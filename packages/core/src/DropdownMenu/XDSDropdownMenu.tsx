@@ -41,6 +41,25 @@ import {
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 
+/**
+ * Size-aware item padding.
+ * sm/md triggers → tighter vertical padding (4px block, 8px inline)
+ * lg triggers → standard padding (8px all around, inherited from base item style)
+ */
+const itemSizeStyles = stylex.create({
+  sm: {
+    paddingBlock: spacingVars['--spacing-1'],
+    paddingInline: spacingVars['--spacing-2'],
+  },
+  md: {
+    paddingBlock: spacingVars['--spacing-1'],
+    paddingInline: spacingVars['--spacing-2'],
+  },
+  lg: {
+    // Uses base item padding (--spacing-2 all around)
+  },
+});
+
 const styles = stylex.create({
   // Dropdown container
   dropdown: {
@@ -322,6 +341,9 @@ export function XDSDropdownMenu({
 }: XDSDropdownMenuProps) {
   const menuId = useId();
 
+  // Derive menu item density from button size
+  const menuSize = button?.size ?? 'md';
+
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   // Internal state for uncontrolled mode
@@ -512,6 +534,7 @@ export function XDSDropdownMenu({
           onMouseEnter={() => handleItemMouseEnter(item, flatIndex)}
           {...stylex.props(
             styles.item,
+            itemSizeStyles[menuSize],
             isHighlighted && styles.itemHighlighted,
             item.isDisabled && styles.itemDisabled,
           )}>
@@ -521,6 +544,7 @@ export function XDSDropdownMenu({
     },
     [
       children,
+      menuSize,
       highlightedIndex,
       getItemId,
       handleItemClick,

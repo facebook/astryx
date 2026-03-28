@@ -52,6 +52,25 @@ import {xdsClassName, mergeProps} from '../utils';
 // Styles
 // =============================================================================
 
+/**
+ * Size-aware item padding.
+ * sm/md triggers → tighter vertical padding (4px block, 8px inline)
+ * lg triggers → standard padding (8px all around, inherited from base item style)
+ */
+const itemSizeStyles = stylex.create({
+  sm: {
+    paddingBlock: spacingVars['--spacing-1'],
+    paddingInline: spacingVars['--spacing-2'],
+  },
+  md: {
+    paddingBlock: spacingVars['--spacing-1'],
+    paddingInline: spacingVars['--spacing-2'],
+  },
+  lg: {
+    // Uses base item padding (--spacing-2 all around)
+  },
+});
+
 const styles = stylex.create({
   dropdown: {
     boxSizing: 'border-box',
@@ -394,6 +413,7 @@ export function XDSMoreMenu({
           onMouseEnter={() => handleItemMouseEnter(item, flatIndex)}
           {...stylex.props(
             styles.item,
+            itemSizeStyles[size],
             isHighlighted && styles.itemHighlighted,
             item.isDisabled && styles.itemDisabled,
           )}>
@@ -403,6 +423,7 @@ export function XDSMoreMenu({
     },
     [
       children,
+      size,
       highlightedIndex,
       getItemId,
       handleItemClick,
