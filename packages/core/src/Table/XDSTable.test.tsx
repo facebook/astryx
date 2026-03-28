@@ -684,6 +684,45 @@ describe('XDSTable', () => {
       'a_very_long_string_without_spaces_that_would_overflow_a_fixed_width_column',
     );
   });
+
+  it('sets title attribute on default-rendered cells for overflow accessibility', () => {
+    const longData = [
+      {name: 'a_very_long_string_that_may_be_truncated', value: '42'},
+    ];
+    render(<XDSTable data={longData} />);
+    const cells = screen.getAllByRole('cell');
+    expect(cells[0]).toHaveAttribute(
+      'title',
+      'a_very_long_string_that_may_be_truncated',
+    );
+    expect(cells[1]).toHaveAttribute('title', '42');
+  });
+
+  it('does not set title attribute on renderCell columns', () => {
+    const cols: XDSTableColumn<User>[] = [
+      {
+        key: 'name',
+        header: 'Name',
+        renderCell: item => <span>{item.name}</span>,
+      },
+      {key: 'email', header: 'Email'},
+    ];
+    render(<XDSTable data={users} columns={cols} />);
+    const cells = screen.getAllByRole('cell');
+    // renderCell column: consumer owns disclosure, no title injected
+    expect(cells[0]).not.toHaveAttribute('title');
+    // default renderer: title present
+    expect(cells[1]).toHaveAttribute('title', users[0].email);
+  });
+
+  it('sets title attribute on header cells', () => {
+    render(<XDSTable data={users} columns={columns} />);
+    const headers = screen.getAllByRole('columnheader');
+    // columns fixture order: name, age, email
+    expect(headers[0]).toHaveAttribute('title', 'Name');
+    expect(headers[1]).toHaveAttribute('title', 'Age');
+    expect(headers[2]).toHaveAttribute('title', 'Email');
+  });
 });
 
 // =============================================================================

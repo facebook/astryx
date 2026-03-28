@@ -102,14 +102,24 @@ function TableRowInner<T extends Record<string, unknown>>({
       item,
     );
 
+    const isDefaultRenderer = !col.renderCell;
     const content = col.renderCell
       ? col.renderCell(item)
       : defaultCellRenderer(item, col.key);
+
+    // When using the default renderer (plain string), add title so truncated
+    // text is accessible on hover — consumers who use renderCell are
+    // responsible for their own overflow disclosure.
+    const titleProp =
+      isDefaultRenderer && typeof content === 'string' && content.length > 0
+        ? {title: content}
+        : {};
 
     return (
       <CellComponent
         key={col.key}
         {...cellRenderProps.htmlProps}
+        {...titleProp}
         xstyle={cellRenderProps.styles}>
         {content}
       </CellComponent>
@@ -242,12 +252,19 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
         }
       : cellRenderProps.htmlProps;
 
+    const headerContent = col.header ?? col.key;
+    const headerTitleProp =
+      typeof headerContent === 'string' && headerContent.length > 0
+        ? {title: headerContent}
+        : {};
+
     return (
       <HeaderCellComponent
         key={col.key}
         {...mergedHtmlProps}
+        {...headerTitleProp}
         xstyle={cellRenderProps.styles}>
-        {col.header ?? col.key}
+        {headerContent}
       </HeaderCellComponent>
     );
   });

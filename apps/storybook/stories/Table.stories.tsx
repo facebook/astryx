@@ -328,11 +328,13 @@ const overflowData: OverflowRow[] = [
 
 /**
  * Cells truncate overflow with an ellipsis by default.
- * The "Wrapped" column shows how consumers can opt into wrapping
- * by passing xstyle with white-space: normal and overflow: visible.
+ * Hover any truncated cell to see its full value via the native title tooltip —
+ * this is automatically applied when using the default renderer.
  *
- * For rich renderCell usage, wrap content in a container with the
- * appropriate inline styles instead.
+ * The "Wrapped" column shows how consumers can opt into wrapping
+ * via renderCell with white-space: normal and overflow: visible.
+ * Note: renderCell columns do not get an automatic title — the consumer
+ * owns overflow disclosure for rich cell content.
  */
 export const OverflowBehavior: Story = {
   render: () => {
