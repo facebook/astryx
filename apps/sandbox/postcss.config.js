@@ -9,7 +9,7 @@ module.exports = {
     '@stylexjs/postcss-plugin': {
       // Only compile StyleX in sandbox page files.
       // @xds/core and theme packages use pre-built dist CSS
-      // (imported in layout.tsx via @layer xds-base / xds-theme).
+      // (imported in layout.tsx via @layer xds.base / xds.theme).
       include: ['src/**/*.{js,jsx,ts,tsx}'],
       babelConfig: {
         babelrc: false,

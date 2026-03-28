@@ -59,25 +59,17 @@ const lightningcssTargets = {
 
 export default defineConfig({
   plugins: [
-    // Declare CSS layer order so theme overrides beat component base styles.
-    {
-      name: 'xds-css-layer-order',
-      transformIndexHtml() {
-        return [
-          {
-            tag: 'style',
-            children:
-              '@layer reset, priority1, priority2, priority3, priority4, priority5, priority6, priority7, priority8, priority9, xds.theme;',
-            injectTo: 'head-prepend',
-          },
-        ];
-      },
-    },
     stylex.vite({
       dev: process.env.NODE_ENV === 'development',
       runtimeInjection: false,
       treeshakeCompensation: true,
-      useCSSLayers: true,
+      // useCSSLayers with before/after/prefix (StyleX 0.18.2+)
+      // Emits: @layer xds.reset, xds.base.priority1-9, xds.theme;
+      useCSSLayers: {
+        before: ['xds.reset'],
+        after: ['xds.theme'],
+        prefix: 'xds.base',
+      },
       unstable_moduleResolution: {
         type: 'commonJS',
         rootDir: __dirname,
@@ -109,7 +101,7 @@ export default defineConfig({
 });
 ```
 
-> **Important:** The `lightningcssOptions.targets` config is required — the StyleX unplugin's internal lightningcss defaults to `browserslist('>= 1%')` which includes Chrome 112, a browser that doesn't support `light-dark()`. Without explicit targets, all theming colors silently break. The `resolve.alias` points `@xds/core` to source so Vite compiles from TypeScript. Plugin order matters — `stylex.vite()` must come before `react()`.
+> **Important:** `lightningcssOptions.targets` is required — the StyleX unplugin's internal lightningcss defaults to `browserslist('>= 1%')` which includes Chrome 112, a browser that doesn't support `light-dark()`. Without explicit targets, all theming colors silently break. The `resolve.alias` points `@xds/core` to source so Vite compiles from TypeScript. Plugin order matters — `stylex.vite()` must come before `react()`.
 
 ### 4. CSS entry point
 
@@ -131,7 +123,7 @@ import './index.css';
 
 The CSS import order matters:
 
-1. `reset.css` — baseline resets (`@layer reset`)
+1. `reset.css` — baseline resets (`@layer xds.reset`)
 2. `theme.css` — theme token overrides (`@layer xds.theme`)
 3. `index.css` — StyleX extraction placeholder
 

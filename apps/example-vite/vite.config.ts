@@ -23,32 +23,25 @@ const lightningcssTargets = {
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
-    // Declare CSS layer order so theme overrides beat component base styles.
-    // Without this, layers are ordered by first appearance — and the StyleX
-    // priority layers (component styles) would come after xds.theme,
-    // preventing theme overrides from taking effect.
-    {
-      name: 'xds-css-layer-order',
-      transformIndexHtml() {
-        return [
-          {
-            tag: 'style',
-            children:
-              '@layer reset, priority1, priority2, priority3, priority4, priority5, priority6, priority7, priority8, priority9, xds.theme;',
-            injectTo: 'head-prepend',
-          },
-        ];
-      },
-    },
     stylex.vite({
       dev: process.env.NODE_ENV === 'development',
       runtimeInjection: false,
       treeshakeCompensation: true,
-      useCSSLayers: true,
+      // useCSSLayers with before/after/prefix (StyleX 0.18.2+)
+      // replaces the manual xds-css-layer-order Vite plugin.
+      // Emits: @layer xds.reset, xds.base.priority1-9, xds.theme;
+      useCSSLayers: {
+        before: ['xds.reset'],
+        after: ['xds.theme'],
+        prefix: 'xds.base',
+      },
       unstable_moduleResolution: {
         type: 'commonJS',
         rootDir: __dirname,
       },
+      // The StyleX unplugin runs its own internal lightningcss with
+      // default targets of browserslist('>= 1%'). Override explicitly
+      // so light-dark() is preserved as native CSS.
       lightningcssOptions: {
         targets: lightningcssTargets,
       },

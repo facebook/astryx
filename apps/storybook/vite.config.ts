@@ -20,7 +20,13 @@ export default defineConfig({
     stylex.vite({
       // Use production mode with CSS extraction
       dev: false,
-      useCSSLayers: true,
+      // useCSSLayers with before/after/prefix (StyleX 0.18.2+)
+      // Emits: @layer xds.reset, xds.base.priority1-9, xds.theme;
+      useCSSLayers: {
+        before: ['xds.reset'],
+        after: ['xds.theme'],
+        prefix: 'xds.base',
+      },
       styleResolution: 'application-order',
       aliases: {
         '@xds/core/*': [path.join(rootDir, 'packages/core/src/*')],

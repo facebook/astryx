@@ -63,30 +63,18 @@ const config: StorybookConfig = {
     return {
       ...config,
       plugins: [
-        // Declare CSS layer order before StyleX injects its virtual CSS.
-        // In Vite dev mode the StyleX unplugin's transformIndexHtml injects
-        // a <link> for /virtual:stylex.css before preview.tsx CSS imports
-        // are processed, which would otherwise cause priority1-9 layers to
-        // be declared first (lowest priority) and reset/typography last
-        // (highest priority) — the reverse of what we need.
-        {
-          name: 'xds-css-layer-order',
-          transformIndexHtml() {
-            return [
-              {
-                tag: 'style',
-                children:
-                  '@layer reset, priority1, priority2, priority3, priority4, priority5, priority6, priority7, priority8, priority9;',
-                injectTo: 'head-prepend',
-              },
-            ];
-          },
-        },
         ...filteredPlugins,
         stylex.vite({
           // Use production mode with CSS extraction
           dev: false,
-          useCSSLayers: true,
+          // useCSSLayers with before/after/prefix (StyleX 0.18.2+)
+          // replaces the manual xds-css-layer-order Vite plugin.
+          // Emits: @layer xds.reset, xds.base.priority1-9, xds.theme;
+          useCSSLayers: {
+            before: ['xds.reset'],
+            after: ['xds.theme'],
+            prefix: 'xds.base',
+          },
           styleResolution: 'application-order',
           aliases: {
             '@xds/core/*': [path.join(rootDir, 'packages/core/src/*')],
