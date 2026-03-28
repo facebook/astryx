@@ -227,7 +227,16 @@ function getStoryTitle(componentName) {
 
     if (storyFiles.length === 0) return null;
 
-    const titles = storyFiles.map(storyFile => {
+    // Prefer exact filename match (e.g. "Table.stories.tsx" for "Table")
+    // over substring matches (e.g. "PowerSearchWithTable.stories.tsx")
+    const exactMatch = storyFiles.find(f =>
+      searchNames.some(name => f.toLowerCase() === `${name.toLowerCase()}.stories.tsx`)
+    );
+    const orderedFiles = exactMatch
+      ? [exactMatch, ...storyFiles.filter(f => f !== exactMatch)]
+      : storyFiles;
+
+    const titles = orderedFiles.map(storyFile => {
       const content = fs.readFileSync(path.join(storiesDir, storyFile), 'utf8');
       const titleMatch = content.match(/title:\s*['"]([^'"]+)['"]/);
       return titleMatch ? titleMatch[1] : null;
