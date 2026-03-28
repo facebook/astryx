@@ -79,7 +79,7 @@ export type XDSAppShellBreakpoint = 'sm' | 'md' | 'lg' | 'none';
  * - `surface`: Nav areas use surface background, no dividers
  * - `section`: Dividers between nav and content (classic look)
  * - `elevated`: Wash nav background with elevated surface content + border radius
- * @default 'section'
+ * @default 'elevated'
  */
 /**
  * Extensible variant map for XDSAppShell.
@@ -152,7 +152,7 @@ export interface XDSAppShellProps {
    * - `surface`: Nav uses surface background, no dividers
    * - `section`: Dividers between nav and content (classic look)
    * - `elevated`: Wash nav with elevated surface content area + border radius
-   * @default 'section'
+   * @default 'elevated'
    */
   variant?: XDSAppShellVariant;
 
@@ -426,7 +426,7 @@ const styles = stylex.create({
  * ```
  */
 export function XDSAppShell({
-  variant = 'section',
+  variant = 'elevated',
   banner,
   children,
   contentPadding,
