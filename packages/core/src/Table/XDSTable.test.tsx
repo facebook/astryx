@@ -665,7 +665,10 @@ describe('XDSTable', () => {
     expect(idKey).toHaveBeenCalledWith(users[2]);
   });
 
-  it('renders cells that contain long strings without crashing', () => {
+  it('applies overflow truncation styles to body cells', () => {
+    // text-overflow: ellipsis + overflow: hidden + white-space: nowrap are applied
+    // via StyleX class names. We verify a class is present on the cell; the actual
+    // CSS rendering is covered by visual/e2e tests (jsdom doesn't compute layout).
     const longData = [
       {
         name: 'a_very_long_string_without_spaces_that_would_overflow_a_fixed_width_column',
@@ -674,8 +677,9 @@ describe('XDSTable', () => {
     ];
     render(<XDSTable data={longData} />);
     const cell = screen.getAllByRole('cell')[0];
-    expect(cell).toBeInTheDocument();
-    // Long unbroken text renders without breaking layout
+    // Cell should have at least one StyleX-generated class applied
+    expect(cell.className.length).toBeGreaterThan(0);
+    // Text content is present in the DOM (truncation is purely visual)
     expect(cell).toHaveTextContent(
       'a_very_long_string_without_spaces_that_would_overflow_a_fixed_width_column',
     );

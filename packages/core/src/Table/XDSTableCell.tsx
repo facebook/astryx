@@ -79,6 +79,7 @@ const dividerColumnStyles = stylex.create({
     borderRightColor: colorVars['--color-border'],
   },
 });
+
 const overflowStyles = stylex.create({
   cell: {
     overflow: 'hidden',

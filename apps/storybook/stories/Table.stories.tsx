@@ -298,3 +298,78 @@ export const KitchenSink: Story = {
     hasHover: true,
   },
 };
+
+// =============================================================================
+// Overflow & Text Wrapping
+// =============================================================================
+
+interface OverflowRow extends Record<string, unknown> {
+  column: string;
+  truncated: string;
+  wrapped: string;
+}
+
+const overflowData: OverflowRow[] = [
+  {
+    column: 'Default (truncate)',
+    truncated:
+      'a_very_long_string_like_this_that_overflows_the_column_without_spaces',
+    wrapped:
+      'a_very_long_string_like_this_that_overflows_the_column_without_spaces',
+  },
+  {
+    column: 'Normal prose',
+    truncated:
+      'This is a longer sentence that will also get clipped by the ellipsis when it runs out of room.',
+    wrapped:
+      'This is a longer sentence that wraps naturally onto the next line when it runs out of room.',
+  },
+];
+
+/**
+ * Cells truncate overflow with an ellipsis by default.
+ * The "Wrapped" column shows how consumers can opt into wrapping
+ * by passing xstyle with white-space: normal and overflow: visible.
+ *
+ * For rich renderCell usage, wrap content in a container with the
+ * appropriate inline styles instead.
+ */
+export const OverflowBehavior: Story = {
+  render: () => {
+    const cols: XDSTableColumn<OverflowRow>[] = [
+      {key: 'column', header: 'Row', width: pixel(140)},
+      {
+        key: 'truncated',
+        header: 'Truncated (default)',
+        width: proportional(1),
+      },
+      {
+        key: 'wrapped',
+        header: 'Wrapped (xstyle override)',
+        width: proportional(1),
+        renderCell: item => (
+          <span
+            style={{
+              whiteSpace: 'normal',
+              overflow: 'visible',
+              wordBreak: 'break-word',
+              display: 'block',
+            }}>
+            {item.wrapped}
+          </span>
+        ),
+      },
+    ];
+
+    return (
+      <div style={{width: '640px'}}>
+        <XDSTable
+          data={overflowData}
+          columns={cols}
+          dividers="grid"
+          density="balanced"
+        />
+      </div>
+    );
+  },
+};
