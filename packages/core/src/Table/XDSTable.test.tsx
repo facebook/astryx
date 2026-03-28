@@ -664,6 +664,60 @@ describe('XDSTable', () => {
     expect(idKey).toHaveBeenCalledWith(users[1]);
     expect(idKey).toHaveBeenCalledWith(users[2]);
   });
+
+  it('applies overflow truncation styles to body cells', () => {
+    // text-overflow: ellipsis + overflow: hidden + white-space: nowrap are applied
+    // via StyleX class names. We verify a class is present on the cell; the actual
+    // CSS rendering is covered by visual/e2e tests (jsdom doesn't compute layout).
+    const longData = [
+      {
+        name: 'a_very_long_string_without_spaces_that_would_overflow_a_fixed_width_column',
+        value: '42',
+      },
+    ];
+    render(<XDSTable data={longData} />);
+    const cell = screen.getAllByRole('cell')[0];
+    // Cell should have at least one StyleX-generated class applied
+    expect(cell.className.length).toBeGreaterThan(0);
+    // Text content is present in the DOM (truncation is purely visual)
+    expect(cell).toHaveTextContent(
+      'a_very_long_string_without_spaces_that_would_overflow_a_fixed_width_column',
+    );
+  });
+
+  it('sets title attribute on default-rendered cells for overflow accessibility', () => {
+    render(<XDSTable data={users} columns={columns} />);
+    const cells = screen.getAllByRole('cell');
+    // Default renderer adds title for native hover tooltip on truncated text
+    expect(cells[0]).toHaveAttribute('title', 'Alice');
+    expect(cells[1]).toHaveAttribute('title', '30');
+  });
+
+  it('does not set title attribute on renderCell columns', () => {
+    const cols: XDSTableColumn<User>[] = [
+      {
+        key: 'name',
+        header: 'Name',
+        renderCell: item => <span>{item.name}</span>,
+      },
+      {key: 'email', header: 'Email'},
+    ];
+    render(<XDSTable data={users} columns={cols} />);
+    const cells = screen.getAllByRole('cell');
+    // renderCell column: consumer owns disclosure
+    expect(cells[0]).not.toHaveAttribute('title');
+    // default column: title present
+    expect(cells[1]).toHaveAttribute('title', users[0].email);
+  });
+
+  it('sets title attribute on string header cells', () => {
+    render(<XDSTable data={users} columns={columns} />);
+    const headers = screen.getAllByRole('columnheader');
+    // columns fixture order: name, age, email
+    expect(headers[0]).toHaveAttribute('title', 'Name');
+    expect(headers[1]).toHaveAttribute('title', 'Age');
+    expect(headers[2]).toHaveAttribute('title', 'Email');
+  });
 });
 
 // =============================================================================

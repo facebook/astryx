@@ -23,6 +23,7 @@ import {
 } from '../theme/tokens.stylex';
 import type {StyleXStyles} from '../theme/types';
 import {XDSTableContext} from './XDSTableContext';
+import {overflowStyles} from './table.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 
 /** Props for XDSTableHeaderCell — `<th>` wrapper with context-aware styling */
@@ -87,6 +88,8 @@ const dividerColumnStyles = stylex.create({
   },
 });
 
+// Shared overflow styles — see table.stylex.ts for rationale
+
 /**
  * XDSTableHeaderCell — a `<th>` wrapper for header cells.
  *
@@ -136,6 +139,7 @@ export function XDSTableHeaderCell({
     headerStyles.cell,
     densityStyles[ctx.density],
     headerDividerStyles.cell,
+    overflowStyles.cell,
   ];
 
   if (ctx.dividers === 'columns' || ctx.dividers === 'grid') {
