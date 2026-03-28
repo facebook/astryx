@@ -29,6 +29,12 @@ const styles = stylex.create({
     justifyContent: 'space-between',
     gap: spacingVars['--spacing-3'],
   },
+  // When the close button is rendered, pull the container tighter
+  // to compensate for the icon button's visual padding
+  containerWithClose: {
+    marginBlock: `calc(-1 * ${spacingVars['--spacing-2']})`,
+    marginInlineEnd: `calc(-1 * ${spacingVars['--spacing-2']})`,
+  },
   titleWrapper: {
     flex: 1,
     minWidth: 0,
@@ -44,10 +50,6 @@ const styles = stylex.create({
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
     flexShrink: 0,
-  },
-  closeButton: {
-    marginTop: `calc(-1 * ${spacingVars['--spacing-2']})`,
-    marginRight: `calc(-1 * ${spacingVars['--spacing-2']})`,
   },
 });
 
@@ -131,7 +133,11 @@ export function XDSDialogHeader({
 
   return (
     <XDSLayoutHeader ref={ref} hasDivider={hasDivider}>
-      <div {...stylex.props(styles.container)}>
+      <div
+        {...stylex.props(
+          styles.container,
+          onOpenChange && styles.containerWithClose,
+        )}>
         {startContent && (
           <div {...stylex.props(styles.actions)}>{startContent}</div>
         )}
@@ -153,15 +159,13 @@ export function XDSDialogHeader({
           <div {...stylex.props(styles.actions)}>
             {endContent}
             {onOpenChange && (
-              <div {...stylex.props(styles.closeButton)}>
-                <XDSButton
-                  variant="ghost"
-                  label="Close"
-                  tooltip="Close"
-                  icon={<XDSIcon icon="close" color="inherit" />}
-                  onClick={() => onOpenChange?.(false)}
-                />
-              </div>
+              <XDSButton
+                variant="ghost"
+                label="Close"
+                tooltip="Close"
+                icon={<XDSIcon icon="close" color="inherit" />}
+                onClick={() => onOpenChange?.(false)}
+              />
             )}
           </div>
         )}
