@@ -52,6 +52,24 @@ import {xdsClassName, mergeProps} from '../utils';
 // Styles
 // =============================================================================
 
+/**
+ * Size-aware item padding.
+ * sm triggers → tighter vertical padding (4px block, 8px inline)
+ * md/lg triggers → standard padding (8px all around, inherited from base item style)
+ */
+const itemSizeStyles = stylex.create({
+  sm: {
+    paddingBlock: spacingVars['--spacing-1'],
+    paddingInline: spacingVars['--spacing-2'],
+  },
+  md: {
+    // Uses base item padding (--spacing-2 all around)
+  },
+  lg: {
+    // Uses base item padding (--spacing-2 all around)
+  },
+});
+
 const styles = stylex.create({
   dropdown: {
     boxSizing: 'border-box',
@@ -73,8 +91,14 @@ const styles = stylex.create({
     marginBlockStart: spacingVars['--spacing-1'],
     marginBlockEnd: spacingVars['--spacing-1'],
   },
-  sectionDivider: {
-    marginBlock: spacingVars['--spacing-1'],
+  sectionHeading: {
+    paddingBlock: spacingVars['--spacing-1'],
+    paddingInline: spacingVars['--spacing-2'],
+    fontFamily: typographyVars['--font-family-body'],
+    fontSize: typeScaleVars['--text-supporting-size'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
+    color: colorVars['--color-text-secondary'],
+    userSelect: 'none',
   },
   divider: {
     marginBlock: spacingVars['--spacing-1'],
@@ -394,6 +418,7 @@ export function XDSMoreMenu({
           onMouseEnter={() => handleItemMouseEnter(item, flatIndex)}
           {...stylex.props(
             styles.item,
+            itemSizeStyles[size],
             isHighlighted && styles.itemHighlighted,
             item.isDisabled && styles.itemDisabled,
           )}>
@@ -403,6 +428,7 @@ export function XDSMoreMenu({
     },
     [
       children,
+      size,
       highlightedIndex,
       getItemId,
       handleItemClick,
@@ -427,17 +453,16 @@ export function XDSMoreMenu({
           sectionItems.push(renderItem(item, flatIndex));
           flatIndex++;
         }
-        if (option.title) {
-          elements.push(
-            <XDSDivider
-              key={`section-divider-${i}`}
-              label={option.title}
-              xstyle={styles.sectionDivider}
-            />,
-          );
-        }
         elements.push(
           <div key={`section-${i}`} role="group" aria-label={option.title}>
+            {option.title && (
+              <div
+                key={`section-heading-${i}`}
+                {...stylex.props(styles.sectionHeading)}
+                aria-hidden="true">
+                {option.title}
+              </div>
+            )}
             {sectionItems}
           </div>,
         );

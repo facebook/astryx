@@ -41,6 +41,24 @@ import {
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 
+/**
+ * Size-aware item padding.
+ * sm triggers → tighter vertical padding (4px block, 8px inline)
+ * md/lg triggers → standard padding (8px all around, inherited from base item style)
+ */
+const itemSizeStyles = stylex.create({
+  sm: {
+    paddingBlock: spacingVars['--spacing-1'],
+    paddingInline: spacingVars['--spacing-2'],
+  },
+  md: {
+    // Uses base item padding (--spacing-2 all around)
+  },
+  lg: {
+    // Uses base item padding (--spacing-2 all around)
+  },
+});
+
 const styles = stylex.create({
   // Dropdown container
   dropdown: {
@@ -75,9 +93,15 @@ const styles = stylex.create({
     minWidth: typeof width === 'number' ? `${width}px` : width,
   }),
 
-  // Section divider with label
-  sectionDivider: {
-    marginBlock: spacingVars['--spacing-1'],
+  // Section heading label (replaces divider for named sections)
+  sectionHeading: {
+    paddingBlock: spacingVars['--spacing-1'],
+    paddingInline: spacingVars['--spacing-2'],
+    fontFamily: typographyVars['--font-family-body'],
+    fontSize: typeScaleVars['--text-supporting-size'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
+    color: colorVars['--color-text-secondary'],
+    userSelect: 'none',
   },
 
   // Divider
@@ -322,6 +346,9 @@ export function XDSDropdownMenu({
 }: XDSDropdownMenuProps) {
   const menuId = useId();
 
+  // Derive menu item density from button size
+  const menuSize = button?.size ?? 'md';
+
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   // Internal state for uncontrolled mode
@@ -512,6 +539,7 @@ export function XDSDropdownMenu({
           onMouseEnter={() => handleItemMouseEnter(item, flatIndex)}
           {...stylex.props(
             styles.item,
+            itemSizeStyles[menuSize],
             isHighlighted && styles.itemHighlighted,
             item.isDisabled && styles.itemDisabled,
           )}>
@@ -521,6 +549,7 @@ export function XDSDropdownMenu({
     },
     [
       children,
+      menuSize,
       highlightedIndex,
       getItemId,
       handleItemClick,
@@ -546,17 +575,16 @@ export function XDSDropdownMenu({
           sectionItems.push(renderItem(item, flatIndex));
           flatIndex++;
         }
-        if (option.title) {
-          elements.push(
-            <XDSDivider
-              key={`section-divider-${i}`}
-              label={option.title}
-              xstyle={styles.sectionDivider}
-            />,
-          );
-        }
         elements.push(
           <div key={`section-${i}`} role="group" aria-label={option.title}>
+            {option.title && (
+              <div
+                key={`section-heading-${i}`}
+                {...stylex.props(styles.sectionHeading)}
+                aria-hidden="true">
+                {option.title}
+              </div>
+            )}
             {sectionItems}
           </div>,
         );
