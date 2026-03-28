@@ -13,7 +13,6 @@
  * - /apps/storybook/stories/Dialog.stories.tsx
  */
 
-
 import {useEffect, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
@@ -30,9 +29,17 @@ const styles = stylex.create({
     justifyContent: 'space-between',
     gap: spacingVars['--spacing-3'],
   },
+  // Compensate for the icon button's visual padding on the actions area
+  actionsCompensation: {
+    marginBlock: `calc(-1 * ${spacingVars['--spacing-2']})`,
+    marginInlineEnd: `calc(-1 * ${spacingVars['--spacing-2']})`,
+  },
   titleWrapper: {
     flex: 1,
     minWidth: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 0,
   },
   titleFocusable: {
     outline: 'none',
@@ -42,10 +49,6 @@ const styles = stylex.create({
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
     flexShrink: 0,
-  },
-  closeButton: {
-    marginTop: `calc(-1 * ${spacingVars['--spacing-2']})`,
-    marginRight: `calc(-1 * ${spacingVars['--spacing-2']})`,
   },
 });
 
@@ -134,7 +137,10 @@ export function XDSDialogHeader({
           <div {...stylex.props(styles.actions)}>{startContent}</div>
         )}
         <div {...stylex.props(styles.titleWrapper)}>
-          <XDSHeading ref={titleRef} level={2} xstyle={styles.titleFocusable}>
+          <XDSHeading
+            ref={titleRef}
+            level={2}
+            xstyle={styles.titleFocusable}>
             {title}
           </XDSHeading>
           {subtitle && (
@@ -144,18 +150,20 @@ export function XDSDialogHeader({
           )}
         </div>
         {(endContent || onOpenChange) && (
-          <div {...stylex.props(styles.actions)}>
+          <div
+            {...stylex.props(
+              styles.actions,
+              onOpenChange && styles.actionsCompensation,
+            )}>
             {endContent}
             {onOpenChange && (
-              <div {...stylex.props(styles.closeButton)}>
-                <XDSButton
-                  variant="ghost"
-                  label="Close"
-                  tooltip="Close"
-                  icon={<XDSIcon icon="close" color="inherit" />}
-                  onClick={() => onOpenChange?.(false)}
-                />
-              </div>
+              <XDSButton
+                variant="ghost"
+                label="Close"
+                tooltip="Close"
+                icon={<XDSIcon icon="close" color="inherit" />}
+                onClick={() => onOpenChange?.(false)}
+              />
             )}
           </div>
         )}

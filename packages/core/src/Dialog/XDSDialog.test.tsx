@@ -263,4 +263,18 @@ describe('XDSDialog', () => {
       expect(screen.getByRole('dialog')).toBeInTheDocument();
     });
   });
+
+  describe('inner flex wrapper', () => {
+    it('wraps children in a flex container for scroll support', () => {
+      render(
+        <XDSDialog isOpen={true} onOpenChange={() => {}}>
+          <div data-testid="child">Content</div>
+        </XDSDialog>,
+      );
+      const child = screen.getByTestId('child');
+      const wrapper = child.parentElement!;
+      expect(wrapper.tagName).toBe('DIV');
+      expect(wrapper.parentElement!.tagName).toBe('DIALOG');
+    });
+  });
 });
