@@ -1,0 +1,15 @@
+# Design owners for the XDS repository
+#
+# Design owners can merge changes to sandbox and storybook apps
+# without code owner approval. This lets designers iterate freely
+# on stories, demos, and visual explorations.
+#
+# Code owners still review everything else (core, CLI, infra, CI).
+#
+# Format: one GitHub username per line (same as CODEOWNERS convention)
+
+rubyycheung
+tedmcdo
+ernestt
+kentonquatman
+saivazian

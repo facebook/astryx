@@ -1,6 +1,9 @@
 # Code owner gate: blocks merge unless a code owner has approved
 # Code owners themselves can merge freely (auto-pass)
 #
+# Design owners (.github/DESIGNOWNERS) can merge sandbox/storybook
+# changes without code owner approval. Everyone else needs it.
+#
 # Uses the Checks API to write a single "Code Owner Gate" status per
 # commit SHA, so re-runs from pull_request_review events UPDATE the
 # existing check instead of creating a competing one.
@@ -22,13 +25,40 @@ jobs:
   codeowner-gate:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout DESIGNOWNERS
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/DESIGNOWNERS
+          sparse-checkout-cone-mode: false
+
       - name: Check code owner status
         uses: actions/github-script@v7
         with:
           script: |
+            const fs = require('fs');
+
             // --- Configuration ---
             // Keep this list in sync with .github/CODEOWNERS
             const CODE_OWNERS = ['cixzhang', 'josephfarina'];
+
+            // Read design owners from file
+            let DESIGNOWNERS = [];
+            try {
+              const content = fs.readFileSync('.github/DESIGNOWNERS', 'utf8');
+              DESIGNOWNERS = content
+                .split('\n')
+                .map(line => line.replace(/#.*$/, '').trim()) // strip comments
+                .filter(line => line.length > 0);
+            } catch (e) {
+              console.log('No DESIGNOWNERS file found, skipping design owner check');
+            }
+            console.log(`Design owners: ${DESIGNOWNERS.join(', ') || '(none)'}`);
+
+            // Paths that design owners can merge without code owner review
+            const DESIGN_PATHS = [
+              'apps/sandbox/',
+              'apps/storybook/',
+            ];
 
             // --- Resolve PR context ---
             const pr = context.payload.pull_request;
@@ -38,24 +68,21 @@ jobs:
 
             console.log(`PR #${prNumber} by @${prAuthor} (${headSha.slice(0, 7)})`);
 
-            // --- Paths that don't require code owner review ---
-            // Sandbox and storybook apps are relaxed — core packages,
-            // CLI, and repo infra still require code owner approval.
-            const RELAXED_PATHS = [
-              'apps/sandbox/',
-              'apps/storybook/',
-            ];
-
-            // Fetch changed files
-            const { data: files } = await github.rest.pulls.listFiles({
+            // Fetch changed files (paginated — PRs with 100+ files)
+            const files = await github.paginate(github.rest.pulls.listFiles, {
               owner: context.repo.owner,
               repo: context.repo.repo,
               pull_number: prNumber,
               per_page: 100,
             });
+            // Collect all affected paths — includes previous_filename
+            // for renames so a rename FROM core TO sandbox is caught.
+            const allPaths = files.flatMap(f =>
+              f.previous_filename ? [f.filename, f.previous_filename] : [f.filename]
+            );
             const changedFiles = files.map(f => f.filename);
-            const onlyRelaxedPaths = changedFiles.length > 0 && changedFiles.every(
-              f => RELAXED_PATHS.some(prefix => f.startsWith(prefix))
+            const onlyDesignPaths = allPaths.length > 0 && allPaths.every(
+              p => DESIGN_PATHS.some(prefix => p.startsWith(prefix))
             );
 
             // --- Determine result ---
@@ -65,9 +92,9 @@ jobs:
             if (CODE_OWNERS.includes(prAuthor)) {
               conclusion = 'success';
               summary = `@${prAuthor} is a code owner — approved automatically.`;
-            } else if (onlyRelaxedPaths) {
+            } else if (onlyDesignPaths && DESIGNOWNERS.includes(prAuthor)) {
               conclusion = 'success';
-              summary = `Only stories/pages changes — code owner review not required.\nFiles: ${changedFiles.join(', ')}`;
+              summary = `@${prAuthor} is a design owner and only sandbox/storybook files changed — approved automatically.\nFiles: ${changedFiles.join(', ')}`;
             } else {
               // Check for code owner approval
               const { data: reviews } = await github.rest.pulls.listReviews({
@@ -89,14 +116,18 @@ jobs:
                 conclusion = 'success';
                 summary = `Approved by code owner(s): ${approvedBy.map(u => '@' + u).join(', ')}`;
               } else {
-                summary = `Requires approval from a code owner (${CODE_OWNERS.map(u => '@' + u).join(', ')}).`;
+                // Tailor the message based on context
+                if (onlyDesignPaths && !DESIGNOWNERS.includes(prAuthor)) {
+                  summary = `@${prAuthor} is not a design owner. Sandbox/storybook changes require code owner approval (${CODE_OWNERS.map(u => '@' + u).join(', ')}) or being listed in .github/DESIGNOWNERS.`;
+                } else {
+                  summary = `Requires approval from a code owner (${CODE_OWNERS.map(u => '@' + u).join(', ')}).`;
+                }
               }
             }
 
             console.log(`${conclusion === 'success' ? '✅' : '❌'} ${summary}`);
 
             // --- Write check run (upsert) ---
-            // Look for an existing check run with our name on this SHA
             const checkName = 'Code Owner Gate';
             const { data: existing } = await github.rest.checks.listForRef({
               owner: context.repo.owner,
@@ -119,14 +150,12 @@ jobs:
             };
 
             if (existing.total_count > 0) {
-              // Update the existing check run
               await github.rest.checks.update({
                 ...params,
                 check_run_id: existing.check_runs[0].id,
               });
               console.log(`Updated check run ${existing.check_runs[0].id}`);
             } else {
-              // Create a new check run
               const { data: created } = await github.rest.checks.create(params);
               console.log(`Created check run ${created.id}`);
             }
