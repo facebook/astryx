@@ -146,9 +146,9 @@ const sizeStyles = stylex.create({
  * Matches XDSIcon sizing: sm/md=16px, lg=20px.
  */
 const iconSizeStyles = stylex.create({
-  sm: {width: 16, height: 16},
-  md: {width: 16, height: 16},
-  lg: {width: 20, height: 20},
+  sm: {width: 16, height: 16, fontSize: 16},
+  md: {width: 16, height: 16, fontSize: 16},
+  lg: {width: 20, height: 20, fontSize: 20},
 });
 
 /**
