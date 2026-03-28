@@ -37,6 +37,9 @@ import migrateGapToNumeric, {
 import migrateIsFullBleedToPadding, {
   meta as fullBleedMeta,
 } from './migrate-isFullBleed-to-padding.mjs';
+import migrateBadgeDotToStatusDot, {
+  meta as badgeDotMeta,
+} from './migrate-badge-dot-to-statusdot.mjs';
 export default [
   {
     name: 'rename-selector-items-to-options',
@@ -92,5 +95,10 @@ export default [
     name: 'migrate-isFullBleed-to-padding',
     transform: migrateIsFullBleedToPadding,
     meta: fullBleedMeta,
+  },
+  {
+    name: 'migrate-badge-dot-to-statusdot',
+    transform: migrateBadgeDotToStatusDot,
+    meta: badgeDotMeta,
   },
 ];
