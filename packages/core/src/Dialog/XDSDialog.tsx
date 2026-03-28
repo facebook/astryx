@@ -373,7 +373,7 @@ export function XDSDialog({
       {...mergeProps(
         xdsClassName('dialog', {variant}),
         stylex.props(
-          ...container({}),
+          ...container({padding: 'spacing0'}),
           styles.dialog,
           styles.backdrop,
           !isFullscreen && dynamicStyles.sizing(width, maxHeight),
