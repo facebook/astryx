@@ -28,6 +28,7 @@ const styles = stylex.create({
     alignItems: 'flex-start',
     justifyContent: 'space-between',
     gap: spacingVars['--spacing-3'],
+    paddingBlockStart: '2px',
   },
   // Compensate for the icon button's visual padding on the actions area
   actionsCompensation: {
