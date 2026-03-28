@@ -12,7 +12,7 @@
  * - /packages/core/src/Button/index.ts (exports if types change)
  * - /apps/storybook/stories/Button.stories.tsx (storybook stories)
  *
- * Last synced props: label, variant, size, isDisabled, isLoading, onClickAction, icon, children, tooltip, endContent
+ * Last synced props: label, variant, size, isDisabled, isLoading, onClickAction, icon, children, tooltip, endContent, href, as, target, rel
  */
 
 import {useRef, useTransition, type ReactNode} from 'react';
@@ -33,6 +33,8 @@ import {XDSSpinner} from '../Spinner';
 
 import {edgeCompensation} from '../Layout/edgeCompensation.stylex';
 import {xdsClassName, mergeProps} from '../utils';
+import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
+import type {XDSLinkComponentType} from '../Link/types';
 
 /**
  * Base button styles
@@ -115,6 +117,9 @@ const styles = stylex.create({
     clip: 'rect(0, 0, 0, 0)',
     whiteSpace: 'nowrap',
     borderWidth: 0,
+  },
+  link: {
+    textDecoration: 'none',
   },
 });
 
@@ -319,6 +324,26 @@ export interface XDSButtonProps extends XDSBaseProps<HTMLButtonElement> {
    * Tooltip text shown on hover.
    */
   tooltip?: string;
+  /**
+   * When provided, renders the button as a link (`<a>` or custom component).
+   * When the button is disabled, still renders as `<button>` regardless of href
+   * (disabled links are an accessibility anti-pattern).
+   */
+  href?: string;
+  /**
+   * Custom link component to use when `href` is provided.
+   * Overrides the provider-level default set by XDSLinkProvider.
+   * Useful for Next.js `<Link>` or other router-aware components.
+   */
+  as?: XDSLinkComponentType;
+  /**
+   * HTML target attribute for the link. Only applies when `href` is provided.
+   */
+  target?: string;
+  /**
+   * HTML rel attribute for the link. Only applies when `href` is provided.
+   */
+  rel?: string;
 }
 
 /**
@@ -363,6 +388,10 @@ const edgeCompStyles = stylex.create({
  * Wrap your app in <Theme> to apply a theme.
  * Themes can provide component-level variant overrides via theme.components.button.variants
  *
+ * When `href` is provided (and the button is not disabled), renders as an `<a>`
+ * element (or custom link component) with full button styling, enabling native
+ * browser behaviors like right-click → open in new tab and Cmd+Click.
+ *
  * @example
  * ```
  * <XDSButton label="Click me" />
@@ -373,6 +402,8 @@ const edgeCompStyles = stylex.create({
  * <XDSButton label="Edit" icon={<PencilIcon />}>Edit</XDSButton>
  * <XDSButton label="Messages" endContent={<XDSBadge label={3} />} />
  * <XDSButton label="Edit" icon={<PencilIcon />} endContent={<XDSBadge label="New" />}>Edit</XDSButton>
+ * <XDSButton label="Visit site" href="https://example.com" variant="primary" />
+ * <XDSButton label="Open in new tab" href="https://example.com" target="_blank" rel="noopener noreferrer" />
  * ```
  */
 export function XDSButton({
@@ -387,6 +418,10 @@ export function XDSButton({
   children,
   endContent,
   tooltip,
+  href,
+  as,
+  target,
+  rel,
   xstyle,
   className,
   style,
@@ -399,6 +434,11 @@ export function XDSButton({
   const buttonDisabled = isDisabled || isLoadingState;
   const useLightSpinner = variant === 'primary' || variant === 'destructive';
   const isIconOnly = icon != null && children == null;
+  const LinkComponent = useXDSLinkComponent(as);
+
+  // Render as link when href is provided and button is not disabled.
+  // Disabled links are an accessibility anti-pattern — fall back to <button>.
+  const renderAsLink = href != null && !buttonDisabled;
 
   // Use aria-disabled when tooltip is present so the button remains focusable
   // for keyboard users to reach the tooltip. Otherwise use native disabled.
@@ -446,36 +486,30 @@ export function XDSButton({
       : edgeCompStyles.paddingInline3
     : null;
 
-  const button = (
-    <button
-      ref={ref}
-      type={type}
-      disabled={useAriaDisabled ? undefined : buttonDisabled}
-      {...mergeProps(
-        xdsClassName('button', {variant, size}),
-        stylex.props(
-          styles.base,
-          sizeStyles[size],
-          variants[variant],
-          isIconOnly && styles.iconOnly,
-          buttonDisabled && styles.disabled,
-          useAriaDisabled && styles.ariaDisabled,
-          isLoadingState && loadingStyles.loading,
-          edgePaddingSignal,
-          edgeCompStyle,
-          xstyle,
-        ),
-        className,
-        style,
-      )}
-      {...props}
-      {...((isIconOnly && label !== '') || (isLoadingState && !isIconOnly)
-        ? {'aria-label': label}
-        : null)}
-      aria-busy={isLoadingState || undefined}
-      aria-disabled={useAriaDisabled || undefined}
-      onClick={handleClick}
-      {...(handleKeyDown ? {onKeyDown: handleKeyDown} : null)}>
+  // Shared StyleX props for both button and link rendering
+  const sharedStylexProps = stylex.props(
+    styles.base,
+    sizeStyles[size],
+    variants[variant],
+    isIconOnly && styles.iconOnly,
+    buttonDisabled && styles.disabled,
+    useAriaDisabled && styles.ariaDisabled,
+    isLoadingState && loadingStyles.loading,
+    edgePaddingSignal,
+    edgeCompStyle,
+    renderAsLink && styles.link,
+    xstyle,
+  );
+
+  const sharedMergedProps = mergeProps(
+    xdsClassName('button', {variant, size}),
+    sharedStylexProps,
+    className,
+    style,
+  );
+
+  const buttonContent = (
+    <>
       {isLoadingState && (
         <span
           {...stylex.props(loadingStyles.spinnerOverlay)}
@@ -504,18 +538,55 @@ export function XDSButton({
         aria-live="polite">
         {isLoadingState ? 'Loading' : ''}
       </span>
-    </button>
+    </>
   );
+
+  const ariaLabelProp =
+    (isIconOnly && label !== '') || (isLoadingState && !isIconOnly)
+      ? {'aria-label': label}
+      : null;
+
+  let element: ReactNode;
+
+  if (renderAsLink) {
+    element = (
+      <LinkComponent
+        ref={ref as React.Ref<HTMLAnchorElement>}
+        href={href}
+        target={target}
+        rel={rel}
+        {...sharedMergedProps}
+        {...ariaLabelProp}>
+        {buttonContent}
+      </LinkComponent>
+    );
+  } else {
+    element = (
+      <button
+        ref={ref}
+        type={type}
+        disabled={useAriaDisabled ? undefined : buttonDisabled}
+        {...sharedMergedProps}
+        {...props}
+        {...ariaLabelProp}
+        aria-busy={isLoadingState || undefined}
+        aria-disabled={useAriaDisabled || undefined}
+        onClick={handleClick}
+        {...(handleKeyDown ? {onKeyDown: handleKeyDown} : null)}>
+        {buttonContent}
+      </button>
+    );
+  }
 
   if (tooltip) {
     return (
       <XDSTooltip content={tooltip} placement="above">
-        {button}
+        {element}
       </XDSTooltip>
     );
   }
 
-  return button;
+  return element;
 }
 
 XDSButton.displayName = 'XDSButton';

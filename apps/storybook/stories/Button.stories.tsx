@@ -242,6 +242,66 @@ export const AllVariants: Story = {
 };
 
 /**
+ * Demonstrates button rendering as a link when `href` is provided.
+ * Right-click to verify native browser link context menu (open in new tab, etc.).
+ * Disabled state falls back to `<button>` — disabled links are an a11y anti-pattern.
+ */
+export const LinkButton: Story = {
+  render: () => (
+    <div style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
+      <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
+        <XDSButton
+          label="Visit Example"
+          href="https://example.com"
+          variant="primary"
+        />
+        <XDSButton
+          label="Open in new tab"
+          href="https://example.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          variant="secondary"
+        />
+        <XDSButton
+          label="Ghost link"
+          href="https://example.com"
+          variant="ghost"
+        />
+      </div>
+      <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
+        <XDSButton
+          label="Disabled link"
+          href="https://example.com"
+          variant="primary"
+          isDisabled
+        />
+        <XDSButton
+          label="Loading link"
+          href="https://example.com"
+          variant="primary"
+          isLoading
+        />
+      </div>
+      <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
+        <XDSButton
+          label="Settings"
+          href="https://example.com"
+          variant="secondary"
+          icon={<Cog6ToothIcon style={{width: 16, height: 16}} />}>
+          Settings
+        </XDSButton>
+        <XDSButton
+          label="Icon-only link"
+          href="https://example.com"
+          variant="ghost"
+          icon={<Cog6ToothIcon style={{width: 16, height: 16}} />}
+        />
+      </div>
+    </div>
+  ),
+};
+
+/**
  * Demonstrates button text truncation in constrained containers.
  * When a button's container is narrower than the button's natural width,
  * the label truncates with an ellipsis instead of wrapping to multiple lines.
