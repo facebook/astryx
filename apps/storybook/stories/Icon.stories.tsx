@@ -1,5 +1,7 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSIcon} from '@xds/core/Icon';
+import {XDSHStack, XDSVStack} from '@xds/core/Layout';
+import {XDSText} from '@xds/core/Text';
 import {
   HomeIcon,
   HeartIcon,
@@ -249,113 +251,13 @@ export const InheritColor: Story = {
 
 export const NonSemanticColors: Story = {
   render: () => (
-    <div
-      style={{
-        display: 'flex',
-        gap: '16px',
-        alignItems: 'center',
-        flexWrap: 'wrap',
-      }}>
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '4px',
-        }}>
-        <XDSIcon icon={StarIcon} color="blue" />
-        <span style={{fontSize: '11px'}}>blue</span>
-      </div>
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '4px',
-        }}>
-        <XDSIcon icon={StarIcon} color="red" />
-        <span style={{fontSize: '11px'}}>red</span>
-      </div>
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '4px',
-        }}>
-        <XDSIcon icon={StarIcon} color="green" />
-        <span style={{fontSize: '11px'}}>green</span>
-      </div>
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '4px',
-        }}>
-        <XDSIcon icon={StarIcon} color="gray" />
-        <span style={{fontSize: '11px'}}>gray</span>
-      </div>
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '4px',
-        }}>
-        <XDSIcon icon={StarIcon} color="cyan" />
-        <span style={{fontSize: '11px'}}>cyan</span>
-      </div>
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '4px',
-        }}>
-        <XDSIcon icon={StarIcon} color="teal" />
-        <span style={{fontSize: '11px'}}>teal</span>
-      </div>
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '4px',
-        }}>
-        <XDSIcon icon={StarIcon} color="yellow" />
-        <span style={{fontSize: '11px'}}>yellow</span>
-      </div>
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '4px',
-        }}>
-        <XDSIcon icon={StarIcon} color="orange" />
-        <span style={{fontSize: '11px'}}>orange</span>
-      </div>
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '4px',
-        }}>
-        <XDSIcon icon={StarIcon} color="pink" />
-        <span style={{fontSize: '11px'}}>pink</span>
-      </div>
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '4px',
-        }}>
-        <XDSIcon icon={StarIcon} color="purple" />
-        <span style={{fontSize: '11px'}}>purple</span>
-      </div>
-    </div>
+    <XDSHStack gap={4} wrap="wrap">
+      {(['blue', 'red', 'green', 'gray', 'cyan', 'teal', 'yellow', 'orange', 'pink', 'purple'] as const).map(color => (
+        <XDSVStack key={color} gap={1} hAlign="center">
+          <XDSIcon icon={StarIcon} color={color} />
+          <XDSText type="supporting">{color}</XDSText>
+        </XDSVStack>
+      ))}
+    </XDSHStack>
   ),
 };
