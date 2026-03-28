@@ -144,7 +144,7 @@ export function XDSDialogHeader({
             {title}
           </XDSHeading>
           {subtitle && (
-            <XDSText type="body" size="sm" color="secondary">
+            <XDSText type="body" size="sm" color="secondary" hasCapsize>
               {subtitle}
             </XDSText>
           )}
