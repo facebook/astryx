@@ -13,7 +13,6 @@
  * - /apps/storybook/stories/Dialog.stories.tsx
  */
 
-
 import {useEffect, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
@@ -33,6 +32,9 @@ const styles = stylex.create({
   titleWrapper: {
     flex: 1,
     minWidth: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacingVars['--spacing-1'],
   },
   titleFocusable: {
     outline: 'none',
@@ -134,7 +136,11 @@ export function XDSDialogHeader({
           <div {...stylex.props(styles.actions)}>{startContent}</div>
         )}
         <div {...stylex.props(styles.titleWrapper)}>
-          <XDSHeading ref={titleRef} level={2} xstyle={styles.titleFocusable}>
+          <XDSHeading
+            ref={titleRef}
+            level={2}
+            hasCapsize
+            xstyle={styles.titleFocusable}>
             {title}
           </XDSHeading>
           {subtitle && (
