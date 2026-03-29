@@ -29,11 +29,11 @@ export default defineConfig({
       treeshakeCompensation: true,
       // useCSSLayers with before/after/prefix (StyleX 0.18.2+)
       // replaces the manual xds-css-layer-order Vite plugin.
-      // Emits: @layer reset, xds-base.priority1-9, xds-theme;
+      // Emits: @layer reset, xds.base.priority1-9, xds-theme;
       useCSSLayers: {
         before: ['reset'],
         after: ['xds-theme'],
-        prefix: 'xds-base',
+        prefix: 'xds.base',
       },
       unstable_moduleResolution: {
         type: 'commonJS',

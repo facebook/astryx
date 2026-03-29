@@ -21,11 +21,11 @@ export default defineConfig({
       // Use production mode with CSS extraction
       dev: false,
       // useCSSLayers with before/after/prefix (StyleX 0.18.2+)
-      // Emits: @layer reset, xds-base.priority1-9, xds-theme;
+      // Emits: @layer reset, xds.base.priority1-9, xds-theme;
       useCSSLayers: {
         before: ['reset'],
         after: ['xds-theme'],
-        prefix: 'xds-base',
+        prefix: 'xds.base',
       },
       styleResolution: 'application-order',
       aliases: {
