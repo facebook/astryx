@@ -12,12 +12,11 @@
  * - /apps/storybook/stories/TreeList.stories.tsx
  */
 
-
 import {useId, useState, useMemo, useCallback, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import {XDSTreeListItem} from './XDSTreeListItem';
 import type {XDSTreeListItemData, XDSTreeListDensity} from './XDSTreeListTypes';
 
@@ -27,7 +26,7 @@ import type {XDSTreeListItemData, XDSTreeListDensity} from './XDSTreeListTypes';
 
 export {type XDSTreeListDensity} from './XDSTreeListTypes';
 
-export interface XDSTreeListProps {
+export interface XDSTreeListProps extends XDSBaseProps<HTMLDivElement> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLDivElement>;
 
@@ -51,24 +50,6 @@ export interface XDSTreeListProps {
    * Semantically associated via aria-labelledby.
    */
   header?: ReactNode;
-
-  /**
-   * StyleX styles created via `stylex.create()`. Merged with the component's
-   * base styles inside a single `stylex.props()` call for optimal deduplication.
-   */
-  xstyle?: StyleXStyles;
-
-  /**
-   * CSS class name(s) appended to the root element.
-   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
-   */
-  className?: string;
-
-  /**
-   * Inline styles to apply to the root element. Spread after StyleX
-   * inline styles, so these values take priority.
-   */
-  style?: React.CSSProperties;
 
   /**
    * Test ID for testing frameworks.

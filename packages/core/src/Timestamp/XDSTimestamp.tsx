@@ -23,7 +23,7 @@ import type {
   XDSTextWeight,
 } from '../theme/types';
 import {xdsClassName, mergeProps} from '../utils';
-import type {StyleXStyles} from '@stylexjs/stylex';
+import type {XDSBaseProps} from '../XDSBaseProps';
 
 const LazyXDSTooltip = lazy(() =>
   import('../Tooltip/XDSTooltip').then(mod => ({default: mod.XDSTooltip})),
@@ -43,8 +43,8 @@ export type XDSTimestampFormat =
   | 'system_date_time'
   | 'system_time';
 
-export interface XDSTimestampProps {
-  /** Ref forwarded to the root element. */
+export interface XDSTimestampProps extends XDSBaseProps<HTMLTimeElement> {
+  /** Ref forwarded to the root `<time>` element. */
   ref?: React.Ref<HTMLTimeElement>;
   /** The date/time to display. Accepts Unix timestamps (seconds) or ISO 8601 strings. */
   value: string | number;
@@ -100,18 +100,6 @@ export interface XDSTimestampProps {
    * Font weight override.
    */
   weight?: XDSTextWeight;
-  /**
-   * StyleX styles created via `stylex.create()`.
-   */
-  xstyle?: StyleXStyles;
-  /**
-   * CSS class name(s) appended to the root element.
-   */
-  className?: string;
-  /**
-   * Inline styles to apply to the root element.
-   */
-  style?: React.CSSProperties;
   /** Test ID for testing frameworks. */
   'data-testid'?: string;
 }
@@ -382,6 +370,8 @@ export function XDSTimestamp({
 
   const showTooltip = hasTooltip && effectiveFormat === 'relative';
 
+  const timestampClass = xdsClassName('timestamp', {format: effectiveFormat});
+
   const timeElement = (
     <XDSText
       type={type}
@@ -389,7 +379,7 @@ export function XDSTimestamp({
       color={color}
       weight={weight}
       xstyle={xstyle}
-      className={className}
+      className={[timestampClass, className].filter(Boolean).join(' ')}
       style={style}>
       <time
         ref={combinedRef}
