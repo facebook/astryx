@@ -19,7 +19,11 @@ module.exports = {
         ],
         plugins: babelConfig.plugins,
       },
-      useCSSLayers: true,
+      useCSSLayers: {
+        before: ['reset'],
+        after: ['xds.theme'],
+        prefix: 'xds.base',
+      },
     },
   },
 };

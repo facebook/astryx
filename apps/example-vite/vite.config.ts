@@ -27,12 +27,9 @@ export default defineConfig({
       dev: process.env.NODE_ENV === 'development',
       runtimeInjection: false,
       treeshakeCompensation: true,
-      // useCSSLayers with before/after/prefix (StyleX 0.18.2+)
-      // replaces the manual xds-css-layer-order Vite plugin.
-      // Emits: @layer reset, xds.base.priority1-9, xds-theme;
       useCSSLayers: {
         before: ['reset'],
-        after: ['xds-theme'],
+        after: ['xds.theme'],
         prefix: 'xds.base',
       },
       unstable_moduleResolution: {
