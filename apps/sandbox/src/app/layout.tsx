@@ -1,9 +1,16 @@
 import type {Metadata} from 'next';
+import {Figtree} from 'next/font/google';
 import '@xds/core/reset.css';
 import '@xds/core/typography.css';
 import './globals.css';
 import {Providers} from './providers';
 import {Sidebar} from './Sidebar';
+
+const figtree = Figtree({
+  subsets: ['latin'],
+  variable: '--font-figtree',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: 'XDS Sandbox',
@@ -12,7 +19,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({children}: {children: React.ReactNode}) {
   return (
-    <html lang="en">
+    <html lang="en" className={figtree.variable}>
       <body>
         <Providers>
           <div style={{display: 'flex', minHeight: '100vh'}}>

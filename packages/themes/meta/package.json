@@ -1,0 +1,29 @@
+{
+  "name": "@xds/theme-meta",
+  "version": "0.0.1",
+  "private": false,
+  "description": "Meta theme for XDS — anchored to CDS Default (XMDS) visual language",
+  "license": "MIT",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    },
+    "./theme.css": "./dist/theme.css"
+  },
+  "files": ["dist", "src"],
+  "scripts": {
+    "build": "xds build-theme src/index.ts -o dist/theme.css && tsup && rm -f dist/meta.js dist/meta.d.ts"
+  },
+  "peerDependencies": {
+    "@xds/core": "*"
+  },
+  "devDependencies": {
+    "@xds/cli": "*"
+  }
+}
