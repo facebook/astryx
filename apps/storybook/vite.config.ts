@@ -23,7 +23,7 @@ export default defineConfig({
       useCSSLayers: {
         before: ['reset'],
         after: ['xds-theme'],
-        prefix: 'xds.base',
+        prefix: 'xds-base',
       },
       styleResolution: 'application-order',
       aliases: {
