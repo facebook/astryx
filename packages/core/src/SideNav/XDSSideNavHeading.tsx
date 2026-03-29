@@ -24,7 +24,6 @@ import {
   spacingVars,
   fontWeightVars,
   radiusVars,
-  shadowVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
 // TODO(#264): Lazy-load useXDSPopover so the popover/layer bundle is not
@@ -128,9 +127,6 @@ const styles = stylex.create({
   },
   popoverContent: {
     padding: spacingVars['--spacing-1'],
-    borderRadius: radiusVars['--radius-element'],
-    backgroundColor: colorVars['--color-background-surface'],
-    boxShadow: shadowVars['--shadow-low'],
     overflow: 'hidden',
   },
   popover: {

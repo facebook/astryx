@@ -26,14 +26,7 @@ import {xdsClassName, mergeProps} from '../utils';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {useXDSPopover} from './useXDSPopover';
 import type {LayerAlignment, LayerPlacement} from '../Layer/useXDSLayer';
-import {
-  colorVars,
-  durationVars,
-  easeVars,
-  spacingVars,
-  radiusVars,
-  shadowVars,
-} from '../theme/tokens.stylex';
+import {durationVars, easeVars, spacingVars} from '../theme/tokens.stylex';
 
 // =============================================================================
 // Helpers
@@ -191,12 +184,6 @@ const styles = stylex.create({
     },
   },
   // Visual styles for the inner content container
-  container: {
-    backgroundColor: colorVars['--color-background-surface'],
-    color: colorVars['--color-text-primary'],
-    borderRadius: radiusVars['--radius-element'],
-    boxShadow: shadowVars['--shadow-low'],
-  },
   contentPadding: {
     paddingBlockStart: spacingVars['--spacing-3'],
     paddingBlockEnd: spacingVars['--spacing-3'],
@@ -437,7 +424,7 @@ export function XDSPopover({
             data-testid={testId}
             {...mergeProps(
               xdsClassName('popover'),
-              stylex.props(styles.container, styles.contentPadding, xstyle),
+              stylex.props(styles.contentPadding, xstyle),
               className,
               style,
             )}>
@@ -463,7 +450,7 @@ export function XDSPopover({
           data-testid={testId}
           {...mergeProps(
             xdsClassName('popover'),
-            stylex.props(styles.container, styles.contentPadding, xstyle),
+            stylex.props(styles.contentPadding, xstyle),
             className,
             style,
           )}>

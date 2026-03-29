@@ -338,7 +338,10 @@ function DefaultMegaMenu({
 
   const popover = useXDSPopover({
     dialogLabel: label,
-    xstyle: styles.panelAnimation,
+    // hasSurface: false — mega menu provides its own surface (panelContainer)
+    // with border-top and custom overflow. Animation is applied via the
+    // render() call's xstyle prop (panelAnimation), not the hook options.
+    hasSurface: false,
     onShow: handlePopoverShow,
     onHide: handlePopoverHide,
   });
