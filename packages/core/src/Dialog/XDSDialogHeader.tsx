@@ -15,7 +15,7 @@
 
 import {useEffect, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {spacingVars} from '../theme/tokens.stylex';
+import {spacingVars, sizeVars, typeScaleVars} from '../theme/tokens.stylex';
 import {XDSLayoutHeader} from '../Layout/XDSLayoutHeader';
 import {XDSButton} from '../Button';
 import {XDSIcon} from '../Icon';
@@ -37,9 +37,11 @@ const styles = stylex.create({
   titleWrapper: {
     flex: 1,
     minWidth: 0,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 0,
+    // Visual centering: align title center with close button center
+    // buttonCenter = -edgeCompensation + size-element-md/2 = -8 + 16 = 8px
+    // titleCenter = heading-2-size * heading-2-leading / 2 = 14px
+    // adjustment = 8 - 14 = -6px
+    marginBlock: `calc(${sizeVars['--size-element-md']} / 2 - ${spacingVars['--spacing-2']} - ${typeScaleVars['--text-heading-2-size']} * ${typeScaleVars['--text-heading-2-leading']} / 2)`,
   },
   titleFocusable: {
     outline: 'none',
@@ -137,10 +139,7 @@ export function XDSDialogHeader({
           <div {...stylex.props(styles.actions)}>{startContent}</div>
         )}
         <div {...stylex.props(styles.titleWrapper)}>
-          <XDSHeading
-            ref={titleRef}
-            level={2}
-            xstyle={styles.titleFocusable}>
+          <XDSHeading ref={titleRef} level={2} xstyle={styles.titleFocusable}>
             {title}
           </XDSHeading>
           {subtitle && (
