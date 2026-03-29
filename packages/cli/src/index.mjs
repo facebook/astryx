@@ -37,9 +37,9 @@ program
  * Uses the FYI format validated by vibe testing — never triggers injection defenses.
  */
 const UPDATE_HINT_COMMANDS = new Set(['component', 'docs', 'doctor']);
-program.hook('postAction', (thisCommand) => {
+program.hook('postAction', (thisCommand, actionCommand) => {
   try {
-    if (UPDATE_HINT_COMMANDS.has(thisCommand.name())) {
+    if (UPDATE_HINT_COMMANDS.has(actionCommand.name())) {
       const hint = checkForUpdate();
       if (hint) {
         console.error(`\n${hint}`);
