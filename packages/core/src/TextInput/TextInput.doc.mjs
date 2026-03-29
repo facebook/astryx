@@ -26,6 +26,10 @@ export const docs = {
       code: '<XDSTextInput label="Email" value={email} onChange={setEmail} placeholder="email@example.com" />',
     },
     {
+      label: 'Password input',
+      code: '<XDSTextInput type="password" label="Password" value={password} onChange={setPassword} />',
+    },
+    {
       label: 'Hidden label',
       code: '<XDSTextInput label="Search" isLabelHidden value={query} onChange={setQuery} placeholder="Search..." />',
     },
@@ -75,6 +79,13 @@ export const docs = {
     },
   ],
   props: [
+    {
+      name: 'type',
+      type: "'text' | 'password' | 'email'",
+      description:
+        'The HTML input type.',
+      default: "'text'",
+    },
     {
       name: 'label',
       type: 'string',
@@ -278,6 +289,12 @@ export const docsZh = {
   ],
   props: [
     {
+      name: 'type',
+      type: "'text' | 'password' | 'email'",
+      description: 'HTML 输入框类型。',
+      default: "'text'",
+    },
+    {
       name: 'label',
       type: 'string',
       description:
@@ -432,6 +449,7 @@ export const docsDense = {
     'aria-busy set during optimistic update or isLoading.',
   ],
   propDescriptions: {
+    type: 'HTML input type.',
     label: 'Label text for input; always rendered for a11y.',
     value: 'Current input value.',
     onChange: 'Fired on input value change.',
