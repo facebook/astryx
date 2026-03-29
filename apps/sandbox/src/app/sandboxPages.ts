@@ -42,6 +42,11 @@ export const categories: SandboxCategory[] = [
     description: 'Interactive tools for building and exploring XDS components.',
     pages: [
       {
+        name: 'Components',
+        href: '/pages/meta-components/',
+        description: 'All XDS components rendered with the Meta theme',
+      },
+      {
         name: 'Theme Editor',
         href: '/pages/theme-editor/',
         description: 'Customize and preview XDS design tokens',
