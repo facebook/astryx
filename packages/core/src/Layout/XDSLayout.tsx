@@ -15,7 +15,6 @@
  * - /apps/storybook/stories/Layout.stories.tsx
  */
 
-
 import {type ReactNode, useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSLayoutAreaContext, type LayoutArea} from './XDSLayoutAreaContext';
@@ -49,6 +48,7 @@ const styles = stylex.create({
   fill: {
     // Add 2x container padding to compensate for negative margins on top/bottom
     height: 'calc(100% + 2 * var(--container-padding, 0px))',
+    maxHeight: 'var(--container-max-height, none)',
   },
   auto: {
     minHeight: '100%',

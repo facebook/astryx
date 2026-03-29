@@ -240,10 +240,21 @@ function FullscreenModalExample() {
           }
           content={
             <XDSLayoutContent>
-              <XDSText type="body">
-                This modal takes up the entire viewport. The width, maxHeight,
-                and position props are ignored in fullscreen mode.
-              </XDSText>
+              <div
+                style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
+                <XDSText type="body">
+                  This modal takes up the entire viewport. The width, maxHeight,
+                  and position props are ignored in fullscreen mode.
+                </XDSText>
+                {Array.from({length: 30}, (_, i) => (
+                  <XDSText type="body" key={i}>
+                    {i + 1}. Lorem ipsum dolor sit amet, consectetur adipiscing
+                    elit. Sed do eiusmod tempor incididunt ut labore et dolore
+                    magna aliqua. Ut enim ad minim veniam, quis nostrud
+                    exercitation ullamco laboris.
+                  </XDSText>
+                ))}
+              </div>
             </XDSLayoutContent>
           }
           footer={

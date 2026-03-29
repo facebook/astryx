@@ -135,10 +135,10 @@ const styles = stylex.create({
     },
   },
   fullscreen: {
-    width: '100vw',
-    height: '100vh',
-    maxWidth: '100vw',
-    maxHeight: '100vh',
+    width: '100dvw',
+    height: '100dvh',
+    maxWidth: '100dvw',
+    maxHeight: '100dvh',
     borderRadius: 0,
     margin: 0,
     inset: 0,
@@ -378,7 +378,14 @@ export function XDSDialog({
       {...mergeProps(
         xdsClassName('dialog', {variant}),
         stylex.props(
-          ...container({padding: 'spacing0'}),
+          ...container({
+            padding: 'spacing0',
+            maxHeight: isFullscreen
+              ? undefined
+              : typeof maxHeight === 'number'
+                ? `${maxHeight}px`
+                : maxHeight,
+          }),
           styles.dialog,
           styles.backdrop,
           !isFullscreen && dynamicStyles.sizing(width, maxHeight),
