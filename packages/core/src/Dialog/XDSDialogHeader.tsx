@@ -41,7 +41,7 @@ const styles = stylex.create({
     // buttonCenter = -edgeCompensation + size-element-md/2 = -8 + 16 = 8px
     // titleCenter = heading-2-size * heading-2-leading / 2 = 14px
     // adjustment = 8 - 14 = -6px
-    marginBlockStart: `calc(${sizeVars['--size-element-md']} / 2 - ${spacingVars['--spacing-2']} - ${typeScaleVars['--text-heading-2-size']} * ${typeScaleVars['--text-heading-2-leading']} / 2)`,
+    marginBlock: `calc(${sizeVars['--size-element-md']} / 2 - ${spacingVars['--spacing-2']} - ${typeScaleVars['--text-heading-2-size']} * ${typeScaleVars['--text-heading-2-leading']} / 2)`,
   },
   titleFocusable: {
     outline: 'none',
