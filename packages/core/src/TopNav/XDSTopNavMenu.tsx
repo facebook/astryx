@@ -35,7 +35,6 @@ import {
   durationVars,
   easeVars,
   fontWeightVars,
-  shadowVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
 
@@ -97,9 +96,6 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-1'],
     minWidth: 280,
     padding: spacingVars['--spacing-1'],
-    backgroundColor: colorVars['--color-background-popover'],
-    borderRadius: radiusVars['--radius-container'],
-    boxShadow: shadowVars['--shadow-low'],
   },
   menuOffset: {
     marginBlockStart: spacingVars['--spacing-1'],

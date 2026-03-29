@@ -20,12 +20,10 @@ import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
   spacingVars,
-  radiusVars,
   fontWeightVars,
   typeScaleVars,
   durationVars,
   easeVars,
-  shadowVars,
   borderVars,
 } from '../theme/tokens.stylex';
 import {XDSIcon} from '../Icon';
@@ -99,12 +97,9 @@ const styles = stylex.create({
   },
   // Popover surface for collapsed items with children
   popoverSurface: {
-    backgroundColor: colorVars['--color-background-popover'],
     borderWidth: borderVars['--border-width'],
     borderStyle: 'solid',
     borderColor: colorVars['--color-border'],
-    borderRadius: radiusVars['--radius-element'],
-    boxShadow: shadowVars['--shadow-low'],
     paddingBlock: spacingVars['--spacing-1'],
     paddingInline: spacingVars['--spacing-1'],
     marginInlineStart: spacingVars['--spacing-1'],

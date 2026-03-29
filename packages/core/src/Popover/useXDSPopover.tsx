@@ -33,10 +33,19 @@ import {
   colorVars,
   spacingVars,
   radiusVars,
+  shadowVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
 
 const styles = stylex.create({
+  // Default popover surface — background, radius, shadow.
+  // Applied automatically unless hasSurface is false.
+  // Consumers that need a raw positioned layer should use useXDSLayer instead.
+  surface: {
+    backgroundColor: colorVars['--color-background-popover'],
+    borderRadius: radiusVars['--radius-container'],
+    boxShadow: shadowVars['--shadow-low'],
+  },
   // Focus trap container
   contentWrapper: {
     position: 'relative',
@@ -100,7 +109,12 @@ export interface UseXDSPopoverOptions {
   onHide?: () => void;
 
   /**
-   * StyleX styles for the popover container
+   * StyleX styles applied to the popover's content wrapper.
+   * Merges after the surface styles (when hasSurface is true), so these
+   * can override background, radius, etc.
+   *
+   * For styles on the layer's positioned element (e.g., animations using
+   * `:popover-open`), pass `xstyle` via the `render()` call's props instead.
    */
   xstyle?: StyleXStyles;
 
@@ -136,6 +150,18 @@ export interface UseXDSPopoverOptions {
    * Required for screen readers to announce the dialog purpose.
    */
   dialogLabel?: string;
+
+  /**
+   * Whether to apply the default popover surface (background, border-radius,
+   * box-shadow) to the content wrapper.
+   *
+   * Set to false when the popover content provides its own surface styling
+   * (e.g., mega menus with custom layouts). If you find yourself opting out,
+   * consider whether useXDSLayer is a better fit.
+   *
+   * @default true
+   */
+  hasSurface?: boolean;
 }
 
 /**
@@ -262,6 +288,7 @@ export function useXDSPopover(
     hasLightDismiss = true,
     hasAutoFocus = true,
     hasCloseButton = true,
+    hasSurface = true,
     closeButtonLabel = 'Close popover',
     dialogLabel,
   } = options;
@@ -344,7 +371,7 @@ export function useXDSPopover(
     'aria-controls': layer.id,
   };
 
-  // Wrapped render function that includes optional hidden close button
+  // Wrapped render function that includes surface styles and optional hidden close button
   const render = useCallback(
     (children: ReactNode, props?: ContextRenderProps) => {
       return layer.render(
@@ -353,7 +380,11 @@ export function useXDSPopover(
           role="dialog"
           aria-modal="true"
           aria-label={dialogLabel}
-          {...stylex.props(styles.contentWrapper)}>
+          {...stylex.props(
+            styles.contentWrapper,
+            hasSurface && styles.surface,
+            xstyle,
+          )}>
           {children}
           {hasCloseButton && (
             <button
@@ -370,12 +401,13 @@ export function useXDSPopover(
             </button>
           )}
         </div>,
-        {...props, xstyle: xstyle ?? props?.xstyle},
+        {...props, xstyle: props?.xstyle},
       );
     },
     [
       layer,
       hasCloseButton,
+      hasSurface,
       closeButtonLabel,
       isCloseButtonFocused,
       contentRef,
