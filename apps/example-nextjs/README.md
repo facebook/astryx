@@ -84,7 +84,7 @@ module.exports = {
       },
       useCSSLayers: {
         before: ['reset'],
-        after: ['xds.theme'],
+        after: ['xds-theme'],
         prefix: 'xds.base',
       },
     },
@@ -111,7 +111,7 @@ import './globals.css';
 The CSS import order matters:
 
 1. `reset.css` — baseline resets (`@layer reset`)
-2. `theme.css` — theme token overrides (`@layer xds.theme`)
+2. `theme.css` — theme token overrides (`@layer xds-theme`)
 3. `globals.css` — StyleX extraction (`@stylex;` directive)
 
 ### 6. Next.js config

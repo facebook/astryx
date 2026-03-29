@@ -19,7 +19,7 @@
  *    import '@xds/core/reset.css';
  *
  * 2. Combine with theme and typography:
- *    import '@xds/core/reset.css';        // @layer reset — clean slate
+ *    import '@xds/core/reset.css';        // @layer reset  — clean slate
  *    import '@xds/core/xds.css';           // @layer xds-base — component styles
  *    import '@xds/theme-default/theme.css'; // @layer xds-theme — theme overrides
  *

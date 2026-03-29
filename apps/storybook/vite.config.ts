@@ -22,7 +22,7 @@ export default defineConfig({
       dev: false,
       useCSSLayers: {
         before: ['reset'],
-        after: ['xds.theme'],
+        after: ['xds-theme'],
         prefix: 'xds.base',
       },
       styleResolution: 'application-order',

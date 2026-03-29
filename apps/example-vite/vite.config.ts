@@ -29,7 +29,7 @@ export default defineConfig({
       treeshakeCompensation: true,
       useCSSLayers: {
         before: ['reset'],
-        after: ['xds.theme'],
+        after: ['xds-theme'],
         prefix: 'xds.base',
       },
       unstable_moduleResolution: {

@@ -65,7 +65,7 @@ export default defineConfig({
       treeshakeCompensation: true,
       useCSSLayers: {
         before: ['reset'],
-        after: ['xds.theme'],
+        after: ['xds-theme'],
         prefix: 'xds.base',
       },
       unstable_moduleResolution: {
@@ -122,7 +122,7 @@ import './index.css';
 The CSS import order matters:
 
 1. `reset.css` — baseline resets (`@layer reset`)
-2. `theme.css` — theme token overrides (`@layer xds.theme`)
+2. `theme.css` — theme token overrides (`@layer xds-theme`)
 3. `index.css` — StyleX extraction placeholder
 
 ### 5. Theme provider
