@@ -9,7 +9,7 @@ import {
 import {XDSNavIcon} from '@xds/core/NavIcon';
 import {XDSButton} from '@xds/core/Button';
 import {XDSIcon} from '@xds/core/Icon';
-import {XDSDivider} from '@xds/core/Divider';
+import {XDSDivider} from '@xds/core';
 import {
   XDSCommandPalette,
   XDSCommandPaletteInput,
@@ -239,9 +239,8 @@ export default function ProductShellPage() {
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
-                    minWidth: 18,
-                    height: 18,
                     padding: '0 3px',
+                    height: 18,
                     borderRadius: 3,
                     border: '1px solid #D1D5DB',
                     backgroundColor: '#F9FAFB',

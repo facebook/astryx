@@ -25,34 +25,24 @@ export function ProductSettingsModal({
   return (
     <XDSDialog
       isOpen={isOpen}
-      onOpenChange={() => onClose()}
+      onOpenChange={(_: boolean) => onClose()}
       purpose="info"
-      style={{
-        width: 800,
-        maxWidth: '95vw',
-        height: 560,
-        maxHeight: '90vh',
-        padding: 0,
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
-      }}>
+      width={800}
+      maxHeight={560}>
       <XDSDialogHeader
         title="Product Settings"
-        description="Configure this workspace. Changes save immediately."
-        onOpenChange={() => onClose()}
-        style={{padding: '20px 24px 16px', flexShrink: 0}}
+        subtitle="Configure this workspace. Changes save immediately."
+        onOpenChange={(_: boolean) => onClose()}
       />
       <XDSDivider />
       <div style={{display: 'flex', flex: 1, overflow: 'hidden', minHeight: 0}}>
-        {/* Section nav */}
         <div
           style={{
             width: 192,
             flexShrink: 0,
             borderRight: '1px solid #E5E7EB',
             overflowY: 'auto',
-            padding: '8px',
+            padding: 8,
           }}>
           {SECTIONS.map(s => (
             <div
@@ -72,7 +62,6 @@ export function ProductSettingsModal({
             </div>
           ))}
         </div>
-        {/* Content */}
         <div
           style={{
             flex: 1,
@@ -82,19 +71,17 @@ export function ProductSettingsModal({
             flexDirection: 'column',
             gap: 16,
           }}>
-          <div style={{fontSize: 18, fontWeight: 600, color: '#0A1317'}}>
-            {active}
-          </div>
+          <div style={{fontSize: 18, fontWeight: 600}}>{active}</div>
           <div style={{fontSize: 14, color: '#6B7280'}}>
-            Configure {active.toLowerCase()} settings for this product
-            workspace.
+            Configure {active.toLowerCase()} settings for this workspace.
           </div>
           <div style={{height: 1, backgroundColor: '#E5E7EB'}} />
-          {/* Static setting rows */}
           {[
             ['Default view', 'Grid'],
             ['Items per page', '24'],
             ['Currency', 'Symbol ($)'],
+            ['Sort order', 'Newest first'],
+            ['Sync frequency', 'Hourly'],
           ].map(([label, val]) => (
             <div
               key={label}
@@ -105,27 +92,29 @@ export function ProductSettingsModal({
                 paddingBlock: 12,
                 borderBottom: '1px solid #F3F4F6',
               }}>
-              <div style={{fontSize: 14, color: '#111827'}}>{label}</div>
-              <div
+              <span style={{fontSize: 14, color: '#111827'}}>{label}</span>
+              <span
                 style={{
                   padding: '6px 10px',
                   border: '1px solid #D1D5DB',
                   borderRadius: 6,
                   fontSize: 14,
-                  color: '#374151',
                   backgroundColor: '#F9FAFB',
+                  color: '#374151',
                 }}>
                 {val}
-              </div>
+              </span>
             </div>
           ))}
           {[
-            ['Low stock alerts', 'on'],
-            ['Track by variant', 'on'],
-            ['Show compare-at', 'on'],
-          ].map(([label, state]) => (
+            ['Low stock alerts', true],
+            ['Track by variant', true],
+            ['Show compare-at', true],
+            ['Google sync', false],
+            ['AI descriptions', false],
+          ].map(([label, on]) => (
             <div
-              key={label}
+              key={String(label)}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -133,16 +122,16 @@ export function ProductSettingsModal({
                 paddingBlock: 12,
                 borderBottom: '1px solid #F3F4F6',
               }}>
-              <div style={{fontSize: 14, color: '#111827'}}>{label}</div>
+              <span style={{fontSize: 14, color: '#111827'}}>{label}</span>
               <div
                 style={{
                   width: 36,
                   height: 20,
                   borderRadius: 10,
-                  backgroundColor: state === 'on' ? '#0064E0' : '#D1D5DB',
+                  backgroundColor: on ? '#0064E0' : '#D1D5DB',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: state === 'on' ? 'flex-end' : 'flex-start',
+                  justifyContent: on ? 'flex-end' : 'flex-start',
                   padding: 2,
                   boxSizing: 'border-box',
                 }}>
