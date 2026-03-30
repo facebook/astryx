@@ -105,6 +105,7 @@ const styles = stylex.create({
   },
   listWithMarkers: {
     paddingInlineStart: spacingVars['--spacing-4'],
+    listStyleType: 'unset',
   },
   header: {
     marginBottom: spacingVars['--spacing-2'],
