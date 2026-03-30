@@ -11,15 +11,24 @@
  */
 
 import * as stylex from '@stylexjs/stylex';
-import {colorVars} from '../theme/tokens.stylex';
+import {colorVars, spacingVars} from '../theme/tokens.stylex';
 
 const LINE_WIDTH = 2;
+
+/**
+ * Branch margin from the left edge. No exact spacing token for 10px,
+ * so we use calc(--spacing-2 + --spacing-0-5) = 8 + 2 = 10.
+ */
+const BRANCH_MARGIN = `calc(${spacingVars['--spacing-2']} + ${spacingVars['--spacing-0-5']})`;
+
+/** Per-level indent width, matching --spacing-5 (20px). */
+const LEVEL_INDENT = spacingVars['--spacing-5'];
 
 const styles = stylex.create({
   container: {
     height: '100%',
     position: 'absolute',
-    width: 20,
+    width: spacingVars['--spacing-5'],
   },
   verticalLine: {
     borderRadius: 1,
@@ -42,7 +51,7 @@ const styles = stylex.create({
   },
   connectorContainer: {
     position: 'absolute',
-    width: 20,
+    width: spacingVars['--spacing-5'],
     height: '100%',
     top: 0,
   },
@@ -68,15 +77,11 @@ const styles = stylex.create({
 interface XDSTreeListBranchesProps {
   ancestorsIsLast: ReadonlyArray<boolean>;
   isLast: boolean;
-  levelIndent: number;
-  marginLeft: number;
   nestedLevel: number;
 }
 
 interface XDSTreeListHorizontalConnectorProps {
   hasChildren: boolean;
-  levelIndent: number;
-  marginLeft: number;
   nestedLevel: number;
 }
 
@@ -91,8 +96,6 @@ interface XDSTreeListHorizontalConnectorProps {
 export function XDSTreeListBranches({
   ancestorsIsLast,
   isLast,
-  levelIndent,
-  marginLeft,
   nestedLevel,
 }: XDSTreeListBranchesProps) {
   return (
@@ -107,7 +110,9 @@ export function XDSTreeListBranches({
             <div
               key={level}
               {...stylex.props(styles.container)}
-              style={{left: marginLeft + level * levelIndent}}>
+              style={{
+                left: `calc(${BRANCH_MARGIN} + ${level} * ${LEVEL_INDENT})`,
+              }}>
               <div
                 {...stylex.props(styles.verticalLine, styles.verticalFull)}
               />
@@ -117,7 +122,9 @@ export function XDSTreeListBranches({
       {nestedLevel > 0 && (
         <div
           {...stylex.props(styles.container)}
-          style={{left: marginLeft + (nestedLevel - 1) * levelIndent}}>
+          style={{
+            left: `calc(${BRANCH_MARGIN} + ${nestedLevel - 1} * ${LEVEL_INDENT})`,
+          }}>
           <div
             {...stylex.props(
               styles.verticalLine,
@@ -137,8 +144,6 @@ export function XDSTreeListBranches({
  */
 export function XDSTreeListHorizontalConnector({
   hasChildren,
-  levelIndent,
-  marginLeft,
   nestedLevel,
 }: XDSTreeListHorizontalConnectorProps) {
   if (nestedLevel <= 0) return null;
@@ -146,7 +151,9 @@ export function XDSTreeListHorizontalConnector({
   return (
     <div
       {...stylex.props(styles.connectorContainer)}
-      style={{left: marginLeft + (nestedLevel - 1) * levelIndent}}>
+      style={{
+        left: `calc(${BRANCH_MARGIN} + ${nestedLevel - 1} * ${LEVEL_INDENT})`,
+      }}>
       <div
         {...stylex.props(
           styles.horizontalLine,

@@ -30,20 +30,6 @@ import {
 import type {XDSTreeListDensity} from './XDSTreeListTypes';
 
 // =============================================================================
-// Layout constants — numeric values for JS-side margin/offset calculations
-// and props passed to child branch components. These mirror the spacing tokens:
-// INDENT=20 (--spacing-5), CHEVRON_SIZE=16 (--spacing-4),
-// CHEVRON_MARGIN=8 (--spacing-2), BRANCH_MARGIN_LEFT=10 (no exact token).
-// The inline style `marginLeft` on the content wrapper uses these for
-// dynamic per-level indentation that can't be expressed as static StyleX.
-// =============================================================================
-
-const INDENT = 20;
-const CHEVRON_SIZE = 16;
-const CHEVRON_MARGIN = 8;
-const BRANCH_MARGIN_LEFT = 10;
-
-// =============================================================================
 // Styles
 // =============================================================================
 
@@ -61,7 +47,7 @@ const styles = stylex.create({
     listStyleType: 'none',
   },
   treeBranches: {
-    paddingInlineStart: BRANCH_MARGIN_LEFT,
+    paddingInlineStart: `calc(${spacingVars['--spacing-2']} + ${spacingVars['--spacing-0-5']})`,
   },
   rowWrapper: {
     position: 'relative',
@@ -409,16 +395,12 @@ export function XDSTreeListItem({
         <XDSTreeListBranches
           ancestorsIsLast={ancestorsIsLast}
           isLast={isLast}
-          levelIndent={INDENT}
-          marginLeft={BRANCH_MARGIN_LEFT}
           nestedLevel={nestedLevel}
         />
       </div>
       <div {...stylex.props(styles.rowWrapper)}>
         <XDSTreeListHorizontalConnector
           hasChildren={hasChildren}
-          levelIndent={INDENT}
-          marginLeft={BRANCH_MARGIN_LEFT}
           nestedLevel={nestedLevel}
         />
         <div
