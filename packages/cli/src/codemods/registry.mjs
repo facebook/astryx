@@ -14,9 +14,28 @@ const registry = new Map([
 ]);
 
 /**
+ * Compare two semver strings numerically.
+ * Returns negative if a < b, positive if a > b, 0 if equal.
+ *
+ * @param {string} a
+ * @param {string} b
+ * @returns {number}
+ */
+function semverCompare(a, b) {
+  const pa = a.split('.').map(Number);
+  const pb = b.split('.').map(Number);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const na = pa[i] ?? 0;
+    const nb = pb[i] ?? 0;
+    if (na !== nb) return na - nb;
+  }
+  return 0;
+}
+
+/**
  * All registered versions, sorted ascending.
  */
-export const versions = [...registry.keys()].sort();
+export const versions = [...registry.keys()].sort(semverCompare);
 
 /**
  * The latest version in the registry.
@@ -32,7 +51,9 @@ export const latestVersion = versions[versions.length - 1];
  * @returns {Promise<Array<{version: string, transforms: Array<{name: string, module: Function}>}>>}
  */
 export async function getTransformsBetween(from, to) {
-  const applicable = versions.filter((v) => v > from && v <= to);
+  const applicable = versions.filter(
+    (v) => semverCompare(v, from) > 0 && semverCompare(v, to) <= 0,
+  );
   const results = [];
 
   for (const version of applicable) {
