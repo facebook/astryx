@@ -493,7 +493,10 @@ export function XDSAppShell({
   const hasTopNav = topNav != null;
   const hasSideNav = sideNav != null;
   const hasNavContent = hasSideNav || hasTopNav;
-  const mobileNavEnabled = !mobileNavDisabled && hasNavContent;
+  // Mobile nav auto-management is enabled when not disabled, there's nav content,
+  // AND the user hasn't provided a ReactNode (full escape hatch = user owns everything)
+  const mobileNavEnabled =
+    !mobileNavDisabled && hasNavContent && mobileNavReactNode == null;
   const navHasDividers = variant === 'section';
   const isElevated = variant === 'elevated';
   const navAreaStyle =
