@@ -9,7 +9,7 @@
  */
 
 import * as stylex from '@stylexjs/stylex';
-import {colorVars, fontWeightVars} from '../theme/tokens.stylex';
+import {colorVars, fontWeightVars, typeScaleVars} from '../theme/tokens.stylex';
 
 // =============================================================================
 // Color Styles
@@ -52,6 +52,37 @@ export const weightStyles = stylex.create({
   },
   bold: {
     fontWeight: fontWeightVars['--font-weight-bold'],
+  },
+});
+
+// =============================================================================
+// Default Weight by Type (matches theme type-scale tokens)
+// =============================================================================
+
+export const defaultWeightByTypeStyles = stylex.create({
+  body: {
+    fontWeight: typeScaleVars['--text-body-weight'],
+  },
+  large: {
+    fontWeight: typeScaleVars['--text-large-weight'],
+  },
+  label: {
+    fontWeight: typeScaleVars['--text-label-weight'],
+  },
+  code: {
+    fontWeight: typeScaleVars['--text-code-weight'],
+  },
+  supporting: {
+    fontWeight: typeScaleVars['--text-supporting-weight'],
+  },
+  'display-1': {
+    fontWeight: typeScaleVars['--text-display-1-weight'],
+  },
+  'display-2': {
+    fontWeight: typeScaleVars['--text-display-2-weight'],
+  },
+  'display-3': {
+    fontWeight: typeScaleVars['--text-display-3-weight'],
   },
 });
 

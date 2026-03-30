@@ -13,7 +13,6 @@
  * - /apps/storybook/stories/Text.stories.tsx (storybook stories)
  */
 
-
 import {lazy, Suspense, useCallback, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
@@ -28,6 +27,7 @@ import type {
 } from '../theme/types';
 import {
   colorStyles,
+  defaultWeightByTypeStyles,
   weightStyles,
   displayStyles,
   truncationStyles,
@@ -267,6 +267,7 @@ export function XDSText({
           xdsClassName('text', {type, color: resolvedColor}),
           stylex.props(
             colorStyles[resolvedColor],
+            defaultWeightByTypeStyles[type],
             weight && weightStyles[weight],
             // Display: use truncation styles when maxLines > 0
             maxLines === 1
