@@ -17,7 +17,7 @@ import {
   XDSCommandPaletteItem,
   XDSCommandPaletteGroup,
   XDSCommandPaletteFooter,
-} from '@xds/lab';
+} from '../../../../../../../packages/lab/src/CommandPalette';
 import {ProductSettingsModal} from '../../../../components/ProductSettingsModal';
 import {
   HomeIcon,
