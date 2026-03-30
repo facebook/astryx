@@ -10,7 +10,7 @@ const meta: Meta<typeof XDSSpinner> = {
   argTypes: {
     size: {
       control: 'select',
-      options: ['sm', 'md', 'lg'],
+      options: ['sm', 'md', 'lg', 'xl'],
       description: 'Spinner size',
     },
     shade: {
@@ -37,6 +37,7 @@ export const Sizes: Story = {
       <XDSSpinner size="sm" />
       <XDSSpinner size="md" />
       <XDSSpinner size="lg" />
+      <XDSSpinner size="xl" />
     </XDSHStack>
   ),
 };

@@ -32,6 +32,7 @@ const SIZES = {
   sm: {diameter: 10, border: 3},
   md: {diameter: 14, border: 3},
   lg: {diameter: 18, border: 3},
+  xl: {diameter: 28, border: 4},
 };
 
 // =============================================================================
@@ -79,6 +80,7 @@ export interface XDSSpinnerProps {
    * - 'sm': 10px diameter
    * - 'md': 14px diameter
    * - 'lg': 18px diameter
+   * - 'xl': 36px diameter
    * @default 'md'
    */
   size?: XDSSpinnerSize;
