@@ -3,7 +3,7 @@
 /**
  * @file XDSProgressBar.tsx
  * @input Uses React, useId, stylex, color/spacing/radius/transition tokens
- * @output Exports XDSProgressBar component, XDSProgressBarProps, XDSProgressBarVariant, XDSProgressBarSize types
+ * @output Exports XDSProgressBar component, XDSProgressBarProps, XDSProgressBarVariant types
  * @position Core implementation; consumed by index.ts
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -53,12 +53,6 @@ export interface XDSProgressBarVariantMap {
  */
 export type XDSProgressBarVariant = keyof XDSProgressBarVariantMap;
 
-/**
- * Progress bar size type — single track height (8px).
- * The `size` prop is accepted for backwards compatibility but has no effect.
- */
-export type XDSProgressBarSize = 'sm' | 'md' | 'lg';
-
 export interface XDSProgressBarProps {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLDivElement>;
@@ -98,13 +92,6 @@ export interface XDSProgressBarProps {
    * @default 'accent'
    */
   variant?: XDSProgressBarVariant;
-  /**
-   * Size of the progress bar track. Single size (8px) — this prop is accepted
-   * for backwards compatibility but has no visual effect.
-   * Larger visualizations should use a dedicated dataviz component.
-   * @default 'md'
-   */
-  size?: XDSProgressBarSize;
   /**
    * When true, renders an animated indeterminate progress indicator.
    * Use when the progress amount is unknown (e.g. loading, processing).
@@ -194,6 +181,7 @@ const styles = stylex.create({
   },
   track: {
     width: '100%',
+    height: '8px',
     backgroundColor: colorVars['--color-background-muted'],
     borderRadius: radiusVars['--radius-full'],
     overflow: 'hidden',
@@ -216,18 +204,6 @@ const styles = stylex.create({
     },
     animationTimingFunction: 'ease-in-out',
     animationIterationCount: 'infinite',
-  },
-});
-
-const sizeStyles = stylex.create({
-  sm: {
-    height: '4px',
-  },
-  md: {
-    height: '8px',
-  },
-  lg: {
-    height: '12px',
   },
 });
 
@@ -280,7 +256,6 @@ export function XDSProgressBar({
   hasValueLabel = false,
   formatValueLabel = defaultFormatValueLabel,
   variant = 'accent',
-  size: _size,
   isIndeterminate = false,
   xstyle,
   className,
@@ -300,7 +275,7 @@ export function XDSProgressBar({
     <div
       ref={ref}
       {...mergeProps(
-        xdsClassName('progressbar', {variant, size: 'md'}),
+        xdsClassName('progressbar', {variant}),
         stylex.props(styles.container, xstyle),
         className,
         style,
@@ -335,7 +310,7 @@ export function XDSProgressBar({
         aria-valuemax={isIndeterminate ? undefined : max}
         aria-labelledby={labelId}
         aria-valuetext={isIndeterminate ? undefined : valueText}
-        {...stylex.props(styles.track, sizeStyles.md)}>
+        {...stylex.props(styles.track)}>
         {isIndeterminate ? (
           <div
             {...mergeProps(
