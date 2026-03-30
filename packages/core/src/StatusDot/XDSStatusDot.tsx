@@ -110,7 +110,8 @@ export interface XDSStatusDotVariantMap {
 export type XDSStatusDotVariant = keyof XDSStatusDotVariantMap;
 
 /**
- * Status dot size type
+ * Status dot size type.
+ * Single size (8px). The `size` prop is accepted for backwards compatibility but has no effect.
  */
 export type XDSStatusDotSize = 'sm' | 'md';
 
@@ -122,8 +123,9 @@ export interface XDSStatusDotProps {
    */
   variant: XDSStatusDotVariant;
   /**
-   * The size of the dot.
-   * @default 'md'
+   * The size of the dot. Single size (8px) — this prop is accepted for
+   * backwards compatibility but has no visual effect.
+   * @default 'sm'
    */
   size?: XDSStatusDotSize;
   /**
@@ -172,13 +174,13 @@ export interface XDSStatusDotProps {
  * @example
  * ```
  * <XDSStatusDot variant="positive" label="Online" />
- * <XDSStatusDot variant="negative" label="Offline" size="sm" />
+ * <XDSStatusDot variant="negative" label="Offline" />
  * <XDSStatusDot variant="positive" label="Live" isPulsing />
  * ```
  */
 export function XDSStatusDot({
   variant,
-  size = 'md',
+  size: _size,
   label,
   isPulsing = false,
   xstyle,
@@ -193,10 +195,10 @@ export function XDSStatusDot({
       role="img"
       aria-label={label}
       {...mergeProps(
-        xdsClassName('statusdot', {variant, size}),
+        xdsClassName('statusdot', {variant, size: 'sm'}),
         stylex.props(
           styles.base,
-          sizes[size],
+          sizes.sm,
           variants[variant],
           isPulsing && styles.pulsing,
           isPulsing && styles.reducedMotion,

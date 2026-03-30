@@ -6,7 +6,7 @@ export const docs = {
     'A small colored dot indicator for status display (online/offline, severity, etc).',
   features: [
     'Five semantic color variants: positive, warning, negative, info, neutral',
-    'Two sizes: sm (8px) and md (10px)',
+    'Single size: 8px',
     'Optional pulse animation that respects prefers-reduced-motion',
     'Accessible — renders as <span role="img" aria-label={label}> for screen reader support',
     'Not focusable (decorative indicator)',
@@ -26,9 +26,9 @@ export const docs = {
     },
     {
       name: 'size',
-      type: "'sm' | 'md'",
-      description: 'Dot size: sm=8px, md=10px.',
-      default: "'md'",
+      type: "'sm'",
+      description: 'Dot size: 8px. Single size — StatusDot is a fixed indicator.',
+      default: "'sm'",
     },
     {
       name: 'isPulsing',
@@ -52,8 +52,8 @@ export const docs = {
 <XDSStatusDot variant="warning" label="Away" />`,
     },
     {
-      label: 'Small size',
-      code: `<XDSStatusDot variant="positive" label="Active" size="sm" />`,
+      label: 'With pulse',
+      code: `<XDSStatusDot variant="positive" label="Active" isPulsing />`,
     },
     {
       label: 'Pulsing animation',
@@ -99,8 +99,8 @@ export const docsZh = {
     },
     {
       name: 'size',
-      type: "'sm' | 'md'",
-      description: '圆点尺寸：sm=8px，md=10px。',
+      type: "'sm'",
+      description: '圆点尺寸：8px。单一尺寸。',
       default: "'md'",
     },
     {
@@ -150,7 +150,7 @@ export const docsDense = {
   description: 'Small colored dot indicator for status display (online/offline, severity, etc).',
   features: [
     'Five semantic color variants: positive, warning, negative, info, neutral',
-    'Two sizes: sm (8px) + md (10px)',
+    'Single size: 8px',
     'Optional pulse animation respecting prefers-reduced-motion',
     'Accessible: <span role="img" aria-label={label}> for screen readers',
     'Not focusable (decorative indicator)',
@@ -163,7 +163,7 @@ export const docsDense = {
   propDescriptions: {
     variant: 'Semantic color variant.',
     label: 'Accessible label via aria-label.',
-    size: 'Dot size: sm=8px, md=10px.',
+    size: 'Dot size: 8px. Single size — StatusDot is a fixed indicator.',
     isPulsing: 'Pulse animation; respects prefers-reduced-motion: reduce.',
     xstyle: 'StyleX layout styles; must be stylex.create() value.',
   },
