@@ -9,8 +9,16 @@ import {
 import {XDSNavIcon} from '@xds/core/NavIcon';
 import {XDSButton} from '@xds/core/Button';
 import {XDSIcon} from '@xds/core/Icon';
+import {XDSDivider} from '@xds/core/Divider';
+import {
+  XDSCommandPalette,
+  XDSCommandPaletteInput,
+  XDSCommandPaletteList,
+  XDSCommandPaletteItem,
+  XDSCommandPaletteGroup,
+  XDSCommandPaletteFooter,
+} from '@xds/lab';
 import {ProductSettingsModal} from '../../../../components/ProductSettingsModal';
-import {XDSCommandPalette} from '../../../../components/XDSCommandPalette';
 import {
   HomeIcon,
   ShoppingBagIcon,
@@ -33,6 +41,8 @@ const PRODUCTS = [
     price: '$24.00',
     bg: '#F8FAFC',
     emoji: '☕',
+    sb: '#D1FAE5',
+    sc: '#065F46',
     stock: 'In stock',
   },
   {
@@ -41,6 +51,8 @@ const PRODUCTS = [
     price: '$38.00',
     bg: '#F8FAFC',
     emoji: '👜',
+    sb: '#FEF3C7',
+    sc: '#92400E',
     stock: '8 left',
   },
   {
@@ -48,7 +60,9 @@ const PRODUCTS = [
     name: 'Scented Candle',
     price: '$32.00',
     bg: '#FEF2F2',
-    emoji: '🕯️',
+    emoji: '🕯',
+    sb: '#FEE2E2',
+    sc: '#B91C1C',
     stock: 'Out of stock',
   },
   {
@@ -57,6 +71,8 @@ const PRODUCTS = [
     price: '$45.00',
     bg: '#F8FAFC',
     emoji: '🧢',
+    sb: '#D1FAE5',
+    sc: '#065F46',
     stock: 'In stock',
   },
   {
@@ -64,7 +80,9 @@ const PRODUCTS = [
     name: 'Cutting Board',
     price: '$55.00',
     bg: '#F8FAFC',
-    emoji: '🪵',
+    emoji: '🌿',
+    sb: '#D1FAE5',
+    sc: '#065F46',
     stock: 'In stock',
   },
   {
@@ -72,61 +90,10 @@ const PRODUCTS = [
     name: 'Soy Lip Balm',
     price: '$12.00',
     bg: '#F8FAFC',
-    emoji: '💄',
+    emoji: '✨',
+    sb: '#D1FAE5',
+    sc: '#065F46',
     stock: 'In stock',
-  },
-];
-
-const PALETTE_ITEMS = [
-  {
-    id: '1',
-    group: 'Navigate',
-    label: 'Dashboard',
-    description: 'Overview and metrics',
-    onSelect: () => {},
-  },
-  {
-    id: '2',
-    group: 'Navigate',
-    label: 'Products',
-    description: 'Browse and manage catalog',
-    onSelect: () => {},
-  },
-  {
-    id: '3',
-    group: 'Navigate',
-    label: 'Orders',
-    description: 'Recent and pending orders',
-    onSelect: () => {},
-  },
-  {
-    id: '4',
-    group: 'Actions',
-    label: 'Add product',
-    description: 'Create a new listing',
-    shortcut: 'N',
-    onSelect: () => {},
-  },
-  {
-    id: '5',
-    group: 'Actions',
-    label: 'Import products',
-    description: 'Bulk import from CSV',
-    onSelect: () => {},
-  },
-  {
-    id: '6',
-    group: 'Actions',
-    label: 'Export catalog',
-    description: 'Download as CSV',
-    onSelect: () => {},
-  },
-  {
-    id: '7',
-    group: 'Actions',
-    label: 'Open settings',
-    description: 'Product workspace preferences',
-    onSelect: () => {},
   },
 ];
 
@@ -145,13 +112,8 @@ export default function ProductShellPage() {
     return () => window.removeEventListener('keydown', h);
   }, []);
 
-  const paletteItems = PALETTE_ITEMS.map(item =>
-    item.id === '7' ? {...item, onSelect: () => setSettingsOpen(true)} : item,
-  );
-
   return (
     <div style={{display: 'flex', height: '100vh', overflow: 'hidden'}}>
-      {/* SideNav */}
       <div
         style={{
           width: 240,
@@ -234,7 +196,6 @@ export default function ProductShellPage() {
         </XDSSideNav>
       </div>
 
-      {/* Main */}
       <main
         style={{
           flex: 1,
@@ -244,7 +205,6 @@ export default function ProductShellPage() {
           flexDirection: 'column',
           gap: 24,
         }}>
-        {/* Top bar */}
         <div
           style={{
             display: 'flex',
@@ -294,10 +254,7 @@ export default function ProductShellPage() {
             </span>
           </div>
         </div>
-
         <div style={{height: 1, backgroundColor: '#E5E7EB'}} />
-
-        {/* Product grid */}
         <div
           style={{
             display: 'grid',
@@ -339,18 +296,8 @@ export default function ProductShellPage() {
                       fontSize: 11,
                       padding: '2px 6px',
                       borderRadius: 4,
-                      backgroundColor:
-                        p.stock === 'Out of stock'
-                          ? '#FEE2E2'
-                          : p.stock.includes('left')
-                            ? '#FEF3C7'
-                            : '#D1FAE5',
-                      color:
-                        p.stock === 'Out of stock'
-                          ? '#B91C1C'
-                          : p.stock.includes('left')
-                            ? '#92400E'
-                            : '#065F46',
+                      backgroundColor: p.sb,
+                      color: p.sc,
                     }}>
                     {p.stock}
                   </span>
@@ -365,11 +312,46 @@ export default function ProductShellPage() {
         isOpen={settingsOpen}
         onClose={() => setSettingsOpen(false)}
       />
+
       <XDSCommandPalette
         isOpen={paletteOpen}
-        onClose={() => setPaletteOpen(false)}
-        items={paletteItems}
-      />
+        onOpenChange={setPaletteOpen}
+        onValueChange={value => {
+          if (value === 'Open settings') setSettingsOpen(true);
+          setPaletteOpen(false);
+        }}>
+        <XDSCommandPaletteInput placeholder="Search actions, pages, and more…" />
+        <XDSDivider />
+        <XDSCommandPaletteList>
+          <XDSCommandPaletteGroup heading="Navigate">
+            <XDSCommandPaletteItem value="Dashboard">
+              Dashboard
+            </XDSCommandPaletteItem>
+            <XDSCommandPaletteItem value="Products">
+              Products
+            </XDSCommandPaletteItem>
+            <XDSCommandPaletteItem value="Orders">Orders</XDSCommandPaletteItem>
+            <XDSCommandPaletteItem value="Analytics">
+              Analytics
+            </XDSCommandPaletteItem>
+          </XDSCommandPaletteGroup>
+          <XDSCommandPaletteGroup heading="Actions">
+            <XDSCommandPaletteItem value="Add product">
+              Add product
+            </XDSCommandPaletteItem>
+            <XDSCommandPaletteItem value="Import products">
+              Import products
+            </XDSCommandPaletteItem>
+            <XDSCommandPaletteItem value="Export catalog">
+              Export catalog
+            </XDSCommandPaletteItem>
+            <XDSCommandPaletteItem value="Open settings">
+              Open settings
+            </XDSCommandPaletteItem>
+          </XDSCommandPaletteGroup>
+        </XDSCommandPaletteList>
+        <XDSCommandPaletteFooter />
+      </XDSCommandPalette>
     </div>
   );
 }
