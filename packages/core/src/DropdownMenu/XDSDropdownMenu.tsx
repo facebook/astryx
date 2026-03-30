@@ -65,7 +65,7 @@ const styles = stylex.create({
     boxSizing: 'border-box',
     maxHeight: '300px',
     overflowY: 'auto',
-    '--dropdown-radius': radiusVars['--radius-element'],
+    '--dropdown-radius': radiusVars['--radius-container'],
     '--dropdown-padding': spacingVars['--spacing-1'],
     padding: spacingVars['--spacing-1'],
     borderRadius: 'var(--dropdown-radius)',
