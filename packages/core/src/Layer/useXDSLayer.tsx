@@ -11,7 +11,6 @@
  * - /packages/core/src/Layer/index.ts
  */
 
-
 import React, {
   useCallback,
   useId,
@@ -286,22 +285,39 @@ export function useXDSLayer(
   const anchorId = `--xds-layer-${id.replace(/:/g, '')}`;
 
   const [isOpen, setIsOpen] = useState(false);
+  const isOpenRef = useRef(false);
   const popoverRef = useRef<HTMLElement | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
 
-  // show/hide only call the Popover API — state updates and callbacks
-  // are handled exclusively by the toggle event handler to avoid double-fire.
+  // show/hide call the Popover API and update state synchronously.
+  // The toggle event handler also updates state, but in environments where
+  // the toggle event doesn't fire (e.g. jsdom), the synchronous update
+  // ensures correct behavior. If both fire, the second is a no-op.
   const show = useCallback(() => {
     if (popoverRef.current && !popoverRef.current.matches(':popover-open')) {
       popoverRef.current.showPopover();
+      // If the toggle event didn't fire synchronously (e.g. some test envs),
+      // update state as fallback. The toggle handler guards against duplicates.
+      if (!isOpenRef.current) {
+        isOpenRef.current = true;
+        setIsOpen(true);
+        onShow?.();
+      }
     }
-  }, []);
+  }, [onShow]);
 
   const hide = useCallback(() => {
     if (popoverRef.current?.matches(':popover-open')) {
       popoverRef.current.hidePopover();
+      // If the toggle event didn't fire synchronously (e.g. some test envs),
+      // update state as fallback. The toggle handler guards against duplicates.
+      if (isOpenRef.current) {
+        isOpenRef.current = false;
+        setIsOpen(false);
+        onHide?.();
+      }
     }
-  }, []);
+  }, [onHide]);
 
   // Ref for trigger element (context mode only)
   const ref: RefCallback<HTMLElement> | undefined =
@@ -327,10 +343,12 @@ export function useXDSLayer(
   const handleToggle = useCallback(
     (e: Event) => {
       const toggleEvent = e as ToggleEvent;
-      if (toggleEvent.newState === 'closed') {
+      if (toggleEvent.newState === 'closed' && isOpenRef.current) {
+        isOpenRef.current = false;
         setIsOpen(false);
         onHide?.();
-      } else if (toggleEvent.newState === 'open') {
+      } else if (toggleEvent.newState === 'open' && !isOpenRef.current) {
+        isOpenRef.current = true;
         setIsOpen(true);
         onShow?.();
       }
