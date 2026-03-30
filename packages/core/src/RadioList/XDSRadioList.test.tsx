@@ -34,13 +34,17 @@ describe('XDSRadioList', () => {
     expect(screen.getAllByRole('radio')).toHaveLength(3);
   });
 
-  it('renders radiogroup role', () => {
+  it('renders radiogroup role with aria-labelledby', () => {
     render(
       <XDSRadioList label="Preference" value="" onChange={() => {}}>
         <XDSRadioListItem label="Option A" value="a" />
       </XDSRadioList>,
     );
-    expect(screen.getByRole('radiogroup')).toBeInTheDocument();
+    const radiogroup = screen.getByRole('radiogroup');
+    expect(radiogroup).toBeInTheDocument();
+    // Should use aria-labelledby, not aria-label (avoids double-announcement)
+    expect(radiogroup).toHaveAttribute('aria-labelledby');
+    expect(radiogroup).not.toHaveAttribute('aria-label');
   });
 
   it('selects the correct radio based on value prop', () => {
@@ -277,11 +281,10 @@ describe('XDSRadioList', () => {
     );
     const label = screen.getByText('Hidden label');
     expect(label).toBeInTheDocument();
-    // The radiogroup should still be labeled
-    expect(screen.getByRole('radiogroup')).toHaveAttribute(
-      'aria-label',
-      'Hidden label',
-    );
+    // The radiogroup should still be labeled via aria-labelledby
+    const radiogroup = screen.getByRole('radiogroup');
+    expect(radiogroup).toHaveAttribute('aria-labelledby');
+    expect(radiogroup).not.toHaveAttribute('aria-label');
   });
 
   it('renders description on items', () => {

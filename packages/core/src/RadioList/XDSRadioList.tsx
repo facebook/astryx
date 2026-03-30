@@ -2,7 +2,7 @@
 
 /**
  * @file XDSRadioList.tsx
- * @input Uses React useId, createContext, ReactNode, XDSField, XDSInputStatus
+ * @input Uses React useId, useMemo, createContext, ReactNode, XDSField, XDSInputStatus, XDSBaseProps
  * @output Exports XDSRadioList component, XDSRadioListProps, XDSRadioListContext
  * @position Core implementation; consumed by index.ts, tested by XDSRadioList.test.tsx
  *
@@ -13,11 +13,11 @@
  * - /apps/storybook/stories/RadioList.stories.tsx
  */
 
-import {createContext, useId, type ReactNode} from 'react';
+import {createContext, useId, useMemo, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import {XDSField} from '../Field/XDSField';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import type {XDSInputStatus} from '../Field/types';
 import {xdsClassName, mergeProps} from '../utils';
 
@@ -53,7 +53,7 @@ const styles = stylex.create({
   },
 });
 
-export interface XDSRadioListProps {
+export interface XDSRadioListProps extends Omit<XDSBaseProps, 'onChange'> {
   /**
    * Label text for the radio group (always rendered for accessibility).
    */
@@ -102,8 +102,8 @@ export interface XDSRadioListProps {
   status?: XDSInputStatus;
   /**
    * The size of the radio controls.
-   * - 'sm': Compact size (18px radio, 20px wrapper)
-   * - 'md': Default size (22px radio, 24px wrapper)
+   * - 'sm': Compact size (20px wrapper)
+   * - 'md': Default size (24px wrapper)
    * @default 'md'
    */
   size?: XDSRadioListSize;
@@ -111,31 +111,6 @@ export interface XDSRadioListProps {
    * Tooltip text to display in an info icon at the end of the label.
    */
   labelTooltip?: string;
-  /**
-   * StyleX styles created via `stylex.create()`. Merged with the component's
-   * base styles inside a single `stylex.props()` call for optimal deduplication.
-   *
-   * @example
-   * ```
-   * const overrides = stylex.create({ root: { marginBottom: 8 } });
-   * <Component xstyle={overrides.root} />
-   * ```
-   */
-  xstyle?: StyleXStyles;
-  /**
-   * CSS class name(s) appended to the root element.
-   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
-   */
-  className?: string;
-  /**
-   * Inline styles to apply to the root element. Spread after StyleX
-   * inline styles, so these values take priority.
-   */
-  style?: React.CSSProperties;
-  /**
-   * Test ID for the outer container.
-   */
-  'data-testid'?: string;
   /**
    * Radio list items to render.
    */
@@ -173,31 +148,31 @@ export function XDSRadioList({
   xstyle,
   className,
   style,
-  'data-testid': dataTestId,
   children,
+  ...rest
 }: XDSRadioListProps) {
   const name = useId();
-  const inputID = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
 
-  const contextValue: XDSRadioListContextValue = {
-    name,
-    value,
-    onChange,
-    isDisabled,
-    isRequired,
-    size,
-    status,
-  };
+  const contextValue: XDSRadioListContextValue = useMemo(
+    () => ({
+      name,
+      value,
+      onChange,
+      isDisabled,
+      isRequired,
+      size,
+      status,
+    }),
+    [name, value, onChange, isDisabled, isRequired, size, status],
+  );
 
   return (
     <XDSField
-      data-testid={dataTestId}
       label={label}
       isLabelHidden={isLabelHidden}
       description={description}
-      inputID={inputID}
       descriptionID={description ? descriptionID : undefined}
       isOptional={isOptional}
       isRequired={isRequired}
@@ -214,34 +189,35 @@ export function XDSRadioList({
       statusVariant="detached"
       xstyle={xstyle}
       className={className}
-      style={style}>
-      <div
-        role="radiogroup"
-        aria-label={label}
-        aria-describedby={
-          [
-            description ? descriptionID : null,
-            status?.message ? statusMessageID : null,
-          ]
-            .filter(Boolean)
-            .join(' ') || undefined
-        }
-        aria-invalid={status?.type === 'error' ? true : undefined}
-        aria-required={isRequired || undefined}
-        {...mergeProps(
-          xdsClassName('radio-list', {orientation, size}),
-          stylex.props(
-            styles.radiogroup,
-            orientation === 'vertical' ? styles.vertical : styles.horizontal,
-            xstyle,
-          ),
-          className,
-          style,
-        )}>
-        <XDSRadioListContext.Provider value={contextValue}>
-          {children}
-        </XDSRadioListContext.Provider>
-      </div>
+      style={style}
+      {...rest}>
+      {({labelID}) => (
+        <div
+          role="radiogroup"
+          aria-labelledby={labelID}
+          aria-orientation={orientation}
+          aria-describedby={
+            [
+              description ? descriptionID : null,
+              status?.message ? statusMessageID : null,
+            ]
+              .filter(Boolean)
+              .join(' ') || undefined
+          }
+          aria-invalid={status?.type === 'error' ? true : undefined}
+          aria-required={isRequired || undefined}
+          {...mergeProps(
+            xdsClassName('radio-list', {orientation, size}),
+            stylex.props(
+              styles.radiogroup,
+              orientation === 'vertical' ? styles.vertical : styles.horizontal,
+            ),
+          )}>
+          <XDSRadioListContext.Provider value={contextValue}>
+            {children}
+          </XDSRadioListContext.Provider>
+        </div>
+      )}
     </XDSField>
   );
 }

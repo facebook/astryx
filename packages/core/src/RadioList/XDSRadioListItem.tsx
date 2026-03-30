@@ -60,7 +60,10 @@ const styles = stylex.create({
     borderStyle: 'solid',
     borderRadius: '50%',
     transitionProperty: 'background-color, border-color',
-    transitionDuration: durationVars['--duration-fast'],
+    transitionDuration: {
+      default: durationVars['--duration-fast'],
+      '@media (prefers-reduced-motion: reduce)': '0s',
+    },
     transitionTimingFunction: easeVars['--ease-standard'],
     boxSizing: 'border-box',
   },
@@ -95,11 +98,11 @@ const styles = stylex.create({
   radioWrapperFocus: {
     outline: {
       default: 'none',
-      ':focus-within': `2px solid ${colorVars['--color-accent']}`,
+      ':has(:focus-visible)': `2px solid ${colorVars['--color-accent']}`,
     },
     outlineOffset: {
-      default: '0',
-      ':focus-within': '2px',
+      default: null,
+      ':has(:focus-visible)': '2px',
     },
     borderRadius: '50%',
   },
@@ -133,6 +136,7 @@ const styles = stylex.create({
   description: {
     fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-supporting-size'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
     color: colorVars['--color-text-secondary'],
   },
   startContent: {
@@ -151,12 +155,12 @@ const styles = stylex.create({
 // Size styles matching CheckboxInput dimensions
 const wrapperSizeStyles = stylex.create({
   sm: {
-    width: 20,
-    height: 20,
+    width: spacingVars['--spacing-5'],
+    height: spacingVars['--spacing-5'],
   },
   md: {
-    width: 24,
-    height: 24,
+    width: spacingVars['--spacing-6'],
+    height: spacingVars['--spacing-6'],
   },
 });
 

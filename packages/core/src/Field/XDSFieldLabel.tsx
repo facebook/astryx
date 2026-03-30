@@ -75,8 +75,14 @@ export interface XDSFieldLabelProps {
   label: string;
   /**
    * ID of the input element this label is for.
+   * When omitted, the label renders without htmlFor (e.g. for radiogroups).
    */
-  inputID: string;
+  inputID?: string;
+  /**
+   * @internal Generated ID set on the label element for aria-labelledby.
+   * Not intended for public use — always generated internally by XDSField.
+   */
+  labelID?: string;
   /**
    * Whether to visually hide the label (still accessible to screen readers).
    * @default false
@@ -119,6 +125,7 @@ export interface XDSFieldLabelProps {
 export function XDSFieldLabel({
   label,
   inputID,
+  labelID,
   isLabelHidden = false,
   isDisabled = false,
   isOptional = false,
@@ -132,6 +139,7 @@ export function XDSFieldLabel({
   return (
     <label
       ref={ref}
+      id={labelID}
       htmlFor={inputID}
       {...mergeProps(
         xdsClassName('field-label'),

@@ -13,7 +13,7 @@
  * - /apps/storybook/stories/Field.stories.tsx (storybook stories)
  */
 
-import {type HTMLAttributes, type ReactNode} from 'react';
+import {type HTMLAttributes, type ReactNode, useId} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {XDSFieldLabel} from './XDSFieldLabel';
@@ -105,8 +105,9 @@ export interface XDSFieldProps extends Omit<
   description?: string;
   /**
    * ID for the input element (used for label's htmlFor attribute).
+   * When omitted, the label renders without htmlFor (e.g. for radiogroups).
    */
-  inputID: string;
+  inputID?: string;
   /**
    * ID for the description element (use for aria-describedby on the input).
    */
@@ -164,8 +165,9 @@ export interface XDSFieldProps extends Omit<
   style?: React.CSSProperties;
   /**
    * The input or control to render inside the field.
+   * Can be a render function receiving `{ labelID }` for aria-labelledby references.
    */
-  children: ReactNode;
+  children: ReactNode | ((props: {labelID: string}) => ReactNode);
 }
 
 /**
@@ -199,6 +201,10 @@ export function XDSField({
   ref,
   ...props
 }: XDSFieldProps) {
+  const labelID = useId();
+  const resolvedChildren =
+    typeof children === 'function' ? children({labelID}) : children;
+
   const resolvedDescriptionID =
     descriptionID ?? (description ? `${inputID}-desc` : undefined);
   const resolvedMessageID =
@@ -224,6 +230,7 @@ export function XDSField({
         <XDSFieldLabel
           label={label}
           inputID={inputID}
+          labelID={labelID}
           isLabelHidden={isLabelHidden}
           isOptional={isOptional}
           isRequired={isRequired}
@@ -243,7 +250,7 @@ export function XDSField({
       </div>
       {statusVariant === 'attached' ? (
         <div {...stylex.props(styles.inputStatusWrapper)}>
-          {children}
+          {resolvedChildren}
           {status?.message && (
             <XDSFieldStatus
               type={status.type}
@@ -255,7 +262,7 @@ export function XDSField({
         </div>
       ) : (
         <>
-          {children}
+          {resolvedChildren}
           {status?.message && (
             <XDSFieldStatus
               type={status.type}
