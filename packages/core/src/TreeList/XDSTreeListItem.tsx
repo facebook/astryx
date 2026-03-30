@@ -30,15 +30,6 @@ import {
 import type {XDSTreeListDensity} from './XDSTreeListTypes';
 
 // =============================================================================
-// Constants
-// =============================================================================
-
-const INDENT = 20;
-const CHEVRON_SIZE = 16;
-const CHEVRON_MARGIN = 8;
-const BRANCH_MARGIN_LEFT = 9;
-
-// =============================================================================
 // Styles
 // =============================================================================
 
@@ -56,13 +47,13 @@ const styles = stylex.create({
     listStyleType: 'none',
   },
   treeBranches: {
-    paddingInlineStart: BRANCH_MARGIN_LEFT,
+    paddingInlineStart: `calc(${spacingVars['--spacing-2']} + ${spacingVars['--spacing-0-5']})`,
   },
   rowWrapper: {
     position: 'relative',
   },
   contentWrapper: {
-    borderRadius: radiusVars['--radius-inner'],
+    borderRadius: radiusVars['--radius-element'],
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
@@ -156,27 +147,31 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    width: CHEVRON_SIZE,
-    height: CHEVRON_SIZE,
-    fontSize: CHEVRON_SIZE,
+    width: spacingVars['--spacing-4'],
+    height: spacingVars['--spacing-4'],
+    fontSize: spacingVars['--spacing-4'],
     cursor: 'pointer',
     border: 'none',
     background: 'none',
     padding: 0,
     color: colorVars['--color-icon-secondary'],
     borderRadius: radiusVars['--radius-inner'],
+    marginInlineStart: spacingVars['--spacing-1'],
+    marginInlineEnd: `calc(${spacingVars['--spacing-1']} * -1)`,
   },
   chevronButton: {
     all: 'unset',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    width: CHEVRON_SIZE,
-    height: CHEVRON_SIZE,
-    fontSize: CHEVRON_SIZE,
+    width: spacingVars['--spacing-4'],
+    height: spacingVars['--spacing-4'],
+    fontSize: spacingVars['--spacing-4'],
     cursor: 'pointer',
     color: colorVars['--color-icon-secondary'],
     borderRadius: radiusVars['--radius-inner'],
+    marginInlineStart: spacingVars['--spacing-1'],
+    marginInlineEnd: `calc(${spacingVars['--spacing-1']} * -1)`,
   },
   chevronSvg: {
     display: 'flex',
@@ -308,10 +303,8 @@ export function XDSTreeListItem({
   }, [onClick, hasChildren, onToggle, id, isDisabled]);
 
   const computedMarginLeft = hasChildren
-    ? nestedLevel * INDENT
-    : nestedLevel * INDENT +
-      CHEVRON_SIZE +
-      (startContent != null ? 0 : CHEVRON_MARGIN);
+    ? `calc(${nestedLevel} * ${spacingVars['--spacing-5']})`
+    : `calc(${nestedLevel} * ${spacingVars['--spacing-5']} + ${spacingVars['--spacing-4']} + ${spacingVars['--spacing-2']})`;
 
   const labelAndDescription = (
     <>
@@ -402,16 +395,12 @@ export function XDSTreeListItem({
         <XDSTreeListBranches
           ancestorsIsLast={ancestorsIsLast}
           isLast={isLast}
-          levelIndent={INDENT}
-          marginLeft={BRANCH_MARGIN_LEFT}
           nestedLevel={nestedLevel}
         />
       </div>
       <div {...stylex.props(styles.rowWrapper)}>
         <XDSTreeListHorizontalConnector
           hasChildren={hasChildren}
-          levelIndent={INDENT}
-          marginLeft={BRANCH_MARGIN_LEFT}
           nestedLevel={nestedLevel}
         />
         <div

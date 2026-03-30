@@ -7,15 +7,15 @@
  * @position Internal context; consumed by XDSList.tsx and XDSListItem.tsx
  */
 
-
 import {createContext} from 'react';
 
 export type XDSListDensity = 'compact' | 'balanced' | 'spacious';
+export type XDSListMarkerStyle = 'none' | 'disc' | 'decimal' | 'circle';
 
 export interface XDSListContextValue {
   density: XDSListDensity;
   hasDividers: boolean;
-  hasMarkers: boolean;
+  listStyle: XDSListMarkerStyle;
 }
 
 export const XDSListContext = createContext<XDSListContextValue | null>(null);

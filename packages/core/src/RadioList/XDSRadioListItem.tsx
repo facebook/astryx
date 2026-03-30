@@ -31,7 +31,7 @@ import {xdsClassName, mergeProps} from '../utils';
 const styles = stylex.create({
   container: {
     display: 'flex',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     gap: spacingVars['--spacing-2'],
   },
   radioWrapper: {
@@ -118,7 +118,6 @@ const styles = stylex.create({
     display: 'flex',
     flexDirection: 'column',
     gap: spacingVars['--spacing-0-5'],
-    marginTop: 1,
   },
   label: {
     fontFamily: typographyVars['--font-family-body'],
@@ -180,15 +179,6 @@ const dotSizeStyles = stylex.create({
   md: {
     width: 10,
     height: 10,
-  },
-});
-
-const labelWrapperSizeStyles = stylex.create({
-  sm: {
-    marginTop: 1,
-  },
-  md: {
-    marginTop: 3,
   },
 });
 
@@ -264,9 +254,6 @@ export function XDSRadioListItem({
         xdsClassName('radio-list-item'),
         stylex.props(styles.container, !isDisabled && stylex.defaultMarker()),
       )}>
-      {startContent && (
-        <div {...stylex.props(styles.startContent)}>{startContent}</div>
-      )}
       <div
         {...stylex.props(
           styles.radioWrapper,
@@ -315,19 +302,22 @@ export function XDSRadioListItem({
           )}
         </div>
       </div>
-      <div {...stylex.props(styles.labelWrapper, labelWrapperSizeStyles[size])}>
+      {startContent != null && (
+        <div {...stylex.props(styles.startContent)}>{startContent}</div>
+      )}
+      <div {...stylex.props(styles.labelWrapper)}>
         <label
           htmlFor={id}
           {...stylex.props(styles.label, isDisabled && styles.labelDisabled)}>
           {label}
         </label>
-        {description && (
+        {description != null && (
           <span id={descriptionID} {...stylex.props(styles.description)}>
             {description}
           </span>
         )}
       </div>
-      {endContent && (
+      {endContent != null && (
         <div {...stylex.props(styles.endContent)}>{endContent}</div>
       )}
     </div>
