@@ -133,12 +133,12 @@ const styles = stylex.create({
     textAlign: 'start',
   },
   // When list has markers (disc/decimal/circle), <li> must be list-item
-  // so the browser renders the ::marker. The marker renders outside (default)
-  // and the inner wrapper handles flex layout for the content.
-  // list-style-type is set on the <li> directly for mobile Safari compat.
+  // so the browser renders the ::marker. list-style-position: inside keeps
+  // the marker within the content box (avoids parent-padding clipping on
+  // mobile Safari). The inner flex wrapper provides the content layout.
   itemWithMarker: {
     display: 'list-item',
-    paddingInline: spacingVars['--spacing-2'],
+    listStylePosition: 'inside',
     position: 'relative',
     boxSizing: 'border-box',
     textAlign: 'start',

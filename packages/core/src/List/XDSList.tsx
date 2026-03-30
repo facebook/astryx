@@ -103,12 +103,21 @@ const styles = stylex.create({
     paddingInlineStart: 0,
     listStyleType: 'none',
   },
-  listWithMarkers: {
-    paddingInlineStart: spacingVars['--spacing-4'],
-    listStyleType: 'unset',
-  },
   header: {
     marginBottom: spacingVars['--spacing-2'],
+  },
+});
+
+const markerStyles = stylex.create({
+  none: {},
+  disc: {
+    listStyleType: 'disc',
+  },
+  decimal: {
+    listStyleType: 'decimal',
+  },
+  circle: {
+    listStyleType: 'circle',
   },
 });
 
@@ -170,11 +179,7 @@ export function XDSList({
         {...(listStyle === 'none' && !isOrdered ? {role: 'list'} : {})}
         {...mergeProps(
           xdsClassName('list', {density, listStyle}),
-          stylex.props(
-            styles.list,
-            hasMarkers && styles.listWithMarkers,
-            xstyle,
-          ),
+          stylex.props(styles.list, markerStyles[listStyle], xstyle),
           className,
           style,
         )}>
