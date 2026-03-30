@@ -25,7 +25,7 @@ export function ProductSettingsModal({
   return (
     <XDSDialog
       isOpen={isOpen}
-      onOpenChange={onClose}
+      onOpenChange={() => onClose()}
       purpose="info"
       style={{
         width: 800,
@@ -40,7 +40,7 @@ export function ProductSettingsModal({
       <XDSDialogHeader
         title="Product Settings"
         description="Configure this workspace. Changes save immediately."
-        onOpenChange={onClose}
+        onOpenChange={() => onClose()}
         style={{padding: '20px 24px 16px', flexShrink: 0}}
       />
       <XDSDivider />
