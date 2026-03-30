@@ -241,6 +241,7 @@ export function XDSLayout({
         )}>
         <div
           {...stylex.props(
+            stylex.defaultMarker(),
             styles.layoutInner,
             ...stack({direction: 'vertical'}),
             isFill ? styles.fill : styles.auto,
