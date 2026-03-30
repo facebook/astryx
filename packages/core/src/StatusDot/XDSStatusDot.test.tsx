@@ -33,14 +33,8 @@ describe('XDSStatusDot', () => {
     }
   });
 
-  it('renders at single 8px size', () => {
+  it('renders at fixed 8px size', () => {
     render(<XDSStatusDot variant="positive" label="Online" />);
-    const dot = screen.getByRole('img', {name: 'Online'});
-    expect(dot).toBeInTheDocument();
-  });
-
-  it('accepts size prop for backwards compatibility', () => {
-    render(<XDSStatusDot variant="positive" label="Online" size="sm" />);
     const dot = screen.getByRole('img', {name: 'Online'});
     expect(dot).toBeInTheDocument();
   });
