@@ -1,5 +1,5 @@
 'use client';
-import {useState, useEffect} from 'react';
+import {useState, useEffect, useRef} from 'react';
 import {
   XDSSideNav,
   XDSSideNavHeading,
@@ -9,15 +9,6 @@ import {
 import {XDSNavIcon} from '@xds/core/NavIcon';
 import {XDSButton} from '@xds/core/Button';
 import {XDSIcon} from '@xds/core/Icon';
-import {XDSDivider} from '@xds/core';
-import {
-  XDSCommandPalette,
-  XDSCommandPaletteInput,
-  XDSCommandPaletteList,
-  XDSCommandPaletteItem,
-  XDSCommandPaletteGroup,
-  XDSCommandPaletteFooter,
-} from '../../../../../../../packages/lab/src/CommandPalette';
 import {ProductSettingsModal} from '../../../../components/ProductSettingsModal';
 import {
   HomeIcon,
@@ -96,6 +87,218 @@ const PRODUCTS = [
     stock: 'In stock',
   },
 ];
+
+const PALETTE_ITEMS = [
+  {group: 'Navigate', label: 'Dashboard', id: 'dashboard'},
+  {group: 'Navigate', label: 'Products', id: 'products'},
+  {group: 'Navigate', label: 'Orders', id: 'orders'},
+  {group: 'Navigate', label: 'Analytics', id: 'analytics'},
+  {group: 'Actions', label: 'Add product', id: 'add'},
+  {group: 'Actions', label: 'Import products', id: 'import'},
+  {group: 'Actions', label: 'Export catalog', id: 'export'},
+  {group: 'Actions', label: 'Open settings', id: 'settings'},
+];
+
+function CommandPalette({
+  isOpen,
+  onClose,
+  onSettings,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onSettings: () => void;
+}) {
+  const [query, setQuery] = useState('');
+  const [active, setActive] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setQuery('');
+      setActive(0);
+      setTimeout(() => inputRef.current?.focus(), 30);
+    }
+  }, [isOpen]);
+
+  const filtered = PALETTE_ITEMS.filter(i =>
+    i.label.toLowerCase().includes(query.toLowerCase()),
+  );
+
+  if (!isOpen) return null;
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        zIndex: 1000,
+        display: 'flex',
+        alignItems: 'flex-start',
+        justifyContent: 'center',
+        paddingTop: 80,
+      }}
+      onClick={onClose}>
+      <div
+        style={{
+          backgroundColor: 'white',
+          borderRadius: 12,
+          boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+          width: 560,
+          maxWidth: '90vw',
+          maxHeight: 440,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        }}
+        onClick={e => e.stopPropagation()}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            padding: '12px 16px',
+            borderBottom: '1px solid #E5E7EB',
+          }}>
+          <MagnifyingGlassIcon
+            style={{width: 18, height: 18, color: '#9CA3AF', flexShrink: 0}}
+          />
+          <input
+            ref={inputRef}
+            value={query}
+            onChange={e => {
+              setQuery(e.target.value);
+              setActive(0);
+            }}
+            onKeyDown={e => {
+              if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                setActive(i => Math.min(i + 1, filtered.length - 1));
+              }
+              if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                setActive(i => Math.max(i - 1, 0));
+              }
+              if (e.key === 'Enter' && filtered[active]) {
+                if (filtered[active].id === 'settings') {
+                  onSettings();
+                }
+                onClose();
+              }
+              if (e.key === 'Escape') onClose();
+            }}
+            placeholder="Search actions, pages, and more…"
+            style={{
+              flex: 1,
+              border: 'none',
+              outline: 'none',
+              fontSize: 16,
+              color: '#111827',
+            }}
+          />
+          <kbd
+            style={{
+              fontSize: 11,
+              padding: '2px 6px',
+              borderRadius: 4,
+              border: '1px solid #D1D5DB',
+              backgroundColor: '#F9FAFB',
+              color: '#6B7280',
+            }}>
+            Esc
+          </kbd>
+        </div>
+        <div style={{overflowY: 'auto', flex: 1, padding: '8px 0'}}>
+          {filtered.length === 0 ? (
+            <div
+              style={{
+                padding: 32,
+                textAlign: 'center',
+                color: '#9CA3AF',
+                fontSize: 14,
+              }}>
+              No results for &ldquo;{query}&rdquo;
+            </div>
+          ) : (
+            (['Navigate', 'Actions'] as const).map(group => {
+              const items = filtered.filter(i => i.group === group);
+              if (!items.length) return null;
+              return (
+                <div key={group}>
+                  <div
+                    style={{
+                      padding: '8px 16px 4px',
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: '#9CA3AF',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                    }}>
+                    {group}
+                  </div>
+                  {items.map((item, idx) => {
+                    const globalIdx = filtered.indexOf(item);
+                    return (
+                      <div
+                        key={item.id}
+                        onClick={() => {
+                          if (item.id === 'settings') onSettings();
+                          onClose();
+                        }}
+                        style={{
+                          padding: '8px 16px',
+                          cursor: 'pointer',
+                          fontSize: 14,
+                          color: '#111827',
+                          backgroundColor:
+                            globalIdx === active ? '#EEF2FF' : 'transparent',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 8,
+                        }}>
+                        {item.label}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })
+          )}
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            gap: 16,
+            padding: '8px 16px',
+            borderTop: '1px solid #E5E7EB',
+          }}>
+          {[
+            ['↑↓', 'navigate'],
+            ['↵', 'select'],
+            ['Esc', 'close'],
+          ].map(([key, hint]) => (
+            <div
+              key={key}
+              style={{display: 'flex', alignItems: 'center', gap: 4}}>
+              <kbd
+                style={{
+                  fontSize: 11,
+                  padding: '2px 5px',
+                  borderRadius: 3,
+                  border: '1px solid #D1D5DB',
+                  backgroundColor: '#F9FAFB',
+                  color: '#374151',
+                }}>
+                {key}
+              </kbd>
+              <span style={{fontSize: 11, color: '#9CA3AF'}}>{hint}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function ProductShellPage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -311,46 +514,14 @@ export default function ProductShellPage() {
         isOpen={settingsOpen}
         onClose={() => setSettingsOpen(false)}
       />
-
-      <XDSCommandPalette
+      <CommandPalette
         isOpen={paletteOpen}
-        onOpenChange={setPaletteOpen}
-        onValueChange={value => {
-          if (value === 'Open settings') setSettingsOpen(true);
+        onClose={() => setPaletteOpen(false)}
+        onSettings={() => {
+          setSettingsOpen(true);
           setPaletteOpen(false);
-        }}>
-        <XDSCommandPaletteInput placeholder="Search actions, pages, and more…" />
-        <XDSDivider />
-        <XDSCommandPaletteList>
-          <XDSCommandPaletteGroup heading="Navigate">
-            <XDSCommandPaletteItem value="Dashboard">
-              Dashboard
-            </XDSCommandPaletteItem>
-            <XDSCommandPaletteItem value="Products">
-              Products
-            </XDSCommandPaletteItem>
-            <XDSCommandPaletteItem value="Orders">Orders</XDSCommandPaletteItem>
-            <XDSCommandPaletteItem value="Analytics">
-              Analytics
-            </XDSCommandPaletteItem>
-          </XDSCommandPaletteGroup>
-          <XDSCommandPaletteGroup heading="Actions">
-            <XDSCommandPaletteItem value="Add product">
-              Add product
-            </XDSCommandPaletteItem>
-            <XDSCommandPaletteItem value="Import products">
-              Import products
-            </XDSCommandPaletteItem>
-            <XDSCommandPaletteItem value="Export catalog">
-              Export catalog
-            </XDSCommandPaletteItem>
-            <XDSCommandPaletteItem value="Open settings">
-              Open settings
-            </XDSCommandPaletteItem>
-          </XDSCommandPaletteGroup>
-        </XDSCommandPaletteList>
-        <XDSCommandPaletteFooter />
-      </XDSCommandPalette>
+        }}
+      />
     </div>
   );
 }
