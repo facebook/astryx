@@ -12,9 +12,7 @@ const meta: Meta<typeof XDSStatusDot> = {
       description: 'Semantic color variant',
     },
     size: {
-      control: 'select',
-      options: ['sm', 'md'],
-      description: 'Dot size',
+      table: {disable: true},
     },
     label: {
       control: 'text',
@@ -45,15 +43,6 @@ export const Variants: Story = {
       <XDSStatusDot variant="negative" label="Negative" />
       <XDSStatusDot variant="info" label="Info" />
       <XDSStatusDot variant="neutral" label="Neutral" />
-    </div>
-  ),
-};
-
-export const Sizes: Story = {
-  render: () => (
-    <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
-      <XDSStatusDot variant="positive" label="Small" size="sm" />
-      <XDSStatusDot variant="positive" label="Medium" size="md" />
     </div>
   ),
 };

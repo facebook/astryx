@@ -24,9 +24,7 @@ const meta: Meta<typeof XDSProgressBar> = {
       description: 'Semantic color variant',
     },
     size: {
-      control: 'select',
-      options: ['sm', 'md', 'lg'],
-      description: 'Track height',
+      table: {disable: true},
     },
     isLabelHidden: {
       control: 'boolean',
@@ -104,18 +102,24 @@ export const Variants: Story = {
   ),
 };
 
-export const Sizes: Story = {
+export const ComposedWithDescription: Story = {
+  name: 'Composed: with description',
   render: () => (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '16px',
-        width: '300px',
-      }}>
-      <XDSProgressBar value={60} label="Small" size="sm" hasValueLabel />
-      <XDSProgressBar value={60} label="Medium" size="md" hasValueLabel />
-      <XDSProgressBar value={60} label="Large" size="lg" hasValueLabel />
+    <div style={{width: '300px'}}>
+      <XDSProgressBar
+        value={40}
+        max={100}
+        label="Download progress"
+        hasValueLabel
+      />
+      <div
+        style={{
+          fontSize: '12px',
+          color: 'var(--color-text-secondary)',
+          marginTop: '4px',
+        }}>
+        40 MB / 100 MB downloaded
+      </div>
     </div>
   ),
 };
@@ -182,22 +186,6 @@ export const IndeterminateVariants: Story = {
       <XDSProgressBar isIndeterminate label="Positive" variant="positive" />
       <XDSProgressBar isIndeterminate label="Warning" variant="warning" />
       <XDSProgressBar isIndeterminate label="Negative" variant="negative" />
-    </div>
-  ),
-};
-
-export const IndeterminateSizes: Story = {
-  render: () => (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '16px',
-        width: '300px',
-      }}>
-      <XDSProgressBar isIndeterminate label="Small" size="sm" />
-      <XDSProgressBar isIndeterminate label="Medium" size="md" />
-      <XDSProgressBar isIndeterminate label="Large" size="lg" />
     </div>
   ),
 };
