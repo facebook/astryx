@@ -262,10 +262,6 @@ const styles = stylex.create({
   truncatedMd: {
     height: sizeVars['--size-element-md'],
   },
-  layerPlaceholder: {
-    // Holds space in the document flow for the expanded layer content.
-    // Height matches the collapsed tokenizer so layout doesn't shift.
-  },
   layerPlaceholderSm: {
     height: sizeVars['--size-element-sm'],
   },
@@ -421,7 +417,14 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
       // doesn't have to tab through every token remove button.
       const comingFromOutside = !isFocusInTokenizer(e.relatedTarget as Node);
       if (comingFromOutside && e.target !== inputRef.current) {
-        inputRef.current?.focus();
+        if (isLayerMode) {
+          // In layer mode, the input moves from the placeholder into the
+          // popover after React re-renders. Defer focus so it targets the
+          // input in its new DOM position.
+          requestAnimationFrame(() => inputRef.current?.focus());
+        } else {
+          inputRef.current?.focus();
+        }
       }
     },
     [isLayerMode, layer, isFocusInTokenizer],
@@ -520,9 +523,16 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
   // Click wrapper to focus input
   const handleWrapperClick = useCallback(() => {
     if (!isDisabled) {
-      inputRef.current?.focus();
+      if (isLayerMode && isTruncated) {
+        // In layer mode, clicking the collapsed placeholder triggers a
+        // re-render that moves the input into the popover. Defer focus
+        // so it targets the input in its new DOM position.
+        requestAnimationFrame(() => inputRef.current?.focus());
+      } else {
+        inputRef.current?.focus();
+      }
     }
-  }, [isDisabled]);
+  }, [isDisabled, isLayerMode, isTruncated]);
 
   const ariaDescribedBy =
     [
@@ -680,12 +690,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
             <>
               {/* Placeholder preserves layout height and acts as the
                   CSS anchor for the top-layer popover. */}
-              <div
-                ref={placeholderRef}
-                {...stylex.props(
-                  styles.layerPlaceholder,
-                  placeholderSizeStyle,
-                )}>
+              <div ref={placeholderRef} {...stylex.props(placeholderSizeStyle)}>
                 {/* When collapsed, render the truncated view in-flow */}
                 {isTruncated && wrapperContent}
               </div>
