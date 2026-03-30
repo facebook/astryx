@@ -122,7 +122,9 @@ export interface XDSListItemProps {
 // =============================================================================
 
 const styles = stylex.create({
-  // Default layout: <li> is the flex container
+  // <li> is always a flex container — markers are rendered as custom
+  // components rather than native list-style (avoids cross-browser issues
+  // with display:list-item + list-style-position:inside on mobile Safari).
   item: {
     display: 'flex',
     alignItems: 'center',
@@ -132,22 +134,9 @@ const styles = stylex.create({
     boxSizing: 'border-box',
     textAlign: 'start',
   },
-  // When list has markers (disc/decimal/circle), <li> must be list-item
-  // so the browser renders the ::marker. list-style-position: inside keeps
-  // the marker within the content box (avoids parent-padding clipping on
-  // mobile Safari). The inner flex wrapper provides the content layout.
-  itemWithMarker: {
-    display: 'list-item',
-    listStylePosition: 'inside',
-    position: 'relative',
-    boxSizing: 'border-box',
-    textAlign: 'start',
-  },
-  // Inner flex wrapper used when markers are shown
-  innerWrapper: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: spacingVars['--spacing-2'],
+  // When markers are active, bump the CSS counter
+  withCounter: {
+    counterIncrement: 'xds-list',
   },
   withRadius: {
     borderRadius: radiusVars['--radius-element'],
@@ -269,18 +258,43 @@ const densityStyles = stylex.create({
   },
 });
 
+// =============================================================================
+// Marker styles — custom-rendered markers instead of native list-style-type.
+// Uses CSS counters for numbers (same pattern as WWW XDS).
+// =============================================================================
+
 const markerStyles = stylex.create({
-  none: {
-    listStyleType: 'none',
+  container: {
+    alignSelf: 'baseline',
+    boxSizing: 'border-box',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    width: spacingVars['--spacing-5'],
   },
-  disc: {
-    listStyleType: 'disc',
-  },
-  decimal: {
-    listStyleType: 'decimal',
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: '50%',
+    backgroundColor: colorVars['--color-text-primary'],
   },
   circle: {
-    listStyleType: 'circle',
+    width: 6,
+    height: 6,
+    borderRadius: '50%',
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: colorVars['--color-text-primary'],
+    backgroundColor: 'transparent',
+  },
+  number: {
+    color: colorVars['--color-text-primary'],
+    fontSize: typeScaleVars['--text-body-size'],
+    lineHeight: typeScaleVars['--text-body-leading'],
+    '::before': {
+      content: 'counter(xds-list) "."',
+    },
   },
 });
 
@@ -399,6 +413,19 @@ export function XDSListItem({
     </>
   );
 
+  const marker =
+    listStyle === 'disc' ? (
+      <span {...stylex.props(markerStyles.container)}>
+        <span {...stylex.props(markerStyles.dot)} />
+      </span>
+    ) : listStyle === 'circle' ? (
+      <span {...stylex.props(markerStyles.container)}>
+        <span {...stylex.props(markerStyles.circle)} />
+      </span>
+    ) : listStyle === 'decimal' ? (
+      <span {...stylex.props(markerStyles.container, markerStyles.number)} />
+    ) : null;
+
   return (
     <li
       ref={ref}
@@ -408,8 +435,8 @@ export function XDSListItem({
       {...mergeProps(
         xdsClassName('list-item'),
         stylex.props(
-          hasMarkers ? styles.itemWithMarker : styles.item,
-          hasMarkers && markerStyles[listStyle],
+          styles.item,
+          hasMarkers && styles.withCounter,
           densityStyles[density],
           hasDividers ? styles.noRadius : styles.withRadius,
           hasDividers && styles.withDivider,
@@ -423,11 +450,8 @@ export function XDSListItem({
         style,
       )}
       onClick={isInteractive ? handleContainerClick : undefined}>
-      {hasMarkers ? (
-        <div {...stylex.props(styles.innerWrapper)}>{innerContent}</div>
-      ) : (
-        innerContent
-      )}
+      {marker}
+      {innerContent}
     </li>
   );
 }

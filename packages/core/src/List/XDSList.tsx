@@ -103,21 +103,11 @@ const styles = stylex.create({
     paddingInlineStart: 0,
     listStyleType: 'none',
   },
+  withCounter: {
+    counterReset: 'xds-list',
+  },
   header: {
     marginBottom: spacingVars['--spacing-2'],
-  },
-});
-
-const markerStyles = stylex.create({
-  none: {},
-  disc: {
-    listStyleType: 'disc',
-  },
-  decimal: {
-    listStyleType: 'decimal',
-  },
-  circle: {
-    listStyleType: 'circle',
   },
 });
 
@@ -157,7 +147,6 @@ export function XDSList({
 }: XDSListProps) {
   const headerId = useId();
   const isOrdered = listStyle === 'decimal';
-  const hasMarkers = listStyle !== 'none';
   const Tag = isOrdered ? 'ol' : 'ul';
 
   const contextValue = useMemo(
@@ -179,7 +168,11 @@ export function XDSList({
         {...(listStyle === 'none' && !isOrdered ? {role: 'list'} : {})}
         {...mergeProps(
           xdsClassName('list', {density, listStyle}),
-          stylex.props(styles.list, markerStyles[listStyle], xstyle),
+          stylex.props(
+            styles.list,
+            listStyle !== 'none' && styles.withCounter,
+            xstyle,
+          ),
           className,
           style,
         )}>
