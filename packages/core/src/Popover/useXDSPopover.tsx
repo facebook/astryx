@@ -13,13 +13,7 @@
  * - /packages/core/src/Popover/index.ts
  */
 
-import React, {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type ReactNode,
-} from 'react';
+import React, {useCallback, useEffect, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   useXDSLayer,
@@ -34,8 +28,8 @@ import {
   spacingVars,
   radiusVars,
   shadowVars,
-  typeScaleVars,
 } from '../theme/tokens.stylex';
+import {XDSButton} from '../Button';
 
 const styles = stylex.create({
   // Default popover surface — background, radius, shadow.
@@ -50,44 +44,38 @@ const styles = stylex.create({
   contentWrapper: {
     position: 'relative',
   },
-  // Hidden close button - visually hidden until focused
-  closeButton: {
-    position: 'absolute',
-    width: 1,
-    height: 1,
-    padding: 0,
-    margin: -1,
-    overflow: 'hidden',
-    clip: 'rect(0, 0, 0, 0)',
-    whiteSpace: 'nowrap',
-    borderWidth: 0,
-    pointerEvents: 'none', // Prevent mouse clicks when hidden
-  },
-  // Revealed state when focused - positioned bottom center, outside popover
-  closeButtonFocused: {
+  // Hidden close button wrapper - sr-only until focused, then positioned below popover
+  closeButtonWrapper: {
     position: 'absolute',
     bottom: 0,
     left: '50%',
     transform: 'translate(-50%, 100%)',
-    width: 'auto',
-    height: 'auto',
-    padding: spacingVars['--spacing-2'],
-    margin: 0,
-    overflow: 'visible',
-    clip: 'auto',
-    whiteSpace: 'nowrap',
-    // Inverted color palette (like tooltip): dark background, light text
-    backgroundColor: colorVars['--color-text-primary'],
-    color: colorVars['--color-background-surface'],
-    fontSize: typeScaleVars['--text-supporting-size'],
-    borderRadius: radiusVars['--radius-element'],
-    cursor: 'pointer',
-    borderWidth: 0,
-    borderStyle: 'none',
-    outline: `2px solid ${colorVars['--color-accent']}`,
-    outlineOffset: 2,
     zIndex: 1,
-    pointerEvents: 'auto', // Re-enable mouse clicks when visible
+    // sr-only by default
+    width: {
+      default: 1,
+      ':focus-within': 'auto',
+    },
+    height: {
+      default: 1,
+      ':focus-within': 'auto',
+    },
+    overflow: {
+      default: 'hidden',
+      ':focus-within': 'visible',
+    },
+    clipPath: {
+      default: 'inset(50%)',
+      ':focus-within': 'none',
+    },
+    pointerEvents: {
+      default: 'none',
+      ':focus-within': 'auto',
+    },
+    paddingBlockStart: {
+      default: 0,
+      ':focus-within': spacingVars['--spacing-1'],
+    },
   },
 });
 
@@ -133,14 +121,12 @@ export interface UseXDSPopoverOptions {
   /**
    * Whether to include a hidden close button for accessibility.
    * The button appears when keyboard users tab past the last element.
-   * Set to false for menus or selectors with different focus behavior.
    * @default true
    */
   hasCloseButton?: boolean;
 
   /**
    * Label for the hidden close button.
-   * Only used when hasCloseButton is true.
    * @default "Close popover"
    */
   closeButtonLabel?: string;
@@ -287,14 +273,11 @@ export function useXDSPopover(
     xstyle,
     hasLightDismiss = true,
     hasAutoFocus = true,
-    hasCloseButton = true,
     hasSurface = true,
+    hasCloseButton = true,
     closeButtonLabel = 'Close popover',
     dialogLabel,
   } = options;
-
-  // Track whether close button is focused (to show tooltip)
-  const [isCloseButtonFocused, setIsCloseButtonFocused] = useState(false);
 
   // Track the trigger element for returning focus
   const triggerElementRef = useRef<HTMLElement | null>(null);
@@ -329,13 +312,6 @@ export function useXDSPopover(
       skipAutoFocusRef.current = false;
     }
   }, [layer.isOpen, hasAutoFocus, focusFirst]);
-
-  // Reset close button focus state when popover closes
-  useEffect(() => {
-    if (!layer.isOpen) {
-      setIsCloseButtonFocused(false);
-    }
-  }, [layer.isOpen]);
 
   // Combined ref for trigger element (layer anchor + our ref)
   const triggerRef = useCallback(
@@ -387,18 +363,13 @@ export function useXDSPopover(
           )}>
           {children}
           {hasCloseButton && (
-            <button
-              type="button"
-              onClick={layer.hide}
-              onFocus={() => setIsCloseButtonFocused(true)}
-              onBlur={() => setIsCloseButtonFocused(false)}
-              aria-label={closeButtonLabel}
-              {...stylex.props(
-                styles.closeButton,
-                isCloseButtonFocused && styles.closeButtonFocused,
-              )}>
-              {closeButtonLabel}
-            </button>
+            <div {...stylex.props(styles.closeButtonWrapper)}>
+              <XDSButton
+                variant="secondary"
+                label={closeButtonLabel}
+                onClick={layer.hide}
+              />
+            </div>
           )}
         </div>,
         {...props, xstyle: props?.xstyle},
@@ -409,7 +380,6 @@ export function useXDSPopover(
       hasCloseButton,
       hasSurface,
       closeButtonLabel,
-      isCloseButtonFocused,
       contentRef,
       dialogLabel,
       xstyle,
