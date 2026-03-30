@@ -1,13 +1,10 @@
 'use client';
-import {useState, type ReactNode} from 'react';
+import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSDialog, XDSDialogHeader} from '@xds/core/Dialog';
 import {XDSList, XDSListItem} from '@xds/core/List';
 import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSSwitch} from '@xds/core/Switch';
 import {XDSDivider} from '@xds/core';
-import {XDSSelector} from '@xds/core/Selector';
-import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import {
   colorVars,
   spacingVars,
@@ -23,9 +20,9 @@ import {
   BeakerIcon,
 } from './SettingsIcons';
 
-const styles = stylex.create({
-  dialogBody: {display: 'flex', flex: 1, overflow: 'hidden', minHeight: 0},
-  sectionNav: {
+const s = stylex.create({
+  body: {display: 'flex', flex: 1, overflow: 'hidden', minHeight: 0},
+  nav: {
     width: 192,
     flexShrink: 0,
     borderInlineEnd: `1px solid ${colorVars['--color-border']}`,
@@ -33,7 +30,7 @@ const styles = stylex.create({
     paddingBlock: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-2'],
   },
-  contentArea: {
+  content: {
     flex: 1,
     overflowY: 'auto',
     padding: spacingVars['--spacing-6'],
@@ -41,98 +38,125 @@ const styles = stylex.create({
     flexDirection: 'column',
     gap: spacingVars['--spacing-4'],
   },
-  sectionHeader: {marginBlockEnd: spacingVars['--spacing-3']},
-  settingRow: {
+  row: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacingVars['--spacing-4'],
     paddingBlock: spacingVars['--spacing-3'],
   },
-  settingLabel: {
+  rowLabel: {
     display: 'flex',
     flexDirection: 'column',
     gap: spacingVars['--spacing-1'],
     flex: 1,
-    minWidth: 0,
   },
-  settingControl: {flexShrink: 0, minWidth: 180},
-  previewGrid: {
+  rowControl: {flexShrink: 0, minWidth: 160},
+  grid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(3, 1fr)',
     gap: spacingVars['--spacing-3'],
   },
-  previewTile: {
+  tile: {
     borderRadius: radiusVars['--radius-element'],
     overflow: 'hidden',
-    cursor: 'pointer',
     border: '2px solid transparent',
+    cursor: 'pointer',
   },
-  previewTileActive: {borderColor: colorVars['--color-accent']},
-  previewInner: {
+  tileActive: {borderColor: colorVars['--color-accent']},
+  tileInner: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     position: 'absolute' as const,
     inset: 0,
   },
-  previewLabel: {
+  tileLabel: {
     paddingBlock: spacingVars['--spacing-2'],
     textAlign: 'center' as const,
   },
 });
 
-interface SettingsState {
-  defaultView: string;
-  itemsPerPage: string;
-  currencyDisplay: string;
-  lowStockAlerts: boolean;
-  lowStockThreshold: string;
-  trackByVariant: boolean;
-  defaultSort: string;
-  showOutOfStock: boolean;
-  dataDensity: string;
-  showCompareAt: boolean;
-  taxDisplay: string;
-  priceRounding: string;
-  imageRatio: string;
-  imageZoom: boolean;
-  notifyOrders: boolean;
-  notifyReviews: boolean;
-  notifyPriceChange: boolean;
-  googleSync: boolean;
-  metaSync: boolean;
-  syncFrequency: string;
-  aiDescriptions: boolean;
-  bulkVariantEditor: boolean;
-  advancedAnalytics: boolean;
+function Toggle({on}: {on: boolean}) {
+  return (
+    <div
+      style={{
+        width: 36,
+        height: 20,
+        borderRadius: 10,
+        backgroundColor: on ? '#0064E0' : '#CCD3DB',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: on ? 'flex-end' : 'flex-start',
+        padding: 2,
+        boxSizing: 'border-box',
+      }}>
+      <div
+        style={{
+          width: 16,
+          height: 16,
+          borderRadius: '50%',
+          backgroundColor: 'white',
+        }}
+      />
+    </div>
+  );
 }
-type UpdateFn = (key: keyof SettingsState, value: string | boolean) => void;
-const DEFAULTS: SettingsState = {
-  defaultView: 'grid',
-  itemsPerPage: '24',
-  currencyDisplay: 'Symbol ($)',
-  lowStockAlerts: true,
-  lowStockThreshold: '10',
-  trackByVariant: true,
-  defaultSort: 'Newest first',
-  showOutOfStock: false,
-  dataDensity: 'Comfortable',
-  showCompareAt: true,
-  taxDisplay: 'Excluding tax',
-  priceRounding: 'None',
-  imageRatio: 'Square (1:1)',
-  imageZoom: true,
-  notifyOrders: true,
-  notifyReviews: false,
-  notifyPriceChange: false,
-  googleSync: false,
-  metaSync: false,
-  syncFrequency: 'Hourly',
-  aiDescriptions: false,
-  bulkVariantEditor: false,
-  advancedAnalytics: false,
-};
+
+function Dropdown({value}: {value: string}) {
+  return (
+    <div
+      style={{
+        padding: '6px 10px',
+        border: '1px solid #CCD3DB',
+        borderRadius: 6,
+        fontSize: 14,
+        backgroundColor: 'white',
+        color: '#0A1317',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 8,
+      }}>
+      <span>{value}</span>
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+        <path
+          d="M3 4.5L6 7.5L9 4.5"
+          stroke="#606770"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
+      </svg>
+    </div>
+  );
+}
+
+function Row({
+  label,
+  desc,
+  children,
+}: {
+  label: string;
+  desc?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <>
+      <div {...stylex.props(s.row)}>
+        <div {...stylex.props(s.rowLabel)}>
+          <XDSText type="body">{label}</XDSText>
+          {desc && (
+            <XDSText type="supporting" color="secondary">
+              {desc}
+            </XDSText>
+          )}
+        </div>
+        <div {...stylex.props(s.rowControl)}>{children}</div>
+      </div>
+      <XDSDivider />
+    </>
+  );
+}
 
 function GridSvg() {
   return (
@@ -178,84 +202,6 @@ function KanbanSvg() {
   );
 }
 
-const VIEW_MODES = [
-  {id: 'grid', label: 'Grid', bg: '#EEF2FF', color: '#4F46E5', Icon: GridSvg},
-  {id: 'list', label: 'List', bg: '#F0FDF4', color: '#16A34A', Icon: ListSvg},
-  {
-    id: 'kanban',
-    label: 'Kanban',
-    bg: '#FFF7ED',
-    color: '#EA580C',
-    Icon: KanbanSvg,
-  },
-];
-
-function ViewModePicker({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  return (
-    <div {...stylex.props(styles.previewGrid)}>
-      {VIEW_MODES.map(({id, label, bg, color, Icon}) => (
-        <div
-          key={id}
-          {...stylex.props(
-            styles.previewTile,
-            value === id && styles.previewTileActive,
-          )}
-          onClick={() => onChange(id)}
-          role="radio"
-          aria-checked={value === id}
-          tabIndex={0}
-          onKeyDown={e => e.key === 'Enter' && onChange(id)}>
-          <XDSAspectRatio ratio={16 / 9}>
-            <div
-              {...stylex.props(styles.previewInner)}
-              style={{backgroundColor: bg, color}}>
-              <Icon />
-            </div>
-          </XDSAspectRatio>
-          <div {...stylex.props(styles.previewLabel)}>
-            <XDSText type="supporting" color="secondary">
-              {label}
-            </XDSText>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function SettingRow({
-  label,
-  description,
-  children,
-}: {
-  label: string;
-  description?: string;
-  children: ReactNode;
-}) {
-  return (
-    <>
-      <div {...stylex.props(styles.settingRow)}>
-        <div {...stylex.props(styles.settingLabel)}>
-          <XDSText type="body">{label}</XDSText>
-          {description && (
-            <XDSText type="supporting" color="secondary">
-              {description}
-            </XDSText>
-          )}
-        </div>
-        <div {...stylex.props(styles.settingControl)}>{children}</div>
-      </div>
-      <XDSDivider />
-    </>
-  );
-}
-
 const SECTIONS = [
   {id: 'general', label: 'General', Icon: CogIcon},
   {id: 'inventory', label: 'Inventory', Icon: BoxIcon},
@@ -267,6 +213,221 @@ const SECTIONS = [
   {id: 'feature-flags', label: 'Feature Flags', Icon: BeakerIcon},
 ];
 
+function GeneralContent() {
+  const views = [
+    {id: 'grid', label: 'Grid', bg: '#EEF2FF', color: '#4F46E5', Icon: GridSvg},
+    {id: 'list', label: 'List', bg: '#F0FDF4', color: '#16A34A', Icon: ListSvg},
+    {
+      id: 'kanban',
+      label: 'Kanban',
+      bg: '#FFF7ED',
+      color: '#EA580C',
+      Icon: KanbanSvg,
+    },
+  ];
+  return (
+    <>
+      <XDSHeading level={3}>General</XDSHeading>
+      <XDSText type="supporting" color="secondary">
+        Default behavior and display preferences.
+      </XDSText>
+      <div style={{marginBlock: '16px 8px'}}>
+        <XDSText type="supporting" color="secondary" weight="semibold">
+          Default product view
+        </XDSText>
+      </div>
+      <div {...stylex.props(s.grid)}>
+        {views.map(({id, label, bg, color, Icon}) => (
+          <div
+            key={id}
+            {...stylex.props(s.tile, id === 'grid' && s.tileActive)}>
+            <div style={{position: 'relative', paddingTop: '56.25%'}}>
+              <div
+                {...stylex.props(s.tileInner)}
+                style={{backgroundColor: bg, color}}>
+                <Icon />
+              </div>
+            </div>
+            <div {...stylex.props(s.tileLabel)}>
+              <XDSText type="supporting" color="secondary">
+                {label}
+              </XDSText>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div style={{marginTop: 16}}>
+        <XDSDivider />
+      </div>
+      <Row label="Items per page" desc="Products loaded per page.">
+        <Dropdown value="24" />
+      </Row>
+      <Row label="Currency display" desc="How prices appear in the catalog.">
+        <Dropdown value="Symbol ($)" />
+      </Row>
+    </>
+  );
+}
+
+const CONTENT: Record<string, React.ReactNode> = {
+  general: <GeneralContent />,
+  inventory: (
+    <>
+      <XDSHeading level={3}>Inventory</XDSHeading>
+      <XDSText type="supporting" color="secondary">
+        Stock alerts and tracking behavior.
+      </XDSText>
+      <div style={{marginTop: 16}}>
+        <XDSDivider />
+      </div>
+      <Row
+        label="Low stock alerts"
+        desc="Warn when stock drops below threshold.">
+        <Toggle on={true} />
+      </Row>
+      <Row
+        label="Low stock threshold"
+        desc="Units remaining before alert triggers.">
+        <Dropdown value="10 units" />
+      </Row>
+      <Row label="Track by variant" desc="Separate stock counts per SKU.">
+        <Toggle on={true} />
+      </Row>
+    </>
+  ),
+  catalog: (
+    <>
+      <XDSHeading level={3}>Catalog</XDSHeading>
+      <XDSText type="supporting" color="secondary">
+        How products are organized and displayed.
+      </XDSText>
+      <div style={{marginTop: 16}}>
+        <XDSDivider />
+      </div>
+      <Row label="Default sort order" desc="Initial ordering of listings.">
+        <Dropdown value="Newest first" />
+      </Row>
+      <Row
+        label="Show out-of-stock products"
+        desc="Display zero-inventory products.">
+        <Toggle on={false} />
+      </Row>
+      <Row label="Data density" desc="Information shown in product rows.">
+        <Dropdown value="Comfortable" />
+      </Row>
+    </>
+  ),
+  pricing: (
+    <>
+      <XDSHeading level={3}>Pricing</XDSHeading>
+      <XDSText type="supporting" color="secondary">
+        Price display and rounding rules.
+      </XDSText>
+      <div style={{marginTop: 16}}>
+        <XDSDivider />
+      </div>
+      <Row
+        label="Show compare-at price"
+        desc="Show original when sale price is set.">
+        <Toggle on={true} />
+      </Row>
+      <Row label="Tax display" desc="How tax is shown on prices.">
+        <Dropdown value="Excluding tax" />
+      </Row>
+      <Row label="Price rounding" desc="Snap prices to nearest increment.">
+        <Dropdown value="None" />
+      </Row>
+    </>
+  ),
+  media: (
+    <>
+      <XDSHeading level={3}>Media</XDSHeading>
+      <XDSText type="supporting" color="secondary">
+        Image behavior and thumbnail settings.
+      </XDSText>
+      <div style={{marginTop: 16}}>
+        <XDSDivider />
+      </div>
+      <Row label="Image aspect ratio" desc="Default ratio for thumbnails.">
+        <Dropdown value="Square (1:1)" />
+      </Row>
+      <Row label="Zoom on hover" desc="Enlarge image when hovering.">
+        <Toggle on={true} />
+      </Row>
+    </>
+  ),
+  notifications: (
+    <>
+      <XDSHeading level={3}>Notifications</XDSHeading>
+      <XDSText type="supporting" color="secondary">
+        Which events trigger in-app alerts.
+      </XDSText>
+      <div style={{marginTop: 16}}>
+        <XDSDivider />
+      </div>
+      <Row label="New orders" desc="Alert when a new order is placed.">
+        <Toggle on={true} />
+      </Row>
+      <Row label="New reviews" desc="Alert when a product gets a review.">
+        <Toggle on={false} />
+      </Row>
+      <Row label="Price changes" desc="Alert when a tracked price changes.">
+        <Toggle on={false} />
+      </Row>
+    </>
+  ),
+  integrations: (
+    <>
+      <XDSHeading level={3}>Integrations</XDSHeading>
+      <XDSText type="supporting" color="secondary">
+        Connected services and sync options.
+      </XDSText>
+      <div style={{marginTop: 16}}>
+        <XDSDivider />
+      </div>
+      <Row
+        label="Sync to Google Shopping"
+        desc="Auto-push to Google Merchant Center.">
+        <Toggle on={false} />
+      </Row>
+      <Row
+        label="Sync to Meta Catalog"
+        desc="Auto-push to Meta Business catalog.">
+        <Toggle on={false} />
+      </Row>
+      <Row label="Sync frequency" desc="How often data is pushed.">
+        <Dropdown value="Hourly" />
+      </Row>
+    </>
+  ),
+  'feature-flags': (
+    <>
+      <XDSHeading level={3}>Feature Flags</XDSHeading>
+      <XDSText type="supporting" color="secondary">
+        Opt in to beta features for this workspace.
+      </XDSText>
+      <div style={{marginTop: 16}}>
+        <XDSDivider />
+      </div>
+      <Row
+        label="AI product descriptions"
+        desc="Beta: Generate descriptions with AI.">
+        <Toggle on={false} />
+      </Row>
+      <Row
+        label="Bulk variant editor"
+        desc="Beta: Edit variants across products.">
+        <Toggle on={false} />
+      </Row>
+      <Row
+        label="Advanced analytics"
+        desc="Beta: Extended performance metrics.">
+        <Toggle on={false} />
+      </Row>
+    </>
+  ),
+};
+
 export function ProductSettingsModal({
   isOpen,
   onClose,
@@ -275,338 +436,6 @@ export function ProductSettingsModal({
   onClose: () => void;
 }) {
   const [active, setActive] = useState('general');
-  const [s, setS] = useState<SettingsState>(DEFAULTS);
-  const upd: UpdateFn = (k, v) => setS(prev => ({...prev, [k]: v}));
-
-  const content = () => {
-    switch (active) {
-      case 'general':
-        return (
-          <>
-            <div {...stylex.props(styles.sectionHeader)}>
-              <XDSHeading level={3}>General</XDSHeading>
-              <XDSText type="supporting" color="secondary">
-                Default behavior and display preferences.
-              </XDSText>
-            </div>
-            <XDSText type="supporting" color="secondary" weight="semibold">
-              Default product view
-            </XDSText>
-            <ViewModePicker
-              value={s.defaultView}
-              onChange={checked => upd('defaultView', checked)}
-            />
-            <XDSDivider />
-            <SettingRow
-              label="Items per page"
-              description="Products loaded per page by default.">
-              <XDSSelector
-                label="Items per page"
-                value={s.itemsPerPage}
-                onChange={v => upd('itemsPerPage', v as string)}
-                options={['12', '24', '48', '96']}
-              />
-            </SettingRow>
-            <SettingRow
-              label="Currency display"
-              description="How prices appear throughout the catalog.">
-              <XDSSelector
-                label="Currency display"
-                value={s.currencyDisplay}
-                onChange={v => upd('currencyDisplay', v as string)}
-                options={['Symbol ($)', 'Code (USD)', 'Name (US Dollar)']}
-              />
-            </SettingRow>
-          </>
-        );
-      case 'inventory':
-        return (
-          <>
-            <div {...stylex.props(styles.sectionHeader)}>
-              <XDSHeading level={3}>Inventory</XDSHeading>
-              <XDSText type="supporting" color="secondary">
-                Stock alerts and tracking behavior.
-              </XDSText>
-            </div>
-            <XDSDivider />
-            <SettingRow
-              label="Low stock alerts"
-              description="Warn when stock drops below threshold.">
-              <XDSSwitch
-                label="Low stock alerts"
-                checked={s.lowStockAlerts}
-                onChange={checked => upd('lowStockAlerts', checked)}
-              />
-            </SettingRow>
-            <SettingRow
-              label="Low stock threshold"
-              description="Units remaining before alert triggers.">
-              <XDSSelector
-                label="Threshold"
-                value={s.lowStockThreshold}
-                onChange={v => upd('lowStockThreshold', v as string)}
-                options={['5', '10', '20', '50']}
-                isDisabled={!s.lowStockAlerts}
-              />
-            </SettingRow>
-            <SettingRow
-              label="Track by variant"
-              description="Separate stock counts per SKU.">
-              <XDSSwitch
-                label="Track by variant"
-                checked={s.trackByVariant}
-                onChange={checked => upd('trackByVariant', checked)}
-              />
-            </SettingRow>
-          </>
-        );
-      case 'catalog':
-        return (
-          <>
-            <div {...stylex.props(styles.sectionHeader)}>
-              <XDSHeading level={3}>Catalog</XDSHeading>
-              <XDSText type="supporting" color="secondary">
-                How products are organized and displayed.
-              </XDSText>
-            </div>
-            <XDSDivider />
-            <SettingRow
-              label="Default sort order"
-              description="Initial ordering of product listings.">
-              <XDSSelector
-                label="Sort order"
-                value={s.defaultSort}
-                onChange={v => upd('defaultSort', v as string)}
-                options={[
-                  'Newest first',
-                  'Oldest first',
-                  'Price: low to high',
-                  'Price: high to low',
-                  'Alphabetical',
-                ]}
-              />
-            </SettingRow>
-            <SettingRow
-              label="Show out-of-stock products"
-              description="Display zero-inventory products.">
-              <XDSSwitch
-                label="Show out-of-stock"
-                checked={s.showOutOfStock}
-                onChange={checked => upd('showOutOfStock', checked)}
-              />
-            </SettingRow>
-            <SettingRow
-              label="Data density"
-              description="Information shown in product rows.">
-              <XDSSelector
-                label="Data density"
-                value={s.dataDensity}
-                onChange={v => upd('dataDensity', v as string)}
-                options={['Comfortable', 'Compact', 'Condensed']}
-              />
-            </SettingRow>
-          </>
-        );
-      case 'pricing':
-        return (
-          <>
-            <div {...stylex.props(styles.sectionHeader)}>
-              <XDSHeading level={3}>Pricing</XDSHeading>
-              <XDSText type="supporting" color="secondary">
-                Price display and rounding rules.
-              </XDSText>
-            </div>
-            <XDSDivider />
-            <SettingRow
-              label="Show compare-at price"
-              description="Show original when sale price is set.">
-              <XDSSwitch
-                label="Compare-at price"
-                checked={s.showCompareAt}
-                onChange={checked => upd('showCompareAt', checked)}
-              />
-            </SettingRow>
-            <SettingRow
-              label="Tax display"
-              description="How tax is shown on product prices.">
-              <XDSSelector
-                label="Tax display"
-                value={s.taxDisplay}
-                onChange={v => upd('taxDisplay', v as string)}
-                options={['Excluding tax', 'Including tax', 'Hidden']}
-              />
-            </SettingRow>
-            <SettingRow
-              label="Price rounding"
-              description="Snap prices to nearest increment.">
-              <XDSSelector
-                label="Price rounding"
-                value={s.priceRounding}
-                onChange={v => upd('priceRounding', v as string)}
-                options={['None', 'Nearest $0.99', 'Nearest $1', 'Nearest $5']}
-              />
-            </SettingRow>
-          </>
-        );
-      case 'media':
-        return (
-          <>
-            <div {...stylex.props(styles.sectionHeader)}>
-              <XDSHeading level={3}>Media</XDSHeading>
-              <XDSText type="supporting" color="secondary">
-                Image behavior and thumbnail settings.
-              </XDSText>
-            </div>
-            <XDSDivider />
-            <SettingRow
-              label="Image aspect ratio"
-              description="Default ratio for product thumbnails.">
-              <XDSSelector
-                label="Aspect ratio"
-                value={s.imageRatio}
-                onChange={v => upd('imageRatio', v as string)}
-                options={[
-                  'Square (1:1)',
-                  'Portrait (3:4)',
-                  'Landscape (4:3)',
-                  'Widescreen (16:9)',
-                ]}
-              />
-            </SettingRow>
-            <SettingRow
-              label="Zoom on hover"
-              description="Enlarge product image when hovering.">
-              <XDSSwitch
-                label="Zoom on hover"
-                checked={s.imageZoom}
-                onChange={checked => upd('imageZoom', checked)}
-              />
-            </SettingRow>
-          </>
-        );
-      case 'notifications':
-        return (
-          <>
-            <div {...stylex.props(styles.sectionHeader)}>
-              <XDSHeading level={3}>Notifications</XDSHeading>
-              <XDSText type="supporting" color="secondary">
-                Which events trigger in-app alerts.
-              </XDSText>
-            </div>
-            <XDSDivider />
-            <SettingRow
-              label="New orders"
-              description="Alert when a new order is placed.">
-              <XDSSwitch
-                label="New orders"
-                checked={s.notifyOrders}
-                onChange={checked => upd('notifyOrders', checked)}
-              />
-            </SettingRow>
-            <SettingRow
-              label="New reviews"
-              description="Alert when a product gets a review.">
-              <XDSSwitch
-                label="New reviews"
-                checked={s.notifyReviews}
-                onChange={checked => upd('notifyReviews', checked)}
-              />
-            </SettingRow>
-            <SettingRow
-              label="Price changes"
-              description="Alert when a tracked price changes.">
-              <XDSSwitch
-                label="Price changes"
-                checked={s.notifyPriceChange}
-                onChange={checked => upd('notifyPriceChange', checked)}
-              />
-            </SettingRow>
-          </>
-        );
-      case 'integrations':
-        return (
-          <>
-            <div {...stylex.props(styles.sectionHeader)}>
-              <XDSHeading level={3}>Integrations</XDSHeading>
-              <XDSText type="supporting" color="secondary">
-                Connected services and sync options.
-              </XDSText>
-            </div>
-            <XDSDivider />
-            <SettingRow
-              label="Sync to Google Shopping"
-              description="Auto-push to Google Merchant Center.">
-              <XDSSwitch
-                label="Google Shopping"
-                checked={s.googleSync}
-                onChange={checked => upd('googleSync', checked)}
-              />
-            </SettingRow>
-            <SettingRow
-              label="Sync to Meta Catalog"
-              description="Auto-push to Meta Business catalog.">
-              <XDSSwitch
-                label="Meta Catalog"
-                checked={s.metaSync}
-                onChange={checked => upd('metaSync', checked)}
-              />
-            </SettingRow>
-            <SettingRow
-              label="Sync frequency"
-              description="How often product data is pushed.">
-              <XDSSelector
-                label="Sync frequency"
-                value={s.syncFrequency}
-                onChange={v => upd('syncFrequency', v as string)}
-                options={['Real-time', 'Every 15 min', 'Hourly', 'Daily']}
-              />
-            </SettingRow>
-          </>
-        );
-      case 'feature-flags':
-        return (
-          <>
-            <div {...stylex.props(styles.sectionHeader)}>
-              <XDSHeading level={3}>Feature Flags</XDSHeading>
-              <XDSText type="supporting" color="secondary">
-                Opt in to beta features for this workspace.
-              </XDSText>
-            </div>
-            <XDSDivider />
-            <SettingRow
-              label="AI product descriptions"
-              description="Beta: Generate descriptions with AI.">
-              <XDSSwitch
-                label="AI descriptions"
-                checked={s.aiDescriptions}
-                onChange={checked => upd('aiDescriptions', checked)}
-              />
-            </SettingRow>
-            <SettingRow
-              label="Bulk variant editor"
-              description="Beta: Edit variants across products.">
-              <XDSSwitch
-                label="Bulk variant editor"
-                checked={s.bulkVariantEditor}
-                onChange={checked => upd('bulkVariantEditor', checked)}
-              />
-            </SettingRow>
-            <SettingRow
-              label="Advanced analytics"
-              description="Beta: Extended performance metrics.">
-              <XDSSwitch
-                label="Advanced analytics"
-                checked={s.advancedAnalytics}
-                onChange={checked => upd('advancedAnalytics', checked)}
-              />
-            </SettingRow>
-          </>
-        );
-      default:
-        return null;
-    }
-  };
-
   return (
     <XDSDialog
       isOpen={isOpen}
@@ -629,8 +458,8 @@ export function ProductSettingsModal({
         style={{padding: '20px 24px 16px', flexShrink: 0}}
       />
       <XDSDivider />
-      <div {...stylex.props(styles.dialogBody)}>
-        <div {...stylex.props(styles.sectionNav)}>
+      <div {...stylex.props(s.body)}>
+        <div {...stylex.props(s.nav)}>
           <XDSList>
             {SECTIONS.map(({id, label, Icon}) => (
               <XDSListItem
@@ -643,7 +472,7 @@ export function ProductSettingsModal({
             ))}
           </XDSList>
         </div>
-        <div {...stylex.props(styles.contentArea)}>{content()}</div>
+        <div {...stylex.props(s.content)}>{CONTENT[active]}</div>
       </div>
     </XDSDialog>
   );

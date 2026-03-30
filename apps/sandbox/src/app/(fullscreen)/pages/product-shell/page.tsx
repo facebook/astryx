@@ -11,7 +11,6 @@ import {XDSNavIcon} from '@xds/core/NavIcon';
 import {XDSButton} from '@xds/core/Button';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSBadge} from '@xds/core/Badge';
 import {XDSDivider} from '@xds/core';
 import {colorVars, spacingVars} from '@xds/core/theme/tokens.stylex';
 import {
@@ -322,14 +321,36 @@ export default function ProductShellPage() {
               selectedIcon={BagSolid}
               isSelected={activeNav === 'products'}
               onClick={() => setActiveNav('products')}
-              endContent={<XDSBadge label="6" />}
+              endContent={
+                <span
+                  style={{
+                    fontSize: 11,
+                    padding: '2px 6px',
+                    borderRadius: 4,
+                    backgroundColor: '#E7F3FF',
+                    color: '#0064E0',
+                  }}>
+                  6
+                </span>
+              }
             />
             <XDSSideNavItem
               label="Orders"
               icon={TagIcon}
               isSelected={activeNav === 'orders'}
               onClick={() => setActiveNav('orders')}
-              endContent={<XDSBadge label="3" variant="error" />}
+              endContent={
+                <span
+                  style={{
+                    fontSize: 11,
+                    padding: '2px 6px',
+                    borderRadius: 4,
+                    backgroundColor: '#FEE2E2',
+                    color: '#B91C1C',
+                  }}>
+                  3
+                </span>
+              }
             />
             <XDSSideNavItem
               label="Analytics"
@@ -395,11 +416,38 @@ export default function ProductShellPage() {
                 <div {...stylex.props(styles.cardFooter)}>
                   <XDSText type="body">{p.price}</XDSText>
                   {p.stock === 0 ? (
-                    <XDSBadge label="Out of stock" variant="error" />
+                    <span
+                      style={{
+                        fontSize: 11,
+                        padding: '2px 6px',
+                        borderRadius: 4,
+                        backgroundColor: '#FEE2E2',
+                        color: '#B91C1C',
+                      }}>
+                      Out of stock
+                    </span>
                   ) : p.stock < 10 ? (
-                    <XDSBadge label={p.stock + ' left'} variant="warning" />
+                    <span
+                      style={{
+                        fontSize: 11,
+                        padding: '2px 6px',
+                        borderRadius: 4,
+                        backgroundColor: '#FEF3C7',
+                        color: '#92400E',
+                      }}>
+                      {p.stock} left
+                    </span>
                   ) : (
-                    <XDSBadge label="In stock" variant="success" />
+                    <span
+                      style={{
+                        fontSize: 11,
+                        padding: '2px 6px',
+                        borderRadius: 4,
+                        backgroundColor: '#D1FAE5',
+                        color: '#065F46',
+                      }}>
+                      In stock
+                    </span>
                   )}
                 </div>
               </div>
