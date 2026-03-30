@@ -25,12 +25,6 @@ export const docs = {
       required: true,
     },
     {
-      name: 'size',
-      type: "'sm'",
-      description: 'Dot size: 8px. Single size — StatusDot is a fixed indicator.',
-      default: "'sm'",
-    },
-    {
       name: 'isPulsing',
       type: 'boolean',
       description:
@@ -62,7 +56,7 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'xds-statusdot', visualProps: ['size', 'variant']},
+      {className: 'xds-statusdot', visualProps: ['variant']},
     ],
   },
   accessibility: [
@@ -98,12 +92,6 @@ export const docsZh = {
       required: true,
     },
     {
-      name: 'size',
-      type: "'sm'",
-      description: '圆点尺寸：8px。单一尺寸。',
-      default: "'md'",
-    },
-    {
       name: 'isPulsing',
       type: 'boolean',
       description:
@@ -126,7 +114,7 @@ export const docsZh = {
     },
     {
       label: '小尺寸',
-      code: `<XDSStatusDot variant="positive" label="Active" size="sm" />`,
+      code: `<XDSStatusDot variant="positive" label="Active" isPulsing />`,
     },
     {
       label: '脉冲动画',
@@ -135,7 +123,7 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'xds-statusdot', visualProps: ['size', 'variant']},
+      {className: 'xds-statusdot', visualProps: ['variant']},
     ],
   },
   accessibility: [
@@ -163,7 +151,6 @@ export const docsDense = {
   propDescriptions: {
     variant: 'Semantic color variant.',
     label: 'Accessible label via aria-label.',
-    size: 'Dot size: 8px. Single size — StatusDot is a fixed indicator.',
     isPulsing: 'Pulse animation; respects prefers-reduced-motion: reduce.',
     xstyle: 'StyleX layout styles; must be stylex.create() value.',
   },

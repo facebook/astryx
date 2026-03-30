@@ -1,7 +1,7 @@
 /**
  * @file XDSStatusDot.tsx
  * @input Uses React
- * @output Exports XDSStatusDot component, XDSStatusDotProps, XDSStatusDotVariant, XDSStatusDotSize types
+ * @output Exports XDSStatusDot component, XDSStatusDotProps, XDSStatusDotVariant types
  * @position Core implementation; consumed by index.ts
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -33,6 +33,8 @@ const styles = stylex.create({
     display: 'inline-block',
     borderRadius: '50%',
     flexShrink: 0,
+    width: '8px',
+    height: '8px',
   },
   pulsing: {
     animationName: pulseKeyframes,
@@ -44,20 +46,6 @@ const styles = stylex.create({
     '@media (prefers-reduced-motion: reduce)': {
       animationName: 'none',
     },
-  },
-});
-
-/**
- * Size styles
- */
-const sizes = stylex.create({
-  sm: {
-    width: '8px',
-    height: '8px',
-  },
-  md: {
-    width: '10px',
-    height: '10px',
   },
 });
 
@@ -109,12 +97,6 @@ export interface XDSStatusDotVariantMap {
  */
 export type XDSStatusDotVariant = keyof XDSStatusDotVariantMap;
 
-/**
- * Status dot size type.
- * Single size (8px). The `size` prop is accepted for backwards compatibility but has no effect.
- */
-export type XDSStatusDotSize = 'sm' | 'md';
-
 export interface XDSStatusDotProps {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLSpanElement>;
@@ -122,12 +104,6 @@ export interface XDSStatusDotProps {
    * The semantic color variant.
    */
   variant: XDSStatusDotVariant;
-  /**
-   * The size of the dot. Single size (8px) — this prop is accepted for
-   * backwards compatibility but has no visual effect.
-   * @default 'sm'
-   */
-  size?: XDSStatusDotSize;
   /**
    * Accessible label describing the status. Required for a11y.
    */
@@ -168,8 +144,9 @@ export interface XDSStatusDotProps {
 /**
  * A small colored dot indicator for status display (online/offline, severity, etc).
  *
- * Renders as a non-focusable `<span>` with `role="img"` and `aria-label` for accessibility.
- * Styles use XDS theme tokens via StyleX. Wrap your app in `<Theme>` to apply a theme.
+ * Fixed 8px size. Renders as a non-focusable `<span>` with `role="img"` and
+ * `aria-label` for accessibility. Styles use XDS theme tokens via StyleX.
+ * Wrap your app in `<Theme>` to apply a theme.
  *
  * @example
  * ```
@@ -180,7 +157,6 @@ export interface XDSStatusDotProps {
  */
 export function XDSStatusDot({
   variant,
-  size: _size,
   label,
   isPulsing = false,
   xstyle,
@@ -195,10 +171,9 @@ export function XDSStatusDot({
       role="img"
       aria-label={label}
       {...mergeProps(
-        xdsClassName('statusdot', {variant, size: 'sm'}),
+        xdsClassName('statusdot', {variant}),
         stylex.props(
           styles.base,
-          sizes.sm,
           variants[variant],
           isPulsing && styles.pulsing,
           isPulsing && styles.reducedMotion,

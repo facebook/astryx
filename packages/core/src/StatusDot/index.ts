@@ -7,5 +7,4 @@ export type {
   XDSStatusDotProps,
   XDSStatusDotVariant,
   XDSStatusDotVariantMap,
-  XDSStatusDotSize,
 } from './XDSStatusDot';

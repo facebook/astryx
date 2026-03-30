@@ -9,5 +9,4 @@ export type {
   XDSProgressBarProps,
   XDSProgressBarVariant,
   XDSProgressBarVariantMap,
-  XDSProgressBarSize,
 } from './XDSProgressBar';

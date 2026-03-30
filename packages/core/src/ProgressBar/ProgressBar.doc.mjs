@@ -59,12 +59,6 @@ export const docs = {
       default: "'accent'",
     },
     {
-      name: 'size',
-      type: "'md'",
-      description: 'Track height: 8px. Single size — larger visualizations should use a dedicated dataviz component.',
-      default: "'md'",
-    },
-    {
       name: 'isIndeterminate',
       type: 'boolean',
       description: 'Animated loading indicator for unknown progress.',
@@ -128,7 +122,7 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'xds-progressbar', visualProps: ['size', 'variant']},
+      {className: 'xds-progressbar', visualProps: ['variant']},
       {className: 'xds-progressbar-fill', visualProps: ['variant']},
     ],
   },
@@ -204,12 +198,6 @@ export const docsZh = {
       default: "'accent'",
     },
     {
-      name: 'size',
-      type: "'md'",
-      description: '轨道高度：8px。单一尺寸——较大的可视化应使用专用的数据可视化组件。',
-      default: "'md'",
-    },
-    {
       name: 'isIndeterminate',
       type: 'boolean',
       description: '用于未知进度的动画加载指示器。',
@@ -247,7 +235,7 @@ export const docsZh = {
     },
     {
       label: '变体和尺寸',
-      code: `<XDSProgressBar value={92} label="Disk" variant="negative" size="sm" />`,
+      code: `<XDSProgressBar value={92} label="Disk" variant="negative" />`,
     },
     {
       label: '隐藏标签（无障碍可访问但不可见）',
@@ -256,7 +244,7 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'xds-progressbar', visualProps: ['size', 'variant']},
+      {className: 'xds-progressbar', visualProps: ['variant']},
       {className: 'xds-progressbar-fill', visualProps: ['variant']},
     ],
   },
@@ -298,7 +286,6 @@ export const docsDense = {
     hasValueLabel: 'Show formatted value text (ignored when indeterminate).',
     formatValueLabel: 'Custom value label formatter; defaults to percentage string.',
     variant: 'Semantic color variant.',
-    size: 'Track height: 8px. Single size — larger visualizations should use a dedicated dataviz component.',
     isIndeterminate: 'Animated loading indicator for unknown progress.',
     xstyle: 'StyleX styles for layout customization. Must be stylex.create() value.',
   },
