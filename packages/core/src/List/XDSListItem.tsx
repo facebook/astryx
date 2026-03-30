@@ -133,10 +133,10 @@ const styles = stylex.create({
     textAlign: 'start',
   },
   // When list has markers (disc/decimal/circle), <li> must be list-item
-  // so the browser renders the ::marker. Flex layout moves to inner wrapper.
+  // so the browser renders the ::marker. The marker renders outside (default)
+  // and the inner wrapper handles flex layout for the content.
   itemWithMarker: {
     display: 'list-item',
-    listStylePosition: 'inside',
     paddingInline: spacingVars['--spacing-2'],
     position: 'relative',
     boxSizing: 'border-box',
@@ -149,7 +149,7 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-2'],
   },
   withRadius: {
-    borderRadius: radiusVars['--radius-inner'],
+    borderRadius: radiusVars['--radius-element'],
   },
   noRadius: {
     borderRadius: 0,

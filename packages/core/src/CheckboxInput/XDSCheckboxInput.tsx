@@ -74,7 +74,6 @@ const styles = stylex.create({
     justifyContent: 'center',
     borderWidth: borderVars['--border-width'],
     borderStyle: 'solid',
-    borderRadius: radiusVars['--radius-element'],
     transitionProperty: 'background-color, border-color',
     transitionDuration: {
       default: durationVars['--duration-fast'],
@@ -184,10 +183,12 @@ const checkboxSizeStyles = stylex.create({
   sm: {
     width: 18,
     height: 18,
+    borderRadius: radiusVars['--radius-inner'],
   },
   md: {
     width: 22,
     height: 22,
+    borderRadius: radiusVars['--radius-element'],
   },
 });
 

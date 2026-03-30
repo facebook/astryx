@@ -78,7 +78,7 @@ export const CustomDelay: Story = {
 };
 
 export const Disabled: Story = {
-  name: 'Disabled',
+  name: 'Disabled Tooltip',
   args: {
     placement: 'above',
     isEnabled: false,
@@ -89,7 +89,7 @@ export const Disabled: Story = {
     docs: {
       description: {
         story:
-          'Demonstrates disabling the tooltip via the `isEnabled` prop. When `isEnabled` is `false`, the tooltip will not appear on hover or focus, even though the trigger element remains fully interactive.',
+          'Demonstrates disabling the tooltip via the `isEnabled` prop. When `isEnabled` is `false`, the tooltip will not appear on hover or focus, even though the trigger element remains fully interactive. This is useful for conditionally showing tooltips based on application state.',
       },
     },
   },

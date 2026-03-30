@@ -13,7 +13,6 @@
  * - /apps/storybook/stories/List.stories.tsx
  */
 
-
 import {useId, useMemo, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
@@ -104,7 +103,7 @@ const styles = stylex.create({
     paddingInlineStart: 0,
   },
   listWithMarkers: {
-    paddingInlineStart: spacingVars['--spacing-6'],
+    paddingInlineStart: spacingVars['--spacing-4'],
   },
   header: {
     marginBottom: spacingVars['--spacing-2'],

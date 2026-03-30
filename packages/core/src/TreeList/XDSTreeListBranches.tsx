@@ -99,7 +99,11 @@ export function XDSTreeListBranches({
     <>
       {ancestorsIsLast.map(
         (ancestorIsLast, level) =>
-          !ancestorIsLast && (
+          // Skip the level that the current-item connector occupies
+          // (nestedLevel - 1), since that position is rendered below
+          // with the correct terminus/continuation style.
+          !ancestorIsLast &&
+          level !== nestedLevel - 1 && (
             <div
               key={level}
               {...stylex.props(styles.container)}
