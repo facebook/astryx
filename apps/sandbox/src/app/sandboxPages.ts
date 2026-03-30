@@ -56,6 +56,11 @@ export const categories: SandboxCategory[] = [
         href: '/pages/table-overview/',
         description: 'Data table patterns and configurations',
       },
+      {
+        name: 'NDS Variant Analysis',
+        href: '/pages/nds-variant-analysis/',
+        description: 'NDS component variant usage — official vs custom, across top Nest apps by MAU',
+      },
     ],
   },
   {
