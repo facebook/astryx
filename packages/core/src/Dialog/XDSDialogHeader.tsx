@@ -88,7 +88,7 @@ export interface XDSDialogHeaderProps {
   /**
    * Adds a themed border at the bottom edge.
    * When false, spacing collapse is applied automatically for seamless visual flow.
-   * @default true
+   * Defaults to the parent XDSLayout's `defaultHasDividers` context value.
    */
   hasDivider?: boolean;
 }
@@ -119,7 +119,7 @@ export function XDSDialogHeader({
   onOpenChange,
   startContent,
   endContent,
-  hasDivider = true,
+  hasDivider,
   ref,
 }: XDSDialogHeaderProps) {
   const titleRef = useRef<HTMLHeadingElement>(null);

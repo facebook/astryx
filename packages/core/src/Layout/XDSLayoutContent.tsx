@@ -12,7 +12,6 @@
  * - /apps/storybook/stories/Layout.stories.tsx
  */
 
-
 import type {AriaRole, ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {useContext} from 'react';
@@ -33,8 +32,18 @@ const styles = stylex.create({
     // Default: inner padding on all sides (will be overridden by position-specific styles)
     paddingInlineStart: `var(--layout-padding-inner-x, ${spacingVars['--spacing-4']})`,
     paddingInlineEnd: `var(--layout-padding-inner-x, ${spacingVars['--spacing-4']})`,
-    paddingBlockStart: `var(--layout-padding-inner-y, ${spacingVars['--spacing-4']})`,
-    paddingBlockEnd: `var(--layout-padding-inner-y, ${spacingVars['--spacing-4']})`,
+    paddingBlockStart: {
+      default: `var(--layout-padding-inner-y, ${spacingVars['--spacing-4']})`,
+      // When header has no divider, collapse top padding for seamless visual flow
+      [stylex.when.ancestor(':has(> .xds-layout-header:not([data-divider]))')]:
+        0,
+    },
+    paddingBlockEnd: {
+      default: `var(--layout-padding-inner-y, ${spacingVars['--spacing-4']})`,
+      // When footer has no divider, collapse bottom padding for seamless visual flow
+      [stylex.when.ancestor(':has(> .xds-layout-footer:not([data-divider]))')]:
+        0,
+    },
   },
   // When no start panel: outer-x on left edge
   noStart: {

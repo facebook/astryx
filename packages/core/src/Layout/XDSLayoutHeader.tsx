@@ -12,8 +12,9 @@
 
 import type {AriaRole, ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
-import {} from 'react';
+import {useContext} from 'react';
 import * as stylex from '@stylexjs/stylex';
+import {XDSLayoutDividerContext} from './XDSLayoutDividerContext';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 import type {SpacingStep} from '../utils/types';
@@ -40,10 +41,6 @@ const styles = stylex.create({
     borderBlockEndStyle: 'solid',
     borderBlockEndColor: colorVars['--color-border'],
   },
-  // When no divider, collapse spacing to avoid double-padding with content
-  collapseBottom: {
-    marginBlockEnd: `calc(-1 * var(--layout-padding-inner-y, ${spacingVars['--spacing-4']}))`,
-  },
 });
 
 // Dynamic styles for sizing props
@@ -63,6 +60,7 @@ export interface XDSLayoutHeaderProps extends XDSBaseProps<HTMLDivElement> {
   /**
    * Adds a themed border at the bottom edge.
    * When false, spacing collapse is applied automatically for seamless visual flow.
+   * When not set, falls back to the parent XDSLayout's `defaultHasDividers`, then `false`.
    * @default false
    */
   hasDivider?: boolean;
@@ -112,7 +110,7 @@ export interface XDSLayoutHeaderProps extends XDSBaseProps<HTMLDivElement> {
  */
 export function XDSLayoutHeader({
   children,
-  hasDivider = false,
+  hasDivider,
   height,
   label,
   padding,
@@ -123,17 +121,17 @@ export function XDSLayoutHeader({
   ref,
   ...props
 }: XDSLayoutHeaderProps) {
+  const dividerCtx = useContext(XDSLayoutDividerContext);
+  const resolvedHasDivider =
+    hasDivider ?? dividerCtx?.defaultHasDividers ?? false;
   const isZeroPadding = padding === 0;
-
-  // When no divider, collapse spacing for seamless visual flow
-  const shouldCollapseSpacing =
-    !hasDivider && !isZeroPadding && padding == null;
 
   return (
     <div
       ref={ref as React.Ref<HTMLDivElement>}
       role={role}
       aria-label={label}
+      data-divider={resolvedHasDivider || undefined}
       {...mergeProps(
         xdsClassName('layout-header'),
         stylex.props(
@@ -142,8 +140,7 @@ export function XDSLayoutHeader({
           isZeroPadding && styles.fullBleed,
           padding != null && paddingStyles[padding],
           padding != null && containerPaddingInlineVarStyles[padding],
-          hasDivider && styles.divider,
-          shouldCollapseSpacing && styles.collapseBottom,
+          resolvedHasDivider && styles.divider,
           xstyle,
         ),
         className,
