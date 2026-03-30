@@ -59,6 +59,18 @@ export const categories: SandboxCategory[] = [
     ],
   },
   {
+    label: 'Prototypes',
+    slug: 'prototypes',
+    description: 'Full-page product prototypes exploring XDS patterns.',
+    pages: [
+      {
+        name: 'Product Shell',
+        href: '/pages/product-shell/',
+        description: 'E-commerce shell: settings dialog and command palette',
+      },
+    ],
+  },
+  {
     label: 'Templates',
     slug: 'templates',
     description: 'Ready-to-use page templates and composition patterns.',
