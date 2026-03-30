@@ -406,6 +406,7 @@ export function XDSTreeListItem({
         <div
           {...mergeProps(
             xdsClassName('tree-list-item', {
+              density,
               selected: isSelected ? 'selected' : null,
               disabled: isDisabled ? 'disabled' : null,
             }),
