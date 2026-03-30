@@ -15,10 +15,12 @@ import * as p from '@clack/prompts';
 import * as path from 'node:path';
 import * as fs from 'node:fs';
 import {CLI_ROOT} from '../utils/paths.mjs';
+import {getRunPrefix} from '../utils/package-manager.mjs';
 import {installAgentDocs, removeAgentDocs} from './agent-docs.mjs';
 import {listTemplates} from './template.mjs';
 
 const VALID_FEATURES = ['agents', 'theme', 'template'];
+const run = getRunPrefix();
 
 function isCancel(value) {
   if (p.isCancel(value)) {
@@ -45,7 +47,7 @@ function runAgents(targetDir, {interactive = true, agent, agentDocsPath} = {}) {
       console.log(`✓ AI agent docs installed → ${summary}`);
     }
   } catch {
-    const msg = 'Could not install agent docs. Try again with `npx xds init --features agents`.';
+    const msg = `Could not install agent docs. Try again with \`${run} xds init --features agents\`.`;
     if (interactive) {
       p.log.warning(msg);
     } else {
@@ -58,14 +60,14 @@ function runAgents(targetDir, {interactive = true, agent, agentDocsPath} = {}) {
 
 async function runTheme({interactive = true} = {}) {
   if (!interactive) {
-    console.log('✓ Theme scaffolding requires interactive mode. Run `npx xds theme` instead.');
+    console.log(`✓ Theme scaffolding requires interactive mode. Run \`${run} xds theme\` instead.`);
     return;
   }
 
   p.note(
     'Create a custom theme with your brand colors.\n' +
-    'Run `npx xds theme` for the full theme wizard.\n' +
-    'Run `npx xds theme --list` to see existing themes.',
+    `Run \`${run} xds theme\` for the full theme wizard.\n` +
+    `Run \`${run} xds theme --list\` to see existing themes.`,
     'Themes',
   );
 }
@@ -78,7 +80,7 @@ async function runTemplate(targetDir, {interactive = true, templateName} = {}) {
 
   if (!interactive) {
     if (!templateName) {
-      console.log(`✓ Available templates: ${templates.join(', ')}. Use npx xds template <name> [path].`);
+      console.log(`✓ Available templates: ${templates.join(', ')}. Use ${run} xds template <name> [path].`);
       return;
     }
 
@@ -213,7 +215,7 @@ export function registerInit(program) {
 
       // Feature: swizzle awareness
       p.note(
-        'You can customize any component with:\n  npx xds swizzle XDSButton\n  npx xds swizzle --list',
+        `You can customize any component with:\n  ${run} xds swizzle XDSButton\n  ${run} xds swizzle --list`,
         'Component Customization',
       );
 
@@ -232,7 +234,7 @@ export function registerInit(program) {
       console.log('    2. Optionally add a theme:');
       console.log("       import { defaultTheme } from '@xds/theme/default'");
       console.log('       <XDSTheme theme={defaultTheme}>...</XDSTheme>');
-      console.log('    3. npx xds --help for all commands');
+      console.log(`    3. ${run} xds --help for all commands`);
       console.log('');
     });
 }

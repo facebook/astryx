@@ -9,6 +9,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as p from '@clack/prompts';
+import {getRunPrefix} from '../utils/package-manager.mjs';
 
 // Known corruption patterns that indicate a broken transform.
 // Each entry: [regex, human-readable description]
@@ -59,10 +60,11 @@ async function formatChangedFiles(files) {
 
   const {execSync} = await import('node:child_process');
   const fileArgs = files.map((f) => `"${f}"`).join(' ');
+  const prefix = getRunPrefix();
 
   const formatters = [
-    {name: 'prettier', cmd: `npx prettier --write ${fileArgs}`},
-    {name: 'biome', cmd: `npx biome format --write ${fileArgs}`},
+    {name: 'prettier', cmd: `${prefix} prettier --write ${fileArgs}`},
+    {name: 'biome', cmd: `${prefix} biome format --write ${fileArgs}`},
   ];
 
   for (const {name, cmd} of formatters) {

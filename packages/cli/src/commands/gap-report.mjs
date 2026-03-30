@@ -16,6 +16,7 @@ import {
   loadGapReportConfig,
   GAP_CATEGORIES,
 } from '../utils/github.mjs';
+import {getRunPrefix} from '../utils/package-manager.mjs';
 
 function isCancel(value) {
   if (p.isCancel(value)) {
@@ -173,7 +174,7 @@ export function registerGapReport(program) {
       const config = loadGapReportConfig();
       if (!config.enabled) {
         console.log(
-          'Gap reporting is disabled. Run `npx xds gap-report setup` to configure.',
+          `Gap reporting is disabled. Run \`${getRunPrefix()} xds gap-report setup\` to configure.`,
         );
         return;
       }
@@ -182,7 +183,7 @@ export function registerGapReport(program) {
         console.error(
           'Error: GitHub CLI (gh) is not installed or not authenticated.\n' +
             'Install it from https://cli.github.com and run `gh auth login`.\n\n' +
-            'Or run `npx xds gap-report setup` to configure a custom command.',
+            `Or run \`${getRunPrefix()} xds gap-report setup\` to configure a custom command.`,
         );
         process.exit(1);
       }

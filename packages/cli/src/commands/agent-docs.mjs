@@ -90,7 +90,7 @@ export function resolveAgentPaths(targetDir, agent) {
  * Format C (one-liner per command) chosen after testing three formats
  * against Claude Opus for AI agent usability (scored 5/5).
  */
-export function generateCompressedIndex(version, {coreDir, zh = false, lang, runPrefix = 'npx'} = {}) {
+export function generateCompressedIndex(version, {coreDir, zh = false, lang, runPrefix = getRunPrefix()} = {}) {
   const run = `${runPrefix} xds`;
   const lines = [XDS_MARKER_START];
 
