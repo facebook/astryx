@@ -17,17 +17,17 @@ import {useId, useMemo, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
-import {XDSListContext, type XDSListDensity} from './XDSListContext';
+import {
+  XDSListContext,
+  type XDSListDensity,
+  type XDSListMarkerStyle,
+} from './XDSListContext';
 import {xdsClassName, mergeProps} from '../utils';
 
-// =============================================================================
-// Types
-// =============================================================================
-
-/** List marker style. */
-export type XDSListStyle = 'none' | 'disc' | 'decimal' | 'circle';
-
-export {type XDSListDensity} from './XDSListContext';
+export {
+  type XDSListDensity,
+  type XDSListMarkerStyle as XDSListStyle,
+} from './XDSListContext';
 
 export interface XDSListProps {
   /** Ref forwarded to the root element */
@@ -63,7 +63,7 @@ export interface XDSListProps {
    * When 'decimal', renders an `<ol>`. Otherwise renders a `<ul>`.
    * @default 'none'
    */
-  listStyle?: XDSListStyle;
+  listStyle?: XDSListMarkerStyle;
 
   /**
    * StyleX styles created via `stylex.create()`. Merged with the component's
@@ -101,27 +101,13 @@ const styles = stylex.create({
   list: {
     margin: 0,
     paddingInlineStart: 0,
+    listStyleType: 'none',
   },
   listWithMarkers: {
     paddingInlineStart: spacingVars['--spacing-4'],
   },
   header: {
     marginBottom: spacingVars['--spacing-2'],
-  },
-});
-
-const listStyleTypes = stylex.create({
-  none: {
-    listStyleType: 'none',
-  },
-  disc: {
-    listStyleType: 'disc',
-  },
-  decimal: {
-    listStyleType: 'decimal',
-  },
-  circle: {
-    listStyleType: 'circle',
   },
 });
 
@@ -165,8 +151,8 @@ export function XDSList({
   const Tag = isOrdered ? 'ol' : 'ul';
 
   const contextValue = useMemo(
-    () => ({density, hasDividers, hasMarkers}),
-    [density, hasDividers, hasMarkers],
+    () => ({density, hasDividers, listStyle}),
+    [density, hasDividers, listStyle],
   );
 
   return (
@@ -185,7 +171,6 @@ export function XDSList({
           xdsClassName('list', {density, listStyle}),
           stylex.props(
             styles.list,
-            listStyleTypes[listStyle],
             hasMarkers && styles.listWithMarkers,
             xstyle,
           ),

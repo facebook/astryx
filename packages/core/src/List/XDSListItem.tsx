@@ -135,6 +135,7 @@ const styles = stylex.create({
   // When list has markers (disc/decimal/circle), <li> must be list-item
   // so the browser renders the ::marker. The marker renders outside (default)
   // and the inner wrapper handles flex layout for the content.
+  // list-style-type is set on the <li> directly for mobile Safari compat.
   itemWithMarker: {
     display: 'list-item',
     paddingInline: spacingVars['--spacing-2'],
@@ -268,6 +269,21 @@ const densityStyles = stylex.create({
   },
 });
 
+const markerStyles = stylex.create({
+  none: {
+    listStyleType: 'none',
+  },
+  disc: {
+    listStyleType: 'disc',
+  },
+  decimal: {
+    listStyleType: 'decimal',
+  },
+  circle: {
+    listStyleType: 'circle',
+  },
+});
+
 const descriptionSizeStyles = stylex.create({
   compact: {
     fontSize: typeScaleVars['--text-supporting-size'],
@@ -320,7 +336,8 @@ export function XDSListItem({
   const ctx = useContext(XDSListContext);
   const density = ctx?.density ?? 'balanced';
   const hasDividers = ctx?.hasDividers ?? false;
-  const hasMarkers = ctx?.hasMarkers ?? false;
+  const listStyle = ctx?.listStyle ?? 'none';
+  const hasMarkers = listStyle !== 'none';
   const isInteractive = onClick != null || href != null;
 
   const isStringDescription = typeof description === 'string';
@@ -392,6 +409,7 @@ export function XDSListItem({
         xdsClassName('list-item'),
         stylex.props(
           hasMarkers ? styles.itemWithMarker : styles.item,
+          hasMarkers && markerStyles[listStyle],
           densityStyles[density],
           hasDividers ? styles.noRadius : styles.withRadius,
           hasDividers && styles.withDivider,
