@@ -10,6 +10,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {discoverComponents, findComponentReadme, resolveImportPath} from './component-discovery.mjs';
+import {getRunPrefix} from '../utils/package-manager.mjs';
 
 export function cleanReadme(content, componentName) {
   const displayName = componentName.startsWith('XDS')
@@ -386,7 +387,7 @@ export function extractBriefAll(coreDir) {
     `> **Style overrides:** Most components accept an \`xstyle\` prop.`,
     `> Use inline objects for simple overrides: \`xstyle={{ maxWidth: 300 }}\``,
     `> Use \`stylex.create()\` for pseudo-classes/media queries or 3+ properties.`,
-    `> See \`npx xds docs principles\` for details.\n`,
+    `> See \`${getRunPrefix()} xds docs principles\` for details.\n`,
   );
 
   for (const [category, comps] of Object.entries(components)) {

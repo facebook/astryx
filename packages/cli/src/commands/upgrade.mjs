@@ -34,7 +34,7 @@ import {
 } from '../codemods/registry.mjs';
 import {runCodemods} from '../codemods/runner.mjs';
 import {installAgentDocs, discoverAgentDocs} from './agent-docs.mjs';
-import {detectPackageManager} from '../utils/package-manager.mjs';
+import {detectPackageManager, getRunPrefix} from '../utils/package-manager.mjs';
 
 /**
  * Detect the installed @xds/core version from the consumer's package.json.
@@ -257,7 +257,7 @@ export function registerUpgrade(program) {
           p.log.success(`Agent docs updated: ${written.join(', ')}`);
         } catch {
           p.log.warn(
-            'Could not update agent docs. Run `npx xds agent-docs` to update manually.',
+            `Could not update agent docs. Run \`${getRunPrefix()} xds agent-docs\` to update manually.`,
           );
         }
       }
