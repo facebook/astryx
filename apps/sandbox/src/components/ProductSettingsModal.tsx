@@ -294,7 +294,7 @@ export function ProductSettingsModal({
             </XDSText>
             <ViewModePicker
               value={s.defaultView}
-              onChange={(v: string | string[]) => upd('defaultView', v)}
+              onChange={v => upd('defaultView', v)}
             />
             <XDSDivider />
             <SettingRow
@@ -303,9 +303,7 @@ export function ProductSettingsModal({
               <XDSSelector
                 label="Items per page"
                 value={s.itemsPerPage}
-                onChange={(v: string | string[]) =>
-                  upd('itemsPerPage', v as string)
-                }
+                onChange={v => upd('itemsPerPage', v as string)}
                 options={['12', '24', '48', '96']}
               />
             </SettingRow>
@@ -315,9 +313,7 @@ export function ProductSettingsModal({
               <XDSSelector
                 label="Currency display"
                 value={s.currencyDisplay}
-                onChange={(v: string | string[]) =>
-                  upd('currencyDisplay', v as string)
-                }
+                onChange={v => upd('currencyDisplay', v as string)}
                 options={['Symbol ($)', 'Code (USD)', 'Name (US Dollar)']}
               />
             </SettingRow>
@@ -339,7 +335,7 @@ export function ProductSettingsModal({
               <XDSSwitch
                 label="Low stock alerts"
                 isSelected={s.lowStockAlerts}
-                onChange={(v: string | string[]) => upd('lowStockAlerts', v)}
+                onChange={v => upd('lowStockAlerts', v)}
               />
             </SettingRow>
             <SettingRow
@@ -348,9 +344,7 @@ export function ProductSettingsModal({
               <XDSSelector
                 label="Threshold"
                 value={s.lowStockThreshold}
-                onChange={(v: string | string[]) =>
-                  upd('lowStockThreshold', v as string)
-                }
+                onChange={v => upd('lowStockThreshold', v as string)}
                 options={['5', '10', '20', '50']}
                 isDisabled={!s.lowStockAlerts}
               />
@@ -361,7 +355,7 @@ export function ProductSettingsModal({
               <XDSSwitch
                 label="Track by variant"
                 isSelected={s.trackByVariant}
-                onChange={(v: string | string[]) => upd('trackByVariant', v)}
+                onChange={v => upd('trackByVariant', v)}
               />
             </SettingRow>
           </>
@@ -382,9 +376,7 @@ export function ProductSettingsModal({
               <XDSSelector
                 label="Sort order"
                 value={s.defaultSort}
-                onChange={(v: string | string[]) =>
-                  upd('defaultSort', v as string)
-                }
+                onChange={v => upd('defaultSort', v as string)}
                 options={[
                   'Newest first',
                   'Oldest first',
@@ -400,7 +392,7 @@ export function ProductSettingsModal({
               <XDSSwitch
                 label="Show out-of-stock"
                 isSelected={s.showOutOfStock}
-                onChange={(v: string | string[]) => upd('showOutOfStock', v)}
+                onChange={v => upd('showOutOfStock', v)}
               />
             </SettingRow>
             <SettingRow
@@ -409,9 +401,7 @@ export function ProductSettingsModal({
               <XDSSelector
                 label="Data density"
                 value={s.dataDensity}
-                onChange={(v: string | string[]) =>
-                  upd('dataDensity', v as string)
-                }
+                onChange={v => upd('dataDensity', v as string)}
                 options={['Comfortable', 'Compact', 'Condensed']}
               />
             </SettingRow>
@@ -433,7 +423,7 @@ export function ProductSettingsModal({
               <XDSSwitch
                 label="Compare-at price"
                 isSelected={s.showCompareAt}
-                onChange={(v: string | string[]) => upd('showCompareAt', v)}
+                onChange={v => upd('showCompareAt', v)}
               />
             </SettingRow>
             <SettingRow
@@ -442,9 +432,7 @@ export function ProductSettingsModal({
               <XDSSelector
                 label="Tax display"
                 value={s.taxDisplay}
-                onChange={(v: string | string[]) =>
-                  upd('taxDisplay', v as string)
-                }
+                onChange={v => upd('taxDisplay', v as string)}
                 options={['Excluding tax', 'Including tax', 'Hidden']}
               />
             </SettingRow>
@@ -454,9 +442,7 @@ export function ProductSettingsModal({
               <XDSSelector
                 label="Price rounding"
                 value={s.priceRounding}
-                onChange={(v: string | string[]) =>
-                  upd('priceRounding', v as string)
-                }
+                onChange={v => upd('priceRounding', v as string)}
                 options={['None', 'Nearest $0.99', 'Nearest $1', 'Nearest $5']}
               />
             </SettingRow>
@@ -478,9 +464,7 @@ export function ProductSettingsModal({
               <XDSSelector
                 label="Aspect ratio"
                 value={s.imageRatio}
-                onChange={(v: string | string[]) =>
-                  upd('imageRatio', v as string)
-                }
+                onChange={v => upd('imageRatio', v as string)}
                 options={[
                   'Square (1:1)',
                   'Portrait (3:4)',
@@ -495,7 +479,7 @@ export function ProductSettingsModal({
               <XDSSwitch
                 label="Zoom on hover"
                 isSelected={s.imageZoom}
-                onChange={(v: string | string[]) => upd('imageZoom', v)}
+                onChange={v => upd('imageZoom', v)}
               />
             </SettingRow>
           </>
@@ -516,7 +500,7 @@ export function ProductSettingsModal({
               <XDSSwitch
                 label="New orders"
                 isSelected={s.notifyOrders}
-                onChange={(v: string | string[]) => upd('notifyOrders', v)}
+                onChange={v => upd('notifyOrders', v)}
               />
             </SettingRow>
             <SettingRow
@@ -525,7 +509,7 @@ export function ProductSettingsModal({
               <XDSSwitch
                 label="New reviews"
                 isSelected={s.notifyReviews}
-                onChange={(v: string | string[]) => upd('notifyReviews', v)}
+                onChange={v => upd('notifyReviews', v)}
               />
             </SettingRow>
             <SettingRow
@@ -534,7 +518,7 @@ export function ProductSettingsModal({
               <XDSSwitch
                 label="Price changes"
                 isSelected={s.notifyPriceChange}
-                onChange={(v: string | string[]) => upd('notifyPriceChange', v)}
+                onChange={v => upd('notifyPriceChange', v)}
               />
             </SettingRow>
           </>
@@ -555,7 +539,7 @@ export function ProductSettingsModal({
               <XDSSwitch
                 label="Google Shopping"
                 isSelected={s.googleSync}
-                onChange={(v: string | string[]) => upd('googleSync', v)}
+                onChange={v => upd('googleSync', v)}
               />
             </SettingRow>
             <SettingRow
@@ -564,7 +548,7 @@ export function ProductSettingsModal({
               <XDSSwitch
                 label="Meta Catalog"
                 isSelected={s.metaSync}
-                onChange={(v: string | string[]) => upd('metaSync', v)}
+                onChange={v => upd('metaSync', v)}
               />
             </SettingRow>
             <SettingRow
@@ -573,9 +557,7 @@ export function ProductSettingsModal({
               <XDSSelector
                 label="Sync frequency"
                 value={s.syncFrequency}
-                onChange={(v: string | string[]) =>
-                  upd('syncFrequency', v as string)
-                }
+                onChange={v => upd('syncFrequency', v as string)}
                 options={['Real-time', 'Every 15 min', 'Hourly', 'Daily']}
               />
             </SettingRow>
@@ -597,7 +579,7 @@ export function ProductSettingsModal({
               <XDSSwitch
                 label="AI descriptions"
                 isSelected={s.aiDescriptions}
-                onChange={(v: string | string[]) => upd('aiDescriptions', v)}
+                onChange={v => upd('aiDescriptions', v)}
               />
             </SettingRow>
             <SettingRow
@@ -606,7 +588,7 @@ export function ProductSettingsModal({
               <XDSSwitch
                 label="Bulk variant editor"
                 isSelected={s.bulkVariantEditor}
-                onChange={(v: string | string[]) => upd('bulkVariantEditor', v)}
+                onChange={v => upd('bulkVariantEditor', v)}
               />
             </SettingRow>
             <SettingRow
@@ -615,7 +597,7 @@ export function ProductSettingsModal({
               <XDSSwitch
                 label="Advanced analytics"
                 isSelected={s.advancedAnalytics}
-                onChange={(v: string | string[]) => upd('advancedAnalytics', v)}
+                onChange={v => upd('advancedAnalytics', v)}
               />
             </SettingRow>
           </>
