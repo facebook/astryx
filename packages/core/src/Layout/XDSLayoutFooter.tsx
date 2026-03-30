@@ -41,10 +41,6 @@ const styles = stylex.create({
     borderBlockStartStyle: 'solid',
     borderBlockStartColor: colorVars['--color-border'],
   },
-  // When no divider, collapse spacing to avoid double-padding with content
-  collapseTop: {
-    marginBlockStart: `calc(-1 * var(--layout-padding-inner-y, ${spacingVars['--spacing-4']}))`,
-  },
 });
 
 // Dynamic styles for sizing props
@@ -130,15 +126,12 @@ export function XDSLayoutFooter({
     hasDivider ?? dividerCtx?.defaultHasDividers ?? false;
   const isZeroPadding = padding === 0;
 
-  // When no divider, collapse spacing for seamless visual flow
-  const shouldCollapseSpacing =
-    !resolvedHasDivider && !isZeroPadding && padding == null;
-
   return (
     <div
       ref={ref as React.Ref<HTMLDivElement>}
       role={role}
       aria-label={label}
+      data-divider={resolvedHasDivider || undefined}
       {...mergeProps(
         xdsClassName('layout-footer'),
         stylex.props(
@@ -148,7 +141,6 @@ export function XDSLayoutFooter({
           padding != null && paddingStyles[padding],
           padding != null && containerPaddingInlineVarStyles[padding],
           resolvedHasDivider && styles.divider,
-          shouldCollapseSpacing && styles.collapseTop,
           xstyle,
         ),
         className,
