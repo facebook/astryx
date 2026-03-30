@@ -136,6 +136,7 @@ const styles = stylex.create({
   // so the browser renders the ::marker. Flex layout moves to inner wrapper.
   itemWithMarker: {
     display: 'list-item',
+    listStylePosition: 'inside',
     paddingInline: spacingVars['--spacing-2'],
     position: 'relative',
     boxSizing: 'border-box',

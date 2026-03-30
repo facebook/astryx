@@ -185,10 +185,10 @@ const dotSizeStyles = stylex.create({
 
 const labelWrapperSizeStyles = stylex.create({
   sm: {
-    marginTop: 1,
+    marginTop: 0,
   },
   md: {
-    marginTop: 3,
+    marginTop: 2,
   },
 });
 
@@ -264,9 +264,6 @@ export function XDSRadioListItem({
         xdsClassName('radio-list-item'),
         stylex.props(styles.container, !isDisabled && stylex.defaultMarker()),
       )}>
-      {startContent && (
-        <div {...stylex.props(styles.startContent)}>{startContent}</div>
-      )}
       <div
         {...stylex.props(
           styles.radioWrapper,
@@ -315,6 +312,9 @@ export function XDSRadioListItem({
           )}
         </div>
       </div>
+      {startContent && (
+        <div {...stylex.props(styles.startContent)}>{startContent}</div>
+      )}
       <div {...stylex.props(styles.labelWrapper, labelWrapperSizeStyles[size])}>
         <label
           htmlFor={id}

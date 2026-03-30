@@ -36,7 +36,7 @@ import type {XDSTreeListDensity} from './XDSTreeListTypes';
 const INDENT = 20;
 const CHEVRON_SIZE = 16;
 const CHEVRON_MARGIN = 8;
-const BRANCH_MARGIN_LEFT = 9;
+const BRANCH_MARGIN_LEFT = 10;
 
 // =============================================================================
 // Styles
@@ -309,9 +309,7 @@ export function XDSTreeListItem({
 
   const computedMarginLeft = hasChildren
     ? nestedLevel * INDENT
-    : nestedLevel * INDENT +
-      CHEVRON_SIZE +
-      (startContent != null ? 0 : CHEVRON_MARGIN);
+    : nestedLevel * INDENT + CHEVRON_SIZE + CHEVRON_MARGIN;
 
   const labelAndDescription = (
     <>

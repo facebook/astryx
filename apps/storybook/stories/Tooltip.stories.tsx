@@ -78,20 +78,21 @@ export const CustomDelay: Story = {
 };
 
 export const Disabled: Story = {
-  render: () => (
-    <div style={{padding: 100}}>
-      <XDSHStack gap={4}>
-        <XDSTooltip content="This action is unavailable" placement="above">
-          <XDSButton label="Disabled button" isDisabled>
-            Disabled button
-          </XDSButton>
-        </XDSTooltip>
-        <XDSTooltip content="Click to submit" placement="above">
-          <XDSButton label="Enabled button">Enabled button</XDSButton>
-        </XDSTooltip>
-      </XDSHStack>
-    </div>
-  ),
+  name: 'Disabled',
+  args: {
+    placement: 'above',
+    isEnabled: false,
+    content: 'You should not see this',
+    children: <XDSButton label="Hover me">Hover me</XDSButton>,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Demonstrates disabling the tooltip via the `isEnabled` prop. When `isEnabled` is `false`, the tooltip will not appear on hover or focus, even though the trigger element remains fully interactive.',
+      },
+    },
+  },
 };
 
 export const AllPlacements: Story = {

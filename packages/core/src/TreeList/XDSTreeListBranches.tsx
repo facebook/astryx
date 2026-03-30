@@ -38,7 +38,7 @@ const styles = stylex.create({
   },
   verticalToHalfWithTerminus: {
     height: '50%',
-    borderBottomLeftRadius: LINE_WIDTH * 2,
+    borderBottomRightRadius: LINE_WIDTH * 2,
   },
   connectorContainer: {
     position: 'absolute',
