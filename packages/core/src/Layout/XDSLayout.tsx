@@ -19,6 +19,7 @@ import {type ReactNode, useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSLayoutAreaContext, type LayoutArea} from './XDSLayoutAreaContext';
 import {XDSLayoutSlotsContext, type LayoutSlots} from './XDSLayoutSlotsContext';
+import {XDSLayoutDividerContext} from './XDSLayoutDividerContext';
 import {stack} from '../Stack/stack.stylex';
 import {stackItem} from '../Stack/stackItem.stylex';
 import {xdsClassName, mergeProps} from '../utils';
@@ -110,6 +111,13 @@ export interface XDSLayoutProps extends Omit<XDSBaseProps, 'content'> {
    */
   start?: ReactNode;
   /**
+   * Default divider visibility for XDSLayoutHeader and XDSLayoutFooter children.
+   * When set, headers/footers that don't explicitly pass `hasDivider` will use this value.
+   * When not set, nested layouts inherit from their parent context.
+   */
+  defaultHasDividers?: boolean;
+
+  /**
    * CSS class name(s) appended to the root element.
    */
   className?: string;
@@ -187,6 +195,7 @@ function AreaProvider({
  */
 export function XDSLayout({
   content,
+  defaultHasDividers,
   end,
   footer,
   header,
@@ -200,6 +209,11 @@ export function XDSLayout({
 }: XDSLayoutProps) {
   const isFill = height === 'fill';
 
+  const dividerCtxValue = useMemo(
+    () => (defaultHasDividers != null ? {defaultHasDividers} : null),
+    [defaultHasDividers],
+  );
+
   // Memoize slots info to avoid unnecessary re-renders
   const slotsValue = useMemo<LayoutSlots>(
     () => ({
@@ -211,7 +225,7 @@ export function XDSLayout({
     [header != null, footer != null, start != null, end != null],
   );
 
-  return (
+  const tree = (
     <XDSLayoutSlotsContext.Provider value={slotsValue}>
       <div
         ref={ref}
@@ -251,6 +265,16 @@ export function XDSLayout({
       </div>
     </XDSLayoutSlotsContext.Provider>
   );
+
+  if (dividerCtxValue != null) {
+    return (
+      <XDSLayoutDividerContext.Provider value={dividerCtxValue}>
+        {tree}
+      </XDSLayoutDividerContext.Provider>
+    );
+  }
+
+  return tree;
 }
 
 XDSLayout.displayName = 'XDSLayout';

@@ -11,6 +11,7 @@ import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {XDSDialogHeader} from './XDSDialogHeader';
+import {XDSLayoutDividerContext} from '../Layout/XDSLayoutDividerContext';
 
 describe('XDSDialogHeader', () => {
   it('renders the title', () => {
@@ -69,11 +70,57 @@ describe('XDSDialogHeader', () => {
     expect(handleHide).toHaveBeenCalledTimes(1);
   });
 
-  it('renders with divider by default', () => {
-    const {container} = render(<XDSDialogHeader title="Title" />);
-    // Check that the header div has divider styles (border-bottom)
-    const header = container.firstChild as HTMLElement;
-    expect(header).toBeInTheDocument();
+  it('renders without divider by default (no context)', () => {
+    // Without context, hasDivider defaults to false — same classes as explicit hasDivider={false}
+    const {container: noCtx} = render(<XDSDialogHeader title="No ctx" />);
+    const {container: explicitFalse} = render(
+      <XDSDialogHeader title="Explicit false" hasDivider={false} />,
+    );
+    const noCtxHeader = noCtx.firstChild as HTMLElement;
+    const explicitFalseHeader = explicitFalse.firstChild as HTMLElement;
+    expect(noCtxHeader.className).toBe(explicitFalseHeader.className);
+  });
+
+  it('renders with divider when context defaultHasDividers is true', () => {
+    // With context true and no explicit prop, should match explicit hasDivider={true}
+    const {container: ctxTrue} = render(
+      <XDSLayoutDividerContext.Provider value={{defaultHasDividers: true}}>
+        <XDSDialogHeader title="Ctx true" />
+      </XDSLayoutDividerContext.Provider>,
+    );
+    const {container: explicitTrue} = render(
+      <XDSDialogHeader title="Explicit true" hasDivider={true} />,
+    );
+    const ctxHeader = ctxTrue.firstChild as HTMLElement;
+    const explicitHeader = explicitTrue.firstChild as HTMLElement;
+    expect(ctxHeader.className).toBe(explicitHeader.className);
+  });
+
+  it('explicit hasDivider={false} overrides context defaultHasDividers=true', () => {
+    const {container: overridden} = render(
+      <XDSLayoutDividerContext.Provider value={{defaultHasDividers: true}}>
+        <XDSDialogHeader title="Overridden" hasDivider={false} />
+      </XDSLayoutDividerContext.Provider>,
+    );
+    const {container: noDivider} = render(
+      <XDSDialogHeader title="No divider" hasDivider={false} />,
+    );
+    const overriddenHeader = overridden.firstChild as HTMLElement;
+    const noDividerHeader = noDivider.firstChild as HTMLElement;
+    expect(overriddenHeader.className).toBe(noDividerHeader.className);
+  });
+
+  it('explicit hasDivider={true} shows divider without context', () => {
+    // Explicit true should differ from default (no context = false)
+    const {container: withDiv} = render(
+      <XDSDialogHeader title="With div" hasDivider={true} />,
+    );
+    const {container: withoutDiv} = render(
+      <XDSDialogHeader title="Without div" hasDivider={false} />,
+    );
+    const withDivHeader = withDiv.firstChild as HTMLElement;
+    const withoutDivHeader = withoutDiv.firstChild as HTMLElement;
+    expect(withDivHeader.className).not.toBe(withoutDivHeader.className);
   });
 
   it('renders additional endContent', () => {

@@ -75,3 +75,6 @@ export type {XDSLayoutPanelProps} from './XDSLayoutPanel';
 
 export {XDSLayoutAreaContext} from './XDSLayoutAreaContext';
 export type {LayoutArea} from './XDSLayoutAreaContext';
+
+export {XDSLayoutDividerContext} from './XDSLayoutDividerContext';
+export type {LayoutDividerContextValue} from './XDSLayoutDividerContext';

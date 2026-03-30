@@ -12,8 +12,9 @@
 
 import type {AriaRole, ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
-import {} from 'react';
+import {useContext} from 'react';
 import * as stylex from '@stylexjs/stylex';
+import {XDSLayoutDividerContext} from './XDSLayoutDividerContext';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 import type {SpacingStep} from '../utils/types';
@@ -63,6 +64,7 @@ export interface XDSLayoutFooterProps extends XDSBaseProps<HTMLDivElement> {
   /**
    * Adds a themed border at the top edge.
    * When false, spacing collapse is applied automatically for seamless visual flow.
+   * When not set, falls back to the parent XDSLayout's `defaultHasDividers`, then `false`.
    * @default false
    */
   hasDivider?: boolean;
@@ -112,7 +114,7 @@ export interface XDSLayoutFooterProps extends XDSBaseProps<HTMLDivElement> {
  */
 export function XDSLayoutFooter({
   children,
-  hasDivider = false,
+  hasDivider,
   height,
   label,
   padding,
@@ -123,11 +125,14 @@ export function XDSLayoutFooter({
   ref,
   ...props
 }: XDSLayoutFooterProps) {
+  const dividerCtx = useContext(XDSLayoutDividerContext);
+  const resolvedHasDivider =
+    hasDivider ?? dividerCtx?.defaultHasDividers ?? false;
   const isZeroPadding = padding === 0;
 
   // When no divider, collapse spacing for seamless visual flow
   const shouldCollapseSpacing =
-    !hasDivider && !isZeroPadding && padding == null;
+    !resolvedHasDivider && !isZeroPadding && padding == null;
 
   return (
     <div
@@ -142,7 +147,7 @@ export function XDSLayoutFooter({
           isZeroPadding && styles.fullBleed,
           padding != null && paddingStyles[padding],
           padding != null && containerPaddingInlineVarStyles[padding],
-          hasDivider && styles.divider,
+          resolvedHasDivider && styles.divider,
           shouldCollapseSpacing && styles.collapseTop,
           xstyle,
         ),
