@@ -708,6 +708,7 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
       descriptionID={description ? descriptionID : undefined}
       isOptional={isOptional}
       isRequired={isRequired}
+      isDisabled={isDisabled}
       status={
         status
           ? {
