@@ -36,6 +36,7 @@ import {XDSToken} from '../Token';
 import {XDSIcon} from '../Icon';
 import type {XDSIconType} from '../Icon';
 import {XDSOverflowList} from '../OverflowList';
+import {useXDSLayer} from '../Layer/useXDSLayer';
 import {
   colorVars,
   spacingVars,
@@ -261,22 +262,21 @@ const styles = stylex.create({
   truncatedMd: {
     height: sizeVars['--size-element-md'],
   },
-  layerOuter: {
-    position: 'relative',
-    zIndex: 1,
+  layerPlaceholder: {
+    // Holds space in the document flow for the expanded layer content.
+    // Height matches the collapsed tokenizer so layout doesn't shift.
   },
-  layerOuterSm: {
+  layerPlaceholderSm: {
     height: sizeVars['--size-element-sm'],
   },
-  layerOuterMd: {
+  layerPlaceholderMd: {
     height: sizeVars['--size-element-md'],
   },
-  layerInner: {
-    position: 'absolute',
-    top: 0,
-    insetInlineStart: 0,
-    insetInlineEnd: 0,
-    zIndex: 1,
+  layerPopover: {
+    // Top-layer popover: match the anchor width exactly so the expanded
+    // tokenizer looks like an in-place expansion, overlapping the
+    // placeholder from its top edge.
+    width: 'anchor-size(width)',
   },
   overflowText: {
     flexShrink: 0,
@@ -380,23 +380,64 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
   const isTruncated =
     !isFocusedWithin && tokenOverflowBehavior !== 'none' && value.length > 0;
 
-  const handleFocusCapture = useCallback((e: React.FocusEvent) => {
-    setIsFocusedWithin(true);
-    // When focus enters from outside, redirect to the input so the user
-    // doesn't have to tab through every token remove button.
-    const comingFromOutside = !wrapperRef.current?.contains(
-      e.relatedTarget as Node,
-    );
-    if (comingFromOutside && e.target !== inputRef.current) {
-      inputRef.current?.focus();
-    }
-  }, []);
+  // Layer for unfocusedLayer mode — promotes expanded content to the top layer
+  // so it isn't clipped by ancestor overflow.
+  const isLayerMode = tokenOverflowBehavior === 'unfocusedLayer';
+  const layer = useXDSLayer({mode: 'context'});
+  const layerContentRef = useRef<HTMLDivElement>(null);
 
-  const handleBlurCapture = useCallback((e: React.FocusEvent) => {
-    if (!wrapperRef.current?.contains(e.relatedTarget as Node)) {
-      setIsFocusedWithin(false);
-    }
-  }, []);
+  // Anchor the layer to the placeholder element
+  const placeholderRef = useCallback(
+    (el: HTMLElement | null) => {
+      if (isLayerMode) {
+        layer.ref(el);
+      }
+    },
+    [isLayerMode, layer],
+  );
+
+  // For the layer variant, focus can be in either the placeholder or the
+  // popover content. We track both to decide when focus has truly left.
+  const isFocusInTokenizer = useCallback(
+    (target: Node | null): boolean => {
+      if (!target) return false;
+      if (wrapperRef.current?.contains(target)) return true;
+      if (layerContentRef.current?.contains(target)) return true;
+      // Also check the popover element itself (the layer wrapper)
+      const popoverEl = document.getElementById(layer.id);
+      if (popoverEl?.contains(target)) return true;
+      return false;
+    },
+    [layer.id],
+  );
+
+  const handleFocusCapture = useCallback(
+    (e: React.FocusEvent) => {
+      setIsFocusedWithin(true);
+      if (isLayerMode) {
+        layer.show();
+      }
+      // When focus enters from outside, redirect to the input so the user
+      // doesn't have to tab through every token remove button.
+      const comingFromOutside = !isFocusInTokenizer(e.relatedTarget as Node);
+      if (comingFromOutside && e.target !== inputRef.current) {
+        inputRef.current?.focus();
+      }
+    },
+    [isLayerMode, layer, isFocusInTokenizer],
+  );
+
+  const handleBlurCapture = useCallback(
+    (e: React.FocusEvent) => {
+      if (!isFocusInTokenizer(e.relatedTarget as Node)) {
+        setIsFocusedWithin(false);
+        if (isLayerMode) {
+          layer.hide();
+        }
+      }
+    },
+    [isLayerMode, layer, isFocusInTokenizer],
+  );
 
   const isAtMax = maxEntries != null && value.length >= maxEntries;
 
@@ -630,13 +671,49 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
           </div>
         );
 
-        if (tokenOverflowBehavior === 'unfocusedLayer') {
-          const layerOuterSizeStyle =
-            size === 'sm' ? styles.layerOuterSm : styles.layerOuterMd;
+        if (isLayerMode) {
+          const placeholderSizeStyle =
+            size === 'sm'
+              ? styles.layerPlaceholderSm
+              : styles.layerPlaceholderMd;
           return (
-            <div {...stylex.props(styles.layerOuter, layerOuterSizeStyle)}>
-              <div {...stylex.props(styles.layerInner)}>{wrapperContent}</div>
-            </div>
+            <>
+              {/* Placeholder preserves layout height and acts as the
+                  CSS anchor for the top-layer popover. */}
+              <div
+                ref={placeholderRef}
+                {...stylex.props(
+                  styles.layerPlaceholder,
+                  placeholderSizeStyle,
+                )}>
+                {/* When collapsed, render the truncated view in-flow */}
+                {isTruncated && wrapperContent}
+              </div>
+              {/* Expanded content in the top layer — immune to ancestor
+                  overflow clipping. Matches the anchor width for seamless
+                  in-place appearance. */}
+              {layer.render(
+                <div
+                  ref={layerContentRef}
+                  onFocusCapture={handleFocusCapture}
+                  onBlurCapture={handleBlurCapture}>
+                  {!isTruncated && wrapperContent}
+                </div>,
+                {
+                  placement: 'below',
+                  alignment: 'start',
+                  xstyle: styles.layerPopover,
+                  // Override position-area to overlap the anchor from its
+                  // top edge rather than sitting below it.
+                  style: {
+                    positionArea: undefined,
+                    positionTryFallbacks: undefined,
+                    top: 'anchor(top)',
+                    left: 'anchor(start)',
+                  } as React.CSSProperties,
+                },
+              )}
+            </>
           );
         }
 

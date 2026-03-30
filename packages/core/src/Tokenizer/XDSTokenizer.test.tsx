@@ -8,7 +8,7 @@
  */
 
 import {describe, it, expect, vi, beforeAll, afterAll} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render, screen, fireEvent, act} from '@testing-library/react';
 import {XDSTokenizer} from './XDSTokenizer';
 import type {XDSSearchSource, XDSSearchableItem} from '../Typeahead/types';
 
@@ -378,7 +378,7 @@ describe('XDSTokenizer', () => {
       expect(screen.getByText('Charlie')).toBeInTheDocument();
     });
 
-    it('unfocusedLayer: renders layer wrapper divs', () => {
+    it('unfocusedLayer: renders placeholder and top-layer popover', () => {
       const {container} = render(
         <XDSTokenizer
           label="Members"
@@ -389,15 +389,66 @@ describe('XDSTokenizer', () => {
           data-testid="tokenizer"
         />,
       );
+      // The wrapper should be rendered inside the placeholder (truncated view in-flow)
       const wrapper = screen.getByTestId('tokenizer');
-      // The wrapper should be inside a layer structure (inner > outer)
-      const layerInner = wrapper.parentElement;
-      const layerOuter = layerInner?.parentElement;
-      // Layer outer should have position: relative
-      expect(layerOuter).toBeInTheDocument();
-      expect(layerInner).toBeInTheDocument();
-      // Verify the layer structure exists (inner is absolute positioned)
+      expect(wrapper).toBeInTheDocument();
+      // A popover element should exist for the top-layer expanded content
+      const popover = container.querySelector('[popover]');
+      expect(popover).toBeInTheDocument();
+      // Only one group role (the wrapper)
       expect(container.querySelectorAll('[role="group"]').length).toBe(1);
+    });
+
+    it('unfocusedLayer: shows expanded content in popover on focus', () => {
+      render(
+        <XDSTokenizer
+          label="Members"
+          searchSource={userSource}
+          value={[users[0], users[1], users[2]]}
+          onChange={() => {}}
+          tokenOverflowBehavior="unfocusedLayer"
+          data-testid="tokenizer"
+        />,
+      );
+      const wrapper = screen.getByTestId('tokenizer');
+      // Focus the wrapper to expand
+      fireEvent.focusIn(wrapper);
+      // showPopover should have been called
+      expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
+      // All tokens should be visible
+      expect(screen.getByText('Alice')).toBeInTheDocument();
+      expect(screen.getByText('Bob')).toBeInTheDocument();
+      expect(screen.getByText('Charlie')).toBeInTheDocument();
+    });
+
+    it('unfocusedLayer: collapses on blur', () => {
+      const {container} = render(
+        <XDSTokenizer
+          label="Members"
+          searchSource={userSource}
+          value={[users[0], users[1], users[2]]}
+          onChange={() => {}}
+          tokenOverflowBehavior="unfocusedLayer"
+          data-testid="tokenizer"
+        />,
+      );
+      const wrapper = screen.getByTestId('tokenizer');
+      // Focus to expand — fires on wrapper in the placeholder
+      act(() => {
+        fireEvent.focusIn(wrapper);
+      });
+      // After focus, content moves to the popover. We need to blur
+      // from the popover content, not the original wrapper.
+      // Get the popover element and blur from it.
+      const popover = container.querySelector('[popover]');
+      expect(popover).toBeInTheDocument();
+      // Find the wrapper again (it may have moved into the popover)
+      const expandedWrapper = screen.getByTestId('tokenizer');
+      act(() => {
+        fireEvent.focusOut(expandedWrapper, {relatedTarget: document.body});
+      });
+      // hidePopover should have been called
+      expect(HTMLElement.prototype.hidePopover).toHaveBeenCalled();
     });
 
     it('unfocusedInline: does not truncate when no tokens', () => {
