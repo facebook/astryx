@@ -294,7 +294,7 @@ export function ProductSettingsModal({
             </XDSText>
             <ViewModePicker
               value={s.defaultView}
-              onChange={v => upd('defaultView', v)}
+              onChange={checked => upd('defaultView', checked)}
             />
             <XDSDivider />
             <SettingRow
@@ -334,8 +334,8 @@ export function ProductSettingsModal({
               description="Warn when stock drops below threshold.">
               <XDSSwitch
                 label="Low stock alerts"
-                isSelected={s.lowStockAlerts}
-                onChange={v => upd('lowStockAlerts', v)}
+                checked={s.lowStockAlerts}
+                onChange={checked => upd('lowStockAlerts', checked)}
               />
             </SettingRow>
             <SettingRow
@@ -354,8 +354,8 @@ export function ProductSettingsModal({
               description="Separate stock counts per SKU.">
               <XDSSwitch
                 label="Track by variant"
-                isSelected={s.trackByVariant}
-                onChange={v => upd('trackByVariant', v)}
+                checked={s.trackByVariant}
+                onChange={checked => upd('trackByVariant', checked)}
               />
             </SettingRow>
           </>
@@ -391,8 +391,8 @@ export function ProductSettingsModal({
               description="Display zero-inventory products.">
               <XDSSwitch
                 label="Show out-of-stock"
-                isSelected={s.showOutOfStock}
-                onChange={v => upd('showOutOfStock', v)}
+                checked={s.showOutOfStock}
+                onChange={checked => upd('showOutOfStock', checked)}
               />
             </SettingRow>
             <SettingRow
@@ -422,8 +422,8 @@ export function ProductSettingsModal({
               description="Show original when sale price is set.">
               <XDSSwitch
                 label="Compare-at price"
-                isSelected={s.showCompareAt}
-                onChange={v => upd('showCompareAt', v)}
+                checked={s.showCompareAt}
+                onChange={checked => upd('showCompareAt', checked)}
               />
             </SettingRow>
             <SettingRow
@@ -478,8 +478,8 @@ export function ProductSettingsModal({
               description="Enlarge product image when hovering.">
               <XDSSwitch
                 label="Zoom on hover"
-                isSelected={s.imageZoom}
-                onChange={v => upd('imageZoom', v)}
+                checked={s.imageZoom}
+                onChange={checked => upd('imageZoom', checked)}
               />
             </SettingRow>
           </>
@@ -499,8 +499,8 @@ export function ProductSettingsModal({
               description="Alert when a new order is placed.">
               <XDSSwitch
                 label="New orders"
-                isSelected={s.notifyOrders}
-                onChange={v => upd('notifyOrders', v)}
+                checked={s.notifyOrders}
+                onChange={checked => upd('notifyOrders', checked)}
               />
             </SettingRow>
             <SettingRow
@@ -508,8 +508,8 @@ export function ProductSettingsModal({
               description="Alert when a product gets a review.">
               <XDSSwitch
                 label="New reviews"
-                isSelected={s.notifyReviews}
-                onChange={v => upd('notifyReviews', v)}
+                checked={s.notifyReviews}
+                onChange={checked => upd('notifyReviews', checked)}
               />
             </SettingRow>
             <SettingRow
@@ -517,8 +517,8 @@ export function ProductSettingsModal({
               description="Alert when a tracked price changes.">
               <XDSSwitch
                 label="Price changes"
-                isSelected={s.notifyPriceChange}
-                onChange={v => upd('notifyPriceChange', v)}
+                checked={s.notifyPriceChange}
+                onChange={checked => upd('notifyPriceChange', checked)}
               />
             </SettingRow>
           </>
@@ -538,8 +538,8 @@ export function ProductSettingsModal({
               description="Auto-push to Google Merchant Center.">
               <XDSSwitch
                 label="Google Shopping"
-                isSelected={s.googleSync}
-                onChange={v => upd('googleSync', v)}
+                checked={s.googleSync}
+                onChange={checked => upd('googleSync', checked)}
               />
             </SettingRow>
             <SettingRow
@@ -547,8 +547,8 @@ export function ProductSettingsModal({
               description="Auto-push to Meta Business catalog.">
               <XDSSwitch
                 label="Meta Catalog"
-                isSelected={s.metaSync}
-                onChange={v => upd('metaSync', v)}
+                checked={s.metaSync}
+                onChange={checked => upd('metaSync', checked)}
               />
             </SettingRow>
             <SettingRow
@@ -578,8 +578,8 @@ export function ProductSettingsModal({
               description="Beta: Generate descriptions with AI.">
               <XDSSwitch
                 label="AI descriptions"
-                isSelected={s.aiDescriptions}
-                onChange={v => upd('aiDescriptions', v)}
+                checked={s.aiDescriptions}
+                onChange={checked => upd('aiDescriptions', checked)}
               />
             </SettingRow>
             <SettingRow
@@ -587,8 +587,8 @@ export function ProductSettingsModal({
               description="Beta: Edit variants across products.">
               <XDSSwitch
                 label="Bulk variant editor"
-                isSelected={s.bulkVariantEditor}
-                onChange={v => upd('bulkVariantEditor', v)}
+                checked={s.bulkVariantEditor}
+                onChange={checked => upd('bulkVariantEditor', checked)}
               />
             </SettingRow>
             <SettingRow
@@ -596,8 +596,8 @@ export function ProductSettingsModal({
               description="Beta: Extended performance metrics.">
               <XDSSwitch
                 label="Advanced analytics"
-                isSelected={s.advancedAnalytics}
-                onChange={v => upd('advancedAnalytics', v)}
+                checked={s.advancedAnalytics}
+                onChange={checked => upd('advancedAnalytics', checked)}
               />
             </SettingRow>
           </>
