@@ -263,6 +263,8 @@ const densityStyles = stylex.create({
 // Uses CSS counters for numbers (same pattern as WWW XDS).
 // =============================================================================
 
+const MARKER_DOT_SIZE = 6;
+
 const markerStyles = stylex.create({
   container: {
     alignSelf: 'baseline',
@@ -271,17 +273,20 @@ const markerStyles = stylex.create({
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
-    width: spacingVars['--spacing-5'],
+    width: spacingVars['--spacing-3'],
+    // Vertically center the dot/circle with the first line of text:
+    // shift down by (lineHeight - dotSize) / 2
+    marginTop: `calc((1em * ${typeScaleVars['--text-body-leading']} - ${MARKER_DOT_SIZE}px) / 2)`,
   },
   dot: {
-    width: 6,
-    height: 6,
+    width: MARKER_DOT_SIZE,
+    height: MARKER_DOT_SIZE,
     borderRadius: '50%',
     backgroundColor: colorVars['--color-text-primary'],
   },
   circle: {
-    width: 6,
-    height: 6,
+    width: MARKER_DOT_SIZE,
+    height: MARKER_DOT_SIZE,
     borderRadius: '50%',
     borderWidth: 1,
     borderStyle: 'solid',
@@ -289,9 +294,12 @@ const markerStyles = stylex.create({
     backgroundColor: 'transparent',
   },
   number: {
+    alignSelf: 'baseline',
+    flexShrink: 0,
     color: colorVars['--color-text-primary'],
     fontSize: typeScaleVars['--text-body-size'],
     lineHeight: typeScaleVars['--text-body-leading'],
+    width: spacingVars['--spacing-3'],
     '::before': {
       content: 'counter(xds-list) "."',
     },
@@ -423,7 +431,7 @@ export function XDSListItem({
         <span {...stylex.props(markerStyles.circle)} />
       </span>
     ) : listStyle === 'decimal' ? (
-      <span {...stylex.props(markerStyles.container, markerStyles.number)} />
+      <span {...stylex.props(markerStyles.number)} />
     ) : null;
 
   return (
