@@ -30,10 +30,12 @@ import {
 import type {XDSTreeListDensity} from './XDSTreeListTypes';
 
 // =============================================================================
-// Layout constants — numeric values for JS-side margin/offset calculations.
-// These mirror the token values used in StyleX styles below.
-// INDENT  = 20 → --spacing-5,  CHEVRON_SIZE = 16 → --spacing-4,
-// CHEVRON_MARGIN = 8 → --spacing-2,  BRANCH_MARGIN_LEFT = 10 (no exact token)
+// Layout constants — numeric values for JS-side margin/offset calculations
+// and props passed to child branch components. These mirror the spacing tokens:
+// INDENT=20 (--spacing-5), CHEVRON_SIZE=16 (--spacing-4),
+// CHEVRON_MARGIN=8 (--spacing-2), BRANCH_MARGIN_LEFT=10 (no exact token).
+// The inline style `marginLeft` on the content wrapper uses these for
+// dynamic per-level indentation that can't be expressed as static StyleX.
 // =============================================================================
 
 const INDENT = 20;
@@ -168,8 +170,8 @@ const styles = stylex.create({
     padding: 0,
     color: colorVars['--color-icon-secondary'],
     borderRadius: radiusVars['--radius-inner'],
-    marginInlineStart: spacingVars['--spacing-0-5'],
-    marginInlineEnd: `calc(${spacingVars['--spacing-0-5']} * -1)`,
+    marginInlineStart: spacingVars['--spacing-1'],
+    marginInlineEnd: `calc(${spacingVars['--spacing-1']} * -1)`,
   },
   chevronButton: {
     all: 'unset',
@@ -182,8 +184,8 @@ const styles = stylex.create({
     cursor: 'pointer',
     color: colorVars['--color-icon-secondary'],
     borderRadius: radiusVars['--radius-inner'],
-    marginInlineStart: spacingVars['--spacing-0-5'],
-    marginInlineEnd: `calc(${spacingVars['--spacing-0-5']} * -1)`,
+    marginInlineStart: spacingVars['--spacing-1'],
+    marginInlineEnd: `calc(${spacingVars['--spacing-1']} * -1)`,
   },
   chevronSvg: {
     display: 'flex',
@@ -315,8 +317,8 @@ export function XDSTreeListItem({
   }, [onClick, hasChildren, onToggle, id, isDisabled]);
 
   const computedMarginLeft = hasChildren
-    ? nestedLevel * INDENT
-    : nestedLevel * INDENT + CHEVRON_SIZE + CHEVRON_MARGIN;
+    ? `calc(${nestedLevel} * ${spacingVars['--spacing-5']})`
+    : `calc(${nestedLevel} * ${spacingVars['--spacing-5']} + ${spacingVars['--spacing-4']} + ${spacingVars['--spacing-2']})`;
 
   const labelAndDescription = (
     <>
