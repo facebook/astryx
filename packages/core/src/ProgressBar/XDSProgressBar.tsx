@@ -54,7 +54,8 @@ export interface XDSProgressBarVariantMap {
 export type XDSProgressBarVariant = keyof XDSProgressBarVariantMap;
 
 /**
- * Progress bar size type — controls track height.
+ * Progress bar size type — single track height (8px).
+ * The `size` prop is accepted for backwards compatibility but has no effect.
  */
 export type XDSProgressBarSize = 'sm' | 'md' | 'lg';
 
@@ -98,10 +99,9 @@ export interface XDSProgressBarProps {
    */
   variant?: XDSProgressBarVariant;
   /**
-   * Size of the progress bar track.
-   * - sm: 4px
-   * - md: 8px
-   * - lg: 12px
+   * Size of the progress bar track. Single size (8px) — this prop is accepted
+   * for backwards compatibility but has no visual effect.
+   * Larger visualizations should use a dedicated dataviz component.
    * @default 'md'
    */
   size?: XDSProgressBarSize;
@@ -260,6 +260,10 @@ function defaultFormatValueLabel(value: number, max: number): string {
  * Styles use XDS theme tokens via StyleX.
  * Wrap your app in <Theme> to apply a theme.
  *
+ * ProgressBar is intentionally minimal — compose additional labels, status
+ * icons, and descriptions alongside the bar using layout components rather
+ * than adding props to ProgressBar itself.
+ *
  * @example
  * ```
  * <XDSProgressBar value={75} label="Upload progress" />
@@ -276,7 +280,7 @@ export function XDSProgressBar({
   hasValueLabel = false,
   formatValueLabel = defaultFormatValueLabel,
   variant = 'accent',
-  size = 'md',
+  size: _size,
   isIndeterminate = false,
   xstyle,
   className,
@@ -296,7 +300,7 @@ export function XDSProgressBar({
     <div
       ref={ref}
       {...mergeProps(
-        xdsClassName('progressbar', {variant, size}),
+        xdsClassName('progressbar', {variant, size: 'md'}),
         stylex.props(styles.container, xstyle),
         className,
         style,
@@ -331,7 +335,7 @@ export function XDSProgressBar({
         aria-valuemax={isIndeterminate ? undefined : max}
         aria-labelledby={labelId}
         aria-valuetext={isIndeterminate ? undefined : valueText}
-        {...stylex.props(styles.track, sizeStyles[size])}>
+        {...stylex.props(styles.track, sizeStyles.md)}>
         {isIndeterminate ? (
           <div
             {...mergeProps(

@@ -11,8 +11,9 @@ export const docs = {
     'aria-valuetext provides human-readable value description (determinate only)',
     'Indeterminate animation respects prefers-reduced-motion',
     'Supports four semantic color variants: accent, positive, warning, negative',
-    'Three track height sizes: sm=4px, md=8px, lg=12px',
+    'Single track height: 8px',
     'Supports custom value label formatter via formatValueLabel',
+    'Compose additional labels, status icons, and descriptions outside the component — ProgressBar is intentionally minimal',
   ],
   props: [
     {
@@ -59,8 +60,8 @@ export const docs = {
     },
     {
       name: 'size',
-      type: "'sm' | 'md' | 'lg'",
-      description: 'Track height: sm=4px, md=8px, lg=12px.',
+      type: "'md'",
+      description: 'Track height: 8px. Single size — larger visualizations should use a dedicated dataviz component.',
       default: "'md'",
     },
     {
@@ -100,12 +101,29 @@ export const docs = {
       code: `<XDSProgressBar isIndeterminate label="Loading..." />`,
     },
     {
-      label: 'Variant and size',
-      code: `<XDSProgressBar value={92} label="Disk" variant="negative" size="sm" />`,
+      label: 'Semantic variant',
+      code: `<XDSProgressBar value={92} label="Disk" variant="negative" />`,
     },
     {
       label: 'Hidden label (accessible but not visible)',
       code: `<XDSProgressBar value={50} label="Loading" isLabelHidden />`,
+    },
+    {
+      label: 'Composed with external description',
+      code: `<div>
+  <XDSProgressBar value={40} max={100} label="Download progress" hasValueLabel />
+  <XDSText color="secondary" size="sm">40 MB / 100 MB downloaded</XDSText>
+</div>`,
+    },
+    {
+      label: 'Composed with status icon',
+      code: `<XDSLayout direction="column" gap="1">
+  <XDSProgressBar value={100} label="Upload complete" variant="positive" hasValueLabel />
+  <XDSLayout direction="row" gap="1" align="center">
+    <XDSIcon icon={CheckCircleIcon} color="positive" size="sm" />
+    <XDSText color="secondary" size="sm">Upload complete</XDSText>
+  </XDSLayout>
+</XDSLayout>`,
     },
   ],
   theming: {
@@ -114,6 +132,10 @@ export const docs = {
       {className: 'xds-progressbar-fill', visualProps: ['variant']},
     ],
   },
+  notes: [
+    'ProgressBar is intentionally minimal — it handles the meter/track and an optional value label. For additional context like descriptions, status icons, or custom label placements, compose them alongside the bar using layout components.',
+    'Do not add props for label placement, progress descriptions, or embedded icons. These are composition concerns, not meter concerns.',
+  ],
   accessibility: [
     'Determinate: uses role="meter" with aria-valuenow, aria-valuemin, aria-valuemax',
     'Indeterminate: uses role="progressbar" without value attributes',
@@ -135,7 +157,7 @@ export const docsZh = {
     'aria-valuetext 提供人类可读的值描述（仅限确定模式）',
     '不确定动画遵循 prefers-reduced-motion 偏好设置',
     '支持四种语义颜色变体：accent、positive、warning、negative',
-    '三种轨道高度尺寸：sm=4px、md=8px、lg=12px',
+    '单一轨道高度：8px',
     '支持通过 formatValueLabel 自定义值标签格式化器',
   ],
   props: [
@@ -183,8 +205,8 @@ export const docsZh = {
     },
     {
       name: 'size',
-      type: "'sm' | 'md' | 'lg'",
-      description: '轨道高度：sm=4px、md=8px、lg=12px。',
+      type: "'md'",
+      description: '轨道高度：8px。单一尺寸——较大的可视化应使用专用的数据可视化组件。',
       default: "'md'",
     },
     {
@@ -258,7 +280,7 @@ export const docsDense = {
     'aria-valuetext provides human-readable value description (determinate only)',
     'Indeterminate animation respects prefers-reduced-motion',
     'Supports four semantic color variants: accent, positive, warning, negative',
-    'Three track height sizes: sm=4px, md=8px, lg=12px',
+    'Single track height: 8px',
     'Supports custom value label formatter via formatValueLabel',
   ],
   accessibility: [
@@ -276,7 +298,7 @@ export const docsDense = {
     hasValueLabel: 'Show formatted value text (ignored when indeterminate).',
     formatValueLabel: 'Custom value label formatter; defaults to percentage string.',
     variant: 'Semantic color variant.',
-    size: 'Track height: sm=4px, md=8px, lg=12px.',
+    size: 'Track height: 8px. Single size — larger visualizations should use a dedicated dataviz component.',
     isIndeterminate: 'Animated loading indicator for unknown progress.',
     xstyle: 'StyleX styles for layout customization. Must be stylex.create() value.',
   },

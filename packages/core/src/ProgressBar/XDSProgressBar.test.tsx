@@ -96,7 +96,7 @@ describe('XDSProgressBar', () => {
     }
   });
 
-  it('renders with all size options', () => {
+  it('accepts size prop for backwards compatibility', () => {
     const sizes = ['sm', 'md', 'lg'] as const;
     for (const size of sizes) {
       const {unmount} = render(
