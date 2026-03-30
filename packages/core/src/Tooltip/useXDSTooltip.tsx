@@ -41,7 +41,7 @@ const styles = stylex.create({
     // Inverted color palette: dark background, light text
     backgroundColor: colorVars['--color-text-primary'],
     color: colorVars['--color-background-surface'],
-    borderRadius: radiusVars['--radius-element'],
+    borderRadius: radiusVars['--radius-container'],
     // Typography
     fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-body-size'],

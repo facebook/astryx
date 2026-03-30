@@ -78,12 +78,20 @@ export const CustomDelay: Story = {
 };
 
 export const Disabled: Story = {
-  args: {
-    placement: 'above',
-    isEnabled: false,
-    content: 'You should not see this',
-    children: <XDSButton label="Tooltip disabled">Tooltip disabled</XDSButton>,
-  },
+  render: () => (
+    <div style={{padding: 100}}>
+      <XDSHStack gap={4}>
+        <XDSTooltip content="This action is unavailable" placement="above">
+          <XDSButton label="Disabled button" isDisabled>
+            Disabled button
+          </XDSButton>
+        </XDSTooltip>
+        <XDSTooltip content="Click to submit" placement="above">
+          <XDSButton label="Enabled button">Enabled button</XDSButton>
+        </XDSTooltip>
+      </XDSHStack>
+    </div>
+  ),
 };
 
 export const AllPlacements: Story = {

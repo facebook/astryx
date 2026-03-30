@@ -126,7 +126,7 @@ const styles = stylex.create({
   item: {
     display: 'flex',
     alignItems: 'center',
-    gap: spacingVars['--spacing-3'],
+    gap: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-2'],
     position: 'relative',
     boxSizing: 'border-box',
@@ -145,7 +145,7 @@ const styles = stylex.create({
   innerWrapper: {
     display: 'flex',
     alignItems: 'center',
-    gap: spacingVars['--spacing-3'],
+    gap: spacingVars['--spacing-2'],
   },
   withRadius: {
     borderRadius: radiusVars['--radius-inner'],

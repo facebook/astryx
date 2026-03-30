@@ -122,7 +122,7 @@ function FilterContent({onApply}: {onApply?: () => void}) {
         onChange={() => toggle('shared')}
       />
       <XDSDivider />
-      <XDSHStack gap={2}>
+      <XDSHStack gap={2} hAlign="end">
         <XDSButton label="Apply" variant="primary" onClick={onApply}>
           Apply
         </XDSButton>
@@ -181,7 +181,7 @@ function ConfirmContent({
         This will permanently delete the project and all its data. This action
         cannot be undone.
       </XDSText>
-      <XDSHStack gap={2}>
+      <XDSHStack gap={2} hAlign="end">
         <XDSButton label="Delete" variant="destructive" onClick={onConfirm}>
           Delete
         </XDSButton>

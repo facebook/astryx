@@ -10,7 +10,6 @@
  * - /packages/core/src/TreeList/XDSTreeListItem.tsx
  */
 
-
 import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
 
@@ -36,6 +35,10 @@ const styles = stylex.create({
   },
   verticalToHalf: {
     height: '50%',
+  },
+  verticalToHalfWithTerminus: {
+    height: '50%',
+    borderBottomLeftRadius: LINE_WIDTH * 2,
   },
   connectorContainer: {
     position: 'absolute',
@@ -114,7 +117,7 @@ export function XDSTreeListBranches({
           <div
             {...stylex.props(
               styles.verticalLine,
-              isLast ? styles.verticalToHalf : styles.verticalFull,
+              isLast ? styles.verticalToHalfWithTerminus : styles.verticalFull,
             )}
           />
         </div>

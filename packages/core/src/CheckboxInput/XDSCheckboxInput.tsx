@@ -74,7 +74,7 @@ const styles = stylex.create({
     justifyContent: 'center',
     borderWidth: borderVars['--border-width'],
     borderStyle: 'solid',
-    borderRadius: radiusVars['--radius-inner'],
+    borderRadius: radiusVars['--radius-element'],
     transitionProperty: 'background-color, border-color',
     transitionDuration: {
       default: durationVars['--duration-fast'],

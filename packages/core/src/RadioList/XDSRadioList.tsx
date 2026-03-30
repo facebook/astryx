@@ -42,13 +42,14 @@ export const XDSRadioListContext =
 const styles = stylex.create({
   radiogroup: {
     display: 'flex',
-    gap: spacingVars['--spacing-2'],
   },
   vertical: {
     flexDirection: 'column',
+    gap: spacingVars['--spacing-2'],
   },
   horizontal: {
     flexDirection: 'row',
+    gap: spacingVars['--spacing-5'],
   },
 });
 
