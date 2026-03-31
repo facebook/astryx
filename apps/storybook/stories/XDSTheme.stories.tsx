@@ -311,15 +311,17 @@ const oceanTheme = defineTheme({
 // =============================================================================
 
 const meta: Meta = {
-  title: 'Hooks/useXDSTheme',
+  title: 'Components/XDSTheme',
   parameters: {
     docs: {
       description: {
         component:
-          '`useXDSTheme()` provides synchronous access to resolved theme token values ' +
-          'for the current color mode. Designed for non-CSS consumers like data visualization ' +
-          'libraries, canvas rendering, and SVG charts that need concrete values ' +
-          '(hex colors, px values) rather than CSS custom property references.\n\n' +
+          '`XDSTheme` applies a theme to its children via CSS custom properties and ' +
+          'provides programmatic token access through `useXDSTheme()`.\n\n' +
+          '`useXDSTheme()` returns resolved token values for the current color mode — ' +
+          'designed for non-CSS consumers like data visualization libraries, canvas rendering, ' +
+          'and SVG charts that need concrete values (hex colors, px values) rather than ' +
+          'CSS custom property references.\n\n' +
           '**No double render.** Values are available on first paint \u2014 no `getComputedStyle` ' +
           'or `useEffect` needed.',
       },
