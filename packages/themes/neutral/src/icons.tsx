@@ -27,6 +27,12 @@ import {
   Menu,
   MoreHorizontal,
   Search,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
+  Filter,
+  EyeOff,
+  Columns,
 } from 'lucide-react';
 
 const iconProps = {
@@ -50,4 +56,10 @@ export const neutralIconRegistry: XDSIconRegistry = {
   menu: <Menu {...iconProps} />,
   moreHorizontal: <MoreHorizontal {...iconProps} />,
   search: <Search {...iconProps} />,
+  arrowUp: <ArrowUp {...iconProps} />,
+  arrowDown: <ArrowDown {...iconProps} />,
+  arrowsUpDown: <ArrowUpDown {...iconProps} />,
+  funnel: <Filter {...iconProps} />,
+  eyeSlash: <EyeOff {...iconProps} />,
+  viewColumns: <Columns {...iconProps} />,
 };

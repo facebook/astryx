@@ -177,4 +177,46 @@ export const defaultIcons: XDSIconRegistry = {
       <path d="M21 21l-4.35-4.35" />
     </svg>
   ),
+
+  /** ↑ — arrow up (sort ascending) */
+  arrowUp: (
+    <svg {...svgProps}>
+      <path d="M12 19V5m0 0l-7 7m7-7l7 7" />
+    </svg>
+  ),
+
+  /** ↓ — arrow down (sort descending) */
+  arrowDown: (
+    <svg {...svgProps}>
+      <path d="M12 5v14m0 0l7-7m-7 7l-7-7" />
+    </svg>
+  ),
+
+  /** ↕ — arrows up-down (unsorted / sortable indicator) */
+  arrowsUpDown: (
+    <svg {...svgProps}>
+      <path d="M3 7.5L7.5 3m0 0L12 7.5M7.5 3v13.5m13.5 0L16.5 21m0 0L12 16.5m4.5 4.5V7.5" />
+    </svg>
+  ),
+
+  /** 🔽 — funnel (filter indicator) */
+  funnel: (
+    <svg {...svgProps}>
+      <path d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z" />
+    </svg>
+  ),
+
+  /** 👁‍🗨 — eye with slash (hidden column) */
+  eyeSlash: (
+    <svg {...svgProps}>
+      <path d="M3.98 8.223A10.477 10.477 0 001.934 12c1.292 4.338 5.31 7.5 10.066 7.5.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+    </svg>
+  ),
+
+  /** ☐☐ — view columns (column settings) */
+  viewColumns: (
+    <svg {...svgProps}>
+      <path d="M9 4.5v15m6-15v15m-10.875 0h15.75c.621 0 1.125-.504 1.125-1.125V5.625c0-.621-.504-1.125-1.125-1.125H4.125C3.504 4.5 3 5.004 3 5.625v12.75c0 .621.504 1.125 1.125 1.125z" />
+    </svg>
+  ),
 };
