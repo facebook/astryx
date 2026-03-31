@@ -4,12 +4,11 @@
  * @file useListFocus.ts
  * @input Uses React useCallback, useRef
  * @output Exports useListFocus hook for linear list keyboard navigation
- * @position Core hook; used by XDSTabMenu for dropdown menu navigation
+ * @position Core hook; used by XDSTabMenu for dropdown menu navigation, XDSToolbar for roving tabindex
  *
  * SYNC: When modified, update:
  * - /packages/core/src/hooks/index.ts
  */
-
 
 import {useCallback, useRef} from 'react';
 
@@ -33,6 +32,13 @@ export interface UseListFocusOptions {
    * Callback when Escape key is pressed.
    */
   onEscape?: () => void;
+
+  /**
+   * Navigation orientation. 'horizontal' uses ArrowLeft/ArrowRight,
+   * 'vertical' uses ArrowUp/ArrowDown.
+   * @default 'vertical'
+   */
+  orientation?: 'horizontal' | 'vertical';
 }
 
 /**
@@ -68,9 +74,9 @@ export interface UseListFocusReturn {
 /**
  * Hook for managing keyboard navigation within a linear list.
  *
- * Implements WAI-ARIA menu/listbox pattern:
- * - ArrowDown: Move to next item (wraps to first)
- * - ArrowUp: Move to previous item (wraps to last)
+ * Implements WAI-ARIA menu/listbox/toolbar pattern:
+ * - ArrowDown/ArrowRight: Move to next item (wraps to first)
+ * - ArrowUp/ArrowLeft: Move to previous item (wraps to last)
  * - Home: Move to first item
  * - End: Move to last item
  * - Escape: Custom callback (e.g., close menu)
@@ -89,7 +95,12 @@ export interface UseListFocusReturn {
 export function useListFocus(
   options: UseListFocusOptions = {},
 ): UseListFocusReturn {
-  const {itemSelector = '[role="menuitem"]', wrap = true, onEscape} = options;
+  const {
+    itemSelector = '[role="menuitem"]',
+    wrap = true,
+    onEscape,
+    orientation = 'vertical',
+  } = options;
 
   const listRef = useRef<HTMLElement>(null);
 
@@ -152,8 +163,11 @@ export function useListFocus(
       const items = getItems();
       let handled = true;
 
+      const nextKey = orientation === 'horizontal' ? 'ArrowRight' : 'ArrowDown';
+      const prevKey = orientation === 'horizontal' ? 'ArrowLeft' : 'ArrowUp';
+
       switch (e.key) {
-        case 'ArrowDown': {
+        case nextKey: {
           if (currentIndex === -1) {
             items[0]?.focus();
           } else if (currentIndex < items.length - 1) {
@@ -163,7 +177,7 @@ export function useListFocus(
           }
           break;
         }
-        case 'ArrowUp': {
+        case prevKey: {
           if (currentIndex === -1) {
             items[items.length - 1]?.focus();
           } else if (currentIndex > 0) {
@@ -190,7 +204,15 @@ export function useListFocus(
         e.preventDefault();
       }
     },
-    [getCurrentIndex, getItems, wrap, focusFirst, focusLast, onEscape],
+    [
+      getCurrentIndex,
+      getItems,
+      wrap,
+      orientation,
+      focusFirst,
+      focusLast,
+      onEscape,
+    ],
   );
 
   return {
