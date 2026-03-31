@@ -2,11 +2,10 @@
  * @file XDSCommandPaletteInput.tsx
  * @input Uses React, StyleX, XDSIcon, CommandPaletteContext
  * @output Exports XDSCommandPaletteInput component and props
- * @position Search input for the command palette
+ * @position Search input for the command palette; renders with built-in bottom separator
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/CommandPalette/README.md
- * - /packages/core/src/CommandPalette/index.ts
+ * - /packages/lab/src/CommandPalette/README.md
  * - /apps/storybook/stories/CommandPalette.stories.tsx
  */
 
@@ -19,6 +18,7 @@ import {XDSIcon} from '@xds/core/Icon';
 import {xdsClassName, mergeProps} from '@xds/core/utils';
 import {
   colorVars,
+  borderVars,
   typeScaleVars,
   spacingVars,
   typographyVars,
@@ -34,8 +34,15 @@ const styles = stylex.create({
     paddingInline: spacingVars['--spacing-4'],
     paddingBlock: spacingVars['--spacing-3'],
     flexShrink: 0,
+    // Built-in separator — no manual <XDSDivider /> needed
+    borderBlockEndWidth: borderVars['--border-width'],
+    borderBlockEndStyle: 'solid',
+    borderBlockEndColor: colorVars['--color-border'],
   },
+  // The icon span needs explicit flex centering to avoid line-height offset
   icon: {
+    display: 'flex',
+    alignItems: 'center',
     flexShrink: 0,
     color: colorVars['--color-text-secondary'],
   },
@@ -56,13 +63,12 @@ const styles = stylex.create({
   },
 });
 
-export interface XDSCommandPaletteInputProps extends Omit<
-  InputHTMLAttributes<HTMLInputElement>,
-  'type' | 'role' | 'children' | 'autoFocus'
-> {
-  /**
-   * Ref forwarded to the input element (for focus management).
-   */
+export interface XDSCommandPaletteInputProps
+  extends Omit<
+    InputHTMLAttributes<HTMLInputElement>,
+    'type' | 'role' | 'children' | 'autoFocus'
+  > {
+  /** Ref forwarded to the input element (for focus management). */
   ref?: React.Ref<HTMLInputElement>;
 
   /**
@@ -89,9 +95,7 @@ export interface XDSCommandPaletteInputProps extends Omit<
    */
   hasAutoFocus?: boolean;
 
-  /**
-   * StyleX styles for the wrapper element.
-   */
+  /** StyleX styles for the wrapper element. */
   xstyle?: StyleXStyles;
 }
 
@@ -99,20 +103,20 @@ export interface XDSCommandPaletteInputProps extends Omit<
  * Search input for the command palette.
  *
  * Renders a search icon and a text input. Auto-focuses when mounted
- * so users can start typing immediately.
+ * so users can start typing immediately. Includes a built-in bottom
+ * separator between the input and the results list — no XDSDivider needed.
  *
  * When used inside XDSCommandPalette, automatically wires to the
- * context for search state. Can also be used standalone with explicit
- * value/onValueChange props.
+ * context for search state and keyboard navigation. Can also be used
+ * standalone with explicit value/onValueChange props.
  *
  * @compositionHint Place as the first child of XDSCommandPalette.
  *
  * @example
  * ```
  * <XDSCommandPalette isOpen={isOpen} onOpenChange={setIsOpen}>
- *   <XDSCommandPaletteInput
- *     placeholder="Search commands..."
- *   />
+ *   <XDSCommandPaletteInput placeholder="Search commands..." />
+ *   <XDSCommandPaletteList>...</XDSCommandPaletteList>
  * </XDSCommandPalette>
  * ```
  */
@@ -155,43 +159,54 @@ export function XDSCommandPaletteInput({
     }
   }, [hasAutoFocus]);
 
-  // Keyboard navigation when context is available
+  // Keyboard navigation — walks visible (non-filtered, non-disabled) items by value
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
       onKeyDown?.(e);
       if (!ctx || e.defaultPrevented) return;
 
-      const items = ctx.items.filter(item => !item.isDisabled);
-      if (items.length === 0) return;
+      // Build the navigable list: registered items that are enabled AND pass
+      // the current filter. This is the ground truth for arrow key movement.
+      const navigable = ctx.items.filter(item => {
+        if (item.isDisabled) return false;
+        if (!ctx.isFiltered || !ctx.search) return true;
+        return ctx.filter(item.value, ctx.search) > 0;
+      });
+      if (navigable.length === 0) return;
+
+      const currentIdx = navigable.findIndex(
+        item => item.value === ctx.highlightedValue,
+      );
 
       switch (e.key) {
         case 'ArrowDown': {
           e.preventDefault();
-          ctx.setHighlightedIndex(
-            Math.min(ctx.highlightedIndex + 1, items.length - 1),
-          );
+          const next =
+            currentIdx < navigable.length - 1 ? currentIdx + 1 : currentIdx;
+          ctx.setHighlightedValue(navigable[next].value);
           break;
         }
         case 'ArrowUp': {
           e.preventDefault();
-          ctx.setHighlightedIndex(Math.max(ctx.highlightedIndex - 1, 0));
+          const prev = currentIdx > 0 ? currentIdx - 1 : 0;
+          ctx.setHighlightedValue(navigable[prev].value);
           break;
         }
         case 'Home': {
           e.preventDefault();
-          ctx.setHighlightedIndex(0);
+          ctx.setHighlightedValue(navigable[0].value);
           break;
         }
         case 'End': {
           e.preventDefault();
-          ctx.setHighlightedIndex(items.length - 1);
+          ctx.setHighlightedValue(navigable[navigable.length - 1].value);
           break;
         }
         case 'Enter': {
           e.preventDefault();
-          const highlighted = items[ctx.highlightedIndex];
-          if (highlighted) {
-            ctx.selectItem(highlighted.value);
+          if (ctx.highlightedValue) {
+            ctx.selectItem(ctx.highlightedValue);
+            ctx.onClose();
           }
           break;
         }
@@ -199,6 +214,11 @@ export function XDSCommandPaletteInput({
     },
     [ctx, onKeyDown],
   );
+
+  // Derive the highlighted item's DOM id for aria-activedescendant
+  const highlightedItemIndex = ctx
+    ? ctx.items.findIndex(item => item.value === ctx.highlightedValue)
+    : -1;
 
   return (
     <div
@@ -213,12 +233,12 @@ export function XDSCommandPaletteInput({
         ref={setRefs}
         type="text"
         role="combobox"
-        aria-expanded={true}
+        aria-expanded={ctx?.isOpen ?? true}
         aria-autocomplete="list"
         aria-controls={ctx?.listId}
         aria-activedescendant={
-          ctx && ctx.highlightedIndex >= 0
-            ? `${ctx.listId}-item-${ctx.highlightedIndex}`
+          highlightedItemIndex >= 0
+            ? `${ctx?.listId}-item-${highlightedItemIndex}`
             : undefined
         }
         placeholder={placeholder}
@@ -227,7 +247,7 @@ export function XDSCommandPaletteInput({
           handleValueChange?.(e.target.value);
           onChange?.(e);
           // Reset highlight when search changes
-          ctx?.setHighlightedIndex(0);
+          ctx?.setHighlightedValue('');
         }}
         onKeyDown={handleKeyDown}
         {...stylex.props(styles.input)}

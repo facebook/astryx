@@ -23,11 +23,11 @@ export interface CommandPaletteContextValue {
   isFiltered: boolean;
   /** Unique ID prefix for ARIA. */
   listId: string;
-  /** Index of the currently highlighted item. */
-  highlightedIndex: number;
-  /** Update highlighted index. */
-  setHighlightedIndex: (index: number) => void;
-  /** All registered item values (for keyboard navigation). */
+  /** Value of the currently highlighted item (empty string = none). */
+  highlightedValue: string;
+  /** Update highlighted value. */
+  setHighlightedValue: (value: string) => void;
+  /** All registered items in mount order. */
   items: Array<{value: string; isDisabled?: boolean}>;
   /** Register an item. Returns unregister function. */
   registerItem: (value: string, isDisabled?: boolean) => () => void;
@@ -35,6 +35,8 @@ export interface CommandPaletteContextValue {
   selectItem: (value: string) => void;
   /** Close the palette. */
   onClose: () => void;
+  /** Whether the palette is open (for aria-expanded). */
+  isOpen: boolean;
 }
 
 export const CommandPaletteContext =
@@ -42,8 +44,7 @@ export const CommandPaletteContext =
 
 /**
  * Access the command palette context.
- * Throws if used outside of a CommandPalette with context enabled.
- * Returns null when context is not available (for standalone usage).
+ * Returns null when used outside a CommandPalette (for standalone usage).
  */
 export function useCommandPaletteContext(): CommandPaletteContextValue | null {
   return useContext(CommandPaletteContext);

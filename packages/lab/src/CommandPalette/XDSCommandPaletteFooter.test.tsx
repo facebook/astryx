@@ -26,8 +26,10 @@ describe('XDSCommandPaletteFooter', () => {
     expect(screen.queryByText(/Navigate/)).not.toBeInTheDocument();
   });
 
-  it('renders a divider', () => {
-    render(<XDSCommandPaletteFooter />);
-    expect(screen.getByRole('separator')).toBeInTheDocument();
+  it('renders a single root element (separator is CSS border, not a DOM node)', () => {
+    const {container} = render(<XDSCommandPaletteFooter />);
+    // The top separator is a borderBlockStart CSS property — no extra DOM node.
+    expect(container.firstChild).toBeInTheDocument();
+    expect(screen.queryByRole('separator')).not.toBeInTheDocument();
   });
 });

@@ -1,12 +1,11 @@
 /**
  * @file XDSCommandPaletteFooter.tsx
- * @input Uses React, StyleX, XDSDivider
+ * @input Uses React, StyleX
  * @output Exports XDSCommandPaletteFooter component
- * @position Sub-component; footer with keyboard hints
+ * @position Sub-component; footer with keyboard hints and built-in top separator
  *
  * SYNC: When modified, update:
- * - /packages/core/src/CommandPalette/README.md
- * - /packages/core/src/CommandPalette/index.ts
+ * - /packages/lab/src/CommandPalette/README.md
  */
 
 'use client';
@@ -17,11 +16,11 @@ import type {XDSBaseProps} from '@xds/core/XDSBaseProps';
 import {xdsClassName, mergeProps} from '@xds/core/utils';
 import {
   colorVars,
+  borderVars,
   spacingVars,
-  textSizeVars,
+  typeScaleVars,
   typographyVars,
 } from '@xds/core/theme/tokens.stylex';
-import {XDSDivider} from '@xds/core/Divider';
 
 const styles = stylex.create({
   footer: {
@@ -31,25 +30,30 @@ const styles = stylex.create({
     paddingInline: spacingVars['--spacing-4'],
     paddingBlock: spacingVars['--spacing-2'],
     flexShrink: 0,
+    // Built-in separator — no manual <XDSDivider /> needed
+    borderBlockStartWidth: borderVars['--border-width'],
+    borderBlockStartStyle: 'solid',
+    borderBlockStartColor: colorVars['--color-border'],
+    // Inherit font so custom children match hint text treatment
+    fontFamily: typographyVars['--font-family-body'],
+    fontSize: typeScaleVars['--text-supporting-size'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
+    color: colorVars['--color-text-secondary'],
   },
   hint: {
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-1'],
-    fontFamily: typographyVars['--font-family-body'],
-    fontSize: textSizeVars['--font-size-xs'],
-    color: colorVars['--color-text-secondary'],
   },
 });
 
 export interface XDSCommandPaletteFooterProps extends XDSBaseProps<HTMLDivElement> {
-  /**
-   * Ref forwarded to the footer element.
-   */
+  /** Ref forwarded to the footer element. */
   ref?: React.Ref<HTMLDivElement>;
 
   /**
    * Footer content. When provided, renders custom content instead of default hints.
+   * Custom children inherit the footer's font treatment (supporting/12px, secondary color).
    * When omitted, renders default keyboard navigation hints.
    */
   children?: ReactNode;
@@ -58,8 +62,9 @@ export interface XDSCommandPaletteFooterProps extends XDSBaseProps<HTMLDivElemen
 /**
  * Footer for the command palette showing keyboard navigation hints.
  *
- * When no children are provided, renders default hints for
- * arrow keys, Enter to select, and Escape to close.
+ * Renders with a built-in top separator — no XDSDivider needed.
+ * Custom children inherit supporting text treatment (12px, secondary color)
+ * so they stay visually consistent with the default hints.
  *
  * @compositionHint Place as the last child of XDSCommandPalette.
  *
@@ -81,26 +86,23 @@ export function XDSCommandPaletteFooter({
   ...props
 }: XDSCommandPaletteFooterProps) {
   return (
-    <>
-      <XDSDivider />
-      <div
-        ref={ref}
-        {...mergeProps(
-          xdsClassName('command-palette-footer'),
-          stylex.props(styles.footer, xstyle),
-          className,
-          style,
-        )}
-        {...props}>
-        {children ?? (
-          <>
-            <span {...stylex.props(styles.hint)}>\u2191\u2193 Navigate</span>
-            <span {...stylex.props(styles.hint)}>\u21b5 Select</span>
-            <span {...stylex.props(styles.hint)}>Esc Close</span>
-          </>
-        )}
-      </div>
-    </>
+    <div
+      ref={ref}
+      {...mergeProps(
+        xdsClassName('command-palette-footer'),
+        stylex.props(styles.footer, xstyle),
+        className,
+        style,
+      )}
+      {...props}>
+      {children ?? (
+        <>
+          <span {...stylex.props(styles.hint)}>\u2191\u2193 Navigate</span>
+          <span {...stylex.props(styles.hint)}>\u21b5 Select</span>
+          <span {...stylex.props(styles.hint)}>Esc Close</span>
+        </>
+      )}
+    </div>
   );
 }
 

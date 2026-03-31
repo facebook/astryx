@@ -52,13 +52,24 @@ describe('XDSCommandPaletteItem', () => {
     expect(screen.getByRole('option')).toHaveAttribute('aria-disabled', 'true');
   });
 
-  it('sets aria-selected when highlighted', () => {
+  it('sets aria-selected when selected (not highlighted)', () => {
+    render(
+      <XDSCommandPaletteItem value="test" isSelected>
+        Item
+      </XDSCommandPaletteItem>,
+    );
+    expect(screen.getByRole('option')).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('does not set aria-selected when only highlighted', () => {
+    // Highlight is visual only — aria-activedescendant on the input conveys
+    // keyboard focus, so aria-selected must not be set on highlight alone.
     render(
       <XDSCommandPaletteItem value="test" isHighlighted>
         Item
       </XDSCommandPaletteItem>,
     );
-    expect(screen.getByRole('option')).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('option')).toHaveAttribute('aria-selected', 'false');
   });
 
   it('sets data-value attribute', () => {

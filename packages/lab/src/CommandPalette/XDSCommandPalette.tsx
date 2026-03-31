@@ -5,8 +5,7 @@
  * @position Core root component; dialog shell with optional state management
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/CommandPalette/README.md
- * - /packages/core/src/CommandPalette/index.ts
+ * - /packages/lab/src/CommandPalette/README.md
  * - /apps/storybook/stories/CommandPalette.stories.tsx
  */
 
@@ -37,26 +36,11 @@ const styles = stylex.create({
   },
 });
 
-// =============================================================================
-// Module Augmentation - Register CommandPalette's style surfaces
-// =============================================================================
-
-declare module '../theme/types' {
-  interface ComponentStyles {
-    commandPalette?: {
-      root?: import('../theme/types').StyleXStyles;
-    };
-  }
-}
-
 export interface XDSCommandPaletteProps extends XDSBaseProps<HTMLDivElement> {
-  /**
-   * Ref forwarded to the root wrapper element inside the dialog.
-   */
+  /** Ref forwarded to the root wrapper element inside the dialog. */
   ref?: React.Ref<HTMLDivElement>;
-  /**
-   * Whether the command palette is open.
-   */
+
+  /** Whether the command palette is open. */
   isOpen: boolean;
 
   /**
@@ -66,14 +50,10 @@ export interface XDSCommandPaletteProps extends XDSBaseProps<HTMLDivElement> {
    */
   onOpenChange: (isOpen: boolean) => void;
 
-  /**
-   * Controlled selected value.
-   */
+  /** Controlled selected value. */
   value?: string;
 
-  /**
-   * Called when the selected value changes.
-   */
+  /** Called when the selected value changes. */
   onValueChange?: (value: string) => void;
 
   /**
@@ -133,9 +113,9 @@ export interface XDSCommandPaletteProps extends XDSBaseProps<HTMLDivElement> {
  * Wraps XDSDialog with command palette defaults and provides context
  * for state management (search, filtering, keyboard navigation, selection).
  *
- * Sub-components (Input, List, Item, Group, Footer) can be used as
- * controlled components via props, or they can consume the context
- * for automatic state wiring.
+ * Sub-components (Input, List, Item, Group, Footer) compose naturally as
+ * children. XDSCommandPaletteInput renders with a built-in separator below it;
+ * XDSCommandPaletteFooter renders with a built-in separator above it.
  *
  * @compositionHint Compose with XDSCommandPaletteInput (search),
  *   XDSCommandPaletteList (scrollable items), and XDSCommandPaletteFooter
@@ -176,7 +156,7 @@ export function XDSCommandPalette({
   const listId = useId();
   const [search, setSearch] = useState('');
   const [internalValue, setInternalValue] = useState('');
-  const [highlightedIndex, setHighlightedIndex] = useState(0);
+  const [highlightedValue, setHighlightedValue] = useState('');
   const itemsRef = useRef<Array<{value: string; isDisabled?: boolean}>>([]);
 
   const value = controlledValue ?? internalValue;
@@ -213,7 +193,7 @@ export function XDSCommandPalette({
   // Reset search and highlight when closing
   const handleClose = useCallback(() => {
     setSearch('');
-    setHighlightedIndex(0);
+    setHighlightedValue('');
     onOpenChange(false);
   }, [onOpenChange]);
 
@@ -226,12 +206,13 @@ export function XDSCommandPalette({
       filter,
       isFiltered,
       listId,
-      highlightedIndex,
-      setHighlightedIndex,
+      highlightedValue,
+      setHighlightedValue,
       items: itemsRef.current,
       registerItem,
       selectItem,
       onClose: handleClose,
+      isOpen,
     }),
     [
       search,
@@ -240,10 +221,11 @@ export function XDSCommandPalette({
       filter,
       isFiltered,
       listId,
-      highlightedIndex,
+      highlightedValue,
       registerItem,
       selectItem,
       handleClose,
+      isOpen,
     ],
   );
 
@@ -256,7 +238,7 @@ export function XDSCommandPalette({
       }}
       width={width}
       maxHeight={maxHeight}
-      purpose="info"
+      purpose="neutral"
       aria-label={label}>
       <CommandPaletteContext.Provider value={contextValue}>
         <div

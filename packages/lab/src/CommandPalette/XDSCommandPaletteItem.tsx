@@ -5,8 +5,7 @@
  * @position Sub-component; individual selectable item
  *
  * SYNC: When modified, update:
- * - /packages/core/src/CommandPalette/README.md
- * - /packages/core/src/CommandPalette/index.ts
+ * - /packages/lab/src/CommandPalette/README.md
  */
 
 'use client';
@@ -51,6 +50,9 @@ const styles = stylex.create({
         backgroundColor: colorVars['--color-overlay-hover'],
       },
     },
+    ':active': {
+      backgroundColor: colorVars['--color-overlay-pressed'],
+    },
   },
   itemHighlighted: {
     backgroundColor: colorVars['--color-overlay-hover'],
@@ -65,49 +67,32 @@ const styles = stylex.create({
 });
 
 export interface XDSCommandPaletteItemProps extends XDSBaseProps<HTMLDivElement> {
-  /**
-   * Ref forwarded to the root element.
-   */
+  /** Ref forwarded to the root element. */
   ref?: React.Ref<HTMLDivElement>;
-
-  /**
-   * Unique value for identification and selection.
-   */
+  /** Unique value for identification and selection. */
   value: string;
-
-  /**
-   * Called when this item is selected (via click or Enter).
-   */
+  /** Called when this item is selected (via click or Enter). */
   onSelect?: (value: string) => void;
-
-  /**
-   * Additional search terms for filtering (used by context filter).
-   */
+  /** Additional search terms for filtering (used by context filter). */
   keywords?: string[];
-
   /**
-   * Whether this item is visually highlighted (e.g., via keyboard navigation).
+   * Whether this item is visually highlighted (keyboard focus).
    * When omitted inside XDSCommandPalette, derived from context.
    * @default false
    */
   isHighlighted?: boolean;
-
   /**
    * Whether this item is currently selected.
    * When omitted inside XDSCommandPalette, derived from context.
    * @default false
    */
   isSelected?: boolean;
-
   /**
    * Whether the item is disabled.
    * @default false
    */
   isDisabled?: boolean;
-
-  /**
-   * Item content. Fully custom — render icons, descriptions, shortcuts, etc.
-   */
+  /** Item content. Fully custom — render icons, descriptions, shortcuts, etc. */
   children: ReactNode;
 }
 
@@ -145,10 +130,8 @@ export function XDSCommandPaletteItem({
   const ctx = useCommandPaletteContext();
   const itemRef = useRef<HTMLDivElement>(null);
 
-  // Merge refs
   const setRefs = (element: HTMLDivElement | null) => {
-    (itemRef as React.MutableRefObject<HTMLDivElement | null>).current =
-      element;
+    (itemRef as React.MutableRefObject<HTMLDivElement | null>).current = element;
     if (typeof ref === 'function') {
       ref(element);
     } else if (ref) {
@@ -156,29 +139,28 @@ export function XDSCommandPaletteItem({
     }
   };
 
-  // Register with context on mount
   useEffect(() => {
     if (!ctx) return;
     const unregister = ctx.registerItem(value, isDisabled);
     return unregister;
   }, [value, isDisabled, ctx]);
 
-  // Derive state from context or props
-  const itemIndex = ctx?.items.findIndex(item => item.value === value) ?? -1;
+  // Value-based highlight — immune to index drift from filtering/sections
   const isHighlighted =
-    controlledHighlighted ?? (ctx ? itemIndex === ctx.highlightedIndex : false);
+    controlledHighlighted ?? (ctx ? ctx.highlightedValue === value : false);
   const isSelected = controlledSelected ?? (ctx ? ctx.value === value : false);
 
-  // Filter: check if this item matches the search
   const score =
     ctx?.isFiltered && ctx.search ? ctx.filter(value, ctx.search, keywords) : 1;
 
-  // Scroll highlighted item into view
   useEffect(() => {
     if (isHighlighted && itemRef.current) {
       itemRef.current.scrollIntoView?.({block: 'nearest'});
     }
   }, [isHighlighted]);
+
+  // Index for ARIA id — based on full registered list (stable, not filtered)
+  const itemIndex = ctx?.items.findIndex(item => item.value === value) ?? -1;
 
   const handleClick = useCallback(() => {
     if (isDisabled) return;
@@ -191,18 +173,17 @@ export function XDSCommandPaletteItem({
 
   const handleMouseEnter = useCallback(() => {
     if (isDisabled || !ctx) return;
-    ctx.setHighlightedIndex(itemIndex);
-  }, [isDisabled, itemIndex, ctx]);
+    ctx.setHighlightedValue(value);
+  }, [isDisabled, value, ctx]);
 
-  // Don't render if filtered out
   if (score === 0) return null;
 
   return (
     <div
       ref={setRefs}
-      id={ctx ? `${ctx.listId}-item-${itemIndex}` : undefined}
+      id={ctx && itemIndex >= 0 ? `${ctx.listId}-item-${itemIndex}` : undefined}
       role="option"
-      aria-selected={isHighlighted}
+      aria-selected={isSelected}
       aria-disabled={isDisabled || undefined}
       data-value={value}
       onClick={handleClick}
