@@ -321,6 +321,28 @@ describe('XDSMultiSelector', () => {
     expect(onChange).toHaveBeenCalledWith(['Apple']);
   });
 
+  it('toggles the correct item when selected items are sorted to top', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    // Orange is selected, so sorted order is: Orange, Apple, Banana
+    render(
+      <XDSMultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={['Orange']}
+        onChange={onChange}
+      />,
+    );
+
+    const trigger = screen.getByRole('combobox');
+    await user.click(trigger);
+    // highlightedIndex starts at 0 which is Orange (sorted first)
+    await user.keyboard('{ArrowDown}');
+    // Now at index 1 which should be Apple
+    await user.keyboard('{Enter}');
+    expect(onChange).toHaveBeenCalledWith(['Orange', 'Apple']);
+  });
+
   it('renders select-all checkbox when hasSelectAll', async () => {
     const user = userEvent.setup();
     render(

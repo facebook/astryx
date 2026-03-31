@@ -527,6 +527,55 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
     );
   }, [selectableItems, searchQuery]);
 
+  // Sorted items for keyboard navigation — matches the visual render order.
+  // Selected-at-open items are placed first so the highlight index and the
+  // toggle target always refer to the same item the user sees.
+  const sortedItems = useMemo(() => {
+    const selectedSet = selectedAtOpenRef.current ?? new Set(optimisticValue);
+    if (searchQuery) {
+      const selected = filteredItems.filter(item =>
+        selectedSet.has(item.value),
+      );
+      const unselected = filteredItems.filter(
+        item => !selectedSet.has(item.value),
+      );
+      return [...selected, ...unselected];
+    }
+    // For non-search mode, flatten options in the same order as renderOptions
+    const result: XDSMultiSelectorOptionData[] = [];
+    let pendingFlat: XDSMultiSelectorOptionData[] = [];
+
+    const flushFlat = () => {
+      if (pendingFlat.length === 0) return;
+      const selected = pendingFlat.filter(item => selectedSet.has(item.value));
+      const unselected = pendingFlat.filter(
+        item => !selectedSet.has(item.value),
+      );
+      result.push(...selected, ...unselected);
+      pendingFlat = [];
+    };
+
+    for (const option of options) {
+      if (isDivider(option)) {
+        flushFlat();
+      } else if (isSection(option)) {
+        flushFlat();
+        const sectionOptions = option.options.map(opt => normalizeOption(opt));
+        const selected = sectionOptions.filter(item =>
+          selectedSet.has(item.value),
+        );
+        const unselected = sectionOptions.filter(
+          item => !selectedSet.has(item.value),
+        );
+        result.push(...selected, ...unselected);
+      } else if (isOptionData(option)) {
+        pendingFlat.push(normalizeOption(option));
+      }
+    }
+    flushFlat();
+    return result;
+  }, [filteredItems, searchQuery, options, optimisticValue]);
+
   // Layer for dropdown positioning
   const handleLayerHide = useCallback(() => {
     setSearchQuery('');
@@ -574,7 +623,7 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
     onKeyDown,
     onItemMouseEnter,
   } = useMultiCombobox({
-    selectableItems: filteredItems,
+    selectableItems: sortedItems,
     isDisabled,
     isOpen: popover.isOpen,
     hasSearch,
