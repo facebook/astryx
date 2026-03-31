@@ -140,9 +140,6 @@ const styles = stylex.create({
     minWidth: 'anchor-size(width)',
     marginBlockStart: spacingVars['--spacing-1'],
   },
-  popoverCollapsed: {
-    marginInlineStart: spacingVars['--spacing-1'],
-  },
 });
 
 // =============================================================================
@@ -299,9 +296,6 @@ export function XDSSideNavHeading({
     return null;
   }
   if (isCollapsed && icon) {
-    const isCollapsedLink = !!headingHref;
-    const isCollapsedMenu = !!menu && !headingHref;
-
     const collapsedIcon = <span {...stylex.props(styles.icon)}>{icon}</span>;
 
     const collapsedSetRef = (el: HTMLElement | null) => {
@@ -313,14 +307,11 @@ export function XDSSideNavHeading({
         (ref as React.MutableRefObject<HTMLDivElement | null>).current =
           el as HTMLDivElement | null;
       }
-      if (isCollapsedMenu) {
-        popover.triggerRef(el);
-      }
     };
 
     let collapsedElement: ReactNode;
 
-    if (isCollapsedLink) {
+    if (headingHref) {
       collapsedElement = (
         <a
           ref={collapsedSetRef as React.Ref<HTMLAnchorElement>}
@@ -335,34 +326,6 @@ export function XDSSideNavHeading({
           )}>
           {collapsedIcon}
         </a>
-      );
-    } else if (isCollapsedMenu) {
-      collapsedElement = (
-        <>
-          <button
-            ref={collapsedSetRef as React.Ref<HTMLButtonElement>}
-            type="button"
-            onClick={handleToggle}
-            aria-label={heading}
-            data-testid={testId}
-            {...popover.triggerProps}
-            {...mergeProps(
-              xdsClassName('side-nav-heading'),
-              stylex.props(navItemStyles.item, styles.rootCollapsed, xstyle),
-              className,
-              style,
-            )}>
-            {collapsedIcon}
-          </button>
-          {popover.render(
-            <div {...stylex.props(styles.popoverContent)}>{menu}</div>,
-            {
-              placement: 'end',
-              alignment: 'start',
-              xstyle: styles.popoverCollapsed,
-            },
-          )}
-        </>
       );
     } else {
       collapsedElement = (
