@@ -12,9 +12,24 @@
  */
 
 import {useCallback, useMemo, useRef, type ReactNode} from 'react';
+import * as stylex from '@stylexjs/stylex';
+import {spacingVars} from '../../../theme/tokens.stylex';
 import {XDSPagination} from '../../../Pagination';
 import type {XDSPaginationProps} from '../../../Pagination';
 import type {TablePlugin} from '../../types';
+
+// =============================================================================
+// Styles
+// =============================================================================
+
+const styles = stylex.create({
+  wrapper: {
+    display: 'flex',
+    justifyContent: 'center',
+    marginTop: spacingVars['--spacing-4'],
+    marginBottom: spacingVars['--spacing-4'],
+  },
+});
 
 // =============================================================================
 // Config Type
@@ -136,9 +151,9 @@ export interface UseXDSTablePaginationConfig {
   /**
    * Available page size options. Shows a page size selector when provided.
    * @example
- * ```
- * [10, 25, 50, 100]
- * ```
+   * ```
+   * [10, 25, 50, 100]
+   * ```
    */
   pageSizeOptions?: number[];
 
@@ -292,7 +307,21 @@ export function useXDSTablePagination<T extends Record<string, unknown>>(
         const {position: pos, paginationProps: props} = configRef.current;
         if (pos === 'none') return children;
 
-        const paginationElement = <XDSPagination {...props} />;
+        // Don't render pagination when there's only one page and no more data.
+        // This can happen when filters reduce the result set to a single page.
+        const resolvedTotalPages =
+          props.totalPages ??
+          (props.totalItems != null && props.pageSize != null
+            ? Math.ceil(props.totalItems / props.pageSize)
+            : undefined);
+        const isSinglePage = resolvedTotalPages === 1 && props.hasMore !== true;
+        if (isSinglePage) return children;
+
+        const paginationElement = (
+          <div {...stylex.props(styles.wrapper)}>
+            <XDSPagination {...props} />
+          </div>
+        );
 
         return (
           <>

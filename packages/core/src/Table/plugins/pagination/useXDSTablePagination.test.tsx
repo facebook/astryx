@@ -50,6 +50,8 @@ function PaginatedTable({
   size,
   label,
   pageSizeOptions,
+  totalPagesProp,
+  hasMore,
 }: {
   data: TestItem[];
   pageSize?: number;
@@ -58,6 +60,8 @@ function PaginatedTable({
   size?: 'sm' | 'md';
   label?: string;
   pageSizeOptions?: number[];
+  totalPagesProp?: number;
+  hasMore?: boolean;
 }) {
   const [page, setPage] = useState(1);
   const [currentPageSize, setCurrentPageSize] = useState(pageSize);
@@ -65,7 +69,11 @@ function PaginatedTable({
   const pagination = useXDSTablePagination<TestItem>({
     page,
     onPageChange: setPage,
-    totalItems: data.length,
+    // Allow overriding with totalPages/hasMore for specific test scenarios
+    totalItems:
+      totalPagesProp == null && hasMore == null ? data.length : undefined,
+    totalPages: totalPagesProp,
+    hasMore,
     pageSize: currentPageSize,
     position,
     variant,
@@ -390,6 +398,36 @@ describe('useXDSTablePagination', () => {
       ).not.toBeInTheDocument();
     });
 
+    it('does not render pagination when there is only one page', () => {
+      // 5 items with pageSize 10 → 1 page total
+      render(<PaginatedTable data={generateItems(5)} pageSize={10} />);
+      expect(
+        screen.queryByRole('navigation', {name: 'Table pagination'}),
+      ).not.toBeInTheDocument();
+    });
+
+    it('does not render pagination when totalPages is explicitly 1', () => {
+      render(
+        <PaginatedTable
+          data={generateItems(5)}
+          pageSize={10}
+          totalPagesProp={1}
+        />,
+      );
+      expect(
+        screen.queryByRole('navigation', {name: 'Table pagination'}),
+      ).not.toBeInTheDocument();
+    });
+
+    it('renders pagination when hasMore is true even with one page of data', () => {
+      render(
+        <PaginatedTable data={generateItems(5)} pageSize={10} hasMore={true} />,
+      );
+      expect(
+        screen.getByRole('navigation', {name: 'Table pagination'}),
+      ).toBeInTheDocument();
+    });
+
     it('paginationProps include pageSizeOptions when provided', () => {
       render(
         <PaginatedTable
@@ -476,8 +514,7 @@ describe('useXDSTablePagination', () => {
           getIsAllSelected: () => {
             const pageData = pagination.paginatedData(data);
             return (
-              pageData.length > 0 &&
-              pageData.every(d => selectedIds.has(d.id))
+              pageData.length > 0 && pageData.every(d => selectedIds.has(d.id))
             );
           },
         });
@@ -573,11 +610,7 @@ describe('useXDSTablePagination', () => {
 
     it('passes size prop', () => {
       render(
-        <PaginatedTable
-          data={generateItems(30)}
-          pageSize={10}
-          size="sm"
-        />,
+        <PaginatedTable data={generateItems(30)} pageSize={10} size="sm" />,
       );
       const nav = screen.getByRole('navigation', {name: 'Table pagination'});
       expect(nav).toBeInTheDocument();
@@ -654,16 +687,12 @@ describe('useXDSTablePagination', () => {
       expect(result.current.totalPages).toBe(0);
     });
 
-    it('handles totalPages=1', () => {
+    it('handles totalPages=1 — pagination is hidden', () => {
+      // When there is only one page, the plugin should not render pagination at all.
       render(<PaginatedTable data={generateItems(5)} pageSize={10} />);
-      const prevButton = screen.getByRole('button', {
-        name: 'Go to previous page',
-      });
-      const nextButton = screen.getByRole('button', {
-        name: 'Go to next page',
-      });
-      expect(prevButton).toBeDisabled();
-      expect(nextButton).toBeDisabled();
+      expect(
+        screen.queryByRole('navigation', {name: 'Table pagination'}),
+      ).not.toBeInTheDocument();
     });
 
     it('handles page=1 with no totalItems or totalPages (cursor mode)', () => {
@@ -738,7 +767,8 @@ describe('useXDSTablePagination', () => {
     });
 
     it('disabled prev/next buttons have aria-disabled', () => {
-      render(<PaginatedTable data={generateItems(5)} pageSize={10} />);
+      // Use multi-page data so pagination is rendered; on page 1, prev is disabled.
+      render(<PaginatedTable data={generateItems(30)} pageSize={10} />);
       const prevButton = screen.getByRole('button', {
         name: 'Go to previous page',
       });
