@@ -121,7 +121,7 @@ export const WithSelectedItem: Story = {
     return (
       <>
         <XDSButton
-          label={\`Open (selected: \${value})\`}
+          label={`Open (selected: ${value})`}
           onClick={() => setIsOpen(true)}
         />
         <XDSCommandPalette
@@ -176,7 +176,7 @@ export const EmptyResults: Story = {
 export const ManyItems: Story = {
   render: function Render() {
     const [isOpen, setIsOpen] = useState(false);
-    const items = Array.from({length: 30}, (_, i) => \`Command \${i + 1}\`);
+    const items = Array.from({length: 30}, (_, i) => `Command ${i + 1}`);
     return (
       <>
         <XDSButton label="Open (30 items)" onClick={() => setIsOpen(true)} />
