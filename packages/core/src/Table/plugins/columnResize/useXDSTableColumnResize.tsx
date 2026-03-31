@@ -122,32 +122,27 @@ const handleStyles = stylex.create({
   base: {
     position: 'absolute',
     // Keep entirely inside the <th> — extending outside gets clipped by the
-    // adjacent <th>'s overflow:hidden. The ::after line sits at the right edge.
+    // adjacent <th>'s overflow:hidden.
     insetInlineEnd: 0,
     top: 0,
     bottom: 0,
+    // Wide transparent hit area; the right 1px becomes the visible indicator.
     width: '8px',
     cursor: 'ew-resize',
     zIndex: 1,
     touchAction: 'none',
     userSelect: 'none',
-    '::after': {
-      content: '""',
-      position: 'absolute',
-      top: 0,
-      bottom: 0,
-      insetInlineEnd: 0,
-      width: '1px',
-      backgroundColor: colorVars['--color-accent'],
-      // Faint resting state so the divider boundary is always subtly visible.
-      // Full opacity on hover or focus.
-      opacity: {
-        default: 0.25,
-        ':hover': 1,
-        ':focus-visible': 1,
-      },
-      transition: 'opacity 150ms ease',
+    // The rightmost 1px acts as the resize indicator line.
+    // Use a right border rather than ::after so it reliably renders
+    // without needing pseudo-element content/dimensions.
+    borderInlineEndWidth: '1px',
+    borderInlineEndStyle: 'solid',
+    borderInlineEndColor: {
+      default: 'transparent',
+      ':hover': colorVars['--color-accent'],
+      ':focus-visible': colorVars['--color-accent'],
     },
+    transition: 'border-color 150ms ease',
     '@media (pointer: coarse)': {
       width: '20px',
     },
@@ -315,18 +310,26 @@ function ResizeHandle({
       const nTh = resolveNeighborTh(th);
       const nInitialWidth = nTh ? nTh.getBoundingClientRect().width : 0;
 
-      // Freeze all preceding <th> elements at their current rendered widths
-      // so proportional columns to the left don't shift when we resize.
+      // Freeze all <th> elements except the last one at their current rendered
+      // widths. This prevents proportional columns on either side from shifting
+      // as we resize. The last column is the only flex absorber — it takes up
+      // whatever space remains.
       const frozenSiblings: FrozenSibling[] = [];
-      let sibling = th.previousElementSibling;
-      while (sibling instanceof HTMLTableCellElement) {
-        const renderedWidth = sibling.getBoundingClientRect().width;
-        frozenSiblings.push({th: sibling, prevWidth: sibling.style.width});
-        const px = `${renderedWidth}px`;
-        sibling.style.width = px;
-        sibling.style.minWidth = px;
-        sibling.style.maxWidth = px;
-        sibling = sibling.previousElementSibling;
+      const headerRow = th.parentElement;
+      if (headerRow) {
+        const allThs = Array.from(
+          headerRow.querySelectorAll<HTMLTableCellElement>(':scope > th'),
+        );
+        const lastTh = allThs[allThs.length - 1];
+        for (const cell of allThs) {
+          if (cell === lastTh) continue; // last column stays flex
+          const renderedWidth = cell.getBoundingClientRect().width;
+          frozenSiblings.push({th: cell, prevWidth: cell.style.width});
+          const px = `${renderedWidth}px`;
+          cell.style.width = px;
+          cell.style.minWidth = px;
+          cell.style.maxWidth = px;
+        }
       }
 
       dragStateRef.current = {
@@ -417,6 +420,14 @@ function ResizeHandle({
       dragStateRef.current = null;
       setTableDragging(false);
 
+      // Restore frozen siblings — React state takes over the committed column
+      // widths, and the layout engine re-settles the rest.
+      for (const {th: fTh, prevWidth} of drag.frozenSiblings) {
+        fTh.style.width = prevWidth;
+        fTh.style.minWidth = prevWidth;
+        fTh.style.maxWidth = prevWidth;
+      }
+
       if (drag.neighborTh && drag.neighborKey) {
         // Proportional-preserving: report the neighbor column's new width,
         // clamped so it never goes below its minimum.
@@ -453,6 +464,12 @@ function ResizeHandle({
     clearWidth(drag.thElement, drag.columnKey);
     if (drag.neighborTh && drag.neighborKey) {
       clearWidth(drag.neighborTh, drag.neighborKey);
+    }
+    // Restore frozen siblings to their pre-drag inline styles
+    for (const {th: fTh, prevWidth} of drag.frozenSiblings) {
+      fTh.style.width = prevWidth;
+      fTh.style.minWidth = prevWidth;
+      fTh.style.maxWidth = prevWidth;
     }
 
     isDraggingRef.current = false;
