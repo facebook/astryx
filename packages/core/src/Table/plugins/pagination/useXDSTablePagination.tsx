@@ -11,7 +11,7 @@
  * - /packages/core/src/Table/index.ts (exports)
  */
 
-import {useCallback, useMemo, type ReactNode} from 'react';
+import {useCallback, useMemo, useRef, type ReactNode} from 'react';
 import {XDSPagination} from '../../../Pagination';
 import type {XDSPaginationProps} from '../../../Pagination';
 import type {TablePlugin} from '../../types';
@@ -27,7 +27,8 @@ import type {TablePlugin} from '../../types';
  * state — this hook provides data helpers and a plugin that integrates with
  * the table's plugin pipeline.
  *
- * @example Basic client-side pagination
+ * @example
+ * Basic client-side pagination
  * ```
  * const [page, setPage] = useState(1);
  * const [pageSize, setPageSize] = useState(20);
@@ -46,7 +47,8 @@ import type {TablePlugin} from '../../types';
  * />
  * ```
  *
- * @example Server-side pagination
+ * @example
+ * Server-side pagination
  * ```
  * const pagination = useXDSTablePagination({
  *   page,
@@ -63,7 +65,8 @@ import type {TablePlugin} from '../../types';
  * />
  * ```
  *
- * @example With page size selector
+ * @example
+ * With page size selector
  * ```
  * const pagination = useXDSTablePagination({
  *   page,
@@ -75,7 +78,8 @@ import type {TablePlugin} from '../../types';
  * });
  * ```
  *
- * @example Cursor-based (infinite) pagination
+ * @example
+ * Cursor-based (infinite) pagination
  * ```
  * const pagination = useXDSTablePagination({
  *   page,
@@ -131,7 +135,10 @@ export interface UseXDSTablePaginationConfig {
 
   /**
    * Available page size options. Shows a page size selector when provided.
-   * @example [10, 25, 50, 100]
+   * @example
+ * ```
+ * [10, 25, 50, 100]
+ * ```
    */
   pageSizeOptions?: number[];
 
@@ -270,41 +277,33 @@ export function useXDSTablePagination<T extends Record<string, unknown>>(
     [page, pageSize],
   );
 
-  // Plugin via useMemo — reference changes when pagination state changes,
-  // which is acceptable since pagination changes require a full table re-render anyway.
+  // Keep current config in a ref so the plugin can read the latest values
+  // without needing to recreate the plugin object on every change.
+  const configRef = useRef({paginationProps, position});
+  configRef.current = {paginationProps, position};
+
+  // Stable plugin object — created once, reads config via ref.
+  // The transformTableContext renders XDSPagination which reads current
+  // props from the ref, so the pagination UI always reflects the latest state
+  // without changing the plugin identity.
   const plugin = useMemo(
     (): TablePlugin<T> => ({
       transformTableContext(children: ReactNode) {
-        if (position === 'none') return children;
+        const {position: pos, paginationProps: props} = configRef.current;
+        if (pos === 'none') return children;
 
-        const paginationElement = <XDSPagination {...paginationProps} />;
+        const paginationElement = <XDSPagination {...props} />;
 
         return (
           <>
-            {(position === 'above' || position === 'both') &&
-              paginationElement}
+            {(pos === 'above' || pos === 'both') && paginationElement}
             {children}
-            {(position === 'below' || position === 'both') &&
-              paginationElement}
+            {(pos === 'below' || pos === 'both') && paginationElement}
           </>
         );
       },
     }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [
-      position,
-      page,
-      onPageChange,
-      totalItems,
-      computedTotalPages,
-      hasMore,
-      pageSize,
-      onPageSizeChange,
-      pageSizeOptions,
-      variant,
-      size,
-      label,
-    ],
+    [],
   );
 
   return {
