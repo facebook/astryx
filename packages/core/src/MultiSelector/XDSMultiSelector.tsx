@@ -1,0 +1,1006 @@
+'use client';
+
+/**
+ * @file XDSMultiSelector.tsx
+ * @input Uses React, StyleX, useXDSPopover, XDSCheckboxInput, XDSField, XDSBadge, XDSIcon
+ * @output Exports XDSMultiSelector component
+ * @position Core implementation; consumed by index.ts
+ *
+ * SYNC: When modified, update:
+ * - /packages/core/src/MultiSelector/MultiSelector.doc.mjs
+ * - /packages/core/src/MultiSelector/index.ts
+ */
+
+import React, {
+  useCallback,
+  useId,
+  useMemo,
+  useOptimistic,
+  useRef,
+  useState,
+  useTransition,
+  type ReactNode,
+} from 'react';
+import * as stylex from '@stylexjs/stylex';
+import {useXDSPopover} from '../Popover/useXDSPopover';
+import {XDSIcon} from '../Icon';
+import type {XDSIconName} from '../Icon';
+import {
+  XDSField,
+  inputStatusBorderStyles,
+  inputStatusHoverShadowStyles,
+} from '../Field';
+import {XDSDivider} from '../Divider';
+import {XDSSpinner} from '../Spinner';
+import {XDSCheckboxInput} from '../CheckboxInput';
+import {XDSBadge} from '../Badge';
+import {
+  colorVars,
+  sizeVars,
+  spacingVars,
+  radiusVars,
+  shadowVars,
+  durationVars,
+  easeVars,
+  typographyVars,
+  fontWeightVars,
+  typeScaleVars,
+  borderVars,
+} from '../theme/tokens.stylex';
+import type {
+  XDSMultiSelectorOptionType,
+  XDSMultiSelectorOptionData,
+  XDSMultiSelectorStatus,
+} from './types';
+import {
+  isOptionData,
+  isDivider,
+  isSection,
+  normalizeOption,
+  getSelectableOptions,
+} from '../Selector/utils';
+import {useMultiCombobox} from './hooks';
+import {xdsClassName, mergeProps} from '../utils';
+import {XDSBaseProps} from '../XDSBaseProps';
+
+const styles = stylex.create({
+  // Trigger button
+  trigger: {
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacingVars['--spacing-2'],
+    width: '100%',
+    paddingBlock: spacingVars['--spacing-2'],
+    paddingInline: spacingVars['--spacing-3'],
+    borderWidth: borderVars['--border-width'],
+    borderStyle: 'solid',
+    borderColor: {
+      default: colorVars['--color-border-emphasized'],
+      ':hover': {
+        '@media (hover: hover)': colorVars['--color-border-emphasized'],
+      },
+    },
+    borderRadius: radiusVars['--radius-element'],
+    backgroundColor: colorVars['--color-background-surface'],
+    fontFamily: typographyVars['--font-family-body'],
+    fontSize: typeScaleVars['--text-label-size'],
+    lineHeight: typeScaleVars['--text-label-leading'],
+    color: colorVars['--color-text-primary'],
+    cursor: 'pointer',
+    transitionProperty: 'border-color, outline, box-shadow',
+    transitionDuration: durationVars['--duration-fast'],
+    transitionTimingFunction: easeVars['--ease-standard'],
+    boxShadow: {
+      default: 'none',
+      ':hover': {
+        '@media (hover: hover)': shadowVars['--shadow-inset-hover'],
+      },
+    },
+    outline: {
+      default: 'none',
+      ':focus': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
+    },
+    outlineOffset: '0',
+  },
+  triggerDisabled: {
+    cursor: 'not-allowed',
+    opacity: 0.5,
+    borderColor: colorVars['--color-border-emphasized'],
+  },
+  triggerPlaceholder: {
+    color: colorVars['--color-text-secondary'],
+  },
+  triggerContent: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-1'],
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 0,
+    minWidth: 0,
+    overflow: 'hidden',
+  },
+  triggerText: {
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+  triggerBadges: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: spacingVars['--spacing-1'],
+    alignItems: 'center',
+  },
+  triggerOverflow: {
+    flexShrink: 0,
+    fontSize: typeScaleVars['--text-label-size'],
+    color: colorVars['--color-text-secondary'],
+    fontWeight: fontWeightVars['--font-weight-medium'],
+  },
+  triggerIcon: {
+    flexShrink: 0,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 16,
+    height: 16,
+    transitionProperty: 'transform',
+    transitionDuration: durationVars['--duration-fast'],
+    transitionTimingFunction: easeVars['--ease-standard'],
+    transformOrigin: 'center',
+    color: colorVars['--color-icon-secondary'],
+  },
+  triggerIconOpen: {
+    transform: 'rotate(180deg)',
+  },
+  triggerIconStatus: {
+    transition: 'none',
+  },
+
+  // Dropdown container
+  dropdown: {
+    boxSizing: 'border-box',
+    maxHeight: '300px',
+    overflowY: 'auto',
+    padding: spacingVars['--spacing-1'],
+  },
+
+  // Popover container (for anchor positioning)
+  popover: {
+    minWidth: 'anchor-size(width)',
+    marginBlockStart: spacingVars['--spacing-1'],
+  },
+
+  // Search input
+  searchWrapper: {
+    paddingInline: spacingVars['--spacing-2'],
+    paddingBlock: spacingVars['--spacing-1'],
+  },
+  searchInput: {
+    boxSizing: 'border-box',
+    width: '100%',
+    paddingBlock: spacingVars['--spacing-1'],
+    paddingInline: spacingVars['--spacing-2'],
+    borderWidth: borderVars['--border-width'],
+    borderStyle: 'solid',
+    borderColor: colorVars['--color-border-emphasized'],
+    borderRadius: radiusVars['--radius-element'],
+    backgroundColor: colorVars['--color-background-surface'],
+    fontFamily: typographyVars['--font-family-body'],
+    fontSize: typeScaleVars['--text-label-size'],
+    color: colorVars['--color-text-primary'],
+    outline: {
+      default: 'none',
+      ':focus': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
+    },
+    outlineOffset: '0',
+  },
+
+  // Select-all wrapper
+  selectAllWrapper: {
+    cursor: 'pointer',
+  },
+
+  // Section divider with label
+  sectionDivider: {
+    marginBlock: spacingVars['--spacing-1'],
+  },
+
+  // Divider
+  divider: {
+    marginBlock: spacingVars['--spacing-1'],
+  },
+
+  // Individual item
+  item: {
+    boxSizing: 'border-box',
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-2'],
+    width: '100%',
+    borderRadius: radiusVars['--radius-element'],
+    cursor: 'pointer',
+    backgroundColor: 'transparent',
+    border: 'none',
+    outline: 'none',
+  },
+  itemHighlighted: {
+    backgroundColor: colorVars['--color-overlay-hover'],
+  },
+  itemDisabled: {
+    opacity: 0.5,
+    cursor: 'not-allowed',
+  },
+
+  // Empty state
+  emptyState: {
+    padding: spacingVars['--spacing-3'],
+    textAlign: 'center',
+    color: colorVars['--color-text-secondary'],
+    fontFamily: typographyVars['--font-family-body'],
+    fontSize: typeScaleVars['--text-label-size'],
+  },
+});
+
+const sizeStyles = stylex.create({
+  sm: {
+    height: sizeVars['--size-element-sm'],
+  },
+  md: {
+    height: sizeVars['--size-element-md'],
+  },
+  lg: {
+    height: sizeVars['--size-element-lg'],
+  },
+});
+
+const itemSizeStyles = stylex.create({
+  sm: {
+    padding: spacingVars['--spacing-1'],
+  },
+  md: {
+    padding: spacingVars['--spacing-2'],
+  },
+  lg: {
+    padding: spacingVars['--spacing-2'],
+  },
+});
+
+const selectAllSizeStyles = stylex.create({
+  sm: {
+    paddingInline: spacingVars['--spacing-1'],
+    paddingBlock: spacingVars['--spacing-0-5'],
+  },
+  md: {
+    paddingInline: spacingVars['--spacing-2'],
+    paddingBlock: spacingVars['--spacing-1'],
+  },
+  lg: {
+    paddingInline: spacingVars['--spacing-2'],
+    paddingBlock: spacingVars['--spacing-1'],
+  },
+});
+
+const STATUS_ICON_MAP: Record<XDSMultiSelectorStatusType, XDSIconName> = {
+  warning: 'warning',
+  error: 'xCircle',
+  success: 'checkCircle',
+};
+
+const STATUS_ICON_COLOR_MAP: Record<
+  XDSMultiSelectorStatusType,
+  'warning' | 'negative' | 'positive'
+> = {
+  warning: 'warning',
+  error: 'negative',
+  success: 'positive',
+};
+
+export type XDSMultiSelectorSize = 'sm' | 'md' | 'lg';
+
+export type XDSMultiSelectorStatusType = 'warning' | 'error' | 'success';
+
+export type {XDSMultiSelectorStatus};
+
+export interface XDSMultiSelectorProps<
+  T extends XDSMultiSelectorOptionType = XDSMultiSelectorOptionType,
+> extends Omit<XDSBaseProps, 'onChange' | 'defaultValue' | 'children'> {
+  /**
+   * Label text for the multi-selector (always rendered for accessibility).
+   */
+  label: string;
+
+  /**
+   * Whether to visually hide the label (still accessible to screen readers).
+   * @default false
+   */
+  isLabelHidden?: boolean;
+
+  /**
+   * Description text displayed between the label and selector.
+   */
+  description?: string;
+
+  /**
+   * Whether the field is optional. Mutually exclusive with isRequired.
+   * @default false
+   */
+  isOptional?: boolean;
+
+  /**
+   * Whether the field is required. Mutually exclusive with isOptional.
+   * @default false
+   */
+  isRequired?: boolean;
+
+  /**
+   * Whether the selector is disabled.
+   * @default false
+   */
+  isDisabled?: boolean;
+
+  /**
+   * The options to display in the selector.
+   * Can be strings, objects, dividers, or sections.
+   */
+  options: T[];
+
+  /**
+   * The currently selected values.
+   */
+  value: string[];
+
+  /**
+   * Callback when selection changes.
+   */
+  onChange: (value: string[]) => void;
+
+  /**
+   * Async action on change. Fires after onChange.
+   */
+  onChangeAction?: (value: string[]) => void | Promise<void>;
+
+  /**
+   * Whether the selector is in a loading state.
+   * @default false
+   */
+  isLoading?: boolean;
+
+  /**
+   * Placeholder text when no value is selected.
+   * @default 'Select...'
+   */
+  placeholder?: string;
+
+  /**
+   * The size of the selector.
+   * @default 'md'
+   */
+  size?: XDSMultiSelectorSize;
+
+  /**
+   * Status indicator for the selector.
+   */
+  status?: XDSMultiSelectorStatus;
+
+  /**
+   * Tooltip text to display in an info icon at the end of the label.
+   */
+  labelTooltip?: string;
+
+  /**
+   * Whether to show a "Select all" checkbox.
+   * @default false
+   */
+  hasSelectAll?: boolean;
+
+  /**
+   * Label for the select-all checkbox.
+   * @default 'Select all'
+   */
+  selectAllLabel?: string;
+
+  /**
+   * Whether to show a search input.
+   * @default false
+   */
+  hasSearch?: boolean;
+
+  /**
+   * Placeholder text for the search input.
+   * @default 'Search...'
+   */
+  searchPlaceholder?: string;
+
+  /**
+   * How to display selected items in the trigger.
+   * - 'count': "3 selected"
+   * - 'labels': "Name, Email, +3"
+   * - 'badges': [Name] [Email] +2
+   * @default 'count'
+   */
+  triggerDisplay?: 'count' | 'labels' | 'badges';
+
+  /**
+   * Maximum number of badges to show before showing "+N".
+   * Only used when triggerDisplay is 'badges'.
+   * @default 3
+   */
+  maxBadges?: number;
+
+  /**
+   * Custom render function for options.
+   * Only called for selectable options (not dividers/sections).
+   */
+  children?: (option: XDSMultiSelectorOptionData) => ReactNode;
+
+  /**
+   * Test ID for testing frameworks.
+   */
+  'data-testid'?: string;
+}
+
+/**
+ * A multi-select dropdown component with checkboxes for choosing
+ * multiple items from a list of options.
+ *
+ * @example
+ * ```
+ * <XDSMultiSelector
+ *   label="Columns"
+ *   options={['Name', 'Email', 'Role', 'Status']}
+ *   value={selectedColumns}
+ *   onChange={setSelectedColumns}
+ *   hasSelectAll
+ * />
+ * ```
+ */
+export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
+  label,
+  isLabelHidden = false,
+  description,
+  isOptional = false,
+  isRequired = false,
+  isDisabled = false,
+  options,
+  value,
+  onChange,
+  onChangeAction,
+  isLoading = false,
+  placeholder = 'Select...',
+  size = 'md',
+  status,
+  labelTooltip,
+  hasSelectAll = false,
+  selectAllLabel = 'Select all',
+  hasSearch = false,
+  searchPlaceholder = 'Search...',
+  triggerDisplay = 'count',
+  maxBadges = 3,
+  children,
+  'data-testid': testId,
+  xstyle,
+  className,
+  style,
+}: XDSMultiSelectorProps<T>) {
+  const triggerId = useId();
+  const listboxId = useId();
+  const descriptionId = useId();
+  const statusMessageId = useId();
+  const searchId = useId();
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Snapshot of which values were selected when the dropdown opened.
+  // Used for sort partitioning so items don't jump during interaction.
+  const selectedAtOpenRef = useRef<Set<string> | null>(null);
+
+  const [, startTransition] = useTransition();
+  const [optimisticValue, setOptimisticValue] = useOptimistic(value);
+  const isBusy = isLoading || optimisticValue !== value;
+
+  // Build aria-describedby
+  const ariaDescribedBy =
+    [
+      description ? descriptionId : null,
+      status?.message ? statusMessageId : null,
+    ]
+      .filter(Boolean)
+      .join(' ') || undefined;
+
+  // Flatten options for keyboard navigation
+  const selectableItems = useMemo(
+    () => getSelectableOptions(options),
+    [options],
+  );
+
+  // Filter items by search query
+  const filteredItems = useMemo(() => {
+    if (!searchQuery) return selectableItems;
+    const query = searchQuery.toLowerCase();
+    return selectableItems.filter(item =>
+      (item.label ?? item.value).toLowerCase().includes(query),
+    );
+  }, [selectableItems, searchQuery]);
+
+  // Layer for dropdown positioning
+  const handleLayerHide = useCallback(() => {
+    setSearchQuery('');
+    selectedAtOpenRef.current = null;
+    triggerRef.current?.focus();
+  }, []);
+
+  const popover = useXDSPopover({
+    hasLightDismiss: true,
+    onHide: handleLayerHide,
+    hasCloseButton: false,
+    hasAutoFocus: false,
+    dialogLabel: `${label} options`,
+  });
+
+  // Handle toggle
+  const handleToggle = useCallback(
+    (itemValue: string) => {
+      const newValue = optimisticValue.includes(itemValue)
+        ? optimisticValue.filter(v => v !== itemValue)
+        : [...optimisticValue, itemValue];
+
+      onChange(newValue);
+      if (onChangeAction) {
+        startTransition(async () => {
+          setOptimisticValue(newValue);
+          await onChangeAction(newValue);
+        });
+      }
+    },
+    [
+      optimisticValue,
+      onChange,
+      onChangeAction,
+      startTransition,
+      setOptimisticValue,
+    ],
+  );
+
+  // Multi-select combobox behavior
+  const {
+    highlightedIndex,
+    getItemId,
+    onTriggerClick,
+    onKeyDown,
+    onItemMouseEnter,
+  } = useMultiCombobox({
+    selectableItems: filteredItems,
+    isDisabled,
+    isOpen: popover.isOpen,
+    hasSearch,
+    onOpen: useCallback(() => {
+      // Snapshot which items are selected at open time — sort is stable during interaction
+      selectedAtOpenRef.current = new Set(optimisticValue);
+
+      popover.show();
+      if (hasSearch) {
+        // Focus search after popover opens
+        requestAnimationFrame(() => {
+          searchRef.current?.focus();
+        });
+      }
+    }, [popover, hasSearch, filteredItems, optimisticValue]),
+    onClose: popover.hide,
+    onToggle: handleToggle,
+    listboxId,
+  });
+
+  // Select-all logic
+  const enabledItems = useMemo(
+    () => filteredItems.filter(item => !item.disabled),
+    [filteredItems],
+  );
+
+  const allEnabledSelected = useMemo(
+    () =>
+      enabledItems.length > 0 &&
+      enabledItems.every(item => optimisticValue.includes(item.value)),
+    [enabledItems, optimisticValue],
+  );
+
+  const someSelected = useMemo(
+    () => enabledItems.some(item => optimisticValue.includes(item.value)),
+    [enabledItems, optimisticValue],
+  );
+
+  const selectAllState: boolean | 'indeterminate' = allEnabledSelected
+    ? true
+    : someSelected
+      ? 'indeterminate'
+      : false;
+
+  const handleSelectAll = useCallback(() => {
+    let newValue: string[];
+    if (allEnabledSelected) {
+      // Deselect all enabled items, keep disabled items that are selected
+      const enabledValues = new Set(enabledItems.map(item => item.value));
+      newValue = optimisticValue.filter(v => !enabledValues.has(v));
+    } else {
+      // Select all enabled items
+      const currentSet = new Set(optimisticValue);
+      newValue = [...optimisticValue];
+      for (const item of enabledItems) {
+        if (!currentSet.has(item.value)) {
+          newValue.push(item.value);
+        }
+      }
+    }
+
+    onChange(newValue);
+    if (onChangeAction) {
+      startTransition(async () => {
+        setOptimisticValue(newValue);
+        await onChangeAction(newValue);
+      });
+    }
+  }, [
+    allEnabledSelected,
+    enabledItems,
+    optimisticValue,
+    onChange,
+    onChangeAction,
+    startTransition,
+    setOptimisticValue,
+  ]);
+
+  // Build trigger display content
+  const selectedLabels = useMemo(() => {
+    return optimisticValue.map(v => {
+      const item = selectableItems.find(i => i.value === v);
+      return item?.label ?? v;
+    });
+  }, [optimisticValue, selectableItems]);
+
+  const renderTriggerContent = useCallback(() => {
+    if (optimisticValue.length === 0) {
+      return <span {...stylex.props(styles.triggerText)}>{placeholder}</span>;
+    }
+
+    switch (triggerDisplay) {
+      case 'count':
+        return (
+          <span {...stylex.props(styles.triggerText)}>
+            {optimisticValue.length} selected
+          </span>
+        );
+
+      case 'labels': {
+        const displayed = selectedLabels.slice(0, 3);
+        const remaining = selectedLabels.length - displayed.length;
+        const text =
+          remaining > 0
+            ? `${displayed.join(', ')}, +${remaining}`
+            : displayed.join(', ');
+        return <span {...stylex.props(styles.triggerText)}>{text}</span>;
+      }
+
+      case 'badges': {
+        const displayed = selectedLabels.slice(0, maxBadges);
+        const remaining = selectedLabels.length - displayed.length;
+        return (
+          <span {...stylex.props(styles.triggerBadges)}>
+            {displayed.map(label => (
+              <XDSBadge key={label} label={label} variant="neutral" />
+            ))}
+            {remaining > 0 && (
+              <span {...stylex.props(styles.triggerOverflow)}>
+                +{remaining}
+              </span>
+            )}
+          </span>
+        );
+      }
+    }
+  }, [optimisticValue, triggerDisplay, selectedLabels, placeholder, maxBadges]);
+
+  // Render search input
+  const renderSearch = useCallback(() => {
+    if (!hasSearch) return null;
+    return (
+      <div {...stylex.props(styles.searchWrapper)}>
+        <input
+          ref={searchRef}
+          id={searchId}
+          role="searchbox"
+          aria-controls={listboxId}
+          aria-label="Search options"
+          type="text"
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          onKeyDown={e => {
+            // Let ArrowDown/Up/Escape propagate to parent handler
+            if (
+              e.key === 'ArrowDown' ||
+              e.key === 'ArrowUp' ||
+              e.key === 'Escape'
+            ) {
+              onKeyDown(e);
+            }
+          }}
+          placeholder={searchPlaceholder}
+          {...stylex.props(styles.searchInput)}
+        />
+      </div>
+    );
+  }, [
+    hasSearch,
+    searchId,
+    listboxId,
+    searchQuery,
+    searchPlaceholder,
+    onKeyDown,
+  ]);
+
+  // Render an individual item
+  const renderItem = useCallback(
+    (item: XDSMultiSelectorOptionData, flatIndex: number) => {
+      const isHighlighted = flatIndex === highlightedIndex;
+      const isSelected = optimisticValue.includes(item.value);
+
+      return (
+        <div
+          key={item.value}
+          id={getItemId(flatIndex)}
+          role="option"
+          aria-selected={isSelected}
+          aria-disabled={item.disabled}
+          onClick={() => {
+            if (!item.disabled) {
+              handleToggle(item.value);
+            }
+          }}
+          onMouseEnter={() => onItemMouseEnter(item, flatIndex)}
+          {...stylex.props(
+            styles.item,
+            itemSizeStyles[size],
+            isHighlighted && styles.itemHighlighted,
+            item.disabled && styles.itemDisabled,
+          )}>
+          <XDSCheckboxInput
+            label={children ? '' : (item.label ?? item.value)}
+            isLabelHidden={!!children}
+            value={isSelected}
+            onChange={() => {}}
+            isDisabled={item.disabled}
+            size={size === 'lg' ? 'md' : size}
+          />
+          {children && children(item)}
+        </div>
+      );
+    },
+    [
+      children,
+      highlightedIndex,
+      optimisticValue,
+      getItemId,
+      handleToggle,
+      onItemMouseEnter,
+      size,
+    ],
+  );
+
+  // Render all options (handling sections/dividers and search filtering)
+  const renderOptions = useCallback(() => {
+    // Use the open-time snapshot for sort partitioning (stable during interaction).
+    // Falls back to live value when dropdown isn't open yet.
+    const selectedSet = selectedAtOpenRef.current ?? new Set(optimisticValue);
+
+    if (searchQuery) {
+      // Sort filtered: selected-at-open first, then unselected
+      const selected = filteredItems.filter(item =>
+        selectedSet.has(item.value),
+      );
+      const unselected = filteredItems.filter(
+        item => !selectedSet.has(item.value),
+      );
+      const sorted = [...selected, ...unselected];
+
+      if (sorted.length === 0) {
+        return <div {...stylex.props(styles.emptyState)}>No results found</div>;
+      }
+      return sorted.map((item, index) => renderItem(item, index));
+    }
+
+    // Normal rendering with selected-first sorting (using open-time snapshot)
+    let flatIndex = 0;
+    const elements: ReactNode[] = [];
+    let pendingFlatItems: Array<{
+      item: XDSMultiSelectorOptionData;
+    }> = [];
+
+    const flushFlatItems = () => {
+      if (pendingFlatItems.length === 0) return;
+      const selected = pendingFlatItems.filter(({item}) =>
+        selectedSet.has(item.value),
+      );
+      const unselected = pendingFlatItems.filter(
+        ({item}) => !selectedSet.has(item.value),
+      );
+      const sorted = [...selected, ...unselected];
+      for (const {item} of sorted) {
+        elements.push(renderItem(item, flatIndex));
+        flatIndex++;
+      }
+      pendingFlatItems = [];
+    };
+
+    for (let i = 0; i < options.length; i++) {
+      const option = options[i];
+
+      if (isDivider(option)) {
+        flushFlatItems();
+        elements.push(
+          <XDSDivider key={`divider-${i}`} xstyle={styles.divider} />,
+        );
+      } else if (isSection(option)) {
+        flushFlatItems();
+        // Sort within section: selected-at-open first
+        const sectionOptions = option.options.map(opt => normalizeOption(opt));
+        const selectedInSection = sectionOptions.filter(item =>
+          selectedSet.has(item.value),
+        );
+        const unselectedInSection = sectionOptions.filter(
+          item => !selectedSet.has(item.value),
+        );
+        const sortedSection = [...selectedInSection, ...unselectedInSection];
+
+        const sectionItems: ReactNode[] = [];
+        for (const item of sortedSection) {
+          sectionItems.push(renderItem(item, flatIndex));
+          flatIndex++;
+        }
+        if (option.title) {
+          elements.push(
+            <XDSDivider
+              key={`section-divider-${i}`}
+              label={option.title}
+              xstyle={styles.sectionDivider}
+            />,
+          );
+        }
+        elements.push(
+          <div key={`section-${i}`} role="group" aria-label={option.title}>
+            {sectionItems}
+          </div>,
+        );
+      } else if (isOptionData(option)) {
+        pendingFlatItems.push({item: normalizeOption(option)});
+      }
+    }
+    flushFlatItems();
+
+    return elements;
+  }, [options, renderItem, filteredItems, searchQuery, optimisticValue]);
+
+  return (
+    <XDSField
+      label={label}
+      isLabelHidden={isLabelHidden}
+      description={description}
+      inputID={triggerId}
+      descriptionID={description ? descriptionId : undefined}
+      isOptional={isOptional}
+      isRequired={isRequired}
+      isDisabled={isDisabled}
+      status={
+        status
+          ? {
+              type: status.type,
+              message: status.message,
+              messageID: status.message ? statusMessageId : undefined,
+            }
+          : undefined
+      }
+      labelTooltip={labelTooltip}>
+      <button
+        ref={el => {
+          (
+            triggerRef as React.MutableRefObject<HTMLButtonElement | null>
+          ).current = el;
+          popover.triggerRef(el);
+        }}
+        id={triggerId}
+        type="button"
+        role="combobox"
+        aria-haspopup="listbox"
+        aria-expanded={popover.isOpen}
+        aria-controls={listboxId}
+        aria-activedescendant={
+          popover.isOpen && highlightedIndex >= 0
+            ? getItemId(highlightedIndex)
+            : undefined
+        }
+        aria-describedby={ariaDescribedBy}
+        aria-required={isRequired ? 'true' : undefined}
+        aria-invalid={status?.type === 'error' ? 'true' : undefined}
+        aria-busy={isBusy || undefined}
+        disabled={isDisabled}
+        onClick={onTriggerClick}
+        onKeyDown={onKeyDown}
+        data-testid={testId}
+        {...mergeProps(
+          xdsClassName('multi-selector', {size, status: status?.type ?? null}),
+          stylex.props(
+            styles.trigger,
+            sizeStyles[size],
+            isDisabled && styles.triggerDisabled,
+            optimisticValue.length === 0 && styles.triggerPlaceholder,
+            status && inputStatusBorderStyles[status.type],
+            status && inputStatusHoverShadowStyles[status.type],
+            xstyle,
+          ),
+          className,
+          style,
+        )}>
+        <span {...stylex.props(styles.triggerContent)}>
+          {renderTriggerContent()}
+        </span>
+        {isBusy && <XDSSpinner size="sm" />}
+        <span
+          {...stylex.props(
+            styles.triggerIcon,
+            !status && popover.isOpen && styles.triggerIconOpen,
+            status && styles.triggerIconStatus,
+          )}>
+          {status ? (
+            <XDSIcon
+              icon={STATUS_ICON_MAP[status.type]}
+              size="sm"
+              color={STATUS_ICON_COLOR_MAP[status.type]}
+            />
+          ) : (
+            <XDSIcon icon="chevronDown" size="sm" color="inherit" />
+          )}
+        </span>
+      </button>
+
+      {popover.render(
+        <div {...stylex.props(styles.dropdown)}>
+          {renderSearch()}
+          {hasSelectAll && (
+            <>
+              <div
+                {...stylex.props(
+                  styles.selectAllWrapper,
+                  selectAllSizeStyles[size],
+                )}
+                onClick={handleSelectAll}>
+                <XDSCheckboxInput
+                  label={selectAllLabel}
+                  value={selectAllState}
+                  onChange={() => {}}
+                  size={size === 'lg' ? 'md' : size}
+                />
+              </div>
+              <XDSDivider xstyle={styles.divider} />
+            </>
+          )}
+          <div
+            id={listboxId}
+            role="listbox"
+            aria-multiselectable="true"
+            aria-labelledby={triggerId}>
+            {renderOptions()}
+          </div>
+        </div>,
+        {
+          placement: 'below',
+          alignment: 'start',
+          xstyle: styles.popover,
+        },
+      )}
+    </XDSField>
+  );
+}
+
+XDSMultiSelector.displayName = 'XDSMultiSelector';
