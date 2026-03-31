@@ -380,7 +380,18 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
   // so it isn't clipped by ancestor overflow.
   const isLayerMode = tokenOverflowBehavior === 'unfocusedLayer';
   const layer = useXDSLayer({mode: 'context'});
-  const layerContentRef = useRef<HTMLDivElement>(null);
+  const layerContentElRef = useRef<HTMLDivElement>(null);
+  // When the expanded content mounts in the popover, auto-focus the input.
+  // A ref callback guarantees the DOM is ready — unlike rAF which races
+  // with React's commit phase.
+  const pendingLayerFocusRef = useRef(false);
+  const layerContentRef = useCallback((el: HTMLDivElement | null) => {
+    layerContentElRef.current = el;
+    if (el && pendingLayerFocusRef.current) {
+      pendingLayerFocusRef.current = false;
+      inputRef.current?.focus();
+    }
+  }, []);
 
   // Anchor the layer to the placeholder element
   const placeholderRef = useCallback(
@@ -398,7 +409,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
     (target: Node | null): boolean => {
       if (!target) return false;
       if (wrapperRef.current?.contains(target)) return true;
-      if (layerContentRef.current?.contains(target)) return true;
+      if (layerContentElRef.current?.contains(target)) return true;
       // Also check the popover element itself (the layer wrapper)
       const popoverEl = document.getElementById(layer.id);
       if (popoverEl?.contains(target)) return true;
@@ -419,9 +430,9 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
       if (comingFromOutside && e.target !== inputRef.current) {
         if (isLayerMode) {
           // In layer mode, the input moves from the placeholder into the
-          // popover after React re-renders. Defer focus so it targets the
-          // input in its new DOM position.
-          requestAnimationFrame(() => inputRef.current?.focus());
+          // popover after React re-renders. Signal the ref callback to
+          // focus the input once the expanded content mounts.
+          pendingLayerFocusRef.current = true;
         } else {
           inputRef.current?.focus();
         }
@@ -525,9 +536,9 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
     if (!isDisabled) {
       if (isLayerMode && isTruncated) {
         // In layer mode, clicking the collapsed placeholder triggers a
-        // re-render that moves the input into the popover. Defer focus
-        // so it targets the input in its new DOM position.
-        requestAnimationFrame(() => inputRef.current?.focus());
+        // re-render that moves the input into the popover. Signal the
+        // ref callback to focus the input once mounted.
+        pendingLayerFocusRef.current = true;
       } else {
         inputRef.current?.focus();
       }
