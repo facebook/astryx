@@ -46,6 +46,25 @@ export interface PixelWidth {
 export type ColumnWidth = ProportionalWidth | PixelWidth;
 
 // =============================================================================
+// Sortable Column Config
+// =============================================================================
+
+/**
+ * Sortable column configuration.
+ * Added to XDSTableColumn<T> via the `sortable` field.
+ */
+export interface XDSTableSortableColumnConfig {
+  /**
+   * The sort key for this column. Must match a key used in XDSTableSortState.
+   * Allows decoupling column identity from sort identity (e.g., a "Full Name"
+   * column might sort by `'lastName'`).
+   *
+   * @default column.key — if omitted, uses the column's `key` property
+   */
+  sortKey?: string;
+}
+
+// =============================================================================
 // Column Definition
 // =============================================================================
 
@@ -61,6 +80,22 @@ export interface XDSTableColumn<T extends Record<string, unknown>> {
   header?: ReactNode;
   /** Column width. Defaults to `proportional(1)`. */
   width?: ColumnWidth;
+  /**
+   * Sortable configuration for this column.
+   * Set to `true` for default behavior (sortKey = column.key),
+   * or provide an object with a custom sortKey.
+   * Omit or set to `undefined`/`false` to make the column non-sortable.
+   *
+   * @example
+   * ```
+   * // Simple: sort key matches column key
+   * { key: 'name', header: 'Name', sortable: true }
+   *
+   * // Custom sort key
+   * { key: 'fullName', header: 'Full Name', sortable: { sortKey: 'lastName' } }
+   * ```
+   */
+  sortable?: boolean | XDSTableSortableColumnConfig;
   /**
    * Custom cell renderer. Receives the row item and returns rich JSX content.
    * Defaults to `String(item[key])` — use renderCell for rich content like
