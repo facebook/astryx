@@ -8,10 +8,11 @@ $ARGUMENTS
 
 ## Instructions
 
-Follow the two-phase protocol documented on the XDS wiki:
+Follow the full component lifecycle documented on the XDS wiki:
 
-1. **Specification Protocol**: https://github.com/facebookexperimental/xds/wiki/Component-Specification-Protocol
-2. **Build Protocol**: https://github.com/facebookexperimental/xds/wiki/Component-Build-Protocol
+- **Lifecycle Overview**: https://github.com/facebookexperimental/xds/wiki/Component-Lifecycle
+- **Specification Protocol**: https://github.com/facebookexperimental/xds/wiki/Component-Specification-Protocol
+- **Build Protocol**: https://github.com/facebookexperimental/xds/wiki/Component-Build-Protocol
 
 ### Quick reference
 
