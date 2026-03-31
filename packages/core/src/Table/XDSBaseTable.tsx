@@ -223,10 +223,16 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
 
   // --- Plugin pipeline: header cells ---
   const headerCells = resolvedColumns.map(col => {
+    const headerContent = col.header ?? col.key;
+
     const cellRenderProps = applyPlugins(
       plugins,
       p => p.transformHeaderCell,
-      {htmlProps: {}, styles: []} as HeaderCellRenderProps,
+      {
+        htmlProps: {},
+        styles: [],
+        content: headerContent,
+      } as HeaderCellRenderProps,
       col,
     );
 
@@ -251,11 +257,15 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
         }
       : cellRenderProps.htmlProps;
 
-    const headerContent = col.header ?? col.key;
+    // Resolve header content from slots — plugins write to named slots
+    // to avoid conflicts (e.g. sort writes `after`, resize writes `overlay`)
+    const resolvedContent = cellRenderProps.content ?? headerContent;
     const headerTitleProp =
-      typeof headerContent === 'string' && headerContent.length > 0
-        ? {title: headerContent}
+      typeof resolvedContent === 'string' && resolvedContent.length > 0
+        ? {title: resolvedContent}
         : {};
+    const {before, after, overlay} = cellRenderProps;
+    const hasSlots = before != null || after != null || overlay != null;
 
     return (
       <HeaderCellComponent
@@ -263,7 +273,16 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
         {...mergedHtmlProps}
         {...headerTitleProp}
         xstyle={cellRenderProps.styles}>
-        {headerContent}
+        {hasSlots ? (
+          <>
+            {before}
+            {resolvedContent}
+            {after}
+            {overlay}
+          </>
+        ) : (
+          resolvedContent
+        )}
       </HeaderCellComponent>
     );
   });
