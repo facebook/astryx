@@ -62,6 +62,7 @@ export * from './Kbd';
 export * from './Dialog';
 export * from './DropdownMenu';
 export * from './MoreMenu';
+export * from './Toolbar';
 export * from './TopNav';
 export * from './SideNav';
 export * from './MobileNav';

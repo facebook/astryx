@@ -382,6 +382,12 @@
       "import": "./dist/Tokenizer/index.mjs",
       "require": "./dist/Tokenizer/index.js"
     },
+    "./Toolbar": {
+      "source": "./src/Toolbar/index.ts",
+      "types": "./dist/Toolbar/index.d.ts",
+      "import": "./dist/Toolbar/index.mjs",
+      "require": "./dist/Toolbar/index.js"
+    },
     "./Tooltip": {
       "source": "./src/Tooltip/index.ts",
       "types": "./dist/Tooltip/index.d.ts",
