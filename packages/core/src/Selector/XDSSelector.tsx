@@ -133,7 +133,6 @@ const styles = stylex.create({
     maxHeight: '300px',
     overflowY: 'auto',
     padding: spacingVars['--spacing-1'],
-    borderRadius: radiusVars['--radius-container'],
     opacity: 1,
     transition: `opacity ${durationVars['--duration-fast']}`,
   },

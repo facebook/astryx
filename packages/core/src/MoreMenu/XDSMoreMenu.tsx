@@ -7,7 +7,7 @@
  * @position Core implementation; consumed by index.ts
  *
  * Overflow menu with a three-dot icon trigger. A convenience wrapper
- * that composes XDSButton (icon-only) + useXDSLayer for the dropdown.
+ * that composes XDSButton (icon-only) + useXDSPopover for the dropdown.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/MoreMenu/README.md
@@ -175,7 +175,7 @@ export interface XDSMoreMenuProps {
    * Same type as XDSDropdownMenu's `items` prop.
    *
    * For advanced menu content that can't be expressed as data,
-   * compose XDSButton + useXDSLayer + XDSDropdownMenuItem directly.
+   * compose XDSButton + useXDSPopover + XDSDropdownMenuItem directly.
    */
   items: XDSDropdownMenuOption[];
 
@@ -247,7 +247,7 @@ function DefaultItem({item}: {item: XDSDropdownMenuItemData}) {
  * pattern.
  *
  * For full control over trigger rendering or menu content, compose
- * XDSButton + useXDSLayer + XDSDropdownMenuItem directly.
+ * XDSButton + useXDSPopover + XDSDropdownMenuItem directly.
  *
  * @example
  * ```
