@@ -208,6 +208,12 @@
       "import": "./dist/MoreMenu/index.mjs",
       "require": "./dist/MoreMenu/index.js"
     },
+    "./MultiSelector": {
+      "source": "./src/MultiSelector/index.ts",
+      "types": "./dist/MultiSelector/index.d.ts",
+      "import": "./dist/MultiSelector/index.mjs",
+      "require": "./dist/MultiSelector/index.js"
+    },
     "./NavIcon": {
       "source": "./src/NavIcon/index.ts",
       "types": "./dist/NavIcon/index.d.ts",
