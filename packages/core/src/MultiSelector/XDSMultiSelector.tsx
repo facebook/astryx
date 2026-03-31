@@ -181,6 +181,7 @@ const styles = stylex.create({
   // Popover container (for anchor positioning)
   popover: {
     minWidth: 'anchor-size(width)',
+    marginBlockStart: spacingVars['--spacing-1'],
   },
 
   // Search input
