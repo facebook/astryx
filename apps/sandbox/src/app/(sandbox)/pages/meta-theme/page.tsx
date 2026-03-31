@@ -25,10 +25,13 @@ import {XDSKbd} from '@xds/core/Kbd';
 import {XDSToken} from '@xds/core/Token';
 import {XDSStatusDot} from '@xds/core/StatusDot';
 import {XDSEmptyState} from '@xds/core/EmptyState';
-import {XDSSegmentedControl, XDSSegmentedControlItem} from '@xds/core/SegmentedControl';
+import {
+  XDSSegmentedControl,
+  XDSSegmentedControlItem,
+} from '@xds/core/SegmentedControl';
 import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
 import {XDSMoreMenu} from '@xds/core/MoreMenu';
-import {XDSSection} from '@xds/core/Section';
+
 import {XDSSlider} from '@xds/core/Slider';
 import {XDSTextArea} from '@xds/core/TextArea';
 import {XDSMetadataList, XDSMetadataListItem} from '@xds/core/MetadataList';
@@ -44,7 +47,12 @@ const styles = stylex.create({
   positive: {color: 'var(--color-text-success)'},
   negative: {color: 'var(--color-text-error)'},
   miniChart: {display: 'flex', alignItems: 'flex-end', gap: 2, height: 32},
-  chartBar: {width: 4, borderRadius: 2, backgroundColor: 'var(--color-accent)', opacity: 0.6},
+  chartBar: {
+    width: 4,
+    borderRadius: 2,
+    backgroundColor: 'var(--color-accent)',
+    opacity: 0.6,
+  },
   tableRow: {
     display: 'grid',
     gridTemplateColumns: '2fr 1fr 1fr 1fr 80px',
@@ -54,14 +62,21 @@ const styles = stylex.create({
     paddingInline: 12,
   },
   tableHeader: {borderBottom: '1px solid var(--color-divider)'},
-  tableRowHover: {':hover': {backgroundColor: 'var(--color-surface-secondary)'}},
+  tableRowHover: {
+    ':hover': {backgroundColor: 'var(--color-surface-secondary)'},
+  },
   activityDot: {
-    width: 8, height: 8, borderRadius: '50%',
-    backgroundColor: 'var(--color-accent)', flexShrink: 0,
+    width: 8,
+    height: 8,
+    borderRadius: '50%',
+    backgroundColor: 'var(--color-accent)',
+    flexShrink: 0,
   },
   activityLine: {
-    width: 1, height: 20,
-    backgroundColor: 'var(--color-divider)', marginInlineStart: 3,
+    width: 1,
+    height: 20,
+    backgroundColor: 'var(--color-divider)',
+    marginInlineStart: 3,
   },
   sidePanel: {minWidth: 280, maxWidth: 320},
   flex1: {flex: 1, minWidth: 0},
@@ -72,25 +87,45 @@ function MiniChart({data}: {data: number[]}) {
   return (
     <div {...stylex.props(styles.miniChart)}>
       {data.map((v, i) => (
-        <div key={i} {...stylex.props(styles.chartBar)} style={{height: `${(v / max) * 100}%`}} />
+        <div
+          key={i}
+          {...stylex.props(styles.chartBar)}
+          style={{height: `${(v / max) * 100}%`}}
+        />
       ))}
     </div>
   );
 }
 
-function StatCard({label, value, change, trend, chart}: {
-  label: string; value: string; change: string; trend: 'up' | 'down'; chart: number[];
+function StatCard({
+  label,
+  value,
+  change,
+  trend,
+  chart,
+}: {
+  label: string;
+  value: string;
+  change: string;
+  trend: 'up' | 'down';
+  chart: number[];
 }) {
   return (
     <XDSCard>
       <XDSVStack gap={2}>
-        <XDSHStack gap={2} hAlign="spaceBetween" vAlign="center">
-          <XDSText type="label" color="secondary">{label}</XDSText>
+        <XDSHStack gap={2} hAlign="between" vAlign="center">
+          <XDSText type="label" color="secondary">
+            {label}
+          </XDSText>
           <MiniChart data={chart} />
         </XDSHStack>
-        <XDSHStack gap={2} vAlign="baseline">
+        <XDSHStack gap={2} vAlign="end">
           <div {...stylex.props(styles.statValue)}>{value}</div>
-          <div {...stylex.props(styles.statChange, trend === 'up' ? styles.positive : styles.negative)}>
+          <div
+            {...stylex.props(
+              styles.statChange,
+              trend === 'up' ? styles.positive : styles.negative,
+            )}>
             {trend === 'up' ? '\u2191' : '\u2193'} {change}
           </div>
         </XDSHStack>
@@ -99,8 +134,16 @@ function StatCard({label, value, change, trend, chart}: {
   );
 }
 
-function ActivityItem({name, action, time, isLast}: {
-  name: string; action: string; time: string; isLast?: boolean;
+function ActivityItem({
+  name,
+  action,
+  time,
+  isLast,
+}: {
+  name: string;
+  action: string;
+  time: string;
+  isLast?: boolean;
 }) {
   return (
     <XDSHStack gap={3}>
@@ -110,42 +153,70 @@ function ActivityItem({name, action, time, isLast}: {
       </XDSVStack>
       <XDSVStack gap={0}>
         <XDSText type="body">
-          <XDSText type="body" weight="bold">{name}</XDSText>{' '}{action}
+          <XDSText type="body" weight="bold">
+            {name}
+          </XDSText>{' '}
+          {action}
         </XDSText>
-        <XDSText type="supporting" color="secondary">{time}</XDSText>
+        <XDSText type="supporting" color="secondary">
+          {time}
+        </XDSText>
       </XDSVStack>
     </XDSHStack>
   );
 }
 
-function ProjectRow({name, status, members, progress}: {
-  name: string; status: 'active' | 'review' | 'completed' | 'paused'; members: string[]; progress: number;
+function ProjectRow({
+  name,
+  status,
+  members,
+  progress,
+}: {
+  name: string;
+  status: 'active' | 'review' | 'completed' | 'paused';
+  members: string[];
+  progress: number;
 }) {
-  const badgeVariant = status === 'active' ? 'info'
-    : status === 'completed' ? 'success'
-    : status === 'paused' ? undefined
-    : 'warning';
+  const badgeVariant =
+    status === 'active'
+      ? 'info'
+      : status === 'completed'
+        ? 'success'
+        : status === 'paused'
+          ? undefined
+          : 'warning';
   return (
     <div {...stylex.props(styles.tableRow, styles.tableRowHover)}>
-      <XDSText type="body" weight="semibold">{name}</XDSText>
-      <XDSBadge variant={badgeVariant} label={status.charAt(0).toUpperCase() + status.slice(1)} />
-      <XDSHStack gap={-1}>
-        {members.map(m => <XDSAvatar key={m} name={m} size="tiny" />)}
+      <XDSText type="body" weight="semibold">
+        {name}
+      </XDSText>
+      <XDSBadge
+        variant={badgeVariant}
+        label={status.charAt(0).toUpperCase() + status.slice(1)}
+      />
+      <XDSHStack gap={0}>
+        {members.map(m => (
+          <XDSAvatar key={m} name={m} size="tiny" />
+        ))}
       </XDSHStack>
       <XDSProgressBar label="Progress" value={progress} />
-      <XDSMoreMenu items={[
-        {label: 'View details', onClick: () => {}},
-        {label: 'Edit', onClick: () => {}},
-        {type: 'divider'},
-        {label: 'Archive', onClick: () => {}},
-      ]} />
+      <XDSMoreMenu
+        items={[
+          {label: 'View details', onClick: () => {}},
+          {label: 'Edit', onClick: () => {}},
+          {type: 'divider'},
+          {label: 'Archive', onClick: () => {}},
+        ]}
+      />
     </div>
   );
 }
 
 export default function MetaThemePage() {
   const {setThemeName} = useThemeControls();
-  useState(() => { setThemeName('meta'); });
+  useState(() => {
+    setThemeName('meta');
+  });
 
   const [tab, setTab] = useState('overview');
   const [period, setPeriod] = useState('week');
@@ -156,7 +227,12 @@ export default function MetaThemePage() {
   const [frequency, setFrequency] = useState('daily');
   const [volume, setVolume] = useState(70);
   const [feedback, setFeedback] = useState('');
-  const [tokens, setTokens] = useState(['Design Systems', 'React', 'TypeScript', 'Meta']);
+  const [tokens, setTokens] = useState([
+    'Design Systems',
+    'React',
+    'TypeScript',
+    'Meta',
+  ]);
   const [checked, setChecked] = useState(false);
 
   return (
@@ -164,15 +240,20 @@ export default function MetaThemePage() {
       <div {...stylex.props(styles.page)}>
         <XDSVStack gap={6}>
           {/* Page Header */}
-          <XDSHStack hAlign="spaceBetween" vAlign="center">
+          <XDSHStack hAlign="between" vAlign="center">
             <XDSVStack gap={1}>
               <XDSHeading level={2}>Dashboard</XDSHeading>
               <XDSText type="body" color="secondary">
-                Welcome back. Here&apos;s what&apos;s happening with your projects.
+                Welcome back. Here&apos;s what&apos;s happening with your
+                projects.
               </XDSText>
             </XDSVStack>
             <XDSHStack gap={2}>
-              <XDSSegmentedControl value={period} onChange={setPeriod} size="sm">
+              <XDSSegmentedControl
+                label="Time period"
+                value={period}
+                onChange={setPeriod}
+                size="sm">
                 <XDSSegmentedControlItem value="day" label="Day" />
                 <XDSSegmentedControlItem value="week" label="Week" />
                 <XDSSegmentedControlItem value="month" label="Month" />
@@ -184,10 +265,34 @@ export default function MetaThemePage() {
 
           {/* Stats Row */}
           <div {...stylex.props(styles.grid4)}>
-            <StatCard label="Total Users" value="12,486" change="12.5%" trend="up" chart={[4,6,5,8,7,9,11,10,13,12]} />
-            <StatCard label="Active Projects" value="34" change="3 new" trend="up" chart={[3,4,3,5,4,6,5,7,6,8]} />
-            <StatCard label="Completion Rate" value="87.3%" change="2.1%" trend="up" chart={[70,72,75,74,78,80,82,84,85,87]} />
-            <StatCard label="Open Issues" value="23" change="5 closed" trend="down" chart={[35,32,30,28,27,26,25,24,24,23]} />
+            <StatCard
+              label="Total Users"
+              value="12,486"
+              change="12.5%"
+              trend="up"
+              chart={[4, 6, 5, 8, 7, 9, 11, 10, 13, 12]}
+            />
+            <StatCard
+              label="Active Projects"
+              value="34"
+              change="3 new"
+              trend="up"
+              chart={[3, 4, 3, 5, 4, 6, 5, 7, 6, 8]}
+            />
+            <StatCard
+              label="Completion Rate"
+              value="87.3%"
+              change="2.1%"
+              trend="up"
+              chart={[70, 72, 75, 74, 78, 80, 82, 84, 85, 87]}
+            />
+            <StatCard
+              label="Open Issues"
+              value="23"
+              change="5 closed"
+              trend="down"
+              chart={[35, 32, 30, 28, 27, 26, 25, 24, 24, 23]}
+            />
           </div>
 
           {/* Banner */}
@@ -210,67 +315,149 @@ export default function MetaThemePage() {
               <XDSHStack gap={4}>
                 <div {...stylex.props(styles.flex1)}>
                   <XDSVStack gap={4}>
-                    <XDSSection title="Recent Projects">
-                      <XDSVStack gap={0}>
-                        <div {...stylex.props(styles.tableRow, styles.tableHeader)}>
-                          <XDSText type="label" color="secondary">Project</XDSText>
-                          <XDSText type="label" color="secondary">Status</XDSText>
-                          <XDSText type="label" color="secondary">Team</XDSText>
-                          <XDSText type="label" color="secondary">Progress</XDSText>
-                          <span />
-                        </div>
-                        <ProjectRow name="Design System v2" status="active" members={['Alice','Bob','Carol']} progress={72} />
-                        <ProjectRow name="Mobile App Redesign" status="review" members={['Dave','Eve']} progress={91} />
-                        <ProjectRow name="API Gateway" status="completed" members={['Frank','Grace','Heidi','Ivan']} progress={100} />
-                        <ProjectRow name="Analytics Dashboard" status="active" members={['Judy','Karl']} progress={45} />
-                        <ProjectRow name="Auth Service" status="paused" members={['Liam']} progress={30} />
-                      </XDSVStack>
-                    </XDSSection>
-
-                    <XDSSection title="Quick Feedback">
+                    <XDSCard>
                       <XDSVStack gap={3}>
-                        <div {...stylex.props(styles.grid2)}>
-                          <XDSTextInput label="Subject" placeholder="What&apos;s this about?" value={searchVal} onChange={setSearchVal} />
-                          <XDSDropdownMenu
-                            button={{label: 'Category', variant: 'secondary', size: 'md'}}
-                            menuWidth={200}
-                            items={[
-                              {label: 'Bug Report', onClick: () => {}},
-                              {label: 'Feature Request', onClick: () => {}},
-                              {label: 'General Feedback', onClick: () => {}},
-                            ]}
+                        <XDSHeading level={4}>Recent Projects</XDSHeading>
+                        <XDSVStack gap={0}>
+                          <div
+                            {...stylex.props(
+                              styles.tableRow,
+                              styles.tableHeader,
+                            )}>
+                            <XDSText type="label" color="secondary">
+                              Project
+                            </XDSText>
+                            <XDSText type="label" color="secondary">
+                              Status
+                            </XDSText>
+                            <XDSText type="label" color="secondary">
+                              Team
+                            </XDSText>
+                            <XDSText type="label" color="secondary">
+                              Progress
+                            </XDSText>
+                            <span />
+                          </div>
+                          <ProjectRow
+                            name="Design System v2"
+                            status="active"
+                            members={['Alice', 'Bob', 'Carol']}
+                            progress={72}
                           />
-                        </div>
-                        <XDSTextArea label="Message" placeholder="Share your thoughts..." value={feedback} onChange={setFeedback} rows={3} />
-                        <XDSHStack gap={2} vAlign="center">
-                          <XDSHStack gap={2} style={{flex: 1}}>
-                            {tokens.map(t => (
-                              <XDSToken key={t} label={t} onRemove={() => setTokens(prev => prev.filter(x => x !== t))} />
-                            ))}
+                          <ProjectRow
+                            name="Mobile App Redesign"
+                            status="review"
+                            members={['Dave', 'Eve']}
+                            progress={91}
+                          />
+                          <ProjectRow
+                            name="API Gateway"
+                            status="completed"
+                            members={['Frank', 'Grace', 'Heidi', 'Ivan']}
+                            progress={100}
+                          />
+                          <ProjectRow
+                            name="Analytics Dashboard"
+                            status="active"
+                            members={['Judy', 'Karl']}
+                            progress={45}
+                          />
+                          <ProjectRow
+                            name="Auth Service"
+                            status="paused"
+                            members={['Liam']}
+                            progress={30}
+                          />
+                        </XDSVStack>
+                      </XDSVStack>
+                    </XDSCard>
+
+                    <XDSCard>
+                      <XDSVStack gap={3}>
+                        <XDSHeading level={4}>Quick Feedback</XDSHeading>
+                        <XDSVStack gap={3}>
+                          <div {...stylex.props(styles.grid2)}>
+                            <XDSTextInput
+                              label="Subject"
+                              placeholder="What's this about?"
+                              value={searchVal}
+                              onChange={setSearchVal}
+                            />
+                            <XDSDropdownMenu
+                              button={{
+                                label: 'Category',
+                                variant: 'secondary',
+                                size: 'md',
+                              }}
+                              menuWidth={200}
+                              items={[
+                                {label: 'Bug Report', onClick: () => {}},
+                                {label: 'Feature Request', onClick: () => {}},
+                                {label: 'General Feedback', onClick: () => {}},
+                              ]}
+                            />
+                          </div>
+                          <XDSTextArea
+                            label="Message"
+                            placeholder="Share your thoughts..."
+                            value={feedback}
+                            onChange={setFeedback}
+                            rows={3}
+                          />
+                          <XDSHStack gap={2} vAlign="center">
+                            <XDSHStack gap={2} style={{flex: 1}}>
+                              {tokens.map(t => (
+                                <XDSToken
+                                  key={t}
+                                  label={t}
+                                  onRemove={() =>
+                                    setTokens(prev => prev.filter(x => x !== t))
+                                  }
+                                />
+                              ))}
+                            </XDSHStack>
+                            <XDSButton
+                              label="Send feedback"
+                              variant="primary"
+                              size="sm"
+                            />
                           </XDSHStack>
-                          <XDSButton label="Send feedback" variant="primary" size="sm" />
+                        </XDSVStack>
+                      </XDSVStack>
+                    </XDSCard>
+
+                    <XDSCard>
+                      <XDSVStack gap={3}>
+                        <XDSHeading level={4}>Loading States</XDSHeading>
+                        <XDSHStack gap={6} vAlign="start">
+                          <XDSVStack gap={3} style={{flex: 1}}>
+                            <XDSProgressBar
+                              label="Uploading assets…"
+                              value={65}
+                              hasValueLabel
+                            />
+                            <XDSProgressBar
+                              label="Processing data…"
+                              isIndeterminate
+                            />
+                          </XDSVStack>
+                          <XDSHStack gap={4} vAlign="center">
+                            <XDSSpinner size="sm" />
+                            <XDSSpinner size="md" />
+                            <XDSSpinner size="lg" />
+                          </XDSHStack>
+                          <XDSVStack gap={2}>
+                            <XDSSkeleton width={200} height={16} />
+                            <XDSSkeleton width={140} height={16} />
+                            <XDSSkeleton
+                              width={40}
+                              height={40}
+                              radius="rounded"
+                            />
+                          </XDSVStack>
                         </XDSHStack>
                       </XDSVStack>
-                    </XDSSection>
-
-                    <XDSSection title="Loading States">
-                      <XDSHStack gap={6} vAlign="start">
-                        <XDSVStack gap={3} style={{flex: 1}}>
-                          <XDSProgressBar label="Uploading assets…" value={65} hasValueLabel />
-                          <XDSProgressBar label="Processing data…" isIndeterminate />
-                        </XDSVStack>
-                        <XDSHStack gap={4} vAlign="center">
-                          <XDSSpinner size="sm" />
-                          <XDSSpinner size="md" />
-                          <XDSSpinner size="lg" />
-                        </XDSHStack>
-                        <XDSVStack gap={2}>
-                          <XDSSkeleton width={200} height={16} />
-                          <XDSSkeleton width={140} height={16} />
-                          <XDSSkeleton width={40} height={40} radius="rounded" />
-                        </XDSVStack>
-                      </XDSHStack>
-                    </XDSSection>
+                    </XDSCard>
                   </XDSVStack>
                 </div>
 
@@ -281,43 +468,77 @@ export default function MetaThemePage() {
                       <XDSVStack gap={3} hAlign="center">
                         <XDSAvatar name="Ruby Cheung" size="large" />
                         <XDSVStack gap={0} hAlign="center">
-                          <XDSText type="body" weight="bold">Ruby Cheung</XDSText>
-                          <XDSText type="supporting" color="secondary">Design Systems Lead</XDSText>
+                          <XDSText type="body" weight="bold">
+                            Ruby Cheung
+                          </XDSText>
+                          <XDSText type="supporting" color="secondary">
+                            Design Systems Lead
+                          </XDSText>
                         </XDSVStack>
                         <XDSStatusDot variant="positive" label="Online" />
                         <XDSDivider />
                         <XDSMetadataList>
-                          <XDSMetadataListItem label="Team" value="XDS Core" />
-                          <XDSMetadataListItem label="Location" value="Menlo Park" />
-                          <XDSMetadataListItem label="Joined" value="Jan 2024" />
+                          <XDSMetadataListItem label="Team">
+                            XDS Core
+                          </XDSMetadataListItem>
+                          <XDSMetadataListItem label="Location">
+                            Menlo Park
+                          </XDSMetadataListItem>
+                          <XDSMetadataListItem label="Joined">
+                            Jan 2024
+                          </XDSMetadataListItem>
                         </XDSMetadataList>
                       </XDSVStack>
                     </XDSCard>
                     <XDSCard>
                       <XDSVStack gap={3}>
-                        <XDSHStack hAlign="spaceBetween" vAlign="center">
-                          <XDSText type="body" weight="bold">Recent Activity</XDSText>
+                        <XDSHStack hAlign="between" vAlign="center">
+                          <XDSText type="body" weight="bold">
+                            Recent Activity
+                          </XDSText>
                           <XDSBadge label="5 new" variant="info" />
                         </XDSHStack>
                         <XDSDivider />
-                        <ActivityItem name="Alice" action="merged PR #482" time="5 min ago" />
-                        <ActivityItem name="Bob" action="opened issue #91" time="22 min ago" />
-                        <ActivityItem name="Carol" action="deployed v2.4.0" time="1 hour ago" />
-                        <ActivityItem name="Dave" action="commented on PR #479" time="3 hours ago" isLast />
+                        <ActivityItem
+                          name="Alice"
+                          action="merged PR #482"
+                          time="5 min ago"
+                        />
+                        <ActivityItem
+                          name="Bob"
+                          action="opened issue #91"
+                          time="22 min ago"
+                        />
+                        <ActivityItem
+                          name="Carol"
+                          action="deployed v2.4.0"
+                          time="1 hour ago"
+                        />
+                        <ActivityItem
+                          name="Dave"
+                          action="commented on PR #479"
+                          time="3 hours ago"
+                          isLast
+                        />
                       </XDSVStack>
                     </XDSCard>
                     <XDSCard>
                       <XDSVStack gap={2}>
-                        <XDSText type="body" weight="bold">Shortcuts</XDSText>
+                        <XDSText type="body" weight="bold">
+                          Shortcuts
+                        </XDSText>
                         <XDSDivider />
-                        <XDSHStack hAlign="spaceBetween" vAlign="center">
-                          <XDSText type="body">Search</XDSText><XDSKbd keys="mod+k" />
+                        <XDSHStack hAlign="between" vAlign="center">
+                          <XDSText type="body">Search</XDSText>
+                          <XDSKbd keys="mod+k" />
                         </XDSHStack>
-                        <XDSHStack hAlign="spaceBetween" vAlign="center">
-                          <XDSText type="body">Save</XDSText><XDSKbd keys="mod+s" />
+                        <XDSHStack hAlign="between" vAlign="center">
+                          <XDSText type="body">Save</XDSText>
+                          <XDSKbd keys="mod+s" />
                         </XDSHStack>
-                        <XDSHStack hAlign="spaceBetween" vAlign="center">
-                          <XDSText type="body">New project</XDSText><XDSKbd keys="mod+n" />
+                        <XDSHStack hAlign="between" vAlign="center">
+                          <XDSText type="body">New project</XDSText>
+                          <XDSKbd keys="mod+n" />
                         </XDSHStack>
                       </XDSVStack>
                     </XDSCard>
@@ -332,14 +553,31 @@ export default function MetaThemePage() {
                   <XDSVStack gap={4}>
                     <XDSVStack gap={1}>
                       <XDSHeading level={4}>Notifications</XDSHeading>
-                      <XDSText type="body" color="secondary">Choose how you want to be notified.</XDSText>
+                      <XDSText type="body" color="secondary">
+                        Choose how you want to be notified.
+                      </XDSText>
                     </XDSVStack>
                     <XDSDivider />
-                    <XDSSwitch label="Email notifications" value={notifEmail} onChange={setNotifEmail} />
-                    <XDSSwitch label="Push notifications" value={notifPush} onChange={setNotifPush} />
-                    <XDSSwitch label="Slack integration" value={notifSlack} onChange={setNotifSlack} />
+                    <XDSSwitch
+                      label="Email notifications"
+                      value={notifEmail}
+                      onChange={setNotifEmail}
+                    />
+                    <XDSSwitch
+                      label="Push notifications"
+                      value={notifPush}
+                      onChange={setNotifPush}
+                    />
+                    <XDSSwitch
+                      label="Slack integration"
+                      value={notifSlack}
+                      onChange={setNotifSlack}
+                    />
                     <XDSDivider />
-                    <XDSRadioList label="Digest frequency" value={frequency} onChange={setFrequency}>
+                    <XDSRadioList
+                      label="Digest frequency"
+                      value={frequency}
+                      onChange={setFrequency}>
                       <XDSRadioListItem value="realtime" label="Real-time" />
                       <XDSRadioListItem value="daily" label="Daily digest" />
                       <XDSRadioListItem value="weekly" label="Weekly summary" />
@@ -350,17 +588,44 @@ export default function MetaThemePage() {
                   <XDSVStack gap={4}>
                     <XDSVStack gap={1}>
                       <XDSHeading level={4}>Preferences</XDSHeading>
-                      <XDSText type="body" color="secondary">Customize your experience.</XDSText>
+                      <XDSText type="body" color="secondary">
+                        Customize your experience.
+                      </XDSText>
                     </XDSVStack>
                     <XDSDivider />
-                    <XDSTextInput label="Display name" placeholder="Your name" value="Ruby Cheung" onChange={() => {}} />
-                    <XDSTextInput label="Email" placeholder="you@example.com" value="ruby@meta.com" onChange={() => {}} status={{type: 'success', message: 'Email verified'}} />
-                    <XDSSlider label="Font size" value={volume} onChange={setVolume} min={50} max={150} />
-                    <XDSCheckboxInput label="Enable beta features" value={checked} onChange={setChecked} />
+                    <XDSTextInput
+                      label="Display name"
+                      placeholder="Your name"
+                      value="Ruby Cheung"
+                      onChange={() => {}}
+                    />
+                    <XDSTextInput
+                      label="Email"
+                      placeholder="you@example.com"
+                      value="ruby@meta.com"
+                      onChange={() => {}}
+                      status={{type: 'success', message: 'Email verified'}}
+                    />
+                    <XDSSlider
+                      label="Font size"
+                      value={volume}
+                      onChange={setVolume}
+                      min={50}
+                      max={150}
+                    />
+                    <XDSCheckboxInput
+                      label="Enable beta features"
+                      value={checked}
+                      onChange={setChecked}
+                    />
                     <XDSDivider />
                     <XDSHStack gap={2} hAlign="end">
                       <XDSButton label="Cancel" variant="ghost" size="sm" />
-                      <XDSButton label="Save changes" variant="primary" size="sm" />
+                      <XDSButton
+                        label="Save changes"
+                        variant="primary"
+                        size="sm"
+                      />
                     </XDSHStack>
                   </XDSVStack>
                 </XDSCard>
@@ -369,27 +634,63 @@ export default function MetaThemePage() {
 
             {tab === 'team' && (
               <XDSVStack gap={4}>
-                <XDSHStack gap={2} hAlign="spaceBetween" vAlign="center">
-                  <XDSTextInput label="" placeholder="Search team members…" value="" onChange={() => {}} />
-                  <XDSButton label="Invite member" variant="primary" size="sm" />
+                <XDSHStack gap={2} hAlign="between" vAlign="center">
+                  <XDSTextInput
+                    label=""
+                    placeholder="Search team members…"
+                    value=""
+                    onChange={() => {}}
+                  />
+                  <XDSButton
+                    label="Invite member"
+                    variant="primary"
+                    size="sm"
+                  />
                 </XDSHStack>
                 <div {...stylex.props(styles.grid3)}>
                   {[
-                    {name: 'Alice Zhang', role: 'Engineer', status: 'positive' as const},
-                    {name: 'Bob Kim', role: 'Designer', status: 'positive' as const},
+                    {
+                      name: 'Alice Zhang',
+                      role: 'Engineer',
+                      status: 'positive' as const,
+                    },
+                    {
+                      name: 'Bob Kim',
+                      role: 'Designer',
+                      status: 'positive' as const,
+                    },
                     {name: 'Carol Lee', role: 'PM', status: 'warning' as const},
-                    {name: 'Dave Patel', role: 'Engineer', status: 'neutral' as const},
-                    {name: 'Eve Chen', role: 'Engineer', status: 'positive' as const},
-                    {name: 'Frank Wu', role: 'QA Lead', status: 'negative' as const},
+                    {
+                      name: 'Dave Patel',
+                      role: 'Engineer',
+                      status: 'neutral' as const,
+                    },
+                    {
+                      name: 'Eve Chen',
+                      role: 'Engineer',
+                      status: 'positive' as const,
+                    },
+                    {
+                      name: 'Frank Wu',
+                      role: 'QA Lead',
+                      status: 'negative' as const,
+                    },
                   ].map(member => (
                     <XDSCard key={member.name}>
                       <XDSHStack gap={3} vAlign="center">
                         <XDSAvatar name={member.name} size="medium" />
                         <XDSVStack gap={0} style={{flex: 1}}>
-                          <XDSText type="body" weight="semibold">{member.name}</XDSText>
-                          <XDSText type="supporting" color="secondary">{member.role}</XDSText>
+                          <XDSText type="body" weight="semibold">
+                            {member.name}
+                          </XDSText>
+                          <XDSText type="supporting" color="secondary">
+                            {member.role}
+                          </XDSText>
                         </XDSVStack>
-                        <XDSStatusDot variant={member.status} />
+                        <XDSStatusDot
+                          variant={member.status}
+                          label={member.status}
+                        />
                       </XDSHStack>
                     </XDSCard>
                   ))}
@@ -401,18 +702,33 @@ export default function MetaThemePage() {
               <XDSEmptyState
                 title="Coming soon"
                 description="The full project view is being built. Switch to Overview to see projects in table form."
-                actions={<XDSButton label="Go to Overview" variant="primary" size="sm" onPress={() => setTab('overview')} />}
+                actions={
+                  <XDSButton
+                    label="Go to Overview"
+                    variant="primary"
+                    size="sm"
+                    onClick={() => setTab('overview')}
+                  />
+                }
               />
             )}
           </XDSVStack>
 
           {/* Footer */}
           <XDSDivider />
-          <XDSHStack hAlign="spaceBetween" vAlign="center">
-            <XDSText type="supporting" color="secondary">Built with XDS · Meta Theme</XDSText>
+          <XDSHStack hAlign="between" vAlign="center">
+            <XDSText type="supporting" color="secondary">
+              Built with XDS · Meta Theme
+            </XDSText>
             <XDSHStack gap={4}>
-              <XDSLink href="https://github.com/facebookexperimental/xds" label="GitHub">GitHub</XDSLink>
-              <XDSLink href="/pages/theme-editor/" label="Theme Editor">Theme Editor</XDSLink>
+              <XDSLink
+                href="https://github.com/facebookexperimental/xds"
+                label="GitHub">
+                GitHub
+              </XDSLink>
+              <XDSLink href="/pages/theme-editor/" label="Theme Editor">
+                Theme Editor
+              </XDSLink>
             </XDSHStack>
           </XDSHStack>
         </XDSVStack>
