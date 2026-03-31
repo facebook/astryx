@@ -12,7 +12,7 @@ export const docs = {
     'Density variants: compact, balanced, spacious',
     'Divider styles: rows, columns, grid, none',
     'Striped even rows and hover highlight via XDSTableContext',
-    'Selection via useXDSTableSelection — checkboxes, select-all, aria-selected',
+    'Selection via useXDSTableSelectionState + useXDSTableSelection — checkboxes, select-all, disabled row handling',
     'Body rows memoized with custom comparison — only changed rows re-render',
     'Auto-generated columns from data object keys when columns prop is omitted',
     'Themeable via className — target .xds-base-table, .xds-table-row, .xds-table-cell, .xds-table-header-cell',
@@ -142,22 +142,13 @@ export const docs = {
       label: 'Selection plugin',
       code: `const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
 
-const selectionPlugin = useXDSTableSelection<User>({
-  getIsItemSelected: item => selectedKeys.has(item.id),
-  onSelectItem: ({item, isSelected}) => {
-    const next = new Set(selectedKeys);
-    isSelected ? next.add(item.id) : next.delete(item.id);
-    setSelectedKeys(next);
-  },
-  onSelectAll: ({isAllSelected}) => {
-    setSelectedKeys(isAllSelected ? new Set(users.map(u => u.id)) : new Set());
-  },
-  getIsAllSelected: () => users.every(u => selectedKeys.has(u.id)),
-  getIsIndeterminate: () => {
-    const count = users.filter(u => selectedKeys.has(u.id)).length;
-    return count > 0 && count < users.length;
-  },
+const {selectionConfig} = useXDSTableSelectionState<User>({
+  data: users,
+  idKey: 'id',
+  selectedKeys,
+  setSelectedKeys,
 });
+const selectionPlugin = useXDSTableSelection<User>(selectionConfig);
 
 <XDSTable
   data={users}
@@ -197,7 +188,7 @@ const selectionPlugin = useXDSTableSelection<User>({
     'Two-layer design: XDSBaseTable provides unstyled structure and the plugin pipeline; XDSTable wraps it with XDSTableContext and styled sub-components.',
     'Styling is owned by components (XDSTableRow, XDSTableCell, XDSTableHeaderCell), not by plugins — each reads XDSTableContext to apply density, dividers, striped, and hover styles.',
     'XDSTable accepts plugins as a named Record<string, TablePlugin<T>> and converts to an ordered array internally; XDSBaseTable accepts an ordered array directly.',
-    'The selection plugin uses React Context so SelectAllCheckbox and SelectionRowCheckbox re-render independently from row content — only the context value updates when selection state changes.',
+    'The selection plugin uses useSyncExternalStore so only the row whose selection state changed re-renders. useXDSTableSelectionState manages the selection set and handles disabled/selectable row filtering for select-all automatically.',
     'Body rows are memoized via React.memo with a custom comparison. For optimal performance, define columns outside the component or memoize them to avoid triggering full re-renders.',
     'Columns can be auto-generated from data keys using generateColumns(); column widths are expressed as proportional (fr-like) or fixed pixel values via the proportional() and pixel() helpers.',
     'tableProps on XDSBaseTable passes additional HTML attributes directly to the <table> element.',
@@ -466,23 +457,83 @@ const selectionPlugin = useXDSTableSelection<User>({
           label: 'Basic selection',
           code: `const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
 
-const selectionPlugin = useXDSTableSelection<User>({
-  getIsItemSelected: item => selectedKeys.has(item.id),
-  onSelectItem: ({item, isSelected}) => {
-    const next = new Set(selectedKeys);
-    isSelected ? next.add(item.id) : next.delete(item.id);
-    setSelectedKeys(next);
-  },
-  onSelectAll: ({isAllSelected}) => {
-    setSelectedKeys(isAllSelected ? new Set(users.map(u => u.id)) : new Set());
-  },
-  getIsAllSelected: () => users.every(u => selectedKeys.has(u.id)),
-  getIsIndeterminate: () => {
-    const count = users.filter(u => selectedKeys.has(u.id)).length;
-    return count > 0 && count < users.length;
-  },
+const {selectionConfig} = useXDSTableSelectionState<User>({
+  data: users,
+  idKey: 'id',
+  selectedKeys,
+  setSelectedKeys,
 });
+const selectionPlugin = useXDSTableSelection<User>(selectionConfig);
 
+<XDSTable
+  data={users}
+  columns={columns}
+  plugins={{selection: selectionPlugin}}
+/>`,
+        },
+      ],
+    },
+    {
+      name: 'useXDSTableSelectionState',
+      description:
+        'State management companion for useXDSTableSelection. Handles disabled/selectable row filtering for select-all automatically — disabled rows are frozen (preserved across select-all/deselect-all), non-selectable rows are excluded.',
+      props: [
+        {
+          name: 'data',
+          type: 'T[]',
+          description: 'The full data array rendered in the table.',
+          required: true,
+        },
+        {
+          name: 'idKey',
+          type: '(keyof T & string) | ((item: T) => string)',
+          description:
+            'Key extractor — property name or function returning a unique string ID.',
+          required: true,
+        },
+        {
+          name: 'selectedKeys',
+          type: 'Set<string>',
+          description: 'Controlled set of selected item IDs.',
+          required: true,
+        },
+        {
+          name: 'setSelectedKeys',
+          type: 'Dispatch<SetStateAction<Set<string>>>',
+          description: 'Setter for the controlled selected keys.',
+          required: true,
+        },
+        {
+          name: 'getIsItemSelectable',
+          type: '(item: T) => boolean',
+          description:
+            'Should this row show a checkbox? Non-selectable rows are excluded from select-all.',
+          default: '() => true',
+        },
+        {
+          name: 'getIsItemEnabled',
+          type: '(item: T) => boolean',
+          description:
+            'Is this row checkbox interactive? Disabled rows are frozen — select-all preserves their state.',
+          default: '() => true',
+        },
+      ],
+      examples: [
+        {
+          label: 'With disabled rows',
+          code: `const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+
+const {selectionConfig} = useXDSTableSelectionState<User>({
+  data: users,
+  idKey: 'id',
+  selectedKeys,
+  setSelectedKeys,
+  getIsItemEnabled: item => !item.isLocked,
+});
+const selectionPlugin = useXDSTableSelection<User>(selectionConfig);
+
+// Select-all skips locked rows. A locked row that was
+// previously selected stays selected (frozen).
 <XDSTable
   data={users}
   columns={columns}
@@ -637,22 +688,13 @@ export const docsZh = {
       label: '选择插件',
       code: `const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
 
-const selectionPlugin = useXDSTableSelection<User>({
-  getIsItemSelected: item => selectedKeys.has(item.id),
-  onSelectItem: ({item, isSelected}) => {
-    const next = new Set(selectedKeys);
-    isSelected ? next.add(item.id) : next.delete(item.id);
-    setSelectedKeys(next);
-  },
-  onSelectAll: ({isAllSelected}) => {
-    setSelectedKeys(isAllSelected ? new Set(users.map(u => u.id)) : new Set());
-  },
-  getIsAllSelected: () => users.every(u => selectedKeys.has(u.id)),
-  getIsIndeterminate: () => {
-    const count = users.filter(u => selectedKeys.has(u.id)).length;
-    return count > 0 && count < users.length;
-  },
+const {selectionConfig} = useXDSTableSelectionState<User>({
+  data: users,
+  idKey: 'id',
+  selectedKeys,
+  setSelectedKeys,
 });
+const selectionPlugin = useXDSTableSelection<User>(selectionConfig);
 
 <XDSTable
   data={users}
@@ -961,22 +1003,13 @@ const selectionPlugin = useXDSTableSelection<User>({
           label: '基础选择',
           code: `const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
 
-const selectionPlugin = useXDSTableSelection<User>({
-  getIsItemSelected: item => selectedKeys.has(item.id),
-  onSelectItem: ({item, isSelected}) => {
-    const next = new Set(selectedKeys);
-    isSelected ? next.add(item.id) : next.delete(item.id);
-    setSelectedKeys(next);
-  },
-  onSelectAll: ({isAllSelected}) => {
-    setSelectedKeys(isAllSelected ? new Set(users.map(u => u.id)) : new Set());
-  },
-  getIsAllSelected: () => users.every(u => selectedKeys.has(u.id)),
-  getIsIndeterminate: () => {
-    const count = users.filter(u => selectedKeys.has(u.id)).length;
-    return count > 0 && count < users.length;
-  },
+const {selectionConfig} = useXDSTableSelectionState<User>({
+  data: users,
+  idKey: 'id',
+  selectedKeys,
+  setSelectedKeys,
 });
+const selectionPlugin = useXDSTableSelection<User>(selectionConfig);
 
 <XDSTable
   data={users}
@@ -1000,7 +1033,7 @@ export const docsDense = {
     'Density variants: compact, balanced, spacious',
     'Divider styles: rows, columns, grid, none',
     'Striped even rows + hover highlight via XDSTableContext',
-    'Selection via useXDSTableSelection; checkboxes, select-all, aria-selected',
+    'Selection via useXDSTableSelectionState + useXDSTableSelection — checkboxes, select-all, disabled row handling',
     'Body rows memoized w/ custom comparison; only changed rows re-render',
     'Auto-generated columns from data object keys when columns omitted',
     'Themeable via className; target .xds-base-table, .xds-table-row, .xds-table-cell, .xds-table-header-cell',

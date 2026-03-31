@@ -1,6 +1,10 @@
-import {useState, useMemo} from 'react';
+import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSTable, useXDSTableSelection} from '@xds/core/Table';
+import {
+  XDSTable,
+  useXDSTableSelection,
+  useXDSTableSelectionState,
+} from '@xds/core/Table';
 import type {XDSTableColumn} from '@xds/core/Table';
 
 // =============================================================================
@@ -75,29 +79,13 @@ export const Default: Story = {
   render: () => {
     const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
 
-    const selectionPlugin = useXDSTableSelection<User>({
-      getIsItemSelected: item => selectedKeys.has(item.id),
-      onSelectItem: ({item, isSelected}) => {
-        const next = new Set(selectedKeys);
-        if (isSelected) {
-          next.add(item.id);
-        } else {
-          next.delete(item.id);
-        }
-        setSelectedKeys(next);
-      },
-      onSelectAll: ({isAllSelected}) => {
-        setSelectedKeys(
-          isAllSelected ? new Set(users.map(u => u.id)) : new Set(),
-        );
-      },
-      getIsAllSelected: () =>
-        users.length > 0 && users.every(u => selectedKeys.has(u.id)),
-      getIsIndeterminate: () => {
-        const count = users.filter(u => selectedKeys.has(u.id)).length;
-        return count > 0 && count < users.length;
-      },
+    const {selectionConfig} = useXDSTableSelectionState<User>({
+      data: users,
+      idKey: 'id',
+      selectedKeys,
+      setSelectedKeys,
     });
+    const selectionPlugin = useXDSTableSelection<User>(selectionConfig);
 
     return (
       <div style={{maxWidth: 600}}>
@@ -121,29 +109,13 @@ export const WithPreselection: Story = {
       new Set(['1', '3']),
     );
 
-    const selectionPlugin = useXDSTableSelection<User>({
-      getIsItemSelected: item => selectedKeys.has(item.id),
-      onSelectItem: ({item, isSelected}) => {
-        const next = new Set(selectedKeys);
-        if (isSelected) {
-          next.add(item.id);
-        } else {
-          next.delete(item.id);
-        }
-        setSelectedKeys(next);
-      },
-      onSelectAll: ({isAllSelected}) => {
-        setSelectedKeys(
-          isAllSelected ? new Set(users.map(u => u.id)) : new Set(),
-        );
-      },
-      getIsAllSelected: () =>
-        users.length > 0 && users.every(u => selectedKeys.has(u.id)),
-      getIsIndeterminate: () => {
-        const count = users.filter(u => selectedKeys.has(u.id)).length;
-        return count > 0 && count < users.length;
-      },
+    const {selectionConfig} = useXDSTableSelectionState<User>({
+      data: users,
+      idKey: 'id',
+      selectedKeys,
+      setSelectedKeys,
     });
+    const selectionPlugin = useXDSTableSelection<User>(selectionConfig);
 
     return (
       <div style={{maxWidth: 600}}>
@@ -165,38 +137,14 @@ export const NonSelectableRows: Story = {
   render: () => {
     const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
 
-    const selectableUsers = useMemo(
-      () => users.filter(u => u.role !== 'Admin'),
-      [],
-    );
-
-    const selectionPlugin = useXDSTableSelection<User>({
-      getIsItemSelected: item => selectedKeys.has(item.id),
-      onSelectItem: ({item, isSelected}) => {
-        const next = new Set(selectedKeys);
-        if (isSelected) {
-          next.add(item.id);
-        } else {
-          next.delete(item.id);
-        }
-        setSelectedKeys(next);
-      },
-      onSelectAll: ({isAllSelected}) => {
-        setSelectedKeys(
-          isAllSelected ? new Set(selectableUsers.map(u => u.id)) : new Set(),
-        );
-      },
-      getIsAllSelected: () =>
-        selectableUsers.length > 0 &&
-        selectableUsers.every(u => selectedKeys.has(u.id)),
-      getIsIndeterminate: () => {
-        const count = selectableUsers.filter(u =>
-          selectedKeys.has(u.id),
-        ).length;
-        return count > 0 && count < selectableUsers.length;
-      },
+    const {selectionConfig} = useXDSTableSelectionState<User>({
+      data: users,
+      idKey: 'id',
+      selectedKeys,
+      setSelectedKeys,
       getIsItemSelectable: item => item.role !== 'Admin',
     });
+    const selectionPlugin = useXDSTableSelection<User>(selectionConfig);
 
     return (
       <div style={{maxWidth: 600}}>
@@ -218,36 +166,20 @@ export const DisabledRows: Story = {
   render: () => {
     const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
 
-    const selectionPlugin = useXDSTableSelection<User>({
-      getIsItemSelected: item => selectedKeys.has(item.id),
-      onSelectItem: ({item, isSelected}) => {
-        const next = new Set(selectedKeys);
-        if (isSelected) {
-          next.add(item.id);
-        } else {
-          next.delete(item.id);
-        }
-        setSelectedKeys(next);
-      },
-      onSelectAll: ({isAllSelected}) => {
-        setSelectedKeys(
-          isAllSelected ? new Set(users.map(u => u.id)) : new Set(),
-        );
-      },
-      getIsAllSelected: () =>
-        users.length > 0 && users.every(u => selectedKeys.has(u.id)),
-      getIsIndeterminate: () => {
-        const count = users.filter(u => selectedKeys.has(u.id)).length;
-        return count > 0 && count < users.length;
-      },
+    const {selectionConfig} = useXDSTableSelectionState<User>({
+      data: users,
+      idKey: 'id',
+      selectedKeys,
+      setSelectedKeys,
       getIsItemEnabled: item => !item.isLocked,
     });
+    const selectionPlugin = useXDSTableSelection<User>(selectionConfig);
 
     return (
       <div style={{maxWidth: 600}}>
         <p style={{marginBottom: 8, fontSize: 14, color: '#666'}}>
-          Locked rows (Diana) have a disabled checkbox. Selected:{' '}
-          {selectedKeys.size}
+          Locked rows (Diana) have a disabled checkbox. Select-all skips them.
+          Selected: {selectedKeys.size}
         </p>
         <XDSTable
           data={users}
@@ -264,29 +196,13 @@ export const Compact: Story = {
   render: () => {
     const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
 
-    const selectionPlugin = useXDSTableSelection<User>({
-      getIsItemSelected: item => selectedKeys.has(item.id),
-      onSelectItem: ({item, isSelected}) => {
-        const next = new Set(selectedKeys);
-        if (isSelected) {
-          next.add(item.id);
-        } else {
-          next.delete(item.id);
-        }
-        setSelectedKeys(next);
-      },
-      onSelectAll: ({isAllSelected}) => {
-        setSelectedKeys(
-          isAllSelected ? new Set(users.map(u => u.id)) : new Set(),
-        );
-      },
-      getIsAllSelected: () =>
-        users.length > 0 && users.every(u => selectedKeys.has(u.id)),
-      getIsIndeterminate: () => {
-        const count = users.filter(u => selectedKeys.has(u.id)).length;
-        return count > 0 && count < users.length;
-      },
+    const {selectionConfig} = useXDSTableSelectionState<User>({
+      data: users,
+      idKey: 'id',
+      selectedKeys,
+      setSelectedKeys,
     });
+    const selectionPlugin = useXDSTableSelection<User>(selectionConfig);
 
     return (
       <div style={{maxWidth: 600}}>
@@ -306,29 +222,13 @@ export const Spacious: Story = {
   render: () => {
     const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
 
-    const selectionPlugin = useXDSTableSelection<User>({
-      getIsItemSelected: item => selectedKeys.has(item.id),
-      onSelectItem: ({item, isSelected}) => {
-        const next = new Set(selectedKeys);
-        if (isSelected) {
-          next.add(item.id);
-        } else {
-          next.delete(item.id);
-        }
-        setSelectedKeys(next);
-      },
-      onSelectAll: ({isAllSelected}) => {
-        setSelectedKeys(
-          isAllSelected ? new Set(users.map(u => u.id)) : new Set(),
-        );
-      },
-      getIsAllSelected: () =>
-        users.length > 0 && users.every(u => selectedKeys.has(u.id)),
-      getIsIndeterminate: () => {
-        const count = users.filter(u => selectedKeys.has(u.id)).length;
-        return count > 0 && count < users.length;
-      },
+    const {selectionConfig} = useXDSTableSelectionState<User>({
+      data: users,
+      idKey: 'id',
+      selectedKeys,
+      setSelectedKeys,
     });
+    const selectionPlugin = useXDSTableSelection<User>(selectionConfig);
 
     return (
       <div style={{maxWidth: 600}}>
@@ -349,29 +249,13 @@ export const WithStripedRows: Story = {
   render: () => {
     const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
 
-    const selectionPlugin = useXDSTableSelection<User>({
-      getIsItemSelected: item => selectedKeys.has(item.id),
-      onSelectItem: ({item, isSelected}) => {
-        const next = new Set(selectedKeys);
-        if (isSelected) {
-          next.add(item.id);
-        } else {
-          next.delete(item.id);
-        }
-        setSelectedKeys(next);
-      },
-      onSelectAll: ({isAllSelected}) => {
-        setSelectedKeys(
-          isAllSelected ? new Set(users.map(u => u.id)) : new Set(),
-        );
-      },
-      getIsAllSelected: () =>
-        users.length > 0 && users.every(u => selectedKeys.has(u.id)),
-      getIsIndeterminate: () => {
-        const count = users.filter(u => selectedKeys.has(u.id)).length;
-        return count > 0 && count < users.length;
-      },
+    const {selectionConfig} = useXDSTableSelectionState<User>({
+      data: users,
+      idKey: 'id',
+      selectedKeys,
+      setSelectedKeys,
     });
+    const selectionPlugin = useXDSTableSelection<User>(selectionConfig);
 
     return (
       <div style={{maxWidth: 600}}>
