@@ -380,18 +380,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
   // so it isn't clipped by ancestor overflow.
   const isLayerMode = tokenOverflowBehavior === 'unfocusedLayer';
   const layer = useXDSLayer({mode: 'context'});
-  const layerContentElRef = useRef<HTMLDivElement>(null);
-  // When the expanded content mounts in the popover, auto-focus the input.
-  // A ref callback guarantees the DOM is ready — unlike rAF which races
-  // with React's commit phase.
-  const pendingLayerFocusRef = useRef(false);
-  const layerContentRef = useCallback((el: HTMLDivElement | null) => {
-    layerContentElRef.current = el;
-    if (el && pendingLayerFocusRef.current) {
-      pendingLayerFocusRef.current = false;
-      inputRef.current?.focus();
-    }
-  }, []);
+  const layerContentRef = useRef<HTMLDivElement>(null);
 
   // Anchor the layer to the placeholder element
   const placeholderRef = useCallback(
@@ -409,7 +398,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
     (target: Node | null): boolean => {
       if (!target) return false;
       if (wrapperRef.current?.contains(target)) return true;
-      if (layerContentElRef.current?.contains(target)) return true;
+      if (layerContentRef.current?.contains(target)) return true;
       // Also check the popover element itself (the layer wrapper)
       const popoverEl = document.getElementById(layer.id);
       if (popoverEl?.contains(target)) return true;
@@ -428,14 +417,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
       // doesn't have to tab through every token remove button.
       const comingFromOutside = !isFocusInTokenizer(e.relatedTarget as Node);
       if (comingFromOutside && e.target !== inputRef.current) {
-        if (isLayerMode) {
-          // In layer mode, the input moves from the placeholder into the
-          // popover after React re-renders. Signal the ref callback to
-          // focus the input once the expanded content mounts.
-          pendingLayerFocusRef.current = true;
-        } else {
-          inputRef.current?.focus();
-        }
+        inputRef.current?.focus();
       }
     },
     [isLayerMode, layer, isFocusInTokenizer],
@@ -534,16 +516,18 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
   // Click wrapper to focus input
   const handleWrapperClick = useCallback(() => {
     if (!isDisabled) {
-      if (isLayerMode && isTruncated) {
-        // In layer mode, clicking the collapsed placeholder triggers a
-        // re-render that moves the input into the popover. Signal the
-        // ref callback to focus the input once mounted.
-        pendingLayerFocusRef.current = true;
+      if (isLayerMode) {
+        // The input always lives in the popover. Show it and focus.
+        layer.show();
+        setIsFocusedWithin(true);
+        // The input is already mounted in the popover (not conditional),
+        // so we can focus it directly.
+        inputRef.current?.focus();
       } else {
         inputRef.current?.focus();
       }
     }
-  }, [isDisabled, isLayerMode, isTruncated]);
+  }, [isDisabled, isLayerMode, layer]);
 
   const ariaDescribedBy =
     [
@@ -699,21 +683,53 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
               : styles.layerPlaceholderMd;
           return (
             <>
-              {/* Placeholder preserves layout height and acts as the
-                  CSS anchor for the top-layer popover. */}
-              <div ref={placeholderRef} {...stylex.props(placeholderSizeStyle)}>
-                {/* When collapsed, render the truncated view in-flow */}
-                {isTruncated && wrapperContent}
+              {/* Placeholder preserves layout height, acts as the CSS
+                  anchor, and shows the collapsed overflow summary.
+                  Clicking it opens the popover and focuses the input. */}
+              <div
+                ref={placeholderRef}
+                onClick={handleWrapperClick}
+                {...mergeProps(
+                  xdsClassName('tokenizer', {size}),
+                  stylex.props(
+                    inputWrapperStyles.base,
+                    styles.wrapper,
+                    value.length > 0 && styles.wrapperWithTokens,
+                    placeholderSizeStyle,
+                    isTruncated && styles.truncatedWrapper,
+                    isDisabled && inputWrapperStyles.disabled,
+                    status && inputStatusBorderStyles[status.type],
+                    status && inputStatusHoverShadowStyles[status.type],
+                    status && inputStatusFocusWithinStyles[status.type],
+                  ),
+                )}>
+                {isTruncated && (
+                  <>
+                    {startIcon && (
+                      <XDSIcon icon={startIcon} size="sm" color="primary" />
+                    )}
+                    <XDSOverflowList
+                      gap={1}
+                      behavior="observeParent"
+                      overflowRenderer={items => (
+                        <span {...stylex.props(styles.overflowText)}>
+                          +{items.length} more
+                        </span>
+                      )}>
+                      {tokens}
+                    </XDSOverflowList>
+                  </>
+                )}
               </div>
-              {/* Expanded content in the top layer — immune to ancestor
-                  overflow clipping. Matches the anchor width for seamless
-                  in-place appearance. */}
+              {/* Expanded content always lives in the top layer so the
+                  input/tokens never unmount during the focus transition.
+                  The popover is shown/hidden via layer.show()/hide(). */}
               {layer.render(
                 <div
                   ref={layerContentRef}
                   onFocusCapture={handleFocusCapture}
                   onBlurCapture={handleBlurCapture}>
-                  {!isTruncated && wrapperContent}
+                  {wrapperContent}
                 </div>,
                 {
                   placement: 'below',
