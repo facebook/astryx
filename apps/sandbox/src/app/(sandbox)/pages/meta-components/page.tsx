@@ -236,19 +236,19 @@ export default function Components() {
               <XDSProgressBar
                 label="Upload progress"
                 value={65}
-                showValueLabel
+                hasValueLabel
               />
               <XDSProgressBar label="Processing…" isIndeterminate />
             </XDSVStack>
             <XDSHStack gap={4} vAlign="center">
-              <XDSSpinner size="sm" label="Small" />
-              <XDSSpinner size="md" label="Medium" />
-              <XDSSpinner size="lg" label="Large" />
+              <XDSSpinner size="sm" />
+              <XDSSpinner size="md" />
+              <XDSSpinner size="lg" />
             </XDSHStack>
             <XDSVStack gap={2}>
               <XDSSkeleton width={180} height={16} />
               <XDSSkeleton width={120} height={16} />
-              <XDSSkeleton width={40} height={40} shape="circle" />
+              <XDSSkeleton width={40} height={40} radius="rounded" />
             </XDSVStack>
           </XDSHStack>
         </XDSVStack>
@@ -272,8 +272,7 @@ export default function Components() {
           <SectionTitle>Core / XDSKbd · XDSToken · XDSLink</SectionTitle>
           <XDSHStack gap={2} vAlign="center">
             <XDSText type="body">Save with</XDSText>
-            <XDSKbd>⌘</XDSKbd>
-            <XDSKbd>S</XDSKbd>
+            <XDSKbd keys="mod+s" />
           </XDSHStack>
           <XDSHStack gap={2} vAlign="center">
             {tokens.map(t => (
@@ -285,10 +284,12 @@ export default function Components() {
             ))}
           </XDSHStack>
           <XDSHStack gap={4}>
-            <XDSLink href="https://github.com/facebookexperimental/xds">
+            <XDSLink href="https://github.com/facebookexperimental/xds" label="XDS on GitHub">
               XDS on GitHub
             </XDSLink>
-            <XDSLink href="/pages/example/">Example page</XDSLink>
+            <XDSLink href="/pages/example/" label="Example page">
+              Example page
+            </XDSLink>
           </XDSHStack>
         </XDSVStack>
 
@@ -313,7 +314,7 @@ export default function Components() {
             <XDSEmptyState
               title="No results found"
               description="Try adjusting your search filters to find what you're looking for."
-              action={
+              actions={
                 <XDSButton
                   label="Clear filters"
                   variant="secondary"
@@ -324,7 +325,7 @@ export default function Components() {
             <XDSEmptyState
               title="Nothing here yet"
               description="Get started by creating your first item."
-              action={
+              actions={
                 <XDSButton label="Create item" variant="primary" size="sm" />
               }
             />
