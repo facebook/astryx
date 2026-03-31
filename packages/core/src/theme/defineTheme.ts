@@ -257,6 +257,13 @@ export interface XDSDefinedTheme {
    * Passed through from defineTheme input unchanged.
    */
   fonts?: ThemeFontSource[];
+  /**
+   * Raw input tokens preserved from defineTheme() input.
+   * Keeps [light, dark] tuples intact for programmatic access
+   * (e.g. data viz, canvas rendering) without parsing light-dark() strings.
+   * @internal
+   */
+  __inputTokens?: Partial<Record<string, XDSTokenValue>>;
 }
 
 // =============================================================================
@@ -495,6 +502,7 @@ export function defineTheme(input: XDSDefineThemeInput): XDSDefinedTheme {
     components,
     icons: input.icons,
     fonts,
+    __inputTokens: input.tokens,
   };
 }
 
