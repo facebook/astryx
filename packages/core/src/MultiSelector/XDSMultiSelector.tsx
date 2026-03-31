@@ -63,17 +63,6 @@ import {useMultiCombobox} from './hooks';
 import {xdsClassName, mergeProps} from '../utils';
 import {XDSBaseProps} from '../XDSBaseProps';
 
-// Theme module augmentation
-declare module '../theme/types' {
-  interface ComponentStyles {
-    multiSelector?: {
-      variants?: Partial<
-        Record<string, import('@stylexjs/stylex').StyleXStyles>
-      >;
-    };
-  }
-}
-
 const styles = stylex.create({
   // Trigger button
   trigger: {
