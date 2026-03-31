@@ -577,6 +577,7 @@ export function XDSSelector<T extends XDSSelectorOptionType>({
       descriptionID={description ? descriptionId : undefined}
       isOptional={isOptional}
       isRequired={isRequired}
+      isDisabled={isDisabled}
       status={
         status
           ? {

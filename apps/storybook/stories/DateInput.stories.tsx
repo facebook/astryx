@@ -2,6 +2,7 @@ import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSDateInput} from '@xds/core/DateInput';
 import type {ISODateString} from '@xds/core/Calendar';
+import {XDSLayout, XDSLayoutContent} from '@xds/core/Layout';
 
 const meta: Meta<typeof XDSDateInput> = {
   title: 'Form/XDSDateInput',
@@ -162,6 +163,29 @@ export const WithMinMax: Story = {
     max: '2026-02-15' as ISODateString,
     description: 'Available dates: Jan 15 - Feb 15, 2026',
     placeholder: 'Select a booking date',
+  },
+};
+
+export const WithMaxDateInLayout: Story = {
+  render: args => {
+    const [value, setValue] = useState<ISODateString | undefined>(undefined);
+    return (
+      <XDSLayout
+        height="auto"
+        content={
+          <XDSLayoutContent>
+            <XDSDateInput {...args} value={value} onChange={setValue} />
+          </XDSLayoutContent>
+        }
+      />
+    );
+  },
+  args: {
+    label: 'End date',
+    max: new Date().toISOString().slice(0, 10) as ISODateString,
+    description:
+      'Max is today — open the calendar to verify the label does not turn grey when nav buttons are disabled',
+    placeholder: 'Select an end date',
   },
 };
 
