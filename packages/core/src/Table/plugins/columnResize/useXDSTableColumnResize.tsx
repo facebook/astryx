@@ -18,7 +18,9 @@ import type {
   TablePlugin,
   HeaderCellRenderProps,
   XDSTableColumn,
+  ColumnWidth,
 } from '../../types';
+import {DEFAULT_MIN_COLUMN_WIDTH} from '../../columnUtils';
 
 // =============================================================================
 // Config Type
@@ -42,25 +44,75 @@ export interface UseXDSTableColumnResizeConfig {
   onColumnResizeEnd?: (event: {columnKey: string; newWidth: number}) => void;
 
   /**
-   * Minimum column width in pixels during resize.
-   * @default 50
+   * Global minimum column width in pixels during resize.
+   * Overrides per-column defaults when set.
+   * @default undefined (uses column-specific minimum)
    */
   minWidth?: number;
 
   /**
-   * Maximum column width in pixels during resize.
+   * Global maximum column width in pixels during resize.
    * @default Infinity (no max)
    */
   maxWidth?: number;
+
+  /**
+   * Column definitions — needed to derive per-column min widths
+   * and detect proportional vs pixel columns for last-column behavior.
+   *
+   * When proportional columns are detected, the resize handle
+   * automatically adjusts the neighboring column instead of the
+   * proportional column itself. The last proportional column has
+   * no resize handle (it flexes to fill remaining space).
+   *
+   * When not provided, all columns are treated as pixel columns
+   * and the global minWidth fallback (50px) is used.
+   */
+  columns?: XDSTableColumn<Record<string, unknown>>[];
 }
 
 // =============================================================================
 // Constants
 // =============================================================================
 
-const DEFAULT_MIN_WIDTH = 50;
+const FALLBACK_MIN_WIDTH = 50;
 const KEYBOARD_STEP = 10;
 const KEYBOARD_LARGE_STEP = 50;
+
+// =============================================================================
+// Width Helpers
+// =============================================================================
+
+/**
+ * Derive the effective minimum width for a column based on its width config.
+ * - Proportional columns: use their declared minWidth (default 120px)
+ * - Pixel columns: use their declared value (you set 200px, min is 200px)
+ * - No width / unknown: use DEFAULT_MIN_COLUMN_WIDTH
+ *
+ * A global override (from config.minWidth) takes precedence when set.
+ */
+function resolveColumnMinWidth(
+  colWidth: ColumnWidth | undefined,
+  globalOverride: number | undefined,
+): number {
+  if (globalOverride != null) return globalOverride;
+  if (!colWidth) return DEFAULT_MIN_COLUMN_WIDTH;
+  if (colWidth.type === 'proportional') {
+    return colWidth.minWidth ?? DEFAULT_MIN_COLUMN_WIDTH;
+  }
+  if (colWidth.type === 'pixel') {
+    return colWidth.value;
+  }
+  return FALLBACK_MIN_WIDTH;
+}
+
+/**
+ * Check whether a column is proportional (or has no explicit width,
+ * which defaults to proportional(1) in XDSBaseTable).
+ */
+function isProportionalColumn(colWidth: ColumnWidth | undefined): boolean {
+  return !colWidth || colWidth.type === 'proportional';
+}
 
 // =============================================================================
 // Styles
@@ -115,6 +167,10 @@ interface DragState {
   startX: number;
   initialWidth: number;
   thElement: HTMLTableCellElement;
+  /** When resizing a proportional column, we resize the next column instead */
+  neighborKey: string | null;
+  neighborTh: HTMLTableCellElement | null;
+  neighborInitialWidth: number;
 }
 
 // =============================================================================
@@ -127,6 +183,9 @@ interface ResizeHandleProps {
   currentWidth: number | undefined;
   minWidth: number;
   maxWidth: number;
+  /** For proportional-preserving: the neighbor column to resize instead */
+  neighborKey: string | null;
+  neighborMinWidth: number;
   configRef: React.RefObject<UseXDSTableColumnResizeConfig>;
   dragStateRef: React.RefObject<DragState | null>;
   isDraggingRef: React.RefObject<boolean>;
@@ -139,14 +198,13 @@ function ResizeHandle({
   currentWidth,
   minWidth,
   maxWidth,
+  neighborKey,
+  neighborMinWidth,
   configRef,
   dragStateRef,
   isDraggingRef,
   tableRef,
 }: ResizeHandleProps) {
-  const keyboardActiveRef = useRef(false);
-  const keyboardInitialWidthRef = useRef(0);
-
   const resolveCurrentWidth = useCallback(
     (handle: HTMLElement): number => {
       if (currentWidth != null) return currentWidth;
@@ -157,14 +215,20 @@ function ResizeHandle({
     [currentWidth, minWidth],
   );
 
+  /**
+   * Resolve the effective maximum width. When no explicit maxWidth is set,
+   * use the table's current width as a natural ceiling — no single column
+   * should exceed the table's bounds.
+   */
   const clamp = useCallback(
-    (value: number) => Math.max(minWidth, Math.min(maxWidth, value)),
+    (value: number, min: number = minWidth, max: number = maxWidth) =>
+      Math.max(min, Math.min(max, value)),
     [minWidth, maxWidth],
   );
 
   const applyWidth = useCallback(
-    (th: HTMLTableCellElement, width: number) => {
-      const clamped = clamp(width);
+    (th: HTMLTableCellElement, width: number, min?: number, max?: number) => {
+      const clamped = clamp(width, min, max);
       const px = `${clamped}px`;
       th.style.width = px;
       th.style.minWidth = px;
@@ -205,6 +269,19 @@ function ResizeHandle({
     return dir === 'rtl' ? -1 : 1;
   }, []);
 
+  /**
+   * Resolve the neighbor <th> element from the handle's <th>.
+   * The neighbor is the next sibling <th> in DOM order.
+   */
+  const resolveNeighborTh = useCallback(
+    (th: HTMLTableCellElement): HTMLTableCellElement | null => {
+      if (!neighborKey) return null;
+      const next = th.nextElementSibling;
+      return next instanceof HTMLTableCellElement ? next : null;
+    },
+    [neighborKey],
+  );
+
   const handlePointerDown = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
       e.preventDefault();
@@ -220,14 +297,38 @@ function ResizeHandle({
       const initialWidth = resolveCurrentWidth(handle);
       if (handle.setPointerCapture) handle.setPointerCapture(e.pointerId);
 
-      dragStateRef.current = {columnKey, startX: e.clientX, initialWidth, thElement: th};
+      // Resolve neighbor for proportional-preserving resize
+      const nTh = resolveNeighborTh(th);
+      const nInitialWidth = nTh ? nTh.getBoundingClientRect().width : 0;
+
+      dragStateRef.current = {
+        columnKey,
+        startX: e.clientX,
+        initialWidth,
+        thElement: th,
+        neighborKey,
+        neighborTh: nTh,
+        neighborInitialWidth: nInitialWidth,
+      };
       isDraggingRef.current = true;
       handle.setAttribute('data-resizing', 'true');
 
       applyWidth(th, initialWidth);
+      if (nTh) applyWidth(nTh, nInitialWidth, neighborMinWidth);
       setTableDragging(true);
     },
-    [columnKey, resolveCurrentWidth, dragStateRef, isDraggingRef, tableRef, applyWidth, setTableDragging],
+    [
+      columnKey,
+      neighborKey,
+      neighborMinWidth,
+      resolveCurrentWidth,
+      resolveNeighborTh,
+      dragStateRef,
+      isDraggingRef,
+      tableRef,
+      applyWidth,
+      setTableDragging,
+    ],
   );
 
   const handlePointerMove = useCallback(
@@ -235,10 +336,43 @@ function ResizeHandle({
       const drag = dragStateRef.current;
       if (!drag || !isDraggingRef.current) return;
 
-      const delta = (e.clientX - drag.startX) * getRTLMultiplier(drag.thElement);
-      applyWidth(drag.thElement, drag.initialWidth + delta);
+      const delta =
+        (e.clientX - drag.startX) * getRTLMultiplier(drag.thElement);
+
+      if (drag.neighborTh && drag.neighborKey) {
+        // Proportional-preserving: resize the neighbor column inversely.
+        // Clamp from below (neighbor can't go below neighborMinWidth), which
+        // also implicitly caps the second-to-last column from eating into
+        // the last column's minimum reserved space.
+        const newNeighborWidth = drag.neighborInitialWidth - delta;
+        const clampedNeighbor = Math.max(neighborMinWidth, newNeighborWidth);
+        applyWidth(drag.neighborTh, clampedNeighbor, neighborMinWidth);
+
+        // Also cap the second-to-last column: it can't grow beyond
+        // (tableWidth - neighborMinWidth), i.e. can't squeeze last column below min.
+        const tableWidth =
+          tableRef.current?.getBoundingClientRect().width ?? Infinity;
+        const maxSecondToLast =
+          tableWidth > 0 ? tableWidth - neighborMinWidth : Infinity;
+        applyWidth(
+          drag.thElement,
+          drag.initialWidth + delta,
+          minWidth,
+          maxSecondToLast,
+        );
+      } else {
+        applyWidth(drag.thElement, drag.initialWidth + delta);
+      }
     },
-    [dragStateRef, isDraggingRef, getRTLMultiplier, applyWidth],
+    [
+      dragStateRef,
+      isDraggingRef,
+      getRTLMultiplier,
+      neighborMinWidth,
+      minWidth,
+      tableRef,
+      applyWidth,
+    ],
   );
 
   const handlePointerUp = useCallback(
@@ -247,92 +381,150 @@ function ResizeHandle({
       if (!drag || !isDraggingRef.current) return;
 
       e.currentTarget.removeAttribute('data-resizing');
-      const delta = (e.clientX - drag.startX) * getRTLMultiplier(drag.thElement);
-      const newWidth = clamp(drag.initialWidth + delta);
+      const delta =
+        (e.clientX - drag.startX) * getRTLMultiplier(drag.thElement);
 
       isDraggingRef.current = false;
       dragStateRef.current = null;
       setTableDragging(false);
 
-      configRef.current.onColumnResizeEnd?.({columnKey, newWidth});
+      if (drag.neighborTh && drag.neighborKey) {
+        // Proportional-preserving: report the neighbor column's new width,
+        // clamped so it never goes below its minimum.
+        const newNeighborWidth = Math.max(
+          neighborMinWidth,
+          drag.neighborInitialWidth - delta,
+        );
+        configRef.current.onColumnResizeEnd?.({
+          columnKey: drag.neighborKey,
+          newWidth: newNeighborWidth,
+        });
+      } else {
+        const newWidth = clamp(drag.initialWidth + delta);
+        configRef.current.onColumnResizeEnd?.({columnKey, newWidth});
+      }
     },
-    [columnKey, dragStateRef, isDraggingRef, getRTLMultiplier, clamp, setTableDragging, configRef],
+    [
+      columnKey,
+      dragStateRef,
+      isDraggingRef,
+      getRTLMultiplier,
+      clamp,
+      neighborMinWidth,
+      setTableDragging,
+      configRef,
+    ],
   );
 
-  const handlePointerCancel = useCallback(
-    () => {
-      const drag = dragStateRef.current;
-      if (!drag || !isDraggingRef.current) return;
+  const handlePointerCancel = useCallback(() => {
+    const drag = dragStateRef.current;
+    if (!drag || !isDraggingRef.current) return;
 
-      // Revert to width before drag
-      clearWidth(drag.thElement, drag.columnKey);
+    // Revert to width before drag
+    clearWidth(drag.thElement, drag.columnKey);
+    if (drag.neighborTh && drag.neighborKey) {
+      clearWidth(drag.neighborTh, drag.neighborKey);
+    }
 
-      isDraggingRef.current = false;
-      dragStateRef.current = null;
-      setTableDragging(false);
-    },
-    [dragStateRef, isDraggingRef, clearWidth, setTableDragging],
-  );
+    isDraggingRef.current = false;
+    dragStateRef.current = null;
+    setTableDragging(false);
+  }, [dragStateRef, isDraggingRef, clearWidth, setTableDragging]);
 
+  /**
+   * Keyboard resize per WAI-ARIA Window Splitter pattern.
+   * Arrow keys resize immediately on focus — no activation step.
+   * Each keypress commits the new width directly.
+   * Home/End jump to min/max width.
+   */
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
       const handle = e.currentTarget;
       const th = handle.closest('th') as HTMLTableCellElement | null;
       if (!th) return;
 
-      // Activate keyboard resize mode
-      if (!keyboardActiveRef.current) {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          keyboardActiveRef.current = true;
-          keyboardInitialWidthRef.current = resolveCurrentWidth(handle);
-          handle.setAttribute('data-resizing', 'true');
-
-          const table = th.closest('table');
-          if (table) tableRef.current = table;
-
-          applyWidth(th, keyboardInitialWidthRef.current);
-          return;
-        }
-        return;
-      }
+      const table = th.closest('table');
+      if (table) tableRef.current = table;
 
       const step = e.shiftKey ? KEYBOARD_LARGE_STEP : KEYBOARD_STEP;
       const rtl = getRTLMultiplier(th);
 
       switch (e.key) {
-        case 'ArrowRight': {
-          e.preventDefault();
-          const cur = parseFloat(th.style.width) || keyboardInitialWidthRef.current;
-          applyWidth(th, cur + step * rtl);
-          break;
-        }
+        case 'ArrowRight':
         case 'ArrowLeft': {
           e.preventDefault();
-          const cur = parseFloat(th.style.width) || keyboardInitialWidthRef.current;
-          applyWidth(th, cur - step * rtl);
+          const direction = e.key === 'ArrowRight' ? 1 : -1;
+          const delta = step * direction * rtl;
+
+          if (neighborKey) {
+            // Proportional-preserving: adjust neighbor inversely, clamped so
+            // it never drops below its min (which also prevents this column
+            // from growing into the last column's reserved minimum space).
+            const nTh = resolveNeighborTh(th);
+            if (nTh) {
+              const curNeighbor = nTh.getBoundingClientRect().width;
+              const newWidth = Math.max(neighborMinWidth, curNeighbor - delta);
+              applyWidth(nTh, newWidth, neighborMinWidth);
+              configRef.current.onColumnResizeEnd?.({
+                columnKey: neighborKey,
+                newWidth,
+              });
+            }
+          } else {
+            const curWidth = currentWidth ?? th.getBoundingClientRect().width;
+            const newWidth = clamp(curWidth + delta);
+            applyWidth(th, newWidth);
+            configRef.current.onColumnResizeEnd?.({columnKey, newWidth});
+          }
           break;
         }
-        case 'Escape':
+        case 'Home': {
           e.preventDefault();
-          clearWidth(th, columnKey);
-          keyboardActiveRef.current = false;
-          handle.removeAttribute('data-resizing');
+          if (neighborKey) {
+            const nTh = resolveNeighborTh(th);
+            if (nTh) {
+              applyWidth(nTh, neighborMinWidth, neighborMinWidth);
+              configRef.current.onColumnResizeEnd?.({
+                columnKey: neighborKey,
+                newWidth: neighborMinWidth,
+              });
+            }
+          } else {
+            applyWidth(th, minWidth);
+            configRef.current.onColumnResizeEnd?.({
+              columnKey,
+              newWidth: minWidth,
+            });
+          }
           break;
-        case 'Enter': {
+        }
+        case 'End': {
           e.preventDefault();
-          const finalWidth = parseFloat(th.style.width) || keyboardInitialWidthRef.current;
-          keyboardActiveRef.current = false;
-          handle.removeAttribute('data-resizing');
-          configRef.current.onColumnResizeEnd?.({
-            columnKey,
-            newWidth: clamp(finalWidth),
-          });
+          if (maxWidth !== Infinity) {
+            applyWidth(th, maxWidth);
+            configRef.current.onColumnResizeEnd?.({
+              columnKey,
+              newWidth: maxWidth,
+            });
+          }
           break;
         }
       }
     },
-    [columnKey, resolveCurrentWidth, getRTLMultiplier, clamp, applyWidth, clearWidth, configRef, tableRef],
+    [
+      columnKey,
+      currentWidth,
+      neighborKey,
+      neighborMinWidth,
+      resolveNeighborTh,
+      getRTLMultiplier,
+      clamp,
+      minWidth,
+      maxWidth,
+      applyWidth,
+      configRef,
+      tableRef,
+    ],
   );
 
   const ariaLabel =
@@ -363,9 +555,9 @@ function ResizeHandle({
 // Hook
 // =============================================================================
 
-export function useXDSTableColumnResize<
-  T extends Record<string, unknown>,
->(config: UseXDSTableColumnResizeConfig): TablePlugin<T> {
+export function useXDSTableColumnResize<T extends Record<string, unknown>>(
+  config: UseXDSTableColumnResizeConfig,
+): TablePlugin<T> {
   const configRef = useRef(config);
   configRef.current = config;
 
@@ -373,9 +565,10 @@ export function useXDSTableColumnResize<
   const isDraggingRef = useRef(false);
   const tableRef = useRef<HTMLTableElement | null>(null);
 
-  const minWidth = config.minWidth ?? DEFAULT_MIN_WIDTH;
+  const globalMinWidth = config.minWidth;
   const maxWidth = config.maxWidth ?? Infinity;
   const columnWidths = config.columnWidths;
+  const columns = config.columns;
 
   return useMemo(
     (): TablePlugin<T> => ({
@@ -384,6 +577,42 @@ export function useXDSTableColumnResize<
         column: XDSTableColumn<T>,
       ): HeaderCellRenderProps {
         const overrideWidth = columnWidths?.[column.key];
+
+        // Derive per-column min width from the column's own width config
+        const effectiveMinWidth = resolveColumnMinWidth(
+          column.width,
+          globalMinWidth,
+        );
+
+        // Determine if this is a proportional column that should
+        // delegate resize to its neighbor (the next column).
+        // This prevents weird behavior when the table is 100% width
+        // and the last column is proportional — it just flexes.
+        let neighborKey: string | null = null;
+        let neighborMinWidth = FALLBACK_MIN_WIDTH;
+
+        if (columns && isProportionalColumn(column.width)) {
+          const colIndex = columns.findIndex(c => c.key === column.key);
+          if (colIndex >= 0 && colIndex < columns.length - 1) {
+            const nextCol = columns[colIndex + 1];
+            neighborKey = nextCol.key;
+            neighborMinWidth = resolveColumnMinWidth(
+              nextCol.width,
+              globalMinWidth,
+            );
+          }
+        }
+
+        // If this is the last column and it's proportional, skip the handle.
+        // There's no neighbor to resize and resizing a flex column in a
+        // full-width table produces unpredictable results.
+        if (columns) {
+          const colIndex = columns.findIndex(c => c.key === column.key);
+          const isLastColumn = colIndex === columns.length - 1;
+          if (isLastColumn && isProportionalColumn(column.width)) {
+            return props;
+          }
+        }
 
         const widthStyle: React.CSSProperties | undefined =
           overrideWidth != null
@@ -409,8 +638,10 @@ export function useXDSTableColumnResize<
             columnKey={column.key}
             columnHeader={column.header ?? column.key}
             currentWidth={overrideWidth}
-            minWidth={minWidth}
+            minWidth={effectiveMinWidth}
             maxWidth={maxWidth}
+            neighborKey={neighborKey}
+            neighborMinWidth={neighborMinWidth}
             configRef={configRef}
             dragStateRef={dragStateRef}
             isDraggingRef={isDraggingRef}
@@ -433,8 +664,7 @@ export function useXDSTableColumnResize<
           styles: [...props.styles, headerCellRelative.base],
         };
       },
-
     }),
-    [columnWidths, minWidth, maxWidth],
+    [columnWidths, globalMinWidth, maxWidth, columns],
   );
 }
