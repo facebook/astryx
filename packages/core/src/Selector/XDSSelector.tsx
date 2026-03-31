@@ -2,7 +2,7 @@
 
 /**
  * @file XDSSelector.tsx
- * @input Uses React, StyleX, useXDSLayer, XDSIcon
+ * @input Uses React, StyleX, useXDSPopover, XDSIcon
  * @output Exports XDSSelector component
  * @position Core implementation; consumed by index.ts
  *
@@ -21,7 +21,7 @@ import React, {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {useXDSLayer} from '../Layer/useXDSLayer';
+import {useXDSPopover} from '../Popover/useXDSPopover';
 import {XDSIcon} from '../Icon';
 import type {XDSIconName} from '../Icon';
 import {
@@ -133,9 +133,6 @@ const styles = stylex.create({
     maxHeight: '300px',
     overflowY: 'auto',
     padding: spacingVars['--spacing-1'],
-    borderRadius: radiusVars['--radius-container'],
-    backgroundColor: colorVars['--color-background-surface'],
-    boxShadow: shadowVars['--shadow-low'],
     opacity: 1,
     transition: `opacity ${durationVars['--duration-fast']}`,
   },
@@ -442,15 +439,16 @@ export function XDSSelector<T extends XDSSelectorOptionType>({
     triggerRef.current?.focus();
   }, []);
 
-  const layer = useXDSLayer({
-    mode: 'context',
-    lightDismiss: true,
+  const popover = useXDSPopover({
     onHide: handleLayerHide,
+    hasLightDismiss: true,
+    hasCloseButton: false,
+    hasAutoFocus: false,
   });
 
   // Calculate offset to position selected item over trigger
   const {offset: selectedItemOffset, isPositioned} = useSelectedItemOffset({
-    isOpen: layer.isOpen,
+    isOpen: popover.isOpen,
     selectedItemIndex,
     listboxId,
     listboxRef,
@@ -470,9 +468,9 @@ export function XDSSelector<T extends XDSSelectorOptionType>({
     selectableItems,
     value,
     isDisabled,
-    isOpen: layer.isOpen,
-    onOpen: layer.show,
-    onClose: layer.hide,
+    isOpen: popover.isOpen,
+    onOpen: popover.show,
+    onClose: popover.hide,
     onSelect: useCallback(
       (newValue: string) => {
         onChange?.(newValue);
@@ -593,16 +591,16 @@ export function XDSSelector<T extends XDSSelectorOptionType>({
           (
             triggerRef as React.MutableRefObject<HTMLButtonElement | null>
           ).current = el;
-          layer.ref(el);
+          popover.triggerRef(el);
         }}
         id={triggerId}
         type="button"
         role="combobox"
         aria-haspopup="listbox"
-        aria-expanded={layer.isOpen}
+        aria-expanded={popover.isOpen}
         aria-controls={listboxId}
         aria-activedescendant={
-          layer.isOpen && highlightedIndex >= 0
+          popover.isOpen && highlightedIndex >= 0
             ? getItemId(highlightedIndex)
             : undefined
         }
@@ -633,7 +631,7 @@ export function XDSSelector<T extends XDSSelectorOptionType>({
         <span
           {...stylex.props(
             styles.triggerIcon,
-            !status && layer.isOpen && styles.triggerIconOpen,
+            !status && popover.isOpen && styles.triggerIconOpen,
             status && styles.triggerIconStatus,
           )}>
           {status ? (
@@ -648,7 +646,7 @@ export function XDSSelector<T extends XDSSelectorOptionType>({
         </span>
       </button>
 
-      {layer.render(
+      {popover.render(
         <div
           ref={listboxRef}
           id={listboxId}

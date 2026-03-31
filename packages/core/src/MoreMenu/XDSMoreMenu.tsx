@@ -2,12 +2,12 @@
 
 /**
  * @file XDSMoreMenu.tsx
- * @input Uses React, StyleX, useXDSLayer, XDSButton, getIcon, XDSDropdownMenuItem, XDSDivider
+ * @input Uses React, StyleX, useXDSPopover, XDSButton, getIcon, XDSDropdownMenuItem, XDSDivider
  * @output Exports XDSMoreMenu component and XDSMoreMenuProps type
  * @position Core implementation; consumed by index.ts
  *
  * Overflow menu with a three-dot icon trigger. A convenience wrapper
- * that composes XDSButton (icon-only) + useXDSLayer for the dropdown.
+ * that composes XDSButton (icon-only) + useXDSPopover for the dropdown.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/MoreMenu/README.md
@@ -25,7 +25,7 @@ import {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {useXDSLayer} from '../Layer/useXDSLayer';
+import {useXDSPopover} from '../Popover/useXDSPopover';
 import {XDSButton, type XDSButtonVariant, type XDSButtonSize} from '../Button';
 import {getIcon} from '../Icon/globalIconRegistry';
 import {XDSDropdownMenuItem} from '../DropdownMenu/XDSDropdownMenuItem';
@@ -43,7 +43,6 @@ import {
   durationVars,
   easeVars,
   typographyVars,
-  shadowVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
@@ -76,9 +75,6 @@ const styles = stylex.create({
     maxHeight: '300px',
     overflowY: 'auto',
     padding: spacingVars['--spacing-1'],
-    borderRadius: radiusVars['--radius-container'],
-    backgroundColor: colorVars['--color-background-surface'],
-    boxShadow: shadowVars['--shadow-low'],
     opacity: 1,
     transitionProperty: 'opacity',
     transitionDuration: durationVars['--duration-fast'],
@@ -179,7 +175,7 @@ export interface XDSMoreMenuProps {
    * Same type as XDSDropdownMenu's `items` prop.
    *
    * For advanced menu content that can't be expressed as data,
-   * compose XDSButton + useXDSLayer + XDSDropdownMenuItem directly.
+   * compose XDSButton + useXDSPopover + XDSDropdownMenuItem directly.
    */
   items: XDSDropdownMenuOption[];
 
@@ -251,7 +247,7 @@ function DefaultItem({item}: {item: XDSDropdownMenuItemData}) {
  * pattern.
  *
  * For full control over trigger rendering or menu content, compose
- * XDSButton + useXDSLayer + XDSDropdownMenuItem directly.
+ * XDSButton + useXDSPopover + XDSDropdownMenuItem directly.
  *
  * @example
  * ```
@@ -286,23 +282,24 @@ export function XDSMoreMenu({
     buttonRef.current?.focus();
   }, []);
 
-  const layer = useXDSLayer({
-    mode: 'context',
-    lightDismiss: true,
+  const popover = useXDSPopover({
     onHide: handleLayerHide,
+    hasLightDismiss: true,
+    hasCloseButton: false,
+    hasAutoFocus: false,
   });
 
   const handleButtonClick = useCallback(() => {
-    if (layer.isOpen) {
-      layer.hide();
+    if (popover.isOpen) {
+      popover.hide();
     } else {
-      layer.show();
+      popover.show();
     }
-  }, [layer]);
+  }, [popover]);
 
   const closeMenu = useCallback(() => {
-    layer.hide();
-  }, [layer]);
+    popover.hide();
+  }, [popover]);
 
   const getItemId = useCallback(
     (index: number) => `${menuId}-item-${index}`,
@@ -328,10 +325,10 @@ export function XDSMoreMenu({
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (!layer.isOpen) {
+      if (!popover.isOpen) {
         if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
-          layer.show();
+          popover.show();
           setHighlightedIndex(0);
         }
         return;
@@ -400,7 +397,7 @@ export function XDSMoreMenu({
           break;
       }
     },
-    [layer, selectableItems, highlightedIndex, closeMenu, handleItemClick],
+    [popover, selectableItems, highlightedIndex, closeMenu, handleItemClick],
   );
 
   const renderItem = useCallback(
@@ -480,7 +477,7 @@ export function XDSMoreMenu({
       <XDSButton
         ref={el => {
           buttonRef.current = el;
-          layer.ref(el);
+          popover.triggerRef(el);
           if (typeof ref === 'function') {
             ref(el);
           } else if (ref) {
@@ -493,20 +490,20 @@ export function XDSMoreMenu({
         variant={variant}
         size={size}
         isDisabled={isDisabled}
-        tooltip={layer.isOpen ? undefined : label}
+        tooltip={popover.isOpen ? undefined : label}
         onClick={handleButtonClick}
         onKeyDown={handleKeyDown}
         aria-haspopup="menu"
-        aria-expanded={layer.isOpen}
+        aria-expanded={popover.isOpen}
         aria-controls={menuId}
         aria-activedescendant={
-          layer.isOpen && highlightedIndex >= 0
+          popover.isOpen && highlightedIndex >= 0
             ? getItemId(highlightedIndex)
             : undefined
         }
         data-testid={testId}
       />
-      {layer.render(
+      {popover.render(
         <div
           id={menuId}
           role="menu"
