@@ -311,6 +311,7 @@ export const IconOnly: Story = {
           label: 'More options',
           icon: <EllipsisHorizontalIcon />,
           variant: 'ghost',
+          isLabelHidden: true,
         }}
         items={[
           {label: 'Edit', icon: PencilIcon, onClick: () => console.log('Edit')},
@@ -326,6 +327,7 @@ export const IconOnly: Story = {
           label: 'Settings',
           icon: <Cog6ToothIcon />,
           variant: 'secondary',
+          isLabelHidden: true,
         }}
         items={[
           {label: 'Preferences', onClick: () => console.log('Preferences')},
@@ -336,7 +338,7 @@ export const IconOnly: Story = {
   ),
 };
 
-// Icon + label together — pass children on button to get visible text with icon
+// Icon + label together — label is visible text alongside icon
 export const IconWithLabel: Story = {
   render: () => (
     <XDSDropdownMenu
@@ -344,7 +346,6 @@ export const IconWithLabel: Story = {
         label: 'Settings',
         icon: <Cog6ToothIcon />,
         variant: 'ghost',
-        children: 'Settings',
       }}
       items={[
         {label: 'Preferences', onClick: () => console.log('Preferences')},

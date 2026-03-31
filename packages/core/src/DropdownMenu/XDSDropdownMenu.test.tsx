@@ -352,13 +352,31 @@ describe('XDSDropdownMenu custom render', () => {
 });
 
 describe('XDSDropdownMenu icon-only mode', () => {
-  it('renders icon-only button when icon is set without children', () => {
+  it('renders icon + visible label by default when icon and label are set', () => {
+    render(
+      <XDSDropdownMenu
+        button={{
+          label: 'Settings',
+          icon: <span data-testid="icon">⚙️</span>,
+          variant: 'ghost',
+        }}
+        items={[{label: 'Preferences'}]}
+      />,
+    );
+    const button = screen.getByRole('button', {name: /Settings/});
+    // label should be visible text, not just aria-label
+    expect(button).not.toHaveAttribute('aria-label');
+    expect(screen.getByTestId('icon')).toBeInTheDocument();
+  });
+
+  it('renders icon-only button when isLabelHidden is true', () => {
     render(
       <XDSDropdownMenu
         button={{
           label: 'More options',
           icon: <span data-testid="icon">⋯</span>,
           variant: 'ghost',
+          isLabelHidden: true,
         }}
         items={[{label: 'Edit'}, {label: 'Delete'}]}
       />,
@@ -366,23 +384,6 @@ describe('XDSDropdownMenu icon-only mode', () => {
     const button = screen.getByRole('button', {name: 'More options'});
     // label should be aria-label, not visible text
     expect(button).toHaveAttribute('aria-label', 'More options');
-    expect(screen.getByTestId('icon')).toBeInTheDocument();
-  });
-
-  it('renders icon + label when children are provided on button', () => {
-    render(
-      <XDSDropdownMenu
-        button={{
-          label: 'Settings',
-          icon: <span data-testid="icon">⚙️</span>,
-          variant: 'ghost',
-          children: 'Settings',
-        }}
-        items={[{label: 'Preferences'}]}
-      />,
-    );
-    const button = screen.getByRole('button', {name: /Settings/});
-    expect(button).not.toHaveAttribute('aria-label');
     expect(screen.getByTestId('icon')).toBeInTheDocument();
   });
 });

@@ -242,10 +242,18 @@ function getSelectableItems(
  * Props for customizing the dropdown button.
  * Extends XDSButtonProps but omits onClick since it's managed internally.
  *
- * When `icon` is set without `children`, renders as an icon-only button
- * (square, with `label` as aria-label). Pass `children` to get icon + visible text.
+ * When `icon` is set, `label` remains visible text (unlike XDSButton where
+ * `icon` without `children` renders icon-only). To hide the label and get
+ * a true icon-only trigger, set `isLabelHidden: true`.
  */
-export type XDSDropdownMenuButtonProps = Omit<XDSButtonProps, 'onClick'>;
+export type XDSDropdownMenuButtonProps = Omit<XDSButtonProps, 'onClick'> & {
+  /**
+   * When true, hides the label text and renders as icon-only.
+   * The `label` is still used as the accessible name (aria-label).
+   * @default false
+   */
+  isLabelHidden?: boolean;
+};
 
 export interface XDSDropdownMenuProps {
   /**
@@ -287,7 +295,7 @@ export interface XDSDropdownMenuProps {
   /**
    * Whether to show a chevron indicator on the trigger button.
    * Automatically hidden for icon-only buttons (when `button.icon` is set
-   * without `button.endContent`).
+   * without `button.label`).
    * @default true
    */
   hasChevron?: boolean;
@@ -597,9 +605,11 @@ export function XDSDropdownMenu({
     return elements;
   }, [items, renderItem]);
 
-  // Icon-only: when button has an icon and no children,
-  // XDSButton handles icon-only rendering natively.
-  const isIconOnly = button.icon != null && button.children == null;
+  // Icon-only: true when icon is present and label is explicitly hidden.
+  // Unlike XDSButton (where icon + no children = icon-only), dropdown
+  // menus show label as visible text by default.
+  const {isLabelHidden, ...buttonProps} = button;
+  const isIconOnly = buttonProps.icon != null && isLabelHidden === true;
 
   // Build endContent: use consumer's endContent if provided,
   // otherwise inject chevron (unless icon-only or hasChevron=false)
@@ -623,7 +633,18 @@ export function XDSDropdownMenu({
           ).current = el;
           layer.ref(el);
         }}
-        {...button}
+        {...buttonProps}
+        // When icon is set without children, XDSButton treats it as
+        // icon-only (label becomes aria-label only). For dropdown menus
+        // we want label to remain visible text, so we promote it to
+        // children — unless isLabelHidden is true.
+        children={
+          !isIconOnly &&
+          buttonProps.icon != null &&
+          buttonProps.children == null
+            ? buttonProps.label
+            : buttonProps.children
+        }
         endContent={resolvedEndContent}
         onClick={handleButtonClick}
         onKeyDown={handleKeyDown}
