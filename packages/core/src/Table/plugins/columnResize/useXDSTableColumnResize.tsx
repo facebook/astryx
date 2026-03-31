@@ -124,7 +124,9 @@ const handleStyles = stylex.create({
     insetInlineEnd: '-3px',
     top: 0,
     bottom: 0,
-    width: '6px',
+    // Wide transparent hit area so the handle is easy to hover/grab.
+    // The visible indicator is the 1px ::after line centered within.
+    width: '8px',
     cursor: 'ew-resize',
     zIndex: 1,
     touchAction: 'none',
@@ -134,19 +136,21 @@ const handleStyles = stylex.create({
       position: 'absolute',
       top: 0,
       bottom: 0,
-      insetInlineStart: '2.5px',
+      insetInlineStart: '3.5px',
       width: '1px',
       backgroundColor: colorVars['--color-accent'],
+      // Faint resting state so the divider boundary is always subtly visible.
+      // Full opacity on hover, focus, or while actively dragging.
       opacity: {
-        default: 0,
+        default: 0.25,
         ':hover': 1,
         ':focus-visible': 1,
       },
       transition: 'opacity 150ms ease',
     },
     '@media (pointer: coarse)': {
-      width: '16px',
-      insetInlineEnd: '-8px',
+      width: '20px',
+      insetInlineEnd: '-10px',
     },
   },
 });
@@ -162,6 +166,12 @@ const headerCellRelative = stylex.create({
 // Drag State (ref-based, not React state — avoids re-renders during drag)
 // =============================================================================
 
+interface FrozenSibling {
+  th: HTMLTableCellElement;
+  /** The inline width style before we froze it (so we can restore on cancel) */
+  prevWidth: string;
+}
+
 interface DragState {
   columnKey: string;
   startX: number;
@@ -171,6 +181,11 @@ interface DragState {
   neighborKey: string | null;
   neighborTh: HTMLTableCellElement | null;
   neighborInitialWidth: number;
+  /**
+   * Preceding <th> elements that were frozen at their rendered widths
+   * on drag start so they don't shift when we resize a later column.
+   */
+  frozenSiblings: FrozenSibling[];
 }
 
 // =============================================================================
@@ -301,6 +316,20 @@ function ResizeHandle({
       const nTh = resolveNeighborTh(th);
       const nInitialWidth = nTh ? nTh.getBoundingClientRect().width : 0;
 
+      // Freeze all preceding <th> elements at their current rendered widths
+      // so proportional columns to the left don't shift when we resize.
+      const frozenSiblings: FrozenSibling[] = [];
+      let sibling = th.previousElementSibling;
+      while (sibling instanceof HTMLTableCellElement) {
+        const renderedWidth = sibling.getBoundingClientRect().width;
+        frozenSiblings.push({th: sibling, prevWidth: sibling.style.width});
+        const px = `${renderedWidth}px`;
+        sibling.style.width = px;
+        sibling.style.minWidth = px;
+        sibling.style.maxWidth = px;
+        sibling = sibling.previousElementSibling;
+      }
+
       dragStateRef.current = {
         columnKey,
         startX: e.clientX,
@@ -309,6 +338,7 @@ function ResizeHandle({
         neighborKey,
         neighborTh: nTh,
         neighborInitialWidth: nInitialWidth,
+        frozenSiblings,
       };
       isDraggingRef.current = true;
       handle.setAttribute('data-resizing', 'true');
