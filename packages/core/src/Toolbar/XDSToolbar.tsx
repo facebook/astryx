@@ -143,6 +143,12 @@ export interface XDSToolbarProps extends XDSBaseProps<HTMLDivElement> {
    * @default 'transparent'
    */
   variant?: XDSSectionVariant;
+  /**
+   * Internal padding using the spacing scale.
+   * Passed through to XDSSection.
+   * When omitted, uses the section's default (16px).
+   */
+  padding?: SpacingStep;
 }
 
 /**
@@ -169,6 +175,7 @@ export function XDSToolbar({
   gap = 2,
   orientation = 'horizontal',
   variant = 'transparent',
+  padding,
   xstyle,
   className,
   style,
@@ -190,7 +197,7 @@ export function XDSToolbar({
     <XDSSection
       ref={ref}
       variant={variant}
-      padding={0}
+      {...(padding != null ? {padding} : {})}
       xstyle={xstyle}
       className={className}
       style={style}>
