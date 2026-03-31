@@ -121,11 +121,11 @@ function isProportionalColumn(colWidth: ColumnWidth | undefined): boolean {
 const handleStyles = stylex.create({
   base: {
     position: 'absolute',
-    insetInlineEnd: '-3px',
+    // Keep entirely inside the <th> — extending outside gets clipped by the
+    // adjacent <th>'s overflow:hidden. The ::after line sits at the right edge.
+    insetInlineEnd: 0,
     top: 0,
     bottom: 0,
-    // Wide transparent hit area so the handle is easy to hover/grab.
-    // The visible indicator is the 1px ::after line centered within.
     width: '8px',
     cursor: 'ew-resize',
     zIndex: 1,
@@ -136,11 +136,11 @@ const handleStyles = stylex.create({
       position: 'absolute',
       top: 0,
       bottom: 0,
-      insetInlineStart: '3.5px',
+      insetInlineEnd: 0,
       width: '1px',
       backgroundColor: colorVars['--color-accent'],
       // Faint resting state so the divider boundary is always subtly visible.
-      // Full opacity on hover, focus, or while actively dragging.
+      // Full opacity on hover or focus.
       opacity: {
         default: 0.25,
         ':hover': 1,
@@ -150,7 +150,6 @@ const handleStyles = stylex.create({
     },
     '@media (pointer: coarse)': {
       width: '20px',
-      insetInlineEnd: '-10px',
     },
   },
 });
