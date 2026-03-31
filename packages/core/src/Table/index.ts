@@ -17,6 +17,7 @@ export {XDSTableHeaderCell} from './XDSTableHeaderCell';
 export {XDSTableContext} from './XDSTableContext';
 export {useXDSTableSelection} from './plugins/selection';
 export {useXDSTableSelectionState} from './plugins/selection';
+export {useXDSTablePagination} from './plugins/pagination';
 export {useXDSBaseTablePlugins} from './useXDSBaseTablePlugins';
 export {
   proportional,
@@ -54,3 +55,7 @@ export type {
   UseXDSTableSelectionStateConfig,
   UseXDSTableSelectionStateResult,
 } from './plugins/selection';
+export type {
+  UseXDSTablePaginationConfig,
+  UseXDSTablePaginationReturn,
+} from './plugins/pagination';
