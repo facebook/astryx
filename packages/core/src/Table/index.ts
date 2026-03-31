@@ -63,6 +63,7 @@ export type {
   XDSTableSortState,
 } from './plugins/sortable';
 export type {XDSTableSortableColumnConfig} from './types';
+export type {
   UseXDSTablePaginationConfig,
   UseXDSTablePaginationReturn,
 } from './plugins/pagination';

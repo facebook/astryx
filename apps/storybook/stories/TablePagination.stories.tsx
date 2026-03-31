@@ -33,6 +33,49 @@ const columns: XDSTableColumn<User>[] = [
 ];
 
 // =============================================================================
+// Types
+// =============================================================================
+
+type Variant = 'pages' | 'count' | 'compact' | 'dots' | 'none';
+type Position = 'below' | 'above' | 'both' | 'none';
+type Align = 'start' | 'center' | 'end';
+
+// =============================================================================
+// Shared render helper
+// =============================================================================
+
+function PaginatedDemo({
+  variant = 'pages',
+  position = 'below',
+  align = 'start',
+}: {
+  variant?: Variant;
+  position?: Position;
+  align?: Align;
+}) {
+  const [page, setPage] = useState(1);
+
+  const pagination = useXDSTablePagination<User>({
+    page,
+    onPageChange: setPage,
+    totalItems: users.length,
+    pageSize: 10,
+    variant,
+    position,
+    align,
+  });
+
+  return (
+    <XDSTable
+      data={pagination.paginatedData(users)}
+      columns={columns}
+      idKey="id"
+      plugins={{pagination: pagination.plugin}}
+    />
+  );
+}
+
+// =============================================================================
 // Stories
 // =============================================================================
 
@@ -73,7 +116,6 @@ export const ServerSide: Story = {
     const [page, setPage] = useState(1);
     const pageSize = 10;
 
-    // Simulate server-side: data is already sliced
     const serverData = users.slice((page - 1) * pageSize, page * pageSize);
 
     const pagination = useXDSTablePagination<User>({
@@ -131,7 +173,6 @@ export const CursorBased: Story = {
     const [page, setPage] = useState(1);
     const pageSize = 10;
 
-    // Simulate cursor-based: only know if there's more, not total count
     const hasMore = page * pageSize < users.length;
 
     const pagination = useXDSTablePagination<User>({
@@ -246,4 +287,106 @@ export const WithSelection: Story = {
       </div>
     );
   },
+};
+
+/**
+ * Interactive playground — use the controls panel to explore every combination
+ * of variant, position, and align.
+ */
+export const Playground: Story = {
+  argTypes: {
+    variant: {
+      control: 'select',
+      options: ['pages', 'count', 'compact', 'dots', 'none'],
+      description: 'What appears between prev/next buttons',
+    },
+    position: {
+      control: 'select',
+      options: ['below', 'above', 'both', 'none'],
+      description: 'Where pagination renders relative to the table',
+    },
+    align: {
+      control: 'select',
+      options: ['start', 'center', 'end'],
+      description: 'Horizontal alignment of the pagination controls',
+    },
+  },
+  args: {
+    variant: 'pages',
+    position: 'below',
+    align: 'start',
+  },
+  render: (args: {variant: Variant; position: Position; align: Align}) => (
+    <div style={{maxWidth: 700}}>
+      <PaginatedDemo
+        variant={args.variant}
+        position={args.position}
+        align={args.align}
+      />
+    </div>
+  ),
+};
+
+// =============================================================================
+// Options Matrix
+// =============================================================================
+
+const VARIANTS: Variant[] = ['pages', 'count', 'compact', 'dots'];
+const POSITIONS: Position[] = ['below', 'above', 'both'];
+const ALIGNS: Align[] = ['start', 'center', 'end'];
+
+/**
+ * All variant × position × align combinations in one scrollable view.
+ * One row per combination, labelled clearly. The `none` values are omitted.
+ */
+export const OptionsMatrix: Story = {
+  render: () => (
+    <div style={{fontFamily: 'sans-serif', maxWidth: 700}}>
+      {VARIANTS.flatMap(variant =>
+        POSITIONS.flatMap(position =>
+          ALIGNS.map(align => (
+            <div
+              key={`${variant}-${position}-${align}`}
+              style={{
+                marginBottom: 48,
+                paddingBottom: 48,
+                borderBottom: '1px solid #e5e5e5',
+              }}>
+              <div
+                style={{
+                  display: 'inline-flex',
+                  gap: 8,
+                  marginBottom: 12,
+                  flexWrap: 'wrap',
+                }}>
+                {[
+                  {label: 'variant', value: variant},
+                  {label: 'position', value: position},
+                  {label: 'align', value: align},
+                ].map(({label, value}) => (
+                  <span
+                    key={label}
+                    style={{
+                      fontSize: 11,
+                      fontFamily: 'monospace',
+                      background: '#f0f0f0',
+                      borderRadius: 4,
+                      padding: '2px 6px',
+                      color: '#555',
+                    }}>
+                    {label}=&quot;{value}&quot;
+                  </span>
+                ))}
+              </div>
+              <PaginatedDemo
+                variant={variant}
+                position={position}
+                align={align}
+              />
+            </div>
+          )),
+        ),
+      )}
+    </div>
+  ),
 };

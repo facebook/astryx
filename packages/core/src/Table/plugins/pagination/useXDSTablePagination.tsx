@@ -25,8 +25,12 @@ import type {TablePlugin} from '../../types';
 const styles = stylex.create({
   wrapper: {
     display: 'flex',
-    marginTop: spacingVars['--spacing-4'],
-    marginBottom: spacingVars['--spacing-4'],
+  },
+  marginTop: {
+    marginTop: spacingVars['--spacing-2'],
+  },
+  marginBottom: {
+    marginBottom: spacingVars['--spacing-2'],
   },
   alignStart: {
     justifyContent: 'flex-start',
@@ -51,7 +55,6 @@ const styles = stylex.create({
  * the table's plugin pipeline.
  *
  * @example
- * Basic client-side pagination
  * ```
  * const [page, setPage] = useState(1);
  * const [pageSize, setPageSize] = useState(20);
@@ -71,7 +74,6 @@ const styles = stylex.create({
  * ```
  *
  * @example
- * Server-side pagination
  * ```
  * const pagination = useXDSTablePagination({
  *   page,
@@ -89,7 +91,6 @@ const styles = stylex.create({
  * ```
  *
  * @example
- * With page size selector
  * ```
  * const pagination = useXDSTablePagination({
  *   page,
@@ -102,7 +103,6 @@ const styles = stylex.create({
  * ```
  *
  * @example
- * Cursor-based (infinite) pagination
  * ```
  * const pagination = useXDSTablePagination({
  *   page,
@@ -340,10 +340,12 @@ export function useXDSTablePagination<T extends Record<string, unknown>>(
         const isSinglePage = resolvedTotalPages === 1 && props.hasMore !== true;
         if (isSinglePage) return children;
 
-        const paginationElement = (
+        const makeWrapper = (side: 'above' | 'below') => (
           <div
             {...stylex.props(
               styles.wrapper,
+              side === 'below' && styles.marginTop,
+              side === 'above' && styles.marginBottom,
               a === 'center' && styles.alignCenter,
               a === 'end' && styles.alignEnd,
               a === 'start' && styles.alignStart,
@@ -354,9 +356,9 @@ export function useXDSTablePagination<T extends Record<string, unknown>>(
 
         return (
           <>
-            {(pos === 'above' || pos === 'both') && paginationElement}
+            {(pos === 'above' || pos === 'both') && makeWrapper('above')}
             {children}
-            {(pos === 'below' || pos === 'both') && paginationElement}
+            {(pos === 'below' || pos === 'both') && makeWrapper('below')}
           </>
         );
       },
