@@ -103,10 +103,31 @@ export interface HeaderRowRenderProps {
   children: ReactNode;
 }
 
-/** Props passed through the plugin pipeline for each `<th>` */
+/**
+ * Props passed through the plugin pipeline for each `<th>`.
+ *
+ * Uses named slots so multiple plugins can contribute content without
+ * conflicts. Each plugin writes to its own slot; XDSBaseTable renders
+ * them in order: `before | content | after`, with `overlay` positioned
+ * absolutely on top.
+ *
+ * Slot semantics:
+ * - **before** — content before the label (e.g. selection checkbox)
+ * - **content** — the header label; plugins may wrap (e.g. sort button)
+ * - **after** — content after the label (e.g. sort icon, filter icon)
+ * - **overlay** — absolutely positioned layer (e.g. resize handle)
+ */
 export interface HeaderCellRenderProps {
   htmlProps: ThHTMLAttributes<HTMLTableCellElement>;
   styles: StyleXStyles[];
+  /** Content rendered before the header label. */
+  before?: ReactNode;
+  /** The header label content. Initialized from `column.header ?? column.key`. Plugins may wrap or replace. */
+  content?: ReactNode;
+  /** Content rendered after the header label (e.g. sort icon, filter trigger). */
+  after?: ReactNode;
+  /** Absolutely positioned overlay content (e.g. resize handle). */
+  overlay?: ReactNode;
 }
 
 /** Props passed through the plugin pipeline for each body `<tr>` */
