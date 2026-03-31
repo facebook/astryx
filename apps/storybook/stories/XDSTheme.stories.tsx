@@ -227,7 +227,7 @@ function ThemeAwareGroupedChart({
  * Displays the raw token values for inspection.
  */
 function TokenInspector() {
-  const {token, colorMode, name} = useXDSTheme();
+  const {token, mode, name} = useXDSTheme();
 
   const inspectedTokens = [
     '--color-accent',
@@ -248,8 +248,8 @@ function TokenInspector() {
         <XDSStack direction="row" gap="sm" align="center">
           <XDSHeading level="h4">Token Inspector</XDSHeading>
           <XDSBadge>{name}</XDSBadge>
-          <XDSBadge variant={colorMode === 'dark' ? 'bold' : 'muted'}>
-            {colorMode}
+          <XDSBadge variant={mode === 'dark' ? 'bold' : 'muted'}>
+            {mode}
           </XDSBadge>
         </XDSStack>
         <div

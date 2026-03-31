@@ -39,7 +39,7 @@ describe('useXDSTheme', () => {
     // Should resolve default light-dark() tokens for light mode (useMediaQuery mocked to false = light)
     expect(result.current.token('--color-text-primary')).toBe('#0A1317');
     expect(result.current.token('--spacing-1')).toBe('4px');
-    expect(result.current.colorMode).toBe('light');
+    expect(result.current.mode).toBe('light');
   });
 
   it('returns the theme name', () => {
@@ -93,11 +93,11 @@ describe('useXDSTheme', () => {
     expect(result.current.token('--nonexistent')).toBe('');
   });
 
-  it('exposes colorMode reflecting effective mode', () => {
+  it('exposes mode reflecting effective mode', () => {
     const {result} = renderHook(() => useXDSTheme(), {
       wrapper: ({children}) => wrapper({children, mode: 'dark'}),
     });
-    expect(result.current.colorMode).toBe('dark');
+    expect(result.current.mode).toBe('dark');
   });
 
   it('provides a tokens map with all resolved values', () => {

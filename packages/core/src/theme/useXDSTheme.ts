@@ -52,8 +52,8 @@ export const XDSThemeContext = createContext<XDSThemeContextValue | null>(null);
 export interface UseXDSThemeReturn {
   /** Theme name */
   name: string;
-  /** Resolved effective color mode ('light' | 'dark') — never 'system' */
-  colorMode: 'light' | 'dark';
+  /** Resolved effective mode ('light' | 'dark') — never 'system' */
+  mode: 'light' | 'dark';
   /**
    * Resolve a token to its raw CSS value for the current color mode.
    *
@@ -156,7 +156,7 @@ function buildDefaultTokens(mode: 'light' | 'dark'): Record<string, string> {
  * @example
  * ```
  * function Chart() {
- *   const { token, colorMode } = useXDSTheme();
+ *   const { token, mode } = useXDSTheme();
  *   return (
  *     <svg>
  *       <rect fill={token('--color-accent')} />
@@ -193,7 +193,7 @@ export function useXDSTheme(): UseXDSThemeReturn {
 
   return {
     name: theme?.name ?? 'default',
-    colorMode: effectiveMode,
+    mode: effectiveMode,
     token,
     tokens,
   };
