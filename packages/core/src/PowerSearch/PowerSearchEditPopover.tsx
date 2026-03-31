@@ -17,13 +17,7 @@ import {XDSSelector} from '../Selector';
 import {XDSHStack, XDSVStack} from '../Stack';
 import {XDSIcon} from '../Icon';
 import {XDSTreeList, type XDSTreeListItemData} from '../TreeList';
-import {
-  spacingVars,
-  colorVars,
-  radiusVars,
-  shadowVars,
-  typeScaleVars,
-} from '../theme/tokens.stylex';
+import {spacingVars, typeScaleVars} from '../theme/tokens.stylex';
 import {PowerSearchValueEditor} from './PowerSearchValueEditor';
 import type {InternalConfig} from './useInternalConfig';
 import type {
@@ -35,9 +29,6 @@ import type {
 
 const styles = stylex.create({
   container: {
-    backgroundColor: colorVars['--color-background-surface'],
-    borderRadius: radiusVars['--radius-container'],
-    boxShadow: shadowVars['--shadow-low'],
     overflow: 'hidden',
   },
   content: {
