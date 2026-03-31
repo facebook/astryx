@@ -150,6 +150,18 @@ export const docs = {
           description: 'Accessible label for the popover dialog.',
         },
         {
+          name: 'hasCloseButton',
+          type: 'boolean',
+          description: 'Whether to include a hidden close button for accessibility.',
+          default: 'true',
+        },
+        {
+          name: 'closeButtonLabel',
+          type: 'string',
+          description: 'Label for the hidden close button.',
+          default: "'Close popover'",
+        },
+        {
           name: 'xstyle',
           type: 'StyleXStyles',
           description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
@@ -201,6 +213,12 @@ export const docs = {
           type: 'boolean',
           description: 'Whether to include a hidden close button for accessibility.',
           default: 'true',
+        },
+        {
+          name: 'closeButtonLabel',
+          type: 'string',
+          description: 'Label for the hidden close button.',
+          default: "'Close popover'",
         },
         {
           name: 'dialogLabel',
@@ -370,6 +388,18 @@ export const docsZh = {
           type: 'string',
           description: '弹出框对话框的无障碍标签。',
         },
+        {
+          name: 'hasCloseButton',
+          type: 'boolean',
+          description: '是否包含用于无障碍访问的隐藏关闭按钮。',
+          default: 'true',
+        },
+        {
+          name: 'closeButtonLabel',
+          type: 'string',
+          description: '隐藏关闭按钮的标签。',
+          default: "'Close popover'",
+        },
       ],
     },
     {
@@ -417,6 +447,12 @@ export const docsZh = {
           type: 'boolean',
           description: '是否包含用于无障碍访问的隐藏关闭按钮。',
           default: 'true',
+        },
+        {
+          name: 'closeButtonLabel',
+          type: 'string',
+          description: '隐藏关闭按钮的标签。',
+          default: "'Close popover'",
         },
         {
           name: 'dialogLabel',
@@ -479,6 +515,8 @@ export const docsDense = {
         isEnabled: 'When false, trigger interactions ignored.',
         width: 'Popover container width.',
         label: 'Accessible label for popover dialog.',
+        hasCloseButton: 'Whether to include hidden close button for accessibility.',
+        closeButtonLabel: 'Label for hidden close button.',
       },
     },
     {
@@ -491,6 +529,7 @@ export const docsDense = {
         hasLightDismiss: 'Whether clicking outside dismisses popover.',
         hasAutoFocus: 'Whether to auto-focus first focusable element when opened.',
         hasCloseButton: 'Whether to include hidden close button for accessibility.',
+        closeButtonLabel: 'Label for hidden close button.',
         dialogLabel: 'Accessible label for dialog.',
       },
     },

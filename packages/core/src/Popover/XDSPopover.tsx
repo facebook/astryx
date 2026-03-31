@@ -144,6 +144,19 @@ export interface XDSPopoverProps {
   style?: React.CSSProperties;
 
   /**
+   * Whether to include a hidden close button for accessibility.
+   * The button appears when keyboard users tab past the last element.
+   * @default true
+   */
+  hasCloseButton?: boolean;
+
+  /**
+   * Label for the hidden close button.
+   * @default "Close popover"
+   */
+  closeButtonLabel?: string;
+
+  /**
    * Test ID for the popover container.
    */
   'data-testid'?: string;
@@ -252,6 +265,8 @@ export function XDSPopover({
   isEnabled = true,
   width,
   label,
+  hasCloseButton,
+  closeButtonLabel,
   xstyle,
   className,
   style,
@@ -275,6 +290,8 @@ export function XDSPopover({
   const popover = useXDSPopover({
     dialogLabel: label,
     hasLightDismiss: true,
+    hasCloseButton,
+    closeButtonLabel,
     onShow: handlePopoverShow,
     onHide: handlePopoverHide,
   });
