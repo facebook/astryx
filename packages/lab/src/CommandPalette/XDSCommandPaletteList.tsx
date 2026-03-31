@@ -13,7 +13,8 @@
 
 import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
+import type {XDSBaseProps} from '@xds/core/XDSBaseProps';
+import {xdsClassName, mergeProps} from '@xds/core/utils';
 import {spacingVars} from '@xds/core/theme/tokens.stylex';
 import {useCommandPaletteContext} from './CommandPaletteContext';
 
@@ -26,7 +27,12 @@ const styles = stylex.create({
   },
 });
 
-export interface XDSCommandPaletteListProps {
+export interface XDSCommandPaletteListProps extends XDSBaseProps<HTMLDivElement> {
+  /**
+   * Ref forwarded to the root element.
+   */
+  ref?: React.Ref<HTMLDivElement>;
+
   /**
    * Command palette items, groups, empty states, etc.
    */
@@ -37,11 +43,6 @@ export interface XDSCommandPaletteListProps {
    * @default 'Commands'
    */
   label?: string;
-
-  /**
-   * StyleX overrides for the list container.
-   */
-  xstyle?: StyleXStyles;
 }
 
 /**
@@ -66,16 +67,27 @@ export interface XDSCommandPaletteListProps {
 export function XDSCommandPaletteList({
   children,
   label = 'Commands',
+  ref,
   xstyle,
+  className,
+  style,
+  ...props
 }: XDSCommandPaletteListProps) {
   const ctx = useCommandPaletteContext();
 
   return (
     <div
+      ref={ref}
       id={ctx?.listId}
       role="listbox"
       aria-label={label}
-      {...stylex.props(styles.list, xstyle)}>
+      {...mergeProps(
+        xdsClassName('command-palette-list'),
+        stylex.props(styles.list, xstyle),
+        className,
+        style,
+      )}
+      {...props}>
       {children}
     </div>
   );

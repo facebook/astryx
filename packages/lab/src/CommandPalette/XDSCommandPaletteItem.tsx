@@ -11,15 +11,10 @@
 
 'use client';
 
-import {
-  forwardRef,
-  useCallback,
-  useEffect,
-  useRef,
-  type ReactNode,
-} from 'react';
+import {useCallback, useEffect, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
+import type {XDSBaseProps} from '@xds/core/XDSBaseProps';
+import {xdsClassName, mergeProps} from '@xds/core/utils';
 import {
   colorVars,
   spacingVars,
@@ -46,7 +41,7 @@ const styles = stylex.create({
     backgroundColor: 'transparent',
     border: 'none',
     cursor: 'pointer',
-    textAlign: 'left',
+    textAlign: 'left' as const,
     outline: 'none',
     userSelect: 'none',
   },
@@ -69,7 +64,12 @@ const styles = stylex.create({
   },
 });
 
-export interface XDSCommandPaletteItemProps {
+export interface XDSCommandPaletteItemProps extends XDSBaseProps<HTMLDivElement> {
+  /**
+   * Ref forwarded to the root element.
+   */
+  ref?: React.Ref<HTMLDivElement>;
+
   /**
    * Unique value for identification and selection.
    */
@@ -109,11 +109,6 @@ export interface XDSCommandPaletteItemProps {
    * Item content. Fully custom — render icons, descriptions, shortcuts, etc.
    */
   children: ReactNode;
-
-  /**
-   * StyleX overrides for the item.
-   */
-  xstyle?: StyleXStyles;
 }
 
 /**
@@ -133,22 +128,20 @@ export interface XDSCommandPaletteItemProps {
  * </XDSCommandPaletteItem>
  * ```
  */
-export const XDSCommandPaletteItem = forwardRef<
-  HTMLDivElement,
-  XDSCommandPaletteItemProps
->(function XDSCommandPaletteItem(
-  {
-    value,
-    onSelect,
-    keywords,
-    isHighlighted: controlledHighlighted,
-    isSelected: controlledSelected,
-    isDisabled = false,
-    children,
-    xstyle,
-  },
+export function XDSCommandPaletteItem({
+  value,
+  onSelect,
+  keywords,
+  isHighlighted: controlledHighlighted,
+  isSelected: controlledSelected,
+  isDisabled = false,
+  children,
   ref,
-) {
+  xstyle,
+  className,
+  style,
+  ...props
+}: XDSCommandPaletteItemProps) {
   const ctx = useCommandPaletteContext();
   const itemRef = useRef<HTMLDivElement>(null);
 
@@ -159,7 +152,7 @@ export const XDSCommandPaletteItem = forwardRef<
     if (typeof ref === 'function') {
       ref(element);
     } else if (ref) {
-      ref.current = element;
+      (ref as React.MutableRefObject<HTMLDivElement | null>).current = element;
     }
   };
 
@@ -214,17 +207,23 @@ export const XDSCommandPaletteItem = forwardRef<
       data-value={value}
       onClick={handleClick}
       onMouseEnter={handleMouseEnter}
-      {...stylex.props(
-        styles.item,
-        !isDisabled && styles.itemHover,
-        isHighlighted && styles.itemHighlighted,
-        isSelected && styles.itemSelected,
-        isDisabled && styles.itemDisabled,
-        xstyle,
-      )}>
+      {...mergeProps(
+        xdsClassName('command-palette-item'),
+        stylex.props(
+          styles.item,
+          !isDisabled && styles.itemHover,
+          isHighlighted && styles.itemHighlighted,
+          isSelected && styles.itemSelected,
+          isDisabled && styles.itemDisabled,
+          xstyle,
+        ),
+        className,
+        style,
+      )}
+      {...props}>
       {children}
     </div>
   );
-});
+}
 
 XDSCommandPaletteItem.displayName = 'XDSCommandPaletteItem';

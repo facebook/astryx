@@ -13,7 +13,8 @@
 
 import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
+import type {XDSBaseProps} from '@xds/core/XDSBaseProps';
+import {xdsClassName, mergeProps} from '@xds/core/utils';
 import {
   colorVars,
   spacingVars,
@@ -39,7 +40,12 @@ const styles = stylex.create({
   },
 });
 
-export interface XDSCommandPaletteGroupProps {
+export interface XDSCommandPaletteGroupProps extends XDSBaseProps<HTMLDivElement> {
+  /**
+   * Ref forwarded to the root element.
+   */
+  ref?: React.Ref<HTMLDivElement>;
+
   /**
    * Group heading text.
    */
@@ -49,11 +55,6 @@ export interface XDSCommandPaletteGroupProps {
    * Items within this group.
    */
   children: ReactNode;
-
-  /**
-   * StyleX overrides for the group container.
-   */
-  xstyle?: StyleXStyles;
 }
 
 /**
@@ -74,13 +75,24 @@ export interface XDSCommandPaletteGroupProps {
 export function XDSCommandPaletteGroup({
   heading,
   children,
+  ref,
   xstyle,
+  className,
+  style,
+  ...props
 }: XDSCommandPaletteGroupProps) {
   return (
     <div
+      ref={ref}
       role="group"
       aria-label={heading}
-      {...stylex.props(styles.group, xstyle)}>
+      {...mergeProps(
+        xdsClassName('command-palette-group'),
+        stylex.props(styles.group, xstyle),
+        className,
+        style,
+      )}
+      {...props}>
       <div aria-hidden="true" {...stylex.props(styles.heading)}>
         {heading}
       </div>
