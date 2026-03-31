@@ -22,6 +22,8 @@ import {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSDialog} from '@xds/core/Dialog';
+import type {XDSBaseProps} from '@xds/core/XDSBaseProps';
+import {xdsClassName, mergeProps} from '@xds/core/utils';
 import {CommandPaletteContext} from './CommandPaletteContext';
 import {defaultFilter} from './filter';
 import type {CommandPaletteFilterFn} from './types';
@@ -47,7 +49,11 @@ declare module '../theme/types' {
   }
 }
 
-export interface XDSCommandPaletteProps {
+export interface XDSCommandPaletteProps extends XDSBaseProps<HTMLDivElement> {
+  /**
+   * Ref forwarded to the root wrapper element inside the dialog.
+   */
+  ref?: React.Ref<HTMLDivElement>;
   /**
    * Whether the command palette is open.
    */
@@ -161,6 +167,11 @@ export function XDSCommandPalette({
   width = 640,
   maxHeight = 480,
   children,
+  ref,
+  xstyle,
+  className,
+  style,
+  ...props
 }: XDSCommandPaletteProps) {
   const listId = useId();
   const [search, setSearch] = useState('');
@@ -248,7 +259,17 @@ export function XDSCommandPalette({
       purpose="info"
       aria-label={label}>
       <CommandPaletteContext.Provider value={contextValue}>
-        <div {...stylex.props(styles.wrapper)}>{children}</div>
+        <div
+          ref={ref}
+          {...mergeProps(
+            xdsClassName('command-palette'),
+            stylex.props(styles.wrapper, xstyle),
+            className,
+            style,
+          )}
+          {...props}>
+          {children}
+        </div>
       </CommandPaletteContext.Provider>
     </XDSDialog>
   );

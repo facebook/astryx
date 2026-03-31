@@ -12,15 +12,11 @@
 
 'use client';
 
-import {
-  forwardRef,
-  useCallback,
-  useEffect,
-  useRef,
-  type InputHTMLAttributes,
-} from 'react';
+import {useCallback, useEffect, useRef, type InputHTMLAttributes} from 'react';
 import * as stylex from '@stylexjs/stylex';
+import type {StyleXStyles} from '@stylexjs/stylex';
 import {XDSIcon} from '@xds/core/Icon';
+import {xdsClassName, mergeProps} from '@xds/core/utils';
 import {
   colorVars,
   typeScaleVars,
@@ -65,6 +61,11 @@ export interface XDSCommandPaletteInputProps extends Omit<
   'type' | 'role' | 'children' | 'autoFocus'
 > {
   /**
+   * Ref forwarded to the input element (for focus management).
+   */
+  ref?: React.Ref<HTMLInputElement>;
+
+  /**
    * The current search value.
    * When omitted inside XDSCommandPalette, reads from context.
    */
@@ -87,6 +88,11 @@ export interface XDSCommandPaletteInputProps extends Omit<
    * @default true
    */
   hasAutoFocus?: boolean;
+
+  /**
+   * StyleX styles for the wrapper element.
+   */
+  xstyle?: StyleXStyles;
 }
 
 /**
@@ -110,21 +116,17 @@ export interface XDSCommandPaletteInputProps extends Omit<
  * </XDSCommandPalette>
  * ```
  */
-export const XDSCommandPaletteInput = forwardRef<
-  HTMLInputElement,
-  XDSCommandPaletteInputProps
->(function XDSCommandPaletteInput(
-  {
-    value: controlledValue,
-    onValueChange,
-    placeholder = 'Search...',
-    hasAutoFocus = true,
-    onChange,
-    onKeyDown,
-    ...props
-  },
+export function XDSCommandPaletteInput({
+  value: controlledValue,
+  onValueChange,
+  placeholder = 'Search...',
+  hasAutoFocus = true,
+  onChange,
+  onKeyDown,
   ref,
-) {
+  xstyle,
+  ...props
+}: XDSCommandPaletteInputProps) {
   const ctx = useCommandPaletteContext();
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -139,7 +141,8 @@ export const XDSCommandPaletteInput = forwardRef<
     if (typeof ref === 'function') {
       ref(element);
     } else if (ref) {
-      ref.current = element;
+      (ref as React.MutableRefObject<HTMLInputElement | null>).current =
+        element;
     }
   };
 
@@ -198,7 +201,11 @@ export const XDSCommandPaletteInput = forwardRef<
   );
 
   return (
-    <div {...stylex.props(styles.wrapper)}>
+    <div
+      {...mergeProps(
+        xdsClassName('command-palette-input'),
+        stylex.props(styles.wrapper, xstyle),
+      )}>
       <span {...stylex.props(styles.icon)}>
         <XDSIcon icon="search" size="sm" color="inherit" />
       </span>
@@ -228,6 +235,6 @@ export const XDSCommandPaletteInput = forwardRef<
       />
     </div>
   );
-});
+}
 
 XDSCommandPaletteInput.displayName = 'XDSCommandPaletteInput';
