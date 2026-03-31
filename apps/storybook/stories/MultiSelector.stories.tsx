@@ -40,7 +40,7 @@ type Story = StoryObj<typeof XDSMultiSelector>;
 // Basic with strings
 export const Default: Story = {
   render: args => {
-    const [value, setValue] = useState<string[]>([]);
+    const [value, setValue] = useState<string[]>(['Role', 'Created']);
     return (
       <XDSMultiSelector
         {...args}

@@ -210,8 +210,6 @@ const styles = stylex.create({
 
   // Select-all wrapper
   selectAllWrapper: {
-    paddingInline: spacingVars['--spacing-2'],
-    paddingBlock: spacingVars['--spacing-1'],
     cursor: 'pointer',
   },
 
@@ -232,7 +230,6 @@ const styles = stylex.create({
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
     width: '100%',
-    padding: spacingVars['--spacing-2'],
     borderRadius: radiusVars['--radius-element'],
     cursor: 'pointer',
     backgroundColor: 'transparent',
@@ -266,6 +263,33 @@ const sizeStyles = stylex.create({
   },
   lg: {
     height: sizeVars['--size-element-lg'],
+  },
+});
+
+const itemSizeStyles = stylex.create({
+  sm: {
+    padding: spacingVars['--spacing-1'],
+  },
+  md: {
+    padding: spacingVars['--spacing-2'],
+  },
+  lg: {
+    padding: spacingVars['--spacing-2'],
+  },
+});
+
+const selectAllSizeStyles = stylex.create({
+  sm: {
+    paddingInline: spacingVars['--spacing-1'],
+    paddingBlock: spacingVars['--spacing-0-5'],
+  },
+  md: {
+    paddingInline: spacingVars['--spacing-2'],
+    paddingBlock: spacingVars['--spacing-1'],
+  },
+  lg: {
+    paddingInline: spacingVars['--spacing-2'],
+    paddingBlock: spacingVars['--spacing-1'],
   },
 });
 
@@ -740,6 +764,7 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
           onMouseEnter={() => onItemMouseEnter(item, flatIndex)}
           {...stylex.props(
             styles.item,
+            itemSizeStyles[size],
             isHighlighted && styles.itemHighlighted,
             item.disabled && styles.itemDisabled,
           )}>
@@ -749,7 +774,7 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
             value={isSelected}
             onChange={() => {}}
             isDisabled={item.disabled}
-            size="sm"
+            size={size === 'lg' ? 'md' : size}
           />
           {children && children(item)}
         </div>
@@ -762,34 +787,76 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
       getItemId,
       handleToggle,
       onItemMouseEnter,
+      size,
     ],
   );
 
   // Render all options (handling sections/dividers and search filtering)
   const renderOptions = useCallback(() => {
     if (searchQuery) {
-      // When searching, render flat filtered list
-      if (filteredItems.length === 0) {
+      // Sort filtered: selected first, then unselected
+      const selected = filteredItems.filter(item =>
+        optimisticValue.includes(item.value),
+      );
+      const unselected = filteredItems.filter(
+        item => !optimisticValue.includes(item.value),
+      );
+      const sorted = [...selected, ...unselected];
+
+      if (sorted.length === 0) {
         return <div {...stylex.props(styles.emptyState)}>No results found</div>;
       }
-      return filteredItems.map((item, index) => renderItem(item, index));
+      return sorted.map((item, index) => renderItem(item, index));
     }
 
-    // Normal rendering with sections/dividers
+    // Normal rendering with selected-first sorting
     let flatIndex = 0;
     const elements: ReactNode[] = [];
+    // Collect consecutive flat items to sort as a group
+    let pendingFlatItems: Array<{
+      item: XDSMultiSelectorOptionData;
+    }> = [];
+
+    const flushFlatItems = () => {
+      if (pendingFlatItems.length === 0) return;
+      // Partition: selected first, maintain relative order
+      const selected = pendingFlatItems.filter(({item}) =>
+        optimisticValue.includes(item.value),
+      );
+      const unselected = pendingFlatItems.filter(
+        ({item}) => !optimisticValue.includes(item.value),
+      );
+      const sorted = [...selected, ...unselected];
+      for (const {item} of sorted) {
+        elements.push(renderItem(item, flatIndex));
+        flatIndex++;
+      }
+      pendingFlatItems = [];
+    };
 
     for (let i = 0; i < options.length; i++) {
       const option = options[i];
 
       if (isDivider(option)) {
+        flushFlatItems();
         elements.push(
           <XDSDivider key={`divider-${i}`} xstyle={styles.divider} />,
         );
       } else if (isSection(option)) {
+        flushFlatItems();
+        // Sort within section: selected first
+        const sectionOptions = option.options.map(opt => normalizeOption(opt));
+        const selectedInSection = sectionOptions.filter(item =>
+          optimisticValue.includes(item.value),
+        );
+        const unselectedInSection = sectionOptions.filter(
+          item => !optimisticValue.includes(item.value),
+        );
+        const sortedSection = [...selectedInSection, ...unselectedInSection];
+
         const sectionItems: ReactNode[] = [];
-        for (const opt of option.options) {
-          sectionItems.push(renderItem(normalizeOption(opt), flatIndex));
+        for (const item of sortedSection) {
+          sectionItems.push(renderItem(item, flatIndex));
           flatIndex++;
         }
         if (option.title) {
@@ -807,13 +874,13 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
           </div>,
         );
       } else if (isOptionData(option)) {
-        elements.push(renderItem(normalizeOption(option), flatIndex));
-        flatIndex++;
+        pendingFlatItems.push({item: normalizeOption(option)});
       }
     }
+    flushFlatItems();
 
     return elements;
-  }, [options, renderItem, filteredItems, searchQuery]);
+  }, [options, renderItem, filteredItems, searchQuery, optimisticValue]);
 
   return (
     <XDSField
@@ -903,13 +970,16 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
           {hasSelectAll && (
             <>
               <div
-                {...stylex.props(styles.selectAllWrapper)}
+                {...stylex.props(
+                  styles.selectAllWrapper,
+                  selectAllSizeStyles[size],
+                )}
                 onClick={handleSelectAll}>
                 <XDSCheckboxInput
                   label={selectAllLabel}
                   value={selectAllState}
                   onChange={() => {}}
-                  size="sm"
+                  size={size === 'lg' ? 'md' : size}
                 />
               </div>
               <XDSDivider xstyle={styles.divider} />

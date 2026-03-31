@@ -520,6 +520,55 @@ describe('XDSMultiSelector', () => {
     expect(screen.getByLabelText('Check all', h)).toBeInTheDocument();
   });
 
+  it('sorts selected items to top', async () => {
+    const user = userEvent.setup();
+    render(
+      <XDSMultiSelector
+        label="Fruit"
+        options={['Apple', 'Banana', 'Orange']}
+        value={['Orange']}
+        onChange={() => {}}
+      />,
+    );
+
+    await user.click(screen.getByRole('combobox'));
+    const options = screen.getAllByRole('option', h);
+    // Orange is selected so it should appear first
+    expect(options[0]).toHaveAttribute('aria-selected', 'true');
+    expect(options[0]).toHaveTextContent('Orange');
+    expect(options[1]).toHaveTextContent('Apple');
+    expect(options[2]).toHaveTextContent('Banana');
+  });
+
+  it('sorts selected items to top within sections', async () => {
+    const user = userEvent.setup();
+    render(
+      <XDSMultiSelector
+        label="Fruit"
+        options={[
+          {
+            type: 'section',
+            title: 'Citrus',
+            options: [
+              {value: 'orange', label: 'Orange'},
+              {value: 'lemon', label: 'Lemon'},
+              {value: 'lime', label: 'Lime'},
+            ],
+          },
+        ]}
+        value={['lime']}
+        onChange={() => {}}
+      />,
+    );
+
+    await user.click(screen.getByRole('combobox'));
+    const options = screen.getAllByRole('option', h);
+    // Lime is selected so it should appear first within the section
+    expect(options[0]).toHaveTextContent('Lime');
+    expect(options[1]).toHaveTextContent('Orange');
+    expect(options[2]).toHaveTextContent('Lemon');
+  });
+
   it('has displayName', () => {
     expect(XDSMultiSelector.displayName).toBe('XDSMultiSelector');
   });
