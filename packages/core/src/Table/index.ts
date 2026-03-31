@@ -18,6 +18,7 @@ export {XDSTableContext} from './XDSTableContext';
 export {useXDSTableSelection} from './plugins/selection';
 export {useXDSTableSelectionState} from './plugins/selection';
 export {useXDSTableSortable} from './plugins/sortable';
+export {useXDSTablePagination} from './plugins/pagination';
 export {useXDSBaseTablePlugins} from './useXDSBaseTablePlugins';
 export {
   proportional,
@@ -62,3 +63,6 @@ export type {
   XDSTableSortState,
 } from './plugins/sortable';
 export type {XDSTableSortableColumnConfig} from './types';
+  UseXDSTablePaginationConfig,
+  UseXDSTablePaginationReturn,
+} from './plugins/pagination';
