@@ -158,7 +158,10 @@ export interface XDSToolbarProps extends XDSBaseProps<HTMLDivElement> {
   /**
    * Which sides should have divider borders.
    * Passed through to XDSSection.
-   * @example dividers={['bottom']} for a toolbar with a bottom border
+   * @example
+   * ```tsx
+   * dividers={['bottom']} // toolbar with a bottom border
+   * ```
    */
   dividers?: Array<'top' | 'bottom' | 'start' | 'end'>;
 }
