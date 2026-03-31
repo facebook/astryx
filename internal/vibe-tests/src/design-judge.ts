@@ -39,10 +39,21 @@ export interface DesignSubScores {
   color: number;
 }
 
+export interface DesignReasoning {
+  layout: string;
+  hierarchy: string;
+  spacing: string;
+  components: string;
+  color: string;
+  summary: string;
+}
+
 export interface DesignJudgment {
   scores: DesignSubScores;
   overall: number;
+  /** @deprecated use reasoning instead */
   notes: string;
+  reasoning: DesignReasoning;
 }
 
 export interface DesignResult {
@@ -106,15 +117,23 @@ Score the generated output's visual fidelity to the ideal on these sub-signals (
 IGNORE: placeholder text differences, exact pixel match, content length, interactive states (hover/focus), browser chrome, scrollbars, favicon.
 PENALIZE: layout mismatch, broken hierarchy, gross spacing violations, missing interactive affordances, wrong color scheme.
 
-Return ONLY valid JSON (no markdown, no explanation outside the JSON):
+Return ONLY valid JSON (no markdown, no explanation outside the JSON).
+For each sub-signal, provide a "reasoning_*" field (1-3 sentences) explaining the specific
+visual evidence behind your score — what you see in the generated screenshot vs the ideal:
+
 {
   "layout": <0-100>,
+  "reasoning_layout": "Specific observation about structure, regions, stacking vs the ideal",
   "hierarchy": <0-100>,
+  "reasoning_hierarchy": "Specific observation about type sizing, weight, visual prominence vs the ideal",
   "spacing": <0-100>,
+  "reasoning_spacing": "Specific observation about padding, gaps, grid alignment vs the ideal",
   "components": <0-100>,
+  "reasoning_components": "Specific observation about buttons, inputs, interactive elements vs the ideal",
   "color": <0-100>,
+  "reasoning_color": "Specific observation about palette, surface/accent/text usage vs the ideal",
   "overall": <weighted average using weights 25/25/20/15/15>,
-  "notes": "brief explanation of major deviations (1-2 sentences)"
+  "summary": "1-2 sentence overall verdict — what the generated UI gets right and what it misses"
 }`;
 }
 
@@ -208,12 +227,17 @@ async function callVisionJudge(
 
   const parsed = JSON.parse(jsonStr) as {
     layout: number;
+    reasoning_layout: string;
     hierarchy: number;
+    reasoning_hierarchy: string;
     spacing: number;
+    reasoning_spacing: string;
     components: number;
+    reasoning_components: string;
     color: number;
+    reasoning_color: string;
     overall: number;
-    notes: string;
+    summary: string;
   };
 
   // Recompute overall to ensure correct weighting
@@ -234,7 +258,15 @@ async function callVisionJudge(
       color: clamp(parsed.color),
     },
     overall: clamp(overall),
-    notes: parsed.notes || '',
+    notes: parsed.summary || '',
+    reasoning: {
+      layout: parsed.reasoning_layout || '',
+      hierarchy: parsed.reasoning_hierarchy || '',
+      spacing: parsed.reasoning_spacing || '',
+      components: parsed.reasoning_components || '',
+      color: parsed.reasoning_color || '',
+      summary: parsed.summary || '',
+    },
   };
 }
 
@@ -280,7 +312,7 @@ function medianJudgment(passes: DesignJudgment[]): DesignJudgment {
       : best,
   );
 
-  return {scores: sub, overall: clamp(overall), notes: closestPass.notes};
+  return {scores: sub, overall: clamp(overall), notes: closestPass.notes, reasoning: closestPass.reasoning};
 }
 
 // ============================================================
