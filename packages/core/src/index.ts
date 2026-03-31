@@ -42,6 +42,7 @@ export * from './Grid';
 export * from './Section';
 export * from './SegmentedControl';
 export * from './Selector';
+export * from './MultiSelector';
 export * from './Icon';
 export * from './Text';
 export * from './TextInput';
