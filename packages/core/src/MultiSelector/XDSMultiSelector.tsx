@@ -2,7 +2,7 @@
 
 /**
  * @file XDSMultiSelector.tsx
- * @input Uses React, StyleX, useXDSLayer, XDSCheckboxInput, XDSField, XDSBadge, XDSIcon
+ * @input Uses React, StyleX, useXDSPopover, XDSCheckboxInput, XDSField, XDSBadge, XDSIcon
  * @output Exports XDSMultiSelector component
  * @position Core implementation; consumed by index.ts
  *
@@ -22,7 +22,7 @@ import React, {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {useXDSLayer} from '../Layer/useXDSLayer';
+import {useXDSPopover} from '../Popover/useXDSPopover';
 import {XDSIcon} from '../Icon';
 import type {XDSIconName} from '../Icon';
 import {
@@ -176,9 +176,6 @@ const styles = stylex.create({
     maxHeight: '300px',
     overflowY: 'auto',
     padding: spacingVars['--spacing-1'],
-    borderRadius: radiusVars['--radius-container'],
-    backgroundColor: colorVars['--color-background-surface'],
-    boxShadow: shadowVars['--shadow-low'],
   },
 
   // Popover container (for anchor positioning)
@@ -517,10 +514,12 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
     triggerRef.current?.focus();
   }, []);
 
-  const layer = useXDSLayer({
-    mode: 'context',
-    lightDismiss: true,
+  const popover = useXDSPopover({
+    hasLightDismiss: true,
     onHide: handleLayerHide,
+    hasCloseButton: false,
+    hasAutoFocus: false,
+    dialogLabel: `${label} options`,
   });
 
   // Handle toggle
@@ -557,18 +556,18 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
   } = useMultiCombobox({
     selectableItems: filteredItems,
     isDisabled,
-    isOpen: layer.isOpen,
+    isOpen: popover.isOpen,
     hasSearch,
     onOpen: useCallback(() => {
-      layer.show();
+      popover.show();
       if (hasSearch) {
-        // Focus search after layer opens
+        // Focus search after popover opens
         requestAnimationFrame(() => {
           searchRef.current?.focus();
         });
       }
-    }, [layer, hasSearch]),
-    onClose: layer.hide,
+    }, [popover, hasSearch]),
+    onClose: popover.hide,
     onToggle: handleToggle,
     listboxId,
   });
@@ -844,16 +843,16 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
           (
             triggerRef as React.MutableRefObject<HTMLButtonElement | null>
           ).current = el;
-          layer.ref(el);
+          popover.triggerRef(el);
         }}
         id={triggerId}
         type="button"
         role="combobox"
         aria-haspopup="listbox"
-        aria-expanded={layer.isOpen}
+        aria-expanded={popover.isOpen}
         aria-controls={listboxId}
         aria-activedescendant={
-          layer.isOpen && highlightedIndex >= 0
+          popover.isOpen && highlightedIndex >= 0
             ? getItemId(highlightedIndex)
             : undefined
         }
@@ -886,7 +885,7 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
         <span
           {...stylex.props(
             styles.triggerIcon,
-            !status && layer.isOpen && styles.triggerIconOpen,
+            !status && popover.isOpen && styles.triggerIconOpen,
             status && styles.triggerIconStatus,
           )}>
           {status ? (
@@ -901,7 +900,7 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
         </span>
       </button>
 
-      {layer.render(
+      {popover.render(
         <div {...stylex.props(styles.dropdown)}>
           {renderSearch()}
           {hasSelectAll && (
