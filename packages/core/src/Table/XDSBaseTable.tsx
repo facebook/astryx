@@ -236,26 +236,39 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
       col,
     );
 
-    // Apply column min-width on the <th>. With table-layout: fixed,
+    // Apply column width on the <th>. With table-layout: fixed,
     // header cell sizing controls column widths.
-    // Proportional columns (or columns without explicit width) get a default minWidth.
     const colWidth = col.width;
-    const minW =
-      !colWidth || colWidth.type === 'proportional'
-        ? (colWidth?.minWidth ?? DEFAULT_MIN_COLUMN_WIDTH)
-        : undefined;
-    const minWidthStyle = minW != null ? {minWidth: `${minW}px`} : undefined;
+    const widthStyle: React.CSSProperties = {};
+
+    if (colWidth?.type === 'pixel') {
+      // Fixed pixel width — set both width and minWidth to prevent shrinking
+      widthStyle.width = `${colWidth.value}px`;
+      widthStyle.minWidth = `${colWidth.value}px`;
+    } else {
+      // Proportional width — compute percentage from total proportional units.
+      const totalProportion = resolvedColumns.reduce((sum, c) => {
+        const w = c.width;
+        if (!w || w.type === 'proportional') {
+          return sum + (w?.value ?? 1);
+        }
+        return sum;
+      }, 0);
+      const proportion = colWidth?.value ?? 1;
+      if (totalProportion > 0) {
+        widthStyle.width = `${(proportion / totalProportion) * 100}%`;
+      }
+      const minW = colWidth?.minWidth ?? DEFAULT_MIN_COLUMN_WIDTH;
+      widthStyle.minWidth = `${minW}px`;
+    }
+
     const existingStyle = cellRenderProps.htmlProps.style as
       | React.CSSProperties
       | undefined;
-    const mergedHtmlProps = minWidthStyle
-      ? {
-          ...cellRenderProps.htmlProps,
-          style: existingStyle
-            ? {...existingStyle, ...minWidthStyle}
-            : minWidthStyle,
-        }
-      : cellRenderProps.htmlProps;
+    const mergedHtmlProps = {
+      ...cellRenderProps.htmlProps,
+      style: existingStyle ? {...existingStyle, ...widthStyle} : widthStyle,
+    };
 
     // Resolve header content from slots — plugins write to named slots
     // to avoid conflicts (e.g. sort writes `after`, resize writes `overlay`)

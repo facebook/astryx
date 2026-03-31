@@ -451,14 +451,14 @@ describe('XDSBaseTable', () => {
       });
     });
 
-    it('does not set minWidth on pixel columns', () => {
+    it('sets minWidth on pixel columns to prevent shrinking', () => {
       const cols: XDSTableColumn<User>[] = [
         {key: 'name', header: 'Name', width: pixel(80)},
         {key: 'age', header: 'Age', width: proportional(1)},
       ];
       render(<XDSBaseTable data={users} columns={cols} />);
       const headers = screen.getAllByRole('columnheader');
-      expect(headers[0].style.minWidth).toBe('');
+      expect(headers[0]).toHaveStyle({width: '80px', minWidth: '80px'});
       expect(headers[1]).toHaveStyle({
         minWidth: `${DEFAULT_MIN_COLUMN_WIDTH}px`,
       });
