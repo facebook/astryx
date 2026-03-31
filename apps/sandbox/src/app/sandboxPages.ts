@@ -59,9 +59,9 @@ export const categories: SandboxCategory[] = [
     ],
   },
   {
-    label: 'Templates',
-    slug: 'templates',
-    description: 'Ready-to-use page templates and composition patterns.',
+    label: 'Examples',
+    slug: 'examples',
+    description: 'Component demos and composition patterns.',
     pages: [
       {
         name: 'Navigation',
@@ -87,6 +87,36 @@ export const categories: SandboxCategory[] = [
         name: 'Example',
         href: '/pages/example/',
         description: 'General component composition examples',
+      },
+    ],
+  },
+  {
+    label: 'Templates',
+    slug: 'templates',
+    description:
+      'Full-page application templates — dashboards, forms, and data views built with XDS.',
+    pages: [
+      {
+        name: 'Dashboard',
+        href: '/pages/template-dashboard/',
+        description:
+          'Analytics dashboard with sidebar, stats, charts, and tables',
+      },
+      {
+        name: 'Login',
+        href: '/pages/template-login/',
+        description: 'Authentication page with login form and branding',
+      },
+      {
+        name: 'Settings',
+        href: '/pages/template-settings/',
+        description: 'Settings page with tabs, forms, and toggles',
+      },
+      {
+        name: 'Data Table',
+        href: '/pages/template-data-table/',
+        description:
+          'Full data management view with search, filters, and pagination',
       },
     ],
   },

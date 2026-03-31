@@ -12,10 +12,11 @@ import {categories} from './sandboxPages';
 import {
   HomeIcon,
   WrenchIcon,
-  LayoutTemplateIcon,
   PaletteIcon,
   SunIcon,
   MoonIcon,
+  BoxIcon,
+  AppWindowIcon,
 } from './icons';
 import {spacingVars, colorVars} from '@xds/core/theme/tokens.stylex';
 
@@ -24,7 +25,8 @@ const categoryIcons: Record<
   React.ComponentType<React.SVGProps<SVGSVGElement>>
 > = {
   tools: WrenchIcon,
-  templates: LayoutTemplateIcon,
+  examples: BoxIcon,
+  templates: AppWindowIcon,
 };
 
 const styles = stylex.create({
@@ -69,7 +71,13 @@ function SandboxHeader() {
         <XDSDropdownMenu
           button={{
             label: 'Theme',
-            icon: <PaletteIcon width={16} height={16} style={{color: 'var(--color-icon-secondary)'}} />,
+            icon: (
+              <PaletteIcon
+                width={16}
+                height={16}
+                style={{color: 'var(--color-icon-secondary)'}}
+              />
+            ),
             variant: 'ghost',
             size: 'sm',
           }}
@@ -81,9 +89,17 @@ function SandboxHeader() {
             label: mode === 'dark' ? 'Dark mode' : 'Light mode',
             icon:
               mode === 'dark' ? (
-                <MoonIcon width={16} height={16} style={{color: 'var(--color-icon-secondary)'}} />
+                <MoonIcon
+                  width={16}
+                  height={16}
+                  style={{color: 'var(--color-icon-secondary)'}}
+                />
               ) : (
-                <SunIcon width={16} height={16} style={{color: 'var(--color-icon-secondary)'}} />
+                <SunIcon
+                  width={16}
+                  height={16}
+                  style={{color: 'var(--color-icon-secondary)'}}
+                />
               ),
             variant: 'ghost',
             size: 'sm',
