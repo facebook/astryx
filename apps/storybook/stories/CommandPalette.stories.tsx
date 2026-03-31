@@ -153,16 +153,19 @@ export const WithSelectedItem: Story = {
  */
 export const EmptyResults: Story = {
   render: function Render() {
-    const [isOpen, setIsOpen] = useState(true);
+    const [isOpen, setIsOpen] = useState(false);
     return (
-      <XDSCommandPalette isOpen={isOpen} onOpenChange={setIsOpen}>
-        <XDSCommandPaletteInput placeholder="Type to filter all items..." />
-        <XDSCommandPaletteList>
-          <XDSCommandPaletteItem value="zzz-alpha">zzz-alpha</XDSCommandPaletteItem>
-          <XDSCommandPaletteItem value="zzz-beta">zzz-beta</XDSCommandPaletteItem>
-        </XDSCommandPaletteList>
-        <XDSCommandPaletteFooter />
-      </XDSCommandPalette>
+      <>
+        <XDSButton label="Open (type to empty)" onClick={() => setIsOpen(true)} />
+        <XDSCommandPalette isOpen={isOpen} onOpenChange={setIsOpen}>
+          <XDSCommandPaletteInput placeholder="Type to filter all items out..." />
+          <XDSCommandPaletteList>
+            <XDSCommandPaletteItem value="zzz-alpha">zzz-alpha</XDSCommandPaletteItem>
+            <XDSCommandPaletteItem value="zzz-beta">zzz-beta</XDSCommandPaletteItem>
+          </XDSCommandPaletteList>
+          <XDSCommandPaletteFooter />
+        </XDSCommandPalette>
+      </>
     );
   },
 };
