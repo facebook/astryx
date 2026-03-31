@@ -108,14 +108,9 @@ function buildResolvedTokens(
   theme: XDSDefinedTheme,
   mode: 'light' | 'dark',
 ): Record<string, string> {
-  const resolved: Record<string, string> = {};
+  const resolved = buildDefaultTokens(mode);
 
-  // 1. Start with defaults, resolve light-dark() strings
-  for (const [key, value] of Object.entries(xdsTokenDefaults)) {
-    resolved[key] = resolveValue(value, mode);
-  }
-
-  // 2. Layer theme overrides on top
+  // Layer theme overrides on top
   // Prefer __inputTokens (preserves tuples) over .tokens (already resolved to light-dark() strings)
   if (theme.__inputTokens) {
     for (const [key, value] of Object.entries(theme.__inputTokens)) {
@@ -130,6 +125,17 @@ function buildResolvedTokens(
     }
   }
 
+  return resolved;
+}
+
+/**
+ * Build the resolved token map from defaults only (no theme provider).
+ */
+function buildDefaultTokens(mode: 'light' | 'dark'): Record<string, string> {
+  const resolved: Record<string, string> = {};
+  for (const [key, value] of Object.entries(xdsTokenDefaults)) {
+    resolved[key] = resolveValue(value, mode);
+  }
   return resolved;
 }
 
@@ -163,23 +169,21 @@ function buildResolvedTokens(
 export function useXDSTheme(): UseXDSThemeReturn {
   const ctx = useContext(XDSThemeContext);
 
-  if (ctx == null) {
-    throw new Error(
-      'useXDSTheme must be used within an <XDSTheme> provider. ' +
-        'Wrap your component tree with <XDSTheme theme={yourTheme}>.',
-    );
-  }
-
-  const {theme, mode} = ctx;
-
   // Resolve 'system' to 'light' | 'dark' using the OS preference
   const prefersDark = useMediaQuery('(prefers-color-scheme: dark)');
+
+  const mode = ctx?.mode ?? 'system';
+  const theme = ctx?.theme ?? null;
+
   const effectiveMode: 'light' | 'dark' =
     mode === 'system' ? (prefersDark ? 'dark' : 'light') : mode;
 
   // Build the full resolved map, memoized on theme + effective mode
   const tokens = useMemo(
-    () => buildResolvedTokens(theme, effectiveMode),
+    () =>
+      theme
+        ? buildResolvedTokens(theme, effectiveMode)
+        : buildDefaultTokens(effectiveMode),
     [theme, effectiveMode],
   );
 
@@ -188,7 +192,7 @@ export function useXDSTheme(): UseXDSThemeReturn {
   };
 
   return {
-    name: theme.name,
+    name: theme?.name ?? 'default',
     colorMode: effectiveMode,
     token,
     tokens,

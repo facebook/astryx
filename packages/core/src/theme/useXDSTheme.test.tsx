@@ -33,10 +33,13 @@ function wrapper({
 }
 
 describe('useXDSTheme', () => {
-  it('throws when used outside XDSTheme', () => {
-    expect(() => {
-      renderHook(() => useXDSTheme());
-    }).toThrow('useXDSTheme must be used within an <XDSTheme> provider');
+  it('returns defaults when used outside XDSTheme', () => {
+    const {result} = renderHook(() => useXDSTheme());
+    expect(result.current.name).toBe('default');
+    // Should resolve default light-dark() tokens for light mode (useMediaQuery mocked to false = light)
+    expect(result.current.token('--color-text-primary')).toBe('#0A1317');
+    expect(result.current.token('--spacing-1')).toBe('4px');
+    expect(result.current.colorMode).toBe('light');
   });
 
   it('returns the theme name', () => {
