@@ -1,47 +1,59 @@
 # MultiSelector
 
-Multi-select dropdown component with checkboxes for choosing multiple items from a list.
+Multi-select dropdown with checkboxes for choosing multiple items from a list.
 
-## File Manifest
+<!-- SYNC: When files in this directory change, update this document. -->
 
-| File                        | Purpose                                                  |
-| --------------------------- | -------------------------------------------------------- |
-| `XDSMultiSelector.tsx`      | Main component implementation                            |
-| `types.ts`                  | Type re-exports from Selector with MultiSelector aliases |
-| `hooks.ts`                  | `useMultiCombobox` — keyboard nav + toggle logic         |
-| `index.ts`                  | Public API entry point                                   |
-| `MultiSelector.doc.mjs`     | Component documentation (ComponentDoc)                   |
-| `XDSMultiSelector.test.tsx` | Unit tests                                               |
-| `README.md`                 | This file                                                |
+## Overview
 
-## Architecture
+XDSMultiSelector is a checkbox dropdown for small, finite lists — column toggles, filter facets, permissions. For large/open sets with typeahead search, use XDSTokenizer instead.
 
-Composes existing XDS components rather than rebuilding:
+- **Checkbox items** — real `XDSCheckboxInput` for each option
+- **Select all** — optional toggle with indeterminate state
+- **Search** — optional filter-in-place
+- **Trigger display** — count, labels, or badge chips
+- **Sections** — reuses `XDSSelector` option type model
+- **Selected-first sort** — selected items sort to top on open (stable during interaction)
 
-- **XDSField** — label, description, status delegation
-- **useXDSPopover** — dropdown positioning, surface styles, light dismiss, focus trapping
-- **XDSCheckboxInput** — real checkbox for each option
-- **XDSDivider** — section dividers
-- **XDSBadge** — trigger display="badges" mode
-- **XDSSpinner** — loading state
+## Import
 
-Reuses `XDSSelectorOptionType/Data/Divider/Section` types and utilities
-(`isOptionData`, `isDivider`, `isSection`, `normalizeOption`, `getSelectableOptions`)
-from `../Selector/types` and `../Selector/utils`.
+```tsx
+import {XDSMultiSelector} from '@xds/core/MultiSelector';
+```
 
-## Differences from XDSSelector
+## Usage
 
-- **Multi-value**: `value: string[]` and `onChange: (value: string[]) => void`
-- **Stays open**: clicking an item toggles it without closing the dropdown
-- **Checkboxes**: each option renders a real `XDSCheckboxInput`
-- **Select all**: optional `hasSelectAll` with indeterminate state
-- **Search**: optional `hasSearch` for filtering options
-- **Trigger display**: `count` | `labels` | `badges` modes
+```tsx
+<XDSMultiSelector
+  label="Columns"
+  options={['Name', 'Email', 'Role', 'Status']}
+  value={selected}
+  onChange={setSelected}
+  hasSelectAll
+/>
+```
+
+## Key Props
+
+| Prop             | Type                              | Default   | Description                                     |
+| ---------------- | --------------------------------- | --------- | ----------------------------------------------- |
+| `label`          | `string`                          | required  | Accessible label                                |
+| `options`        | `XDSMultiSelectorOptionType[]`    | required  | Items — strings, objects, dividers, or sections |
+| `value`          | `string[]`                        | required  | Currently selected values                       |
+| `onChange`       | `(value: string[]) => void`       | required  | Selection change callback                       |
+| `hasSelectAll`   | `boolean`                         | `false`   | Show select-all toggle                          |
+| `hasSearch`      | `boolean`                         | `false`   | Show search/filter input                        |
+| `triggerDisplay` | `'count' \| 'labels' \| 'badges'` | `'count'` | How trigger shows selections                    |
+| `maxBadges`      | `number`                          | `3`       | Max badges before "+N"                          |
+| `size`           | `'sm' \| 'md' \| 'lg'`            | `'md'`    | Size variant                                    |
+| `status`         | `{type, message?}`                | —         | Validation state                                |
+| `isDisabled`     | `boolean`                         | `false`   | Disable the selector                            |
+| `onChangeAction` | `(value) => Promise`              | —         | Async action with optimistic UI                 |
 
 ## Theming
 
-The trigger renders `xdsClassName('multi-selector', {size, status})`, producing stable
-CSS classes that themes can target via `defineTheme({ components })`:
+The trigger renders `xdsClassName('multi-selector', {size, status})`. Theme authors
+target these classes via `defineTheme({ components })`:
 
 ```ts
 defineTheme({
@@ -50,11 +62,9 @@ defineTheme({
     'multi-selector': {
       base: {borderRadius: 'var(--radius-3)'},
       'size:sm': {fontSize: '12px'},
-      'status:error': {borderColor: 'var(--color-negative)'},
     },
   },
 });
 ```
 
-See the [Theming Infrastructure wiki](https://github.com/facebookexperimental/xds/wiki/Theming-Infrastructure)
-for the full component theming model.
+See the [Theming Infrastructure wiki](https://github.com/facebookexperimental/xds/wiki/Theming-Infrastructure).
