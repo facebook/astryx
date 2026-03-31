@@ -505,6 +505,10 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
 
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Snapshot of which values were selected when the dropdown opened.
+  // Used for sort partitioning so items don't jump during interaction.
+  const selectedAtOpenRef = useRef<Set<string> | null>(null);
+
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
   const isBusy = isLoading || optimisticValue !== value;
@@ -536,6 +540,7 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
   // Layer for dropdown positioning
   const handleLayerHide = useCallback(() => {
     setSearchQuery('');
+    selectedAtOpenRef.current = null;
     triggerRef.current?.focus();
   }, []);
 
@@ -584,6 +589,9 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
     isOpen: popover.isOpen,
     hasSearch,
     onOpen: useCallback(() => {
+      // Snapshot which items are selected at open time — sort is stable during interaction
+      selectedAtOpenRef.current = new Set(optimisticValue);
+
       popover.show();
       if (hasSearch) {
         // Focus search after popover opens
@@ -591,7 +599,7 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
           searchRef.current?.focus();
         });
       }
-    }, [popover, hasSearch]),
+    }, [popover, hasSearch, filteredItems, optimisticValue]),
     onClose: popover.hide,
     onToggle: handleToggle,
     listboxId,
@@ -793,13 +801,17 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
 
   // Render all options (handling sections/dividers and search filtering)
   const renderOptions = useCallback(() => {
+    // Use the open-time snapshot for sort partitioning (stable during interaction).
+    // Falls back to live value when dropdown isn't open yet.
+    const selectedSet = selectedAtOpenRef.current ?? new Set(optimisticValue);
+
     if (searchQuery) {
-      // Sort filtered: selected first, then unselected
+      // Sort filtered: selected-at-open first, then unselected
       const selected = filteredItems.filter(item =>
-        optimisticValue.includes(item.value),
+        selectedSet.has(item.value),
       );
       const unselected = filteredItems.filter(
-        item => !optimisticValue.includes(item.value),
+        item => !selectedSet.has(item.value),
       );
       const sorted = [...selected, ...unselected];
 
@@ -809,22 +821,20 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
       return sorted.map((item, index) => renderItem(item, index));
     }
 
-    // Normal rendering with selected-first sorting
+    // Normal rendering with selected-first sorting (using open-time snapshot)
     let flatIndex = 0;
     const elements: ReactNode[] = [];
-    // Collect consecutive flat items to sort as a group
     let pendingFlatItems: Array<{
       item: XDSMultiSelectorOptionData;
     }> = [];
 
     const flushFlatItems = () => {
       if (pendingFlatItems.length === 0) return;
-      // Partition: selected first, maintain relative order
       const selected = pendingFlatItems.filter(({item}) =>
-        optimisticValue.includes(item.value),
+        selectedSet.has(item.value),
       );
       const unselected = pendingFlatItems.filter(
-        ({item}) => !optimisticValue.includes(item.value),
+        ({item}) => !selectedSet.has(item.value),
       );
       const sorted = [...selected, ...unselected];
       for (const {item} of sorted) {
@@ -844,13 +854,13 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
         );
       } else if (isSection(option)) {
         flushFlatItems();
-        // Sort within section: selected first
+        // Sort within section: selected-at-open first
         const sectionOptions = option.options.map(opt => normalizeOption(opt));
         const selectedInSection = sectionOptions.filter(item =>
-          optimisticValue.includes(item.value),
+          selectedSet.has(item.value),
         );
         const unselectedInSection = sectionOptions.filter(
-          item => !optimisticValue.includes(item.value),
+          item => !selectedSet.has(item.value),
         );
         const sortedSection = [...selectedInSection, ...unselectedInSection];
 
