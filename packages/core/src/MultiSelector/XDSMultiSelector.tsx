@@ -212,6 +212,7 @@ const styles = stylex.create({
   selectAllWrapper: {
     paddingInline: spacingVars['--spacing-2'],
     paddingBlock: spacingVars['--spacing-1'],
+    cursor: 'pointer',
   },
 
   // Section divider with label
@@ -746,11 +747,7 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
             label={children ? '' : (item.label ?? item.value)}
             isLabelHidden={!!children}
             value={isSelected}
-            onChange={() => {
-              if (!item.disabled) {
-                handleToggle(item.value);
-              }
-            }}
+            onChange={() => {}}
             isDisabled={item.disabled}
             size="sm"
           />
@@ -905,11 +902,13 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
           {renderSearch()}
           {hasSelectAll && (
             <>
-              <div {...stylex.props(styles.selectAllWrapper)}>
+              <div
+                {...stylex.props(styles.selectAllWrapper)}
+                onClick={handleSelectAll}>
                 <XDSCheckboxInput
                   label={selectAllLabel}
                   value={selectAllState}
-                  onChange={handleSelectAll}
+                  onChange={() => {}}
                   size="sm"
                 />
               </div>
