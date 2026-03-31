@@ -17,6 +17,7 @@ export {XDSTableHeaderCell} from './XDSTableHeaderCell';
 export {XDSTableContext} from './XDSTableContext';
 export {useXDSTableSelection} from './plugins/selection';
 export {useXDSTableSelectionState} from './plugins/selection';
+export {useXDSTableSortable} from './plugins/sortable';
 export {useXDSBaseTablePlugins} from './useXDSBaseTablePlugins';
 export {
   proportional,
@@ -54,3 +55,10 @@ export type {
   UseXDSTableSelectionStateConfig,
   UseXDSTableSelectionStateResult,
 } from './plugins/selection';
+export type {
+  UseXDSTableSortableConfig,
+  XDSTableSortDirection,
+  XDSTableSortEntry,
+  XDSTableSortState,
+} from './plugins/sortable';
+export type {XDSTableSortableColumnConfig} from './types';
