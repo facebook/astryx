@@ -17,6 +17,7 @@ export {XDSTableHeaderCell} from './XDSTableHeaderCell';
 export {XDSTableContext} from './XDSTableContext';
 export {useXDSTableSelection} from './plugins/selection';
 export {useXDSTableSelectionState} from './plugins/selection';
+export {useXDSTableColumnResize} from './plugins/columnResize';
 export {useXDSBaseTablePlugins} from './useXDSBaseTablePlugins';
 export {
   proportional,
@@ -54,3 +55,4 @@ export type {
   UseXDSTableSelectionStateConfig,
   UseXDSTableSelectionStateResult,
 } from './plugins/selection';
+export type {UseXDSTableColumnResizeConfig} from './plugins/columnResize';
