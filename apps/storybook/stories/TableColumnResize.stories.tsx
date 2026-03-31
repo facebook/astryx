@@ -5,6 +5,8 @@ import {
   useXDSTableColumnResize,
   useXDSTableSelection,
   useXDSTableSelectionState,
+  proportional,
+  pixel,
 } from '@xds/core/Table';
 import type {XDSTableColumn} from '@xds/core/Table';
 
@@ -84,6 +86,7 @@ export const Default: Story = {
 
     const resizePlugin = useXDSTableColumnResize<User>({
       columnWidths,
+      columns,
       onColumnResizeEnd: ({columnKey, newWidth}) => {
         setColumnWidths(prev => ({...prev, [columnKey]: newWidth}));
       },
@@ -92,7 +95,8 @@ export const Default: Story = {
     return (
       <div style={{maxWidth: 600}}>
         <p style={{marginBottom: 8, fontSize: 14, color: '#666'}}>
-          Drag the right edge of any column header to resize.
+          Drag the right edge of any column header to resize. The last
+          proportional column has no handle — it flexes to fill remaining space.
         </p>
         <XDSTable
           data={users}
@@ -116,6 +120,7 @@ export const WithMinMaxConstraints: Story = {
       onColumnResizeEnd: ({columnKey, newWidth}) => {
         setColumnWidths(prev => ({...prev, [columnKey]: newWidth}));
       },
+      columns,
       minWidth: 80,
       maxWidth: 300,
     });
@@ -144,6 +149,7 @@ export const PersistingWidths: Story = {
 
     const resizePlugin = useXDSTableColumnResize<User>({
       columnWidths,
+      columns,
       onColumnResizeEnd: ({columnKey, newWidth}) => {
         setColumnWidths(prev => ({...prev, [columnKey]: newWidth}));
       },
@@ -161,8 +167,7 @@ export const PersistingWidths: Story = {
         </p>
         <button
           onClick={() => setColumnWidths({})}
-          style={{marginBottom: 8, fontSize: 14}}
-        >
+          style={{marginBottom: 8, fontSize: 14}}>
           Reset all widths
         </button>
         <XDSTable
@@ -184,6 +189,7 @@ export const KeyboardResize: Story = {
 
     const resizePlugin = useXDSTableColumnResize<User>({
       columnWidths,
+      columns,
       onColumnResizeEnd: ({columnKey, newWidth}) => {
         setColumnWidths(prev => ({...prev, [columnKey]: newWidth}));
       },
@@ -223,6 +229,7 @@ export const WithSelectionAndResize: Story = {
 
     const resizePlugin = useXDSTableColumnResize<User>({
       columnWidths,
+      columns,
       onColumnResizeEnd: ({columnKey, newWidth}) => {
         setColumnWidths(prev => ({...prev, [columnKey]: newWidth}));
       },
@@ -239,6 +246,44 @@ export const WithSelectionAndResize: Story = {
           columns={columns}
           idKey="id"
           plugins={{selection: selectionPlugin, columnResize: resizePlugin}}
+        />
+      </div>
+    );
+  },
+};
+
+const pixelColumns: XDSTableColumn<User>[] = [
+  {key: 'name', header: 'Name', width: pixel(200)},
+  {key: 'email', header: 'Email', width: pixel(250)},
+  {key: 'role', header: 'Role', width: pixel(150)},
+];
+
+export const AllPixelColumns: Story = {
+  render: () => {
+    const [columnWidths, setColumnWidths] = useState<Record<string, number>>(
+      {},
+    );
+
+    const resizePlugin = useXDSTableColumnResize<User>({
+      columnWidths,
+      columns: pixelColumns,
+      onColumnResizeEnd: ({columnKey, newWidth}) => {
+        setColumnWidths(prev => ({...prev, [columnKey]: newWidth}));
+      },
+    });
+
+    return (
+      <div style={{maxWidth: 600}}>
+        <p style={{marginBottom: 8, fontSize: 14, color: '#666'}}>
+          All columns are pixel-width. Every column gets a resize handle,
+          including the last one. Min width defaults to the column&apos;s
+          declared pixel value.
+        </p>
+        <XDSTable
+          data={users}
+          columns={pixelColumns}
+          idKey="id"
+          plugins={{columnResize: resizePlugin}}
         />
       </div>
     );

@@ -12,6 +12,7 @@ import userEvent from '@testing-library/user-event';
 import {XDSTable} from '../../XDSTable';
 import {useXDSTableColumnResize} from './useXDSTableColumnResize';
 import {useXDSTableSelection} from '../selection/useXDSTableSelection';
+import {proportional, pixel} from '../../columnUtils';
 import type {XDSTableColumn} from '../../types';
 
 // JSDOM doesn't implement pointer capture
@@ -41,6 +42,12 @@ const testColumns: XDSTableColumn<TestItem>[] = [
   {key: 'role', header: 'Role'},
 ];
 
+/** Pixel columns — both columns get handles and resize directly */
+const pixelColumns: XDSTableColumn<TestItem>[] = [
+  {key: 'name', header: 'Name', width: pixel(200)},
+  {key: 'role', header: 'Role', width: pixel(200)},
+];
+
 // =============================================================================
 // Test Helpers
 // =============================================================================
@@ -50,11 +57,13 @@ function ResizeTable({
   onColumnResizeEnd,
   minWidth,
   maxWidth,
+  columns: columnsProp = testColumns,
 }: {
   columnWidths?: Record<string, number>;
   onColumnResizeEnd?: (event: {columnKey: string; newWidth: number}) => void;
   minWidth?: number;
   maxWidth?: number;
+  columns?: XDSTableColumn<TestItem>[];
 }) {
   const [columnWidths, setColumnWidths] = useState(initialWidths);
 
@@ -66,12 +75,13 @@ function ResizeTable({
     },
     minWidth,
     maxWidth,
+    columns: columnsProp,
   });
 
   return (
     <XDSTable
       data={testData}
-      columns={testColumns}
+      columns={columnsProp}
       idKey="id"
       plugins={{resize: resizePlugin}}
     />
@@ -88,8 +98,8 @@ function getResizeHandles() {
 
 describe('useXDSTableColumnResize', () => {
   describe('hook behavior', () => {
-    it('renders resize handles in each header cell', () => {
-      render(<ResizeTable />);
+    it('renders resize handles in each header cell (pixel columns)', () => {
+      render(<ResizeTable columns={pixelColumns} />);
       const handles = getResizeHandles();
       expect(handles).toHaveLength(2);
     });
@@ -128,6 +138,7 @@ describe('useXDSTableColumnResize', () => {
       const onResize = vi.fn();
       render(
         <ResizeTable
+          columns={pixelColumns}
           columnWidths={{name: 200}}
           onColumnResizeEnd={onResize}
         />,
@@ -148,6 +159,7 @@ describe('useXDSTableColumnResize', () => {
       const onResize = vi.fn();
       render(
         <ResizeTable
+          columns={pixelColumns}
           columnWidths={{name: 100}}
           onColumnResizeEnd={onResize}
           minWidth={80}
@@ -170,6 +182,7 @@ describe('useXDSTableColumnResize', () => {
       const onResize = vi.fn();
       render(
         <ResizeTable
+          columns={pixelColumns}
           columnWidths={{name: 200}}
           onColumnResizeEnd={onResize}
           maxWidth={300}
@@ -190,10 +203,7 @@ describe('useXDSTableColumnResize', () => {
     it('does not call onColumnResizeEnd on Escape during drag', () => {
       const onResize = vi.fn();
       render(
-        <ResizeTable
-          columnWidths={{name: 200}}
-          onColumnResizeEnd={onResize}
-        />,
+        <ResizeTable columnWidths={{name: 200}} onColumnResizeEnd={onResize} />,
       );
       const handle = getResizeHandles()[0];
 
@@ -252,18 +262,16 @@ describe('useXDSTableColumnResize', () => {
     });
 
     it('resized column persists across re-renders', () => {
-      const {rerender} = render(
-        <ResizeTable columnWidths={{name: 250}} />,
-      );
+      const {rerender} = render(<ResizeTable columnWidths={{name: 250}} />);
       const headerRow = screen.getAllByRole('row')[0];
       const headers = within(headerRow).getAllByRole('columnheader');
       expect(headers[0].style.width).toBe('250px');
 
       // Trigger re-render
       rerender(<ResizeTable columnWidths={{name: 250}} />);
-      const headersAfter = within(
-        screen.getAllByRole('row')[0],
-      ).getAllByRole('columnheader');
+      const headersAfter = within(screen.getAllByRole('row')[0]).getAllByRole(
+        'columnheader',
+      );
       expect(headersAfter[0].style.width).toBe('250px');
     });
 
@@ -290,15 +298,15 @@ describe('useXDSTableColumnResize', () => {
       const {rerender} = render(
         <ControlledResizeTable columnWidths={{name: 250}} />,
       );
-      const headers = within(
-        screen.getAllByRole('row')[0],
-      ).getAllByRole('columnheader');
+      const headers = within(screen.getAllByRole('row')[0]).getAllByRole(
+        'columnheader',
+      );
       expect(headers[0].style.width).toBe('250px');
 
       rerender(<ControlledResizeTable columnWidths={{}} />);
-      const headersAfter = within(
-        screen.getAllByRole('row')[0],
-      ).getAllByRole('columnheader');
+      const headersAfter = within(screen.getAllByRole('row')[0]).getAllByRole(
+        'columnheader',
+      );
       expect(headersAfter[0].style.width).toBe('');
     });
   });
@@ -314,29 +322,16 @@ describe('useXDSTableColumnResize', () => {
       const handle = getResizeHandles()[0];
 
       await user.tab();
-      // Tab may land on the handle (or other focusable elements first)
       // Explicitly focus the handle
       handle.focus();
       expect(document.activeElement).toBe(handle);
     });
 
-    it('Enter activates resize mode and locks width', () => {
-      render(<ResizeTable columnWidths={{name: 200}} />);
-      const handle = getResizeHandles()[0];
-      handle.focus();
-
-      fireEvent.keyDown(handle, {key: 'Enter'});
-      // After activation, the th should have width locked as inline style
-      const headers = within(
-        screen.getAllByRole('row')[0],
-      ).getAllByRole('columnheader');
-      expect(headers[0].style.width).toBe('200px');
-    });
-
-    it('ArrowRight increases width by 10px in resize mode', () => {
+    it('ArrowRight resizes immediately on focus (no activation step)', () => {
       const onResize = vi.fn();
       render(
         <ResizeTable
+          columns={pixelColumns}
           columnWidths={{name: 200}}
           onColumnResizeEnd={onResize}
         />,
@@ -344,12 +339,8 @@ describe('useXDSTableColumnResize', () => {
       const handle = getResizeHandles()[0];
       handle.focus();
 
-      // Activate
-      fireEvent.keyDown(handle, {key: 'Enter'});
-      // Arrow right
+      // Arrow right commits immediately — no Enter activation needed
       fireEvent.keyDown(handle, {key: 'ArrowRight'});
-      // Commit
-      fireEvent.keyDown(handle, {key: 'Enter'});
 
       expect(onResize).toHaveBeenCalledWith({
         columnKey: 'name',
@@ -357,10 +348,15 @@ describe('useXDSTableColumnResize', () => {
       });
     });
 
-    it('ArrowLeft decreases width by 10px', () => {
+    it('ArrowLeft decreases width by 10px immediately', () => {
+      const smallPixelColumns: XDSTableColumn<TestItem>[] = [
+        {key: 'name', header: 'Name', width: pixel(100)},
+        {key: 'role', header: 'Role', width: pixel(100)},
+      ];
       const onResize = vi.fn();
       render(
         <ResizeTable
+          columns={smallPixelColumns}
           columnWidths={{name: 200}}
           onColumnResizeEnd={onResize}
         />,
@@ -368,9 +364,7 @@ describe('useXDSTableColumnResize', () => {
       const handle = getResizeHandles()[0];
       handle.focus();
 
-      fireEvent.keyDown(handle, {key: 'Enter'});
       fireEvent.keyDown(handle, {key: 'ArrowLeft'});
-      fireEvent.keyDown(handle, {key: 'Enter'});
 
       expect(onResize).toHaveBeenCalledWith({
         columnKey: 'name',
@@ -382,6 +376,7 @@ describe('useXDSTableColumnResize', () => {
       const onResize = vi.fn();
       render(
         <ResizeTable
+          columns={pixelColumns}
           columnWidths={{name: 200}}
           onColumnResizeEnd={onResize}
         />,
@@ -389,9 +384,7 @@ describe('useXDSTableColumnResize', () => {
       const handle = getResizeHandles()[0];
       handle.focus();
 
-      fireEvent.keyDown(handle, {key: 'Enter'});
       fireEvent.keyDown(handle, {key: 'ArrowRight', shiftKey: true});
-      fireEvent.keyDown(handle, {key: 'Enter'});
 
       expect(onResize).toHaveBeenCalledWith({
         columnKey: 'name',
@@ -399,10 +392,11 @@ describe('useXDSTableColumnResize', () => {
       });
     });
 
-    it('Escape cancels keyboard resize and reverts width', () => {
+    it('multiple arrow presses accumulate', () => {
       const onResize = vi.fn();
       render(
         <ResizeTable
+          columns={pixelColumns}
           columnWidths={{name: 200}}
           onColumnResizeEnd={onResize}
         />,
@@ -410,41 +404,74 @@ describe('useXDSTableColumnResize', () => {
       const handle = getResizeHandles()[0];
       handle.focus();
 
-      fireEvent.keyDown(handle, {key: 'Enter'});
       fireEvent.keyDown(handle, {key: 'ArrowRight'});
       fireEvent.keyDown(handle, {key: 'ArrowRight'});
-      fireEvent.keyDown(handle, {key: 'Escape'});
+      fireEvent.keyDown(handle, {key: 'ArrowRight'});
 
-      expect(onResize).not.toHaveBeenCalled();
-
-      // Width should revert — the th should have the original 200px
-      const headers = within(
-        screen.getAllByRole('row')[0],
-      ).getAllByRole('columnheader');
-      expect(headers[0].style.width).toBe('200px');
+      // Each press commits independently, building on the previous
+      expect(onResize).toHaveBeenCalledTimes(3);
+      expect(onResize).toHaveBeenLastCalledWith({
+        columnKey: 'name',
+        newWidth: 230, // 200 + 10 + 10 + 10
+      });
     });
 
-    it('Enter commits keyboard resize with accumulated changes', () => {
+    it('Home key jumps to minimum width', () => {
       const onResize = vi.fn();
       render(
         <ResizeTable
-          columnWidths={{name: 200}}
+          columns={pixelColumns}
+          columnWidths={{name: 300}}
           onColumnResizeEnd={onResize}
         />,
       );
       const handle = getResizeHandles()[0];
       handle.focus();
 
-      fireEvent.keyDown(handle, {key: 'Enter'});
-      fireEvent.keyDown(handle, {key: 'ArrowRight'});
-      fireEvent.keyDown(handle, {key: 'ArrowRight'});
-      fireEvent.keyDown(handle, {key: 'ArrowRight'});
-      fireEvent.keyDown(handle, {key: 'Enter'});
+      fireEvent.keyDown(handle, {key: 'Home'});
 
       expect(onResize).toHaveBeenCalledWith({
         columnKey: 'name',
-        newWidth: 230,
+        newWidth: 200, // pixel(200) column min
       });
+    });
+
+    it('End key jumps to maximum width when finite', () => {
+      const onResize = vi.fn();
+      render(
+        <ResizeTable
+          columns={pixelColumns}
+          columnWidths={{name: 200}}
+          onColumnResizeEnd={onResize}
+          maxWidth={500}
+        />,
+      );
+      const handle = getResizeHandles()[0];
+      handle.focus();
+
+      fireEvent.keyDown(handle, {key: 'End'});
+
+      expect(onResize).toHaveBeenCalledWith({
+        columnKey: 'name',
+        newWidth: 500,
+      });
+    });
+
+    it('End key does nothing when maxWidth is Infinity', () => {
+      const onResize = vi.fn();
+      render(
+        <ResizeTable
+          columns={pixelColumns}
+          columnWidths={{name: 200}}
+          onColumnResizeEnd={onResize}
+        />,
+      );
+      const handle = getResizeHandles()[0];
+      handle.focus();
+
+      fireEvent.keyDown(handle, {key: 'End'});
+
+      expect(onResize).not.toHaveBeenCalled();
     });
   });
 
@@ -499,11 +526,7 @@ describe('useXDSTableColumnResize', () => {
       function EmptyTable() {
         const resizePlugin = useXDSTableColumnResize<TestItem>({});
         return (
-          <XDSTable
-            data={[]}
-            columns={[]}
-            plugins={{resize: resizePlugin}}
-          />
+          <XDSTable data={[]} columns={[]} plugins={{resize: resizePlugin}} />
         );
       }
 
@@ -571,6 +594,117 @@ describe('useXDSTableColumnResize', () => {
       // After reorder, Role is first, Name is second
       expect(headers[0].style.width).toBe('150px');
       expect(headers[1].style.width).toBe('200px');
+    });
+  });
+
+  // ===========================================================================
+  // 6.7 Per-Column Min Width
+  // ===========================================================================
+
+  describe('per-column min width', () => {
+    it('uses proportional column minWidth as resize minimum', () => {
+      const columnsWithMinWidth: XDSTableColumn<TestItem>[] = [
+        {key: 'name', header: 'Name', width: proportional(1, {minWidth: 150})},
+        {key: 'role', header: 'Role', width: pixel(200)},
+      ];
+
+      render(<ResizeTable columns={columnsWithMinWidth} />);
+      const handle = getResizeHandles()[0];
+      // The handle's aria-valuemin should reflect the column's minWidth
+      expect(handle).toHaveAttribute('aria-valuemin', '150');
+    });
+
+    it('uses pixel column value as resize minimum', () => {
+      const columnsWithPixel: XDSTableColumn<TestItem>[] = [
+        {key: 'name', header: 'Name', width: pixel(180)},
+        {key: 'role', header: 'Role', width: pixel(200)},
+      ];
+
+      render(<ResizeTable columns={columnsWithPixel} />);
+      const handle = getResizeHandles()[0];
+      expect(handle).toHaveAttribute('aria-valuemin', '180');
+    });
+
+    it('global minWidth overrides per-column minimum', () => {
+      const columnsWithMinWidth: XDSTableColumn<TestItem>[] = [
+        {key: 'name', header: 'Name', width: proportional(1, {minWidth: 150})},
+        {key: 'role', header: 'Role'},
+      ];
+
+      render(<ResizeTable columns={columnsWithMinWidth} minWidth={60} />);
+      const handle = getResizeHandles()[0];
+      // Global override wins
+      expect(handle).toHaveAttribute('aria-valuemin', '60');
+    });
+
+    it('defaults to DEFAULT_MIN_COLUMN_WIDTH (120) for proportional without explicit minWidth', () => {
+      const defaultColumns: XDSTableColumn<TestItem>[] = [
+        {key: 'name', header: 'Name', width: proportional(1)},
+        {key: 'role', header: 'Role', width: pixel(200)},
+      ];
+
+      render(<ResizeTable columns={defaultColumns} />);
+      const handle = getResizeHandles()[0];
+      // proportional() helper defaults minWidth to 120
+      expect(handle).toHaveAttribute('aria-valuemin', '120');
+    });
+  });
+
+  // ===========================================================================
+  // 6.8 Proportional-Preserving Resize
+  // ===========================================================================
+
+  describe('proportional-preserving resize', () => {
+    it('does not render resize handle on last proportional column', () => {
+      // Default columns have no explicit width → proportional
+      // The last column (role) should have no handle
+      render(<ResizeTable />);
+      const handles = getResizeHandles();
+      // Only the first column should get a handle (proportional with a neighbor)
+      // The last proportional column has no handle
+      expect(handles).toHaveLength(1);
+    });
+
+    it('renders resize handle on last column if it is pixel', () => {
+      const columnsWithPixelLast: XDSTableColumn<TestItem>[] = [
+        {key: 'name', header: 'Name'},
+        {key: 'role', header: 'Role', width: pixel(200)},
+      ];
+
+      render(<ResizeTable columns={columnsWithPixelLast} />);
+      const handles = getResizeHandles();
+      // Both columns get handles — last is pixel, not proportional
+      expect(handles).toHaveLength(2);
+    });
+
+    it('all pixel columns get handles including last', () => {
+      const allPixel: XDSTableColumn<TestItem>[] = [
+        {key: 'name', header: 'Name', width: pixel(200)},
+        {key: 'role', header: 'Role', width: pixel(200)},
+      ];
+
+      render(<ResizeTable columns={allPixel} />);
+      const handles = getResizeHandles();
+      expect(handles).toHaveLength(2);
+    });
+
+    it('without columns config, all columns get handles (backward compat)', () => {
+      // Don't pass columns to the plugin — falls back to old behavior
+      function LegacyResizeTable() {
+        const resizePlugin = useXDSTableColumnResize<TestItem>({});
+        return (
+          <XDSTable
+            data={testData}
+            columns={testColumns}
+            idKey="id"
+            plugins={{resize: resizePlugin}}
+          />
+        );
+      }
+
+      render(<LegacyResizeTable />);
+      const handles = getResizeHandles();
+      expect(handles).toHaveLength(2);
     });
   });
 });
