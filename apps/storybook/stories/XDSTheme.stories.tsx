@@ -3,7 +3,7 @@ import * as React from 'react';
 import {XDSTheme, defineTheme, useXDSTheme} from '@xds/core/theme';
 import {XDSCard} from '@xds/core/Card';
 import {XDSStack} from '@xds/core/Stack';
-import {XDSText, XDSHeading} from '@xds/core/Text';
+import {XDSHeading} from '@xds/core/Text';
 import {XDSBadge} from '@xds/core/Badge';
 import {defaultTheme} from '@xds/theme-default';
 
@@ -244,13 +244,14 @@ function TokenInspector() {
 
   return (
     <XDSCard>
-      <XDSStack gap="sm">
-        <XDSStack direction="row" gap="sm" align="center">
-          <XDSHeading level="h4">Token Inspector</XDSHeading>
-          <XDSBadge>{name}</XDSBadge>
-          <XDSBadge variant={mode === 'dark' ? 'bold' : 'muted'}>
-            {mode}
-          </XDSBadge>
+      <XDSStack direction="vertical" gap={2}>
+        <XDSStack direction="horizontal" gap={2} vAlign="center">
+          <XDSHeading level={4}>Token Inspector</XDSHeading>
+          <XDSBadge label={name} />
+          <XDSBadge
+            variant={mode === 'dark' ? 'neutral' : 'info'}
+            label={mode}
+          />
         </XDSStack>
         <div
           style={{
@@ -338,8 +339,8 @@ export default meta;
 export const BarChart: StoryObj = {
   render: () => (
     <XDSTheme theme={defaultTheme} mode="light">
-      <XDSStack gap="md">
-        <XDSHeading level="h3">Weekly Activity</XDSHeading>
+      <XDSStack direction="vertical" gap={4}>
+        <XDSHeading level={3}>Weekly Activity</XDSHeading>
         <XDSCard>
           <ThemeAwareBarChart data={CHART_DATA} />
         </XDSCard>
@@ -355,8 +356,8 @@ export const BarChart: StoryObj = {
 export const BarChartDark: StoryObj = {
   render: () => (
     <XDSTheme theme={defaultTheme} mode="dark">
-      <XDSStack gap="md">
-        <XDSHeading level="h3">Weekly Activity</XDSHeading>
+      <XDSStack direction="vertical" gap={4}>
+        <XDSHeading level={3}>Weekly Activity</XDSHeading>
         <XDSCard>
           <ThemeAwareBarChart data={CHART_DATA} />
         </XDSCard>
@@ -372,8 +373,8 @@ export const BarChartDark: StoryObj = {
 export const GroupedChart: StoryObj = {
   render: () => (
     <XDSTheme theme={defaultTheme} mode="light">
-      <XDSStack gap="md">
-        <XDSHeading level="h3">Quarterly Metrics</XDSHeading>
+      <XDSStack direction="vertical" gap={4}>
+        <XDSHeading level={3}>Quarterly Metrics</XDSHeading>
         <XDSCard>
           <ThemeAwareGroupedChart data={MULTI_SERIES} />
         </XDSCard>
@@ -390,16 +391,16 @@ export const ThemeComparison: StoryObj = {
   render: () => (
     <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16}}>
       <XDSTheme theme={defaultTheme} mode="light">
-        <XDSStack gap="sm">
-          <XDSHeading level="h4">Default Theme</XDSHeading>
+        <XDSStack direction="vertical" gap={2}>
+          <XDSHeading level={4}>Default Theme</XDSHeading>
           <XDSCard>
             <ThemeAwareGroupedChart data={MULTI_SERIES} width={360} />
           </XDSCard>
         </XDSStack>
       </XDSTheme>
       <XDSTheme theme={oceanTheme} mode="light">
-        <XDSStack gap="sm">
-          <XDSHeading level="h4">Ocean Theme</XDSHeading>
+        <XDSStack direction="vertical" gap={2}>
+          <XDSHeading level={4}>Ocean Theme</XDSHeading>
           <XDSCard>
             <ThemeAwareGroupedChart data={MULTI_SERIES} width={360} />
           </XDSCard>
