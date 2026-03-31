@@ -66,9 +66,14 @@ const styles = stylex.create({
     minHeight: spacingVars['--spacing-10'],
   },
   // Slot containers
+  // Start and end slots add horizontal padding (spacing-2 = 8px) so that
+  // combined with the section's 8px padding, content aligns at 16px from edges.
+  // This split enables future edge compensation: ghost buttons can negate
+  // the slot padding while the section padding remains.
   startSlot: {
     display: 'flex',
     alignItems: 'center',
+    paddingInlineStart: spacingVars['--spacing-2'],
   },
   centerSlot: {
     display: 'flex',
@@ -81,6 +86,7 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'flex-end',
+    paddingInlineEnd: spacingVars['--spacing-2'],
   },
   // When only startContent is present, let it fill
   startOnly: {
@@ -146,9 +152,15 @@ export interface XDSToolbarProps extends XDSBaseProps<HTMLDivElement> {
   /**
    * Internal padding using the spacing scale.
    * Passed through to XDSSection.
-   * When omitted, uses the section's default (16px).
+   * @default 2 (8px) — combined with 8px slot padding = 16px from edges
    */
   padding?: SpacingStep;
+  /**
+   * Which sides should have divider borders.
+   * Passed through to XDSSection.
+   * @example dividers={['bottom']} for a toolbar with a bottom border
+   */
+  dividers?: Array<'top' | 'bottom' | 'start' | 'end'>;
 }
 
 /**
@@ -176,6 +188,7 @@ export function XDSToolbar({
   orientation = 'horizontal',
   variant = 'transparent',
   padding,
+  dividers,
   xstyle,
   className,
   style,
@@ -197,7 +210,8 @@ export function XDSToolbar({
     <XDSSection
       ref={ref}
       variant={variant}
-      {...(padding != null ? {padding} : {})}
+      padding={padding ?? 2}
+      dividers={dividers}
       xstyle={xstyle}
       className={className}
       style={style}>

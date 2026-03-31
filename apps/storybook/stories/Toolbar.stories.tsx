@@ -12,7 +12,6 @@ import {XDSLayoutHeader} from '@xds/core/Layout';
 import {XDSLayoutContent} from '@xds/core/Layout';
 import {XDSMoreMenu} from '@xds/core/MoreMenu';
 import {XDSHeading} from '@xds/core/Text';
-import {XDSDivider} from '@xds/core/Divider';
 import {
   Cog6ToothIcon,
   FunnelIcon,
@@ -165,6 +164,7 @@ export const InsideCard: Story = {
       <XDSToolbar
         label="User list actions"
         density="compact"
+        dividers={['bottom']}
         startContent={<XDSHeading level={4}>Users</XDSHeading>}
         endContent={
           <>
@@ -182,7 +182,6 @@ export const InsideCard: Story = {
           </>
         }
       />
-      <XDSDivider />
       <XDSSection>
         <XDSText>Table rows go here...</XDSText>
       </XDSSection>
@@ -238,6 +237,7 @@ export const PageHeader: Story = {
     <XDSCard>
       <XDSToolbar
         label="Page navigation"
+        dividers={['bottom']}
         startContent={
           <XDSButton
             label="Back to projects"
@@ -253,7 +253,6 @@ export const PageHeader: Story = {
           </>
         }
       />
-      <XDSDivider />
       <XDSSection>
         <XDSText>Settings form content...</XDSText>
       </XDSSection>
@@ -298,6 +297,7 @@ export const StackedToolbars: Story = {
       <XDSToolbar
         label="Primary actions"
         density="compact"
+        dividers={['bottom']}
         startContent={<XDSHeading level={4}>Orders</XDSHeading>}
         endContent={
           <>
@@ -317,7 +317,6 @@ export const StackedToolbars: Story = {
           </>
         }
       />
-      <XDSDivider />
       <XDSToolbar
         label="Filters"
         density="compact"
