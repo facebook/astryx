@@ -3,12 +3,13 @@
 export const docs = {
   name: 'Spinner',
   description:
-    'A pure spinner component for indicating loading state. No layout, no text — just the spinning indicator.',
+    'An animated loading indicator with optional visible label.',
   features: [
-    'CSS Border Animation: Lightweight border-based spinner with smooth 360° rotation',
+    'Canvas Animation: Lightweight canvas-based spinner with smooth 360° rotation',
     'Size Variants: Three sizes (sm, md, lg) matching existing inline spinners',
     'Shade Support: Default shade for light backgrounds, onMedia for dark/accent backgrounds',
-    'Accessible: role="status" and aria-label="Loading" by default',
+    'Label: Optional visible label (string or ReactNode) displayed below spinner',
+    'Accessible: role="status" with aria-label; defaults to label text or "Loading"',
   ],
   props: [
     {
@@ -23,6 +24,19 @@ export const docs = {
       description: 'Color shade for light or dark backgrounds.',
       default: "'default'",
     },
+    {
+      name: 'label',
+      type: 'ReactNode',
+      description:
+        'Visible content below the spinner. String labels auto-set aria-label.',
+    },
+    {
+      name: 'aria-label',
+      type: 'string',
+      description:
+        'Accessible name for screen readers. Defaults to label (if string) or "Loading".',
+      default: "'Loading'",
+    },
   ],
   examples: [
     {
@@ -30,19 +44,25 @@ export const docs = {
       code: `<XDSSpinner />`,
     },
     {
-      label: 'Small',
-      code: `<XDSSpinner size="sm" />`,
+      label: 'With label',
+      code: `<XDSSpinner label="Loading..." />`,
     },
     {
-      label: 'Large on dark background',
-      code: `<XDSSpinner size="lg" shade="onMedia" />`,
+      label: 'A11y only (no visible text)',
+      code: `<XDSSpinner aria-label="Loading data" />`,
     },
     {
-      label: 'Composing with layout and text',
-      code: `<XDSVStack gap={2} align="center">
-  <XDSSpinner size="lg" />
-  <XDSText color="secondary">Loading...</XDSText>
-</XDSVStack>`,
+      label: 'Rich label with composition',
+      code: `<XDSSpinner
+  size="lg"
+  label={
+    <XDSVStack gap={0} hAlign="center">
+      <XDSText type="body" weight="bold">Fetching data</XDSText>
+      <XDSText type="supporting" color="secondary">This may take a moment</XDSText>
+    </XDSVStack>
+  }
+  aria-label="Fetching data"
+/>`,
     },
   ],
   theming: {
@@ -64,12 +84,13 @@ export const docs = {
 export const docsZh = {
   name: 'Spinner',
   description:
-    '用于指示加载状态的纯旋转器组件。无布局、无文本——仅有旋转指示器。',
+    '带有可选可见标签的动画加载指示器。',
   features: [
-    'CSS 边框动画：基于边框的轻量级旋转器，平滑 360° 旋转',
+    'Canvas 动画：基于 Canvas 的轻量级旋转器，平滑 360° 旋转',
     '尺寸变体：三种尺寸（sm、md、lg），与现有内联旋转器匹配',
     '色调支持：默认色调用于浅色背景，onMedia 用于深色/强调色背景',
-    '无障碍：默认使用 role="status" 和 aria-label="Loading"',
+    '标签：可选可见标签（字符串或 ReactNode），显示在旋转器下方',
+    '无障碍：role="status" 与 aria-label；默认为标签文本或 "Loading"',
   ],
   props: [
     {
@@ -84,6 +105,17 @@ export const docsZh = {
       description: '浅色或深色背景的颜色色调。',
       default: "'default'",
     },
+    {
+      name: 'label',
+      type: 'ReactNode',
+      description: '旋转器下方的可见内容。字符串标签自动设置 aria-label。',
+    },
+    {
+      name: 'aria-label',
+      type: 'string',
+      description: '屏幕阅读器的无障碍名称。默认为 label（如果是字符串）或 "Loading"。',
+      default: "'Loading'",
+    },
   ],
   examples: [
     {
@@ -91,19 +123,25 @@ export const docsZh = {
       code: `<XDSSpinner />`,
     },
     {
-      label: '小尺寸',
-      code: `<XDSSpinner size="sm" />`,
+      label: '带标签',
+      code: `<XDSSpinner label="加载中..." />`,
     },
     {
-      label: '深色背景上的大尺寸',
-      code: `<XDSSpinner size="lg" shade="onMedia" />`,
+      label: '仅无障碍（无可见文本）',
+      code: `<XDSSpinner aria-label="正在加载数据" />`,
     },
     {
-      label: '与布局和文本组合',
-      code: `<XDSVStack gap={2} align="center">
-  <XDSSpinner size="lg" />
-  <XDSText color="secondary">Loading...</XDSText>
-</XDSVStack>`,
+      label: '富文本标签',
+      code: `<XDSSpinner
+  size="lg"
+  label={
+    <XDSVStack gap={0} hAlign="center">
+      <XDSText type="body" weight="bold">正在获取数据</XDSText>
+      <XDSText type="supporting" color="secondary">这可能需要一些时间</XDSText>
+    </XDSVStack>
+  }
+  aria-label="正在获取数据"
+/>`,
     },
   ],
   theming: {
@@ -123,23 +161,26 @@ export const docsZh = {
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
-  description: 'Pure spinner for loading state. No layout, no text; just spinning indicator.',
+  description: 'Animated loading indicator w/ optional visible label.',
   features: [
-    'CSS border animation: lightweight border-based spinner w/ smooth 360\u00b0 rotation',
+    'Canvas animation: lightweight canvas-based spinner w/ smooth 360\u00b0 rotation',
     'Size variants: sm (10px), md (14px), lg (18px) matching inline spinners',
     'Shade support: default for light bg, onMedia for dark/accent bg',
-    'Accessible: role="status" + aria-label="Loading" by default',
+    'Label: optional ReactNode below spinner; string labels auto-set aria-label',
+    'Accessible: role="status" + aria-label; defaults to label text or "Loading"',
   ],
   notes: [
-    'CSS border technique: 3 visible borders + 1 transparent for gap.',
+    'Canvas renders spinner arcs at device pixel ratio.',
     'Animation: rotate(360deg) at 0.75s linear infinite.',
-    'Color inherits currentColor, controlled by shade styles w/ theme tokens.',
+    'Color resolved from CSS custom properties via getComputedStyle.',
     'Element is <span> w/ display: inline-block for inline composability.',
-    'Intentionally minimal; compose w/ layout + text components for full loading states.',
+    'label + aria-label are independent props; compose, never conflict.',
     'Size ref: sm=10x10px/3px border, md=14x14px/3px border, lg=18x18px/3px border.',
   ],
   propDescriptions: {
     size: 'Spinner size (10px, 14px, 18px).',
     shade: 'Color shade for light or dark backgrounds.',
+    label: 'Visible content below spinner. String auto-sets aria-label.',
+    'aria-label': 'A11y name for screen readers. Defaults to label or "Loading".',
   },
 };

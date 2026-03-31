@@ -13,10 +13,11 @@
  * - /apps/storybook/stories/Spinner.stories.tsx
  */
 
-import {useEffect, useRef} from 'react';
+import {useEffect, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
-import {colorVars} from '../theme/tokens.stylex';
+import {colorVars, spacingVars} from '../theme/tokens.stylex';
+import {XDSText} from '../Text/XDSText';
 import {xdsClassName, mergeProps} from '../utils';
 
 // =============================================================================
@@ -49,6 +50,12 @@ const rotation = stylex.keyframes({
 // =============================================================================
 
 const styles = stylex.create({
+  wrapper: {
+    display: 'inline-flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-2'],
+  },
   spinner: {
     display: 'inline-block',
     overflow: 'hidden',
@@ -107,6 +114,25 @@ export interface XDSSpinnerProps {
    */
   className?: string;
   /**
+   * Visible content displayed below the spinner.
+   * Accepts a string or ReactNode for rich content.
+   *
+   * When `label` is a string, it is also used as the accessible name
+   * (aria-label) unless `aria-label` is explicitly set.
+   *
+   * @example
+   * ```
+   * <XDSSpinner label="Loading..." />
+   * <XDSSpinner label={<><strong>Fetching data</strong><br/>This may take a moment</>} aria-label="Fetching data" />
+   * ```
+   */
+  label?: ReactNode;
+  /**
+   * Accessible label for screen readers.
+   * Defaults to `label` when label is a string, otherwise "Loading".
+   */
+  'aria-label'?: string;
+  /**
    * Test ID for the root element.
    */
   'data-testid'?: string;
@@ -124,13 +150,17 @@ export interface XDSSpinnerProps {
  * <XDSSpinner />
  * <XDSSpinner size="sm" />
  * <XDSSpinner size="lg" shade="onMedia" />
+ * <XDSSpinner label="Loading..." />
+ * <XDSSpinner aria-label="Loading data" />
  * ```
  */
 export function XDSSpinner({
   size = 'md',
   shade = 'default',
+  label,
   xstyle,
   className,
+  'aria-label': ariaLabel,
   'data-testid': testId,
   ref,
 }: XDSSpinnerProps) {
@@ -190,21 +220,50 @@ export function XDSSpinner({
 
   const {border, diameter} = SIZES[size];
   const frameSize = diameter + border * 2;
+  const hasLabel = label != null;
 
-  return (
+  // Resolve accessible name: explicit aria-label > string label > "Loading"
+  const resolvedAriaLabel =
+    ariaLabel ?? (typeof label === 'string' ? label : undefined) ?? 'Loading';
+
+  const spinner = (
     <span
-      ref={ref}
+      ref={hasLabel ? undefined : ref}
       role="status"
-      aria-label="Loading"
-      data-testid={testId}
+      aria-label={resolvedAriaLabel}
+      data-testid={hasLabel ? undefined : testId}
       {...mergeProps(
-        xdsClassName('spinner', {size, shade}),
-        stylex.props(styles.spinner, xstyle),
-        className,
+        hasLabel ? '' : xdsClassName('spinner', {size, shade}),
+        stylex.props(styles.spinner, !hasLabel && xstyle),
+        hasLabel ? undefined : className,
       )}
       style={{width: frameSize, height: frameSize}}>
       <canvas ref={canvasRef} {...stylex.props(styles.canvas)} />
     </span>
+  );
+
+  if (!hasLabel) {
+    return spinner;
+  }
+
+  return (
+    <div
+      ref={ref as React.Ref<HTMLDivElement>}
+      data-testid={testId}
+      {...mergeProps(
+        xdsClassName('spinner', {size, shade}),
+        stylex.props(styles.wrapper, xstyle),
+        className,
+      )}>
+      {spinner}
+      {typeof label === 'string' ? (
+        <XDSText type="body" weight="bold">
+          {label}
+        </XDSText>
+      ) : (
+        label
+      )}
+    </div>
   );
 }
 

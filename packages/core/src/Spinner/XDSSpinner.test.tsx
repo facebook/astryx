@@ -47,12 +47,57 @@ describe('XDSSpinner', () => {
     expect(screen.getByRole('status')).toBeInTheDocument();
   });
 
-  it('has aria-label="Loading"', () => {
+  it('has aria-label="Loading" by default', () => {
     render(<XDSSpinner data-testid="spinner" />);
     expect(screen.getByTestId('spinner')).toHaveAttribute(
       'aria-label',
       'Loading',
     );
+  });
+
+  it('uses string label as aria-label automatically', () => {
+    render(<XDSSpinner label="Fetching data" data-testid="spinner" />);
+    expect(screen.getByRole('status')).toHaveAttribute(
+      'aria-label',
+      'Fetching data',
+    );
+  });
+
+  it('uses explicit aria-label over string label', () => {
+    render(
+      <XDSSpinner
+        label="Loading..."
+        aria-label="Please wait"
+        data-testid="spinner"
+      />,
+    );
+    expect(screen.getByRole('status')).toHaveAttribute(
+      'aria-label',
+      'Please wait',
+    );
+  });
+
+  it('renders label content below the spinner', () => {
+    render(<XDSSpinner label="Loading..." data-testid="spinner" />);
+    expect(screen.getByText('Loading...')).toBeInTheDocument();
+  });
+
+  it('renders ReactNode label', () => {
+    render(
+      <XDSSpinner
+        label={<span data-testid="custom-label">Custom content</span>}
+        aria-label="Loading"
+        data-testid="spinner"
+      />,
+    );
+    expect(screen.getByTestId('custom-label')).toBeInTheDocument();
+  });
+
+  it('defaults aria-label to "Loading" for ReactNode label without explicit aria-label', () => {
+    render(
+      <XDSSpinner label={<span>Rich content</span>} data-testid="spinner" />,
+    );
+    expect(screen.getByRole('status')).toHaveAttribute('aria-label', 'Loading');
   });
 
   it('accepts data-testid', () => {
