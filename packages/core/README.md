@@ -4,6 +4,8 @@ A design system for building internal tools and products at Meta.
 
 ## Installation
 
+The instructions below describe installing from source. See the "Installation from dist" section for an alternative method that doesn't require a build step.
+
 ```bash
 # Install core + a theme + the CLI (dev tooling)
 yarn add @xds/core @xds/theme-default
@@ -61,6 +63,51 @@ function Example() {
     </>
   );
 }
+```
+
+## Installation from dist
+
+We also offer a `dist` release which doesn't require any additional build steps can be dropped into any existing React app. To install:
+
+1. Ensure React is available. XDS peer-requires react and react-dom (>=19.0.0). Your app needs those installed.
+2. Run `yarn build` to generate the dist files.
+3. Copy the dist folder. Grab `packages/core/dist/` from this repo and place it somewhere in your project (e.g., `vendor/xds/`).
+4. Include the CSS: there's a single bundled `dist/xds.css` that contains all component styles as well as `dist/reset.css`.
+
+You can use a `<link>` tag or a CSS import (recommended):
+
+```
+import '../vendor/xds/reset.css';
+import '../vendor/xds/xds.css';
+```
+
+5. Import components. If you are using a bundler such as Vite/TS you can add a resolver so you can use standard imports:
+
+Add this to `vite.config.ts`:
+
+```
+  resolve: {
+    alias: {
+      '@xds/core': path.resolve(__dirname, 'vendor/xds'),
+    },
+  },
+```
+
+Add this to `tsconfig.json`:
+
+```
+    "paths": {
+      "@xds/core/*": ["./vendor/xds/*"]
+    },
+```
+
+Then you can use standard imports as described in "Use Components" above. Alternatively you can use relative imports:
+
+```
+// Import from index
+import {Button} from './vendor/xds/index.mjs'
+// Or import individual components (preferred)
+import {Button} from './vendor/xds/Button/index.mjs'
 ```
 
 ## CLI Tooling
