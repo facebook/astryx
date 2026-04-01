@@ -50,7 +50,7 @@ export default function SettingsTemplate() {
       {/* Body */}
       <div style={{display: 'flex', flex: 1}}>
         {/* Sidebar */}
-        <nav style={{width: 200, padding: 16, borderRight: '1px solid var(--xds-color-border-primary, #e5e5e5)', flexShrink: 0}}>
+        <nav style={{width: 200, padding: 8, borderRight: '1px solid var(--xds-color-border-primary, #e5e5e5)', flexShrink: 0}}>
           <XDSList density="compact">
             {NAV_ITEMS.map(item => (
               <XDSListItem
