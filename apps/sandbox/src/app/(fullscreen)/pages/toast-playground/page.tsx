@@ -13,6 +13,8 @@ import {XDSButton} from '@xds/core/Button';
 import {XDSCard} from '@xds/core/Card';
 import {XDSHeading, XDSText} from '@xds/core/Text';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {XDSTextInput} from '@xds/core/TextInput';
+import {XDSSelector} from '@xds/core/Selector';
 import {spacingVars, colorVars, radiusVars, shadowVars} from '@xds/core/theme/tokens.stylex';
 
 // ---------------------------------------------------------------------------
@@ -444,12 +446,22 @@ const pageStyles = stylex.create({
     paddingInline: spacingVars['--spacing-8'],
   },
   container: {
-    maxWidth: 720,
+    maxWidth: 960,
     marginInline: 'auto',
+  },
+  columns: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: spacingVars['--spacing-5'],
+    alignItems: 'start',
   },
 });
 
 export default function ToastPlaygroundPage() {
+  const [title, setTitle] = useState('Changes saved successfully');
+  const [variant, setVariant] = useState<string>('default');
+  const [isDismissable, setIsDismissable] = useState<string>('yes');
+
   return (
     <ToastProvider>
       <div {...stylex.props(pageStyles.page)}>
@@ -462,14 +474,52 @@ export default function ToastPlaygroundPage() {
               </XDSText>
             </XDSVStack>
 
-            <XDSCard>
-              <XDSVStack gap={4}>
-                <XDSText type="label" weight="bold">
-                  Examples
-                </XDSText>
-                <ToastExamples />
-              </XDSVStack>
-            </XDSCard>
+            <div {...stylex.props(pageStyles.columns)}>
+              <XDSCard>
+                <XDSVStack gap={4}>
+                  <XDSText type="label" weight="bold">
+                    Configuration
+                  </XDSText>
+                  <XDSTextInput
+                    label="Message"
+                    value={title}
+                    onChange={setTitle}
+                  />
+                  <XDSSelector
+                    label="Variant"
+                    options={[
+                      {value: 'default', label: 'Default'},
+                      {value: 'error', label: 'Error'},
+                    ]}
+                    value={variant}
+                    onChange={setVariant}
+                  />
+                  <XDSSelector
+                    label="Dismissable"
+                    options={[
+                      {value: 'yes', label: 'Yes'},
+                      {value: 'no', label: 'No'},
+                    ]}
+                    value={isDismissable}
+                    onChange={setIsDismissable}
+                  />
+                  <ToastTrigger
+                    title={title}
+                    variant={variant as ToastVariant}
+                    isDismissable={isDismissable === 'yes'}
+                  />
+                </XDSVStack>
+              </XDSCard>
+
+              <XDSCard>
+                <XDSVStack gap={4}>
+                  <XDSText type="label" weight="bold">
+                    Examples
+                  </XDSText>
+                  <ToastExamples />
+                </XDSVStack>
+              </XDSCard>
+            </div>
           </XDSVStack>
         </div>
       </div>
@@ -477,11 +527,31 @@ export default function ToastPlaygroundPage() {
   );
 }
 
+function ToastTrigger({
+  title,
+  variant,
+  isDismissable,
+}: {
+  title: string;
+  variant: ToastVariant;
+  isDismissable: boolean;
+}) {
+  const toast = useToast();
+
+  return (
+    <XDSButton
+      label="Show Toast"
+      variant="primary"
+      onClick={() => toast({title, variant, isDismissable})}
+    />
+  );
+}
+
 function ToastExamples() {
   const toast = useToast();
 
   return (
-    <XDSHStack gap={2} wrap>
+    <XDSVStack gap={2}>
       <XDSButton
         label="Default"
         variant="secondary"
@@ -500,7 +570,7 @@ function ToastExamples() {
         }
       />
       <XDSButton
-        label="With Button"
+        label="With Action Button"
         variant="secondary"
         onClick={() =>
           toast({
@@ -551,6 +621,6 @@ function ToastExamples() {
           })
         }
       />
-    </XDSHStack>
+    </XDSVStack>
   );
 }
