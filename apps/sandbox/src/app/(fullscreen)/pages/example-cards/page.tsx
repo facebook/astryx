@@ -94,7 +94,7 @@ function Sparkline({values}: {values: number[]}) {
   );
 }
 
-export default function MetaThemePage() {
+export default function ExampleCardsPage() {
   const {themeName, setThemeName, mode, setMode} = useThemeControls();
 
   const themeItems = [

@@ -42,9 +42,9 @@ export const categories: SandboxCategory[] = [
     description: 'Interactive tools for building and exploring XDS components.',
     pages: [
       {
-        name: 'Meta Theme',
-        href: '/pages/meta-theme/',
-        description: 'XDS components in application context with the Meta theme',
+        name: 'Example Cards',
+        href: '/pages/example-cards/',
+        description: 'XDS components showcased in realistic card compositions',
       },
       {
         name: 'Theme Editor',
