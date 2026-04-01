@@ -42,6 +42,11 @@ export const categories: SandboxCategory[] = [
     description: 'Interactive tools for building and exploring XDS components.',
     pages: [
       {
+        name: 'Toast Playground',
+        href: '/pages/toast-playground/',
+        description: 'Prototype and test XDS toast notifications',
+      },
+      {
         name: 'Theme Editor',
         href: '/pages/theme-editor/',
         description: 'Customize and preview XDS design tokens',
