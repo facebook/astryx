@@ -49,7 +49,7 @@ const styles = stylex.create({
     flexDirection: 'column',
     alignItems: 'center',
     width: '100%',
-    maxWidth: 400,
+    maxWidth: 340,
     gap: 16,
   },
   fullWidth: {
