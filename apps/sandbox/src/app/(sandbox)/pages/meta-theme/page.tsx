@@ -29,14 +29,13 @@ import {useThemeControls} from '../../../providers';
 
 const styles = stylex.create({
   grid: {
-    columnCount: 4,
-    columnGap: 16,
+    display: 'grid',
+    gridTemplateColumns: 'repeat(4, 1fr)',
+    gap: 16,
     padding: 16,
+    alignItems: 'start',
   },
-  cell: {
-    breakInside: 'avoid',
-    marginBottom: 16,
-  },
+  cell: {},
   row: {
     display: 'flex',
     alignItems: 'center',
