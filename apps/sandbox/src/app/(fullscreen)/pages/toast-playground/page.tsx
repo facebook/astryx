@@ -13,22 +13,17 @@ import {XDSButton} from '@xds/core/Button';
 import {XDSCard} from '@xds/core/Card';
 import {XDSHeading, XDSText} from '@xds/core/Text';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
-import {XDSSelector} from '@xds/core/Selector';
-import {XDSTextInput} from '@xds/core/TextInput';
-import {XDSDivider} from '@xds/core/Divider';
 import {spacingVars, colorVars, radiusVars, shadowVars} from '@xds/core/theme/tokens.stylex';
 
 // ---------------------------------------------------------------------------
 // Toast Types
 // ---------------------------------------------------------------------------
 
-type ToastType = 'info' | 'warning' | 'error' | 'success';
-type ToastPosition = 'topEnd' | 'topStart' | 'bottomEnd' | 'bottomStart';
+type ToastVariant = 'default' | 'error';
 
 interface ToastOptions {
   title: string;
-  body?: string;
-  type?: ToastType;
+  variant?: ToastVariant;
   isAutoHide?: boolean;
   autoHideDuration?: number;
   action?: ReactNode;
@@ -38,9 +33,8 @@ interface ToastOptions {
   onHide?: () => void;
 }
 
-interface ToastEntry extends Required<Pick<ToastOptions, 'title' | 'type'>> {
+interface ToastEntry extends Required<Pick<ToastOptions, 'title' | 'variant'>> {
   id: string;
-  body?: string;
   isAutoHide: boolean;
   autoHideDuration: number;
   action?: ReactNode;
@@ -73,28 +67,14 @@ const toastStyles = stylex.create({
   viewport: {
     position: 'fixed',
     zIndex: 9999,
+    bottom: spacingVars['--spacing-6'],
+    right: spacingVars['--spacing-6'],
     display: 'flex',
     flexDirection: 'column',
     gap: spacingVars['--spacing-3'],
     pointerEvents: 'none',
     maxWidth: 480,
     width: '100%',
-  },
-  topEnd: {
-    top: spacingVars['--spacing-6'],
-    right: spacingVars['--spacing-6'],
-  },
-  topStart: {
-    top: spacingVars['--spacing-6'],
-    left: spacingVars['--spacing-6'],
-  },
-  bottomEnd: {
-    bottom: spacingVars['--spacing-6'],
-    right: spacingVars['--spacing-6'],
-  },
-  bottomStart: {
-    bottom: spacingVars['--spacing-6'],
-    left: spacingVars['--spacing-6'],
   },
   toast: {
     pointerEvents: 'auto',
@@ -118,15 +98,9 @@ const toastStyles = stylex.create({
     backgroundColor: colorVars['--color-error'],
     color: colorVars['--color-on-error'],
   },
-  enterFromBottom: {
+  enter: {
     animationName: stylex.keyframes({
       from: {opacity: 0, transform: 'translateY(16px)'},
-      to: {opacity: 1, transform: 'translateY(0)'},
-    }),
-  },
-  enterFromTop: {
-    animationName: stylex.keyframes({
-      from: {opacity: 0, transform: 'translateY(-16px)'},
       to: {opacity: 1, transform: 'translateY(0)'},
     }),
   },
@@ -224,7 +198,7 @@ const toastStyles = stylex.create({
 });
 
 // ---------------------------------------------------------------------------
-// Close Icon (inline to avoid dependency on icon registry for sandbox)
+// Close Icon
 // ---------------------------------------------------------------------------
 
 function CloseIcon() {
@@ -254,27 +228,20 @@ function ToastItem({
   onDismiss,
   onPause,
   onResume,
-  position,
 }: {
   entry: ToastEntry;
   onDismiss: (id: string) => void;
   onPause: (id: string) => void;
   onResume: (id: string) => void;
-  position: ToastPosition;
 }) {
-  const isFromBottom = position.startsWith('bottom');
-  const isError = entry.type === 'error';
+  const isError = entry.variant === 'error';
 
   return (
     <div
       {...stylex.props(
         toastStyles.toast,
         isError ? toastStyles.errorVariant : toastStyles.defaultVariant,
-        entry.isExiting
-          ? toastStyles.exit
-          : isFromBottom
-            ? toastStyles.enterFromBottom
-            : toastStyles.enterFromTop,
+        entry.isExiting ? toastStyles.exit : toastStyles.enter,
       )}
       role={isError ? 'alert' : 'status'}
       aria-live={isError ? 'assertive' : 'polite'}
@@ -288,10 +255,7 @@ function ToastItem({
         }
       }}>
       <div {...stylex.props(toastStyles.content)}>
-        <span {...stylex.props(toastStyles.title)}>
-          {entry.title}
-          {entry.body && `, ${entry.body}`}
-        </span>
+        <span {...stylex.props(toastStyles.title)}>{entry.title}</span>
       </div>
       <div {...stylex.props(toastStyles.actions)}>
         {entry.action}
@@ -314,11 +278,9 @@ function ToastItem({
 
 function ToastProvider({
   children,
-  position = 'bottomEnd',
   maxVisible = 5,
 }: {
   children: ReactNode;
-  position?: ToastPosition;
   maxVisible?: number;
 }) {
   const [toasts, setToasts] = useState<ToastEntry[]>([]);
@@ -393,32 +355,36 @@ function ToastProvider({
 
   const showToast: ShowToastFn = useCallback(
     options => {
-      const type = options.type ?? 'info';
-      const isAutoHide = options.isAutoHide ?? (type !== 'error');
+      const variant = options.variant ?? 'default';
+      const isAutoHide = options.isAutoHide ?? (variant !== 'error');
       const autoHideDuration = options.autoHideDuration ?? 5000;
+
+      const id = `toast-${++counterRef.current}`;
 
       // Handle deduplication
       if (options.uniqueID) {
-        const existing = toasts.find(
-          t => t.uniqueID === options.uniqueID,
-        );
-        if (existing) {
-          if (
-            (options.collisionBehavior ?? 'overwrite') === 'ignore'
-          ) {
-            return () => startExit(existing.id);
+        setToasts(prev => {
+          const existing = prev.find(t => t.uniqueID === options.uniqueID);
+          if (existing) {
+            if ((options.collisionBehavior ?? 'overwrite') === 'ignore') {
+              return prev;
+            }
+            // Remove existing duplicate
+            const timer = timersRef.current.get(existing.id);
+            if (timer) {
+              clearTimeout(timer);
+              timersRef.current.delete(existing.id);
+            }
+            return prev.filter(t => t.id !== existing.id);
           }
-          dismiss(existing.id);
-        }
+          return prev;
+        });
       }
-
-      const id = `toast-${++counterRef.current}`;
 
       const entry: ToastEntry = {
         id,
         title: options.title,
-        body: options.body,
-        type,
+        variant,
         isAutoHide,
         autoHideDuration,
         action: options.action,
@@ -431,10 +397,7 @@ function ToastProvider({
 
       setToasts(prev => {
         const next = [entry, ...prev];
-        if (next.length > maxVisible) {
-          return next.slice(0, maxVisible);
-        }
-        return next;
+        return next.length > maxVisible ? next.slice(0, maxVisible) : next;
       });
 
       if (isAutoHide) {
@@ -443,26 +406,16 @@ function ToastProvider({
 
       return () => startExit(id);
     },
-    [toasts, maxVisible, startTimer, dismiss, startExit],
+    [maxVisible, startTimer, startExit],
   );
 
-  const positionStyle =
-    position === 'topEnd'
-      ? toastStyles.topEnd
-      : position === 'topStart'
-        ? toastStyles.topStart
-        : position === 'bottomStart'
-          ? toastStyles.bottomStart
-          : toastStyles.bottomEnd;
-
-  const orderedToasts =
-    position.startsWith('bottom') ? [...toasts].reverse() : toasts;
+  const orderedToasts = [...toasts].reverse();
 
   return (
     <ToastContext.Provider value={showToast}>
       {children}
       <div
-        {...stylex.props(toastStyles.viewport, positionStyle)}
+        {...stylex.props(toastStyles.viewport)}
         role="region"
         aria-label="Notifications">
         {orderedToasts.map(entry => (
@@ -472,7 +425,6 @@ function ToastProvider({
             onDismiss={startExit}
             onPause={pause}
             onResume={resume}
-            position={position}
           />
         ))}
       </div>
@@ -498,133 +450,24 @@ const pageStyles = stylex.create({
 });
 
 export default function ToastPlaygroundPage() {
-  const [position, setPosition] = useState<ToastPosition>('bottomEnd');
-  const [title, setTitle] = useState('Lorem ipsum dolor sit amet, consectetur adipiscing elit');
-  const [type, setType] = useState<string>('info');
-  const [duration, setDuration] = useState('5000');
-
   return (
-    <ToastProvider position={position}>
+    <ToastProvider>
       <div {...stylex.props(pageStyles.page)}>
         <div {...stylex.props(pageStyles.container)}>
           <XDSVStack gap={6}>
             <XDSVStack gap={2}>
               <XDSHeading level={2}>Toast Playground</XDSHeading>
               <XDSText type="body" color="secondary">
-                Prototype for XDSToast component. Two visual variants: default
-                (dark) and error (red).
+                Two visual variants: default (dark) and error (red).
               </XDSText>
             </XDSVStack>
 
             <XDSCard>
               <XDSVStack gap={4}>
                 <XDSText type="label" weight="bold">
-                  Configuration
+                  Examples
                 </XDSText>
-                <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16}}>
-                  <XDSTextInput
-                    label="Title"
-                    value={title}
-                    onChange={setTitle}
-                  />
-                  <XDSSelector
-                    label="Type"
-                    options={['info', 'success', 'warning', 'error']}
-                    value={type}
-                    onChange={setType}
-                  />
-                  <XDSSelector
-                    label="Position"
-                    options={[
-                      {value: 'bottomEnd', label: 'Bottom End'},
-                      {value: 'bottomStart', label: 'Bottom Start'},
-                      {value: 'topEnd', label: 'Top End'},
-                      {value: 'topStart', label: 'Top Start'},
-                    ]}
-                    value={position}
-                    onChange={v => setPosition(v as ToastPosition)}
-                  />
-                  <XDSTextInput
-                    label="Auto-hide duration (ms)"
-                    value={duration}
-                    onChange={setDuration}
-                  />
-                </div>
-
-                <XDSDivider />
-
-                <XDSText type="label" weight="bold">
-                  Trigger Toasts
-                </XDSText>
-                <ToastTriggers
-                  title={title}
-                  type={type as ToastType}
-                  duration={parseInt(duration, 10)}
-                />
-              </XDSVStack>
-            </XDSCard>
-
-            <XDSCard>
-              <XDSVStack gap={4}>
-                <XDSText type="label" weight="bold">
-                  Quick Examples
-                </XDSText>
-                <QuickExamples />
-              </XDSVStack>
-            </XDSCard>
-
-            <XDSCard>
-              <XDSVStack gap={4}>
-                <XDSText type="label" weight="bold">
-                  API Preview
-                </XDSText>
-                <XDSText type="supporting" color="secondary">
-                  The proposed API for @xds/core/Toast
-                </XDSText>
-                <pre
-                  style={{
-                    padding: 16,
-                    borderRadius: 8,
-                    backgroundColor: 'var(--color-background-muted)',
-                    fontSize: 13,
-                    lineHeight: 1.6,
-                    overflow: 'auto',
-                  }}>
-{`// 1. Wrap your app
-<XDSToastProvider position="bottomEnd">
-  <App />
-</XDSToastProvider>
-
-// 2. Use the hook
-const toast = useXDSToast();
-
-// 3. Show toasts
-toast({
-  title: "Saved successfully",
-  type: "success",
-});
-
-// With action button
-const dismiss = toast({
-  title: "Item deleted",
-  action: <XDSButton label="Undo" variant="ghost" onClick={undo} />,
-});
-
-// Error toast (red, persists by default)
-toast({
-  title: "Something went wrong",
-  type: "error",
-});
-
-// Deduplication
-toast({
-  title: "You are offline",
-  type: "warning",
-  uniqueID: "offline",
-  collisionBehavior: "ignore",
-  isAutoHide: false,
-});`}
-                </pre>
+                <ToastExamples />
               </XDSVStack>
             </XDSCard>
           </XDSVStack>
@@ -634,98 +477,30 @@ toast({
   );
 }
 
-function ToastTriggers({
-  title,
-  type,
-  duration,
-}: {
-  title: string;
-  type: ToastType;
-  duration: number;
-}) {
+function ToastExamples() {
   const toast = useToast();
 
   return (
-    <XDSHStack gap={2}>
+    <XDSHStack gap={2} wrap>
       <XDSButton
-        label="Show Toast"
-        variant="primary"
-        onClick={() =>
-          toast({title, type, autoHideDuration: duration})
-        }
-      />
-      <XDSButton
-        label="With Action"
-        variant="secondary"
-        onClick={() =>
-          toast({
-            title,
-            type,
-            autoHideDuration: duration,
-            action: (
-              <button
-                {...stylex.props(toastStyles.actionButton)}
-                onClick={() => {
-                  toast({title: 'Action triggered!', type: 'success'});
-                }}>
-                Button
-              </button>
-            ),
-          })
-        }
-      />
-      <XDSButton
-        label="Error Toast"
-        variant="destructive"
-        onClick={() =>
-          toast({
-            title: 'Something went wrong, please try again.',
-            type: 'error',
-          })
-        }
-      />
-    </XDSHStack>
-  );
-}
-
-function QuickExamples() {
-  const toast = useToast();
-
-  return (
-    <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12}}>
-      <XDSButton
-        label="Default (info)"
+        label="Default"
         variant="secondary"
         onClick={() =>
           toast({title: 'Changes saved successfully'})
         }
       />
       <XDSButton
-        label="Default (success)"
-        variant="secondary"
-        onClick={() =>
-          toast({title: 'Profile updated', type: 'success'})
-        }
-      />
-      <XDSButton
-        label="Default (warning)"
-        variant="secondary"
-        onClick={() =>
-          toast({title: 'Storage almost full', type: 'warning'})
-        }
-      />
-      <XDSButton
         label="Error"
-        variant="secondary"
+        variant="destructive"
         onClick={() =>
           toast({
-            title: 'Upload failed, file exceeds 10MB limit.',
-            type: 'error',
+            title: 'Something went wrong, please try again.',
+            variant: 'error',
           })
         }
       />
       <XDSButton
-        label="With Action"
+        label="With Button"
         variant="secondary"
         onClick={() =>
           toast({
@@ -737,36 +512,6 @@ function QuickExamples() {
                 Undo
               </button>
             ),
-          })
-        }
-      />
-      <XDSButton
-        label="Error + Action"
-        variant="secondary"
-        onClick={() =>
-          toast({
-            title: 'Connection lost',
-            type: 'error',
-            action: (
-              <button
-                {...stylex.props(toastStyles.actionButton)}
-                onClick={() => toast({title: 'Reconnecting...', type: 'info'})}>
-                Retry
-              </button>
-            ),
-          })
-        }
-      />
-      <XDSButton
-        label="Deduplicated"
-        variant="secondary"
-        onClick={() =>
-          toast({
-            title: 'You are offline',
-            type: 'warning',
-            uniqueID: 'offline',
-            collisionBehavior: 'ignore',
-            isAutoHide: false,
           })
         }
       />
@@ -798,7 +543,7 @@ function QuickExamples() {
         }
       />
       <XDSButton
-        label="Long text (truncated)"
+        label="Long Text"
         variant="secondary"
         onClick={() =>
           toast({
@@ -806,6 +551,6 @@ function QuickExamples() {
           })
         }
       />
-    </div>
+    </XDSHStack>
   );
 }
