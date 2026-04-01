@@ -150,8 +150,20 @@ describe('useXDSTableColumnResize', () => {
       const handle = getResizeHandles()[0];
 
       fireEvent.pointerDown(handle, {clientX: 200, pointerId: 1});
-      fireEvent.pointerMove(handle, {clientX: 300, pointerId: 1});
-      fireEvent.pointerUp(handle, {clientX: 300, pointerId: 1});
+      window.dispatchEvent(
+        new PointerEvent('pointermove', {
+          clientX: 300,
+          pointerId: 1,
+          bubbles: true,
+        }),
+      );
+      window.dispatchEvent(
+        new PointerEvent('pointerup', {
+          clientX: 300,
+          pointerId: 1,
+          bubbles: true,
+        }),
+      );
 
       expect(onResize).toHaveBeenCalledWith({
         columnKey: 'name',
@@ -173,8 +185,20 @@ describe('useXDSTableColumnResize', () => {
 
       // Drag left past minWidth
       fireEvent.pointerDown(handle, {clientX: 200, pointerId: 1});
-      fireEvent.pointerMove(handle, {clientX: 50, pointerId: 1});
-      fireEvent.pointerUp(handle, {clientX: 50, pointerId: 1});
+      window.dispatchEvent(
+        new PointerEvent('pointermove', {
+          clientX: 50,
+          pointerId: 1,
+          bubbles: true,
+        }),
+      );
+      window.dispatchEvent(
+        new PointerEvent('pointerup', {
+          clientX: 50,
+          pointerId: 1,
+          bubbles: true,
+        }),
+      );
 
       expect(onResize).toHaveBeenCalledWith({
         columnKey: 'name',
@@ -195,8 +219,20 @@ describe('useXDSTableColumnResize', () => {
       const handle = getResizeHandles()[0];
 
       fireEvent.pointerDown(handle, {clientX: 200, pointerId: 1});
-      fireEvent.pointerMove(handle, {clientX: 600, pointerId: 1});
-      fireEvent.pointerUp(handle, {clientX: 600, pointerId: 1});
+      window.dispatchEvent(
+        new PointerEvent('pointermove', {
+          clientX: 600,
+          pointerId: 1,
+          bubbles: true,
+        }),
+      );
+      window.dispatchEvent(
+        new PointerEvent('pointerup', {
+          clientX: 600,
+          pointerId: 1,
+          bubbles: true,
+        }),
+      );
 
       expect(onResize).toHaveBeenCalledWith({
         columnKey: 'name',
@@ -212,9 +248,17 @@ describe('useXDSTableColumnResize', () => {
       const handle = getResizeHandles()[0];
 
       fireEvent.pointerDown(handle, {clientX: 200, pointerId: 1});
-      fireEvent.pointerMove(handle, {clientX: 300, pointerId: 1});
+      window.dispatchEvent(
+        new PointerEvent('pointermove', {
+          clientX: 300,
+          pointerId: 1,
+          bubbles: true,
+        }),
+      );
       // Cancel via pointerCancel
-      fireEvent.pointerCancel(handle, {pointerId: 1});
+      window.dispatchEvent(
+        new PointerEvent('pointercancel', {pointerId: 1, bubbles: true}),
+      );
 
       expect(onResize).not.toHaveBeenCalled();
     });

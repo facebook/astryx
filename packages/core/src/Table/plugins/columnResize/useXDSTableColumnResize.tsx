@@ -121,6 +121,63 @@ function isProportionalColumn(colWidth: ColumnWidth | undefined): boolean {
 }
 
 // =============================================================================
+// Central width computation
+// =============================================================================
+
+/**
+ * Given a drag delta, compute pixel widths for ALL columns.
+ * Only the target column (or neighbor in proportional mode) changes;
+ * all others stay at their snapshot values. The last column gets the
+ * remainder (tableWidth - sum of others).
+ *
+ * Every width is clamped to its column's min. This is the single source
+ * of truth for column widths during drag — no other code path should
+ * compute widths independently.
+ */
+function computeColumnWidths(drag: DragState, delta: number): number[] {
+  const {snapshots, resizeIndex, neighborIndex, tableWidth} = drag;
+  const widths = snapshots.map(s => s.initialWidth);
+  const lastIndex = snapshots.length - 1;
+
+  if (neighborIndex != null) {
+    // Proportional-preserving: adjust the neighbor column inversely.
+    const neighbor = snapshots[neighborIndex];
+    const self = snapshots[resizeIndex];
+
+    // Clamp: neighbor can't go below its min
+    const maxDelta = neighbor.initialWidth - neighbor.minWidth;
+    // Clamp: self can't go below its min
+    const minDelta = self.minWidth - self.initialWidth;
+    const clampedDelta = Math.max(minDelta, Math.min(delta, maxDelta));
+
+    widths[neighborIndex] = neighbor.initialWidth - clampedDelta;
+    widths[resizeIndex] = self.initialWidth + clampedDelta;
+  } else {
+    // Direct resize: clamp to min/max
+    const self = snapshots[resizeIndex];
+    const newWidth = Math.min(
+      self.maxWidth,
+      Math.max(self.minWidth, self.initialWidth + delta),
+    );
+    widths[resizeIndex] = newWidth;
+  }
+
+  // Last column = remainder
+  if (lastIndex >= 0) {
+    const sumOthers = widths.reduce(
+      (sum, w, i) => (i === lastIndex ? sum : sum + w),
+      0,
+    );
+    widths[lastIndex] = Math.max(
+      snapshots[lastIndex].minWidth,
+      tableWidth - sumOthers,
+    );
+  }
+
+  return widths;
+}
+
+// =============================================================================
 // Styles
 // =============================================================================
 
@@ -166,15 +223,25 @@ const headerCellRelative = stylex.create({
 // Drag State (ref-based, not React state — avoids re-renders during drag)
 // =============================================================================
 
+interface ColumnSnapshot {
+  key: string;
+  th: HTMLTableCellElement;
+  initialWidth: number;
+  minWidth: number;
+  maxWidth: number;
+}
+
 interface DragState {
   columnKey: string;
   startX: number;
-  initialWidth: number;
-  thElement: HTMLTableCellElement;
+  /** Index of the column being resized in the snapshots array */
+  resizeIndex: number;
   /** When resizing a proportional column, we resize the next column instead */
-  neighborKey: string | null;
-  neighborTh: HTMLTableCellElement | null;
-  neighborInitialWidth: number;
+  neighborIndex: number | null;
+  /** Snapshot of ALL columns at drag start */
+  snapshots: ColumnSnapshot[];
+  /** Table width at drag start — last column fills remainder */
+  tableWidth: number;
 }
 
 // =============================================================================
@@ -209,16 +276,6 @@ function ResizeHandle({
   isDraggingRef,
   tableRef,
 }: ResizeHandleProps) {
-  const resolveCurrentWidth = useCallback(
-    (handle: HTMLElement): number => {
-      if (currentWidth != null) return currentWidth;
-      const th = handle.closest('th');
-      if (th) return th.getBoundingClientRect().width;
-      return minWidth;
-    },
-    [currentWidth, minWidth],
-  );
-
   /**
    * Resolve the effective maximum width. When no explicit maxWidth is set,
    * use the table's current width as a natural ceiling — no single column
@@ -239,23 +296,6 @@ function ResizeHandle({
       th.style.maxWidth = px;
     },
     [clamp],
-  );
-
-  const clearWidth = useCallback(
-    (th: HTMLTableCellElement, key: string) => {
-      const override = configRef.current.columnWidths?.[key];
-      if (override != null) {
-        const px = `${override}px`;
-        th.style.width = px;
-        th.style.minWidth = px;
-        th.style.maxWidth = px;
-      } else {
-        th.style.width = '';
-        th.style.minWidth = '';
-        th.style.maxWidth = '';
-      }
-    },
-    [configRef],
   );
 
   const setTableDragging = useCallback(
@@ -298,117 +338,113 @@ function ResizeHandle({
       const table = th.closest('table');
       if (table) tableRef.current = table;
 
-      const initialWidth = resolveCurrentWidth(handle);
+      const headerRow = th.parentElement;
+      if (!headerRow) return;
 
-      // Resolve neighbor for proportional-preserving resize
-      const nTh = resolveNeighborTh(th);
-      const nInitialWidth = nTh ? nTh.getBoundingClientRect().width : 0;
+      const cols = configRef.current.columns;
+      const allThs = Array.from(
+        headerRow.querySelectorAll<HTMLTableCellElement>(':scope > th'),
+      );
+      const tableWidth = tableRef.current?.getBoundingClientRect().width ?? 0;
 
-      dragStateRef.current = {
+      // Snapshot every column: rendered width, min width, <th> ref.
+      // Prefer columnWidths override when available (getBoundingClientRect
+      // returns 0 in test environments without layout).
+      const currentWidths = configRef.current.columnWidths ?? {};
+      const snapshots: ColumnSnapshot[] = allThs.map((cell, i) => {
+        const col = cols?.[i];
+        const key = col?.key ?? String(i);
+        const rendered = cell.getBoundingClientRect().width;
+        const override = currentWidths[key];
+        return {
+          key,
+          th: cell,
+          initialWidth: override ?? (rendered > 0 ? rendered : 0),
+          minWidth: col
+            ? resolveColumnMinWidth(col.width, configRef.current.minWidth)
+            : minWidth,
+          maxWidth: configRef.current.maxWidth ?? Infinity,
+        };
+      });
+
+      // Find our column and neighbor in the snapshots
+      const resizeIndex = allThs.indexOf(th);
+      let neighborIdx: number | null = null;
+      if (neighborKey) {
+        const nTh = resolveNeighborTh(th);
+        if (nTh) neighborIdx = allThs.indexOf(nTh);
+      }
+
+      const drag: DragState = {
         columnKey,
         startX: e.clientX,
-        initialWidth,
-        thElement: th,
-        neighborKey,
-        neighborTh: nTh,
-        neighborInitialWidth: nInitialWidth,
+        resizeIndex,
+        neighborIndex: neighborIdx,
+        snapshots,
+        tableWidth,
       };
+      dragStateRef.current = drag;
       isDraggingRef.current = true;
       handle.setAttribute('data-resizing', 'true');
 
-      applyWidth(th, initialWidth);
-      if (nTh) applyWidth(nTh, nInitialWidth, neighborMinWidth);
+      // Apply initial snapshot widths to ALL columns (freezes layout)
+      const initialWidths = computeColumnWidths(drag, 0);
+      snapshots.forEach((s, i) => {
+        const px = `${initialWidths[i]}px`;
+        s.th.style.width = px;
+        s.th.style.minWidth = px;
+        s.th.style.maxWidth = px;
+      });
       setTableDragging(true);
 
-      // --- Window-level listeners for fluid drag on touch & mouse ---
-      // React onPointerMove only fires while the pointer is over the element.
-      // On touch devices the finger quickly drifts off the narrow handle,
-      // killing the drag. Window listeners + pointer capture keep it alive.
+      // --- Window-level listeners ---
 
       function onMove(ev: PointerEvent) {
-        const drag = dragStateRef.current;
-        if (!drag || !isDraggingRef.current) return;
+        const d = dragStateRef.current;
+        if (!d || !isDraggingRef.current) return;
 
         const rawDelta =
-          (ev.clientX - drag.startX) * getRTLMultiplier(drag.thElement);
+          (ev.clientX - d.startX) *
+          getRTLMultiplier(d.snapshots[d.resizeIndex].th);
+        const widths = computeColumnWidths(d, rawDelta);
 
-        if (drag.neighborTh && drag.neighborKey) {
-          const maxDelta = drag.neighborInitialWidth - neighborMinWidth;
-          const clampedDelta = Math.min(rawDelta, maxDelta);
-
-          applyWidth(
-            drag.neighborTh,
-            drag.neighborInitialWidth - clampedDelta,
-            neighborMinWidth,
-          );
-
-          const minDelta = minWidth - drag.initialWidth;
-          const effectiveDelta = Math.max(clampedDelta, minDelta);
-          const tableWidth =
-            tableRef.current?.getBoundingClientRect().width ?? Infinity;
-          const maxSecondToLast =
-            tableWidth > 0 ? tableWidth - neighborMinWidth : Infinity;
-          applyWidth(
-            drag.thElement,
-            drag.initialWidth + effectiveDelta,
-            minWidth,
-            maxSecondToLast,
-          );
-        } else {
-          const clampedWidth = clamp(drag.initialWidth + rawDelta);
-          const clampedDelta = clampedWidth - drag.initialWidth;
-          applyWidth(drag.thElement, drag.initialWidth + clampedDelta);
-        }
+        d.snapshots.forEach((s, i) => {
+          const px = `${widths[i]}px`;
+          s.th.style.width = px;
+          s.th.style.minWidth = px;
+          s.th.style.maxWidth = px;
+        });
       }
 
       function onUp(ev: PointerEvent) {
         cleanup();
-        const drag = dragStateRef.current;
-        if (!drag || !isDraggingRef.current) return;
+        const d = dragStateRef.current;
+        if (!d || !isDraggingRef.current) return;
 
         handle.removeAttribute('data-resizing');
-        const delta =
-          (ev.clientX - drag.startX) * getRTLMultiplier(drag.thElement);
-
         isDraggingRef.current = false;
         dragStateRef.current = null;
         setTableDragging(false);
 
-        // Collect the final width of every column except the last.
-        const updates: Record<string, number> = {};
-        const headerRow = drag.thElement.parentElement;
-        if (headerRow && configRef.current.columns) {
-          const cols = configRef.current.columns;
-          const allThs = Array.from(
-            headerRow.querySelectorAll<HTMLTableCellElement>(':scope > th'),
-          );
-          const lastIndex = allThs.length - 1;
-          allThs.forEach((cell, i) => {
-            if (i === lastIndex) return;
-            const col = cols[i];
-            if (col) {
-              // Enforce the column's own minimum — the table layout engine
-              // may have rendered it smaller than allowed.
-              const colMin = resolveColumnMinWidth(
-                col.width,
-                configRef.current.minWidth,
-              );
-              const rendered = cell.getBoundingClientRect().width;
-              updates[col.key] = Math.max(rendered, colMin);
-            }
-          });
-        }
+        const rawDelta =
+          (ev.clientX - d.startX) *
+          getRTLMultiplier(d.snapshots[d.resizeIndex].th);
+        const widths = computeColumnWidths(d, rawDelta);
 
-        // Override the resized column(s) with precise clamped values
-        if (drag.neighborTh && drag.neighborKey) {
-          const newNeighborWidth = Math.max(
-            neighborMinWidth,
-            drag.neighborInitialWidth - delta,
-          );
-          updates[drag.neighborKey] = newNeighborWidth;
-        } else {
-          updates[columnKey] = clamp(drag.initialWidth + delta);
-        }
+        // Build updates map — all columns except the last
+        const updates: Record<string, number> = {};
+        const lastIndex = d.snapshots.length - 1;
+        d.snapshots.forEach((s, i) => {
+          if (i === lastIndex) return;
+          updates[s.key] = widths[i];
+        });
+
+        // Clear inline styles — React state takes over on re-render
+        d.snapshots.forEach(s => {
+          s.th.style.width = '';
+          s.th.style.minWidth = '';
+          s.th.style.maxWidth = '';
+        });
 
         if (Object.keys(updates).length > 0) {
           configRef.current.onColumnResizeEnd?.(updates);
@@ -417,18 +453,20 @@ function ResizeHandle({
 
       function onCancel() {
         cleanup();
-        const drag = dragStateRef.current;
-        if (!drag || !isDraggingRef.current) return;
+        const d = dragStateRef.current;
+        if (!d || !isDraggingRef.current) return;
 
         handle.removeAttribute('data-resizing');
-        clearWidth(drag.thElement, drag.columnKey);
-        if (drag.neighborTh && drag.neighborKey) {
-          clearWidth(drag.neighborTh, drag.neighborKey);
-        }
-
         isDraggingRef.current = false;
         dragStateRef.current = null;
         setTableDragging(false);
+
+        // Restore to pre-drag state by clearing all inline styles
+        d.snapshots.forEach(s => {
+          s.th.style.width = '';
+          s.th.style.minWidth = '';
+          s.th.style.maxWidth = '';
+        });
       }
 
       function cleanup() {
@@ -444,14 +482,9 @@ function ResizeHandle({
     [
       columnKey,
       neighborKey,
-      neighborMinWidth,
       minWidth,
-      resolveCurrentWidth,
       resolveNeighborTh,
       getRTLMultiplier,
-      clamp,
-      applyWidth,
-      clearWidth,
       dragStateRef,
       isDraggingRef,
       tableRef,
