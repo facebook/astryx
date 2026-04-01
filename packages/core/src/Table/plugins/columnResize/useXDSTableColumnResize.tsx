@@ -138,6 +138,11 @@ function computeColumnWidths(drag: DragState, delta: number): number[] {
   const {snapshots, resizeIndex, neighborIndex, tableWidth} = drag;
   const widths = snapshots.map(s => s.initialWidth);
   const lastIndex = snapshots.length - 1;
+  const lastMin = lastIndex >= 0 ? snapshots[lastIndex].minWidth : 0;
+
+  // Budget available for all non-last columns: tableWidth minus what
+  // the last column needs at minimum.
+  const maxBudget = tableWidth > 0 ? tableWidth - lastMin : Infinity;
 
   if (neighborIndex != null) {
     // Proportional-preserving: adjust the neighbor column inversely.
@@ -162,16 +167,28 @@ function computeColumnWidths(drag: DragState, delta: number): number[] {
     widths[resizeIndex] = newWidth;
   }
 
-  // Last column = remainder
-  if (lastIndex >= 0) {
+  // Enforce: sum of non-last columns can't exceed maxBudget.
+  // If it does, scale down the resized column so the last column
+  // keeps its minimum width.
+  if (lastIndex >= 0 && maxBudget < Infinity) {
     const sumOthers = widths.reduce(
       (sum, w, i) => (i === lastIndex ? sum : sum + w),
       0,
     );
-    widths[lastIndex] = Math.max(
-      snapshots[lastIndex].minWidth,
-      tableWidth - sumOthers,
+    if (sumOthers > maxBudget) {
+      const excess = sumOthers - maxBudget;
+      widths[resizeIndex] = Math.max(
+        snapshots[resizeIndex].minWidth,
+        widths[resizeIndex] - excess,
+      );
+    }
+
+    // Recompute last column as remainder
+    const finalSum = widths.reduce(
+      (sum, w, i) => (i === lastIndex ? sum : sum + w),
+      0,
     );
+    widths[lastIndex] = Math.max(lastMin, tableWidth - finalSum);
   }
 
   return widths;
