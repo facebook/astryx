@@ -453,10 +453,13 @@ const pageStyles = stylex.create({
     width: '100%',
   },
   columns: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
+    display: 'flex',
     gap: spacingVars['--spacing-5'],
-    alignItems: 'start',
+    justifyContent: 'center',
+  },
+  card: {
+    width: 360,
+    flexShrink: 0,
   },
   exampleRow: {
     display: 'flex',
@@ -537,7 +540,7 @@ export default function ToastPlaygroundPage() {
       <div {...stylex.props(pageStyles.page)}>
         <div {...stylex.props(pageStyles.container)}>
           <XDSVStack gap={6}>
-            <XDSVStack gap={1}>
+            <XDSVStack gap={1} align="center">
               <XDSHeading level={1}>Toast</XDSHeading>
               <XDSText type="body" color="secondary">
                 Brief notifications that appear at the bottom right. Two
@@ -546,6 +549,7 @@ export default function ToastPlaygroundPage() {
             </XDSVStack>
 
             <div {...stylex.props(pageStyles.columns)}>
+              <div {...stylex.props(pageStyles.card)}>
               <XDSCard>
                 <XDSVStack gap={5}>
                   <XDSText type="body" weight="bold">
@@ -581,7 +585,9 @@ export default function ToastPlaygroundPage() {
                   />
                 </XDSVStack>
               </XDSCard>
+              </div>
 
+              <div {...stylex.props(pageStyles.card)}>
               <XDSCard>
                 <XDSVStack gap={4}>
                   <XDSText type="body" weight="bold">
@@ -590,6 +596,7 @@ export default function ToastPlaygroundPage() {
                   <ToastExamples />
                 </XDSVStack>
               </XDSCard>
+              </div>
             </div>
           </XDSVStack>
         </div>
