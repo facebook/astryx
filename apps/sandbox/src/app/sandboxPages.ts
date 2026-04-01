@@ -123,6 +123,12 @@ export const categories: SandboxCategory[] = [
         description:
           'Full data management view with search, filters, and pagination',
       },
+      {
+        name: 'Detail Page',
+        href: '/pages/template-detail/',
+        description:
+          'Order detail page with status stepper, invoice, and customer panel',
+      },
     ],
   },
 ];
