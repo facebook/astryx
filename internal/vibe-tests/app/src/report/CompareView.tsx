@@ -408,7 +408,7 @@ export function CompareView({comparison}: CompareViewProps) {
   ];
 
   return (
-    <XDSVStack gap="space4">
+    <XDSVStack gap={4}>
       <div
         className={
           isThreeWay
@@ -417,7 +417,7 @@ export function CompareView({comparison}: CompareViewProps) {
         }>
         <XDSCard>
           <div className="report-compare-winCard">
-            <XDSVStack gap="space2">
+            <XDSVStack gap={2}>
               <XDSText type="label">XDS Wins</XDSText>
               <XDSHeading level={2}>
                 <span className="report-color-positive">{xdsWins}</span>
@@ -427,7 +427,7 @@ export function CompareView({comparison}: CompareViewProps) {
         </XDSCard>
         <XDSCard>
           <div className="report-compare-winCard">
-            <XDSVStack gap="space2">
+            <XDSVStack gap={2}>
               <XDSText type="label">Baseline Wins</XDSText>
               <XDSHeading level={2}>
                 <span className="report-color-negative">{baselineWins}</span>
@@ -438,7 +438,7 @@ export function CompareView({comparison}: CompareViewProps) {
         {isThreeWay && (
           <XDSCard>
             <div className="report-compare-winCard">
-              <XDSVStack gap="space2">
+              <XDSVStack gap={2}>
                 <XDSText type="label">HTML Wins</XDSText>
                 <XDSHeading level={2}>
                   <span className="report-color-warning">{htmlWins}</span>
@@ -449,7 +449,7 @@ export function CompareView({comparison}: CompareViewProps) {
         )}
         <XDSCard>
           <div className="report-compare-winCard">
-            <XDSVStack gap="space2">
+            <XDSVStack gap={2}>
               <XDSText type="label">Ties</XDSText>
               <XDSHeading level={2}>
                 <span className="report-color-neutral">{ties}</span>
@@ -459,7 +459,7 @@ export function CompareView({comparison}: CompareViewProps) {
         </XDSCard>
       </div>
 
-      <XDSVStack gap="space3">
+      <XDSVStack gap={3}>
         <XDSHeading level={3}>Dimension Comparison</XDSHeading>
         <XDSTable<DimRow>
           data={dimData}
@@ -471,7 +471,7 @@ export function CompareView({comparison}: CompareViewProps) {
       </XDSVStack>
 
       {catData.length > 0 && (
-        <XDSVStack gap="space3">
+        <XDSVStack gap={3}>
           <XDSHeading level={3}>Category Breakdown</XDSHeading>
           <XDSTable<CatRow>
             data={catData}
@@ -484,7 +484,7 @@ export function CompareView({comparison}: CompareViewProps) {
       )}
 
       {xds.cost && baseline.cost && (
-        <XDSVStack gap="space3">
+        <XDSVStack gap={3}>
           <XDSHeading level={3}>Cost Comparison</XDSHeading>
           <CostComparisonSection
             xdsCost={xds.cost}

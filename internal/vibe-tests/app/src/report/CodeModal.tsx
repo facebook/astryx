@@ -33,7 +33,7 @@ export function CodeModal({
       width={800}
       aria-label={`${targetLabel} code for ${promptId}`}>
       <div className="report-codeModal-header">
-        <XDSVStack gap="space1">
+        <XDSVStack gap={1}>
           <XDSHeading level={3}>
             {promptId} — {targetLabel}
           </XDSHeading>

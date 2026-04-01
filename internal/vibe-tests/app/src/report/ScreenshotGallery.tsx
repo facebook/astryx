@@ -50,7 +50,7 @@ export function ScreenshotGallery({screenshots}: ScreenshotGalleryProps) {
       <div className="report-gallery-grid">
         {items.map(item => (
           <XDSCard key={item.filename}>
-            <XDSVStack gap="space0">
+            <XDSVStack gap={0}>
               <img
                 className="report-gallery-image"
                 src={item.src}
@@ -58,7 +58,7 @@ export function ScreenshotGallery({screenshots}: ScreenshotGalleryProps) {
                 onClick={() => setEnlarged(item.src)}
               />
               <div className="report-gallery-cardContent">
-                <XDSVStack gap="space1">
+                <XDSVStack gap={1}>
                   <XDSText type="label">{item.promptId}</XDSText>
                   <div className="report-gallery-meta">
                     <XDSText type="supporting">{item.viewport}</XDSText>

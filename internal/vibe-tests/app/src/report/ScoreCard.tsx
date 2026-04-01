@@ -31,9 +31,9 @@ export function ScoreCard({
   return (
     <XDSCard>
       <div className="report-scoreCard-card">
-        <XDSVStack gap="space2">
+        <XDSVStack gap={2}>
           <XDSText type="label">{label}</XDSText>
-          <XDSHStack gap="space2" hAlign="center">
+          <XDSHStack gap={2} hAlign="center">
             <XDSHeading level={2}>{formatScore(score)}</XDSHeading>
             {delta != null && (
               <XDSText type="supporting" className={deltaClassName(delta)}>
