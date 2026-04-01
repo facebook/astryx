@@ -351,5 +351,161 @@ describe('usePowerSearchSource', () => {
       const aux = valueItem!.auxiliaryData as PowerSearchAuxData;
       expect(aux.filterValue).toEqual({type: 'string_list', value: ['hello']});
     });
+
+    it('suggests matching enum values for "<field> <value>"', () => {
+      const config: PowerSearchConfig = {
+        name: 'Test',
+        fields: [
+          {
+            key: 'genre',
+            label: 'Genre',
+            operators: [
+              {
+                key: 'is',
+                label: 'is',
+                value: {
+                  type: 'enum',
+                  values: [
+                    {value: 'fiction', label: 'Fiction'},
+                    {value: 'nonfiction', label: 'Non-Fiction'},
+                    {value: 'science', label: 'Science'},
+                  ],
+                },
+              },
+              {
+                key: 'is_not',
+                label: 'is not',
+                value: {
+                  type: 'enum',
+                  values: [
+                    {value: 'fiction', label: 'Fiction'},
+                    {value: 'nonfiction', label: 'Non-Fiction'},
+                    {value: 'science', label: 'Science'},
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      };
+      const source = createSource(config);
+      const results = source.search('genre fiction');
+
+      const valueItems = results.filter(
+        r => r.label.startsWith('Genre ') && r.label.includes('Fiction'),
+      );
+      // "fiction" matches both "Fiction" and "Non-Fiction"
+      expect(valueItems.map(r => r.label)).toEqual([
+        'Genre is Fiction',
+        'Genre is Non-Fiction',
+        'Genre is not Fiction',
+        'Genre is not Non-Fiction',
+      ]);
+
+      const isAux = valueItems[0].auxiliaryData as PowerSearchAuxData;
+      expect(isAux.filterValue).toEqual({type: 'enum', value: 'fiction'});
+    });
+
+    it('suggests only matching operator for "<field> <operator> <value>" with enum', () => {
+      const config: PowerSearchConfig = {
+        name: 'Test',
+        fields: [
+          {
+            key: 'genre',
+            label: 'Genre',
+            operators: [
+              {
+                key: 'is',
+                label: 'is',
+                value: {
+                  type: 'enum',
+                  values: [
+                    {value: 'fiction', label: 'Fiction'},
+                    {value: 'nonfiction', label: 'Non-Fiction'},
+                  ],
+                },
+              },
+              {
+                key: 'is_not',
+                label: 'is not',
+                value: {
+                  type: 'enum',
+                  values: [
+                    {value: 'fiction', label: 'Fiction'},
+                    {value: 'nonfiction', label: 'Non-Fiction'},
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      };
+      const source = createSource(config);
+      const results = source.search('genre is fiction');
+
+      const valueItems = results.filter(r => r.label === 'Genre is Fiction');
+      expect(valueItems).toHaveLength(1);
+      // Should NOT include "is not" operator results
+      const isNotItems = results.filter(r =>
+        r.label.startsWith('Genre is not'),
+      );
+      expect(isNotItems).toHaveLength(0);
+    });
+
+    it('suggests multiple matching enum values for partial match', () => {
+      const source = createSource(baseConfig);
+      const results = source.search('status o');
+
+      // "o" matches "Open" and "Closed"
+      const valueItems = results.filter(
+        r => r.label.startsWith('Status is ') && r.label !== 'Status is',
+      );
+      expect(valueItems.map(r => r.label)).toEqual([
+        'Status is Open',
+        'Status is Closed',
+      ]);
+    });
+
+    it('does not suggest enum values when no labels match', () => {
+      const source = createSource(baseConfig);
+      const results = source.search('status xyz');
+
+      const valueItems = results.filter(
+        r => r.label.startsWith('Status is ') && r.label !== 'Status is',
+      );
+      expect(valueItems).toHaveLength(0);
+    });
+
+    it('uses enum_list filter value for enum_list operators', () => {
+      const config: PowerSearchConfig = {
+        name: 'Test',
+        fields: [
+          {
+            key: 'tags',
+            label: 'Tags',
+            operators: [
+              {
+                key: 'includes',
+                label: 'includes',
+                value: {
+                  type: 'enum_list',
+                  values: [
+                    {value: 'bug', label: 'Bug'},
+                    {value: 'feature', label: 'Feature'},
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      };
+      const source = createSource(config);
+      const results = source.search('tags bug');
+
+      const valueItem = results.find(r => r.label === 'Tags includes Bug');
+      expect(valueItem).toBeDefined();
+      const aux = valueItem!.auxiliaryData as PowerSearchAuxData;
+      expect(aux.filterValue).toEqual({type: 'enum_list', value: ['bug']});
+    });
   });
 });
