@@ -27,7 +27,8 @@ import {
   XDSLayoutFooter,
 } from '@xds/core/Layout';
 import {CommandPaletteContext} from './CommandPaletteContext';
-import {getNavigableItems} from './getNavigableItems';
+import {defaultFilter} from './filter';
+import type {CommandPaletteFilterFn} from './types';
 
 export interface XDSCommandPaletteProps {
   /** Whether the command palette is open. */
@@ -59,6 +60,25 @@ export interface XDSCommandPaletteProps {
    */
   footer?: ReactNode;
 
+  /** Controlled selected value. */
+  value?: string;
+
+  /** Called when the selected value changes. */
+  onValueChange?: (value: string) => void;
+
+  /**
+   * Custom filter function. Return a score between 0 and 1.
+   * When provided, replaces the built-in substring filter.
+   */
+  filter?: CommandPaletteFilterFn;
+
+  /**
+   * Whether built-in filtering is enabled.
+   * Set to false when filtering is handled externally (e.g., server-side).
+   * @default true
+   */
+  isFiltered?: boolean;
+
   /**
    * Accessible label for the command palette dialog.
    * @default 'Command palette'
@@ -88,10 +108,7 @@ export interface XDSCommandPaletteProps {
  * goes in `children`.
  *
  * Wraps XDSDialog + XDSLayout and provides context for state management
- * (search, keyboard navigation).
- *
- * Selection is handled at the item level via `isSelected` and `onSelect`
- * props on XDSCommandPaletteItem.
+ * (search, filtering, keyboard navigation, selection).
  *
  * @compositionHint
  *   - `input` slot: XDSCommandPaletteInput
@@ -121,57 +138,50 @@ export function XDSCommandPalette({
   input,
   children,
   footer,
+  value: controlledValue,
+  onValueChange,
+  filter = defaultFilter,
+  isFiltered = true,
   label = 'Command palette',
   width = 640,
   maxHeight = 480,
 }: XDSCommandPaletteProps) {
   const listId = useId();
   const [search, setSearch] = useState('');
+  const [internalValue, setInternalValue] = useState('');
   const [highlightedValue, setHighlightedValue] = useState('');
   const itemsRef = useRef<Array<{value: string; isDisabled?: boolean}>>([]);
 
-  const isOpenRef = useRef(isOpen);
-  const prevIsOpenRef = useRef(false);
+  const value = controlledValue ?? internalValue;
 
-  const autoHighlight = useCallback(() => {
-    const navigable = getNavigableItems(itemsRef.current);
-    if (navigable.length === 0) {
-      setHighlightedValue('');
-      return;
-    }
-    setHighlightedValue(navigable[0].value);
-  }, []);
+  const setValue = useCallback(
+    (newValue: string) => {
+      if (controlledValue === undefined) {
+        setInternalValue(newValue);
+      }
+      onValueChange?.(newValue);
+    },
+    [controlledValue, onValueChange],
+  );
 
   const registerItem = useCallback(
     (itemValue: string, isDisabled?: boolean) => {
-      const alreadyRegistered = itemsRef.current.some(
-        item => item.value === itemValue,
-      );
-      if (alreadyRegistered) {
-        itemsRef.current = itemsRef.current.map(item =>
-          item.value === itemValue ? {value: itemValue, isDisabled} : item,
-        );
-      } else {
-        itemsRef.current = [
-          ...itemsRef.current,
-          {value: itemValue, isDisabled},
-        ];
-        if (isOpenRef.current) {
-          autoHighlight();
-        }
-      }
+      itemsRef.current = [...itemsRef.current, {value: itemValue, isDisabled}];
       return () => {
         itemsRef.current = itemsRef.current.filter(
           item => item.value !== itemValue,
         );
       };
     },
-    [autoHighlight],
+    [],
   );
 
-  const handleSetSearch = useCallback((newSearch: string) => {
-    setSearch(newSearch);
-  }, []);
+  const selectItem = useCallback(
+    (itemValue: string) => {
+      setValue(itemValue);
+    },
+    [setValue],
+  );
 
   const handleClose = useCallback(() => {
     setSearch('');
@@ -179,32 +189,33 @@ export function XDSCommandPalette({
     onOpenChange(false);
   }, [onOpenChange]);
 
-  // Auto-highlight on open transition (items already registered from previous mount)
-  if (isOpen && !prevIsOpenRef.current) {
-    autoHighlight();
-  }
-  prevIsOpenRef.current = isOpen;
-  isOpenRef.current = isOpen;
-
   const contextValue = useMemo(
     () => ({
       search,
-      setSearch: handleSetSearch,
+      setSearch,
+      value,
+      setValue,
+      filter,
+      isFiltered,
       listId,
       highlightedValue,
       setHighlightedValue,
       items: itemsRef.current,
       registerItem,
+      selectItem,
       onClose: handleClose,
       isOpen,
-      isBusy: false,
     }),
     [
       search,
-      handleSetSearch,
+      value,
+      setValue,
+      filter,
+      isFiltered,
       listId,
       highlightedValue,
       registerItem,
+      selectItem,
       handleClose,
       isOpen,
     ],
@@ -229,7 +240,9 @@ export function XDSCommandPalette({
               {input}
             </XDSLayoutHeader>
           }
-          content={<XDSLayoutContent padding={0}>{children}</XDSLayoutContent>}
+          content={
+            <XDSLayoutContent padding={0}>{children}</XDSLayoutContent>
+          }
           footer={
             footer != null ? (
               <XDSLayoutFooter hasDivider padding={0}>

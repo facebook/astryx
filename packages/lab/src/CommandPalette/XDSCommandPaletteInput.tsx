@@ -1,6 +1,6 @@
 /**
  * @file XDSCommandPaletteInput.tsx
- * @input Uses React, StyleX, XDSIcon, XDSSpinner, CommandPaletteContext
+ * @input Uses React, StyleX, XDSIcon, CommandPaletteContext
  * @output Exports XDSCommandPaletteInput component and props
  * @position Search input for the command palette
  *
@@ -11,19 +11,10 @@
 
 'use client';
 
-import {
-  useCallback,
-  useEffect,
-  useOptimistic,
-  useRef,
-  useTransition,
-  type ChangeEvent,
-  type InputHTMLAttributes,
-} from 'react';
+import {useCallback, useEffect, useRef, type InputHTMLAttributes} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {XDSIcon} from '@xds/core/Icon';
-import {XDSSpinner} from '@xds/core/Spinner';
 import {xdsClassName, mergeProps} from '@xds/core/utils';
 import {
   colorVars,
@@ -33,7 +24,6 @@ import {
   textSizeVars,
 } from '@xds/core/theme/tokens.stylex';
 import {useCommandPaletteContext} from './CommandPaletteContext';
-import {getNavigableItems} from './getNavigableItems';
 
 const styles = stylex.create({
   wrapper: {
@@ -68,10 +58,11 @@ const styles = stylex.create({
   },
 });
 
-export interface XDSCommandPaletteInputProps extends Omit<
-  InputHTMLAttributes<HTMLInputElement>,
-  'type' | 'role' | 'children' | 'autoFocus' | 'onChange'
-> {
+export interface XDSCommandPaletteInputProps
+  extends Omit<
+    InputHTMLAttributes<HTMLInputElement>,
+    'type' | 'role' | 'children' | 'autoFocus'
+  > {
   /** Ref forwarded to the input element (for focus management). */
   ref?: React.Ref<HTMLInputElement>;
 
@@ -85,23 +76,7 @@ export interface XDSCommandPaletteInputProps extends Omit<
    * Called when the search value changes.
    * When omitted inside XDSCommandPalette, writes to context.
    */
-  onChange?: (value: string, e: ChangeEvent<HTMLInputElement>) => void;
-
-  /**
-   * Async action on change. Fires after onChange if not prevented.
-   * Uses React transitions for built-in loading state.
-   * The input shows a spinner while the action is pending.
-   */
-  onChangeAction?: (
-    value: string,
-    e: ChangeEvent<HTMLInputElement>,
-  ) => void | Promise<void>;
-
-  /**
-   * Manual loading override. Shows a spinner in place of the search icon.
-   * @default false
-   */
-  isLoading?: boolean;
+  onValueChange?: (value: string) => void;
 
   /**
    * Placeholder text for the input.
@@ -125,34 +100,25 @@ export interface XDSCommandPaletteInputProps extends Omit<
  * Renders a search icon and a text input. Auto-focuses when mounted
  * so users can start typing immediately.
  *
- * Supports async search via `onChangeAction` — the input automatically
- * shows a spinner while the action is pending, following the same
- * transition pattern as XDSTextInput.
- *
  * When used inside XDSCommandPalette, automatically wires to the
  * context for search state and keyboard navigation. Can also be used
- * standalone with explicit value/onChange props.
+ * standalone with explicit value/onValueChange props.
  *
  * @compositionHint Place as the first child of XDSCommandPalette.
  *
  * @example
  * ```
- * <XDSCommandPaletteInput
- *   placeholder="Search commands..."
- *   onChangeAction={async (search) => {
- *     const results = await api.search(search);
- *     setResults(results);
- *   }}
- * />
+ * <XDSCommandPalette isOpen={isOpen} onOpenChange={setIsOpen}>
+ *   <XDSCommandPaletteInput placeholder="Search commands..." />
+ * </XDSCommandPalette>
  * ```
  */
 export function XDSCommandPaletteInput({
   value: controlledValue,
-  onChange,
-  onChangeAction,
-  isLoading = false,
+  onValueChange,
   placeholder = 'Search...',
   hasAutoFocus = true,
+  onChange,
   onKeyDown,
   ref,
   xstyle,
@@ -162,17 +128,8 @@ export function XDSCommandPaletteInput({
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Use context values as fallback
-  const value = controlledValue ?? ctx?.search ?? '';
-  const handleValueChange = onChange
-    ? (v: string, e: ChangeEvent<HTMLInputElement>) => onChange(v, e)
-    : ctx?.setSearch
-      ? (v: string) => ctx.setSearch(v)
-      : undefined;
-
-  // Transition support (matches XDSTextInput pattern)
-  const [, startTransition] = useTransition();
-  const [optimisticValue, setOptimisticValue] = useOptimistic(value);
-  const isBusy = isLoading || optimisticValue !== value;
+  const value = controlledValue ?? ctx?.search;
+  const handleValueChange = onValueChange ?? ctx?.setSearch;
 
   // Merge refs
   const setRefs = (element: HTMLInputElement | null) => {
@@ -195,27 +152,19 @@ export function XDSCommandPaletteInput({
     }
   }, [hasAutoFocus]);
 
-  const handleChange = useCallback(
-    (e: ChangeEvent<HTMLInputElement>) => {
-      const newValue = e.target.value;
-      handleValueChange?.(newValue, e);
-      if (onChangeAction && !e.defaultPrevented) {
-        startTransition(async () => {
-          setOptimisticValue(newValue);
-          await onChangeAction(newValue, e);
-        });
-      }
-    },
-    [handleValueChange, onChangeAction, startTransition, setOptimisticValue],
-  );
-
-  // Keyboard navigation — walks non-disabled items by value
+  // Keyboard navigation — walks visible (non-filtered, non-disabled) items by value
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
       onKeyDown?.(e);
       if (!ctx || e.defaultPrevented) return;
 
-      const navigable = getNavigableItems(ctx.items);
+      // Build the navigable list: registered items that are enabled AND pass
+      // the current filter. This is the ground truth for arrow key movement.
+      const navigable = ctx.items.filter(item => {
+        if (item.isDisabled) return false;
+        if (!ctx.isFiltered || !ctx.search) return true;
+        return ctx.filter(item.value, ctx.search) > 0;
+      });
       if (navigable.length === 0) return;
 
       const currentIdx = navigable.findIndex(
@@ -225,13 +174,14 @@ export function XDSCommandPaletteInput({
       switch (e.key) {
         case 'ArrowDown': {
           e.preventDefault();
-          const next = currentIdx < navigable.length - 1 ? currentIdx + 1 : 0; // cycle to top
+          const next =
+            currentIdx < navigable.length - 1 ? currentIdx + 1 : currentIdx;
           ctx.setHighlightedValue(navigable[next].value);
           break;
         }
         case 'ArrowUp': {
           e.preventDefault();
-          const prev = currentIdx > 0 ? currentIdx - 1 : navigable.length - 1; // cycle to bottom
+          const prev = currentIdx > 0 ? currentIdx - 1 : 0;
           ctx.setHighlightedValue(navigable[prev].value);
           break;
         }
@@ -248,11 +198,8 @@ export function XDSCommandPaletteInput({
         case 'Enter': {
           e.preventDefault();
           if (ctx.highlightedValue) {
-            // Trigger click on the highlighted item — its handler calls onSelect + onClose
-            const el = document.querySelector(
-              `[data-value="${CSS.escape(ctx.highlightedValue)}"]`,
-            ) as HTMLElement | null;
-            el?.click();
+            ctx.selectItem(ctx.highlightedValue);
+            ctx.onClose();
           }
           break;
         }
@@ -273,11 +220,7 @@ export function XDSCommandPaletteInput({
         stylex.props(styles.wrapper, xstyle),
       )}>
       <span {...stylex.props(styles.icon)}>
-        {isBusy ? (
-          <XDSSpinner size="sm" />
-        ) : (
-          <XDSIcon icon="search" size="sm" color="inherit" />
-        )}
+        <XDSIcon icon="search" size="sm" color="inherit" />
       </span>
       <input
         ref={setRefs}
@@ -291,10 +234,14 @@ export function XDSCommandPaletteInput({
             ? `${ctx?.listId}-item-${highlightedItemIndex}`
             : undefined
         }
-        aria-busy={isBusy || undefined}
         placeholder={placeholder}
         value={value}
-        onChange={handleChange}
+        onChange={e => {
+          handleValueChange?.(e.target.value);
+          onChange?.(e);
+          // Reset highlight when search changes
+          ctx?.setHighlightedValue('');
+        }}
         onKeyDown={handleKeyDown}
         {...stylex.props(styles.input)}
         {...props}

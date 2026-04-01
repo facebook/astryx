@@ -28,7 +28,7 @@ const styles = stylex.create({
     alignItems: 'center',
     gap: spacingVars['--spacing-4'],
     paddingInline: spacingVars['--spacing-4'],
-    paddingBlock: spacingVars['--spacing-3'],
+    paddingBlock: spacingVars['--spacing-2'],
     flexShrink: 0,
     // Inherit font so custom children match hint text treatment
     fontFamily: typographyVars['--font-family-body'],

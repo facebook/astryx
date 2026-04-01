@@ -27,30 +27,37 @@ describe('XDSCommandPaletteInput', () => {
     expect(screen.getByRole('combobox')).toBeInTheDocument();
   });
 
-  it('calls onChange when typing', () => {
+  it('calls onValueChange when typing', () => {
     const handleChange = vi.fn();
-    render(<XDSCommandPaletteInput onChange={handleChange} />);
+    render(<XDSCommandPaletteInput onValueChange={handleChange} />);
 
     const input = screen.getByRole('combobox');
     fireEvent.change(input, {target: {value: 'test'}});
 
-    expect(handleChange).toHaveBeenCalledWith('test', expect.any(Object));
+    expect(handleChange).toHaveBeenCalledWith('test');
   });
 
   it('displays controlled value', () => {
-    render(<XDSCommandPaletteInput value="hello" onChange={() => {}} />);
+    render(<XDSCommandPaletteInput value="hello" onValueChange={() => {}} />);
     expect(screen.getByRole('combobox')).toHaveValue('hello');
   });
 
-  it('calls onChangeAction when typing', () => {
-    const handleAction = vi.fn();
+  it('forwards native onChange alongside onValueChange', () => {
+    const handleChange = vi.fn();
+    const handleNativeChange = vi.fn();
 
-    render(<XDSCommandPaletteInput onChangeAction={handleAction} />);
+    render(
+      <XDSCommandPaletteInput
+        onValueChange={handleChange}
+        onChange={handleNativeChange}
+      />,
+    );
 
     const input = screen.getByRole('combobox');
     fireEvent.change(input, {target: {value: 'x'}});
 
-    expect(handleAction).toHaveBeenCalledWith('x', expect.any(Object));
+    expect(handleChange).toHaveBeenCalledWith('x');
+    expect(handleNativeChange).toHaveBeenCalled();
   });
 
   it('has aria-expanded and aria-autocomplete', () => {
