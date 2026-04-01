@@ -207,12 +207,14 @@ function CloseIcon() {
 
 function ToastItem({
   entry,
-  onDismiss,
+  onClose,
+  onRemove,
   onPause,
   onResume,
 }: {
   entry: ToastEntry;
-  onDismiss: (id: string) => void;
+  onClose: (id: string) => void;
+  onRemove: (id: string) => void;
   onPause: (id: string) => void;
   onResume: (id: string) => void;
 }) {
@@ -233,7 +235,7 @@ function ToastItem({
       onBlur={() => onResume(entry.id)}
       onAnimationEnd={() => {
         if (entry.isExiting) {
-          onDismiss(entry.id);
+          onRemove(entry.id);
         }
       }}>
       <div {...stylex.props(toastStyles.content)}>
@@ -248,7 +250,7 @@ function ToastItem({
               variant="ghost"
               size="sm"
               icon={<CloseIcon />}
-              onClick={() => onDismiss(entry.id)}
+              onClick={() => onClose(entry.id)}
             />
           </div>
         )}
@@ -407,7 +409,8 @@ function ToastProvider({
           <ToastItem
             key={entry.id}
             entry={entry}
-            onDismiss={startExit}
+            onClose={startExit}
+            onRemove={dismiss}
             onPause={pause}
             onResume={resume}
           />
