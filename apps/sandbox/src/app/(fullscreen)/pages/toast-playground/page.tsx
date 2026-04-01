@@ -75,8 +75,7 @@ const toastStyles = stylex.create({
     flexDirection: 'column',
     gap: spacingVars['--spacing-3'],
     pointerEvents: 'none',
-    maxWidth: 360,
-    width: '100%',
+    width: 360,
   },
   toast: {
     pointerEvents: 'auto',
