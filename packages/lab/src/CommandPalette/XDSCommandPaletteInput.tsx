@@ -15,6 +15,7 @@ import {useCallback, useEffect, useRef, type InputHTMLAttributes} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {XDSIcon} from '@xds/core/Icon';
+import {XDSSpinner} from '@xds/core/Spinner';
 import {xdsClassName, mergeProps} from '@xds/core/utils';
 import {
   colorVars,
@@ -158,13 +159,9 @@ export function XDSCommandPaletteInput({
       onKeyDown?.(e);
       if (!ctx || e.defaultPrevented) return;
 
-      // Build the navigable list: registered items that are enabled AND pass
-      // the current filter. This is the ground truth for arrow key movement.
-      const navigable = ctx.items.filter(item => {
-        if (item.isDisabled) return false;
-        if (!ctx.isFiltered || !ctx.search) return true;
-        return ctx.filter(item.value, ctx.search) > 0;
-      });
+      // Build navigable list: registered items that are not disabled.
+      // Filtering is handled by searchSource — all rendered items are valid targets.
+      const navigable = ctx.items.filter(item => !item.isDisabled);
       if (navigable.length === 0) return;
 
       const currentIdx = navigable.findIndex(
@@ -220,7 +217,11 @@ export function XDSCommandPaletteInput({
         stylex.props(styles.wrapper, xstyle),
       )}>
       <span {...stylex.props(styles.icon)}>
-        <XDSIcon icon="search" size="sm" color="inherit" />
+        {ctx?.isBusy ? (
+          <XDSSpinner size="sm" />
+        ) : (
+          <XDSIcon icon="search" size="sm" color="inherit" />
+        )}
       </span>
       <input
         ref={setRefs}

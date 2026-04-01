@@ -6,7 +6,6 @@
  */
 
 import {createContext, useContext} from 'react';
-import type {CommandPaletteFilterFn} from './types';
 
 export interface CommandPaletteContextValue {
   /** Current search query. */
@@ -17,10 +16,6 @@ export interface CommandPaletteContextValue {
   value: string;
   /** Update the selected value. */
   setValue: (value: string) => void;
-  /** Filter function. */
-  filter: CommandPaletteFilterFn;
-  /** Whether built-in filtering is enabled. */
-  isFiltered: boolean;
   /** Unique ID prefix for ARIA. */
   listId: string;
   /** Value of the currently highlighted item (empty string = none). */
@@ -37,6 +32,8 @@ export interface CommandPaletteContextValue {
   onClose: () => void;
   /** Whether the palette is open (for aria-expanded). */
   isOpen: boolean;
+  /** Whether an async search is in flight. */
+  isBusy: boolean;
 }
 
 export const CommandPaletteContext =

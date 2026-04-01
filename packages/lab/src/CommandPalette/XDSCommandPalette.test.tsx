@@ -3,13 +3,22 @@
  * @input Uses vitest, @testing-library/react, XDSCommandPalette
  * @output Unit tests for XDSCommandPalette dialog shell
  * @position Testing; validates XDSCommandPalette.tsx implementation
- *
- * SYNC: When XDSCommandPalette.tsx changes, update tests to match
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render, screen, waitFor} from '@testing-library/react';
 import {XDSCommandPalette} from './XDSCommandPalette';
+import {createStaticSource} from '@xds/core/Typeahead';
+
+const simpleSource = createStaticSource([
+  {id: 'home', label: 'Home'},
+  {id: 'settings', label: 'Settings'},
+]);
+
+const groupedSource = createStaticSource([
+  {id: 'home', label: 'Home', auxiliaryData: {group: 'Navigation'}},
+  {id: 'save', label: 'Save', auxiliaryData: {group: 'Actions'}},
+]);
 
 // Mock showModal and close since jsdom doesn't implement them
 beforeEach(() => {
@@ -29,12 +38,11 @@ describe('XDSCommandPalette', () => {
       <XDSCommandPalette
         isOpen={true}
         onOpenChange={() => {}}
-        input={<div>Input</div>}>
-        <div>Content</div>
-      </XDSCommandPalette>,
+        searchSource={simpleSource}
+        input={<div>Input</div>}
+      />,
     );
     expect(screen.getByRole('dialog')).toBeInTheDocument();
-    expect(screen.getByText('Content')).toBeInTheDocument();
   });
 
   it('does not show content when isOpen is false', () => {
@@ -42,9 +50,9 @@ describe('XDSCommandPalette', () => {
       <XDSCommandPalette
         isOpen={false}
         onOpenChange={() => {}}
-        input={<div>Input</div>}>
-        <div>Hidden</div>
-      </XDSCommandPalette>,
+        searchSource={simpleSource}
+        input={<div>Input</div>}
+      />,
     );
     const dialog = screen.getByRole('dialog', {hidden: true});
     expect(dialog).not.toHaveAttribute('open');
@@ -55,9 +63,9 @@ describe('XDSCommandPalette', () => {
       <XDSCommandPalette
         isOpen={true}
         onOpenChange={() => {}}
-        input={<div>Input</div>}>
-        <div>Content</div>
-      </XDSCommandPalette>,
+        searchSource={simpleSource}
+        input={<div>Input</div>}
+      />,
     );
     expect(screen.getByRole('dialog')).toHaveAttribute(
       'aria-label',
@@ -70,10 +78,10 @@ describe('XDSCommandPalette', () => {
       <XDSCommandPalette
         isOpen={true}
         onOpenChange={() => {}}
+        searchSource={simpleSource}
         label="Quick search"
-        input={<div>Input</div>}>
-        <div>Content</div>
-      </XDSCommandPalette>,
+        input={<div>Input</div>}
+      />,
     );
     expect(screen.getByRole('dialog')).toHaveAttribute(
       'aria-label',
@@ -81,18 +89,17 @@ describe('XDSCommandPalette', () => {
     );
   });
 
-  it('renders input slot, children, and optional footer slot', () => {
+  it('renders input and footer slots', () => {
     render(
       <XDSCommandPalette
         isOpen={true}
         onOpenChange={() => {}}
+        searchSource={simpleSource}
         input={<div data-testid="input-slot">Input</div>}
-        footer={<div data-testid="footer-slot">Footer</div>}>
-        <div data-testid="list-slot">List</div>
-      </XDSCommandPalette>,
+        footer={<div data-testid="footer-slot">Footer</div>}
+      />,
     );
     expect(screen.getByTestId('input-slot')).toBeInTheDocument();
-    expect(screen.getByTestId('list-slot')).toBeInTheDocument();
     expect(screen.getByTestId('footer-slot')).toBeInTheDocument();
   });
 
@@ -101,11 +108,66 @@ describe('XDSCommandPalette', () => {
       <XDSCommandPalette
         isOpen={true}
         onOpenChange={() => {}}
+        searchSource={simpleSource}
+        input={<div>Input</div>}
+      />,
+    );
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+  });
+
+  it('default renders items from searchSource bootstrap', async () => {
+    render(
+      <XDSCommandPalette
+        isOpen={true}
+        onOpenChange={() => {}}
+        searchSource={simpleSource}
+        input={<div>Input</div>}
+      />,
+    );
+    await waitFor(() => {
+      expect(screen.getByText('Home')).toBeInTheDocument();
+      expect(screen.getByText('Settings')).toBeInTheDocument();
+    });
+  });
+
+  it('auto-groups items by auxiliaryData.group', async () => {
+    render(
+      <XDSCommandPalette
+        isOpen={true}
+        onOpenChange={() => {}}
+        searchSource={groupedSource}
+        input={<div>Input</div>}
+      />,
+    );
+    await waitFor(() => {
+      expect(screen.getByText('Navigation')).toBeInTheDocument();
+      expect(screen.getByText('Actions')).toBeInTheDocument();
+      expect(screen.getByText('Home')).toBeInTheDocument();
+      expect(screen.getByText('Save')).toBeInTheDocument();
+    });
+  });
+
+  it('uses render function children when provided', async () => {
+    render(
+      <XDSCommandPalette
+        isOpen={true}
+        onOpenChange={() => {}}
+        searchSource={simpleSource}
         input={<div>Input</div>}>
-        <div data-testid="list-slot">List</div>
+        {(items) => (
+          <div data-testid="custom-render">
+            {items.map(item => (
+              <span key={item.id}>{item.label.toUpperCase()}</span>
+            ))}
+          </div>
+        )}
       </XDSCommandPalette>,
     );
-    expect(screen.getByTestId('list-slot')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByTestId('custom-render')).toBeInTheDocument();
+      expect(screen.getByText('HOME')).toBeInTheDocument();
+      expect(screen.getByText('SETTINGS')).toBeInTheDocument();
+    });
   });
 
   it('calls onOpenChange(false) when Escape is pressed', () => {
@@ -114,9 +176,9 @@ describe('XDSCommandPalette', () => {
       <XDSCommandPalette
         isOpen={true}
         onOpenChange={handleOpenChange}
-        input={<div>Input</div>}>
-        <div>Content</div>
-      </XDSCommandPalette>,
+        searchSource={simpleSource}
+        input={<div>Input</div>}
+      />,
     );
     const dialog = screen.getByRole('dialog');
     const escapeEvent = new KeyboardEvent('keydown', {
