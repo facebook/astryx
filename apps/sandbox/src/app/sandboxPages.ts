@@ -6,8 +6,7 @@
  * 1. Create the page under the appropriate route group:
  *    - `src/app/(sandbox)/pages/<name>/page.tsx` for standard layout
  *    - `src/app/(fullscreen)/pages/<name>/page.tsx` for fullscreen
- * 2. Run `node scripts/capture-previews.mjs` to generate a screenshot
- * 3. Add an entry to the appropriate category below
+ * 2. Add an entry to the appropriate category below
  *
  * Note: hrefs use trailing slashes because the sandbox is a static export
  * with `trailingSlash: true` in next.config.mjs.
@@ -20,8 +19,6 @@ export interface SandboxPage {
   href: string;
   /** Short description shown below the name */
   description: string;
-  /** Path to preview image in /public (optional — falls back to placeholder) */
-  preview?: string;
 }
 
 export interface SandboxCategory {
@@ -37,44 +34,27 @@ export interface SandboxCategory {
 
 export const categories: SandboxCategory[] = [
   {
-    label: 'Tools',
-    slug: 'tools',
-    description: 'Interactive tools for building and exploring XDS components.',
+    label: 'Components & Patterns',
+    slug: 'components-patterns',
+    description: 'Component demos, composition patterns, and interactive examples.',
     pages: [
       {
-        name: 'Example Cards',
+        name: 'Card Examples',
         href: '/pages/example-cards/',
         description: 'XDS components showcased in realistic card compositions',
       },
-      {
-        name: 'Theme Editor',
-        href: '/pages/theme-editor/',
-        description: 'Customize and preview XDS design tokens',
-      },
-      {
-        name: 'Shell Lab',
-        href: '/pages/shell-lab/',
-        description: 'Experiment with app shell layouts and navigation',
-      },
-      {
+{
         name: 'Table Overview',
         href: '/pages/table-overview/',
         description: 'Data table patterns and configurations',
       },
-    ],
-  },
-  {
-    label: 'Examples',
-    slug: 'examples',
-    description: 'Component demos and composition patterns.',
-    pages: [
       {
-        name: 'Navigation',
+        name: 'Side Navigation',
         href: '/pages/navigation/',
         description: 'Side navigation layout patterns',
       },
       {
-        name: 'TopNav Menu',
+        name: 'Top Navigation',
         href: '/pages/topnav-menu/',
         description: 'Top navigation bar with menu integration',
       },
@@ -84,12 +64,17 @@ export const categories: SandboxCategory[] = [
         description: 'Full-width dropdown navigation menu',
       },
       {
-        name: 'Polymorphic Link',
+        name: 'Link Patterns',
         href: '/pages/polymorphic-link/',
         description: 'Flexible link component with router integration',
       },
       {
-        name: 'Example',
+        name: 'App Shell',
+        href: '/pages/shell-lab/',
+        description: 'Experiment with app shell layouts and navigation',
+      },
+      {
+        name: 'Component Overview',
         href: '/pages/example/',
         description: 'General component composition examples',
       },
@@ -122,6 +107,18 @@ export const categories: SandboxCategory[] = [
         href: '/pages/template-data-table/',
         description:
           'Full data management view with search, filters, and pagination',
+      },
+    ],
+  },
+  {
+    label: 'Tools',
+    slug: 'tools',
+    description: 'Interactive tools for building and exploring XDS components.',
+    pages: [
+      {
+        name: 'Theme Editor',
+        href: '/pages/theme-editor/',
+        description: 'Customize and preview XDS design tokens',
       },
     ],
   },

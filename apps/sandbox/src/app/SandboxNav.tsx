@@ -24,9 +24,9 @@ const categoryIcons: Record<
   string,
   React.ComponentType<React.SVGProps<SVGSVGElement>>
 > = {
-  tools: WrenchIcon,
-  examples: BoxIcon,
+  'components-patterns': BoxIcon,
   templates: AppWindowIcon,
+  tools: WrenchIcon,
 };
 
 const styles = stylex.create({

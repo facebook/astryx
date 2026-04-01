@@ -33,22 +33,14 @@ export function ProjectCard({page}: {page: SandboxPage}) {
             overflow: 'hidden',
             flexShrink: 0,
           }}>
-          {page.preview ? (
-            <img
-              src={page.preview}
-              alt={`Preview of ${page.name}`}
-              style={{width: '100%', height: '100%', objectFit: 'cover'}}
-            />
-          ) : (
-            <ImageIcon
-              style={{
-                width: 48,
-                height: 48,
-                opacity: 0.3,
-                color: 'var(--color-text-disabled)',
-              }}
-            />
-          )}
+          <ImageIcon
+            style={{
+              width: 48,
+              height: 48,
+              opacity: 0.3,
+              color: 'var(--color-text-disabled)',
+            }}
+          />
         </div>
         <div
           style={{
