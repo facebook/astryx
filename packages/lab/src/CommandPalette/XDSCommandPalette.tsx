@@ -255,54 +255,32 @@ export function XDSCommandPalette<
     onOpenChange(false);
   }, [onOpenChange, searchSource]);
 
-  // Bootstrap on open
-  useEffect(() => {
-    if (!isOpen) return;
-    const result = searchSource.bootstrap();
-    if (result instanceof Promise) {
-      setIsBusy(true);
-      result.then(items => {
-        setSearchResults(items);
-        setIsBusy(false);
-      });
-    } else {
-      setSearchResults(result);
-    }
-  }, [isOpen, searchSource]);
-
-  // Search on query change
+  // Unified search effect: bootstrap on open or empty query, search otherwise
   useEffect(() => {
     if (!isOpen) return;
 
     searchSource.cancel?.();
     const version = ++searchVersionRef.current;
 
-    if (search === '') {
-      const result = searchSource.bootstrap();
-      if (result instanceof Promise) {
-        setIsBusy(true);
-        result.then(items => {
+    const result =
+      search === ''
+        ? searchSource.bootstrap()
+        : searchSource.search(search);
+
+    if (result instanceof Promise) {
+      setIsBusy(true);
+      result
+        .then(items => {
           if (searchVersionRef.current === version) {
             setSearchResults(items);
             setIsBusy(false);
           }
+        })
+        .catch(() => {
+          if (searchVersionRef.current === version) {
+            setIsBusy(false);
+          }
         });
-      } else {
-        setSearchResults(result);
-        setIsBusy(false);
-      }
-      return;
-    }
-
-    const result = searchSource.search(search);
-    if (result instanceof Promise) {
-      setIsBusy(true);
-      result.then(items => {
-        if (searchVersionRef.current === version) {
-          setSearchResults(items);
-          setIsBusy(false);
-        }
-      });
     } else {
       setSearchResults(result);
       setIsBusy(false);
