@@ -253,9 +253,12 @@ export function XDSCommandPalette<
   const handleClose = useCallback(() => {
     setSearch('');
     setHighlightedValue('');
+    if (controlledValue === undefined) {
+      setInternalValue('');
+    }
     searchSource.cancel?.();
     onOpenChange(false);
-  }, [onOpenChange, searchSource]);
+  }, [onOpenChange, searchSource, controlledValue]);
 
   // Unified search effect: bootstrap on open or empty query, search otherwise
   useEffect(() => {
@@ -265,9 +268,7 @@ export function XDSCommandPalette<
     const version = ++searchVersionRef.current;
 
     const result =
-      search === ''
-        ? searchSource.bootstrap()
-        : searchSource.search(search);
+      search === '' ? searchSource.bootstrap() : searchSource.search(search);
 
     if (result instanceof Promise) {
       setIsBusy(true);
