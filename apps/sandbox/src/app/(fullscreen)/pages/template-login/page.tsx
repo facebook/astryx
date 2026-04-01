@@ -146,15 +146,21 @@ export default function LoginTemplate() {
                 value={email}
                 onChange={setEmail}
               />
-              <XDSTextInput
-                label="Password"
-                type="password"
-                value={password}
-                onChange={setPassword}
-              />
-              <XDSLink label="Forgot your password?" href="#">
-                <XDSText type="supporting">Forgot your password?</XDSText>
-              </XDSLink>
+              <XDSVStack gap={2}>
+                <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
+                  <XDSText type="label">Password</XDSText>
+                  <XDSLink label="Forgot your password?" href="#">
+                    <XDSText type="supporting">Forgot your password?</XDSText>
+                  </XDSLink>
+                </div>
+                <XDSTextInput
+                  label="Password"
+                  isLabelHidden
+                  type="password"
+                  value={password}
+                  onChange={setPassword}
+                />
+              </XDSVStack>
             </XDSVStack>
 
             {/* Login button */}
