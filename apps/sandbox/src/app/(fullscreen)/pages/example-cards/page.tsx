@@ -6,7 +6,6 @@ import * as stylex from '@stylexjs/stylex';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSButton} from '@xds/core/Button';
 import {XDSHeading, XDSText} from '@xds/core/Text';
-import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
 import {useThemeControls} from '../../../providers';
 import type {ThemeMode} from '@xds/core/theme';
 import {XDSBadge} from '@xds/core/Badge';
@@ -97,18 +96,8 @@ function Sparkline({values}: {values: number[]}) {
 export default function ExampleCardsPage() {
   const {themeName, setThemeName, mode, setMode} = useThemeControls();
 
-  const themeItems = [
-    {label: 'Default', onClick: () => setThemeName('default')},
-    {label: 'Neutral', onClick: () => setThemeName('neutral')},
-    {label: 'Brutalist', onClick: () => setThemeName('brutalist')},
-    {label: 'Meta', onClick: () => setThemeName('meta')},
-    {label: 'WhatsApp', onClick: () => setThemeName('whatsapp')},
-  ];
-
-  const modeItems = [
-    {label: 'Light', onClick: () => setMode('light' as ThemeMode)},
-    {label: 'Dark', onClick: () => setMode('dark' as ThemeMode)},
-  ];
+  const themeOptions = ['Default', 'Neutral', 'Brutalist', 'Meta', 'WhatsApp'];
+  const modeOptions = ['Light', 'Dark'];
 
   const [email, setEmail] = useState('artist@studio.inc');
   const [notes, setNotes] = useState('');
@@ -138,16 +127,22 @@ export default function ExampleCardsPage() {
     <>
       <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px'}}>
         <XDSHeading level={3}>{themeName.charAt(0).toUpperCase() + themeName.slice(1)}</XDSHeading>
-        <XDSHStack gap={1}>
-          <XDSDropdownMenu
-            button={{label: 'Theme', variant: 'secondary', size: 'sm'}}
-            menuWidth={160}
-            items={themeItems}
+        <XDSHStack gap={2}>
+          <XDSSelector
+            label="Theme"
+            isLabelHidden
+            options={themeOptions}
+            value={themeName.charAt(0).toUpperCase() + themeName.slice(1)}
+            onChange={(v: string) => setThemeName(v.toLowerCase())}
+            size="sm"
           />
-          <XDSDropdownMenu
-            button={{label: mode === 'dark' ? 'Dark' : 'Light', variant: 'secondary', size: 'sm'}}
-            menuWidth={160}
-            items={modeItems}
+          <XDSSelector
+            label="Mode"
+            isLabelHidden
+            options={modeOptions}
+            value={mode === 'dark' ? 'Dark' : 'Light'}
+            onChange={(v: string) => setMode(v.toLowerCase() as ThemeMode)}
+            size="sm"
           />
         </XDSHStack>
       </div>
@@ -396,7 +391,10 @@ export default function ExampleCardsPage() {
               <XDSText type="supporting" color="secondary">
                 Upload your first master and start reaching listeners on Spotify, Apple Music and more.
               </XDSText>
-              <XDSButton label="Create Release" variant="primary" size="sm" />
+              <XDSHStack gap={2}>
+                <XDSButton label="Create Release" variant="primary" size="sm" />
+                <XDSButton label="+" variant="secondary" size="sm" />
+              </XDSHStack>
             </XDSVStack>
           </XDSCard>
         </div>
@@ -447,18 +445,21 @@ export default function ExampleCardsPage() {
               </div>
               <XDSDivider />
               {[
-                {name: 'Blue Bottle Coffee', cat: 'Food & Drink', date: 'Today, 10:24 AM', amt: '-$6.50'},
-                {name: 'Whole Foods Market', cat: 'Groceries', date: 'Yesterday', amt: '-$142.30'},
-                {name: 'Stripe Payout', cat: 'Income', date: 'Oct 12', amt: '+$4,200.00', positive: true},
-                {name: 'Uber Technologies', cat: 'Transport', date: 'Oct 11', amt: '-$24.10'},
-                {name: 'Netflix Subscription', cat: 'Entertainment', date: 'Oct 10', amt: '-$19.99'},
+                {name: 'Blue Bottle Coffee', cat: 'Food & Drink', date: 'Today, 10:24 AM', amt: '-$6.50', initials: 'BB'},
+                {name: 'Whole Foods Market', cat: 'Groceries', date: 'Yesterday', amt: '-$142.30', initials: 'WF'},
+                {name: 'Stripe Payout', cat: 'Income', date: 'Oct 12', amt: '+$4,200.00', initials: 'SP'},
+                {name: 'Uber Technologies', cat: 'Transport', date: 'Oct 11', amt: '-$24.10', initials: 'UT'},
+                {name: 'Netflix Subscription', cat: 'Entertainment', date: 'Oct 10', amt: '-$19.99', initials: 'NS'},
               ].map((txn, i) => (
                 <div key={i}>
                   <div {...stylex.props(styles.row)}>
-                    <XDSVStack gap={0}>
-                      <XDSText type="body" weight="bold">{txn.name}</XDSText>
-                      <XDSText type="supporting" color="secondary">{txn.cat}</XDSText>
-                    </XDSVStack>
+                    <XDSHStack gap={3} vAlign="center">
+                      <XDSAvatar name={txn.initials} size="small" />
+                      <XDSVStack gap={0}>
+                        <XDSText type="body" weight="bold">{txn.name}</XDSText>
+                        <XDSText type="supporting" color="secondary">{txn.cat}</XDSText>
+                      </XDSVStack>
+                    </XDSHStack>
                     <XDSVStack gap={0} style={{alignItems: 'flex-end'}}>
                       <XDSText type="body" weight="bold">
                         {txn.amt}
@@ -697,14 +698,36 @@ export default function ExampleCardsPage() {
             <XDSHStack gap={6}>
               <XDSVStack gap={3} style={{flex: 1}}>
                 <XDSText type="label" weight="bold" color="secondary">Overview</XDSText>
-                {['Dashboard', 'Transactions', 'Investments', 'Goals', 'Budget', 'Reports', 'Documents'].map(item => (
-                  <XDSText key={item} type="body">{item}</XDSText>
+                {[
+                  {name: 'Dashboard', color: 'info' as const},
+                  {name: 'Transactions', color: 'info' as const},
+                  {name: 'Investments', color: 'positive' as const},
+                  {name: 'Goals', color: 'positive' as const},
+                  {name: 'Budget', color: 'warning' as const},
+                  {name: 'Reports', color: 'warning' as const},
+                  {name: 'Documents', color: 'info' as const},
+                ].map(item => (
+                  <XDSHStack key={item.name} gap={2} vAlign="center">
+                    <XDSStatusDot variant={item.color} label={item.name} />
+                    <XDSText type="body">{item.name}</XDSText>
+                  </XDSHStack>
                 ))}
               </XDSVStack>
               <XDSVStack gap={3} style={{flex: 1}}>
                 <XDSText type="label" weight="bold" color="secondary">Account</XDSText>
-                {['Profile', 'Billing', 'Notifications', 'Security', 'Help Center', 'Contact Us', 'Status'].map(item => (
-                  <XDSText key={item} type="body">{item}</XDSText>
+                {[
+                  {name: 'Profile', color: 'info' as const},
+                  {name: 'Billing', color: 'info' as const},
+                  {name: 'Notifications', color: 'positive' as const},
+                  {name: 'Security', color: 'warning' as const},
+                  {name: 'Help Center', color: 'positive' as const},
+                  {name: 'Contact Us', color: 'info' as const},
+                  {name: 'Status', color: 'positive' as const},
+                ].map(item => (
+                  <XDSHStack key={item.name} gap={2} vAlign="center">
+                    <XDSStatusDot variant={item.color} label={item.name} />
+                    <XDSText type="body">{item.name}</XDSText>
+                  </XDSHStack>
                 ))}
               </XDSVStack>
             </XDSHStack>
@@ -729,10 +752,13 @@ export default function ExampleCardsPage() {
                 {title: 'Direct Debits', desc: 'Set up and manage regular payments.'},
                 {title: 'Recurring card payments', desc: 'Manage your repeated card transactions.'},
               ].map((item, i) => (
-                <XDSVStack key={i} gap={1}>
-                  <XDSText type="body" weight="bold">{item.title}</XDSText>
-                  <XDSText type="supporting" color="secondary">{item.desc}</XDSText>
-                </XDSVStack>
+                <div key={i} {...stylex.props(styles.row)}>
+                  <XDSVStack gap={1}>
+                    <XDSText type="body" weight="bold">{item.title}</XDSText>
+                    <XDSText type="supporting" color="secondary">{item.desc}</XDSText>
+                  </XDSVStack>
+                  <XDSText type="body" color="secondary">›</XDSText>
+                </div>
               ))}
             </XDSVStack>
           </XDSCard>
