@@ -8,6 +8,9 @@ import {
 } from '@xds/core/Table';
 import type {XDSTableColumn} from '@xds/core/Table';
 import {XDSMultiSelector} from '@xds/core/MultiSelector';
+import {XDSButton} from '@xds/core/Button';
+import {XDSHStack} from '@xds/core/Layout';
+import {XDSText} from '@xds/core/Text';
 
 // =============================================================================
 // Sample Data
@@ -151,10 +154,10 @@ export const DisabledColumns: Story = {
 
     return (
       <div style={{maxWidth: 700}}>
-        <p style={{marginBottom: 8, fontSize: 14, color: '#666'}}>
+        <XDSText type="supporting">
           &quot;Name&quot; is always visible and cannot be unchecked.
-        </p>
-        <div style={{marginBottom: 12}}>
+        </XDSText>
+        <div style={{marginBottom: 12, marginTop: 8}}>
           <XDSMultiSelector
             label="Columns"
             options={columnSettings.dropdownItems}
@@ -194,35 +197,115 @@ export const ResetToDefault: Story = {
 
     return (
       <div style={{maxWidth: 700}}>
-        <p style={{marginBottom: 8, fontSize: 14, color: '#666'}}>
-          Toggle columns, then click &quot;Reset&quot; to restore the default
-          set (Name, Email, Role).
-        </p>
-        <div
-          style={{
-            marginBottom: 12,
-            display: 'flex',
-            gap: 8,
-            alignItems: 'flex-end',
-          }}
-        >
+        <XDSText type="supporting">
+          Toggle columns, then reset to restore the default set (Name, Email,
+          Role).
+        </XDSText>
+        <XDSHStack gap={2} vAlign="end" style={{marginBottom: 12, marginTop: 8}}>
           <XDSMultiSelector
             label="Columns"
             options={columnSettings.dropdownItems}
             value={[...columnSettings.activeColumnKeys]}
             onChange={columnSettings.onDropdownChange}
           />
-          <button
+          <XDSButton
+            label="Reset to default"
+            variant="secondary"
+            size="sm"
             onClick={columnSettings.resetToDefault}
-            style={{
-              padding: '6px 12px',
-              fontSize: 13,
-              cursor: 'pointer',
-            }}
-          >
-            Reset
-          </button>
-        </div>
+          />
+        </XDSHStack>
+        <XDSTable
+          data={users}
+          columns={columnSettings.activeColumns(allColumns)}
+          idKey="id"
+          plugins={{columnSettings: columnSettings.plugin}}
+        />
+      </div>
+    );
+  },
+};
+
+export const SavedViews: Story = {
+  render: () => {
+    type ViewId = 'default' | 'compact' | 'detailed';
+
+    const [activeKeys, setActiveKeys] = useState<UserColumnKey[]>([
+      'name',
+      'email',
+      'role',
+    ]);
+
+    const [views, setViews] = useState([
+      {
+        id: 'default',
+        label: 'Default',
+        columnKeys: ['name', 'email', 'role'] as UserColumnKey[],
+        isDeleteDisabled: true,
+      },
+      {
+        id: 'compact',
+        label: 'Compact',
+        columnKeys: ['name', 'role'] as UserColumnKey[],
+      },
+      {
+        id: 'detailed',
+        label: 'Detailed',
+        columnKeys: [
+          'name',
+          'email',
+          'role',
+          'department',
+          'status',
+        ] as UserColumnKey[],
+      },
+    ]);
+
+    const columnSettings = useXDSTableColumnSettings<User, UserColumnKey>({
+      columns: columnOptions,
+      activeColumnKeys: activeKeys,
+      onChangeActiveColumnKeys: setActiveKeys,
+      viewConfig: {
+        views,
+        defaultColumnKeys: ['name', 'email', 'role'],
+        onCreateView: (label, columnKeys) => {
+          const id = label.toLowerCase().replace(/\s+/g, '-');
+          setViews(prev => [...prev, {id, label, columnKeys: [...columnKeys] as UserColumnKey[]}]);
+        },
+        onDeleteView: id => {
+          setViews(prev => prev.filter(v => v.id !== id));
+        },
+      },
+    });
+
+    return (
+      <div style={{maxWidth: 700}}>
+        <XDSText type="supporting">
+          Apply a saved view to switch column sets, or reset to the default.
+        </XDSText>
+        <XDSHStack gap={2} vAlign="end" style={{marginBottom: 12, marginTop: 8}}>
+          <XDSMultiSelector
+            label="Columns"
+            options={columnSettings.dropdownItems}
+            value={[...columnSettings.activeColumnKeys]}
+            onChange={columnSettings.onDropdownChange}
+          />
+          {views.map(view => (
+            <XDSButton
+              key={view.id}
+              label={view.label}
+              variant="secondary"
+              size="sm"
+              onClick={() => columnSettings.views?.applyView(view.id)}
+            />
+          ))}
+          <XDSButton
+            label="Reset"
+            variant="ghost"
+            size="sm"
+            onClick={() => columnSettings.views?.resetToDefault()}
+          />
+        </XDSHStack>
         <XDSTable
           data={users}
           columns={columnSettings.activeColumns(allColumns)}
@@ -256,11 +339,11 @@ export const WithSelection: Story = {
 
     return (
       <div style={{maxWidth: 700}}>
-        <p style={{marginBottom: 8, fontSize: 14, color: '#666'}}>
-          Column settings + row selection composed together. Selected:{' '}
+        <XDSText type="supporting">
+          Column settings and row selection composed together. Selected:{' '}
           {selectedKeys.size} of {users.length}
-        </p>
-        <div style={{marginBottom: 12}}>
+        </XDSText>
+        <div style={{marginBottom: 12, marginTop: 8}}>
           <XDSMultiSelector
             label="Columns"
             options={columnSettings.dropdownItems}
