@@ -475,44 +475,52 @@ const pageStyles = stylex.create({
   },
 });
 
-const examples = [
+interface ExampleEntry {
+  label: string;
+  description: string;
+  variant: ToastVariant;
+  options?: ToastOptions;
+  hasAction?: 'button' | 'link';
+}
+
+const examples: ExampleEntry[] = [
   {
     label: 'Default',
     description: 'Simple notification',
-    variant: 'default' as ToastVariant,
+    variant: 'default',
     options: {title: 'Changes saved successfully'},
   },
   {
     label: 'Error',
     description: 'Error notification',
-    variant: 'error' as ToastVariant,
-    options: {title: 'Something went wrong, please try again.', variant: 'error' as ToastVariant},
+    variant: 'error',
+    options: {title: 'Something went wrong, please try again.', variant: 'error'},
   },
   {
     label: 'With Action',
     description: 'Undo button action',
-    variant: 'default' as ToastVariant,
-    hasAction: 'button' as const,
+    variant: 'default',
+    hasAction: 'button',
   },
   {
     label: 'With Link',
     description: 'Text link action',
-    variant: 'default' as ToastVariant,
-    hasAction: 'link' as const,
+    variant: 'default',
+    hasAction: 'link',
   },
   {
     label: 'Not Dismissable',
     description: 'No close button, 3s auto-hide',
-    variant: 'default' as ToastVariant,
+    variant: 'default',
     options: {title: 'Auto-saving...', isDismissable: false, autoHideDuration: 3000},
   },
   {
     label: 'Long Text',
     description: 'Truncated to 2 lines',
-    variant: 'default' as ToastVariant,
+    variant: 'default',
     options: {title: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua'},
   },
-] as const;
+];
 
 export default function ToastPlaygroundPage() {
   const [title, setTitle] = useState('Changes saved successfully');
@@ -524,7 +532,7 @@ export default function ToastPlaygroundPage() {
       <div {...stylex.props(pageStyles.page)}>
         <div {...stylex.props(pageStyles.container)}>
           <XDSVStack gap={6}>
-            <XDSVStack gap={1} align="center">
+            <XDSVStack gap={1} hAlign="center">
               <XDSHeading level={1}>Toast</XDSHeading>
               <XDSText type="body" color="secondary">
                 Brief notifications that appear at the bottom right. Two
@@ -619,7 +627,7 @@ function ToastExamples() {
           {i > 0 && <div {...stylex.props(pageStyles.exampleDivider)} />}
           <div {...stylex.props(pageStyles.exampleRow)}>
             <XDSVStack gap={1}>
-              <XDSHStack gap={2} align="center">
+              <XDSHStack gap={2} vAlign="center">
                 <XDSText type="body" weight="semibold">
                   {example.label}
                 </XDSText>
