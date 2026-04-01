@@ -60,7 +60,7 @@ function ResizeTable({
   columns: columnsProp = testColumns,
 }: {
   columnWidths?: Record<string, number>;
-  onColumnResizeEnd?: (event: {columnKey: string; newWidth: number}) => void;
+  onColumnResizeEnd?: (event: {columnKey: string; newWidth: number}) => void; // spy receives single entry
   minWidth?: number;
   maxWidth?: number;
   columns?: XDSTableColumn<TestItem>[];
@@ -69,9 +69,11 @@ function ResizeTable({
 
   const resizePlugin = useXDSTableColumnResize<TestItem>({
     columnWidths,
-    onColumnResizeEnd: event => {
-      setColumnWidths(prev => ({...prev, [event.columnKey]: event.newWidth}));
-      onColumnResizeEnd?.(event);
+    onColumnResizeEnd: updates => {
+      setColumnWidths(prev => ({...prev, ...updates}));
+      // Forward the first update entry to the single-column spy for test assertions
+      const [[columnKey, newWidth]] = Object.entries(updates);
+      onColumnResizeEnd?.({columnKey, newWidth});
     },
     minWidth,
     maxWidth,

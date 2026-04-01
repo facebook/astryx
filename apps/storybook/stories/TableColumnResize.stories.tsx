@@ -87,8 +87,8 @@ export const Default: Story = {
     const resizePlugin = useXDSTableColumnResize<User>({
       columnWidths,
       columns,
-      onColumnResizeEnd: ({columnKey, newWidth}) => {
-        setColumnWidths(prev => ({...prev, [columnKey]: newWidth}));
+      onColumnResizeEnd: updates => {
+        setColumnWidths(prev => ({...prev, ...updates}));
       },
     });
 
@@ -117,8 +117,8 @@ export const WithMinMaxConstraints: Story = {
 
     const resizePlugin = useXDSTableColumnResize<User>({
       columnWidths,
-      onColumnResizeEnd: ({columnKey, newWidth}) => {
-        setColumnWidths(prev => ({...prev, [columnKey]: newWidth}));
+      onColumnResizeEnd: updates => {
+        setColumnWidths(prev => ({...prev, ...updates}));
       },
       columns,
       minWidth: 80,
@@ -150,8 +150,8 @@ export const PersistingWidths: Story = {
     const resizePlugin = useXDSTableColumnResize<User>({
       columnWidths,
       columns,
-      onColumnResizeEnd: ({columnKey, newWidth}) => {
-        setColumnWidths(prev => ({...prev, [columnKey]: newWidth}));
+      onColumnResizeEnd: updates => {
+        setColumnWidths(prev => ({...prev, ...updates}));
       },
     });
 
@@ -190,8 +190,8 @@ export const KeyboardResize: Story = {
     const resizePlugin = useXDSTableColumnResize<User>({
       columnWidths,
       columns,
-      onColumnResizeEnd: ({columnKey, newWidth}) => {
-        setColumnWidths(prev => ({...prev, [columnKey]: newWidth}));
+      onColumnResizeEnd: updates => {
+        setColumnWidths(prev => ({...prev, ...updates}));
       },
     });
 
@@ -230,8 +230,8 @@ export const WithSelectionAndResize: Story = {
     const resizePlugin = useXDSTableColumnResize<User>({
       columnWidths,
       columns,
-      onColumnResizeEnd: ({columnKey, newWidth}) => {
-        setColumnWidths(prev => ({...prev, [columnKey]: newWidth}));
+      onColumnResizeEnd: updates => {
+        setColumnWidths(prev => ({...prev, ...updates}));
       },
     });
 
@@ -267,8 +267,8 @@ export const AllPixelColumns: Story = {
     const resizePlugin = useXDSTableColumnResize<User>({
       columnWidths,
       columns: pixelColumns,
-      onColumnResizeEnd: ({columnKey, newWidth}) => {
-        setColumnWidths(prev => ({...prev, [columnKey]: newWidth}));
+      onColumnResizeEnd: updates => {
+        setColumnWidths(prev => ({...prev, ...updates}));
       },
     });
 

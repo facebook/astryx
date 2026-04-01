@@ -41,7 +41,13 @@ export interface UseXDSTableColumnResizeConfig {
    * Called when a resize operation completes (pointerup / Enter key).
    * Consumer updates their `columnWidths` state here.
    */
-  onColumnResizeEnd?: (event: {columnKey: string; newWidth: number}) => void;
+  /**
+   * Called when a resize operation completes (pointerup / Enter key).
+   * Receives a map of ALL column keys that changed width — the resized column
+   * plus any other columns that were committed to pixel widths to prevent
+   * layout shift. Consumer should merge these into their columnWidths state.
+   */
+  onColumnResizeEnd?: (updates: Record<string, number>) => void;
 
   /**
    * Global minimum column width in pixels during resize.
@@ -160,12 +166,6 @@ const headerCellRelative = stylex.create({
 // Drag State (ref-based, not React state — avoids re-renders during drag)
 // =============================================================================
 
-interface FrozenSibling {
-  th: HTMLTableCellElement;
-  /** The inline width style before we froze it (so we can restore on cancel) */
-  prevWidth: string;
-}
-
 interface DragState {
   columnKey: string;
   startX: number;
@@ -175,11 +175,6 @@ interface DragState {
   neighborKey: string | null;
   neighborTh: HTMLTableCellElement | null;
   neighborInitialWidth: number;
-  /**
-   * Preceding <th> elements that were frozen at their rendered widths
-   * on drag start so they don't shift when we resize a later column.
-   */
-  frozenSiblings: FrozenSibling[];
 }
 
 // =============================================================================
@@ -310,28 +305,6 @@ function ResizeHandle({
       const nTh = resolveNeighborTh(th);
       const nInitialWidth = nTh ? nTh.getBoundingClientRect().width : 0;
 
-      // Freeze all <th> elements except the last one at their current rendered
-      // widths. This prevents proportional columns on either side from shifting
-      // as we resize. The last column is the only flex absorber — it takes up
-      // whatever space remains.
-      const frozenSiblings: FrozenSibling[] = [];
-      const headerRow = th.parentElement;
-      if (headerRow) {
-        const allThs = Array.from(
-          headerRow.querySelectorAll<HTMLTableCellElement>(':scope > th'),
-        );
-        const lastTh = allThs[allThs.length - 1];
-        for (const cell of allThs) {
-          if (cell === lastTh) continue; // last column stays flex
-          const renderedWidth = cell.getBoundingClientRect().width;
-          frozenSiblings.push({th: cell, prevWidth: cell.style.width});
-          const px = `${renderedWidth}px`;
-          cell.style.width = px;
-          cell.style.minWidth = px;
-          cell.style.maxWidth = px;
-        }
-      }
-
       dragStateRef.current = {
         columnKey,
         startX: e.clientX,
@@ -340,7 +313,6 @@ function ResizeHandle({
         neighborKey,
         neighborTh: nTh,
         neighborInitialWidth: nInitialWidth,
-        frozenSiblings,
       };
       isDraggingRef.current = true;
       handle.setAttribute('data-resizing', 'true');
@@ -420,28 +392,39 @@ function ResizeHandle({
       dragStateRef.current = null;
       setTableDragging(false);
 
-      // Restore frozen siblings — React state takes over the committed column
-      // widths, and the layout engine re-settles the rest.
-      for (const {th: fTh, prevWidth} of drag.frozenSiblings) {
-        fTh.style.width = prevWidth;
-        fTh.style.minWidth = prevWidth;
-        fTh.style.maxWidth = prevWidth;
+      // Collect the final width of every column except the last and commit
+      // them all at once. This gives the consumer pixel widths for all columns
+      // so proportional redistribution can't shift them on re-render.
+      const updates: Record<string, number> = {};
+      const headerRow = drag.thElement.parentElement;
+      if (headerRow && configRef.current.columns) {
+        const cols = configRef.current.columns;
+        const allThs = Array.from(
+          headerRow.querySelectorAll<HTMLTableCellElement>(':scope > th'),
+        );
+        const lastIndex = allThs.length - 1;
+        allThs.forEach((cell, i) => {
+          if (i === lastIndex) return; // last column stays flex
+          const col = cols[i];
+          if (col) {
+            updates[col.key] = cell.getBoundingClientRect().width;
+          }
+        });
       }
 
+      // Override the resized column(s) with the precise clamped values
       if (drag.neighborTh && drag.neighborKey) {
-        // Proportional-preserving: report the neighbor column's new width,
-        // clamped so it never goes below its minimum.
         const newNeighborWidth = Math.max(
           neighborMinWidth,
           drag.neighborInitialWidth - delta,
         );
-        configRef.current.onColumnResizeEnd?.({
-          columnKey: drag.neighborKey,
-          newWidth: newNeighborWidth,
-        });
+        updates[drag.neighborKey] = newNeighborWidth;
       } else {
-        const newWidth = clamp(drag.initialWidth + delta);
-        configRef.current.onColumnResizeEnd?.({columnKey, newWidth});
+        updates[columnKey] = clamp(drag.initialWidth + delta);
+      }
+
+      if (Object.keys(updates).length > 0) {
+        configRef.current.onColumnResizeEnd?.(updates);
       }
     },
     [
@@ -464,12 +447,6 @@ function ResizeHandle({
     clearWidth(drag.thElement, drag.columnKey);
     if (drag.neighborTh && drag.neighborKey) {
       clearWidth(drag.neighborTh, drag.neighborKey);
-    }
-    // Restore frozen siblings to their pre-drag inline styles
-    for (const {th: fTh, prevWidth} of drag.frozenSiblings) {
-      fTh.style.width = prevWidth;
-      fTh.style.minWidth = prevWidth;
-      fTh.style.maxWidth = prevWidth;
     }
 
     isDraggingRef.current = false;
@@ -511,16 +488,13 @@ function ResizeHandle({
               const curNeighbor = nTh.getBoundingClientRect().width;
               const newWidth = Math.max(neighborMinWidth, curNeighbor - delta);
               applyWidth(nTh, newWidth, neighborMinWidth);
-              configRef.current.onColumnResizeEnd?.({
-                columnKey: neighborKey,
-                newWidth,
-              });
+              configRef.current.onColumnResizeEnd?.({[neighborKey]: newWidth});
             }
           } else {
             const curWidth = currentWidth ?? th.getBoundingClientRect().width;
             const newWidth = clamp(curWidth + delta);
             applyWidth(th, newWidth);
-            configRef.current.onColumnResizeEnd?.({columnKey, newWidth});
+            configRef.current.onColumnResizeEnd?.({[columnKey]: newWidth});
           }
           break;
         }
@@ -531,16 +505,12 @@ function ResizeHandle({
             if (nTh) {
               applyWidth(nTh, neighborMinWidth, neighborMinWidth);
               configRef.current.onColumnResizeEnd?.({
-                columnKey: neighborKey,
-                newWidth: neighborMinWidth,
+                [neighborKey]: neighborMinWidth,
               });
             }
           } else {
             applyWidth(th, minWidth);
-            configRef.current.onColumnResizeEnd?.({
-              columnKey,
-              newWidth: minWidth,
-            });
+            configRef.current.onColumnResizeEnd?.({[columnKey]: minWidth});
           }
           break;
         }
@@ -548,10 +518,7 @@ function ResizeHandle({
           e.preventDefault();
           if (maxWidth !== Infinity) {
             applyWidth(th, maxWidth);
-            configRef.current.onColumnResizeEnd?.({
-              columnKey,
-              newWidth: maxWidth,
-            });
+            configRef.current.onColumnResizeEnd?.({[columnKey]: maxWidth});
           }
           break;
         }
