@@ -75,7 +75,7 @@ export default function SettingsTemplate() {
             <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40}}>
               <div>
                 <XDSVStack gap={1}>
-                  <XDSText type="body" weight="bold">Basic information</XDSText>
+                  <XDSHeading level={3}>Basic information</XDSHeading>
                   <XDSText type="supporting" color="secondary">
                     View and update your personal details and account information.
                   </XDSText>
@@ -100,7 +100,7 @@ export default function SettingsTemplate() {
             <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40}}>
               <div>
                 <XDSVStack gap={1}>
-                  <XDSText type="body" weight="bold">Change password</XDSText>
+                  <XDSHeading level={3}>Change password</XDSHeading>
                   <XDSText type="supporting" color="secondary">
                     Update your password to keep your account secure.
                   </XDSText>
@@ -124,7 +124,7 @@ export default function SettingsTemplate() {
             <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40}}>
               <div>
                 <XDSVStack gap={1}>
-                  <XDSText type="body" weight="bold">Advanced settings</XDSText>
+                  <XDSHeading level={3}>Advanced settings</XDSHeading>
                   <XDSText type="supporting" color="secondary">
                     Configure detailed account preferences and security options.
                   </XDSText>
