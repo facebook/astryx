@@ -28,6 +28,7 @@ import {XDSList, XDSListItem} from '@xds/core/List';
 import {XDSMetadataList, XDSMetadataListItem} from '@xds/core/MetadataList';
 import {XDSStatusDot} from '@xds/core/StatusDot';
 import {XDSCard} from '@xds/core/Card';
+import {XDSAspectRatio} from '@xds/core/AspectRatio';
 
 // ─── Icons ──────────────────────────────────────────────────────────────────
 
@@ -220,7 +221,7 @@ const StoreIcon = (p: React.SVGProps<SVGSVGElement>) => (
 // ─── Styles ─────────────────────────────────────────────────────────────────
 
 const styles = stylex.create({
-  maxWidth: {maxWidth: 800},
+  maxWidth: {maxWidth: 1000},
   stepperItem: {
     display: 'flex',
     alignItems: 'flex-start',
@@ -275,16 +276,16 @@ const styles = stylex.create({
     width: 'var(--spacing-5)',
     height: 'var(--spacing-5)',
     color: 'var(--color-icon-secondary)',
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
   },
   lineItemImage: {
     width: 48,
-    height: 48,
     borderRadius: 'var(--radius-element)',
     backgroundColor: 'var(--color-background-body)',
     flexShrink: 0,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   iconSm: {
     width: 16,
@@ -472,9 +473,9 @@ function ItemsSection() {
               label={item.name}
               description={item.details}
               startContent={
-                <div {...stylex.props(styles.lineItemImage)}>
+                <XDSAspectRatio ratio={1} xstyle={styles.lineItemImage}>
                   <ProductsIcon {...stylex.props(styles.productIcon)} />
-                </div>
+                </XDSAspectRatio>
               }
               endContent={
                 <XDSText type="body">${item.price.toFixed(2)}</XDSText>
@@ -508,7 +509,7 @@ function InvoiceSection() {
             </XDSHStack>
           }>
           <XDSMetadataListItem label="Subtotal">
-            <XDSHStack gap={2} vAlign="center">
+            <XDSHStack gap={2} hAlign="between" vAlign="center">
               <XDSText type="supporting" color="secondary">
                 2 items
               </XDSText>
@@ -516,13 +517,13 @@ function InvoiceSection() {
             </XDSHStack>
           </XDSMetadataListItem>
           <XDSMetadataListItem label="Discount">
-            <XDSHStack gap={2} vAlign="center">
+            <XDSHStack gap={2} hAlign="between" vAlign="center">
               <XDSBadge variant="info" label="NEW15" />
               <XDSText type="body">{'\u2212'}$15.00</XDSText>
             </XDSHStack>
           </XDSMetadataListItem>
           <XDSMetadataListItem label="Shipping">
-            <XDSHStack gap={2} vAlign="center">
+            <XDSHStack gap={2} hAlign="between" vAlign="center">
               <XDSText type="supporting" color="secondary">
                 Free
               </XDSText>
@@ -530,7 +531,7 @@ function InvoiceSection() {
             </XDSHStack>
           </XDSMetadataListItem>
           <XDSMetadataListItem label="Tax">
-            <XDSHStack gap={2} vAlign="center">
+            <XDSHStack gap={2} hAlign="between" vAlign="center">
               <XDSText type="supporting" color="secondary">
                 8.25%
               </XDSText>
@@ -538,9 +539,11 @@ function InvoiceSection() {
             </XDSHStack>
           </XDSMetadataListItem>
           <XDSMetadataListItem label="Total">
-            <XDSText type="body" weight="bold">
-              $29.20
-            </XDSText>
+            <XDSHStack hAlign="end">
+              <XDSText type="body" weight="bold">
+                $29.20
+              </XDSText>
+            </XDSHStack>
           </XDSMetadataListItem>
         </XDSMetadataList>
         <XDSDivider />
@@ -663,9 +666,9 @@ export default function DetailTemplate() {
       contentPadding={0}>
       <XDSLayout
         header={
-          <XDSLayoutHeader hasDivider>
+          <XDSLayoutHeader hasDivider padding={4}>
             <div {...stylex.props(styles.maxWidth)}>
-              <XDSVStack gap={2}>
+              <XDSVStack gap={0}>
                 <XDSHStack gap={2} hAlign="between" vAlign="center">
                   <XDSLink label="All orders" href="#">
                     <XDSHStack gap={1} vAlign="center">
