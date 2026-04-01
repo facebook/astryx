@@ -442,12 +442,15 @@ const pageStyles = stylex.create({
   page: {
     minHeight: '100svh',
     backgroundColor: colorVars['--color-background-surface'],
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
     paddingBlock: spacingVars['--spacing-8'],
     paddingInline: spacingVars['--spacing-8'],
   },
   container: {
-    maxWidth: 960,
-    marginInline: 'auto',
+    maxWidth: 880,
+    width: '100%',
   },
   columns: {
     display: 'grid',
@@ -455,7 +458,74 @@ const pageStyles = stylex.create({
     gap: spacingVars['--spacing-5'],
     alignItems: 'start',
   },
+  exampleRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBlock: spacingVars['--spacing-3'],
+  },
+  exampleDivider: {
+    borderBottomWidth: 1,
+    borderBottomStyle: 'solid',
+    borderBottomColor: colorVars['--color-border'],
+  },
+  badge: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    paddingBlock: spacingVars['--spacing-1'],
+    paddingInline: spacingVars['--spacing-3'],
+    borderRadius: radiusVars['--radius-full'],
+    fontSize: 12,
+    fontWeight: 500,
+  },
+  badgeDefault: {
+    backgroundColor: colorVars['--color-neutral'],
+    color: colorVars['--color-on-dark'],
+  },
+  badgeError: {
+    backgroundColor: colorVars['--color-error'],
+    color: colorVars['--color-on-error'],
+  },
 });
+
+const examples = [
+  {
+    label: 'Default',
+    description: 'Simple notification',
+    variant: 'default' as ToastVariant,
+    options: {title: 'Changes saved successfully'},
+  },
+  {
+    label: 'Error',
+    description: 'Error notification',
+    variant: 'error' as ToastVariant,
+    options: {title: 'Something went wrong, please try again.', variant: 'error' as ToastVariant},
+  },
+  {
+    label: 'With Action',
+    description: 'Undo button action',
+    variant: 'default' as ToastVariant,
+    hasAction: 'button' as const,
+  },
+  {
+    label: 'With Link',
+    description: 'Text link action',
+    variant: 'default' as ToastVariant,
+    hasAction: 'link' as const,
+  },
+  {
+    label: 'Not Dismissable',
+    description: 'No close button, 3s auto-hide',
+    variant: 'default' as ToastVariant,
+    options: {title: 'Auto-saving...', isDismissable: false, autoHideDuration: 3000},
+  },
+  {
+    label: 'Long Text',
+    description: 'Truncated to 2 lines',
+    variant: 'default' as ToastVariant,
+    options: {title: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua'},
+  },
+] as const;
 
 export default function ToastPlaygroundPage() {
   const [title, setTitle] = useState('Changes saved successfully');
@@ -467,18 +537,19 @@ export default function ToastPlaygroundPage() {
       <div {...stylex.props(pageStyles.page)}>
         <div {...stylex.props(pageStyles.container)}>
           <XDSVStack gap={6}>
-            <XDSVStack gap={2}>
-              <XDSHeading level={2}>Toast Playground</XDSHeading>
+            <XDSVStack gap={1}>
+              <XDSHeading level={1}>Toast</XDSHeading>
               <XDSText type="body" color="secondary">
-                Two visual variants: default (dark) and error (red).
+                Brief notifications that appear at the bottom right. Two
+                variants: default and error.
               </XDSText>
             </XDSVStack>
 
             <div {...stylex.props(pageStyles.columns)}>
               <XDSCard>
-                <XDSVStack gap={4}>
-                  <XDSText type="label" weight="bold">
-                    Configuration
+                <XDSVStack gap={5}>
+                  <XDSText type="body" weight="bold">
+                    Configure
                   </XDSText>
                   <XDSTextInput
                     label="Message"
@@ -513,7 +584,7 @@ export default function ToastPlaygroundPage() {
 
               <XDSCard>
                 <XDSVStack gap={4}>
-                  <XDSText type="label" weight="bold">
+                  <XDSText type="body" weight="bold">
                     Examples
                   </XDSText>
                   <ToastExamples />
@@ -541,7 +612,7 @@ function ToastTrigger({
   return (
     <XDSButton
       label="Show Toast"
-      variant="primary"
+      variant={variant === 'error' ? 'destructive' : 'primary'}
       onClick={() => toast({title, variant, isDismissable})}
     />
   );
@@ -551,76 +622,65 @@ function ToastExamples() {
   const toast = useToast();
 
   return (
-    <XDSVStack gap={2}>
-      <XDSButton
-        label="Default"
-        variant="secondary"
-        onClick={() =>
-          toast({title: 'Changes saved successfully'})
-        }
-      />
-      <XDSButton
-        label="Error"
-        variant="destructive"
-        onClick={() =>
-          toast({
-            title: 'Something went wrong, please try again.',
-            variant: 'error',
-          })
-        }
-      />
-      <XDSButton
-        label="With Action Button"
-        variant="secondary"
-        onClick={() =>
-          toast({
-            title: 'Item moved to trash',
-            action: (
-              <button
-                {...stylex.props(toastStyles.actionButton)}
-                onClick={() => toast({title: 'Restored!'})}>
-                Undo
-              </button>
-            ),
-          })
-        }
-      />
-      <XDSButton
-        label="With Link"
-        variant="secondary"
-        onClick={() =>
-          toast({
-            title: 'Settings updated',
-            action: (
-              <button
-                {...stylex.props(toastStyles.link)}
-                onClick={() => toast({title: 'Navigating...'})}>
-                View changes
-              </button>
-            ),
-          })
-        }
-      />
-      <XDSButton
-        label="No Close Button"
-        variant="secondary"
-        onClick={() =>
-          toast({
-            title: 'Auto-saving...',
-            isDismissable: false,
-            autoHideDuration: 3000,
-          })
-        }
-      />
-      <XDSButton
-        label="Long Text"
-        variant="secondary"
-        onClick={() =>
-          toast({
-            title: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua',
-          })
-        }
-      />
+    <XDSVStack gap={0}>
+      {examples.map((example, i) => (
+        <div key={example.label}>
+          {i > 0 && <div {...stylex.props(pageStyles.exampleDivider)} />}
+          <div {...stylex.props(pageStyles.exampleRow)}>
+            <XDSVStack gap={1}>
+              <XDSHStack gap={2} align="center">
+                <XDSText type="body" weight="semibold">
+                  {example.label}
+                </XDSText>
+                <span
+                  {...stylex.props(
+                    pageStyles.badge,
+                    example.variant === 'error'
+                      ? pageStyles.badgeError
+                      : pageStyles.badgeDefault,
+                  )}>
+                  {example.variant}
+                </span>
+              </XDSHStack>
+              <XDSText type="supporting" color="secondary">
+                {example.description}
+              </XDSText>
+            </XDSVStack>
+            <XDSButton
+              label="Try"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                if (example.hasAction === 'button') {
+                  toast({
+                    title: 'Item moved to trash',
+                    action: (
+                      <button
+                        {...stylex.props(toastStyles.actionButton)}
+                        onClick={() => toast({title: 'Restored!'})}>
+                        Undo
+                      </button>
+                    ),
+                  });
+                } else if (example.hasAction === 'link') {
+                  toast({
+                    title: 'Settings updated',
+                    action: (
+                      <button
+                        {...stylex.props(toastStyles.link)}
+                        onClick={() => toast({title: 'Navigating...'})}>
+                        View changes
+                      </button>
+                    ),
+                  });
+                } else {
+                  toast(example.options as ToastOptions);
+                }
+              }}
+            />
+          </div>
+        </div>
+      ))}
     </XDSVStack>
   );
 }
