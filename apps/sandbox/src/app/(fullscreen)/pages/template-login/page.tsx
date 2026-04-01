@@ -86,7 +86,7 @@ export default function LoginTemplate() {
   const [password, setPassword] = useState('');
 
   return (
-    <div {...stylex.props(styles.page)}>
+    <div style={{display: 'flex', flexDirection: 'column', minHeight: '100svh', width: '100%', alignItems: 'center', justifyContent: 'center', padding: 24}}>
       <div {...stylex.props(styles.wrapper)}>
         {/* Logo */}
         <XDSHStack gap={2}>
