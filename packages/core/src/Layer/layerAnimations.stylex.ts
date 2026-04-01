@@ -25,27 +25,37 @@
  */
 
 import * as stylex from '@stylexjs/stylex';
-import {durationVars, easeVars} from '../theme/tokens.stylex';
-
-const SLIDE_DISTANCE = '8px';
+import {durationVars, easeVars, spacingVars} from '../theme/tokens.stylex';
 
 const enterBelow = stylex.keyframes({
-  from: {opacity: 0, transform: `translateY(-${SLIDE_DISTANCE}) scale(0.95)`},
+  from: {
+    opacity: 0,
+    transform: `translateY(calc(-1 * ${spacingVars['--spacing-2']})) scale(0.95)`,
+  },
   to: {opacity: 1, transform: 'translateY(0) scale(1)'},
 });
 
 const enterAbove = stylex.keyframes({
-  from: {opacity: 0, transform: `translateY(${SLIDE_DISTANCE}) scale(0.95)`},
+  from: {
+    opacity: 0,
+    transform: `translateY(${spacingVars['--spacing-2']}) scale(0.95)`,
+  },
   to: {opacity: 1, transform: 'translateY(0) scale(1)'},
 });
 
 const enterEnd = stylex.keyframes({
-  from: {opacity: 0, transform: `translateX(-${SLIDE_DISTANCE}) scale(0.95)`},
+  from: {
+    opacity: 0,
+    transform: `translateX(calc(-1 * ${spacingVars['--spacing-2']})) scale(0.95)`,
+  },
   to: {opacity: 1, transform: 'translateX(0) scale(1)'},
 });
 
 const enterStart = stylex.keyframes({
-  from: {opacity: 0, transform: `translateX(${SLIDE_DISTANCE}) scale(0.95)`},
+  from: {
+    opacity: 0,
+    transform: `translateX(${spacingVars['--spacing-2']}) scale(0.95)`,
+  },
   to: {opacity: 1, transform: 'translateX(0) scale(1)'},
 });
 

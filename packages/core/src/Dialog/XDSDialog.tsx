@@ -91,6 +91,15 @@ export interface XDSDialogPosition {
   top?: number | string;
 }
 
+const enterDirectional = stylex.keyframes({
+  from: {
+    opacity: 0,
+    transform:
+      'translate(var(--dialog-dir-x, 0px), var(--dialog-dir-y, 16px)) scale(0.95)',
+  },
+  to: {opacity: 1, transform: 'translate(0, 0) scale(1)'},
+});
+
 /**
  * Dialog styles using native <dialog> element
  * Uses ::backdrop pseudo-element for overlay
@@ -112,12 +121,17 @@ const styles = stylex.create({
     flexDirection: 'column',
     height: 'fit-content',
     overscrollBehavior: 'contain',
-    // Open state opacity (entry animation handled by Web Animations API)
     opacity: {
-      default: 1,
-      ':where(:not([open]))': 0,
+      default: 0,
+      ':where([open])': 1,
     },
+    animationName: {
+      default: 'none',
+      ':where([open])': enterDirectional,
     },
+    animationDuration: durationVars['--duration-medium-max'],
+    animationTimingFunction: easeVars['--ease-standard'],
+    animationFillMode: 'backwards',
     outline: {
       default: null,
       ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
@@ -314,36 +328,19 @@ export function XDSDialog({
     if (!dialog) return;
 
     if (isOpen) {
+      // Set directional CSS custom properties before opening
+      const trigger = triggerRef?.current;
+      if (trigger) {
+        const dir = getDialogDirection(trigger);
+        dialog.style.setProperty('--dialog-dir-x', `${dir.x}px`);
+        dialog.style.setProperty('--dialog-dir-y', `${dir.y}px`);
+      } else {
+        dialog.style.setProperty('--dialog-dir-x', '0px');
+        dialog.style.setProperty('--dialog-dir-y', '16px');
+      }
+
       if (!dialog.open) {
         dialog.showModal();
-
-        // Directional entry animation
-        const trigger = triggerRef?.current;
-        let tx = 0;
-        let ty = 8; // default: slide up from below
-        if (trigger) {
-          const dir = getDialogDirection(trigger);
-          tx = dir.x;
-          ty = dir.y;
-        }
-
-        const cs = getComputedStyle(dialog);
-        const duration =
-          cs.getPropertyValue('--duration-medium-max').trim() || '550ms';
-        const easing =
-          cs.getPropertyValue('--ease-standard').trim() ||
-          'cubic-bezier(0.24, 1, 0.4, 1)';
-
-        dialog.animate(
-          [
-            {
-              opacity: 0,
-              transform: `translate(${tx}px, ${ty}px) scale(0.95)`,
-            },
-            {opacity: 1, transform: 'translate(0, 0) scale(1)'},
-          ],
-          {duration: parseFloat(duration), easing, fill: 'backwards'},
-        );
       }
     } else {
       if (dialog.open) {

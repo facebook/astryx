@@ -14,7 +14,7 @@
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
-import {durationVars, easeVars} from '../theme/tokens.stylex';
+import {durationVars, easeVars, spacingVars} from '../theme/tokens.stylex';
 
 // Track whether the initial page paint has completed.
 // Elements rendered on page load should not animate;
@@ -33,12 +33,18 @@ if (typeof window !== 'undefined') {
 }
 
 const slideDown = stylex.keyframes({
-  from: {opacity: 0, transform: 'translateY(-8px)'},
+  from: {
+    opacity: 0,
+    transform: `translateY(calc(-1 * ${spacingVars['--spacing-2']}))`,
+  },
   to: {opacity: 1, transform: 'translateY(0)'},
 });
 
 const slideUp = stylex.keyframes({
-  from: {opacity: 0, transform: 'translateY(8px)'},
+  from: {
+    opacity: 0,
+    transform: `translateY(${spacingVars['--spacing-2']})`,
+  },
   to: {opacity: 1, transform: 'translateY(0)'},
 });
 

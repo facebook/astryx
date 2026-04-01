@@ -9,6 +9,8 @@
  * - /packages/core/src/Field/index.ts (exports if types change)
  */
 
+'use client';
+
 import * as stylex from '@stylexjs/stylex';
 import {xdsClassName, mergeProps} from '../utils';
 import {
