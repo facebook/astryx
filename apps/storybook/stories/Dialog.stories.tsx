@@ -9,6 +9,7 @@ import {
 } from '@xds/core/Layout';
 import {XDSButton} from '@xds/core/Button';
 import {XDSText} from '@xds/core/Text';
+import {XDSTextInput} from '@xds/core/TextInput';
 import * as stylex from '@stylexjs/stylex';
 
 const styles = stylex.create({
@@ -653,4 +654,46 @@ export const AllPurposes: Story = {
       <InfoModalExample />
     </div>
   ),
+};
+
+/**
+ * Dialog with auto-focused input
+ */
+function AutoFocusInputExample() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [value, setValue] = useState('');
+  return (
+    <>
+      <XDSButton
+        label="Open Dialog"
+        variant="secondary"
+        onClick={() => setIsOpen(true)}
+      />
+      <XDSDialog isOpen={isOpen} onOpenChange={open => setIsOpen(open)}>
+        <XDSLayout
+          header={
+            <XDSDialogHeader
+              title="Auto-focused Input"
+              onOpenChange={open => setIsOpen(open)}
+            />
+          }
+          content={
+            <XDSLayoutContent>
+              <XDSTextInput
+                label="Name"
+                placeholder="This input is focused on mount"
+                value={value}
+                onChange={setValue}
+                hasAutoFocus
+              />
+            </XDSLayoutContent>
+          }
+        />
+      </XDSDialog>
+    </>
+  );
+}
+
+export const AutoFocusInput: Story = {
+  render: () => <AutoFocusInputExample />,
 };

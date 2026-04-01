@@ -299,6 +299,7 @@ export function XDSTextInput({
           placeholder={placeholder}
           disabled={isDisabled}
           autoFocus={hasAutoFocus}
+          data-autofocus={hasAutoFocus || undefined}
           aria-describedby={ariaDescribedBy}
           aria-required={isRequired === true ? 'true' : undefined}
           aria-invalid={status?.type === 'error' ? 'true' : undefined}
