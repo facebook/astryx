@@ -154,9 +154,9 @@ export default function MetaThemePage() {
           />
         </XDSHStack>
       </div>
-      <div style={{columnCount: 4, columnGap: 16, padding: 16, backgroundColor: 'var(--xds-color-bg-wash, #f5f5f5)', minHeight: '100%'}}>
+      <div style={{columnCount: 4, columnGap: 24, padding: 24, backgroundColor: 'var(--xds-color-bg-wash, #f5f5f5)', minHeight: '100%'}}>
         {/* Contribution History */}
-        <div style={{breakInside: 'avoid', marginBottom: 16, overflow: 'hidden'}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
           <XDSCard>
             <XDSVStack gap={3}>
               <div {...stylex.props(styles.row)}>
@@ -201,7 +201,7 @@ export default function MetaThemePage() {
         </div>
 
         {/* Payout Threshold */}
-        <div style={{breakInside: 'avoid', marginBottom: 16, overflow: 'hidden'}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
           <XDSCard>
             <XDSVStack gap={4}>
               <div {...stylex.props(styles.row)}>
@@ -236,7 +236,7 @@ export default function MetaThemePage() {
         </div>
 
         {/* Savings Targets */}
-        <div style={{breakInside: 'avoid', marginBottom: 16, overflow: 'hidden'}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
           <XDSCard>
             <XDSVStack gap={4}>
               <div {...stylex.props(styles.row)}>
@@ -272,7 +272,7 @@ export default function MetaThemePage() {
         </div>
 
         {/* Buy Investment */}
-        <div style={{breakInside: 'avoid', marginBottom: 16, overflow: 'hidden'}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
           <XDSCard>
             <XDSVStack gap={4}>
               <XDSText type="label" weight="bold">Buy Investment</XDSText>
@@ -308,7 +308,7 @@ export default function MetaThemePage() {
         </div>
 
         {/* Account Access */}
-        <div style={{breakInside: 'avoid', marginBottom: 16, overflow: 'hidden'}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
           <XDSCard>
             <XDSVStack gap={4}>
               <XDSText type="label" weight="bold">Account Access</XDSText>
@@ -341,7 +341,7 @@ export default function MetaThemePage() {
         </div>
 
         {/* Payout Preferences */}
-        <div style={{breakInside: 'avoid', marginBottom: 16, overflow: 'hidden'}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
           <XDSCard>
             <XDSVStack gap={4}>
               <div {...stylex.props(styles.row)}>
@@ -369,7 +369,7 @@ export default function MetaThemePage() {
         </div>
 
         {/* Stock Performance */}
-        <div style={{breakInside: 'avoid', marginBottom: 16, overflow: 'hidden'}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
           <XDSCard>
             <XDSVStack gap={3}>
               <XDSText type="label" weight="bold">Stock Performance</XDSText>
@@ -391,7 +391,7 @@ export default function MetaThemePage() {
         </div>
 
         {/* Distribute Track */}
-        <div style={{breakInside: 'avoid', marginBottom: 16, overflow: 'hidden'}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
           <XDSCard>
             <XDSVStack gap={3}>
               <XDSText type="label" weight="bold">Distribute Track</XDSText>
@@ -404,7 +404,7 @@ export default function MetaThemePage() {
         </div>
 
         {/* Clearinghouse Balance */}
-        <div style={{breakInside: 'avoid', marginBottom: 16, overflow: 'hidden'}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
           <XDSCard>
             <XDSVStack gap={4}>
               <XDSText type="supporting" color="secondary">Clearhouse Balance</XDSText>
@@ -435,7 +435,7 @@ export default function MetaThemePage() {
         </div>
 
         {/* Recent Transactions */}
-        <div style={{breakInside: 'avoid', marginBottom: 16, overflow: 'hidden'}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
           <XDSCard>
             <XDSVStack gap={3}>
               <div {...stylex.props(styles.row)}>
@@ -476,7 +476,7 @@ export default function MetaThemePage() {
         </div>
 
         {/* Card Balance */}
-        <div style={{breakInside: 'avoid', marginBottom: 16, overflow: 'hidden'}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
           <XDSCard>
             <XDSVStack gap={3}>
               <div {...stylex.props(styles.row)}>
@@ -510,7 +510,7 @@ export default function MetaThemePage() {
         </div>
 
         {/* Power Usage */}
-        <div style={{breakInside: 'avoid', marginBottom: 16, overflow: 'hidden'}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
           <XDSCard>
             <XDSVStack gap={3}>
               <XDSText type="label" weight="bold">Power Usage</XDSText>
@@ -540,7 +540,7 @@ export default function MetaThemePage() {
         </div>
 
         {/* Explore Catalog */}
-        <div style={{breakInside: 'avoid', marginBottom: 16, overflow: 'hidden'}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
           <XDSCard>
             <XDSVStack gap={3}>
               <XDSText type="label" weight="bold">Explore Catalog</XDSText>
@@ -553,7 +553,7 @@ export default function MetaThemePage() {
         </div>
 
         {/* Transfer Funds */}
-        <div style={{breakInside: 'avoid', marginBottom: 16, overflow: 'hidden'}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
           <XDSCard>
             <XDSVStack gap={4}>
               <div {...stylex.props(styles.row)}>
@@ -605,7 +605,7 @@ export default function MetaThemePage() {
         </div>
 
         {/* Set a New Milestone */}
-        <div style={{breakInside: 'avoid', marginBottom: 16, overflow: 'hidden'}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
           <XDSCard>
             <XDSVStack gap={4}>
               <XDSText type="label" weight="bold">Set a new milestone</XDSText>
@@ -639,7 +639,7 @@ export default function MetaThemePage() {
         </div>
 
         {/* Connect Bank */}
-        <div style={{breakInside: 'avoid', marginBottom: 16, overflow: 'hidden'}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
           <XDSCard>
             <XDSVStack gap={3}>
               <XDSText type="label" weight="bold">Connect Bank</XDSText>
@@ -652,7 +652,7 @@ export default function MetaThemePage() {
         </div>
 
         {/* Preferences */}
-        <div style={{breakInside: 'avoid', marginBottom: 16, overflow: 'hidden'}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
           <XDSCard>
             <XDSVStack gap={4}>
               <div {...stylex.props(styles.row)}>
@@ -694,7 +694,7 @@ export default function MetaThemePage() {
         </div>
 
         {/* Settings Navigation */}
-        <div style={{breakInside: 'avoid', marginBottom: 16, overflow: 'hidden'}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
           <XDSCard>
             <XDSHStack gap={6}>
               <XDSVStack gap={3} style={{flex: 1}}>
@@ -714,7 +714,7 @@ export default function MetaThemePage() {
         </div>
 
         {/* Payments Navigation */}
-        <div style={{breakInside: 'avoid', marginBottom: 16, overflow: 'hidden'}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
           <XDSCard>
             <XDSVStack gap={4}>
               <XDSHStack gap={2} vAlign="center">
@@ -741,7 +741,7 @@ export default function MetaThemePage() {
         </div>
 
         {/* FAQ / Settings Tabs */}
-        <div style={{breakInside: 'avoid', marginBottom: 16, overflow: 'hidden'}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
           <XDSCard>
             <XDSVStack gap={3}>
               <XDSTabList value={settingsTab} onChange={setSettingsTab}>
@@ -769,7 +769,7 @@ export default function MetaThemePage() {
         </div>
 
         {/* Upcoming Payments */}
-        <div style={{breakInside: 'avoid', marginBottom: 16, overflow: 'hidden'}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
           <XDSCard>
             <XDSVStack gap={3}>
               <XDSText type="label" weight="bold">Upcoming Payments</XDSText>
@@ -796,7 +796,7 @@ export default function MetaThemePage() {
         </div>
 
         {/* QR Code / Mobile Connect */}
-        <div style={{breakInside: 'avoid', marginBottom: 16, overflow: 'hidden'}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
           <XDSCard>
             <XDSVStack gap={3}>
               <div {...stylex.props(styles.placeholder)}>
@@ -814,7 +814,7 @@ export default function MetaThemePage() {
         </div>
 
         {/* Q2 Dividend Income */}
-        <div style={{breakInside: 'avoid', marginBottom: 16, overflow: 'hidden'}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
           <XDSCard>
             <XDSVStack gap={3}>
               <div {...stylex.props(styles.row)}>
@@ -847,7 +847,7 @@ export default function MetaThemePage() {
         </div>
 
         {/* Savings Target Progress */}
-        <div style={{breakInside: 'avoid', marginBottom: 16, overflow: 'hidden'}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
           <XDSCard>
             <XDSVStack gap={3}>
               <XDSHeading level={2}>$24,000</XDSHeading>
@@ -871,7 +871,7 @@ export default function MetaThemePage() {
         </div>
 
         {/* Dollar-Cost Averaging */}
-        <div style={{breakInside: 'avoid', marginBottom: 16, overflow: 'hidden'}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
           <XDSCard>
             <XDSVStack gap={3}>
               <XDSText type="label" weight="bold">Dollar-Cost Averaging</XDSText>
@@ -886,7 +886,7 @@ export default function MetaThemePage() {
         </div>
 
         {/* Cover Art / Upload */}
-        <div style={{breakInside: 'avoid', marginBottom: 16, overflow: 'hidden'}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
           <XDSCard>
             <XDSVStack gap={3}>
               <XDSText type="supporting" color="secondary">COVER ART</XDSText>
@@ -900,7 +900,7 @@ export default function MetaThemePage() {
         </div>
 
         {/* Front Door (Smart Home) */}
-        <div style={{breakInside: 'avoid', marginBottom: 16, overflow: 'hidden'}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
           <XDSCard>
             <XDSVStack gap={3}>
               <div {...stylex.props(styles.row)}>
@@ -921,7 +921,7 @@ export default function MetaThemePage() {
         </div>
 
         {/* Stock Holdings */}
-        <div style={{breakInside: 'avoid', marginBottom: 16, overflow: 'hidden'}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
           <XDSCard>
             <XDSVStack gap={3}>
               <XDSTextInput
@@ -965,7 +965,7 @@ export default function MetaThemePage() {
         </div>
 
         {/* Kitchen Island (Smart Home) */}
-        <div style={{breakInside: 'avoid', marginBottom: 16, overflow: 'hidden'}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
           <XDSCard>
             <XDSVStack gap={4}>
               <div {...stylex.props(styles.row)}>
@@ -993,7 +993,7 @@ export default function MetaThemePage() {
         </div>
 
         {/* Living Room (Smart Home) */}
-        <div style={{breakInside: 'avoid', marginBottom: 16, overflow: 'hidden'}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
           <XDSCard>
             <XDSVStack gap={3}>
               <XDSText type="label" weight="bold">Living Room</XDSText>
@@ -1014,7 +1014,7 @@ export default function MetaThemePage() {
         </div>
 
         {/* Social Links */}
-        <div style={{breakInside: 'avoid', marginBottom: 16, overflow: 'hidden'}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
           <XDSCard>
             <XDSVStack gap={4}>
               <XDSText type="label" weight="bold">Social Links</XDSText>
@@ -1031,7 +1031,7 @@ export default function MetaThemePage() {
         </div>
 
         {/* Notifications */}
-        <div style={{breakInside: 'avoid', marginBottom: 16, overflow: 'hidden'}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
           <XDSCard>
             <XDSVStack gap={4}>
               <XDSText type="label" weight="bold">Notifications</XDSText>
@@ -1054,7 +1054,7 @@ export default function MetaThemePage() {
         </div>
 
         {/* Syncing Accounts */}
-        <div style={{breakInside: 'avoid', marginBottom: 16, overflow: 'hidden'}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
           <XDSCard>
             <XDSVStack gap={3}>
               <XDSHStack gap={3} vAlign="center">
