@@ -82,6 +82,86 @@ export function usePowerSearchSource(
           }
         }
 
+        // Field+operator+value suggestions for string-valued operators.
+        // Matches "title foobar" → Title contains "foobar"
+        // and "title contains foobar" → Title contains "foobar"
+        for (const field of config.getVisibleFields()) {
+          if (field.isValueMatchAllowed === false) continue;
+
+          const fieldLabel = field.label.toLowerCase();
+
+          // Try "<field> <operator> <value>" first (longer match wins)
+          let hasExactOperatorMatch = false;
+          for (const op of field.operators) {
+            if (op.value.type !== 'string' && op.value.type !== 'string_list') {
+              continue;
+            }
+            const prefix = `${fieldLabel} ${op.label.toLowerCase()} `;
+            if (lower.startsWith(prefix) && lower.length > prefix.length) {
+              hasExactOperatorMatch = true;
+              const rawValue = query.slice(prefix.length);
+              const id = `${field.key}:${op.key}:value:${rawValue}`;
+              if (!seen.has(id)) {
+                seen.add(id);
+                results.push({
+                  id,
+                  label: `${field.label} ${op.label} "${rawValue}"`,
+                  auxiliaryData: {
+                    fieldKey: field.key,
+                    operatorKey: op.key,
+                    filterValue:
+                      op.value.type === 'string'
+                        ? {type: 'string', value: rawValue}
+                        : {type: 'string_list', value: [rawValue]},
+                  },
+                });
+              }
+            }
+          }
+
+          // Try "<field> <value>" — suggests all string-valued operators.
+          // Skip if an explicit "<field> <operator> <value>" already matched.
+          const fieldPrefix = `${fieldLabel} `;
+          if (
+            !hasExactOperatorMatch &&
+            lower.startsWith(fieldPrefix) &&
+            lower.length > fieldPrefix.length
+          ) {
+            // Check the remainder isn't the start of an operator name
+            const remainder = lower.slice(fieldPrefix.length);
+            const isOperatorPrefix = field.operators.some(op =>
+              op.label.toLowerCase().startsWith(remainder),
+            );
+            if (!isOperatorPrefix) {
+              const rawValue = query.slice(fieldPrefix.length);
+              for (const op of field.operators) {
+                if (
+                  op.value.type !== 'string' &&
+                  op.value.type !== 'string_list'
+                ) {
+                  continue;
+                }
+                const id = `${field.key}:${op.key}:value:${rawValue}`;
+                if (!seen.has(id)) {
+                  seen.add(id);
+                  results.push({
+                    id,
+                    label: `${field.label} ${op.label} "${rawValue}"`,
+                    auxiliaryData: {
+                      fieldKey: field.key,
+                      operatorKey: op.key,
+                      filterValue:
+                        op.value.type === 'string'
+                          ? {type: 'string', value: rawValue}
+                          : {type: 'string_list', value: [rawValue]},
+                    },
+                  });
+                }
+              }
+            }
+          }
+        }
+
         // If contentSearchFieldKey is set and no field or field+operator
         // exactly matches the query, prepend a content search item
         const contentFieldKey = config.config.contentSearchFieldKey;
