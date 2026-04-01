@@ -69,8 +69,8 @@ const toastStyles = stylex.create({
   viewport: {
     position: 'fixed',
     zIndex: 9999,
-    bottom: spacingVars['--spacing-6'],
-    right: spacingVars['--spacing-6'],
+    bottom: spacingVars['--spacing-4'],
+    right: spacingVars['--spacing-4'],
     display: 'flex',
     flexDirection: 'column',
     gap: spacingVars['--spacing-3'],
