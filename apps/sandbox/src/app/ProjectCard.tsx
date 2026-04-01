@@ -1,9 +1,36 @@
 'use client';
 
+import {useState} from 'react';
 import Link from 'next/link';
 import {XDSText} from '@xds/core/Text';
 import type {SandboxPage} from './sandboxPages';
 import {ImageIcon} from './icons';
+
+function PreviewImage({src, name}: {src: string; name: string}) {
+  const [failed, setFailed] = useState(false);
+
+  if (failed) {
+    return (
+      <ImageIcon
+        style={{
+          width: 48,
+          height: 48,
+          opacity: 0.3,
+          color: 'var(--color-text-disabled)',
+        }}
+      />
+    );
+  }
+
+  return (
+    <img
+      src={src}
+      alt={`Preview of ${name}`}
+      style={{width: '100%', height: '100%', objectFit: 'cover'}}
+      onError={() => setFailed(true)}
+    />
+  );
+}
 
 export function ProjectCard({page}: {page: SandboxPage}) {
   return (
@@ -34,11 +61,7 @@ export function ProjectCard({page}: {page: SandboxPage}) {
             flexShrink: 0,
           }}>
           {page.preview ? (
-            <img
-              src={page.preview}
-              alt={`Preview of ${page.name}`}
-              style={{width: '100%', height: '100%', objectFit: 'cover'}}
-            />
+            <PreviewImage src={page.preview} name={page.name} />
           ) : (
             <ImageIcon
               style={{

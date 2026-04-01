@@ -1,0 +1,84 @@
+name: Sandbox Preview Screenshots
+
+on:
+  pull_request:
+    paths:
+      - 'apps/sandbox/src/app/**/page.tsx'
+      - 'apps/sandbox/src/app/sandboxPages.ts'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sandbox-previews-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  capture:
+    name: Capture Previews
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Install Playwright
+        run: npx playwright install chromium --with-deps
+
+      - name: Build core packages
+        run: yarn build
+
+      - name: Start sandbox and capture screenshots
+        run: |
+          # Start dev server in background
+          yarn workspace @xds/sandbox dev --port 3001 &
+          DEV_PID=$!
+
+          # Wait for server to be ready
+          echo "Waiting for dev server..."
+          for i in $(seq 1 30); do
+            if curl -s -o /dev/null http://localhost:3001; then
+              echo "Dev server ready"
+              break
+            fi
+            sleep 2
+          done
+
+          # Capture screenshots
+          node apps/sandbox/scripts/capture-previews.mjs --base-url http://localhost:3001
+
+          # Stop dev server
+          kill $DEV_PID 2>/dev/null || true
+
+      - name: Check for changes
+        id: changes
+        run: |
+          if git diff --quiet apps/sandbox/public/previews/; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No preview changes detected"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "Preview changes detected:"
+            git diff --stat apps/sandbox/public/previews/
+          fi
+
+      - name: Commit updated previews
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add apps/sandbox/public/previews/
+          git commit -m "chore: update sandbox preview screenshots"
+          git push

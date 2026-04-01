@@ -37,66 +37,63 @@ export interface SandboxCategory {
 
 export const categories: SandboxCategory[] = [
   {
-    label: 'Tools',
-    slug: 'tools',
-    description: 'Interactive tools for building and exploring XDS components.',
+    label: 'Components & Patterns',
+    slug: 'components-patterns',
+    description: 'Component demos, composition patterns, and interactive examples.',
     pages: [
       {
-        name: 'Example Cards',
+        name: 'Card Examples',
         href: '/pages/example-cards/',
         description: 'XDS components showcased in realistic card compositions',
+        preview: '/previews/example-cards.png',
       },
       {
-        name: 'Toast Playground',
+        name: 'Toast',
         href: '/pages/toast-playground/',
-        description: 'Prototype and test XDS toast notifications',
-      },
-      {
-        name: 'Theme Editor',
-        href: '/pages/theme-editor/',
-        description: 'Customize and preview XDS design tokens',
-      },
-      {
-        name: 'Shell Lab',
-        href: '/pages/shell-lab/',
-        description: 'Experiment with app shell layouts and navigation',
+        description: 'Toast notification component with variants and actions',
+        preview: '/previews/toast-playground.png',
       },
       {
         name: 'Table Overview',
         href: '/pages/table-overview/',
         description: 'Data table patterns and configurations',
+        preview: '/previews/table-overview.png',
       },
-    ],
-  },
-  {
-    label: 'Examples',
-    slug: 'examples',
-    description: 'Component demos and composition patterns.',
-    pages: [
       {
-        name: 'Navigation',
+        name: 'Side Navigation',
         href: '/pages/navigation/',
         description: 'Side navigation layout patterns',
+        preview: '/previews/navigation.png',
       },
       {
-        name: 'TopNav Menu',
+        name: 'Top Navigation',
         href: '/pages/topnav-menu/',
         description: 'Top navigation bar with menu integration',
+        preview: '/previews/topnav-menu.png',
       },
       {
         name: 'Mega Menu',
         href: '/pages/mega-menu/',
         description: 'Full-width dropdown navigation menu',
+        preview: '/previews/mega-menu.png',
       },
       {
-        name: 'Polymorphic Link',
+        name: 'Link Patterns',
         href: '/pages/polymorphic-link/',
         description: 'Flexible link component with router integration',
+        preview: '/previews/polymorphic-link.png',
       },
       {
-        name: 'Example',
+        name: 'App Shell',
+        href: '/pages/shell-lab/',
+        description: 'Experiment with app shell layouts and navigation',
+        preview: '/previews/shell-lab.png',
+      },
+      {
+        name: 'Component Overview',
         href: '/pages/example/',
         description: 'General component composition examples',
+        preview: '/previews/example.png',
       },
     ],
   },
@@ -111,22 +108,39 @@ export const categories: SandboxCategory[] = [
         href: '/pages/template-dashboard/',
         description:
           'Analytics dashboard with sidebar, stats, charts, and tables',
+        preview: '/previews/template-dashboard.png',
       },
       {
         name: 'Login',
         href: '/pages/template-login/',
         description: 'Authentication page with login form and branding',
+        preview: '/previews/template-login.png',
       },
       {
         name: 'Settings',
         href: '/pages/template-settings/',
         description: 'Settings page with tabs, forms, and toggles',
+        preview: '/previews/template-settings.png',
       },
       {
         name: 'Data Table',
         href: '/pages/template-data-table/',
         description:
           'Full data management view with search, filters, and pagination',
+        preview: '/previews/template-data-table.png',
+      },
+    ],
+  },
+  {
+    label: 'Tools',
+    slug: 'tools',
+    description: 'Interactive tools for building and exploring XDS components.',
+    pages: [
+      {
+        name: 'Theme Editor',
+        href: '/pages/theme-editor/',
+        description: 'Customize and preview XDS design tokens',
+        preview: '/previews/theme-editor.png',
       },
     ],
   },
