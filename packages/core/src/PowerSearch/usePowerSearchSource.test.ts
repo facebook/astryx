@@ -70,6 +70,84 @@ const configWithContentSearch: PowerSearchConfig = {
 // =============================================================================
 
 describe('usePowerSearchSource', () => {
+  describe('bootstrap (no query)', () => {
+    it('returns only field names without operator labels', () => {
+      const source = createSource(baseConfig);
+      const items = source.bootstrap();
+
+      expect(items.map(i => i.label)).toEqual(['Title', 'Status']);
+    });
+
+    it('sets defaultOperator on bootstrap items', () => {
+      const source = createSource(baseConfig);
+      const items = source.bootstrap();
+
+      const titleAux = items[0].auxiliaryData as PowerSearchAuxData;
+      expect(titleAux.fieldKey).toBe('title');
+      expect(titleAux.operatorKey).toBe('contains');
+
+      const statusAux = items[1].auxiliaryData as PowerSearchAuxData;
+      expect(statusAux.fieldKey).toBe('status');
+      expect(statusAux.operatorKey).toBe('is');
+    });
+
+    it('empty search returns same as bootstrap', () => {
+      const source = createSource(baseConfig);
+      expect(source.search('')).toEqual(source.bootstrap());
+    });
+  });
+
+  describe('search (with query)', () => {
+    it('shows field name for partial match', () => {
+      const source = createSource(baseConfig);
+      const results = source.search('tit');
+
+      expect(results.some(r => r.label === 'Title')).toBe(true);
+    });
+
+    it('shows all field+operator combos for partial match', () => {
+      const source = createSource(baseConfig);
+      const results = source.search('tit');
+      const labels = results.map(r => r.label);
+
+      expect(labels).toContain('Title');
+      expect(labels).toContain('Title contains');
+      expect(labels).toContain('Title is');
+    });
+
+    it('matches query against combined field and operator label', () => {
+      const source = createSource(baseConfig);
+      const results = source.search('title contains');
+
+      expect(results.some(r => r.label === 'Title contains')).toBe(true);
+    });
+
+    it('matches partial field + operator query', () => {
+      const source = createSource(baseConfig);
+      const results = source.search('title con');
+
+      expect(results.some(r => r.label === 'Title contains')).toBe(true);
+    });
+
+    it('field name item uses defaultOperator', () => {
+      const source = createSource(baseConfig);
+      const results = source.search('tit');
+
+      const titleItem = results.find(r => r.label === 'Title');
+      const aux = titleItem?.auxiliaryData as PowerSearchAuxData;
+      expect(aux.operatorKey).toBe('contains');
+    });
+
+    it('field+operator items use specific operator', () => {
+      const source = createSource(baseConfig);
+      const results = source.search('tit');
+
+      const isItem = results.find(r => r.label === 'Title is');
+      const aux = isItem?.auxiliaryData as PowerSearchAuxData;
+      expect(aux.operatorKey).toBe('is');
+    });
+  });
+
   describe('contentSearchFieldKey', () => {
     it('shows content search item for non-matching query', () => {
       const source = createSource(configWithContentSearch);
@@ -111,7 +189,8 @@ describe('usePowerSearchSource', () => {
       const results = source.search('tit');
 
       expect(results[0].label).toBe('"tit"');
-      // Field results should still appear after
+      // Field and field+operator results should still appear after
+      expect(results.some(r => r.label === 'Title')).toBe(true);
       expect(results.some(r => r.label === 'Title contains')).toBe(true);
     });
 
@@ -129,22 +208,6 @@ describe('usePowerSearchSource', () => {
 
       expect(results[0].label).toBe('"sta"');
       expect(results.length).toBeGreaterThan(1);
-    });
-  });
-
-  describe('field + operator matching', () => {
-    it('matches query against combined field and operator label', () => {
-      const source = createSource(baseConfig);
-      const results = source.search('title contains');
-
-      expect(results.some(r => r.label === 'Title contains')).toBe(true);
-    });
-
-    it('matches partial field + operator query', () => {
-      const source = createSource(baseConfig);
-      const results = source.search('title con');
-
-      expect(results.some(r => r.label === 'Title contains')).toBe(true);
     });
   });
 });

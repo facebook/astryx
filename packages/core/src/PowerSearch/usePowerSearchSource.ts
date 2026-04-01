@@ -30,14 +30,6 @@ export function usePowerSearchSource(
         const seen = new Set<string>();
 
         for (const field of config.getVisibleFields()) {
-          // Check if query matches field name or aliases
-          const fieldLabel = field.label.toLowerCase();
-          const fieldMatches =
-            fieldLabel.includes(lower) ||
-            field.typeaheadAliases?.some(alias =>
-              alias.toLowerCase().includes(lower),
-            );
-
           // Respect typeaheadMinQueryLength
           if (
             field.typeaheadMinQueryLength != null &&
@@ -46,17 +38,22 @@ export function usePowerSearchSource(
             continue;
           }
 
+          // Check if query matches field name or aliases
+          const fieldMatches =
+            field.label.toLowerCase().includes(lower) ||
+            field.typeaheadAliases?.some(alias =>
+              alias.toLowerCase().includes(lower),
+            );
+
           if (fieldMatches) {
-            // Add the field with its default operator
+            // Add the field name entry (opens with defaultOperator)
             const defaultOp = config.getDefaultOperator(field.key);
-            const id = defaultOp ? `${field.key}:${defaultOp.key}` : field.key;
-            if (!seen.has(id)) {
-              seen.add(id);
+            const fieldId = field.key;
+            if (!seen.has(fieldId)) {
+              seen.add(fieldId);
               results.push({
-                id,
-                label: defaultOp
-                  ? `${field.label} ${defaultOp.label}`
-                  : field.label,
+                id: fieldId,
+                label: field.label,
                 auxiliaryData: {
                   fieldKey: field.key,
                   operatorKey: defaultOp?.key,
@@ -65,7 +62,7 @@ export function usePowerSearchSource(
             }
           }
 
-          // Also check if query matches operator labels
+          // Check each field+operator combo against the query
           for (const op of field.operators) {
             const combinedLabel = `${field.label} ${op.label}`.toLowerCase();
             if (combinedLabel.includes(lower)) {
@@ -128,26 +125,14 @@ function buildFieldItems(config: InternalConfig): PowerSearchItem[] {
 
   for (const field of config.getVisibleFields()) {
     const defaultOp = config.getDefaultOperator(field.key);
-    if (defaultOp) {
-      items.push({
-        id: `${field.key}:${defaultOp.key}`,
-        label: defaultOp.label
-          ? `${field.label} ${defaultOp.label}`
-          : field.label,
-        auxiliaryData: {
-          fieldKey: field.key,
-          operatorKey: defaultOp.key,
-        },
-      });
-    } else {
-      items.push({
-        id: field.key,
-        label: field.label,
-        auxiliaryData: {
-          fieldKey: field.key,
-        },
-      });
-    }
+    items.push({
+      id: field.key,
+      label: field.label,
+      auxiliaryData: {
+        fieldKey: field.key,
+        operatorKey: defaultOp?.key,
+      },
+    });
   }
 
   return items;
