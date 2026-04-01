@@ -50,7 +50,7 @@ const styles = stylex.create({
     alignItems: 'center',
     width: '100%',
     maxWidth: 400,
-    gap: 24,
+    gap: 16,
   },
   fullWidth: {
     width: '100%',
@@ -77,7 +77,6 @@ const styles = stylex.create({
   },
   footer: {
     textAlign: 'center',
-    marginTop: 8,
   },
 });
 
