@@ -80,7 +80,7 @@ const toastStyles = stylex.create({
   toast: {
     pointerEvents: 'auto',
     display: 'flex',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: spacingVars['--spacing-3'],
     paddingBlock: spacingVars['--spacing-4'],
     paddingInlineStart: spacingVars['--spacing-5'],
@@ -125,6 +125,7 @@ const toastStyles = stylex.create({
     WebkitLineClamp: 2,
     WebkitBoxOrient: 'vertical',
     overflow: 'hidden',
+    wordBreak: 'break-word',
   },
   link: {
     color: 'inherit',
