@@ -23,6 +23,9 @@ import {
 
 const styles = stylex.create({
   group: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacingVars['--spacing-0-5'],
     paddingBlock: spacingVars['--spacing-1'],
   },
   heading: {

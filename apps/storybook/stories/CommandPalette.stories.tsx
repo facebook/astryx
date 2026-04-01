@@ -27,8 +27,9 @@ export default meta;
 type Story = StoryObj<typeof XDSCommandPalette>;
 
 /**
- * Full command palette with grouped items, context-driven filtering, and selection.
- * Type to filter. Arrow keys navigate across groups. Enter selects.
+ * Action launcher — the most common command palette pattern.
+ * Each item triggers a one-shot action and the palette closes.
+ * No selection state is tracked.
  */
 export const Default: Story = {
   render: function Render() {
@@ -42,34 +43,44 @@ export const Default: Story = {
         <XDSCommandPalette
           isOpen={isOpen}
           onOpenChange={setIsOpen}
-          onValueChange={value => console.log('Selected:', value)}
           input={<XDSCommandPaletteInput placeholder="Type a command..." />}
           footer={<XDSCommandPaletteFooter />}>
           <XDSCommandPaletteList>
             <XDSCommandPaletteGroup heading="Navigation">
-              <XDSCommandPaletteItem value="Go to Dashboard">
+              <XDSCommandPaletteItem
+                value="dashboard"
+                onSelect={() => console.log('Navigate to dashboard')}>
                 <XDSIcon icon="home" size="sm" />
                 Go to Dashboard
               </XDSCommandPaletteItem>
-              <XDSCommandPaletteItem value="Open Settings">
+              <XDSCommandPaletteItem
+                value="settings"
+                onSelect={() => console.log('Navigate to settings')}>
                 <XDSIcon icon="settings" size="sm" />
                 Open Settings
               </XDSCommandPaletteItem>
-              <XDSCommandPaletteItem value="View Profile">
+              <XDSCommandPaletteItem
+                value="profile"
+                onSelect={() => console.log('Navigate to profile')}>
                 <XDSIcon icon="user" size="sm" />
                 View Profile
               </XDSCommandPaletteItem>
             </XDSCommandPaletteGroup>
             <XDSCommandPaletteGroup heading="Actions">
               <XDSCommandPaletteItem
-                value="Toggle Dark Mode"
-                keywords={['theme', 'appearance']}>
+                value="dark-mode"
+                keywords={['theme', 'appearance']}
+                onSelect={() => console.log('Toggle dark mode')}>
                 Toggle Dark Mode
               </XDSCommandPaletteItem>
-              <XDSCommandPaletteItem value="Create New File">
+              <XDSCommandPaletteItem
+                value="new-file"
+                onSelect={() => console.log('Create new file')}>
                 Create New File
               </XDSCommandPaletteItem>
-              <XDSCommandPaletteItem value="Search Files">
+              <XDSCommandPaletteItem
+                value="search"
+                onSelect={() => console.log('Open file search')}>
                 <XDSIcon icon="search" size="sm" />
                 Search Files
               </XDSCommandPaletteItem>
@@ -82,7 +93,8 @@ export const Default: Story = {
 };
 
 /**
- * Flat list without groups — includes a disabled item.
+ * Flat launcher without groups — includes a disabled item.
+ * Items use `onSelect` for fire-and-forget actions.
  */
 export const FlatList: Story = {
   render: function Render() {
@@ -96,14 +108,22 @@ export const FlatList: Story = {
           input={<XDSCommandPaletteInput placeholder="Search..." />}
           footer={<XDSCommandPaletteFooter />}>
           <XDSCommandPaletteList>
-            <XDSCommandPaletteItem value="Home">Go Home</XDSCommandPaletteItem>
-            <XDSCommandPaletteItem value="Settings">
+            <XDSCommandPaletteItem
+              value="home"
+              onSelect={() => console.log('Go home')}>
+              Go Home
+            </XDSCommandPaletteItem>
+            <XDSCommandPaletteItem
+              value="settings"
+              onSelect={() => console.log('Open settings')}>
               Settings
             </XDSCommandPaletteItem>
-            <XDSCommandPaletteItem value="Disabled Item" isDisabled>
+            <XDSCommandPaletteItem value="disabled" isDisabled>
               Disabled Item
             </XDSCommandPaletteItem>
-            <XDSCommandPaletteItem value="Profile">
+            <XDSCommandPaletteItem
+              value="profile"
+              onSelect={() => console.log('View profile')}>
               Profile
             </XDSCommandPaletteItem>
           </XDSCommandPaletteList>
@@ -114,35 +134,33 @@ export const FlatList: Story = {
 };
 
 /**
- * Pre-selected item — palette opens with a value already selected.
+ * Picker mode — use when the palette represents a choice with persistent selection.
+ * The selected item is visually highlighted when the palette reopens.
+ * Use `value` + `onValueChange` to track which option is active.
+ *
+ * Good for: theme switchers, workspace pickers, language selectors.
  */
-export const WithSelectedItem: Story = {
+export const Picker: Story = {
   render: function Render() {
     const [isOpen, setIsOpen] = useState(false);
-    const [value, setValue] = useState('Open Settings');
+    const [theme, setTheme] = useState('light');
+
     return (
       <>
         <XDSButton
-          label={`Open (selected: ${value})`}
+          label={`Theme: ${theme}`}
           onClick={() => setIsOpen(true)}
         />
         <XDSCommandPalette
           isOpen={isOpen}
           onOpenChange={setIsOpen}
-          value={value}
-          onValueChange={setValue}
-          input={<XDSCommandPaletteInput placeholder="Type a command..." />}
-          footer={<XDSCommandPaletteFooter />}>
+          value={theme}
+          onValueChange={setTheme}
+          input={<XDSCommandPaletteInput placeholder="Choose a theme..." />}>
           <XDSCommandPaletteList>
-            <XDSCommandPaletteItem value="Go to Dashboard">
-              Go to Dashboard
-            </XDSCommandPaletteItem>
-            <XDSCommandPaletteItem value="Open Settings">
-              Open Settings
-            </XDSCommandPaletteItem>
-            <XDSCommandPaletteItem value="View Profile">
-              View Profile
-            </XDSCommandPaletteItem>
+            <XDSCommandPaletteItem value="light">Light</XDSCommandPaletteItem>
+            <XDSCommandPaletteItem value="dark">Dark</XDSCommandPaletteItem>
+            <XDSCommandPaletteItem value="system">System</XDSCommandPaletteItem>
           </XDSCommandPaletteList>
         </XDSCommandPalette>
       </>
@@ -191,7 +209,10 @@ export const ManyItems: Story = {
           footer={<XDSCommandPaletteFooter />}>
           <XDSCommandPaletteList>
             {items.map(item => (
-              <XDSCommandPaletteItem key={item} value={item}>
+              <XDSCommandPaletteItem
+                key={item}
+                value={item}
+                onSelect={() => console.log('Run:', item)}>
                 {item}
               </XDSCommandPaletteItem>
             ))}
@@ -254,8 +275,16 @@ export const CustomFooter: Story = {
             </XDSCommandPaletteFooter>
           }>
           <XDSCommandPaletteList>
-            <XDSCommandPaletteItem value="Option A">Option A</XDSCommandPaletteItem>
-            <XDSCommandPaletteItem value="Option B">Option B</XDSCommandPaletteItem>
+            <XDSCommandPaletteItem
+              value="option-a"
+              onSelect={() => console.log('Option A')}>
+              Option A
+            </XDSCommandPaletteItem>
+            <XDSCommandPaletteItem
+              value="option-b"
+              onSelect={() => console.log('Option B')}>
+              Option B
+            </XDSCommandPaletteItem>
           </XDSCommandPaletteList>
         </XDSCommandPalette>
       </>
@@ -265,6 +294,7 @@ export const CustomFooter: Story = {
 
 /**
  * External filtering disabled — all items always shown regardless of input.
+ * Use when filtering is handled server-side or externally.
  */
 export const UnfilteredList: Story = {
   render: function Render() {
@@ -279,13 +309,19 @@ export const UnfilteredList: Story = {
           input={<XDSCommandPaletteInput placeholder="Search (no filtering)..." />}
           footer={<XDSCommandPaletteFooter />}>
           <XDSCommandPaletteList>
-            <XDSCommandPaletteItem value="Always Visible A">
+            <XDSCommandPaletteItem
+              value="always-a"
+              onSelect={() => console.log('A')}>
               Always Visible A
             </XDSCommandPaletteItem>
-            <XDSCommandPaletteItem value="Always Visible B">
+            <XDSCommandPaletteItem
+              value="always-b"
+              onSelect={() => console.log('B')}>
               Always Visible B
             </XDSCommandPaletteItem>
-            <XDSCommandPaletteItem value="Always Visible C">
+            <XDSCommandPaletteItem
+              value="always-c"
+              onSelect={() => console.log('C')}>
               Always Visible C
             </XDSCommandPaletteItem>
           </XDSCommandPaletteList>
