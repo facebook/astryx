@@ -95,7 +95,7 @@ export default function LoginTemplate() {
 
         {/* Card */}
         <XDSCard maxWidth={400}>
-          <XDSVStack gap={6}>
+          <XDSVStack gap={4}>
             {/* Header */}
             <div {...stylex.props(styles.centered)}>
               <XDSVStack gap={2}>
