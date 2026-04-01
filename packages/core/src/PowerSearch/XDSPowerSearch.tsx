@@ -442,6 +442,32 @@ type PopoverState =
  *   onChange={(newFilters) => setFilters(newFilters)}
  * />
  * ```
+ *
+ * @example
+ * ```
+ * // Use contentSearchFieldKey to designate a field for free-text search.
+ * // When set, unstructured text input is routed to this field.
+ * const config = {
+ *   name: 'IssueSearch',
+ *   contentSearchFieldKey: 'title',
+ *   fields: [
+ *     {
+ *       key: 'title',
+ *       label: 'Title',
+ *       operators: [
+ *         { key: 'contains', label: 'contains', value: { type: 'string' } },
+ *       ],
+ *     },
+ *     {
+ *       key: 'status',
+ *       label: 'Status',
+ *       operators: [
+ *         { key: 'is', label: 'is', value: { type: 'enum', values: [...] } },
+ *       ],
+ *     },
+ *   ],
+ * };
+ * ```
  */
 export function XDSPowerSearch({
   config: configProp,
@@ -568,6 +594,17 @@ export function XDSPowerSearch({
         const operator = auxData.operatorKey
           ? config.getOperator(auxData.fieldKey, auxData.operatorKey)
           : config.getDefaultOperator(auxData.fieldKey);
+
+        // If the item already has a filter value (e.g. content search), add immediately
+        if (auxData.filterValue && operator) {
+          const newFilter: PowerSearchFilter = {
+            field: auxData.fieldKey,
+            operator: operator.key,
+            value: auxData.filterValue,
+          };
+          onChange([...filters, newFilter], 'add', filters.length);
+          return;
+        }
 
         // For "empty" type operators, add the filter immediately
         if (operator?.value.type === 'empty') {
