@@ -6,6 +6,7 @@
  *   tsx src/universal-compare.ts --xds abc123 --baseline def456
  *   tsx src/universal-compare.ts --xds abc123 --baseline def456 --html ghi789
  *   tsx src/universal-compare.ts --xds abc123 --baseline def456 --json
+ *   tsx src/universal-compare.ts --xds abc123 --baseline def456 --html ghi789 --markdown
  */
 
 import * as fs from 'node:fs';
@@ -85,12 +86,14 @@ function parseArgs(): {
   baseline: string;
   html?: string;
   json: boolean;
+  markdown: boolean;
 } {
   const args = process.argv.slice(2);
   let xds = '';
   let baseline = '';
   let html: string | undefined;
   let json = false;
+  let markdown = false;
 
   for (let i = 0; i < args.length; i++) {
     if ((args[i] === '--xds' || args[i] === '-x') && args[i + 1]) {
@@ -101,21 +104,138 @@ function parseArgs(): {
       html = args[++i];
     } else if (args[i] === '--json') {
       json = true;
+    } else if (args[i] === '--markdown' || args[i] === '--md') {
+      markdown = true;
     }
   }
 
   if (!xds || !baseline) {
     console.error(
-      'Usage: tsx src/universal-compare.ts --xds <id> --baseline <id> [--html <id>] [--json]',
+      'Usage: tsx src/universal-compare.ts --xds <id> --baseline <id> [--html <id>] [--json] [--markdown]',
     );
     process.exit(1);
   }
 
-  return {xds, baseline, html, json};
+  return {xds, baseline, html, json, markdown};
+}
+
+/**
+ * Generate a GitHub-flavored markdown summary table.
+ * Designed for pasting into GitHub issue bodies.
+ */
+function toMarkdown(opts: {
+  comparison: UniversalComparison;
+  xdsId: string;
+  baselineId: string;
+  htmlId?: string;
+  byPrompt: UniversalComparison['byPrompt'];
+}): string {
+  const {comparison, xdsId, baselineId, htmlId, byPrompt} = opts;
+  const {xds, baseline, html: htmlData, winners} = comparison;
+  const dimensions = getDimensionNames();
+  const isThreeWay = !!htmlData;
+  const lines: string[] = [];
+
+  // Summary table
+  if (isThreeWay) {
+    lines.push(
+      '| Target | Iteration | Overall | Correctness | Accessibility | Code Quality | Efficiency | Maintainability |',
+    );
+    lines.push(
+      '|--------|-----------|---------|-------------|---------------|--------------|------------|-----------------|',
+    );
+  } else {
+    lines.push(
+      '| Target | Iteration | Overall | Correctness | Accessibility | Code Quality | Efficiency | Maintainability |',
+    );
+    lines.push(
+      '|--------|-----------|---------|-------------|---------------|--------------|------------|-----------------|',
+    );
+  }
+
+  const dimOrder: UniversalDimension[] = [
+    'correctness',
+    'accessibility',
+    'codeQuality',
+    'efficiency',
+    'maintainability',
+  ];
+
+  const xdsRow = dimOrder.map(d => xds.averages[d]).join(' | ');
+  lines.push(`| **XDS** | \`${xdsId}\` | ${xds.overall} | ${xdsRow} |`);
+
+  const baseRow = dimOrder.map(d => baseline.averages[d]).join(' | ');
+  lines.push(
+    `| **Baseline** | \`${baselineId}\` | ${baseline.overall} | ${baseRow} |`,
+  );
+
+  if (isThreeWay && htmlData) {
+    const htmlRow = dimOrder.map(d => htmlData.averages[d]).join(' | ');
+    lines.push(
+      `| **HTML** | \`${htmlId}\` | ${htmlData.overall} | ${htmlRow} |`,
+    );
+  }
+
+  lines.push('');
+
+  // Per-prompt winners
+  const promptEntries = Object.entries(byPrompt);
+  if (promptEntries.length > 0) {
+    let xWins = 0;
+    let bWins = 0;
+    let hWins = 0;
+    let ties = 0;
+    for (const [, data] of promptEntries) {
+      if (data.winner === 'xds') xWins++;
+      else if (data.winner === 'baseline') bWins++;
+      else if (data.winner === 'html') hWins++;
+      else ties++;
+    }
+    if (isThreeWay) {
+      lines.push(
+        `**Per-prompt wins:** XDS ${xWins} · Baseline ${bWins} · HTML ${hWins} · Tie ${ties} (${promptEntries.length} prompts)`,
+      );
+    } else {
+      lines.push(
+        `**Per-prompt wins:** XDS ${xWins} · Baseline ${bWins} · Tie ${ties} (${promptEntries.length} prompts)`,
+      );
+    }
+    lines.push('');
+  }
+
+  // Dark mode
+  if (isThreeWay && htmlData) {
+    lines.push(
+      `**Dark mode:** XDS ${xds.darkModeRate}% · Baseline ${baseline.darkModeRate}% · HTML ${htmlData.darkModeRate}%`,
+    );
+  } else {
+    lines.push(
+      `**Dark mode:** XDS ${xds.darkModeRate}% · Baseline ${baseline.darkModeRate}%`,
+    );
+  }
+
+  // Dimension winners
+  lines.push('');
+  lines.push('**Dimension winners:**');
+  for (const d of dimensions) {
+    const w = winners[d];
+    const icon =
+      w === 'xds' ? '🟢' : w === 'baseline' ? '🔵' : w === 'html' ? '🟡' : '⚪';
+    const label = DIMENSION_LABELS[d] || d;
+    lines.push(`- ${label}: ${icon} ${w === 'tie' ? 'Tie' : w.toUpperCase()}`);
+  }
+
+  return lines.join('\n');
 }
 
 async function main() {
-  const {xds: xdsId, baseline: baselineId, html: htmlId, json} = parseArgs();
+  const {
+    xds: xdsId,
+    baseline: baselineId,
+    html: htmlId,
+    json,
+    markdown,
+  } = parseArgs();
 
   const xds = loadOrGenerate(xdsId);
   const baseline = loadOrGenerate(baselineId);
@@ -177,6 +297,19 @@ async function main() {
 
   if (json) {
     console.log(JSON.stringify(comparison, null, 2));
+    return;
+  }
+
+  if (markdown) {
+    console.log(
+      toMarkdown({
+        comparison,
+        xdsId,
+        baselineId,
+        htmlId,
+        byPrompt,
+      }),
+    );
     return;
   }
 

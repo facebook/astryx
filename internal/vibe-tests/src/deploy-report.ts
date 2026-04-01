@@ -162,19 +162,48 @@ async function main() {
       console.log(`   ✓ ${previewCount} preview pages copied`);
     }
 
-    // Deploy screenshots if they exist (from GHA vibe-screenshots workflow)
-    // Check all iterations for screenshots and merge into one directory
+    // Deploy screenshots if they exist locally (from GHA artifact download)
+    // Also check if screenshots were already deployed to gh-pages by the
+    // vibe-screenshots workflow's deploy-screenshots job.
     const targetScreenshotsDir = path.join(targetDir, 'screenshots');
     let totalScreenshots = 0;
+
+    // First: check if gh-pages already has screenshots (from GHA deploy-screenshots job)
+    if (
+      fs.existsSync(targetScreenshotsDir) &&
+      countFiles(targetScreenshotsDir, '.png') > 0
+    ) {
+      totalScreenshots = countFiles(targetScreenshotsDir, '.png');
+      console.log(
+        `   ✓ ${totalScreenshots} screenshots found on gh-pages (from GHA)`,
+      );
+    }
+
+    // Second: copy any local screenshots (may add to or overwrite gh-pages ones)
     for (const id of [iteration, baseline, html].filter(Boolean) as string[]) {
       const screenshotsDir = path.join(VIBE_DIR, 'results', id, 'screenshots');
       if (fs.existsSync(screenshotsDir)) {
         copyDirRecursive(screenshotsDir, targetScreenshotsDir);
-        totalScreenshots += countFiles(screenshotsDir, '.png');
+        const localCount = countFiles(screenshotsDir, '.png');
+        totalScreenshots = countFiles(targetScreenshotsDir, '.png');
+        console.log(`   ✓ ${localCount} screenshots copied from local results`);
       }
     }
-    if (totalScreenshots > 0) {
-      console.log(`   ✓ ${totalScreenshots} screenshots copied`);
+
+    // If screenshots exist (from either source), inject manifest into report HTML
+    // so the report app can render them. The report HTML may have been built
+    // without screenshot data if screenshots weren't available locally during build.
+    if (
+      totalScreenshots > 0 &&
+      fs.existsSync(path.join(targetDir, 'index.html'))
+    ) {
+      const manifestPath = path.join(targetScreenshotsDir, 'manifest.json');
+      if (fs.existsSync(manifestPath)) {
+        injectScreenshotsIntoReport(
+          path.join(targetDir, 'index.html'),
+          manifestPath,
+        );
+      }
     }
 
     updateReportsIndex(tmpDir);
@@ -203,6 +232,69 @@ async function main() {
     console.log(`   📊 ${reportUrl}`);
   } finally {
     fs.rmSync(tmpDir, {recursive: true, force: true});
+  }
+}
+
+/**
+ * Inject screenshot manifest into a deployed report HTML file.
+ *
+ * When the report was built without local screenshots (common in sandbox
+ * environments that can't download GHA artifacts), the __REPORT_DATA__
+ * in the HTML will have `screenshots: null`. This function reads the
+ * screenshot manifest from gh-pages and patches the report data so the
+ * ScreenshotGallery component renders properly.
+ */
+function injectScreenshotsIntoReport(
+  htmlPath: string,
+  manifestPath: string,
+): void {
+  try {
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+    const screenshots: Record<string, string> = {};
+
+    // Flatten the nested manifest (promptId → target → viewport → theme → filename)
+    // into a flat map (filename → relative URL)
+    for (const [, targets] of Object.entries(manifest)) {
+      for (const [, viewports] of Object.entries(
+        targets as Record<string, Record<string, Record<string, string>>>,
+      )) {
+        for (const [, themes] of Object.entries(
+          viewports as Record<string, Record<string, string>>,
+        )) {
+          for (const [, filename] of Object.entries(
+            themes as Record<string, string>,
+          )) {
+            screenshots[filename] = `screenshots/${filename}`;
+          }
+        }
+      }
+    }
+
+    if (Object.keys(screenshots).length === 0) return;
+
+    let html = fs.readFileSync(htmlPath, 'utf-8');
+
+    // Find the __REPORT_DATA__ script tag and patch the screenshots field
+    const dataMatch = html.match(
+      /window\.__REPORT_DATA__=(\{.+?\});<\/script>/,
+    );
+    if (dataMatch) {
+      const data = JSON.parse(dataMatch[1]);
+      if (!data.screenshots || Object.keys(data.screenshots).length === 0) {
+        data.screenshots = screenshots;
+        const newScript = `window.__REPORT_DATA__=${JSON.stringify(data)};</script>`;
+        html = html.replace(
+          /window\.__REPORT_DATA__=\{.+?\};<\/script>/,
+          newScript,
+        );
+        fs.writeFileSync(htmlPath, html);
+        console.log(
+          `   ✓ Injected ${Object.keys(screenshots).length} screenshot references into report`,
+        );
+      }
+    }
+  } catch (err) {
+    console.warn(`   ⚠️  Failed to inject screenshots into report: ${err}`);
   }
 }
 
