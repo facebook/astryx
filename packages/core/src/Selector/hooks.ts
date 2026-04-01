@@ -6,7 +6,6 @@
  * @position Internal hooks; used by XDSSelector.tsx
  */
 
-
 import {useCallback, useLayoutEffect, useRef, useState} from 'react';
 import type {RefObject} from 'react';
 import type {XDSSelectorOptionData} from './types';
@@ -31,6 +30,12 @@ interface UseSelectedItemOffsetResult {
 /**
  * Calculates the offset needed to position the dropdown so that the selected
  * item appears centered over the trigger button (macOS-style selector).
+ *
+ * When the offset would push the popover out of the viewport (e.g. the selector
+ * is near the top of the page), the offset is clamped so the popover stays
+ * fully visible. If the selected item can't be shown over the trigger without
+ * going out of bounds, the popover falls back to appearing below the trigger
+ * with no offset.
  */
 export function useSelectedItemOffset({
   isOpen,
@@ -84,7 +89,32 @@ export function useSelectedItemOffset({
     // (item center in listbox) + (half trigger height to reach trigger's center from its bottom edge)
     const calculatedOffset = itemCenterInListbox + triggerRect.height / 2;
 
-    setOffset(calculatedOffset);
+    // Clamp to viewport bounds — don't let the popover go above the screen.
+    // The popover's top edge after offset = triggerRect.bottom - calculatedOffset.
+    // We want: top >= 0 (viewport top) and bottom <= viewportHeight.
+    const popoverTopAfterOffset = triggerRect.bottom - calculatedOffset;
+    const listboxHeight = listboxRect.height;
+    const popoverBottomAfterOffset = popoverTopAfterOffset + listboxHeight;
+    const viewportHeight = window.innerHeight;
+
+    let clampedOffset = calculatedOffset;
+
+    if (popoverTopAfterOffset < 0) {
+      // Would go above viewport — reduce offset so top edge sits at viewport top
+      clampedOffset = calculatedOffset + popoverTopAfterOffset;
+    } else if (popoverBottomAfterOffset > viewportHeight) {
+      // Would go below viewport — reduce offset so bottom edge sits at viewport bottom
+      clampedOffset =
+        calculatedOffset - (popoverBottomAfterOffset - viewportHeight);
+    }
+
+    // If even the clamped offset is negative or near-zero, fall back to
+    // showing the popover below the trigger with no overlay offset
+    if (clampedOffset < 0) {
+      clampedOffset = 0;
+    }
+
+    setOffset(clampedOffset);
     setIsPositioned(true);
   }, [isOpen, selectedItemIndex, listboxId, listboxRef, triggerRef]);
 
