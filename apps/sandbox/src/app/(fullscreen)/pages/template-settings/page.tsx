@@ -88,7 +88,7 @@ export default function SettingsTemplate() {
                   <XDSTextInput label="Last name" value={lastName} onChange={setLastName} />
                   <XDSTextInput label="Email address" value={email} onChange={setEmail} />
                   <div>
-                    <XDSButton label="Save" variant="primary" size="sm" />
+                    <XDSButton label="Save" variant="primary" />
                   </div>
                 </XDSVStack>
               </div>
@@ -112,7 +112,7 @@ export default function SettingsTemplate() {
                   <XDSTextInput label="New password" type="password" value={newPw} onChange={setNewPw} />
                   <XDSTextInput label="Confirm password" type="password" value={confirmPw} onChange={setConfirmPw} />
                   <div>
-                    <XDSButton label="Save" variant="primary" size="sm" />
+                    <XDSButton label="Save" variant="primary" />
                   </div>
                 </XDSVStack>
               </div>
@@ -151,7 +151,7 @@ export default function SettingsTemplate() {
                     onChange={setTwoFactor}
                   />
                   <div>
-                    <XDSButton label="Save" variant="primary" size="sm" />
+                    <XDSButton label="Save" variant="primary" />
                   </div>
                 </XDSVStack>
               </div>
