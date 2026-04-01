@@ -7,238 +7,175 @@ import {
   XDSSideNav,
   XDSSideNavItem,
   XDSSideNavSection,
-  XDSSideNavCollapseButton,
 } from '@xds/core/SideNav';
-import {XDSTopNav, XDSTopNavHeading, XDSTopNavItem} from '@xds/core/TopNav';
+import {XDSTopNav, XDSTopNavHeading} from '@xds/core/TopNav';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSCard} from '@xds/core/Card';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSAvatar} from '@xds/core/Avatar';
-import {XDSProgressBar} from '@xds/core/ProgressBar';
 import {XDSButton} from '@xds/core/Button';
 import {XDSNavIcon} from '@xds/core/NavIcon';
 import {XDSTable, proportional, pixel} from '@xds/core/Table';
 import type {XDSTableColumn} from '@xds/core/Table';
+import {XDSTabList, XDSTab} from '@xds/core/TabList';
+import {XDSLink} from '@xds/core/Link';
+import {
+  XDSSegmentedControl,
+  XDSSegmentedControlItem,
+} from '@xds/core/SegmentedControl';
 
-// =============================================================================
+
 // Icons
-// =============================================================================
-
 const DashboardIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} {...props}>
     <rect x="3" y="3" width="7" height="7" rx="1" />
     <rect x="14" y="3" width="7" height="7" rx="1" />
     <rect x="3" y="14" width="7" height="7" rx="1" />
     <rect x="14" y="14" width="7" height="7" rx="1" />
   </svg>
 );
+const LifecycleIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} {...props}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 7v5l3 3" />
+  </svg>
+);
 const AnalyticsIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} {...props}>
     <path d="M18 20V10M12 20V4M6 20v-6" />
   </svg>
 );
-const UsersIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
+const ProjectsIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} {...props}>
+    <path d="M2 17l10 5 10-5M2 12l10 5 10-5M12 2L2 7l10 5 10-5-10-5z" />
+  </svg>
+);
+const TeamIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} {...props}>
     <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
     <circle cx="9" cy="7" r="4" />
     <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
   </svg>
 );
-const OrdersIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4zM3 6h18M16 10a4 4 0 0 1-8 0" />
+const DataIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} {...props}>
+    <ellipse cx="12" cy="5" rx="9" ry="3" />
+    <path d="M21 12c0 1.66-4.03 3-9 3s-9-1.34-9-3" />
+    <path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5" />
+  </svg>
+);
+const ReportsIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} {...props}>
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+    <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" />
+  </svg>
+);
+const WordIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} {...props}>
+    <path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
   </svg>
 );
 const SettingsIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} {...props}>
     <circle cx="12" cy="12" r="3" />
     <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
   </svg>
 );
+const HelpIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} {...props}>
+    <circle cx="12" cy="12" r="10" />
+    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01" />
+  </svg>
+);
+const SearchIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} {...props}>
+    <circle cx="11" cy="11" r="8" />
+    <path d="M21 21l-4.35-4.35" />
+  </svg>
+);
+const MailIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} {...props}>
+    <rect x="2" y="4" width="20" height="16" rx="2" />
+    <path d="M22 7l-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+  </svg>
+);
+const MoreIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} {...props}>
+    <circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" /><circle cx="5" cy="12" r="1" />
+  </svg>
+);
+const TrendUpIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} width={16} height={16}>
+    <path d="M23 6l-9.5 9.5-5-5L1 18" /><path d="M17 6h6v6" />
+  </svg>
+);
+const TrendDownIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} width={16} height={16}>
+    <path d="M23 18l-9.5-9.5-5 5L1 6" /><path d="M17 18h6v-6" />
+  </svg>
+);
 
-// =============================================================================
 // Mock data
-// =============================================================================
-
 const stats = [
-  {
-    label: 'Total Revenue',
-    value: '$45,231.89',
-    change: '+20.1%',
-    positive: true,
-  },
-  {label: 'Subscriptions', value: '2,350', change: '+180.1%', positive: true},
-  {label: 'Active Users', value: '12,234', change: '+19%', positive: true},
-  {label: 'Bounce Rate', value: '21.3%', change: '-4.5%', positive: true},
+  {label: 'Total Revenue', value: '$1,250.00', change: '+12.5%', positive: true, desc: 'Trending up this month'},
+  {label: 'New Customers', value: '1,234', change: '-20%', positive: false, desc: 'Down 20% this period'},
+  {label: 'Active Accounts', value: '45,678', change: '+12.5%', positive: true, desc: 'Strong user retention'},
+  {label: 'Growth Rate', value: '4.5%', change: '+4.5%', positive: true, desc: 'Steady performance increase'},
 ];
 
-interface OrderRow extends Record<string, unknown> {
+interface DocRow extends Record<string, unknown> {
   id: string;
-  customer: string;
-  avatar: string;
-  email: string;
-  amount: string;
-  status: 'completed' | 'processing' | 'failed';
-  date: string;
+  header: string;
+  sectionType: string;
+  status: 'In Process' | 'Done' | 'Draft';
+  target: number;
+  limit: number;
+  reviewer: string;
 }
 
-const recentOrders: OrderRow[] = [
-  {
-    id: '1',
-    customer: 'Olivia Martin',
-    avatar: 'https://i.pravatar.cc/36?img=1',
-    email: 'olivia@example.com',
-    amount: '$1,999.00',
-    status: 'completed',
-    date: 'Mar 28',
-  },
-  {
-    id: '2',
-    customer: 'Jackson Lee',
-    avatar: 'https://i.pravatar.cc/36?img=2',
-    email: 'jackson@example.com',
-    amount: '$39.00',
-    status: 'processing',
-    date: 'Mar 27',
-  },
-  {
-    id: '3',
-    customer: 'Isabella Nguyen',
-    avatar: 'https://i.pravatar.cc/36?img=3',
-    email: 'isabella@example.com',
-    amount: '$299.00',
-    status: 'completed',
-    date: 'Mar 27',
-  },
-  {
-    id: '4',
-    customer: 'William Kim',
-    avatar: 'https://i.pravatar.cc/36?img=4',
-    email: 'will@example.com',
-    amount: '$99.00',
-    status: 'failed',
-    date: 'Mar 26',
-  },
-  {
-    id: '5',
-    customer: 'Sofia Davis',
-    avatar: 'https://i.pravatar.cc/36?img=5',
-    email: 'sofia@example.com',
-    amount: '$599.00',
-    status: 'completed',
-    date: 'Mar 26',
-  },
+const docRows: DocRow[] = [
+  {id: '1', header: 'Cover page', sectionType: 'Cover page', status: 'In Process', target: 18, limit: 5, reviewer: 'Eddie Lake'},
+  {id: '2', header: 'Table of contents', sectionType: 'Table of contents', status: 'Done', target: 20, limit: 24, reviewer: 'Eddie Lake'},
+  {id: '3', header: 'Executive summary', sectionType: 'Summary', status: 'In Process', target: 12, limit: 8, reviewer: 'Eddie Lake'},
+  {id: '4', header: 'Technical approach', sectionType: 'Technical', status: 'Draft', target: 45, limit: 30, reviewer: 'Eddie Lake'},
+  {id: '5', header: 'Design methodology', sectionType: 'Design', status: 'In Process', target: 22, limit: 15, reviewer: 'Eddie Lake'},
 ];
 
-const teamMembers = [
-  {
-    name: 'Sofia Davis',
-    role: 'Engineering Lead',
-    avatar: 'https://i.pravatar.cc/36?img=5',
-  },
-  {
-    name: 'Jackson Lee',
-    role: 'Product Designer',
-    avatar: 'https://i.pravatar.cc/36?img=2',
-  },
-  {
-    name: 'Isabella Nguyen',
-    role: 'Frontend Engineer',
-    avatar: 'https://i.pravatar.cc/36?img=3',
-  },
-];
-
-// =============================================================================
-// Table columns
-// =============================================================================
-
-const orderColumns: XDSTableColumn<OrderRow>[] = [
-  {
-    key: 'customer',
-    header: 'Customer',
-    width: proportional(4),
-    renderCell: (item: OrderRow) => (
-      <XDSHStack gap={3} vAlign="center">
-        <XDSAvatar src={item.avatar} name={item.customer} size="small" />
-        <XDSVStack gap={0}>
-          <XDSText type="body" weight="bold">
-            {item.customer}
-          </XDSText>
-          <XDSText type="supporting" color="secondary">
-            {item.email}
-          </XDSText>
-        </XDSVStack>
-      </XDSHStack>
-    ),
-  },
+const docColumns: XDSTableColumn<DocRow>[] = [
+  {key: 'header', header: 'Header', width: proportional(3)},
+  {key: 'sectionType', header: 'Section Type', width: proportional(2)},
   {
     key: 'status',
     header: 'Status',
     width: pixel(130),
-    renderCell: (item: OrderRow) => (
+    renderCell: (item: DocRow) => (
       <XDSBadge
-        variant={
-          item.status === 'completed'
-            ? 'success'
-            : item.status === 'processing'
-              ? 'info'
-              : 'error'
-        }
-        label={item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+        variant={item.status === 'Done' ? 'success' : item.status === 'Draft' ? undefined : 'info'}
+        label={item.status}
       />
     ),
   },
+  {key: 'target', header: 'Target', width: pixel(80)},
+  {key: 'limit', header: 'Limit', width: pixel(80)},
   {
-    key: 'date',
-    header: 'Date',
-    width: pixel(100),
-    renderCell: (item: OrderRow) => (
-      <XDSText type="supporting" color="secondary">
-        {item.date}
-      </XDSText>
-    ),
-  },
-  {
-    key: 'amount',
-    header: 'Amount',
-    width: pixel(120),
-    renderCell: (item: OrderRow) => (
-      <XDSText type="body" weight="bold">
-        {item.amount}
-      </XDSText>
+    key: 'reviewer',
+    header: 'Reviewer',
+    width: pixel(140),
+    renderCell: (item: DocRow) => (
+      <XDSText type="body">{item.reviewer}</XDSText>
     ),
   },
 ];
 
-// =============================================================================
-// Styles
-// =============================================================================
+// Chart data — approximate the area chart from the screenshot
+const chartPoints = [
+  10, 15, 12, 18, 25, 30, 28, 35, 32, 38, 42, 35, 30, 28, 32, 25, 20, 22,
+  28, 35, 30, 25, 22, 28, 32, 38, 42, 45, 40, 35, 38, 42, 48, 45, 40, 38,
+  42, 45, 50, 48, 42, 38, 35, 40, 45, 42, 38, 35, 30, 28, 32, 35, 38, 42,
+  45, 48, 52, 50, 45, 42, 38, 35, 32, 30, 28, 25, 22, 20, 18, 22, 25, 28,
+  32, 35, 38, 42, 45, 48, 42, 38, 35, 32, 35, 38, 42, 45, 48, 52, 55, 50,
+];
 
 const styles = stylex.create({
   statsGrid: {
@@ -246,238 +183,173 @@ const styles = stylex.create({
     gridTemplateColumns: 'repeat(4, 1fr)',
     gap: 16,
   },
-  statCard: {
-    padding: '20px 24px',
-  },
-  changePositive: {
-    color: '#16a34a',
-  },
-  changeNegative: {
-    color: '#dc2626',
-  },
-  contentGrid: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 320px',
-    gap: 24,
-  },
-  chartPlaceholder: {
-    height: 240,
+  statRow: {
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 8,
-    backgroundColor: 'var(--color-surface-wash, #f5f5f5)',
+    justifyContent: 'space-between',
   },
-  barChart: {
+  changePositive: {color: 'var(--color-text-success, #16a34a)'},
+  changeNegative: {color: 'var(--color-text-error, #dc2626)'},
+  chartContainer: {
+    position: 'relative',
+    height: 260,
+    overflow: 'hidden',
+  },
+  chartSvg: {
+    width: '100%',
+    height: '100%',
+  },
+  tabRow: {
     display: 'flex',
-    alignItems: 'flex-end',
-    gap: 8,
-    height: 180,
-    padding: '0 24px',
-  },
-  bar: {
-    flex: 1,
-    borderRadius: '4px 4px 0 0',
-    backgroundColor: 'var(--color-action-primary, #0066ff)',
-    opacity: 0.8,
-    minWidth: 20,
-  },
-  barLabel: {
-    textAlign: 'center' as const,
-    marginTop: 8,
-  },
-  teamCard: {
-    padding: 16,
-  },
-  progress: {
-    padding: '0 24px 24px',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 16,
   },
 });
 
-// =============================================================================
-// Components
-// =============================================================================
+function AreaChart() {
+  const max = Math.max(...chartPoints);
+  const w = 900;
+  const h = 220;
+  const pad = 20;
+  const points = chartPoints.map((v, i) => ({
+    x: pad + (i / (chartPoints.length - 1)) * (w - pad * 2),
+    y: h - pad - (v / max) * (h - pad * 2),
+  }));
+  const line = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ');
+  const area = `${line} L${points[points.length - 1].x},${h} L${points[0].x},${h} Z`;
 
-function StatCard({label, value, change, positive}: (typeof stats)[0]) {
+  const months = ['Apr 7', 'Apr 13', 'Apr 19', 'Apr 26', 'May 2', 'May 8', 'May 14', 'May 21', 'May 28', 'Jun 3', 'Jun 9', 'Jun 15', 'Jun 22', 'Jun 30'];
+
+  return (
+    <div {...stylex.props(styles.chartContainer)}>
+      <svg viewBox={`0 0 ${w} ${h + 30}`} {...stylex.props(styles.chartSvg)} preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="var(--color-accent, #000)" stopOpacity="0.15" />
+            <stop offset="100%" stopColor="var(--color-accent, #000)" stopOpacity="0.01" />
+          </linearGradient>
+        </defs>
+        {/* Grid lines */}
+        {[0.25, 0.5, 0.75].map(pct => (
+          <line
+            key={pct}
+            x1={pad}
+            y1={h - pad - pct * (h - pad * 2)}
+            x2={w - pad}
+            y2={h - pad - pct * (h - pad * 2)}
+            stroke="var(--color-divider, #e5e5e5)"
+            strokeWidth="1"
+          />
+        ))}
+        <path d={area} fill="url(#areaGrad)" />
+        <path d={line} fill="none" stroke="var(--color-text-primary, #000)" strokeWidth="1.5" />
+        {/* X-axis labels */}
+        {months.map((label, i) => (
+          <text
+            key={label}
+            x={pad + (i / (months.length - 1)) * (w - pad * 2)}
+            y={h + 20}
+            textAnchor="middle"
+            fontSize="11"
+            fill="var(--color-text-secondary, #888)"
+          >
+            {label}
+          </text>
+        ))}
+      </svg>
+    </div>
+  );
+}
+
+function StatCard({label, value, change, positive, desc}: typeof stats[0]) {
   return (
     <XDSCard>
-      <div {...stylex.props(styles.statCard)}>
-        <XDSVStack gap={1}>
-          <XDSText type="supporting" color="secondary">
-            {label}
-          </XDSText>
-          <XDSText type="large" weight="bold">
-            {value}
-          </XDSText>
-          <XDSText type="supporting" color={positive ? undefined : 'secondary'}>
-            <span
-              {...stylex.props(
-                positive ? styles.changePositive : styles.changeNegative,
-              )}>
-              {change}
-            </span>{' '}
-            from last month
-          </XDSText>
-        </XDSVStack>
-      </div>
+      <XDSVStack gap={2}>
+        <div {...stylex.props(styles.statRow)}>
+          <XDSText type="supporting" color="secondary">{label}</XDSText>
+          <XDSHStack gap={1} vAlign="center">
+            {positive ? <TrendUpIcon /> : <TrendDownIcon />}
+            <span {...stylex.props(positive ? styles.changePositive : styles.changeNegative)}>
+              <XDSText type="supporting">{change}</XDSText>
+            </span>
+          </XDSHStack>
+        </div>
+        <XDSHeading level={2}>{value}</XDSHeading>
+        <XDSText type="supporting" color="secondary">{desc}</XDSText>
+      </XDSVStack>
     </XDSCard>
   );
 }
-
-const monthlyData = [
-  {month: 'Jan', value: 65},
-  {month: 'Feb', value: 45},
-  {month: 'Mar', value: 80},
-  {month: 'Apr', value: 55},
-  {month: 'May', value: 70},
-  {month: 'Jun', value: 90},
-  {month: 'Jul', value: 60},
-  {month: 'Aug', value: 85},
-  {month: 'Sep', value: 75},
-  {month: 'Oct', value: 95},
-  {month: 'Nov', value: 88},
-  {month: 'Dec', value: 72},
-];
-
-function MiniBarChart() {
-  const max = Math.max(...monthlyData.map(d => d.value));
-  return (
-    <XDSVStack gap={2}>
-      <div {...stylex.props(styles.barChart)}>
-        {monthlyData.map(d => (
-          <div
-            key={d.month}
-            style={{
-              flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-            }}>
-            <div
-              {...stylex.props(styles.bar)}
-              style={{height: `${(d.value / max) * 100}%`}}
-            />
-            <div {...stylex.props(styles.barLabel)}>
-              <XDSText type="supporting" color="secondary">
-                {d.month}
-              </XDSText>
-            </div>
-          </div>
-        ))}
-      </div>
-    </XDSVStack>
-  );
-}
-
-// =============================================================================
-// Sidebar
-// =============================================================================
 
 function DashboardSideNav() {
   const [active, setActive] = useState('dashboard');
   return (
     <XDSSideNav
       header={
-        <div
-          style={{
-            padding: '12px 16px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-          }}>
-          <XDSNavIcon
-            icon={<AnalyticsIcon style={{width: 16, height: 16}} />}
-          />
-          <XDSText type="body" weight="bold">
-            Acme Inc
-          </XDSText>
-        </div>
+        <XDSVStack gap={3} style={{padding: '12px 16px'}}>
+          <XDSHStack gap={2} vAlign="center">
+            <XDSNavIcon icon={<DashboardIcon style={{width: 16, height: 16}} />} />
+            <XDSText type="body" weight="bold">Acme Inc.</XDSText>
+          </XDSHStack>
+          <XDSHStack gap={2}>
+            <XDSButton label="Quick Create" variant="primary" size="sm" xstyle={{flex: 1} as never} />
+            <XDSButton label="Mail" variant="ghost" size="sm" icon={<MailIcon style={{width: 16, height: 16}} />} />
+          </XDSHStack>
+        </XDSVStack>
       }
-      footer={<XDSSideNavCollapseButton />}>
-      <XDSSideNavSection title="Overview">
-        <XDSSideNavItem
-          label="Dashboard"
-          icon={DashboardIcon}
-          isSelected={active === 'dashboard'}
-          onClick={() => setActive('dashboard')}
-        />
-        <XDSSideNavItem
-          label="Analytics"
-          icon={AnalyticsIcon}
-          isSelected={active === 'analytics'}
-          onClick={() => setActive('analytics')}
-        />
+      footer={
+        <XDSVStack gap={0} style={{padding: '8px 0'}}>
+          <XDSSideNavItem label="Settings" icon={SettingsIcon} isSelected={active === 'settings'} onClick={() => setActive('settings')} />
+          <XDSSideNavItem label="Get Help" icon={HelpIcon} isSelected={active === 'help'} onClick={() => setActive('help')} />
+          <XDSSideNavItem label="Search" icon={SearchIcon} isSelected={active === 'search'} onClick={() => setActive('search')} />
+          <div style={{padding: '12px 16px', borderTop: '1px solid var(--color-divider)'}}>
+            <XDSHStack gap={3} vAlign="center">
+              <XDSAvatar name="shadcn" size="small" />
+              <XDSVStack gap={0} style={{flex: 1}}>
+                <XDSText type="body" weight="bold">shadcn</XDSText>
+                <XDSText type="supporting" color="secondary">m@example.com</XDSText>
+              </XDSVStack>
+              <XDSButton label="More" variant="ghost" size="sm" icon={<MoreIcon style={{width: 16, height: 16}} />} />
+            </XDSHStack>
+          </div>
+        </XDSVStack>
+      }>
+      <XDSSideNavSection title="Platform">
+        <XDSSideNavItem label="Dashboard" icon={DashboardIcon} isSelected={active === 'dashboard'} onClick={() => setActive('dashboard')} />
+        <XDSSideNavItem label="Lifecycle" icon={LifecycleIcon} isSelected={active === 'lifecycle'} onClick={() => setActive('lifecycle')} />
+        <XDSSideNavItem label="Analytics" icon={AnalyticsIcon} isSelected={active === 'analytics'} onClick={() => setActive('analytics')} />
+        <XDSSideNavItem label="Projects" icon={ProjectsIcon} isSelected={active === 'projects'} onClick={() => setActive('projects')} />
+        <XDSSideNavItem label="Team" icon={TeamIcon} isSelected={active === 'team'} onClick={() => setActive('team')} />
       </XDSSideNavSection>
-      <XDSSideNavSection title="Management">
-        <XDSSideNavItem
-          label="Customers"
-          icon={UsersIcon}
-          isSelected={active === 'customers'}
-          onClick={() => setActive('customers')}
-        />
-        <XDSSideNavItem
-          label="Orders"
-          icon={OrdersIcon}
-          isSelected={active === 'orders'}
-          onClick={() => setActive('orders')}
-        />
-        <XDSSideNavItem
-          label="Settings"
-          icon={SettingsIcon}
-          isSelected={active === 'settings'}
-          onClick={() => setActive('settings')}
-        />
+      <XDSSideNavSection title="Documents">
+        <XDSSideNavItem label="Data Library" icon={DataIcon} isSelected={active === 'data'} onClick={() => setActive('data')} />
+        <XDSSideNavItem label="Reports" icon={ReportsIcon} isSelected={active === 'reports'} onClick={() => setActive('reports')} />
+        <XDSSideNavItem label="Word Assistant" icon={WordIcon} isSelected={active === 'word'} onClick={() => setActive('word')} />
+        <XDSSideNavItem label="More" icon={MoreIcon} isSelected={active === 'more'} onClick={() => setActive('more')} />
       </XDSSideNavSection>
     </XDSSideNav>
   );
 }
 
-// =============================================================================
-// TopNav
-// =============================================================================
-
-function DashboardTopNav() {
-  return (
-    <XDSTopNav
-      startContent={
-        <>
-          <XDSTopNavItem label="Overview" isSelected />
-          <XDSTopNavItem label="Analytics" />
-          <XDSTopNavItem label="Reports" />
-        </>
-      }
-      endContent={
-        <XDSAvatar
-          src="https://i.pravatar.cc/36?img=12"
-          name="Admin User"
-          size="xsmall"
-        />
-      }>
-      <XDSTopNavHeading>Dashboard</XDSTopNavHeading>
-    </XDSTopNav>
-  );
-}
-
-// =============================================================================
-// Page
-// =============================================================================
-
 export default function DashboardTemplate() {
+  const [period, setPeriod] = useState('3m');
+  const [docTab, setDocTab] = useState('outline');
+
   return (
     <XDSAppShell
       sideNav={<DashboardSideNav />}
-      topNav={<DashboardTopNav />}
+      topNav={
+        <XDSTopNav
+          endContent={
+            <XDSLink label="GitHub" href="#">GitHub</XDSLink>
+          }>
+          <XDSTopNavHeading>Documents</XDSTopNavHeading>
+        </XDSTopNav>
+      }
       variant="elevated"
       contentPadding={6}>
       <XDSVStack gap={6}>
-        <XDSVStack gap={1}>
-          <XDSHeading level={1}>Dashboard</XDSHeading>
-          <XDSText type="body" color="secondary">
-            Welcome back! Here&apos;s what&apos;s happening with your business
-            today.
-          </XDSText>
-        </XDSVStack>
-
         {/* Stats Grid */}
         <div {...stylex.props(styles.statsGrid)}>
           {stats.map(stat => (
@@ -485,133 +357,50 @@ export default function DashboardTemplate() {
           ))}
         </div>
 
-        {/* Main Content */}
-        <div {...stylex.props(styles.contentGrid)}>
-          {/* Chart + Table column */}
-          <XDSVStack gap={6}>
-            <XDSCard>
-              <div style={{padding: '24px 24px 0'}}>
-                <XDSVStack gap={1}>
-                  <XDSText type="body" weight="bold">
-                    Revenue Overview
-                  </XDSText>
-                  <XDSText type="supporting" color="secondary">
-                    Monthly revenue for the current year
-                  </XDSText>
-                </XDSVStack>
-              </div>
-              <MiniBarChart />
-            </XDSCard>
-
-            <XDSCard>
-              <div style={{padding: '20px 24px 8px'}}>
-                <XDSHStack gap={3} vAlign="center">
-                  <div style={{flex: 1}}>
-                    <XDSText type="body" weight="bold">
-                      Recent Orders
-                    </XDSText>
-                  </div>
-                  <XDSButton label="View all" variant="ghost" size="sm" />
-                </XDSHStack>
-              </div>
-              <XDSTable<OrderRow>
-                data={recentOrders}
-                columns={orderColumns}
-                idKey="id"
-                density="balanced"
-                dividers="rows"
-                hasHover
-              />
-            </XDSCard>
+        {/* Area Chart */}
+        <XDSCard>
+          <XDSVStack gap={4}>
+            <div {...stylex.props(styles.statRow)}>
+              <XDSVStack gap={1}>
+                <XDSHeading level={3}>Total Visitors</XDSHeading>
+                <XDSText type="supporting" color="secondary">
+                  Total for the last 3 months
+                </XDSText>
+              </XDSVStack>
+              <XDSSegmentedControl label="Time period" value={period} onChange={setPeriod}>
+                <XDSSegmentedControlItem value="3m" label="Last 3 months" />
+                <XDSSegmentedControlItem value="30d" label="Last 30 days" />
+                <XDSSegmentedControlItem value="7d" label="Last 7 days" />
+              </XDSSegmentedControl>
+            </div>
+            <AreaChart />
           </XDSVStack>
+        </XDSCard>
 
-          {/* Sidebar column */}
-          <XDSVStack gap={6}>
-            <XDSCard>
-              <div style={{padding: '20px 24px'}}>
-                <XDSVStack gap={4}>
-                  <XDSText type="body" weight="bold">
-                    Team Members
-                  </XDSText>
-                  {teamMembers.map(member => (
-                    <XDSHStack key={member.name} gap={3} vAlign="center">
-                      <XDSAvatar
-                        src={member.avatar}
-                        name={member.name}
-                        size="small"
-                      />
-                      <XDSVStack gap={0}>
-                        <XDSText type="body" weight="bold">
-                          {member.name}
-                        </XDSText>
-                        <XDSText type="supporting" color="secondary">
-                          {member.role}
-                        </XDSText>
-                      </XDSVStack>
-                    </XDSHStack>
-                  ))}
-                </XDSVStack>
-              </div>
-            </XDSCard>
-
-            <XDSCard>
-              <div style={{padding: '20px 24px'}}>
-                <XDSVStack gap={4}>
-                  <XDSText type="body" weight="bold">
-                    Goals
-                  </XDSText>
-                  <XDSVStack gap={3}>
-                    <XDSVStack gap={1}>
-                      <XDSHStack gap={2} vAlign="center">
-                        <div style={{flex: 1}}>
-                          <XDSText type="supporting">Revenue target</XDSText>
-                        </div>
-                        <XDSText type="supporting" weight="bold">
-                          72%
-                        </XDSText>
-                      </XDSHStack>
-                      <XDSProgressBar
-                        value={72}
-                        label="Progress"
-                        isLabelHidden
-                      />
-                    </XDSVStack>
-                    <XDSVStack gap={1}>
-                      <XDSHStack gap={2} vAlign="center">
-                        <div style={{flex: 1}}>
-                          <XDSText type="supporting">New users</XDSText>
-                        </div>
-                        <XDSText type="supporting" weight="bold">
-                          48%
-                        </XDSText>
-                      </XDSHStack>
-                      <XDSProgressBar
-                        value={48}
-                        label="Progress"
-                        isLabelHidden
-                      />
-                    </XDSVStack>
-                    <XDSVStack gap={1}>
-                      <XDSHStack gap={2} vAlign="center">
-                        <div style={{flex: 1}}>
-                          <XDSText type="supporting">Retention</XDSText>
-                        </div>
-                        <XDSText type="supporting" weight="bold">
-                          89%
-                        </XDSText>
-                      </XDSHStack>
-                      <XDSProgressBar
-                        value={89}
-                        label="Progress"
-                        isLabelHidden
-                      />
-                    </XDSVStack>
-                  </XDSVStack>
-                </XDSVStack>
-              </div>
-            </XDSCard>
-          </XDSVStack>
+        {/* Document Tabs + Table */}
+        <div {...stylex.props(styles.tabRow)}>
+          <XDSTabList value={docTab} onChange={setDocTab}>
+            <XDSTab value="outline" label="Outline" />
+            <XDSTab value="performance" label="Past Performance" />
+            <XDSTab value="personnel" label="Key Personnel" />
+            <XDSTab value="focus" label="Focus Documents" />
+          </XDSTabList>
+          <XDSHStack gap={3}>
+            <XDSButton label="Customize Columns" variant="secondary" size="sm" />
+            <XDSButton label="+ Add Section" variant="secondary" size="sm" />
+          </XDSHStack>
         </div>
+
+        <XDSCard padding={0}>
+          <XDSTable<DocRow>
+            data={docRows}
+            columns={docColumns}
+            idKey="id"
+            density="balanced"
+            dividers="rows"
+            hasHover
+          />
+        </XDSCard>
       </XDSVStack>
     </XDSAppShell>
   );
