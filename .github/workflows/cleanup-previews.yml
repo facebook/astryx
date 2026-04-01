@@ -110,6 +110,38 @@ jobs:
             echo ""
           fi
 
+          # ----- Clean old report screenshots -----
+          # Screenshots are large (~30 per report). Purge them from reports
+          # older than 30 days to control gh-pages size. The report HTML
+          # (index.html) and previews are tiny — keep those forever.
+          if [ -d "reports" ]; then
+            SCREENSHOT_PURGED=0
+            CUTOFF_DATE=$(date -d "30 days ago" +%s 2>/dev/null || date -v-30d +%s 2>/dev/null || echo "0")
+            if [ "$CUTOFF_DATE" != "0" ]; then
+              for report_dir in reports/*/; do
+                screenshots_dir="${report_dir}screenshots"
+                if [ -d "$screenshots_dir" ]; then
+                  # Use the git commit date for the screenshots directory
+                  COMMIT_DATE=$(git log -1 --format="%ct" -- "$screenshots_dir" 2>/dev/null || echo "0")
+                  if [ "$COMMIT_DATE" != "0" ] && [ "$COMMIT_DATE" -lt "$CUTOFF_DATE" ]; then
+                    REPORT_NAME=$(basename "$report_dir")
+                    PNG_COUNT=$(find "$screenshots_dir" -name '*.png' 2>/dev/null | wc -l)
+                    echo "  DELETE ${screenshots_dir} — ${PNG_COUNT} screenshots older than 30 days"
+                    if [ "$DRY_RUN" != "true" ]; then
+                      git rm -rf --quiet "$screenshots_dir"
+                    fi
+                    SCREENSHOT_PURGED=$((SCREENSHOT_PURGED + 1))
+                    DELETED=$((DELETED + 1))
+                  fi
+                fi
+              done
+              if [ "$SCREENSHOT_PURGED" -gt 0 ]; then
+                echo "Purged screenshots from ${SCREENSHOT_PURGED} old reports"
+                echo ""
+              fi
+            fi
+          fi
+
           # ----- Summary -----
           echo "Summary: ${DELETED} items deleted"
 
