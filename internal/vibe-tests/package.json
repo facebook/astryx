@@ -22,6 +22,7 @@
     "generate-a11y-manifest": "tsx src/generate-a11y-manifest.ts",
     "universal": "tsx src/universal-aggregate.ts",
     "universal:compare": "tsx src/universal-compare.ts",
+        "universal:compare:md": "tsx src/universal-compare.ts --markdown",
     "report:build": "tsx src/build-report.ts",
     "report:dev": "tsx src/build-report.ts --dev",
     "report:deploy": "tsx src/deploy-report.ts",
