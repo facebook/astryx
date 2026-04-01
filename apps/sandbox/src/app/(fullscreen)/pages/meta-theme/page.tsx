@@ -887,7 +887,7 @@ export default function MetaThemePage() {
           <XDSCard>
             <XDSVStack gap={3}>
               <XDSText type="supporting" color="secondary">COVER ART</XDSText>
-              <div {...stylex.props(styles.placeholder)} style={{height: 160}} />
+              <img src="https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&h=400&fit=crop" alt="Cover art" style={{width: '100%', height: 160, objectFit: 'cover', borderRadius: 8}} />
               <XDSText type="label" weight="bold">Upload Artwork</XDSText>
               <XDSText type="supporting" color="secondary">
                 Minimum 3000 × 3000px — JPEG or PNG only
