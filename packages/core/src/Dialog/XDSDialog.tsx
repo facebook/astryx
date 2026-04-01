@@ -307,6 +307,15 @@ export function XDSDialog({
     if (isOpen) {
       if (!dialog.open) {
         dialog.showModal();
+        // React's autoFocus calls .focus() during commit, before showModal()
+        // makes the dialog visible, so the focus silently fails.
+        // Focus the first input element inside the dialog.
+        const firstInput = dialog.querySelector<HTMLElement>(
+          'input, textarea, select',
+        );
+        if (firstInput) {
+          firstInput.focus();
+        }
       }
     } else {
       if (dialog.open) {
