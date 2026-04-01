@@ -43,12 +43,7 @@ export const categories: SandboxCategory[] = [
         href: '/pages/example-cards/',
         description: 'XDS components showcased in realistic card compositions',
       },
-      {
-        name: 'Toast',
-        href: '/pages/toast-playground/',
-        description: 'Toast notification component with variants and actions',
-      },
-      {
+{
         name: 'Table Overview',
         href: '/pages/table-overview/',
         description: 'Data table patterns and configurations',
