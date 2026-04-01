@@ -75,6 +75,7 @@ jobs:
       storybook_url: ${{ steps.urls.outputs.storybook_url }}
       short_hash: ${{ steps.urls.outputs.short_hash }}
       sandbox_url: ${{ steps.urls.outputs.sandbox_url }}
+      pr_number: ${{ steps.urls.outputs.pr_number }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -128,29 +129,13 @@ jobs:
           path: apps/storybook/dist/
           retention-days: 30
 
-      - name: Prepare and deploy PR preview
-        if: github.event_name == 'pull_request'
-        run: |
-          PR_NUMBER="${{ steps.urls.outputs.pr_number }}"
-
-          mkdir -p deploy/pr/${PR_NUMBER}
-          cp -r apps/storybook/dist/* deploy/pr/${PR_NUMBER}/
-
-          if [ -d "apps/sandbox/out" ]; then
-            mkdir -p deploy/pr/${PR_NUMBER}/sandbox
-            cp -r apps/sandbox/out/* deploy/pr/${PR_NUMBER}/sandbox/
-          fi
-
-          touch deploy/.nojekyll
-
-      - name: Deploy PR preview to GitHub Pages
-        if: github.event_name == 'pull_request'
-        uses: peaceiris/actions-gh-pages@v4
+      - name: Upload Sandbox artifact
+        if: github.event_name == 'pull_request' && hashFiles('apps/sandbox/out/**') != ''
+        uses: actions/upload-artifact@v4
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./deploy
-          keep_files: true
-          destination_dir: .
+          name: sandbox-${{ steps.urls.outputs.short_hash }}
+          path: apps/sandbox/out/
+          retention-days: 30
 
       - name: Analyze components
         if: github.event_name == 'pull_request'
@@ -167,6 +152,53 @@ jobs:
           name: pr-analysis
           path: analysis.json
           retention-days: 1
+
+  # Deploy PR preview to GitHub Pages in its own job with a concurrency group
+  # that matches deploy.yml ("pages-deploy"). This prevents race conditions
+  # where a main branch deploy (keep_files:false) overwrites a PR preview
+  # that was just deployed, or vice versa.
+  deploy-preview:
+    if: github.event_name == 'pull_request'
+    needs: [build]
+    runs-on: ubuntu-latest
+    concurrency:
+      group: "pages-deploy"
+      cancel-in-progress: false
+    steps:
+      - name: Download Storybook artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: storybook-${{ needs.build.outputs.short_hash }}
+          path: storybook-dist
+
+      - name: Download Sandbox artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: sandbox-${{ needs.build.outputs.short_hash }}
+          path: sandbox-dist
+        continue-on-error: true
+
+      - name: Prepare PR preview
+        run: |
+          PR_NUMBER="${{ needs.build.outputs.pr_number }}"
+
+          mkdir -p deploy/pr/${PR_NUMBER}
+          cp -r storybook-dist/* deploy/pr/${PR_NUMBER}/
+
+          if [ -d "sandbox-dist" ]; then
+            mkdir -p deploy/pr/${PR_NUMBER}/sandbox
+            cp -r sandbox-dist/* deploy/pr/${PR_NUMBER}/sandbox/
+          fi
+
+          touch deploy/.nojekyll
+
+      - name: Deploy PR preview to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./deploy
+          keep_files: true
+          destination_dir: .
 
   # Post PR comment with preview links + analysis as soon as build finishes
   # Does NOT wait for test or a11y — those update the comment later
