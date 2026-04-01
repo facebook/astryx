@@ -210,4 +210,146 @@ describe('usePowerSearchSource', () => {
       expect(results.length).toBeGreaterThan(1);
     });
   });
+
+  describe('field+operator+value suggestions', () => {
+    it('suggests all string-valued operators for "title foobar"', () => {
+      const source = createSource(baseConfig);
+      const results = source.search('title foobar');
+
+      const valueItems = results.filter(r => r.label.includes('"foobar"'));
+      expect(valueItems.map(r => r.label)).toEqual([
+        'Title contains "foobar"',
+        'Title is "foobar"',
+      ]);
+
+      const containsAux = valueItems[0].auxiliaryData as PowerSearchAuxData;
+      expect(containsAux.fieldKey).toBe('title');
+      expect(containsAux.operatorKey).toBe('contains');
+      expect(containsAux.filterValue).toEqual({
+        type: 'string',
+        value: 'foobar',
+      });
+
+      const isAux = valueItems[1].auxiliaryData as PowerSearchAuxData;
+      expect(isAux.operatorKey).toBe('is');
+    });
+
+    it('suggests only the matching operator for "title contains foobar"', () => {
+      const source = createSource(baseConfig);
+      const results = source.search('title contains foobar');
+
+      const valueItems = results.filter(r => r.label.includes('"foobar"'));
+      expect(valueItems).toHaveLength(1);
+      expect(valueItems[0].label).toBe('Title contains "foobar"');
+      const aux = valueItems[0].auxiliaryData as PowerSearchAuxData;
+      expect(aux.operatorKey).toBe('contains');
+      expect(aux.filterValue).toEqual({type: 'string', value: 'foobar'});
+    });
+
+    it('does not suggest "<field> <value>" matches when explicit operator matched', () => {
+      const source = createSource(baseConfig);
+      const results = source.search('title contains foobar');
+
+      // Should NOT have 'Title is "contains foobar"' or similar
+      const spurious = results.filter(r =>
+        r.label.includes('"contains foobar"'),
+      );
+      expect(spurious).toHaveLength(0);
+    });
+
+    it('suggests only the matching operator for "title is foobar"', () => {
+      const source = createSource(baseConfig);
+      const results = source.search('title is foobar');
+
+      const valueItems = results.filter(r => r.label.includes('"foobar"'));
+      expect(valueItems).toHaveLength(1);
+      expect(valueItems[0].label).toBe('Title is "foobar"');
+      const aux = valueItems[0].auxiliaryData as PowerSearchAuxData;
+      expect(aux.operatorKey).toBe('is');
+    });
+
+    it('is case-insensitive for field and operator matching', () => {
+      const source = createSource(baseConfig);
+      const results = source.search('TITLE CONTAINS hello');
+
+      const valueItem = results.find(r => r.label === 'Title contains "hello"');
+      expect(valueItem).toBeDefined();
+    });
+
+    it('preserves original case of the value', () => {
+      const source = createSource(baseConfig);
+      const results = source.search('title FooBar');
+
+      const valueItem = results.find(
+        r => r.label === 'Title contains "FooBar"',
+      );
+      expect(valueItem).toBeDefined();
+      const aux = valueItem!.auxiliaryData as PowerSearchAuxData;
+      expect(aux.filterValue).toEqual({type: 'string', value: 'FooBar'});
+    });
+
+    it('does not suggest value match for non-string operators', () => {
+      const source = createSource(baseConfig);
+      const results = source.search('status foobar');
+
+      const valueItem = results.find(r => r.label.includes('"foobar"'));
+      expect(valueItem).toBeUndefined();
+    });
+
+    it('does not suggest value match when remainder matches an operator prefix', () => {
+      const source = createSource(baseConfig);
+      const results = source.search('title con');
+
+      // "con" is a prefix of "contains", so should not suggest a value match
+      const valueItem = results.find(r => r.label.includes('"con"'));
+      expect(valueItem).toBeUndefined();
+    });
+
+    it('does not suggest value match when field has isValueMatchAllowed=false', () => {
+      const config: PowerSearchConfig = {
+        name: 'Test',
+        fields: [
+          {
+            key: 'title',
+            label: 'Title',
+            isValueMatchAllowed: false,
+            operators: [
+              {key: 'contains', label: 'contains', value: {type: 'string'}},
+            ],
+          },
+        ],
+      };
+      const source = createSource(config);
+      const results = source.search('title foobar');
+
+      const valueItem = results.find(r => r.label.includes('"foobar"'));
+      expect(valueItem).toBeUndefined();
+    });
+
+    it('uses string_list filter value for string_list operators', () => {
+      const config: PowerSearchConfig = {
+        name: 'Test',
+        fields: [
+          {
+            key: 'tags',
+            label: 'Tags',
+            operators: [
+              {
+                key: 'contains',
+                label: 'contains',
+                value: {type: 'string_list'},
+              },
+            ],
+          },
+        ],
+      };
+      const source = createSource(config);
+      const results = source.search('tags hello');
+
+      const valueItem = results.find(r => r.label === 'Tags contains "hello"');
+      expect(valueItem).toBeDefined();
+      const aux = valueItem!.auxiliaryData as PowerSearchAuxData;
+      expect(aux.filterValue).toEqual({type: 'string_list', value: ['hello']});
+    });
+  });
 });
