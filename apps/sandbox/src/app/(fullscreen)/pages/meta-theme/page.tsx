@@ -137,10 +137,7 @@ export default function MetaThemePage() {
   return (
     <>
       <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderBottom: '1px solid var(--xds-color-border-primary, #e5e5e5)'}}>
-        <XDSHStack gap={2}>
-          <XDSHeading level={3}>{themeName.charAt(0).toUpperCase() + themeName.slice(1)}</XDSHeading>
-          <XDSText type="supporting" color="secondary">{mode}</XDSText>
-        </XDSHStack>
+        <XDSHeading level={3}>{themeName.charAt(0).toUpperCase() + themeName.slice(1)}</XDSHeading>
         <XDSHStack gap={1}>
           <XDSDropdownMenu
             button={{label: 'Theme', variant: 'secondary', size: 'sm'}}
