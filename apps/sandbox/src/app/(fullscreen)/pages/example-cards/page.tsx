@@ -136,7 +136,7 @@ export default function ExampleCardsPage() {
 
   return (
     <>
-      <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderBottom: '1px solid var(--xds-color-border-primary, #e5e5e5)'}}>
+      <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px'}}>
         <XDSHeading level={3}>{themeName.charAt(0).toUpperCase() + themeName.slice(1)}</XDSHeading>
         <XDSHStack gap={1}>
           <XDSDropdownMenu
@@ -151,6 +151,7 @@ export default function ExampleCardsPage() {
           />
         </XDSHStack>
       </div>
+      <XDSDivider />
       <div style={{columnCount: 4, columnGap: 24, padding: 24, backgroundColor: 'var(--color-background-muted)', minHeight: '100%'}}>
         {/* Contribution History */}
         <div style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
