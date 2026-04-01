@@ -146,7 +146,7 @@ export default function LoginTemplate() {
                 value={email}
                 onChange={setEmail}
               />
-              <XDSVStack gap={2}>
+              <XDSVStack gap={1}>
                 <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
                   <XDSText type="label">Password</XDSText>
                   <XDSLink label="Forgot your password?" href="#">
