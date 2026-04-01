@@ -43,7 +43,7 @@ export default function LoginTemplate() {
   return (
     <div {...stylex.props(styles.page)}>
       <div {...stylex.props(styles.wrapper)}>
-        <XDSCard>
+        <XDSCard maxWidth={384}>
           <XDSVStack gap={6}>
             <XDSVStack gap={2}>
               <XDSHeading level={2}>Login</XDSHeading>
