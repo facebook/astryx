@@ -86,7 +86,7 @@ export default function LoginTemplate() {
 
   return (
     <div style={{display: 'flex', flexDirection: 'column', minHeight: '100svh', width: '100%', alignItems: 'center', justifyContent: 'center', padding: 24}}>
-      <div {...stylex.props(styles.wrapper)}>
+      <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: 340, gap: 16}}>
         {/* Logo */}
         <XDSHStack gap={2}>
           <LogoIcon />
