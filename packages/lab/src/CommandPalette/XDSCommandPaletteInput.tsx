@@ -2,7 +2,7 @@
  * @file XDSCommandPaletteInput.tsx
  * @input Uses React, StyleX, XDSIcon, CommandPaletteContext
  * @output Exports XDSCommandPaletteInput component and props
- * @position Search input for the command palette; renders with built-in bottom separator
+ * @position Search input for the command palette
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/lab/src/CommandPalette/README.md
@@ -18,7 +18,6 @@ import {XDSIcon} from '@xds/core/Icon';
 import {xdsClassName, mergeProps} from '@xds/core/utils';
 import {
   colorVars,
-  borderVars,
   typeScaleVars,
   spacingVars,
   typographyVars,
@@ -34,10 +33,6 @@ const styles = stylex.create({
     paddingInline: spacingVars['--spacing-4'],
     paddingBlock: spacingVars['--spacing-3'],
     flexShrink: 0,
-    // Built-in separator — no manual <XDSDivider /> needed
-    borderBlockEndWidth: borderVars['--border-width'],
-    borderBlockEndStyle: 'solid',
-    borderBlockEndColor: colorVars['--color-border'],
   },
   // The icon span needs explicit flex centering to avoid line-height offset
   icon: {
@@ -103,8 +98,7 @@ export interface XDSCommandPaletteInputProps
  * Search input for the command palette.
  *
  * Renders a search icon and a text input. Auto-focuses when mounted
- * so users can start typing immediately. Includes a built-in bottom
- * separator between the input and the results list — no XDSDivider needed.
+ * so users can start typing immediately.
  *
  * When used inside XDSCommandPalette, automatically wires to the
  * context for search state and keyboard navigation. Can also be used
@@ -116,7 +110,6 @@ export interface XDSCommandPaletteInputProps
  * ```
  * <XDSCommandPalette isOpen={isOpen} onOpenChange={setIsOpen}>
  *   <XDSCommandPaletteInput placeholder="Search commands..." />
- *   <XDSCommandPaletteList>...</XDSCommandPaletteList>
  * </XDSCommandPalette>
  * ```
  */

@@ -26,7 +26,10 @@ beforeEach(() => {
 describe('XDSCommandPalette', () => {
   it('renders when isOpen is true', () => {
     render(
-      <XDSCommandPalette isOpen={true} onOpenChange={() => {}}>
+      <XDSCommandPalette
+        isOpen={true}
+        onOpenChange={() => {}}
+        input={<div>Input</div>}>
         <div>Content</div>
       </XDSCommandPalette>,
     );
@@ -36,7 +39,10 @@ describe('XDSCommandPalette', () => {
 
   it('does not show content when isOpen is false', () => {
     render(
-      <XDSCommandPalette isOpen={false} onOpenChange={() => {}}>
+      <XDSCommandPalette
+        isOpen={false}
+        onOpenChange={() => {}}
+        input={<div>Input</div>}>
         <div>Hidden</div>
       </XDSCommandPalette>,
     );
@@ -46,7 +52,10 @@ describe('XDSCommandPalette', () => {
 
   it('has correct aria-label', () => {
     render(
-      <XDSCommandPalette isOpen={true} onOpenChange={() => {}}>
+      <XDSCommandPalette
+        isOpen={true}
+        onOpenChange={() => {}}
+        input={<div>Input</div>}>
         <div>Content</div>
       </XDSCommandPalette>,
     );
@@ -61,7 +70,8 @@ describe('XDSCommandPalette', () => {
       <XDSCommandPalette
         isOpen={true}
         onOpenChange={() => {}}
-        label="Quick search">
+        label="Quick search"
+        input={<div>Input</div>}>
         <div>Content</div>
       </XDSCommandPalette>,
     );
@@ -71,12 +81,14 @@ describe('XDSCommandPalette', () => {
     );
   });
 
-  it('renders children as composable slots', () => {
+  it('renders input slot, children, and optional footer slot', () => {
     render(
-      <XDSCommandPalette isOpen={true} onOpenChange={() => {}}>
-        <div data-testid="input-slot">Input</div>
+      <XDSCommandPalette
+        isOpen={true}
+        onOpenChange={() => {}}
+        input={<div data-testid="input-slot">Input</div>}
+        footer={<div data-testid="footer-slot">Footer</div>}>
         <div data-testid="list-slot">List</div>
-        <div data-testid="footer-slot">Footer</div>
       </XDSCommandPalette>,
     );
     expect(screen.getByTestId('input-slot')).toBeInTheDocument();
@@ -84,15 +96,28 @@ describe('XDSCommandPalette', () => {
     expect(screen.getByTestId('footer-slot')).toBeInTheDocument();
   });
 
+  it('renders without footer slot', () => {
+    render(
+      <XDSCommandPalette
+        isOpen={true}
+        onOpenChange={() => {}}
+        input={<div>Input</div>}>
+        <div data-testid="list-slot">List</div>
+      </XDSCommandPalette>,
+    );
+    expect(screen.getByTestId('list-slot')).toBeInTheDocument();
+  });
+
   it('calls onOpenChange(false) when Escape is pressed', () => {
     const handleOpenChange = vi.fn();
-
     render(
-      <XDSCommandPalette isOpen={true} onOpenChange={handleOpenChange}>
+      <XDSCommandPalette
+        isOpen={true}
+        onOpenChange={handleOpenChange}
+        input={<div>Input</div>}>
         <div>Content</div>
       </XDSCommandPalette>,
     );
-
     const dialog = screen.getByRole('dialog');
     const escapeEvent = new KeyboardEvent('keydown', {
       key: 'Escape',
@@ -100,7 +125,6 @@ describe('XDSCommandPalette', () => {
       cancelable: true,
     });
     dialog.dispatchEvent(escapeEvent);
-
     expect(handleOpenChange).toHaveBeenCalledWith(false);
   });
 });

@@ -1,8 +1,8 @@
 /**
  * @file XDSCommandPaletteFooter.tsx
- * @input Uses React, StyleX
+ * @input Uses React, StyleX, XDSKbd
  * @output Exports XDSCommandPaletteFooter component
- * @position Sub-component; footer with keyboard hints and built-in top separator
+ * @position Sub-component; footer with keyboard hints
  *
  * SYNC: When modified, update:
  * - /packages/lab/src/CommandPalette/README.md
@@ -16,11 +16,11 @@ import type {XDSBaseProps} from '@xds/core/XDSBaseProps';
 import {xdsClassName, mergeProps} from '@xds/core/utils';
 import {
   colorVars,
-  borderVars,
   spacingVars,
   typeScaleVars,
   typographyVars,
 } from '@xds/core/theme/tokens.stylex';
+import {XDSKbd} from '@xds/core/Kbd';
 
 const styles = stylex.create({
   footer: {
@@ -30,10 +30,6 @@ const styles = stylex.create({
     paddingInline: spacingVars['--spacing-4'],
     paddingBlock: spacingVars['--spacing-2'],
     flexShrink: 0,
-    // Built-in separator — no manual <XDSDivider /> needed
-    borderBlockStartWidth: borderVars['--border-width'],
-    borderBlockStartStyle: 'solid',
-    borderBlockStartColor: colorVars['--color-border'],
     // Inherit font so custom children match hint text treatment
     fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-supporting-size'],
@@ -53,8 +49,8 @@ export interface XDSCommandPaletteFooterProps extends XDSBaseProps<HTMLDivElemen
 
   /**
    * Footer content. When provided, renders custom content instead of default hints.
-   * Custom children inherit the footer's font treatment (supporting/12px, secondary color).
-   * When omitted, renders default keyboard navigation hints.
+   * Custom children inherit the footer font treatment (supporting/12px, secondary color).
+   * When omitted, renders default keyboard navigation hints using XDSKbd.
    */
   children?: ReactNode;
 }
@@ -62,18 +58,19 @@ export interface XDSCommandPaletteFooterProps extends XDSBaseProps<HTMLDivElemen
 /**
  * Footer for the command palette showing keyboard navigation hints.
  *
- * Renders with a built-in top separator — no XDSDivider needed.
- * Custom children inherit supporting text treatment (12px, secondary color)
- * so they stay visually consistent with the default hints.
+ * When no children are provided, renders default hints using XDSKbd
+ * for arrow keys, Enter to select, and Escape to close.
  *
- * @compositionHint Place as the last child of XDSCommandPalette.
+ * @compositionHint Pass to XDSCommandPalette's `footer` slot.
  *
  * @example
  * ```
- * <XDSCommandPalette isOpen={isOpen} onOpenChange={setIsOpen}>
- *   <XDSCommandPaletteInput />
+ * <XDSCommandPalette
+ *   isOpen={isOpen}
+ *   onOpenChange={setIsOpen}
+ *   input={<XDSCommandPaletteInput />}
+ *   footer={<XDSCommandPaletteFooter />}>
  *   <XDSCommandPaletteList>...</XDSCommandPaletteList>
- *   <XDSCommandPaletteFooter />
  * </XDSCommandPalette>
  * ```
  */
@@ -97,9 +94,19 @@ export function XDSCommandPaletteFooter({
       {...props}>
       {children ?? (
         <>
-          <span {...stylex.props(styles.hint)}>\u2191\u2193 Navigate</span>
-          <span {...stylex.props(styles.hint)}>\u21b5 Select</span>
-          <span {...stylex.props(styles.hint)}>Esc Close</span>
+          <span {...stylex.props(styles.hint)}>
+            <XDSKbd keys="up" />
+            <XDSKbd keys="down" />
+            Navigate
+          </span>
+          <span {...stylex.props(styles.hint)}>
+            <XDSKbd keys="enter" />
+            Select
+          </span>
+          <span {...stylex.props(styles.hint)}>
+            <XDSKbd keys="escape" />
+            Close
+          </span>
         </>
       )}
     </div>

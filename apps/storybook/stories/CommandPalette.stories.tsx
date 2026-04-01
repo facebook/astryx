@@ -42,8 +42,9 @@ export const Default: Story = {
         <XDSCommandPalette
           isOpen={isOpen}
           onOpenChange={setIsOpen}
-          onValueChange={value => console.log('Selected:', value)}>
-          <XDSCommandPaletteInput placeholder="Type a command..." />
+          onValueChange={value => console.log('Selected:', value)}
+          input={<XDSCommandPaletteInput placeholder="Type a command..." />}
+          footer={<XDSCommandPaletteFooter />}>
           <XDSCommandPaletteList>
             <XDSCommandPaletteGroup heading="Navigation">
               <XDSCommandPaletteItem value="Go to Dashboard">
@@ -74,7 +75,6 @@ export const Default: Story = {
               </XDSCommandPaletteItem>
             </XDSCommandPaletteGroup>
           </XDSCommandPaletteList>
-          <XDSCommandPaletteFooter />
         </XDSCommandPalette>
       </>
     );
@@ -90,8 +90,11 @@ export const FlatList: Story = {
     return (
       <>
         <XDSButton label="Open Flat Palette" onClick={() => setIsOpen(true)} />
-        <XDSCommandPalette isOpen={isOpen} onOpenChange={setIsOpen}>
-          <XDSCommandPaletteInput placeholder="Search..." />
+        <XDSCommandPalette
+          isOpen={isOpen}
+          onOpenChange={setIsOpen}
+          input={<XDSCommandPaletteInput placeholder="Search..." />}
+          footer={<XDSCommandPaletteFooter />}>
           <XDSCommandPaletteList>
             <XDSCommandPaletteItem value="Home">Go Home</XDSCommandPaletteItem>
             <XDSCommandPaletteItem value="Settings">
@@ -104,7 +107,6 @@ export const FlatList: Story = {
               Profile
             </XDSCommandPaletteItem>
           </XDSCommandPaletteList>
-          <XDSCommandPaletteFooter />
         </XDSCommandPalette>
       </>
     );
@@ -128,8 +130,9 @@ export const WithSelectedItem: Story = {
           isOpen={isOpen}
           onOpenChange={setIsOpen}
           value={value}
-          onValueChange={setValue}>
-          <XDSCommandPaletteInput placeholder="Type a command..." />
+          onValueChange={setValue}
+          input={<XDSCommandPaletteInput placeholder="Type a command..." />}
+          footer={<XDSCommandPaletteFooter />}>
           <XDSCommandPaletteList>
             <XDSCommandPaletteItem value="Go to Dashboard">
               Go to Dashboard
@@ -141,7 +144,6 @@ export const WithSelectedItem: Story = {
               View Profile
             </XDSCommandPaletteItem>
           </XDSCommandPaletteList>
-          <XDSCommandPaletteFooter />
         </XDSCommandPalette>
       </>
     );
@@ -157,13 +159,15 @@ export const EmptyResults: Story = {
     return (
       <>
         <XDSButton label="Open (type to empty)" onClick={() => setIsOpen(true)} />
-        <XDSCommandPalette isOpen={isOpen} onOpenChange={setIsOpen}>
-          <XDSCommandPaletteInput placeholder="Type to filter all items out..." />
+        <XDSCommandPalette
+          isOpen={isOpen}
+          onOpenChange={setIsOpen}
+          input={<XDSCommandPaletteInput placeholder="Type to filter all items out..." />}
+          footer={<XDSCommandPaletteFooter />}>
           <XDSCommandPaletteList>
             <XDSCommandPaletteItem value="zzz-alpha">zzz-alpha</XDSCommandPaletteItem>
             <XDSCommandPaletteItem value="zzz-beta">zzz-beta</XDSCommandPaletteItem>
           </XDSCommandPaletteList>
-          <XDSCommandPaletteFooter />
         </XDSCommandPalette>
       </>
     );
@@ -180,8 +184,11 @@ export const ManyItems: Story = {
     return (
       <>
         <XDSButton label="Open (30 items)" onClick={() => setIsOpen(true)} />
-        <XDSCommandPalette isOpen={isOpen} onOpenChange={setIsOpen}>
-          <XDSCommandPaletteInput placeholder="Search 30 commands..." />
+        <XDSCommandPalette
+          isOpen={isOpen}
+          onOpenChange={setIsOpen}
+          input={<XDSCommandPaletteInput placeholder="Search 30 commands..." />}
+          footer={<XDSCommandPaletteFooter />}>
           <XDSCommandPaletteList>
             {items.map(item => (
               <XDSCommandPaletteItem key={item} value={item}>
@@ -189,7 +196,6 @@ export const ManyItems: Story = {
               </XDSCommandPaletteItem>
             ))}
           </XDSCommandPaletteList>
-          <XDSCommandPaletteFooter />
         </XDSCommandPalette>
       </>
     );
@@ -205,8 +211,11 @@ export const LongLabels: Story = {
     return (
       <>
         <XDSButton label="Open (long labels)" onClick={() => setIsOpen(true)} />
-        <XDSCommandPalette isOpen={isOpen} onOpenChange={setIsOpen}>
-          <XDSCommandPaletteInput placeholder="Search..." />
+        <XDSCommandPalette
+          isOpen={isOpen}
+          onOpenChange={setIsOpen}
+          input={<XDSCommandPaletteInput placeholder="Search..." />}
+          footer={<XDSCommandPaletteFooter />}>
           <XDSCommandPaletteList>
             <XDSCommandPaletteItem value="short">Short</XDSCommandPaletteItem>
             <XDSCommandPaletteItem value="long1">
@@ -220,7 +229,6 @@ export const LongLabels: Story = {
               Supercalifragilisticexpialidocious command name right here
             </XDSCommandPaletteItem>
           </XDSCommandPaletteList>
-          <XDSCommandPaletteFooter />
         </XDSCommandPalette>
       </>
     );
@@ -236,15 +244,19 @@ export const CustomFooter: Story = {
     return (
       <>
         <XDSButton label="Open Custom Footer" onClick={() => setIsOpen(true)} />
-        <XDSCommandPalette isOpen={isOpen} onOpenChange={setIsOpen}>
-          <XDSCommandPaletteInput placeholder="Search..." />
+        <XDSCommandPalette
+          isOpen={isOpen}
+          onOpenChange={setIsOpen}
+          input={<XDSCommandPaletteInput placeholder="Search..." />}
+          footer={
+            <XDSCommandPaletteFooter>
+              <span>Tip: Use ⌘K to open this palette</span>
+            </XDSCommandPaletteFooter>
+          }>
           <XDSCommandPaletteList>
             <XDSCommandPaletteItem value="Option A">Option A</XDSCommandPaletteItem>
             <XDSCommandPaletteItem value="Option B">Option B</XDSCommandPaletteItem>
           </XDSCommandPaletteList>
-          <XDSCommandPaletteFooter>
-            <span>Tip: Use ⌘K to open this palette</span>
-          </XDSCommandPaletteFooter>
         </XDSCommandPalette>
       </>
     );
@@ -263,8 +275,9 @@ export const UnfilteredList: Story = {
         <XDSCommandPalette
           isOpen={isOpen}
           onOpenChange={setIsOpen}
-          isFiltered={false}>
-          <XDSCommandPaletteInput placeholder="Search (no filtering)..." />
+          isFiltered={false}
+          input={<XDSCommandPaletteInput placeholder="Search (no filtering)..." />}
+          footer={<XDSCommandPaletteFooter />}>
           <XDSCommandPaletteList>
             <XDSCommandPaletteItem value="Always Visible A">
               Always Visible A
@@ -276,7 +289,6 @@ export const UnfilteredList: Story = {
               Always Visible C
             </XDSCommandPaletteItem>
           </XDSCommandPaletteList>
-          <XDSCommandPaletteFooter />
         </XDSCommandPalette>
       </>
     );

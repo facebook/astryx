@@ -1,8 +1,8 @@
 /**
  * @file XDSCommandPalette.tsx
- * @input Uses React, StyleX, XDSDialog, CommandPaletteContext
+ * @input Uses React, XDSDialog, XDSLayout, CommandPaletteContext
  * @output Exports XDSCommandPalette root component and props
- * @position Core root component; dialog shell with optional state management
+ * @position Core root component; dialog shell with slot-based layout
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/lab/src/CommandPalette/README.md
@@ -19,27 +19,18 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import * as stylex from '@stylexjs/stylex';
 import {XDSDialog} from '@xds/core/Dialog';
-import type {XDSBaseProps} from '@xds/core/XDSBaseProps';
-import {xdsClassName, mergeProps} from '@xds/core/utils';
+import {
+  XDSLayout,
+  XDSLayoutHeader,
+  XDSLayoutContent,
+  XDSLayoutFooter,
+} from '@xds/core/Layout';
 import {CommandPaletteContext} from './CommandPaletteContext';
 import {defaultFilter} from './filter';
 import type {CommandPaletteFilterFn} from './types';
 
-const styles = stylex.create({
-  wrapper: {
-    display: 'flex',
-    flexDirection: 'column',
-    height: '100%',
-    overflow: 'hidden',
-  },
-});
-
-export interface XDSCommandPaletteProps extends XDSBaseProps<HTMLDivElement> {
-  /** Ref forwarded to the root wrapper element inside the dialog. */
-  ref?: React.Ref<HTMLDivElement>;
-
+export interface XDSCommandPaletteProps {
   /** Whether the command palette is open. */
   isOpen: boolean;
 
@@ -49,6 +40,25 @@ export interface XDSCommandPaletteProps extends XDSBaseProps<HTMLDivElement> {
    * (via Escape key or backdrop click).
    */
   onOpenChange: (isOpen: boolean) => void;
+
+  /**
+   * The search input slot. Pass XDSCommandPaletteInput here.
+   * Rendered in a header position with a divider below.
+   */
+  input: ReactNode;
+
+  /**
+   * The results list content. Typically XDSCommandPaletteList containing
+   * XDSCommandPaletteItem and/or XDSCommandPaletteGroup children.
+   */
+  children: ReactNode;
+
+  /**
+   * The footer slot. Pass XDSCommandPaletteFooter here.
+   * Rendered in a footer position with a divider above.
+   * When omitted, no footer is rendered.
+   */
+  footer?: ReactNode;
 
   /** Controlled selected value. */
   value?: string;
@@ -88,57 +98,46 @@ export interface XDSCommandPaletteProps extends XDSBaseProps<HTMLDivElement> {
    * @default 480
    */
   maxHeight?: number | string;
-
-  /**
-   * Composable content slots.
-   * Typically includes XDSCommandPaletteInput, XDSCommandPaletteList, and XDSCommandPaletteFooter.
-   *
-   * @example
-   * ```
-   * <XDSCommandPalette isOpen={isOpen} onOpenChange={setIsOpen}>
-   *   <XDSCommandPaletteInput placeholder="Search commands..." />
-   *   <XDSCommandPaletteList>
-   *     <XDSCommandPaletteItem value="home">Go Home</XDSCommandPaletteItem>
-   *   </XDSCommandPaletteList>
-   *   <XDSCommandPaletteFooter />
-   * </XDSCommandPalette>
-   * ```
-   */
-  children: ReactNode;
 }
 
 /**
  * Command palette root component.
  *
- * Wraps XDSDialog with command palette defaults and provides context
- * for state management (search, filtering, keyboard navigation, selection).
+ * Uses a slot-based API: `input` and `footer` are named slots rendered
+ * in fixed layout positions with automatic dividers. The list content
+ * goes in `children`.
  *
- * Sub-components (Input, List, Item, Group, Footer) compose naturally as
- * children. XDSCommandPaletteInput renders with a built-in separator below it;
- * XDSCommandPaletteFooter renders with a built-in separator above it.
+ * Wraps XDSDialog + XDSLayout and provides context for state management
+ * (search, filtering, keyboard navigation, selection).
  *
- * @compositionHint Compose with XDSCommandPaletteInput (search),
- *   XDSCommandPaletteList (scrollable items), and XDSCommandPaletteFooter
- *   (keyboard hints) as children.
+ * @compositionHint
+ *   - `input` slot: XDSCommandPaletteInput
+ *   - `children`: XDSCommandPaletteList (with XDSCommandPaletteItem / XDSCommandPaletteGroup)
+ *   - `footer` slot: XDSCommandPaletteFooter
  *
  * @example
  * ```
  * const [isOpen, setIsOpen] = useState(false);
  *
- * <XDSCommandPalette isOpen={isOpen} onOpenChange={setIsOpen}>
- *   <XDSCommandPaletteInput placeholder="Type a command..." />
+ * <XDSCommandPalette
+ *   isOpen={isOpen}
+ *   onOpenChange={setIsOpen}
+ *   input={<XDSCommandPaletteInput placeholder="Type a command..." />}
+ *   footer={<XDSCommandPaletteFooter />}>
  *   <XDSCommandPaletteList>
  *     <XDSCommandPaletteItem value="home" onSelect={() => navigate('/')}>
  *       Go Home
  *     </XDSCommandPaletteItem>
  *   </XDSCommandPaletteList>
- *   <XDSCommandPaletteFooter />
  * </XDSCommandPalette>
  * ```
  */
 export function XDSCommandPalette({
   isOpen,
   onOpenChange,
+  input,
+  children,
+  footer,
   value: controlledValue,
   onValueChange,
   filter = defaultFilter,
@@ -146,12 +145,6 @@ export function XDSCommandPalette({
   label = 'Command palette',
   width = 640,
   maxHeight = 480,
-  children,
-  ref,
-  xstyle,
-  className,
-  style,
-  ...props
 }: XDSCommandPaletteProps) {
   const listId = useId();
   const [search, setSearch] = useState('');
@@ -190,7 +183,6 @@ export function XDSCommandPalette({
     [setValue],
   );
 
-  // Reset search and highlight when closing
   const handleClose = useCallback(() => {
     setSearch('');
     setHighlightedValue('');
@@ -238,20 +230,27 @@ export function XDSCommandPalette({
       }}
       width={width}
       maxHeight={maxHeight}
-      purpose="neutral"
+      purpose="info"
       aria-label={label}>
       <CommandPaletteContext.Provider value={contextValue}>
-        <div
-          ref={ref}
-          {...mergeProps(
-            xdsClassName('command-palette'),
-            stylex.props(styles.wrapper, xstyle),
-            className,
-            style,
-          )}
-          {...props}>
-          {children}
-        </div>
+        <XDSLayout
+          defaultHasDividers
+          header={
+            <XDSLayoutHeader hasDivider padding={0}>
+              {input}
+            </XDSLayoutHeader>
+          }
+          content={
+            <XDSLayoutContent padding={0}>{children}</XDSLayoutContent>
+          }
+          footer={
+            footer != null ? (
+              <XDSLayoutFooter hasDivider padding={0}>
+                {footer}
+              </XDSLayoutFooter>
+            ) : undefined
+          }
+        />
       </CommandPaletteContext.Provider>
     </XDSDialog>
   );
