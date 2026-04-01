@@ -26,6 +26,8 @@ import {XDSDivider} from '@xds/core/Divider';
 import {XDSTextArea} from '@xds/core/TextArea';
 import {XDSList, XDSListItem} from '@xds/core/List';
 import {XDSMetadataList, XDSMetadataListItem} from '@xds/core/MetadataList';
+import {XDSStatusDot} from '@xds/core/StatusDot';
+import {XDSCard} from '@xds/core/Card';
 
 // ─── Icons ──────────────────────────────────────────────────────────────────
 
@@ -202,16 +204,6 @@ const CheckCircleIcon = (p: React.SVGProps<SVGSVGElement>) => (
     <path d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
   </svg>
 );
-const ShieldCheckIcon = (p: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...p}>
-    <path d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
-  </svg>
-);
 const StoreIcon = (p: React.SVGProps<SVGSVGElement>) => (
   <svg
     viewBox="0 0 24 24"
@@ -229,21 +221,12 @@ const StoreIcon = (p: React.SVGProps<SVGSVGElement>) => (
 
 const styles = stylex.create({
   maxWidth: {maxWidth: 800},
-  backLink: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 4,
-    color: 'var(--color-secondary-text)',
-    textDecoration: 'none',
-    fontSize: 13,
-    cursor: 'pointer',
-  },
   stepperItem: {
     display: 'flex',
     alignItems: 'flex-start',
-    gap: 12,
+    gap: 'var(--spacing-3)',
     position: 'relative',
-    paddingBottom: 20,
+    paddingBottom: 'var(--spacing-5)',
   },
   stepperItemLast: {paddingBottom: 0},
   stepperLine: {
@@ -254,11 +237,11 @@ const styles = stylex.create({
     width: 2,
     backgroundColor: 'var(--color-divider)',
   },
-  stepperLineCompleted: {backgroundColor: 'var(--color-positive)'},
+  stepperLineCompleted: {backgroundColor: 'var(--color-success)'},
   stepperDot: {
     width: 20,
     height: 20,
-    borderRadius: '50%',
+    borderRadius: 'var(--radius-full)',
     flexShrink: 0,
     display: 'flex',
     alignItems: 'center',
@@ -266,7 +249,7 @@ const styles = stylex.create({
     zIndex: 1,
   },
   stepperDotCompleted: {
-    backgroundColor: 'var(--color-positive)',
+    backgroundColor: 'var(--color-success)',
     color: 'white',
   },
   stepperDotActive: {backgroundColor: 'var(--color-accent)', color: 'white'},
@@ -280,20 +263,24 @@ const styles = stylex.create({
   stepperActiveDot: {
     width: 8,
     height: 8,
-    borderRadius: '50%',
+    borderRadius: 'var(--radius-full)',
     backgroundColor: 'white',
   },
   fraudCard: {
     backgroundColor: 'var(--color-positive-wash)',
-    borderRadius: 8,
-    padding: 16,
+    borderRadius: 'var(--radius-element)',
+    padding: 'var(--spacing-4)',
   },
-  productIcon: {width: 20, height: 20, color: 'var(--color-secondary-text)'},
+  productIcon: {
+    width: 'var(--spacing-5)',
+    height: 'var(--spacing-5)',
+    color: 'var(--color-icon-secondary)',
+  },
   lineItemImage: {
     width: 48,
     height: 48,
-    borderRadius: 8,
-    backgroundColor: 'var(--color-wash)',
+    borderRadius: 'var(--radius-element)',
+    backgroundColor: 'var(--color-background-body)',
     flexShrink: 0,
     display: 'flex',
     alignItems: 'center',
@@ -302,7 +289,7 @@ const styles = stylex.create({
   iconSm: {
     width: 16,
     height: 16,
-    color: 'var(--color-secondary-text)',
+    color: 'var(--color-icon-secondary)',
     flexShrink: 0,
   },
 });
@@ -351,14 +338,14 @@ function DetailSideNav() {
         />
       }
       footer={
-        <div style={{padding: '8px 0'}}>
+        <XDSVStack gap={0}>
           <XDSSideNavItem
             label="Settings"
             icon={SettingsIcon}
             isSelected={active === 'settings'}
             onClick={() => setActive('settings')}
           />
-        </div>
+        </XDSVStack>
       }>
       <XDSSideNavSection title="Main">
         <XDSSideNavItem
@@ -471,12 +458,14 @@ function ItemsSection() {
   return (
     <XDSSection variant="section">
       <XDSVStack gap={2}>
-        <XDSHStack gap={2} vAlign="center">
-          <XDSHeading level={3}>Items</XDSHeading>
-          <XDSBadge variant="warning" label="Unfulfilled" />
-        </XDSHStack>
-        <XDSDivider />
-        <XDSList>
+        <XDSList
+          hasDividers
+          header={
+            <XDSHStack gap={2} vAlign="center">
+              <XDSHeading level={3}>Items</XDSHeading>
+              <XDSBadge variant="warning" label="Unfulfilled" />
+            </XDSHStack>
+          }>
           {ORDER_ITEMS.map((item, i) => (
             <XDSListItem
               key={i}
@@ -510,12 +499,14 @@ function InvoiceSection() {
   return (
     <XDSSection variant="section">
       <XDSVStack gap={2}>
-        <XDSHStack gap={2} vAlign="center">
-          <XDSHeading level={3}>Invoice</XDSHeading>
-          <XDSBadge variant="success" label="Paid" />
-        </XDSHStack>
-        <XDSDivider />
-        <XDSMetadataList label={{position: 'start'}}>
+        <XDSMetadataList
+          label={{position: 'start'}}
+          title={
+            <XDSHStack gap={2} vAlign="center">
+              <XDSHeading level={3}>Invoice</XDSHeading>
+              <XDSBadge variant="success" label="Paid" />
+            </XDSHStack>
+          }>
           <XDSMetadataListItem label="Subtotal">
             <XDSHStack gap={2} vAlign="center">
               <XDSText type="supporting" color="secondary">
@@ -603,8 +594,9 @@ function RightPanel() {
       </XDSVStack>
       <XDSDivider />
       <XDSVStack gap={2}>
-        <XDSHeading level={4}>Customer</XDSHeading>
-        <XDSMetadataList label={{position: 'start'}}>
+        <XDSMetadataList
+          label={{position: 'start'}}
+          title={<XDSHeading level={4}>Customer</XDSHeading>}>
           <XDSMetadataListItem
             label="Name"
             icon={<UserIcon {...stylex.props(styles.iconSm)} />}>
@@ -639,12 +631,10 @@ function RightPanel() {
       <XDSDivider />
       <XDSVStack gap={2}>
         <XDSHeading level={4}>Fraud Analysis</XDSHeading>
-        <div {...stylex.props(styles.fraudCard)}>
+        <XDSCard xstyle={styles.fraudCard}>
           <XDSVStack gap={2}>
             <XDSHStack gap={2} vAlign="center">
-              <ShieldCheckIcon
-                style={{width: 16, height: 16, color: 'var(--color-positive)'}}
-              />
+              <XDSStatusDot variant="positive" label="Low risk" />
               <XDSText type="body" weight="bold">
                 Recommendation: Fulfill order
               </XDSText>
@@ -657,7 +647,7 @@ function RightPanel() {
               Learn more
             </XDSLink>
           </XDSVStack>
-        </div>
+        </XDSCard>
       </XDSVStack>
     </XDSVStack>
   );
@@ -677,10 +667,14 @@ export default function DetailTemplate() {
             <div {...stylex.props(styles.maxWidth)}>
               <XDSVStack gap={2}>
                 <XDSHStack gap={2} hAlign="between" vAlign="center">
-                  <a {...stylex.props(styles.backLink)} href="#">
-                    <ArrowLeftIcon style={{width: 14, height: 14}} />
-                    All orders
-                  </a>
+                  <XDSLink label="All orders" href="#">
+                    <XDSHStack gap={1} vAlign="center">
+                      <ArrowLeftIcon style={{width: 14, height: 14}} />
+                      <XDSText type="supporting" color="secondary">
+                        All orders
+                      </XDSText>
+                    </XDSHStack>
+                  </XDSLink>
                   <XDSHStack gap={2} vAlign="center">
                     <XDSButton
                       label="Grid view"
