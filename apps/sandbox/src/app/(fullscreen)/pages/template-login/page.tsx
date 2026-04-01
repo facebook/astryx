@@ -187,11 +187,11 @@ export default function LoginTemplate() {
           <XDSText type="supporting" color="secondary">
             By clicking continue, you agree to our{' '}
             <XDSLink label="Terms of Service" href="#">
-              Terms of Service
+              <XDSText type="supporting">Terms of Service</XDSText>
             </XDSLink>{' '}
             and{' '}
             <XDSLink label="Privacy Policy" href="#">
-              Privacy Policy
+              <XDSText type="supporting">Privacy Policy</XDSText>
             </XDSLink>
             .
           </XDSText>
