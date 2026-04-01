@@ -387,7 +387,14 @@ function ResizeHandle({
             if (i === lastIndex) return;
             const col = cols[i];
             if (col) {
-              updates[col.key] = cell.getBoundingClientRect().width;
+              // Enforce the column's own minimum — the table layout engine
+              // may have rendered it smaller than allowed.
+              const colMin = resolveColumnMinWidth(
+                col.width,
+                configRef.current.minWidth,
+              );
+              const rendered = cell.getBoundingClientRect().width;
+              updates[col.key] = Math.max(rendered, colMin);
             }
           });
         }
