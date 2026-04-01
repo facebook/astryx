@@ -87,14 +87,14 @@ const toastStyles = stylex.create({
     paddingInlineStart: spacingVars['--spacing-5'],
     paddingInlineEnd: spacingVars['--spacing-4'],
     borderRadius: radiusVars['--radius-container'],
-    boxShadow: shadowVars['--shadow-med'],
+    boxShadow: shadowVars['--shadow-low'],
     animationDuration: '0.2s',
     animationTimingFunction: 'ease-out',
     animationFillMode: 'forwards',
   },
   defaultVariant: {
-    backgroundColor: colorVars['--color-neutral'],
-    color: colorVars['--color-on-dark'],
+    backgroundColor: colorVars['--color-background-popover'],
+    color: colorVars['--color-text-primary'],
   },
   errorVariant: {
     backgroundColor: colorVars['--color-error'],
@@ -175,27 +175,8 @@ const toastStyles = stylex.create({
       ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
     },
   },
-  closeButton: {
+  closeWrapper: {
     flexShrink: 0,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 28,
-    height: 28,
-    borderRadius: radiusVars['--radius-inner'],
-    borderWidth: 0,
-    backgroundColor: 'transparent',
-    color: 'inherit',
-    cursor: 'pointer',
-    padding: 0,
-    opacity: 0.8,
-    fontFamily: 'inherit',
-    backgroundImage: {
-      default: null,
-      ':hover': {
-        '@media (hover: hover)': 'linear-gradient(rgba(255,255,255,0.1), rgba(255,255,255,0.1))',
-      },
-    },
   },
 });
 
@@ -262,12 +243,15 @@ function ToastItem({
       <div {...stylex.props(toastStyles.actions)}>
         {entry.action}
         {entry.isDismissable && (
-          <button
-            {...stylex.props(toastStyles.closeButton)}
-            onClick={() => onDismiss(entry.id)}
-            aria-label="Dismiss notification">
-            <CloseIcon />
-          </button>
+          <div {...stylex.props(toastStyles.closeWrapper)}>
+            <XDSButton
+              label="Dismiss"
+              variant="ghost"
+              size="sm"
+              icon={<CloseIcon />}
+              onClick={() => onDismiss(entry.id)}
+            />
+          </div>
         )}
       </div>
     </div>
