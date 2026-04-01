@@ -3,6 +3,7 @@
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSVStack} from '@xds/core/Layout';
+import {XDSList, XDSListItem} from '@xds/core/List';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSButton} from '@xds/core/Button';
@@ -50,22 +51,16 @@ export default function SettingsTemplate() {
       <div style={{display: 'flex', flex: 1}}>
         {/* Sidebar */}
         <nav style={{width: 200, padding: '24px 16px', borderRight: '1px solid var(--xds-color-border-primary, #e5e5e5)', flexShrink: 0}}>
-          <XDSVStack gap={1}>
+          <XDSList density="compact">
             {NAV_ITEMS.map(item => (
-              <div
+              <XDSListItem
                 key={item}
+                label={item}
+                isSelected={activeNav === item}
                 onClick={() => setActiveNav(item)}
-                {...stylex.props(
-                  styles.sidebarItem,
-                  activeNav === item && styles.sidebarItemSelected,
-                )}
-              >
-                <XDSText type="body" weight={activeNav === item ? 'bold' : undefined}>
-                  {item}
-                </XDSText>
-              </div>
+              />
             ))}
-          </XDSVStack>
+          </XDSList>
         </nav>
 
         {/* Content */}
