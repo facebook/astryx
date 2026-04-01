@@ -154,7 +154,7 @@ export default function MetaThemePage() {
           />
         </XDSHStack>
       </div>
-      <div style={{columnCount: 4, columnGap: 24, padding: 24, backgroundColor: 'var(--xds-color-bg-wash, #f5f5f5)', minHeight: '100%'}}>
+      <div style={{columnCount: 4, columnGap: 24, padding: 24, backgroundColor: 'var(--color-background-muted)', minHeight: '100%'}}>
         {/* Contribution History */}
         <div style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
           <XDSCard>
