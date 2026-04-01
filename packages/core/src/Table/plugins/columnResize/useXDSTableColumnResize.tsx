@@ -340,32 +340,41 @@ function ResizeHandle({
       const drag = dragStateRef.current;
       if (!drag || !isDraggingRef.current) return;
 
-      const delta =
+      const rawDelta =
         (e.clientX - drag.startX) * getRTLMultiplier(drag.thElement);
 
       if (drag.neighborTh && drag.neighborKey) {
-        // Proportional-preserving: resize the neighbor column inversely.
-        // Clamp from below (neighbor can't go below neighborMinWidth), which
-        // also implicitly caps the second-to-last column from eating into
-        // the last column's minimum reserved space.
-        const newNeighborWidth = drag.neighborInitialWidth - delta;
-        const clampedNeighbor = Math.max(neighborMinWidth, newNeighborWidth);
-        applyWidth(drag.neighborTh, clampedNeighbor, neighborMinWidth);
+        // Proportional-preserving: dragging right shrinks the neighbor column.
+        // Clamp delta so the neighbor can't go below its min width — once
+        // the neighbor is at min, the handle stops moving and other columns stop shifting.
+        const maxDelta = drag.neighborInitialWidth - neighborMinWidth;
+        const clampedDelta = Math.min(rawDelta, maxDelta);
 
-        // Also cap the second-to-last column: it can't grow beyond
-        // (tableWidth - neighborMinWidth), i.e. can't squeeze last column below min.
+        applyWidth(
+          drag.neighborTh,
+          drag.neighborInitialWidth - clampedDelta,
+          neighborMinWidth,
+        );
+
+        // Also cap leftward: this column can't shrink below its own min.
+        const minDelta = minWidth - drag.initialWidth; // most negative delta allowed
+        const effectiveDelta = Math.max(clampedDelta, minDelta);
         const tableWidth =
           tableRef.current?.getBoundingClientRect().width ?? Infinity;
         const maxSecondToLast =
           tableWidth > 0 ? tableWidth - neighborMinWidth : Infinity;
         applyWidth(
           drag.thElement,
-          drag.initialWidth + delta,
+          drag.initialWidth + effectiveDelta,
           minWidth,
           maxSecondToLast,
         );
       } else {
-        applyWidth(drag.thElement, drag.initialWidth + delta);
+        // Direct resize: clamp delta so it can't go below min or above max.
+        // Other columns stop shifting once the target column hits its limit.
+        const clampedWidth = clamp(drag.initialWidth + rawDelta);
+        const clampedDelta = clampedWidth - drag.initialWidth;
+        applyWidth(drag.thElement, drag.initialWidth + clampedDelta);
       }
     },
     [
@@ -375,6 +384,7 @@ function ResizeHandle({
       neighborMinWidth,
       minWidth,
       tableRef,
+      clamp,
       applyWidth,
     ],
   );
