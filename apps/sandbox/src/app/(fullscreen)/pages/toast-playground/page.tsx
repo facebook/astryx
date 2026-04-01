@@ -487,7 +487,7 @@ function ToastProvider({
 const pageStyles = stylex.create({
   page: {
     minHeight: '100svh',
-    backgroundColor: colorVars['--color-background-muted'],
+    backgroundColor: colorVars['--color-background-surface'],
     paddingBlock: spacingVars['--spacing-8'],
     paddingInline: spacingVars['--spacing-8'],
   },
