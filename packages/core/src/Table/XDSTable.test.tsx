@@ -472,18 +472,57 @@ describe('XDSBaseTable', () => {
       }
     });
 
-    it('applies default minWidth on columns with no explicit width', () => {
+    it('does not apply minWidth on columns with no explicit width', () => {
       const cols: XDSTableColumn<User>[] = [
         {key: 'name', header: 'Name'},
         {key: 'age', header: 'Age'},
       ];
       render(<XDSBaseTable data={users} columns={cols} />);
       const headers = screen.getAllByRole('columnheader');
-      expect(headers[0]).toHaveStyle({
+      expect(headers[0]).not.toHaveStyle({
         minWidth: `${DEFAULT_MIN_COLUMN_WIDTH}px`,
       });
-      expect(headers[1]).toHaveStyle({
+      expect(headers[1]).not.toHaveStyle({
         minWidth: `${DEFAULT_MIN_COLUMN_WIDTH}px`,
+      });
+    });
+
+    it('sets table min-width to enforce proportional column minimums', () => {
+      const cols: XDSTableColumn<User>[] = [
+        {key: 'name', header: 'Name', width: proportional(1)},
+        {key: 'age', header: 'Age', width: proportional(1)},
+      ];
+      render(<XDSBaseTable data={users} columns={cols} />);
+      const table = screen.getByRole('table');
+      // 2 equal columns: 120 * 2 / 1 = 240px
+      expect(table).toHaveStyle({
+        minWidth: `${DEFAULT_MIN_COLUMN_WIDTH * 2}px`,
+      });
+    });
+
+    it('sets table min-width based on most constrained proportional column', () => {
+      const cols: XDSTableColumn<User>[] = [
+        {key: 'name', header: 'Name', width: proportional(1, {minWidth: 200})},
+        {key: 'age', header: 'Age', width: proportional(1)},
+      ];
+      render(<XDSBaseTable data={users} columns={cols} />);
+      const table = screen.getByRole('table');
+      // name requires: 200 * 2 / 1 = 400px (most constrained)
+      // age requires:  120 * 2 / 1 = 240px
+      expect(table).toHaveStyle({minWidth: '400px'});
+    });
+
+    it('sets table min-width accounting for pixel and proportional columns', () => {
+      const cols: XDSTableColumn<User>[] = [
+        {key: 'name', header: 'Name', width: pixel(80)},
+        {key: 'age', header: 'Age', width: proportional(1)},
+      ];
+      render(<XDSBaseTable data={users} columns={cols} />);
+      const table = screen.getByRole('table');
+      // pixel: 80px + proportional requires 120 * 1 / 1 = 120px
+      // Table min-width = 80 + 120 = 200px
+      expect(table).toHaveStyle({
+        minWidth: `${80 + DEFAULT_MIN_COLUMN_WIDTH}px`,
       });
     });
   });
