@@ -1,6 +1,6 @@
 /**
  * @file XDSCommandPaletteFooter.tsx
- * @input Uses React, StyleX, XDSKbd
+ * @input Uses React, StyleX, XDSDivider
  * @output Exports XDSCommandPaletteFooter component
  * @position Sub-component; footer with keyboard hints
  *
@@ -13,6 +13,8 @@
 
 import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
+import type {XDSBaseProps} from '@xds/core/XDSBaseProps';
+import {xdsClassName, mergeProps} from '@xds/core/utils';
 import {
   colorVars,
   spacingVars,
@@ -40,7 +42,12 @@ const styles = stylex.create({
   },
 });
 
-export interface XDSCommandPaletteFooterProps {
+export interface XDSCommandPaletteFooterProps extends XDSBaseProps<HTMLDivElement> {
+  /**
+   * Ref forwarded to the footer element.
+   */
+  ref?: React.Ref<HTMLDivElement>;
+
   /**
    * Footer content. When provided, renders custom content instead of default hints.
    * When omitted, renders default keyboard navigation hints.
@@ -67,15 +74,28 @@ export interface XDSCommandPaletteFooterProps {
  */
 export function XDSCommandPaletteFooter({
   children,
+  ref,
+  xstyle,
+  className,
+  style,
+  ...props
 }: XDSCommandPaletteFooterProps) {
   return (
     <>
       <XDSDivider />
-      <div {...stylex.props(styles.footer)}>
+      <div
+        ref={ref}
+        {...mergeProps(
+          xdsClassName('command-palette-footer'),
+          stylex.props(styles.footer, xstyle),
+          className,
+          style,
+        )}
+        {...props}>
         {children ?? (
           <>
-            <span {...stylex.props(styles.hint)}>↑↓ Navigate</span>
-            <span {...stylex.props(styles.hint)}>↵ Select</span>
+            <span {...stylex.props(styles.hint)}>\u2191\u2193 Navigate</span>
+            <span {...stylex.props(styles.hint)}>\u21b5 Select</span>
             <span {...stylex.props(styles.hint)}>Esc Close</span>
           </>
         )}

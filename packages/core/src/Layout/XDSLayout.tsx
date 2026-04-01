@@ -15,11 +15,11 @@
  * - /apps/storybook/stories/Layout.stories.tsx
  */
 
-
 import {type ReactNode, useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSLayoutAreaContext, type LayoutArea} from './XDSLayoutAreaContext';
 import {XDSLayoutSlotsContext, type LayoutSlots} from './XDSLayoutSlotsContext';
+import {XDSLayoutDividerContext} from './XDSLayoutDividerContext';
 import {stack} from '../Stack/stack.stylex';
 import {stackItem} from '../Stack/stackItem.stylex';
 import {xdsClassName, mergeProps} from '../utils';
@@ -49,6 +49,7 @@ const styles = stylex.create({
   fill: {
     // Add 2x container padding to compensate for negative margins on top/bottom
     height: 'calc(100% + 2 * var(--container-padding, 0px))',
+    maxHeight: 'var(--container-max-height, none)',
   },
   auto: {
     minHeight: '100%',
@@ -109,6 +110,13 @@ export interface XDSLayoutProps extends Omit<XDSBaseProps, 'content'> {
    * Start panel slot (left in LTR, right in RTL).
    */
   start?: ReactNode;
+  /**
+   * Default divider visibility for XDSLayoutHeader and XDSLayoutFooter children.
+   * When set, headers/footers that don't explicitly pass `hasDivider` will use this value.
+   * When not set, nested layouts inherit from their parent context.
+   */
+  defaultHasDividers?: boolean;
+
   /**
    * CSS class name(s) appended to the root element.
    */
@@ -187,6 +195,7 @@ function AreaProvider({
  */
 export function XDSLayout({
   content,
+  defaultHasDividers,
   end,
   footer,
   header,
@@ -200,6 +209,11 @@ export function XDSLayout({
 }: XDSLayoutProps) {
   const isFill = height === 'fill';
 
+  const dividerCtxValue = useMemo(
+    () => (defaultHasDividers != null ? {defaultHasDividers} : null),
+    [defaultHasDividers],
+  );
+
   // Memoize slots info to avoid unnecessary re-renders
   const slotsValue = useMemo<LayoutSlots>(
     () => ({
@@ -211,7 +225,7 @@ export function XDSLayout({
     [header != null, footer != null, start != null, end != null],
   );
 
-  return (
+  const tree = (
     <XDSLayoutSlotsContext.Provider value={slotsValue}>
       <div
         ref={ref}
@@ -227,6 +241,7 @@ export function XDSLayout({
         )}>
         <div
           {...stylex.props(
+            stylex.defaultMarker(),
             styles.layoutInner,
             ...stack({direction: 'vertical'}),
             isFill ? styles.fill : styles.auto,
@@ -251,6 +266,16 @@ export function XDSLayout({
       </div>
     </XDSLayoutSlotsContext.Provider>
   );
+
+  if (dividerCtxValue != null) {
+    return (
+      <XDSLayoutDividerContext.Provider value={dividerCtxValue}>
+        {tree}
+      </XDSLayoutDividerContext.Provider>
+    );
+  }
+
+  return tree;
 }
 
 XDSLayout.displayName = 'XDSLayout';

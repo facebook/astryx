@@ -2,7 +2,7 @@
 
 /**
  * @file XDSBaseTypeahead.tsx
- * @input Uses React, StyleX, useXDSLayer, XDSTypeaheadItem
+ * @input Uses React, StyleX, useXDSPopover, XDSTypeaheadItem
  * @output Exports XDSBaseTypeahead combobox engine component
  * @position Core implementation; used by XDSTypeahead and XDSTokenizer
  *
@@ -26,7 +26,7 @@ import React, {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
-import {useXDSLayer} from '../Layer/useXDSLayer';
+import {useXDSPopover} from '../Popover/useXDSPopover';
 import {XDSTypeaheadItem} from './XDSTypeaheadItem';
 import {XDSIcon} from '../Icon';
 import {
@@ -35,7 +35,6 @@ import {
   radiusVars,
   typographyVars,
   fontWeightVars,
-  shadowVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
@@ -177,9 +176,6 @@ const styles = stylex.create({
     maxHeight: '300px',
     overflowY: 'auto',
     padding: spacingVars['--spacing-1'],
-    borderRadius: radiusVars['--radius-element'],
-    backgroundColor: colorVars['--color-background-surface'],
-    boxShadow: shadowVars['--shadow-low'],
   },
   popover: {
     minWidth: 'anchor-size(width)',
@@ -194,7 +190,7 @@ const styles = stylex.create({
     alignItems: 'center',
     width: '100%',
     padding: spacingVars['--spacing-2'],
-    borderRadius: radiusVars['--radius-inner'],
+    borderRadius: radiusVars['--radius-element'],
     cursor: 'pointer',
     outline: 'none',
     backgroundColor: 'transparent',
@@ -285,7 +281,7 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
 
-  // Track active pointer to defer layer.show() past click events.
+  // Track active pointer to defer popover.show() past click events.
   // With popover="auto", showing the popover between pointerdown and
   // pointerup/click causes the browser's light-dismiss to immediately
   // close it (the click is seen as "outside" the newly-opened popover).
@@ -305,11 +301,12 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
     searchSource.cancel?.();
   }, [onOpenChange, searchSource]);
 
-  const layer = useXDSLayer({
-    mode: 'context',
-    lightDismiss: true,
+  const popover = useXDSPopover({
     onShow: handleLayerShow,
     onHide: handleLayerHide,
+    hasLightDismiss: true,
+    hasCloseButton: false,
+    hasAutoFocus: false,
   });
 
   // Show the layer, deferring past the active click if a pointer is down.
@@ -319,13 +316,13 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
     if (pointerActiveRef.current) {
       document.addEventListener(
         'click',
-        () => requestAnimationFrame(() => layer.show()),
+        () => requestAnimationFrame(() => popover.show()),
         {once: true},
       );
     } else {
-      layer.show();
+      popover.show();
     }
-  }, [layer]);
+  }, [popover]);
 
   // Merge refs: forward ref + internal ref + fallback anchor ref
   const setInputRef = useCallback(
@@ -346,12 +343,12 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
   useEffect(() => {
     const el = anchorRef?.current ?? fallbackAnchorRef.current;
     if (el) {
-      layer.ref(el);
+      popover.triggerRef(el);
     }
     return () => {
-      layer.ref(null);
+      popover.triggerRef(null);
     };
-  }, [layer, anchorRef]);
+  }, [popover, anchorRef]);
 
   // Perform search
   const performSearch = useCallback(
@@ -407,7 +404,7 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
         searchSource.cancel?.();
         setResults([]);
         setHasSearched(false);
-        layer.hide();
+        popover.hide();
         return;
       }
 
@@ -430,7 +427,7 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
       hasEntriesOnFocus,
       performSearch,
       performBootstrap,
-      layer,
+      popover,
       debounceMs,
       searchSource,
     ],
@@ -451,10 +448,10 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
       setQuery('');
       setResults([]);
       setHasSearched(false);
-      layer.hide();
+      popover.hide();
       inputRef.current?.focus();
     },
-    [onChange, layer],
+    [onChange, popover],
   );
 
   // Handle focus
@@ -480,11 +477,11 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
       externalOnKeyDown?.(e);
       if (e.defaultPrevented) return;
 
-      if (!layer.isOpen) {
+      if (!popover.isOpen) {
         if (e.key === 'ArrowDown' && (hasEntriesOnFocus || query.length > 0)) {
           e.preventDefault();
           if (results.length > 0) {
-            layer.show();
+            popover.show();
             setHighlightedIndex(0);
           } else if (hasEntriesOnFocus) {
             performBootstrap();
@@ -514,16 +511,16 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
           break;
         case 'Escape':
           e.preventDefault();
-          layer.hide();
+          popover.hide();
           break;
         case 'Home':
-          if (layer.isOpen) {
+          if (popover.isOpen) {
             e.preventDefault();
             setHighlightedIndex(0);
           }
           break;
         case 'End':
-          if (layer.isOpen) {
+          if (popover.isOpen) {
             e.preventDefault();
             setHighlightedIndex(results.length - 1);
           }
@@ -531,7 +528,7 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
       }
     },
     [
-      layer,
+      popover,
       results,
       highlightedIndex,
       handleSelect,
@@ -565,10 +562,10 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
         id={inputId}
         type="text"
         role="combobox"
-        aria-expanded={layer.isOpen}
+        aria-expanded={popover.isOpen}
         aria-controls={listboxId}
         aria-activedescendant={
-          layer.isOpen && highlightedIndex >= 0
+          popover.isOpen && highlightedIndex >= 0
             ? getItemId(highlightedIndex)
             : undefined
         }
@@ -607,7 +604,7 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
         </span>
       )}
 
-      {layer.render(
+      {popover.render(
         <div
           id={listboxId}
           role="listbox"

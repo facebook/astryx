@@ -20,12 +20,19 @@
  * ```
  */
 
-import React, {useId, useInsertionEffect, useLayoutEffect, useRef} from 'react';
+import React, {
+  useId,
+  useInsertionEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {ThemeMode} from './types';
 import {colorVars, typographyVars} from './tokens.stylex';
 import {registerIcons} from '../Icon/globalIconRegistry';
 import {generateThemeCSS, type XDSDefinedTheme} from './defineTheme';
+import {XDSThemeContext} from './useXDSTheme';
 
 /**
  * XDSTheme provider props
@@ -202,13 +209,18 @@ export function XDSTheme({
     registerIcons(icons);
   }
 
+  // Memoize the context value to prevent unnecessary re-renders
+  const ctxValue = useMemo(() => ({theme, mode}), [theme, mode]);
+
   return (
-    <div
-      {...stylex.props(wrapperStyles.base, colorSchemeStyle)}
-      data-xds-theme={theme.name}
-      data-theme={mode === 'system' ? undefined : mode}>
-      {children}
-    </div>
+    <XDSThemeContext.Provider value={ctxValue}>
+      <div
+        {...stylex.props(wrapperStyles.base, colorSchemeStyle)}
+        data-xds-theme={theme.name}
+        data-theme={mode === 'system' ? undefined : mode}>
+        {children}
+      </div>
+    </XDSThemeContext.Provider>
   );
 }
 

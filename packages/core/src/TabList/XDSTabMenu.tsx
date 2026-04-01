@@ -2,7 +2,7 @@
 
 /**
  * @file XDSTabMenu.tsx
- * @input Uses React, StyleX, useXDSLayer, XDSTabListContext
+ * @input Uses React, StyleX, useXDSPopover, XDSTabListContext
  * @output Exports XDSTabMenu component, XDSTabMenuProps type, XDSTabMenuOption type
  * @position Menu trigger button; opens dropdown of overflow menu items
  *
@@ -23,11 +23,10 @@ import {
   radiusVars,
   durationVars,
   easeVars,
-  shadowVars,
   fontWeightVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
-import {useXDSLayer} from '../Layer/useXDSLayer';
+import {useXDSPopover} from '../Popover/useXDSPopover';
 import {useListFocus} from '../hooks/useListFocus';
 import {XDSDivider} from '../Divider';
 import {useXDSTabListContext} from './XDSTabListContext';
@@ -159,9 +158,6 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-0-5'],
     paddingBlock: spacingVars['--spacing-1'],
     paddingInline: spacingVars['--spacing-1'],
-    backgroundColor: colorVars['--color-background-surface'],
-    borderRadius: radiusVars['--radius-element'],
-    boxShadow: shadowVars['--shadow-low'],
     minWidth: '160px',
   },
   menuItem: {
@@ -171,7 +167,7 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-2'],
     paddingBlock: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-3'],
-    borderRadius: radiusVars['--radius-inner'],
+    borderRadius: radiusVars['--radius-element'],
     fontFamily: 'inherit',
     fontSize: typeScaleVars['--text-label-size'],
     lineHeight: typeScaleVars['--text-label-leading'],
@@ -234,22 +230,23 @@ export function XDSTabMenu({label, options}: XDSTabMenuProps) {
   const tabListCtx = useXDSTabListContext();
   const menuId = useId();
 
-  const layer = useXDSLayer({
-    mode: 'context',
-    lightDismiss: true,
+  const popover = useXDSPopover({
+    hasLightDismiss: true,
+    hasCloseButton: false,
+    hasAutoFocus: false,
   });
 
   const {listRef, handleKeyDown: handleListKeyDown} = useListFocus({
-    onEscape: () => layer.hide(),
+    onEscape: () => popover.hide(),
   });
 
   const handleToggle = useCallback(() => {
-    if (layer.isOpen) {
-      layer.hide();
+    if (popover.isOpen) {
+      popover.hide();
     } else {
-      layer.show();
+      popover.show();
     }
-  }, [layer]);
+  }, [popover]);
 
   const selectedOption = options.find(o => o.value === tabListCtx.value);
   const triggerLabel = selectedOption?.label ?? label;
@@ -260,18 +257,18 @@ export function XDSTabMenu({label, options}: XDSTabMenuProps) {
   const handleSelect = useCallback(
     (value: string) => {
       tabListCtx.onChange(value);
-      layer.hide();
+      popover.hide();
     },
-    [tabListCtx, layer],
+    [tabListCtx, popover],
   );
 
   return (
     <>
       <button
-        ref={layer.ref}
+        ref={popover.triggerRef}
         type="button"
         aria-haspopup="menu"
-        aria-expanded={layer.isOpen}
+        aria-expanded={popover.isOpen}
         aria-controls={menuId}
         onClick={handleToggle}
         {...mergeProps(
@@ -298,11 +295,14 @@ export function XDSTabMenu({label, options}: XDSTabMenuProps) {
         </span>
         <span
           aria-hidden="true"
-          {...stylex.props(styles.chevron, layer.isOpen && styles.chevronOpen)}>
+          {...stylex.props(
+            styles.chevron,
+            popover.isOpen && styles.chevronOpen,
+          )}>
           <XDSIcon icon="chevronDown" size="sm" color="inherit" />
         </span>
       </button>
-      {layer.render(
+      {popover.render(
         <div
           ref={listRef as React.RefObject<HTMLDivElement | null>}
           id={menuId}

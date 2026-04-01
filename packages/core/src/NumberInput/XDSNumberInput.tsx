@@ -444,6 +444,7 @@ export function XDSNumberInput({
       descriptionID={description ? descriptionID : undefined}
       isOptional={isOptional}
       isRequired={isRequired}
+      isDisabled={isDisabled}
       labelIcon={labelIcon}
       status={
         status

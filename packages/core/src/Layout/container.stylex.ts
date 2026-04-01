@@ -240,6 +240,12 @@ const paddingInnerYStyles = stylex.create({
   spacing12: {'--layout-padding-inner-y': spacingVars['--spacing-12']},
 });
 
+const maxHeightStyles = stylex.create({
+  containerMaxHeight: (maxHeight: string) => ({
+    '--container-max-height': maxHeight,
+  }),
+});
+
 export interface ContainerOptions {
   /**
    * Default container padding for simple content.
@@ -290,6 +296,14 @@ export interface ContainerOptions {
    * @default undefined (uses explicit spacing token values)
    */
   useThemeDefault?: ContainerComponent;
+
+  /**
+   * Maximum height constraint for the container.
+   * Sets --container-max-height CSS variable that XDSLayout reads
+   * to enable scroll containment in fill mode.
+   * Accepts CSS length values (e.g., '75vh', '500px').
+   */
+  maxHeight?: string;
 }
 
 /**
@@ -331,7 +345,12 @@ export function container({
   paddingInnerX = 'spacing4',
   paddingInnerY = 'spacing4',
   useThemeDefault,
+  maxHeight,
 }: ContainerOptions) {
+  const maxHeightStyle = maxHeight
+    ? maxHeightStyles.containerMaxHeight(maxHeight)
+    : null;
+
   // When useThemeDefault is a component name, cascade from the component's
   // public CSS custom property (e.g. --xds-card-padding, --xds-section-padding)
   // so themes can override each component's padding independently.
@@ -345,6 +364,7 @@ export function container({
       defaults.layoutPaddingOuterY,
       defaults.layoutPaddingInnerX,
       defaults.layoutPaddingInnerY,
+      maxHeightStyle,
     ] as const;
   }
 
@@ -359,5 +379,6 @@ export function container({
     paddingOuterYStyles[paddingOuterY],
     paddingInnerXStyles[paddingInnerX],
     paddingInnerYStyles[paddingInnerY],
+    maxHeightStyle,
   ] as const;
 }

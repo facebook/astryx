@@ -78,11 +78,20 @@ export const CustomDelay: Story = {
 };
 
 export const Disabled: Story = {
+  name: 'Disabled Tooltip',
   args: {
     placement: 'above',
     isEnabled: false,
     content: 'You should not see this',
-    children: <XDSButton label="Tooltip disabled">Tooltip disabled</XDSButton>,
+    children: <XDSButton label="Hover me">Hover me</XDSButton>,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Demonstrates disabling the tooltip via the `isEnabled` prop. When `isEnabled` is `false`, the tooltip will not appear on hover or focus, even though the trigger element remains fully interactive. This is useful for conditionally showing tooltips based on application state.',
+      },
+    },
   },
 };
 

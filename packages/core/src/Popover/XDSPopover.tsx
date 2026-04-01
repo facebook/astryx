@@ -26,14 +26,7 @@ import {xdsClassName, mergeProps} from '../utils';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {useXDSPopover} from './useXDSPopover';
 import type {LayerAlignment, LayerPlacement} from '../Layer/useXDSLayer';
-import {
-  colorVars,
-  durationVars,
-  easeVars,
-  spacingVars,
-  radiusVars,
-  shadowVars,
-} from '../theme/tokens.stylex';
+import {durationVars, easeVars, spacingVars} from '../theme/tokens.stylex';
 
 // =============================================================================
 // Helpers
@@ -151,6 +144,19 @@ export interface XDSPopoverProps {
   style?: React.CSSProperties;
 
   /**
+   * Whether to include a hidden close button for accessibility.
+   * The button appears when keyboard users tab past the last element.
+   * @default true
+   */
+  hasCloseButton?: boolean;
+
+  /**
+   * Label for the hidden close button.
+   * @default "Close popover"
+   */
+  closeButtonLabel?: string;
+
+  /**
    * Test ID for the popover container.
    */
   'data-testid'?: string;
@@ -191,12 +197,6 @@ const styles = stylex.create({
     },
   },
   // Visual styles for the inner content container
-  container: {
-    backgroundColor: colorVars['--color-background-surface'],
-    color: colorVars['--color-text-primary'],
-    borderRadius: radiusVars['--radius-element'],
-    boxShadow: shadowVars['--shadow-low'],
-  },
   contentPadding: {
     paddingBlockStart: spacingVars['--spacing-3'],
     paddingBlockEnd: spacingVars['--spacing-3'],
@@ -265,6 +265,8 @@ export function XDSPopover({
   isEnabled = true,
   width,
   label,
+  hasCloseButton,
+  closeButtonLabel,
   xstyle,
   className,
   style,
@@ -288,6 +290,8 @@ export function XDSPopover({
   const popover = useXDSPopover({
     dialogLabel: label,
     hasLightDismiss: true,
+    hasCloseButton,
+    closeButtonLabel,
     onShow: handlePopoverShow,
     onHide: handlePopoverHide,
   });
@@ -437,7 +441,7 @@ export function XDSPopover({
             data-testid={testId}
             {...mergeProps(
               xdsClassName('popover'),
-              stylex.props(styles.container, styles.contentPadding, xstyle),
+              stylex.props(styles.contentPadding, xstyle),
               className,
               style,
             )}>
@@ -463,7 +467,7 @@ export function XDSPopover({
           data-testid={testId}
           {...mergeProps(
             xdsClassName('popover'),
-            stylex.props(styles.container, styles.contentPadding, xstyle),
+            stylex.props(styles.contentPadding, xstyle),
             className,
             style,
           )}>

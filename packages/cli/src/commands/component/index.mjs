@@ -32,6 +32,7 @@ import {
 } from '../../lib/component-legacy.mjs';
 import {findClosestComponents} from '../../lib/string-utils.mjs';
 import {resolveTheme} from '../../lib/resolve-theme.mjs';
+import {getRunPrefix} from '../../utils/package-manager.mjs';
 
 export function registerComponent(program) {
   program
@@ -42,6 +43,7 @@ export function registerComponent(program) {
     .option('--props', 'Print only the props table')
     .option('--source', 'Print component source code')
     .action(async (name, options) => {
+      const run = getRunPrefix();
       const coreDir = findCoreDir(process.cwd());
       const zh = program.opts().zh || false;
       const dense = program.opts().dense || false;
@@ -134,7 +136,7 @@ export function registerComponent(program) {
             }
           }
 
-          console.log('Usage: npx xds component <name>');
+          console.log(`Usage: ${run} xds component <name>`);
           console.log('');
         }
         return;
@@ -193,7 +195,7 @@ export function registerComponent(program) {
 
         if (!readmePath) {
           console.error(`Error: Component "${name}" not found.`);
-          console.error('Run `npx xds component --list` to see available components.');
+          console.error(`Run \`${run} xds component --list\` to see available components.`);
           process.exit(1);
         }
       }

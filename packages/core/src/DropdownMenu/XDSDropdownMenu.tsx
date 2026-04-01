@@ -2,7 +2,7 @@
 
 /**
  * @file XDSDropdownMenu.tsx
- * @input Uses React, StyleX, useXDSLayer, XDSButton, XDSIcon
+ * @input Uses React, StyleX, useXDSPopover, XDSButton, XDSIcon
  * @output Exports XDSDropdownMenu component
  * @position Core implementation; consumed by index.ts
  *
@@ -22,7 +22,7 @@ import React, {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {useXDSLayer} from '../Layer/useXDSLayer';
+import {useXDSPopover} from '../Popover/useXDSPopover';
 import {XDSButton, type XDSButtonProps} from '../Button';
 import {XDSIcon} from '../Icon';
 import type {XDSIconType} from '../Icon';
@@ -31,7 +31,6 @@ import {XDSDivider} from '../Divider';
 import {XDSDropdownMenuItem} from './XDSDropdownMenuItem';
 import {
   colorVars,
-  shadowVars,
   spacingVars,
   radiusVars,
   durationVars,
@@ -65,12 +64,10 @@ const styles = stylex.create({
     boxSizing: 'border-box',
     maxHeight: '300px',
     overflowY: 'auto',
-    '--dropdown-radius': radiusVars['--radius-element'],
+    '--dropdown-radius': radiusVars['--radius-container'],
     '--dropdown-padding': spacingVars['--spacing-1'],
     padding: spacingVars['--spacing-1'],
     borderRadius: 'var(--dropdown-radius)',
-    backgroundColor: colorVars['--color-background-surface'],
-    boxShadow: shadowVars['--shadow-low'],
     opacity: 1,
     transitionProperty: 'opacity',
     transitionDuration: durationVars['--duration-fast'],
@@ -383,40 +380,41 @@ export function XDSDropdownMenu({
     }
   }, [isControlled, onOpenChange]);
 
-  const layer = useXDSLayer({
-    mode: 'context',
-    lightDismiss: true,
+  const popover = useXDSPopover({
     onHide: handleLayerHide,
     onShow: handleLayerShow,
+    hasLightDismiss: true,
+    hasCloseButton: false,
+    hasAutoFocus: false,
   });
 
   // Sync layer with controlled state
   React.useEffect(() => {
     if (isControlled) {
-      if (controlledIsOpen && !layer.isOpen) {
-        layer.show();
-      } else if (!controlledIsOpen && layer.isOpen) {
-        layer.hide();
+      if (controlledIsOpen && !popover.isOpen) {
+        popover.show();
+      } else if (!controlledIsOpen && popover.isOpen) {
+        popover.hide();
       }
     }
-  }, [controlledIsOpen, isControlled, layer]);
+  }, [controlledIsOpen, isControlled, popover]);
 
   const handleButtonClick = useCallback(() => {
     onClick?.();
     if (isControlled) {
       onOpenChange?.(!controlledIsOpen);
     } else {
-      if (layer.isOpen) {
-        layer.hide();
+      if (popover.isOpen) {
+        popover.hide();
       } else {
-        layer.show();
+        popover.show();
       }
     }
-  }, [onClick, isControlled, onOpenChange, controlledIsOpen, layer]);
+  }, [onClick, isControlled, onOpenChange, controlledIsOpen, popover]);
 
   const closeMenu = useCallback(() => {
-    layer.hide();
-  }, [layer]);
+    popover.hide();
+  }, [popover]);
 
   // Generate item ID for accessibility
   const getItemId = useCallback(
@@ -446,10 +444,10 @@ export function XDSDropdownMenu({
   // Keyboard navigation
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (!layer.isOpen) {
+      if (!popover.isOpen) {
         if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
-          layer.show();
+          popover.show();
           setHighlightedIndex(0);
         }
         return;
@@ -520,7 +518,7 @@ export function XDSDropdownMenu({
           break;
       }
     },
-    [layer, selectableItems, highlightedIndex, closeMenu, handleItemClick],
+    [popover, selectableItems, highlightedIndex, closeMenu, handleItemClick],
   );
 
   // Render an individual item
@@ -621,7 +619,7 @@ export function XDSDropdownMenu({
           (
             buttonRef as React.MutableRefObject<HTMLButtonElement | null>
           ).current = el;
-          layer.ref(el);
+          popover.triggerRef(el);
         }}
         {...button}
         endContent={resolvedEndContent}
@@ -638,7 +636,7 @@ export function XDSDropdownMenu({
         data-testid={testId}
       />
 
-      {layer.render(
+      {popover.render(
         <div
           id={menuId}
           role="menu"

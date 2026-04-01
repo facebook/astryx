@@ -1,7 +1,7 @@
 /**
  * @file XDSStatusDot.tsx
  * @input Uses React
- * @output Exports XDSStatusDot component, XDSStatusDotProps, XDSStatusDotVariant, XDSStatusDotSize types
+ * @output Exports XDSStatusDot component, XDSStatusDotProps, XDSStatusDotVariant types
  * @position Core implementation; consumed by index.ts
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -33,6 +33,8 @@ const styles = stylex.create({
     display: 'inline-block',
     borderRadius: '50%',
     flexShrink: 0,
+    width: '8px',
+    height: '8px',
   },
   pulsing: {
     animationName: pulseKeyframes,
@@ -44,20 +46,6 @@ const styles = stylex.create({
     '@media (prefers-reduced-motion: reduce)': {
       animationName: 'none',
     },
-  },
-});
-
-/**
- * Size styles
- */
-const sizes = stylex.create({
-  sm: {
-    width: '8px',
-    height: '8px',
-  },
-  md: {
-    width: '10px',
-    height: '10px',
   },
 });
 
@@ -109,11 +97,6 @@ export interface XDSStatusDotVariantMap {
  */
 export type XDSStatusDotVariant = keyof XDSStatusDotVariantMap;
 
-/**
- * Status dot size type
- */
-export type XDSStatusDotSize = 'sm' | 'md';
-
 export interface XDSStatusDotProps {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLSpanElement>;
@@ -121,11 +104,6 @@ export interface XDSStatusDotProps {
    * The semantic color variant.
    */
   variant: XDSStatusDotVariant;
-  /**
-   * The size of the dot.
-   * @default 'md'
-   */
-  size?: XDSStatusDotSize;
   /**
    * Accessible label describing the status. Required for a11y.
    */
@@ -166,19 +144,19 @@ export interface XDSStatusDotProps {
 /**
  * A small colored dot indicator for status display (online/offline, severity, etc).
  *
- * Renders as a non-focusable `<span>` with `role="img"` and `aria-label` for accessibility.
- * Styles use XDS theme tokens via StyleX. Wrap your app in `<Theme>` to apply a theme.
+ * Fixed 8px size. Renders as a non-focusable `<span>` with `role="img"` and
+ * `aria-label` for accessibility. Styles use XDS theme tokens via StyleX.
+ * Wrap your app in `<Theme>` to apply a theme.
  *
  * @example
  * ```
  * <XDSStatusDot variant="positive" label="Online" />
- * <XDSStatusDot variant="negative" label="Offline" size="sm" />
+ * <XDSStatusDot variant="negative" label="Offline" />
  * <XDSStatusDot variant="positive" label="Live" isPulsing />
  * ```
  */
 export function XDSStatusDot({
   variant,
-  size = 'md',
   label,
   isPulsing = false,
   xstyle,
@@ -193,10 +171,9 @@ export function XDSStatusDot({
       role="img"
       aria-label={label}
       {...mergeProps(
-        xdsClassName('statusdot', {variant, size}),
+        xdsClassName('statusdot', {variant}),
         stylex.props(
           styles.base,
-          sizes[size],
           variants[variant],
           isPulsing && styles.pulsing,
           isPulsing && styles.reducedMotion,

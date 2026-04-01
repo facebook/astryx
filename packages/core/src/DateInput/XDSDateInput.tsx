@@ -28,7 +28,6 @@ import {
   colorVars,
   sizeVars,
   radiusVars,
-  shadowVars,
   typographyVars,
   typeScaleVars,
   borderVars,
@@ -96,11 +95,6 @@ const styles = stylex.create({
   },
   inputInvalid: {
     color: colorVars['--color-text-secondary'],
-  },
-  popover: {
-    backgroundColor: colorVars['--color-background-popover'],
-    borderRadius: radiusVars['--radius-container'],
-    boxShadow: shadowVars['--shadow-low'],
   },
 });
 
@@ -340,7 +334,6 @@ export function XDSDateInput({
       : parseDateInput(pendingInput) !== null;
 
   const popover = useXDSPopover({
-    xstyle: styles.popover,
     dialogLabel: 'Choose date',
     closeButtonLabel: 'Close calendar',
     onHide: () => inputRef.current?.focus(),
@@ -471,6 +464,7 @@ export function XDSDateInput({
       descriptionID={description ? descriptionID : undefined}
       isOptional={isOptional}
       isRequired={isRequired}
+      isDisabled={isDisabled}
       status={
         status
           ? {

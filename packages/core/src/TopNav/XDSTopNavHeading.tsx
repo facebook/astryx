@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSTopNavHeading.tsx
  * @input Uses React, HTMLAttributes, ReactNode
@@ -20,6 +22,8 @@ import {
   fontWeightVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
+import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
+import type {XDSLinkComponentType} from '../Link/types';
 import {xdsClassName, mergeProps} from '../utils';
 
 /**
@@ -64,9 +68,15 @@ export interface XDSTopNavHeadingProps extends XDSBaseProps<HTMLElement> {
   logo?: ReactNode;
   /**
    * URL to navigate to when the heading is clicked.
-   * If provided, renders as an anchor element.
+   * If provided, renders as a link element.
    */
   href?: string;
+  /**
+   * Custom component to render instead of `<a>`.
+   * Overrides the provider-level default set by XDSLinkProvider.
+   * Must accept href, className, style, and children props.
+   */
+  as?: XDSLinkComponentType;
 }
 
 /**
@@ -90,6 +100,7 @@ export interface XDSTopNavHeadingProps extends XDSBaseProps<HTMLElement> {
  * ```
  */
 export function XDSTopNavHeading({
+  as,
   heading,
   logo,
   href,
@@ -99,7 +110,9 @@ export function XDSTopNavHeading({
   ref,
   ...props
 }: XDSTopNavHeadingProps) {
-  const Element = href ? 'a' : 'div';
+  const LinkComponent = useXDSLinkComponent(as);
+  const isLink = href != null;
+  const Element = isLink ? LinkComponent : 'div';
 
   return (
     <Element
@@ -107,7 +120,7 @@ export function XDSTopNavHeading({
       href={href}
       {...mergeProps(
         xdsClassName('top-nav-heading'),
-        stylex.props(styles.base, href != null && styles.clickable, xstyle),
+        stylex.props(styles.base, isLink && styles.clickable, xstyle),
         className,
         style,
       )}

@@ -358,6 +358,7 @@ export function XDSTypeahead<T extends XDSSearchableItem>({
       descriptionID={description ? descriptionId : undefined}
       isOptional={isOptional}
       isRequired={isRequired}
+      isDisabled={isDisabled}
       status={
         status
           ? {

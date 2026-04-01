@@ -12,6 +12,7 @@
 export {XDSTextInput} from './XDSTextInput';
 export type {
   XDSTextInputProps,
+  XDSTextInputType,
   XDSTextInputSize,
   XDSTextInputStatus,
   XDSTextInputStatusType,

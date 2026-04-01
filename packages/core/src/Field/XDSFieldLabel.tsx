@@ -30,15 +30,8 @@ const styles = stylex.create({
     fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-label-size'],
     fontWeight: fontWeightVars['--font-weight-medium'],
-    color: {
-      default: colorVars['--color-text-primary'],
-      [stylex.when.ancestor(':has(:disabled)')]:
-        colorVars['--color-text-disabled'],
-    },
-    cursor: {
-      default: 'pointer',
-      [stylex.when.ancestor(':has(:disabled)')]: 'not-allowed',
-    },
+    color: colorVars['--color-text-primary'],
+    cursor: 'pointer',
   },
   labelDisabled: {
     color: colorVars['--color-text-disabled'],

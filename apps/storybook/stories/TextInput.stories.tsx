@@ -441,6 +441,18 @@ export const WithTooltip: Story = {
   },
 };
 
+export const Password: Story = {
+  render: args => {
+    const [value, setValue] = useState(args.value ?? '');
+    return <XDSTextInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    type: 'password',
+    label: 'Password',
+    placeholder: 'Enter your password',
+  },
+};
+
 export const TooltipWithOptional: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? '');

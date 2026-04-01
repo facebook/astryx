@@ -14,6 +14,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {createRequire} from 'node:module';
 import {pathToFileURL, fileURLToPath} from 'node:url';
+import {getRunPrefix} from '../utils/package-manager.mjs';
 
 // Import shared theme processing from core — ensures build and runtime
 // use the same logic for typography.scale expansion, prose, and component rules.
@@ -577,7 +578,7 @@ function generateBuiltModule(themeDef, iconImportPath) {
     .join('\n');
 
   return `${iconImport}/**
- * ${themeDef.name} theme — built by \`npx xds theme build\`
+ * ${themeDef.name} theme — built by \`${getRunPrefix()} xds theme build\`
  * Import the CSS file alongside this module:
  *
  *   import { ${toIdentifier(themeDef.name)}Theme } from './${themeDef.name}';

@@ -36,14 +36,14 @@ describe('generateCompressedIndex', () => {
 
   it('does not include theme command references', () => {
     const result = generateCompressedIndex('1.0.0');
-    expect(result).not.toContain('npx xds theme');
+    expect(result).not.toMatch(/\bxds theme\b/);
   });
 
   it('includes upgrade command and migration rule', () => {
     const result = generateCompressedIndex('1.0.0');
-    expect(result).toContain('npx xds upgrade');
-    expect(result).toContain('npx xds upgrade --apply');
-    expect(result).toContain('after @xds/core bump, always run npx xds upgrade --apply');
+    expect(result).toContain('xds upgrade');
+    expect(result).toContain('xds upgrade --apply');
+    expect(result).toMatch(/always run .+ xds upgrade --apply/);
   });
 
   it('uses custom runPrefix when provided', () => {

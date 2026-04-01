@@ -13,13 +13,7 @@
  * - /packages/core/src/Popover/index.ts
  */
 
-import React, {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type ReactNode,
-} from 'react';
+import React, {useCallback, useEffect, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   useXDSLayer,
@@ -33,52 +27,55 @@ import {
   colorVars,
   spacingVars,
   radiusVars,
-  typeScaleVars,
+  shadowVars,
 } from '../theme/tokens.stylex';
+import {XDSButton} from '../Button';
 
 const styles = stylex.create({
+  // Default popover surface — background, radius, shadow.
+  // Applied automatically unless hasSurface is false.
+  // Consumers that need a raw positioned layer should use useXDSLayer instead.
+  surface: {
+    backgroundColor: colorVars['--color-background-popover'],
+    borderRadius: radiusVars['--radius-container'],
+    boxShadow: shadowVars['--shadow-low'],
+  },
   // Focus trap container
   contentWrapper: {
     position: 'relative',
   },
-  // Hidden close button - visually hidden until focused
-  closeButton: {
-    position: 'absolute',
-    width: 1,
-    height: 1,
-    padding: 0,
-    margin: -1,
-    overflow: 'hidden',
-    clip: 'rect(0, 0, 0, 0)',
-    whiteSpace: 'nowrap',
-    borderWidth: 0,
-    pointerEvents: 'none', // Prevent mouse clicks when hidden
-  },
-  // Revealed state when focused - positioned bottom center, outside popover
-  closeButtonFocused: {
+  // Hidden close button wrapper - sr-only until focused, then positioned below popover
+  closeButtonWrapper: {
     position: 'absolute',
     bottom: 0,
     left: '50%',
     transform: 'translate(-50%, 100%)',
-    width: 'auto',
-    height: 'auto',
-    padding: spacingVars['--spacing-2'],
-    margin: 0,
-    overflow: 'visible',
-    clip: 'auto',
-    whiteSpace: 'nowrap',
-    // Inverted color palette (like tooltip): dark background, light text
-    backgroundColor: colorVars['--color-text-primary'],
-    color: colorVars['--color-background-surface'],
-    fontSize: typeScaleVars['--text-supporting-size'],
-    borderRadius: radiusVars['--radius-element'],
-    cursor: 'pointer',
-    borderWidth: 0,
-    borderStyle: 'none',
-    outline: `2px solid ${colorVars['--color-accent']}`,
-    outlineOffset: 2,
     zIndex: 1,
-    pointerEvents: 'auto', // Re-enable mouse clicks when visible
+    // sr-only by default
+    width: {
+      default: 1,
+      ':focus-within': 'auto',
+    },
+    height: {
+      default: 1,
+      ':focus-within': 'auto',
+    },
+    overflow: {
+      default: 'hidden',
+      ':focus-within': 'visible',
+    },
+    clipPath: {
+      default: 'inset(50%)',
+      ':focus-within': 'none',
+    },
+    pointerEvents: {
+      default: 'none',
+      ':focus-within': 'auto',
+    },
+    paddingBlockStart: {
+      default: 0,
+      ':focus-within': spacingVars['--spacing-1'],
+    },
   },
 });
 
@@ -100,7 +97,12 @@ export interface UseXDSPopoverOptions {
   onHide?: () => void;
 
   /**
-   * StyleX styles for the popover container
+   * StyleX styles applied to the popover's content wrapper.
+   * Merges after the surface styles (when hasSurface is true), so these
+   * can override background, radius, etc.
+   *
+   * For styles on the layer's positioned element (e.g., animations using
+   * `:popover-open`), pass `xstyle` via the `render()` call's props instead.
    */
   xstyle?: StyleXStyles;
 
@@ -119,14 +121,12 @@ export interface UseXDSPopoverOptions {
   /**
    * Whether to include a hidden close button for accessibility.
    * The button appears when keyboard users tab past the last element.
-   * Set to false for menus or selectors with different focus behavior.
    * @default true
    */
   hasCloseButton?: boolean;
 
   /**
    * Label for the hidden close button.
-   * Only used when hasCloseButton is true.
    * @default "Close popover"
    */
   closeButtonLabel?: string;
@@ -136,6 +136,18 @@ export interface UseXDSPopoverOptions {
    * Required for screen readers to announce the dialog purpose.
    */
   dialogLabel?: string;
+
+  /**
+   * Whether to apply the default popover surface (background, border-radius,
+   * box-shadow) to the content wrapper.
+   *
+   * Set to false when the popover content provides its own surface styling
+   * (e.g., mega menus with custom layouts). If you find yourself opting out,
+   * consider whether useXDSLayer is a better fit.
+   *
+   * @default true
+   */
+  hasSurface?: boolean;
 }
 
 /**
@@ -261,13 +273,11 @@ export function useXDSPopover(
     xstyle,
     hasLightDismiss = true,
     hasAutoFocus = true,
+    hasSurface = true,
     hasCloseButton = true,
     closeButtonLabel = 'Close popover',
     dialogLabel,
   } = options;
-
-  // Track whether close button is focused (to show tooltip)
-  const [isCloseButtonFocused, setIsCloseButtonFocused] = useState(false);
 
   // Track the trigger element for returning focus
   const triggerElementRef = useRef<HTMLElement | null>(null);
@@ -303,13 +313,6 @@ export function useXDSPopover(
     }
   }, [layer.isOpen, hasAutoFocus, focusFirst]);
 
-  // Reset close button focus state when popover closes
-  useEffect(() => {
-    if (!layer.isOpen) {
-      setIsCloseButtonFocused(false);
-    }
-  }, [layer.isOpen]);
-
   // Combined ref for trigger element (layer anchor + our ref)
   const triggerRef = useCallback(
     (el: HTMLElement | null) => {
@@ -344,7 +347,7 @@ export function useXDSPopover(
     'aria-controls': layer.id,
   };
 
-  // Wrapped render function that includes optional hidden close button
+  // Wrapped render function that includes surface styles and optional hidden close button
   const render = useCallback(
     (children: ReactNode, props?: ContextRenderProps) => {
       return layer.render(
@@ -353,31 +356,30 @@ export function useXDSPopover(
           role="dialog"
           aria-modal="true"
           aria-label={dialogLabel}
-          {...stylex.props(styles.contentWrapper)}>
+          {...stylex.props(
+            styles.contentWrapper,
+            hasSurface && styles.surface,
+            xstyle,
+          )}>
           {children}
           {hasCloseButton && (
-            <button
-              type="button"
-              onClick={layer.hide}
-              onFocus={() => setIsCloseButtonFocused(true)}
-              onBlur={() => setIsCloseButtonFocused(false)}
-              aria-label={closeButtonLabel}
-              {...stylex.props(
-                styles.closeButton,
-                isCloseButtonFocused && styles.closeButtonFocused,
-              )}>
-              {closeButtonLabel}
-            </button>
+            <div {...stylex.props(styles.closeButtonWrapper)}>
+              <XDSButton
+                variant="secondary"
+                label={closeButtonLabel}
+                onClick={layer.hide}
+              />
+            </div>
           )}
         </div>,
-        {...props, xstyle: xstyle ?? props?.xstyle},
+        {...props, xstyle: props?.xstyle},
       );
     },
     [
       layer,
       hasCloseButton,
+      hasSurface,
       closeButtonLabel,
-      isCloseButtonFocused,
       contentRef,
       dialogLabel,
       xstyle,

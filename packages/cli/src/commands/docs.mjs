@@ -14,6 +14,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {CLI_ROOT} from '../utils/paths.mjs';
+import {getRunPrefix} from '../utils/package-manager.mjs';
 
 const DOCS_DIR = path.join(CLI_ROOT, 'docs');
 
@@ -185,6 +186,7 @@ export function registerDocs(program) {
     .command('docs [topic] [section]')
     .description('Print XDS reference docs')
     .action(async (topic, section) => {
+      const run = getRunPrefix();
       const topics = discoverTopics();
       const lang = program.opts().lang || null;
       const zh = program.opts().zh || false;
@@ -202,8 +204,8 @@ export function registerDocs(program) {
             console.log(`  ${name}`);
           }
         }
-        console.log('\nUsage: npx xds docs <topic>');
-        console.log('       npx xds docs <topic> <section>\n');
+        console.log(`\nUsage: ${run} xds docs <topic>`);
+        console.log(`       ${run} xds docs <topic> <section>\n`);
         return;
       }
 

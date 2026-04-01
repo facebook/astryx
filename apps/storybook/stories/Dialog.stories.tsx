@@ -60,7 +60,7 @@ function BasicModalExample() {
     <>
       <XDSButton
         label="Open Modal"
-        variant="primary"
+        variant="secondary"
         onClick={() => setIsOpen(true)}
       />
       <XDSDialog isOpen={isOpen} onOpenChange={open => setIsOpen(open)}>
@@ -81,7 +81,7 @@ function BasicModalExample() {
             </XDSLayoutContent>
           }
           footer={
-            <XDSLayoutFooter hasDivider>
+            <XDSLayoutFooter>
               <XDSHStack gap={2} hAlign="end">
                 <XDSButton
                   label="Cancel"
@@ -137,7 +137,7 @@ function SubtitleModalExample() {
             </XDSLayoutContent>
           }
           footer={
-            <XDSLayoutFooter hasDivider>
+            <XDSLayoutFooter>
               <XDSHStack gap={2} hAlign="end">
                 <XDSButton
                   label="Cancel"
@@ -194,7 +194,7 @@ function WideModalExample() {
             </XDSLayoutContent>
           }
           footer={
-            <XDSLayoutFooter hasDivider>
+            <XDSLayoutFooter>
               <XDSHStack hAlign="end">
                 <XDSButton
                   label="Close"
@@ -240,14 +240,25 @@ function FullscreenModalExample() {
           }
           content={
             <XDSLayoutContent>
-              <XDSText type="body">
-                This modal takes up the entire viewport. The width, maxHeight,
-                and position props are ignored in fullscreen mode.
-              </XDSText>
+              <div
+                style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
+                <XDSText type="body">
+                  This modal takes up the entire viewport. The width, maxHeight,
+                  and position props are ignored in fullscreen mode.
+                </XDSText>
+                {Array.from({length: 30}, (_, i) => (
+                  <XDSText type="body" key={i}>
+                    {i + 1}. Lorem ipsum dolor sit amet, consectetur adipiscing
+                    elit. Sed do eiusmod tempor incididunt ut labore et dolore
+                    magna aliqua. Ut enim ad minim veniam, quis nostrud
+                    exercitation ullamco laboris.
+                  </XDSText>
+                ))}
+              </div>
             </XDSLayoutContent>
           }
           footer={
-            <XDSLayoutFooter hasDivider>
+            <XDSLayoutFooter>
               <XDSHStack hAlign="end">
                 <XDSButton
                   label="Close"
@@ -306,7 +317,7 @@ function RequiredModalExample() {
             </XDSLayoutContent>
           }
           footer={
-            <XDSLayoutFooter hasDivider>
+            <XDSLayoutFooter>
               <XDSHStack hAlign="end">
                 <XDSButton
                   label="I Accept"
@@ -361,7 +372,7 @@ function FormModalExample() {
             </XDSLayoutContent>
           }
           footer={
-            <XDSLayoutFooter hasDivider>
+            <XDSLayoutFooter>
               <XDSHStack gap={2} hAlign="end">
                 <XDSButton
                   label="Cancel"
@@ -420,7 +431,7 @@ function InfoModalExample() {
             </XDSLayoutContent>
           }
           footer={
-            <XDSLayoutFooter hasDivider>
+            <XDSLayoutFooter>
               <XDSHStack hAlign="end">
                 <XDSButton
                   label="Got it"
@@ -474,7 +485,7 @@ function PositionedModalExample() {
             </XDSLayoutContent>
           }
           footer={
-            <XDSLayoutFooter hasDivider>
+            <XDSLayoutFooter>
               <XDSHStack hAlign="end">
                 <XDSButton
                   label="Close"
@@ -536,7 +547,7 @@ function ScrollingModalExample() {
             </XDSLayoutContent>
           }
           footer={
-            <XDSLayoutFooter hasDivider>
+            <XDSLayoutFooter>
               <XDSHStack gap={2} hAlign="end">
                 <XDSButton
                   label="Decline"
@@ -606,7 +617,7 @@ function ConfirmationModalExample() {
             </XDSLayoutContent>
           }
           footer={
-            <XDSLayoutFooter hasDivider>
+            <XDSLayoutFooter>
               <XDSHStack gap={2} hAlign="end">
                 <XDSButton
                   label="Cancel"

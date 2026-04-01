@@ -11,7 +11,7 @@ import React from 'react';
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {forwardRef, type ComponentPropsWithoutRef} from 'react';
+import {forwardRef, type ComponentPropsWithoutRef, type ReactNode} from 'react';
 import {XDSSideNav} from './XDSSideNav';
 import {XDSSideNavHeading} from './XDSSideNavHeading';
 import {XDSSideNavItem} from './XDSSideNavItem';
@@ -221,6 +221,106 @@ describe('XDSSideNavHeading', () => {
 
   it('passes data-testid', () => {
     render(<XDSSideNavHeading heading="My App" data-testid="nav-header" />);
+    expect(screen.getByTestId('nav-header')).toBeInTheDocument();
+  });
+});
+
+// =============================================================================
+// XDSSideNavHeading — collapsed mode
+// =============================================================================
+
+function CollapsedWrapper({children}: {children: ReactNode}) {
+  return (
+    <XDSSideNavCollapseContext.Provider
+      value={{isCollapsed: true, toggle: () => {}, isCollapsible: true}}>
+      {children}
+    </XDSSideNavCollapseContext.Provider>
+  );
+}
+
+describe('XDSSideNavHeading collapsed', () => {
+  it('returns null when collapsed without icon', () => {
+    const {container} = render(
+      <CollapsedWrapper>
+        <XDSSideNavHeading heading="My App" />
+      </CollapsedWrapper>,
+    );
+    expect(container.innerHTML).toBe('');
+  });
+
+  it('renders icon when collapsed with icon', () => {
+    render(
+      <CollapsedWrapper>
+        <XDSSideNavHeading
+          heading="My App"
+          icon={<span data-testid="app-icon">🏠</span>}
+        />
+      </CollapsedWrapper>,
+    );
+    expect(screen.getByTestId('app-icon')).toBeInTheDocument();
+  });
+
+  it('does not show heading text inline when collapsed (only in tooltip)', () => {
+    const {container} = render(
+      <CollapsedWrapper>
+        <XDSSideNavHeading
+          heading="My App"
+          icon={<span data-testid="app-icon">🏠</span>}
+        />
+      </CollapsedWrapper>,
+    );
+    // The heading text should not appear as a visible inline element
+    // (it exists only in the tooltip for accessibility)
+    const headingSpans = container.querySelectorAll('span');
+    const inlineHeadingText = Array.from(headingSpans).find(
+      el =>
+        el.textContent === 'My App' &&
+        !el.closest('[role="tooltip"]') &&
+        !el.hasAttribute('data-tooltip'),
+    );
+    expect(inlineHeadingText).toBeUndefined();
+  });
+
+  it('renders as link when collapsed with headingHref', () => {
+    render(
+      <CollapsedWrapper>
+        <XDSSideNavHeading
+          heading="My App"
+          headingHref="/home"
+          icon={<span data-testid="app-icon">🏠</span>}
+        />
+      </CollapsedWrapper>,
+    );
+    const link = screen.getByRole('link');
+    expect(link).toHaveAttribute('href', '/home');
+    expect(link).toHaveAttribute('aria-label', 'My App');
+  });
+
+  it('does not show chevron when collapsed', () => {
+    const {container} = render(
+      <CollapsedWrapper>
+        <XDSSideNavHeading
+          heading="My App"
+          headingHref="/home"
+          icon={<span data-testid="app-icon">🏠</span>}
+          menu={<div>Menu</div>}
+        />
+      </CollapsedWrapper>,
+    );
+    const svg = container.querySelector('svg');
+    expect(svg).not.toBeInTheDocument();
+  });
+
+  it('passes data-testid when collapsed', () => {
+    render(
+      <CollapsedWrapper>
+        <XDSSideNavHeading
+          heading="My App"
+          icon={<span>🏠</span>}
+          data-testid="nav-header"
+        />
+      </CollapsedWrapper>,
+    );
     expect(screen.getByTestId('nav-header')).toBeInTheDocument();
   });
 });

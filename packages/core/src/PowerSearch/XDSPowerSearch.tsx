@@ -31,7 +31,7 @@ import {XDSIcon} from '../Icon';
 import type {XDSIconType} from '../Icon';
 import type {XDSIconName} from '../Icon/globalIconRegistry';
 import type {XDSInputStatus} from '../Field';
-import {useXDSLayer} from '../Layer';
+import {useXDSPopover} from '../Popover/useXDSPopover';
 import {spacingVars, colorVars, typeScaleVars} from '../theme/tokens.stylex';
 import {useInternalConfig} from './useInternalConfig';
 import {usePowerSearchSource} from './usePowerSearchSource';
@@ -442,6 +442,32 @@ type PopoverState =
  *   onChange={(newFilters) => setFilters(newFilters)}
  * />
  * ```
+ *
+ * @example
+ * ```
+ * // Use contentSearchFieldKey to designate a field for free-text search.
+ * // When set, unstructured text input is routed to this field.
+ * const config = {
+ *   name: 'IssueSearch',
+ *   contentSearchFieldKey: 'title',
+ *   fields: [
+ *     {
+ *       key: 'title',
+ *       label: 'Title',
+ *       operators: [
+ *         { key: 'contains', label: 'contains', value: { type: 'string' } },
+ *       ],
+ *     },
+ *     {
+ *       key: 'status',
+ *       label: 'Status',
+ *       operators: [
+ *         { key: 'is', label: 'is', value: { type: 'enum', values: [...] } },
+ *       ],
+ *     },
+ *   ],
+ * };
+ * ```
  */
 export function XDSPowerSearch({
   config: configProp,
@@ -483,10 +509,11 @@ export function XDSPowerSearch({
     setPopoverStateRaw({type: 'idle'});
   }, []);
 
-  const layer = useXDSLayer({
-    mode: 'context',
-    lightDismiss: true,
+  const popover = useXDSPopover({
     onHide: handleLayerHide,
+    hasLightDismiss: true,
+    hasCloseButton: false,
+    hasAutoFocus: false,
   });
 
   // Wrapper that manages layer visibility and tokenizer focus alongside state
@@ -497,15 +524,15 @@ export function XDSPowerSearch({
         // Schedule after the current frame so React can render the popover
         // content and the typeahead's synchronous focus() has completed
         requestAnimationFrame(() => {
-          layer.show();
+          popover.show();
           tokenizerRef.current?.blur();
         });
       } else {
-        layer.hide();
+        popover.hide();
         tokenizerRef.current?.focus();
       }
     },
-    [layer],
+    [popover],
   );
 
   // Expose imperative handle
@@ -567,6 +594,17 @@ export function XDSPowerSearch({
         const operator = auxData.operatorKey
           ? config.getOperator(auxData.fieldKey, auxData.operatorKey)
           : config.getDefaultOperator(auxData.fieldKey);
+
+        // If the item already has a filter value (e.g. content search), add immediately
+        if (auxData.filterValue && operator) {
+          const newFilter: PowerSearchFilter = {
+            field: auxData.fieldKey,
+            operator: operator.key,
+            value: auxData.filterValue,
+          };
+          onChange([...filters, newFilter], 'add', filters.length);
+          return;
+        }
 
         // For "empty" type operators, add the filter immediately
         if (operator?.value.type === 'empty') {
@@ -776,7 +814,7 @@ export function XDSPowerSearch({
 
   return (
     <>
-      <div ref={layer.ref}>
+      <div ref={popover.triggerRef}>
         <XDSTokenizer
           ref={tokenizerRef}
           label={label}
@@ -802,7 +840,7 @@ export function XDSPowerSearch({
           data-testid={testId}
         />
       </div>
-      {layer.render(
+      {popover.render(
         popoverPartialFilter ? (
           <PowerSearchEditPopover
             config={config}

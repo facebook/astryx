@@ -896,6 +896,88 @@ export const WithNestedFilters: Story = {
   name: 'Nested Filters',
 };
 
+const contentSearchConfig: PowerSearchConfig = {
+  name: 'ContentSearch',
+  contentSearchFieldKey: 'title',
+  fields: [
+    {
+      key: 'title',
+      label: 'Title',
+      defaultOperator: 'contains',
+      operators: [
+        {key: 'contains', label: 'contains', value: {type: 'string'}},
+        {
+          key: 'not_contains',
+          label: 'does not contain',
+          value: {type: 'string'},
+        },
+      ],
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      defaultOperator: 'is',
+      operators: [
+        {
+          key: 'is',
+          label: 'is',
+          value: {type: 'enum', values: statusValues},
+        },
+        {
+          key: 'is_not',
+          label: 'is not',
+          value: {type: 'enum', values: statusValues},
+        },
+      ],
+    },
+    {
+      key: 'priority',
+      label: 'Priority',
+      defaultOperator: 'is',
+      operators: [
+        {
+          key: 'is',
+          label: 'is',
+          value: {type: 'enum', values: priorityValues},
+        },
+      ],
+    },
+  ],
+};
+
+export const WithContentSearchFieldKey: Story = {
+  render: args => {
+    const [filters, setFilters] = useState<PowerSearchFilter[]>([]);
+    return (
+      <div>
+        <XDSPowerSearch
+          {...args}
+          config={contentSearchConfig}
+          filters={filters}
+          onChange={newFilters => setFilters([...newFilters])}
+        />
+        {filters.length > 0 && (
+          <pre
+            style={{
+              marginTop: 16,
+              padding: 12,
+              backgroundColor: '#f5f5f5',
+              borderRadius: 8,
+              fontSize: 12,
+              overflow: 'auto',
+            }}>
+            {JSON.stringify(filters, null, 2)}
+          </pre>
+        )}
+      </div>
+    );
+  },
+  args: {
+    placeholder: 'Type to search by title, or pick a field...',
+  },
+  name: 'Content Search Field Key',
+};
+
 export const WithStartIcon: Story = {
   render: args => {
     const [filters, setFilters] = useState<PowerSearchFilter[]>([]);

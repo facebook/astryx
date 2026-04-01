@@ -538,7 +538,7 @@ export const CardExample: Story = {
 export const MetricsExample: Story = {
   render: () => (
     <div style={{display: 'flex', gap: '24px'}}>
-      <div style={{textAlign: 'center'}}>
+      <div style={{textAlign: 'start'}}>
         <XDSText type="body" color="secondary" display="block">
           Revenue
         </XDSText>
@@ -546,7 +546,7 @@ export const MetricsExample: Story = {
           $1,234,567.89
         </XDSText>
       </div>
-      <div style={{textAlign: 'center'}}>
+      <div style={{textAlign: 'start'}}>
         <XDSText type="body" color="secondary" display="block">
           Users
         </XDSText>
@@ -554,7 +554,7 @@ export const MetricsExample: Story = {
           12,345
         </XDSText>
       </div>
-      <div style={{textAlign: 'center'}}>
+      <div style={{textAlign: 'start'}}>
         <XDSText type="body" color="secondary" display="block">
           Conversion
         </XDSText>

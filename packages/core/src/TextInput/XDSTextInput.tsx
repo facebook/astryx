@@ -83,12 +83,19 @@ export type {
 import {xdsClassName, mergeProps} from '../utils';
 import {XDSBaseProps} from '../XDSBaseProps';
 
+export type XDSTextInputType = 'text' | 'password' | 'email';
+
 export interface XDSTextInputProps extends Omit<
   XDSBaseProps,
   'onChange' | 'defaultValue'
 > {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLInputElement>;
+  /**
+   * The HTML input type.
+   * @default 'text'
+   */
+  type?: XDSTextInputType;
   /**
    * Label text for the input (always rendered for accessibility).
    */
@@ -180,6 +187,7 @@ export interface XDSTextInputProps extends Omit<
  * ```
  */
 export function XDSTextInput({
+  type = 'text',
   label,
   isLabelHidden = false,
   description,
@@ -253,6 +261,7 @@ export function XDSTextInput({
       descriptionID={description ? descriptionID : undefined}
       isOptional={isOptional}
       isRequired={isRequired}
+      isDisabled={isDisabled}
       status={
         status
           ? {
@@ -284,7 +293,7 @@ export function XDSTextInput({
           ref={ref}
           id={id}
           name={htmlName}
-          type="text"
+          type={type}
           value={String(optimisticValue)}
           onChange={handleChange}
           placeholder={placeholder}

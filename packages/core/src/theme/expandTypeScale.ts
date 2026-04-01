@@ -395,7 +395,6 @@ export function generateTypeScaleComponents(
     textRules[`type:${type}`] = {
       fontFamily: TEXT_FONT_FAMILIES[type],
       fontSize: `var(--text-${type}-size)`,
-      fontWeight: `var(--text-${type}-weight)`,
       lineHeight: `var(--text-${type}-leading)`,
     };
   }

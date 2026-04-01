@@ -10,6 +10,7 @@ import {fileURLToPath} from 'node:url';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {checkForUpdate} from './utils/update-check.mjs';
+import {getRunPrefix} from './utils/package-manager.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -87,22 +88,27 @@ for (const cmd of commands) {
 program
   .command('postinstall', {hidden: true})
   .action(() => {
+    const run = getRunPrefix();
+    const r = `${run} xds`;
+    const pad = (s, len) => s + ' '.repeat(Math.max(0, len - s.length));
+    const W = 49; // inner width of the box
+    const line = (s) => `  │ ${pad(s, W)}│`;
     console.log(`
-  ╭───────────────────────────────────────────────────╮
-  │                                                   │
-  │   XDS design system installed!                    │
-  │                                                   │
-  │   Get started:                                    │
-  │     npx xds init          Interactive setup       │
-  │     npx xds --help        See all commands        │
-  │                                                   │
-  │   Or run directly:                                │
-  │     npx xds init           Setup + AI agent docs   │
-  │     npx xds component     Browse component docs   │
-  │     npx xds docs          Design system reference │
-  │     npx xds swizzle       Customize a component   │
-  │     npx xds template      Add a page template     │
-  │                                                   │
-  ╰───────────────────────────────────────────────────╯
+  ╭${'─'.repeat(W + 2)}╮
+${line('')}
+${line('  XDS design system installed!')}
+${line('')}
+${line('  Get started:')}
+${line(`    ${r} init          Interactive setup`)}
+${line(`    ${r} --help        See all commands`)}
+${line('')}
+${line('  Or run directly:')}
+${line(`    ${r} init           Setup + AI agent docs`)}
+${line(`    ${r} component     Browse component docs`)}
+${line(`    ${r} docs          Design system reference`)}
+${line(`    ${r} swizzle       Customize a component`)}
+${line(`    ${r} template      Add a page template`)}
+${line('')}
+  ╰${'─'.repeat(W + 2)}╯
 `);
   });

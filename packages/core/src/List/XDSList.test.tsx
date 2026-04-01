@@ -540,21 +540,44 @@ describe('XDSList', () => {
       </XDSList>,
     );
     const item = screen.getByTestId('item');
-    // When markers are shown, inner content is wrapped in a div
-    const innerWrapper = item.querySelector('div');
-    expect(innerWrapper).toBeInTheDocument();
+    // Custom marker rendered as a span (dot marker container)
+    const markerContainer = item.querySelector(':scope > span:first-child');
+    expect(markerContainer).toBeInTheDocument();
+    // The dot itself is a nested span
+    const dot = markerContainer?.querySelector('span');
+    expect(dot).toBeInTheDocument();
   });
 
-  it('does not wrap content when listStyle is none', () => {
+  it('renders list markers for decimal style', () => {
     render(
-      <XDSList listStyle="none">
-        <XDSListItem label="Plain item" data-testid="item" />
+      <XDSList listStyle="decimal">
+        <XDSListItem label="Numbered item" data-testid="item" />
       </XDSList>,
     );
     const item = screen.getByTestId('item');
-    // No inner div wrapper when no markers
-    const innerDiv = item.querySelector(':scope > div');
-    expect(innerDiv).not.toBeInTheDocument();
+    // Number marker uses CSS counter via ::before pseudo-element
+    const marker = item.querySelector(':scope > span:first-child');
+    expect(marker).toBeInTheDocument();
+  });
+
+  it('does not render markers when listStyle is none', () => {
+    const {container} = render(
+      <XDSList listStyle="disc">
+        <XDSListItem label="With marker" data-testid="with-marker" />
+      </XDSList>,
+    );
+    const withMarker = screen.getByTestId('with-marker');
+    const markerCount = withMarker.children.length;
+
+    const {container: container2} = render(
+      <XDSList listStyle="none">
+        <XDSListItem label="Plain item" data-testid="no-marker" />
+      </XDSList>,
+    );
+    const noMarker = screen.getByTestId('no-marker');
+    // Without markers, the item should have fewer direct children
+    // (no marker container element)
+    expect(noMarker.children.length).toBeLessThan(markerCount);
   });
 
   // ===========================================================================

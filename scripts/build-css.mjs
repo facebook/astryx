@@ -123,21 +123,93 @@ async function collectStyleXCSS() {
 /**
  * Given a list of StyleX rules, produce CSS via the official processor
  * and parse it into individual rule entries: { className, rule (full text) }
+ *
+ * Handles @media and other at-rule wrappers by preserving them around the
+ * inner rule. For example:
+ *   @media (prefers-reduced-motion: reduce){.x1{transition-duration:0s}}
+ * is parsed as a single entry with the full @media wrapper intact.
  */
 function parseRulesFromCSS(css) {
   const entries = [];
-  // Match each rule: .className...{ ... }
-  // StyleX rules can have :not(#\#) and pseudo-selectors
-  const ruleRegex = /(\.[a-z][a-z0-9_-]+[^{}]*)\{([^}]+)\}/g;
-  let match;
-  while ((match = ruleRegex.exec(css)) !== null) {
-    const selector = match[1].trim();
-    const className = selector.match(/^(\.[a-z][a-z0-9_-]+)/)?.[1];
-    if (className) {
-      entries.push({className, fullRule: match[0]});
+  let i = 0;
+
+  while (i < css.length) {
+    // Skip whitespace and newlines
+    while (i < css.length && /\s/.test(css[i])) i++;
+    if (i >= css.length) break;
+
+    // Detect at-rules (@media, @keyframes, etc.)
+    if (css[i] === '@') {
+      // Find the opening brace of the at-rule
+      const atStart = i;
+      const braceIdx = css.indexOf('{', i);
+      if (braceIdx === -1) break;
+
+      const atPrelude = css.slice(atStart, braceIdx).trim();
+
+      // Skip @keyframes entirely — they aren't component-splittable rules
+      if (atPrelude.startsWith('@keyframes')) {
+        // Jump past the balanced braces
+        i = findClosingBrace(css, braceIdx);
+        continue;
+      }
+
+      // For @media and other conditional at-rules, extract inner rules
+      // and wrap each one with the at-rule prelude
+      const closeIdx = findClosingBrace(css, braceIdx);
+      const innerCSS = css.slice(braceIdx + 1, closeIdx - 1);
+      const innerEntries = parseRulesFromCSS(innerCSS);
+
+      for (const entry of innerEntries) {
+        entries.push({
+          className: entry.className,
+          fullRule: `${atPrelude}{${entry.fullRule}}`,
+        });
+      }
+
+      i = closeIdx;
+      continue;
     }
+
+    // Regular rule: .className...{ declarations }
+    if (css[i] === '.') {
+      const ruleStart = i;
+      const braceIdx = css.indexOf('{', i);
+      if (braceIdx === -1) break;
+
+      const closeIdx = findClosingBrace(css, braceIdx);
+      const fullRule = css.slice(ruleStart, closeIdx).trim();
+      const selector = css.slice(ruleStart, braceIdx).trim();
+      const className = selector.match(/^(\.[a-z][a-z0-9_-]+)/)?.[1];
+
+      if (className) {
+        entries.push({className, fullRule});
+      }
+
+      i = closeIdx;
+      continue;
+    }
+
+    // Skip anything else (comments, etc.)
+    i++;
   }
+
   return entries;
+}
+
+/**
+ * Find the index just past the closing brace that matches the opening brace
+ * at `openIdx`. Handles nested braces.
+ */
+function findClosingBrace(css, openIdx) {
+  let depth = 1;
+  let i = openIdx + 1;
+  while (i < css.length && depth > 0) {
+    if (css[i] === '{') depth++;
+    else if (css[i] === '}') depth--;
+    i++;
+  }
+  return i;
 }
 
 function wrapInLayer(css, comment) {

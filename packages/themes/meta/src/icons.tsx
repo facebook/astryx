@@ -24,6 +24,12 @@ import {
   Bars3Icon,
   EllipsisHorizontalIcon,
   MagnifyingGlassIcon,
+  ArrowUpIcon,
+  ArrowDownIcon,
+  ArrowsUpDownIcon,
+  FunnelIcon,
+  EyeSlashIcon,
+  ViewColumnsIcon,
 } from '@heroicons/react/24/outline';
 
 import {
@@ -55,4 +61,10 @@ export const metaIconRegistry: XDSIconRegistry = {
   menu: <Bars3Icon {...iconProps} />,
   moreHorizontal: <EllipsisHorizontalIcon {...iconProps} />,
   search: <MagnifyingGlassIcon {...iconProps} />,
+  arrowUp: <ArrowUpIcon {...iconProps} />,
+  arrowDown: <ArrowDownIcon {...iconProps} />,
+  arrowsUpDown: <ArrowsUpDownIcon {...iconProps} />,
+  funnel: <FunnelIcon {...iconProps} />,
+  eyeSlash: <EyeSlashIcon {...iconProps} />,
+  viewColumns: <ViewColumnsIcon {...iconProps} />,
 };

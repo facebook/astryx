@@ -122,6 +122,11 @@ export interface XDSFieldProps extends Omit<
    */
   isRequired?: boolean;
   /**
+   * Whether the associated input is disabled.
+   * @default false
+   */
+  isDisabled?: boolean;
+  /**
    * Icon to display before the label text.
    */
   labelIcon?: XDSIconType;
@@ -188,6 +193,7 @@ export function XDSField({
   descriptionID,
   isOptional = false,
   isRequired = false,
+  isDisabled = false,
   labelIcon,
   status,
   labelTooltip,
@@ -225,6 +231,7 @@ export function XDSField({
           label={label}
           inputID={inputID}
           isLabelHidden={isLabelHidden}
+          isDisabled={isDisabled}
           isOptional={isOptional}
           isRequired={isRequired}
           labelIcon={labelIcon}

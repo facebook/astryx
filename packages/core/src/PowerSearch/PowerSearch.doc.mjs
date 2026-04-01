@@ -176,6 +176,48 @@ const [filters, setFilters] = useState([]);
   placeholder="Add filters..."
 />`,
     },
+    {
+      label: 'With contentSearchFieldKey for free-text search',
+      code: `const config = {
+  name: 'IssueSearch',
+  contentSearchFieldKey: 'title',
+  fields: [
+    {
+      key: 'title',
+      label: 'Title',
+      operators: [
+        { key: 'contains', label: 'contains', value: { type: 'string' } },
+        { key: 'is', label: 'is', value: { type: 'string' } },
+      ],
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      operators: [
+        {
+          key: 'is',
+          label: 'is',
+          value: {
+            type: 'enum',
+            values: [
+              { value: 'open', label: 'Open' },
+              { value: 'closed', label: 'Closed' },
+            ],
+          },
+        },
+      ],
+    },
+  ],
+};
+
+const [filters, setFilters] = useState([]);
+<XDSPowerSearch
+  config={config}
+  filters={filters}
+  onChange={(newFilters) => setFilters(newFilters)}
+  placeholder="Search issues..."
+/>`,
+    },
   ],
   features: [
     'Typeahead field selection with search and aliases',
@@ -370,6 +412,48 @@ const [filters, setFilters] = useState([]);
     console.log(changeType, 'at index', index);
   }}
   placeholder="Add filters..."
+/>`,
+    },
+    {
+      label: '使用 contentSearchFieldKey 进行自由文本搜索',
+      code: `const config = {
+  name: 'IssueSearch',
+  contentSearchFieldKey: 'title',
+  fields: [
+    {
+      key: 'title',
+      label: 'Title',
+      operators: [
+        { key: 'contains', label: 'contains', value: { type: 'string' } },
+        { key: 'is', label: 'is', value: { type: 'string' } },
+      ],
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      operators: [
+        {
+          key: 'is',
+          label: 'is',
+          value: {
+            type: 'enum',
+            values: [
+              { value: 'open', label: 'Open' },
+              { value: 'closed', label: 'Closed' },
+            ],
+          },
+        },
+      ],
+    },
+  ],
+};
+
+const [filters, setFilters] = useState([]);
+<XDSPowerSearch
+  config={config}
+  filters={filters}
+  onChange={(newFilters) => setFilters(newFilters)}
+  placeholder="Search issues..."
 />`,
     },
   ],

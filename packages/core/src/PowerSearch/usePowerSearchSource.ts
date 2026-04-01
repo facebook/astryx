@@ -31,8 +31,9 @@ export function usePowerSearchSource(
 
         for (const field of config.getVisibleFields()) {
           // Check if query matches field name or aliases
+          const fieldLabel = field.label.toLowerCase();
           const fieldMatches =
-            field.label.toLowerCase().includes(lower) ||
+            fieldLabel.includes(lower) ||
             field.typeaheadAliases?.some(alias =>
               alias.toLowerCase().includes(lower),
             );
@@ -66,7 +67,8 @@ export function usePowerSearchSource(
 
           // Also check if query matches operator labels
           for (const op of field.operators) {
-            if (op.label.toLowerCase().includes(lower)) {
+            const combinedLabel = `${field.label} ${op.label}`.toLowerCase();
+            if (combinedLabel.includes(lower)) {
               const id = `${field.key}:${op.key}`;
               if (!seen.has(id)) {
                 seen.add(id);
@@ -80,6 +82,34 @@ export function usePowerSearchSource(
                 });
               }
             }
+          }
+        }
+
+        // If contentSearchFieldKey is set and no field or field+operator
+        // exactly matches the query, prepend a content search item
+        const contentFieldKey = config.config.contentSearchFieldKey;
+        const hasExactMatch = config
+          .getVisibleFields()
+          .some(
+            f =>
+              f.label.toLowerCase() === lower ||
+              f.operators.some(
+                op => `${f.label} ${op.label}`.toLowerCase() === lower,
+              ),
+          );
+        if (contentFieldKey && !hasExactMatch) {
+          const contentField = config.getField(contentFieldKey);
+          const contentOp = config.getDefaultOperator(contentFieldKey);
+          if (contentField && contentOp) {
+            results.unshift({
+              id: `__content_search__:${query}`,
+              label: `"${query}"`,
+              auxiliaryData: {
+                fieldKey: contentFieldKey,
+                operatorKey: contentOp.key,
+                filterValue: {type: 'string', value: query},
+              },
+            });
           }
         }
 

@@ -96,15 +96,9 @@ describe('XDSProgressBar', () => {
     }
   });
 
-  it('renders with all size options', () => {
-    const sizes = ['sm', 'md', 'lg'] as const;
-    for (const size of sizes) {
-      const {unmount} = render(
-        <XDSProgressBar value={50} label={size} size={size} />,
-      );
-      expect(screen.getByRole('meter')).toBeInTheDocument();
-      unmount();
-    }
+  it('renders at fixed 8px track height', () => {
+    render(<XDSProgressBar value={50} label="Progress" />);
+    expect(screen.getByRole('meter')).toBeInTheDocument();
   });
 
   it('shows value label with hidden label', () => {

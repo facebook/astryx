@@ -36,7 +36,13 @@ export type XDSIconName =
   | 'externalLink'
   | 'menu'
   | 'moreHorizontal'
-  | 'search';
+  | 'search'
+  | 'arrowUp'
+  | 'arrowDown'
+  | 'arrowsUpDown'
+  | 'funnel'
+  | 'eyeSlash'
+  | 'viewColumns';
 
 /**
  * Icon registry mapping semantic names to React nodes.
