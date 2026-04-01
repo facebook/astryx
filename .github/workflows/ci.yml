@@ -130,7 +130,7 @@ jobs:
           retention-days: 30
 
       - name: Upload Sandbox artifact
-        if: github.event_name == 'pull_request' && hashFiles('apps/sandbox/out/**') != ''
+        if: github.event_name == 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           name: sandbox-${{ steps.urls.outputs.short_hash }}
@@ -176,7 +176,6 @@ jobs:
         with:
           name: sandbox-${{ needs.build.outputs.short_hash }}
           path: sandbox-dist
-        continue-on-error: true
 
       - name: Prepare PR preview
         run: |
@@ -185,10 +184,8 @@ jobs:
           mkdir -p deploy/pr/${PR_NUMBER}
           cp -r storybook-dist/* deploy/pr/${PR_NUMBER}/
 
-          if [ -d "sandbox-dist" ]; then
-            mkdir -p deploy/pr/${PR_NUMBER}/sandbox
-            cp -r sandbox-dist/* deploy/pr/${PR_NUMBER}/sandbox/
-          fi
+          mkdir -p deploy/pr/${PR_NUMBER}/sandbox
+          cp -r sandbox-dist/* deploy/pr/${PR_NUMBER}/sandbox/
 
           touch deploy/.nojekyll
 
