@@ -6,8 +6,8 @@
  * 1. Create the page under the appropriate route group:
  *    - `src/app/(sandbox)/pages/<name>/page.tsx` for standard layout
  *    - `src/app/(fullscreen)/pages/<name>/page.tsx` for fullscreen
- * 2. Run `node scripts/capture-previews.mjs` to generate a screenshot
- * 3. Add an entry to the appropriate category below
+ * 2. Add an entry to the appropriate category below
+ * 3. Optionally add a preview screenshot to `public/previews/<slug>.png`
  *
  * Note: hrefs use trailing slashes because the sandbox is a static export
  * with `trailingSlash: true` in next.config.mjs.
