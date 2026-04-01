@@ -9,14 +9,23 @@ import {
   XDSSideNavItem,
   XDSSideNavSection,
 } from '@xds/core/SideNav';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {
+  XDSLayout,
+  XDSLayoutHeader,
+  XDSLayoutContent,
+  XDSLayoutPanel,
+  XDSVStack,
+  XDSHStack,
+  XDSSection,
+} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSCard} from '@xds/core/Card';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSButton} from '@xds/core/Button';
 import {XDSLink} from '@xds/core/Link';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSTextArea} from '@xds/core/TextArea';
+import {XDSList, XDSListItem} from '@xds/core/List';
+import {XDSMetadataList, XDSMetadataListItem} from '@xds/core/MetadataList';
 
 // ─── Icons ──────────────────────────────────────────────────────────────────
 
@@ -216,23 +225,10 @@ const StoreIcon = (p: React.SVGProps<SVGSVGElement>) => (
 
 // ─── Styles ─────────────────────────────────────────────────────────────────
 
+// ─── Styles ─────────────────────────────────────────────────────────────────
+
 const styles = stylex.create({
-  contentArea: {display: 'flex', flex: 1, overflow: 'auto'},
-  mainContent: {flex: 1, padding: 24, minWidth: 0},
-  rightPanel: {
-    width: 280,
-    flexShrink: 0,
-    borderLeftWidth: 1,
-    borderLeftStyle: 'solid',
-    borderLeftColor: 'var(--color-divider)',
-    padding: 20,
-    overflowY: 'auto',
-  },
-  headerRow: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
+  maxWidth: {maxWidth: 800},
   backLink: {
     display: 'inline-flex',
     alignItems: 'center',
@@ -241,55 +237,6 @@ const styles = stylex.create({
     textDecoration: 'none',
     fontSize: 13,
     cursor: 'pointer',
-  },
-  sectionCard: {padding: 0},
-  sectionHeader: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: '16px 20px',
-  },
-  sectionBody: {padding: '0 20px 20px'},
-  lineItem: {
-    display: 'flex',
-    alignItems: 'flex-start',
-    gap: 12,
-    padding: '12px 0',
-  },
-  lineItemImage: {
-    width: 48,
-    height: 48,
-    borderRadius: 8,
-    backgroundColor: 'var(--color-wash)',
-    flexShrink: 0,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  lineItemDetails: {flex: 1, minWidth: 0},
-  invoiceRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '6px 0',
-  },
-  invoiceLabel: {display: 'flex', gap: 8, alignItems: 'center'},
-  invoiceTotal: {
-    borderTopWidth: 1,
-    borderTopStyle: 'solid',
-    borderTopColor: 'var(--color-divider)',
-    marginTop: 4,
-    paddingTop: 8,
-  },
-  paymentRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '12px 0',
-    borderTopWidth: 1,
-    borderTopStyle: 'solid',
-    borderTopColor: 'var(--color-divider)',
-    marginTop: 8,
   },
   stepperItem: {
     display: 'flex',
@@ -336,24 +283,28 @@ const styles = stylex.create({
     borderRadius: '50%',
     backgroundColor: 'white',
   },
-  customerItem: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 10,
-    padding: '6px 0',
-  },
-  customerIcon: {
-    width: 16,
-    height: 16,
-    color: 'var(--color-secondary-text)',
-    flexShrink: 0,
-  },
   fraudCard: {
     backgroundColor: 'var(--color-positive-wash)',
     borderRadius: 8,
     padding: 16,
   },
   productIcon: {width: 20, height: 20, color: 'var(--color-secondary-text)'},
+  lineItemImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 8,
+    backgroundColor: 'var(--color-wash)',
+    flexShrink: 0,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconSm: {
+    width: 16,
+    height: 16,
+    color: 'var(--color-secondary-text)',
+    flexShrink: 0,
+  },
 });
 
 // ─── Data ───────────────────────────────────────────────────────────────────
@@ -391,6 +342,7 @@ function DetailSideNav() {
   const [active, setActive] = useState('orders');
   return (
     <XDSSideNav
+      collapsible
       header={
         <XDSSideNavHeading
           icon={<StoreIcon style={{width: 20, height: 20}} />}
@@ -483,7 +435,7 @@ function StepperDotIcon({
 
 function OrderStepper() {
   return (
-    <XDSVStack gap={0}>
+    <XDSList>
       {STEPPER_STEPS.map((step, i) => {
         const isLast = i === STEPPER_STEPS.length - 1;
         return (
@@ -511,137 +463,113 @@ function OrderStepper() {
           </div>
         );
       })}
-    </XDSVStack>
+    </XDSList>
   );
 }
 
 function ItemsSection() {
   return (
-    <XDSCard xstyle={styles.sectionCard}>
-      <div {...stylex.props(styles.sectionHeader)}>
+    <XDSSection variant="section">
+      <XDSVStack gap={2}>
         <XDSHStack gap={2} vAlign="center">
           <XDSHeading level={3}>Items</XDSHeading>
           <XDSBadge variant="warning" label="Unfulfilled" />
         </XDSHStack>
-      </div>
-      <XDSDivider />
-      <div {...stylex.props(styles.sectionBody)}>
-        <XDSVStack gap={0}>
+        <XDSDivider />
+        <XDSList>
           {ORDER_ITEMS.map((item, i) => (
-            <div key={i}>
-              <div {...stylex.props(styles.lineItem)}>
+            <XDSListItem
+              key={i}
+              label={item.name}
+              description={item.details}
+              startContent={
                 <div {...stylex.props(styles.lineItemImage)}>
                   <ProductsIcon {...stylex.props(styles.productIcon)} />
                 </div>
-                <div {...stylex.props(styles.lineItemDetails)}>
-                  <XDSText type="body" weight="semibold">
-                    {item.name}
-                  </XDSText>
-                  <XDSText type="supporting" color="secondary">
-                    {item.details}
-                  </XDSText>
-                </div>
+              }
+              endContent={
                 <XDSText type="body">${item.price.toFixed(2)}</XDSText>
-              </div>
-              {i < ORDER_ITEMS.length - 1 && <XDSDivider />}
-            </div>
-          ))}
-        </XDSVStack>
-        <div style={{paddingTop: 16}}>
-          <XDSHStack gap={2}>
-            <XDSButton label="Fulfill item" variant="secondary" size="sm" />
-            <XDSButton
-              label="Create shipping label"
-              variant="secondary"
-              size="sm"
+              }
             />
-          </XDSHStack>
-        </div>
-      </div>
-    </XDSCard>
+          ))}
+        </XDSList>
+        <XDSHStack gap={2}>
+          <XDSButton label="Fulfill item" variant="secondary" size="sm" />
+          <XDSButton
+            label="Create shipping label"
+            variant="secondary"
+            size="sm"
+          />
+        </XDSHStack>
+      </XDSVStack>
+    </XDSSection>
   );
 }
 
 function InvoiceSection() {
   return (
-    <XDSCard xstyle={styles.sectionCard}>
-      <div {...stylex.props(styles.sectionHeader)}>
+    <XDSSection variant="section">
+      <XDSVStack gap={2}>
         <XDSHStack gap={2} vAlign="center">
           <XDSHeading level={3}>Invoice</XDSHeading>
           <XDSBadge variant="success" label="Paid" />
         </XDSHStack>
-      </div>
-      <XDSDivider />
-      <div {...stylex.props(styles.sectionBody)}>
-        <XDSVStack gap={0}>
-          <div {...stylex.props(styles.invoiceRow)}>
-            <div {...stylex.props(styles.invoiceLabel)}>
-              <XDSText type="body" color="secondary">
-                Subtotal
-              </XDSText>
+        <XDSDivider />
+        <XDSMetadataList label={{position: 'start'}}>
+          <XDSMetadataListItem label="Subtotal">
+            <XDSHStack gap={2} vAlign="center">
               <XDSText type="supporting" color="secondary">
                 2 items
               </XDSText>
-            </div>
-            <XDSText type="body">$40.00</XDSText>
-          </div>
-          <div {...stylex.props(styles.invoiceRow)}>
-            <div {...stylex.props(styles.invoiceLabel)}>
-              <XDSText type="body" color="secondary">
-                Discount
-              </XDSText>
+              <XDSText type="body">$40.00</XDSText>
+            </XDSHStack>
+          </XDSMetadataListItem>
+          <XDSMetadataListItem label="Discount">
+            <XDSHStack gap={2} vAlign="center">
               <XDSBadge variant="info" label="NEW15" />
-            </div>
-            <XDSText type="body">{'\u2212'}$15.00</XDSText>
-          </div>
-          <div {...stylex.props(styles.invoiceRow)}>
-            <div {...stylex.props(styles.invoiceLabel)}>
-              <XDSText type="body" color="secondary">
-                Shipping
-              </XDSText>
+              <XDSText type="body">{'\u2212'}$15.00</XDSText>
+            </XDSHStack>
+          </XDSMetadataListItem>
+          <XDSMetadataListItem label="Shipping">
+            <XDSHStack gap={2} vAlign="center">
               <XDSText type="supporting" color="secondary">
                 Free
               </XDSText>
-            </div>
-            <XDSText type="body">$0.00</XDSText>
-          </div>
-          <div {...stylex.props(styles.invoiceRow)}>
-            <div {...stylex.props(styles.invoiceLabel)}>
-              <XDSText type="body" color="secondary">
-                Tax
-              </XDSText>
+              <XDSText type="body">$0.00</XDSText>
+            </XDSHStack>
+          </XDSMetadataListItem>
+          <XDSMetadataListItem label="Tax">
+            <XDSHStack gap={2} vAlign="center">
               <XDSText type="supporting" color="secondary">
                 8.25%
               </XDSText>
-            </div>
-            <XDSText type="body">$4.20</XDSText>
-          </div>
-          <div {...stylex.props(styles.invoiceRow, styles.invoiceTotal)}>
-            <XDSText type="body" weight="bold">
-              Total
-            </XDSText>
+              <XDSText type="body">$4.20</XDSText>
+            </XDSHStack>
+          </XDSMetadataListItem>
+          <XDSMetadataListItem label="Total">
             <XDSText type="body" weight="bold">
               $29.20
             </XDSText>
-          </div>
-        </XDSVStack>
-        <div {...stylex.props(styles.paymentRow)}>
+          </XDSMetadataListItem>
+        </XDSMetadataList>
+        <XDSDivider />
+        <XDSHStack gap={2} hAlign="between" vAlign="center">
           <XDSHStack gap={2} vAlign="center">
             <XDSText type="body" color="secondary">
               Paid by customer
             </XDSText>
-            <XDSText type="body">Visa {'\u00b7\u00b7\u00b7\u00b7'}7482</XDSText>
+            <XDSText type="body">Visa ····7482</XDSText>
           </XDSHStack>
           <XDSText type="body" weight="semibold">
             $29.20
           </XDSText>
-        </div>
+        </XDSHStack>
         <XDSHStack gap={2}>
           <XDSButton label="Refund" variant="secondary" size="sm" />
           <XDSButton label="Send Invoice" variant="secondary" size="sm" />
         </XDSHStack>
-      </div>
-    </XDSCard>
+      </XDSVStack>
+    </XDSSection>
   );
 }
 
@@ -650,12 +578,10 @@ function NotesSection() {
     'Customer requested gift wrapping for both notebooks. Please include the handwritten note card from the uploaded file. Priority shipping was discussed but customer opted for standard delivery.',
   );
   return (
-    <XDSCard xstyle={styles.sectionCard}>
-      <div {...stylex.props(styles.sectionHeader)}>
+    <XDSSection variant="section">
+      <XDSVStack gap={2}>
         <XDSHeading level={3}>Notes</XDSHeading>
-      </div>
-      <XDSDivider />
-      <div {...stylex.props(styles.sectionBody)}>
+        <XDSDivider />
         <XDSTextArea
           label="Order notes"
           isLabelHidden
@@ -663,80 +589,77 @@ function NotesSection() {
           onChange={setNotes}
           rows={5}
         />
-      </div>
-    </XDSCard>
+      </XDSVStack>
+    </XDSSection>
   );
 }
 
 function RightPanel() {
   return (
-    <div {...stylex.props(styles.rightPanel)}>
-      <XDSVStack gap={5}>
-        <XDSVStack gap={3}>
-          <XDSHeading level={4}>Status</XDSHeading>
-          <OrderStepper />
-        </XDSVStack>
-        <XDSDivider />
-        <XDSVStack gap={3}>
-          <XDSHeading level={4}>Customer</XDSHeading>
-          <XDSVStack gap={0}>
-            <div {...stylex.props(styles.customerItem)}>
-              <UserIcon {...stylex.props(styles.customerIcon)} />
-              <XDSText type="body">Jane Doe</XDSText>
-            </div>
-            <div {...stylex.props(styles.customerItem)}>
-              <MapPinIcon {...stylex.props(styles.customerIcon)} />
-              <XDSText type="body">321 Smith Road, CA 38238</XDSText>
-            </div>
-            <div {...stylex.props(styles.customerItem)}>
-              <PhoneIcon {...stylex.props(styles.customerIcon)} />
-              <XDSText type="body">234-555-0198</XDSText>
-            </div>
-            <div {...stylex.props(styles.customerItem)}>
-              <EnvelopeIcon {...stylex.props(styles.customerIcon)} />
-              <XDSLink
-                label="janedoe@email.com"
-                href="mailto:janedoe@email.com">
-                janedoe@email.com
-              </XDSLink>
-            </div>
-            <div {...stylex.props(styles.customerItem)}>
-              <CheckCircleIcon {...stylex.props(styles.customerIcon)} />
-              <XDSText type="supporting" color="secondary">
-                Billing address same as shipping
-              </XDSText>
-            </div>
-          </XDSVStack>
-        </XDSVStack>
-        <XDSDivider />
-        <XDSVStack gap={3}>
-          <XDSHeading level={4}>Fraud Analysis</XDSHeading>
-          <div {...stylex.props(styles.fraudCard)}>
-            <XDSVStack gap={2}>
-              <XDSHStack gap={2} vAlign="center">
-                <ShieldCheckIcon
-                  style={{
-                    width: 16,
-                    height: 16,
-                    color: 'var(--color-positive)',
-                  }}
-                />
-                <XDSText type="body" weight="bold">
-                  Recommendation: Fulfill order
-                </XDSText>
-              </XDSHStack>
-              <XDSText type="supporting" color="secondary">
-                There is a low chance that you will receive a chargeback on this
-                order.
-              </XDSText>
-              <XDSLink label="Learn more" href="#">
-                Learn more
-              </XDSLink>
-            </XDSVStack>
-          </div>
-        </XDSVStack>
+    <XDSVStack gap={4}>
+      <XDSVStack gap={2}>
+        <XDSHeading level={4}>Status</XDSHeading>
+        <OrderStepper />
       </XDSVStack>
-    </div>
+      <XDSDivider />
+      <XDSVStack gap={2}>
+        <XDSHeading level={4}>Customer</XDSHeading>
+        <XDSMetadataList label={{position: 'start'}}>
+          <XDSMetadataListItem
+            label="Name"
+            icon={<UserIcon {...stylex.props(styles.iconSm)} />}>
+            Jane Doe
+          </XDSMetadataListItem>
+          <XDSMetadataListItem
+            label="Address"
+            icon={<MapPinIcon {...stylex.props(styles.iconSm)} />}>
+            321 Smith Road, CA 38238
+          </XDSMetadataListItem>
+          <XDSMetadataListItem
+            label="Phone"
+            icon={<PhoneIcon {...stylex.props(styles.iconSm)} />}>
+            234-555-0198
+          </XDSMetadataListItem>
+          <XDSMetadataListItem
+            label="Email"
+            icon={<EnvelopeIcon {...stylex.props(styles.iconSm)} />}>
+            <XDSLink label="janedoe@email.com" href="mailto:janedoe@email.com">
+              janedoe@email.com
+            </XDSLink>
+          </XDSMetadataListItem>
+          <XDSMetadataListItem
+            label="Billing"
+            icon={<CheckCircleIcon {...stylex.props(styles.iconSm)} />}>
+            <XDSText type="supporting" color="secondary">
+              Same as shipping address
+            </XDSText>
+          </XDSMetadataListItem>
+        </XDSMetadataList>
+      </XDSVStack>
+      <XDSDivider />
+      <XDSVStack gap={2}>
+        <XDSHeading level={4}>Fraud Analysis</XDSHeading>
+        <div {...stylex.props(styles.fraudCard)}>
+          <XDSVStack gap={2}>
+            <XDSHStack gap={2} vAlign="center">
+              <ShieldCheckIcon
+                style={{width: 16, height: 16, color: 'var(--color-positive)'}}
+              />
+              <XDSText type="body" weight="bold">
+                Recommendation: Fulfill order
+              </XDSText>
+            </XDSHStack>
+            <XDSText type="supporting" color="secondary">
+              There is a low chance that you will receive a chargeback on this
+              order.
+            </XDSText>
+            <XDSLink label="Learn more" href="#">
+              Learn more
+            </XDSLink>
+          </XDSVStack>
+        </div>
+      </XDSVStack>
+    </XDSVStack>
   );
 }
 
@@ -745,79 +668,93 @@ function RightPanel() {
 export default function DetailTemplate() {
   return (
     <XDSAppShell
-      variant="section"
+      variant="elevated"
       sideNav={<DetailSideNav />}
       contentPadding={0}>
-      <div {...stylex.props(styles.contentArea)}>
-        <div {...stylex.props(styles.mainContent)}>
-          <XDSVStack gap={5}>
-            <XDSVStack gap={3}>
-              <div {...stylex.props(styles.headerRow)}>
-                <a {...stylex.props(styles.backLink)} href="#">
-                  <ArrowLeftIcon style={{width: 14, height: 14}} />
-                  All orders
-                </a>
-                <XDSHStack gap={2} vAlign="center">
-                  <XDSButton
-                    label="Grid view"
-                    variant="ghost"
-                    size="sm"
-                    icon={<Squares2x2Icon />}
-                  />
-                  <XDSHStack gap={1} vAlign="center">
+      <XDSLayout
+        header={
+          <XDSLayoutHeader hasDivider>
+            <div {...stylex.props(styles.maxWidth)}>
+              <XDSVStack gap={2}>
+                <XDSHStack gap={2} hAlign="between" vAlign="center">
+                  <a {...stylex.props(styles.backLink)} href="#">
+                    <ArrowLeftIcon style={{width: 14, height: 14}} />
+                    All orders
+                  </a>
+                  <XDSHStack gap={2} vAlign="center">
                     <XDSButton
-                      label="Previous"
+                      label="Grid view"
                       variant="ghost"
                       size="sm"
-                      icon={<ChevronLeftIcon />}
+                      icon={<Squares2x2Icon />}
                     />
-                    <XDSText type="supporting" color="secondary">
-                      2 / 9
-                    </XDSText>
+                    <XDSHStack gap={1} vAlign="center">
+                      <XDSButton
+                        label="Previous"
+                        variant="ghost"
+                        size="sm"
+                        icon={<ChevronLeftIcon />}
+                      />
+                      <XDSText type="supporting" color="secondary">
+                        2 / 9
+                      </XDSText>
+                      <XDSButton
+                        label="Next"
+                        variant="ghost"
+                        size="sm"
+                        icon={<ChevronRightIcon />}
+                      />
+                    </XDSHStack>
+                    <XDSButton label="Restock" variant="secondary" size="sm" />
                     <XDSButton
-                      label="Next"
-                      variant="ghost"
+                      label="Edit"
+                      variant="secondary"
                       size="sm"
-                      icon={<ChevronRightIcon />}
+                      icon={<PencilIcon />}
                     />
                   </XDSHStack>
-                  <XDSButton label="Restock" variant="secondary" size="sm" />
-                  <XDSButton
-                    label="Edit"
-                    variant="secondary"
-                    size="sm"
-                    icon={<PencilIcon />}
-                  />
                 </XDSHStack>
-              </div>
-              <XDSHeading level={1}>#1001</XDSHeading>
-              <XDSHStack gap={2} vAlign="center">
-                <XDSText type="supporting" color="secondary">
-                  5 days since order placed
-                </XDSText>
-                <XDSText type="supporting" color="secondary">
-                  {'\u00b7'}
-                </XDSText>
-                <XDSText type="supporting">Sarah Jon</XDSText>
-                <XDSText type="supporting" color="secondary">
-                  {'\u00b7'}
-                </XDSText>
-                <XDSBadge variant="warning" label="Payment pending" />
-                <XDSText type="supporting" color="secondary">
-                  {'\u00b7'}
-                </XDSText>
-                <XDSLink label="See All" href="#">
-                  See All
-                </XDSLink>
-              </XDSHStack>
-            </XDSVStack>
-            <ItemsSection />
-            <InvoiceSection />
-            <NotesSection />
-          </XDSVStack>
-        </div>
-        <RightPanel />
-      </div>
+                <XDSHeading level={1}>#1001</XDSHeading>
+                <XDSHStack gap={2} vAlign="center">
+                  <XDSText type="supporting" color="secondary">
+                    5 days since order placed
+                  </XDSText>
+                  <XDSText type="supporting" color="secondary">
+                    {'\u00b7'}
+                  </XDSText>
+                  <XDSText type="supporting">Sarah Jon</XDSText>
+                  <XDSText type="supporting" color="secondary">
+                    {'\u00b7'}
+                  </XDSText>
+                  <XDSBadge variant="warning" label="Payment pending" />
+                  <XDSText type="supporting" color="secondary">
+                    {'\u00b7'}
+                  </XDSText>
+                  <XDSLink label="See All" href="#">
+                    See All
+                  </XDSLink>
+                </XDSHStack>
+              </XDSVStack>
+            </div>
+          </XDSLayoutHeader>
+        }
+        content={
+          <XDSLayoutContent>
+            <div {...stylex.props(styles.maxWidth)}>
+              <XDSVStack gap={4}>
+                <ItemsSection />
+                <InvoiceSection />
+                <NotesSection />
+              </XDSVStack>
+            </div>
+          </XDSLayoutContent>
+        }
+        end={
+          <XDSLayoutPanel width={280} hasDivider>
+            <RightPanel />
+          </XDSLayoutPanel>
+        }
+      />
     </XDSAppShell>
   );
 }
