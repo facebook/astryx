@@ -93,8 +93,8 @@ const toastStyles = stylex.create({
     animationFillMode: 'forwards',
   },
   defaultVariant: {
-    backgroundColor: colorVars['--color-background-popover'],
-    color: colorVars['--color-text-primary'],
+    backgroundColor: 'light-dark(#0A1317, #28292C)',
+    color: 'light-dark(#FFFFFF, var(--color-text-primary))',
   },
   errorVariant: {
     backgroundColor: colorVars['--color-error'],
