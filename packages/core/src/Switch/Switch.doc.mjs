@@ -4,6 +4,7 @@ export const docs = {
   name: 'Switch',
   description:
     'A toggle switch component for boolean values with integrated label support.',
+  keywords: ["switch","toggle","onoff","flipswitch","boolean","toggleswitch"],
   features: [
     'Boolean toggle — fixed 40x24px track with animated 16px (off) / 20px (on) thumb',
     'Label integration — uses XDSFieldLabel for accessible labels with optional tooltip and icon',

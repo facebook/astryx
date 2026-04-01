@@ -4,6 +4,7 @@ export const docs = {
   name: 'Spinner',
   description:
     'An animated loading indicator with optional visible label.',
+  keywords: ["spinner","loader","loading","circular","progress","spin","activity","busy","indeterminate"],
   features: [
     'Canvas Animation: Lightweight canvas-based spinner with smooth 360° rotation',
     'Size Variants: Three sizes (sm, md, lg) matching existing inline spinners',

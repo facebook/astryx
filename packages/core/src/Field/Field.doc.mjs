@@ -4,6 +4,7 @@ export const docs = {
   name: 'Field',
   description:
     'A form field wrapper component that provides label, description, and optional/required indicators.',
+  keywords: ["field","formfield","formgroup","formcontrol","label","input","required","optional","helpertext","hint"],
   features: [
     'Label Support — required label for accessibility (can be visually hidden)',
     'Description — optional description text displayed between the label and input',

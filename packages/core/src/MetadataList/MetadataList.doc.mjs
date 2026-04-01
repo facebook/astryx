@@ -4,6 +4,7 @@ export const docs = {
   name: 'MetadataList',
   description:
     'A read-only labeled list for displaying key-value metadata. Semantic equivalent of HTML <dl>/<dt>/<dd> with layout control, column modes, and consistent styling. Uses a composition model: XDSMetadataList wraps XDSMetadataListItem sub-components.',
+  keywords: ["metadata","description","definition","keyvalue","properties","details","attributes","summary"],
   features: [
     'Composition model — XDSMetadataList wraps XDSMetadataListItem sub-components',
     'Column modes: single, multi (auto-fill), or fixed number',

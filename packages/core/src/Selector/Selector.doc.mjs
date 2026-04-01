@@ -4,6 +4,7 @@ export const docs = {
   name: 'Selector',
   description:
     'Dropdown selector for choosing from a list of options. Follows XDS input conventions with label, status, and field props.',
+  keywords: ["selector","select","dropdown","combobox","picker","listbox","chooser","autocomplete","option","selectmenu"],
   features: [
     'Supports string items (auto-converted to {value, label}), object items with optional icon and disabled state, dividers, and labeled sections',
     'Custom item rendering via children render prop and XDSSelectorItem helper',

@@ -4,6 +4,7 @@ export const docs = {
   name: 'NumberInput',
   description:
     'A number input component for collecting numeric user input with validation.',
+  keywords: ["numberinput","numberfield","stepper","spinner","counter","increment","decrement","quantity","numberpicker"],
   features: [
     'Label Support — required label for accessibility (can be visually hidden)',
     'Description — optional description text displayed between the label and input',

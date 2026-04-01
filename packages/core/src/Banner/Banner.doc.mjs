@@ -5,6 +5,7 @@ export const docs = {
   description:
     'Persistent status notification for info, warning, error, or success messages.',
 
+  keywords: ["banner","alert","notification","callout","notice","status","message","info","warning","error","success","toast"],
   features: [
     'Two-part layout: colored status header with icon, title, description, action buttons, and optional dismiss; optional card-background content area below',
     'When no children are provided, only the colored header renders',

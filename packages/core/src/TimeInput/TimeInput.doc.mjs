@@ -4,6 +4,7 @@ export const docs = {
   name: 'TimeInput',
   description:
     'Time input with free-text entry, text parsing, and arrow-key navigation.',
+  keywords: ["timeinput","timepicker","time","clock","hour","minute","ampm","timeselect","timefield"],
   features: [
     'Accepts free-text time entry and parses common formats (e.g. "2:30 PM", "14:30")',
     'Supports 12-hour and 24-hour display formats',

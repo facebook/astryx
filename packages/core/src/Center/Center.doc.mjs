@@ -3,6 +3,7 @@
 export const docs = {
   name: 'Center',
   description: 'Centers children horizontally and/or vertically using flexbox.',
+  keywords: ["center","centered","centering","align","alignment","justify","flexbox","middle"],
   features: [
     'Supports centering on both axes, horizontal only, or vertical only',
     'Inline-flex mode for centering inline content such as text and icons',

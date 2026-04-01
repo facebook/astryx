@@ -4,6 +4,7 @@ export const docs = {
   name: 'SideNav',
   description:
     'Sidebar navigation component for application pages. Supports sections, nested items, selected state, icons, and collapsible sidebar.',
+  keywords: ["sidenav","sidebar","navigation","drawer","menu","nav","aside","sidemenu","navmenu","sider","treeview"],
   features: [
     'Five-zone layout: header, topContent, children (scrollable), footer, footerIcons',
     'Smart header interaction boundary logic — links and menu trigger coexist without overlap',

@@ -4,6 +4,7 @@ export const docs = {
   name: 'Tooltip',
   description:
     'A hover/focus triggered tooltip for displaying short, non-interactive text anchored to a trigger element.',
+  keywords: ["tooltip","hint","infotip","title","hover","flyout","balloon","helpertext"],
   features: [
     'CSS Anchor Positioning for automatic placement relative to trigger elements',
     'Popover API for top-layer rendering — no React portals needed',

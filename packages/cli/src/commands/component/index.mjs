@@ -30,7 +30,7 @@ import {
   ensureImportStatement,
   extractProps,
 } from '../../lib/component-legacy.mjs';
-import {findClosestComponents} from '../../lib/string-utils.mjs';
+import {findClosestComponents, searchComponents} from '../../lib/string-utils.mjs';
 import {resolveTheme} from '../../lib/resolve-theme.mjs';
 import {getRunPrefix} from '../../utils/package-manager.mjs';
 
@@ -174,27 +174,39 @@ export function registerComponent(program) {
       }
 
       if (!readmePath) {
-        // Try fuzzy matching
         const components = discoverComponents(coreDir);
-        const closest = findClosestComponents(dirName, components);
+        const results = await searchComponents(dirName, coreDir, components);
 
-        if (closest.length === 1) {
-          resolvedName = closest[0].name;
-          readmePath = findComponentReadme(coreDir, resolvedName);
-          if (readmePath) {
-            console.log(`Did you mean ${resolvedName}?\n`);
-          }
-        } else if (closest.length > 1) {
-          console.error(`Component "${name}" not found. Did you mean one of these?\n`);
-          for (const match of closest) {
-            console.error(`  ${match.name}`);
-          }
-          console.error('');
-          process.exit(1);
-        }
+        if (results.length > 0) {
+          const topScore = results[0].score;
+          const topTied = results.filter(r => r.score === topScore);
+          const secondScore = results.length > topTied.length
+            ? results[topTied.length].score : 0;
+          const gap = topScore - secondScore;
 
-        if (!readmePath) {
-          console.error(`Error: Component "${name}" not found.`);
+          if (topScore >= 90 && topTied.length === 1 && gap >= 20) {
+            // Crystal clear single winner: show docs directly
+            resolvedName = topTied[0].name;
+            readmePath = findComponentReadme(coreDir, resolvedName);
+            if (readmePath && topScore < 100) {
+              console.log(`Showing results for ${resolvedName} (matched ${topTied[0].reason})\n`);
+            }
+          } else {
+            // Multiple strong matches or ambiguous: show options
+            // Include everything within 20 points of the top, min 2, max 5
+            const threshold = Math.max(topScore - 20, 1);
+            const candidates = results.filter(r => r.score >= threshold).slice(0, 5);
+            if (candidates.length < 2) candidates.push(...results.slice(candidates.length, 2));
+
+            console.error(`No component named "${name}". Did you mean:\n`);
+            for (const match of candidates) {
+              console.error(`  ${match.name}  (${match.reason})`);
+            }
+            console.error(`\nRun \`${run} xds component <name>\` to view docs.`);
+            process.exit(1);
+          }
+        } else {
+          console.error(`No component named "${name}".`);
           console.error(`Run \`${run} xds component --list\` to see available components.`);
           process.exit(1);
         }
@@ -237,4 +249,4 @@ export {discoverExternalPackages} from '../../utils/paths.mjs';
 export {loadDocs} from '../../lib/component-loader.mjs';
 export {formatFull, formatCompact, formatBrief, formatProps, formatBriefAll} from '../../lib/component-format.mjs';
 export {cleanReadme, extractCompact, extractBrief, ensureImportStatement, extractProps} from '../../lib/component-legacy.mjs';
-export {levenshteinDistance, findClosestComponents} from '../../lib/string-utils.mjs';
+export {levenshteinDistance, findClosestComponents, searchComponents} from '../../lib/string-utils.mjs';

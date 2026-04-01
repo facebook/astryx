@@ -4,6 +4,7 @@ export const docs = {
   name: 'Icon',
   description:
     'Renders icons with XDS design system colors and sizes. Supports both direct SVG icon components and semantic icon names that adapt to the active theme.',
+  keywords: ["icon","svg","glyph","symbol","pictogram","graphic","vector"],
   features: [
     "Semantic Icon Names: Use names like 'close' or 'chevronDown' — resolved from the theme's icon registry",
     'Direct Icon Components: Pass any SVG icon component (heroicons, lucide, etc.) directly',

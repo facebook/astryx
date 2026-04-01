@@ -4,6 +4,7 @@ export const docs = {
   name: 'DropdownMenu',
   description:
     'A dropdown menu component for displaying actionable items in a popup menu.',
+  keywords: ["dropdown","menu","popover","select","actions","contextmenu","overflow","kebab","menubutton"],
   features: [
     'Button customization: Customize the trigger button via the `button` prop (supports all XDSButton props)',
     'Data-driven items: Pass items via the `items` prop with support for sections and dividers',

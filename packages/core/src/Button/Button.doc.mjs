@@ -5,6 +5,7 @@ export const docs = {
   description:
     'XDSButton component with multiple variants, sizes, and isLoading state support.',
 
+  keywords: ["button","btn","cta","submit","action","loading","primary","secondary","ghost","destructive","danger"],
   features: [
     "Variants: 'primary', 'secondary', 'ghost', 'destructive'",
     'Sizes: sm (28px), md (32px), lg (36px)',

@@ -4,6 +4,7 @@ export const docs = {
   name: 'Popover',
   description:
     'A click-triggered popover for displaying interactive content anchored to a trigger element, implementing the button + dialog ARIA pattern.',
+  keywords: ["popover","popup","dropdown","tooltip","overlay","flyout","callout","popper","anchor","floating","bubble"],
   features: [
     'CSS Anchor Positioning for automatic placement relative to trigger elements',
     'Popover API for top-layer rendering — no React portals needed',

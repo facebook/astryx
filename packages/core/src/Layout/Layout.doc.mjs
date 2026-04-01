@@ -4,6 +4,7 @@ export const docs = {
   name: 'Layout',
   description:
     'Composable utilities and components for building structured layouts with a container/content separation pattern.',
+  keywords: ["layout","container","content","flex","box","wrapper","scaffold","page","shell"],
   features: [
     'Primitive + higher-order architecture — XDSLayoutContainer is a primitive; XDSCard, XDSSection are higher-order',
     'Directional padding via CSS variables — inner/outer, horizontal/vertical padding control',

@@ -3,6 +3,7 @@
 export const docs = {
   name: 'CheckboxInput',
   description: 'A checkbox input component for toggling boolean values.',
+  keywords: ["checkbox","check","toggle","tick","indeterminate","boolean","tristate"],
   features: [
     'Accessible — always includes a label (can be visually hidden)',
     'Indeterminate state — supports indeterminate for "select all" patterns',

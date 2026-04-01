@@ -4,6 +4,7 @@ export const docs = {
   name: 'Dialog',
   description:
     'Modal dialog using the native <dialog> element with automatic focus trapping, backdrop, and purpose-based dismissal control.',
+  keywords: ["dialog","modal","popup","overlay","lightbox","alert","confirm","prompt","backdrop","focus trap"],
   features: [
     "Native <dialog>: Uses the browser's built-in modal behavior via showModal()",
     'Automatic focus trap: Focus is trapped within the dialog when open (browser-native)',

@@ -4,6 +4,7 @@ export const docs = {
   name: 'Kbd',
   description:
     'Displays a keyboard shortcut as styled <kbd> elements. Use in tooltips, menus, and documentation to show key combinations.',
+  keywords: ["kbd","keyboard","shortcut","hotkey","keybinding","keystroke","keycombo","modifier","accelerator"],
   features: [
     'Key parsing — splits "mod+k" into individual styled <kbd> elements',
     'Modifier symbols — maps mod/ctrl/alt/shift/enter/backspace/escape/arrows to platform symbols',

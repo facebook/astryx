@@ -4,6 +4,7 @@ export const docs = {
   name: 'Token',
   description:
     'A chip/tag component for displaying entities inline. Renders as a <span> by default, <a> when href is provided, or a <span> with an invisible <button> inside when onClick is provided.',
+  keywords: ["token","chip","tag","pill","label","removable","dismissible","filter chip","closable"],
   features: [
     'Polymorphic — renders as <span>, <a>, or interactive <span>+<button> based on props',
     'Invisible button pattern for onClick preserves real button semantics while allowing focus-within outline on the full token',

@@ -4,6 +4,7 @@ export const docs = {
   name: 'ProgressBar',
   description:
     'A progress bar for displaying determinate or indeterminate progress.',
+  keywords: ["progressbar","progress","loader","loading","linear","determinate","indeterminate","meter"],
   features: [
     'Determinate mode uses role="meter" with aria-valuenow, aria-valuemin, and aria-valuemax',
     'Indeterminate mode uses role="progressbar" without value attributes',

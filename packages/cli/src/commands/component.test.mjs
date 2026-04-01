@@ -505,3 +505,48 @@ describe('findExternalComponentDoc', () => {
     expect(result).toBeNull();
   });
 });
+
+
+describe('searchComponents', () => {
+  it('finds Collapsible when searching "accordion"', async () => {
+    const {searchComponents, discoverComponents} = await import('./component/index.mjs');
+    const components = discoverComponents('packages/core');
+    const results = await searchComponents('accordion', 'packages/core', components);
+    expect(results.length).toBeGreaterThan(0);
+    expect(results[0].name).toBe('Collapsible');
+    expect(results[0].score).toBe(90);
+  });
+
+  it('finds Dialog when searching "modal"', async () => {
+    const {searchComponents, discoverComponents} = await import('./component/index.mjs');
+    const components = discoverComponents('packages/core');
+    const results = await searchComponents('modal', 'packages/core', components);
+    expect(results[0].name).toBe('Dialog');
+    expect(results[0].score).toBe(90);
+  });
+
+  it('returns multiple matches for ambiguous terms like "select"', async () => {
+    const {searchComponents, discoverComponents} = await import('./component/index.mjs');
+    const components = discoverComponents('packages/core');
+    const results = await searchComponents('select', 'packages/core', components);
+    const top90 = results.filter(r => r.score === 90);
+    expect(top90.length).toBeGreaterThan(1);
+    const names = top90.map(r => r.name);
+    expect(names).toContain('Selector');
+  });
+
+  it('finds exact name matches with score 100', async () => {
+    const {searchComponents, discoverComponents} = await import('./component/index.mjs');
+    const components = discoverComponents('packages/core');
+    const results = await searchComponents('Button', 'packages/core', components);
+    expect(results[0].name).toBe('Button');
+    expect(results[0].score).toBe(100);
+  });
+
+  it('returns empty array for complete gibberish', async () => {
+    const {searchComponents, discoverComponents} = await import('./component/index.mjs');
+    const components = discoverComponents('packages/core');
+    const results = await searchComponents('zzzzzzzzzzz', 'packages/core', components);
+    expect(results.length).toBe(0);
+  });
+});
