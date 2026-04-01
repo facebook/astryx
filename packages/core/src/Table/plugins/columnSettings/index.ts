@@ -3,6 +3,4 @@ export type {
   UseXDSTableColumnSettingsConfig,
   UseXDSTableColumnSettingsReturn,
   XDSColumnSettingsOption,
-  XDSColumnSettingsView,
-  XDSColumnSettingsViewConfig,
 } from './useXDSTableColumnSettings';

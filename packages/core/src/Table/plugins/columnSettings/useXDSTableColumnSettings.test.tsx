@@ -2,7 +2,7 @@
  * @file useXDSTableColumnSettings.test.tsx
  * @input useXDSTableColumnSettings, XDSTable, React testing utilities
  * @output Functional tests for the column settings plugin
- * @position Test file; validates column visibility, toggling, views, dropdown items
+ * @position Test file; validates column visibility, toggling, column options
  */
 
 import {describe, it, expect, vi} from 'vitest';
@@ -123,28 +123,6 @@ describe('useXDSTableColumnSettings', () => {
         activeColumnKeys: ['name', 'email'],
       });
       expect(result.current.activeColumnKeys).toEqual(['name', 'email']);
-    });
-
-    it('returns views when viewConfig is provided', () => {
-      const {result} = renderColumnSettingsHook({
-        viewConfig: {
-          views: [{id: 'v1', label: 'Default', columnKeys: ['name']}],
-          onCreateView: vi.fn(),
-          onDeleteView: vi.fn(),
-          defaultColumnKeys: ['name', 'email'],
-        },
-      });
-      expect(result.current.views).toBeDefined();
-      expect(result.current.views!.list).toHaveLength(1);
-      expect(result.current.views!.applyView).toBeInstanceOf(Function);
-      expect(result.current.views!.createView).toBeInstanceOf(Function);
-      expect(result.current.views!.deleteView).toBeInstanceOf(Function);
-      expect(result.current.views!.resetToDefault).toBeInstanceOf(Function);
-    });
-
-    it('returns undefined views when viewConfig is omitted', () => {
-      const {result} = renderColumnSettingsHook();
-      expect(result.current.views).toBeUndefined();
     });
   });
 
@@ -328,24 +306,19 @@ describe('useXDSTableColumnSettings', () => {
   // ===========================================================================
 
   describe('resetToDefault', () => {
-    it('resets to defaultColumnKeys when viewConfig provided', () => {
+    it('resets to defaultColumnKeys when provided', () => {
       const onChange = vi.fn();
       const {result} = renderColumnSettingsHook({
         activeColumnKeys: ['name', 'email', 'role', 'status', 'lastLogin'],
         onChangeActiveColumnKeys: onChange,
-        viewConfig: {
-          views: [],
-          onCreateView: vi.fn(),
-          onDeleteView: vi.fn(),
-          defaultColumnKeys: ['name', 'email'],
-        },
+        defaultColumnKeys: ['name', 'email'],
       });
 
       act(() => result.current.resetToDefault());
       expect(onChange).toHaveBeenCalledWith(['name', 'email']);
     });
 
-    it('shows all columns when no viewConfig', () => {
+    it('shows all columns when no defaultColumnKeys', () => {
       const onChange = vi.fn();
       const {result} = renderColumnSettingsHook({
         activeColumnKeys: ['name'],
@@ -364,18 +337,18 @@ describe('useXDSTableColumnSettings', () => {
   });
 
   // ===========================================================================
-  // dropdownItems
+  // columnOptions
   // ===========================================================================
 
-  describe('dropdownItems', () => {
+  describe('columnOptions', () => {
     it('generates one item per column for ungrouped columns', () => {
       const {result} = renderColumnSettingsHook();
-      expect(result.current.dropdownItems).toHaveLength(5);
+      expect(result.current.columnOptions).toHaveLength(5);
     });
 
     it('marks always-visible columns as disabled', () => {
       const {result} = renderColumnSettingsHook();
-      const items = result.current.dropdownItems;
+      const items = result.current.columnOptions;
       // First item is 'name' with isAlwaysVisible
       const nameItem = items[0];
       expect(nameItem).toHaveProperty('disabled', true);
@@ -386,7 +359,7 @@ describe('useXDSTableColumnSettings', () => {
 
     it('generates items with value and label', () => {
       const {result} = renderColumnSettingsHook();
-      const items = result.current.dropdownItems;
+      const items = result.current.columnOptions;
       const first = items[0] as {value: string; label: string};
       expect(first.value).toBe('name');
       expect(first.label).toBe('Name');
@@ -401,7 +374,7 @@ describe('useXDSTableColumnSettings', () => {
       ];
 
       const {result} = renderColumnSettingsHook({columns: groupedColumns});
-      const items = result.current.dropdownItems;
+      const items = result.current.columnOptions;
 
       // Should have 2 sections + 1 ungrouped item
       const sections = items.filter(
@@ -424,10 +397,10 @@ describe('useXDSTableColumnSettings', () => {
   });
 
   // ===========================================================================
-  // onDropdownChange
+  // setActiveColumnKeys
   // ===========================================================================
 
-  describe('onDropdownChange', () => {
+  describe('setActiveColumnKeys', () => {
     it('passes selected values to onChangeActiveColumnKeys', () => {
       const onChange = vi.fn();
       const {result} = renderColumnSettingsHook({
@@ -435,7 +408,7 @@ describe('useXDSTableColumnSettings', () => {
       });
 
       act(() =>
-        result.current.onDropdownChange(['name', 'email', 'status']),
+        result.current.setActiveColumnKeys(['name', 'email', 'status']),
       );
       expect(onChange).toHaveBeenCalledWith(
         expect.arrayContaining(['name', 'email', 'status']),
@@ -449,100 +422,10 @@ describe('useXDSTableColumnSettings', () => {
       });
 
       // Try to deselect 'name' (isAlwaysVisible) by not including it
-      act(() => result.current.onDropdownChange(['email']));
+      act(() => result.current.setActiveColumnKeys(['email']));
       const calledWith = onChange.mock.calls[0][0] as string[];
       expect(calledWith).toContain('name');
       expect(calledWith).toContain('email');
-    });
-  });
-
-  // ===========================================================================
-  // Views
-  // ===========================================================================
-
-  describe('views', () => {
-    const viewConfig = {
-      views: [
-        {id: 'v1', label: 'Compact', columnKeys: ['name', 'email'] as string[]},
-        {
-          id: 'v2',
-          label: 'Detailed',
-          columnKeys: ['name', 'email', 'role', 'status'] as string[],
-        },
-      ],
-      onCreateView: vi.fn(),
-      onDeleteView: vi.fn(),
-      onSetDefaultView: vi.fn(),
-      defaultColumnKeys: ['name', 'email', 'role'] as string[],
-    };
-
-    it('applyView sets activeColumnKeys to view columnKeys', () => {
-      const onChange = vi.fn();
-      const {result} = renderColumnSettingsHook({
-        onChangeActiveColumnKeys: onChange,
-        viewConfig,
-      });
-
-      act(() => result.current.views!.applyView('v1'));
-      expect(onChange).toHaveBeenCalledWith(['name', 'email']);
-    });
-
-    it('applyView no-ops for unknown view ID', () => {
-      const onChange = vi.fn();
-      const {result} = renderColumnSettingsHook({
-        onChangeActiveColumnKeys: onChange,
-        viewConfig,
-      });
-
-      act(() => result.current.views!.applyView('unknown'));
-      expect(onChange).not.toHaveBeenCalled();
-    });
-
-    it('createView calls onCreateView with label and current keys', () => {
-      const onCreateView = vi.fn();
-      const {result} = renderColumnSettingsHook({
-        activeColumnKeys: ['name', 'email'],
-        viewConfig: {...viewConfig, onCreateView},
-      });
-
-      act(() => result.current.views!.createView('My View'));
-      expect(onCreateView).toHaveBeenCalledWith('My View', ['name', 'email']);
-    });
-
-    it('deleteView calls onDeleteView with view ID', () => {
-      const onDeleteView = vi.fn();
-      const {result} = renderColumnSettingsHook({
-        viewConfig: {...viewConfig, onDeleteView},
-      });
-
-      act(() => result.current.views!.deleteView('v1'));
-      expect(onDeleteView).toHaveBeenCalledWith('v1');
-    });
-
-    it('setDefaultView calls onSetDefaultView', () => {
-      const onSetDefaultView = vi.fn();
-      const {result} = renderColumnSettingsHook({
-        viewConfig: {...viewConfig, onSetDefaultView},
-      });
-
-      act(() => result.current.views!.setDefaultView!('v2'));
-      expect(onSetDefaultView).toHaveBeenCalledWith('v2');
-    });
-
-    it('resetToDefault uses defaultColumnKeys', () => {
-      const onChange = vi.fn();
-      const {result} = renderColumnSettingsHook({
-        onChangeActiveColumnKeys: onChange,
-        viewConfig,
-      });
-
-      act(() => result.current.views!.resetToDefault());
-      expect(onChange).toHaveBeenCalledWith(['name', 'email', 'role']);
-    });
-
-    it('views.list reflects viewConfig.views', () => {
-      const {result} = renderColumnSettingsHook({viewConfig});
-      expect(result.current.views!.list).toBe(viewConfig.views);
     });
   });
 
@@ -612,7 +495,7 @@ describe('useXDSTableColumnSettings', () => {
         activeColumnKeys: [],
       });
 
-      expect(result.current.dropdownItems).toHaveLength(0);
+      expect(result.current.columnOptions).toHaveLength(0);
       expect(result.current.activeColumns(allTableColumns)).toHaveLength(0);
     });
 

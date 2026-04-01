@@ -50,65 +50,6 @@ export interface XDSColumnSettingsOption<
 }
 
 /**
- * A saved view preset — a named set of active columns.
- */
-export interface XDSColumnSettingsView<
-  TColumnKey extends string = string,
-> {
-  /** Unique identifier for this view */
-  id: string;
-  /** Display label (e.g., "Compact View", "Detailed View") */
-  label: string;
-  /** Column keys included in this view, in display order */
-  columnKeys: ReadonlyArray<TColumnKey>;
-  /**
-   * Whether the user can delete this view.
-   * System-provided views (like "Default") should be non-deletable.
-   *
-   * @default false
-   */
-  isDeleteDisabled?: boolean;
-}
-
-/**
- * Configuration for saved views / presets.
- * Optional — omit for basic column toggle without views.
- */
-export interface XDSColumnSettingsViewConfig<
-  TColumnKey extends string = string,
-> {
-  /** Available saved views */
-  views: ReadonlyArray<XDSColumnSettingsView<TColumnKey>>;
-  /**
-   * Called when the user creates a new view.
-   * Consumer persists the view and updates the `views` array.
-   */
-  onCreateView: (
-    label: string,
-    columnKeys: ReadonlyArray<TColumnKey>,
-  ) => void;
-  /**
-   * Called when the user deletes a view.
-   * Consumer removes the view from persistence and updates the `views` array.
-   */
-  onDeleteView: (id: string) => void;
-  /**
-   * Called when the user sets a view as the default.
-   */
-  onSetDefaultView?: (id: string) => void;
-  /**
-   * The system default column set. Used for "Reset to default" functionality.
-   * This is the column set used when no view is selected or when the user resets.
-   */
-  defaultColumnKeys: ReadonlyArray<TColumnKey>;
-  /**
-   * Which view is active on mount.
-   * If not provided, `defaultColumnKeys` are used as the initial active columns.
-   */
-  initialViewId?: string;
-}
-
-/**
  * Configuration for useXDSTableColumnSettings.
  *
  * Headless column visibility and ordering management for XDSTable.
@@ -150,9 +91,9 @@ export interface XDSColumnSettingsViewConfig<
  * ```
  * <XDSMultiSelector
  *   label="Columns"
- *   options={columnSettings.dropdownItems}
+ *   options={columnSettings.columnOptions}
  *   value={[...columnSettings.activeColumnKeys]}
- *   onChange={columnSettings.onDropdownChange}
+ *   onChange={columnSettings.setActiveColumnKeys}
  *   hasSelectAll
  * />
  * ```
@@ -174,16 +115,16 @@ export interface UseXDSTableColumnSettingsConfig<
   activeColumnKeys: ReadonlyArray<TColumnKey>;
 
   /**
-   * Called when active columns change (toggle, reorder, view selection).
+   * Called when active columns change (toggle, reorder).
    * Consumer updates their own state.
    */
   onChangeActiveColumnKeys: (keys: ReadonlyArray<TColumnKey>) => void;
 
   /**
-   * Optional saved views / presets configuration.
-   * Enables saving and loading named column configurations.
+   * The default column set for "Reset to default" functionality.
+   * When omitted, resetToDefault shows all columns.
    */
-  viewConfig?: XDSColumnSettingsViewConfig<TColumnKey>;
+  defaultColumnKeys?: ReadonlyArray<TColumnKey>;
 }
 
 // =============================================================================
@@ -236,13 +177,12 @@ export interface UseXDSTableColumnSettingsReturn<
 
   /**
    * Reset to the default column set.
-   * Uses `viewConfig.defaultColumnKeys` if views are configured,
-   * otherwise shows all columns.
+   * Uses `defaultColumnKeys` if provided, otherwise shows all columns.
    */
   resetToDefault: () => void;
 
   /**
-   * Pre-built options for use with XDSMultiSelector.
+   * Column options formatted for XDSMultiSelector.
    * Each option represents a column; always-visible columns are disabled.
    * Columns with a `group` are rendered as sections.
    *
@@ -250,40 +190,23 @@ export interface UseXDSTableColumnSettingsReturn<
    * ```
    * <XDSMultiSelector
    *   label="Columns"
-   *   options={columnSettings.dropdownItems}
+   *   options={columnSettings.columnOptions}
    *   value={[...columnSettings.activeColumnKeys]}
-   *   onChange={columnSettings.onDropdownChange}
+   *   onChange={columnSettings.setActiveColumnKeys}
    * />
    * ```
    */
-  dropdownItems: XDSMultiSelectorOptionType[];
+  columnOptions: XDSMultiSelectorOptionType[];
 
   /**
-   * Change handler for XDSMultiSelector.
+   * Set active column keys from a list of key strings.
    * Enforces that `isAlwaysVisible` columns remain in the active set.
+   * Pass directly as `onChange` to XDSMultiSelector.
    */
-  onDropdownChange: (value: string[]) => void;
+  setActiveColumnKeys: (keys: string[]) => void;
 
   /** Currently active column keys (pass-through from config). */
   activeColumnKeys: ReadonlyArray<TColumnKey>;
-
-  /**
-   * View management methods (only present when viewConfig is provided).
-   */
-  views?: {
-    /** All available views */
-    list: ReadonlyArray<XDSColumnSettingsView<TColumnKey>>;
-    /** Apply a saved view's column configuration */
-    applyView: (viewId: string) => void;
-    /** Create a new view from the current active columns */
-    createView: (label: string) => void;
-    /** Delete a saved view */
-    deleteView: (viewId: string) => void;
-    /** Set a view as the default */
-    setDefaultView?: (viewId: string) => void;
-    /** Reset to the system default columns */
-    resetToDefault: () => void;
-  };
 }
 
 // =============================================================================
@@ -315,8 +238,7 @@ export function useXDSTableColumnSettings<
 >(
   config: UseXDSTableColumnSettingsConfig<TColumnKey>,
 ): UseXDSTableColumnSettingsReturn<T, TColumnKey> {
-  const {columns, activeColumnKeys, onChangeActiveColumnKeys, viewConfig} =
-    config;
+  const {columns, activeColumnKeys} = config;
 
   // Keep config in a ref so the plugin and callbacks always read
   // the latest version without forcing new object identity.
@@ -373,8 +295,8 @@ export function useXDSTableColumnSettings<
 
   const resetToDefault = useCallback(() => {
     const cfg = configRef.current;
-    if (cfg.viewConfig?.defaultColumnKeys) {
-      cfg.onChangeActiveColumnKeys([...cfg.viewConfig.defaultColumnKeys]);
+    if (cfg.defaultColumnKeys) {
+      cfg.onChangeActiveColumnKeys([...cfg.defaultColumnKeys]);
     } else {
       cfg.onChangeActiveColumnKeys(cfg.columns.map((c) => c.key));
     }
@@ -392,9 +314,9 @@ export function useXDSTableColumnSettings<
     [activeColumnKeys],
   );
 
-  // --- Dropdown items for XDSMultiSelector ---
+  // --- Column options for XDSMultiSelector ---
 
-  const dropdownItems = useMemo((): XDSMultiSelectorOptionType[] => {
+  const columnOptions = useMemo((): XDSMultiSelectorOptionType[] => {
     const hasGroups = columns.some((c) => c.group);
 
     if (!hasGroups) {
@@ -447,9 +369,9 @@ export function useXDSTableColumnSettings<
     return items;
   }, [columns]);
 
-  // --- Dropdown change handler ---
+  // --- Set active column keys ---
 
-  const onDropdownChange = useCallback(
+  const setActiveColumnKeys = useCallback(
     (value: string[]) => {
       const cfg = configRef.current;
       const avSet = new Set(
@@ -466,42 +388,6 @@ export function useXDSTableColumnSettings<
     },
     [],
   );
-
-  // --- Views ---
-
-  const views = useMemo(() => {
-    if (!viewConfig) return undefined;
-
-    return {
-      list: viewConfig.views,
-      applyView: (viewId: string) => {
-        const cfg = configRef.current;
-        const view = cfg.viewConfig?.views.find((v) => v.id === viewId);
-        if (view) cfg.onChangeActiveColumnKeys([...view.columnKeys]);
-      },
-      createView: (label: string) => {
-        const cfg = configRef.current;
-        cfg.viewConfig?.onCreateView(label, cfg.activeColumnKeys);
-      },
-      deleteView: (viewId: string) => {
-        const cfg = configRef.current;
-        cfg.viewConfig?.onDeleteView(viewId);
-      },
-      setDefaultView: viewConfig.onSetDefaultView
-        ? (viewId: string) => {
-            configRef.current.viewConfig?.onSetDefaultView?.(viewId);
-          }
-        : undefined,
-      resetToDefault: () => {
-        const cfg = configRef.current;
-        if (cfg.viewConfig?.defaultColumnKeys) {
-          cfg.onChangeActiveColumnKeys([
-            ...cfg.viewConfig.defaultColumnKeys,
-          ]);
-        }
-      },
-    };
-  }, [viewConfig]);
 
   // --- Plugin (stable ref via configRef) ---
 
@@ -522,9 +408,8 @@ export function useXDSTableColumnSettings<
     isColumnToggleable,
     showAllColumns,
     resetToDefault,
-    dropdownItems,
-    onDropdownChange,
+    columnOptions,
+    setActiveColumnKeys,
     activeColumnKeys,
-    views,
   };
 }
