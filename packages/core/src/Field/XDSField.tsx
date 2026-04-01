@@ -32,6 +32,8 @@ const styles = stylex.create({
   container: {
     display: 'flex',
     flexDirection: 'column',
+  },
+  containerGap: {
     gap: spacingVars['--spacing-1'],
   },
   labelHidden: {
@@ -221,7 +223,11 @@ export function XDSField({
       ref={ref}
       {...mergeProps(
         xdsClassName('field'),
-        stylex.props(styles.container, xstyle),
+        stylex.props(
+          styles.container,
+          !isLabelHidden && styles.containerGap,
+          xstyle,
+        ),
         className,
         style,
       )}
