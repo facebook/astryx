@@ -2,8 +2,7 @@
 
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSTheme} from '@xds/core/theme';
-import {metaTheme} from '@xds/theme-meta';
+
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSButton} from '@xds/core/Button';
 import {XDSHeading, XDSText} from '@xds/core/Text';
@@ -25,7 +24,7 @@ import {XDSSelector} from '@xds/core/Selector';
 import {XDSSlider} from '@xds/core/Slider';
 import {XDSCalendar} from '@xds/core/Calendar';
 import {XDSToken} from '@xds/core/Token';
-import {useThemeControls} from '../../../providers';
+
 
 const styles = stylex.create({
   row: {
@@ -93,11 +92,6 @@ function Sparkline({values}: {values: number[]}) {
 }
 
 export default function MetaThemePage() {
-  const {setThemeName} = useThemeControls();
-  useState(() => {
-    setThemeName('meta');
-  });
-
   const [email, setEmail] = useState('artist@studio.inc');
   const [notes, setNotes] = useState('');
   const [publicStats, setPublicStats] = useState(true);
@@ -123,7 +117,6 @@ export default function MetaThemePage() {
   const [website, setWebsite] = useState('https://yoursite.com');
 
   return (
-    <XDSTheme theme={metaTheme}>
       <div style={{columnCount: 4, columnGap: 16, padding: 16}}>
         {/* Contribution History */}
         <div style={{breakInside: 'avoid', marginBottom: 16}}>
@@ -1041,6 +1034,5 @@ export default function MetaThemePage() {
           </XDSCard>
         </div>
       </div>
-    </XDSTheme>
   );
 }
