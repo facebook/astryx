@@ -69,7 +69,6 @@ export const Default: Story = {
             <XDSCommandPaletteGroup heading="Actions">
               <XDSCommandPaletteItem
                 value="dark-mode"
-                keywords={['theme', 'appearance']}
                 onSelect={() => console.log('Toggle dark mode')}>
                 Toggle Dark Mode
               </XDSCommandPaletteItem>
@@ -135,8 +134,7 @@ export const FlatList: Story = {
 
 /**
  * Picker mode — use when the palette represents a choice with persistent selection.
- * The selected item is visually highlighted when the palette reopens.
- * Use `value` + `onValueChange` to track which option is active.
+ * Selection is managed at the item level via `isSelected` and `onSelect`.
  *
  * Good for: theme switchers, workspace pickers, language selectors.
  */
@@ -145,22 +143,25 @@ export const Picker: Story = {
     const [isOpen, setIsOpen] = useState(false);
     const [theme, setTheme] = useState('light');
 
+    const themes = ['light', 'dark', 'system'] as const;
+
     return (
       <>
-        <XDSButton
-          label={`Theme: ${theme}`}
-          onClick={() => setIsOpen(true)}
-        />
+        <XDSButton label={`Theme: ${theme}`} onClick={() => setIsOpen(true)} />
         <XDSCommandPalette
           isOpen={isOpen}
           onOpenChange={setIsOpen}
-          value={theme}
-          onValueChange={setTheme}
           input={<XDSCommandPaletteInput placeholder="Choose a theme..." />}>
           <XDSCommandPaletteList>
-            <XDSCommandPaletteItem value="light">Light</XDSCommandPaletteItem>
-            <XDSCommandPaletteItem value="dark">Dark</XDSCommandPaletteItem>
-            <XDSCommandPaletteItem value="system">System</XDSCommandPaletteItem>
+            {themes.map(t => (
+              <XDSCommandPaletteItem
+                key={t}
+                value={t}
+                isSelected={theme === t}
+                onSelect={() => setTheme(t)}>
+                {t.charAt(0).toUpperCase() + t.slice(1)}
+              </XDSCommandPaletteItem>
+            ))}
           </XDSCommandPaletteList>
         </XDSCommandPalette>
       </>
@@ -176,15 +177,24 @@ export const EmptyResults: Story = {
     const [isOpen, setIsOpen] = useState(false);
     return (
       <>
-        <XDSButton label="Open (type to empty)" onClick={() => setIsOpen(true)} />
+        <XDSButton
+          label="Open (type to empty)"
+          onClick={() => setIsOpen(true)}
+        />
         <XDSCommandPalette
           isOpen={isOpen}
           onOpenChange={setIsOpen}
-          input={<XDSCommandPaletteInput placeholder="Type to filter all items out..." />}
+          input={
+            <XDSCommandPaletteInput placeholder="Type to filter all items out..." />
+          }
           footer={<XDSCommandPaletteFooter />}>
           <XDSCommandPaletteList>
-            <XDSCommandPaletteItem value="zzz-alpha">zzz-alpha</XDSCommandPaletteItem>
-            <XDSCommandPaletteItem value="zzz-beta">zzz-beta</XDSCommandPaletteItem>
+            <XDSCommandPaletteItem value="zzz-alpha">
+              zzz-alpha
+            </XDSCommandPaletteItem>
+            <XDSCommandPaletteItem value="zzz-beta">
+              zzz-beta
+            </XDSCommandPaletteItem>
           </XDSCommandPaletteList>
         </XDSCommandPalette>
       </>
@@ -240,7 +250,8 @@ export const LongLabels: Story = {
           <XDSCommandPaletteList>
             <XDSCommandPaletteItem value="short">Short</XDSCommandPaletteItem>
             <XDSCommandPaletteItem value="long1">
-              This is a very long item label that pushes the width of the palette
+              This is a very long item label that pushes the width of the
+              palette
             </XDSCommandPaletteItem>
             <XDSCommandPaletteItem value="long2">
               <XDSIcon icon="settings" size="sm" />
@@ -293,37 +304,73 @@ export const CustomFooter: Story = {
 };
 
 /**
- * External filtering disabled — all items always shown regardless of input.
- * Use when filtering is handled server-side or externally.
+ * Async search — simulates server-side filtering via `onChangeAction`.
+ * The input automatically shows a spinner while the action is pending.
+ * No manual loading state management needed.
+ *
+ * Good for: server-side search, fuzzy matching libraries, async results.
  */
-export const UnfilteredList: Story = {
+export const AsyncSearch: Story = {
   render: function Render() {
     const [isOpen, setIsOpen] = useState(false);
+
+    const allItems = [
+      {value: 'users', label: 'Manage Users', tags: ['admin', 'people']},
+      {
+        value: 'billing',
+        label: 'Billing Settings',
+        tags: ['payments', 'invoices'],
+      },
+      {value: 'logs', label: 'View Logs', tags: ['debug', 'monitoring']},
+      {value: 'deploy', label: 'Deploy to Production', tags: ['ci', 'release']},
+      {value: 'docs', label: 'Open Documentation', tags: ['help', 'wiki']},
+      {value: 'api-keys', label: 'API Keys', tags: ['auth', 'tokens']},
+      {value: 'webhooks', label: 'Configure Webhooks', tags: ['integrations']},
+      {value: 'audit', label: 'Audit Log', tags: ['security', 'compliance']},
+    ];
+
+    const [results, setResults] = useState(allItems);
+
+    // Simulate server search — returns a promise that resolves after 800ms
+    async function serverSearch(query: string) {
+      await new Promise(resolve => setTimeout(resolve, 800));
+      if (!query) return allItems;
+      const q = query.toLowerCase();
+      return allItems.filter(
+        item =>
+          item.label.toLowerCase().includes(q) ||
+          item.tags.some(t => t.includes(q)),
+      );
+    }
+
     return (
       <>
-        <XDSButton label="Open Unfiltered" onClick={() => setIsOpen(true)} />
+        <XDSButton
+          label="Open (async search)"
+          onClick={() => setIsOpen(true)}
+        />
         <XDSCommandPalette
           isOpen={isOpen}
           onOpenChange={setIsOpen}
-          isFiltered={false}
-          input={<XDSCommandPaletteInput placeholder="Search (no filtering)..." />}
+          input={
+            <XDSCommandPaletteInput
+              placeholder="Search commands..."
+              onChangeAction={async search => {
+                const res = await serverSearch(search);
+                setResults(res);
+              }}
+            />
+          }
           footer={<XDSCommandPaletteFooter />}>
           <XDSCommandPaletteList>
-            <XDSCommandPaletteItem
-              value="always-a"
-              onSelect={() => console.log('A')}>
-              Always Visible A
-            </XDSCommandPaletteItem>
-            <XDSCommandPaletteItem
-              value="always-b"
-              onSelect={() => console.log('B')}>
-              Always Visible B
-            </XDSCommandPaletteItem>
-            <XDSCommandPaletteItem
-              value="always-c"
-              onSelect={() => console.log('C')}>
-              Always Visible C
-            </XDSCommandPaletteItem>
+            {results.map(item => (
+              <XDSCommandPaletteItem
+                key={item.value}
+                value={item.value}
+                onSelect={() => console.log('Run:', item.value)}>
+                {item.label}
+              </XDSCommandPaletteItem>
+            ))}
           </XDSCommandPaletteList>
         </XDSCommandPalette>
       </>

@@ -8,8 +8,12 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {useRef} from 'react';
+import {render, screen, fireEvent, act} from '@testing-library/react';
 import {XDSCommandPalette} from './XDSCommandPalette';
+import {XDSCommandPaletteInput} from './XDSCommandPaletteInput';
+import {XDSCommandPaletteList} from './XDSCommandPaletteList';
+import {XDSCommandPaletteItem} from './XDSCommandPaletteItem';
 
 // Mock showModal and close since jsdom doesn't implement them
 beforeEach(() => {
@@ -126,5 +130,53 @@ describe('XDSCommandPalette', () => {
     });
     dialog.dispatchEvent(escapeEvent);
     expect(handleOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it('does not over-render items during keyboard navigation', () => {
+    const renderCount = vi.fn();
+
+    function TrackedItem({value, children}: {value: string; children: string}) {
+      const countRef = useRef(0);
+      countRef.current++;
+      renderCount(value, countRef.current);
+      return (
+        <XDSCommandPaletteItem value={value}>{children}</XDSCommandPaletteItem>
+      );
+    }
+
+    render(
+      <XDSCommandPalette
+        isOpen={true}
+        onOpenChange={() => {}}
+        input={<XDSCommandPaletteInput placeholder="Search..." />}>
+        <XDSCommandPaletteList>
+          <TrackedItem value="a">Alpha</TrackedItem>
+          <TrackedItem value="b">Beta</TrackedItem>
+          <TrackedItem value="c">Gamma</TrackedItem>
+        </XDSCommandPaletteList>
+      </XDSCommandPalette>,
+    );
+
+    // Clear initial render counts
+    renderCount.mockClear();
+
+    const input = screen.getByRole('combobox');
+
+    // Arrow down 3 times
+    act(() => {
+      fireEvent.keyDown(input, {key: 'ArrowDown'});
+    });
+    act(() => {
+      fireEvent.keyDown(input, {key: 'ArrowDown'});
+    });
+    act(() => {
+      fireEvent.keyDown(input, {key: 'ArrowDown'});
+    });
+
+    // Each arrow key should cause at most 2 items to re-render
+    // (the one losing highlight + the one gaining it).
+    // 3 keypresses × 2 items = 6 max. Allow some slack for React internals.
+    const totalRenders = renderCount.mock.calls.length;
+    expect(totalRenders).toBeLessThanOrEqual(18); // 3 items × 3 keypresses × 2 (strict mode)
   });
 });

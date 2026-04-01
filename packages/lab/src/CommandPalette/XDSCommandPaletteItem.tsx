@@ -33,7 +33,7 @@ const styles = stylex.create({
     width: '100%',
     paddingInline: spacingVars['--spacing-3'],
     paddingBlock: spacingVars['--spacing-2'],
-    borderRadius: radiusVars['--radius-inner'],
+    borderRadius: radiusVars['--radius-element'],
     fontFamily: typographyVars['--font-family-body'],
     fontSize: textSizeVars['--font-size-base'],
     color: colorVars['--color-text-primary'],
@@ -73,8 +73,6 @@ export interface XDSCommandPaletteItemProps extends XDSBaseProps<HTMLDivElement>
   value: string;
   /** Called when this item is selected (via click or Enter). */
   onSelect?: (value: string) => void;
-  /** Additional search terms for filtering (used by context filter). */
-  keywords?: string[];
   /**
    * Whether this item is visually highlighted (keyboard focus).
    * When omitted inside XDSCommandPalette, derived from context.
@@ -82,8 +80,8 @@ export interface XDSCommandPaletteItemProps extends XDSBaseProps<HTMLDivElement>
    */
   isHighlighted?: boolean;
   /**
-   * Whether this item is currently selected.
-   * When omitted inside XDSCommandPalette, derived from context.
+   * Whether this item is currently selected (picker mode).
+   * Must be set explicitly by the caller.
    * @default false
    */
   isSelected?: boolean;
@@ -101,7 +99,7 @@ export interface XDSCommandPaletteItemProps extends XDSBaseProps<HTMLDivElement>
  * Accepts arbitrary children for full rendering control.
  *
  * When used inside XDSCommandPalette, registers with context for
- * filtering, keyboard navigation, and selection. Can also be used
+ * keyboard navigation and selection. Can also be used
  * standalone with explicit isHighlighted/isSelected props.
  *
  * @compositionHint Place inside XDSCommandPaletteList or XDSCommandPaletteGroup.
@@ -116,7 +114,6 @@ export interface XDSCommandPaletteItemProps extends XDSBaseProps<HTMLDivElement>
 export function XDSCommandPaletteItem({
   value,
   onSelect,
-  keywords,
   isHighlighted: controlledHighlighted,
   isSelected: controlledSelected,
   isDisabled = false,
@@ -131,7 +128,8 @@ export function XDSCommandPaletteItem({
   const itemRef = useRef<HTMLDivElement>(null);
 
   const setRefs = (element: HTMLDivElement | null) => {
-    (itemRef as React.MutableRefObject<HTMLDivElement | null>).current = element;
+    (itemRef as React.MutableRefObject<HTMLDivElement | null>).current =
+      element;
     if (typeof ref === 'function') {
       ref(element);
     } else if (ref) {
@@ -139,19 +137,16 @@ export function XDSCommandPaletteItem({
     }
   };
 
+  const registerItem = ctx?.registerItem;
   useEffect(() => {
-    if (!ctx) return;
-    const unregister = ctx.registerItem(value, isDisabled);
-    return unregister;
-  }, [value, isDisabled, ctx]);
+    if (!registerItem) return;
+    return registerItem(value, isDisabled);
+  }, [value, isDisabled, registerItem]);
 
-  // Value-based highlight — immune to index drift from filtering/sections
+  // Value-based highlight
   const isHighlighted =
     controlledHighlighted ?? (ctx ? ctx.highlightedValue === value : false);
-  const isSelected = controlledSelected ?? (ctx ? ctx.value === value : false);
-
-  const score =
-    ctx?.isFiltered && ctx.search ? ctx.filter(value, ctx.search, keywords) : 1;
+  const isSelected = controlledSelected ?? false;
 
   useEffect(() => {
     if (isHighlighted && itemRef.current) {
@@ -159,24 +154,19 @@ export function XDSCommandPaletteItem({
     }
   }, [isHighlighted]);
 
-  // Index for ARIA id — based on full registered list (stable, not filtered)
+  // Index for ARIA id — based on registered list
   const itemIndex = ctx?.items.findIndex(item => item.value === value) ?? -1;
 
   const handleClick = useCallback(() => {
     if (isDisabled) return;
     onSelect?.(value);
-    if (ctx) {
-      ctx.selectItem(value);
-      ctx.onClose();
-    }
+    ctx?.onClose();
   }, [isDisabled, value, onSelect, ctx]);
 
   const handleMouseEnter = useCallback(() => {
     if (isDisabled || !ctx) return;
     ctx.setHighlightedValue(value);
   }, [isDisabled, value, ctx]);
-
-  if (score === 0) return null;
 
   return (
     <div

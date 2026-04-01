@@ -29,7 +29,8 @@ const styles = stylex.create({
     paddingBlock: spacingVars['--spacing-1'],
   },
   heading: {
-    paddingInline: spacingVars['--spacing-2'],
+    paddingInlineStart: spacingVars['--spacing-3'],
+    paddingInlineEnd: spacingVars['--spacing-2'],
     paddingBlock: spacingVars['--spacing-1'],
     fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-supporting-size'],
