@@ -298,7 +298,7 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
       | undefined;
     const mergedHtmlProps = {
       ...cellRenderProps.htmlProps,
-      style: existingStyle ? {...existingStyle, ...widthStyle} : widthStyle,
+      style: existingStyle ? {...widthStyle, ...existingStyle} : widthStyle,
     };
 
     // Resolve header content from slots — plugins write to named slots

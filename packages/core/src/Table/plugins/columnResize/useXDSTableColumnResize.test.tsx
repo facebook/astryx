@@ -118,8 +118,10 @@ describe('useXDSTableColumnResize', () => {
       render(<ResizeTable />);
       const headerRow = screen.getAllByRole('row')[0];
       const headers = within(headerRow).getAllByRole('columnheader');
-      // No pixel width override from the plugin
-      expect(headers[0].style.width).toBe('');
+      // No pixel override from the plugin — XDSBaseTable sets a percentage width
+      // for table-layout:fixed distribution, so width is not empty
+      expect(headers[0].style.width).not.toBe('');
+      expect(headers[0].style.width).not.toContain('px');
     });
 
     it('does not add user-select: none when not dragging', () => {
@@ -307,7 +309,8 @@ describe('useXDSTableColumnResize', () => {
       const headersAfter = within(screen.getAllByRole('row')[0]).getAllByRole(
         'columnheader',
       );
-      expect(headersAfter[0].style.width).toBe('');
+      // Plugin override removed — falls back to XDSBaseTable's percentage width
+      expect(headersAfter[0].style.width).not.toContain('px');
     });
   });
 
