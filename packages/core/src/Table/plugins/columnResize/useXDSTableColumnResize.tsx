@@ -299,7 +299,6 @@ function ResizeHandle({
       if (table) tableRef.current = table;
 
       const initialWidth = resolveCurrentWidth(handle);
-      if (handle.setPointerCapture) handle.setPointerCapture(e.pointerId);
 
       // Resolve neighbor for proportional-preserving resize
       const nTh = resolveNeighborTh(th);
@@ -320,149 +319,139 @@ function ResizeHandle({
       applyWidth(th, initialWidth);
       if (nTh) applyWidth(nTh, nInitialWidth, neighborMinWidth);
       setTableDragging(true);
+
+      // --- Window-level listeners for fluid drag on touch & mouse ---
+      // React onPointerMove only fires while the pointer is over the element.
+      // On touch devices the finger quickly drifts off the narrow handle,
+      // killing the drag. Window listeners + pointer capture keep it alive.
+
+      function onMove(ev: PointerEvent) {
+        const drag = dragStateRef.current;
+        if (!drag || !isDraggingRef.current) return;
+
+        const rawDelta =
+          (ev.clientX - drag.startX) * getRTLMultiplier(drag.thElement);
+
+        if (drag.neighborTh && drag.neighborKey) {
+          const maxDelta = drag.neighborInitialWidth - neighborMinWidth;
+          const clampedDelta = Math.min(rawDelta, maxDelta);
+
+          applyWidth(
+            drag.neighborTh,
+            drag.neighborInitialWidth - clampedDelta,
+            neighborMinWidth,
+          );
+
+          const minDelta = minWidth - drag.initialWidth;
+          const effectiveDelta = Math.max(clampedDelta, minDelta);
+          const tableWidth =
+            tableRef.current?.getBoundingClientRect().width ?? Infinity;
+          const maxSecondToLast =
+            tableWidth > 0 ? tableWidth - neighborMinWidth : Infinity;
+          applyWidth(
+            drag.thElement,
+            drag.initialWidth + effectiveDelta,
+            minWidth,
+            maxSecondToLast,
+          );
+        } else {
+          const clampedWidth = clamp(drag.initialWidth + rawDelta);
+          const clampedDelta = clampedWidth - drag.initialWidth;
+          applyWidth(drag.thElement, drag.initialWidth + clampedDelta);
+        }
+      }
+
+      function onUp(ev: PointerEvent) {
+        cleanup();
+        const drag = dragStateRef.current;
+        if (!drag || !isDraggingRef.current) return;
+
+        handle.removeAttribute('data-resizing');
+        const delta =
+          (ev.clientX - drag.startX) * getRTLMultiplier(drag.thElement);
+
+        isDraggingRef.current = false;
+        dragStateRef.current = null;
+        setTableDragging(false);
+
+        // Collect the final width of every column except the last.
+        const updates: Record<string, number> = {};
+        const headerRow = drag.thElement.parentElement;
+        if (headerRow && configRef.current.columns) {
+          const cols = configRef.current.columns;
+          const allThs = Array.from(
+            headerRow.querySelectorAll<HTMLTableCellElement>(':scope > th'),
+          );
+          const lastIndex = allThs.length - 1;
+          allThs.forEach((cell, i) => {
+            if (i === lastIndex) return;
+            const col = cols[i];
+            if (col) {
+              updates[col.key] = cell.getBoundingClientRect().width;
+            }
+          });
+        }
+
+        // Override the resized column(s) with precise clamped values
+        if (drag.neighborTh && drag.neighborKey) {
+          const newNeighborWidth = Math.max(
+            neighborMinWidth,
+            drag.neighborInitialWidth - delta,
+          );
+          updates[drag.neighborKey] = newNeighborWidth;
+        } else {
+          updates[columnKey] = clamp(drag.initialWidth + delta);
+        }
+
+        if (Object.keys(updates).length > 0) {
+          configRef.current.onColumnResizeEnd?.(updates);
+        }
+      }
+
+      function onCancel() {
+        cleanup();
+        const drag = dragStateRef.current;
+        if (!drag || !isDraggingRef.current) return;
+
+        handle.removeAttribute('data-resizing');
+        clearWidth(drag.thElement, drag.columnKey);
+        if (drag.neighborTh && drag.neighborKey) {
+          clearWidth(drag.neighborTh, drag.neighborKey);
+        }
+
+        isDraggingRef.current = false;
+        dragStateRef.current = null;
+        setTableDragging(false);
+      }
+
+      function cleanup() {
+        window.removeEventListener('pointermove', onMove);
+        window.removeEventListener('pointerup', onUp);
+        window.removeEventListener('pointercancel', onCancel);
+      }
+
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', onUp);
+      window.addEventListener('pointercancel', onCancel);
     },
     [
       columnKey,
       neighborKey,
       neighborMinWidth,
+      minWidth,
       resolveCurrentWidth,
       resolveNeighborTh,
+      getRTLMultiplier,
+      clamp,
+      applyWidth,
+      clearWidth,
       dragStateRef,
       isDraggingRef,
       tableRef,
-      applyWidth,
-      setTableDragging,
-    ],
-  );
-
-  const handlePointerMove = useCallback(
-    (e: React.PointerEvent<HTMLDivElement>) => {
-      const drag = dragStateRef.current;
-      if (!drag || !isDraggingRef.current) return;
-
-      const rawDelta =
-        (e.clientX - drag.startX) * getRTLMultiplier(drag.thElement);
-
-      if (drag.neighborTh && drag.neighborKey) {
-        // Proportional-preserving: dragging right shrinks the neighbor column.
-        // Clamp delta so the neighbor can't go below its min width — once
-        // the neighbor is at min, the handle stops moving and other columns stop shifting.
-        const maxDelta = drag.neighborInitialWidth - neighborMinWidth;
-        const clampedDelta = Math.min(rawDelta, maxDelta);
-
-        applyWidth(
-          drag.neighborTh,
-          drag.neighborInitialWidth - clampedDelta,
-          neighborMinWidth,
-        );
-
-        // Also cap leftward: this column can't shrink below its own min.
-        const minDelta = minWidth - drag.initialWidth; // most negative delta allowed
-        const effectiveDelta = Math.max(clampedDelta, minDelta);
-        const tableWidth =
-          tableRef.current?.getBoundingClientRect().width ?? Infinity;
-        const maxSecondToLast =
-          tableWidth > 0 ? tableWidth - neighborMinWidth : Infinity;
-        applyWidth(
-          drag.thElement,
-          drag.initialWidth + effectiveDelta,
-          minWidth,
-          maxSecondToLast,
-        );
-      } else {
-        // Direct resize: clamp delta so it can't go below min or above max.
-        // Other columns stop shifting once the target column hits its limit.
-        const clampedWidth = clamp(drag.initialWidth + rawDelta);
-        const clampedDelta = clampedWidth - drag.initialWidth;
-        applyWidth(drag.thElement, drag.initialWidth + clampedDelta);
-      }
-    },
-    [
-      dragStateRef,
-      isDraggingRef,
-      getRTLMultiplier,
-      neighborMinWidth,
-      minWidth,
-      tableRef,
-      clamp,
-      applyWidth,
-    ],
-  );
-
-  const handlePointerUp = useCallback(
-    (e: React.PointerEvent<HTMLDivElement>) => {
-      const drag = dragStateRef.current;
-      if (!drag || !isDraggingRef.current) return;
-
-      e.currentTarget.removeAttribute('data-resizing');
-      const delta =
-        (e.clientX - drag.startX) * getRTLMultiplier(drag.thElement);
-
-      isDraggingRef.current = false;
-      dragStateRef.current = null;
-      setTableDragging(false);
-
-      // Collect the final width of every column except the last and commit
-      // them all at once. This gives the consumer pixel widths for all columns
-      // so proportional redistribution can't shift them on re-render.
-      const updates: Record<string, number> = {};
-      const headerRow = drag.thElement.parentElement;
-      if (headerRow && configRef.current.columns) {
-        const cols = configRef.current.columns;
-        const allThs = Array.from(
-          headerRow.querySelectorAll<HTMLTableCellElement>(':scope > th'),
-        );
-        const lastIndex = allThs.length - 1;
-        allThs.forEach((cell, i) => {
-          if (i === lastIndex) return; // last column stays flex
-          const col = cols[i];
-          if (col) {
-            updates[col.key] = cell.getBoundingClientRect().width;
-          }
-        });
-      }
-
-      // Override the resized column(s) with the precise clamped values
-      if (drag.neighborTh && drag.neighborKey) {
-        const newNeighborWidth = Math.max(
-          neighborMinWidth,
-          drag.neighborInitialWidth - delta,
-        );
-        updates[drag.neighborKey] = newNeighborWidth;
-      } else {
-        updates[columnKey] = clamp(drag.initialWidth + delta);
-      }
-
-      if (Object.keys(updates).length > 0) {
-        configRef.current.onColumnResizeEnd?.(updates);
-      }
-    },
-    [
-      columnKey,
-      dragStateRef,
-      isDraggingRef,
-      getRTLMultiplier,
-      clamp,
-      neighborMinWidth,
-      setTableDragging,
       configRef,
+      setTableDragging,
     ],
   );
-
-  const handlePointerCancel = useCallback(() => {
-    const drag = dragStateRef.current;
-    if (!drag || !isDraggingRef.current) return;
-
-    // Revert to width before drag
-    clearWidth(drag.thElement, drag.columnKey);
-    if (drag.neighborTh && drag.neighborKey) {
-      clearWidth(drag.neighborTh, drag.neighborKey);
-    }
-
-    isDraggingRef.current = false;
-    dragStateRef.current = null;
-    setTableDragging(false);
-  }, [dragStateRef, isDraggingRef, clearWidth, setTableDragging]);
 
   /**
    * Keyboard resize per WAI-ARIA Window Splitter pattern.
@@ -565,9 +554,6 @@ function ResizeHandle({
       aria-label={ariaLabel}
       tabIndex={0}
       onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-      onPointerCancel={handlePointerCancel}
       onKeyDown={handleKeyDown}
       {...stylex.props(handleStyles.base)}
     />
