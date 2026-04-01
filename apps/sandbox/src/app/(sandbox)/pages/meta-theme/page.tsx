@@ -29,7 +29,6 @@ import {useThemeControls} from '../../../providers';
 
 const styles = stylex.create({
   grid: {
-    display: 'columns',
     columnCount: 4,
     columnGap: 16,
     padding: 16,
