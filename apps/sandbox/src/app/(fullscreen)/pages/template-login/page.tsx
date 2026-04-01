@@ -86,7 +86,7 @@ export default function LoginTemplate() {
 
   return (
     <div style={{display: 'flex', flexDirection: 'column', minHeight: '100svh', width: '100%', alignItems: 'center', justifyContent: 'center', padding: 24}}>
-      <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: 400, gap: 16}}>
+      <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: 340, gap: 16}}>
         {/* Logo */}
         <XDSHStack gap={2}>
           <LogoIcon />
@@ -94,7 +94,7 @@ export default function LoginTemplate() {
         </XDSHStack>
 
         {/* Card */}
-        <XDSCard maxWidth={400}>
+        <XDSCard>
           <XDSVStack gap={4}>
             {/* Header */}
             <div {...stylex.props(styles.centered)}>
