@@ -92,16 +92,18 @@ export interface XDSCommandPaletteProps<
   maxHeight?: number | string;
 }
 
+function getGroup(item: XDSSearchableItem): string | undefined {
+  const aux = item.auxiliaryData as Record<string, unknown> | undefined;
+  return typeof aux?.group === 'string' ? aux.group : undefined;
+}
+
 /**
  * Default renderer for search results.
  * Renders items as XDSCommandPaletteItem with label text.
  * Auto-groups items by auxiliaryData.group when present.
  */
 function DefaultRenderer({items}: {items: XDSSearchableItem[]}) {
-  // Check if any items have a group
-  const hasGroups = items.some(
-    item => (item.auxiliaryData as any)?.group != null,
-  );
+  const hasGroups = items.some(item => getGroup(item) != null);
 
   if (!hasGroups) {
     return (
@@ -121,7 +123,7 @@ function DefaultRenderer({items}: {items: XDSSearchableItem[]}) {
   const ungrouped: XDSSearchableItem[] = [];
 
   for (const item of items) {
-    const group = (item.auxiliaryData as any)?.group;
+    const group = getGroup(item);
     if (group != null) {
       if (!groups.has(group)) {
         groupOrder.push(group);

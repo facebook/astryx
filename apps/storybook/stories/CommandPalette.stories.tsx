@@ -127,12 +127,12 @@ export const WithKeywords: Story = {
 
 // --- Custom rendering with groups ---
 
-interface CommandItem extends XDSSearchableItem<{
+type CommandItem = XDSSearchableItem<{
   icon?: string;
   group?: string;
   shortcut?: string;
   keywords?: string[];
-}> {}
+}>;
 
 /** Full control via render function. Groups, icons, shortcuts -- all explicit. */
 export const CustomRendering: Story = {
@@ -294,8 +294,14 @@ export const HybridSearch: Story = {
           searchSource={source}
           input={<XDSCommandPaletteInput placeholder="Search project files..." />}>
           {(items) => {
-            const recent = items.filter(i => (i as any).auxiliaryData?.recent);
-            const other = items.filter(i => !(i as any).auxiliaryData?.recent);
+            const recent = items.filter(i => {
+              const aux = i.auxiliaryData as Record<string, unknown> | undefined;
+              return aux?.recent === true;
+            });
+            const other = items.filter(i => {
+              const aux = i.auxiliaryData as Record<string, unknown> | undefined;
+              return aux?.recent !== true;
+            });
             return (
               <>
                 {recent.length > 0 && (
