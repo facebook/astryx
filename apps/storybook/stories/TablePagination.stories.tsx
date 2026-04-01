@@ -314,7 +314,7 @@ export const Playground: Story = {
   args: {
     variant: 'pages',
     position: 'below',
-    align: 'start',
+    align: 'center',
   },
   render: (args: {variant: Variant; position: Position; align: Align}) => (
     <div style={{maxWidth: 700}}>

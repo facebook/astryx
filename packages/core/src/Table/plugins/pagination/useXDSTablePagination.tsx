@@ -194,11 +194,11 @@ export interface UseXDSTablePaginationConfig {
 
   /**
    * Horizontal alignment of the pagination controls within their container.
-   * - 'start' — left-aligned (default)
-   * - 'center' — centered
+   * - 'start' — left-aligned
+   * - 'center' — centered (default)
    * - 'end' — right-aligned
    *
-   * @default 'start'
+   * @default 'center'
    */
   align?: 'start' | 'center' | 'end';
 
@@ -279,7 +279,7 @@ export function useXDSTablePagination<T extends Record<string, unknown>>(
     variant = 'pages',
     size = 'md',
     position = 'below',
-    align = 'start',
+    align = 'center',
     label = 'Table pagination',
   } = config;
 
