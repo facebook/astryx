@@ -439,12 +439,10 @@ function ResizeHandle({
           updates[s.key] = widths[i];
         });
 
-        // Clear inline styles — React state takes over on re-render
-        d.snapshots.forEach(s => {
-          s.th.style.width = '';
-          s.th.style.minWidth = '';
-          s.th.style.maxWidth = '';
-        });
+        // Don't clear inline styles — leave them in place so there's no flash
+        // between clearing and React re-rendering with the new columnWidths.
+        // The plugin's transformHeaderCell will set the same pixel values on
+        // the next render, seamlessly replacing these inline styles.
 
         if (Object.keys(updates).length > 0) {
           configRef.current.onColumnResizeEnd?.(updates);
