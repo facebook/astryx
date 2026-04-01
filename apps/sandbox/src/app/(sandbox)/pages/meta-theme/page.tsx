@@ -5,6 +5,7 @@ import * as stylex from '@stylexjs/stylex';
 import {XDSTheme} from '@xds/core/theme';
 import {metaTheme} from '@xds/theme-meta';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {XDSGrid} from '@xds/core/Grid';
 import {XDSButton} from '@xds/core/Button';
 import {XDSHeading, XDSText} from '@xds/core/Text';
 import {XDSBadge} from '@xds/core/Badge';
@@ -28,14 +29,12 @@ import {XDSToken} from '@xds/core/Token';
 import {useThemeControls} from '../../../providers';
 
 const styles = stylex.create({
-  grid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(4, 1fr)',
-    gap: 16,
+  gridPadding: {
     padding: 16,
-    alignItems: 'start',
   },
-  cell: {},
+  cell: {
+    minWidth: 0,
+  },
   row: {
     display: 'flex',
     alignItems: 'center',
@@ -132,7 +131,7 @@ export default function MetaThemePage() {
 
   return (
     <XDSTheme theme={metaTheme}>
-      <div {...stylex.props(styles.grid)}>
+      <XDSGrid columns={4} gap={4} align="start" xstyle={styles.gridPadding}>
         {/* Contribution History */}
         <div {...stylex.props(styles.cell)}>
           <XDSCard>
@@ -1048,7 +1047,7 @@ export default function MetaThemePage() {
             </XDSVStack>
           </XDSCard>
         </div>
-      </div>
+      </XDSGrid>
     </XDSTheme>
   );
 }
