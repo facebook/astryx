@@ -6,6 +6,9 @@ import * as stylex from '@stylexjs/stylex';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSButton} from '@xds/core/Button';
 import {XDSHeading, XDSText} from '@xds/core/Text';
+import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
+import {useThemeControls} from '../../../providers';
+import type {ThemeMode} from '@xds/core/theme';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSCard} from '@xds/core/Card';
 import {XDSAvatar} from '@xds/core/Avatar';
@@ -92,6 +95,21 @@ function Sparkline({values}: {values: number[]}) {
 }
 
 export default function MetaThemePage() {
+  const {themeName, setThemeName, mode, setMode} = useThemeControls();
+
+  const themeItems = [
+    {label: 'Default', onClick: () => setThemeName('default')},
+    {label: 'Neutral', onClick: () => setThemeName('neutral')},
+    {label: 'Brutalist', onClick: () => setThemeName('brutalist')},
+    {label: 'Meta', onClick: () => setThemeName('meta')},
+    {label: 'WhatsApp', onClick: () => setThemeName('whatsapp')},
+  ];
+
+  const modeItems = [
+    {label: 'Light', onClick: () => setMode('light' as ThemeMode)},
+    {label: 'Dark', onClick: () => setMode('dark' as ThemeMode)},
+  ];
+
   const [email, setEmail] = useState('artist@studio.inc');
   const [notes, setNotes] = useState('');
   const [publicStats, setPublicStats] = useState(true);
@@ -117,7 +135,26 @@ export default function MetaThemePage() {
   const [website, setWebsite] = useState('https://yoursite.com');
 
   return (
-      <div style={{columnCount: 4, columnGap: 16, padding: 16}}>
+    <>
+      <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderBottom: '1px solid var(--xds-color-border-primary, #e5e5e5)'}}>
+        <XDSHStack gap={2}>
+          <XDSHeading level={3}>{themeName.charAt(0).toUpperCase() + themeName.slice(1)}</XDSHeading>
+          <XDSText type="supporting" color="secondary">{mode}</XDSText>
+        </XDSHStack>
+        <XDSHStack gap={1}>
+          <XDSDropdownMenu
+            button={{label: 'Theme', variant: 'secondary', size: 'sm'}}
+            menuWidth={160}
+            items={themeItems}
+          />
+          <XDSDropdownMenu
+            button={{label: mode === 'dark' ? 'Dark' : 'Light', variant: 'secondary', size: 'sm'}}
+            menuWidth={160}
+            items={modeItems}
+          />
+        </XDSHStack>
+      </div>
+      <div style={{columnCount: 4, columnGap: 16, padding: 16, backgroundColor: 'var(--xds-color-bg-wash, #f5f5f5)', minHeight: '100%'}}>
         {/* Contribution History */}
         <div style={{breakInside: 'avoid', marginBottom: 16, overflow: 'hidden'}}>
           <XDSCard>
@@ -1034,5 +1071,6 @@ export default function MetaThemePage() {
           </XDSCard>
         </div>
       </div>
+    </>
   );
 }
