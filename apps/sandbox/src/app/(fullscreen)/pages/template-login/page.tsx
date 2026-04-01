@@ -22,12 +22,16 @@ const styles = stylex.create({
     width: '100%',
     maxWidth: 384,
   },
-  passwordRow: {
+  fullWidth: {
+    width: '100%',
+  },
+  passwordLabelRow: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   signupText: {
+    marginTop: 16,
     textAlign: 'center',
   },
 });
@@ -39,52 +43,58 @@ export default function LoginTemplate() {
   return (
     <div {...stylex.props(styles.page)}>
       <div {...stylex.props(styles.wrapper)}>
-        <XDSVStack gap={6}>
-          <XDSCard>
-            <XDSVStack gap={6}>
-              <XDSVStack gap={2}>
-                <XDSHeading level={2}>Login</XDSHeading>
-                <XDSText type="body" color="secondary">
-                  Enter your email below to login to your account
-                </XDSText>
-              </XDSVStack>
-              <XDSVStack gap={6}>
-                <XDSTextInput
-                  label="Email"
-                  type="email"
-                  placeholder="m@example.com"
-                  value={email}
-                  onChange={setEmail}
-                />
-                <XDSVStack gap={2}>
-                  <div {...stylex.props(styles.passwordRow)}>
-                    <XDSText type="label">Password</XDSText>
-                    <XDSLink label="Forgot your password?" href="#">
-                      Forgot your password?
-                    </XDSLink>
-                  </div>
-                  <XDSTextInput
-                    label="Password"
-                    isLabelHidden
-                    type="password"
-                    value={password}
-                    onChange={setPassword}
-                  />
-                </XDSVStack>
-                <XDSButton label="Login" variant="primary" />
-                <XDSButton label="Login with Google" variant="secondary" />
-              </XDSVStack>
-              <div {...stylex.props(styles.signupText)}>
-                <XDSText type="supporting" color="secondary">
-                  Don&apos;t have an account?{' '}
-                  <XDSLink label="Sign up" href="#">
-                    Sign up
-                  </XDSLink>
-                </XDSText>
-              </div>
+        <XDSCard>
+          <XDSVStack gap={6}>
+            <XDSVStack gap={2}>
+              <XDSHeading level={2}>Login</XDSHeading>
+              <XDSText type="body" color="secondary">
+                Enter your email below to login to your account
+              </XDSText>
             </XDSVStack>
-          </XDSCard>
-        </XDSVStack>
+            <XDSVStack gap={6}>
+              <XDSTextInput
+                label="Email"
+                type="email"
+                placeholder="m@example.com"
+                value={email}
+                onChange={setEmail}
+              />
+              <XDSVStack gap={2}>
+                <div {...stylex.props(styles.passwordLabelRow)}>
+                  <XDSText type="label">Password</XDSText>
+                  <XDSLink label="Forgot your password?" href="#">
+                    Forgot your password?
+                  </XDSLink>
+                </div>
+                <XDSTextInput
+                  label="Password"
+                  isLabelHidden
+                  type="password"
+                  value={password}
+                  onChange={setPassword}
+                />
+              </XDSVStack>
+              <XDSButton
+                label="Login"
+                variant="primary"
+                xstyle={styles.fullWidth}
+              />
+              <XDSButton
+                label="Login with Google"
+                variant="secondary"
+                xstyle={styles.fullWidth}
+              />
+            </XDSVStack>
+            <div {...stylex.props(styles.signupText)}>
+              <XDSText type="supporting" color="secondary">
+                Don&apos;t have an account?{' '}
+                <XDSLink label="Sign up" href="#">
+                  Sign up
+                </XDSLink>
+              </XDSText>
+            </div>
+          </XDSVStack>
+        </XDSCard>
       </div>
     </div>
   );
