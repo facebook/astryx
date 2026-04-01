@@ -3,6 +3,7 @@
 export const docs = {
   name: 'AspectRatio',
   description: 'Maintains a specific aspect ratio for its children.',
+  keywords: ["aspect-ratio","ratio","proportion","responsive","embed","container","widescreen","thumbnail","letterbox","crop"],
   features: [
     'Accepts any numeric ratio expressed as width/height (e.g. 16/9, 4/3, 1)',
     'Children are positioned absolutely to fill the container',

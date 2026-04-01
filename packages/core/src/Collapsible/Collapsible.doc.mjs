@@ -3,6 +3,7 @@
 export const docs = {
   name: 'Collapsible',
   description: 'Collapsible content primitive and group coordination.',
+  keywords: ["accordion","collapse","expandable","disclosure","toggle","panel","foldable","expander","expand"],
   features: [
     'XDSCollapsible makes any content collapsible — a trigger toggles visibility of the content area',
     'Handles state management, accessibility (aria-expanded, keyboard activation), and a chevron indicator',

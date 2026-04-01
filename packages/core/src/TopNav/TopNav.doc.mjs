@@ -4,6 +4,7 @@ export const docs = {
   name: 'TopNav',
   description:
     'Top navigation bar component for application headers with slot-based layout and companion nav item components.',
+  keywords: ["topnav","navbar","appbar","header","toolbar","navigation","menubar","topbar"],
   features: [
     'Slot-based layout — heading, startContent, centerContent, and endContent slots for flexible organization',
     'Three-column centering — when centerContent is provided, switches to CSS grid (1fr auto 1fr) for true horizontal centering',

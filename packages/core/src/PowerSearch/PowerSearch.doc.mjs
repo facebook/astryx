@@ -4,6 +4,7 @@ export const docs = {
   name: 'PowerSearch',
   description:
     'Structured filter bar where each token represents a filter (field + operator + value). Users select fields from a typeahead dropdown, configure operators and values in an edit popover, and manage filters as removable tokens.',
+  keywords: ["powersearch","search","searchbar","filter","filterbar","faceted","querybuilder","structured","omnibar"],
   props: [
     {
       name: 'config',

@@ -4,6 +4,7 @@ export const docs = {
   name: 'Stack',
   description:
     'Stack layout primitives for arranging items in horizontal or vertical sequences using flexbox-based layout with themed spacing tokens.',
+  keywords: ["stack","hstack","vstack","flexbox","flex","spacing","gap","horizontal","vertical","row","column"],
   features: [
     'Horizontal (XDSHStack) and vertical (XDSVStack) stacking',
     'Themed spacing via gap tokens from the design system spacing scale',

@@ -4,6 +4,7 @@ export const docs = {
   name: 'TabList',
   description:
     'Tab navigation components with overflow menu support, rendering as a semantic nav landmark with button or anchor tab items.',
+  keywords: ["tabs","tabbar","tabstrip","navigation","tabpanel","tabgroup","segmented","navtabs","tab"],
   features: [
     'Context-based communication: XDSTabListContext passes value/onChange/size from XDSTabList to children',
     'Single-responsibility XDSTab: renders as <button> or <a> (when href is provided) in the nav',

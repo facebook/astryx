@@ -4,6 +4,7 @@ export const docs = {
   name: 'Avatar',
   description:
     'Avatar component for displaying user profile pictures with fallback support.',
+  keywords: ["avatar","profile","user","photo","thumbnail","initials","gravatar","pfp","userpic"],
   features: [
     'Image loading: Primary and fallback image sources',
     'Initials fallback: Auto-generates initials from user name',

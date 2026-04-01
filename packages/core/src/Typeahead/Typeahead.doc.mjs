@@ -4,6 +4,7 @@ export const docs = {
   name: 'Typeahead',
   description:
     'Searchable dropdown components for single-item selection with keyboard navigation. Supports async and sync search via a searchSource interface.',
+  keywords: ["typeahead","autocomplete","combobox","searchbox","autosuggest","select","dropdown","lookup","searchable","suggestion","picker"],
   features: [
     'Async and sync search via a searchSource interface with search() and bootstrap() methods',
     'Bootstrap results shown on focus before typing (via hasEntriesOnFocus)',

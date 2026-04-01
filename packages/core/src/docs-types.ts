@@ -180,6 +180,12 @@ interface BaseDoc {
    *  Start with the most common usage pattern, then progress to advanced.
    *  Include 2-5 examples (complex components may justify more). */
   examples: Example[];
+  /** Search keywords for CLI discovery. Terms a developer might type when
+   *  looking for this component: synonyms, related UI concepts, and common
+   *  names from other design systems (MUI, Chakra, Radix, shadcn).
+   *  Lowercase only. Used by `xds component <term>` for fuzzy matching.
+   *  e.g. `['accordion', 'expand', 'toggle', 'disclosure']` for Collapsible */
+  keywords?: string[];
   /** Key capabilities as short bullet points. Each string is one feature.
    *  Strongly recommended even though optional — all existing components
    *  include this field. Use "Category: details" format.

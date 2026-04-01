@@ -4,6 +4,7 @@ export const docs = {
   name: 'Link',
   description:
     'XDSLink component for styled anchor links with multiple variants and features, plus polymorphic link infrastructure for rendering custom link components (Next.js Link, React Router Link, etc.).',
+  keywords: ["link","anchor","href","hyperlink","navigation","url","external","textlink"],
   features: [
     "Color control: Uses XDSText color prop ('active' default, 'secondary', 'inherit', etc.)",
     'External links: Opens in new tab with external link icon',

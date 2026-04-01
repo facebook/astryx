@@ -5,6 +5,7 @@
 export const docs = {
   name: 'Divider',
   description: 'Visual separator with optional label, using XDS design tokens.',
+  keywords: ["divider","separator","hr","rule","line","border","spacer","horizontal rule"],
   features: [
     'Supports horizontal and vertical orientations',
     'Optional label centered on the divider line',

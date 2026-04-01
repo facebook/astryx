@@ -4,6 +4,7 @@ export const docs = {
   name: 'EmptyState',
   description:
     'An empty state placeholder for content areas with no data. Displays an icon or illustration, title, optional description, and action buttons.',
+  keywords: ["emptystate","empty","placeholder","nodata","blank","noresults","illustration","blankslate"],
   features: [
     'Uses role="status" so screen readers announce the empty state automatically',
     'Icon slot renders as decorative (aria-hidden="true") — no extra labeling needed',

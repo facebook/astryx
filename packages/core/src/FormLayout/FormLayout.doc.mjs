@@ -4,6 +4,7 @@ export const docs = {
   name: 'FormLayout',
   description:
     'A spatial layout container for arranging form fields with consistent spacing and direction.',
+  keywords: ["formlayout","form","fieldset","formgroup","formcontainer","fields","vertical","horizontal"],
   props: [
     {
       name: 'direction',

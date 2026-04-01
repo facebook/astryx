@@ -3,6 +3,7 @@
 export const docs = {
   name: 'Breadcrumbs',
   description: 'A navigation breadcrumb trail with semantic HTML.',
+  keywords: ["breadcrumbs","breadcrumb","navigation","nav","crumbs","trail","path","hierarchy","wayfinding","steps"],
   features: [
     'Renders a <nav> landmark with an ordered list of breadcrumb items',
     'Configurable separator between items (defaults to /)',

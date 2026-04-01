@@ -4,6 +4,7 @@ export const docs = {
   name: 'TextArea',
   description:
     'A multi-line text input component for collecting longer user input.',
+  keywords: ["textarea","textfield","multiline","comment","message","autoresize","autosize","charlimit"],
   features: [
     'Label support — required label for accessibility, can be visually hidden',
     'Description — optional text displayed between the label and textarea',

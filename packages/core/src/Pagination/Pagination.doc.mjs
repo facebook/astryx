@@ -4,6 +4,7 @@ export const docs = {
   name: 'Pagination',
   description:
     'Standalone pagination controls for navigating through pages of content. Supports multiple display variants and works with known totals or cursor-based pagination.',
+  keywords: ["pagination","pager","paginator","pagenavigation","paging","paginate","pages","pagecontrol"],
   props: [
     {
       name: 'page',

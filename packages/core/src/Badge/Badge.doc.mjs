@@ -4,6 +4,7 @@ export const docs = {
   name: 'Badge',
   description:
     'A badge component for displaying status indicators, counts, or labels.',
+  keywords: ["badge","tag","chip","label","status","indicator","dot","count","counter","pill","notification","marker"],
   props: [
     {
       name: 'variant',

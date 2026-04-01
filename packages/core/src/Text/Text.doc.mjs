@@ -4,6 +4,7 @@ export const docs = {
   name: 'Text',
   description:
     'Typography components for the XDS design system, including semantic body text, headings, and a wrapper for applying typography styles to native HTML.',
+  keywords: ["text","typography","label","paragraph","heading","caption","font","body","subtitle"],
   examples: [
     {
       label: 'Body text',

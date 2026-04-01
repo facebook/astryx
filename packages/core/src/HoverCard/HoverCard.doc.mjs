@@ -4,6 +4,7 @@ export const docs = {
   name: 'HoverCard',
   description:
     'A hover/focus triggered overlay for displaying rich, interactive content anchored to a trigger element.',
+  keywords: ["hovercard","hover card","popover","tooltip","preview card","flyout","overlay","hover popup"],
   features: [
     'CSS Anchor Positioning for automatic placement relative to trigger elements',
     'Popover API for top-layer rendering — no React portals needed',

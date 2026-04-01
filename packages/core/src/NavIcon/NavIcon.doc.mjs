@@ -4,6 +4,7 @@ export const docs = {
   name: 'NavIcon',
   description:
     'Circular icon container with accent background for navigation headers.',
+  keywords: ["navicon","iconbutton","toolbar icon","appbar icon","nav button"],
   features: [
     'Shared — used in both XDSTopNavHeading and XDSPageNavHeader',
     'Accent background — uses --color-accent with --color-on-accent contrast',

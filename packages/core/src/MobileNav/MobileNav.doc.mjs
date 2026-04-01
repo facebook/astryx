@@ -4,6 +4,7 @@ export const docs = {
   name: 'MobileNav',
   description:
     'Slide-out drawer overlay for mobile navigation. The mobile counterpart to XDSSideNav — accepts the same children (XDSSideNavSection, XDSSideNavItem, or any ReactNode).',
+  keywords: ["mobilenav","drawer","sidebar","navigation","hamburger","menu","offcanvas","slideout","navdrawer"],
   props: [
     {
       name: 'isOpen',
