@@ -38,9 +38,9 @@ export default function SettingsTemplate() {
   const [twoFactor, setTwoFactor] = useState(false);
 
   return (
-    <div style={{minHeight: '100svh', display: 'flex', flexDirection: 'column'}}>
+    <div style={{height: '100svh', display: 'flex', flexDirection: 'column', overflow: 'hidden'}}>
       {/* Header */}
-      <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottom: '1px solid var(--xds-color-border-primary, #e5e5e5)'}}>
+      <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottom: '1px solid var(--xds-color-border-primary, #e5e5e5)', flexShrink: 0}}>
         <XDSHeading level={1}>Settings</XDSHeading>
         <div style={{width: 240}}>
           <XDSTextInput label="Search" isLabelHidden placeholder="Search" value="" onChange={() => {}} />
@@ -48,9 +48,9 @@ export default function SettingsTemplate() {
       </div>
 
       {/* Body */}
-      <div style={{display: 'flex', flex: 1}}>
+      <div style={{display: 'flex', flex: 1, overflow: 'hidden'}}>
         {/* Sidebar */}
-        <nav style={{width: 200, padding: 8, borderRight: '1px solid var(--xds-color-border-primary, #e5e5e5)', flexShrink: 0}}>
+        <nav style={{width: 200, padding: 8, borderRight: '1px solid var(--xds-color-border-primary, #e5e5e5)', flexShrink: 0, overflowY: 'auto'}}>
           <XDSList density="compact">
             {NAV_ITEMS.map(item => (
               <XDSListItem
@@ -64,7 +64,7 @@ export default function SettingsTemplate() {
         </nav>
 
         {/* Content */}
-        <div style={{flex: 1, padding: 16, maxWidth: 960}}>
+        <div style={{flex: 1, padding: 16, maxWidth: 960, overflowY: 'auto'}}>
           <XDSVStack gap={8}>
             {/* Basic information */}
             <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40}}>
