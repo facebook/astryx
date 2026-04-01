@@ -120,10 +120,12 @@ export const BasicColumnToggle: Story = {
     return (
       <div style={{maxWidth: 700}}>
         <XDSToolbar
-          label="Column settings"
-          startContent={
+          label="Table actions"
+          startContent={<XDSText type="label">Users</XDSText>}
+          endContent={
             <XDSMultiSelector
               label="Columns"
+              isLabelHidden
               options={columnSettings.dropdownItems}
               value={[...columnSettings.activeColumnKeys]}
               onChange={columnSettings.onDropdownChange}
@@ -161,10 +163,12 @@ export const DisabledColumns: Story = {
           &quot;Name&quot; is always visible and cannot be unchecked.
         </XDSText>
         <XDSToolbar
-          label="Column settings"
-          startContent={
+          label="Table actions"
+          startContent={<XDSText type="label">Users</XDSText>}
+          endContent={
             <XDSMultiSelector
               label="Columns"
+              isLabelHidden
               options={columnSettings.dropdownItems}
               value={[...columnSettings.activeColumnKeys]}
               onChange={columnSettings.onDropdownChange}
@@ -208,21 +212,23 @@ export const ResetToDefault: Story = {
           Role).
         </XDSText>
         <XDSToolbar
-          label="Column settings"
-          startContent={
-            <XDSMultiSelector
-              label="Columns"
-              options={columnSettings.dropdownItems}
-              value={[...columnSettings.activeColumnKeys]}
-              onChange={columnSettings.onDropdownChange}
-            />
-          }
+          label="Table actions"
+          startContent={<XDSText type="label">Users</XDSText>}
           endContent={
-            <XDSButton
-              label="Reset to default"
-              variant="secondary"
-              onClick={columnSettings.resetToDefault}
-            />
+            <>
+              <XDSButton
+                label="Reset to default"
+                variant="secondary"
+                onClick={columnSettings.resetToDefault}
+              />
+              <XDSMultiSelector
+                label="Columns"
+                isLabelHidden
+                options={columnSettings.dropdownItems}
+                value={[...columnSettings.activeColumnKeys]}
+                onChange={columnSettings.onDropdownChange}
+              />
+            </>
           }
         />
         <XDSTable
@@ -295,15 +301,8 @@ export const SavedViews: Story = {
           Apply a saved view to switch column sets, or reset to the default.
         </XDSText>
         <XDSToolbar
-          label="Column settings"
-          startContent={
-            <XDSMultiSelector
-              label="Columns"
-              options={columnSettings.dropdownItems}
-              value={[...columnSettings.activeColumnKeys]}
-              onChange={columnSettings.onDropdownChange}
-            />
-          }
+          label="Table actions"
+          startContent={<XDSText type="label">Users</XDSText>}
           endContent={
             <>
               {views.map(view => (
@@ -318,6 +317,13 @@ export const SavedViews: Story = {
                 label="Reset"
                 variant="ghost"
                 onClick={() => columnSettings.views?.resetToDefault()}
+              />
+              <XDSMultiSelector
+                label="Columns"
+                isLabelHidden
+                options={columnSettings.dropdownItems}
+                value={[...columnSettings.activeColumnKeys]}
+                onChange={columnSettings.onDropdownChange}
               />
             </>
           }
@@ -356,19 +362,20 @@ export const WithSelection: Story = {
     return (
       <div style={{maxWidth: 700}}>
         <XDSToolbar
-          label="Column settings"
+          label="Table actions"
           startContent={
+            <XDSText type="supporting">
+              {selectedKeys.size} of {users.length} selected
+            </XDSText>
+          }
+          endContent={
             <XDSMultiSelector
               label="Columns"
+              isLabelHidden
               options={columnSettings.dropdownItems}
               value={[...columnSettings.activeColumnKeys]}
               onChange={columnSettings.onDropdownChange}
             />
-          }
-          endContent={
-            <XDSText type="supporting">
-              {selectedKeys.size} of {users.length} selected
-            </XDSText>
           }
         />
         <XDSTable
