@@ -10,7 +10,7 @@
 
 'use client';
 
-import {useCallback, useEffect, useRef, type ReactNode} from 'react';
+import {useCallback, useEffect, useMemo, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {XDSBaseProps} from '@xds/core/XDSBaseProps';
 import {xdsClassName, mergeProps} from '@xds/core/utils';
@@ -127,7 +127,8 @@ export function XDSCommandPaletteItem({
   const itemRef = useRef<HTMLDivElement>(null);
 
   const setRefs = (element: HTMLDivElement | null) => {
-    (itemRef as React.MutableRefObject<HTMLDivElement | null>).current = element;
+    (itemRef as React.MutableRefObject<HTMLDivElement | null>).current =
+      element;
     if (typeof ref === 'function') {
       ref(element);
     } else if (ref) {
@@ -135,15 +136,17 @@ export function XDSCommandPaletteItem({
     }
   };
 
-  useEffect(() => {
-    if (!ctx) return;
-    const unregister = ctx.registerItem(value, isDisabled);
-    return unregister;
-  }, [value, isDisabled, ctx]);
+  // Find this item's index in the flat selectable items list (DOM order).
+  // This aligns with useCombobox's index-based navigation.
+  const itemIndex = useMemo(
+    () => ctx?.selectableItems.findIndex(item => item.value === value) ?? -1,
+    [ctx?.selectableItems, value],
+  );
 
-  // Value-based highlight — immune to index drift from filtering/sections
+  // Highlight from useCombobox: index-based, matches DOM order
   const isHighlighted =
-    controlledHighlighted ?? (ctx ? ctx.highlightedValue === value : false);
+    controlledHighlighted ??
+    (ctx ? ctx.highlightedIndex === itemIndex && itemIndex >= 0 : false);
   const isSelected = controlledSelected ?? (ctx ? ctx.value === value : false);
 
   useEffect(() => {
@@ -151,9 +154,6 @@ export function XDSCommandPaletteItem({
       itemRef.current.scrollIntoView?.({block: 'nearest'});
     }
   }, [isHighlighted]);
-
-  // Index for ARIA id — based on full registered list (stable, not filtered)
-  const itemIndex = ctx?.items.findIndex(item => item.value === value) ?? -1;
 
   const handleClick = useCallback(() => {
     if (isDisabled) return;
@@ -165,14 +165,14 @@ export function XDSCommandPaletteItem({
   }, [isDisabled, value, onSelect, ctx]);
 
   const handleMouseEnter = useCallback(() => {
-    if (isDisabled || !ctx) return;
-    ctx.setHighlightedValue(value);
-  }, [isDisabled, value, ctx]);
+    if (isDisabled || !ctx || itemIndex < 0) return;
+    ctx.setHighlightedIndex(itemIndex);
+  }, [isDisabled, itemIndex, ctx]);
 
   return (
     <div
       ref={setRefs}
-      id={ctx && itemIndex >= 0 ? `${ctx.listId}-item-${itemIndex}` : undefined}
+      id={ctx && itemIndex >= 0 ? ctx.getItemId(itemIndex) : undefined}
       role="option"
       aria-selected={isSelected}
       aria-disabled={isDisabled || undefined}

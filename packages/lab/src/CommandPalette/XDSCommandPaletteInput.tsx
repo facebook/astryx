@@ -59,11 +59,10 @@ const styles = stylex.create({
   },
 });
 
-export interface XDSCommandPaletteInputProps
-  extends Omit<
-    InputHTMLAttributes<HTMLInputElement>,
-    'type' | 'role' | 'children' | 'autoFocus'
-  > {
+export interface XDSCommandPaletteInputProps extends Omit<
+  InputHTMLAttributes<HTMLInputElement>,
+  'type' | 'role' | 'children' | 'autoFocus'
+> {
   /** Ref forwarded to the input element (for focus management). */
   ref?: React.Ref<HTMLInputElement>;
 
@@ -102,8 +101,8 @@ export interface XDSCommandPaletteInputProps
  * so users can start typing immediately.
  *
  * When used inside XDSCommandPalette, automatically wires to the
- * context for search state and keyboard navigation. Can also be used
- * standalone with explicit value/onValueChange props.
+ * context for search state and keyboard navigation (via useCombobox).
+ * Can also be used standalone with explicit value/onValueChange props.
  *
  * @compositionHint Place as the first child of XDSCommandPalette.
  *
@@ -153,62 +152,16 @@ export function XDSCommandPaletteInput({
     }
   }, [hasAutoFocus]);
 
-  // Keyboard navigation — walks visible (non-filtered, non-disabled) items by value
+  // Keyboard navigation — delegates to useCombobox via context
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
       onKeyDown?.(e);
-      if (!ctx || e.defaultPrevented) return;
-
-      // Build navigable list: registered items that are not disabled.
-      // Filtering is handled by searchSource — all rendered items are valid targets.
-      const navigable = ctx.items.filter(item => !item.isDisabled);
-      if (navigable.length === 0) return;
-
-      const currentIdx = navigable.findIndex(
-        item => item.value === ctx.highlightedValue,
-      );
-
-      switch (e.key) {
-        case 'ArrowDown': {
-          e.preventDefault();
-          const next =
-            currentIdx < navigable.length - 1 ? currentIdx + 1 : currentIdx;
-          ctx.setHighlightedValue(navigable[next].value);
-          break;
-        }
-        case 'ArrowUp': {
-          e.preventDefault();
-          const prev = currentIdx > 0 ? currentIdx - 1 : 0;
-          ctx.setHighlightedValue(navigable[prev].value);
-          break;
-        }
-        case 'Home': {
-          e.preventDefault();
-          ctx.setHighlightedValue(navigable[0].value);
-          break;
-        }
-        case 'End': {
-          e.preventDefault();
-          ctx.setHighlightedValue(navigable[navigable.length - 1].value);
-          break;
-        }
-        case 'Enter': {
-          e.preventDefault();
-          if (ctx.highlightedValue) {
-            ctx.selectItem(ctx.highlightedValue);
-            ctx.onClose();
-          }
-          break;
-        }
-      }
+      if (e.defaultPrevented) return;
+      // Delegate to useCombobox's keyboard handler from context
+      ctx?.onKeyDown(e);
     },
     [ctx, onKeyDown],
   );
-
-  // Derive the highlighted item's DOM id for aria-activedescendant
-  const highlightedItemIndex = ctx
-    ? ctx.items.findIndex(item => item.value === ctx.highlightedValue)
-    : -1;
 
   return (
     <div
@@ -231,8 +184,8 @@ export function XDSCommandPaletteInput({
         aria-autocomplete="list"
         aria-controls={ctx?.listId}
         aria-activedescendant={
-          highlightedItemIndex >= 0
-            ? `${ctx?.listId}-item-${highlightedItemIndex}`
+          ctx && ctx.highlightedIndex >= 0
+            ? ctx.getItemId(ctx.highlightedIndex)
             : undefined
         }
         placeholder={placeholder}
@@ -240,8 +193,6 @@ export function XDSCommandPaletteInput({
         onChange={e => {
           handleValueChange?.(e.target.value);
           onChange?.(e);
-          // Reset highlight when search changes
-          ctx?.setHighlightedValue('');
         }}
         onKeyDown={handleKeyDown}
         {...stylex.props(styles.input)}

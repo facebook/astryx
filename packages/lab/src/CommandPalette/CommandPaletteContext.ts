@@ -6,6 +6,7 @@
  */
 
 import {createContext, useContext} from 'react';
+import type {XDSSearchableItem} from '@xds/core/Typeahead';
 
 export interface CommandPaletteContextValue {
   /** Current search query. */
@@ -16,18 +17,22 @@ export interface CommandPaletteContextValue {
   value: string;
   /** Update the selected value. */
   setValue: (value: string) => void;
-  /** Unique ID prefix for ARIA. */
+  /** Unique ID prefix for ARIA (listbox id). */
   listId: string;
-  /** Value of the currently highlighted item (empty string = none). */
-  highlightedValue: string;
-  /** Update highlighted value. */
-  setHighlightedValue: (value: string) => void;
-  /** All registered items in mount order. */
-  items: Array<{value: string; isDisabled?: boolean}>;
-  /** Register an item. Returns unregister function. */
-  registerItem: (value: string, isDisabled?: boolean) => () => void;
-  /** Select an item by value. */
+  /** Index-based highlight from useCombobox. -1 = none. */
+  highlightedIndex: number;
+  /** Update highlighted index. */
+  setHighlightedIndex: (index: number) => void;
+  /** Get the DOM id for an item by its flat index. */
+  getItemId: (index: number) => string;
+  /** Flat list of selectable items in DOM order (after grouping/filtering). */
+  selectableItems: Array<{value: string; label?: string; disabled?: boolean}>;
+  /** The search result items (typed). */
+  searchResults: XDSSearchableItem[];
+  /** Select an item by value and close. */
   selectItem: (value: string) => void;
+  /** Keyboard handler from useCombobox — attach to the input. */
+  onKeyDown: (e: React.KeyboardEvent) => void;
   /** Close the palette. */
   onClose: () => void;
   /** Whether the palette is open (for aria-expanded). */

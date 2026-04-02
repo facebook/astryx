@@ -1,6 +1,6 @@
 /**
  * @file XDSCommandPalette.tsx
- * @input Uses React, XDSDialog, XDSLayout, CommandPaletteContext, XDSSearchSource
+ * @input Uses React, XDSDialog, XDSLayout, CommandPaletteContext, XDSSearchSource, useCombobox
  * @output Exports XDSCommandPalette root component and props
  * @position Core root component; dialog shell with searchSource-driven items
  *
@@ -28,6 +28,8 @@ import {
   XDSLayoutFooter,
 } from '@xds/core/Layout';
 import type {XDSSearchSource, XDSSearchableItem} from '@xds/core/Typeahead';
+import {useCombobox} from '@xds/core/Selector';
+import type {XDSSelectorOptionData} from '@xds/core/Selector';
 import {CommandPaletteContext} from './CommandPaletteContext';
 import {XDSCommandPaletteList} from './XDSCommandPaletteList';
 import {XDSCommandPaletteItem} from './XDSCommandPaletteItem';
@@ -98,6 +100,53 @@ function getGroup(item: XDSSearchableItem): string | undefined {
 }
 
 /**
+ * Build a flat list of selectable items in DOM order from search results.
+ * When groups are present, items are ordered by group (preserving insertion order),
+ * with ungrouped items at the end — matching the DefaultRenderer layout.
+ */
+function buildSelectableItems(
+  items: XDSSearchableItem[],
+): XDSSelectorOptionData[] {
+  const hasGroups = items.some(item => getGroup(item) != null);
+
+  if (!hasGroups) {
+    return items.map(item => ({
+      value: item.id,
+      label: item.label,
+    }));
+  }
+
+  // Group items preserving insertion order of groups
+  const groupOrder: string[] = [];
+  const groups = new Map<string, XDSSearchableItem[]>();
+  const ungrouped: XDSSearchableItem[] = [];
+
+  for (const item of items) {
+    const group = getGroup(item);
+    if (group != null) {
+      if (!groups.has(group)) {
+        groupOrder.push(group);
+        groups.set(group, []);
+      }
+      groups.get(group)!.push(item);
+    } else {
+      ungrouped.push(item);
+    }
+  }
+
+  const result: XDSSelectorOptionData[] = [];
+  for (const heading of groupOrder) {
+    for (const item of groups.get(heading)!) {
+      result.push({value: item.id, label: item.label});
+    }
+  }
+  for (const item of ungrouped) {
+    result.push({value: item.id, label: item.label});
+  }
+  return result;
+}
+
+/**
  * Default renderer for search results.
  * Renders items as XDSCommandPaletteItem with label text.
  * Auto-groups items by auxiliaryData.group when present.
@@ -161,6 +210,10 @@ function DefaultRenderer({items}: {items: XDSSearchableItem[]}) {
  * Uses `searchSource` for all search logic — same interface as XDSTypeahead.
  * For static lists, use `createStaticSource` from `@xds/core/Typeahead`.
  *
+ * Keyboard navigation is handled by `useCombobox` from XDSSelector,
+ * ensuring consistent arrow key, Home/End, Enter, and Escape behavior
+ * across all combobox-pattern components.
+ *
  * Progressive disclosure:
  * - No children: default rendering (label text, auto-groups by auxiliaryData.group)
  * - Children render function: full control over item layout and grouping
@@ -213,10 +266,8 @@ export function XDSCommandPalette<
   const listId = useId();
   const [search, setSearch] = useState('');
   const [internalValue, setInternalValue] = useState('');
-  const [highlightedValue, setHighlightedValue] = useState('');
   const [searchResults, setSearchResults] = useState<T[]>([]);
   const [isBusy, setIsBusy] = useState(false);
-  const itemsRef = useRef<Array<{value: string; isDisabled?: boolean}>>([]);
   const searchVersionRef = useRef(0);
 
   const value = controlledValue ?? internalValue;
@@ -231,17 +282,21 @@ export function XDSCommandPalette<
     [controlledValue, onValueChange],
   );
 
-  const registerItem = useCallback(
-    (itemValue: string, isDisabled?: boolean) => {
-      itemsRef.current = [...itemsRef.current, {value: itemValue, isDisabled}];
-      return () => {
-        itemsRef.current = itemsRef.current.filter(
-          item => item.value !== itemValue,
-        );
-      };
-    },
-    [],
+  // Build flat selectable items in DOM order from search results.
+  // This must match the order that DefaultRenderer (or custom children) renders.
+  const selectableItems = useMemo(
+    () => buildSelectableItems(searchResults),
+    [searchResults],
   );
+
+  const handleClose = useCallback(() => {
+    setSearch('');
+    if (controlledValue === undefined) {
+      setInternalValue('');
+    }
+    searchSource.cancel?.();
+    onOpenChange(false);
+  }, [onOpenChange, searchSource, controlledValue]);
 
   const selectItem = useCallback(
     (itemValue: string) => {
@@ -250,15 +305,32 @@ export function XDSCommandPalette<
     [setValue],
   );
 
-  const handleClose = useCallback(() => {
-    setSearch('');
-    setHighlightedValue('');
-    if (controlledValue === undefined) {
-      setInternalValue('');
+  // useCombobox handles all keyboard navigation and highlight state.
+  // We treat the palette as always "open" from the combobox's perspective
+  // (since the dialog itself handles open/close), and use onClose as a no-op
+  // for the combobox — the palette's own close is handled by handleClose.
+  const combobox = useCombobox({
+    selectableItems,
+    value,
+    isOpen: true, // Always "open" from combobox POV — the dialog handles visibility
+    onOpen: () => {}, // Dialog handles open
+    onClose: () => {}, // We handle close via handleClose
+    onSelect: (itemValue: string) => {
+      selectItem(itemValue);
+      handleClose();
+    },
+    listboxId: listId,
+  });
+
+  // When the dialog opens, set highlight to selected item or first item
+  useEffect(() => {
+    if (isOpen && selectableItems.length > 0) {
+      const selectedIdx = selectableItems.findIndex(
+        item => item.value === value,
+      );
+      combobox.setHighlightedIndex(selectedIdx >= 0 ? selectedIdx : 0);
     }
-    searchSource.cancel?.();
-    onOpenChange(false);
-  }, [onOpenChange, searchSource, controlledValue]);
+  }, [isOpen, selectableItems, value, combobox]);
 
   // Unified search effect: bootstrap on open or empty query, search otherwise
   useEffect(() => {
@@ -290,10 +362,36 @@ export function XDSCommandPalette<
     }
   }, [search, isOpen, searchSource]);
 
-  // Reset highlight when results change
-  useEffect(() => {
-    setHighlightedValue('');
-  }, [searchResults]);
+  // Wrap combobox's onKeyDown to intercept Escape (close palette) and
+  // Enter on highlight (select + close), since we're not using combobox's
+  // built-in open/close lifecycle.
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        handleClose();
+        return;
+      }
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (
+          combobox.highlightedIndex >= 0 &&
+          combobox.highlightedIndex < selectableItems.length
+        ) {
+          const item = selectableItems[combobox.highlightedIndex];
+          if (item && !item.disabled) {
+            selectItem(item.value);
+            handleClose();
+          }
+        }
+        return;
+      }
+      // Space should type in the input, not trigger selection
+      if (e.key === ' ') return;
+      combobox.onKeyDown(e);
+    },
+    [combobox, handleClose, selectableItems, selectItem],
+  );
 
   const contextValue = useMemo(
     () => ({
@@ -302,11 +400,13 @@ export function XDSCommandPalette<
       value,
       setValue,
       listId,
-      highlightedValue,
-      setHighlightedValue,
-      items: itemsRef.current,
-      registerItem,
+      highlightedIndex: combobox.highlightedIndex,
+      setHighlightedIndex: combobox.setHighlightedIndex,
+      getItemId: combobox.getItemId,
+      selectableItems,
+      searchResults,
       selectItem,
+      onKeyDown: handleKeyDown,
       onClose: handleClose,
       isOpen,
       isBusy,
@@ -316,9 +416,13 @@ export function XDSCommandPalette<
       value,
       setValue,
       listId,
-      highlightedValue,
-      registerItem,
+      combobox.highlightedIndex,
+      combobox.setHighlightedIndex,
+      combobox.getItemId,
+      selectableItems,
+      searchResults,
       selectItem,
+      handleKeyDown,
       handleClose,
       isOpen,
       isBusy,
