@@ -46,6 +46,9 @@ const styles = stylex.create({
 
 /**
  * Run a value through a pipeline of plugin transform functions.
+ * Wraps each transform in a try-catch so a single broken plugin
+ * doesn't crash the entire table. In development, logs a warning
+ * with the plugin index and error details.
  */
 function applyPlugins<TPlugin, TProps, TArgs extends unknown[]>(
   plugins: TPlugin[],
@@ -55,9 +58,20 @@ function applyPlugins<TPlugin, TProps, TArgs extends unknown[]>(
   initial: TProps,
   ...args: TArgs
 ): TProps {
-  return plugins.reduce<TProps>((acc, plugin) => {
+  return plugins.reduce<TProps>((acc, plugin, index) => {
     const transform = getter(plugin);
-    return transform ? transform(acc, ...args) : acc;
+    if (!transform) return acc;
+    try {
+      return transform(acc, ...args);
+    } catch (error) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.error(
+          `[XDSTable] Plugin at index ${index} threw in transform:`,
+          error,
+        );
+      }
+      return acc;
+    }
   }, initial);
 }
 
@@ -375,7 +389,16 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
   for (let i = plugins.length - 1; i >= 0; i--) {
     const plugin = plugins[i];
     if (plugin.transformTableContext) {
-      tableElement = plugin.transformTableContext(tableElement);
+      try {
+        tableElement = plugin.transformTableContext(tableElement);
+      } catch (error) {
+        if (process.env.NODE_ENV !== 'production') {
+          console.error(
+            '[XDSTable] Plugin threw in transformTableContext:',
+            error,
+          );
+        }
+      }
     }
   }
 

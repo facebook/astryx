@@ -34,10 +34,8 @@
 import {useRef} from 'react';
 import type {TablePlugin} from './types';
 
-// =============================================================================
-// Canonical Plugin Order
-// =============================================================================
-
+// ======================================================================// Canonical Plugin Order
+// ======================================================================
 /**
  * Canonical ordering for first-party plugin names.
  * Plugins are sorted by their position in this array.
@@ -75,9 +73,72 @@ function sortPluginEntries<T extends Record<string, unknown>>(
   });
 }
 
-// =============================================================================
-// Hook
-// =============================================================================
+// ======================================================================// Hook
+// ======================================================================
+// Plugin Validation (dev mode only)
+// ======================================================================
+/** Known transform method names on the TablePlugin interface. */
+const VALID_TRANSFORM_KEYS = new Set([
+  'transformColumns',
+  'transformTable',
+  'transformHeaderRow',
+  'transformHeaderCell',
+  'transformBodyRow',
+  'transformBodyCell',
+  'transformTableContext',
+]);
+
+/**
+ * Validate a plugin object in development mode.
+ * Warns about common mistakes like misspelled transform names,
+ * non-function values where functions are expected, or
+ * completely empty plugins that add pipeline overhead for nothing.
+ */
+function validatePlugin<T extends Record<string, unknown>>(
+  name: string,
+  plugin: TablePlugin<T>,
+): void {
+  if (process.env.NODE_ENV === 'production') return;
+
+  const keys = Object.keys(plugin);
+
+  // Warn about unknown keys (likely misspelled transform names)
+  for (const key of keys) {
+    if (!VALID_TRANSFORM_KEYS.has(key)) {
+      console.warn(
+        `[XDSTable] Plugin "${name}" has unknown key "${key}". ` +
+          `Valid keys: ${[...VALID_TRANSFORM_KEYS].join(', ')}. ` +
+          `This key will be ignored.`,
+      );
+    }
+  }
+
+  // Warn about non-function values on known transform keys
+  for (const key of keys) {
+    if (VALID_TRANSFORM_KEYS.has(key)) {
+      const value = (plugin as Record<string, unknown>)[key];
+      if (value != null && typeof value !== 'function') {
+        console.warn(
+          `[XDSTable] Plugin "${name}" has non-function value for "${key}" ` +
+            `(got ${typeof value}). Transform will be skipped.`,
+        );
+      }
+    }
+  }
+
+  // Warn about empty plugins that add pipeline overhead
+  const hasTransforms = keys.some(
+    key =>
+      VALID_TRANSFORM_KEYS.has(key) &&
+      typeof (plugin as Record<string, unknown>)[key] === 'function',
+  );
+  if (!hasTransforms) {
+    console.warn(
+      `[XDSTable] Plugin "${name}" has no transform methods. ` +
+        `It will be included in the pipeline but won't do anything.`,
+    );
+  }
+}
 
 /**
  * Converts a named plugin record (`Record<string, TablePlugin>`) to a stable
@@ -134,6 +195,13 @@ export function useXDSBaseTablePlugins<T extends Record<string, unknown>>(
     : [];
 
   const result = [...basePlugins, ...sortedUserPlugins];
+
+  // Validate plugins in dev mode
+  if (process.env.NODE_ENV !== 'production' && userPlugins) {
+    for (const [name, plugin] of Object.entries(userPlugins)) {
+      validatePlugin(name, plugin);
+    }
+  }
 
   prevRef.current = {basePlugins, userPlugins, result};
   return result;
