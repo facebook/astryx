@@ -49,7 +49,7 @@ const styles = stylex.create({
     height: spacingVars['--spacing-2'],
     paddingInline: 0,
     paddingBlock: 0,
-    borderRadius: '50%',
+    borderRadius: radiusVars['--radius-full'],
   },
   visuallyHidden: {
     position: 'absolute',

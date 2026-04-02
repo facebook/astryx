@@ -20,6 +20,7 @@ import {
   colorVars,
   typographyVars,
   fontWeightVars,
+  radiusVars,
 } from '../theme/tokens.stylex';
 import {XDSAvatarSizeContext} from './XDSAvatarSizeContext';
 import {xdsClassName, mergeProps} from '../utils';
@@ -113,7 +114,7 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: '50%',
+    borderRadius: radiusVars['--radius-full'],
     overflow: 'hidden',
     userSelect: 'none',
   },
