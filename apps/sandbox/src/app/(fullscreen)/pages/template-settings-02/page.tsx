@@ -29,6 +29,10 @@ const styles = stylex.create({
   pageBg: {
     backgroundColor: colorVars['--color-background-surface'],
   },
+  flatCard: {
+    backgroundColor: colorVars['--color-background-body'],
+    borderWidth: 0,
+  },
 });
 
 const NAV_ITEMS = [
@@ -320,10 +324,7 @@ export default function SettingsSecurityTemplate() {
 
                   <XDSCard
                     padding={4}
-                    xstyle={{
-                      backgroundColor: colorVars['--color-background-body'],
-                      borderWidth: 0,
-                    }}>
+                    xstyle={styles.flatCard}>
                     <div
                       style={{
                         display: 'flex',
@@ -505,10 +506,7 @@ export default function SettingsSecurityTemplate() {
                   </XDSCard>
                   <XDSCard
                     padding={4}
-                    xstyle={{
-                      backgroundColor: colorVars['--color-background-body'],
-                      borderWidth: 0,
-                    }}>
+                    xstyle={styles.flatCard}>
                     <div
                       style={{
                         display: 'flex',
