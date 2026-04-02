@@ -2,7 +2,12 @@
 
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSVStack} from '@xds/core/Layout';
+import {
+  XDSVStack,
+  XDSLayout,
+  XDSLayoutContent,
+  XDSLayoutPanel,
+} from '@xds/core/Layout';
 import {XDSList, XDSListItem} from '@xds/core/List';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSLink} from '@xds/core/Link';
@@ -119,30 +124,11 @@ export default function SettingsSecurityTemplate() {
   const [aiFeatures, setAiFeatures] = useState(true);
 
   return (
-    <div
-      {...stylex.props(styles.pageBg)}
-      style={{minHeight: '100svh', display: 'flex', flexDirection: 'column'}}>
-      {/* Body — constrained */}
-      <div
-        style={{
-          display: 'flex',
-          flex: 1,
-          maxWidth: 1000,
-          margin: '0 auto',
-          width: '100%',
-        }}>
-        {/* Sidebar */}
-        <nav
-          style={{
-            width: 280,
-            paddingTop: 16,
-            paddingLeft: 12,
-            paddingRight: 12,
-            paddingBottom: 16,
-            borderRight: '1px solid var(--xds-color-border-primary, #e5e5e5)',
-            flexShrink: 0,
-            overflowY: 'auto',
-          }}>
+    <XDSLayout
+      height="fill"
+      xstyle={styles.pageBg}
+      start={
+        <XDSLayoutPanel width={280} hasDivider padding={3}>
           <XDSVStack gap={4}>
             <div style={{paddingLeft: 16, paddingRight: 16}}>
               <XDSHeading level={2}>Account settings</XDSHeading>
@@ -169,18 +155,10 @@ export default function SettingsSecurityTemplate() {
               />
             </XDSList>
           </XDSVStack>
-        </nav>
-
-        {/* Content */}
-        <div
-          style={{
-            flex: 1,
-            paddingTop: 16,
-            paddingLeft: 32,
-            paddingRight: 32,
-            paddingBottom: 16,
-            overflowY: 'auto',
-          }}>
+        </XDSLayoutPanel>
+      }
+      content={
+        <XDSLayoutContent padding={6}>
           {activeNav === 'Login & security' && (
             <XDSVStack gap={6}>
               <XDSHeading level={2}>Login &amp; security</XDSHeading>
@@ -549,8 +527,8 @@ export default function SettingsSecurityTemplate() {
               </XDSVStack>
             </XDSVStack>
           )}
-        </div>
-      </div>
-    </div>
+        </XDSLayoutContent>
+      }
+    />
   );
 }

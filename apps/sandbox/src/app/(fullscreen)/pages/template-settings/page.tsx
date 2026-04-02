@@ -2,7 +2,13 @@
 
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSVStack} from '@xds/core/Layout';
+import {
+  XDSVStack,
+  XDSLayout,
+  XDSLayoutHeader,
+  XDSLayoutContent,
+  XDSLayoutPanel,
+} from '@xds/core/Layout';
 import {XDSList, XDSListItem} from '@xds/core/List';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSTextInput} from '@xds/core/TextInput';
@@ -70,61 +76,38 @@ export default function SettingsTemplate() {
   );
 
   return (
-    <div
-      style={{minHeight: '100svh', display: 'flex', flexDirection: 'column'}}>
-      {/* Header — full width with edge-to-edge divider */}
-      <div
-        style={{
-          borderBottom: '1px solid var(--xds-color-border-primary, #e5e5e5)',
-          flexShrink: 0,
-        }}>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '16px 16px',
-            maxWidth: 1000,
-            margin: '0 auto',
-          }}>
-          <XDSHeading level={1}>Settings</XDSHeading>
-          <div style={{width: 344}}>
-            <XDSTypeahead
-              label="Search"
-              isLabelHidden
-              placeholder="Search settings..."
-              searchSource={settingsSearchSource}
-              value={searchValue}
-              onChange={setSearchValue}
-              hasEntriesOnFocus
-              startIcon={MagnifyingGlassIcon}
-            />
+    <XDSLayout
+      height="fill"
+      header={
+        <XDSLayoutHeader hasDivider padding={0}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '16px 16px',
+              maxWidth: 1000,
+              margin: '0 auto',
+              width: '100%',
+            }}>
+            <XDSHeading level={1}>Settings</XDSHeading>
+            <div style={{width: 344}}>
+              <XDSTypeahead
+                label="Search"
+                isLabelHidden
+                placeholder="Search settings..."
+                searchSource={settingsSearchSource}
+                value={searchValue}
+                onChange={setSearchValue}
+                hasEntriesOnFocus
+                startIcon={MagnifyingGlassIcon}
+              />
+            </div>
           </div>
-        </div>
-      </div>
-
-      {/* Body — constrained */}
-      <div
-        style={{
-          display: 'flex',
-          flex: 1,
-          overflow: 'hidden',
-          maxWidth: 1000,
-          margin: '0 auto',
-          width: '100%',
-        }}>
-        {/* Sidebar */}
-        <nav
-          style={{
-            width: 240,
-            paddingTop: 16,
-            paddingLeft: 12,
-            paddingRight: 12,
-            paddingBottom: 8,
-            borderRight: '1px solid var(--xds-color-border-primary, #e5e5e5)',
-            flexShrink: 0,
-            overflowY: 'auto',
-          }}>
+        </XDSLayoutHeader>
+      }
+      start={
+        <XDSLayoutPanel width={240} hasDivider padding={3}>
           <XDSList density="compact">
             {NAV_ITEMS.map(item => (
               <XDSListItem
@@ -135,10 +118,10 @@ export default function SettingsTemplate() {
               />
             ))}
           </XDSList>
-        </nav>
-
-        {/* Content */}
-        <div style={{flex: 1, padding: 16, maxWidth: 960, overflowY: 'auto'}}>
+        </XDSLayoutPanel>
+      }
+      content={
+        <XDSLayoutContent padding={4}>
           <XDSVStack gap={4}>
             {/* Basic information */}
             <div
@@ -273,8 +256,8 @@ export default function SettingsTemplate() {
               </div>
             </div>
           </XDSVStack>
-        </div>
-      </div>
-    </div>
+        </XDSLayoutContent>
+      }
+    />
   );
 }

@@ -3,10 +3,15 @@
 import {useState, useMemo} from 'react';
 import {XDSButton} from '@xds/core/Button';
 import {XDSList, XDSListItem} from '@xds/core/List';
-import {XDSHStack, XDSVStack} from '@xds/core/Layout';
+import {
+  XDSHStack,
+  XDSVStack,
+  XDSLayout,
+  XDSLayoutHeader,
+  XDSLayoutContent,
+} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSToolbar} from '@xds/core/Toolbar';
-import {XDSDivider} from '@xds/core';
 import {
   XDSSegmentedControl,
   XDSSegmentedControlItem,
@@ -610,16 +615,9 @@ const FONT =
 
 const inlineStyles = {
   page: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    height: '100vh',
-    width: '100vw',
-    overflow: 'hidden',
     userSelect: 'none' as const,
     fontFamily: FONT,
     backgroundColor: 'var(--xds-color-background-surface, #FFFFFF)',
-    position: 'fixed' as const,
-    inset: 0,
   },
   toolbar: {
     flexShrink: 0,
@@ -858,12 +856,15 @@ export default function FileExplorerPage() {
   }
 
   return (
-    <div style={inlineStyles.page}>
-      {/* Toolbar */}
-      <XDSToolbar
-        label="File Explorer"
-        padding={0}
-        style={inlineStyles.toolbar}
+    <XDSLayout
+      height="fill"
+      style={inlineStyles.page}
+      header={
+        <XDSLayoutHeader hasDivider padding={0}>
+          <XDSToolbar
+            label="File Explorer"
+            padding={0}
+            style={inlineStyles.toolbar}
         startContent={
           <XDSHStack gap={1} vAlign="center">
             <XDSButton
@@ -959,12 +960,13 @@ export default function FileExplorerPage() {
             />
           </XDSHStack>
         }
-      />
-
-      <XDSDivider />
-
-      {/* Columns */}
-      <XDSHStack style={inlineStyles.body}>
+          />
+        </XDSLayoutHeader>
+      }
+      content={
+        <XDSLayoutContent padding={0}>
+          {/* Columns */}
+          <XDSHStack style={inlineStyles.body}>
         {columns.map((col, colIndex) => {
           const isLast = colIndex === columns.length - 1;
           return (
@@ -1052,7 +1054,9 @@ export default function FileExplorerPage() {
             </XDSVStack>
           </div>
         )}
-      </XDSHStack>
-    </div>
+          </XDSHStack>
+        </XDSLayoutContent>
+      }
+    />
   );
 }

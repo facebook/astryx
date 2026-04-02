@@ -2,13 +2,14 @@
 
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSVStack} from '@xds/core/Layout';
+import {XDSVStack, XDSLayout, XDSLayoutContent} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSButton} from '@xds/core/Button';
 import {XDSCard} from '@xds/core/Card';
 import {XDSLink} from '@xds/core/Link';
 import {XDSDivider} from '@xds/core/Divider';
+import {XDSCenter} from '@xds/core/Center';
 import {colorVars, spacingVars} from '@xds/core/theme/tokens.stylex';
 
 const LogoIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -92,137 +93,132 @@ export default function LoginSimple() {
   const [password, setPassword] = useState('');
 
   return (
-    <div
-      {...stylex.props(styles.pageBg)}
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '100svh',
-        height: '100%',
+    <XDSLayout
+      height="fill"
+      xstyle={styles.pageBg}
+      content={
+        <XDSLayoutContent padding={0}>
+          <XDSCenter width="100%" height="100%">
+            <XDSVStack gap={5} hAlign="center" style={{padding: 24}}>
+              {/* Logo — outside card */}
+              <XDSVStack gap={2} hAlign="center">
+                <LogoIcon />
+                <XDSText type="body" weight="bold" size="lg">
+                  Product Inc.
+                </XDSText>
+              </XDSVStack>
 
-        padding: 24,
-        position: 'fixed',
-        inset: 0,
-        overflow: 'auto',
-        gap: 24,
-      }}>
-      {/* Logo — outside card */}
-      <XDSVStack gap={2} hAlign="center">
-        <LogoIcon />
-        <XDSText type="body" weight="bold" size="lg">
-          Product Inc.
-        </XDSText>
-      </XDSVStack>
+              {/* Card */}
+              <XDSCard padding={6} width={400}>
+                <XDSVStack gap={5}>
+                  {/* Header */}
+                  <div {...stylex.props(styles.centered)}>
+                    <XDSVStack gap={1}>
+                      <XDSHeading level={2}>Welcome back</XDSHeading>
+                      <XDSText type="body" color="secondary" size="sm">
+                        Login with your Apple or Google account
+                      </XDSText>
+                    </XDSVStack>
+                  </div>
 
-      {/* Card */}
-      <XDSCard padding={6} width={400}>
-        <XDSVStack gap={5}>
-          {/* Header */}
-          <div {...stylex.props(styles.centered)}>
-            <XDSVStack gap={1}>
-              <XDSHeading level={2}>Welcome back</XDSHeading>
-              <XDSText type="body" color="secondary" size="sm">
-                Login with your Apple or Google account
-              </XDSText>
-            </XDSVStack>
-          </div>
+                  {/* Social buttons */}
+                  <XDSVStack gap={3}>
+                    <XDSButton
+                      label="Login with Apple"
+                      variant="secondary"
+                      icon={<AppleIcon />}
+                      xstyle={styles.fullWidth}>
+                      Login with Apple
+                    </XDSButton>
+                    <XDSButton
+                      label="Login with Google"
+                      variant="secondary"
+                      icon={<GoogleIcon />}
+                      xstyle={styles.fullWidth}>
+                      Login with Google
+                    </XDSButton>
+                  </XDSVStack>
 
-          {/* Social buttons */}
-          <XDSVStack gap={3}>
-            <XDSButton
-              label="Login with Apple"
-              variant="secondary"
-              icon={<AppleIcon />}
-              xstyle={styles.fullWidth}>
-              Login with Apple
-            </XDSButton>
-            <XDSButton
-              label="Login with Google"
-              variant="secondary"
-              icon={<GoogleIcon />}
-              xstyle={styles.fullWidth}>
-              Login with Google
-            </XDSButton>
-          </XDSVStack>
+                  {/* Divider */}
+                  <div {...stylex.props(styles.dividerRow)}>
+                    <div {...stylex.props(styles.dividerLine)}>
+                      <XDSDivider />
+                    </div>
+                    <XDSText type="supporting" color="secondary">
+                      Or continue with
+                    </XDSText>
+                    <div {...stylex.props(styles.dividerLine)}>
+                      <XDSDivider />
+                    </div>
+                  </div>
 
-          {/* Divider */}
-          <div {...stylex.props(styles.dividerRow)}>
-            <div {...stylex.props(styles.dividerLine)}>
-              <XDSDivider />
-            </div>
-            <XDSText type="supporting" color="secondary">
-              Or continue with
-            </XDSText>
-            <div {...stylex.props(styles.dividerLine)}>
-              <XDSDivider />
-            </div>
-          </div>
+                  {/* Form fields */}
+                  <XDSVStack gap={4}>
+                    <XDSTextInput
+                      label="Email"
+                      type="email"
+                      placeholder="name@company.com"
+                      value={email}
+                      onChange={setEmail}
+                    />
+                    <XDSVStack gap={0}>
+                      <div {...stylex.props(styles.passwordRow)}>
+                        <XDSText type="label">Password</XDSText>
+                        <XDSLink
+                          label="Forgot your password?"
+                          href="#"
+                          size="sm"
+                          color="secondary">
+                          Forgot password?
+                        </XDSLink>
+                      </div>
+                      <XDSTextInput
+                        label="Password"
+                        isLabelHidden
+                        type="password"
+                        value={password}
+                        onChange={setPassword}
+                      />
+                    </XDSVStack>
+                  </XDSVStack>
 
-          {/* Form fields */}
-          <XDSVStack gap={4}>
-            <XDSTextInput
-              label="Email"
-              type="email"
-              placeholder="name@company.com"
-              value={email}
-              onChange={setEmail}
-            />
-            <XDSVStack gap={0}>
-              <div {...stylex.props(styles.passwordRow)}>
-                <XDSText type="label">Password</XDSText>
-                <XDSLink
-                  label="Forgot your password?"
-                  href="#"
-                  size="sm"
-                  color="secondary">
-                  Forgot password?
-                </XDSLink>
+                  {/* Login button */}
+                  <XDSButton
+                    label="Login"
+                    variant="primary"
+                    xstyle={styles.fullWidth}
+                  />
+
+                  {/* Sign up link */}
+                  <div {...stylex.props(styles.centered)}>
+                    <XDSText type="supporting" color="secondary">
+                      Don&apos;t have an account?{' '}
+                      <XDSLink label="Sign up" href="#" type="supporting">
+                        Sign up
+                      </XDSLink>
+                    </XDSText>
+                  </div>
+                </XDSVStack>
+              </XDSCard>
+
+              {/* Terms — outside card */}
+              <div style={{textAlign: 'center', maxWidth: 400}}>
+                <XDSText type="supporting" color="secondary">
+                  By clicking continue, you agree to our{' '}
+                  <XDSLink label="Terms of Service" href="#" type="supporting">
+                    Terms of Service
+                  </XDSLink>{' '}
+                  and{' '}
+                  <XDSLink label="Privacy Policy" href="#" type="supporting">
+                    Privacy Policy
+                  </XDSLink>
+                  .
+                </XDSText>
               </div>
-              <XDSTextInput
-                label="Password"
-                isLabelHidden
-                type="password"
-                value={password}
-                onChange={setPassword}
-              />
             </XDSVStack>
-          </XDSVStack>
-
-          {/* Login button */}
-          <XDSButton
-            label="Login"
-            variant="primary"
-            xstyle={styles.fullWidth}
-          />
-
-          {/* Sign up link */}
-          <div {...stylex.props(styles.centered)}>
-            <XDSText type="supporting" color="secondary">
-              Don&apos;t have an account?{' '}
-              <XDSLink label="Sign up" href="#" type="supporting">
-                Sign up
-              </XDSLink>
-            </XDSText>
-          </div>
-        </XDSVStack>
-      </XDSCard>
-
-      {/* Terms — outside card */}
-      <div style={{textAlign: 'center', maxWidth: 400}}>
-        <XDSText type="supporting" color="secondary">
-          By clicking continue, you agree to our{' '}
-          <XDSLink label="Terms of Service" href="#" type="supporting">
-            Terms of Service
-          </XDSLink>{' '}
-          and{' '}
-          <XDSLink label="Privacy Policy" href="#" type="supporting">
-            Privacy Policy
-          </XDSLink>
-          .
-        </XDSText>
-      </div>
-    </div>
+          </XDSCenter>
+        </XDSLayoutContent>
+      }
+    />
   );
 }
