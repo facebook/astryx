@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSKbd.tsx
  * @input Uses React, StyleX, theme tokens
@@ -69,6 +71,34 @@ const KEY_DISPLAY: Record<string, string> = {
   right: '\u2192',
 };
 
+/**
+ * Resolves a key name to its display string. Handles the platform-aware
+ * `mod` key (⌘ on macOS, Ctrl on other platforms) and falls back to
+ * KEY_DISPLAY or uppercased key name.
+ */
+function getKeyDisplay(key: string, isMac: boolean): string {
+  if (key === 'mod') {
+    return isMac ? '\u2318' : 'Ctrl';
+  }
+  return KEY_DISPLAY[key] ?? key.toUpperCase();
+}
+
+/**
+ * Detects whether the current platform is macOS/iOS.
+ * Prefers the User-Agent Client Hints API when available (modern Chrome/Edge),
+ * falls back to navigator.platform (deprecated but universally supported).
+ */
+function detectMac(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  // Prefer User-Agent Client Hints API (not deprecated)
+  const uaData = 'userAgentData' in navigator ? navigator.userAgentData : null;
+  if (uaData && typeof uaData === 'object' && 'platform' in uaData) {
+    return /mac/i.test((uaData as {platform: string}).platform ?? '');
+  }
+  // Fallback: navigator.platform (deprecated but still shipped everywhere)
+  return /Mac|iPhone|iPad|iPod/.test(navigator.platform ?? '');
+}
+
 export interface XDSKbdProps {
   /**
    * Keyboard shortcut string. Use "+" to separate keys.
@@ -126,21 +156,10 @@ export function XDSKbd({keys, xstyle, className, style}: XDSKbdProps) {
   const [isMac, setIsMac] = useState(false);
 
   useLayoutEffect(() => {
-    setIsMac(
-      /Mac|iPhone|iPad|iPod/.test(
-        navigator.platform ?? navigator.userAgent ?? '',
-      ),
-    );
+    setIsMac(detectMac());
   }, []);
 
   const parts = keys.split('+').map(key => key.trim().toLowerCase());
-
-  function getKeyDisplay(key: string): string {
-    if (key === 'mod') {
-      return isMac ? '\u2318' : 'Ctrl';
-    }
-    return KEY_DISPLAY[key] ?? key.toUpperCase();
-  }
 
   return (
     <span
@@ -153,7 +172,7 @@ export function XDSKbd({keys, xstyle, className, style}: XDSKbdProps) {
       aria-hidden="true">
       {parts.map((key, i) => (
         <kbd key={i} {...stylex.props(styles.kbd)}>
-          {getKeyDisplay(key)}
+          {getKeyDisplay(key, isMac)}
         </kbd>
       ))}
     </span>

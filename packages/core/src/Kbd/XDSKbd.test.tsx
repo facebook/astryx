@@ -4,13 +4,24 @@
  * @output Tests for XDSKbd component
  *
  * Note: Tests run in jsdom which reports a non-Mac platform,
- * so `mod` resolves to "Ctrl" rather than "⌘" after mount.
+ * so `mod` resolves to "Ctrl" rather than "\u2318" after the layout effect.
  */
 
-import {render, screen, act} from '@testing-library/react';
+import {render, screen} from '@testing-library/react';
 import {XDSKbd} from './XDSKbd';
 
 describe('XDSKbd', () => {
+  const originalPlatform = navigator.platform;
+
+  afterEach(() => {
+    // Restore platform after any test that spoofs it \u2014 ensures no
+    // test pollution even if an assertion fails mid-test.
+    Object.defineProperty(navigator, 'platform', {
+      value: originalPlatform,
+      configurable: true,
+    });
+  });
+
   it('renders a single key', () => {
     render(<XDSKbd keys="k" />);
     const kbd = screen.getByText('K');
@@ -25,38 +36,32 @@ describe('XDSKbd', () => {
   });
 
   it('renders mod as Ctrl on non-Mac platforms', () => {
-    // jsdom is a non-Mac environment, so mod → Ctrl
+    // jsdom is a non-Mac environment, so mod \u2192 Ctrl
     render(<XDSKbd keys="mod" />);
     expect(screen.getByText('Ctrl')).toBeInTheDocument();
   });
 
-  it('renders mod as ⌘ on Mac platforms', () => {
-    const originalPlatform = navigator.platform;
+  it('renders mod as \u2318 on Mac platforms', () => {
     Object.defineProperty(navigator, 'platform', {
       value: 'MacIntel',
       configurable: true,
     });
 
     render(<XDSKbd keys="mod" />);
-    expect(screen.getByText('\u2318')).toBeInTheDocument(); // ⌘
-
-    Object.defineProperty(navigator, 'platform', {
-      value: originalPlatform,
-      configurable: true,
-    });
+    expect(screen.getByText('\u2318')).toBeInTheDocument(); // \u2318
   });
 
   it('maps modifier keys to symbols', () => {
     render(<XDSKbd keys="ctrl+alt+shift+k" />);
-    expect(screen.getByText('\u2303')).toBeInTheDocument(); // ⌃
-    expect(screen.getByText('\u2325')).toBeInTheDocument(); // ⌥
-    expect(screen.getByText('\u21E7')).toBeInTheDocument(); // ⇧
+    expect(screen.getByText('\u2303')).toBeInTheDocument(); // \u2303
+    expect(screen.getByText('\u2325')).toBeInTheDocument(); // \u2325
+    expect(screen.getByText('\u21E7')).toBeInTheDocument(); // \u21E7
     expect(screen.getByText('K')).toBeInTheDocument();
   });
 
   it('maps special keys', () => {
     render(<XDSKbd keys="enter" />);
-    expect(screen.getByText('\u21B5')).toBeInTheDocument(); // ↵
+    expect(screen.getByText('\u21B5')).toBeInTheDocument(); // \u21B5
   });
 
   it('renders escape as text', () => {
@@ -86,29 +91,5 @@ describe('XDSKbd', () => {
     const {container} = render(<XDSKbd keys="k" />);
     const wrapper = container.firstChild as HTMLElement;
     expect(wrapper.className).toContain('xds-kbd');
-  });
-
-  it('SSR-safe: initial render shows Ctrl for mod (before effect)', () => {
-    // Spoof Mac platform to verify the initial (pre-effect) render is Ctrl
-    const originalPlatform = navigator.platform;
-    Object.defineProperty(navigator, 'platform', {
-      value: 'MacIntel',
-      configurable: true,
-    });
-
-    // Use React.createElement directly and renderToString would be ideal,
-    // but we can verify the effect-based approach by checking that
-    // useState(false) means the first synchronous render uses Ctrl.
-    // RTL's render() calls act() which flushes effects, so we get ⌘.
-    // The important thing: server would render Ctrl, client hydrates as Ctrl,
-    // then effect updates to ⌘. No mismatch.
-    render(<XDSKbd keys="mod" />);
-    // After effects flush, Mac shows ⌘
-    expect(screen.getByText('\u2318')).toBeInTheDocument();
-
-    Object.defineProperty(navigator, 'platform', {
-      value: originalPlatform,
-      configurable: true,
-    });
   });
 });
