@@ -284,6 +284,28 @@ describe('XDSMultiSelector', () => {
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
 
+  it('closes combobox on Tab and moves focus to next element', async () => {
+    const user = userEvent.setup();
+    render(
+      <>
+        <XDSMultiSelector
+          label="Fruit"
+          options={defaultOptions}
+          value={[]}
+          onChange={() => {}}
+        />
+        <button>Next</button>
+      </>,
+    );
+
+    const trigger = screen.getByRole('combobox');
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    await user.keyboard('{Tab}');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
   it('supports keyboard navigation with ArrowDown/ArrowUp', async () => {
     const user = userEvent.setup();
     render(

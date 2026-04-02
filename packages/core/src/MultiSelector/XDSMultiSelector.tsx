@@ -820,11 +820,12 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
           onKeyDown={e => {
-            // Let ArrowDown/Up/Escape propagate to parent handler
+            // Let ArrowDown/Up/Escape/Tab propagate to parent handler
             if (
               e.key === 'ArrowDown' ||
               e.key === 'ArrowUp' ||
-              e.key === 'Escape'
+              e.key === 'Escape' ||
+              e.key === 'Tab'
             ) {
               onKeyDown(e);
             }
@@ -868,7 +869,7 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
             isHighlighted && styles.itemHighlighted,
             item.disabled && styles.itemDisabled,
           )}>
-          <div aria-hidden="true" {...stylex.props(styles.checkboxDecorative)}>
+          <div inert {...stylex.props(styles.checkboxDecorative)}>
             <XDSCheckboxInput
               label=""
               isLabelHidden

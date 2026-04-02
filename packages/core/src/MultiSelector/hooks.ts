@@ -145,6 +145,13 @@ export function useMultiCombobox({
           }
           break;
 
+        case 'Tab':
+          // Close the combobox and let the browser move focus to the next element
+          if (isOpen) {
+            closeAndReset();
+          }
+          break;
+
         case 'Escape':
           if (isOpen) {
             e.preventDefault();
