@@ -99,11 +99,9 @@ xds/
 │
 ├── packages/
 │   ├── core/           # Core components (Button, Input, etc.)
-│   ├── foundations/    # Design tokens, typography, colors
-│   ├── patterns/       # Composed patterns (TablePage, FormWizard)
-│   ├── icons/          # Icon library
-│   ├── themes/         # Theme presets
-│   └── utils/          # Shared utilities
+│   ├── cli/            # CLI tooling (npx xds)
+│   ├── lab/            # Experimental components (not yet stable)
+│   └── themes/         # Theme presets (default, neutral, brutalist)
 │
 ├── internal/           # Internal tooling (not published)
 │   └── test-utils/     # Shared test helpers

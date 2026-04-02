@@ -68,7 +68,7 @@ function deriveSourceExports() {
   const sourceExports = {};
 
   for (const [key, value] of Object.entries(PKG.exports)) {
-    // Handle string exports (e.g., "./typography.css": "./src/typography.css")
+    // Handle string exports (e.g., "./reset.css": "./src/reset.css")
     if (typeof value === 'string') {
       if (value.startsWith('./src/')) {
         sourceExports[key] = value.replace('./src/', './');
