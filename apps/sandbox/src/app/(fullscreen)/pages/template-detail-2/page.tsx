@@ -487,10 +487,10 @@ function PageHeader({
               <XDSHStack gap={2} vAlign="center">
                 <XDSHeading level={1}>#1001</XDSHeading>
               </XDSHStack>
-              <XDSHStack gap={2} vAlign="center">
-                <XDSButton label="← 2/9 →" variant="ghost" size="sm" />
-                <XDSButton label="Restock" variant="secondary" size="sm" />
-                <XDSButton label="Edit" variant="secondary" size="sm" />
+              <XDSHStack gap={2} vAlign="start">
+                <XDSButton label="← 2/9 →" variant="ghost" />
+                <XDSButton label="Restock" variant="secondary" />
+                <XDSButton label="Edit" variant="secondary" />
               </XDSHStack>
             </XDSHStack>
 
@@ -554,11 +554,10 @@ function ItemsCard() {
             <XDSBadge variant="warning" label="Unfulfilled" />
           </XDSHStack>
           <XDSHStack gap={2}>
-            <XDSButton label="Fulfill item" variant="ghost" size="sm" />
+            <XDSButton label="Fulfill item" variant="ghost" />
             <XDSButton
               label="Create shipping label"
               variant="secondary"
-              size="sm"
             />
           </XDSHStack>
         </XDSHStack>
@@ -617,8 +616,8 @@ function InvoiceCard() {
             <XDSBadge variant="success" label="Paid" />
           </XDSHStack>
           <XDSHStack gap={2}>
-            <XDSButton label="Refund" variant="ghost" size="sm" />
-            <XDSButton label="Send Invoice" variant="secondary" size="sm" />
+            <XDSButton label="Refund" variant="ghost" />
+            <XDSButton label="Send Invoice" variant="secondary" />
           </XDSHStack>
         </XDSHStack>
 
@@ -681,7 +680,6 @@ function TimelineSection() {
           <XDSButton
             label="Filters"
             variant="ghost"
-            size="sm"
             icon={<FilterIcon style={{width: 14, height: 14}} />}
           />
         </XDSHStack>
@@ -805,7 +803,7 @@ function RightPanel() {
                     There is a low chance that you will receive a chargeback on
                     this order.
                   </XDSText>
-                  <XDSButton label="Learn more" variant="secondary" size="sm" />
+                  <XDSButton label="Learn more" variant="secondary" />
                 </XDSVStack>
               </XDSSection>
             </XDSCard>
