@@ -555,9 +555,9 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
     );
   }, [selectableItems, searchQuery]);
 
-  // Sorted items for keyboard navigation — matches the visual render order.
-  // Selected-at-open items are placed first so the highlight index and the
-  // toggle target always refer to the same item the user sees.
+  // Single source of truth for item order. Both the hook (keyboard navigation)
+  // and renderOptions (DOM rendering) consume this list — no independent sorting.
+  // Selected-at-open items are placed first within each group/section.
   const sortedItems = useMemo(() => {
     const selectedSet = selectedAtOpenRef.current ?? new Set(optimisticValue);
     if (searchQuery) {
@@ -902,72 +902,47 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
     ],
   );
 
-  // Render all options (handling sections/dividers and search filtering)
+  // Render all options. Uses sortedItems as the single source of truth for
+  // item order — no independent sorting here. Structural elements (dividers,
+  // section headers) come from the original options prop.
   const renderOptions = useCallback(() => {
-    // Use the open-time snapshot for sort partitioning (stable during interaction).
-    // Falls back to live value when dropdown isn't open yet.
-    const selectedSet = selectedAtOpenRef.current ?? new Set(optimisticValue);
-
     if (searchQuery) {
-      // Sort filtered: selected-at-open first, then unselected
-      const selected = filteredItems.filter(item =>
-        selectedSet.has(item.value),
-      );
-      const unselected = filteredItems.filter(
-        item => !selectedSet.has(item.value),
-      );
-      const sorted = [...selected, ...unselected];
-
-      if (sorted.length === 0) {
+      // In search mode, sortedItems is already filtered and sorted
+      if (sortedItems.length === 0) {
         return <div {...stylex.props(styles.emptyState)}>No results found</div>;
       }
-      return sorted.map(item => renderItem(item));
+      return sortedItems.map(item => renderItem(item));
     }
 
-    // Normal rendering with selected-first sorting (using open-time snapshot)
+    // Non-search: consume items from sortedItems in order, interleaving
+    // structural elements (dividers, section headers) from the options prop.
+    // sortedItems was built by the same iteration pattern over options, so
+    // the cursor stays in sync with the structural boundaries.
+    let cursor = 0;
     const elements: ReactNode[] = [];
-    let pendingFlatItems: Array<{
-      item: XDSMultiSelectorOptionData;
-    }> = [];
+    let pendingCount = 0;
 
-    const flushFlatItems = () => {
-      if (pendingFlatItems.length === 0) return;
-      const selected = pendingFlatItems.filter(({item}) =>
-        selectedSet.has(item.value),
-      );
-      const unselected = pendingFlatItems.filter(
-        ({item}) => !selectedSet.has(item.value),
-      );
-      const sorted = [...selected, ...unselected];
-      for (const {item} of sorted) {
-        elements.push(renderItem(item));
+    const flushPending = () => {
+      for (let j = 0; j < pendingCount; j++) {
+        elements.push(renderItem(sortedItems[cursor++]));
       }
-      pendingFlatItems = [];
+      pendingCount = 0;
     };
 
     for (let i = 0; i < options.length; i++) {
       const option = options[i];
 
       if (isDivider(option)) {
-        flushFlatItems();
+        flushPending();
         elements.push(
           <XDSDivider key={`divider-${i}`} xstyle={styles.divider} />,
         );
       } else if (isSection(option)) {
-        flushFlatItems();
-        // Sort within section: selected-at-open first
-        const sectionOptions = option.options.map(opt => normalizeOption(opt));
-        const selectedInSection = sectionOptions.filter(item =>
-          selectedSet.has(item.value),
-        );
-        const unselectedInSection = sectionOptions.filter(
-          item => !selectedSet.has(item.value),
-        );
-        const sortedSection = [...selectedInSection, ...unselectedInSection];
-
+        flushPending();
+        const count = option.options.length;
         const sectionItems: ReactNode[] = [];
-        for (const item of sortedSection) {
-          sectionItems.push(renderItem(item));
+        for (let j = 0; j < count; j++) {
+          sectionItems.push(renderItem(sortedItems[cursor++]));
         }
         if (option.title) {
           elements.push(
@@ -984,13 +959,13 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
           </div>,
         );
       } else if (isOptionData(option)) {
-        pendingFlatItems.push({item: normalizeOption(option)});
+        pendingCount++;
       }
     }
-    flushFlatItems();
+    flushPending();
 
     return elements;
-  }, [options, renderItem, filteredItems, searchQuery, optimisticValue]);
+  }, [options, renderItem, sortedItems, searchQuery]);
 
   return (
     <XDSField
