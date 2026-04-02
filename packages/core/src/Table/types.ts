@@ -239,6 +239,8 @@ export interface TablePlugin<
 
 /** Props for row components used in the components prop */
 export interface TableRowComponentProps extends HTMLAttributes<HTMLTableRowElement> {
+  /** Ref forwarded to the root `<tr>` element */
+  ref?: Ref<HTMLTableRowElement>;
   children: ReactNode;
   xstyle?: StyleXStyles[];
 }
