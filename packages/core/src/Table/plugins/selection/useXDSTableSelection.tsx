@@ -273,17 +273,14 @@ const selectedBgColor = colorVars['--color-accent-muted'];
 const selectionColumnStyles = stylex.create({
   cell: {
     textAlign: 'center',
-    // Override density paddingInline so the column width is consistent
-    // across compact/balanced/spacious. Without this, spacious padding
-    // (16px × 2) would overflow the fixed column width.
-    paddingInline: spacingVars['--spacing-2'],
+    paddingInline: 0,
   },
 });
 
 /** Selection column key — prefixed to avoid collisions with user columns. */
 const SELECTION_COLUMN_KEY = '__xds_selection';
 
-/** Fixed width for the selection column (20px checkbox + 8px × 2 padding). */
+/** Fixed width for the selection column. Content is centered with no horizontal padding. */
 const SELECTION_COLUMN_WIDTH = pixel(36);
 
 // =============================================================================
