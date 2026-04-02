@@ -7,7 +7,6 @@ import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSCenter} from '@xds/core/Center';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
-import {XDSNumberInput} from '@xds/core/NumberInput';
 import {
   XDSSegmentedControl,
   XDSSegmentedControlItem,
@@ -64,6 +63,31 @@ const HeartIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
+const MinusIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    {...props}>
+    <line x1="5" y1="12" x2="19" y2="12" />
+  </svg>
+);
+
+const PlusIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    {...props}>
+    <line x1="12" y1="5" x2="12" y2="19" />
+    <line x1="5" y1="12" x2="19" y2="12" />
+  </svg>
+);
+
 // ─── Star Rating ─────────────────────────────────────────────────────────────
 function StarRating({rating, count}: {rating: number; count: number}) {
   const full = Math.floor(rating);
@@ -72,13 +96,17 @@ function StarRating({rating, count}: {rating: number; count: number}) {
   const starSize = 16;
 
   return (
-    <div style={{display: 'flex', alignItems: 'center', gap: 6}}>
+    <div style={{display: 'flex', alignItems: 'center', gap: 4}}>
       {Array.from({length: full}, (_, i) => (
         <svg
           key={`full-${i}`}
           viewBox="0 0 24 24"
           fill="currentColor"
-          style={{width: starSize, height: starSize, color: '#f59e0b'}}>
+          style={{
+            width: starSize,
+            height: starSize,
+            color: 'var(--color-accent)',
+          }}>
           <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
         </svg>
       ))}
@@ -94,13 +122,13 @@ function StarRating({rating, count}: {rating: number; count: number}) {
           </defs>
           <path
             d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
-            fill="#f59e0b"
+            fill="var(--color-accent)"
             clipPath="url(#star-clip)"
           />
           <path
             d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
             fill="none"
-            stroke="#f59e0b"
+            stroke="var(--color-accent)"
             strokeWidth={1.5}
           />
         </svg>
@@ -110,7 +138,7 @@ function StarRating({rating, count}: {rating: number; count: number}) {
           key={`empty-${i}`}
           viewBox="0 0 24 24"
           fill="none"
-          stroke="#f59e0b"
+          stroke="var(--color-accent)"
           strokeWidth={1.5}
           style={{width: starSize, height: starSize}}>
           <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
@@ -124,13 +152,15 @@ function StarRating({rating, count}: {rating: number; count: number}) {
 }
 
 // ─── Image URLs ─────────────────────────────────────────────────────────────
+// Main hero: B&W living room (unsplash pqyu59ZcbLU)
+// Thumbnails: B&W interiors of similar tone
 const IMAGES = [
-  'https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?w=800&q=80',
-  'https://images.unsplash.com/photo-1540574163026-643ea20ade25?w=400&q=80',
-  'https://images.unsplash.com/photo-1524484485831-a92ffc0de03f?w=400&q=80',
+  'https://images.unsplash.com/photo-1567016432779-094069958ea5?w=800&q=80',
+  'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400&q=80',
   'https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?w=400&q=80',
-  'https://images.unsplash.com/photo-1416339134316-0e91dc9ded92?w=400&q=80',
-  'https://images.unsplash.com/photo-1505691938895-1758d7feb511?w=400&q=80',
+  'https://images.unsplash.com/photo-1560448204-603b3fc33ddc?w=400&q=80',
+  'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=400&q=80',
+  'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&q=80',
   'https://images.unsplash.com/photo-1489171078254-c3365d6e359f?w=400&q=80',
 ];
 
@@ -163,13 +193,6 @@ const FINISHES = [
 ];
 
 const fmt = (n: number) => `$${n.toFixed(2)}`;
-
-// ─── Placeholder image style ────────────────────────────────────────────────
-const placeholderStyle: React.CSSProperties = {
-  backgroundColor: '#e8e8e8',
-  borderRadius: 'var(--radius-element, 8px)',
-  border: '1px solid #d4d4d4',
-};
 
 // ─── TopNav ─────────────────────────────────────────────────────────────────
 function StoreTopNav() {
@@ -291,7 +314,10 @@ function ImageGallery({
 function ProductInfo() {
   const [color, setColor] = useState('matte-black');
   const [finish, setFinish] = useState('linen');
-  const [quantity, setQuantity] = useState<number | null>(1);
+  const [quantity, setQuantity] = useState(1);
+
+  const decrement = () => setQuantity(q => Math.max(1, q - 1));
+  const increment = () => setQuantity(q => Math.min(10, q + 1));
 
   return (
     <XDSVStack gap={5}>
@@ -314,7 +340,7 @@ function ProductInfo() {
           <XDSText type="body" color="secondary" hasStrikethrough>
             {fmt(PRODUCT.originalPrice)}
           </XDSText>
-          <XDSBadge variant="success" label="In stock" />
+          <XDSBadge variant="error" label="Sale" />
         </XDSHStack>
       </XDSVStack>
 
@@ -354,40 +380,73 @@ function ProductInfo() {
       </XDSVStack>
 
       {/* Quantity */}
-      <XDSNumberInput
-        label="Quantity"
-        value={quantity}
-        onChange={setQuantity}
-        min={1}
-        max={10}
-        isIntegerOnly
-      />
+      <XDSVStack gap={1}>
+        <XDSText type="label">Quantity</XDSText>
+        <XDSHStack gap={1} vAlign="center">
+          <XDSButton
+            label="Decrease quantity"
+            variant="ghost"
+            icon={<MinusIcon style={{width: 16, height: 16}} />}
+            onClickAction={decrement}
+            isDisabled={quantity <= 1}
+          />
+          <input
+            type="number"
+            value={quantity}
+            min={1}
+            max={10}
+            readOnly
+            aria-label="Quantity"
+            style={{
+              width: 100,
+              textAlign: 'center',
+              border: '1px solid var(--color-divider-emphasized)',
+              borderRadius: 'var(--radius-element, 8px)',
+              padding: '6px 8px',
+              fontSize: 'var(--text-body-size, 14px)',
+              color: 'var(--color-text-primary)',
+              backgroundColor: 'var(--color-background-surface)',
+              outline: 'none',
+              MozAppearance: 'textfield',
+            }}
+          />
+          <XDSButton
+            label="Increase quantity"
+            variant="ghost"
+            icon={<PlusIcon style={{width: 16, height: 16}} />}
+            onClickAction={increment}
+            isDisabled={quantity >= 10}
+          />
+        </XDSHStack>
+      </XDSVStack>
 
-      {/* Add to Cart */}
-      <XDSButton
-        label="Add to Cart"
-        variant="primary"
-        size="lg"
-        style={{display: 'flex', width: '100%'}}>
-        Add to Cart
-      </XDSButton>
-
-      {/* Buy it now + Wishlist */}
-      <XDSHStack gap={2}>
+      {/* Add to Cart + Buy it now (8px gap between them) */}
+      <XDSVStack gap={2}>
         <XDSButton
-          label="Buy it now"
-          variant="secondary"
+          label="Add to Cart"
+          variant="primary"
           size="lg"
-          style={{display: 'flex', flex: 1}}>
-          Buy it now
+          style={{display: 'flex', width: '100%'}}>
+          Add to Cart
         </XDSButton>
-        <XDSButton
-          label="Add to wishlist"
-          variant="ghost"
-          size="lg"
-          icon={<HeartIcon style={{width: 16, height: 16}} />}
-        />
-      </XDSHStack>
+
+        {/* Buy it now + Wishlist */}
+        <XDSHStack gap={2}>
+          <XDSButton
+            label="Buy it now"
+            variant="secondary"
+            size="lg"
+            style={{display: 'flex', flex: 1}}>
+            Buy it now
+          </XDSButton>
+          <XDSButton
+            label="Add to wishlist"
+            variant="ghost"
+            size="lg"
+            icon={<HeartIcon style={{width: 16, height: 16}} />}
+          />
+        </XDSHStack>
+      </XDSVStack>
 
       {/* Description */}
       <XDSText type="body">{PRODUCT.description}</XDSText>
