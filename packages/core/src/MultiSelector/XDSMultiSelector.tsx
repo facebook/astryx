@@ -524,8 +524,11 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
   const [searchQuery, setSearchQuery] = useState('');
 
   // Snapshot of which values were selected when the dropdown opened.
-  // Used for sort partitioning so items don't jump during interaction.
-  const selectedAtOpenRef = useRef<Set<string> | null>(null);
+  // Stored as state (not a ref) so sortedItems recomputes exactly once on open,
+  // then stays frozen until the menu closes.
+  const [selectedAtOpen, setSelectedAtOpen] = useState<Set<string> | null>(
+    null,
+  );
 
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
@@ -559,7 +562,7 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
   // and renderOptions (DOM rendering) consume this list — no independent sorting.
   // Selected-at-open items are placed first within each group/section.
   const sortedItems = useMemo(() => {
-    const selectedSet = selectedAtOpenRef.current ?? new Set(optimisticValue);
+    const selectedSet = selectedAtOpen ?? new Set<string>();
     if (searchQuery) {
       const selected = filteredItems.filter(item =>
         selectedSet.has(item.value),
@@ -614,7 +617,7 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
     filteredItems,
     searchQuery,
     options,
-    optimisticValue,
+    selectedAtOpen,
     hasSelectAll,
     selectAllLabel,
   ]);
@@ -622,7 +625,7 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
   // Layer for dropdown positioning
   const handleLayerHide = useCallback(() => {
     setSearchQuery('');
-    selectedAtOpenRef.current = null;
+    setSelectedAtOpen(null);
     triggerRef.current?.focus();
   }, []);
 
@@ -742,8 +745,8 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
     isOpen: popover.isOpen,
     hasSearch,
     onOpen: useCallback(() => {
-      // Snapshot which items are selected at open time — sort is stable during interaction
-      selectedAtOpenRef.current = new Set(optimisticValue);
+      // Snapshot which items are selected at open time — sort is frozen until close
+      setSelectedAtOpen(new Set(optimisticValue));
 
       popover.show();
       if (hasSearch) {
