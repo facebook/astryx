@@ -25,17 +25,19 @@ interface UseMultiComboboxOptions {
 }
 
 interface UseMultiComboboxResult {
-  highlightedIndex: number;
-  setHighlightedIndex: (index: number) => void;
-  getItemId: (index: number) => string;
+  highlightedValue: string | null;
+  getItemId: (value: string) => string;
   onTriggerClick: () => void;
   onKeyDown: (e: React.KeyboardEvent) => void;
-  onItemMouseEnter: (item: XDSMultiSelectorOptionData, index: number) => void;
+  onItemMouseEnter: (item: XDSMultiSelectorOptionData) => void;
 }
 
 /**
  * Handles keyboard navigation and toggle logic for multi-select combobox.
  * Unlike useCombobox (single-select), toggling an item does NOT close the dropdown.
+ *
+ * Uses value-based highlighting (not positional indices) so that keyboard
+ * navigation and selection are decoupled from render order.
  */
 export function useMultiCombobox({
   selectableItems,
@@ -47,27 +49,45 @@ export function useMultiCombobox({
   onToggle,
   listboxId,
 }: UseMultiComboboxOptions): UseMultiComboboxResult {
-  const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
+  const [highlightedValue, setHighlightedValue] = useState<string | null>(null);
   const [typeahead, setTypeahead] = useState('');
   const typeaheadTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(
     undefined,
   );
 
   const getItemId = useCallback(
-    (index: number) => `${listboxId}-item-${index}`,
+    (value: string) => `${listboxId}-item-${encodeURIComponent(value)}`,
     [listboxId],
   );
 
-  const getEnabledIndices = useCallback(() => {
-    return selectableItems
-      .map((item, i) => (!item.disabled ? i : -1))
-      .filter(i => i >= 0);
+  const getEnabledItems = useCallback(() => {
+    return selectableItems.filter(item => !item.disabled);
   }, [selectableItems]);
 
+  // Find the position of the highlighted value in the current items list
+  const getHighlightedPosition = useCallback(() => {
+    if (highlightedValue == null) return -1;
+    return selectableItems.findIndex(item => item.value === highlightedValue);
+  }, [selectableItems, highlightedValue]);
+
   const closeAndReset = useCallback(() => {
-    setHighlightedIndex(-1);
+    setHighlightedValue(null);
     onClose();
   }, [onClose]);
+
+  const highlightFirstEnabled = useCallback(() => {
+    const enabled = getEnabledItems();
+    if (enabled.length > 0) {
+      setHighlightedValue(enabled[0].value);
+    }
+  }, [getEnabledItems]);
+
+  const highlightLastEnabled = useCallback(() => {
+    const enabled = getEnabledItems();
+    if (enabled.length > 0) {
+      setHighlightedValue(enabled[enabled.length - 1].value);
+    }
+  }, [getEnabledItems]);
 
   const onTriggerClick = useCallback(() => {
     if (isDisabled) return;
@@ -77,39 +97,49 @@ export function useMultiCombobox({
       onOpen();
       // If search is present, don't highlight any item (focus goes to search)
       if (!hasSearch) {
-        setHighlightedIndex(0);
+        highlightFirstEnabled();
       }
     }
-  }, [isDisabled, isOpen, onOpen, closeAndReset, hasSearch]);
+  }, [
+    isDisabled,
+    isOpen,
+    onOpen,
+    closeAndReset,
+    hasSearch,
+    highlightFirstEnabled,
+  ]);
 
-  const onItemMouseEnter = useCallback(
-    (item: XDSMultiSelectorOptionData, index: number) => {
-      if (!item.disabled) {
-        setHighlightedIndex(index);
-      }
-    },
-    [],
-  );
+  const onItemMouseEnter = useCallback((item: XDSMultiSelectorOptionData) => {
+    if (!item.disabled) {
+      setHighlightedValue(item.value);
+    }
+  }, []);
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (isDisabled) return;
 
-      const enabledIndices = getEnabledIndices();
+      const enabledItems = getEnabledItems();
+
+      // Build an ordered list of enabled values for navigation
+      const enabledValues = enabledItems.map(item => item.value);
+
+      // Find current position among enabled items
+      const currentEnabledPos =
+        highlightedValue != null ? enabledValues.indexOf(highlightedValue) : -1;
 
       switch (e.key) {
         case 'ArrowDown':
           e.preventDefault();
           if (!isOpen) {
             onOpen();
-            setHighlightedIndex(0);
-          } else {
-            const currentEnabledPos = enabledIndices.indexOf(highlightedIndex);
+            highlightFirstEnabled();
+          } else if (enabledValues.length > 0) {
             const nextPos = Math.min(
               currentEnabledPos + 1,
-              enabledIndices.length - 1,
+              enabledValues.length - 1,
             );
-            setHighlightedIndex(enabledIndices[nextPos] ?? highlightedIndex);
+            setHighlightedValue(enabledValues[nextPos]);
           }
           break;
 
@@ -117,11 +147,10 @@ export function useMultiCombobox({
           e.preventDefault();
           if (!isOpen) {
             onOpen();
-            setHighlightedIndex(selectableItems.length - 1);
-          } else {
-            const currentEnabledPos = enabledIndices.indexOf(highlightedIndex);
+            highlightLastEnabled();
+          } else if (enabledValues.length > 0) {
             const prevPos = Math.max(currentEnabledPos - 1, 0);
-            setHighlightedIndex(enabledIndices[prevPos] ?? highlightedIndex);
+            setHighlightedValue(enabledValues[prevPos]);
           }
           break;
 
@@ -132,15 +161,17 @@ export function useMultiCombobox({
             break;
           }
           e.preventDefault();
-          if (isOpen && highlightedIndex >= 0) {
-            const item = selectableItems[highlightedIndex];
+          if (isOpen && highlightedValue != null) {
+            const item = selectableItems.find(
+              i => i.value === highlightedValue,
+            );
             if (item && !item.disabled) {
               onToggle(item.value);
             }
           } else if (!isOpen) {
             onOpen();
             if (!hasSearch) {
-              setHighlightedIndex(0);
+              highlightFirstEnabled();
             }
           }
           break;
@@ -161,15 +192,15 @@ export function useMultiCombobox({
 
         case 'Home':
           e.preventDefault();
-          if (isOpen && enabledIndices.length > 0) {
-            setHighlightedIndex(enabledIndices[0]);
+          if (isOpen) {
+            highlightFirstEnabled();
           }
           break;
 
         case 'End':
           e.preventDefault();
-          if (isOpen && enabledIndices.length > 0) {
-            setHighlightedIndex(enabledIndices[enabledIndices.length - 1]);
+          if (isOpen) {
+            highlightLastEnabled();
           }
           break;
 
@@ -186,16 +217,16 @@ export function useMultiCombobox({
               setTypeahead('');
             }, 500);
 
-            const matchIndex = selectableItems.findIndex(
+            const match = selectableItems.find(
               item =>
                 !item.disabled &&
                 item.label?.toLowerCase().startsWith(newTypeahead),
             );
-            if (matchIndex >= 0) {
+            if (match) {
               if (!isOpen) {
                 onOpen();
               }
-              setHighlightedIndex(matchIndex);
+              setHighlightedValue(match.value);
             }
           }
           break;
@@ -207,17 +238,18 @@ export function useMultiCombobox({
       onOpen,
       closeAndReset,
       selectableItems,
-      highlightedIndex,
+      highlightedValue,
       onToggle,
-      getEnabledIndices,
+      getEnabledItems,
+      highlightFirstEnabled,
+      highlightLastEnabled,
       typeahead,
       hasSearch,
     ],
   );
 
   return {
-    highlightedIndex,
-    setHighlightedIndex,
+    highlightedValue,
     getItemId,
     onTriggerClick,
     onKeyDown,

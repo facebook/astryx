@@ -711,9 +711,6 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
     return [selectAllItem, ...sortedItems];
   }, [hasSelectAll, sortedItems, selectAllLabel]);
 
-  // Offset for flat indices: when select-all is present, regular items start at index 1
-  const itemIndexOffset = hasSelectAll ? 1 : 0;
-
   // Route toggle: select-all sentinel → handleSelectAll, everything else → handleToggle
   const handleNavigableToggle = useCallback(
     (itemValue: string) => {
@@ -726,9 +723,10 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
     [handleSelectAll, handleToggle],
   );
 
-  // Multi-select combobox behavior
+  // Multi-select combobox behavior — uses value-based highlighting
+  // so keyboard navigation and selection are decoupled from render order.
   const {
-    highlightedIndex,
+    highlightedValue,
     getItemId,
     onTriggerClick,
     onKeyDown,
@@ -846,14 +844,14 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
 
   // Render an individual item
   const renderItem = useCallback(
-    (item: XDSMultiSelectorOptionData, flatIndex: number) => {
-      const isHighlighted = flatIndex === highlightedIndex;
+    (item: XDSMultiSelectorOptionData) => {
+      const isHighlighted = item.value === highlightedValue;
       const isSelected = optimisticValue.includes(item.value);
 
       return (
         <div
           key={item.value}
-          id={getItemId(flatIndex)}
+          id={getItemId(item.value)}
           role="option"
           aria-selected={isSelected}
           aria-disabled={item.disabled}
@@ -862,7 +860,7 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
               handleToggle(item.value);
             }
           }}
-          onMouseEnter={() => onItemMouseEnter(item, flatIndex)}
+          onMouseEnter={() => onItemMouseEnter(item)}
           {...stylex.props(
             styles.item,
             itemSizeStyles[size],
@@ -895,7 +893,7 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
     },
     [
       children,
-      highlightedIndex,
+      highlightedValue,
       optimisticValue,
       getItemId,
       handleToggle,
@@ -923,13 +921,10 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
       if (sorted.length === 0) {
         return <div {...stylex.props(styles.emptyState)}>No results found</div>;
       }
-      return sorted.map((item, index) =>
-        renderItem(item, index + itemIndexOffset),
-      );
+      return sorted.map(item => renderItem(item));
     }
 
     // Normal rendering with selected-first sorting (using open-time snapshot)
-    let flatIndex = itemIndexOffset;
     const elements: ReactNode[] = [];
     let pendingFlatItems: Array<{
       item: XDSMultiSelectorOptionData;
@@ -945,8 +940,7 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
       );
       const sorted = [...selected, ...unselected];
       for (const {item} of sorted) {
-        elements.push(renderItem(item, flatIndex));
-        flatIndex++;
+        elements.push(renderItem(item));
       }
       pendingFlatItems = [];
     };
@@ -973,8 +967,7 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
 
         const sectionItems: ReactNode[] = [];
         for (const item of sortedSection) {
-          sectionItems.push(renderItem(item, flatIndex));
-          flatIndex++;
+          sectionItems.push(renderItem(item));
         }
         if (option.title) {
           elements.push(
@@ -997,14 +990,7 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
     flushFlatItems();
 
     return elements;
-  }, [
-    options,
-    renderItem,
-    filteredItems,
-    searchQuery,
-    optimisticValue,
-    itemIndexOffset,
-  ]);
+  }, [options, renderItem, filteredItems, searchQuery, optimisticValue]);
 
   return (
     <XDSField
@@ -1040,8 +1026,8 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
         aria-expanded={popover.isOpen}
         aria-controls={listboxId}
         aria-activedescendant={
-          popover.isOpen && highlightedIndex >= 0
-            ? getItemId(highlightedIndex)
+          popover.isOpen && highlightedValue != null
+            ? getItemId(highlightedValue)
             : undefined
         }
         aria-describedby={ariaDescribedBy}
@@ -1099,25 +1085,24 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
             {hasSelectAll && (
               <>
                 <div
-                  id={getItemId(0)}
+                  id={getItemId(SELECT_ALL_VALUE)}
                   role="option"
                   aria-selected={allEnabledSelected}
                   onClick={handleSelectAll}
                   onMouseEnter={() =>
-                    onItemMouseEnter(
-                      {value: SELECT_ALL_VALUE, label: selectAllLabel},
-                      0,
-                    )
+                    onItemMouseEnter({
+                      value: SELECT_ALL_VALUE,
+                      label: selectAllLabel,
+                    })
                   }
                   {...stylex.props(
                     styles.item,
                     styles.selectAllWrapper,
                     selectAllSizeStyles[size],
-                    highlightedIndex === 0 && styles.itemHighlighted,
+                    highlightedValue === SELECT_ALL_VALUE &&
+                      styles.itemHighlighted,
                   )}>
-                  <div
-                    aria-hidden="true"
-                    {...stylex.props(styles.checkboxDecorative)}>
+                  <div inert {...stylex.props(styles.checkboxDecorative)}>
                     <XDSCheckboxInput
                       label=""
                       isLabelHidden
