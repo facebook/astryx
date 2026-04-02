@@ -28,7 +28,7 @@ import type {
 import {
   generateColumns,
   defaultCellRenderer,
-  DEFAULT_MIN_COLUMN_WIDTH,
+  resolveColumnWidths,
 } from './columnUtils';
 import {XDSTableRow} from './XDSTableRow';
 import {XDSTableCell} from './XDSTableCell';
@@ -147,14 +147,18 @@ function TableRowInner<T extends Record<string, unknown>>({
 /**
  * Compares TableRowProps to determine if re-render is needed.
  * Shallow compares the item object and checks if columns/plugins references changed.
+ *
+ * Includes rowIndex in the comparison so that plugins using the index
+ * (e.g. for row numbering or conditional formatting) get correct values
+ * after insertions/deletions. This also future-proofs for tree grid
+ * index paths where structural position matters.
  */
 function areRowPropsEqual<T extends Record<string, unknown>>(
   prevProps: TableRowProps<T>,
   nextProps: TableRowProps<T>,
 ): boolean {
-  // Row index affects CSS :nth-child styling, but not React re-render
-  // We don't compare rowIndex as it's handled by CSS
   if (prevProps.rowKey !== nextProps.rowKey) return false;
+  if (prevProps.rowIndex !== nextProps.rowIndex) return false;
 
   // If columns, plugins, or components change, need to re-render all rows
   if (prevProps.columns !== nextProps.columns) return false;
@@ -215,44 +219,9 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
   const resolvedColumns: XDSTableColumn<T>[] =
     columnsProp ?? (data ? generateColumns(data) : []);
 
-  // Compute table min-width from column constraints.
-  // With table-layout: fixed, minWidth on cells is ignored — the table itself
-  // must be wide enough that no proportional column shrinks below its minWidth.
-  // Since proportional ratios are always maintained, we find the column that
-  // constrains the table the most: tableWidth >= minWidth * totalProportion / proportion.
-  // Table min-width = max of those values + sum of pixel column widths.
-  const tableMinWidth = (() => {
-    let totalProportion = 0;
-    let pixelTotal = 0;
-    const proportionalCols: Array<{proportion: number; minWidth: number}> = [];
-
-    for (const col of resolvedColumns) {
-      const w = col.width;
-      if (w?.type === 'pixel') {
-        pixelTotal += w.value;
-      } else {
-        const proportion = w?.value ?? 1;
-        // Only count minWidth for columns that explicitly used proportional().
-        // Columns with no width set (w === undefined) have no minimum.
-        const minW = w != null ? (w.minWidth ?? DEFAULT_MIN_COLUMN_WIDTH) : 0;
-        totalProportion += proportion;
-        proportionalCols.push({proportion, minWidth: minW});
-      }
-    }
-
-    if (totalProportion === 0) return pixelTotal;
-
-    // Find the proportional column that requires the most total space
-    let maxProportionalSpace = 0;
-    for (const col of proportionalCols) {
-      const required = (col.minWidth * totalProportion) / col.proportion;
-      if (required > maxProportionalSpace) {
-        maxProportionalSpace = required;
-      }
-    }
-
-    return pixelTotal + maxProportionalSpace;
-  })();
+  // Resolve all column widths in a single pass — produces per-column
+  // inline styles and the aggregate table min-width.
+  const resolvedWidths = resolveColumnWidths(resolvedColumns);
 
   // --- Plugin pipeline: table ---
   const tableRenderProps = applyPlugins(plugins, p => p.transformTable, {
@@ -275,35 +244,9 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
       col,
     );
 
-    // Apply column width on the <th>. With table-layout: fixed,
-    // header cell sizing controls column widths.
-    const colWidth = col.width;
-    const widthStyle: React.CSSProperties = {};
-
-    if (colWidth?.type === 'pixel') {
-      // Fixed pixel width — set both width and minWidth to prevent shrinking
-      widthStyle.width = `${colWidth.value}px`;
-      widthStyle.minWidth = `${colWidth.value}px`;
-    } else {
-      // Proportional width — compute percentage from total proportional units.
-      const totalProportion = resolvedColumns.reduce((sum, c) => {
-        const w = c.width;
-        if (!w || w.type === 'proportional') {
-          return sum + (w?.value ?? 1);
-        }
-        return sum;
-      }, 0);
-      const proportion = colWidth?.value ?? 1;
-      if (totalProportion > 0) {
-        widthStyle.width = `${(proportion / totalProportion) * 100}%`;
-      }
-      // Only apply minWidth if the column explicitly used proportional().
-      // Columns with no width set (colWidth === undefined) have no minimum.
-      if (colWidth != null) {
-        const minW = colWidth.minWidth ?? DEFAULT_MIN_COLUMN_WIDTH;
-        widthStyle.minWidth = `${minW}px`;
-      }
-    }
+    // Apply pre-computed column width styles on the <th>.
+    // With table-layout: fixed, header cell sizing controls column widths.
+    const widthStyle = resolvedWidths.columns.get(col.key)?.style ?? {};
 
     const existingStyle = cellRenderProps.htmlProps.style as
       | React.CSSProperties
@@ -360,7 +303,10 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
 
   const tableStyle: React.CSSProperties = {
     ...(tableRenderProps.htmlProps.style as React.CSSProperties | undefined),
-    minWidth: tableMinWidth > 0 ? `${tableMinWidth}px` : undefined,
+    minWidth:
+      resolvedWidths.tableMinWidth > 0
+        ? `${resolvedWidths.tableMinWidth}px`
+        : undefined,
   };
 
   let tableElement: ReactNode = (
