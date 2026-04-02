@@ -185,10 +185,28 @@ export interface BodyCellRenderProps {
 /**
  * Table plugin — transforms render props at each structural level.
  * Plugins compose by sequential application (first plugin's output feeds next).
+ *
+ * ## Pipeline order
+ *
+ * 1. `transformColumns` — filter, reorder, or inject columns before rendering
+ * 2. `transformTable` — transform the root `<table>` element props
+ * 3. `transformHeaderRow` — transform the header `<tr>` props
+ * 4. `transformHeaderCell` — transform each `<th>` props
+ * 5. `transformBodyRow` — transform each body `<tr>` props
+ * 6. `transformBodyCell` — transform each body `<td>` props
+ * 7. `transformTableContext` — wrap the table output in context providers
  */
 export interface TablePlugin<
   T extends Record<string, unknown> = Record<string, unknown>,
 > {
+  /**
+   * Transform the column definitions before rendering.
+   * Runs before any element-level transforms. Use to filter, reorder,
+   * or inject synthetic columns (e.g. a selection checkbox column).
+   */
+  transformColumns?: (
+    columns: XDSTableColumn<T>[],
+  ) => XDSTableColumn<T>[];
   /** Transform the root `<table>` element props */
   transformTable?: (props: TableRenderProps) => TableRenderProps;
   /** Transform the header `<tr>` props */

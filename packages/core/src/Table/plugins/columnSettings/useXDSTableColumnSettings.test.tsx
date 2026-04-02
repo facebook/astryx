@@ -90,12 +90,27 @@ function renderColumnSettingsHook(
 
 describe('useXDSTableColumnSettings', () => {
   describe('return value', () => {
-    it('returns plugin object with transformTableContext', () => {
+    it('returns plugin object with transformColumns', () => {
       const {result} = renderColumnSettingsHook();
       expect(result.current.plugin).toBeDefined();
-      expect(result.current.plugin.transformTableContext).toBeInstanceOf(
+      expect(result.current.plugin.transformColumns).toBeInstanceOf(
         Function,
       );
+    });
+
+    it('transformColumns filters and reorders columns by activeColumnKeys', () => {
+      const {result} = renderColumnSettingsHook({
+        activeColumnKeys: ['role', 'name'], // reversed order, missing 'email'
+      });
+
+      const allColumns: XDSTableColumn<User>[] = [
+        {key: 'name', header: 'Name'},
+        {key: 'email', header: 'Email'},
+        {key: 'role', header: 'Role'},
+      ];
+
+      const filtered = result.current.plugin.transformColumns!(allColumns);
+      expect(filtered.map(c => c.key)).toEqual(['role', 'name']);
     });
 
     it('returns activeColumns function', () => {
