@@ -1,23 +1,29 @@
-'use client';
+"use client";
 
 /**
  * @file useXDSTableSelection.tsx
- * @input React, types, XDSCheckboxInput, XDSTableCell, XDSTableHeaderCell, theme tokens
+ * @input React, types, XDSCheckboxInput, theme tokens
  * @output Exports useXDSTableSelection hook and UseXDSTableSelectionConfig type
  * @position Selection plugin; consumed by XDSTable via plugins prop
  *
- * ## Performance Architecture
+ * ## Architecture (v2 — transformColumns + imperative row styling)
  *
- * Selection state is managed via an external store (SelectionStore) so that
- * individual rows can subscribe to their own selection state independently.
- * When a row is selected/deselected, only that row re-renders — not the
- * entire table body.
+ * Selection checkboxes are implemented as a synthetic column prepended via
+ * `transformColumns`. The checkbox column flows through the normal cell
+ * component pipeline, so it automatically respects component overrides
+ * (components prop on XDSBaseTable). This replaces the v1 approach of
+ * hardcoding XDSTableCell/XDSTableHeaderCell in the plugin.
  *
- * The plugin object returned by useXDSTableSelection is referentially stable
- * across renders. Selection-dependent rendering (aria-selected, background
- * highlight, checkbox state) is handled by store-subscribing components
- * (SelectionRowContent, SelectAllCheckbox) rather than in the plugin
- * transform functions.
+ * Selection state is managed via an external store (SelectionStore) for
+ * fine-grained row subscriptions. Each row's checkbox subscribes
+ * independently — when selection changes, only that row's checkbox
+ * re-renders, not the entire table body.
+ *
+ * Row-level styling (aria-selected, background) uses imperative DOM
+ * updates via a ref on a sentinel element inside each row. This avoids
+ * re-rendering the entire memoized row when selection state changes.
+ * The sentinel element's useEffect applies/removes attributes on the
+ * parent <tr> element.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Table/Table.doc.mjs (selection documentation)
@@ -37,9 +43,12 @@ import {
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars} from '../../../theme/tokens.stylex';
 import {XDSCheckboxInput} from '../../../CheckboxInput';
-import {XDSTableCell} from '../../XDSTableCell';
-import {XDSTableHeaderCell} from '../../XDSTableHeaderCell';
-import type {TablePlugin, BodyRowRenderProps} from '../../types';
+import type {
+  TablePlugin,
+  XDSTableColumn,
+  BodyRowRenderProps,
+} from '../../types';
+import {pixel} from '../../columnUtils';
 
 // =============================================================================
 // Config Type
@@ -66,12 +75,6 @@ export interface UseXDSTableSelectionConfig<T extends Record<string, unknown>> {
 // Selection Store (external store for fine-grained row subscriptions)
 // =============================================================================
 
-/**
- * Lightweight external store that lets each row subscribe to selection
- * changes independently. When selection state changes, all subscribers are
- * notified but only components whose snapshot actually changed will re-render
- * (thanks to useSyncExternalStore's built-in equality check on the snapshot).
- */
 interface SelectionStore<T extends Record<string, unknown>> {
   subscribe: (listener: () => void) => () => void;
   notify: () => void;
@@ -110,10 +113,6 @@ const SelectionStoreContext = createContext<SelectionStore<any> | null>(null);
 // Hooks for subscribing to selection state
 // =============================================================================
 
-/**
- * Subscribe to whether a specific item is selected.
- * Only triggers re-render when this item's selected state changes.
- */
 function useIsItemSelected<T extends Record<string, unknown>>(
   store: SelectionStore<T>,
   item: T,
@@ -182,29 +181,92 @@ function SelectAllCheckboxInner<T extends Record<string, unknown>>({
 }
 
 /**
- * Row content component that subscribes to this item's selection state.
- * Handles the checkbox cell, aria-selected attribute, and selected row styling.
- * Only re-renders when this specific item's selection state changes.
+ * Row checkbox component — used as renderCell for the synthetic selection column.
+ * Subscribes to this item's selection state independently.
  */
-function SelectionRowContent<T extends Record<string, unknown>>({
+function SelectionCellContent<T extends Record<string, unknown>>({
   item,
-  children,
 }: {
   item: T;
-  children: ReactNode;
 }) {
-  const store = useContext(SelectionStoreContext)!;
+  const store = useContext(SelectionStoreContext);
+  if (!store) return null;
+
+  return <SelectionCellContentInner store={store} item={item} />;
+}
+
+function SelectionCellContentInner<T extends Record<string, unknown>>({
+  store,
+  item,
+}: {
+  store: SelectionStore<T>;
+  item: T;
+}) {
   const config = store.getConfig();
   const isSelected = useIsItemSelected(store, item);
   const selectable = config.getIsItemSelectable?.(item) ?? true;
   const enabled = config.getIsItemEnabled?.(item) ?? true;
 
-  // Manage aria-selected and background color on the parent <tr> imperatively.
-  // This avoids re-rendering the entire memoized row component — only this
-  // content component re-renders when selection state changes.
-  const cellRef = useRef<HTMLTableCellElement>(null);
+  if (!selectable) return null;
+
+  return (
+    <XDSCheckboxInput
+      label="Select row"
+      isLabelHidden
+      value={isSelected}
+      onChange={() =>
+        store.getConfig().onSelectItem({item, isSelected: !isSelected})
+      }
+      isDisabled={!enabled}
+      size="sm"
+    />
+  );
+}
+
+// =============================================================================
+// Row Selection Sentinel
+// =============================================================================
+
+/**
+ * Invisible sentinel element rendered inside each body row. Subscribes to
+ * this item's selection state and imperatively manages aria-selected and
+ * background color on the parent <tr>.
+ *
+ * Why imperative: The <tr> is rendered by the memoized MemoizedTableRow
+ * component. Re-rendering the entire row on selection change would defeat
+ * the external store architecture. Instead, this zero-height sentinel
+ * subscribes to the store and applies/removes attributes directly.
+ *
+ * The sentinel is a <td> with colspan=0, display:none — invisible and
+ * doesn't affect table layout.
+ */
+function SelectionRowSentinel<T extends Record<string, unknown>>({
+  item,
+}: {
+  item: T;
+}) {
+  const store = useContext(SelectionStoreContext);
+  if (!store) return null;
+
+  return <SelectionRowSentinelInner store={store} item={item} />;
+}
+
+const sentinelStyle: React.CSSProperties = {
+  display: 'none',
+};
+
+function SelectionRowSentinelInner<T extends Record<string, unknown>>({
+  store,
+  item,
+}: {
+  store: SelectionStore<T>;
+  item: T;
+}) {
+  const isSelected = useIsItemSelected(store, item);
+  const sentinelRef = useRef<HTMLTableCellElement>(null);
+
   useEffect(() => {
-    const tr = cellRef.current?.parentElement;
+    const tr = sentinelRef.current?.parentElement;
     if (!tr) return;
     if (isSelected) {
       tr.setAttribute('aria-selected', 'true');
@@ -221,46 +283,26 @@ function SelectionRowContent<T extends Record<string, unknown>>({
     };
   }, [isSelected]);
 
-  return (
-    <>
-      <XDSTableCell ref={cellRef} xstyle={selectionCellStyles.base}>
-        {selectable && (
-          <XDSCheckboxInput
-            label="Select row"
-            isLabelHidden
-            value={isSelected}
-            onChange={() =>
-              store.getConfig().onSelectItem({item, isSelected: !isSelected})
-            }
-            isDisabled={!enabled}
-            size="sm"
-          />
-        )}
-      </XDSTableCell>
-      {children}
-    </>
-  );
+  return <td ref={sentinelRef} style={sentinelStyle} aria-hidden="true" />;
 }
 
 // =============================================================================
 // Styles
 // =============================================================================
 
-/**
- * Resolved CSS variable for imperative style updates on the <tr>.
- * Uses the StyleX token directly so it stays in sync with the theme.
- */
 const selectedBgColor = colorVars['--color-accent-muted'];
 
-const selectionCellStyles = stylex.create({
-  base: {
-    width: '36px',
-    minWidth: '36px',
-    maxWidth: '36px',
-    paddingInline: spacingVars['--spacing-2'],
+const selectionColumnStyles = stylex.create({
+  cell: {
     textAlign: 'center',
   },
 });
+
+/** Selection column key — prefixed to avoid collisions with user columns. */
+const SELECTION_COLUMN_KEY = '__xds_selection';
+
+/** Fixed width for the selection column. */
+const SELECTION_COLUMN_WIDTH = pixel(36);
 
 // =============================================================================
 // Hook
@@ -269,12 +311,9 @@ const selectionCellStyles = stylex.create({
 export function useXDSTableSelection<T extends Record<string, unknown>>(
   config: UseXDSTableSelectionConfig<T>,
 ): TablePlugin<T> {
-  // Keep config in a ref so the store always reads the latest version
-  // without creating a new store or plugin object.
   const configRef = useRef(config);
   configRef.current = config;
 
-  // Create the store once — it reads config via ref, so it never goes stale.
   const storeRef = useRef<SelectionStore<T> | null>(null);
   if (storeRef.current == null) {
     storeRef.current = createSelectionStore(configRef);
@@ -287,9 +326,18 @@ export function useXDSTableSelection<T extends Record<string, unknown>>(
     store.notify();
   });
 
-  // Return a stable plugin object — never changes after mount.
-  // Selection-dependent rendering is handled by SelectionRowContent
-  // and SelectAllCheckbox which subscribe to the store independently.
+  // Synthetic selection column — uses renderCell with a subscribing
+  // component so each row's checkbox re-renders independently.
+  const selectionColumn = useMemo(
+    (): XDSTableColumn<T> => ({
+      key: SELECTION_COLUMN_KEY,
+      header: <SelectAllCheckbox />,
+      width: SELECTION_COLUMN_WIDTH,
+      renderCell: (item: T) => <SelectionCellContent item={item} />,
+    }),
+    [],
+  );
+
   return useMemo(
     (): TablePlugin<T> => ({
       transformTableContext(children: ReactNode) {
@@ -300,35 +348,46 @@ export function useXDSTableSelection<T extends Record<string, unknown>>(
         );
       },
 
-      transformHeaderRow(props) {
+      transformColumns(columns: XDSTableColumn<T>[]) {
+        return [selectionColumn, ...columns];
+      },
+
+      transformHeaderCell(props, column) {
+        if (column.key === SELECTION_COLUMN_KEY) {
+          return {
+            ...props,
+            styles: [...props.styles, selectionColumnStyles.cell],
+          };
+        }
+        return props;
+      },
+
+      transformBodyCell(props, column) {
+        if (column.key === SELECTION_COLUMN_KEY) {
+          return {
+            ...props,
+            styles: [...props.styles, selectionColumnStyles.cell],
+          };
+        }
+        return props;
+      },
+
+      transformBodyRow(props: BodyRowRenderProps, item: T) {
+        // Inject a hidden sentinel <td> that subscribes to this item's
+        // selection state and imperatively manages aria-selected +
+        // background on the parent <tr>. This avoids re-rendering the
+        // entire memoized row on selection change.
         return {
           ...props,
           children: (
             <>
-              <XDSTableHeaderCell xstyle={selectionCellStyles.base}>
-                <SelectAllCheckbox />
-              </XDSTableHeaderCell>
               {props.children}
+              <SelectionRowSentinel item={item} />
             </>
           ),
         };
       },
-
-      transformBodyRow(props: BodyRowRenderProps, item: T) {
-        // Don't read selection state here — that would cause all rows
-        // to re-render when any selection changes. Instead, delegate to
-        // SelectionRowContent which subscribes to the store and only
-        // re-renders when this specific item's selection state changes.
-        return {
-          ...props,
-          children: (
-            <SelectionRowContent item={item}>
-              {props.children}
-            </SelectionRowContent>
-          ),
-        };
-      },
     }),
-    [store],
+    [store, selectionColumn],
   );
 }

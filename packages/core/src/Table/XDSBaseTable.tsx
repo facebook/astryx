@@ -10,7 +10,7 @@
  * - /packages/core/src/Table/index.ts (exports if types change)
  */
 
-import {memo, type ReactElement, type ReactNode, type Ref} from 'react';
+import {memo, useRef, type ReactElement, type ReactNode, type Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {
   XDSBaseTableProps,
@@ -67,6 +67,19 @@ function applyPlugins<TPlugin, TProps, TArgs extends unknown[]>(
 
 // Stable empty array to avoid creating new reference on each render
 const EMPTY_PLUGINS: TablePlugin<Record<string, unknown>>[] = [];
+
+/**
+ * Shallow-compare two arrays by element identity.
+ * Used to stabilize the resolved columns array across renders.
+ */
+function areArraysShallowEqual<T>(a: T[], b: T[]): boolean {
+  if (a === b) return true;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+}
 
 interface TableRowProps<T extends Record<string, unknown>> {
   item: T;
@@ -222,11 +235,21 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
   // --- Plugin pipeline: transformColumns ---
   // Runs before any element-level transforms. Allows plugins to filter,
   // reorder, or inject synthetic columns (e.g. selection checkbox).
-  const resolvedColumns = applyPlugins(
+  const transformedColumns = applyPlugins(
     plugins,
     p => p.transformColumns,
     baseColumns,
   );
+
+  // Stabilize the resolved columns array — transformColumns returns a
+  // new array on every call, but if the contents haven't changed, we
+  // reuse the previous reference. This prevents MemoizedTableRow from
+  // re-rendering all rows when the column array is structurally identical.
+  const resolvedColumnsRef = useRef(transformedColumns);
+  if (!areArraysShallowEqual(resolvedColumnsRef.current, transformedColumns)) {
+    resolvedColumnsRef.current = transformedColumns;
+  }
+  const resolvedColumns = resolvedColumnsRef.current;
 
   // Resolve all column widths in a single pass — produces per-column
   // inline styles and the aggregate table min-width.
