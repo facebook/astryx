@@ -9,7 +9,7 @@
  * - /packages/core/src/Kbd/index.ts
  */
 
-import {useState, useEffect} from 'react';
+import {useState, useLayoutEffect} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {xdsClassName, mergeProps} from '../utils';
@@ -113,8 +113,9 @@ export interface XDSKbdProps {
  * anywhere in the system — tooltips, menus, documentation, etc.
  *
  * Platform-aware: `mod` renders as ⌘ on macOS and Ctrl elsewhere.
- * SSR-safe — defers platform detection to after mount to avoid
- * hydration mismatches.
+ * SSR-safe — defers platform detection to a layout effect to avoid
+ * hydration mismatches. Uses useLayoutEffect so the platform-correct
+ * symbol is set before the browser paints (no visible flicker).
  *
  * @example
  * ```
@@ -124,7 +125,7 @@ export interface XDSKbdProps {
 export function XDSKbd({keys, xstyle, className, style}: XDSKbdProps) {
   const [isMac, setIsMac] = useState(false);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     setIsMac(
       /Mac|iPhone|iPad|iPod/.test(
         navigator.platform ?? navigator.userAgent ?? '',
