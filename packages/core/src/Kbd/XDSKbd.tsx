@@ -9,6 +9,7 @@
  * - /packages/core/src/Kbd/index.ts
  */
 
+import {useState, useEffect} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {xdsClassName, mergeProps} from '../utils';
@@ -50,24 +51,9 @@ const styles = stylex.create({
 });
 
 /**
- * Lazy platform detection — SSR-safe, cached after first call.
- * Returns true on macOS, iPhone, iPad, iPod; false elsewhere (including SSR).
- */
-let _isMac: boolean | null = null;
-function isMac(): boolean {
-  if (_isMac === null) {
-    _isMac =
-      typeof navigator !== 'undefined' &&
-      /Mac|iPhone|iPad|iPod/.test(
-        navigator.platform ?? navigator.userAgent ?? '',
-      );
-  }
-  return _isMac;
-}
-
-/**
  * Map of modifier key names to display symbols.
- * Note: `mod` is not in this map — it resolves dynamically via `getKeyDisplay`.
+ * Note: `mod` is not in this map — it resolves dynamically via platform
+ * detection inside the component.
  */
 const KEY_DISPLAY: Record<string, string> = {
   ctrl: '\u2303', // ⌃
@@ -82,18 +68,6 @@ const KEY_DISPLAY: Record<string, string> = {
   left: '\u2190',
   right: '\u2192',
 };
-
-/**
- * Resolves a key name to its display string. Handles the platform-aware
- * `mod` key (⌘ on macOS, Ctrl on other platforms) and falls back to
- * KEY_DISPLAY or uppercased key name.
- */
-function getKeyDisplay(key: string): string {
-  if (key === 'mod') {
-    return isMac() ? '\u2318' : 'Ctrl';
-  }
-  return KEY_DISPLAY[key] ?? key.toUpperCase();
-}
 
 export interface XDSKbdProps {
   /**
@@ -138,13 +112,34 @@ export interface XDSKbdProps {
  * A general-purpose component for rendering keyboard shortcuts
  * anywhere in the system — tooltips, menus, documentation, etc.
  *
+ * Platform-aware: `mod` renders as ⌘ on macOS and Ctrl elsewhere.
+ * SSR-safe — defers platform detection to after mount to avoid
+ * hydration mismatches.
+ *
  * @example
  * ```
  * <XDSKbd keys="mod+k" />
  * ```
  */
 export function XDSKbd({keys, xstyle, className, style}: XDSKbdProps) {
+  const [isMac, setIsMac] = useState(false);
+
+  useEffect(() => {
+    setIsMac(
+      /Mac|iPhone|iPad|iPod/.test(
+        navigator.platform ?? navigator.userAgent ?? '',
+      ),
+    );
+  }, []);
+
   const parts = keys.split('+').map(key => key.trim().toLowerCase());
+
+  function getKeyDisplay(key: string): string {
+    if (key === 'mod') {
+      return isMac ? '\u2318' : 'Ctrl';
+    }
+    return KEY_DISPLAY[key] ?? key.toUpperCase();
+  }
 
   return (
     <span
