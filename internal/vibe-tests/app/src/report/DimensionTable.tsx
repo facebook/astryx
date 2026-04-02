@@ -29,7 +29,7 @@ interface RowData extends Record<string, unknown> {
 
 function ScoreCell({score}: {score: number}) {
   return (
-    <XDSHStack gap="space1" hAlign="center">
+    <XDSHStack gap={1} hAlign="center">
       <XDSStatusDot
         variant={scoreToStatusVariant(score)}
         label={`Score: ${formatScore(score)}`}

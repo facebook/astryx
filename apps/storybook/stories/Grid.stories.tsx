@@ -263,7 +263,7 @@ export const DifferentGaps: Story = {
     <div {...stylex.props(styles.storyWrapper)}>
       <div {...stylex.props(styles.container)}>
         <XDSText type="supporting" xstyle={styles.sectionLabel}>
-          Same gap for rows and columns (space4)
+          Same gap for rows and columns (gap=4)
         </XDSText>
         <XDSGrid columns={3} gap={4}>
           <GridItem>Item 1</GridItem>
@@ -276,7 +276,7 @@ export const DifferentGaps: Story = {
       </div>
       <div {...stylex.props(styles.container)}>
         <XDSText type="supporting" xstyle={styles.sectionLabel}>
-          Different gaps: rowGap=space2, columnGap=space6
+          Different gaps: rowGap=2, columnGap=6
         </XDSText>
         <XDSGrid columns={3} rowGap={2} columnGap={6}>
           <GridItem>Item 1</GridItem>

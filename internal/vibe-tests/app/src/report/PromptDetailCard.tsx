@@ -33,7 +33,7 @@ function ScoreItem({label, score}: {label: string; score: number}) {
 function ScoreSummary({label, score}: {label: string; score: UniversalScore}) {
   return (
     <div className="report-promptDetail-scoreBlock">
-      <XDSVStack gap="space2">
+      <XDSVStack gap={2}>
         <XDSText type="label">{label}</XDSText>
         <div className="report-promptDetail-scoreGrid">
           {ALL_DIMENSIONS.map(dim => (
@@ -128,7 +128,7 @@ export function PromptDetailCard({
   return (
     <XDSCard>
       <div className="report-promptDetail-card">
-        <XDSVStack gap="space3">
+        <XDSVStack gap={3}>
           {/* Header: prompt ID, prompt text, and buttons */}
           <div className="report-promptDetail-header">
             <XDSHeading level={4}>{promptId}</XDSHeading>

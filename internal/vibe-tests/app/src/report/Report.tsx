@@ -22,7 +22,7 @@ import './report.css';
 function MetricValue({label, value}: {label: string; value: string}) {
   return (
     <div className="report-metricItem">
-      <XDSVStack gap="space1">
+      <XDSVStack gap={1}>
         <XDSText type="label">{label}</XDSText>
         <XDSHeading level={3}>{value}</XDSHeading>
       </XDSVStack>
@@ -55,7 +55,7 @@ function EfficiencyMetricsCard({
   return (
     <XDSCard>
       <div className="report-metricsCard">
-        <XDSVStack gap="space2">
+        <XDSVStack gap={2}>
           <XDSHeading level={4}>Efficiency Metrics</XDSHeading>
           <div className="report-metricsGrid">
             <MetricValue
@@ -100,7 +100,7 @@ function MaintainabilityMetricsCard({
   return (
     <XDSCard>
       <div className="report-metricsCard">
-        <XDSVStack gap="space2">
+        <XDSVStack gap={2}>
           <XDSHeading level={4}>Maintainability Metrics</XDSHeading>
           <div className="report-metricsGrid">
             <MetricValue
@@ -125,7 +125,7 @@ function CostMetricsCard({cost}: {cost: ReportData['universal']['cost']}) {
   return (
     <XDSCard>
       <div className="report-metricsCard">
-        <XDSVStack gap="space2">
+        <XDSVStack gap={2}>
           <XDSHeading level={4}>Cost</XDSHeading>
           <div className="report-metricsGrid">
             {cost.avgDurationMs > 0 && (
@@ -173,7 +173,7 @@ export function Report() {
         <div className="report-root">
           <div className="report-container">
             <div className="report-emptyState">
-              <XDSVStack gap="space4">
+              <XDSVStack gap={4}>
                 <XDSHeading level={2}>No Report Data</XDSHeading>
                 <XDSText type="body">
                   No report data found. Run the vibe test harness to generate a
@@ -193,11 +193,11 @@ export function Report() {
     <XDSTheme theme={defaultTheme} mode={themeMode}>
       <div className="report-root">
         <div className="report-container">
-          <XDSVStack gap="space5">
+          <XDSVStack gap={5}>
             {/* Header */}
             <div className="report-header">
-              <XDSHStack gap="space4" hAlign="between" vAlign="center">
-                <XDSVStack gap="space1">
+              <XDSHStack gap={4} hAlign="between" vAlign="center">
+                <XDSVStack gap={1}>
                   <XDSHeading level={1}>Vibe Test Report</XDSHeading>
                   {data.target && (
                     <XDSText type="supporting">Target: {data.target}</XDSText>
@@ -230,7 +230,7 @@ export function Report() {
             {/* Tab Content */}
             <div className="report-tabContent">
               {activeTab === 'overview' && (
-                <XDSVStack gap="space4">
+                <XDSVStack gap={4}>
                   {/* Overall score */}
                   <ScoreCard
                     label="Overall Score"
@@ -248,7 +248,7 @@ export function Report() {
                   )}
 
                   {/* Dimension scores grid */}
-                  <XDSVStack gap="space3">
+                  <XDSVStack gap={3}>
                     <XDSHeading level={3}>Dimensions</XDSHeading>
                     <div className="report-scoreGrid">
                       {ALL_DIMENSIONS.map(dim => (
@@ -270,7 +270,7 @@ export function Report() {
 
                   {/* Comparison view */}
                   {comparison && (
-                    <XDSVStack gap="space3">
+                    <XDSVStack gap={3}>
                       <XDSHeading level={3}>
                         {comparison.html
                           ? 'XDS vs Baseline vs HTML Comparison'
@@ -283,11 +283,11 @@ export function Report() {
               )}
 
               {activeTab === 'byPrompt' && (
-                <XDSVStack gap="space4">
+                <XDSVStack gap={4}>
                   <DimensionTable byPrompt={universal.byPrompt} />
 
                   {/* Per-prompt detail cards */}
-                  <XDSVStack gap="space3">
+                  <XDSVStack gap={3}>
                     <XDSHeading level={3}>Prompt Details</XDSHeading>
                     {Object.keys(universal.byPrompt).map(promptId => (
                       <PromptDetailCard
