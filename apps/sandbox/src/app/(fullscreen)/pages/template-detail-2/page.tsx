@@ -460,7 +460,7 @@ function PageHeader({
       <XDSCenter axis="horizontal">
         <XDSVStack xstyle={pageStyles.maxWidth} gap={0}>
           {/* Back link */}
-          <XDSLink href="#" label="← All orders" />
+          <XDSLink href="#" label="← All orders">← All orders</XDSLink>
           {/* Title + metadata */}
           <XDSVStack gap={0}>
             {/* Title row */}
@@ -499,7 +499,7 @@ function PageHeader({
                 <XDSText type="body">Needs attention</XDSText>
               </XDSHStack>
               <Bullet />
-              <XDSLink href="#" label="See all" />
+              <XDSLink href="#" label="See all">See all</XDSLink>
             </XDSHStack>
           </XDSVStack>
 
@@ -743,7 +743,7 @@ function RightPanel() {
               Customer is a repeat buyer — 3rd order this quarter. Prefers brown
               leather goods and grid-format notebooks. Requested gift wrapping
               for this order. Ships to a residential address in CA.{' '}
-              <XDSLink href="#" label="Show more" />
+              <XDSLink href="#" label="Show more">Show more</XDSLink>
             </XDSText>
           </XDSCollapsible>
         </div>
