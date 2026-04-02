@@ -18,7 +18,7 @@
  * 1. Import directly (global reset):
  *    import '@xds/core/reset.css';
  *
- * 2. Combine with theme and typography:
+ * 2. Combine with base styles and theme:
  *    import '@xds/core/reset.css';        // @layer reset  — clean slate
  *    import '@xds/core/xds.css';           // @layer xds-base — component styles
  *    import '@xds/theme-default/theme.css'; // @layer xds-theme — theme overrides

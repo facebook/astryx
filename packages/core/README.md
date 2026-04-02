@@ -4,8 +4,6 @@ A design system for building internal tools and products at Meta.
 
 ## Installation
 
-The instructions below describe installing from source. See the "Installation from dist" section for an alternative method that doesn't require a build step.
-
 ```bash
 # Install core + a theme + the CLI (dev tooling)
 yarn add @xds/core @xds/theme-default
@@ -22,15 +20,20 @@ pnpm add -D @xds/cli
 
 ## Quick Start
 
-### 1. Import Base Styles
+### 1. Import CSS
 
-Import the reset stylesheet and your theme's CSS at the root of your application:
+Import the reset, base component styles, and your theme's CSS at the root of your application:
 
 ```tsx
 // In your root layout or entry point
-import '@xds/core/reset.css';
-import '@xds/theme-default/theme.css';
+import '@xds/core/reset.css'; // CSS reset (normalize + box-sizing)
+import '@xds/core/xds.css'; // Pre-compiled component styles
+import '@xds/theme-default/theme.css'; // Theme tokens
 ```
+
+> **Building from source with the StyleX plugin?** You can skip `xds.css` —
+> the plugin compiles component styles at build time. See the
+> [Vite example](apps/example-vite/) for the source-path setup.
 
 ### 2. Set Up the Theme Provider
 
@@ -65,14 +68,14 @@ function Example() {
 }
 ```
 
-## Installation from dist
+## Installation from dist (vendored)
 
-We also offer a `dist` release which doesn't require any additional build steps can be dropped into any existing React app. To install:
+If you'd rather vendor XDS without a package manager:
 
-1. Ensure React is available. XDS peer-requires react and react-dom (>=19.0.0). Your app needs those installed.
+1. Ensure React is available. XDS peer-requires `react` and `react-dom` (>=19.0.0).
 2. Run `yarn build` to generate the dist files.
-3. Copy the dist folder. Grab `packages/core/dist/` from this repo and place it somewhere in your project (e.g., `vendor/xds/`).
-4. Include the CSS: there's a single bundled `dist/xds.css` that contains all component styles as well as `dist/reset.css`.
+3. Copy `packages/core/dist/` into your project (e.g., `vendor/xds/`).
+4. Import the CSS — `reset.css` for the reset, `xds.css` for all component styles:
 
 You can use a `<link>` tag or a CSS import (recommended):
 
