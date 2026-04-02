@@ -12,6 +12,7 @@ import {
   XDSSegmentedControl,
   XDSSegmentedControlItem,
 } from '@xds/core/SegmentedControl';
+import {XDSBadge} from '@xds/core/Badge';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSCollapsible, XDSCollapsibleGroup} from '@xds/core/Collapsible';
 import {XDSNavIcon} from '@xds/core/NavIcon';
@@ -62,6 +63,65 @@ const HeartIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
   </svg>
 );
+
+// ─── Star Rating ─────────────────────────────────────────────────────────────
+function StarRating({rating, count}: {rating: number; count: number}) {
+  const full = Math.floor(rating);
+  const partial = rating - full;
+  const empty = 5 - full - (partial > 0 ? 1 : 0);
+  const starSize = 16;
+
+  return (
+    <div style={{display: 'flex', alignItems: 'center', gap: 6}}>
+      {Array.from({length: full}, (_, i) => (
+        <svg
+          key={`full-${i}`}
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          style={{width: starSize, height: starSize, color: '#f59e0b'}}>
+          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+        </svg>
+      ))}
+      {partial > 0 && (
+        <svg
+          key="partial"
+          viewBox="0 0 24 24"
+          style={{width: starSize, height: starSize}}>
+          <defs>
+            <clipPath id="star-clip">
+              <rect x="0" y="0" width={24 * partial} height="24" />
+            </clipPath>
+          </defs>
+          <path
+            d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
+            fill="#f59e0b"
+            clipPath="url(#star-clip)"
+          />
+          <path
+            d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
+            fill="none"
+            stroke="#f59e0b"
+            strokeWidth={1.5}
+          />
+        </svg>
+      )}
+      {Array.from({length: empty}, (_, i) => (
+        <svg
+          key={`empty-${i}`}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#f59e0b"
+          strokeWidth={1.5}
+          style={{width: starSize, height: starSize}}>
+          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+        </svg>
+      ))}
+      <XDSText type="body" color="secondary">
+        {rating} ({count})
+      </XDSText>
+    </div>
+  );
+}
 
 // ─── Image URLs ─────────────────────────────────────────────────────────────
 const IMAGES = [
@@ -235,7 +295,7 @@ function ProductInfo() {
 
   return (
     <XDSVStack gap={5}>
-      {/* Title & Price */}
+      {/* Title & Rating */}
       <XDSVStack gap={2}>
         <p
           style={{
@@ -246,13 +306,15 @@ function ProductInfo() {
           }}>
           {PRODUCT.name}
         </p>
-        <XDSHStack gap={2} style={{alignItems: 'baseline'}}>
+        <StarRating rating={4.3} count={128} />
+        <XDSHStack gap={2} style={{alignItems: 'center'}}>
           <XDSText type="large" weight="bold">
             {fmt(PRODUCT.price)}
           </XDSText>
           <XDSText type="body" color="secondary" hasStrikethrough>
             {fmt(PRODUCT.originalPrice)}
           </XDSText>
+          <XDSBadge variant="success" label="In stock" />
         </XDSHStack>
       </XDSVStack>
 
@@ -309,6 +371,23 @@ function ProductInfo() {
         style={{display: 'flex', width: '100%'}}>
         Add to Cart
       </XDSButton>
+
+      {/* Buy it now + Wishlist */}
+      <XDSHStack gap={2}>
+        <XDSButton
+          label="Buy it now"
+          variant="secondary"
+          size="lg"
+          style={{display: 'flex', flex: 1}}>
+          Buy it now
+        </XDSButton>
+        <XDSButton
+          label="Add to wishlist"
+          variant="ghost"
+          size="lg"
+          icon={<HeartIcon style={{width: 16, height: 16}} />}
+        />
+      </XDSHStack>
 
       {/* Description */}
       <XDSText type="body">{PRODUCT.description}</XDSText>
