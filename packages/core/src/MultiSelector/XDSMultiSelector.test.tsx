@@ -403,6 +403,43 @@ describe('XDSMultiSelector', () => {
     expect(onChange).toHaveBeenCalledWith([]);
   });
 
+  it('select-all is a role="option" in the listbox', async () => {
+    const user = userEvent.setup();
+    render(
+      <XDSMultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={[]}
+        onChange={() => {}}
+        hasSelectAll
+      />,
+    );
+
+    await user.click(screen.getByRole('combobox'));
+    const options = screen.getAllByRole('option', h);
+    expect(options[0]).toHaveTextContent('Select all');
+  });
+
+  it('select-all toggles via keyboard Enter', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <XDSMultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={[]}
+        onChange={onChange}
+        hasSelectAll
+      />,
+    );
+
+    const trigger = screen.getByRole('combobox');
+    await user.click(trigger);
+    // highlightedIndex starts at 0 which is select-all
+    await user.keyboard('{Enter}');
+    expect(onChange).toHaveBeenCalledWith(['Apple', 'Banana', 'Orange']);
+  });
+
   it('renders search input when hasSearch', async () => {
     const user = userEvent.setup();
     render(
