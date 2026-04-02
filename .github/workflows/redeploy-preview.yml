@@ -1,0 +1,83 @@
+# Re-deploy Preview
+#
+# Manually re-deploys a PR's preview build (Storybook + Sandbox) to GitHub Pages.
+# Use this when a PR's deploy-preview job was cancelled due to concurrency contention
+# in the pages-deploy group. Enter the PR number and click "Run workflow".
+
+name: Re-deploy Preview
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "PR number to re-deploy preview for"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: "pages-deploy"
+  cancel-in-progress: false
+
+jobs:
+  redeploy-preview:
+    runs-on: ubuntu-latest
+
+    env:
+      PR_NUMBER: ${{ github.event.inputs.pr_number }}
+
+    steps:
+      - name: Get PR head SHA
+        id: pr-info
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          HEAD_SHA=$(gh pr view $PR_NUMBER --repo ${{ github.repository }} --json headRefOid --jq '.headRefOid')
+          echo "head_sha=$HEAD_SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout PR head commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.pr-info.outputs.head_sha }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Build core
+        run: yarn build
+
+      - name: Build Storybook
+        run: yarn workspace @xds/storybook build
+
+      - name: Build Sandbox
+        env:
+          SANDBOX_BASE_PATH: /pr/${{ github.event.inputs.pr_number }}/sandbox
+        run: yarn workspace @xds/sandbox build
+
+      - name: Prepare deployment directory
+        run: |
+          mkdir -p deploy/pr/${PR_NUMBER}
+          cp -r apps/storybook/dist/* deploy/pr/${PR_NUMBER}/
+          mkdir -p deploy/pr/${PR_NUMBER}/sandbox
+          cp -r apps/sandbox/out/* deploy/pr/${PR_NUMBER}/sandbox/
+          touch deploy/.nojekyll
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./deploy
+          keep_files: true
+          destination_dir: .
