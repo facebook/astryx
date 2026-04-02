@@ -1,8 +1,8 @@
 # Re-deploy Preview
 #
 # Manually re-deploys a PR's preview build (Storybook + Sandbox) to GitHub Pages.
-# Use this when a PR's deploy-preview job was cancelled due to concurrency contention
-# in the pages-deploy group. Enter the PR number and click "Run workflow".
+# Uses a retry-based git push instead of peaceiris/actions-gh-pages to avoid
+# concurrency conflicts with the main deploy workflow.
 
 name: Re-deploy Preview
 
@@ -22,8 +22,8 @@ permissions:
   actions: read
 
 concurrency:
-  group: "pages-deploy"
-  cancel-in-progress: false
+  group: "pr-preview-${{ github.event.inputs.pr_number }}"
+  cancel-in-progress: true
 
 jobs:
   redeploy-preview:
@@ -66,18 +66,44 @@ jobs:
           SANDBOX_BASE_PATH: /pr/${{ github.event.inputs.pr_number }}/sandbox
         run: yarn workspace @xds/sandbox build
 
-      - name: Prepare deployment directory
-        run: |
-          mkdir -p deploy/pr/${PR_NUMBER}
-          cp -r apps/storybook/dist/* deploy/pr/${PR_NUMBER}/
-          mkdir -p deploy/pr/${PR_NUMBER}/sandbox
-          cp -r apps/sandbox/out/* deploy/pr/${PR_NUMBER}/sandbox/
-          touch deploy/.nojekyll
-
       - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./deploy
-          keep_files: true
-          destination_dir: .
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          REPO_URL="https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git"
+          MAX_ATTEMPTS=5
+          WORK_DIR="$PWD"
+
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          for attempt in $(seq 1 $MAX_ATTEMPTS); do
+            echo "::group::Attempt $attempt of $MAX_ATTEMPTS"
+            cd "$WORK_DIR"
+
+            rm -rf /tmp/gh-pages
+            git clone --depth=1 --single-branch --branch gh-pages "$REPO_URL" /tmp/gh-pages
+
+            rm -rf /tmp/gh-pages/pr/${PR_NUMBER}
+            mkdir -p /tmp/gh-pages/pr/${PR_NUMBER}
+            cp -r apps/storybook/dist/* /tmp/gh-pages/pr/${PR_NUMBER}/
+            mkdir -p /tmp/gh-pages/pr/${PR_NUMBER}/sandbox
+            cp -r apps/sandbox/out/* /tmp/gh-pages/pr/${PR_NUMBER}/sandbox/
+
+            cd /tmp/gh-pages
+            git add -A
+            git commit -m "Deploy PR #${PR_NUMBER} preview" || { echo "Nothing to commit"; echo "::endgroup::"; exit 0; }
+
+            if git push origin gh-pages; then
+              echo "Deployed successfully on attempt $attempt"
+              echo "::endgroup::"
+              exit 0
+            fi
+
+            echo "Push failed (likely concurrent update), retrying in $((attempt * 2))s..."
+            echo "::endgroup::"
+            sleep $((attempt * 2))
+          done
+
+          echo "::error::Failed to deploy PR preview after $MAX_ATTEMPTS attempts"
+          exit 1
