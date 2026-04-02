@@ -359,8 +359,12 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
     </table>
   );
 
-  // Apply transformTableContext from each plugin (outermost-first)
-  for (const plugin of plugins) {
+  // Apply transformTableContext from each plugin.
+  // Iterates in reverse so the first plugin in the array wraps outermost,
+  // matching the mental model: plugins are listed in priority order, and
+  // the first plugin's context provider encompasses all others.
+  for (let i = plugins.length - 1; i >= 0; i--) {
+    const plugin = plugins[i];
     if (plugin.transformTableContext) {
       tableElement = plugin.transformTableContext(tableElement);
     }
