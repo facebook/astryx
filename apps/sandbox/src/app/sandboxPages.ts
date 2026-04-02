@@ -131,6 +131,12 @@ export const categories: SandboxCategory[] = [
         href: '/pages/template-detail-2/',
         description: 'Order details',
       },
+      {
+        name: 'Detail Page (Product)',
+        href: '/pages/template-product-detail/',
+        description:
+          'Product detail page with image gallery, options, and collapsible info',
+      },
     ],
   },
   {
