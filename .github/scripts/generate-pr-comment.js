@@ -150,6 +150,11 @@ let footerLinks = [];
 if (storybookUrl) footerLinks.push(extLink('Storybook', storybookUrl));
 if (sandboxUrl) footerLinks.push(extLink('Sandbox', sandboxUrl));
 if (runUrl) footerLinks.push(extLink('View full report', runUrl));
+if (prNumber) {
+  const repoUrl = 'https://github.com/facebookexperimental/xds';
+  const redeployUrl = `${repoUrl}/actions/workflows/redeploy-preview.yml`;
+  footerLinks.push(extLink('Re-deploy preview', redeployUrl));
+}
 const footerLinksStr = footerLinks.length > 0 ? ` | ${footerLinks.join(' | ')}` : '';
 
 // Build the full comment
