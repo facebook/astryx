@@ -138,6 +138,15 @@ function SelectAllCheckbox() {
 }
 
 /**
+ * Encode select-all state as a number for useSyncExternalStore.
+ * Avoids string encoding + splitting — the snapshot is a cheap numeric
+ * comparison. Values: 0 = none, 1 = indeterminate, 2 = all selected.
+ */
+const SELECT_NONE = 0;
+const SELECT_INDETERMINATE = 1;
+const SELECT_ALL = 2;
+
+/**
  * Inner component that subscribes to all-selected/indeterminate state.
  * Separated so the useCallback/useSyncExternalStore hooks are not
  * called conditionally (after the null guard).
@@ -150,14 +159,14 @@ function SelectAllCheckboxInner<T extends Record<string, unknown>>({
   const getSnapshot = useCallback(() => {
     const config = store.getConfig();
     const allSelected = config.getIsAllSelected();
+    if (allSelected) return SELECT_ALL;
     const indeterminate = config.getIsIndeterminate?.() ?? false;
-    return `${allSelected}:${indeterminate}`;
+    return indeterminate ? SELECT_INDETERMINATE : SELECT_NONE;
   }, [store]);
 
-  const key = useSyncExternalStore(store.subscribe, getSnapshot, getSnapshot);
-  const [allSelectedStr, indeterminateStr] = key.split(':');
-  const allSelected = allSelectedStr === 'true';
-  const indeterminate = indeterminateStr === 'true';
+  const state = useSyncExternalStore(store.subscribe, getSnapshot, getSnapshot);
+  const allSelected = state === SELECT_ALL;
+  const indeterminate = state === SELECT_INDETERMINATE;
 
   return (
     <XDSCheckboxInput

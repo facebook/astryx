@@ -2,7 +2,7 @@
 
 /**
  * @file XDSTableCell.tsx
- * @input React, StyleX, XDSTableContext, theme tokens
+ * @input React, StyleX, XDSTableContext, theme tokens, useTableCellStyles
  * @output Exports XDSTableCell component, XDSTableCellProps
  * @position Sub-component; used inside XDSTable children mode
  *
@@ -11,7 +11,7 @@
  * - /packages/core/src/Table/index.ts
  */
 
-import {useContext, type ReactNode} from 'react';
+import {type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -21,8 +21,12 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import type {StyleXStyles} from '../theme/types';
-import {XDSTableContext} from './XDSTableContext';
 import {overflowStyles} from './table.stylex';
+import {
+  useTableContext,
+  buildDividerStyles,
+  mergeXStyle,
+} from './useTableCellStyles';
 import {xdsClassName, mergeProps} from '../utils';
 
 /** Props for XDSTableCell — thin `<td>` wrapper */
@@ -81,8 +85,6 @@ const dividerColumnStyles = stylex.create({
   },
 });
 
-// Shared overflow styles — see table.stylex.ts for rationale
-
 /**
  * XDSTableCell — a `<td>` wrapper for children/streaming mode.
  *
@@ -103,7 +105,7 @@ export function XDSTableCell({
   ref,
   ...props
 }: XDSTableCellProps) {
-  const ctx = useContext(XDSTableContext);
+  const ctx = useTableContext();
 
   if (!ctx) {
     return (
@@ -119,29 +121,17 @@ export function XDSTableCell({
   const cellStyles: StyleXStyles[] = [
     densityStyles[ctx.density],
     overflowStyles.cell,
+    ...buildDividerStyles(ctx, dividerRowStyles.cell, dividerColumnStyles.cell),
   ];
-
-  if (ctx.dividers === 'rows' || ctx.dividers === 'grid') {
-    cellStyles.push(dividerRowStyles.cell);
-  }
-
-  if (ctx.dividers === 'columns' || ctx.dividers === 'grid') {
-    cellStyles.push(dividerColumnStyles.cell);
-  }
-
-  if (xstyle) {
-    if (Array.isArray(xstyle)) {
-      cellStyles.push(...xstyle);
-    } else {
-      cellStyles.push(xstyle);
-    }
-  }
 
   return (
     <td
       ref={ref}
       {...props}
-      {...mergeProps(xdsClassName('table-cell'), stylex.props(...cellStyles))}>
+      {...mergeProps(
+        xdsClassName('table-cell'),
+        stylex.props(...mergeXStyle(cellStyles, xstyle)),
+      )}>
       {children}
     </td>
   );

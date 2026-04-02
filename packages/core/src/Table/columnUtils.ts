@@ -1,7 +1,7 @@
 /**
  * @file columnUtils.ts
  * @input XDSTableColumn types from types.ts
- * @output Pure utility functions for column width and auto-generation
+ * @output Pure utility functions for column width, layout resolution, and auto-generation
  * @position Utility layer; consumed by XDSBaseTable.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -9,11 +9,118 @@
  * - /packages/core/src/Table/index.ts (exports if functions change)
  */
 
-import type {ReactNode} from 'react';
+import type {CSSProperties, ReactNode} from 'react';
 import type {XDSTableColumn, ProportionalWidth, PixelWidth} from './types';
 
 /** Default minimum width (in px) for proportional columns. */
 export const DEFAULT_MIN_COLUMN_WIDTH = 120;
+
+// =============================================================================
+// Resolved Column Widths
+// =============================================================================
+
+/**
+ * Pre-computed width information for a single column.
+ * Produced by `resolveColumnWidths()`, consumed by header cell rendering.
+ */
+export interface ResolvedColumnWidth {
+  /** Inline style to apply on the `<th>` for this column. */
+  style: CSSProperties;
+}
+
+/**
+ * Result of `resolveColumnWidths()` — contains per-column width styles
+ * and the aggregate table min-width. Computed once and shared between
+ * the table min-width calculation and header cell rendering.
+ */
+export interface ResolvedColumnWidths {
+  /** Per-column width styles, indexed by column key. */
+  columns: Map<string, ResolvedColumnWidth>;
+  /** Minimum table width (px) to prevent proportional columns from shrinking below their minWidth. */
+  tableMinWidth: number;
+}
+
+/**
+ * Resolve column widths for the entire table in a single pass.
+ *
+ * Computes:
+ * - Per-column inline styles (`width`, `minWidth`) for `<th>` elements
+ * - Aggregate `tableMinWidth` for the `<table>` element
+ *
+ * This consolidates width logic that was previously duplicated between
+ * the `tableMinWidth` IIFE and the header cell rendering loop.
+ *
+ * @param columns - Resolved column definitions (after auto-generation)
+ * @returns Pre-computed widths for each column and the table minimum width
+ */
+export function resolveColumnWidths<T extends Record<string, unknown>>(
+  columns: XDSTableColumn<T>[],
+): ResolvedColumnWidths {
+  // --- Pass 1: Categorize columns and compute totals ---
+  let totalProportion = 0;
+  let pixelTotal = 0;
+  const proportionalCols: Array<{
+    key: string;
+    proportion: number;
+    minWidth: number;
+  }> = [];
+
+  for (const col of columns) {
+    const w = col.width;
+    if (w?.type === 'pixel') {
+      pixelTotal += w.value;
+    } else {
+      const proportion = w?.value ?? 1;
+      // Only count minWidth for columns that explicitly used proportional().
+      // Columns with no width set (w === undefined) have no minimum.
+      const minW = w != null ? (w.minWidth ?? DEFAULT_MIN_COLUMN_WIDTH) : 0;
+      totalProportion += proportion;
+      proportionalCols.push({key: col.key, proportion, minWidth: minW});
+    }
+  }
+
+  // --- Pass 2: Compute table min-width ---
+  let maxProportionalSpace = 0;
+  if (totalProportion > 0) {
+    for (const col of proportionalCols) {
+      const required = (col.minWidth * totalProportion) / col.proportion;
+      if (required > maxProportionalSpace) {
+        maxProportionalSpace = required;
+      }
+    }
+  }
+  const tableMinWidth = pixelTotal + maxProportionalSpace;
+
+  // --- Pass 3: Build per-column styles ---
+  const result = new Map<string, ResolvedColumnWidth>();
+
+  for (const col of columns) {
+    const w = col.width;
+    const style: CSSProperties = {};
+
+    if (w?.type === 'pixel') {
+      // Fixed pixel width — set both width and minWidth to prevent shrinking
+      style.width = `${w.value}px`;
+      style.minWidth = `${w.value}px`;
+    } else {
+      // Proportional width — compute percentage from total proportional units.
+      const proportion = w?.value ?? 1;
+      if (totalProportion > 0) {
+        style.width = `${(proportion / totalProportion) * 100}%`;
+      }
+      // Only apply minWidth if the column explicitly used proportional().
+      // Columns with no width set (w === undefined) have no minimum.
+      if (w != null) {
+        const minW = w.minWidth ?? DEFAULT_MIN_COLUMN_WIDTH;
+        style.minWidth = `${minW}px`;
+      }
+    }
+
+    result.set(col.key, {style});
+  }
+
+  return {columns: result, tableMinWidth};
+}
 
 /**
  * Create a proportional column width (fr-like).

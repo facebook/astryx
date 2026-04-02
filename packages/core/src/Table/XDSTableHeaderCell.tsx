@@ -2,7 +2,7 @@
 
 /**
  * @file XDSTableHeaderCell.tsx
- * @input React, StyleX, XDSTableContext, theme tokens
+ * @input React, StyleX, XDSTableContext, theme tokens, useTableCellStyles
  * @output Exports XDSTableHeaderCell component, XDSTableHeaderCellProps
  * @position Sub-component; used inside XDSTable for header cells
  *
@@ -11,7 +11,7 @@
  * - /packages/core/src/Table/index.ts
  */
 
-import {useContext, type ReactNode} from 'react';
+import {type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -22,8 +22,12 @@ import {
   borderVars,
 } from '../theme/tokens.stylex';
 import type {StyleXStyles} from '../theme/types';
-import {XDSTableContext} from './XDSTableContext';
 import {overflowStyles} from './table.stylex';
+import {
+  useTableContext,
+  buildDividerStyles,
+  mergeXStyle,
+} from './useTableCellStyles';
 import {xdsClassName, mergeProps} from '../utils';
 
 /** Props for XDSTableHeaderCell — `<th>` wrapper with context-aware styling */
@@ -88,8 +92,6 @@ const dividerColumnStyles = stylex.create({
   },
 });
 
-// Shared overflow styles — see table.stylex.ts for rationale
-
 /**
  * XDSTableHeaderCell — a `<th>` wrapper for header cells.
  *
@@ -117,7 +119,7 @@ export function XDSTableHeaderCell({
   style: incomingStyle,
   ...props
 }: XDSTableHeaderCellProps) {
-  const ctx = useContext(XDSTableContext);
+  const ctx = useTableContext();
 
   if (!ctx) {
     return (
@@ -135,6 +137,9 @@ export function XDSTableHeaderCell({
     );
   }
 
+  // Header cells always get the bottom divider (separates header from body).
+  // Column dividers use the shared buildDividerStyles — but only for
+  // the column axis, since the row divider is the headerDividerStyles.
   const cellStyles: StyleXStyles[] = [
     headerStyles.cell,
     densityStyles[ctx.density],
@@ -142,16 +147,9 @@ export function XDSTableHeaderCell({
     overflowStyles.cell,
   ];
 
+  // Only add column dividers from the shared builder
   if (ctx.dividers === 'columns' || ctx.dividers === 'grid') {
     cellStyles.push(dividerColumnStyles.cell);
-  }
-
-  if (xstyle) {
-    if (Array.isArray(xstyle)) {
-      cellStyles.push(...xstyle);
-    } else {
-      cellStyles.push(xstyle);
-    }
   }
 
   return (
@@ -160,7 +158,7 @@ export function XDSTableHeaderCell({
       {...props}
       {...mergeProps(
         xdsClassName('table-header-cell'),
-        stylex.props(...cellStyles),
+        stylex.props(...mergeXStyle(cellStyles, xstyle)),
         incomingClassName,
         incomingStyle as React.CSSProperties,
       )}>
