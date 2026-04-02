@@ -12,6 +12,7 @@
 import type {
   ComponentType,
   HTMLAttributes,
+  Ref,
   TdHTMLAttributes,
   ThHTMLAttributes,
   ReactNode,
@@ -170,6 +171,8 @@ export interface BodyRowRenderProps {
   htmlProps: HTMLAttributes<HTMLTableRowElement>;
   styles: StyleXStyles[];
   children: ReactNode;
+  /** Ref for the `<tr>` element. Plugins can set this to access the row DOM node. */
+  ref?: Ref<HTMLTableRowElement>;
 }
 
 /** Props passed through the plugin pipeline for each body `<td>` */
@@ -204,9 +207,7 @@ export interface TablePlugin<
    * Runs before any element-level transforms. Use to filter, reorder,
    * or inject synthetic columns (e.g. a selection checkbox column).
    */
-  transformColumns?: (
-    columns: XDSTableColumn<T>[],
-  ) => XDSTableColumn<T>[];
+  transformColumns?: (columns: XDSTableColumn<T>[]) => XDSTableColumn<T>[];
   /** Transform the root `<table>` element props */
   transformTable?: (props: TableRenderProps) => TableRenderProps;
   /** Transform the header `<tr>` props */

@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 /**
  * @file useXDSTableSelection.tsx
@@ -6,13 +6,12 @@
  * @output Exports useXDSTableSelection hook and UseXDSTableSelectionConfig type
  * @position Selection plugin; consumed by XDSTable via plugins prop
  *
- * ## Architecture (v2 — transformColumns + imperative row styling)
+ * ## Architecture (v2 — transformColumns + ref-based row styling)
  *
  * Selection checkboxes are implemented as a synthetic column prepended via
  * `transformColumns`. The checkbox column flows through the normal cell
  * component pipeline, so it automatically respects component overrides
- * (components prop on XDSBaseTable). This replaces the v1 approach of
- * hardcoding XDSTableCell/XDSTableHeaderCell in the plugin.
+ * (components prop on XDSBaseTable).
  *
  * Selection state is managed via an external store (SelectionStore) for
  * fine-grained row subscriptions. Each row's checkbox subscribes
@@ -20,10 +19,11 @@
  * re-renders, not the entire table body.
  *
  * Row-level styling (aria-selected, background) uses imperative DOM
- * updates via a ref on a sentinel element inside each row. This avoids
- * re-rendering the entire memoized row when selection state changes.
- * The sentinel element's useEffect applies/removes attributes on the
- * parent <tr> element.
+ * updates via a ref attached directly to the <tr> element through the
+ * plugin's `transformBodyRow`. No extra DOM elements are injected —
+ * the store tracks row elements in a Set and applies styles during
+ * notify(). This scales to multiple plugins since any plugin can
+ * attach a ref via the `ref` field on BodyRowRenderProps.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Table/Table.doc.mjs (selection documentation)
@@ -39,6 +39,7 @@ import {
   useMemo,
   useSyncExternalStore,
   type ReactNode,
+  type Ref,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars} from '../../../theme/tokens.stylex';
@@ -75,16 +76,27 @@ export interface UseXDSTableSelectionConfig<T extends Record<string, unknown>> {
 // Selection Store (external store for fine-grained row subscriptions)
 // =============================================================================
 
+/**
+ * Lightweight external store that lets each row subscribe to selection
+ * changes independently. Also manages a set of <tr> element refs for
+ * imperative row styling — no extra DOM elements needed.
+ */
 interface SelectionStore<T extends Record<string, unknown>> {
   subscribe: (listener: () => void) => () => void;
   notify: () => void;
   getConfig: () => UseXDSTableSelectionConfig<T>;
+  /** Tracked <tr> elements for imperative row styling. */
+  rowElements: Set<HTMLTableRowElement>;
+  /** Reverse lookup: <tr> element → item, for checking selection state. */
+  rowItems: WeakMap<HTMLTableRowElement, T>;
 }
 
 function createSelectionStore<T extends Record<string, unknown>>(
   configRef: React.RefObject<UseXDSTableSelectionConfig<T>>,
 ): SelectionStore<T> {
   const listeners = new Set<() => void>();
+  const rowElements = new Set<HTMLTableRowElement>();
+  const rowItems = new WeakMap<HTMLTableRowElement, T>();
 
   return {
     subscribe(listener: () => void) {
@@ -92,13 +104,55 @@ function createSelectionStore<T extends Record<string, unknown>>(
       return () => listeners.delete(listener);
     },
     notify() {
+      // Notify useSyncExternalStore subscribers (checkbox components)
       for (const listener of listeners) {
         listener();
+      }
+
+      // Imperative DOM updates for row styling — no React re-render needed.
+      const config = configRef.current;
+      for (const el of rowElements) {
+        if (!el.isConnected) {
+          rowElements.delete(el);
+          continue;
+        }
+        const item = rowItems.get(el);
+        if (!item) continue;
+        const isSelected = config.getIsItemSelected(item);
+        if (isSelected) {
+          el.setAttribute('aria-selected', 'true');
+          el.style.backgroundColor = selectedBgColor;
+        } else {
+          el.removeAttribute('aria-selected');
+          el.style.backgroundColor = '';
+        }
       }
     },
     getConfig() {
       return configRef.current;
     },
+    rowElements,
+    rowItems,
+  };
+}
+
+// =============================================================================
+// Ref Merging Utility
+// =============================================================================
+
+/**
+ * Compose multiple refs into a single callback ref.
+ * Used when multiple plugins need to attach refs to the same row.
+ */
+function mergeRefs<T>(...refs: (Ref<T> | undefined)[]): React.RefCallback<T> {
+  return (el: T | null) => {
+    for (const ref of refs) {
+      if (typeof ref === 'function') {
+        ref(el);
+      } else if (ref != null) {
+        (ref as React.MutableRefObject<T | null>).current = el;
+      }
+    }
   };
 }
 
@@ -224,69 +278,6 @@ function SelectionCellContentInner<T extends Record<string, unknown>>({
 }
 
 // =============================================================================
-// Row Selection Sentinel
-// =============================================================================
-
-/**
- * Invisible sentinel element rendered inside each body row. Subscribes to
- * this item's selection state and imperatively manages aria-selected and
- * background color on the parent <tr>.
- *
- * Why imperative: The <tr> is rendered by the memoized MemoizedTableRow
- * component. Re-rendering the entire row on selection change would defeat
- * the external store architecture. Instead, this zero-height sentinel
- * subscribes to the store and applies/removes attributes directly.
- *
- * The sentinel is a <td> with colspan=0, display:none — invisible and
- * doesn't affect table layout.
- */
-function SelectionRowSentinel<T extends Record<string, unknown>>({
-  item,
-}: {
-  item: T;
-}) {
-  const store = useContext(SelectionStoreContext);
-  if (!store) return null;
-
-  return <SelectionRowSentinelInner store={store} item={item} />;
-}
-
-const sentinelStyle: React.CSSProperties = {
-  display: 'none',
-};
-
-function SelectionRowSentinelInner<T extends Record<string, unknown>>({
-  store,
-  item,
-}: {
-  store: SelectionStore<T>;
-  item: T;
-}) {
-  const isSelected = useIsItemSelected(store, item);
-  const sentinelRef = useRef<HTMLTableCellElement>(null);
-
-  useEffect(() => {
-    const tr = sentinelRef.current?.parentElement;
-    if (!tr) return;
-    if (isSelected) {
-      tr.setAttribute('aria-selected', 'true');
-      tr.style.backgroundColor = selectedBgColor;
-    } else {
-      tr.removeAttribute('aria-selected');
-      tr.style.backgroundColor = '';
-    }
-    return () => {
-      if (tr) {
-        tr.removeAttribute('aria-selected');
-        tr.style.backgroundColor = '';
-      }
-    };
-  }, [isSelected]);
-
-  return <td ref={sentinelRef} style={sentinelStyle} aria-hidden="true" />;
-}
-
-// =============================================================================
 // Styles
 // =============================================================================
 
@@ -321,7 +312,8 @@ export function useXDSTableSelection<T extends Record<string, unknown>>(
   const store = storeRef.current;
 
   // Notify subscribers on every render — useSyncExternalStore will only
-  // re-render components whose snapshot actually changed.
+  // re-render components whose snapshot actually changed. Also applies
+  // imperative row styling via the store's row ref tracking.
   useEffect(() => {
     store.notify();
   });
@@ -373,18 +365,20 @@ export function useXDSTableSelection<T extends Record<string, unknown>>(
       },
 
       transformBodyRow(props: BodyRowRenderProps, item: T) {
-        // Inject a hidden sentinel <td> that subscribes to this item's
-        // selection state and imperatively manages aria-selected +
-        // background on the parent <tr>. This avoids re-rendering the
-        // entire memoized row on selection change.
+        // Attach a ref to the <tr> for imperative row styling.
+        // The store tracks all row elements and applies aria-selected /
+        // backgroundColor on notify() — no extra DOM elements needed.
+        const selectionRef: React.RefCallback<HTMLTableRowElement> = el => {
+          if (el) {
+            store.rowElements.add(el);
+            store.rowItems.set(el, item);
+          }
+        };
+
         return {
           ...props,
-          children: (
-            <>
-              {props.children}
-              <SelectionRowSentinel item={item} />
-            </>
-          ),
+          // Merge with any existing ref from other plugins
+          ref: props.ref ? mergeRefs(props.ref, selectionRef) : selectionRef,
         };
       },
     }),

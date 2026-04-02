@@ -150,6 +150,7 @@ function TableRowInner<T extends Record<string, unknown>>({
   return (
     <RowComponent
       key={rowKey}
+      ref={rowRenderProps.ref}
       {...rowRenderProps.htmlProps}
       xstyle={rowRenderProps.styles}>
       {rowRenderProps.children}
