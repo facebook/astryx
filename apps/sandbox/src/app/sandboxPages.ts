@@ -109,6 +109,12 @@ export const categories: SandboxCategory[] = [
         description: 'Settings page with tabs, forms, and toggles',
       },
       {
+        name: 'Settings (Account)',
+        href: '/pages/template-settings-02/',
+        description:
+          'Account settings with sidebar nav, info rows, and device history',
+      },
+      {
         name: 'Data Table',
         href: '/pages/template-data-table/',
         description:
