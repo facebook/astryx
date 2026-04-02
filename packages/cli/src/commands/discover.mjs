@@ -251,22 +251,45 @@ function fuzzyMatch(name, components, maxDistance = 3) {
     .map(m => m.name);
 }
 
+/**
+ * Validate that a docs object has the minimum required shape.
+ */
+function validateDocs(docs) {
+  if (!docs || typeof docs !== 'object') return 'docs export is missing or not an object';
+  if (typeof docs.name !== 'string' || !docs.name) return 'docs.name is missing or not a string';
+  if (typeof docs.description !== 'string') return 'docs.description is missing or not a string';
+  if (docs.props && !Array.isArray(docs.props)) return 'docs.props must be an array';
+  if (docs.components && !Array.isArray(docs.components)) return 'docs.components must be an array';
+  if (docs.examples && !Array.isArray(docs.examples)) return 'docs.examples must be an array';
+  if (docs.features && !Array.isArray(docs.features)) return 'docs.features must be an array';
+  return null;
+}
+
 async function renderDocs(result, program, detail) {
+  let docs;
   try {
     const zh = program.opts().zh || false;
     const lang = program.opts().lang || null;
-    const docs = await loadDocs(result.docPath, {zh, lang});
-
-    if (detail === 'brief') {
-      console.log(formatBrief(docs, result.componentName, result.pkg.name + '/' + result.componentName));
-    } else if (detail === 'compact') {
-      console.log(formatCompact(docs, result.componentName, result.pkg.name + '/' + result.componentName));
-    } else {
-      console.log(formatFull(docs));
-    }
+    docs = await loadDocs(result.docPath, {zh, lang});
   } catch (e) {
-    console.error('Failed to load docs: ' + e.message);
+    console.error('Failed to load docs for ' + result.componentName + ': ' + e.message);
+    console.error('File: ' + result.docPath);
     process.exit(1);
+  }
+
+  const validationError = validateDocs(docs);
+  if (validationError) {
+    console.error('Invalid docs for ' + result.componentName + ': ' + validationError);
+    console.error('File: ' + result.docPath);
+    process.exit(1);
+  }
+
+  if (detail === 'brief') {
+    console.log(formatBrief(docs, result.componentName, result.pkg.name + '/' + result.componentName));
+  } else if (detail === 'compact') {
+    console.log(formatCompact(docs, result.componentName, result.pkg.name + '/' + result.componentName));
+  } else {
+    console.log(formatFull(docs));
   }
 
   console.log('');
