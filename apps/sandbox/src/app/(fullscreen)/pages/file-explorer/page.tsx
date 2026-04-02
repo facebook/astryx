@@ -1,7 +1,16 @@
 'use client';
 
 import {useState, useMemo} from 'react';
-// StyleX imports removed — using inline styles for Finder-accurate rendering
+import {XDSButton} from '@xds/core/Button';
+import {XDSList, XDSListItem} from '@xds/core/List';
+import {XDSHStack} from '@xds/core/Layout';
+import {XDSText} from '@xds/core/Text';
+import {XDSToolbar} from '@xds/core/Toolbar';
+import {XDSDivider} from '@xds/core';
+import {
+  XDSSegmentedControl,
+  XDSSegmentedControlItem,
+} from '@xds/core/SegmentedControl';
 
 // =============================================================================
 // Types
@@ -80,7 +89,7 @@ function ChevronRight({color = '#C7C7CC'}: {color?: string}) {
 
 function BackIcon() {
   return (
-    <svg width={12} height={20} viewBox="0 0 12 20" fill="none">
+    <svg width={16} height={16} viewBox="0 0 12 20" fill="none">
       <path
         d="M10.5 1.5l-8 8.5 8 8.5"
         stroke="currentColor"
@@ -94,7 +103,7 @@ function BackIcon() {
 
 function ForwardIcon() {
   return (
-    <svg width={12} height={20} viewBox="0 0 12 20" fill="none">
+    <svg width={16} height={16} viewBox="0 0 12 20" fill="none">
       <path
         d="M1.5 1.5l8 8.5-8 8.5"
         stroke="currentColor"
@@ -106,8 +115,7 @@ function ForwardIcon() {
   );
 }
 
-function ColumnViewIcon({active}: {active?: boolean}) {
-  const c = active ? '#007AFF' : '#8E8E93';
+function ColumnViewIcon() {
   return (
     <svg width={18} height={18} viewBox="0 0 18 18" fill="none">
       <rect
@@ -116,8 +124,8 @@ function ColumnViewIcon({active}: {active?: boolean}) {
         width="4.5"
         height="16"
         rx="1"
-        fill={c}
-        fillOpacity={active ? 1 : 0.5}
+        fill="currentColor"
+        fillOpacity={0.5}
       />
       <rect
         x="6.75"
@@ -125,8 +133,8 @@ function ColumnViewIcon({active}: {active?: boolean}) {
         width="4.5"
         height="16"
         rx="1"
-        fill={c}
-        fillOpacity={active ? 1 : 0.5}
+        fill="currentColor"
+        fillOpacity={0.5}
       />
       <rect
         x="12.5"
@@ -134,14 +142,14 @@ function ColumnViewIcon({active}: {active?: boolean}) {
         width="4.5"
         height="16"
         rx="1"
-        fill={c}
-        fillOpacity={active ? 1 : 0.5}
+        fill="currentColor"
+        fillOpacity={0.5}
       />
     </svg>
   );
 }
 
-function GridViewIcon({active}: {active?: boolean}) {
+function GridViewIcon() {
   return (
     <svg width={18} height={18} viewBox="0 0 18 18" fill="none">
       <rect
@@ -150,8 +158,8 @@ function GridViewIcon({active}: {active?: boolean}) {
         width="7"
         height="7"
         rx="1.5"
-        fill={active ? '#007AFF' : '#8E8E93'}
-        fillOpacity={active ? 1 : 0.5}
+        fill="currentColor"
+        fillOpacity={0.5}
       />
       <rect
         x="10"
@@ -159,8 +167,8 @@ function GridViewIcon({active}: {active?: boolean}) {
         width="7"
         height="7"
         rx="1.5"
-        fill={active ? '#007AFF' : '#8E8E93'}
-        fillOpacity={active ? 1 : 0.5}
+        fill="currentColor"
+        fillOpacity={0.5}
       />
       <rect
         x="1"
@@ -168,8 +176,8 @@ function GridViewIcon({active}: {active?: boolean}) {
         width="7"
         height="7"
         rx="1.5"
-        fill={active ? '#007AFF' : '#8E8E93'}
-        fillOpacity={active ? 1 : 0.5}
+        fill="currentColor"
+        fillOpacity={0.5}
       />
       <rect
         x="10"
@@ -177,15 +185,14 @@ function GridViewIcon({active}: {active?: boolean}) {
         width="7"
         height="7"
         rx="1.5"
-        fill={active ? '#007AFF' : '#8E8E93'}
-        fillOpacity={active ? 1 : 0.5}
+        fill="currentColor"
+        fillOpacity={0.5}
       />
     </svg>
   );
 }
 
-function ListViewIcon({active}: {active?: boolean}) {
-  const c = active ? '#007AFF' : '#8E8E93';
+function ListViewIcon() {
   return (
     <svg width={18} height={18} viewBox="0 0 18 18" fill="none">
       <rect
@@ -194,8 +201,8 @@ function ListViewIcon({active}: {active?: boolean}) {
         width="16"
         height="3"
         rx="1"
-        fill={c}
-        fillOpacity={active ? 1 : 0.5}
+        fill="currentColor"
+        fillOpacity={0.5}
       />
       <rect
         x="1"
@@ -203,8 +210,8 @@ function ListViewIcon({active}: {active?: boolean}) {
         width="16"
         height="3"
         rx="1"
-        fill={c}
-        fillOpacity={active ? 1 : 0.5}
+        fill="currentColor"
+        fillOpacity={0.5}
       />
       <rect
         x="1"
@@ -212,15 +219,14 @@ function ListViewIcon({active}: {active?: boolean}) {
         width="16"
         height="3"
         rx="1"
-        fill={c}
-        fillOpacity={active ? 1 : 0.5}
+        fill="currentColor"
+        fillOpacity={0.5}
       />
     </svg>
   );
 }
 
-function GalleryViewIcon({active}: {active?: boolean}) {
-  const c = active ? '#007AFF' : '#8E8E93';
+function GalleryViewIcon() {
   return (
     <svg width={18} height={18} viewBox="0 0 18 18" fill="none">
       <rect
@@ -229,8 +235,8 @@ function GalleryViewIcon({active}: {active?: boolean}) {
         width="12"
         height="12"
         rx="1.5"
-        fill={c}
-        fillOpacity={active ? 1 : 0.5}
+        fill="currentColor"
+        fillOpacity={0.5}
       />
       <rect
         x="1"
@@ -238,8 +244,8 @@ function GalleryViewIcon({active}: {active?: boolean}) {
         width="4"
         height="2"
         rx="0.5"
-        fill={c}
-        fillOpacity={active ? 0.6 : 0.3}
+        fill="currentColor"
+        fillOpacity={0.3}
       />
       <rect
         x="7"
@@ -247,8 +253,8 @@ function GalleryViewIcon({active}: {active?: boolean}) {
         width="4"
         height="2"
         rx="0.5"
-        fill={c}
-        fillOpacity={active ? 0.6 : 0.3}
+        fill="currentColor"
+        fillOpacity={0.3}
       />
       <rect
         x="13"
@@ -256,8 +262,8 @@ function GalleryViewIcon({active}: {active?: boolean}) {
         width="4"
         height="2"
         rx="0.5"
-        fill={c}
-        fillOpacity={active ? 0.6 : 0.3}
+        fill="currentColor"
+        fillOpacity={0.3}
       />
     </svg>
   );
@@ -605,80 +611,14 @@ const inlineStyles = {
     overflow: 'hidden',
     userSelect: 'none' as const,
     fontFamily: FONT,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'var(--xds-color-background-surface, #FFFFFF)',
     position: 'fixed' as const,
     inset: 0,
   },
   toolbar: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    height: 38,
-    minHeight: 38,
-    paddingLeft: 78,
+    paddingLeft: 4,
     paddingRight: 12,
-    borderBottom: '1px solid #D1D1D6',
-    backgroundColor: '#F5F5F7',
     flexShrink: 0,
-  },
-  toolbarLeft: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 4,
-  },
-  toolbarCenter: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 1,
-    backgroundColor: '#E8E8ED',
-    borderRadius: 6,
-    padding: 2,
-  },
-  toolbarRight: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 4,
-  },
-  navButton: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 24,
-    height: 24,
-    borderRadius: 4,
-    border: 'none',
-    backgroundColor: 'transparent',
-    color: '#86868B',
-    cursor: 'pointer',
-    padding: 0,
-  },
-  toolbarButton: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 28,
-    height: 24,
-    borderRadius: 4,
-    border: 'none',
-    backgroundColor: 'transparent',
-    cursor: 'pointer',
-    padding: 0,
-  },
-  viewButton: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 28,
-    height: 24,
-    borderRadius: 5,
-    border: 'none',
-    backgroundColor: 'transparent',
-    cursor: 'pointer',
-    padding: 0,
-  },
-  viewButtonActive: {
-    backgroundColor: '#FFFFFF',
-    boxShadow: '0 0.5px 1px rgba(0,0,0,0.1)',
   },
   body: {
     display: 'flex',
@@ -688,15 +628,13 @@ const inlineStyles = {
   column: (isLast: boolean) => ({
     display: 'flex',
     flexDirection: 'column' as const,
-    minWidth: 180,
-    maxWidth: isLast ? 'none' : 260,
-    width: isLast ? undefined : '33.333%',
-    borderRight: isLast ? 'none' : '1px solid #E5E5EA',
+    width: 240,
+    flex: 'none',
+    borderRight: isLast ? 'none' : '1px solid var(--xds-color-border, #E5E5EA)',
     overflowY: 'auto' as const,
     overflowX: 'hidden' as const,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'var(--xds-color-background-surface, #FFFFFF)',
     flexShrink: 0,
-    flex: isLast ? 1 : undefined,
   }),
   columnContent: {
     paddingTop: 2,
@@ -714,8 +652,12 @@ const inlineStyles = {
     cursor: 'pointer',
     fontSize: 12,
     fontFamily: FONT,
-    color: isSelected ? '#FFFFFF' : '#1D1D1F',
-    backgroundColor: isSelected ? '#007AFF' : 'transparent',
+    color: isSelected
+      ? 'var(--xds-color-on-accent, #FFFFFF)'
+      : 'var(--xds-color-text-primary, #1D1D1F)',
+    backgroundColor: isSelected
+      ? 'var(--xds-color-accent, #007AFF)'
+      : 'transparent',
     borderRadius: isSelected ? 5 : 0,
     flexShrink: 0,
     whiteSpace: 'nowrap' as const,
@@ -860,81 +802,111 @@ export default function FileExplorerPage() {
   return (
     <div style={inlineStyles.page}>
       {/* Toolbar */}
-      <div style={inlineStyles.toolbar}>
-        <div style={inlineStyles.toolbarLeft}>
-          <button
-            style={{
-              ...inlineStyles.navButton,
-              opacity: selectedPath.length === 0 ? 0.3 : 1,
-              cursor: selectedPath.length === 0 ? 'default' : 'pointer',
-            }}
-            onClick={handleBack}
-            aria-label="Go back">
-            <BackIcon />
-          </button>
-          <button
-            style={{...inlineStyles.navButton, opacity: 0.3, cursor: 'default'}}
-            aria-label="Go forward">
-            <ForwardIcon />
-          </button>
-          <span
-            style={{
-              fontSize: 13,
-              fontWeight: 600,
-              fontFamily: FONT,
-              color: '#1D1D1F',
-              marginLeft: 6,
-            }}>
-            {currentFolderName}
-          </span>
-        </div>
+      <XDSToolbar
+        label="File Explorer"
+        style={inlineStyles.toolbar}
+        startContent={
+          <XDSHStack gap={1} vAlign="center">
+            <XDSButton
+              variant="ghost"
+              size="sm"
+              icon={<BackIcon />}
+              onClick={handleBack}
+              isDisabled={selectedPath.length === 0}
+              aria-label="Go back"
+            />
+            <XDSButton
+              variant="ghost"
+              size="sm"
+              icon={<ForwardIcon />}
+              isDisabled
+              aria-label="Go forward"
+            />
+            <XDSText type="label" style={{marginLeft: 6}}>
+              {currentFolderName}
+            </XDSText>
+          </XDSHStack>
+        }
+        centerContent={
+          <XDSSegmentedControl
+            value="column"
+            onChange={() => {}}
+            label="View mode"
+            size="sm">
+            <XDSSegmentedControlItem
+              value="grid"
+              label="Grid"
+              icon={<GridViewIcon />}
+              isLabelHidden
+            />
+            <XDSSegmentedControlItem
+              value="list"
+              label="List"
+              icon={<ListViewIcon />}
+              isLabelHidden
+            />
+            <XDSSegmentedControlItem
+              value="column"
+              label="Column"
+              icon={<ColumnViewIcon />}
+              isLabelHidden
+            />
+            <XDSSegmentedControlItem
+              value="gallery"
+              label="Gallery"
+              icon={<GalleryViewIcon />}
+              isLabelHidden
+            />
+          </XDSSegmentedControl>
+        }
+        endContent={
+          <XDSHStack gap={1} vAlign="center">
+            <XDSButton
+              variant="ghost"
+              size="sm"
+              icon={<GroupIcon />}
+              aria-label="Group"
+            />
+            <XDSButton
+              variant="ghost"
+              size="sm"
+              icon={<ShareIcon />}
+              aria-label="Share"
+            />
+            <XDSButton
+              variant="ghost"
+              size="sm"
+              icon={<TagIcon />}
+              aria-label="Tags"
+            />
+            <XDSButton
+              variant="ghost"
+              size="sm"
+              icon={<MoreIcon />}
+              aria-label="More"
+            />
+            <XDSButton
+              variant="ghost"
+              size="sm"
+              icon={<SearchIcon />}
+              aria-label="Search"
+            />
+          </XDSHStack>
+        }
+      />
 
-        <div style={inlineStyles.toolbarCenter}>
-          <button style={inlineStyles.viewButton} aria-label="Grid view">
-            <GridViewIcon />
-          </button>
-          <button style={inlineStyles.viewButton} aria-label="List view">
-            <ListViewIcon />
-          </button>
-          <button
-            style={{
-              ...inlineStyles.viewButton,
-              ...inlineStyles.viewButtonActive,
-            }}
-            aria-label="Column view">
-            <ColumnViewIcon active />
-          </button>
-          <button style={inlineStyles.viewButton} aria-label="Gallery view">
-            <GalleryViewIcon />
-          </button>
-        </div>
-
-        <div style={inlineStyles.toolbarRight}>
-          <button style={inlineStyles.toolbarButton} aria-label="Group">
-            <GroupIcon />
-          </button>
-          <button style={inlineStyles.toolbarButton} aria-label="Share">
-            <ShareIcon />
-          </button>
-          <button style={inlineStyles.toolbarButton} aria-label="Tags">
-            <TagIcon />
-          </button>
-          <button style={inlineStyles.toolbarButton} aria-label="More">
-            <MoreIcon />
-          </button>
-          <button style={inlineStyles.toolbarButton} aria-label="Search">
-            <SearchIcon />
-          </button>
-        </div>
-      </div>
+      <XDSDivider />
 
       {/* Columns */}
-      <div style={inlineStyles.body}>
+      <XDSHStack style={inlineStyles.body}>
         {columns.map((col, colIndex) => {
           const isLast = colIndex === columns.length - 1;
           return (
             <div key={colIndex} style={inlineStyles.column(isLast)}>
-              <div style={inlineStyles.columnContent}>
+              <XDSList
+                density="compact"
+                hasDividers={false}
+                style={{padding: 8}}>
                 {col.items.map(item => {
                   const isSelected = col.selectedId === item.id;
                   const hasChildren =
@@ -943,27 +915,27 @@ export default function FileExplorerPage() {
                     item.children.length > 0;
 
                   return (
-                    <div
+                    <XDSListItem
                       key={item.id}
-                      style={inlineStyles.row(isSelected)}
-                      onClick={() => handleSelect(colIndex, item.id)}>
-                      {renderIcon(item, isSelected)}
-                      <span style={inlineStyles.rowName}>{item.name}</span>
-                      {hasChildren && (
-                        <span style={inlineStyles.rowChevron}>
+                      label={item.name}
+                      startContent={renderIcon(item, isSelected)}
+                      endContent={
+                        hasChildren ? (
                           <ChevronRight
-                            color={isSelected ? 'white' : '#C7C7CC'}
+                            color={'var(--xds-color-icon-secondary, #86868B)'}
                           />
-                        </span>
-                      )}
-                    </div>
+                        ) : undefined
+                      }
+                      onClick={() => handleSelect(colIndex, item.id)}
+                      isSelected={isSelected}
+                    />
                   );
                 })}
-              </div>
+              </XDSList>
             </div>
           );
         })}
-      </div>
+      </XDSHStack>
     </div>
   );
 }
