@@ -200,6 +200,9 @@ const styles = stylex.create({
 
   // Select-all wrapper
   selectAllWrapper: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-2'],
     cursor: 'pointer',
   },
 
@@ -232,6 +235,28 @@ const styles = stylex.create({
   itemDisabled: {
     opacity: 0.5,
     cursor: 'not-allowed',
+  },
+
+  // Decorative checkbox (non-interactive, purely visual)
+  checkboxDecorative: {
+    pointerEvents: 'none',
+    display: 'flex',
+    flexShrink: 0,
+  },
+
+  // Label text for items (rendered outside checkbox for correct click behavior)
+  itemLabel: {
+    fontFamily: typographyVars['--font-family-body'],
+    fontSize: typeScaleVars['--text-label-size'],
+    fontWeight: fontWeightVars['--font-weight-medium'],
+    color: colorVars['--color-text-primary'],
+    minWidth: 0,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+  itemLabelDisabled: {
+    color: colorVars['--color-text-disabled'],
   },
 
   // Empty state
@@ -815,15 +840,27 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
             isHighlighted && styles.itemHighlighted,
             item.disabled && styles.itemDisabled,
           )}>
-          <XDSCheckboxInput
-            label={children ? '' : (item.label ?? item.value)}
-            isLabelHidden={!!children}
-            value={isSelected}
-            onChange={() => {}}
-            isDisabled={item.disabled}
-            size={size === 'lg' ? 'md' : size}
-          />
-          {children && children(item)}
+          <div aria-hidden="true" {...stylex.props(styles.checkboxDecorative)}>
+            <XDSCheckboxInput
+              label=""
+              isLabelHidden
+              value={isSelected}
+              onChange={() => {}}
+              isDisabled={item.disabled}
+              size={size === 'lg' ? 'md' : size}
+            />
+          </div>
+          {children ? (
+            children(item)
+          ) : (
+            <span
+              {...stylex.props(
+                styles.itemLabel,
+                item.disabled && styles.itemLabelDisabled,
+              )}>
+              {item.label ?? item.value}
+            </span>
+          )}
         </div>
       );
     },
@@ -1024,12 +1061,20 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
                   selectAllSizeStyles[size],
                 )}
                 onClick={handleSelectAll}>
-                <XDSCheckboxInput
-                  label={selectAllLabel}
-                  value={selectAllState}
-                  onChange={() => {}}
-                  size={size === 'lg' ? 'md' : size}
-                />
+                <div
+                  aria-hidden="true"
+                  {...stylex.props(styles.checkboxDecorative)}>
+                  <XDSCheckboxInput
+                    label=""
+                    isLabelHidden
+                    value={selectAllState}
+                    onChange={() => {}}
+                    size={size === 'lg' ? 'md' : size}
+                  />
+                </div>
+                <span {...stylex.props(styles.itemLabel)}>
+                  {selectAllLabel}
+                </span>
               </div>
               <XDSDivider xstyle={styles.divider} />
             </>

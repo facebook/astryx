@@ -356,7 +356,7 @@ describe('XDSMultiSelector', () => {
     );
 
     await user.click(screen.getByRole('combobox'));
-    expect(screen.getByLabelText('Select all', h)).toBeInTheDocument();
+    expect(screen.getByText('Select all')).toBeInTheDocument();
   });
 
   it('select-all selects all enabled items', async () => {
@@ -377,7 +377,7 @@ describe('XDSMultiSelector', () => {
     );
 
     await user.click(screen.getByRole('combobox'));
-    const selectAll = screen.getByLabelText('Select all', h);
+    const selectAll = screen.getByText('Select all');
     await user.click(selectAll);
 
     expect(onChange).toHaveBeenCalledWith(['apple', 'orange']);
@@ -397,7 +397,7 @@ describe('XDSMultiSelector', () => {
     );
 
     await user.click(screen.getByRole('combobox'));
-    const selectAll = screen.getByLabelText('Select all', h);
+    const selectAll = screen.getByText('Select all');
     await user.click(selectAll);
 
     expect(onChange).toHaveBeenCalledWith([]);
@@ -539,7 +539,7 @@ describe('XDSMultiSelector', () => {
     );
 
     await user.click(screen.getByRole('combobox'));
-    expect(screen.getByLabelText('Check all', h)).toBeInTheDocument();
+    expect(screen.getByText('Check all')).toBeInTheDocument();
   });
 
   it('sorts selected items to top', async () => {
