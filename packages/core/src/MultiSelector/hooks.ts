@@ -35,7 +35,9 @@ interface UseMultiComboboxResult {
 
 /**
  * Handles keyboard navigation and toggle logic for multi-select combobox.
- * Unlike useCombobox (single-select), toggling an item does NOT close the dropdown.
+ * Works like useCombobox (index-based) but toggling does NOT close the dropdown.
+ *
+ * The caller must ensure selectableItems is in the same order as the rendered DOM.
  */
 export function useMultiCombobox({
   selectableItems,
@@ -75,7 +77,6 @@ export function useMultiCombobox({
       closeAndReset();
     } else {
       onOpen();
-      // If search is present, don't highlight any item (focus goes to search)
       if (!hasSearch) {
         setHighlightedIndex(0);
       }
@@ -142,6 +143,12 @@ export function useMultiCombobox({
             if (!hasSearch) {
               setHighlightedIndex(0);
             }
+          }
+          break;
+
+        case 'Tab':
+          if (isOpen) {
+            closeAndReset();
           }
           break;
 
