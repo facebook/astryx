@@ -1,8 +1,7 @@
 'use client';
 
 import {useState, useMemo} from 'react';
-import * as stylex from '@stylexjs/stylex';
-import {colorVars} from '@xds/core/theme/tokens.stylex';
+// StyleX imports removed — using inline styles for Finder-accurate rendering
 
 // =============================================================================
 // Types
@@ -21,7 +20,7 @@ interface FileSystemItem {
 
 function FolderIcon({color = '#5AADFE'}: {color?: string}) {
   return (
-    <svg width={20} height={20} viewBox="0 0 20 20" fill="none">
+    <svg width={16} height={16} viewBox="0 0 20 20" fill="none">
       <path
         d="M2 5.5A1.5 1.5 0 013.5 4h3.764a1.5 1.5 0 011.073.453l1.326 1.36a.5.5 0 00.358.152L16.5 6A1.5 1.5 0 0118 7.5v7a1.5 1.5 0 01-1.5 1.5h-13A1.5 1.5 0 012 14.5v-9z"
         fill={color}
@@ -32,7 +31,7 @@ function FolderIcon({color = '#5AADFE'}: {color?: string}) {
 
 function FileIcon({color = '#8E8E93'}: {color?: string}) {
   return (
-    <svg width={20} height={20} viewBox="0 0 20 20" fill="none">
+    <svg width={16} height={16} viewBox="0 0 20 20" fill="none">
       <path
         d="M5 2.5A1.5 1.5 0 016.5 1h4.879a1.5 1.5 0 011.06.44l3.122 3.12A1.5 1.5 0 0116 5.622V17.5a1.5 1.5 0 01-1.5 1.5h-8A1.5 1.5 0 015 17.5v-15z"
         fill="white"
@@ -48,14 +47,14 @@ function AppIcon({label, bg}: {label: string; bg: string}) {
   return (
     <div
       style={{
-        width: 20,
-        height: 20,
-        borderRadius: 5,
+        width: 16,
+        height: 16,
+        borderRadius: 4,
         backgroundColor: bg,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        fontSize: 9,
+        fontSize: 8,
         fontWeight: 700,
         color: 'white',
         flexShrink: 0,
@@ -591,71 +590,75 @@ const APP_ICONS: Record<string, {label: string; bg: string}> = {
 };
 
 // =============================================================================
-// Styles
+// Styles — inline for layout, minimal StyleX for tokens only
 // =============================================================================
 
-const styles = stylex.create({
+const FONT =
+  '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif';
+
+const inlineStyles = {
   page: {
     display: 'flex',
-    flexDirection: 'column',
+    flexDirection: 'column' as const,
     height: '100vh',
-    backgroundColor: colorVars['--color-background-body'],
+    width: '100vw',
     overflow: 'hidden',
-    userSelect: 'none',
+    userSelect: 'none' as const,
+    fontFamily: FONT,
+    backgroundColor: '#FFFFFF',
+    position: 'fixed' as const,
+    inset: 0,
   },
   toolbar: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    height: 52,
-    paddingLeft: 12,
+    height: 38,
+    minHeight: 38,
+    paddingLeft: 78,
     paddingRight: 12,
-    borderBottom: '1px solid var(--xds-color-border-primary, #D5D5D5)',
-    backgroundColor: colorVars['--color-background-surface'],
+    borderBottom: '1px solid #D1D1D6',
+    backgroundColor: '#F5F5F7',
     flexShrink: 0,
   },
   toolbarLeft: {
     display: 'flex',
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
   },
   toolbarCenter: {
     display: 'flex',
     alignItems: 'center',
-    gap: 2,
-    backgroundColor: 'var(--xds-color-background-body, #F5F5F5)',
+    gap: 1,
+    backgroundColor: '#E8E8ED',
     borderRadius: 6,
     padding: 2,
   },
   toolbarRight: {
     display: 'flex',
     alignItems: 'center',
-    gap: 8,
+    gap: 4,
   },
   navButton: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    width: 28,
-    height: 28,
-    borderRadius: 6,
+    width: 24,
+    height: 24,
+    borderRadius: 4,
     border: 'none',
     backgroundColor: 'transparent',
-    color: 'var(--xds-color-content-secondary, #8E8E93)',
+    color: '#86868B',
     cursor: 'pointer',
     padding: 0,
-  },
-  navButtonDisabled: {
-    opacity: 0.3,
-    cursor: 'default',
   },
   toolbarButton: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    width: 32,
-    height: 28,
-    borderRadius: 6,
+    width: 28,
+    height: 24,
+    borderRadius: 4,
     border: 'none',
     backgroundColor: 'transparent',
     cursor: 'pointer',
@@ -665,8 +668,8 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    width: 32,
-    height: 28,
+    width: 28,
+    height: 24,
     borderRadius: 5,
     border: 'none',
     backgroundColor: 'transparent',
@@ -674,87 +677,57 @@ const styles = stylex.create({
     padding: 0,
   },
   viewButtonActive: {
-    backgroundColor: 'var(--xds-color-background-surface, white)',
-    boxShadow: '0 0.5px 1px rgba(0,0,0,0.12), 0 0 0.5px rgba(0,0,0,0.06)',
-  },
-  title: {
-    fontSize: 13,
-    fontWeight: 700,
-    color: 'var(--xds-color-content-primary, #1D1D1F)',
-    marginLeft: 8,
-  },
-  groupButton: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 4,
-    height: 28,
-    paddingLeft: 8,
-    paddingRight: 6,
-    borderRadius: 6,
-    border: 'none',
-    backgroundColor: 'transparent',
-    cursor: 'pointer',
-    fontSize: 11,
-    color: 'var(--xds-color-content-secondary, #8E8E93)',
-  },
-  groupChevron: {
-    fontSize: 8,
-    color: 'var(--xds-color-content-secondary, #8E8E93)',
+    backgroundColor: '#FFFFFF',
+    boxShadow: '0 0.5px 1px rgba(0,0,0,0.1)',
   },
   body: {
     display: 'flex',
     flex: 1,
     overflow: 'hidden',
   },
-  column: {
+  column: (isLast: boolean) => ({
     display: 'flex',
-    flexDirection: 'column',
+    flexDirection: 'column' as const,
     minWidth: 180,
-    maxWidth: 340,
-    width: '33.333%',
-    borderRight: '1px solid var(--xds-color-border-primary, #D5D5D5)',
-    overflowY: 'auto',
-    overflowX: 'hidden',
-    backgroundColor: colorVars['--color-background-body'],
+    maxWidth: isLast ? 'none' : 260,
+    width: isLast ? undefined : '33.333%',
+    borderRight: isLast ? 'none' : '1px solid #E5E5EA',
+    overflowY: 'auto' as const,
+    overflowX: 'hidden' as const,
+    backgroundColor: '#FFFFFF',
     flexShrink: 0,
+    flex: isLast ? 1 : undefined,
+  }),
+  columnContent: {
+    paddingTop: 2,
+    paddingBottom: 2,
   },
-  lastColumn: {
-    borderRight: 'none',
-    flex: 1,
-    maxWidth: 'none',
-  },
-  row: {
+  row: (isSelected: boolean) => ({
     display: 'flex',
     alignItems: 'center',
-    gap: 6,
-    height: 24,
-    paddingLeft: 8,
-    paddingRight: 8,
+    gap: 5,
+    height: 22,
+    paddingLeft: isSelected ? 5 : 8,
+    paddingRight: isSelected ? 5 : 8,
+    marginLeft: isSelected ? 4 : 0,
+    marginRight: isSelected ? 4 : 0,
     cursor: 'pointer',
-    fontSize: 13,
-    color: 'var(--xds-color-content-primary, #1D1D1F)',
-    borderRadius: 0,
+    fontSize: 12,
+    fontFamily: FONT,
+    color: isSelected ? '#FFFFFF' : '#1D1D1F',
+    backgroundColor: isSelected ? '#007AFF' : 'transparent',
+    borderRadius: isSelected ? 5 : 0,
     flexShrink: 0,
-    whiteSpace: 'nowrap',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    lineHeight: '24px',
-  },
-  rowSelected: {
-    backgroundColor: '#0058D0',
-    color: 'white',
-    borderRadius: 5,
-    marginLeft: 4,
-    marginRight: 4,
-    paddingLeft: 4,
-    paddingRight: 4,
-  },
+    whiteSpace: 'nowrap' as const,
+    overflow: 'hidden' as const,
+    textOverflow: 'ellipsis' as const,
+    lineHeight: '22px',
+  }),
   rowName: {
     flex: 1,
     overflow: 'hidden',
     textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
-    fontSize: 13,
+    whiteSpace: 'nowrap' as const,
   },
   rowChevron: {
     flexShrink: 0,
@@ -766,14 +739,10 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    width: 20,
-    height: 20,
+    width: 16,
+    height: 16,
   },
-  columnContent: {
-    paddingTop: 4,
-    paddingBottom: 4,
-  },
-});
+};
 
 // =============================================================================
 // Helpers
@@ -866,7 +835,7 @@ export default function FileExplorerPage() {
   function renderIcon(item: FileSystemItem, isSelected: boolean) {
     if (item.type === 'folder') {
       return (
-        <div {...stylex.props(styles.iconWrapper)}>
+        <div style={inlineStyles.iconWrapper}>
           <FolderIcon color={isSelected ? '#A0CCFF' : '#5AADFE'} />
         </div>
       );
@@ -875,119 +844,125 @@ export default function FileExplorerPage() {
     const appIcon = APP_ICONS[item.name];
     if (appIcon) {
       return (
-        <div {...stylex.props(styles.iconWrapper)}>
+        <div style={inlineStyles.iconWrapper}>
           <AppIcon label={appIcon.label} bg={appIcon.bg} />
         </div>
       );
     }
 
     return (
-      <div {...stylex.props(styles.iconWrapper)}>
+      <div style={inlineStyles.iconWrapper}>
         <FileIcon color={isSelected ? '#FFFFFF' : '#8E8E93'} />
       </div>
     );
   }
 
   return (
-    <div {...stylex.props(styles.page)}>
+    <div style={inlineStyles.page}>
       {/* Toolbar */}
-      <div {...stylex.props(styles.toolbar)}>
-        <div {...stylex.props(styles.toolbarLeft)}>
+      <div style={inlineStyles.toolbar}>
+        <div style={inlineStyles.toolbarLeft}>
           <button
-            {...stylex.props(
-              styles.navButton,
-              selectedPath.length === 0 && styles.navButtonDisabled,
-            )}
+            style={{
+              ...inlineStyles.navButton,
+              opacity: selectedPath.length === 0 ? 0.3 : 1,
+              cursor: selectedPath.length === 0 ? 'default' : 'pointer',
+            }}
             onClick={handleBack}
             aria-label="Go back">
             <BackIcon />
           </button>
           <button
-            {...stylex.props(styles.navButton, styles.navButtonDisabled)}
+            style={{...inlineStyles.navButton, opacity: 0.3, cursor: 'default'}}
             aria-label="Go forward">
             <ForwardIcon />
           </button>
-          <span {...stylex.props(styles.title)}>{currentFolderName}</span>
+          <span
+            style={{
+              fontSize: 13,
+              fontWeight: 600,
+              fontFamily: FONT,
+              color: '#1D1D1F',
+              marginLeft: 6,
+            }}>
+            {currentFolderName}
+          </span>
         </div>
 
-        <div {...stylex.props(styles.toolbarCenter)}>
-          <button {...stylex.props(styles.viewButton)} aria-label="Grid view">
+        <div style={inlineStyles.toolbarCenter}>
+          <button style={inlineStyles.viewButton} aria-label="Grid view">
             <GridViewIcon />
           </button>
-          <button {...stylex.props(styles.viewButton)} aria-label="List view">
+          <button style={inlineStyles.viewButton} aria-label="List view">
             <ListViewIcon />
           </button>
           <button
-            {...stylex.props(styles.viewButton, styles.viewButtonActive)}
+            style={{
+              ...inlineStyles.viewButton,
+              ...inlineStyles.viewButtonActive,
+            }}
             aria-label="Column view">
             <ColumnViewIcon active />
           </button>
-          <button
-            {...stylex.props(styles.viewButton)}
-            aria-label="Gallery view">
+          <button style={inlineStyles.viewButton} aria-label="Gallery view">
             <GalleryViewIcon />
           </button>
         </div>
 
-        <div {...stylex.props(styles.toolbarRight)}>
-          <button {...stylex.props(styles.toolbarButton)} aria-label="Group">
+        <div style={inlineStyles.toolbarRight}>
+          <button style={inlineStyles.toolbarButton} aria-label="Group">
             <GroupIcon />
           </button>
-          <button {...stylex.props(styles.toolbarButton)} aria-label="Share">
+          <button style={inlineStyles.toolbarButton} aria-label="Share">
             <ShareIcon />
           </button>
-          <button {...stylex.props(styles.toolbarButton)} aria-label="Tags">
+          <button style={inlineStyles.toolbarButton} aria-label="Tags">
             <TagIcon />
           </button>
-          <button {...stylex.props(styles.toolbarButton)} aria-label="More">
+          <button style={inlineStyles.toolbarButton} aria-label="More">
             <MoreIcon />
           </button>
-          <button {...stylex.props(styles.toolbarButton)} aria-label="Search">
+          <button style={inlineStyles.toolbarButton} aria-label="Search">
             <SearchIcon />
           </button>
         </div>
       </div>
 
       {/* Columns */}
-      <div {...stylex.props(styles.body)}>
-        {columns.map((col, colIndex) => (
-          <div
-            key={colIndex}
-            {...stylex.props(
-              styles.column,
-              colIndex === columns.length - 1 && styles.lastColumn,
-            )}>
-            <div {...stylex.props(styles.columnContent)}>
-              {col.items.map(item => {
-                const isSelected = col.selectedId === item.id;
-                const hasChildren =
-                  item.type === 'folder' &&
-                  item.children != null &&
-                  item.children.length > 0;
+      <div style={inlineStyles.body}>
+        {columns.map((col, colIndex) => {
+          const isLast = colIndex === columns.length - 1;
+          return (
+            <div key={colIndex} style={inlineStyles.column(isLast)}>
+              <div style={inlineStyles.columnContent}>
+                {col.items.map(item => {
+                  const isSelected = col.selectedId === item.id;
+                  const hasChildren =
+                    item.type === 'folder' &&
+                    item.children != null &&
+                    item.children.length > 0;
 
-                return (
-                  <div
-                    key={item.id}
-                    {...stylex.props(
-                      styles.row,
-                      isSelected && styles.rowSelected,
-                    )}
-                    onClick={() => handleSelect(colIndex, item.id)}>
-                    {renderIcon(item, isSelected)}
-                    <span {...stylex.props(styles.rowName)}>{item.name}</span>
-                    {hasChildren && (
-                      <span {...stylex.props(styles.rowChevron)}>
-                        <ChevronRight
-                          color={isSelected ? 'white' : '#C7C7CC'}
-                        />
-                      </span>
-                    )}
-                  </div>
-                );
-              })}
+                  return (
+                    <div
+                      key={item.id}
+                      style={inlineStyles.row(isSelected)}
+                      onClick={() => handleSelect(colIndex, item.id)}>
+                      {renderIcon(item, isSelected)}
+                      <span style={inlineStyles.rowName}>{item.name}</span>
+                      {hasChildren && (
+                        <span style={inlineStyles.rowChevron}>
+                          <ChevronRight
+                            color={isSelected ? 'white' : '#C7C7CC'}
+                          />
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
