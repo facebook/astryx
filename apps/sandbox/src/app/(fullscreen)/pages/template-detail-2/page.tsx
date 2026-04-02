@@ -398,7 +398,7 @@ function ShopSideNav() {
           />
         </XDSVStack>
       }>
-      <XDSSideNavSection>
+      <XDSSideNavSection title="Main" isHeaderHidden>
         <XDSSideNavItem
           label="Home"
           icon={HomeIcon}
