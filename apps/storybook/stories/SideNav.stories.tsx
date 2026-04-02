@@ -415,7 +415,7 @@ export const HeadingOverflow: Story = {
   ],
   render: () => (
     <>
-      {/* Case 1: Long heading text */}
+      {/* Case 1: Long unbroken strings */}
       <div style={{width: 280, height: 400, border: '1px solid #e5e7eb'}}>
         <XDSSideNav
           header={
@@ -425,8 +425,8 @@ export const HeadingOverflow: Story = {
                   icon={<CubeIcon style={{width: 16, height: 16}} />}
                 />
               }
-              heading="Enterprise Content Management Platform"
-              superheading="verylongusernamethatshouldtruncate"
+              heading="this_is_a_long_unbroken_application_name"
+              superheading="very_long_unbroken_username_that_should_truncate"
               headingHref="/"
             />
           }>
@@ -442,7 +442,7 @@ export const HeadingOverflow: Story = {
         </XDSSideNav>
       </div>
 
-      {/* Case 2: Long heading + subheading + menu */}
+      {/* Case 2: Unbroken heading + subheading + menu */}
       <div style={{width: 280, height: 400, border: '1px solid #e5e7eb'}}>
         <XDSSideNav
           header={
@@ -452,8 +452,8 @@ export const HeadingOverflow: Story = {
                   icon={<CubeIcon style={{width: 16, height: 16}} />}
                 />
               }
-              heading="My Super Long Application Name Here"
-              subheading="really-long-business-account-name@company.com"
+              heading="my_super_long_unbroken_app_name_here"
+              subheading="really_long_business_account_name@company.com"
               menu={
                 <XDSList density="compact">
                   <XDSListItem label="Switch account" href="#" />
@@ -483,7 +483,7 @@ export const HeadingOverflow: Story = {
                   icon={<CubeIcon style={{width: 16, height: 16}} />}
                 />
               }
-              heading="Normal App Name"
+              heading="normal_app_name"
               superheading="username"
               headingHref="/"
             />
