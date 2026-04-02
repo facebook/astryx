@@ -51,11 +51,22 @@ export async function loadConfig(startDir = process.cwd()) {
 }
 
 /**
- * Normalize packages to an array of absolute paths.
+ * Normalize packages to an array of unique absolute paths.
+ * Filters out empty strings and non-string values.
  * Relative paths resolved from config file directory.
+ * Deduplicates by resolved path.
  */
 function normalizePackages(packages, configDir) {
   if (!packages) return [];
   const arr = Array.isArray(packages) ? packages : [packages];
-  return arr.map(p => (path.isAbsolute(p) ? p : path.resolve(configDir, p)));
+  const seen = new Set();
+  const result = [];
+  for (const p of arr) {
+    if (typeof p !== 'string' || p === '') continue;
+    const resolved = path.isAbsolute(p) ? p : path.resolve(configDir, p);
+    if (seen.has(resolved)) continue;
+    seen.add(resolved);
+    result.push(resolved);
+  }
+  return result;
 }

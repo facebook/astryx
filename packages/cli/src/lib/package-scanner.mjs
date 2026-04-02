@@ -17,13 +17,15 @@ export function scanDirectory(scanDir) {
     if (!pkg.xds || !pkg.xds.docs) continue;
     const pkgDir = path.join(scanDir, entry.name);
     const docsDir = path.resolve(pkgDir, pkg.xds.docs);
+    const components = discoverDocComponents(docsDir);
+    if (components.length === 0) continue;
     packages.push({
       name: pkg.name || entry.name,
       dir: pkgDir,
       xds: pkg.xds,
       category: pkg.xds.category || pkg.name || entry.name,
       docsDir,
-      components: discoverDocComponents(docsDir),
+      components,
     });
   }
   return packages;
@@ -31,7 +33,14 @@ export function scanDirectory(scanDir) {
 
 export function scanAllPackages(packageDirs) {
   const all = [];
-  for (const dir of packageDirs) all.push(...scanDirectory(dir));
+  const seen = new Set();
+  for (const dir of packageDirs) {
+    for (const pkg of scanDirectory(dir)) {
+      if (seen.has(pkg.name)) continue;
+      seen.add(pkg.name);
+      all.push(pkg);
+    }
+  }
   return all;
 }
 
