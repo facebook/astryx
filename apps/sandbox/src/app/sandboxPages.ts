@@ -126,6 +126,11 @@ export const categories: SandboxCategory[] = [
         description:
           'macOS Finder-style column view with drill-down file navigation',
       },
+      {
+        name: 'Details Page',
+        href: '/pages/template-detail-2/',
+        description: 'Order details',
+      },
     ],
   },
   {
