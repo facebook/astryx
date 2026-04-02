@@ -279,8 +279,11 @@ const selectionColumnStyles = stylex.create({
 /** Selection column key — prefixed to avoid collisions with user columns. */
 const SELECTION_COLUMN_KEY = '__xds_selection';
 
-/** Fixed width for the selection column. */
-const SELECTION_COLUMN_WIDTH = pixel(36);
+/** Fixed width for the selection column.
+ * Must accommodate the sm checkbox (20px touch target) plus the largest
+ * cell paddingInline (spacious = 16px × 2 = 32px). 20 + 32 = 52px.
+ */
+const SELECTION_COLUMN_WIDTH = pixel(52);
 
 // =============================================================================
 // Hook
