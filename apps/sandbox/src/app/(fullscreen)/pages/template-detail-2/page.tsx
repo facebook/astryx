@@ -23,7 +23,6 @@ import {XDSTabList, XDSTab} from '@xds/core/TabList';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSLink} from '@xds/core/Link';
 import {XDSList, XDSListItem} from '@xds/core/List';
-import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import {XDSMetadataList, XDSMetadataListItem} from '@xds/core/MetadataList';
 import {XDSProgressBar} from '@xds/core/ProgressBar';
 import {XDSCollapsible} from '@xds/core/Collapsible';
@@ -117,16 +116,6 @@ const HelpIcon = (props: React.SVGProps<SVGSVGElement>) => (
     {...props}>
     <circle cx="12" cy="12" r="10" />
     <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01" />
-  </svg>
-);
-const ArrowLeftIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <path d="M19 12H5M12 19l-7-7 7-7" />
   </svg>
 );
 const CalendarIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -388,7 +377,7 @@ function ShopSideNav() {
       header={
         <XDSHStack gap={2} vAlign="center" style={{padding: '8px 12px'}}>
           <XDSNavIcon icon={<ShopIcon style={{width: 16, height: 16}} />} />
-          <XDSLink href="#" label="Acme" />
+          <XDSLink href="#">Acme</XDSLink>
         </XDSHStack>
       }
       footer={
