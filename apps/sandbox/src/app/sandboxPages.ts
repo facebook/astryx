@@ -36,14 +36,15 @@ export const categories: SandboxCategory[] = [
   {
     label: 'Components & Patterns',
     slug: 'components-patterns',
-    description: 'Component demos, composition patterns, and interactive examples.',
+    description:
+      'Component demos, composition patterns, and interactive examples.',
     pages: [
       {
         name: 'Card Examples',
         href: '/pages/example-cards/',
         description: 'XDS components showcased in realistic card compositions',
       },
-{
+      {
         name: 'Table Overview',
         href: '/pages/table-overview/',
         description: 'Data table patterns and configurations',
@@ -93,9 +94,14 @@ export const categories: SandboxCategory[] = [
           'Analytics dashboard with sidebar, stats, charts, and tables',
       },
       {
-        name: 'Login',
+        name: 'Login (Simple)',
         href: '/pages/template-login/',
-        description: 'Authentication page with login form and branding',
+        description: 'Centered login card with social auth and email form',
+      },
+      {
+        name: 'Login (Two-Column)',
+        href: '/pages/template-login-02/',
+        description: 'Form on left, cover image on right — responsive',
       },
       {
         name: 'Settings',
