@@ -19,11 +19,10 @@
  * re-renders, not the entire table body.
  *
  * Row-level styling (aria-selected, background) uses imperative DOM
- * updates via a ref attached directly to the <tr> element through the
- * plugin's `transformBodyRow`. No extra DOM elements are injected —
- * the store tracks row elements in a Set and applies styles during
- * notify(). This scales to multiple plugins since any plugin can
- * attach a ref via the `ref` field on BodyRowRenderProps.
+ * updates via a ref callback on each <tr>. The ref subscribes to the
+ * store and applies/removes styles when selection changes — no extra
+ * DOM elements and no central element tracking. Each subscription
+ * self-cleans when the row disconnects.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Table/Table.doc.mjs (selection documentation)
@@ -78,25 +77,19 @@ export interface UseXDSTableSelectionConfig<T extends Record<string, unknown>> {
 
 /**
  * Lightweight external store that lets each row subscribe to selection
- * changes independently. Also manages a set of <tr> element refs for
- * imperative row styling — no extra DOM elements needed.
+ * changes independently. Row styling is handled by per-row ref callbacks
+ * that subscribe to this store — the store itself holds no DOM references.
  */
 interface SelectionStore<T extends Record<string, unknown>> {
   subscribe: (listener: () => void) => () => void;
   notify: () => void;
   getConfig: () => UseXDSTableSelectionConfig<T>;
-  /** Tracked <tr> elements for imperative row styling. */
-  rowElements: Set<HTMLTableRowElement>;
-  /** Reverse lookup: <tr> element → item, for checking selection state. */
-  rowItems: WeakMap<HTMLTableRowElement, T>;
 }
 
 function createSelectionStore<T extends Record<string, unknown>>(
   configRef: React.RefObject<UseXDSTableSelectionConfig<T>>,
 ): SelectionStore<T> {
   const listeners = new Set<() => void>();
-  const rowElements = new Set<HTMLTableRowElement>();
-  const rowItems = new WeakMap<HTMLTableRowElement, T>();
 
   return {
     subscribe(listener: () => void) {
@@ -104,36 +97,30 @@ function createSelectionStore<T extends Record<string, unknown>>(
       return () => listeners.delete(listener);
     },
     notify() {
-      // Notify useSyncExternalStore subscribers (checkbox components)
       for (const listener of listeners) {
         listener();
-      }
-
-      // Imperative DOM updates for row styling — no React re-render needed.
-      const config = configRef.current;
-      for (const el of rowElements) {
-        if (!el.isConnected) {
-          rowElements.delete(el);
-          continue;
-        }
-        const item = rowItems.get(el);
-        if (!item) continue;
-        const isSelected = config.getIsItemSelected(item);
-        if (isSelected) {
-          el.setAttribute('aria-selected', 'true');
-          el.style.backgroundColor = selectedBgColor;
-        } else {
-          el.removeAttribute('aria-selected');
-          el.style.backgroundColor = '';
-        }
       }
     },
     getConfig() {
       return configRef.current;
     },
-    rowElements,
-    rowItems,
   };
+}
+
+/**
+ * Apply or remove selection styling on a <tr> element.
+ */
+function applyRowSelectionStyle(
+  el: HTMLTableRowElement,
+  isSelected: boolean,
+): void {
+  if (isSelected) {
+    el.setAttribute('aria-selected', 'true');
+    el.style.backgroundColor = selectedBgColor;
+  } else {
+    el.removeAttribute('aria-selected');
+    el.style.backgroundColor = '';
+  }
 }
 
 // =============================================================================
@@ -312,8 +299,8 @@ export function useXDSTableSelection<T extends Record<string, unknown>>(
   const store = storeRef.current;
 
   // Notify subscribers on every render — useSyncExternalStore will only
-  // re-render components whose snapshot actually changed. Also applies
-  // imperative row styling via the store's row ref tracking.
+  // re-render components whose snapshot actually changed. Row ref
+  // subscribers apply imperative styling independently.
   useEffect(() => {
     store.notify();
   });
@@ -365,19 +352,28 @@ export function useXDSTableSelection<T extends Record<string, unknown>>(
       },
 
       transformBodyRow(props: BodyRowRenderProps, item: T) {
-        // Attach a ref to the <tr> for imperative row styling.
-        // The store tracks all row elements and applies aria-selected /
-        // backgroundColor on notify() — no extra DOM elements needed.
+        // Attach a ref to the <tr> that subscribes to the store for
+        // imperative row styling. Each row manages its own subscription
+        // and self-cleans when disconnected — no central element tracking.
         const selectionRef: React.RefCallback<HTMLTableRowElement> = el => {
-          if (el) {
-            store.rowElements.add(el);
-            store.rowItems.set(el, item);
-          }
+          if (!el) return;
+          // Apply initial style
+          applyRowSelectionStyle(el, store.getConfig().getIsItemSelected(item));
+          // Subscribe for future changes
+          const unsub = store.subscribe(() => {
+            if (!el.isConnected) {
+              unsub();
+              return;
+            }
+            applyRowSelectionStyle(
+              el,
+              store.getConfig().getIsItemSelected(item),
+            );
+          });
         };
 
         return {
           ...props,
-          // Merge with any existing ref from other plugins
           ref: props.ref ? mergeRefs(props.ref, selectionRef) : selectionRef,
         };
       },
