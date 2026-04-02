@@ -5,7 +5,7 @@ import {defaultTheme} from '@xds/theme-default';
 import {neutralTheme} from '@xds/theme-neutral';
 import {brutalistTheme} from '@xds/theme-brutalist';
 
-// Import the base reset and typography stylesheets
+// Import the base reset stylesheet
 import '@xds/core/reset.css';
 
 /**
@@ -42,7 +42,6 @@ const withXDSTheme: Decorator = (Story, context) => {
   if (themeKey === 'none') {
     return (
       <div
-        className="xds-typography"
         style={{
           colorScheme: mode,
           padding: 16,
@@ -57,7 +56,6 @@ const withXDSTheme: Decorator = (Story, context) => {
   return (
     <XDSTheme theme={theme} mode={mode}>
       <div
-        className="xds-typography"
         style={{
           backgroundColor: 'var(--color-background-surface)',
           padding: 16,
