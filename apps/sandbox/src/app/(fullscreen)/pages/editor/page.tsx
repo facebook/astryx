@@ -295,7 +295,7 @@ export default function EditorPage() {
     <div style={{display: 'flex', flexDirection: 'column' as const, gap: 16, padding: 16}}>
       {/* Layers */}
       <div>
-        <XDSText type="subtitle2" style={{marginBottom: 8}}>Layers</XDSText>
+        <XDSText type="label" style={{marginBottom: 8}}>Layers</XDSText>
         <XDSList density="compact" hasDividers={false}>
           {blocks.map((block) => (
             <XDSListItem
@@ -340,7 +340,7 @@ export default function EditorPage() {
 
       {/* Add Block */}
       <div>
-        <XDSText type="subtitle2" style={{marginBottom: 8}}>Add Block</XDSText>
+        <XDSText type="label" style={{marginBottom: 8}}>Add Block</XDSText>
         <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8}}>
           {(Object.keys(BLOCK_TYPE_META) as BlockType[]).map((type) => (
             <XDSButton
@@ -375,7 +375,7 @@ export default function EditorPage() {
     return (
       <div style={{display: 'flex', flexDirection: 'column' as const, gap: 16, padding: 16}}>
         <XDSHStack gap={2} align="center">
-          <XDSText type="subtitle2">{label}</XDSText>
+          <XDSText type="label">{label}</XDSText>
           <XDSBadge label={type} />
         </XDSHStack>
 
@@ -505,7 +505,7 @@ export default function EditorPage() {
               {cards.map((card, i) => (
                 <XDSCard key={i}>
                   <XDSVStack gap={2}>
-                    <XDSText type="subtitle2">{card.title}</XDSText>
+                    <XDSText type="label">{card.title}</XDSText>
                     <XDSText type="body" color="secondary">{card.description}</XDSText>
                   </XDSVStack>
                 </XDSCard>
@@ -608,7 +608,7 @@ export default function EditorPage() {
                         marginBottom: 8,
                       }}
                     />
-                    <XDSText type="subtitle2">{card.title}</XDSText>
+                    <XDSText type="label">{card.title}</XDSText>
                     <XDSText type="body" color="secondary">{card.description}</XDSText>
                   </XDSVStack>
                 </XDSCard>
