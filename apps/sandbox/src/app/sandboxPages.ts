@@ -120,6 +120,12 @@ export const categories: SandboxCategory[] = [
         description:
           'Full data management view with search, filters, and pagination',
       },
+      {
+        name: 'File Explorer',
+        href: '/pages/file-explorer/',
+        description:
+          'macOS Finder-style column view with drill-down file navigation',
+      },
     ],
   },
   {
