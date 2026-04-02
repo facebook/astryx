@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSKbd.tsx
  * @input Uses React, StyleX, theme tokens
@@ -9,6 +11,7 @@
  * - /packages/core/src/Kbd/index.ts
  */
 
+import {useState, useLayoutEffect} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {xdsClassName, mergeProps} from '../utils';
@@ -50,24 +53,9 @@ const styles = stylex.create({
 });
 
 /**
- * Lazy platform detection — SSR-safe, cached after first call.
- * Returns true on macOS, iPhone, iPad, iPod; false elsewhere (including SSR).
- */
-let _isMac: boolean | null = null;
-function isMac(): boolean {
-  if (_isMac === null) {
-    _isMac =
-      typeof navigator !== 'undefined' &&
-      /Mac|iPhone|iPad|iPod/.test(
-        navigator.platform ?? navigator.userAgent ?? '',
-      );
-  }
-  return _isMac;
-}
-
-/**
  * Map of modifier key names to display symbols.
- * Note: `mod` is not in this map — it resolves dynamically via `getKeyDisplay`.
+ * Note: `mod` is not in this map — it resolves dynamically via platform
+ * detection inside the component.
  */
 const KEY_DISPLAY: Record<string, string> = {
   ctrl: '\u2303', // ⌃
@@ -88,11 +76,27 @@ const KEY_DISPLAY: Record<string, string> = {
  * `mod` key (⌘ on macOS, Ctrl on other platforms) and falls back to
  * KEY_DISPLAY or uppercased key name.
  */
-function getKeyDisplay(key: string): string {
+function getKeyDisplay(key: string, isMac: boolean): string {
   if (key === 'mod') {
-    return isMac() ? '\u2318' : 'Ctrl';
+    return isMac ? '\u2318' : 'Ctrl';
   }
   return KEY_DISPLAY[key] ?? key.toUpperCase();
+}
+
+/**
+ * Detects whether the current platform is macOS/iOS.
+ * Prefers the User-Agent Client Hints API when available (modern Chrome/Edge),
+ * falls back to navigator.platform (deprecated but universally supported).
+ */
+function detectMac(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  // Prefer User-Agent Client Hints API (not deprecated)
+  const uaData = 'userAgentData' in navigator ? navigator.userAgentData : null;
+  if (uaData && typeof uaData === 'object' && 'platform' in uaData) {
+    return /mac/i.test((uaData as {platform: string}).platform ?? '');
+  }
+  // Fallback: navigator.platform (deprecated but still shipped everywhere)
+  return /Mac|iPhone|iPad|iPod/.test(navigator.platform ?? '');
 }
 
 export interface XDSKbdProps {
@@ -138,12 +142,23 @@ export interface XDSKbdProps {
  * A general-purpose component for rendering keyboard shortcuts
  * anywhere in the system — tooltips, menus, documentation, etc.
  *
+ * Platform-aware: `mod` renders as ⌘ on macOS and Ctrl elsewhere.
+ * SSR-safe — defers platform detection to a layout effect to avoid
+ * hydration mismatches. Uses useLayoutEffect so the platform-correct
+ * symbol is set before the browser paints (no visible flicker).
+ *
  * @example
  * ```
  * <XDSKbd keys="mod+k" />
  * ```
  */
 export function XDSKbd({keys, xstyle, className, style}: XDSKbdProps) {
+  const [isMac, setIsMac] = useState(false);
+
+  useLayoutEffect(() => {
+    setIsMac(detectMac());
+  }, []);
+
   const parts = keys.split('+').map(key => key.trim().toLowerCase());
 
   return (
@@ -157,7 +172,7 @@ export function XDSKbd({keys, xstyle, className, style}: XDSKbdProps) {
       aria-hidden="true">
       {parts.map((key, i) => (
         <kbd key={i} {...stylex.props(styles.kbd)}>
-          {getKeyDisplay(key)}
+          {getKeyDisplay(key, isMac)}
         </kbd>
       ))}
     </span>
