@@ -394,3 +394,111 @@ export const HiddenSectionHeader: Story = {
     </XDSSideNav>
   ),
 };
+
+// =============================================================================
+// Bug Repro: Heading Overflow (#1069)
+// =============================================================================
+
+export const HeadingOverflow: Story = {
+  name: 'Bug #1069: Heading Overflow',
+  decorators: [
+    Story => (
+      <div
+        style={{
+          display: 'flex',
+          gap: 24,
+          alignItems: 'flex-start',
+        }}>
+        <Story />
+      </div>
+    ),
+  ],
+  render: () => (
+    <>
+      {/* Case 1: Long heading text */}
+      <div style={{width: 280, height: 400, border: '1px solid #e5e7eb'}}>
+        <XDSSideNav
+          header={
+            <XDSSideNavHeading
+              icon={
+                <XDSNavIcon
+                  icon={<CubeIcon style={{width: 16, height: 16}} />}
+                />
+              }
+              heading="Enterprise Content Management Platform"
+              superheading="verylongusernamethatshouldtruncate"
+              headingHref="/"
+            />
+          }>
+          <XDSSideNavSection title="Main">
+            <XDSSideNavItem
+              label="Dashboard"
+              icon={HomeIcon}
+              selectedIcon={HomeIconSolid}
+              isSelected
+            />
+            <XDSSideNavItem label="Projects" icon={FolderIcon} />
+          </XDSSideNavSection>
+        </XDSSideNav>
+      </div>
+
+      {/* Case 2: Long heading + subheading + menu */}
+      <div style={{width: 280, height: 400, border: '1px solid #e5e7eb'}}>
+        <XDSSideNav
+          header={
+            <XDSSideNavHeading
+              icon={
+                <XDSNavIcon
+                  icon={<CubeIcon style={{width: 16, height: 16}} />}
+                />
+              }
+              heading="My Super Long Application Name Here"
+              subheading="really-long-business-account-name@company.com"
+              menu={
+                <XDSList density="compact">
+                  <XDSListItem label="Switch account" href="#" />
+                </XDSList>
+              }
+            />
+          }>
+          <XDSSideNavSection title="Main">
+            <XDSSideNavItem
+              label="Dashboard"
+              icon={HomeIcon}
+              selectedIcon={HomeIconSolid}
+              isSelected
+            />
+            <XDSSideNavItem label="Projects" icon={FolderIcon} />
+          </XDSSideNavSection>
+        </XDSSideNav>
+      </div>
+
+      {/* Case 3: Narrow container — simulates resized sidebar */}
+      <div style={{width: 180, height: 400, border: '1px solid #e5e7eb'}}>
+        <XDSSideNav
+          header={
+            <XDSSideNavHeading
+              icon={
+                <XDSNavIcon
+                  icon={<CubeIcon style={{width: 16, height: 16}} />}
+                />
+              }
+              heading="Normal App Name"
+              superheading="username"
+              headingHref="/"
+            />
+          }>
+          <XDSSideNavSection title="Main">
+            <XDSSideNavItem
+              label="Dashboard"
+              icon={HomeIcon}
+              selectedIcon={HomeIconSolid}
+              isSelected
+            />
+            <XDSSideNavItem label="Projects" icon={FolderIcon} />
+          </XDSSideNavSection>
+        </XDSSideNav>
+      </div>
+    </>
+  ),
+};
