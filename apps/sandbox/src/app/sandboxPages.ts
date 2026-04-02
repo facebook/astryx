@@ -88,7 +88,7 @@ export const categories: SandboxCategory[] = [
       'Full-page application templates — dashboards, forms, and data views built with XDS.',
     pages: [
       {
-        name: 'Dashboard',
+        name: 'Dashboard (WIP)',
         href: '/pages/template-dashboard/',
         description:
           'Analytics dashboard with sidebar, stats, charts, and tables',
@@ -115,7 +115,7 @@ export const categories: SandboxCategory[] = [
           'Account settings with sidebar nav, info rows, and device history',
       },
       {
-        name: 'Data Table',
+        name: 'Data Table (WIP)',
         href: '/pages/template-data-table/',
         description:
           'Full data management view with search, filters, and pagination',
