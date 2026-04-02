@@ -443,10 +443,11 @@ type PopoverState =
  * />
  * ```
  *
+ * Use contentSearchFieldKey to designate a field for free-text search.
+ * When set, unstructured text input is routed to that field.
+ *
  * @example
  * ```
- * // Use contentSearchFieldKey to designate a field for free-text search.
- * // When set, unstructured text input is routed to this field.
  * const config = {
  *   name: 'IssueSearch',
  *   contentSearchFieldKey: 'title',
