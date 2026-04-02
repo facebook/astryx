@@ -872,6 +872,7 @@ export default function FileExplorerPage() {
               icon={<BackIcon />}
               onClick={handleBack}
               isDisabled={selectedPath.length === 0}
+              label="Go back"
               aria-label="Go back"
             />
             <XDSButton
@@ -879,6 +880,7 @@ export default function FileExplorerPage() {
               size="sm"
               icon={<ForwardIcon />}
               isDisabled
+              label="Go forward"
               aria-label="Go forward"
             />
             <XDSText type="label" style={{marginLeft: 6}}>
@@ -924,30 +926,35 @@ export default function FileExplorerPage() {
               variant="ghost"
               size="sm"
               icon={<GroupIcon />}
+              label="Group"
               aria-label="Group"
             />
             <XDSButton
               variant="ghost"
               size="sm"
               icon={<ShareIcon />}
+              label="Share"
               aria-label="Share"
             />
             <XDSButton
               variant="ghost"
               size="sm"
               icon={<TagIcon />}
+              label="Tags"
               aria-label="Tags"
             />
             <XDSButton
               variant="ghost"
               size="sm"
               icon={<MoreIcon />}
+              label="More"
               aria-label="More"
             />
             <XDSButton
               variant="ghost"
               size="sm"
               icon={<SearchIcon />}
+              label="Search"
               aria-label="Search"
             />
           </XDSHStack>
