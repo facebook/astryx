@@ -15,7 +15,7 @@
 import {useContext, type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
-import {colorVars} from '../theme/tokens.stylex';
+import {colorVars, radiusVars} from '../theme/tokens.stylex';
 import {XDSAvatarSizeContext} from './XDSAvatarSizeContext';
 import {xdsClassName, mergeProps} from '../utils';
 
@@ -106,7 +106,7 @@ export interface XDSAvatarStatusDotProps extends XDSBaseProps<HTMLSpanElement> {
 
 const styles = stylex.create({
   dot: {
-    borderRadius: '50%',
+    borderRadius: radiusVars['--radius-full'],
     borderStyle: 'solid',
     borderColor: colorVars['--color-background-surface'],
     boxSizing: 'border-box',
