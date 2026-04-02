@@ -113,7 +113,7 @@ export const categories: SandboxCategory[] = [
         name: 'File Explorer',
         href: '/pages/file-explorer/',
         description:
-          'Three-column file browser with team, project, and file navigation',
+          'macOS Finder-style column view with drill-down file navigation',
       },
     ],
   },

@@ -2,97 +2,76 @@
 
 import {useState, useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSTextInput} from '@xds/core/TextInput';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSDivider} from '@xds/core';
-import {XDSAvatar} from '@xds/core/Avatar';
+import {colorVars} from '@xds/core/theme/tokens.stylex';
 
 // =============================================================================
 // Types
 // =============================================================================
 
-interface FileItem {
+interface FileSystemItem {
   id: string;
   name: string;
   type: 'file' | 'folder';
-  size?: string;
-  modified: string;
-  owner: string;
-  ownerAvatar: string;
-  extension?: string;
-}
-
-interface ProjectItem {
-  id: string;
-  name: string;
-  description: string;
-  files: number;
-  modified: string;
-  badge?: {label: string; variant: 'info' | 'success' | 'warning' | 'error'};
-}
-
-interface TeamItem {
-  id: string;
-  name: string;
-  members: number;
-  projects: ProjectItem[];
-  avatar: string;
+  children?: FileSystemItem[];
 }
 
 // =============================================================================
 // Icons
 // =============================================================================
 
-function FolderIcon({
-  size = 16,
-  color = 'currentColor',
-}: {
-  size?: number;
-  color?: string;
-}) {
+function FolderIcon({color = '#5AADFE'}: {color?: string}) {
   return (
-    <svg width={size} height={size} viewBox="0 0 16 16" fill="none">
+    <svg width={20} height={20} viewBox="0 0 20 20" fill="none">
       <path
-        d="M1.5 3A1.5 1.5 0 013 1.5h3.146a1.5 1.5 0 011.094.474L8.34 3.12a.5.5 0 00.365.158H13A1.5 1.5 0 0114.5 4.78v7.72A1.5 1.5 0 0113 14H3a1.5 1.5 0 01-1.5-1.5V3z"
+        d="M2 5.5A1.5 1.5 0 013.5 4h3.764a1.5 1.5 0 011.073.453l1.326 1.36a.5.5 0 00.358.152L16.5 6A1.5 1.5 0 0118 7.5v7a1.5 1.5 0 01-1.5 1.5h-13A1.5 1.5 0 012 14.5v-9z"
         fill={color}
       />
     </svg>
   );
 }
 
-function FileIcon({
-  size = 16,
-  color = 'currentColor',
-}: {
-  size?: number;
-  color?: string;
-}) {
+function FileIcon({color = '#8E8E93'}: {color?: string}) {
   return (
-    <svg width={size} height={size} viewBox="0 0 16 16" fill="none">
+    <svg width={20} height={20} viewBox="0 0 20 20" fill="none">
       <path
-        d="M3.5 1.5A1.5 1.5 0 015 0h4.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V14.5a1.5 1.5 0 01-1.5 1.5H5a1.5 1.5 0 01-1.5-1.5v-13z"
-        fill={color}
-        opacity={0.15}
-      />
-      <path
-        d="M3.5 1.5A1.5 1.5 0 015 0h4.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V14.5a1.5 1.5 0 01-1.5 1.5H5a1.5 1.5 0 01-1.5-1.5v-13z"
+        d="M5 2.5A1.5 1.5 0 016.5 1h4.879a1.5 1.5 0 011.06.44l3.122 3.12A1.5 1.5 0 0116 5.622V17.5a1.5 1.5 0 01-1.5 1.5h-8A1.5 1.5 0 015 17.5v-15z"
+        fill="white"
         stroke={color}
-        strokeWidth={1.2}
-        fill="none"
+        strokeWidth={1}
       />
+      <path d="M11 1v3.5a1 1 0 001 1h3.5" stroke={color} strokeWidth={1} />
     </svg>
   );
 }
 
-function ChevronRightIcon({size = 12}: {size?: number}) {
+function AppIcon({label, bg}: {label: string; bg: string}) {
   return (
-    <svg width={size} height={size} viewBox="0 0 12 12" fill="none">
+    <div
+      style={{
+        width: 20,
+        height: 20,
+        borderRadius: 5,
+        backgroundColor: bg,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: 9,
+        fontWeight: 700,
+        color: 'white',
+        flexShrink: 0,
+      }}>
+      {label}
+    </div>
+  );
+}
+
+function ChevronRight({color = '#C7C7CC'}: {color?: string}) {
+  return (
+    <svg width={8} height={13} viewBox="0 0 8 13" fill="none">
       <path
-        d="M4.5 2.5l3.5 3.5-3.5 3.5"
-        stroke="currentColor"
-        strokeWidth={1.5}
+        d="M1.5 1.5l5 5-5 5"
+        stroke={color}
+        strokeWidth={1.8}
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -100,55 +79,198 @@ function ChevronRightIcon({size = 12}: {size?: number}) {
   );
 }
 
-function GridIcon() {
+function BackIcon() {
   return (
-    <svg width={16} height={16} viewBox="0 0 16 16" fill="none">
-      <rect
-        x="1"
-        y="1"
-        width="6"
-        height="6"
-        rx="1"
+    <svg width={12} height={20} viewBox="0 0 12 20" fill="none">
+      <path
+        d="M10.5 1.5l-8 8.5 8 8.5"
         stroke="currentColor"
-        strokeWidth={1.2}
-      />
-      <rect
-        x="9"
-        y="1"
-        width="6"
-        height="6"
-        rx="1"
-        stroke="currentColor"
-        strokeWidth={1.2}
-      />
-      <rect
-        x="1"
-        y="9"
-        width="6"
-        height="6"
-        rx="1"
-        stroke="currentColor"
-        strokeWidth={1.2}
-      />
-      <rect
-        x="9"
-        y="9"
-        width="6"
-        height="6"
-        rx="1"
-        stroke="currentColor"
-        strokeWidth={1.2}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   );
 }
 
-function ListIcon() {
+function ForwardIcon() {
+  return (
+    <svg width={12} height={20} viewBox="0 0 12 20" fill="none">
+      <path
+        d="M1.5 1.5l8 8.5-8 8.5"
+        stroke="currentColor"
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function ColumnViewIcon({active}: {active?: boolean}) {
+  const c = active ? '#007AFF' : '#8E8E93';
+  return (
+    <svg width={18} height={18} viewBox="0 0 18 18" fill="none">
+      <rect
+        x="1"
+        y="1"
+        width="4.5"
+        height="16"
+        rx="1"
+        fill={c}
+        fillOpacity={active ? 1 : 0.5}
+      />
+      <rect
+        x="6.75"
+        y="1"
+        width="4.5"
+        height="16"
+        rx="1"
+        fill={c}
+        fillOpacity={active ? 1 : 0.5}
+      />
+      <rect
+        x="12.5"
+        y="1"
+        width="4.5"
+        height="16"
+        rx="1"
+        fill={c}
+        fillOpacity={active ? 1 : 0.5}
+      />
+    </svg>
+  );
+}
+
+function GridViewIcon({active}: {active?: boolean}) {
+  return (
+    <svg width={18} height={18} viewBox="0 0 18 18" fill="none">
+      <rect
+        x="1"
+        y="1"
+        width="7"
+        height="7"
+        rx="1.5"
+        fill={active ? '#007AFF' : '#8E8E93'}
+        fillOpacity={active ? 1 : 0.5}
+      />
+      <rect
+        x="10"
+        y="1"
+        width="7"
+        height="7"
+        rx="1.5"
+        fill={active ? '#007AFF' : '#8E8E93'}
+        fillOpacity={active ? 1 : 0.5}
+      />
+      <rect
+        x="1"
+        y="10"
+        width="7"
+        height="7"
+        rx="1.5"
+        fill={active ? '#007AFF' : '#8E8E93'}
+        fillOpacity={active ? 1 : 0.5}
+      />
+      <rect
+        x="10"
+        y="10"
+        width="7"
+        height="7"
+        rx="1.5"
+        fill={active ? '#007AFF' : '#8E8E93'}
+        fillOpacity={active ? 1 : 0.5}
+      />
+    </svg>
+  );
+}
+
+function ListViewIcon({active}: {active?: boolean}) {
+  const c = active ? '#007AFF' : '#8E8E93';
+  return (
+    <svg width={18} height={18} viewBox="0 0 18 18" fill="none">
+      <rect
+        x="1"
+        y="2"
+        width="16"
+        height="3"
+        rx="1"
+        fill={c}
+        fillOpacity={active ? 1 : 0.5}
+      />
+      <rect
+        x="1"
+        y="7.5"
+        width="16"
+        height="3"
+        rx="1"
+        fill={c}
+        fillOpacity={active ? 1 : 0.5}
+      />
+      <rect
+        x="1"
+        y="13"
+        width="16"
+        height="3"
+        rx="1"
+        fill={c}
+        fillOpacity={active ? 1 : 0.5}
+      />
+    </svg>
+  );
+}
+
+function GalleryViewIcon({active}: {active?: boolean}) {
+  const c = active ? '#007AFF' : '#8E8E93';
+  return (
+    <svg width={18} height={18} viewBox="0 0 18 18" fill="none">
+      <rect
+        x="3"
+        y="1"
+        width="12"
+        height="12"
+        rx="1.5"
+        fill={c}
+        fillOpacity={active ? 1 : 0.5}
+      />
+      <rect
+        x="1"
+        y="15"
+        width="4"
+        height="2"
+        rx="0.5"
+        fill={c}
+        fillOpacity={active ? 0.6 : 0.3}
+      />
+      <rect
+        x="7"
+        y="15"
+        width="4"
+        height="2"
+        rx="0.5"
+        fill={c}
+        fillOpacity={active ? 0.6 : 0.3}
+      />
+      <rect
+        x="13"
+        y="15"
+        width="4"
+        height="2"
+        rx="0.5"
+        fill={c}
+        fillOpacity={active ? 0.6 : 0.3}
+      />
+    </svg>
+  );
+}
+
+function SearchIcon() {
   return (
     <svg width={16} height={16} viewBox="0 0 16 16" fill="none">
+      <circle cx="6.5" cy="6.5" r="5" stroke="#8E8E93" strokeWidth={1.5} />
       <path
-        d="M1 3h14M1 8h14M1 13h14"
-        stroke="currentColor"
+        d="M10.5 10.5L14.5 14.5"
+        stroke="#8E8E93"
         strokeWidth={1.5}
         strokeLinecap="round"
       />
@@ -156,414 +278,317 @@ function ListIcon() {
   );
 }
 
+function ShareIcon() {
+  return (
+    <svg width={16} height={16} viewBox="0 0 16 16" fill="none">
+      <path
+        d="M8 1v9M4.5 4.5L8 1l3.5 3.5"
+        stroke="#8E8E93"
+        strokeWidth={1.3}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M3 8v5.5a1 1 0 001 1h8a1 1 0 001-1V8"
+        stroke="#8E8E93"
+        strokeWidth={1.3}
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function TagIcon() {
+  return (
+    <svg width={16} height={16} viewBox="0 0 16 16" fill="none">
+      <path
+        d="M1.5 8.793V2.5a1 1 0 011-1h6.293a1 1 0 01.707.293l5.207 5.207a1 1 0 010 1.414L9.414 14.707a1 1 0 01-1.414 0L1.793 8.5a1 1 0 01-.293-.707z"
+        stroke="#8E8E93"
+        strokeWidth={1.3}
+      />
+      <circle cx="5" cy="5" r="1" fill="#8E8E93" />
+    </svg>
+  );
+}
+
+function MoreIcon() {
+  return (
+    <svg width={16} height={16} viewBox="0 0 16 16" fill="none">
+      <circle cx="3" cy="8" r="1.5" fill="#8E8E93" />
+      <circle cx="8" cy="8" r="1.5" fill="#8E8E93" />
+      <circle cx="13" cy="8" r="1.5" fill="#8E8E93" />
+    </svg>
+  );
+}
+
+function GroupIcon() {
+  return (
+    <svg width={18} height={16} viewBox="0 0 18 16" fill="none">
+      <rect
+        x="1"
+        y="1"
+        width="16"
+        height="4"
+        rx="1"
+        fill="#8E8E93"
+        fillOpacity={0.4}
+      />
+      <rect
+        x="1"
+        y="7"
+        width="16"
+        height="3"
+        rx="0.5"
+        fill="#8E8E93"
+        fillOpacity={0.3}
+      />
+      <rect
+        x="1"
+        y="12"
+        width="16"
+        height="3"
+        rx="0.5"
+        fill="#8E8E93"
+        fillOpacity={0.3}
+      />
+    </svg>
+  );
+}
+
 // =============================================================================
-// Mock Data
+// Data — filesystem tree
 // =============================================================================
 
-const TEAMS: TeamItem[] = [
+const FILESYSTEM: FileSystemItem[] = [
   {
-    id: 'design-systems',
-    name: 'Design Systems',
-    members: 12,
-    avatar: 'https://i.pravatar.cc/36?img=10',
-    projects: [
+    id: 'applications',
+    name: 'Applications',
+    type: 'folder',
+    children: [
       {
-        id: 'xds-core',
-        name: 'XDS Core',
-        description:
-          'Core component library — buttons, inputs, layout primitives',
-        files: 142,
-        modified: '2 hours ago',
-        badge: {label: 'Active', variant: 'success'},
+        id: 'chrome-apps',
+        name: 'Chrome Apps',
+        type: 'folder',
+        children: [
+          {id: 'component-lab', name: 'Component Lab.app', type: 'file'},
+          {id: 'google-chat', name: 'Google Chat.app', type: 'file'},
+          {id: 'workchat', name: 'Workchat.app', type: 'file'},
+        ],
       },
+      {id: 'figma', name: 'Figma.app', type: 'file'},
+      {id: 'safari', name: 'Safari.app', type: 'file'},
+      {id: 'slack', name: 'Slack.app', type: 'file'},
+      {id: 'terminal', name: 'Terminal.app', type: 'file'},
+      {id: 'vscode', name: 'Visual Studio Code.app', type: 'file'},
+      {id: 'xcode', name: 'Xcode.app', type: 'file'},
+    ],
+  },
+  {id: 'debug-log', name: 'debug-storybook.log', type: 'file'},
+  {
+    id: 'desktop',
+    name: 'Desktop',
+    type: 'folder',
+    children: [
+      {id: 'screenshot1', name: 'Screenshot 2026-03-28.png', type: 'file'},
+      {id: 'notes-txt', name: 'meeting-notes.txt', type: 'file'},
       {
-        id: 'xds-themes',
-        name: 'XDS Themes',
-        description:
-          'Theme packages — default, neutral, brutalist, meta, whatsapp',
-        files: 38,
-        modified: '1 day ago',
-        badge: {label: 'Active', variant: 'success'},
-      },
-      {
-        id: 'xds-icons',
-        name: 'XDS Icons',
-        description: 'Icon registry and default icon set',
-        files: 24,
-        modified: '3 days ago',
+        id: 'projects',
+        name: 'Projects',
+        type: 'folder',
+        children: [
+          {id: 'readme-proj', name: 'README.md', type: 'file'},
+          {
+            id: 'src-folder',
+            name: 'src',
+            type: 'folder',
+            children: [
+              {id: 'index-ts', name: 'index.ts', type: 'file'},
+              {id: 'app-tsx', name: 'App.tsx', type: 'file'},
+            ],
+          },
+        ],
       },
     ],
   },
   {
-    id: 'frontend-infra',
-    name: 'Frontend Infra',
-    members: 8,
-    avatar: 'https://i.pravatar.cc/36?img=20',
-    projects: [
+    id: 'documents',
+    name: 'Documents',
+    type: 'folder',
+    children: [
+      {id: 'design-spec', name: 'design-spec.pdf', type: 'file'},
+      {id: 'resume', name: 'resume.docx', type: 'file'},
       {
-        id: 'build-tools',
-        name: 'Build Tools',
-        description: 'Webpack, Babel, and bundler config for internal apps',
-        files: 67,
-        modified: '5 hours ago',
-        badge: {label: 'In Review', variant: 'warning'},
-      },
-      {
-        id: 'perf-monitoring',
-        name: 'Perf Monitoring',
-        description: 'Core Web Vitals tracking and performance budgets',
-        files: 31,
-        modified: '1 week ago',
+        id: 'work',
+        name: 'Work',
+        type: 'folder',
+        children: [
+          {id: 'q1-report', name: 'Q1-report.xlsx', type: 'file'},
+          {id: 'presentation', name: 'team-presentation.pptx', type: 'file'},
+        ],
       },
     ],
   },
   {
-    id: 'product-eng',
-    name: 'Product Engineering',
-    members: 24,
-    avatar: 'https://i.pravatar.cc/36?img=30',
-    projects: [
+    id: 'downloads',
+    name: 'Downloads',
+    type: 'folder',
+    children: [
+      {id: 'archive', name: 'archive.zip', type: 'file'},
+      {id: 'installer', name: 'installer.dmg', type: 'file'},
+      {id: 'photo', name: 'photo-2026.jpg', type: 'file'},
+    ],
+  },
+  {id: 'login-screenshot', name: 'login-02-screenshot.png', type: 'file'},
+  {
+    id: 'movies',
+    name: 'Movies',
+    type: 'folder',
+    children: [{id: 'recording', name: 'screen-recording.mov', type: 'file'}],
+  },
+  {
+    id: 'music',
+    name: 'Music',
+    type: 'folder',
+    children: [{id: 'playlist', name: 'favorites.m3u', type: 'file'}],
+  },
+  {
+    id: 'node-modules',
+    name: 'node_modules',
+    type: 'folder',
+    children: [
       {
-        id: 'dashboard-v2',
-        name: 'Dashboard v2',
-        description: 'Next-gen analytics dashboard with real-time data',
-        files: 203,
-        modified: '30 min ago',
-        badge: {label: 'Active', variant: 'success'},
+        id: 'react',
+        name: 'react',
+        type: 'folder',
+        children: [{id: 'react-index', name: 'index.js', type: 'file'}],
       },
       {
-        id: 'settings-ui',
-        name: 'Settings UI',
-        description: 'User and org settings management interface',
-        files: 89,
-        modified: '2 days ago',
+        id: 'stylex',
+        name: '@stylexjs',
+        type: 'folder',
+        children: [{id: 'stylex-index', name: 'stylex.js', type: 'file'}],
+      },
+    ],
+  },
+  {
+    id: 'pictures',
+    name: 'Pictures',
+    type: 'folder',
+    children: [
+      {
+        id: 'vacation',
+        name: 'vacation-2026',
+        type: 'folder',
+        children: [
+          {id: 'img1', name: 'IMG_0001.jpg', type: 'file'},
+          {id: 'img2', name: 'IMG_0002.jpg', type: 'file'},
+          {id: 'img3', name: 'IMG_0003.jpg', type: 'file'},
+        ],
       },
       {
-        id: 'onboarding-flow',
-        name: 'Onboarding Flow',
-        description: 'New user onboarding wizard and setup experience',
-        files: 45,
-        modified: '4 days ago',
-        badge: {label: 'Archived', variant: 'error'},
+        id: 'screenshots-folder',
+        name: 'Screenshots',
+        type: 'folder',
+        children: [
+          {id: 'ss1', name: 'Screen Shot 1.png', type: 'file'},
+          {id: 'ss2', name: 'Screen Shot 2.png', type: 'file'},
+        ],
+      },
+    ],
+  },
+  {
+    id: 'public',
+    name: 'Public',
+    type: 'folder',
+    children: [
+      {id: 'drop-box', name: 'Drop Box', type: 'folder', children: []},
+    ],
+  },
+  {
+    id: 'xds',
+    name: 'xds',
+    type: 'folder',
+    children: [
+      {id: 'xds-readme', name: 'README.md', type: 'file'},
+      {id: 'xds-pkg', name: 'package.json', type: 'file'},
+      {
+        id: 'xds-packages',
+        name: 'packages',
+        type: 'folder',
+        children: [
+          {
+            id: 'xds-core',
+            name: 'core',
+            type: 'folder',
+            children: [
+              {
+                id: 'core-src',
+                name: 'src',
+                type: 'folder',
+                children: [
+                  {id: 'button-tsx', name: 'Button.tsx', type: 'file'},
+                  {id: 'card-tsx', name: 'Card.tsx', type: 'file'},
+                  {id: 'text-tsx', name: 'Text.tsx', type: 'file'},
+                ],
+              },
+            ],
+          },
+          {
+            id: 'xds-cli',
+            name: 'cli',
+            type: 'folder',
+            children: [{id: 'cli-index', name: 'index.ts', type: 'file'}],
+          },
+        ],
+      },
+      {
+        id: 'xds-apps',
+        name: 'apps',
+        type: 'folder',
+        children: [
+          {
+            id: 'storybook',
+            name: 'storybook',
+            type: 'folder',
+            children: [
+              {
+                id: 'sb-config',
+                name: '.storybook',
+                type: 'folder',
+                children: [],
+              },
+            ],
+          },
+          {
+            id: 'sandbox-app',
+            name: 'sandbox',
+            type: 'folder',
+            children: [
+              {
+                id: 'sandbox-src',
+                name: 'src',
+                type: 'folder',
+                children: [],
+              },
+            ],
+          },
+        ],
       },
     ],
   },
 ];
 
-const FILES: Record<string, FileItem[]> = {
-  'xds-core': [
-    {
-      id: '1',
-      name: 'Button',
-      type: 'folder',
-      modified: '2 hours ago',
-      owner: 'Alice Chen',
-      ownerAvatar: 'https://i.pravatar.cc/24?img=1',
-    },
-    {
-      id: '2',
-      name: 'Card',
-      type: 'folder',
-      modified: '1 day ago',
-      owner: 'Bob Kim',
-      ownerAvatar: 'https://i.pravatar.cc/24?img=2',
-    },
-    {
-      id: '3',
-      name: 'Layout',
-      type: 'folder',
-      modified: '3 days ago',
-      owner: 'Alice Chen',
-      ownerAvatar: 'https://i.pravatar.cc/24?img=1',
-    },
-    {
-      id: '4',
-      name: 'Text',
-      type: 'folder',
-      modified: '1 week ago',
-      owner: 'Carol Wu',
-      ownerAvatar: 'https://i.pravatar.cc/24?img=3',
-    },
-    {
-      id: '5',
-      name: 'Table',
-      type: 'folder',
-      modified: '2 days ago',
-      owner: 'David Park',
-      ownerAvatar: 'https://i.pravatar.cc/24?img=4',
-    },
-    {
-      id: '6',
-      name: 'index.ts',
-      type: 'file',
-      extension: 'ts',
-      size: '2.4 KB',
-      modified: '2 hours ago',
-      owner: 'Alice Chen',
-      ownerAvatar: 'https://i.pravatar.cc/24?img=1',
-    },
-    {
-      id: '7',
-      name: 'README.md',
-      type: 'file',
-      extension: 'md',
-      size: '8.1 KB',
-      modified: '3 days ago',
-      owner: 'Bob Kim',
-      ownerAvatar: 'https://i.pravatar.cc/24?img=2',
-    },
-    {
-      id: '8',
-      name: 'package.json',
-      type: 'file',
-      extension: 'json',
-      size: '1.2 KB',
-      modified: '1 week ago',
-      owner: 'Carol Wu',
-      ownerAvatar: 'https://i.pravatar.cc/24?img=3',
-    },
-    {
-      id: '9',
-      name: 'tsconfig.json',
-      type: 'file',
-      extension: 'json',
-      size: '0.5 KB',
-      modified: '2 weeks ago',
-      owner: 'David Park',
-      ownerAvatar: 'https://i.pravatar.cc/24?img=4',
-    },
-    {
-      id: '10',
-      name: '.eslintrc.js',
-      type: 'file',
-      extension: 'js',
-      size: '0.8 KB',
-      modified: '1 month ago',
-      owner: 'Alice Chen',
-      ownerAvatar: 'https://i.pravatar.cc/24?img=1',
-    },
-  ],
-  'xds-themes': [
-    {
-      id: '11',
-      name: 'default',
-      type: 'folder',
-      modified: '1 day ago',
-      owner: 'Eve Lin',
-      ownerAvatar: 'https://i.pravatar.cc/24?img=5',
-    },
-    {
-      id: '12',
-      name: 'neutral',
-      type: 'folder',
-      modified: '3 days ago',
-      owner: 'Eve Lin',
-      ownerAvatar: 'https://i.pravatar.cc/24?img=5',
-    },
-    {
-      id: '13',
-      name: 'brutalist',
-      type: 'folder',
-      modified: '1 week ago',
-      owner: 'Frank Zhao',
-      ownerAvatar: 'https://i.pravatar.cc/24?img=6',
-    },
-    {
-      id: '14',
-      name: 'theme.config.ts',
-      type: 'file',
-      extension: 'ts',
-      size: '3.2 KB',
-      modified: '1 day ago',
-      owner: 'Eve Lin',
-      ownerAvatar: 'https://i.pravatar.cc/24?img=5',
-    },
-  ],
-  'xds-icons': [
-    {
-      id: '15',
-      name: 'icons',
-      type: 'folder',
-      modified: '3 days ago',
-      owner: 'Grace Ng',
-      ownerAvatar: 'https://i.pravatar.cc/24?img=7',
-    },
-    {
-      id: '16',
-      name: 'registry.ts',
-      type: 'file',
-      extension: 'ts',
-      size: '1.8 KB',
-      modified: '3 days ago',
-      owner: 'Grace Ng',
-      ownerAvatar: 'https://i.pravatar.cc/24?img=7',
-    },
-  ],
-  'build-tools': [
-    {
-      id: '17',
-      name: 'webpack',
-      type: 'folder',
-      modified: '5 hours ago',
-      owner: 'Hank Lee',
-      ownerAvatar: 'https://i.pravatar.cc/24?img=8',
-    },
-    {
-      id: '18',
-      name: 'babel.config.js',
-      type: 'file',
-      extension: 'js',
-      size: '2.1 KB',
-      modified: '5 hours ago',
-      owner: 'Hank Lee',
-      ownerAvatar: 'https://i.pravatar.cc/24?img=8',
-    },
-  ],
-  'perf-monitoring': [
-    {
-      id: '19',
-      name: 'vitals',
-      type: 'folder',
-      modified: '1 week ago',
-      owner: 'Iris Tan',
-      ownerAvatar: 'https://i.pravatar.cc/24?img=9',
-    },
-    {
-      id: '20',
-      name: 'budgets.json',
-      type: 'file',
-      extension: 'json',
-      size: '4.5 KB',
-      modified: '1 week ago',
-      owner: 'Iris Tan',
-      ownerAvatar: 'https://i.pravatar.cc/24?img=9',
-    },
-  ],
-  'dashboard-v2': [
-    {
-      id: '21',
-      name: 'components',
-      type: 'folder',
-      modified: '30 min ago',
-      owner: 'Jack Chen',
-      ownerAvatar: 'https://i.pravatar.cc/24?img=11',
-    },
-    {
-      id: '22',
-      name: 'hooks',
-      type: 'folder',
-      modified: '2 hours ago',
-      owner: 'Kate Liu',
-      ownerAvatar: 'https://i.pravatar.cc/24?img=12',
-    },
-    {
-      id: '23',
-      name: 'utils',
-      type: 'folder',
-      modified: '1 day ago',
-      owner: 'Jack Chen',
-      ownerAvatar: 'https://i.pravatar.cc/24?img=11',
-    },
-    {
-      id: '24',
-      name: 'App.tsx',
-      type: 'file',
-      extension: 'tsx',
-      size: '5.2 KB',
-      modified: '30 min ago',
-      owner: 'Kate Liu',
-      ownerAvatar: 'https://i.pravatar.cc/24?img=12',
-    },
-  ],
-  'settings-ui': [
-    {
-      id: '25',
-      name: 'pages',
-      type: 'folder',
-      modified: '2 days ago',
-      owner: 'Leo Wang',
-      ownerAvatar: 'https://i.pravatar.cc/24?img=13',
-    },
-    {
-      id: '26',
-      name: 'SettingsLayout.tsx',
-      type: 'file',
-      extension: 'tsx',
-      size: '3.8 KB',
-      modified: '2 days ago',
-      owner: 'Leo Wang',
-      ownerAvatar: 'https://i.pravatar.cc/24?img=13',
-    },
-  ],
-  'onboarding-flow': [
-    {
-      id: '27',
-      name: 'steps',
-      type: 'folder',
-      modified: '4 days ago',
-      owner: 'Mia Huang',
-      ownerAvatar: 'https://i.pravatar.cc/24?img=14',
-    },
-    {
-      id: '28',
-      name: 'WizardContainer.tsx',
-      type: 'file',
-      extension: 'tsx',
-      size: '6.1 KB',
-      modified: '4 days ago',
-      owner: 'Mia Huang',
-      ownerAvatar: 'https://i.pravatar.cc/24?img=14',
-    },
-  ],
+const APP_ICONS: Record<string, {label: string; bg: string}> = {
+  'Component Lab.app': {label: 'CL', bg: '#5856D6'},
+  'Google Chat.app': {label: 'G', bg: '#34C759'},
+  'Workchat.app': {label: 'W', bg: '#30B0C7'},
+  'Figma.app': {label: 'F', bg: '#A259FF'},
+  'Safari.app': {label: 'S', bg: '#007AFF'},
+  'Slack.app': {label: 'S', bg: '#611F69'},
+  'Terminal.app': {label: '>', bg: '#1D1D1F'},
+  'Visual Studio Code.app': {label: 'VS', bg: '#007ACC'},
+  'Xcode.app': {label: 'X', bg: '#147EFB'},
 };
-
-function getFilesForProject(projectId: string): FileItem[] {
-  return (
-    FILES[projectId] || [
-      {
-        id: 'default-1',
-        name: 'src',
-        type: 'folder',
-        modified: 'recently',
-        owner: 'Unknown',
-        ownerAvatar: 'https://i.pravatar.cc/24?img=15',
-      },
-      {
-        id: 'default-2',
-        name: 'README.md',
-        type: 'file',
-        extension: 'md',
-        size: '1.0 KB',
-        modified: 'recently',
-        owner: 'Unknown',
-        ownerAvatar: 'https://i.pravatar.cc/24?img=15',
-      },
-    ]
-  );
-}
-
-// =============================================================================
-// Helpers
-// =============================================================================
-
-function getExtensionColor(ext?: string): string {
-  switch (ext) {
-    case 'ts':
-    case 'tsx':
-      return '#3178c6';
-    case 'js':
-    case 'jsx':
-      return '#f0db4f';
-    case 'json':
-      return '#6d8086';
-    case 'md':
-      return '#519aba';
-    case 'css':
-      return '#563d7c';
-    default:
-      return '#8b949e';
-  }
-}
 
 // =============================================================================
 // Styles
@@ -573,503 +598,396 @@ const styles = stylex.create({
   page: {
     display: 'flex',
     flexDirection: 'column',
-    height: '100%',
-    minHeight: 'calc(100vh - 64px)',
+    height: '100vh',
+    backgroundColor: colorVars['--color-background-body'],
+    overflow: 'hidden',
+    userSelect: 'none',
   },
-  header: {padding: '1.5rem 2rem 1rem'},
-  headerRow: {
+  toolbar: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: '1rem',
+    height: 52,
+    paddingLeft: 12,
+    paddingRight: 12,
+    borderBottom: '1px solid var(--xds-color-border-primary, #D5D5D5)',
+    backgroundColor: colorVars['--color-background-surface'],
+    flexShrink: 0,
   },
-  searchArea: {maxWidth: 320},
-  body: {display: 'flex', flex: 1, overflow: 'hidden'},
+  toolbarLeft: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+  },
+  toolbarCenter: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 2,
+    backgroundColor: 'var(--xds-color-background-body, #F5F5F5)',
+    borderRadius: 6,
+    padding: 2,
+  },
+  toolbarRight: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+  },
+  navButton: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    border: 'none',
+    backgroundColor: 'transparent',
+    color: 'var(--xds-color-content-secondary, #8E8E93)',
+    cursor: 'pointer',
+    padding: 0,
+  },
+  navButtonDisabled: {
+    opacity: 0.3,
+    cursor: 'default',
+  },
+  toolbarButton: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 32,
+    height: 28,
+    borderRadius: 6,
+    border: 'none',
+    backgroundColor: 'transparent',
+    cursor: 'pointer',
+    padding: 0,
+  },
+  viewButton: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 32,
+    height: 28,
+    borderRadius: 5,
+    border: 'none',
+    backgroundColor: 'transparent',
+    cursor: 'pointer',
+    padding: 0,
+  },
+  viewButtonActive: {
+    backgroundColor: 'var(--xds-color-background-surface, white)',
+    boxShadow: '0 0.5px 1px rgba(0,0,0,0.12), 0 0 0.5px rgba(0,0,0,0.06)',
+  },
+  title: {
+    fontSize: 13,
+    fontWeight: 700,
+    color: 'var(--xds-color-content-primary, #1D1D1F)',
+    marginLeft: 8,
+  },
+  groupButton: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 4,
+    height: 28,
+    paddingLeft: 8,
+    paddingRight: 6,
+    borderRadius: 6,
+    border: 'none',
+    backgroundColor: 'transparent',
+    cursor: 'pointer',
+    fontSize: 11,
+    color: 'var(--xds-color-content-secondary, #8E8E93)',
+  },
+  groupChevron: {
+    fontSize: 8,
+    color: 'var(--xds-color-content-secondary, #8E8E93)',
+  },
+  body: {
+    display: 'flex',
+    flex: 1,
+    overflow: 'hidden',
+  },
   column: {
     display: 'flex',
     flexDirection: 'column',
-    borderRight: '1px solid #e0e0e0',
-    overflow: 'auto',
+    minWidth: 180,
+    maxWidth: 340,
+    width: '33.333%',
+    borderRight: '1px solid var(--xds-color-border-primary, #D5D5D5)',
+    overflowY: 'auto',
+    overflowX: 'hidden',
+    backgroundColor: colorVars['--color-background-body'],
+    flexShrink: 0,
   },
-  teamsColumn: {width: 220, flexShrink: 0},
-  projectsColumn: {width: 280, flexShrink: 0},
-  filesColumn: {flex: 1, borderRight: 'none'},
-  columnHeader: {padding: '0.75rem 1rem', borderBottom: '1px solid #e0e0e0'},
-  columnHeaderText: {
-    fontSize: '0.7rem',
-    fontWeight: 700,
-    textTransform: 'uppercase',
-    letterSpacing: '0.06em',
-    color: '#666',
+  lastColumn: {
+    borderRight: 'none',
+    flex: 1,
+    maxWidth: 'none',
   },
-  listItem: {
+  row: {
     display: 'flex',
     alignItems: 'center',
-    gap: '0.75rem',
-    padding: '0.625rem 1rem',
+    gap: 6,
+    height: 24,
+    paddingLeft: 8,
+    paddingRight: 8,
     cursor: 'pointer',
-    transition: 'background 0.1s',
-    borderBottom: '1px solid #f0f0f0',
-  },
-  listItemHover: {':hover': {backgroundColor: '#f8f8f8'}},
-  listItemSelected: {backgroundColor: '#e8f0fe'},
-  listItemContent: {flex: 1, minWidth: 0},
-  listItemName: {
-    fontSize: '0.875rem',
-    fontWeight: 500,
-    color: '#1a1a1a',
+    fontSize: 13,
+    color: 'var(--xds-color-content-primary, #1D1D1F)',
+    borderRadius: 0,
+    flexShrink: 0,
     whiteSpace: 'nowrap',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
+    lineHeight: '24px',
   },
-  listItemDescription: {
-    fontSize: '0.75rem',
-    color: '#666',
-    whiteSpace: 'nowrap',
+  rowSelected: {
+    backgroundColor: '#0058D0',
+    color: 'white',
+    borderRadius: 5,
+    marginLeft: 4,
+    marginRight: 4,
+    paddingLeft: 4,
+    paddingRight: 4,
+  },
+  rowName: {
+    flex: 1,
     overflow: 'hidden',
     textOverflow: 'ellipsis',
-    marginTop: '0.125rem',
-  },
-  listItemMeta: {fontSize: '0.7rem', color: '#999', whiteSpace: 'nowrap'},
-  listItemChevron: {color: '#999', flexShrink: 0},
-  fileRow: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.75rem',
-    padding: '0.5rem 1rem',
-    cursor: 'pointer',
-    transition: 'background 0.1s',
-    ':hover': {backgroundColor: '#f8f8f8'},
-  },
-  fileIcon: {
-    flexShrink: 0,
-    width: 28,
-    height: 28,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 6,
-    backgroundColor: '#f5f5f5',
-  },
-  fileInfo: {flex: 1, minWidth: 0},
-  fileName: {fontSize: '0.875rem', fontWeight: 500, color: '#1a1a1a'},
-  fileMeta: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.5rem',
-    fontSize: '0.7rem',
-    color: '#999',
-    marginTop: '0.125rem',
-  },
-  fileOwner: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.375rem',
-    flexShrink: 0,
-  },
-  fileSize: {
-    flexShrink: 0,
-    fontSize: '0.75rem',
-    color: '#999',
-    width: 60,
-    textAlign: 'right',
-  },
-  fileModified: {
-    flexShrink: 0,
-    fontSize: '0.75rem',
-    color: '#999',
-    width: 100,
-    textAlign: 'right',
-  },
-  breadcrumb: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.375rem',
-    fontSize: '0.8rem',
-    color: '#666',
-  },
-  breadcrumbLink: {cursor: 'pointer', ':hover': {color: '#1a1a1a'}},
-  breadcrumbCurrent: {fontWeight: 600, color: '#1a1a1a'},
-  emptyState: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: '100%',
-    padding: '2rem',
-  },
-  viewToggle: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.25rem',
-    padding: '0.25rem',
-    borderRadius: 6,
-    backgroundColor: '#f0f0f0',
-  },
-  viewToggleButton: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 28,
-    height: 28,
-    borderRadius: 4,
-    border: 'none',
-    cursor: 'pointer',
-    backgroundColor: 'transparent',
-    color: '#999',
-    transition: 'all 0.1s',
-  },
-  viewToggleActive: {
-    backgroundColor: 'white',
-    color: '#1a1a1a',
-    boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
-  },
-  filesGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
-    gap: '0.75rem',
-    padding: '1rem',
-  },
-  gridItem: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: '0.5rem',
-    padding: '1rem 0.75rem',
-    borderRadius: 8,
-    cursor: 'pointer',
-    transition: 'background 0.1s',
-    ':hover': {backgroundColor: '#f8f8f8'},
-  },
-  gridItemIcon: {
-    width: 40,
-    height: 40,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 8,
-    backgroundColor: '#f5f5f5',
-  },
-  gridItemName: {
-    fontSize: '0.8rem',
-    fontWeight: 500,
-    textAlign: 'center',
-    color: '#1a1a1a',
     whiteSpace: 'nowrap',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    maxWidth: '100%',
+    fontSize: 13,
   },
-  gridItemMeta: {fontSize: '0.65rem', color: '#999'},
+  rowChevron: {
+    flexShrink: 0,
+    display: 'flex',
+    alignItems: 'center',
+  },
+  iconWrapper: {
+    flexShrink: 0,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 20,
+    height: 20,
+  },
+  columnContent: {
+    paddingTop: 4,
+    paddingBottom: 4,
+  },
 });
+
+// =============================================================================
+// Helpers
+// =============================================================================
+
+function findItem(items: FileSystemItem[], id: string): FileSystemItem | null {
+  for (const item of items) {
+    if (item.id === id) return item;
+    if (item.children) {
+      const found = findItem(item.children, id);
+      if (found) return found;
+    }
+  }
+  return null;
+}
 
 // =============================================================================
 // Component
 // =============================================================================
 
 /**
- * File Explorer template.
+ * File Explorer template — macOS Finder column view.
  *
- * A three-column file browser with Teams > Projects > Files drill-down.
- * Demonstrates XDS layout patterns for master-detail navigation with:
- * - Multi-column panel navigation
- * - Search/filter functionality
- * - List and grid view toggling
- * - Breadcrumb navigation
- * - Avatar integration for file ownership
- * - Badge usage for project status
+ * A multi-column file browser that drills down through a filesystem tree.
+ * Each selection opens a new column to the right showing the children.
+ *
+ * Demonstrates:
+ * - Multi-column panel navigation (Finder-style)
+ * - StyleX for all layout and theming
+ * - XDS design token integration
+ * - Dynamic column rendering based on selection depth
  */
 export default function FileExplorerPage() {
-  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(
-    'design-systems',
-  );
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
-    'xds-core',
-  );
-  const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+  const [selectedPath, setSelectedPath] = useState<string[]>([
+    'applications',
+    'chrome-apps',
+  ]);
 
-  const selectedTeam = useMemo(
-    () => TEAMS.find(t => t.id === selectedTeamId) ?? null,
-    [selectedTeamId],
-  );
-  const selectedProject = useMemo(
-    () => selectedTeam?.projects.find(p => p.id === selectedProjectId) ?? null,
-    [selectedTeam, selectedProjectId],
-  );
+  const columns = useMemo(() => {
+    const cols: {items: FileSystemItem[]; selectedId: string | null}[] = [];
 
-  const files = useMemo(() => {
-    if (!selectedProjectId) return [];
-    const projectFiles = getFilesForProject(selectedProjectId);
-    if (!searchQuery) return projectFiles;
-    const q = searchQuery.toLowerCase();
-    return projectFiles.filter(f => f.name.toLowerCase().includes(q));
-  }, [selectedProjectId, searchQuery]);
+    cols.push({
+      items: FILESYSTEM,
+      selectedId: selectedPath[0] ?? null,
+    });
+
+    let currentItems: FileSystemItem[] = FILESYSTEM;
+    for (let i = 0; i < selectedPath.length; i++) {
+      const selected = currentItems.find(item => item.id === selectedPath[i]);
+      if (selected?.children && selected.children.length > 0) {
+        cols.push({
+          items: selected.children,
+          selectedId: selectedPath[i + 1] ?? null,
+        });
+        currentItems = selected.children;
+      } else {
+        break;
+      }
+    }
+
+    return cols;
+  }, [selectedPath]);
+
+  const currentFolderName = useMemo(() => {
+    if (selectedPath.length === 0) return 'Home';
+    const lastId = selectedPath[selectedPath.length - 1];
+    const item = findItem(FILESYSTEM, lastId);
+    if (item?.type === 'folder') return item.name;
+    if (selectedPath.length >= 2) {
+      const parent = findItem(
+        FILESYSTEM,
+        selectedPath[selectedPath.length - 2],
+      );
+      return parent?.name ?? 'Home';
+    }
+    return 'Home';
+  }, [selectedPath]);
+
+  const handleSelect = (columnIndex: number, itemId: string) => {
+    const newPath = [...selectedPath.slice(0, columnIndex), itemId];
+    setSelectedPath(newPath);
+  };
+
+  const handleBack = () => {
+    if (selectedPath.length > 0) {
+      setSelectedPath(selectedPath.slice(0, -1));
+    }
+  };
+
+  function renderIcon(item: FileSystemItem, isSelected: boolean) {
+    if (item.type === 'folder') {
+      return (
+        <div {...stylex.props(styles.iconWrapper)}>
+          <FolderIcon color={isSelected ? '#A0CCFF' : '#5AADFE'} />
+        </div>
+      );
+    }
+
+    const appIcon = APP_ICONS[item.name];
+    if (appIcon) {
+      return (
+        <div {...stylex.props(styles.iconWrapper)}>
+          <AppIcon label={appIcon.label} bg={appIcon.bg} />
+        </div>
+      );
+    }
+
+    return (
+      <div {...stylex.props(styles.iconWrapper)}>
+        <FileIcon color={isSelected ? '#FFFFFF' : '#8E8E93'} />
+      </div>
+    );
+  }
 
   return (
     <div {...stylex.props(styles.page)}>
-      {/* Header */}
-      <div {...stylex.props(styles.header)}>
-        <div {...stylex.props(styles.headerRow)}>
-          <XDSVStack gap={1}>
-            <XDSHeading level={2}>File Explorer</XDSHeading>
-            <div {...stylex.props(styles.breadcrumb)}>
-              <span
-                {...stylex.props(styles.breadcrumbLink)}
-                onClick={() => {
-                  setSelectedTeamId(null);
-                  setSelectedProjectId(null);
-                }}>
-                Workspace
-              </span>
-              {selectedTeam && (
-                <>
-                  <ChevronRightIcon />
-                  <span
-                    {...stylex.props(styles.breadcrumbLink)}
-                    onClick={() => setSelectedProjectId(null)}>
-                    {selectedTeam.name}
-                  </span>
-                </>
-              )}
-              {selectedProject && (
-                <>
-                  <ChevronRightIcon />
-                  <span {...stylex.props(styles.breadcrumbCurrent)}>
-                    {selectedProject.name}
-                  </span>
-                </>
-              )}
-            </div>
-          </XDSVStack>
-          <XDSHStack gap={3} vAlign="center">
-            <div {...stylex.props(styles.searchArea)}>
-              <XDSTextInput
-                label=""
-                placeholder="Search files..."
-                value={searchQuery}
-                onChange={setSearchQuery}
-                size="sm"
-              />
-            </div>
-            <div {...stylex.props(styles.viewToggle)}>
-              <button
-                {...stylex.props(
-                  styles.viewToggleButton,
-                  viewMode === 'list' && styles.viewToggleActive,
-                )}
-                onClick={() => setViewMode('list')}
-                aria-label="List view">
-                <ListIcon />
-              </button>
-              <button
-                {...stylex.props(
-                  styles.viewToggleButton,
-                  viewMode === 'grid' && styles.viewToggleActive,
-                )}
-                onClick={() => setViewMode('grid')}
-                aria-label="Grid view">
-                <GridIcon />
-              </button>
-            </div>
-          </XDSHStack>
+      {/* Toolbar */}
+      <div {...stylex.props(styles.toolbar)}>
+        <div {...stylex.props(styles.toolbarLeft)}>
+          <button
+            {...stylex.props(
+              styles.navButton,
+              selectedPath.length === 0 && styles.navButtonDisabled,
+            )}
+            onClick={handleBack}
+            aria-label="Go back">
+            <BackIcon />
+          </button>
+          <button
+            {...stylex.props(styles.navButton, styles.navButtonDisabled)}
+            aria-label="Go forward">
+            <ForwardIcon />
+          </button>
+          <span {...stylex.props(styles.title)}>{currentFolderName}</span>
+        </div>
+
+        <div {...stylex.props(styles.toolbarCenter)}>
+          <button {...stylex.props(styles.viewButton)} aria-label="Grid view">
+            <GridViewIcon />
+          </button>
+          <button {...stylex.props(styles.viewButton)} aria-label="List view">
+            <ListViewIcon />
+          </button>
+          <button
+            {...stylex.props(styles.viewButton, styles.viewButtonActive)}
+            aria-label="Column view">
+            <ColumnViewIcon active />
+          </button>
+          <button
+            {...stylex.props(styles.viewButton)}
+            aria-label="Gallery view">
+            <GalleryViewIcon />
+          </button>
+        </div>
+
+        <div {...stylex.props(styles.toolbarRight)}>
+          <button {...stylex.props(styles.toolbarButton)} aria-label="Group">
+            <GroupIcon />
+          </button>
+          <button {...stylex.props(styles.toolbarButton)} aria-label="Share">
+            <ShareIcon />
+          </button>
+          <button {...stylex.props(styles.toolbarButton)} aria-label="Tags">
+            <TagIcon />
+          </button>
+          <button {...stylex.props(styles.toolbarButton)} aria-label="More">
+            <MoreIcon />
+          </button>
+          <button {...stylex.props(styles.toolbarButton)} aria-label="Search">
+            <SearchIcon />
+          </button>
         </div>
       </div>
 
-      <XDSDivider />
-
-      {/* Three-column layout */}
+      {/* Columns */}
       <div {...stylex.props(styles.body)}>
-        {/* Column 1: Teams */}
-        <div {...stylex.props(styles.column, styles.teamsColumn)}>
-          <div {...stylex.props(styles.columnHeader)}>
-            <span {...stylex.props(styles.columnHeaderText)}>Teams</span>
-          </div>
-          {TEAMS.map(team => (
-            <div
-              key={team.id}
-              {...stylex.props(
-                styles.listItem,
-                styles.listItemHover,
-                selectedTeamId === team.id && styles.listItemSelected,
-              )}
-              onClick={() => {
-                setSelectedTeamId(team.id);
-                setSelectedProjectId(null);
-                setSearchQuery('');
-              }}>
-              <XDSAvatar src={team.avatar} name={team.name} size="small" />
-              <div {...stylex.props(styles.listItemContent)}>
-                <div {...stylex.props(styles.listItemName)}>{team.name}</div>
-                <div {...stylex.props(styles.listItemMeta)}>
-                  {team.members} members · {team.projects.length} projects
-                </div>
-              </div>
-              <span {...stylex.props(styles.listItemChevron)}>
-                <ChevronRightIcon />
-              </span>
-            </div>
-          ))}
-        </div>
+        {columns.map((col, colIndex) => (
+          <div
+            key={colIndex}
+            {...stylex.props(
+              styles.column,
+              colIndex === columns.length - 1 && styles.lastColumn,
+            )}>
+            <div {...stylex.props(styles.columnContent)}>
+              {col.items.map(item => {
+                const isSelected = col.selectedId === item.id;
+                const hasChildren =
+                  item.type === 'folder' &&
+                  item.children != null &&
+                  item.children.length > 0;
 
-        {/* Column 2: Projects */}
-        <div {...stylex.props(styles.column, styles.projectsColumn)}>
-          <div {...stylex.props(styles.columnHeader)}>
-            <span {...stylex.props(styles.columnHeaderText)}>
-              Projects{selectedTeam ? ` — ${selectedTeam.name}` : ''}
-            </span>
-          </div>
-          {selectedTeam ? (
-            selectedTeam.projects.map(project => (
-              <div
-                key={project.id}
-                {...stylex.props(
-                  styles.listItem,
-                  styles.listItemHover,
-                  selectedProjectId === project.id && styles.listItemSelected,
-                )}
-                onClick={() => {
-                  setSelectedProjectId(project.id);
-                  setSearchQuery('');
-                }}>
-                <div {...stylex.props(styles.listItemContent)}>
-                  <XDSHStack gap={2} vAlign="center">
-                    <div {...stylex.props(styles.listItemName)}>
-                      {project.name}
-                    </div>
-                    {project.badge && (
-                      <XDSBadge
-                        variant={project.badge.variant}
-                        label={project.badge.label}
-                      />
+                return (
+                  <div
+                    key={item.id}
+                    {...stylex.props(
+                      styles.row,
+                      isSelected && styles.rowSelected,
                     )}
-                  </XDSHStack>
-                  <div {...stylex.props(styles.listItemDescription)}>
-                    {project.description}
-                  </div>
-                  <div {...stylex.props(styles.listItemMeta)}>
-                    {project.files} files · {project.modified}
-                  </div>
-                </div>
-                <span {...stylex.props(styles.listItemChevron)}>
-                  <ChevronRightIcon />
-                </span>
-              </div>
-            ))
-          ) : (
-            <div {...stylex.props(styles.emptyState)}>
-              <XDSText type="supporting" color="secondary">
-                Select a team
-              </XDSText>
-            </div>
-          )}
-        </div>
-
-        {/* Column 3: Files */}
-        <div {...stylex.props(styles.column, styles.filesColumn)}>
-          <div {...stylex.props(styles.columnHeader)}>
-            <XDSHStack hAlign="between" vAlign="center">
-              <span {...stylex.props(styles.columnHeaderText)}>
-                Files{selectedProject ? ` — ${selectedProject.name}` : ''}
-              </span>
-              {selectedProject && (
-                <span {...stylex.props(styles.listItemMeta)}>
-                  {files.length} items
-                </span>
-              )}
-            </XDSHStack>
-          </div>
-          {selectedProject ? (
-            viewMode === 'list' ? (
-              <div>
-                {files.map(file => (
-                  <div key={file.id} {...stylex.props(styles.fileRow)}>
-                    <div
-                      {...stylex.props(styles.fileIcon)}
-                      style={{
-                        backgroundColor:
-                          file.type === 'folder'
-                            ? 'rgba(59, 130, 246, 0.08)'
-                            : undefined,
-                      }}>
-                      {file.type === 'folder' ? (
-                        <FolderIcon size={16} color="#3b82f6" />
-                      ) : (
-                        <FileIcon
-                          size={16}
-                          color={getExtensionColor(file.extension)}
+                    onClick={() => handleSelect(colIndex, item.id)}>
+                    {renderIcon(item, isSelected)}
+                    <span {...stylex.props(styles.rowName)}>{item.name}</span>
+                    {hasChildren && (
+                      <span {...stylex.props(styles.rowChevron)}>
+                        <ChevronRight
+                          color={isSelected ? 'white' : '#C7C7CC'}
                         />
-                      )}
-                    </div>
-                    <div {...stylex.props(styles.fileInfo)}>
-                      <div {...stylex.props(styles.fileName)}>{file.name}</div>
-                      <div {...stylex.props(styles.fileMeta)}>
-                        <span>
-                          {file.type === 'folder'
-                            ? 'Folder'
-                            : file.extension?.toUpperCase()}
-                        </span>
-                      </div>
-                    </div>
-                    <div {...stylex.props(styles.fileOwner)}>
-                      <XDSAvatar
-                        src={file.ownerAvatar}
-                        name={file.owner}
-                        size="tiny"
-                      />
-                      <span {...stylex.props(styles.listItemMeta)}>
-                        {file.owner.split(' ')[0]}
-                      </span>
-                    </div>
-                    {file.size && (
-                      <span {...stylex.props(styles.fileSize)}>
-                        {file.size}
                       </span>
                     )}
-                    <span {...stylex.props(styles.fileModified)}>
-                      {file.modified}
-                    </span>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div {...stylex.props(styles.filesGrid)}>
-                {files.map(file => (
-                  <div key={file.id} {...stylex.props(styles.gridItem)}>
-                    <div
-                      {...stylex.props(styles.gridItemIcon)}
-                      style={{
-                        backgroundColor:
-                          file.type === 'folder'
-                            ? 'rgba(59, 130, 246, 0.08)'
-                            : undefined,
-                      }}>
-                      {file.type === 'folder' ? (
-                        <FolderIcon size={20} color="#3b82f6" />
-                      ) : (
-                        <FileIcon
-                          size={20}
-                          color={getExtensionColor(file.extension)}
-                        />
-                      )}
-                    </div>
-                    <div {...stylex.props(styles.gridItemName)}>
-                      {file.name}
-                    </div>
-                    <span {...stylex.props(styles.gridItemMeta)}>
-                      {file.modified}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )
-          ) : (
-            <div {...stylex.props(styles.emptyState)}>
-              <XDSText type="supporting" color="secondary">
-                Select a project to browse files
-              </XDSText>
+                );
+              })}
             </div>
-          )}
-        </div>
+          </div>
+        ))}
       </div>
     </div>
   );
