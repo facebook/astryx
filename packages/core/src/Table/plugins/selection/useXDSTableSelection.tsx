@@ -272,7 +272,9 @@ const selectedBgColor = colorVars['--color-accent-muted'];
 
 const selectionColumnStyles = stylex.create({
   cell: {
-    textAlign: 'center',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
     paddingInline: 0,
   },
 });
