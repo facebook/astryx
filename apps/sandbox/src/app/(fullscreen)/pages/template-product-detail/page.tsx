@@ -7,6 +7,7 @@ import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSCenter} from '@xds/core/Center';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
+import {XDSNumberInput} from '@xds/core/NumberInput';
 import {
   XDSSegmentedControl,
   XDSSegmentedControlItem,
@@ -105,7 +106,7 @@ function StarRating({rating, count}: {rating: number; count: number}) {
           style={{
             width: starSize,
             height: starSize,
-            color: 'var(--color-accent)',
+            color: 'var(--color-icon-primary)',
           }}>
           <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
         </svg>
@@ -122,13 +123,13 @@ function StarRating({rating, count}: {rating: number; count: number}) {
           </defs>
           <path
             d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
-            fill="var(--color-accent)"
+            fill="var(--color-icon-primary)"
             clipPath="url(#star-clip)"
           />
           <path
             d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
             fill="none"
-            stroke="var(--color-accent)"
+            stroke="var(--color-icon-primary)"
             strokeWidth={1.5}
           />
         </svg>
@@ -138,7 +139,7 @@ function StarRating({rating, count}: {rating: number; count: number}) {
           key={`empty-${i}`}
           viewBox="0 0 24 24"
           fill="none"
-          stroke="var(--color-accent)"
+          stroke="var(--color-icon-primary)"
           strokeWidth={1.5}
           style={{width: starSize, height: starSize}}>
           <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
@@ -314,10 +315,10 @@ function ImageGallery({
 function ProductInfo() {
   const [color, setColor] = useState('matte-black');
   const [finish, setFinish] = useState('linen');
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity] = useState<number | null>(1);
 
-  const decrement = () => setQuantity(q => Math.max(1, q - 1));
-  const increment = () => setQuantity(q => Math.min(10, q + 1));
+  const decrement = () => setQuantity(q => Math.max(1, (q ?? 1) - 1));
+  const increment = () => setQuantity(q => Math.min(10, (q ?? 1) + 1));
 
   return (
     <XDSVStack gap={5}>
@@ -380,45 +381,33 @@ function ProductInfo() {
       </XDSVStack>
 
       {/* Quantity */}
-      <XDSVStack gap={1}>
-        <XDSText type="label">Quantity</XDSText>
-        <XDSHStack gap={1} vAlign="center">
-          <XDSButton
-            label="Decrease quantity"
-            variant="ghost"
-            icon={<MinusIcon style={{width: 16, height: 16}} />}
-            onClickAction={decrement}
-            isDisabled={quantity <= 1}
-          />
-          <input
-            type="number"
+      <XDSHStack gap={1} vAlign="center">
+        <XDSButton
+          label="Decrease quantity"
+          variant="ghost"
+          icon={<MinusIcon style={{width: 16, height: 16}} />}
+          onClickAction={decrement}
+          isDisabled={(quantity ?? 1) <= 1}
+        />
+        <div style={{width: 100}}>
+          <XDSNumberInput
+            label="Quantity"
+            isLabelHidden
             value={quantity}
+            onChange={setQuantity}
             min={1}
             max={10}
-            readOnly
-            aria-label="Quantity"
-            style={{
-              width: 100,
-              textAlign: 'center',
-              border: '1px solid var(--color-divider-emphasized)',
-              borderRadius: 'var(--radius-element, 8px)',
-              padding: '6px 8px',
-              fontSize: 'var(--text-body-size, 14px)',
-              color: 'var(--color-text-primary)',
-              backgroundColor: 'var(--color-background-surface)',
-              outline: 'none',
-              MozAppearance: 'textfield',
-            }}
+            isIntegerOnly
           />
-          <XDSButton
-            label="Increase quantity"
-            variant="ghost"
-            icon={<PlusIcon style={{width: 16, height: 16}} />}
-            onClickAction={increment}
-            isDisabled={quantity >= 10}
-          />
-        </XDSHStack>
-      </XDSVStack>
+        </div>
+        <XDSButton
+          label="Increase quantity"
+          variant="ghost"
+          icon={<PlusIcon style={{width: 16, height: 16}} />}
+          onClickAction={increment}
+          isDisabled={(quantity ?? 1) >= 10}
+        />
+      </XDSHStack>
 
       {/* Add to Cart + Buy it now (8px gap between them) */}
       <XDSVStack gap={2}>
