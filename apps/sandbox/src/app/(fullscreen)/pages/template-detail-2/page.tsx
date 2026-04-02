@@ -377,7 +377,9 @@ function ShopSideNav() {
       header={
         <XDSHStack gap={2} vAlign="center" style={{padding: '8px 12px'}}>
           <XDSNavIcon icon={<ShopIcon style={{width: 16, height: 16}} />} />
-          <XDSLink href="#">Acme</XDSLink>
+          <XDSLink href="#" label="Acme">
+            Acme
+          </XDSLink>
         </XDSHStack>
       }
       footer={
