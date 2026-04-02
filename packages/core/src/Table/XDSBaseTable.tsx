@@ -64,12 +64,10 @@ function applyPlugins<TPlugin, TProps, TArgs extends unknown[]>(
     try {
       return transform(acc, ...args);
     } catch (error) {
-      if (process.env.NODE_ENV !== 'production') {
-        console.error(
-          `[XDSTable] Plugin at index ${index} threw in transform:`,
-          error,
-        );
-      }
+      console.error(
+        `[XDSTable] Plugin at index ${index} threw in transform:`,
+        error,
+      );
       return acc;
     }
   }, initial);
@@ -392,12 +390,10 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
       try {
         tableElement = plugin.transformTableContext(tableElement);
       } catch (error) {
-        if (process.env.NODE_ENV !== 'production') {
-          console.error(
-            '[XDSTable] Plugin threw in transformTableContext:',
-            error,
-          );
-        }
+        console.error(
+          '[XDSTable] Plugin threw in transformTableContext:',
+          error,
+        );
       }
     }
   }

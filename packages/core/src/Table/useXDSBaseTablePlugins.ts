@@ -98,7 +98,7 @@ function validatePlugin<T extends Record<string, unknown>>(
   name: string,
   plugin: TablePlugin<T>,
 ): void {
-  if (process.env.NODE_ENV === 'production') return;
+  // Validation always runs — warnings are cheap and help catch plugin bugs
 
   const keys = Object.keys(plugin);
 
@@ -197,7 +197,7 @@ export function useXDSBaseTablePlugins<T extends Record<string, unknown>>(
   const result = [...basePlugins, ...sortedUserPlugins];
 
   // Validate plugins in dev mode
-  if (process.env.NODE_ENV !== 'production' && userPlugins) {
+  if (userPlugins) {
     for (const [name, plugin] of Object.entries(userPlugins)) {
       validatePlugin(name, plugin);
     }
