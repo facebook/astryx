@@ -567,7 +567,11 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
       const unselected = filteredItems.filter(
         item => !selectedSet.has(item.value),
       );
-      return [...selected, ...unselected];
+      const items = [...selected, ...unselected];
+      if (hasSelectAll) {
+        return [{value: SELECT_ALL_VALUE, label: selectAllLabel}, ...items];
+      }
+      return items;
     }
     // For non-search mode, flatten options in the same order as renderOptions
     const result: XDSMultiSelectorOptionData[] = [];
@@ -601,8 +605,19 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
       }
     }
     flushFlat();
+
+    if (hasSelectAll) {
+      return [{value: SELECT_ALL_VALUE, label: selectAllLabel}, ...result];
+    }
     return result;
-  }, [filteredItems, searchQuery, options, optimisticValue]);
+  }, [
+    filteredItems,
+    searchQuery,
+    options,
+    optimisticValue,
+    hasSelectAll,
+    selectAllLabel,
+  ]);
 
   // Layer for dropdown positioning
   const handleLayerHide = useCallback(() => {
@@ -701,16 +716,6 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
     setOptimisticValue,
   ]);
 
-  // Prepend a synthetic select-all item so it participates in keyboard navigation
-  const navigableItems = useMemo(() => {
-    if (!hasSelectAll) return sortedItems;
-    const selectAllItem: XDSMultiSelectorOptionData = {
-      value: SELECT_ALL_VALUE,
-      label: selectAllLabel,
-    };
-    return [selectAllItem, ...sortedItems];
-  }, [hasSelectAll, sortedItems, selectAllLabel]);
-
   // Route toggle: select-all sentinel → handleSelectAll, everything else → handleToggle
   const handleNavigableToggle = useCallback(
     (itemValue: string) => {
@@ -723,16 +728,16 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
     [handleSelectAll, handleToggle],
   );
 
-  // Multi-select combobox behavior — uses value-based highlighting
-  // so keyboard navigation and selection are decoupled from render order.
+  // Multi-select combobox behavior — index-based, matching useCombobox pattern.
+  // sortedItems is the single source of truth for item order.
   const {
-    highlightedValue,
+    highlightedIndex,
     getItemId,
     onTriggerClick,
     onKeyDown,
     onItemMouseEnter,
   } = useMultiCombobox({
-    selectableItems: navigableItems,
+    selectableItems: sortedItems,
     isDisabled,
     isOpen: popover.isOpen,
     hasSearch,
@@ -842,28 +847,33 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
     onKeyDown,
   ]);
 
-  // Render an individual item
+  // Render an individual item (index-based)
   const renderItem = useCallback(
-    (item: XDSMultiSelectorOptionData) => {
-      const isHighlighted = item.value === highlightedValue;
-      const isSelected = optimisticValue.includes(item.value);
+    (item: XDSMultiSelectorOptionData, flatIndex: number) => {
+      const isHighlighted = flatIndex === highlightedIndex;
+      const isSelectAll = item.value === SELECT_ALL_VALUE;
+      const isSelected = isSelectAll
+        ? allEnabledSelected
+        : optimisticValue.includes(item.value);
+      const checkboxValue = isSelectAll ? selectAllState : isSelected;
 
       return (
         <div
           key={item.value}
-          id={getItemId(item.value)}
+          id={getItemId(flatIndex)}
           role="option"
           aria-selected={isSelected}
           aria-disabled={item.disabled}
           onClick={() => {
             if (!item.disabled) {
-              handleToggle(item.value);
+              handleNavigableToggle(item.value);
             }
           }}
-          onMouseEnter={() => onItemMouseEnter(item)}
+          onMouseEnter={() => onItemMouseEnter(item, flatIndex)}
           {...stylex.props(
             styles.item,
-            itemSizeStyles[size],
+            isSelectAll ? selectAllSizeStyles[size] : itemSizeStyles[size],
+            isSelectAll && styles.selectAllWrapper,
             isHighlighted && styles.itemHighlighted,
             item.disabled && styles.itemDisabled,
           )}>
@@ -871,13 +881,13 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
             <XDSCheckboxInput
               label=""
               isLabelHidden
-              value={isSelected}
+              value={checkboxValue}
               onChange={() => {}}
               isDisabled={item.disabled}
               size={size === 'lg' ? 'md' : size}
             />
           </div>
-          {children ? (
+          {children && !isSelectAll ? (
             children(item)
           ) : (
             <span
@@ -893,10 +903,12 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
     },
     [
       children,
-      highlightedValue,
+      highlightedIndex,
       optimisticValue,
+      allEnabledSelected,
+      selectAllState,
       getItemId,
-      handleToggle,
+      handleNavigableToggle,
       onItemMouseEnter,
       size,
     ],
@@ -906,25 +918,51 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
   // item order — no independent sorting here. Structural elements (dividers,
   // section headers) come from the original options prop.
   const renderOptions = useCallback(() => {
+    const elements: ReactNode[] = [];
+    let cursor = 0;
+
+    // Number of real items (excluding the select-all sentinel)
+    const realItemCount = hasSelectAll
+      ? sortedItems.length - 1
+      : sortedItems.length;
+
+    // Show select-all only when there are real items to select
+    if (hasSelectAll && realItemCount > 0) {
+      elements.push(renderItem(sortedItems[0], 0));
+      elements.push(
+        <XDSDivider key="select-all-divider" xstyle={styles.divider} />,
+      );
+      cursor = 1;
+    } else if (hasSelectAll) {
+      // Skip the select-all sentinel when there are no real items
+      cursor = 1;
+    }
+
+    // Empty state — no real items to show
+    if (realItemCount === 0) {
+      elements.push(
+        <div key="empty" {...stylex.props(styles.emptyState)}>
+          No results found
+        </div>,
+      );
+      return elements;
+    }
+
     if (searchQuery) {
-      // In search mode, sortedItems is already filtered and sorted
-      if (sortedItems.length === 0) {
-        return <div {...stylex.props(styles.emptyState)}>No results found</div>;
+      for (let i = cursor; i < sortedItems.length; i++) {
+        elements.push(renderItem(sortedItems[i], i));
       }
-      return sortedItems.map(item => renderItem(item));
+      return elements;
     }
 
     // Non-search: consume items from sortedItems in order, interleaving
     // structural elements (dividers, section headers) from the options prop.
-    // sortedItems was built by the same iteration pattern over options, so
-    // the cursor stays in sync with the structural boundaries.
-    let cursor = 0;
-    const elements: ReactNode[] = [];
     let pendingCount = 0;
 
     const flushPending = () => {
       for (let j = 0; j < pendingCount; j++) {
-        elements.push(renderItem(sortedItems[cursor++]));
+        elements.push(renderItem(sortedItems[cursor], cursor));
+        cursor++;
       }
       pendingCount = 0;
     };
@@ -942,7 +980,8 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
         const count = option.options.length;
         const sectionItems: ReactNode[] = [];
         for (let j = 0; j < count; j++) {
-          sectionItems.push(renderItem(sortedItems[cursor++]));
+          sectionItems.push(renderItem(sortedItems[cursor], cursor));
+          cursor++;
         }
         if (option.title) {
           elements.push(
@@ -965,7 +1004,7 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
     flushPending();
 
     return elements;
-  }, [options, renderItem, sortedItems, searchQuery]);
+  }, [options, renderItem, sortedItems, searchQuery, hasSelectAll]);
 
   return (
     <XDSField
@@ -1001,8 +1040,8 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
         aria-expanded={popover.isOpen}
         aria-controls={listboxId}
         aria-activedescendant={
-          popover.isOpen && highlightedValue != null
-            ? getItemId(highlightedValue)
+          popover.isOpen && highlightedIndex >= 0
+            ? getItemId(highlightedIndex)
             : undefined
         }
         aria-describedby={ariaDescribedBy}
@@ -1057,42 +1096,6 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
             role="listbox"
             aria-multiselectable="true"
             aria-labelledby={triggerId}>
-            {hasSelectAll && (
-              <>
-                <div
-                  id={getItemId(SELECT_ALL_VALUE)}
-                  role="option"
-                  aria-selected={allEnabledSelected}
-                  onClick={handleSelectAll}
-                  onMouseEnter={() =>
-                    onItemMouseEnter({
-                      value: SELECT_ALL_VALUE,
-                      label: selectAllLabel,
-                    })
-                  }
-                  {...stylex.props(
-                    styles.item,
-                    styles.selectAllWrapper,
-                    selectAllSizeStyles[size],
-                    highlightedValue === SELECT_ALL_VALUE &&
-                      styles.itemHighlighted,
-                  )}>
-                  <div inert {...stylex.props(styles.checkboxDecorative)}>
-                    <XDSCheckboxInput
-                      label=""
-                      isLabelHidden
-                      value={selectAllState}
-                      onChange={() => {}}
-                      size={size === 'lg' ? 'md' : size}
-                    />
-                  </div>
-                  <span {...stylex.props(styles.itemLabel)}>
-                    {selectAllLabel}
-                  </span>
-                </div>
-                <XDSDivider xstyle={styles.divider} />
-              </>
-            )}
             {renderOptions()}
           </div>
         </div>,
