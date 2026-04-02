@@ -36,14 +36,15 @@ export const categories: SandboxCategory[] = [
   {
     label: 'Components & Patterns',
     slug: 'components-patterns',
-    description: 'Component demos, composition patterns, and interactive examples.',
+    description:
+      'Component demos, composition patterns, and interactive examples.',
     pages: [
       {
         name: 'Card Examples',
         href: '/pages/example-cards/',
         description: 'XDS components showcased in realistic card compositions',
       },
-{
+      {
         name: 'Table Overview',
         href: '/pages/table-overview/',
         description: 'Data table patterns and configurations',
@@ -101,6 +102,12 @@ export const categories: SandboxCategory[] = [
         name: 'Settings',
         href: '/pages/template-settings/',
         description: 'Settings page with tabs, forms, and toggles',
+      },
+      {
+        name: 'Settings (Account)',
+        href: '/pages/template-settings-02/',
+        description:
+          'Account settings with sidebar nav, info rows, and device history',
       },
       {
         name: 'Data Table',
