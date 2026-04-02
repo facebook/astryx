@@ -14,7 +14,7 @@
  * - /packages/core/src/Table/index.ts (exports)
  */
 
-import {useCallback, useMemo, useRef, type ReactNode} from 'react';
+import {useCallback, useMemo, useRef} from 'react';
 import type {TablePlugin, XDSTableColumn} from '../../types';
 import type {XDSMultiSelectorOptionType} from '../../../MultiSelector/types';
 
@@ -145,9 +145,19 @@ export interface UseXDSTableColumnSettingsReturn<
    * Filters and reorders the full columns array based on activeColumnKeys.
    * Returns only active columns, in the order specified by activeColumnKeys.
    *
+   * **Note:** When using the plugin with XDSTable, you typically don't need
+   * this — the plugin's `transformColumns` handles filtering automatically.
+   * Pass all columns to XDSTable and let the plugin do the work.
+   * Use `activeColumns()` when you need the filtered array for non-table
+   * purposes (e.g., rendering column headers in a toolbar or export).
+   *
    * @example
    * ```
-   * <XDSTable columns={columnSettings.activeColumns(allColumns)} />
+   * // Preferred: let the plugin filter via transformColumns
+   * <XDSTable columns={allColumns} plugins={{ columnSettings: cs.plugin }} />
+   *
+   * // Manual: for non-table usage
+   * const visibleCols = cs.activeColumns(allColumns);
    * ```
    */
   activeColumns: (columns: XDSTableColumn<T>[]) => XDSTableColumn<T>[];
@@ -389,12 +399,24 @@ export function useXDSTableColumnSettings<
     [],
   );
 
-  // --- Plugin (stable ref via configRef) ---
+  // --- Plugin (uses transformColumns to filter/reorder) ---
 
   const plugin = useMemo(
     (): TablePlugin<T> => ({
-      transformTableContext(children: ReactNode) {
-        return children;
+      transformColumns(columns: XDSTableColumn<T>[]): XDSTableColumn<T>[] {
+        const cfg = configRef.current;
+        const activeSet = new Set(cfg.activeColumnKeys);
+        // Build a map for ordering by activeColumnKeys position
+        const orderMap = new Map(
+          cfg.activeColumnKeys.map((key, index) => [key, index]),
+        );
+        return columns
+          .filter((col) => activeSet.has(col.key as TColumnKey))
+          .sort((a, b) => {
+            const orderA = orderMap.get(a.key as TColumnKey) ?? Infinity;
+            const orderB = orderMap.get(b.key as TColumnKey) ?? Infinity;
+            return orderA - orderB;
+          });
       },
     }),
     [],

@@ -134,7 +134,7 @@ export const BasicColumnToggle: Story = {
         />
         <XDSTable
           data={users}
-          columns={columnSettings.activeColumns(allColumns)}
+          columns={allColumns}
           idKey="id"
           plugins={{columnSettings: columnSettings.plugin}}
         />
@@ -177,7 +177,7 @@ export const DisabledColumns: Story = {
         />
         <XDSTable
           data={users}
-          columns={columnSettings.activeColumns(allColumns)}
+          columns={allColumns}
           idKey="id"
           plugins={{columnSettings: columnSettings.plugin}}
         />
@@ -228,7 +228,7 @@ export const ResetToDefault: Story = {
         />
         <XDSTable
           data={users}
-          columns={columnSettings.activeColumns(allColumns)}
+          columns={allColumns}
           idKey="id"
           plugins={{columnSettings: columnSettings.plugin}}
         />
@@ -278,7 +278,7 @@ export const WithSelection: Story = {
         />
         <XDSTable
           data={users}
-          columns={columnSettings.activeColumns(allColumns)}
+          columns={allColumns}
           idKey="id"
           plugins={{
             columnSettings: columnSettings.plugin,

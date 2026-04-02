@@ -216,8 +216,17 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
     XDSTableHeaderCell) as React.ComponentType<TableHeaderCellComponentProps>;
 
   // Resolve columns: explicit > auto-generated from data.
-  const resolvedColumns: XDSTableColumn<T>[] =
+  const baseColumns: XDSTableColumn<T>[] =
     columnsProp ?? (data ? generateColumns(data) : []);
+
+  // --- Plugin pipeline: transformColumns ---
+  // Runs before any element-level transforms. Allows plugins to filter,
+  // reorder, or inject synthetic columns (e.g. selection checkbox).
+  const resolvedColumns = applyPlugins(
+    plugins,
+    p => p.transformColumns,
+    baseColumns,
+  );
 
   // Resolve all column widths in a single pass — produces per-column
   // inline styles and the aggregate table min-width.
