@@ -192,6 +192,17 @@ const ShopIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <polyline points="9 22 9 12 15 12 15 22" />
   </svg>
 );
+const ArrowLeftIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.5}
+    {...props}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+  </svg>
+);
+
 
 // ─── Styles ─────────────────────────────────────────────────────────────────
 const pageStyles = stylex.create({
@@ -377,9 +388,9 @@ function ShopSideNav() {
       header={
         <XDSHStack gap={2} vAlign="center" style={{padding: '8px 12px'}}>
           <XDSNavIcon icon={<ShopIcon style={{width: 16, height: 16}} />} />
-          <XDSLink href="#" label="Acme">
+          <XDSHeading level={4}>
             Acme
-          </XDSLink>
+          </XDSHeading>
         </XDSHStack>
       }
       footer={
@@ -460,7 +471,12 @@ function PageHeader({
       <XDSCenter axis="horizontal">
         <XDSVStack xstyle={pageStyles.maxWidth} gap={0}>
           {/* Back link */}
-          <XDSLink href="#" label="← All orders">← All orders</XDSLink>
+          <XDSLink href="#" label="All orders" color="secondary">
+            <XDSHStack gap={1} vAlign="center">
+              <ArrowLeftIcon style={{width: 16, height: 16}} />
+              All orders
+            </XDSHStack>
+          </XDSLink>
           {/* Title + metadata */}
           <XDSVStack gap={0}>
             {/* Title row */}
@@ -499,7 +515,7 @@ function PageHeader({
                 <XDSText type="body">Needs attention</XDSText>
               </XDSHStack>
               <Bullet />
-              <XDSLink href="#" label="See all">See all</XDSLink>
+              <XDSLink href="#" label="See all" color="secondary">See all</XDSLink>
             </XDSHStack>
           </XDSVStack>
 
@@ -743,7 +759,7 @@ function RightPanel() {
               Customer is a repeat buyer — 3rd order this quarter. Prefers brown
               leather goods and grid-format notebooks. Requested gift wrapping
               for this order. Ships to a residential address in CA.{' '}
-              <XDSLink href="#" label="Show more">Show more</XDSLink>
+              <XDSLink href="#" label="Show more" color="secondary">Show more</XDSLink>
             </XDSText>
           </XDSCollapsible>
         </div>
