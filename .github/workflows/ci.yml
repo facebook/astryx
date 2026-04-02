@@ -184,12 +184,14 @@ jobs:
         run: |
           REPO_URL="https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git"
           MAX_ATTEMPTS=5
+          WORK_DIR="$PWD"
 
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
           for attempt in $(seq 1 $MAX_ATTEMPTS); do
             echo "::group::Attempt $attempt of $MAX_ATTEMPTS"
+            cd "$WORK_DIR"
 
             rm -rf /tmp/gh-pages
             git clone --depth=1 --single-branch --branch gh-pages "$REPO_URL" /tmp/gh-pages
