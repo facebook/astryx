@@ -3,8 +3,8 @@
 import {useState, useMemo} from 'react';
 import {XDSButton} from '@xds/core/Button';
 import {XDSList, XDSListItem} from '@xds/core/List';
-import {XDSHStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {XDSHStack, XDSVStack} from '@xds/core/Layout';
+import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSToolbar} from '@xds/core/Toolbar';
 import {XDSDivider} from '@xds/core';
 import {
@@ -38,9 +38,15 @@ function FolderIcon({color = '#5AADFE'}: {color?: string}) {
   );
 }
 
-function FileIcon({color = '#8E8E93'}: {color?: string}) {
+function FileIcon({
+  color = '#8E8E93',
+  size = 16,
+}: {
+  color?: string;
+  size?: number;
+}) {
   return (
-    <svg width={16} height={16} viewBox="0 0 20 20" fill="none">
+    <svg width={size} height={size} viewBox="0 0 20 20" fill="none">
       <path
         d="M5 2.5A1.5 1.5 0 016.5 1h4.879a1.5 1.5 0 011.06.44l3.122 3.12A1.5 1.5 0 0116 5.622V17.5a1.5 1.5 0 01-1.5 1.5h-8A1.5 1.5 0 015 17.5v-15z"
         fill="white"
@@ -616,8 +622,6 @@ const inlineStyles = {
     inset: 0,
   },
   toolbar: {
-    paddingLeft: 4,
-    paddingRight: 12,
     flexShrink: 0,
   },
   body: {
@@ -721,6 +725,7 @@ export default function FileExplorerPage() {
   const [selectedPath, setSelectedPath] = useState<string[]>([
     'applications',
     'chrome-apps',
+    'component-lab',
   ]);
 
   const columns = useMemo(() => {
@@ -763,6 +768,15 @@ export default function FileExplorerPage() {
     return 'Home';
   }, [selectedPath]);
 
+  // Check if the last selected item is a file (for preview pane)
+  const selectedFile = useMemo(() => {
+    if (selectedPath.length === 0) return null;
+    const lastId = selectedPath[selectedPath.length - 1];
+    const item = findItem(FILESYSTEM, lastId);
+    if (item && item.type === 'file') return item;
+    return null;
+  }, [selectedPath]);
+
   const handleSelect = (columnIndex: number, itemId: string) => {
     const newPath = [...selectedPath.slice(0, columnIndex), itemId];
     setSelectedPath(newPath);
@@ -773,6 +787,50 @@ export default function FileExplorerPage() {
       setSelectedPath(selectedPath.slice(0, -1));
     }
   };
+
+  function renderPreviewIcon(item: FileSystemItem) {
+    const appIcon = APP_ICONS[item.name];
+    if (appIcon) {
+      return (
+        <div
+          style={{
+            width: 128,
+            height: 128,
+            borderRadius: 28,
+            backgroundColor: appIcon.bg,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 48,
+            fontWeight: 700,
+            color: 'white',
+            boxShadow: '0 4px 24px rgba(0,0,0,0.1)',
+          }}>
+          {appIcon.label}
+        </div>
+      );
+    }
+    return (
+      <div
+        style={{
+          width: 128,
+          height: 128,
+          borderRadius: 16,
+          backgroundColor: 'var(--xds-color-background-body, #F5F5F7)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
+        }}>
+        <FileIcon color="var(--xds-color-icon-secondary, #86868B)" size={64} />
+      </div>
+    );
+  }
+
+  function getFileExtension(name: string): string {
+    const dot = name.lastIndexOf('.');
+    return dot > 0 ? name.substring(dot + 1).toUpperCase() : 'File';
+  }
 
   function renderIcon(item: FileSystemItem, isSelected: boolean) {
     if (item.type === 'folder') {
@@ -804,6 +862,7 @@ export default function FileExplorerPage() {
       {/* Toolbar */}
       <XDSToolbar
         label="File Explorer"
+        padding={0}
         style={inlineStyles.toolbar}
         startContent={
           <XDSHStack gap={1} vAlign="center">
@@ -935,6 +994,57 @@ export default function FileExplorerPage() {
             </div>
           );
         })}
+
+        {/* Preview Pane */}
+        {selectedFile && (
+          <div
+            style={{
+              flex: 1,
+              flexShrink: 0,
+              borderLeft: '1px solid var(--xds-color-border, #E5E5EA)',
+              overflowY: 'auto' as const,
+              backgroundColor: 'var(--xds-color-background-surface, #FFFFFF)',
+              padding: 16,
+            }}>
+            <XDSVStack
+              gap={4}
+              hAlign="center"
+              style={{maxWidth: 300, margin: '0 auto'}}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  paddingBlock: 32,
+                }}>
+                {renderPreviewIcon(selectedFile)}
+              </div>
+              <XDSVStack gap={1} hAlign="center" style={{width: '100%'}}>
+                <XDSText type="label">{selectedFile.name}</XDSText>
+                <XDSText type="supporting">
+                  {getFileExtension(selectedFile.name)} Document
+                </XDSText>
+              </XDSVStack>
+              <XDSVStack gap={2} style={{width: '100%'}}>
+                <XDSText type="label">Information</XDSText>
+                <XDSHStack hAlign="between">
+                  <XDSText type="supporting">Created</XDSText>
+                  <XDSText type="supporting">March 28, 2026 at 2:15 PM</XDSText>
+                </XDSHStack>
+                <XDSHStack hAlign="between">
+                  <XDSText type="supporting">Modified</XDSText>
+                  <XDSText type="supporting">Yesterday, 10:27 PM</XDSText>
+                </XDSHStack>
+              </XDSVStack>
+              <XDSVStack gap={1} style={{width: '100%'}}>
+                <XDSText type="label">Tags</XDSText>
+                <XDSText type="supporting" color="secondary">
+                  Add Tags...
+                </XDSText>
+              </XDSVStack>
+            </XDSVStack>
+          </div>
+        )}
       </XDSHStack>
     </div>
   );
