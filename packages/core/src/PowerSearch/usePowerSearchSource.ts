@@ -13,7 +13,7 @@
 import {useMemo} from 'react';
 import type {XDSSearchSource} from '../Typeahead/types';
 import type {InternalConfig} from './useInternalConfig';
-import type {PowerSearchItem} from './types';
+import type {PowerSearchItem, PowerSearchOperator, FilterValue} from './types';
 
 export function usePowerSearchSource(
   config: InternalConfig,
@@ -82,9 +82,10 @@ export function usePowerSearchSource(
           }
         }
 
-        // Field+operator+value suggestions for string-valued operators.
+        // Field+operator+value suggestions for string and enum operators.
         // Matches "title foobar" → Title contains "foobar"
         // and "title contains foobar" → Title contains "foobar"
+        // and "genre fiction" → Genre is "Fiction"
         for (const field of config.getVisibleFields()) {
           if (field.isValueMatchAllowed === false) continue;
 
@@ -93,33 +94,32 @@ export function usePowerSearchSource(
           // Try "<field> <operator> <value>" first (longer match wins)
           let hasExactOperatorMatch = false;
           for (const op of field.operators) {
-            if (op.value.type !== 'string' && op.value.type !== 'string_list') {
-              continue;
-            }
             const prefix = `${fieldLabel} ${op.label.toLowerCase()} `;
             if (lower.startsWith(prefix) && lower.length > prefix.length) {
-              hasExactOperatorMatch = true;
               const rawValue = query.slice(prefix.length);
-              const id = `${field.key}:${op.key}:value:${rawValue}`;
-              if (!seen.has(id)) {
-                seen.add(id);
-                results.push({
-                  id,
-                  label: `${field.label} ${op.label} "${rawValue}"`,
-                  auxiliaryData: {
-                    fieldKey: field.key,
-                    operatorKey: op.key,
-                    filterValue:
-                      op.value.type === 'string'
-                        ? {type: 'string', value: rawValue}
-                        : {type: 'string_list', value: [rawValue]},
-                  },
-                });
+              const matches = resolveValueMatches(op, rawValue);
+              if (matches.length > 0) {
+                hasExactOperatorMatch = true;
+              }
+              for (const match of matches) {
+                const id = `${field.key}:${op.key}:value:${match.displayValue}`;
+                if (!seen.has(id)) {
+                  seen.add(id);
+                  results.push({
+                    id,
+                    label: `${field.label} ${op.label} ${match.quoted ? `"${match.displayValue}"` : match.displayValue}`,
+                    auxiliaryData: {
+                      fieldKey: field.key,
+                      operatorKey: op.key,
+                      filterValue: match.filterValue,
+                    },
+                  });
+                }
               }
             }
           }
 
-          // Try "<field> <value>" — suggests all string-valued operators.
+          // Try "<field> <value>" — suggests all matching operators.
           // Skip if an explicit "<field> <operator> <value>" already matched.
           const fieldPrefix = `${fieldLabel} `;
           if (
@@ -135,27 +135,21 @@ export function usePowerSearchSource(
             if (!isOperatorPrefix) {
               const rawValue = query.slice(fieldPrefix.length);
               for (const op of field.operators) {
-                if (
-                  op.value.type !== 'string' &&
-                  op.value.type !== 'string_list'
-                ) {
-                  continue;
-                }
-                const id = `${field.key}:${op.key}:value:${rawValue}`;
-                if (!seen.has(id)) {
-                  seen.add(id);
-                  results.push({
-                    id,
-                    label: `${field.label} ${op.label} "${rawValue}"`,
-                    auxiliaryData: {
-                      fieldKey: field.key,
-                      operatorKey: op.key,
-                      filterValue:
-                        op.value.type === 'string'
-                          ? {type: 'string', value: rawValue}
-                          : {type: 'string_list', value: [rawValue]},
-                    },
-                  });
+                const matches = resolveValueMatches(op, rawValue);
+                for (const match of matches) {
+                  const id = `${field.key}:${op.key}:value:${match.displayValue}`;
+                  if (!seen.has(id)) {
+                    seen.add(id);
+                    results.push({
+                      id,
+                      label: `${field.label} ${op.label} ${match.quoted ? `"${match.displayValue}"` : match.displayValue}`,
+                      auxiliaryData: {
+                        fieldKey: field.key,
+                        operatorKey: op.key,
+                        filterValue: match.filterValue,
+                      },
+                    });
+                  }
                 }
               }
             }
@@ -198,6 +192,69 @@ export function usePowerSearchSource(
       },
     };
   }, [config]);
+}
+
+interface ValueMatch {
+  displayValue: string;
+  filterValue: FilterValue;
+  /** Whether to wrap the display value in quotes (for arbitrary string values). */
+  quoted: boolean;
+}
+
+/**
+ * Given an operator and a raw typed value, returns matching value suggestions.
+ * - string/string_list: returns the raw value as-is
+ * - enum/enum_list: returns enum items whose labels match the typed value
+ */
+function resolveValueMatches(
+  op: PowerSearchOperator,
+  rawValue: string,
+): ValueMatch[] {
+  const opType = op.value.type;
+
+  if (opType === 'string') {
+    return [
+      {
+        displayValue: rawValue,
+        filterValue: {type: 'string', value: rawValue},
+        quoted: true,
+      },
+    ];
+  }
+
+  if (opType === 'string_list') {
+    return [
+      {
+        displayValue: rawValue,
+        filterValue: {type: 'string_list', value: [rawValue]},
+        quoted: true,
+      },
+    ];
+  }
+
+  if (opType === 'enum') {
+    const lower = rawValue.toLowerCase();
+    return op.value.values
+      .filter(item => item.label.toLowerCase().includes(lower))
+      .map(item => ({
+        displayValue: item.label,
+        filterValue: {type: 'enum' as const, value: item.value},
+        quoted: false,
+      }));
+  }
+
+  if (opType === 'enum_list') {
+    const lower = rawValue.toLowerCase();
+    return op.value.values
+      .filter(item => item.label.toLowerCase().includes(lower))
+      .map(item => ({
+        displayValue: item.label,
+        filterValue: {type: 'enum_list' as const, value: [item.value]},
+        quoted: false,
+      }));
+  }
+
+  return [];
 }
 
 function buildFieldItems(config: InternalConfig): PowerSearchItem[] {
