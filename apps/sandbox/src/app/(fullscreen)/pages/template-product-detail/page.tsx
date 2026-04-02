@@ -64,7 +64,15 @@ const HeartIcon = (props: React.SVGProps<SVGSVGElement>) => (
 );
 
 // ─── Image URLs ─────────────────────────────────────────────────────────────
-// TODO: Swap placeholder gray rectangles for real product images when merging.
+const IMAGES = [
+  'https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?w=800&q=80',
+  'https://images.unsplash.com/photo-1540574163026-643ea20ade25?w=400&q=80',
+  'https://images.unsplash.com/photo-1524484485831-a92ffc0de03f?w=400&q=80',
+  'https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?w=400&q=80',
+  'https://images.unsplash.com/photo-1416339134316-0e91dc9ded92?w=400&q=80',
+  'https://images.unsplash.com/photo-1505691938895-1758d7feb511?w=400&q=80',
+  'https://images.unsplash.com/photo-1489171078254-c3365d6e359f?w=400&q=80',
+];
 
 // ─── Product Data ───────────────────────────────────────────────────────────
 const PRODUCT = {
@@ -162,15 +170,21 @@ function ImageGallery({
   selected: number;
   onSelect: (i: number) => void;
 }) {
+  const heroSrc = IMAGES[selected + 1] ?? IMAGES[0];
+  const thumbnails = IMAGES.slice(1);
+
   return (
     <div style={{display: 'flex', flexDirection: 'column', gap: 12}}>
       {/* Hero image */}
-      <div
+      <img
+        src={heroSrc}
+        alt={PRODUCT.name}
         style={{
-          ...placeholderStyle,
           width: '100%',
           aspectRatio: '4 / 5',
+          objectFit: 'cover',
           borderRadius: 'var(--radius-container, 12px)',
+          backgroundColor: '#e8e8e8',
         }}
       />
       {/* Thumbnail grid */}
@@ -180,13 +194,17 @@ function ImageGallery({
           gridTemplateColumns: 'repeat(3, 1fr)',
           gap: 8,
         }}>
-        {Array.from({length: 6}, (_, i) => (
-          <div
+        {thumbnails.map((src, i) => (
+          <img
             key={i}
+            src={src}
+            alt={`Product image ${i + 1}`}
             style={{
-              ...placeholderStyle,
+              width: '100%',
               aspectRatio: '1 / 1',
+              objectFit: 'cover',
               cursor: 'pointer',
+              borderRadius: 'var(--radius-element, 8px)',
               outline:
                 selected === i
                   ? '2px solid var(--color-accent, #0866ff)'
@@ -196,7 +214,6 @@ function ImageGallery({
             onClick={() => onSelect(i)}
             role="button"
             tabIndex={0}
-            aria-label={`Product image ${i + 1}`}
             onKeyDown={e => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
