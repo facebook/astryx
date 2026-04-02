@@ -153,17 +153,17 @@ jobs:
           path: analysis.json
           retention-days: 1
 
-  # Deploy PR preview to GitHub Pages in its own job with a concurrency group
-  # that matches deploy.yml ("pages-deploy"). This prevents race conditions
-  # where a main branch deploy (keep_files:false) overwrites a PR preview
-  # that was just deployed, or vice versa.
+  # Deploy PR preview to GitHub Pages.
+  # Uses a per-PR concurrency group so multiple PRs deploy in parallel.
+  # Instead of peaceiris/actions-gh-pages (which can conflict with main's
+  # force-push), we do a manual git push with retry-on-conflict.
   deploy-preview:
     if: github.event_name == 'pull_request'
     needs: [build]
     runs-on: ubuntu-latest
     concurrency:
-      group: "pages-deploy"
-      cancel-in-progress: false
+      group: "pr-preview-${{ needs.build.outputs.pr_number }}"
+      cancel-in-progress: true
     steps:
       - name: Download Storybook artifact
         uses: actions/download-artifact@v4
@@ -177,25 +177,48 @@ jobs:
           name: sandbox-${{ needs.build.outputs.short_hash }}
           path: sandbox-dist
 
-      - name: Prepare PR preview
-        run: |
-          PR_NUMBER="${{ needs.build.outputs.pr_number }}"
-
-          mkdir -p deploy/pr/${PR_NUMBER}
-          cp -r storybook-dist/* deploy/pr/${PR_NUMBER}/
-
-          mkdir -p deploy/pr/${PR_NUMBER}/sandbox
-          cp -r sandbox-dist/* deploy/pr/${PR_NUMBER}/sandbox/
-
-          touch deploy/.nojekyll
-
       - name: Deploy PR preview to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./deploy
-          keep_files: true
-          destination_dir: .
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ needs.build.outputs.pr_number }}
+        run: |
+          REPO_URL="https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git"
+          MAX_ATTEMPTS=5
+          WORK_DIR="$PWD"
+
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          for attempt in $(seq 1 $MAX_ATTEMPTS); do
+            echo "::group::Attempt $attempt of $MAX_ATTEMPTS"
+            cd "$WORK_DIR"
+
+            rm -rf /tmp/gh-pages
+            git clone --depth=1 --single-branch --branch gh-pages "$REPO_URL" /tmp/gh-pages
+
+            rm -rf /tmp/gh-pages/pr/${PR_NUMBER}
+            mkdir -p /tmp/gh-pages/pr/${PR_NUMBER}
+            cp -r storybook-dist/* /tmp/gh-pages/pr/${PR_NUMBER}/
+            mkdir -p /tmp/gh-pages/pr/${PR_NUMBER}/sandbox
+            cp -r sandbox-dist/* /tmp/gh-pages/pr/${PR_NUMBER}/sandbox/
+
+            cd /tmp/gh-pages
+            git add -A
+            git commit -m "Deploy PR #${PR_NUMBER} preview" || { echo "Nothing to commit"; echo "::endgroup::"; exit 0; }
+
+            if git push origin gh-pages; then
+              echo "Deployed successfully on attempt $attempt"
+              echo "::endgroup::"
+              exit 0
+            fi
+
+            echo "Push failed (likely concurrent update), retrying in $((attempt * 2))s..."
+            echo "::endgroup::"
+            sleep $((attempt * 2))
+          done
+
+          echo "::error::Failed to deploy PR preview after $MAX_ATTEMPTS attempts"
+          exit 1
 
   # Post PR comment with preview links + analysis as soon as build finishes
   # Does NOT wait for test or a11y — those update the comment later
