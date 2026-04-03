@@ -13,7 +13,8 @@
     "docs"
   ],
   "scripts": {
-    "xds": "node bin/xds.mjs"
+    "xds": "node bin/xds.mjs",
+    "typecheck:template-docs": "tsc --project tsconfig.template-docs.json"
   },
   "dependencies": {
     "@clack/prompts": "^0.9.1",
