@@ -152,6 +152,7 @@ export default function LoginSSO() {
   const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loginFailed, setLoginFailed] = useState(false);
 
   const provider = getProvider(email);
   const emailValid = isValidEmail(email);
@@ -338,30 +339,47 @@ export default function LoginSSO() {
               </XDSVStack>
 
               <XDSVStack gap={4}>
-                <XDSVStack gap={0}>
+                <XDSVStack gap={1}>
                   <XDSHStack style={{marginBottom: 4}}>
                     <XDSText type="label">Password</XDSText>
-                    <XDSLink
-                      label="Forgot password?"
-                      href="#"
-                      size="sm"
-                      color="secondary">
-                      Forgot password?
-                    </XDSLink>
                   </XDSHStack>
                   <XDSTextInput
                     label="Password"
                     isLabelHidden
                     type="password"
                     value={password}
-                    onChange={setPassword}
+                    onChange={(v: string) => {
+                      setPassword(v);
+                      setLoginFailed(false);
+                    }}
+                    status={
+                      loginFailed
+                        ? {
+                            type: 'error',
+                            message: 'Incorrect password. Try again.',
+                          }
+                        : undefined
+                    }
                   />
+                  {loginFailed && (
+                    <div style={{textAlign: 'right'}}>
+                      <XDSLink
+                        label="Forgot password?"
+                        href="#"
+                        size="sm"
+                        color="secondary"
+                        type="supporting">
+                        Forgot password?
+                      </XDSLink>
+                    </div>
+                  )}
                 </XDSVStack>
 
                 <XDSButton
                   label="Sign in"
                   variant="primary"
                   xstyle={styles.fullWidth}
+                  onClick={() => setLoginFailed(true)}
                 />
                 <XDSButton
                   label="Use a different email"
