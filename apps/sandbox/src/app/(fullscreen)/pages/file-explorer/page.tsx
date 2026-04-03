@@ -863,7 +863,7 @@ export default function FileExplorerPage() {
       <XDSToolbar
         label="File Explorer"
         padding={0}
-        style={inlineStyles.toolbar}
+        style={{...inlineStyles.toolbar, paddingTop: 8, paddingBottom: 8}}
         startContent={
           <XDSHStack gap={1} vAlign="center">
             <XDSButton
@@ -892,8 +892,7 @@ export default function FileExplorerPage() {
           <XDSSegmentedControl
             value="column"
             onChange={() => {}}
-            label="View mode"
-            size="sm">
+            label="View mode">
             <XDSSegmentedControlItem
               value="grid"
               label="Grid"
