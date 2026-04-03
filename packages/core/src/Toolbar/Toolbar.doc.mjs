@@ -4,6 +4,7 @@ export const docs = {
   name: 'Toolbar',
   description:
     'General-purpose toolbar with start, center, and end content slots. Built on XDSSection with roving tabindex keyboard navigation.',
+  keywords: ['toolbar', 'nav', 'bar', 'actions', 'buttonbar', 'header', 'footer', 'action-bar', 'control-bar'],
   features: [
     'Slot-based layout — startContent, centerContent, and endContent for flexible organization',
     'Three-column centering — centerContent switches to CSS grid (1fr auto 1fr) for true centering',
