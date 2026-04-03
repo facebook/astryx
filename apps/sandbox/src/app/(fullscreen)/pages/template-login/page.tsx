@@ -2,7 +2,7 @@
 
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSVStack} from '@xds/core/Layout';
+import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSButton} from '@xds/core/Button';
@@ -106,7 +106,7 @@ export default function LoginSimple() {
         position: 'fixed',
         inset: 0,
         overflow: 'auto',
-        gap: 24,
+        gap: 16,
       }}>
       {/* Logo — outside card */}
       <XDSVStack gap={2} hAlign="center">
@@ -117,17 +117,17 @@ export default function LoginSimple() {
       </XDSVStack>
 
       {/* Card */}
-      <XDSCard padding={6} width={400}>
-        <XDSVStack gap={5}>
+      <XDSCard padding={8} width={400}>
+        <XDSVStack gap={4}>
           {/* Header */}
-          <div {...stylex.props(styles.centered)}>
+          <XDSVStack hAlign="center" xstyle={styles.centered}>
             <XDSVStack gap={1}>
               <XDSHeading level={2}>Welcome back</XDSHeading>
               <XDSText type="body" color="secondary" size="sm">
                 Login with your Apple or Google account
               </XDSText>
             </XDSVStack>
-          </div>
+          </XDSVStack>
 
           {/* Social buttons */}
           <XDSVStack gap={3}>
@@ -148,22 +148,23 @@ export default function LoginSimple() {
           </XDSVStack>
 
           {/* Divider */}
-          <div {...stylex.props(styles.dividerRow)}>
-            <div {...stylex.props(styles.dividerLine)}>
+          <XDSHStack gap={4} vAlign="center">
+            <div style={{flex: 1}}>
               <XDSDivider />
             </div>
             <XDSText type="supporting" color="secondary">
               Or continue with
             </XDSText>
-            <div {...stylex.props(styles.dividerLine)}>
+            <div style={{flex: 1}}>
               <XDSDivider />
             </div>
-          </div>
+          </XDSHStack>
 
           {/* Form fields */}
           <XDSVStack gap={4}>
             <XDSTextInput
               label="Email"
+              isLabelHidden
               type="email"
               placeholder="name@company.com"
               value={email}
@@ -198,14 +199,14 @@ export default function LoginSimple() {
           />
 
           {/* Sign up link */}
-          <div {...stylex.props(styles.centered)}>
+          <XDSVStack hAlign="center" xstyle={styles.centered}>
             <XDSText type="supporting" color="secondary">
               Don&apos;t have an account?{' '}
               <XDSLink label="Sign up" href="#" type="supporting">
                 Sign up
               </XDSLink>
             </XDSText>
-          </div>
+          </XDSVStack>
         </XDSVStack>
       </XDSCard>
 

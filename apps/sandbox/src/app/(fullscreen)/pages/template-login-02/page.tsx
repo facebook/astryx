@@ -144,7 +144,7 @@ export default function LoginTwoColumn() {
         position: 'fixed',
         inset: 0,
         overflow: 'auto',
-        gap: 24,
+        gap: 16,
       }}>
       {/* Card — inline styles to prevent StyleX cascade issues */}
       <div
