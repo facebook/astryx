@@ -165,7 +165,7 @@ export default function FormSimplePage() {
                   <Image
                     src={item.image}
                     alt={item.title}
-                    style={{width: '100%', height: 80, objectFit: 'cover', borderRadius: 8}}
+                    style={{width: '100%', height: 'auto', objectFit: 'cover', borderRadius: 8}}
                   />
                   <XDSVStack gap={1}>
                     <XDSText type="body" weight="bold">{item.title}</XDSText>
