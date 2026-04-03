@@ -51,7 +51,7 @@ const BUDGET_OPTIONS = [
 const styles = stylex.create({
   page: {
     minHeight: '100svh',
-    backgroundColor: colorVars['--color-background-body'],
+    backgroundColor: colorVars['--color-background-surface'],
     display: 'flex',
     alignItems: 'flex-start',
     justifyContent: 'center',
@@ -60,7 +60,7 @@ const styles = stylex.create({
   },
   form: {
     width: '100%',
-    maxWidth: 600,
+    maxWidth: 1000,
   },
   centered: {
     textAlign: 'center',
