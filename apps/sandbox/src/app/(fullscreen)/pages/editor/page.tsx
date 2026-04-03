@@ -733,9 +733,62 @@ export default function EditorPage() {
   const renderPropertiesTab = () => {
     if (!selectedBlock) {
       return (
-        <div style={{padding: 16}}>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column' as const,
+            alignItems: 'center' as const,
+            justifyContent: 'center' as const,
+            flex: 1,
+            padding: 24,
+            textAlign: 'center' as const,
+            gap: 8,
+            height: '100%',
+          }}>
+          <svg width={32} height={32} viewBox="0 0 24 24" fill="none">
+            <rect
+              x={3}
+              y={3}
+              width={8}
+              height={8}
+              rx={1.5}
+              stroke="currentColor"
+              strokeWidth={1.5}
+              opacity={0.4}
+            />
+            <rect
+              x={13}
+              y={3}
+              width={8}
+              height={8}
+              rx={1.5}
+              stroke="currentColor"
+              strokeWidth={1.5}
+              opacity={0.4}
+            />
+            <rect
+              x={3}
+              y={13}
+              width={8}
+              height={8}
+              rx={1.5}
+              stroke="currentColor"
+              strokeWidth={1.5}
+              opacity={0.4}
+            />
+            <rect
+              x={13}
+              y={13}
+              width={8}
+              height={8}
+              rx={1.5}
+              stroke="currentColor"
+              strokeWidth={1.5}
+              opacity={0.4}
+            />
+          </svg>
           <XDSText type="body" color="secondary">
-            Select a block to edit its properties.
+            Select a block to edit its properties
           </XDSText>
         </div>
       );
@@ -751,12 +804,8 @@ export default function EditorPage() {
           display: 'flex',
           flexDirection: 'column' as const,
           gap: 16,
-          padding: '16px 8px',
+          padding: 16,
         }}>
-        <XDSHStack gap={2} vAlign="center">
-          <XDSText type="label">{label}</XDSText>
-        </XDSHStack>
-
         {type === 'hero' && (
           <>
             <XDSTextInput
@@ -851,21 +900,54 @@ export default function EditorPage() {
         )}
 
         {type === 'image' && (
-          <XDSText type="body" color="secondary">
-            No configurable properties
-          </XDSText>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column' as const,
+              alignItems: 'center' as const,
+              justifyContent: 'center' as const,
+              padding: 24,
+              gap: 8,
+              textAlign: 'center' as const,
+            }}>
+            <XDSText type="body" color="secondary">
+              No configurable properties
+            </XDSText>
+          </div>
         )}
 
         {type === 'cards' && (
-          <XDSText type="body" color="secondary">
-            No configurable properties
-          </XDSText>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column' as const,
+              alignItems: 'center' as const,
+              justifyContent: 'center' as const,
+              padding: 24,
+              gap: 8,
+              textAlign: 'center' as const,
+            }}>
+            <XDSText type="body" color="secondary">
+              No configurable properties
+            </XDSText>
+          </div>
         )}
 
         {type === 'features' && (
-          <XDSText type="body" color="secondary">
-            No configurable properties
-          </XDSText>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column' as const,
+              alignItems: 'center' as const,
+              justifyContent: 'center' as const,
+              padding: 24,
+              gap: 8,
+              textAlign: 'center' as const,
+            }}>
+            <XDSText type="body" color="secondary">
+              No configurable properties
+            </XDSText>
+          </div>
         )}
       </div>
     );
@@ -876,82 +958,123 @@ export default function EditorPage() {
   const renderBlockPreview = (block: Block) => {
     const {type, props} = block;
     const isSelected = block.id === selectedId;
-    const outline = isSelected
-      ? '2px solid var(--xds-color-accent, #0066ff)'
-      : '2px solid transparent';
+    const ring = isSelected
+      ? '0 0 0 2px var(--xds-color-accent, #0066ff)'
+      : 'none';
+    const handleClick = () =>
+      selectBlock(
+        block.id === selectedId ? (null as unknown as string) : block.id,
+      );
+    const cream = '#f5f3ef';
+    const dark = '#1a1a1a';
 
     switch (type) {
       case 'hero': {
-        const align = (props.alignment as string) ?? 'center';
+        const align = (props.alignment as string) ?? 'left';
         return (
           <div
             key={block.id}
-            onClick={() =>
-              selectBlock(
-                block.id === selectedId
-                  ? (null as unknown as string)
-                  : block.id,
-              )
-            }
+            onClick={handleClick}
             style={{
-              outline,
-              borderRadius: 12,
-              padding: 48,
-              textAlign: align as 'left' | 'center' | 'right',
-              ...stylex.props(editorStyles.body).style,
-              cursor: 'pointer',
+              boxShadow: ring,
+              borderRadius: 16,
+              overflow: 'hidden' as const,
+              cursor: 'pointer' as const,
+              background: cream,
+              padding: '64px 56px',
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: 48,
+              alignItems: 'center' as const,
             }}>
-            <XDSHeading level={2}>{(props.heading as string) ?? ''}</XDSHeading>
-            <XDSText
-              type="body"
-              color="secondary"
-              style={{
-                marginTop: 12,
-                maxWidth: 600,
-                marginLeft: align === 'center' ? 'auto' : undefined,
-                marginRight: align === 'center' ? 'auto' : undefined,
-              }}>
-              {(props.subheading as string) ?? ''}
-            </XDSText>
-            {(props.buttonLabel as string) && (
-              <div style={{marginTop: 20}}>
-                <XDSButton label={props.buttonLabel as string} />
+            <div>
+              <div
+                style={{
+                  fontSize: 48,
+                  fontWeight: 700,
+                  letterSpacing: '-0.03em',
+                  lineHeight: 1.05,
+                  color: dark,
+                  marginBottom: 20,
+                }}>
+                {(props.heading as string) ??
+                  'Invest your way, commission-free'}
               </div>
-            )}
-          </div>
-        );
-      }
-
-      case 'features': {
-        const cards =
-          (props.cards as {title: string; description: string}[]) ?? [];
-        return (
-          <div
-            key={block.id}
-            onClick={() =>
-              selectBlock(
-                block.id === selectedId
-                  ? (null as unknown as string)
-                  : block.id,
-              )
-            }
-            style={{outline, borderRadius: 12, padding: 24, cursor: 'pointer'}}>
+              <div
+                style={{
+                  fontSize: 15,
+                  lineHeight: 1.6,
+                  color: 'rgba(0,0,0,0.55)',
+                  marginBottom: 32,
+                  maxWidth: 380,
+                }}>
+                {(props.subheading as string) ??
+                  'Build your own portfolio with thousands of stocks, ETFs, and options — all on our powerful platform.'}
+              </div>
+              {(props.buttonLabel as string) && (
+                <div
+                  style={{
+                    display: 'inline-block',
+                    background: dark,
+                    color: '#fff',
+                    borderRadius: 100,
+                    padding: '11px 24px',
+                    fontSize: 14,
+                    fontWeight: 600,
+                  }}>
+                  {props.buttonLabel as string}
+                </div>
+              )}
+            </div>
             <div
               style={{
-                display: 'grid',
-                gridTemplateColumns: `repeat(${Math.min(cards.length, 3)}, 1fr)`,
-                gap: 16,
+                background:
+                  'linear-gradient(160deg, #c8dce8 0%, #b5cfa8 50%, #d4b896 100%)',
+                borderRadius: 12,
+                aspectRatio: '4/3',
+                display: 'flex',
+                alignItems: 'center' as const,
+                justifyContent: 'center' as const,
+                overflow: 'hidden' as const,
               }}>
-              {cards.map((card, i) => (
-                <XDSCard key={i}>
-                  <XDSVStack gap={2}>
-                    <XDSText type="label">{card.title}</XDSText>
-                    <XDSText type="body" color="secondary">
-                      {card.description}
-                    </XDSText>
-                  </XDSVStack>
-                </XDSCard>
-              ))}
+              <div
+                style={{
+                  background: 'rgba(255,255,255,0.85)',
+                  backdropFilter: 'blur(8px)',
+                  borderRadius: 10,
+                  padding: 16,
+                  width: 180,
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                }}>
+                <div
+                  style={{
+                    fontSize: 11,
+                    color: 'rgba(0,0,0,0.4)',
+                    marginBottom: 10,
+                  }}>
+                  Portfolio
+                </div>
+                {['AAPL', 'TSLA', 'VFV'].map((t, i) => (
+                  <div
+                    key={t}
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: 8,
+                    }}>
+                    <span style={{fontSize: 12, fontWeight: 600}}>{t}</span>
+                    <span
+                      style={{
+                        fontSize: 11,
+                        color: i === 1 ? '#d63' : '#2a7',
+                        fontWeight: 500,
+                      }}>
+                      {i === 1 ? '-1.2%' : '+3.4%'}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         );
@@ -961,15 +1084,24 @@ export default function EditorPage() {
         return (
           <div
             key={block.id}
-            onClick={() =>
-              selectBlock(
-                block.id === selectedId
-                  ? (null as unknown as string)
-                  : block.id,
-              )
-            }
-            style={{outline, borderRadius: 12, padding: 24, cursor: 'pointer'}}>
-            <XDSText type="body">{(props.content as string) ?? ''}</XDSText>
+            onClick={handleClick}
+            style={{
+              boxShadow: ring,
+              borderRadius: 16,
+              cursor: 'pointer' as const,
+              background: cream,
+              padding: '56px',
+            }}>
+            <div
+              style={{
+                maxWidth: 680,
+                fontSize: 17,
+                lineHeight: 1.8,
+                color: dark,
+              }}>
+              {(props.content as string) ??
+                'Your text content goes here. Clean, readable body copy with generous line height and a comfortable measure for easy scanning.'}
+            </div>
           </div>
         );
 
@@ -977,28 +1109,30 @@ export default function EditorPage() {
         return (
           <div
             key={block.id}
-            onClick={() =>
-              selectBlock(
-                block.id === selectedId
-                  ? (null as unknown as string)
-                  : block.id,
-              )
-            }
-            style={{outline, borderRadius: 12, cursor: 'pointer'}}>
+            onClick={handleClick}
+            style={{
+              boxShadow: ring,
+              borderRadius: 16,
+              overflow: 'hidden' as const,
+              cursor: 'pointer' as const,
+              background:
+                'linear-gradient(160deg, #c8dce8 0%, #c5d5b0 60%, #d4b896 100%)',
+              aspectRatio: '16/7',
+              display: 'flex',
+              alignItems: 'center' as const,
+              justifyContent: 'center' as const,
+            }}>
             <div
               style={{
-                width: '100%',
-                height: 400,
-                background: 'var(--xds-color-background-secondary, #e8e8e8)',
-                borderRadius: 12,
-                display: 'flex',
-                alignItems: 'center' as const,
-                justifyContent: 'center' as const,
-                color: 'var(--xds-color-text-secondary, #999)',
+                background: 'rgba(255,255,255,0.7)',
+                backdropFilter: 'blur(12px)',
+                borderRadius: 8,
+                padding: '10px 16px',
+                fontSize: 12,
+                color: 'rgba(0,0,0,0.4)',
+                letterSpacing: '0.04em',
               }}>
-              <XDSText type="body" color="secondary">
-                800 × 400
-              </XDSText>
+              Image
             </div>
           </div>
         );
@@ -1007,113 +1141,355 @@ export default function EditorPage() {
         return (
           <div
             key={block.id}
-            onClick={() =>
-              selectBlock(
-                block.id === selectedId
-                  ? (null as unknown as string)
-                  : block.id,
-              )
-            }
-            style={{outline, borderRadius: 12, padding: 24, cursor: 'pointer'}}>
-            <XDSButton
-              label={(props.label as string) ?? 'Button'}
-              variant={
-                ((props.variant as string) ?? 'primary') as
-                  | 'primary'
-                  | 'secondary'
-                  | 'ghost'
-              }
-              size={((props.size as string) ?? 'md') as 'sm' | 'md' | 'lg'}
-            />
+            onClick={handleClick}
+            style={{
+              boxShadow: ring,
+              borderRadius: 16,
+              cursor: 'pointer' as const,
+              background: cream,
+              padding: '40px 56px',
+              display: 'flex',
+              justifyContent: 'flex-start' as const,
+            }}>
+            <div
+              style={{
+                background:
+                  (props.variant as string) === 'ghost'
+                    ? 'transparent'
+                    : (props.variant as string) === 'secondary'
+                      ? 'transparent'
+                      : dark,
+                color:
+                  (props.variant as string) === 'secondary' ||
+                  (props.variant as string) === 'ghost'
+                    ? dark
+                    : '#fff',
+                border:
+                  (props.variant as string) !== 'primary'
+                    ? `1px solid ${dark}`
+                    : 'none',
+                borderRadius: 100,
+                padding:
+                  (props.size as string) === 'lg'
+                    ? '13px 32px'
+                    : (props.size as string) === 'sm'
+                      ? '8px 18px'
+                      : '11px 24px',
+                fontSize:
+                  (props.size as string) === 'lg'
+                    ? 16
+                    : (props.size as string) === 'sm'
+                      ? 13
+                      : 14,
+                fontWeight: 600,
+              }}>
+              {(props.label as string) ?? 'Get started'}
+            </div>
           </div>
         );
 
-      case 'cta':
-        return (
-          <div
-            key={block.id}
-            onClick={() =>
-              selectBlock(
-                block.id === selectedId
-                  ? (null as unknown as string)
-                  : block.id,
-              )
-            }
-            style={{outline, borderRadius: 12, cursor: 'pointer'}}>
-            <XDSCard>
-              <XDSVStack gap={3} hAlign="center">
-                <XDSHeading level={3}>
-                  {(props.heading as string) ?? ''}
-                </XDSHeading>
-                <XDSText
-                  type="body"
-                  color="secondary"
-                  style={{maxWidth: 480, textAlign: 'center' as const}}>
-                  {(props.description as string) ?? ''}
-                </XDSText>
-                <XDSHStack gap={2} hAlign="center">
-                  <XDSButton
-                    label={(props.primaryLabel as string) ?? 'Primary'}
-                  />
-                  <XDSButton
-                    label={(props.secondaryLabel as string) ?? 'Secondary'}
-                    variant="secondary"
-                  />
-                </XDSHStack>
-              </XDSVStack>
-            </XDSCard>
-          </div>
-        );
-
-      case 'cards': {
-        const cards = (props.cards as {
+      case 'features': {
+        const featureCards = (props.cards as {
           title: string;
           description: string;
         }[]) ?? [
-          {title: 'Card 1', description: 'Description'},
-          {title: 'Card 2', description: 'Description'},
+          {
+            title: 'Low fees, more value',
+            description:
+              'The more assets you have with us, the better your perks. Pay lower option trading and FX fees as a Premium or Generation client.',
+          },
+          {
+            title: 'Fast and flexible',
+            description:
+              'Start trading on your terms and timeline. Instant transfers and extended hours keep you ready for any market moment.',
+          },
+          {
+            title: 'Everything you need to trade',
+            description:
+              'Buy and sell all common stocks, ETFs, and options on mobile or web, with multiple different accounts to choose from.',
+          },
         ];
         return (
           <div
             key={block.id}
-            onClick={() =>
-              selectBlock(
-                block.id === selectedId
-                  ? (null as unknown as string)
-                  : block.id,
-              )
-            }
-            style={{outline, borderRadius: 12, padding: 24, cursor: 'pointer'}}>
+            onClick={handleClick}
+            style={{
+              boxShadow: ring,
+              borderRadius: 16,
+              cursor: 'pointer' as const,
+              background: cream,
+              padding: '56px',
+            }}>
+            <div
+              style={{
+                fontSize: 40,
+                fontWeight: 700,
+                letterSpacing: '-0.025em',
+                lineHeight: 1.1,
+                color: dark,
+                marginBottom: 48,
+                maxWidth: 480,
+              }}>
+              Self-directed trading that earns you more
+            </div>
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
-                gap: 16,
+                gridTemplateColumns: `repeat(${Math.min(featureCards.length, 3)}, 1fr)`,
+                gap: 32,
               }}>
-              {cards.map((card, i) => (
-                <XDSCard key={i}>
-                  <XDSVStack gap={2}>
-                    <div
-                      style={{
-                        width: '100%',
-                        height: 120,
-                        background:
-                          'var(--xds-color-background-secondary, #e8e8e8)',
-                        borderRadius: 8,
-                        marginBottom: 8,
-                      }}
-                    />
-                    <XDSText type="label">{card.title}</XDSText>
-                    <XDSText type="body" color="secondary">
-                      {card.description}
-                    </XDSText>
-                  </XDSVStack>
-                </XDSCard>
+              {featureCards.map((card, i) => (
+                <div key={i}>
+                  <div
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 700,
+                      color: dark,
+                      marginBottom: 8,
+                    }}>
+                    {card.title}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 13,
+                      lineHeight: 1.65,
+                      color: 'rgba(0,0,0,0.5)',
+                    }}>
+                    {card.description}
+                  </div>
+                </div>
               ))}
             </div>
           </div>
         );
       }
+
+      case 'cards': {
+        const cardItems = (props.cards as {
+          title: string;
+          description: string;
+        }[]) ?? [
+          {title: '$0 commission trading', description: 'Stocks & ETFs'},
+          {
+            title: 'Trade options for $0 — a first in Canada',
+            description: 'Options',
+          },
+          {
+            title: 'Get margin rates lower than your bank',
+            description: 'Margin',
+          },
+        ];
+        const cardBg = ['#c8d8b0', '#b5c8a0', '#c0b090'];
+        return (
+          <div
+            key={block.id}
+            onClick={handleClick}
+            style={{
+              boxShadow: ring,
+              borderRadius: 16,
+              overflow: 'hidden' as const,
+              cursor: 'pointer' as const,
+              background: cream,
+              padding: '56px',
+            }}>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'flex-end',
+                marginBottom: 32,
+              }}>
+              <div
+                style={{
+                  fontSize: 40,
+                  fontWeight: 700,
+                  letterSpacing: '-0.025em',
+                  lineHeight: 1.1,
+                  color: dark,
+                  maxWidth: 400,
+                }}>
+                Strategies to suit any portfolio
+              </div>
+              <div
+                style={{
+                  border: '1px solid rgba(0,0,0,0.2)',
+                  borderRadius: 100,
+                  padding: '9px 20px',
+                  fontSize: 13,
+                  fontWeight: 500,
+                  color: dark,
+                  flexShrink: 0,
+                }}>
+                Invest now
+              </div>
+            </div>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: `repeat(${Math.min(cardItems.length, 3)}, 1fr)`,
+                gap: 12,
+              }}>
+              {cardItems.map((card, i) => (
+                <div
+                  key={i}
+                  style={{
+                    background: cardBg[i % cardBg.length],
+                    borderRadius: 12,
+                    padding: '24px 20px 20px',
+                    display: 'flex',
+                    flexDirection: 'column' as const,
+                    justifyContent: 'space-between',
+                    minHeight: 200,
+                  }}>
+                  <div
+                    style={{
+                      width: '100%',
+                      height: 80,
+                      borderRadius: 8,
+                      background: 'rgba(255,255,255,0.25)',
+                      marginBottom: 24,
+                    }}
+                  />
+                  <div>
+                    <div
+                      style={{
+                        fontSize: 11,
+                        color: 'rgba(0,0,0,0.45)',
+                        marginBottom: 6,
+                      }}>
+                      {card.description}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 15,
+                        fontWeight: 700,
+                        color: dark,
+                        lineHeight: 1.25,
+                      }}>
+                      {card.title}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      }
+
+      case 'cta':
+        return (
+          <div
+            key={block.id}
+            onClick={handleClick}
+            style={{
+              boxShadow: ring,
+              borderRadius: 16,
+              overflow: 'hidden' as const,
+              cursor: 'pointer' as const,
+              background: cream,
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: 0,
+            }}>
+            <div
+              style={{
+                background:
+                  'linear-gradient(160deg, #c8dce8 0%, #c5d5b0 60%, #d4b896 100%)',
+                padding: 40,
+                minHeight: 260,
+                display: 'flex',
+                alignItems: 'center' as const,
+                justifyContent: 'center' as const,
+              }}>
+              <div
+                style={{
+                  background: 'rgba(255,255,255,0.8)',
+                  backdropFilter: 'blur(8px)',
+                  borderRadius: 10,
+                  padding: 20,
+                  width: '80%',
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                }}>
+                {[
+                  ['NVDA', '$500.00 USD'],
+                  ['Recurring investments', '●'],
+                  ['Dividend reinvestments', '●'],
+                ].map(([label, val], i) => (
+                  <div
+                    key={i}
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: '8px 0',
+                      borderBottom:
+                        i < 2 ? '1px solid rgba(0,0,0,0.06)' : 'none',
+                    }}>
+                    <span
+                      style={{fontSize: 12, fontWeight: i === 0 ? 600 : 400}}>
+                      {label}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: i === 0 ? 12 : 18,
+                        color: i > 0 ? '#2a7' : 'rgba(0,0,0,0.5)',
+                      }}>
+                      {val}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div style={{padding: '48px 40px'}}>
+              <div
+                style={{
+                  fontSize: 36,
+                  fontWeight: 700,
+                  letterSpacing: '-0.025em',
+                  lineHeight: 1.1,
+                  color: dark,
+                  marginBottom: 32,
+                }}>
+                {(props.heading as string) ??
+                  'Automation for smarter investing'}
+              </div>
+              {[
+                {
+                  title:
+                    (props.primaryLabel as string) || 'Recurring investments',
+                  body:
+                    (props.description as string) ||
+                    'Auto-buy your favourite stocks and ETFs on your schedule.',
+                },
+                {
+                  title:
+                    (props.secondaryLabel as string) || 'Dividend reinvestment',
+                  body: 'Keep growing by reinvesting 100% of your earnings with zero commissions.',
+                },
+              ].map((item, i) => (
+                <div key={i} style={{marginBottom: 20}}>
+                  <div
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 700,
+                      color: dark,
+                      marginBottom: 4,
+                    }}>
+                    {item.title}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 13,
+                      lineHeight: 1.6,
+                      color: 'rgba(0,0,0,0.5)',
+                    }}>
+                    {item.body}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
 
       default:
         return null;
@@ -1164,7 +1540,7 @@ export default function EditorPage() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                marginBottom: 12,
+                marginBottom: 16,
               }}>
               <div style={{flex: 1}}>
                 {isEditingTitle ? (
@@ -1209,6 +1585,7 @@ export default function EditorPage() {
                 }
                 variant="ghost"
                 size="sm"
+                style={{marginRight: -8, marginTop: -8}}
                 onClick={() => setIsPanelCollapsed(v => !v)}
               />
             </div>
@@ -1246,11 +1623,11 @@ export default function EditorPage() {
               <XDSHStack gap={2}>
                 <XDSButton
                   label="Preview"
+                  isLabelHidden
                   icon={<EyeIcon />}
-                  variant="secondary"
-                  size="sm"
+                  variant="ghost"
                 />
-                <XDSButton label="Publish" variant="primary" size="sm" />
+                <XDSButton label="Publish" variant="primary" />
               </XDSHStack>
             </div>
           </div>
@@ -1311,11 +1688,12 @@ export default function EditorPage() {
                   flexDirection: 'column' as const,
                   alignItems: 'center' as const,
                   justifyContent: 'center' as const,
-                  padding: 64,
+                  minHeight: 400,
+                  gap: 12,
                   color: 'var(--xds-color-text-secondary, #999)',
                 }}>
                 <PlusIcon />
-                <XDSText type="body" color="secondary" style={{marginTop: 8}}>
+                <XDSText type="body" color="secondary">
                   Add blocks from the sidebar to get started
                 </XDSText>
               </div>
