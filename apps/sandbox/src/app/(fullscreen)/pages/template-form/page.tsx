@@ -4,7 +4,7 @@ import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSButton} from '@xds/core/Button';
-import {XDSText, XDSHeading} from '@xds/core/Text';
+import {XDSText} from '@xds/core/Text';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSSelector} from '@xds/core/Selector';
 import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
@@ -13,7 +13,7 @@ import {XDSLink} from '@xds/core/Link';
 import {XDSToken} from '@xds/core/Token';
 import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
 import {XDSTextArea} from '@xds/core/TextArea';
-import {colorVars, typeScaleVars} from '@xds/core/theme/tokens.stylex';
+import {colorVars, typeScaleVars, fontWeightVars} from '@xds/core/theme/tokens.stylex';
 
 const CAMPAIGN_GOALS = [
   'Brand Awareness',
@@ -48,22 +48,18 @@ const styles = stylex.create({
   pageBg: {
     backgroundColor: colorVars['--color-background-surface'],
   },
-  hero: {
-    width: '100%',
-    height: 220,
-    backgroundColor: colorVars['--color-background-muted'],
-    borderRadius: 12,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
   fullWidth: {
     width: '100%',
   },
   errorText: {
     color: colorVars['--color-error'],
     fontSize: typeScaleVars['--text-supporting-size'],
+  },
+  displayHeading: {
+    fontSize: typeScaleVars['--text-display-1-size'],
+    fontWeight: fontWeightVars['--font-weight-bold'],
+    lineHeight: '1.1',
+    letterSpacing: '-0.02em',
   },
 });
 
@@ -121,17 +117,10 @@ export default function FormSimplePage() {
         }}>
         <XDSVStack gap={8}>
 
-          {/* Hero image placeholder */}
-          <div {...stylex.props(styles.hero)}>
-            <XDSText type="supporting" color="secondary">
-              Hero image
-            </XDSText>
-          </div>
-
           {/* Header */}
-          <div style={{textAlign: 'center'}}>
-            <XDSVStack gap={1}>
-              <XDSHeading level={1}>Let's work together</XDSHeading>
+          <div>
+            <XDSVStack gap={2}>
+              <h1 {...stylex.props(styles.displayHeading)}>Let's work together</h1>
               <XDSText type="body" color="secondary">
                 Tell us a bit about what you're working on — we'd love to help.
               </XDSText>
