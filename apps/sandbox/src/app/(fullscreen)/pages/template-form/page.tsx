@@ -12,7 +12,11 @@ import {XDSLink} from '@xds/core/Link';
 import {XDSToken} from '@xds/core/Token';
 import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
 import {XDSTextArea} from '@xds/core/TextArea';
+import Image from 'next/image';
 import {XDSDivider} from '@xds/core/Divider';
+import whyUs1 from '../../../../assets/template-form/why-us-1.png';
+import whyUs2 from '../../../../assets/template-form/why-us-2.png';
+import whyUs3 from '../../../../assets/template-form/why-us-3.png';
 import {colorVars, typeScaleVars, fontWeightVars} from '@xds/core/theme/tokens.stylex';
 
 const CAMPAIGN_GOALS = [
@@ -46,17 +50,17 @@ const BUDGET_OPTIONS = [
 
 const WHY_US = [
   {
-    image: '/images/template-form/why-us-1.png',
+    image: whyUs1,
     title: 'We move fast',
     description: 'From brief to live in days, not months. We cut through the noise and get to work.',
   },
   {
-    image: '/images/template-form/why-us-2.png',
+    image: whyUs2,
     title: 'Built around your goals',
     description: "Every campaign is different. We tailor everything to what you're actually trying to achieve.",
   },
   {
-    image: '/images/template-form/why-us-3.png',
+    image: whyUs3,
     title: 'A real partnership',
     description: "You'll have a dedicated team who knows your brand and is invested in your success.",
   },
@@ -158,7 +162,7 @@ export default function FormSimplePage() {
             <div style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16}}>
               {WHY_US.map(item => (
                 <XDSVStack key={item.title} gap={3}>
-                  <img
+                  <Image
                     src={item.image}
                     alt={item.title}
                     style={{width: '100%', height: 80, objectFit: 'cover', borderRadius: 8}}
