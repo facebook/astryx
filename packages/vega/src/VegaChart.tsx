@@ -8,7 +8,7 @@
  */
 
 import React, {useEffect, useRef} from 'react';
-import embed from 'vega-embed';
+import embed, {type Result} from 'vega-embed';
 import type {VegaChartProps} from './types';
 
 /**
@@ -16,6 +16,10 @@ import type {VegaChartProps} from './types';
  *
  * It wraps `vega-embed` in a React component, managing the embed lifecycle
  * (mount, spec update, unmount) automatically.
+ *
+ * Callbacks (`onReady`, `onError`) are stable across renders via refs — you
+ * don't need to memoize them. `options` is a dep-array member: pass a stable
+ * reference (or `useMemo`) if you want to avoid re-embedding on every render.
  *
  * @example
  * ```
@@ -43,6 +47,17 @@ export function VegaChart({
 }: VegaChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Keep callbacks in refs so they never stale-close over old values and
+  // don't need to be in the effect dependency array (avoids spurious re-embeds).
+  const onReadyRef = useRef(onReady);
+  const onErrorRef = useRef(onError);
+  onReadyRef.current = onReady;
+  onErrorRef.current = onError;
+
+  // Track the active vega-embed result so we can finalize() it on cleanup,
+  // releasing timers, event listeners, and WebGL resources held by the Vega runtime.
+  const resultRef = useRef<Result | null>(null);
+
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -55,25 +70,29 @@ export function VegaChart({
       ...options,
     })
       .then(result => {
-        if (!cancelled) {
-          onReady?.();
-          return result;
+        if (cancelled) {
+          // Effect was cleaned up before the promise resolved — finalize immediately.
+          result.finalize();
+          return;
         }
-        result.finalize();
+        resultRef.current = result;
+        onReadyRef.current?.();
       })
       .catch((err: unknown) => {
         if (!cancelled) {
-          onError?.(err instanceof Error ? err : new Error(String(err)));
+          onErrorRef.current?.(err instanceof Error ? err : new Error(String(err)));
         }
       });
 
     return () => {
       cancelled = true;
-      // vega-embed cleans up its own DOM when re-embedding, but we clear
-      // the container on unmount to avoid stale SVG nodes.
-      container.innerHTML = '';
+      resultRef.current?.finalize();
+      resultRef.current = null;
     };
-  }, [spec, options, onReady, onError]);
+  // `options` is intentionally in the dep array — a changed options object
+  // re-embeds the chart. Callers should memoize options to avoid this.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [spec, options]);
 
   return <div ref={containerRef} className={className} style={style} />;
 }

@@ -22,13 +22,11 @@
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit"
   },
-  "dependencies": {
-    "vega-lite": "^5.0.0",
-    "vega-embed": "^6.0.0"
-  },
   "peerDependencies": {
-    "react": ">=18.0.0",
-    "react-dom": ">=18.0.0"
+    "react": ">=19.0.0",
+    "react-dom": ">=19.0.0",
+    "vega-lite": ">=5.0.0",
+    "vega-embed": ">=6.0.0"
   },
   "devDependencies": {
     "@types/react": "^19.2.14",
