@@ -2,7 +2,8 @@
 
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSVStack} from '@xds/core/Layout';
+import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {XDSCard} from '@xds/core/Card';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSButton} from '@xds/core/Button';
@@ -144,143 +145,133 @@ export default function LoginTwoColumn() {
         position: 'fixed',
         inset: 0,
         overflow: 'auto',
-        gap: 24,
+        gap: 16,
       }}>
-      {/* Card — inline styles to prevent StyleX cascade issues */}
-      <div
-        {...stylex.props(styles.cardBg)}
-        style={{
-          display: 'flex',
-          maxWidth: 900,
-          width: '100%',
-          overflow: 'hidden',
-          borderRadius: 12,
-          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-        }}>
-        {/* Left — Form */}
-        <div
-          style={{
-            flex: 1,
-            padding: 32,
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-          }}>
-          <XDSVStack gap={5}>
-            <div {...stylex.props(styles.centered)}>
-              <XDSVStack gap={1}>
-                <XDSHeading level={2}>Welcome back</XDSHeading>
-                <XDSText type="body" color="secondary" size="sm">
-                  Login to your Product Inc. account
+      {/* Card */}
+      <XDSCard padding={0} maxWidth={900} width="100%">
+        <XDSHStack>
+          {/* Left — Form */}
+          <div
+            style={{
+              width: 400,
+              minWidth: 400,
+              padding: 32,
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+            }}>
+            <XDSVStack gap={4}>
+              <XDSVStack hAlign="center" xstyle={styles.centered}>
+                <XDSVStack gap={1}>
+                  <XDSHeading level={2}>Welcome back</XDSHeading>
+                  <XDSText type="body" color="secondary" size="sm">
+                    Login to your Product Inc. account
+                  </XDSText>
+                </XDSVStack>
+              </XDSVStack>
+
+              <XDSVStack gap={2}>
+                <XDSTextInput
+                  label="Email"
+                  isLabelHidden
+                  type="email"
+                  placeholder="name@company.com"
+                  value={email}
+                  onChange={setEmail}
+                />
+                <XDSVStack gap={1}>
+                  <XDSTextInput
+                    label="Password"
+                    isLabelHidden
+                    placeholder="Enter your password"
+                    type="password"
+                    value={password}
+                    onChange={setPassword}
+                  />
+                  <div style={{textAlign: 'right'}}>
+                    <XDSLink
+                      label="Forgot your password?"
+                      href="#"
+                      size="sm"
+                      color="secondary"
+                      type="supporting">
+                      Forgot your password?
+                    </XDSLink>
+                  </div>
+                </XDSVStack>
+              </XDSVStack>
+
+              <XDSButton
+                label="Login"
+                variant="primary"
+                xstyle={styles.fullWidth}
+              />
+
+              <XDSHStack gap={4} vAlign="center">
+                <div style={{flex: 1}}>
+                  <XDSDivider />
+                </div>
+                <XDSText type="supporting" color="secondary">
+                  Or continue with
+                </XDSText>
+                <div style={{flex: 1}}>
+                  <XDSDivider />
+                </div>
+              </XDSHStack>
+
+              <div {...stylex.props(styles.socialRow)}>
+                <XDSButton
+                  label="Apple"
+                  variant="secondary"
+                  icon={<AppleIcon />}
+                  xstyle={styles.socialButton}>
+                  Apple
+                </XDSButton>
+                <XDSButton
+                  label="Google"
+                  variant="secondary"
+                  icon={<GoogleIcon />}
+                  xstyle={styles.socialButton}>
+                  Google
+                </XDSButton>
+              </div>
+
+              <XDSVStack hAlign="center" xstyle={styles.centered}>
+                <XDSText type="supporting" color="secondary">
+                  Don&apos;t have an account?{' '}
+                  <XDSLink label="Sign up" href="#" type="supporting">
+                    Sign up
+                  </XDSLink>
                 </XDSText>
               </XDSVStack>
-            </div>
-
-            <XDSVStack gap={4}>
-              <XDSTextInput
-                label="Email"
-                type="email"
-                placeholder="name@company.com"
-                value={email}
-                onChange={setEmail}
-              />
-              <XDSVStack gap={0}>
-                <div {...stylex.props(styles.passwordRow)}>
-                  <XDSText type="label">Password</XDSText>
-                  <XDSLink
-                    label="Forgot your password?"
-                    href="#"
-                    size="sm"
-                    color="secondary">
-                    Forgot your password?
-                  </XDSLink>
-                </div>
-                <XDSTextInput
-                  label="Password"
-                  isLabelHidden
-                  type="password"
-                  value={password}
-                  onChange={setPassword}
-                />
-              </XDSVStack>
             </XDSVStack>
+          </div>
 
-            <XDSButton
-              label="Login"
-              variant="primary"
-              xstyle={styles.fullWidth}
-            />
-
-            <div {...stylex.props(styles.dividerRow)}>
-              <div {...stylex.props(styles.dividerLine)}>
-                <XDSDivider />
-              </div>
-              <XDSText type="supporting" color="secondary">
-                Or continue with
-              </XDSText>
-              <div {...stylex.props(styles.dividerLine)}>
-                <XDSDivider />
-              </div>
-            </div>
-
-            <div {...stylex.props(styles.socialRow)}>
-              <XDSButton
-                label="Apple"
-                variant="secondary"
-                icon={<AppleIcon />}
-                xstyle={styles.socialButton}>
-                Apple
-              </XDSButton>
-              <XDSButton
-                label="Google"
-                variant="secondary"
-                icon={<GoogleIcon />}
-                xstyle={styles.socialButton}>
-                Google
-              </XDSButton>
-              <XDSButton
-                label="Meta"
-                variant="secondary"
-                icon={<MetaIcon />}
-                xstyle={styles.socialButton}>
-                Meta
-              </XDSButton>
-            </div>
-
-            <div {...stylex.props(styles.centered)}>
-              <XDSText type="supporting" color="secondary">
-                Don&apos;t have an account?{' '}
-                <XDSLink label="Sign up" href="#" type="supporting">
-                  Sign up
-                </XDSLink>
-              </XDSText>
-            </div>
-          </XDSVStack>
-        </div>
-
-        {/* Right — Image placeholder */}
-        <div
-          {...stylex.props(styles.imageBg)}
-          style={{
-            flex: 1,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            minHeight: 400,
-          }}>
-          <ImageIcon
+          {/* Right — Image placeholder */}
+          <div
+            {...stylex.props(styles.imageBg)}
             style={{
-              width: 64,
-              height: 64,
-              opacity: 0.3,
-              color: 'var(--color-text-disabled)',
-            }}
-          />
-        </div>
-      </div>
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              minHeight: 400,
+              borderRadius: '0 12px 12px 0',
+            }}>
+            <ImageIcon
+              style={{
+                width: 64,
+                height: 64,
+                opacity: 0.3,
+                color: 'var(--color-text-disabled)',
+              }}
+            />
+          </div>
+        </XDSHStack>
+      </XDSCard>
 
       {/* Terms — outside card */}
-      <div {...stylex.props(styles.centered)}>
+      <XDSVStack hAlign="center" xstyle={styles.centered}>
         <XDSText type="supporting" color="secondary">
           By clicking continue, you agree to our{' '}
           <XDSLink label="Terms of Service" href="#" type="supporting">
@@ -292,7 +283,7 @@ export default function LoginTwoColumn() {
           </XDSLink>
           .
         </XDSText>
-      </div>
+      </XDSVStack>
     </div>
   );
 }
