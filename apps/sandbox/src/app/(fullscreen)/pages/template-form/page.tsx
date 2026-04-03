@@ -10,6 +10,7 @@ import {XDSSelector} from '@xds/core/Selector';
 import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSLink} from '@xds/core/Link';
+import {XDSTextArea} from '@xds/core/TextArea';
 import {colorVars} from '@xds/core/theme/tokens.stylex';
 import {
   radiusVars,
@@ -90,6 +91,7 @@ export default function FormSimplePage() {
   const [goals, setGoals] = useState<string[]>([]);
   const [timeline, setTimeline] = useState('');
   const [budget, setBudget] = useState('');
+  const [message, setMessage] = useState('');
   const [isDecider, setIsDecider] = useState(false);
 
   const toggleGoal = (goal: string) =>
@@ -103,7 +105,7 @@ export default function FormSimplePage() {
       style={{minHeight: '100svh', display: 'flex', flexDirection: 'column'}}>
       <div
         style={{
-          maxWidth: 1000,
+          maxWidth: 900,
           margin: '0 auto',
           width: '100%',
           paddingTop: 48,
@@ -201,6 +203,13 @@ export default function FormSimplePage() {
               options={BUDGET_OPTIONS}
               value={budget}
               onChange={setBudget}
+            />
+
+            <XDSTextArea
+              label="Leave us a message"
+              placeholder="Tell us anything else you'd like us to know..."
+              value={message}
+              onChange={setMessage}
             />
 
             <XDSCheckboxInput
