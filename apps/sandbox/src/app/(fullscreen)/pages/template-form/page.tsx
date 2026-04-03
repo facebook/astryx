@@ -10,9 +10,10 @@ import {XDSSelector} from '@xds/core/Selector';
 import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSLink} from '@xds/core/Link';
+import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
 import {XDSTextArea} from '@xds/core/TextArea';
-import {colorVars} from '@xds/core/theme/tokens.stylex';
 import {
+  colorVars,
   radiusVars,
   borderVars,
   durationVars,
@@ -95,6 +96,7 @@ export default function FormSimplePage() {
   const [timeline, setTimeline] = useState('');
   const [budget, setBudget] = useState('');
   const [message, setMessage] = useState('');
+  const [hearAboutUs, setHearAboutUs] = useState('');
   const [isDecider, setIsDecider] = useState(false);
 
   const toggleGoal = (goal: string) =>
@@ -216,6 +218,17 @@ export default function FormSimplePage() {
               value={message}
               onChange={setMessage}
             />
+
+            <XDSRadioList
+              label="How did you hear about us?"
+              value={hearAboutUs}
+              onChange={setHearAboutUs}>
+              <XDSRadioListItem label="Social media" value="social" />
+              <XDSRadioListItem label="Word of mouth" value="word-of-mouth" />
+              <XDSRadioListItem label="Search engine" value="search" />
+              <XDSRadioListItem label="Event or conference" value="event" />
+              <XDSRadioListItem label="Other" value="other" />
+            </XDSRadioList>
 
             <XDSCheckboxInput
               label="I'm a budget decision-maker"
