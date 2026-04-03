@@ -12,7 +12,7 @@ import {XDSLink} from '@xds/core/Link';
 import {XDSToken} from '@xds/core/Token';
 import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
 import {XDSTextArea} from '@xds/core/TextArea';
-import {XDSCard} from '@xds/core/Card';
+import {XDSDivider} from '@xds/core/Divider';
 import {colorVars, typeScaleVars, fontWeightVars} from '@xds/core/theme/tokens.stylex';
 
 const CAMPAIGN_GOALS = [
@@ -161,132 +161,134 @@ export default function FormSimplePage() {
             </XDSText>
           </XDSVStack>
 
-          {/* Card 1: Why work with us */}
-          <XDSCard padding={6}>
-            <XDSVStack gap={5}>
-              <span {...stylex.props(styles.sectionLabel)}>Why work with us?</span>
-              <div style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16}}>
-                {WHY_US.map(item => (
-                  <XDSVStack key={item.title} gap={3}>
-                    <div {...stylex.props(styles.illustrationPlaceholder)}>
-                      {item.emoji}
-                    </div>
-                    <XDSVStack gap={1}>
-                      <XDSText type="body" weight="bold">{item.title}</XDSText>
-                      <XDSText type="supporting" color="secondary">
-                        {item.description}
-                      </XDSText>
-                    </XDSVStack>
+          <XDSDivider />
+
+          {/* Why work with us */}
+          <XDSVStack gap={5}>
+            <span {...stylex.props(styles.sectionLabel)}>Why work with us?</span>
+            <div style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16}}>
+              {WHY_US.map(item => (
+                <XDSVStack key={item.title} gap={3}>
+                  <div {...stylex.props(styles.illustrationPlaceholder)}>
+                    {item.emoji}
+                  </div>
+                  <XDSVStack gap={1}>
+                    <XDSText type="body" weight="bold">{item.title}</XDSText>
+                    <XDSText type="supporting" color="secondary">
+                      {item.description}
+                    </XDSText>
                   </XDSVStack>
+                </XDSVStack>
+              ))}
+            </div>
+          </XDSVStack>
+
+          <XDSDivider />
+
+          {/* Your details */}
+          <XDSVStack gap={5}>
+            <span {...stylex.props(styles.sectionLabel)}>Your details</span>
+            <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16}}>
+              <XDSTextInput
+                label="Full Name"
+                placeholder="Full Name"
+                value={fullName}
+                onChange={setFullName}
+                status={errors.fullName ? {type: 'error', message: errors.fullName} : undefined}
+              />
+              <XDSTextInput
+                label="Email"
+                placeholder="you@company.com"
+                value={email}
+                onChange={setEmail}
+                status={errors.email ? {type: 'error', message: errors.email} : undefined}
+              />
+            </div>
+            <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16}}>
+              <XDSTextInput
+                label="Company"
+                placeholder="Company"
+                value={company}
+                onChange={setCompany}
+                status={errors.company ? {type: 'error', message: errors.company} : undefined}
+              />
+              <XDSTextInput
+                label="Phone"
+                placeholder="Phone number"
+                value={phone}
+                onChange={setPhone}
+                status={errors.phone ? {type: 'error', message: errors.phone} : undefined}
+              />
+            </div>
+          </XDSVStack>
+
+          <XDSDivider />
+
+          {/* Your project */}
+          <XDSVStack gap={5}>
+            <span {...stylex.props(styles.sectionLabel)}>Your project</span>
+
+            <XDSVStack gap={2}>
+              <XDSText type="label">What are you going for?</XDSText>
+              <div style={{display: 'flex', flexWrap: 'wrap', gap: 8}}>
+                {CAMPAIGN_GOALS.map(goal => (
+                  <XDSToken
+                    key={goal}
+                    label={goal}
+                    color={goals.includes(goal) ? 'blue' : 'default'}
+                    onClick={() => toggleGoal(goal)}
+                  />
                 ))}
               </div>
+              {errors.goals && (
+                <span {...stylex.props(styles.errorText)}>{errors.goals}</span>
+              )}
             </XDSVStack>
-          </XDSCard>
 
-          {/* Card 2: Your details */}
-          <XDSCard padding={6}>
-            <XDSVStack gap={5}>
-              <span {...stylex.props(styles.sectionLabel)}>Your details</span>
-              <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16}}>
-                <XDSTextInput
-                  label="Full Name"
-                  placeholder="Full Name"
-                  value={fullName}
-                  onChange={setFullName}
-                  status={errors.fullName ? {type: 'error', message: errors.fullName} : undefined}
-                />
-                <XDSTextInput
-                  label="Email"
-                  placeholder="you@company.com"
-                  value={email}
-                  onChange={setEmail}
-                  status={errors.email ? {type: 'error', message: errors.email} : undefined}
-                />
-              </div>
-              <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16}}>
-                <XDSTextInput
-                  label="Company"
-                  placeholder="Company"
-                  value={company}
-                  onChange={setCompany}
-                  status={errors.company ? {type: 'error', message: errors.company} : undefined}
-                />
-                <XDSTextInput
-                  label="Phone"
-                  placeholder="Phone number"
-                  value={phone}
-                  onChange={setPhone}
-                  status={errors.phone ? {type: 'error', message: errors.phone} : undefined}
-                />
-              </div>
-            </XDSVStack>
-          </XDSCard>
+            <XDSSelector
+              label="When are you thinking?"
+              placeholder="When are you thinking of launching?"
+              options={LAUNCH_OPTIONS}
+              value={timeline}
+              onChange={setTimeline}
+              status={errors.timeline ? {type: 'error', message: errors.timeline} : undefined}
+            />
 
-          {/* Card 3: Your project */}
-          <XDSCard padding={6}>
-            <XDSVStack gap={5}>
-              <span {...stylex.props(styles.sectionLabel)}>Your project</span>
+            <XDSSelector
+              label="Ballpark budget?"
+              placeholder="What's your rough monthly budget?"
+              options={BUDGET_OPTIONS}
+              value={budget}
+              onChange={setBudget}
+              status={errors.budget ? {type: 'error', message: errors.budget} : undefined}
+            />
 
-              <XDSVStack gap={2}>
-                <XDSText type="label">What are you going for?</XDSText>
-                <div style={{display: 'flex', flexWrap: 'wrap', gap: 8}}>
-                  {CAMPAIGN_GOALS.map(goal => (
-                    <XDSToken
-                      key={goal}
-                      label={goal}
-                      color={goals.includes(goal) ? 'blue' : 'default'}
-                      onClick={() => toggleGoal(goal)}
-                    />
-                  ))}
-                </div>
-                {errors.goals && (
-                  <span {...stylex.props(styles.errorText)}>{errors.goals}</span>
-                )}
-              </XDSVStack>
+            <XDSRadioList
+              label="How did you hear about us?"
+              value={hearAboutUs}
+              onChange={setHearAboutUs}>
+              <XDSRadioListItem label="Social media" value="social" />
+              <XDSRadioListItem label="Word of mouth" value="word-of-mouth" />
+              <XDSRadioListItem label="Search engine" value="search" />
+              <XDSRadioListItem label="Event or conference" value="event" />
+              <XDSRadioListItem label="Other" value="other" />
+            </XDSRadioList>
 
-              <XDSSelector
-                label="When are you thinking?"
-                placeholder="When are you thinking of launching?"
-                options={LAUNCH_OPTIONS}
-                value={timeline}
-                onChange={setTimeline}
-                status={errors.timeline ? {type: 'error', message: errors.timeline} : undefined}
-              />
+            <XDSTextArea
+              label="Anything else?"
+              placeholder="Tell us whatever else is on your mind..."
+              value={message}
+              onChange={setMessage}
+            />
 
-              <XDSSelector
-                label="Ballpark budget?"
-                placeholder="What's your rough monthly budget?"
-                options={BUDGET_OPTIONS}
-                value={budget}
-                onChange={setBudget}
-                status={errors.budget ? {type: 'error', message: errors.budget} : undefined}
-              />
+            <XDSCheckboxInput
+              label="I'm a budget decision-maker"
+              value={isDecider}
+              onChange={setIsDecider}
+            />
+          </XDSVStack>
 
-              <XDSRadioList
-                label="How did you hear about us?"
-                value={hearAboutUs}
-                onChange={setHearAboutUs}>
-                <XDSRadioListItem label="Social media" value="social" />
-                <XDSRadioListItem label="Word of mouth" value="word-of-mouth" />
-                <XDSRadioListItem label="Search engine" value="search" />
-                <XDSRadioListItem label="Event or conference" value="event" />
-                <XDSRadioListItem label="Other" value="other" />
-              </XDSRadioList>
-
-              <XDSTextArea
-                label="Anything else?"
-                placeholder="Tell us whatever else is on your mind..."
-                value={message}
-                onChange={setMessage}
-              />
-
-              <XDSCheckboxInput
-                label="I'm a budget decision-maker"
-                value={isDecider}
-                onChange={setIsDecider}
-              />
-            </XDSVStack>
-          </XDSCard>
+          <XDSDivider />
 
           {/* Submit */}
           <XDSVStack gap={3}>
