@@ -80,7 +80,7 @@ const styles = stylex.create({
     color: colorVars['--color-on-accent'],
   },
   pillError: {
-    borderColor: colorVars['--color-status-error'],
+    borderColor: colorVars['--color-error'],
   },
   fullWidth: {
     width: '100%',
@@ -211,9 +211,9 @@ export default function FormSimplePage() {
                 ))}
               </div>
               {errors.goals && (
-                <XDSText type="supporting" color="negative">
+                <span style={{fontSize: 12, color: 'var(--xds-color-error)'}}>
                   {errors.goals}
-                </XDSText>
+                </span>
               )}
             </XDSVStack>
 
