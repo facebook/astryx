@@ -29,6 +29,8 @@ import {
   DocumentTextIcon,
   CreditCardIcon,
   BriefcaseIcon,
+  PencilSquareIcon,
+  ShareIcon,
 } from '@heroicons/react/24/outline';
 
 // ---------------------------------------------------------------------------
@@ -195,9 +197,11 @@ function InfoRowItem({
             {value}
           </XDSText>
         </div>
-        <XDSLink label={action} href="#">
-          {action}
-        </XDSLink>
+        {action && (
+          <XDSLink label={action} href="#">
+            {action}
+          </XDSLink>
+        )}
       </div>
       <XDSDivider />
     </>
@@ -339,63 +343,159 @@ export default function SettingsDialogTemplate() {
                 padding: '16px 32px',
                 maxWidth: 680,
               }}>
-              {activeNav === 'Personal info' && (
+              {activeNav === 'Personal information' && (
                 <XDSVStack gap={6}>
-                  <XDSHeading level={2}>Personal information</XDSHeading>
+                  <XDSHeading level={2}>Personal info</XDSHeading>
                   <XDSVStack gap={0}>
-                    <XDSDivider />
-                    <ExpandableRow
+                    <InfoRowItem
                       label="Legal name"
-                      value={firstName + ' ' + lastName}
-                      isExpanded={expandedRow === 'name'}
-                      onEdit={() => handleEdit('name')}
-                      onCancel={handleCancel}
-                      onSave={handleSave}>
-                      <XDSVStack gap={3}>
-                        <XDSTextInput
-                          label="First name"
-                          size="lg"
-                          value={firstName}
-                          onChange={setFirstName}
-                        />
-                        <XDSTextInput
-                          label="Last name"
-                          size="lg"
-                          value={lastName}
-                          onChange={setLastName}
-                        />
-                      </XDSVStack>
-                    </ExpandableRow>
-                    <ExpandableRow
+                      value="Alex Johnson"
+                      action="Edit"
+                    />
+                    <InfoRowItem
+                      label="Preferred first name"
+                      value="Not provided"
+                      action="Add"
+                    />
+                    <InfoRowItem
                       label="Email address"
-                      value={email}
-                      isExpanded={expandedRow === 'email'}
-                      onEdit={() => handleEdit('email')}
-                      onCancel={handleCancel}
-                      onSave={handleSave}>
-                      <XDSTextInput
-                        label="Email"
-                        size="lg"
-                        type="email"
-                        value={email}
-                        onChange={setEmail}
-                      />
-                    </ExpandableRow>
-                    <ExpandableRow
+                      value="a***n@example.com"
+                      action="Edit"
+                    />
+                    <InfoRowItem
                       label="Phone number"
-                      value={phone}
-                      isExpanded={expandedRow === 'phone'}
-                      onEdit={() => handleEdit('phone')}
-                      onCancel={handleCancel}
-                      onSave={handleSave}>
-                      <XDSTextInput
-                        label="Phone number"
-                        size="lg"
-                        value={phone}
-                        onChange={setPhone}
-                      />
-                    </ExpandableRow>
+                      value="+1 ***-***-0123"
+                      action="Edit"
+                    />
+                    <InfoRowItem
+                      label="Identity verification"
+                      value="Verified"
+                      action=""
+                    />
+                    <InfoRowItem
+                      label="Residential address"
+                      value="Not provided"
+                      action="Add"
+                    />
+                    <InfoRowItem
+                      label="Mailing address"
+                      value="Not provided"
+                      action="Add"
+                    />
+                    <InfoRowItem
+                      label="Emergency contact"
+                      value="Provided"
+                      action="Edit"
+                    />
                   </XDSVStack>
+
+                  <XDSCard padding={4} style={{marginTop: 16}}>
+                    <XDSVStack gap={0}>
+                      <div style={{paddingTop: 0, paddingBottom: 16}}>
+                        <XDSHStack gap={3} vAlign="start">
+                          <div
+                            style={{
+                              width: 48,
+                              height: 48,
+                              borderRadius: 12,
+                              backgroundColor:
+                                'var(--xds-color-background-muted, #f5f5f5)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              flexShrink: 0,
+                            }}>
+                            <LockClosedIcon width={24} height={24} />
+                          </div>
+                          <XDSVStack gap={0}>
+                            <XDSText
+                              type="body"
+                              weight="semibold"
+                              display="block">
+                              Why isn&apos;t my info shown here?
+                            </XDSText>
+                            <XDSText
+                              type="supporting"
+                              color="secondary"
+                              display="block">
+                              We&apos;re hiding some account details to protect
+                              your identity.
+                            </XDSText>
+                          </XDSVStack>
+                        </XDSHStack>
+                      </div>
+                      <XDSDivider />
+                      <div style={{padding: '16px 0'}}>
+                        <XDSHStack gap={3} vAlign="start">
+                          <div
+                            style={{
+                              width: 48,
+                              height: 48,
+                              borderRadius: 12,
+                              backgroundColor:
+                                'var(--xds-color-background-muted, #f5f5f5)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              flexShrink: 0,
+                            }}>
+                            <PencilSquareIcon width={24} height={24} />
+                          </div>
+                          <XDSVStack gap={0}>
+                            <XDSText
+                              type="body"
+                              weight="semibold"
+                              display="block">
+                              Which details can be edited?
+                            </XDSText>
+                            <XDSText
+                              type="supporting"
+                              color="secondary"
+                              display="block">
+                              Contact info and personal details can be edited.
+                              If this info was used to verify your identity,
+                              you&apos;ll need to get verified again the next
+                              time you book—or to continue hosting.
+                            </XDSText>
+                          </XDSVStack>
+                        </XDSHStack>
+                      </div>
+                      <XDSDivider />
+                      <div style={{paddingTop: 16, paddingBottom: 0}}>
+                        <XDSHStack gap={3} vAlign="start">
+                          <div
+                            style={{
+                              width: 48,
+                              height: 48,
+                              borderRadius: 12,
+                              backgroundColor:
+                                'var(--xds-color-background-muted, #f5f5f5)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              flexShrink: 0,
+                            }}>
+                            <ShareIcon width={24} height={24} />
+                          </div>
+                          <XDSVStack gap={0}>
+                            <XDSText
+                              type="body"
+                              weight="semibold"
+                              display="block">
+                              What info is shared with others?
+                            </XDSText>
+                            <XDSText
+                              type="supporting"
+                              color="secondary"
+                              display="block">
+                              We only release contact information after a
+                              reservation is confirmed.
+                            </XDSText>
+                          </XDSVStack>
+                        </XDSHStack>
+                      </div>
+                    </XDSVStack>
+                  </XDSCard>
                 </XDSVStack>
               )}
 
