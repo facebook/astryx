@@ -140,8 +140,9 @@ export const categories: SandboxCategory[] = [
       {
         name: 'Editor',
         href: '/pages/editor/',
-        description:
-          'Page builder with config panel and live preview',
+        description: 'Page builder with config panel and live preview',
+      },
+      {
         name: 'Form (Simple)',
         href: '/pages/template-form/',
         description:
