@@ -390,3 +390,27 @@ export interface ReferenceTranslationDoc {
     )[];
   }[];
 }
+
+/**
+ * Documentation for a page template.
+ *
+ * Every template directory under `packages/cli/templates/` has a
+ * `template.doc.mjs` that exports a single `doc` constant:
+ *
+ *   /** @type {import('@xds/core').TemplateDoc} *\/
+ *   export const doc = { ... };
+ *
+ * The CLI and sandbox import these for discovery and display.
+ */
+export interface TemplateDoc {
+  /** Display name shown in the sandbox gallery and CLI.
+   *  e.g. "Dashboard", "Login (Card)", "Settings (Sidebar)" */
+  name: string;
+
+  /** One-sentence description of what the template provides. */
+  description: string;
+
+  /** Whether this template is ready for use. Templates with
+   *  isReady: false show as "(WIP)" in the gallery and CLI. */
+  isReady: boolean;
+}
