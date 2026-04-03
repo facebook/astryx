@@ -14,14 +14,6 @@ import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
 import {XDSTextArea} from '@xds/core/TextArea';
 import {
   colorVars,
-  radiusVars,
-  borderVars,
-  durationVars,
-  easeVars,
-  typographyVars,
-  typeScaleVars,
-  fontWeightVars,
-  spacingVars,
 } from '@xds/core/theme/tokens.stylex';
 
 const CAMPAIGN_GOALS = [
@@ -56,28 +48,6 @@ const BUDGET_OPTIONS = [
 const styles = stylex.create({
   pageBg: {
     backgroundColor: colorVars['--color-background-surface'],
-  },
-  pill: {
-    paddingBlock: spacingVars['--spacing-2'],
-    paddingInline: spacingVars['--spacing-4'],
-    borderRadius: radiusVars['--radius-full'],
-    borderWidth: borderVars['--border-width'],
-    borderStyle: 'solid',
-    borderColor: colorVars['--color-border-emphasized'],
-    backgroundColor: colorVars['--color-background-surface'],
-    fontFamily: typographyVars['--font-family-body'],
-    fontSize: typeScaleVars['--text-label-size'],
-    fontWeight: fontWeightVars['--font-weight-medium'],
-    color: colorVars['--color-text-primary'],
-    cursor: 'pointer',
-    transitionProperty: 'background-color, border-color, color',
-    transitionDuration: durationVars['--duration-fast'],
-    transitionTimingFunction: easeVars['--ease-standard'],
-  },
-  pillSelected: {
-    borderColor: colorVars['--color-accent'],
-    backgroundColor: colorVars['--color-accent'],
-    color: colorVars['--color-on-accent'],
   },
   fullWidth: {
     width: '100%',
@@ -193,17 +163,12 @@ export default function FormSimplePage() {
               <XDSText type="label">What are you going for?</XDSText>
               <div style={{display: 'flex', flexWrap: 'wrap', gap: 8}}>
                 {CAMPAIGN_GOALS.map(goal => (
-                  <button
+                  <XDSButton
                     key={goal}
-                    type="button"
-                    aria-pressed={goals.includes(goal)}
+                    label={goal}
+                    variant={goals.includes(goal) ? 'primary' : 'secondary'}
                     onClick={() => toggleGoal(goal)}
-                    {...stylex.props(
-                      styles.pill,
-                      goals.includes(goal) && styles.pillSelected,
-                    )}>
-                    {goal}
-                  </button>
+                  />
                 ))}
               </div>
               {errors.goals && (
