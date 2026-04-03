@@ -112,7 +112,7 @@ export default function FormSimplePage() {
         goals: goals.length === 0 ? 'Pick at least one' : undefined,
         timeline: !timeline ? 'Required' : undefined,
         budget: !budget ? 'Required' : undefined,
-        hearAboutUs: !hearAboutUs ? 'Required' : undefined,
+        hearAboutUs: undefined,
       }
     : {};
 
