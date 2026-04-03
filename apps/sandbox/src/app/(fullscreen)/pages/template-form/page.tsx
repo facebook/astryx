@@ -30,6 +30,9 @@ const CAMPAIGN_GOALS = [
   'Event Promotion',
   'Retail / In-Store',
   'Trade Show',
+  'Influencer Activation',
+  'Community Building',
+  'Seasonal Campaign',
   'Other',
 ];
 
@@ -167,7 +170,9 @@ export default function FormSimplePage() {
               />
             </div>
 
-            <XDSDivider label="About your campaign" />
+            <div style={{paddingBlock: 16}}>
+              <XDSDivider label="About your campaign" />
+            </div>
 
             {/* Goals */}
             <XDSVStack gap={2}>
