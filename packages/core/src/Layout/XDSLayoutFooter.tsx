@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSLayoutFooter.tsx
  * @input Uses React StyleX
