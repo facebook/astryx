@@ -1772,8 +1772,6 @@ function MotionPreview() {
         style={{height: '100%'}}
         variant="section"
         contentPadding={0}
-        isSideNavCollapsed={sidebarCollapsed}
-        onSideNavCollapsedChange={setSidebarCollapsed}
         sideNav={
           <XDSSideNav
             collapsible={{
@@ -1939,7 +1937,7 @@ function MotionPreview() {
                   label="Close"
                   icon={<XMarkIcon style={{width: 16, height: 16}} />}
                   variant="ghost"
-                  size="small"
+                  size="sm"
                   onClick={() => setOverlayOpen(false)}
                 />
               </div>
@@ -1975,7 +1973,7 @@ function MotionPreview() {
                   label="Close"
                   icon={<XMarkIcon style={{width: 16, height: 16}} />}
                   variant="ghost"
-                  size="small"
+                  size="sm"
                   onClick={() => setPushOpen(false)}
                 />
               </div>
@@ -2015,7 +2013,7 @@ function MotionPreview() {
         onOpenChange={setModalOpen}
         triggerRef={modalTriggerRef}>
         <div style={{padding: 'var(--spacing-3)', flex: 1}}>
-          <XDSText color="secondary">
+          <XDSText type="body" color="secondary">
             This modal uses XDSDialog with directional entry animation from the
             trigger element.
           </XDSText>
@@ -2146,7 +2144,7 @@ function NavigationOverlaysPreview({
         onOpenChange={setModalOpen}
         triggerRef={modalTriggerRef}>
         <div style={{padding: 'var(--spacing-3)'}}>
-          <XDSText color="secondary">
+          <XDSText type="body" color="secondary">
             This modal uses the XDSDialog component with directional entry
             animation from the trigger element. Try adjusting the duration and
             easing tokens.
@@ -3359,7 +3357,7 @@ function ThemeEditorComponent() {
                     label="Close"
                     icon={<XMarkIcon style={{width: 16, height: 16}} />}
                     variant="ghost"
-                    size="small"
+                    size="sm"
                     onClick={() => setOverlayPanelOpen(false)}
                   />
                 </div>
@@ -3400,7 +3398,7 @@ function ThemeEditorComponent() {
                     label="Close"
                     icon={<XMarkIcon style={{width: 16, height: 16}} />}
                     variant="ghost"
-                    size="small"
+                    size="sm"
                     onClick={() => setPushPanelOpen(false)}
                   />
                 </div>
