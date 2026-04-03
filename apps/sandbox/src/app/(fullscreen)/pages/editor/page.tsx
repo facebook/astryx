@@ -1544,28 +1544,18 @@ export default function EditorPage() {
               }}>
               <div style={{flex: 1}}>
                 {isEditingTitle ? (
-                  <input
-                    value={pageTitle}
-                    onChange={e => setPageTitle(e.target.value)}
-                    onBlur={() => setIsEditingTitle(false)}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') setIsEditingTitle(false);
-                    }}
-                    autoFocus
-                    aria-label="Page title"
-                    style={{
-                      font: 'inherit',
-                      fontSize: 18,
-                      fontWeight: 600,
-                      border: '1px solid var(--xds-color-border, #ccc)',
-                      borderRadius: 6,
-                      padding: '4px 8px',
-                      outline: 'none',
-                      background: 'var(--xds-color-background-card, #fff)',
-                      color: 'inherit',
-                      width: 160,
-                    }}
-                  />
+                  <div onBlurCapture={() => setIsEditingTitle(false)}>
+                    <XDSTextInput
+                      label="Page title"
+                      isLabelHidden
+                      value={pageTitle}
+                      onChange={setPageTitle}
+                      onKeyDown={(e: React.KeyboardEvent) => {
+                        if (e.key === 'Enter') setIsEditingTitle(false);
+                      }}
+                      hasAutoFocus
+                    />
+                  </div>
                 ) : (
                   <span
                     style={{cursor: 'pointer'}}
@@ -1621,12 +1611,7 @@ export default function EditorPage() {
                 />
               </XDSSegmentedControl>
               <XDSHStack gap={2}>
-                <XDSButton
-                  label="Preview"
-                  isLabelHidden
-                  icon={<EyeIcon />}
-                  variant="ghost"
-                />
+                <XDSButton label="Preview" icon={<EyeIcon />} variant="ghost" />
                 <XDSButton label="Publish" variant="primary" />
               </XDSHStack>
             </div>
