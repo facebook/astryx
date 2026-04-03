@@ -52,14 +52,10 @@ const styles = stylex.create({
   page: {
     minHeight: '100svh',
     backgroundColor: colorVars['--color-background-surface'],
-    display: 'flex',
-    alignItems: 'flex-start',
-    justifyContent: 'center',
     paddingBlock: spacingVars['--spacing-12'],
     paddingInline: spacingVars['--spacing-4'],
   },
   form: {
-    width: '100%',
     maxWidth: 1000,
     margin: '0 auto',
   },
