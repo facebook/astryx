@@ -46,17 +46,17 @@ const BUDGET_OPTIONS = [
 
 const WHY_US = [
   {
-    emoji: '\uD83D\uDE80',
+    image: '/images/template-form/why-us-1.png',
     title: 'We move fast',
     description: 'From brief to live in days, not months. We cut through the noise and get to work.',
   },
   {
-    emoji: '\uD83C\uDFAF',
+    image: '/images/template-form/why-us-2.png',
     title: 'Built around your goals',
     description: "Every campaign is different. We tailor everything to what you're actually trying to achieve.",
   },
   {
-    emoji: '\uD83E\uDD1D',
+    image: '/images/template-form/why-us-3.png',
     title: 'A real partnership',
     description: "You'll have a dedicated team who knows your brand and is invested in your success.",
   },
@@ -80,16 +80,7 @@ const styles = stylex.create({
     letterSpacing: '-0.02em',
     margin: 0,
   },
-  illustrationPlaceholder: {
-    width: '100%',
-    height: 80,
-    backgroundColor: colorVars['--color-background-muted'],
-    borderRadius: 8,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: 32,
-  },
+
   whyGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(3, 1fr)',
@@ -167,9 +158,11 @@ export default function FormSimplePage() {
             <div style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16}}>
               {WHY_US.map(item => (
                 <XDSVStack key={item.title} gap={3}>
-                  <div {...stylex.props(styles.illustrationPlaceholder)}>
-                    {item.emoji}
-                  </div>
+                  <img
+                    src={item.image}
+                    alt={item.title}
+                    style={{width: '100%', height: 80, objectFit: 'cover', borderRadius: 8}}
+                  />
                   <XDSVStack gap={1}>
                     <XDSText type="body" weight="bold">{item.title}</XDSText>
                     <XDSText type="supporting" color="secondary">
