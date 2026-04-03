@@ -61,6 +61,7 @@ const styles = stylex.create({
   form: {
     width: '100%',
     maxWidth: 1000,
+    margin: '0 auto',
   },
   centered: {
     textAlign: 'center',
