@@ -119,7 +119,7 @@ export default function FormSimplePage() {
 
   return (
     <div {...stylex.props(styles.page)}>
-      <div {...stylex.props(styles.form)}>
+      <div style={{maxWidth: 720, margin: '0 auto', paddingBlock: 48, paddingInline: 24}}>
         <XDSVStack gap={8}>
           {/* Header */}
           <div {...stylex.props(styles.centered)}>
