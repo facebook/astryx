@@ -51,6 +51,10 @@ const styles = stylex.create({
   fullWidth: {
     width: '100%',
   },
+  errorText: {
+    color: colorVars['--color-error'],
+    fontSize: 12,
+  },
 });
 
 /**
@@ -171,7 +175,7 @@ export default function FormSimplePage() {
                 ))}
               </div>
               {errors.goals && (
-                <span style={{fontSize: 12, color: 'var(--xds-color-error)'}}>
+                <span {...stylex.props(styles.errorText)}>
                   {errors.goals}
                 </span>
               )}
