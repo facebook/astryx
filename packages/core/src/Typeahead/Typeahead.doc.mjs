@@ -405,6 +405,8 @@ export const docs = {
     'Arrow keys navigate dropdown items; Enter selects highlighted item; Escape closes dropdown or restores previous value in edit mode; Home/End jump to first/last item',
   theming: {
     targets: [
+      {className: 'xds-typeahead', visualProps: ['status']},
+      {className: 'xds-typeahead-dropdown'},
       {className: 'xds-typeahead-item'},
     ],
   },
@@ -821,6 +823,8 @@ export const docsZh = {
     '方向键导航下拉列表项目；Enter 选择高亮项目；Escape 关闭下拉列表或在编辑模式中恢复之前的值；Home/End 跳转到第一个/最后一个项目',
   theming: {
     targets: [
+      {className: 'xds-typeahead', visualProps: ['status']},
+      {className: 'xds-typeahead-dropdown'},
       {className: 'xds-typeahead-item'},
     ],
   },
