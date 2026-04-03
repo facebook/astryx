@@ -156,7 +156,7 @@ export const categories: SandboxCategory[] = [
       },
       // Auto-discovered templates from packages/cli/templates/
       ...autoDiscoveredTemplates.map(t => ({
-        name: t.name,
+        name: t.isReady ? t.name : t.name + ' (WIP)',
         href: t.href,
         description: t.description,
       })),

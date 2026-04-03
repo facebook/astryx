@@ -33,24 +33,21 @@ async function discoverTemplates() {
     const docPath = path.join(TEMPLATES_DIR, dir.name, 'template.doc.mjs');
     const pagePath = path.join(TEMPLATES_DIR, dir.name, 'page.tsx');
 
-    if (!fs.existsSync(docPath)) {
-      // Skip templates without doc files (old-style templates)
-      continue;
-    }
+    if (!fs.existsSync(docPath)) continue;
 
     if (!fs.existsSync(pagePath)) {
       console.warn(`  skip ${dir.name}/ (has doc but missing page.tsx)`);
       continue;
     }
 
-    // Import the doc.mjs to read metadata
     const docModule = await import(`file://${docPath}`);
     const doc = docModule.doc;
 
     templates.push({
       dirName: dir.name,
-      ...doc,
-      slug: doc.slug || dir.name,
+      name: doc.name,
+      description: doc.description,
+      isReady: doc.isReady ?? false,
     });
   }
 
@@ -60,11 +57,10 @@ async function discoverTemplates() {
 function generateRegistry(templates) {
   const entries = templates.map(t => `  {
     name: ${JSON.stringify(t.name)},
-    slug: ${JSON.stringify(t.slug)},
+    slug: ${JSON.stringify(t.dirName)},
     description: ${JSON.stringify(t.description)},
-    category: ${JSON.stringify(t.category || 'general')},
-    tags: ${JSON.stringify(t.tags || [])},
-    href: '/templates/${t.slug}/',
+    isReady: ${JSON.stringify(t.isReady)},
+    href: '/templates/${t.dirName}/',
   }`);
 
   return `/**
@@ -75,8 +71,7 @@ export interface TemplateEntry {
   name: string;
   slug: string;
   description: string;
-  category: string;
-  tags: string[];
+  isReady: boolean;
   href: string;
 }
 
@@ -104,19 +99,16 @@ async function main() {
 
   fs.mkdirSync(GENERATED_DIR, {recursive: true});
 
-  // Clean old generated template routes
   if (fs.existsSync(ROUTES_DIR)) {
     fs.rmSync(ROUTES_DIR, {recursive: true});
   }
 
-  // Write registry
   const registryPath = path.join(GENERATED_DIR, 'templateRegistry.ts');
   fs.writeFileSync(registryPath, generateRegistry(templates));
   console.log(`  wrote ${path.relative(ROOT, registryPath)}`);
 
-  // Write route wrappers
   for (const t of templates) {
-    const routeDir = path.join(ROUTES_DIR, t.slug);
+    const routeDir = path.join(ROUTES_DIR, t.dirName);
     fs.mkdirSync(routeDir, {recursive: true});
     const wrapperPath = path.join(routeDir, 'page.tsx');
     fs.writeFileSync(wrapperPath, generateRouteWrapper(t));
