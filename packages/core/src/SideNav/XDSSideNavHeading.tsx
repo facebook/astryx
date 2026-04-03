@@ -140,6 +140,17 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
   },
+  // Inner interactive element (link/button) when headerEndContent splits
+  // the interactive boundary — stretches to fill remaining space so
+  // headerEndContent hugs the trailing edge of the nav.
+  interactiveInner: {
+    display: 'flex',
+    alignItems: 'center',
+    flex: 1,
+    minWidth: 0,
+    padding: 0,
+    gap: 'inherit',
+  },
   popoverContent: {
     padding: spacingVars['--spacing-1'],
     overflow: 'hidden',
@@ -523,8 +534,11 @@ export function XDSSideNavHeading({
             )}>
             <a
               href={headingHref}
-              {...stylex.props(styles.root, styles.interactive)}
-              style={{padding: 0, gap: 'inherit'}}
+              {...stylex.props(
+                styles.root,
+                styles.interactive,
+                styles.interactiveInner,
+              )}
               {...(props as React.AnchorHTMLAttributes<HTMLAnchorElement>)}>
               {icon && <span {...stylex.props(styles.icon)}>{icon}</span>}
               {renderTextContent()}
@@ -577,8 +591,11 @@ export function XDSSideNavHeading({
               type="button"
               onClick={handleToggle}
               {...popover.triggerProps}
-              {...stylex.props(styles.root, styles.interactive)}
-              style={{padding: 0, gap: 'inherit'}}>
+              {...stylex.props(
+                styles.root,
+                styles.interactive,
+                styles.interactiveInner,
+              )}>
               {icon && <span {...stylex.props(styles.icon)}>{icon}</span>}
               {renderTextContent()}
               {chevronElement}
