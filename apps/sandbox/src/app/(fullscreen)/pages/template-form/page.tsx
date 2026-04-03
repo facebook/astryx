@@ -161,8 +161,6 @@ export default function FormSimplePage() {
             </XDSText>
           </XDSVStack>
 
-          <XDSDivider />
-
           {/* Why work with us */}
           <XDSVStack gap={5}>
             <span {...stylex.props(styles.sectionLabel)}>Why work with us?</span>
