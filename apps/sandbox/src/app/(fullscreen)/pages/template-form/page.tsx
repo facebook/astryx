@@ -79,6 +79,9 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-accent'],
     color: colorVars['--color-on-accent'],
   },
+  pillError: {
+    borderColor: colorVars['--color-status-error'],
+  },
   fullWidth: {
     width: '100%',
   },
@@ -98,11 +101,29 @@ export default function FormSimplePage() {
   const [message, setMessage] = useState('');
   const [hearAboutUs, setHearAboutUs] = useState('');
   const [isDecider, setIsDecider] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  const errors = submitted
+    ? {
+        fullName: !fullName.trim() ? 'Required' : undefined,
+        email: !email.trim() ? 'Required' : undefined,
+        company: !company.trim() ? 'Required' : undefined,
+        phone: !phone.trim() ? 'Required' : undefined,
+        goals: goals.length === 0 ? 'Pick at least one' : undefined,
+        timeline: !timeline ? 'Required' : undefined,
+        budget: !budget ? 'Required' : undefined,
+        hearAboutUs: !hearAboutUs ? 'Required' : undefined,
+      }
+    : {};
 
   const toggleGoal = (goal: string) =>
     setGoals(prev =>
       prev.includes(goal) ? prev.filter(g => g !== goal) : [...prev, goal],
     );
+
+  const handleSubmit = () => {
+    setSubmitted(true);
+  };
 
   return (
     <div
@@ -131,44 +152,38 @@ export default function FormSimplePage() {
 
           <XDSVStack gap={4}>
             {/* Row 1 */}
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
-                gap: 16,
-              }}>
+            <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16}}>
               <XDSTextInput
                 label="Full Name"
                 placeholder="Full Name"
                 value={fullName}
                 onChange={setFullName}
+                status={errors.fullName ? {type: 'error', message: errors.fullName} : undefined}
               />
               <XDSTextInput
-                label="Business Email"
+                label="Email"
                 placeholder="you@company.com"
                 value={email}
                 onChange={setEmail}
+                status={errors.email ? {type: 'error', message: errors.email} : undefined}
               />
             </div>
 
             {/* Row 2 */}
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
-                gap: 16,
-              }}>
+            <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16}}>
               <XDSTextInput
                 label="Company"
                 placeholder="Company"
                 value={company}
                 onChange={setCompany}
+                status={errors.company ? {type: 'error', message: errors.company} : undefined}
               />
               <XDSTextInput
                 label="Phone"
                 placeholder="Phone number"
                 value={phone}
                 onChange={setPhone}
+                status={errors.phone ? {type: 'error', message: errors.phone} : undefined}
               />
             </div>
 
@@ -189,11 +204,17 @@ export default function FormSimplePage() {
                     {...stylex.props(
                       styles.pill,
                       goals.includes(goal) && styles.pillSelected,
+                      !!errors.goals && !goals.includes(goal) && styles.pillError,
                     )}>
                     {goal}
                   </button>
                 ))}
               </div>
+              {errors.goals && (
+                <XDSText type="supporting" color="negative">
+                  {errors.goals}
+                </XDSText>
+              )}
             </XDSVStack>
 
             <XDSSelector
@@ -202,6 +223,7 @@ export default function FormSimplePage() {
               options={LAUNCH_OPTIONS}
               value={timeline}
               onChange={setTimeline}
+              status={errors.timeline ? {type: 'error', message: errors.timeline} : undefined}
             />
 
             <XDSSelector
@@ -210,6 +232,7 @@ export default function FormSimplePage() {
               options={BUDGET_OPTIONS}
               value={budget}
               onChange={setBudget}
+              status={errors.budget ? {type: 'error', message: errors.budget} : undefined}
             />
 
             <XDSTextArea
@@ -222,7 +245,8 @@ export default function FormSimplePage() {
             <XDSRadioList
               label="How did you hear about us?"
               value={hearAboutUs}
-              onChange={setHearAboutUs}>
+              onChange={setHearAboutUs}
+              status={errors.hearAboutUs ? {type: 'error', message: errors.hearAboutUs} : undefined}>
               <XDSRadioListItem label="Social media" value="social" />
               <XDSRadioListItem label="Word of mouth" value="word-of-mouth" />
               <XDSRadioListItem label="Search engine" value="search" />
@@ -241,6 +265,7 @@ export default function FormSimplePage() {
               variant="primary"
               size="lg"
               xstyle={styles.fullWidth}
+              onClick={handleSubmit}
             />
 
             <XDSHStack gap={1} hAlign="center">
