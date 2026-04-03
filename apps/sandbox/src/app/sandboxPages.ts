@@ -2,15 +2,25 @@
  * @file sandboxPages.ts
  * @position Central registry of all sandbox pages, grouped by category.
  *
- * To add a new page:
- * 1. Create the page under the appropriate route group:
- *    - `src/app/(sandbox)/pages/<name>/page.tsx` for standard layout
- *    - `src/app/(fullscreen)/pages/<name>/page.tsx` for fullscreen
- * 2. Add an entry to the appropriate category below
+ * The "Templates" category is auto-populated from packages/cli/templates/
+ * via `node scripts/sync-templates.js`. Each template has a template.doc.mjs
+ * that provides metadata. The sync script generates a registry file at
+ * src/generated/templateRegistry.ts.
+ *
+ * To add a new template:
+ *   1. Create packages/cli/templates/<name>/page.tsx + template.doc.mjs
+ *   2. Run `node scripts/sync-templates.js`
+ *   3. It appears in the sandbox and CLI automatically
+ *
+ * To add a non-template sandbox page:
+ *   1. Create the page under the appropriate route group
+ *   2. Add an entry to the appropriate category below
  *
  * Note: hrefs use trailing slashes because the sandbox is a static export
  * with `trailingSlash: true` in next.config.mjs.
  */
+
+import {templates as autoDiscoveredTemplates} from '../generated/templateRegistry';
 
 export interface SandboxPage {
   /** Display name shown on the card */
@@ -144,6 +154,12 @@ export const categories: SandboxCategory[] = [
         description:
           'Block-based page builder with sidebar config and live preview',
       },
+      // Auto-discovered templates from packages/cli/templates/
+      ...autoDiscoveredTemplates.map(t => ({
+        name: t.name,
+        href: t.href,
+        description: t.description,
+      })),
     ],
   },
   {

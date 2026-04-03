@@ -3,7 +3,9 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
+    "predev": "node ../../scripts/sync-templates.js",
     "dev": "next dev",
+    "prebuild": "node ../../scripts/sync-templates.js",
     "build": "next build",
     "start": "next start",
     "postinstall": "xds agent-docs"
