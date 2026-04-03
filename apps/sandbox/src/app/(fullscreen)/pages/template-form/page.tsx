@@ -48,6 +48,16 @@ const styles = stylex.create({
   pageBg: {
     backgroundColor: colorVars['--color-background-surface'],
   },
+  hero: {
+    width: '100%',
+    height: 220,
+    backgroundColor: colorVars['--color-background-muted'],
+    borderRadius: 12,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
   fullWidth: {
     width: '100%',
   },
@@ -101,7 +111,7 @@ export default function FormSimplePage() {
       style={{minHeight: '100svh', display: 'flex', flexDirection: 'column'}}>
       <div
         style={{
-          maxWidth: 900,
+          maxWidth: 800,
           margin: '0 auto',
           width: '100%',
           paddingTop: 48,
@@ -110,6 +120,14 @@ export default function FormSimplePage() {
           paddingRight: 24,
         }}>
         <XDSVStack gap={8}>
+
+          {/* Hero image placeholder */}
+          <div {...stylex.props(styles.hero)}>
+            <XDSText type="supporting" color="secondary">
+              Hero image
+            </XDSText>
+          </div>
+
           {/* Header */}
           <div style={{textAlign: 'center'}}>
             <XDSVStack gap={1}>
@@ -120,8 +138,8 @@ export default function FormSimplePage() {
             </XDSVStack>
           </div>
 
+          {/* Section 1: Contact info */}
           <XDSVStack gap={4}>
-            {/* Row 1 */}
             <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16}}>
               <XDSTextInput
                 label="Full Name"
@@ -138,8 +156,6 @@ export default function FormSimplePage() {
                 status={errors.email ? {type: 'error', message: errors.email} : undefined}
               />
             </div>
-
-            {/* Row 2 */}
             <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16}}>
               <XDSTextInput
                 label="Company"
@@ -156,12 +172,12 @@ export default function FormSimplePage() {
                 status={errors.phone ? {type: 'error', message: errors.phone} : undefined}
               />
             </div>
+          </XDSVStack>
 
-            <div style={{paddingBlock: 16}}>
-              <XDSDivider label="About your campaign" />
-            </div>
+          <XDSDivider />
 
-            {/* Goals */}
+          {/* Section 2: Campaign details */}
+          <XDSVStack gap={4}>
             <XDSVStack gap={2}>
               <XDSText type="label">What are you going for?</XDSText>
               <div style={{display: 'flex', flexWrap: 'wrap', gap: 8}}>
@@ -198,12 +214,16 @@ export default function FormSimplePage() {
               onChange={setBudget}
               status={errors.budget ? {type: 'error', message: errors.budget} : undefined}
             />
+          </XDSVStack>
 
+          <XDSDivider />
+
+          {/* Section 3: Additional info */}
+          <XDSVStack gap={4}>
             <XDSRadioList
               label="How did you hear about us?"
               value={hearAboutUs}
-              onChange={setHearAboutUs}
-              status={errors.hearAboutUs ? {type: 'error', message: errors.hearAboutUs} : undefined}>
+              onChange={setHearAboutUs}>
               <XDSRadioListItem label="Social media" value="social" />
               <XDSRadioListItem label="Word of mouth" value="word-of-mouth" />
               <XDSRadioListItem label="Search engine" value="search" />
@@ -223,7 +243,12 @@ export default function FormSimplePage() {
               value={isDecider}
               onChange={setIsDecider}
             />
+          </XDSVStack>
 
+          <XDSDivider />
+
+          {/* Submit */}
+          <XDSVStack gap={3}>
             <XDSButton
               label="Submit"
               variant="primary"
@@ -231,7 +256,6 @@ export default function FormSimplePage() {
               xstyle={styles.fullWidth}
               onClick={handleSubmit}
             />
-
             <XDSHStack gap={1} hAlign="center">
               <XDSText type="supporting" color="secondary">
                 By submitting you agree to our{' '}
@@ -242,6 +266,7 @@ export default function FormSimplePage() {
               </XDSText>
             </XDSHStack>
           </XDSVStack>
+
         </XDSVStack>
       </div>
     </div>
