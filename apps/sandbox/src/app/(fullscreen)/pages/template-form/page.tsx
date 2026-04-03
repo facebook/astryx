@@ -235,13 +235,6 @@ export default function FormSimplePage() {
               status={errors.budget ? {type: 'error', message: errors.budget} : undefined}
             />
 
-            <XDSTextArea
-              label="Anything else?"
-              placeholder="Tell us whatever else is on your mind..."
-              value={message}
-              onChange={setMessage}
-            />
-
             <XDSRadioList
               label="How did you hear about us?"
               value={hearAboutUs}
@@ -253,6 +246,13 @@ export default function FormSimplePage() {
               <XDSRadioListItem label="Event or conference" value="event" />
               <XDSRadioListItem label="Other" value="other" />
             </XDSRadioList>
+
+            <XDSTextArea
+              label="Anything else?"
+              placeholder="Tell us whatever else is on your mind..."
+              value={message}
+              onChange={setMessage}
+            />
 
             <XDSCheckboxInput
               label="I'm a budget decision-maker"
