@@ -10,9 +10,8 @@ import {XDSSelector} from '@xds/core/Selector';
 import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSLink} from '@xds/core/Link';
+import {colorVars} from '@xds/core/theme/tokens.stylex';
 import {
-  colorVars,
-  spacingVars,
   radiusVars,
   borderVars,
   durationVars,
@@ -20,6 +19,7 @@ import {
   typographyVars,
   typeScaleVars,
   fontWeightVars,
+  spacingVars,
 } from '@xds/core/theme/tokens.stylex';
 
 const CAMPAIGN_GOALS = [
@@ -49,28 +49,8 @@ const BUDGET_OPTIONS = [
 ];
 
 const styles = stylex.create({
-  page: {
-    minHeight: '100svh',
+  pageBg: {
     backgroundColor: colorVars['--color-background-surface'],
-  },
-  form: {
-    maxWidth: 1000,
-    margin: '0 auto',
-    paddingBlock: spacingVars['--spacing-12'],
-    paddingInline: spacingVars['--spacing-4'],
-  },
-  centered: {
-    textAlign: 'center',
-  },
-  twoCol: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: spacingVars['--spacing-4'],
-  },
-  pillGroup: {
-    display: 'flex',
-    flexWrap: 'wrap',
-    gap: spacingVars['--spacing-2'],
   },
   pill: {
     paddingBlock: spacingVars['--spacing-2'],
@@ -118,11 +98,22 @@ export default function FormSimplePage() {
     );
 
   return (
-    <div {...stylex.props(styles.page)}>
-      <div style={{maxWidth: 720, margin: '0 auto', paddingBlock: 48, paddingInline: 24}}>
+    <div
+      {...stylex.props(styles.pageBg)}
+      style={{minHeight: '100svh', display: 'flex', flexDirection: 'column'}}>
+      <div
+        style={{
+          maxWidth: 1000,
+          margin: '0 auto',
+          width: '100%',
+          paddingTop: 48,
+          paddingBottom: 48,
+          paddingLeft: 24,
+          paddingRight: 24,
+        }}>
         <XDSVStack gap={8}>
           {/* Header */}
-          <div {...stylex.props(styles.centered)}>
+          <div style={{textAlign: 'center'}}>
             <XDSVStack gap={2}>
               <XDSHeading level={1}>Get in touch</XDSHeading>
               <XDSText type="body" color="secondary">
@@ -133,7 +124,12 @@ export default function FormSimplePage() {
 
           <XDSVStack gap={4}>
             {/* Row 1 */}
-            <div {...stylex.props(styles.twoCol)}>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: 16,
+              }}>
               <XDSTextInput
                 label="Full Name"
                 placeholder="Full Name"
@@ -149,7 +145,12 @@ export default function FormSimplePage() {
             </div>
 
             {/* Row 2 */}
-            <div {...stylex.props(styles.twoCol)}>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: 16,
+              }}>
               <XDSTextInput
                 label="Company"
                 placeholder="Company"
@@ -169,7 +170,7 @@ export default function FormSimplePage() {
             {/* Goals */}
             <XDSVStack gap={2}>
               <XDSText type="label">Campaign goals</XDSText>
-              <div {...stylex.props(styles.pillGroup)}>
+              <div style={{display: 'flex', flexWrap: 'wrap', gap: 8}}>
                 {CAMPAIGN_GOALS.map(goal => (
                   <button
                     key={goal}
@@ -186,7 +187,6 @@ export default function FormSimplePage() {
               </div>
             </XDSVStack>
 
-            {/* Timeline */}
             <XDSSelector
               label="Launch timeline"
               placeholder="When are you looking to launch?"
@@ -195,7 +195,6 @@ export default function FormSimplePage() {
               onChange={setTimeline}
             />
 
-            {/* Budget */}
             <XDSSelector
               label="Monthly budget"
               placeholder="What's your estimated monthly budget?"
