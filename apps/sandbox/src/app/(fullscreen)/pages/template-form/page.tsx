@@ -116,10 +116,10 @@ export default function FormSimplePage() {
         <XDSVStack gap={8}>
           {/* Header */}
           <div style={{textAlign: 'center'}}>
-            <XDSVStack gap={2}>
-              <XDSHeading level={1}>Get in touch</XDSHeading>
+            <XDSVStack gap={1}>
+              <XDSHeading level={1}>Let's work together</XDSHeading>
               <XDSText type="body" color="secondary">
-                Tell us about your campaign and we'll be in touch shortly.
+                Tell us a bit about what you're working on — we'd love to help.
               </XDSText>
             </XDSVStack>
           </div>
@@ -167,11 +167,11 @@ export default function FormSimplePage() {
               />
             </div>
 
-            <XDSDivider label="Campaign Details" />
+            <XDSDivider label="About your campaign" />
 
             {/* Goals */}
             <XDSVStack gap={2}>
-              <XDSText type="label">Campaign goals</XDSText>
+              <XDSText type="label">What are you going for?</XDSText>
               <div style={{display: 'flex', flexWrap: 'wrap', gap: 8}}>
                 {CAMPAIGN_GOALS.map(goal => (
                   <button
@@ -190,24 +190,24 @@ export default function FormSimplePage() {
             </XDSVStack>
 
             <XDSSelector
-              label="Launch timeline"
-              placeholder="When are you looking to launch?"
+              label="When are you thinking?"
+              placeholder="When are you thinking of launching?"
               options={LAUNCH_OPTIONS}
               value={timeline}
               onChange={setTimeline}
             />
 
             <XDSSelector
-              label="Monthly budget"
-              placeholder="What's your estimated monthly budget?"
+              label="Ballpark budget?"
+              placeholder="What's your rough monthly budget?"
               options={BUDGET_OPTIONS}
               value={budget}
               onChange={setBudget}
             />
 
             <XDSTextArea
-              label="Leave us a message"
-              placeholder="Tell us anything else you'd like us to know..."
+              label="Anything else?"
+              placeholder="Tell us whatever else is on your mind..."
               value={message}
               onChange={setMessage}
             />
