@@ -318,6 +318,7 @@ export function useXDSTableSelection<T extends Record<string, unknown>>(
         </div>
       ),
       width: SELECTION_COLUMN_WIDTH,
+      resizable: false,
       renderCell: (item: T) => (
         <div {...stylex.props(selectionColumnStyles.center)}>
           <SelectionCellContent item={item} />
