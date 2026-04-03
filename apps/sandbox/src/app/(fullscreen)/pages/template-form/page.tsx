@@ -165,7 +165,7 @@ export default function FormSimplePage() {
           <XDSCard padding={6}>
             <XDSVStack gap={5}>
               <span {...stylex.props(styles.sectionLabel)}>Why work with us?</span>
-              <div {...stylex.props(styles.whyGrid)}>
+              <div style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16}}>
                 {WHY_US.map(item => (
                   <XDSVStack key={item.title} gap={3}>
                     <div {...stylex.props(styles.illustrationPlaceholder)}>
