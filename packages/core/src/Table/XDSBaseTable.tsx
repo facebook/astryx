@@ -282,7 +282,7 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
       plugins,
       p => p.transformHeaderCell,
       {
-        htmlProps: {},
+        htmlProps: {'data-column-key': col.key},
         styles: [],
         content: headerContent,
       } as HeaderCellRenderProps,

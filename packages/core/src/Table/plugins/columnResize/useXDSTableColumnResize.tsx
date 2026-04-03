@@ -320,8 +320,11 @@ function ResizeHandle({
   const resolveNeighborTh = useCallback(
     (th: HTMLTableCellElement): HTMLTableCellElement | null => {
       if (!neighborKey) return null;
-      const next = th.nextElementSibling;
-      return next instanceof HTMLTableCellElement ? next : null;
+      const row = th.parentElement;
+      if (!row) return null;
+      return row.querySelector<HTMLTableCellElement>(
+        `th[data-column-key="${neighborKey}"]`,
+      );
     },
     [neighborKey],
   );
@@ -342,21 +345,25 @@ function ResizeHandle({
       if (!headerRow) return;
 
       const cols = configRef.current.columns;
+      const colsByKey = new Map(cols?.map(c => [c.key, c]));
       const allThs = Array.from(
         headerRow.querySelectorAll<HTMLTableCellElement>(':scope > th'),
       );
       const tableWidth = tableRef.current?.getBoundingClientRect().width ?? 0;
 
-      // Snapshot every column: rendered width, min width, <th> ref.
-      // Prefer columnWidths override when available (getBoundingClientRect
-      // returns 0 in test environments without layout).
+      // Snapshot only resizable columns — skip non-resizable synthetic
+      // columns (e.g. selection checkbox) so they don't shift indices
+      // or participate in width redistribution during drag.
       const currentWidths = configRef.current.columnWidths ?? {};
-      const snapshots: ColumnSnapshot[] = allThs.map((cell, i) => {
-        const col = cols?.[i];
-        const key = col?.key ?? String(i);
+      const snapshots: ColumnSnapshot[] = [];
+      for (const cell of allThs) {
+        const key = cell.getAttribute('data-column-key');
+        if (!key) continue;
+        const col = colsByKey.get(key);
+        if (col?.resizable === false) continue;
         const rendered = cell.getBoundingClientRect().width;
         const override = currentWidths[key];
-        return {
+        snapshots.push({
           key,
           th: cell,
           initialWidth: override ?? (rendered > 0 ? rendered : 0),
@@ -364,15 +371,15 @@ function ResizeHandle({
             ? resolveColumnMinWidth(col.width, configRef.current.minWidth)
             : minWidth,
           maxWidth: configRef.current.maxWidth ?? Infinity,
-        };
-      });
+        });
+      }
 
-      // Find our column and neighbor in the snapshots
-      const resizeIndex = allThs.indexOf(th);
+      // Find our column and neighbor in the snapshots by key
+      const resizeIndex = snapshots.findIndex(s => s.key === columnKey);
       let neighborIdx: number | null = null;
       if (neighborKey) {
-        const nTh = resolveNeighborTh(th);
-        if (nTh) neighborIdx = allThs.indexOf(nTh);
+        const idx = snapshots.findIndex(s => s.key === neighborKey);
+        if (idx >= 0) neighborIdx = idx;
       }
 
       const drag: DragState = {
@@ -617,6 +624,16 @@ export function useXDSTableColumnResize<T extends Record<string, unknown>>(
   const columnWidths = config.columnWidths;
   const columns = config.columns;
 
+  // Central list of resizable columns — filters out non-resizable columns
+  // (e.g. selection checkbox) once so that all index-based logic (neighbor
+  // detection, last-column checks, drag snapshots) operates on a consistent
+  // set. Without this, synthetic columns injected by other plugins shift
+  // indices and break width computation.
+  const resizableColumns = useMemo(
+    () => columns?.filter(c => c.resizable !== false),
+    [columns],
+  );
+
   return useMemo(
     (): TablePlugin<T> => ({
       transformHeaderCell(
@@ -638,13 +655,17 @@ export function useXDSTableColumnResize<T extends Record<string, unknown>>(
         // delegate resize to its neighbor (the next column).
         // This prevents weird behavior when the table is 100% width
         // and the last column is proportional — it just flexes.
+        // Uses resizableColumns so indices aren't shifted by non-resizable
+        // synthetic columns (e.g. selection).
         let neighborKey: string | null = null;
         let neighborMinWidth = FALLBACK_MIN_WIDTH;
 
-        if (columns && isProportionalColumn(column.width)) {
-          const colIndex = columns.findIndex(c => c.key === column.key);
-          if (colIndex >= 0 && colIndex < columns.length - 1) {
-            const nextCol = columns[colIndex + 1];
+        if (resizableColumns && isProportionalColumn(column.width)) {
+          const colIndex = resizableColumns.findIndex(
+            c => c.key === column.key,
+          );
+          if (colIndex >= 0 && colIndex < resizableColumns.length - 1) {
+            const nextCol = resizableColumns[colIndex + 1];
             neighborKey = nextCol.key;
             neighborMinWidth = resolveColumnMinWidth(
               nextCol.width,
@@ -653,13 +674,15 @@ export function useXDSTableColumnResize<T extends Record<string, unknown>>(
           }
         }
 
-        // If this is the last column and it's proportional, skip the handle.
-        // There's no neighbor to resize and resizing a flex column in a
-        // full-width table produces unpredictable results.
-        if (columns) {
-          const colIndex = columns.findIndex(c => c.key === column.key);
-          const isLastColumn = colIndex === columns.length - 1;
-          if (isLastColumn && isProportionalColumn(column.width)) {
+        // If this is the last resizable column and it's proportional, skip
+        // the handle. There's no neighbor to resize and resizing a flex
+        // column in a full-width table produces unpredictable results.
+        if (resizableColumns) {
+          const colIndex = resizableColumns.findIndex(
+            c => c.key === column.key,
+          );
+          const isLastResizable = colIndex === resizableColumns.length - 1;
+          if (isLastResizable && isProportionalColumn(column.width)) {
             return props;
           }
         }
@@ -715,6 +738,6 @@ export function useXDSTableColumnResize<T extends Record<string, unknown>>(
         };
       },
     }),
-    [columnWidths, globalMinWidth, maxWidth, columns],
+    [columnWidths, globalMinWidth, maxWidth, resizableColumns],
   );
 }
