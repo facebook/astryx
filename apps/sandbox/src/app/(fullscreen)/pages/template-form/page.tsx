@@ -52,12 +52,12 @@ const styles = stylex.create({
   page: {
     minHeight: '100svh',
     backgroundColor: colorVars['--color-background-surface'],
-    paddingBlock: spacingVars['--spacing-12'],
-    paddingInline: spacingVars['--spacing-4'],
   },
   form: {
     maxWidth: 1000,
     margin: '0 auto',
+    paddingBlock: spacingVars['--spacing-12'],
+    paddingInline: spacingVars['--spacing-4'],
   },
   centered: {
     textAlign: 'center',
