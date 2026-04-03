@@ -67,6 +67,9 @@ jobs:
       - name: Typecheck component docs
         run: yarn workspace @xds/core typecheck:docs
 
+      - name: Typecheck template docs
+        run: yarn workspace @xds/cli typecheck:template-docs
+
   # Build storybook + analyze components (parallel with test)
   # Uploads storybook preview and analysis artifacts for downstream jobs
   build:
