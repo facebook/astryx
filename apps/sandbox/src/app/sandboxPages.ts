@@ -137,6 +137,12 @@ export const categories: SandboxCategory[] = [
         description:
           'Product detail page with image gallery, options, and collapsible info',
       },
+      {
+        name: 'Editor',
+        href: '/pages/editor/',
+        description:
+          'Page builder with config panel and live preview',
+      },
     ],
   },
   {
