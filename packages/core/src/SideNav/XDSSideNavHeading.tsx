@@ -528,7 +528,7 @@ export function XDSSideNavHeading({
             data-testid={testId}
             {...mergeProps(
               xdsClassName('side-nav-heading'),
-              stylex.props(styles.root, styles.interactive, xstyle),
+              stylex.props(styles.root, xstyle),
               className,
               style,
             )}>
