@@ -10,11 +10,10 @@ import {XDSSelector} from '@xds/core/Selector';
 import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSLink} from '@xds/core/Link';
+import {XDSToken} from '@xds/core/Token';
 import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
 import {XDSTextArea} from '@xds/core/TextArea';
-import {
-  colorVars,
-} from '@xds/core/theme/tokens.stylex';
+import {colorVars} from '@xds/core/theme/tokens.stylex';
 
 const CAMPAIGN_GOALS = [
   'Brand Awareness',
@@ -163,10 +162,10 @@ export default function FormSimplePage() {
               <XDSText type="label">What are you going for?</XDSText>
               <div style={{display: 'flex', flexWrap: 'wrap', gap: 8}}>
                 {CAMPAIGN_GOALS.map(goal => (
-                  <XDSButton
+                  <XDSToken
                     key={goal}
                     label={goal}
-                    variant={goals.includes(goal) ? 'primary' : 'secondary'}
+                    color={goals.includes(goal) ? 'blue' : 'default'}
                     onClick={() => toggleGoal(goal)}
                   />
                 ))}
