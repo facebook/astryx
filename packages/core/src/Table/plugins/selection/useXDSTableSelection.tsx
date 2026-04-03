@@ -41,7 +41,7 @@ import {
   type Ref,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {colorVars, spacingVars} from '../../../theme/tokens.stylex';
+import {colorVars} from '../../../theme/tokens.stylex';
 import {XDSCheckboxInput} from '../../../CheckboxInput';
 import type {
   TablePlugin,
@@ -271,11 +271,10 @@ function SelectionCellContentInner<T extends Record<string, unknown>>({
 const selectedBgColor = colorVars['--color-accent-muted'];
 
 const selectionColumnStyles = stylex.create({
-  cell: {
+  center: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingInline: 0,
   },
 });
 
@@ -313,9 +312,17 @@ export function useXDSTableSelection<T extends Record<string, unknown>>(
   const selectionColumn = useMemo(
     (): XDSTableColumn<T> => ({
       key: SELECTION_COLUMN_KEY,
-      header: <SelectAllCheckbox />,
+      header: (
+        <div {...stylex.props(selectionColumnStyles.center)}>
+          <SelectAllCheckbox />
+        </div>
+      ),
       width: SELECTION_COLUMN_WIDTH,
-      renderCell: (item: T) => <SelectionCellContent item={item} />,
+      renderCell: (item: T) => (
+        <div {...stylex.props(selectionColumnStyles.center)}>
+          <SelectionCellContent item={item} />
+        </div>
+      ),
     }),
     [],
   );
@@ -332,26 +339,6 @@ export function useXDSTableSelection<T extends Record<string, unknown>>(
 
       transformColumns(columns: XDSTableColumn<T>[]) {
         return [selectionColumn, ...columns];
-      },
-
-      transformHeaderCell(props, column) {
-        if (column.key === SELECTION_COLUMN_KEY) {
-          return {
-            ...props,
-            styles: [...props.styles, selectionColumnStyles.cell],
-          };
-        }
-        return props;
-      },
-
-      transformBodyCell(props, column) {
-        if (column.key === SELECTION_COLUMN_KEY) {
-          return {
-            ...props,
-            styles: [...props.styles, selectionColumnStyles.cell],
-          };
-        }
-        return props;
       },
 
       transformBodyRow(props: BodyRowRenderProps, item: T) {
