@@ -142,6 +142,10 @@ export const categories: SandboxCategory[] = [
         href: '/pages/editor/',
         description:
           'Page builder with config panel and live preview',
+        name: 'Form (Simple)',
+        href: '/pages/template-form/',
+        description:
+          'Marketing lead-capture form with pill toggles, dropdowns, and full-width CTA',
       },
     ],
   },
