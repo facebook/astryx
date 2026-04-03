@@ -52,6 +52,8 @@ const styles = stylex.create({
     textDecoration: 'none',
     color: 'inherit',
     cursor: 'default',
+    overflow: 'hidden',
+    minWidth: 0,
   },
   rootCollapsed: {
     justifyContent: 'center',

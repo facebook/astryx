@@ -59,6 +59,8 @@ const styles = stylex.create({
     paddingBlockEnd: spacingVars['--spacing-1'],
     paddingInline: spacingVars['--spacing-2'],
     gap: spacingVars['--spacing-2'],
+    overflow: 'hidden',
+    minWidth: 0,
   },
   topContent: {},
   scrollable: {
