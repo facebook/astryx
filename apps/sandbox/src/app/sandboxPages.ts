@@ -115,6 +115,11 @@ export const categories: SandboxCategory[] = [
           'Account settings with sidebar nav, info rows, and device history',
       },
       {
+        name: 'Settings (Dialog)',
+        href: '/pages/template-settings-03/',
+        description: 'Airbnb-style account settings in a dialog',
+      },
+      {
         name: 'Data Table (WIP)',
         href: '/pages/template-data-table/',
         description:
@@ -140,8 +145,7 @@ export const categories: SandboxCategory[] = [
       {
         name: 'Editor',
         href: '/pages/editor/',
-        description:
-          'Page builder with config panel and live preview',
+        description: 'Page builder with config panel and live preview',
       },
     ],
   },
