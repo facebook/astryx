@@ -91,61 +91,58 @@ export const categories: SandboxCategory[] = [
         name: 'Dashboard (WIP)',
         href: '/pages/template-dashboard/',
         description:
-          'Analytics dashboard with sidebar, stats, charts, and tables',
+          'Analytics dashboard with KPI cards, charts, and data tables',
       },
       {
-        name: 'Login (Simple)',
+        name: 'Login (Card)',
         href: '/pages/template-login/',
-        description: 'Centered login card with social auth and email form',
+        description: 'Centered login card with social sign-in and email form',
       },
       {
-        name: 'Login (Two-Column)',
+        name: 'Login (Split)',
         href: '/pages/template-login-02/',
-        description: 'Form on left, cover image on right — responsive',
+        description: 'Split-screen login with form and cover image',
       },
       {
-        name: 'Settings',
-        href: '/pages/template-settings/',
-        description: 'Settings page with tabs, forms, and toggles',
+        name: 'Login (SSO)',
+        href: '/pages/template-login-sso/',
+        description: 'SSO login with email-based provider detection',
       },
       {
-        name: 'Settings (Account)',
+        name: 'Settings (Sidebar)',
         href: '/pages/template-settings-02/',
-        description:
-          'Account settings with sidebar nav, info rows, and device history',
+        description: 'Account settings with sidebar nav and inline editing',
       },
       {
         name: 'Settings (Dialog)',
         href: '/pages/template-settings-03/',
-        description: 'Airbnb-style account settings in a dialog',
+        description: 'Account settings in a dialog with sidebar nav',
       },
       {
         name: 'Data Table (WIP)',
         href: '/pages/template-data-table/',
-        description:
-          'Full data management view with search, filters, and pagination',
+        description: 'Sortable data table with search and pagination',
       },
       {
         name: 'File Explorer',
         href: '/pages/file-explorer/',
-        description:
-          'macOS Finder-style column view with drill-down file navigation',
+        description: 'Column-based file browser inspired by macOS Finder',
       },
       {
-        name: 'Details Page',
+        name: 'Detail Page',
         href: '/pages/template-detail-2/',
-        description: 'Order details',
+        description: 'Order detail page with timeline and line items',
       },
       {
-        name: 'Detail Page (Product)',
+        name: 'Product Detail',
         href: '/pages/template-product-detail/',
-        description:
-          'Product detail page with image gallery, options, and collapsible info',
+        description: 'Product page with image gallery and collapsible sections',
       },
       {
-        name: 'Editor',
+        name: 'Page Editor',
         href: '/pages/editor/',
-        description: 'Page builder with config panel and live preview',
+        description:
+          'Block-based page builder with sidebar config and live preview',
       },
     ],
   },
