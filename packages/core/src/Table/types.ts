@@ -96,6 +96,17 @@ export interface XDSTableColumn<T extends Record<string, unknown>> {
    * { key: 'fullName', header: 'Full Name', sortable: { sortKey: 'lastName' } }
    * ```
    */
+  /**
+   * Whether this column can be resized by dragging its header border.
+   * Defaults to `true`. Set to `false` to lock the column width.
+   *
+   * @example
+   * ```
+   * // Non-resizable fixed column
+   * { key: 'actions', header: '', width: pixel(48), resizable: false }
+   * ```
+   */
+  resizable?: boolean;
   sortable?: boolean | XDSTableSortableColumnConfig;
   /**
    * Custom cell renderer. Receives the row item and returns rich JSX content.

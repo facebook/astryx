@@ -623,6 +623,9 @@ export function useXDSTableColumnResize<T extends Record<string, unknown>>(
         props: HeaderCellRenderProps,
         column: XDSTableColumn<T>,
       ): HeaderCellRenderProps {
+        // Skip columns that opt out of resizing
+        if (column.resizable === false) return props;
+
         const overrideWidth = columnWidths?.[column.key];
 
         // Derive per-column min width from the column's own width config
