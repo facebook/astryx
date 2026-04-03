@@ -24,10 +24,9 @@ import {
   type LayerAlignment,
   type LayerPlacement,
 } from '../Layer/useXDSLayer';
+import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import {
   colorVars,
-  durationVars,
-  easeVars,
   shadowVars,
   radiusVars,
   spacingVars,
@@ -35,31 +34,12 @@ import {
 import {xdsClassName, mergeProps} from '../utils';
 
 const styles = stylex.create({
-  // Base container styles passed to useXDSLayer (includes animations)
+  // Base container styles passed to useXDSLayer
   container: {
     backgroundColor: colorVars['--color-background-surface'],
     '--hovercard-radius': radiusVars['--radius-container'],
     borderRadius: 'var(--hovercard-radius)',
     boxShadow: shadowVars['--shadow-med'],
-    // Animation: closed state (default) and open state
-    opacity: {
-      default: 0,
-      ':popover-open': 1,
-    },
-    transform: {
-      default: 'scale(0.95)',
-      ':popover-open': 'scale(1)',
-    },
-    // Transitions with allow-discrete for display/overlay
-    transitionProperty: 'opacity, transform, overlay, display',
-    transitionDuration: durationVars['--duration-fast'],
-    transitionTimingFunction: easeVars['--ease-standard'],
-    transitionBehavior: 'allow-discrete',
-    // Entry animation starting state
-    '@starting-style': {
-      opacity: 0,
-      transform: 'scale(0.95)',
-    },
   },
   // Position-based margin styles
   marginBlock: {
@@ -418,10 +398,11 @@ export function useXDSHoverCard(
   // Render function that wraps layer.render with hover card behavior
   const renderHoverCard = useCallback(
     (children: ReactNode, props?: ContextRenderProps) => {
+      const renderPlacement = props?.placement ?? placement;
       const renderProps = {
-        placement: props?.placement ?? placement,
+        placement: renderPlacement,
         alignment: props?.alignment ?? alignment,
-        xstyle: popoverXstyle,
+        xstyle: [popoverXstyle, layerAnimations[renderPlacement]],
       };
 
       return layer.render(

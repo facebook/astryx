@@ -13,7 +13,7 @@
  * - /apps/storybook/stories/Dialog.stories.tsx (storybook stories)
  */
 
-import {useEffect, useRef, type ReactNode} from 'react';
+import {useEffect, useRef, type ReactNode, type RefObject} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {useScrollLock} from '../hooks/useScrollLock';
@@ -26,6 +26,25 @@ import {
 } from '../theme/tokens.stylex';
 import {container} from '../Layout/container.stylex';
 import {xdsClassName, mergeProps} from '../utils';
+
+/**
+ * Calculate a directional translate offset for dialog entry animation.
+ * Returns a normalized vector from the trigger element toward the viewport
+ * center, scaled to the given distance.
+ */
+function getDialogDirection(
+  triggerEl: HTMLElement,
+  distance = 16,
+): {x: number; y: number} {
+  const rect = triggerEl.getBoundingClientRect();
+  const dx = rect.left + rect.width / 2 - window.innerWidth / 2;
+  const dy = rect.top + rect.height / 2 - window.innerHeight / 2;
+  const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+  return {
+    x: Math.round((dx / dist) * distance),
+    y: Math.round((dy / dist) * distance),
+  };
+}
 
 /**
  * Extensible variant map for XDSDialog.
@@ -72,6 +91,15 @@ export interface XDSDialogPosition {
   top?: number | string;
 }
 
+const enterDirectional = stylex.keyframes({
+  from: {
+    opacity: 0,
+    transform:
+      'translate(var(--dialog-dir-x, 0px), var(--dialog-dir-y, 16px)) scale(0.95)',
+  },
+  to: {opacity: 1, transform: 'translate(0, 0) scale(1)'},
+});
+
 /**
  * Dialog styles using native <dialog> element
  * Uses ::backdrop pseudo-element for overlay
@@ -93,31 +121,17 @@ const styles = stylex.create({
     flexDirection: 'column',
     height: 'fit-content',
     overscrollBehavior: 'contain',
-    // Entry/exit animation. Requires @starting-style + allow-discrete
-    // for transitioning from display:none. Browsers without support
-    // get instant show/hide (opacity defaults to 1 in base, animation
-    // layer only applies when @starting-style is supported).
     opacity: {
-      default: 1,
-      ':where(:not([open]))': 0,
+      default: 0,
+      ':where([open])': 1,
     },
-    transform: {
-      default: 'scale(1) translateY(0)',
-      ':where(:not([open]))': 'scale(0.95) translateY(8px)',
+    animationName: {
+      default: 'none',
+      ':where([open])': enterDirectional,
     },
-    '@supports (transition-behavior: allow-discrete)': {
-      transitionProperty: 'opacity, transform, display, overlay',
-      transitionDuration: durationVars['--duration-medium'],
-      transitionTimingFunction: easeVars['--ease-standard'],
-      transitionBehavior: 'allow-discrete',
-      '@starting-style': {
-        opacity: 0,
-        transform: 'scale(0.95) translateY(8px)',
-      },
-    },
-    '@media (prefers-reduced-motion: reduce)': {
-      transitionDuration: '0s',
-    },
+    animationDuration: durationVars['--duration-medium-max'],
+    animationTimingFunction: easeVars['--ease-standard'],
+    animationFillMode: 'backwards' as const,
     outline: {
       default: null,
       ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
@@ -202,6 +216,14 @@ export interface XDSDialogProps extends XDSBaseProps<HTMLDialogElement> {
   onOpenChange: (isOpen: boolean) => unknown;
 
   /**
+   * Ref to the trigger element that opens the dialog.
+   * When provided, the dialog entry animation slides from the direction
+   * of the trigger toward the viewport center. Focus is returned to
+   * the trigger when the dialog closes.
+   */
+  triggerRef?: RefObject<HTMLElement | null>;
+
+  /**
    * The width of the dialog.
    * Numbers are treated as pixels, strings are used as-is.
    * Ignored when variant is 'fullscreen'.
@@ -270,6 +292,7 @@ export interface XDSDialogProps extends XDSBaseProps<HTMLDialogElement> {
 export function XDSDialog({
   isOpen,
   onOpenChange,
+  triggerRef,
   width = 400,
   maxHeight = '75vh',
   position,
@@ -305,6 +328,17 @@ export function XDSDialog({
     if (!dialog) return;
 
     if (isOpen) {
+      // Set directional CSS custom properties before opening
+      const trigger = triggerRef?.current;
+      if (trigger) {
+        const dir = getDialogDirection(trigger);
+        dialog.style.setProperty('--dialog-dir-x', `${dir.x}px`);
+        dialog.style.setProperty('--dialog-dir-y', `${dir.y}px`);
+      } else {
+        dialog.style.setProperty('--dialog-dir-x', '0px');
+        dialog.style.setProperty('--dialog-dir-y', '16px');
+      }
+
       if (!dialog.open) {
         dialog.showModal();
         // React's autoFocus calls .focus() during commit, before showModal()
@@ -320,8 +354,10 @@ export function XDSDialog({
       if (dialog.open) {
         dialog.close();
       }
+      // Return focus to trigger
+      triggerRef?.current?.focus();
     }
-  }, [isOpen]);
+  }, [isOpen, triggerRef]);
 
   // Lock body scroll when dialog is open (iOS Safari workaround)
   useScrollLock(isOpen);

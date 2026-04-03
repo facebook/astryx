@@ -16,7 +16,7 @@
 import {useEffect, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
-import {colorVars, spacingVars} from '../theme/tokens.stylex';
+import {colorVars, durationVars, spacingVars} from '../theme/tokens.stylex';
 import {XDSText} from '../Text/XDSText';
 import {xdsClassName, mergeProps} from '../utils';
 
@@ -64,7 +64,7 @@ const styles = stylex.create({
   canvas: {
     backfaceVisibility: 'hidden',
     display: 'block',
-    animationDuration: '750ms',
+    animationDuration: durationVars['--duration-medium-max'],
     animationIterationCount: 'infinite',
     animationName: rotation,
     animationTimingFunction: 'linear',

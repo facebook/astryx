@@ -26,7 +26,8 @@ import {xdsClassName, mergeProps} from '../utils';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {useXDSPopover} from './useXDSPopover';
 import type {LayerAlignment, LayerPlacement} from '../Layer/useXDSLayer';
-import {durationVars, easeVars, spacingVars} from '../theme/tokens.stylex';
+import {layerAnimations} from '../Layer/layerAnimations.stylex';
+import {spacingVars} from '../theme/tokens.stylex';
 
 // =============================================================================
 // Helpers
@@ -174,27 +175,6 @@ const styles = stylex.create({
   // don't shift the anchor position and cause popover jitter.
   anchorWrapper: {
     display: 'inline-flex',
-  },
-  // Animation styles for the popover element (the one with [popover] attribute).
-  // :popover-open only matches the element with the popover attribute,
-  // so these MUST be applied via xstyle to useXDSLayer's render wrapper.
-  popoverAnimation: {
-    opacity: {
-      default: 0,
-      ':popover-open': 1,
-    },
-    transform: {
-      default: 'scale(0.95)',
-      ':popover-open': 'scale(1)',
-    },
-    transitionProperty: 'opacity, transform, overlay, display',
-    transitionDuration: durationVars['--duration-fast'],
-    transitionTimingFunction: easeVars['--ease-standard'],
-    transitionBehavior: 'allow-discrete',
-    '@starting-style': {
-      opacity: 0,
-      transform: 'scale(0.95)',
-    },
   },
   // Visual styles for the inner content container
   contentPadding: {
@@ -450,7 +430,7 @@ export function XDSPopover({
           {
             placement,
             alignment,
-            xstyle: [popoverXstyle, styles.gap, styles.popoverAnimation],
+            xstyle: [popoverXstyle, styles.gap, layerAnimations[placement]],
           },
         )}
       </>
@@ -476,7 +456,7 @@ export function XDSPopover({
         {
           placement,
           alignment,
-          xstyle: [popoverXstyle, styles.gap, styles.popoverAnimation],
+          xstyle: [popoverXstyle, styles.gap, layerAnimations[placement]],
         },
       )}
     </>

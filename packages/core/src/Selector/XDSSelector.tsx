@@ -30,6 +30,7 @@ import {
   inputStatusHoverShadowStyles,
 } from '../Field';
 import {XDSDivider} from '../Divider';
+import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import {XDSSpinner} from '../Spinner';
 import {
   colorVars,
@@ -662,7 +663,7 @@ export function XDSSelector<T extends XDSSelectorOptionType>({
         {
           placement: 'below',
           alignment: 'start',
-          xstyle: styles.popover,
+          xstyle: [styles.popover, layerAnimations.below],
         },
       )}
     </XDSField>
