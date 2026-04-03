@@ -90,6 +90,7 @@ const styles = stylex.create({
 export default function LoginSimple() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loginFailed, setLoginFailed] = useState(false);
 
   return (
     <div
@@ -124,10 +125,73 @@ export default function LoginSimple() {
             <XDSVStack gap={1}>
               <XDSHeading level={2}>Welcome back</XDSHeading>
               <XDSText type="body" color="secondary" size="sm">
-                Login with your Apple or Google account
+                Sign in to your account
               </XDSText>
             </XDSVStack>
           </XDSVStack>
+
+          {/* Form fields */}
+          <XDSVStack gap={2}>
+            <XDSTextInput
+              label="Email"
+              isLabelHidden
+              type="email"
+              placeholder="name@company.com"
+              value={email}
+              onChange={setEmail}
+            />
+            <XDSVStack gap={1}>
+              <XDSTextInput
+                label="Password"
+                isLabelHidden
+                placeholder="Enter your password"
+                type="password"
+                value={password}
+                onChange={(v: string) => {
+                  setPassword(v);
+                  setLoginFailed(false);
+                }}
+                status={
+                  loginFailed
+                    ? {type: 'error', message: 'Incorrect password. Try again.'}
+                    : undefined
+                }
+              />
+              {loginFailed && (
+                <div style={{textAlign: 'right'}}>
+                  <XDSLink
+                    label="Forgot your password?"
+                    href="#"
+                    size="sm"
+                    color="secondary"
+                    type="supporting">
+                    Forgot password?
+                  </XDSLink>
+                </div>
+              )}
+            </XDSVStack>
+          </XDSVStack>
+
+          {/* Login button */}
+          <XDSButton
+            label="Login"
+            variant="primary"
+            xstyle={styles.fullWidth}
+            onClick={() => setLoginFailed(true)}
+          />
+
+          {/* Divider */}
+          <XDSHStack gap={4} vAlign="center">
+            <div style={{flex: 1}}>
+              <XDSDivider />
+            </div>
+            <XDSText type="supporting" color="secondary">
+              Or continue with
+            </XDSText>
+            <div style={{flex: 1}}>
+              <XDSDivider />
+            </div>
+          </XDSHStack>
 
           {/* Social buttons */}
           <XDSVStack gap={3}>
@@ -146,57 +210,6 @@ export default function LoginSimple() {
               Login with Google
             </XDSButton>
           </XDSVStack>
-
-          {/* Divider */}
-          <XDSHStack gap={4} vAlign="center">
-            <div style={{flex: 1}}>
-              <XDSDivider />
-            </div>
-            <XDSText type="supporting" color="secondary">
-              Or continue with
-            </XDSText>
-            <div style={{flex: 1}}>
-              <XDSDivider />
-            </div>
-          </XDSHStack>
-
-          {/* Form fields */}
-          <XDSVStack gap={4}>
-            <XDSTextInput
-              label="Email"
-              isLabelHidden
-              type="email"
-              placeholder="name@company.com"
-              value={email}
-              onChange={setEmail}
-            />
-            <XDSVStack gap={0}>
-              <div {...stylex.props(styles.passwordRow)}>
-                <XDSText type="label">Password</XDSText>
-                <XDSLink
-                  label="Forgot your password?"
-                  href="#"
-                  size="sm"
-                  color="secondary">
-                  Forgot password?
-                </XDSLink>
-              </div>
-              <XDSTextInput
-                label="Password"
-                isLabelHidden
-                type="password"
-                value={password}
-                onChange={setPassword}
-              />
-            </XDSVStack>
-          </XDSVStack>
-
-          {/* Login button */}
-          <XDSButton
-            label="Login"
-            variant="primary"
-            xstyle={styles.fullWidth}
-          />
 
           {/* Sign up link */}
           <XDSVStack hAlign="center" xstyle={styles.centered}>
