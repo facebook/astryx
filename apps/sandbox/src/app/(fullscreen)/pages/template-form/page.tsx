@@ -79,9 +79,6 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-accent'],
     color: colorVars['--color-on-accent'],
   },
-  pillError: {
-    borderColor: colorVars['--color-error'],
-  },
   fullWidth: {
     width: '100%',
   },
@@ -204,7 +201,6 @@ export default function FormSimplePage() {
                     {...stylex.props(
                       styles.pill,
                       goals.includes(goal) && styles.pillSelected,
-                      !!errors.goals && !goals.includes(goal) && styles.pillError,
                     )}>
                     {goal}
                   </button>
