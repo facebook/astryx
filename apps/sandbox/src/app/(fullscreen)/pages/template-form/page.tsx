@@ -82,18 +82,18 @@ const styles = stylex.create({
   },
   illustrationPlaceholder: {
     width: '100%',
-    height: 120,
+    height: 80,
     backgroundColor: colorVars['--color-background-muted'],
     borderRadius: 8,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontSize: 40,
+    fontSize: 32,
   },
   whyGrid: {
     display: 'grid',
-    gridTemplateColumns: '1fr 1fr 1fr',
-    gap: 24,
+    gridTemplateColumns: 'repeat(3, 1fr)',
+    gap: 16,
   },
   sectionLabel: {
     fontSize: typeScaleVars['--text-supporting-size'],
