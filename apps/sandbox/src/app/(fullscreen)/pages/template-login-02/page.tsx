@@ -130,6 +130,7 @@ const styles = stylex.create({
 export default function LoginTwoColumn() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loginFailed, setLoginFailed] = useState(false);
 
   return (
     <div
@@ -186,18 +187,31 @@ export default function LoginTwoColumn() {
                     placeholder="Enter your password"
                     type="password"
                     value={password}
-                    onChange={setPassword}
+                    onChange={(v: string) => {
+                      setPassword(v);
+                      setLoginFailed(false);
+                    }}
+                    status={
+                      loginFailed
+                        ? {
+                            type: 'error',
+                            message: 'Incorrect password. Try again.',
+                          }
+                        : undefined
+                    }
                   />
-                  <div style={{textAlign: 'right'}}>
-                    <XDSLink
-                      label="Forgot your password?"
-                      href="#"
-                      size="sm"
-                      color="secondary"
-                      type="supporting">
-                      Forgot your password?
-                    </XDSLink>
-                  </div>
+                  {loginFailed && (
+                    <div style={{textAlign: 'right'}}>
+                      <XDSLink
+                        label="Forgot your password?"
+                        href="#"
+                        size="sm"
+                        color="secondary"
+                        type="supporting">
+                        Forgot your password?
+                      </XDSLink>
+                    </div>
+                  )}
                 </XDSVStack>
               </XDSVStack>
 
@@ -205,6 +219,7 @@ export default function LoginTwoColumn() {
                 label="Login"
                 variant="primary"
                 xstyle={styles.fullWidth}
+                onClick={() => setLoginFailed(true)}
               />
 
               <XDSHStack gap={4} vAlign="center">
