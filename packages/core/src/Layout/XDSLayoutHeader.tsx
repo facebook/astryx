@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSLayoutHeader.tsx
  * @input Uses React StyleX

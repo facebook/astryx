@@ -24,7 +24,7 @@ import {
 } from '../Layout/padding.stylex';
 import type {SizeValue, SpacingStep} from '../utils/types';
 import {xdsClassName, mergeProps} from '../utils';
-import {XDSBaseProps} from '../XDSBaseProps';
+import type {XDSBaseProps} from '../XDSBaseProps';
 
 const styles = stylex.create({
   // Outer wrapper: visual styling with clip for border-radius
@@ -66,7 +66,7 @@ const dynamicStyles = stylex.create({
 
 export type {SizeValue} from '../utils/types';
 
-export interface XDSCardProps extends XDSBaseProps {
+export interface XDSCardProps extends XDSBaseProps<HTMLDivElement> {
   ref?: React.Ref<HTMLDivElement>;
   /**
    * CSS class name(s) appended to the root element.
