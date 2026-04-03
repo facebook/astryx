@@ -394,3 +394,102 @@ export const HiddenSectionHeader: Story = {
     </XDSSideNav>
   ),
 };
+
+// =============================================================================
+// Long Heading with Tooltip
+// =============================================================================
+
+export const LongHeadingText: Story = {
+  name: 'Long Heading with Tooltip',
+  render: () => (
+    <XDSSideNav
+      header={
+        <XDSSideNavHeading
+          icon={
+            <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
+          }
+          heading="Enterprise Resource Planning Dashboard"
+          superheading="Acme Corporation International"
+          subheading="admin@acmecorp-international.com"
+          headingHref="/"
+        />
+      }>
+      <XDSSideNavSection title="Main">
+        <XDSSideNavItem
+          label="Dashboard"
+          icon={HomeIcon}
+          selectedIcon={HomeIconSolid}
+          isSelected
+        />
+        <XDSSideNavItem label="Projects" icon={FolderIcon} />
+      </XDSSideNavSection>
+    </XDSSideNav>
+  ),
+};
+
+// =============================================================================
+// Header End Content
+// =============================================================================
+
+export const HeaderEndContent: Story = {
+  name: 'Header End Content',
+  render: () => (
+    <XDSSideNav
+      header={
+        <XDSSideNavHeading
+          icon={
+            <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
+          }
+          heading="My App"
+          headingHref="/"
+          headerEndContent={<XDSBadge label="3" variant="error" />}
+        />
+      }>
+      <XDSSideNavSection title="Main">
+        <XDSSideNavItem
+          label="Dashboard"
+          icon={HomeIcon}
+          selectedIcon={HomeIconSolid}
+          isSelected
+        />
+        <XDSSideNavItem label="Projects" icon={FolderIcon} />
+      </XDSSideNavSection>
+    </XDSSideNav>
+  ),
+};
+
+// =============================================================================
+// Header End Content + Menu
+// =============================================================================
+
+export const HeaderEndContentWithMenu: Story = {
+  name: 'Header End Content + Menu',
+  render: () => (
+    <XDSSideNav
+      header={
+        <XDSSideNavHeading
+          icon={
+            <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
+          }
+          heading="Product Name"
+          subheading="Business Account"
+          headerEndContent={<XDSBadge label="New" variant="info" />}
+          menu={
+            <XDSList density="compact">
+              <XDSListItem label="Switch Account" href="#" />
+              <XDSListItem label="Sign Out" href="#" />
+            </XDSList>
+          }
+        />
+      }>
+      <XDSSideNavSection title="Main">
+        <XDSSideNavItem
+          label="Dashboard"
+          icon={HomeIcon}
+          selectedIcon={HomeIconSolid}
+          isSelected
+        />
+      </XDSSideNavSection>
+    </XDSSideNav>
+  ),
+};
