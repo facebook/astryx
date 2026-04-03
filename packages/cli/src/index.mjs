@@ -65,6 +65,7 @@ const commands = [
   {name: 'gap-report', path: './commands/gap-report.mjs', register: 'registerGapReport'},
   {name: 'upgrade', path: './commands/upgrade.mjs', register: 'registerUpgrade'},
   {name: 'theme', path: './commands/build-theme.mjs', register: 'registerTheme'},
+  {name: 'discover', path: './commands/discover.mjs', register: 'registerDiscover'},
 ];
 
 for (const cmd of commands) {
