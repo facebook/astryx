@@ -5,9 +5,9 @@
  * @position Core implementation; read-only syntax-highlighted code display
  *
  * SYNC: When modified, update:
- * - /packages/lab/src/CodeBlock/index.ts (exports if types change)
- * - /packages/lab/src/CodeBlock/tokenizer.ts (shared tokenizer)
- * - /packages/lab/src/CodeBlock/highlightStyles.ts (::highlight rules)
+ * - /packages/core/src/CodeBlock/index.ts (exports if types change)
+ * - /packages/core/src/CodeBlock/tokenizer.ts (shared tokenizer)
+ * - /packages/core/src/CodeBlock/highlightStyles.ts (::highlight rules)
  */
 
 'use client';
@@ -15,6 +15,7 @@
 import {
   useLayoutEffect,
   useEffect,
+  useId,
   useRef,
   useState,
   useCallback,
@@ -116,7 +117,6 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-accent-muted'],
     marginInline: `calc(-1 * ${spacingVars['--spacing-4']})`,
     paddingInline: spacingVars['--spacing-4'],
-    borderLeft: `2px solid ${colorVars['--color-accent']}`,
   },
   sizeSm: {
     fontSize: textSizeVars['--font-size-sm'],
@@ -129,21 +129,6 @@ const styles = stylex.create({
   },
   gutterMd: {
     fontSize: textSizeVars['--font-size-base'],
-  },
-  copyButton: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacingVars['--spacing-1'],
-    border: 'none',
-    borderRadius: radiusVars['--radius-inner'],
-    backgroundColor: 'transparent',
-    color: colorVars['--color-text-secondary'],
-    cursor: 'pointer',
-    fontFamily: typographyVars['--font-family-code'],
-    fontSize: textSizeVars['--font-size-sm'],
-    lineHeight: '1',
-    transition: 'background-color 0.15s ease, color 0.15s ease',
   },
   copyButtonAbsolute: {
     position: 'absolute',
@@ -184,14 +169,6 @@ export interface XDSCodeBlockProps extends XDSBaseProps<HTMLPreElement> {
     code: string,
     language: string,
   ) => Array<{type: string; start: number; end: number}>;
-  /**
-   * How to apply syntax highlighting.
-   * - 'css-highlight': Uses CSS Custom Highlight API (zero DOM overhead).
-   *   Falls back to 'spans' if the API is not available.
-   * - 'spans': Renders `<span>` elements with CSS classes per token.
-   * @default 'css-highlight'
-   */
-  highlightMode?: 'css-highlight' | 'spans';
 }
 
 // ---------------------------------------------------------------------------
@@ -208,12 +185,6 @@ function hasHighlightAPI(): boolean {
     typeof Highlight !== 'undefined'
   );
 }
-
-/**
- * Unique instance counter to namespace highlights when multiple
- * code blocks are on the same page.
- */
-let instanceCounter = 0;
 
 /**
  * Build span-based highlighted line content from tokens.
@@ -303,7 +274,6 @@ export function XDSCodeBlock({
   maxHeight,
   size = 'md',
   tokenizer: customTokenizer,
-  highlightMode: highlightModeProp = 'css-highlight',
   xstyle,
   className,
   style,
@@ -311,11 +281,11 @@ export function XDSCodeBlock({
   ...props
 }: XDSCodeBlockProps) {
   const codeRef = useRef<HTMLElement>(null);
-  const [instanceId] = useState(() => ++instanceCounter);
+  const instanceId = useId();
   const [copied, setCopied] = useState(false);
 
-  // Resolve effective highlight mode — fall back to spans if API unavailable
-  const useSpans = highlightModeProp === 'spans' || !hasHighlightAPI();
+  // Auto-detect: use CSS Custom Highlight API when available, fall back to spans
+  const useSpans = !hasHighlightAPI();
 
   // For span mode: we need tokens to render. Small code is tokenized sync,
   // large code is tokenized async.
@@ -430,11 +400,8 @@ export function XDSCodeBlock({
       type="button"
       onClick={handleCopy}
       aria-label={copied ? 'Copied' : 'Copy code'}
-      {...stylex.props(
-        styles.copyButton,
-        !showHeader && styles.copyButtonAbsolute,
-      )}>
-      {copied ? '\u2713' : '\u2398'}
+      {...stylex.props(!showHeader && styles.copyButtonAbsolute)}>
+      {copied ? '\u2713' : 'Copy'}
     </button>
   ) : null;
 
