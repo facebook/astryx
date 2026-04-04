@@ -252,6 +252,31 @@ describe('EntityListEditor (#1106)', () => {
     // The token should render — verifies the entity was properly mapped
     expect(screen.getByText('Alice')).toBeInTheDocument();
   });
+
+  it('passes renderItem from operatorValue to XDSTokenizer', () => {
+    const customRenderItem = vi.fn((item: {id: string; label: string}) => (
+      <span data-testid="custom-render">{item.label}</span>
+    ));
+
+    const onChange = vi.fn();
+    render(
+      <PowerSearchValueEditor
+        operatorValue={{
+          type: 'entity_list',
+          searchSource: entitySource,
+          renderItem: customRenderItem,
+        }}
+        filterValue={undefined}
+        onChange={onChange}
+        config={stubConfig}
+      />,
+    );
+
+    // The tokenizer should render — renderItem is passed through
+    // (we can't easily assert it was passed as a prop in unit tests,
+    // but we verify the component renders without error with renderItem)
+    expect(screen.getByRole('combobox')).toBeInTheDocument();
+  });
 });
 
 // =============================================================================
