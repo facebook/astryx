@@ -1,0 +1,8 @@
+{
+  "ps-1": "Create a new page for a settings dashboard. It should have a header with the app title, a sidebar for navigation, and a main content area. Use the XDS theme system.",
+  "ps-3": "Create an admin panel page layout with a fixed header, collapsible left sidebar, main content area, and a right panel for details. Wrap everything in the XDS theme.",
+  "ps-4": "Create a product detail page with breadcrumb navigation showing Home > Category > Subcategory > Product Name. The page should have a header, product info section, and a back button.",
+  "dd-1": "A table of users with sortable columns and search",
+  "dd-3": "Show a grid of product cards with image, title, price, and add to cart button",
+  "dd-5": "Build an email inbox view with a table showing sender, subject, date, and a preview snippet. Add row selection with checkboxes and a bulk actions bar that appears when items are selected."
+}

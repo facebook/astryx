@@ -413,4 +413,16 @@ export interface TemplateDoc {
   /** Whether this template is ready for use. Templates with
    *  isReady: false show as "(WIP)" in the gallery and CLI. */
   isReady: boolean;
+
+  /** Search keywords for CLI discovery. Terms a developer or LLM might use
+   *  when looking for this layout pattern: intents, synonyms, related concepts.
+   *  Lowercase only. Used by `xds component <term>` cross-referencing.
+   *  e.g. `['dashboard', 'analytics', 'metrics', 'admin']` */
+  keywords?: string[];
+
+  /** XDS components used in this template (without XDS prefix).
+   *  Serves as a composition reference — LLMs use this to learn which
+   *  components go together for a given page intent.
+   *  e.g. `['AppShell', 'SideNav', 'TopNav', 'Card', 'Table']` */
+  components?: string[];
 }

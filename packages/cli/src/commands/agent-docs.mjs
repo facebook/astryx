@@ -129,15 +129,42 @@ export function generateCompressedIndex(version, {coreDir, zh = false, lang, run
     }
   }
 
-  // Templates from live discovery
+  // Templates from live discovery — include component compositions
   const templatesDir = path.join(CLI_ROOT, 'templates');
   if (fs.existsSync(templatesDir)) {
-    const templates = fs.readdirSync(templatesDir, {withFileTypes: true})
+    const templateDirs = fs.readdirSync(templatesDir, {withFileTypes: true})
       .filter(e => e.isDirectory())
-      .map(e => e.name)
-      .sort();
-    if (templates.length > 0) {
-      lines.push(`${run} template <name> [path]  scaffold page (${templates.join(', ')})`);
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    if (templateDirs.length > 0) {
+      lines.push(`${run} template <name> [path]  scaffold page from template`);
+      lines.push('TEMPLATES (use as layout reference — check before building a page):');
+      for (const dir of templateDirs) {
+        const pagePath = path.join(templatesDir, dir.name, 'page.tsx');
+        if (!fs.existsSync(pagePath)) continue;
+        // Extract key structural XDS components from imports
+        // Filter out ubiquitous components (Text, Button, etc.) to show the
+        // distinguishing composition — what makes this template's layout unique.
+        const src = fs.readFileSync(pagePath, 'utf-8');
+        const UBIQUITOUS = new Set([
+          'Text', 'Heading', 'Button', 'HStack', 'VStack', 'Link',
+          'StackItem', 'Icon',
+        ]);
+        const comps = [...new Set(
+          (src.match(/XDS[A-Z]\w+/g) || [])
+            .map(n => n.replace(/^XDS/, ''))
+            .filter(n => !['Theme', 'ThemeProvider'].includes(n))
+            .filter(n => !UBIQUITOUS.has(n))
+            // Strip sub-types (SideNavItem → SideNav, TabListItem → TabList)
+            .map(n => n.replace(/(Item|Section|Header|Content|Footer|Panel|Heading|CollapseButton|Column|Sortable|Selection|Group|Source)$/, ''))
+            .filter(Boolean)
+        )].sort();
+        if (comps.length > 0) {
+          const name = dir.name.padEnd(22);
+          lines.push(`  ${name}${comps.join(' + ')}`);
+        }
+      }
+      lines.push(`RULE: before building a page layout, check if a template matches your intent`);
     }
   }
 
