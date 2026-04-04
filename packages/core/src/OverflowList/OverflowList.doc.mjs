@@ -117,7 +117,7 @@ export const docs = {
   ],
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'OverflowList',
   description:
