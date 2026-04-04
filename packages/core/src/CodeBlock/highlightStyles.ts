@@ -8,7 +8,7 @@
  * - /packages/core/src/theme/domainTokens.ts (syntax color token names/defaults)
  */
 
-import {syntaxTokenDefaults} from '@xds/core/theme';
+import {syntaxTokenDefaults} from '../theme';
 
 /**
  * Build the fallback CSS custom properties from the syntax token defaults.

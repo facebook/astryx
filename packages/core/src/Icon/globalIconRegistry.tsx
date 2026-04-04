@@ -42,7 +42,8 @@ export type XDSIconName =
   | 'arrowsUpDown'
   | 'funnel'
   | 'eyeSlash'
-  | 'viewColumns';
+  | 'viewColumns'
+  | 'copy';
 
 /**
  * Icon registry mapping semantic names to React nodes.
