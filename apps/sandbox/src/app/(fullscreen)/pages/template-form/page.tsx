@@ -192,7 +192,6 @@ export default function FormSimplePage() {
 
           {/* Your details */}
           <XDSVStack gap={5}>
-            <span {...stylex.props(styles.sectionLabel)}>Your details</span>
             <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16}}>
               <XDSTextInput
                 label="Full Name"
@@ -231,8 +230,6 @@ export default function FormSimplePage() {
 
           {/* Your project */}
           <XDSVStack gap={5}>
-            <span {...stylex.props(styles.sectionLabel)}>Your project</span>
-
             <XDSVStack gap={2}>
               <XDSText type="label">What are you going for?</XDSText>
               <div style={{display: 'flex', flexWrap: 'wrap', gap: 8}}>
