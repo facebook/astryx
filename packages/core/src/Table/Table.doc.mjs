@@ -17,6 +17,7 @@ export const docs = {
     'Sorting via useXDSTableSortable — single or multi-column sort with header indicators',
     'Pagination via useXDSTablePagination — client-side, server-side, or cursor-based with auto-rendered controls',
     'Column visibility via useXDSTableColumnSettings — toggle, reorder, and reset columns with XDSMultiSelector integration',
+    'Column resize via useXDSTableColumnResize — drag-to-resize column headers with min/max constraints and proportional-preserving behavior',
     'Body rows memoized with custom comparison — only changed rows re-render',
     'Auto-generated columns from data object keys when columns prop is omitted',
     'Themeable via className — target .xds-base-table, .xds-table-row, .xds-table-cell, .xds-table-header-cell',
@@ -173,6 +174,21 @@ const selectionPlugin = useXDSTableSelection<User>(selectionConfig);
 
 <XDSTable data={users} plugins={{highlight: highlightPlugin}} />`,
     },
+    {
+      label: 'Column resize plugin',
+      code: `const [columnWidths, setColumnWidths] = useState({});
+const resizePlugin = useXDSTableColumnResize({
+  columnWidths,
+  columns,
+  onColumnResizeEnd: updates => setColumnWidths(prev => ({...prev, ...updates})),
+});
+<XDSTable
+  data={users}
+  columns={columns}
+  idKey="id"
+  plugins={{columnResize: resizePlugin}}
+/>`,
+    },
   ],
   theming: {
     targets: [
@@ -193,6 +209,7 @@ const selectionPlugin = useXDSTableSelection<User>(selectionConfig);
     'Styling is owned by components (XDSTableRow, XDSTableCell, XDSTableHeaderCell), not by plugins — each reads XDSTableContext to apply density, dividers, striped, and hover styles.',
     'XDSTable accepts plugins as a named Record<string, TablePlugin<T>> and converts to an ordered array internally; XDSBaseTable accepts an ordered array directly.',
     'The selection plugin uses useSyncExternalStore so only the row whose selection state changed re-renders. useXDSTableSelectionState manages the selection set and handles disabled/selectable row filtering for select-all automatically.',
+    'useXDSTableColumnResize — drag-to-resize column headers. Proportional columns preserve their ratio when neighboring columns are resized. Pass columnWidths state and onColumnResizeEnd to control width persistence. Use minWidth/maxWidth for per-resize constraints.',
     'Body rows are memoized via React.memo with a custom comparison. For optimal performance, define columns outside the component or memoize them to avoid triggering full re-renders.',
     'Columns can be auto-generated from data keys using generateColumns(); column widths are expressed as proportional (fr-like) or fixed pixel values via the proportional() and pixel() helpers.',
     'tableProps on XDSBaseTable passes additional HTML attributes directly to the <table> element.',
@@ -778,6 +795,7 @@ export const docsZh = {
     '通过 useXDSTableSortable 实现排序 — 单列或多列排序，表头指示器',
     '通过 useXDSTablePagination 实现分页 — 客户端、服务器端或游标分页，自动渲染控件',
     '通过 useXDSTableColumnSettings 实现列可见性 — 切换、排序和重置列',
+    '通过 useXDSTableColumnResize 实现列调整 — 拖拽表头调整宽度，支持最小/最大约束和等比例调整',
     '主体行使用自定义比较进行记忆化 — 仅重新渲染更改的行',
     '省略 columns 属性时，自动从数据对象键生成列',
     '通过 className 实现主题化 — 目标选择器：.xds-base-table、.xds-table-row、.xds-table-cell、.xds-table-header-cell',
@@ -934,6 +952,21 @@ const selectionPlugin = useXDSTableSelection<User>(selectionConfig);
 
 <XDSTable data={users} plugins={{highlight: highlightPlugin}} />`,
     },
+    {
+      label: '列调整宽度插件',
+      code: `const [columnWidths, setColumnWidths] = useState({});
+const resizePlugin = useXDSTableColumnResize({
+  columnWidths,
+  columns,
+  onColumnResizeEnd: updates => setColumnWidths(prev => ({...prev, ...updates})),
+});
+<XDSTable
+  data={users}
+  columns={columns}
+  idKey="id"
+  plugins={{columnResize: resizePlugin}}
+/>`,
+    },
   ],
   theming: {
     targets: [
@@ -954,6 +987,7 @@ const selectionPlugin = useXDSTableSelection<User>(selectionConfig);
     '样式由组件（XDSTableRow、XDSTableCell、XDSTableHeaderCell）控制，而非插件 — 每个组件读取 XDSTableContext 来应用密度、分隔线、条纹和悬停样式。',
     'XDSTable 接受命名的 Record<string, TablePlugin<T>> 格式的插件，并在内部转换为有序数组；XDSBaseTable 直接接受有序数组。',
     '选择插件使用 React Context，使 SelectAllCheckbox 和 SelectionRowCheckbox 独立于行内容重新渲染 — 仅当选择状态变化时更新 context 值。',
+    'useXDSTableColumnResize — 拖拽表头调整列宽。比例列在调整相邻列时保持比例。传入 columnWidths 状态和 onColumnResizeEnd 控制宽度持久化。使用 minWidth/maxWidth 设置每次调整的约束范围。',
     '主体行通过带有自定义比较的 React.memo 进行记忆化。为获得最佳性能，请在组件外部定义列或对其进行记忆化，以避免触发全量重新渲染。',
     '可以使用 generateColumns() 从数据键自动生成列；列宽使用 proportional() 和 pixel() 辅助函数表达为比例值（类似 fr）或固定像素值。',
     'XDSBaseTable 上的 tableProps 将额外的 HTML 属性直接传递给 <table> 元素。',

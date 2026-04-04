@@ -148,6 +148,12 @@ function Example() {
           required: true,
         },
         {
+          name: 'triggerRef',
+          type: 'RefObject<HTMLElement | null>',
+          description:
+            'Ref to the trigger element that opened the dialog. When provided, the entry animation slides from the direction of the trigger and focus returns to the trigger on close.',
+        },
+        {
           name: 'width',
           type: 'number | string',
           description: 'Width of the dialog in pixels or any CSS value.',
@@ -405,6 +411,12 @@ function Example() {
           type: 'ReactNode',
           description: '对话框内容。',
           required: true,
+        },
+        {
+          name: 'triggerRef',
+          type: 'RefObject<HTMLElement | null>',
+          description:
+            '打开对话框的触发元素的引用。提供时，进入动画从触发方向滑入，关闭时焦点返回到触发元素。',
         },
         {
           name: 'width',
