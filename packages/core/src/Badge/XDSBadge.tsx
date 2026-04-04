@@ -65,7 +65,7 @@ const styles = stylex.create({
 });
 
 /**
- * Variant styles for different badge appearances
+ * Semantic variant styles — solid backgrounds with on-media text
  */
 const variants = stylex.create({
   neutral: {
@@ -87,6 +87,43 @@ const variants = stylex.create({
   error: {
     backgroundColor: colorVars['--color-error'],
     color: colorVars['--color-on-error'],
+  },
+  // Non-semantic color variants — tinted backgrounds with colored text
+  blue: {
+    backgroundColor: colorVars['--color-blue-background'],
+    color: colorVars['--color-blue-text'],
+  },
+  cyan: {
+    backgroundColor: colorVars['--color-cyan-background'],
+    color: colorVars['--color-cyan-text'],
+  },
+  green: {
+    backgroundColor: colorVars['--color-green-background'],
+    color: colorVars['--color-green-text'],
+  },
+  orange: {
+    backgroundColor: colorVars['--color-orange-background'],
+    color: colorVars['--color-orange-text'],
+  },
+  pink: {
+    backgroundColor: colorVars['--color-pink-background'],
+    color: colorVars['--color-pink-text'],
+  },
+  purple: {
+    backgroundColor: colorVars['--color-purple-background'],
+    color: colorVars['--color-purple-text'],
+  },
+  red: {
+    backgroundColor: colorVars['--color-red-background'],
+    color: colorVars['--color-red-text'],
+  },
+  teal: {
+    backgroundColor: colorVars['--color-teal-background'],
+    color: colorVars['--color-teal-text'],
+  },
+  yellow: {
+    backgroundColor: colorVars['--color-yellow-background'],
+    color: colorVars['--color-yellow-text'],
   },
 });
 

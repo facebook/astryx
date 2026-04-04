@@ -22,9 +22,41 @@ describe('XDSBadge', () => {
     expect(screen.getByText('Info')).toBeInTheDocument();
   });
 
+  it('renders with non-semantic color variants', () => {
+    const colors = [
+      'blue',
+      'cyan',
+      'green',
+      'orange',
+      'pink',
+      'purple',
+      'red',
+      'teal',
+      'yellow',
+    ] as const;
+
+    const {rerender} = render(
+      <XDSBadge variant={colors[0]} label={colors[0]} />,
+    );
+    expect(screen.getByText(colors[0])).toBeInTheDocument();
+
+    for (const color of colors.slice(1)) {
+      rerender(<XDSBadge variant={color} label={color} />);
+      expect(screen.getByText(color)).toBeInTheDocument();
+    }
+  });
+
+  it('applies xds class name with non-semantic variant', () => {
+    const {container} = render(
+      <XDSBadge variant="purple" label="Tag" />,
+    );
+    const root = container.firstElementChild!;
+    expect(root.className).toContain('xds-badge');
+    expect(root.className).toContain('purple');
+  });
+
   it('renders as dot with shape="dot"', () => {
     render(<XDSBadge variant="success" shape="dot" label="Online" />);
-    // Label is in the DOM as visually hidden text for screen readers
     expect(screen.getByText('Online')).toBeInTheDocument();
   });
 
@@ -39,7 +71,6 @@ describe('XDSBadge', () => {
     );
     const badge = screen.getByTestId('dot-badge');
     expect(screen.getByText('3 unread')).toBeInTheDocument();
-    // The visually hidden span is inside the badge
     expect(badge.textContent).toBe('3 unread');
   });
 

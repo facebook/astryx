@@ -8,8 +8,9 @@ export const docs = {
   props: [
     {
       name: 'variant',
-      type: "'neutral' | 'info' | 'success' | 'warning' | 'error'",
-      description: 'Visual style variant.',
+      type: "'neutral' | 'info' | 'success' | 'warning' | 'error' | 'blue' | 'cyan' | 'green' | 'orange' | 'pink' | 'purple' | 'red' | 'teal' | 'yellow'",
+      description:
+        'Visual style variant. Semantic variants (neutral, info, success, warning, error) use solid backgrounds. Non-semantic color variants use tinted backgrounds with colored text for categorization and tagging.',
       default: "'neutral'",
     },
     {
@@ -52,6 +53,13 @@ export const docs = {
     {
       label: 'Dot indicator',
       code: '<XDSBadge variant="error" shape="dot" label="Unread" />',
+    },
+    {
+      label: 'Non-semantic color variants',
+      code: `<XDSBadge variant="blue" label="Design" />
+<XDSBadge variant="purple" label="Engineering" />
+<XDSBadge variant="teal" label="Research" />
+<XDSBadge variant="orange" label="Urgent" />`,
     },
   ],
   theming: {
