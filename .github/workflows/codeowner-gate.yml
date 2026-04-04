@@ -1,8 +1,9 @@
 # Code owner gate: blocks merge unless a code owner has approved
 # Code owners themselves can merge freely (auto-pass)
 #
-# Design owners (.github/DESIGNOWNERS) can merge sandbox/storybook
-# changes without code owner approval. Everyone else needs it.
+# Design owners (.github/DESIGNOWNERS) can merge sandbox, storybook,
+# and CLI template changes without code owner approval. Everyone else
+# needs it.
 #
 # Uses the Checks API to write a single "Code Owner Gate" status per
 # commit SHA, so re-runs from pull_request_review events UPDATE the
@@ -58,6 +59,7 @@ jobs:
             const DESIGN_PATHS = [
               'apps/sandbox/',
               'apps/storybook/',
+              'packages/cli/templates/',
             ];
 
             // --- Resolve PR context ---
@@ -94,7 +96,7 @@ jobs:
               summary = `@${prAuthor} is a code owner — approved automatically.`;
             } else if (onlyDesignPaths && DESIGNOWNERS.includes(prAuthor)) {
               conclusion = 'success';
-              summary = `@${prAuthor} is a design owner and only sandbox/storybook files changed — approved automatically.\nFiles: ${changedFiles.join(', ')}`;
+              summary = `@${prAuthor} is a design owner and only design-owned paths changed — approved automatically.\nFiles: ${changedFiles.join(', ')}`;
             } else {
               // Check for code owner approval
               const { data: reviews } = await github.rest.pulls.listReviews({
@@ -118,7 +120,7 @@ jobs:
               } else {
                 // Tailor the message based on context
                 if (onlyDesignPaths && !DESIGNOWNERS.includes(prAuthor)) {
-                  summary = `@${prAuthor} is not a design owner. Sandbox/storybook changes require code owner approval (${CODE_OWNERS.map(u => '@' + u).join(', ')}) or being listed in .github/DESIGNOWNERS.`;
+                  summary = `@${prAuthor} is not a design owner. These paths require code owner approval (${CODE_OWNERS.map(u => '@' + u).join(', ')}) or being listed in .github/DESIGNOWNERS.`;
                 } else {
                   summary = `Requires approval from a code owner (${CODE_OWNERS.map(u => '@' + u).join(', ')}).`;
                 }
