@@ -14,10 +14,10 @@ import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
 import {XDSTextArea} from '@xds/core/TextArea';
 import Image from 'next/image';
 import {XDSDivider} from '@xds/core/Divider';
-import bannerImg from '../../../../assets/template-form/banner.png';
-import whyUs1 from '../../../../assets/template-form/why-us-1.png';
-import whyUs2 from '../../../../assets/template-form/why-us-2.png';
-import whyUs3 from '../../../../assets/template-form/why-us-3.png';
+import bannerImg from './banner.png';
+import whyUs1 from './why-us-1.png';
+import whyUs2 from './why-us-2.png';
+import whyUs3 from './why-us-3.png';
 import {colorVars, typeScaleVars, fontWeightVars} from '@xds/core/theme/tokens.stylex';
 
 const CAMPAIGN_GOALS = [

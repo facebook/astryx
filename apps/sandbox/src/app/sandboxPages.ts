@@ -102,12 +102,6 @@ export const categories: SandboxCategory[] = [
         href: t.href,
         description: t.description,
       })),
-      {
-        name: 'Contact Form',
-        href: '/pages/template-form/',
-        description:
-          'Marketing lead-capture form with pill toggles, dropdowns, and full-width CTA',
-      },
     ],
   },
   {
