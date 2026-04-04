@@ -1,0 +1,18 @@
+{
+  "promptId": "dd-3",
+  "category": "data-display",
+  "prompt": "Show a grid of product cards with image, title, price, and add to cart button",
+  "expectedComponents": [
+    "XDSCard",
+    "XDSButton"
+  ],
+  "followUps": [
+    "Add a quantity selector to each card",
+    "Add a 'Quick view' button that opens a modal with more details"
+  ],
+  "persona": "naive",
+  "degradation": false,
+  "target": "xds",
+  "subagentPrompt": "First read AGENTS.md in this directory for component library guidance.\n\nShow a grid of product cards with image, title, price, and add to cart button\n\nWrite the code to: /vercel/sandbox/repos/xds-worktrees/f5a57175/internal/vibe-tests/results/441ddbe0/results/dd-3.tsx",
+  "createdAt": "2026-04-04T18:34:13.711Z"
+}

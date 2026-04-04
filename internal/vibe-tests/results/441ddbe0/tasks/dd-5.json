@@ -1,0 +1,20 @@
+{
+  "promptId": "dd-5",
+  "category": "data-display",
+  "prompt": "Build an email inbox view with a table showing sender, subject, date, and a preview snippet. Add row selection with checkboxes and a bulk actions bar that appears when items are selected.",
+  "expectedComponents": [
+    "XDSTable",
+    "XDSCheckboxInput",
+    "XDSDropdownMenu",
+    "XDSButton"
+  ],
+  "followUps": [
+    "Add a \"Select all\" checkbox in the header that selects all visible rows",
+    "Add swipe-to-archive on mobile"
+  ],
+  "persona": "naive",
+  "degradation": false,
+  "target": "xds",
+  "subagentPrompt": "First read AGENTS.md in this directory for component library guidance.\n\nBuild an email inbox view with a table showing sender, subject, date, and a preview snippet. Add row selection with checkboxes and a bulk actions bar that appears when items are selected.\n\nWrite the code to: /vercel/sandbox/repos/xds-worktrees/f5a57175/internal/vibe-tests/results/441ddbe0/results/dd-5.tsx",
+  "createdAt": "2026-04-04T18:34:13.712Z"
+}

@@ -1,0 +1,21 @@
+{
+  "promptId": "ps-1",
+  "category": "page-setup",
+  "prompt": "Create a new page for a settings dashboard. It should have a header with the app title, a sidebar for navigation, and a main content area. Use the XDS theme system.",
+  "expectedComponents": [
+    "Theme",
+    "XDSLayout",
+    "XDSLayoutHeader",
+    "XDSLayoutContent",
+    "XDSLayoutPanel"
+  ],
+  "followUps": [
+    "Add a user avatar with dropdown menu in the header",
+    "Make the sidebar collapsible with a toggle button"
+  ],
+  "persona": "naive",
+  "degradation": false,
+  "target": "xds",
+  "subagentPrompt": "First read AGENTS.md in this directory for component library guidance.\n\nCreate a new page for a settings dashboard. It should have a header with the app title, a sidebar for navigation, and a main content area. Use the XDS theme system.\n\nWrite the code to: /vercel/sandbox/repos/xds-worktrees/f5a57175/internal/vibe-tests/results/441ddbe0/results/ps-1.tsx",
+  "createdAt": "2026-04-04T18:34:13.711Z"
+}

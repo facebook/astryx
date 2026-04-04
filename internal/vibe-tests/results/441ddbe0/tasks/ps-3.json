@@ -1,0 +1,21 @@
+{
+  "promptId": "ps-3",
+  "category": "page-setup",
+  "prompt": "Create an admin panel page layout with a fixed header, collapsible left sidebar, main content area, and a right panel for details. Wrap everything in the XDS theme.",
+  "expectedComponents": [
+    "Theme",
+    "XDSLayout",
+    "XDSLayoutHeader",
+    "XDSLayoutContent",
+    "XDSLayoutPanel"
+  ],
+  "followUps": [
+    "Add breadcrumbs below the header",
+    "Add a footer with version info and links"
+  ],
+  "persona": "naive",
+  "degradation": false,
+  "target": "xds",
+  "subagentPrompt": "First read AGENTS.md in this directory for component library guidance.\n\nCreate an admin panel page layout with a fixed header, collapsible left sidebar, main content area, and a right panel for details. Wrap everything in the XDS theme.\n\nWrite the code to: /vercel/sandbox/repos/xds-worktrees/f5a57175/internal/vibe-tests/results/441ddbe0/results/ps-3.tsx",
+  "createdAt": "2026-04-04T18:34:13.711Z"
+}

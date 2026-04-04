@@ -1,0 +1,19 @@
+{
+  "promptId": "ps-4",
+  "category": "page-setup",
+  "prompt": "Create a product detail page with breadcrumb navigation showing Home > Category > Subcategory > Product Name. The page should have a header, product info section, and a back button.",
+  "expectedComponents": [
+    "XDSBreadcrumbs",
+    "XDSCard",
+    "XDSButton"
+  ],
+  "followUps": [
+    "Make the breadcrumb items clickable links that navigate to each level",
+    "Add a \"Related Products\" section below the product details"
+  ],
+  "persona": "naive",
+  "degradation": false,
+  "target": "xds",
+  "subagentPrompt": "First read AGENTS.md in this directory for component library guidance.\n\nCreate a product detail page with breadcrumb navigation showing Home > Category > Subcategory > Product Name. The page should have a header, product info section, and a back button.\n\nWrite the code to: /vercel/sandbox/repos/xds-worktrees/f5a57175/internal/vibe-tests/results/441ddbe0/results/ps-4.tsx",
+  "createdAt": "2026-04-04T18:34:13.712Z"
+}

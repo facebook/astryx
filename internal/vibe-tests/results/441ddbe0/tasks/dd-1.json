@@ -1,0 +1,17 @@
+{
+  "promptId": "dd-1",
+  "category": "data-display",
+  "prompt": "A table of users with sortable columns and search",
+  "expectedComponents": [
+    "XDSTextInput"
+  ],
+  "followUps": [
+    "Add pagination with page size selector (10, 25, 50)",
+    "Add row selection with a bulk actions dropdown"
+  ],
+  "persona": "naive",
+  "degradation": false,
+  "target": "xds",
+  "subagentPrompt": "First read AGENTS.md in this directory for component library guidance.\n\nA table of users with sortable columns and search\n\nWrite the code to: /vercel/sandbox/repos/xds-worktrees/f5a57175/internal/vibe-tests/results/441ddbe0/results/dd-1.tsx",
+  "createdAt": "2026-04-04T18:34:13.711Z"
+}

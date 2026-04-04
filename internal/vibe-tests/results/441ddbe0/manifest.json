@@ -1,0 +1,83 @@
+{
+  "iterationId": "441ddbe0",
+  "createdAt": "2026-04-04T18:34:13.709Z",
+  "config": {
+    "holdout": false,
+    "persona": "naive",
+    "degradation": false,
+    "target": "xds"
+  },
+  "label": "template-compositions-1120",
+  "prompts": [
+    {
+      "id": "dd-1",
+      "category": "data-display",
+      "prompt": "A table of users with sortable columns and search",
+      "expectedComponents": [
+        "XDSTextInput"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "dd-3",
+      "category": "data-display",
+      "prompt": "Show a grid of product cards with image, title, price, and add to cart button",
+      "expectedComponents": [
+        "XDSCard",
+        "XDSButton"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "ps-1",
+      "category": "page-setup",
+      "prompt": "Create a new page for a settings dashboard. It should have a header with the app title, a sidebar for navigation, and a main content area. Use the XDS theme system.",
+      "expectedComponents": [
+        "Theme",
+        "XDSLayout",
+        "XDSLayoutHeader",
+        "XDSLayoutContent",
+        "XDSLayoutPanel"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "ps-3",
+      "category": "page-setup",
+      "prompt": "Create an admin panel page layout with a fixed header, collapsible left sidebar, main content area, and a right panel for details. Wrap everything in the XDS theme.",
+      "expectedComponents": [
+        "Theme",
+        "XDSLayout",
+        "XDSLayoutHeader",
+        "XDSLayoutContent",
+        "XDSLayoutPanel"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "ps-4",
+      "category": "page-setup",
+      "prompt": "Create a product detail page with breadcrumb navigation showing Home > Category > Subcategory > Product Name. The page should have a header, product info section, and a back button.",
+      "expectedComponents": [
+        "XDSBreadcrumbs",
+        "XDSCard",
+        "XDSButton"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "dd-5",
+      "category": "data-display",
+      "prompt": "Build an email inbox view with a table showing sender, subject, date, and a preview snippet. Add row selection with checkboxes and a bulk actions bar that appears when items are selected.",
+      "expectedComponents": [
+        "XDSTable",
+        "XDSCheckboxInput",
+        "XDSDropdownMenu",
+        "XDSButton"
+      ],
+      "status": "pending"
+    }
+  ],
+  "totalPrompts": 6,
+  "completedPrompts": 0
+}

@@ -1,0 +1,36 @@
+{
+  "id": "441ddbe0-dd-1",
+  "timestamp": "2026-04-04T18:36:32.331743+00:00",
+  "model": "navi-subagent",
+  "persona": "naive",
+  "promptCategory": "data-display",
+  "trajectoryDepth": 0,
+  "prompt": "A table of users with sortable columns and search",
+  "evaluation": {
+    "success": true,
+    "componentsUsed": [
+      "XDSTable",
+      "useXDSTableSortable",
+      "XDSTextInput",
+      "XDSAvatar",
+      "XDSBadge",
+      "XDSText",
+      "XDSHStack",
+      "XDSVStack"
+    ],
+    "componentsExpected": [
+      "XDSTextInput"
+    ],
+    "escapeHatches": [],
+    "failureMode": null,
+    "confusionSignals": []
+  },
+  "docsRead": [
+    "AGENTS.md",
+    "Table",
+    "TextInput",
+    "Badge",
+    "Avatar"
+  ],
+  "completedAt": "2026-04-04T18:36:32.331743+00:00"
+}

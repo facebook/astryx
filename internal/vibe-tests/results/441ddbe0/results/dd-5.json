@@ -1,0 +1,44 @@
+{
+  "id": "441ddbe0-dd-5",
+  "timestamp": "2026-04-04T18:36:44.999769+00:00",
+  "model": "navi-subagent",
+  "persona": "naive",
+  "promptCategory": "data-display",
+  "trajectoryDepth": 0,
+  "prompt": "Build an email inbox view with a table showing sender, subject, date, and a preview snippet. Add row selection with checkboxes and a bulk actions bar that appears when items are selected.",
+  "evaluation": {
+    "success": true,
+    "componentsUsed": [
+      "XDSTable",
+      "useXDSTableSelection",
+      "useXDSTableSelectionState",
+      "XDSText",
+      "XDSVStack",
+      "XDSHStack",
+      "XDSStackItem",
+      "XDSButton",
+      "XDSDropdownMenu",
+      "XDSBadge"
+    ],
+    "componentsExpected": [
+      "XDSTable",
+      "XDSCheckboxInput",
+      "XDSDropdownMenu",
+      "XDSButton"
+    ],
+    "escapeHatches": [],
+    "failureMode": null,
+    "confusionSignals": []
+  },
+  "docsRead": [
+    "AGENTS.md",
+    "Table",
+    "CheckboxInput",
+    "DropdownMenu",
+    "Button",
+    "Text",
+    "Stack",
+    "Badge"
+  ],
+  "completedAt": "2026-04-04T18:36:44.999769+00:00"
+}

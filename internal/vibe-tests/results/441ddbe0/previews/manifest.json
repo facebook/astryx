@@ -1,0 +1,20 @@
+{
+  "dd-1": {
+    "xds": "previews/dd-1/xds.html"
+  },
+  "dd-3": {
+    "xds": "previews/dd-3/xds.html"
+  },
+  "dd-5": {
+    "xds": "previews/dd-5/xds.html"
+  },
+  "ps-1": {
+    "xds": "previews/ps-1/xds.html"
+  },
+  "ps-3": {
+    "xds": "previews/ps-3/xds.html"
+  },
+  "ps-4": {
+    "xds": "previews/ps-4/xds.html"
+  }
+}

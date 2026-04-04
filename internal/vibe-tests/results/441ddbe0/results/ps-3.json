@@ -1,0 +1,45 @@
+{
+  "id": "441ddbe0-ps-3",
+  "timestamp": "2026-04-04T18:36:40.437847+00:00",
+  "model": "navi-subagent",
+  "persona": "naive",
+  "promptCategory": "page-setup",
+  "trajectoryDepth": 0,
+  "prompt": "Create an admin panel page layout with a fixed header, collapsible left sidebar, main content area, and a right panel for details. Wrap everything in the XDS theme.",
+  "evaluation": {
+    "success": true,
+    "componentsUsed": [
+      "XDSTheme",
+      "XDSAppShell",
+      "XDSLayout",
+      "XDSLayoutContent",
+      "XDSLayoutPanel",
+      "XDSTopNav",
+      "XDSTopNavHeading",
+      "XDSTopNavItem",
+      "XDSSideNav",
+      "XDSSideNavItem",
+      "XDSSideNavSection",
+      "XDSSideNavCollapseButton"
+    ],
+    "componentsExpected": [
+      "Theme",
+      "XDSLayout",
+      "XDSLayoutHeader",
+      "XDSLayoutContent",
+      "XDSLayoutPanel"
+    ],
+    "escapeHatches": [],
+    "failureMode": null,
+    "confusionSignals": []
+  },
+  "docsRead": [
+    "AGENTS.md",
+    "Theme",
+    "Layout",
+    "AppShell",
+    "SideNav",
+    "TopNav"
+  ],
+  "completedAt": "2026-04-04T18:36:40.437847+00:00"
+}

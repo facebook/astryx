@@ -1,0 +1,52 @@
+{
+  "id": "441ddbe0-ps-1",
+  "timestamp": "2026-04-04T18:36:56.894003+00:00",
+  "model": "navi-subagent",
+  "persona": "naive",
+  "promptCategory": "page-setup",
+  "trajectoryDepth": 0,
+  "prompt": "Create a new page for a settings dashboard. It should have a header with the app title, a sidebar for navigation, and a main content area. Use the XDS theme system.",
+  "evaluation": {
+    "success": true,
+    "componentsUsed": [
+      "XDSTheme",
+      "XDSAppShell",
+      "XDSTopNav",
+      "XDSTopNavHeading",
+      "XDSTopNavItem",
+      "XDSSideNav",
+      "XDSSideNavSection",
+      "XDSSideNavItem",
+      "XDSHeading",
+      "XDSText",
+      "XDSCard",
+      "XDSVStack",
+      "XDSSwitch",
+      "XDSTextInput",
+      "XDSDivider"
+    ],
+    "componentsExpected": [
+      "Theme",
+      "XDSLayout",
+      "XDSLayoutHeader",
+      "XDSLayoutContent",
+      "XDSLayoutPanel"
+    ],
+    "escapeHatches": [],
+    "failureMode": null,
+    "confusionSignals": []
+  },
+  "docsRead": [
+    "AGENTS.md",
+    "Theme",
+    "AppShell",
+    "SideNav",
+    "TopNav",
+    "Layout",
+    "Heading",
+    "Text",
+    "Switch",
+    "Card"
+  ],
+  "completedAt": "2026-04-04T18:36:56.894003+00:00"
+}

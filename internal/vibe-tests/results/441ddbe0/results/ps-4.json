@@ -1,0 +1,45 @@
+{
+  "id": "441ddbe0-ps-4",
+  "timestamp": "2026-04-04T18:37:46.617971+00:00",
+  "model": "navi-subagent",
+  "persona": "naive",
+  "promptCategory": "page-setup",
+  "trajectoryDepth": 0,
+  "prompt": "Create a product detail page with breadcrumb navigation showing Home > Category > Subcategory > Product Name. The page should have a header, product info section, and a back button.",
+  "evaluation": {
+    "success": true,
+    "componentsUsed": [
+      "XDSBreadcrumbs",
+      "XDSBreadcrumbItem",
+      "XDSButton",
+      "XDSCard",
+      "XDSLayout",
+      "XDSLayoutHeader",
+      "XDSLayoutContent",
+      "XDSVStack",
+      "XDSHStack",
+      "XDSHeading",
+      "XDSText",
+      "XDSDivider",
+      "XDSBadge"
+    ],
+    "componentsExpected": [
+      "XDSBreadcrumbs",
+      "XDSCard",
+      "XDSButton"
+    ],
+    "escapeHatches": [],
+    "failureMode": null,
+    "confusionSignals": []
+  },
+  "docsRead": [
+    "AGENTS.md",
+    "Breadcrumbs",
+    "Button",
+    "Card",
+    "Layout",
+    "Text",
+    "product-detail template"
+  ],
+  "completedAt": "2026-04-04T18:37:46.617971+00:00"
+}

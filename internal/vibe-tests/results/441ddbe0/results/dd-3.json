@@ -1,0 +1,36 @@
+{
+  "id": "441ddbe0-dd-3",
+  "timestamp": "2026-04-04T18:36:26.433955+00:00",
+  "model": "navi-subagent",
+  "persona": "naive",
+  "promptCategory": "data-display",
+  "trajectoryDepth": 0,
+  "prompt": "Show a grid of product cards with image, title, price, and add to cart button",
+  "evaluation": {
+    "success": true,
+    "componentsUsed": [
+      "XDSCard",
+      "XDSButton",
+      "XDSGrid",
+      "XDSText",
+      "XDSHeading",
+      "XDSVStack"
+    ],
+    "componentsExpected": [
+      "XDSCard",
+      "XDSButton"
+    ],
+    "escapeHatches": [],
+    "failureMode": null,
+    "confusionSignals": []
+  },
+  "docsRead": [
+    "AGENTS.md",
+    "XDSCard",
+    "XDSButton",
+    "XDSGrid",
+    "XDSText",
+    "XDSLayout"
+  ],
+  "completedAt": "2026-04-04T18:36:26.433955+00:00"
+}
