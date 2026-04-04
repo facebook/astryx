@@ -102,7 +102,7 @@ const styles = stylex.create({
 });
 
 /**
- * Form (Simple) — lead capture form template
+ * Contact Form — lead capture form template
  */
 export default function FormSimplePage() {
   const [fullName, setFullName] = useState('');
