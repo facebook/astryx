@@ -3,7 +3,7 @@
 /**
  * @file useXDSCollapsible.ts
  * @input Uses React useState/useContext, CollapsibleGroupContext
- * @output Exports useXDSCollapsible hook, CollapsibleConfig, UseXDSCollapsibleOptions, UseXDSCollapsibleReturn types
+ * @output Exports useXDSCollapsible hook, XDSCollapsibleConfig (formerly CollapsibleConfig), UseXDSCollapsibleOptions, UseXDSCollapsibleReturn types
  * @position Reusable hook for collapsible behavior — used by XDSCard, XDSSection, etc.
  *
  * Encapsulates the full collapsible state machine:
@@ -19,14 +19,13 @@
  * NOTE: Public hooks use the `useXDS` prefix per XDS naming conventions.
  */
 
-
 import {useState, useContext} from 'react';
 import {CollapsibleGroupContext} from './XDSCollapsibleGroupContext';
 
 /**
  * Configuration for collapsible behavior.
  */
-export type CollapsibleConfig = {
+export type XDSCollapsibleConfig = {
   /** Default open state for uncontrolled usage. @default true */
   defaultIsOpen?: boolean;
   /** Controlled open state. */
@@ -42,7 +41,7 @@ export interface UseXDSCollapsibleOptions {
    * - `{ defaultIsOpen: false }` — self-managed, starts collapsed
    * - `{ isOpen, onOpenChange }` — controlled externally
    */
-  isCollapsible?: boolean | CollapsibleConfig;
+  isCollapsible?: boolean | XDSCollapsibleConfig;
   /**
    * Unique identifier within an XDSCollapsibleGroup.
    * When present and inside a group, defers state to the group.
@@ -85,7 +84,7 @@ export function useXDSCollapsible(
   const isControlledByGroup = group != null && value != null;
 
   // Parse config: true → empty config, object → as-is, false/undefined → null
-  const config: CollapsibleConfig | null =
+  const config: XDSCollapsibleConfig | null =
     isCollapsible === true ? {} : isCollapsible ? isCollapsible : null;
   const isEnabled = config != null;
 

@@ -24,6 +24,7 @@ export * from './Card';
 export * from './Calendar';
 export * from './Center';
 export * from './CheckboxInput';
+export * from './Collapsible';
 export * from './RadioList';
 export * from './Divider';
 export * from './EmptyState';
