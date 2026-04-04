@@ -468,20 +468,20 @@ describe('XDSTokenizer', () => {
     });
   });
 
-  describe('isCreatable', () => {
+  describe('hasCreate', () => {
     const emptySource: XDSSearchSource = {
       search: () => [],
       bootstrap: () => [],
     };
 
-    it('shows a "Create" option when typing with isCreatable', async () => {
+    it('shows a "Create" option when typing with hasCreate', async () => {
       render(
         <XDSTokenizer
           label="Tags"
           searchSource={emptySource}
           value={[]}
           onChange={() => {}}
-          isCreatable
+          hasCreate
           debounceMs={0}
         />,
       );
@@ -505,7 +505,7 @@ describe('XDSTokenizer', () => {
           searchSource={emptySource}
           value={[]}
           onChange={onChange}
-          isCreatable
+          hasCreate
           debounceMs={0}
         />,
       );
@@ -536,7 +536,7 @@ describe('XDSTokenizer', () => {
           searchSource={emptySource}
           value={[{id: 'existing', label: 'existing'}]}
           onChange={() => {}}
-          isCreatable
+          hasCreate
           debounceMs={0}
         />,
       );
@@ -552,14 +552,14 @@ describe('XDSTokenizer', () => {
       expect(screen.queryByText('Create "existing"')).not.toBeInTheDocument();
     });
 
-    it('does not show Create option when isCreatable is false', async () => {
+    it('does not show Create option when hasCreate is false', async () => {
       render(
         <XDSTokenizer
           label="Tags"
           searchSource={emptySource}
           value={[]}
           onChange={() => {}}
-          isCreatable={false}
+          hasCreate={false}
           debounceMs={0}
         />,
       );
@@ -583,7 +583,7 @@ describe('XDSTokenizer', () => {
           searchSource={userSource}
           value={[]}
           onChange={onChange}
-          isCreatable
+          hasCreate
           debounceMs={0}
         />,
       );
@@ -609,7 +609,7 @@ describe('XDSTokenizer', () => {
           searchSource={userSource}
           value={[]}
           onChange={() => {}}
-          isCreatable
+          hasCreate
           debounceMs={0}
         />,
       );

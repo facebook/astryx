@@ -151,7 +151,7 @@ function StringListEditor({
 
   // Enable creatable mode when no searchSource is provided (free-text tags)
   // or when isArbitraryStringAllowed is explicitly set (#1107).
-  const isCreatable =
+  const hasCreate =
     operatorValue.isArbitraryStringAllowed || !operatorValue.searchSource;
 
   return (
@@ -168,7 +168,7 @@ function StringListEditor({
       }}
       placeholder="Add values..."
       debounceMs={operatorValue.searchSource ? 150 : 0}
-      isCreatable={isCreatable}
+      hasCreate={hasCreate}
     />
   );
 }

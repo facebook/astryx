@@ -162,7 +162,7 @@ export interface XDSTokenizerProps<T extends XDSSearchableItem> {
    * as a new token — even if the search source returned no results.
    * @default false
    */
-  isCreatable?: boolean;
+  hasCreate?: boolean;
   /** Query change callback. */
   onChangeQuery?: (query: string) => void;
   /**
@@ -361,7 +361,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
   size = 'md',
   tokenOverflowBehavior = 'none',
   debounceMs,
-  isCreatable = false,
+  hasCreate = false,
   onChangeQuery,
   xstyle,
   className,
@@ -465,10 +465,10 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
         const results = await searchSource.search(query);
         const filtered = results.filter(item => !selectedIds.has(item.id));
 
-        // Append a "Create: X" synthetic item when isCreatable is true,
+        // Append a "Create: X" synthetic item when hasCreate is true,
         // the user has typed something, and it doesn't exactly match an
         // existing result.
-        if (isCreatable && query.trim()) {
+        if (hasCreate && query.trim()) {
           const trimmed = query.trim();
           const alreadyExists =
             selectedIds.has(trimmed) ||
@@ -492,7 +492,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
         return results.filter(item => !selectedIds.has(item.id));
       },
     }),
-    [searchSource, selectedIds, isCreatable],
+    [searchSource, selectedIds, hasCreate],
   );
 
   const emptySource: XDSSearchSource<T> = useMemo(
@@ -511,7 +511,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
 
       // Detect "Create: X" synthetic items from the creatable source
       if (
-        isCreatable &&
+        hasCreate &&
         typeof item.id === 'string' &&
         item.id.startsWith(CREATABLE_ID_PREFIX)
       ) {
@@ -527,7 +527,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
       const newItems = [...value, item];
       onChange(newItems, {item, type: 'add'});
     },
-    [value, onChange, isAtMax, selectedIds, isCreatable],
+    [value, onChange, isAtMax, selectedIds, hasCreate],
   );
 
   // Handle removing an item
@@ -698,7 +698,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
               inputId={inputId}
               ariaDescribedBy={ariaDescribedBy}
               onChangeQuery={
-                isCreatable
+                hasCreate
                   ? (q: string) => {
                       setCreatableQuery(q);
                       onChangeQuery?.(q);
