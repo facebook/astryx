@@ -78,10 +78,10 @@ const styles = stylex.create({
     fontSize: typeScaleVars['--text-supporting-size'],
   },
   displayHeading: {
-    fontSize: typeScaleVars['--text-display-1-size'],
+    fontSize: 56,
     fontWeight: fontWeightVars['--font-weight-bold'],
-    lineHeight: '1.1',
-    letterSpacing: '-0.02em',
+    lineHeight: '1.05',
+    letterSpacing: '-0.03em',
     margin: 0,
   },
 
@@ -149,8 +149,8 @@ export default function FormSimplePage() {
         <XDSVStack gap={6}>
 
           {/* Header */}
-          <XDSVStack gap={2}>
-            <h1 {...stylex.props(styles.displayHeading)}>Let's work together</h1>
+          <XDSVStack gap={2} hAlign="center">
+            <h1 {...stylex.props(styles.displayHeading)} style={{textAlign: 'center'}}>Let's work together</h1>
             <XDSText type="body" color="secondary">
               Tell us a bit about what you're working on — we'd love to help.
             </XDSText>
