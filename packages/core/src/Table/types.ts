@@ -18,10 +18,7 @@ import type {
   ReactNode,
 } from 'react';
 import type {StyleXStyles} from '../theme/types';
-import type {
-  XDSTableFilterType,
-  XDSTableFilterFieldRef,
-} from './plugins/filtering/useXDSTableFiltering';
+import type {XDSTableFilterFieldRef} from './plugins/filtering/useXDSTableFiltering';
 
 // =============================================================================
 // Column Width
@@ -115,26 +112,24 @@ export interface XDSTableColumn<T extends Record<string, unknown>> {
   /**
    * Filter configuration for this column.
    *
-   * Accepts:
-   * - **Inline type** — `{ type: 'text' }`, `{ type: 'selector', options: [...] }`
-   * - **Field key** — `'status'` — resolves from `searchConfig` using `defaultOperator`
-   * - **Field ref** — `{ field: 'status', operator: 'is_not' }` — explicit operator
+   * References a field in the shared `PowerSearchConfig` passed to
+   * `useXDSTableFiltering`. The plugin resolves the operator's value
+   * type and renders the matching control.
    *
-   * String and field-ref forms require `searchConfig` on the plugin config.
+   * Accepts:
+   * - **Field key** — `'status'` — uses the field's `defaultOperator`
+   * - **Field ref** — `{ field: 'status', operator: 'is_not' }` — explicit operator
    *
    * @example
    * ```
-   * // Inline
-   * { key: 'name', header: 'Name', filter: { type: 'text' } }
-   *
-   * // PowerSearch field key (uses defaultOperator)
+   * // Field key (uses defaultOperator)
    * { key: 'status', header: 'Status', filter: 'status' }
    *
-   * // PowerSearch field + explicit operator
+   * // Field + explicit operator
    * { key: 'status', header: 'Status', filter: { field: 'status', operator: 'is_not' } }
    * ```
    */
-  filter?: XDSTableFilterType | XDSTableFilterFieldRef | string;
+  filter?: XDSTableFilterFieldRef | string;
   /**
    * Custom cell renderer. Receives the row item and returns rich JSX content.
    * Defaults to `String(item[key])` — use renderCell for rich content like

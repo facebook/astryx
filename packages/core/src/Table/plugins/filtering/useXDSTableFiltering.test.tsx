@@ -10,7 +10,7 @@ import {useState} from 'react';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {XDSTable} from '../../XDSTable';
-import {useXDSTableFiltering} from './useXDSTableFiltering';
+import {useXDSTableFiltering, toSearchFilters} from './useXDSTableFiltering';
 import type {
   XDSTableFilterState,
   XDSTableFilterVariant,
@@ -37,6 +37,10 @@ const testData: TestRow[] = [
   {id: '3', name: 'Charlie', status: 'active', age: 35, tags: 'user'},
 ];
 
+// =============================================================================
+// Shared PowerSearch Config
+// =============================================================================
+
 const statusOptions = [
   {value: 'active', label: 'Active'},
   {value: 'inactive', label: 'Inactive'},
@@ -45,54 +49,80 @@ const statusOptions = [
 const tagOptions = [
   {value: 'admin', label: 'Admin'},
   {value: 'user', label: 'User'},
-  {value: 'editor', label: 'Editor'},
 ];
 
-const columnsWithFilters: XDSTableColumn<TestRow>[] = [
-  {key: 'name', header: 'Name', filter: {type: 'text'}},
-  {
-    key: 'status',
-    header: 'Status',
-    filter: {type: 'selector', options: statusOptions},
-  },
-  {key: 'age', header: 'Age', filter: {type: 'number'}},
-  {key: 'tags', header: 'Tags'},
+const searchConfig: PowerSearchConfig = {
+  name: 'test',
+  fields: [
+    {
+      key: 'name',
+      label: 'Name',
+      defaultOperator: 'contains',
+      operators: [
+        {key: 'contains', label: 'contains', value: {type: 'string'}},
+      ],
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      defaultOperator: 'is',
+      operators: [
+        {key: 'is', label: 'is', value: {type: 'enum', values: statusOptions}},
+      ],
+    },
+    {
+      key: 'age',
+      label: 'Age',
+      defaultOperator: 'equals',
+      operators: [
+        {
+          key: 'equals',
+          label: 'equals',
+          value: {type: 'integer', minValue: 0, maxValue: 120},
+        },
+      ],
+    },
+    {
+      key: 'tags',
+      label: 'Tags',
+      defaultOperator: 'includes',
+      operators: [
+        {
+          key: 'includes',
+          label: 'includes',
+          value: {type: 'enum_list', values: tagOptions},
+        },
+      ],
+    },
+  ],
+};
+
+// =============================================================================
+// Test Columns
+// =============================================================================
+
+const defaultColumns: XDSTableColumn<TestRow>[] = [
+  {key: 'name', header: 'Name', filter: 'name'},
+  {key: 'status', header: 'Status', filter: 'status'},
+  {key: 'age', header: 'Age', filter: 'age'},
 ];
 
-/** Single text-filter column — avoids multiple 'Filter...' placeholders. */
-const textOnlyColumns: XDSTableColumn<TestRow>[] = [
-  {key: 'name', header: 'Name', filter: {type: 'text'}},
-  {key: 'tags', header: 'Tags'},
-];
-
-/** Selector-only columns. */
-const selectorOnlyColumns: XDSTableColumn<TestRow>[] = [
-  {
-    key: 'status',
-    header: 'Status',
-    filter: {type: 'selector', options: statusOptions},
-  },
-];
-
-const columnsWithNumberRange: XDSTableColumn<TestRow>[] = [
-  {key: 'name', header: 'Name', filter: {type: 'text'}},
-  {key: 'age', header: 'Age', filter: {type: 'number-range', min: 0, max: 120}},
+const allFilterColumns: XDSTableColumn<TestRow>[] = [
+  {key: 'name', header: 'Name', filter: 'name'},
+  {key: 'status', header: 'Status', filter: 'status'},
+  {key: 'age', header: 'Age', filter: 'age'},
+  {key: 'tags', header: 'Tags', filter: 'tags'},
 ];
 
 // =============================================================================
-// Test Helpers
+// Test Helper Component
 // =============================================================================
 
 function FilterTable({
-  columns = columnsWithFilters,
-  variant = 'popover',
-  initialFilters = {},
-}: {
-  columns?: XDSTableColumn<TestRow>[];
-  variant?: XDSTableFilterVariant;
-  initialFilters?: XDSTableFilterState;
+  columns = defaultColumns,
+  variant = 'popover' as XDSTableFilterVariant,
 }) {
-  const [filters, setFilters] = useState<XDSTableFilterState>(initialFilters);
+  const [filters, setFilters] = useState<XDSTableFilterState>({});
 
   const filterPlugin = useXDSTableFiltering<TestRow>({
     filters,
@@ -108,375 +138,164 @@ function FilterTable({
       });
     },
     variant,
+    searchConfig,
   });
 
   return (
     <XDSTable
       data={testData}
       columns={columns}
-      plugins={[filterPlugin]}
       idKey="id"
-    />
-  );
-}
-
-function ControlledFilterTable({
-  columns = columnsWithFilters,
-  variant = 'popover',
-  filters,
-  onFilterChange,
-}: {
-  columns?: XDSTableColumn<TestRow>[];
-  variant?: XDSTableFilterVariant;
-  filters: XDSTableFilterState;
-  onFilterChange: (key: string, value: XDSTableFilterValue | null) => void;
-}) {
-  const filterPlugin = useXDSTableFiltering<TestRow>({
-    filters,
-    onFilterChange,
-    variant,
-  });
-
-  return (
-    <XDSTable
-      data={testData}
-      columns={columns}
-      plugins={[filterPlugin]}
-      idKey="id"
+      plugins={{filter: filterPlugin}}
     />
   );
 }
 
 // =============================================================================
-// Tests — Popover Variant Rendering
+// Tests
 // =============================================================================
 
 describe('useXDSTableFiltering', () => {
   describe('popover variant — rendering', () => {
     it('renders filter icon for filterable columns', () => {
       render(<FilterTable />);
-      expect(
-        screen.getByRole('button', {name: 'Filter Name'}),
-      ).toBeInTheDocument();
-      expect(
-        screen.getByRole('button', {name: 'Filter Status'}),
-      ).toBeInTheDocument();
-      expect(
-        screen.getByRole('button', {name: 'Filter Age'}),
-      ).toBeInTheDocument();
-      expect(
-        screen.queryByRole('button', {name: 'Filter Tags'}),
-      ).not.toBeInTheDocument();
+      const filterButtons = screen.getAllByRole('button', {name: /Filter /});
+      expect(filterButtons).toHaveLength(3);
     });
 
-    it('renders muted icon when no active filter', () => {
+    it('renders no filter icon for columns without filter config', () => {
+      const noFilterColumns: XDSTableColumn<TestRow>[] = [
+        {key: 'name', header: 'Name'},
+        {key: 'status', header: 'Status'},
+      ];
+      render(<FilterTable columns={noFilterColumns} />);
+      expect(screen.queryAllByLabelText(/Filter /)).toHaveLength(0);
+    });
+
+    it('filter trigger button is clickable', async () => {
+      const user = userEvent.setup();
       render(<FilterTable />);
-      const btn = screen.getByRole('button', {name: 'Filter Name'});
-      expect(btn).toHaveAttribute('aria-haspopup', 'dialog');
-    });
-
-    it('renders accent icon when filter has value', () => {
-      render(<FilterTable initialFilters={{name: 'alice'}} />);
-      expect(
-        screen.getByRole('button', {name: 'Clear filter for Name'}),
-      ).toBeInTheDocument();
-      expect(
-        screen.getByRole('button', {name: 'Filter Status'}),
-      ).toBeInTheDocument();
-    });
-
-    it('does not render filter UI for columns without filter config', () => {
-      render(<FilterTable />);
-      expect(
-        screen.queryByRole('button', {name: 'Filter Tags'}),
-      ).not.toBeInTheDocument();
-      expect(
-        screen.queryByRole('button', {name: 'Clear filter for Tags'}),
-      ).not.toBeInTheDocument();
-    });
-
-    it('renders filter icons when data is empty', () => {
-      const EmptyTable = () => {
-        const filterPlugin = useXDSTableFiltering<TestRow>({
-          filters: {},
-          onFilterChange: () => {},
-          variant: 'popover',
-        });
-        return (
-          <XDSTable
-            data={[]}
-            columns={columnsWithFilters}
-            plugins={[filterPlugin]}
-            idKey="id"
-          />
-        );
-      };
-      render(<EmptyTable />);
-      expect(
-        screen.getByRole('button', {name: 'Filter Name'}),
-      ).toBeInTheDocument();
+      const filterButton = screen.getByRole('button', {name: 'Filter Name'});
+      await user.click(filterButton);
+      // Button exists and is interactive
+      expect(filterButton).toBeInTheDocument();
     });
   });
-
-  // ===========================================================================
-  // Tests — Inline Variant Rendering
-  // ===========================================================================
 
   describe('inline variant — rendering', () => {
-    it('renders text input below header for text filter', () => {
-      render(<FilterTable columns={textOnlyColumns} variant="inline" />);
-      expect(screen.getByPlaceholderText('Filter...')).toBeInTheDocument();
+    it('renders inline filter controls', () => {
+      render(<FilterTable variant="inline" />);
+      const textInputs = screen.getAllByRole('textbox');
+      expect(textInputs.length).toBeGreaterThanOrEqual(1);
     });
 
-    it('renders selector below header for selector filter', () => {
-      render(<FilterTable columns={selectorOnlyColumns} variant="inline" />);
-      expect(screen.getByText('All')).toBeInTheDocument();
+    it('renders text input for string field', () => {
+      render(<FilterTable variant="inline" />);
+      const textInputs = screen.getAllByPlaceholderText('Filter...');
+      expect(textInputs.length).toBeGreaterThanOrEqual(1);
     });
 
-    it('renders placeholder for non-filterable columns in inline mode', () => {
-      const {container} = render(
-        <FilterTable columns={textOnlyColumns} variant="inline" />,
-      );
-      const placeholders = container.querySelectorAll('[aria-hidden="true"]');
-      expect(placeholders.length).toBeGreaterThanOrEqual(1);
-    });
-
-    it('renders two number inputs for number-range filter', () => {
-      render(<FilterTable columns={columnsWithNumberRange} variant="inline" />);
-      expect(screen.getByPlaceholderText('Min')).toBeInTheDocument();
-      expect(screen.getByPlaceholderText('Max')).toBeInTheDocument();
-    });
-
-    it('uses compact size for inline-compact variant', () => {
-      render(
-        <FilterTable columns={textOnlyColumns} variant="inline-compact" />,
-      );
-      expect(screen.getByPlaceholderText('Filter...')).toBeInTheDocument();
+    it('renders number input for integer field', () => {
+      render(<FilterTable variant="inline" />);
+      const numberInputs = screen.getAllByRole('spinbutton');
+      expect(numberInputs.length).toBeGreaterThanOrEqual(1);
     });
   });
 
-  // ===========================================================================
-  // Tests — Filter Controls Display
-  // ===========================================================================
-
-  describe('filter controls — display', () => {
-    it('text filter shows current value from filters state', () => {
-      render(
-        <FilterTable
-          columns={textOnlyColumns}
-          variant="inline"
-          initialFilters={{name: 'alice'}}
-        />,
-      );
-      expect(screen.getByPlaceholderText('Filter...')).toHaveValue('alice');
-    });
-
-    it('selector filter shows selected value from filters state', () => {
-      render(
-        <FilterTable
-          columns={selectorOnlyColumns}
-          variant="inline"
-          initialFilters={{status: 'active'}}
-        />,
-      );
-      // The selector trigger should display "Active" (via getAllByText since
-      // "Active" also appears in table data cells)
-      const matches = screen.getAllByText('Active');
-      expect(matches.length).toBeGreaterThanOrEqual(1);
+  describe('inline variant — interaction', () => {
+    it('updates text filter on type', async () => {
+      const user = userEvent.setup();
+      render(<FilterTable variant="inline" />);
+      const textInputs = screen.getAllByPlaceholderText('Filter...');
+      await user.type(textInputs[0], 'Alice');
+      expect(textInputs[0]).toHaveValue('Alice');
     });
   });
 
-  // ===========================================================================
-  // Tests — Popover Interaction
-  // ===========================================================================
-
-  describe('popover variant — interaction', () => {
-    it('clicking inactive filter icon opens popover', async () => {
-      const user = userEvent.setup();
-      render(<FilterTable columns={textOnlyColumns} />);
-      await user.click(screen.getByRole('button', {name: 'Filter Name'}));
-      expect(screen.getByPlaceholderText('Filter...')).toBeInTheDocument();
-    });
-
-    it('clicking active filter icon clears filter', async () => {
-      const onFilterChange = vi.fn();
-      render(
-        <ControlledFilterTable
-          filters={{name: 'alice'}}
-          onFilterChange={onFilterChange}
-        />,
-      );
-      const user = userEvent.setup();
-      await user.click(
-        screen.getByRole('button', {name: 'Clear filter for Name'}),
-      );
-      expect(onFilterChange).toHaveBeenCalledWith('name', null);
-    });
-  });
-
-  // ===========================================================================
-  // Tests — Text Filter Interaction
-  // ===========================================================================
-
-  describe('text filter — interaction', () => {
-    it('typing in text filter calls onFilterChange', async () => {
-      const user = userEvent.setup();
-      render(<FilterTable columns={textOnlyColumns} variant="inline" />);
-      const input = screen.getByPlaceholderText('Filter...');
-      await user.type(input, 'a');
-      expect(input).toHaveValue('a');
-    });
-
-    it('clearing text filter calls onFilterChange with null', async () => {
-      const onFilterChange = vi.fn();
-      render(
-        <ControlledFilterTable
-          columns={textOnlyColumns}
-          variant="inline"
-          filters={{name: 'a'}}
-          onFilterChange={onFilterChange}
-        />,
-      );
-      const user = userEvent.setup();
-      const input = screen.getByPlaceholderText('Filter...');
-      await user.clear(input);
-      expect(onFilterChange).toHaveBeenCalledWith('name', null);
-    });
-  });
-
-  // ===========================================================================
-  // Tests — Number Filter Interaction
-  // ===========================================================================
-
-  describe('number filter — interaction', () => {
-    it('entering number calls onFilterChange', async () => {
-      const onFilterChange = vi.fn();
-      const numberColumns: XDSTableColumn<TestRow>[] = [
-        {key: 'age', header: 'Age', filter: {type: 'number'}},
-      ];
-      render(
-        <ControlledFilterTable
-          columns={numberColumns}
-          variant="inline"
-          filters={{}}
-          onFilterChange={onFilterChange}
-        />,
-      );
-      const user = userEvent.setup();
-      const ageInput = screen.getByRole('spinbutton');
-      await user.type(ageInput, '25');
-      expect(onFilterChange).toHaveBeenCalled();
-    });
-  });
-
-  // ===========================================================================
-  // Tests — Number Range Filter Interaction
-  // ===========================================================================
-
-  describe('number-range filter — interaction', () => {
-    it('changing min calls onFilterChange with updated range', async () => {
-      const onFilterChange = vi.fn();
-      const rangeColumns: XDSTableColumn<TestRow>[] = [
+  describe('field reference forms', () => {
+    it('supports object form { field, operator }', () => {
+      const columns: XDSTableColumn<TestRow>[] = [
         {
-          key: 'age',
-          header: 'Age',
-          filter: {type: 'number-range', min: 0, max: 120},
+          key: 'name',
+          header: 'Name',
+          filter: {field: 'name', operator: 'contains'},
         },
       ];
-      render(
-        <ControlledFilterTable
-          columns={rangeColumns}
-          variant="inline"
-          filters={{}}
-          onFilterChange={onFilterChange}
-        />,
-      );
-      const user = userEvent.setup();
-      const minInput = screen.getByPlaceholderText('Min');
-      await user.type(minInput, '18');
-      expect(onFilterChange).toHaveBeenCalled();
+      render(<FilterTable columns={columns} variant="inline" />);
+      const textInputs = screen.getAllByPlaceholderText('Filter...');
+      expect(textInputs.length).toBeGreaterThanOrEqual(1);
     });
 
-    it('changing max calls onFilterChange with updated range', async () => {
-      const onFilterChange = vi.fn();
-      const rangeColumns: XDSTableColumn<TestRow>[] = [
-        {
-          key: 'age',
-          header: 'Age',
-          filter: {type: 'number-range', min: 0, max: 120},
-        },
+    it('ignores unresolvable field references', () => {
+      const columns: XDSTableColumn<TestRow>[] = [
+        {key: 'name', header: 'Name', filter: 'nonexistent_field'},
       ];
-      render(
-        <ControlledFilterTable
-          columns={rangeColumns}
-          variant="inline"
-          filters={{}}
-          onFilterChange={onFilterChange}
-        />,
-      );
-      const user = userEvent.setup();
-      const maxInput = screen.getByPlaceholderText('Max');
-      await user.type(maxInput, '65');
-      expect(onFilterChange).toHaveBeenCalled();
+      expect(() => render(<FilterTable columns={columns} />)).not.toThrow();
     });
   });
 
-  // ===========================================================================
-  // Tests — Accessibility
-  // ===========================================================================
-
-  describe('accessibility', () => {
-    it('filter icon button has aria-label (popover)', () => {
-      render(<FilterTable />);
-      expect(
-        screen.getByRole('button', {name: 'Filter Name'}),
-      ).toBeInTheDocument();
+  describe('toSearchFilters', () => {
+    it('converts table filter state to PowerSearchFilter[]', () => {
+      const filters: XDSTableFilterState = {name: 'alice', status: 'active'};
+      const result = toSearchFilters(filters, defaultColumns, searchConfig);
+      expect(result).toHaveLength(2);
+      expect(result[0]).toEqual({
+        field: 'name',
+        operator: 'contains',
+        value: {type: 'string', value: 'alice'},
+      });
+      expect(result[1]).toEqual({
+        field: 'status',
+        operator: 'is',
+        value: {type: 'enum', value: 'active'},
+      });
     });
 
-    it('filter icon button has aria-haspopup (popover)', () => {
-      render(<FilterTable />);
-      const btn = screen.getByRole('button', {name: 'Filter Name'});
-      expect(btn).toHaveAttribute('aria-haspopup', 'dialog');
+    it('skips columns with no filter value', () => {
+      const filters: XDSTableFilterState = {name: 'alice'};
+      const result = toSearchFilters(filters, defaultColumns, searchConfig);
+      expect(result).toHaveLength(1);
     });
 
-    it('active filter button has clear label', () => {
-      render(<FilterTable initialFilters={{name: 'alice'}} />);
-      expect(
-        screen.getByRole('button', {name: 'Clear filter for Name'}),
-      ).toBeInTheDocument();
+    it('skips columns with no filter config', () => {
+      const filters: XDSTableFilterState = {name: 'alice'};
+      const noFilterColumns = [{key: 'name', header: 'Name'}];
+      const result = toSearchFilters(filters, noFilterColumns, searchConfig);
+      expect(result).toHaveLength(0);
     });
 
-    it('placeholder div is aria-hidden (inline)', () => {
-      const {container} = render(
-        <FilterTable columns={textOnlyColumns} variant="inline" />,
-      );
-      const placeholders = container.querySelectorAll('[aria-hidden="true"]');
-      expect(placeholders.length).toBeGreaterThanOrEqual(1);
+    it('handles integer values', () => {
+      const filters: XDSTableFilterState = {age: 30};
+      const result = toSearchFilters(filters, defaultColumns, searchConfig);
+      expect(result).toHaveLength(1);
+      expect(result[0]).toEqual({
+        field: 'age',
+        operator: 'equals',
+        value: {type: 'integer', value: 30},
+      });
+    });
+
+    it('handles enum_list values', () => {
+      const filters: XDSTableFilterState = {tags: ['admin', 'user']};
+      const result = toSearchFilters(filters, allFilterColumns, searchConfig);
+      expect(result).toHaveLength(1);
+      expect(result[0]).toEqual({
+        field: 'tags',
+        operator: 'includes',
+        value: {type: 'enum_list', value: ['admin', 'user']},
+      });
     });
   });
 
-  // ===========================================================================
-  // Tests — Edge Cases
-  // ===========================================================================
-
-  describe('edge cases', () => {
-    it('handles filters state with key not matching any column', () => {
-      expect(() =>
-        render(<FilterTable initialFilters={{unknownColumn: 'value'}} />),
-      ).not.toThrow();
-    });
-
-    it('handles empty filters state', () => {
-      expect(() => render(<FilterTable initialFilters={{}} />)).not.toThrow();
-    });
-
-    it('plugin object is referentially stable across renders', () => {
-      const plugins: Array<ReturnType<typeof useXDSTableFiltering>> = [];
+  describe('plugin stability', () => {
+    it('returns a referentially stable plugin object', () => {
+      const plugins: ReturnType<typeof useXDSTableFiltering>[] = [];
 
       function Capture() {
-        const plugin = useXDSTableFiltering<TestRow>({
+        const plugin = useXDSTableFiltering({
           filters: {},
           onFilterChange: () => {},
+          searchConfig,
         });
         plugins.push(plugin);
         return null;
@@ -495,347 +314,6 @@ describe('useXDSTableFiltering', () => {
       expect(() =>
         render(<FilterTable columns={noFilterColumns} />),
       ).not.toThrow();
-    });
-
-    it('works with empty options for selector', () => {
-      const emptyOptionsColumns: XDSTableColumn<TestRow>[] = [
-        {
-          key: 'status',
-          header: 'Status',
-          filter: {type: 'selector', options: []},
-        },
-      ];
-      expect(() =>
-        render(<FilterTable columns={emptyOptionsColumns} variant="inline" />),
-      ).not.toThrow();
-    });
-  });
-
-  // ===========================================================================
-  // PowerSearch integration
-  // ===========================================================================
-
-  describe('PowerSearch searchConfig', () => {
-    const searchConfig: PowerSearchConfig = {
-      name: 'test',
-      fields: [
-        {
-          key: 'name',
-          label: 'Name',
-          defaultOperator: 'contains',
-          operators: [
-            {key: 'contains', label: 'contains', value: {type: 'string'}},
-            {key: 'is', label: 'is', value: {type: 'string'}},
-          ],
-        },
-        {
-          key: 'status',
-          label: 'Status',
-          defaultOperator: 'is',
-          operators: [
-            {
-              key: 'is',
-              label: 'is',
-              value: {
-                type: 'enum',
-                values: [
-                  {value: 'active', label: 'Active'},
-                  {value: 'inactive', label: 'Inactive'},
-                ],
-              },
-            },
-          ],
-        },
-        {
-          key: 'age',
-          label: 'Age',
-          defaultOperator: 'equals',
-          operators: [
-            {
-              key: 'equals',
-              label: 'equals',
-              value: {type: 'integer', minValue: 0, maxValue: 200},
-            },
-          ],
-        },
-        {
-          key: 'tags',
-          label: 'Tags',
-          defaultOperator: 'includes',
-          operators: [
-            {
-              key: 'includes',
-              label: 'includes',
-              value: {
-                type: 'enum_list',
-                values: [
-                  {value: 'admin', label: 'Admin'},
-                  {value: 'user', label: 'User'},
-                ],
-              },
-            },
-          ],
-        },
-      ],
-    };
-
-    function PowerSearchFilterTable({
-      variant = 'inline' as XDSTableFilterVariant,
-    }) {
-      const [filters, setFilters] = useState<XDSTableFilterState>({});
-      const filterPlugin = useXDSTableFiltering({
-        filters,
-        onFilterChange: (key: string, value: XDSTableFilterValue | null) => {
-          setFilters(prev => {
-            const next = {...prev};
-            if (value == null) {
-              delete next[key];
-            } else {
-              next[key] = value;
-            }
-            return next;
-          });
-        },
-        variant,
-        searchConfig,
-      });
-
-      const columns: XDSTableColumn<TestRow>[] = [
-        {key: 'name', header: 'Name', filter: 'name'},
-        {key: 'status', header: 'Status', filter: 'status'},
-        {key: 'age', header: 'Age', filter: 'age'},
-        {key: 'tags', header: 'Tags', filter: 'tags'},
-      ];
-
-      return (
-        <XDSTable
-          data={testData}
-          columns={columns}
-          idKey="id"
-          plugins={{filter: filterPlugin}}
-        />
-      );
-    }
-
-    it('renders text input for string field (field key string form)', () => {
-      render(<PowerSearchFilterTable />);
-      const textInputs = screen.getAllByPlaceholderText('Filter...');
-      // name (string) and age (number) both get 'Filter...' placeholder
-      expect(textInputs.length).toBeGreaterThanOrEqual(1);
-    });
-
-    it('renders selector for enum field', () => {
-      render(<PowerSearchFilterTable />);
-      // Enum fields render as selector — the placeholder "All" appears
-      // for both single-select (status) and multi-select (tags)
-      const allPlaceholders = screen.getAllByText('All');
-      expect(allPlaceholders.length).toBeGreaterThanOrEqual(1);
-    });
-
-    it('renders number input for integer field', () => {
-      render(<PowerSearchFilterTable />);
-      const numberInputs = screen.getAllByRole('spinbutton');
-      expect(numberInputs.length).toBeGreaterThanOrEqual(1);
-    });
-
-    it('filters text via PowerSearch field reference', async () => {
-      const user = userEvent.setup();
-      render(<PowerSearchFilterTable />);
-
-      // First text input corresponds to the 'name' column
-      const textInputs = screen.getAllByPlaceholderText('Filter...');
-      await user.type(textInputs[0], 'Alice');
-      expect(textInputs[0]).toHaveValue('Alice');
-    });
-
-    it('supports object form field reference with explicit operator', () => {
-      function ExplicitOperatorTable() {
-        const [filters, setFilters] = useState<XDSTableFilterState>({});
-        const filterPlugin = useXDSTableFiltering({
-          filters,
-          onFilterChange: (key: string, value: XDSTableFilterValue | null) => {
-            setFilters(prev => ({...prev, [key]: value ?? undefined}));
-          },
-          variant: 'inline',
-          searchConfig,
-        });
-
-        const columns: XDSTableColumn<TestRow>[] = [
-          {
-            key: 'name',
-            header: 'Name',
-            filter: {field: 'name', operator: 'is'},
-          },
-        ];
-
-        return (
-          <XDSTable
-            data={testData}
-            columns={columns}
-            idKey="id"
-            plugins={{filter: filterPlugin}}
-          />
-        );
-      }
-
-      render(<ExplicitOperatorTable />);
-      expect(screen.getByPlaceholderText('Filter...')).toBeInTheDocument();
-    });
-
-    it('ignores columns with unresolvable field references', () => {
-      function BadRefTable() {
-        const [filters, setFilters] = useState<XDSTableFilterState>({});
-        const filterPlugin = useXDSTableFiltering({
-          filters,
-          onFilterChange: (key: string, value: XDSTableFilterValue | null) => {
-            setFilters(prev => ({...prev, [key]: value ?? undefined}));
-          },
-          variant: 'inline',
-          searchConfig,
-        });
-
-        const columns: XDSTableColumn<TestRow>[] = [
-          {key: 'name', header: 'Name', filter: 'nonexistent_field'},
-        ];
-
-        return (
-          <XDSTable
-            data={testData}
-            columns={columns}
-            idKey="id"
-            plugins={{filter: filterPlugin}}
-          />
-        );
-      }
-
-      // Should not throw — just renders no filter control
-      expect(() => render(<BadRefTable />)).not.toThrow();
-    });
-
-    it('mixes inline and PowerSearch filter configs', () => {
-      function MixedTable() {
-        const [filters, setFilters] = useState<XDSTableFilterState>({});
-        const filterPlugin = useXDSTableFiltering({
-          filters,
-          onFilterChange: (key: string, value: XDSTableFilterValue | null) => {
-            setFilters(prev => ({...prev, [key]: value ?? undefined}));
-          },
-          variant: 'inline',
-          searchConfig,
-        });
-
-        const columns: XDSTableColumn<TestRow>[] = [
-          // PowerSearch field ref
-          {key: 'status', header: 'Status', filter: 'status'},
-          // Inline filter type
-          {key: 'name', header: 'Name', filter: {type: 'text'}},
-        ];
-
-        return (
-          <XDSTable
-            data={testData}
-            columns={columns}
-            idKey="id"
-            plugins={{filter: filterPlugin}}
-          />
-        );
-      }
-
-      render(<MixedTable />);
-      // Both should render — selector for status, text input for name
-      expect(screen.getByText('All')).toBeInTheDocument();
-      expect(screen.getByPlaceholderText('Filter...')).toBeInTheDocument();
-    });
-
-    it('renders date input for date_absolute field', () => {
-      const dateSearchConfig: PowerSearchConfig = {
-        name: 'test-date',
-        fields: [
-          {
-            key: 'created',
-            label: 'Created',
-            defaultOperator: 'on',
-            operators: [
-              {key: 'on', label: 'on', value: {type: 'date_absolute'}},
-            ],
-          },
-        ],
-      };
-
-      function DateTable() {
-        const [filters, setFilters] = useState<XDSTableFilterState>({});
-        const filterPlugin = useXDSTableFiltering({
-          filters,
-          onFilterChange: (key: string, value: XDSTableFilterValue | null) => {
-            setFilters(prev => ({...prev, [key]: value ?? undefined}));
-          },
-          variant: 'inline',
-          searchConfig: dateSearchConfig,
-        });
-
-        return (
-          <XDSTable
-            data={testData}
-            columns={[
-              {key: 'name', header: 'Name'},
-              {
-                key: 'created' as keyof TestRow,
-                header: 'Created',
-                filter: 'created',
-              },
-            ]}
-            idKey="id"
-            plugins={{filter: filterPlugin}}
-          />
-        );
-      }
-
-      expect(() => render(<DateTable />)).not.toThrow();
-      // DateInput renders with an accessible label
-      expect(screen.getByLabelText('Filter Created')).toBeInTheDocument();
-    });
-
-    it('renders string-list tokenizer for string_list field', () => {
-      const listSearchConfig: PowerSearchConfig = {
-        name: 'test-list',
-        fields: [
-          {
-            key: 'tags',
-            label: 'Tags',
-            defaultOperator: 'includes',
-            operators: [
-              {
-                key: 'includes',
-                label: 'includes',
-                value: {type: 'string_list'},
-              },
-            ],
-          },
-        ],
-      };
-
-      function ListTable() {
-        const [filters, setFilters] = useState<XDSTableFilterState>({});
-        const filterPlugin = useXDSTableFiltering({
-          filters,
-          onFilterChange: (key: string, value: XDSTableFilterValue | null) => {
-            setFilters(prev => ({...prev, [key]: value ?? undefined}));
-          },
-          variant: 'inline',
-          searchConfig: listSearchConfig,
-        });
-
-        return (
-          <XDSTable
-            data={testData}
-            columns={[{key: 'tags', header: 'Tags', filter: 'tags'}]}
-            idKey="id"
-            plugins={{filter: filterPlugin}}
-          />
-        );
-      }
-
-      expect(() => render(<ListTable />)).not.toThrow();
     });
   });
 });

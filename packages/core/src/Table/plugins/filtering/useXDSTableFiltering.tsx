@@ -43,6 +43,8 @@ import type {
   PowerSearchConfig,
   PowerSearchField,
   PowerSearchOperator,
+  PowerSearchFilter,
+  FilterValue,
   OperatorValue,
 } from '../../../PowerSearch/types';
 
@@ -298,25 +300,16 @@ function operatorValueToFilterType(
 }
 
 /**
- * Resolve a column's filter config to a concrete XDSTableFilterType.
+ * Resolve a column's filter field reference to a concrete filter type.
  *
- * - Inline filter type (has `type` field) → return directly.
- * - String → field key, look up in searchConfig with defaultOperator.
- * - Object with `field` → look up field + optional operator in searchConfig.
- * - Returns undefined if the config can't be resolved.
+ * - String → field key, uses defaultOperator.
+ * - Object with `field` → look up field + optional operator.
+ * - Returns undefined if the field/operator can't be resolved.
  */
 function resolveFilterConfig(
-  filter: XDSTableFilterType | XDSTableFilterFieldRef | string,
-  searchConfig?: PowerSearchConfig,
+  filter: XDSTableFilterFieldRef | string,
+  searchConfig: PowerSearchConfig,
 ): XDSTableFilterType | undefined {
-  // Inline filter type — has a `type` discriminant
-  if (typeof filter === 'object' && 'type' in filter) {
-    return filter;
-  }
-
-  // Field reference — string or { field, operator }
-  if (!searchConfig) return undefined;
-
   const fieldKey = typeof filter === 'string' ? filter : filter.field;
   const operatorKey = typeof filter === 'string' ? undefined : filter.operator;
 
@@ -327,6 +320,102 @@ function resolveFilterConfig(
   if (!operator) return undefined;
 
   return operatorValueToFilterType(operator.value);
+}
+
+/**
+ * Convert table filter state to PowerSearchFilter[] for use with `applyFilters`.
+ *
+ * Maps each non-empty entry in the filter state to a `PowerSearchFilter`,
+ * resolving the field and operator from the column config + searchConfig.
+ * This bridges the table filtering UI with PowerSearch's client-side
+ * filter engine — define filters once, apply everywhere.
+ *
+ * @example
+ * ```
+ * const { config, applyFilters } = usePowerSearchConfig(defs);
+ * const searchFilters = toSearchFilters(filters, columns, config);
+ * const filteredData = applyFilters(searchFilters, data);
+ * ```
+ */
+export function toSearchFilters<T extends Record<string, unknown>>(
+  filters: XDSTableFilterState,
+  columns: ReadonlyArray<{
+    key: string;
+    filter?: XDSTableFilterFieldRef | string;
+  }>,
+  searchConfig: PowerSearchConfig,
+): PowerSearchFilter[] {
+  const result: PowerSearchFilter[] = [];
+
+  for (const col of columns) {
+    if (!col.filter) continue;
+    const value = filters[col.key];
+    if (value == null) continue;
+
+    const fieldKey =
+      typeof col.filter === 'string' ? col.filter : col.filter.field;
+    const operatorKey =
+      typeof col.filter === 'string' ? undefined : col.filter.operator;
+
+    const field = searchConfig.fields.find(f => f.key === fieldKey);
+    if (!field) continue;
+
+    const operator = resolveOperator(field, operatorKey);
+    if (!operator) continue;
+
+    const filterValue = tableValueToFilterValue(value, operator.value);
+    if (!filterValue) continue;
+
+    result.push({field: fieldKey, operator: operator.key, value: filterValue});
+  }
+
+  return result;
+}
+
+/**
+ * Convert a table filter value to a PowerSearch FilterValue
+ * based on the operator's value type.
+ */
+function tableValueToFilterValue(
+  value: XDSTableFilterValue,
+  opValue: OperatorValue,
+): FilterValue | undefined {
+  switch (opValue.type) {
+    case 'string':
+      return typeof value === 'string' ? {type: 'string', value} : undefined;
+    case 'integer':
+      return typeof value === 'number' ? {type: 'integer', value} : undefined;
+    case 'float':
+      return typeof value === 'number' ? {type: 'float', value} : undefined;
+    case 'enum':
+      return typeof value === 'string' ? {type: 'enum', value} : undefined;
+    case 'enum_list':
+      return Array.isArray(value)
+        ? {type: 'enum_list', value: value as string[]}
+        : undefined;
+    case 'date_absolute':
+      return typeof value === 'string'
+        ? {
+            type: 'date_absolute',
+            unixSeconds: Math.floor(new Date(value).getTime() / 1000),
+          }
+        : undefined;
+    case 'time':
+      return typeof value === 'string' ? {type: 'time', value} : undefined;
+    case 'string_list':
+      return Array.isArray(value)
+        ? {type: 'string_list', value: value as string[]}
+        : undefined;
+    case 'entity_list':
+      return Array.isArray(value)
+        ? {
+            type: 'entity_list',
+            value: (value as string[]).map(id => ({id, label: id})),
+          }
+        : undefined;
+    default:
+      return undefined;
+  }
 }
 
 // =============================================================================
@@ -405,16 +494,15 @@ export interface UseXDSTableFilteringConfig {
    */
   variant?: XDSTableFilterVariant;
   /**
-   * Shared PowerSearch configuration. When provided, columns can reference
-   * fields by `{ field, operator }` instead of defining filter types inline.
-   * The plugin resolves the operator's value type and renders the matching
-   * control automatically.
+   * PowerSearch configuration that defines the available filter fields.
+   * Columns reference fields by key; the plugin resolves the operator's
+   * value type and renders the matching control.
    *
-   * This lets you define filter config once and share it between PowerSearch
-   * and table filtering — any UI that produces filters works from the same
-   * source of truth.
+   * Use `createPowerSearchConfig` or `usePowerSearchConfig` to build this
+   * from field definitions — the same config can be shared with
+   * `XDSPowerSearch` for a unified filtering experience.
    */
-  searchConfig?: PowerSearchConfig;
+  searchConfig: PowerSearchConfig;
 }
 
 // =============================================================================
@@ -476,7 +564,7 @@ const filterStyles = stylex.create({
     opacity: 1,
   },
   popoverContent: {
-    padding: spacingVars['--spacing-3'],
+    padding: spacingVars['--spacing-2'],
     width: '240px',
   },
   popoverActions: {
@@ -950,21 +1038,6 @@ function PopoverFilterTrigger({
     setIsOpen(false);
   }, [store, columnKey]);
 
-  if (hasValue && !isOpen) {
-    return (
-      <button
-        type="button"
-        aria-label={`Clear filter for ${header}`}
-        onClick={() => store.getConfig().onFilterChange(columnKey, null)}
-        {...stylex.props(
-          filterStyles.triggerButton,
-          filterStyles.triggerActive,
-        )}>
-        <XDSIcon icon="funnel" size="xsm" color="accent" />
-      </button>
-    );
-  }
-
   // Build a local store override so FilterControl writes to the draft
   // instead of the consumer's state.
   const draftStore: FilterStore = {
@@ -999,14 +1072,12 @@ function PopoverFilterTrigger({
               size="sm"
             />
             <div {...stylex.props(filterStyles.popoverActions)}>
-              {hasValue && (
-                <XDSButton
-                  label="Clear"
-                  variant="secondary"
-                  size="sm"
-                  onClick={handleClear}
-                />
-              )}
+              <XDSButton
+                label="Clear"
+                variant="secondary"
+                size="sm"
+                onClick={handleClear}
+              />
               <XDSButton
                 label="Apply"
                 variant="primary"
@@ -1023,9 +1094,13 @@ function PopoverFilterTrigger({
         aria-haspopup="dialog"
         {...stylex.props(
           filterStyles.triggerButton,
-          filterStyles.triggerInactive,
+          hasValue ? filterStyles.triggerActive : filterStyles.triggerInactive,
         )}>
-        <XDSIcon icon="funnel" size="xsm" color="secondary" />
+        <XDSIcon
+          icon="funnel"
+          size="xsm"
+          color={hasValue ? 'accent' : 'secondary'}
+        />
       </button>
     </XDSPopover>
   );

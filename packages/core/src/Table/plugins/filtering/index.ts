@@ -1,26 +1,8 @@
-export {useXDSTableFiltering} from './useXDSTableFiltering';
+export {useXDSTableFiltering, toSearchFilters} from './useXDSTableFiltering';
 export type {
   UseXDSTableFilteringConfig,
   XDSTableFilterState,
   XDSTableFilterVariant,
   XDSTableFilterValue,
-  XDSTableFilterTextValue,
-  XDSTableFilterNumberValue,
-  XDSTableFilterNumberRangeValue,
-  XDSTableFilterSelectorValue,
-  XDSTableFilterMultiSelectorValue,
-  XDSTableFilterType,
   XDSTableFilterFieldRef,
-  XDSTableFilterTypeText,
-  XDSTableFilterTypeNumber,
-  XDSTableFilterTypeNumberRange,
-  XDSTableFilterTypeSelector,
-  XDSTableFilterTypeMultiSelector,
-  XDSTableFilterOption,
-  XDSTableFilterTypeDate,
-  XDSTableFilterTypeTime,
-  XDSTableFilterTypeStringList,
-  XDSTableFilterDateValue,
-  XDSTableFilterTimeValue,
-  XDSTableFilterStringListValue,
 } from './useXDSTableFiltering';

@@ -7,6 +7,7 @@ import {
   useXDSTableSelectionState,
   useXDSTableSortable,
   useXDSTableColumnResize,
+  toSearchFilters,
 } from '@xds/core/Table';
 import type {
   XDSTableColumn,
@@ -14,10 +15,8 @@ import type {
   XDSTableFilterValue,
   XDSTableSortState,
 } from '@xds/core/Table';
-
-// =============================================================================
-// Sample Data
-// =============================================================================
+import {usePowerSearchConfig} from '@xds/core/PowerSearch';
+import type {PowerSearchFilter} from '@xds/core/PowerSearch';
 
 interface Employee extends Record<string, unknown> {
   id: string;
@@ -71,34 +70,46 @@ const employees: Employee[] = [
   },
 ];
 
-// =============================================================================
-// Helpers
-// =============================================================================
+const fieldDefs = [
+  {key: 'name', type: 'string', label: 'Name'},
+  {key: 'email', type: 'string', label: 'Email'},
+  {
+    key: 'role',
+    type: 'enum',
+    label: 'Role',
+    enumValues: [
+      {value: 'Engineer', label: 'Engineer'},
+      {value: 'Designer', label: 'Designer'},
+      {value: 'Manager', label: 'Manager'},
+      {value: 'Admin', label: 'Admin'},
+    ],
+  },
+  {
+    key: 'department',
+    type: 'enum_list',
+    label: 'Department',
+    enumValues: [
+      {value: 'Platform', label: 'Platform'},
+      {value: 'Product', label: 'Product'},
+      {value: 'Infrastructure', label: 'Infrastructure'},
+      {value: 'Operations', label: 'Operations'},
+    ],
+  },
+  {key: 'level', type: 'number', label: 'Level'},
+] as const;
 
 function useFilterState() {
   const [filters, setFilters] = useState<XDSTableFilterState>({});
-
-  const onFilterChange = (
-    columnKey: string,
-    value: XDSTableFilterValue | null,
-  ) => {
+  const onFilterChange = (key: string, value: XDSTableFilterValue | null) => {
     setFilters(prev => {
       const next = {...prev};
-      if (value == null) {
-        delete next[columnKey];
-      } else {
-        next[columnKey] = value;
-      }
+      if (value == null) delete next[key];
+      else next[key] = value;
       return next;
     });
   };
-
   return {filters, onFilterChange};
 }
-
-// =============================================================================
-// Stories
-// =============================================================================
 
 const meta: Meta = {
   title: 'Core/XDSTable/Filtering',
@@ -110,30 +121,30 @@ type Story = StoryObj;
 
 export const TextFilter: Story = {
   render: () => {
+    const {config, applyFilters} = usePowerSearchConfig(fieldDefs);
     const {filters, onFilterChange} = useFilterState();
-
     const columns: XDSTableColumn<Employee>[] = [
-      {key: 'name', header: 'Name', filter: {type: 'text'}},
-      {
-        key: 'email',
-        header: 'Email',
-        filter: {type: 'text', placeholder: 'Search email...'},
-      },
+      {key: 'name', header: 'Name', filter: 'name'},
+      {key: 'email', header: 'Email', filter: 'email'},
       {key: 'role', header: 'Role'},
+      {key: 'department', header: 'Department'},
     ];
-
     const filterPlugin = useXDSTableFiltering<Employee>({
       filters,
       onFilterChange,
+      searchConfig: config,
     });
-
+    const data = applyFilters(
+      toSearchFilters(filters, columns, config) as PowerSearchFilter[],
+      employees,
+    );
     return (
-      <div style={{maxWidth: 700}}>
+      <div style={{maxWidth: 800}}>
         <p style={{marginBottom: 8, fontSize: 14, color: '#666'}}>
-          Active filters: {JSON.stringify(filters)}
+          Showing {data.length}/{employees.length} rows.
         </p>
         <XDSTable
-          data={employees}
+          data={data}
           columns={columns}
           idKey="id"
           plugins={{filter: filterPlugin}}
@@ -145,39 +156,30 @@ export const TextFilter: Story = {
 
 export const SelectorFilter: Story = {
   render: () => {
+    const {config, applyFilters} = usePowerSearchConfig(fieldDefs);
     const {filters, onFilterChange} = useFilterState();
-
     const columns: XDSTableColumn<Employee>[] = [
       {key: 'name', header: 'Name'},
-      {key: 'email', header: 'Email'},
-      {
-        key: 'role',
-        header: 'Role',
-        filter: {
-          type: 'selector',
-          options: [
-            {value: 'Engineer'},
-            {value: 'Designer'},
-            {value: 'Manager'},
-            {value: 'Admin'},
-          ],
-          placeholder: 'All roles',
-        },
-      },
+      {key: 'role', header: 'Role', filter: 'role'},
+      {key: 'department', header: 'Department'},
+      {key: 'level', header: 'Level'},
     ];
-
     const filterPlugin = useXDSTableFiltering<Employee>({
       filters,
       onFilterChange,
+      searchConfig: config,
     });
-
+    const data = applyFilters(
+      toSearchFilters(filters, columns, config) as PowerSearchFilter[],
+      employees,
+    );
     return (
-      <div style={{maxWidth: 700}}>
+      <div style={{maxWidth: 800}}>
         <p style={{marginBottom: 8, fontSize: 14, color: '#666'}}>
-          Active filters: {JSON.stringify(filters)}
+          Enum → selector. Showing {data.length}/{employees.length} rows.
         </p>
         <XDSTable
-          data={employees}
+          data={data}
           columns={columns}
           idKey="id"
           plugins={{filter: filterPlugin}}
@@ -189,41 +191,31 @@ export const SelectorFilter: Story = {
 
 export const MultiSelectorFilter: Story = {
   render: () => {
+    const {config, applyFilters} = usePowerSearchConfig(fieldDefs);
     const {filters, onFilterChange} = useFilterState();
-
     const columns: XDSTableColumn<Employee>[] = [
       {key: 'name', header: 'Name'},
-      {
-        key: 'department',
-        header: 'Department',
-        filter: {
-          type: 'multi-selector',
-          options: [
-            {value: 'Platform'},
-            {value: 'Product'},
-            {value: 'Infrastructure'},
-            {value: 'Operations'},
-          ],
-          hasSelectAll: true,
-          isSearchable: true,
-          placeholder: 'All departments',
-        },
-      },
       {key: 'role', header: 'Role'},
+      {key: 'department', header: 'Department', filter: 'department'},
+      {key: 'level', header: 'Level'},
     ];
-
     const filterPlugin = useXDSTableFiltering<Employee>({
       filters,
       onFilterChange,
+      searchConfig: config,
     });
-
+    const data = applyFilters(
+      toSearchFilters(filters, columns, config) as PowerSearchFilter[],
+      employees,
+    );
     return (
-      <div style={{maxWidth: 700}}>
+      <div style={{maxWidth: 800}}>
         <p style={{marginBottom: 8, fontSize: 14, color: '#666'}}>
-          Active filters: {JSON.stringify(filters)}
+          Enum list → multi-selector. Showing {data.length}/{employees.length}{' '}
+          rows.
         </p>
         <XDSTable
-          data={employees}
+          data={data}
           columns={columns}
           idKey="id"
           plugins={{filter: filterPlugin}}
@@ -235,30 +227,31 @@ export const MultiSelectorFilter: Story = {
 
 export const NumberFilter: Story = {
   render: () => {
+    const {config, applyFilters} = usePowerSearchConfig(fieldDefs);
     const {filters, onFilterChange} = useFilterState();
-
     const columns: XDSTableColumn<Employee>[] = [
       {key: 'name', header: 'Name'},
       {key: 'role', header: 'Role'},
-      {
-        key: 'level',
-        header: 'Level',
-        filter: {type: 'number', min: 1, max: 10, placeholder: 'Level...'},
-      },
+      {key: 'level', header: 'Level', filter: 'level'},
+      {key: 'department', header: 'Department'},
     ];
-
     const filterPlugin = useXDSTableFiltering<Employee>({
       filters,
       onFilterChange,
+      searchConfig: config,
     });
-
+    const data = applyFilters(
+      toSearchFilters(filters, columns, config) as PowerSearchFilter[],
+      employees,
+    );
     return (
-      <div style={{maxWidth: 700}}>
+      <div style={{maxWidth: 800}}>
         <p style={{marginBottom: 8, fontSize: 14, color: '#666'}}>
-          Active filters: {JSON.stringify(filters)}
+          Number field → numeric input. Showing {data.length}/{employees.length}{' '}
+          rows.
         </p>
         <XDSTable
-          data={employees}
+          data={data}
           columns={columns}
           idKey="id"
           plugins={{filter: filterPlugin}}
@@ -270,101 +263,31 @@ export const NumberFilter: Story = {
 
 export const InlineVariant: Story = {
   render: () => {
+    const {config, applyFilters} = usePowerSearchConfig(fieldDefs);
     const {filters, onFilterChange} = useFilterState();
-
     const columns: XDSTableColumn<Employee>[] = [
-      {key: 'name', header: 'Name', filter: {type: 'text'}},
-      {
-        key: 'role',
-        header: 'Role',
-        filter: {
-          type: 'selector',
-          options: [
-            {value: 'Engineer'},
-            {value: 'Designer'},
-            {value: 'Manager'},
-            {value: 'Admin'},
-          ],
-        },
-      },
-      {key: 'email', header: 'Email'},
+      {key: 'name', header: 'Name', filter: 'name'},
+      {key: 'role', header: 'Role', filter: 'role'},
+      {key: 'level', header: 'Level', filter: 'level'},
+      {key: 'department', header: 'Department'},
     ];
-
     const filterPlugin = useXDSTableFiltering<Employee>({
       filters,
       onFilterChange,
       variant: 'inline',
+      searchConfig: config,
     });
-
-    return (
-      <div style={{maxWidth: 700}}>
-        <p style={{marginBottom: 8, fontSize: 14, color: '#666'}}>
-          Always-visible inline filters. Active: {JSON.stringify(filters)}
-        </p>
-        <XDSTable
-          data={employees}
-          columns={columns}
-          idKey="id"
-          plugins={{filter: filterPlugin}}
-        />
-      </div>
+    const data = applyFilters(
+      toSearchFilters(filters, columns, config) as PowerSearchFilter[],
+      employees,
     );
-  },
-};
-
-export const ActiveFilterIndicator: Story = {
-  render: () => {
-    const [filters, setFilters] = useState<XDSTableFilterState>({
-      role: 'Engineer',
-      name: 'Ali',
-    });
-
-    const onFilterChange = (
-      columnKey: string,
-      value: XDSTableFilterValue | null,
-    ) => {
-      setFilters(prev => {
-        const next = {...prev};
-        if (value == null) {
-          delete next[columnKey];
-        } else {
-          next[columnKey] = value;
-        }
-        return next;
-      });
-    };
-
-    const columns: XDSTableColumn<Employee>[] = [
-      {key: 'name', header: 'Name', filter: {type: 'text'}},
-      {key: 'email', header: 'Email'},
-      {
-        key: 'role',
-        header: 'Role',
-        filter: {
-          type: 'selector',
-          options: [
-            {value: 'Engineer'},
-            {value: 'Designer'},
-            {value: 'Manager'},
-            {value: 'Admin'},
-          ],
-        },
-      },
-    ];
-
-    const filterPlugin = useXDSTableFiltering<Employee>({
-      filters,
-      onFilterChange,
-    });
-
     return (
-      <div style={{maxWidth: 700}}>
+      <div style={{maxWidth: 800}}>
         <p style={{marginBottom: 8, fontSize: 14, color: '#666'}}>
-          Name and Role have active filters (accent icon). Click accent icon to
-          clear.
+          Inline variant. Showing {data.length}/{employees.length} rows.
         </p>
         <XDSTable
-          data={employees}
+          data={data}
           columns={columns}
           idKey="id"
           plugins={{filter: filterPlugin}}
@@ -376,61 +299,39 @@ export const ActiveFilterIndicator: Story = {
 
 export const WithSelection: Story = {
   render: () => {
+    const {config, applyFilters} = usePowerSearchConfig(fieldDefs);
     const {filters, onFilterChange} = useFilterState();
-    const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
-
+    const [selectedKeys, setSelectedKeys] = useState(new Set<string>());
     const columns: XDSTableColumn<Employee>[] = [
-      {key: 'name', header: 'Name', filter: {type: 'text'}},
-      {key: 'email', header: 'Email'},
-      {
-        key: 'role',
-        header: 'Role',
-        filter: {
-          type: 'selector',
-          options: [
-            {value: 'Engineer'},
-            {value: 'Designer'},
-            {value: 'Manager'},
-            {value: 'Admin'},
-          ],
-        },
-      },
-      {
-        key: 'department',
-        header: 'Department',
-        filter: {
-          type: 'multi-selector',
-          options: [
-            {value: 'Platform'},
-            {value: 'Product'},
-            {value: 'Infrastructure'},
-            {value: 'Operations'},
-          ],
-        },
-      },
+      {key: 'name', header: 'Name', filter: 'name'},
+      {key: 'role', header: 'Role', filter: 'role'},
+      {key: 'department', header: 'Department', filter: 'department'},
+      {key: 'level', header: 'Level'},
     ];
-
     const filterPlugin = useXDSTableFiltering<Employee>({
       filters,
       onFilterChange,
+      searchConfig: config,
     });
-
-    const {selectionConfig} = useXDSTableSelectionState<Employee>({
+    const {selectionConfig} = useXDSTableSelectionState({
       data: employees,
       idKey: 'id',
       selectedKeys,
       setSelectedKeys,
     });
     const selectionPlugin = useXDSTableSelection<Employee>(selectionConfig);
-
+    const data = applyFilters(
+      toSearchFilters(filters, columns, config) as PowerSearchFilter[],
+      employees,
+    );
     return (
       <div style={{maxWidth: 800}}>
         <p style={{marginBottom: 8, fontSize: 14, color: '#666'}}>
-          Filtering + Selection composed. Selected: {selectedKeys.size} |
-          Filters: {JSON.stringify(filters)}
+          Filtering + Selection. Selected: {selectedKeys.size} | Showing{' '}
+          {data.length}/{employees.length} rows.
         </p>
         <XDSTable
-          data={employees}
+          data={data}
           columns={columns}
           idKey="id"
           plugins={{selection: selectionPlugin, filter: filterPlugin}}
@@ -442,58 +343,35 @@ export const WithSelection: Story = {
 
 export const WithSorting: Story = {
   render: () => {
+    const {config, applyFilters} = usePowerSearchConfig(fieldDefs);
     const {filters, onFilterChange} = useFilterState();
     const [sort, setSort] = useState<XDSTableSortState>([]);
-
     const columns: XDSTableColumn<Employee>[] = [
-      {
-        key: 'name',
-        header: 'Name',
-        sortable: true,
-        filter: {type: 'text'},
-      },
-      {
-        key: 'role',
-        header: 'Role',
-        sortable: true,
-        filter: {
-          type: 'selector',
-          options: [
-            {value: 'Engineer'},
-            {value: 'Designer'},
-            {value: 'Manager'},
-            {value: 'Admin'},
-          ],
-        },
-      },
-      {
-        key: 'level',
-        header: 'Level',
-        sortable: true,
-        filter: {type: 'number', min: 1, max: 10},
-      },
+      {key: 'name', header: 'Name', sortable: true, filter: 'name'},
+      {key: 'role', header: 'Role', sortable: true, filter: 'role'},
+      {key: 'level', header: 'Level', sortable: true, filter: 'level'},
       {key: 'department', header: 'Department'},
     ];
-
     const filterPlugin = useXDSTableFiltering<Employee>({
       filters,
       onFilterChange,
+      searchConfig: config,
     });
     const sortPlugin = useXDSTableSortable<Employee>({
       sort,
       onSortChange: setSort,
     });
-
+    const data = applyFilters(
+      toSearchFilters(filters, columns, config) as PowerSearchFilter[],
+      employees,
+    );
     return (
       <div style={{maxWidth: 800}}>
         <p style={{marginBottom: 8, fontSize: 14, color: '#666'}}>
-          Filtering + Sorting composed. Sort icon and filter button appear
-          inline with the column label. Sort:{' '}
-          {sort.length > 0 ? JSON.stringify(sort) : 'none'} | Filters:{' '}
-          {JSON.stringify(filters)}
+          Filtering + Sorting. Showing {data.length}/{employees.length} rows.
         </p>
         <XDSTable
-          data={employees}
+          data={data}
           columns={columns}
           idKey="id"
           plugins={{sort: sortPlugin, filter: filterPlugin}}
@@ -505,38 +383,22 @@ export const WithSorting: Story = {
 
 export const WithResize: Story = {
   render: () => {
+    const {config, applyFilters} = usePowerSearchConfig(fieldDefs);
     const {filters, onFilterChange} = useFilterState();
     const [columnWidths, setColumnWidths] = useState<Record<string, number>>(
       {},
     );
-
     const columns: XDSTableColumn<Employee>[] = [
-      {key: 'name', header: 'Name', filter: {type: 'text'}},
-      {
-        key: 'role',
-        header: 'Role',
-        filter: {
-          type: 'selector',
-          options: [
-            {value: 'Engineer'},
-            {value: 'Designer'},
-            {value: 'Manager'},
-            {value: 'Admin'},
-          ],
-        },
-      },
-      {
-        key: 'level',
-        header: 'Level',
-        filter: {type: 'number', min: 1, max: 10},
-      },
+      {key: 'name', header: 'Name', filter: 'name'},
+      {key: 'role', header: 'Role', filter: 'role'},
+      {key: 'level', header: 'Level', filter: 'level'},
       {key: 'department', header: 'Department'},
     ];
-
     const filterPlugin = useXDSTableFiltering<Employee>({
       filters,
       onFilterChange,
       variant: 'inline',
+      searchConfig: config,
     });
     const resizePlugin = useXDSTableColumnResize<Employee>({
       columnWidths,
@@ -544,15 +406,18 @@ export const WithResize: Story = {
         setColumnWidths(prev => ({...prev, ...updates})),
       columns,
     });
-
+    const data = applyFilters(
+      toSearchFilters(filters, columns, config) as PowerSearchFilter[],
+      employees,
+    );
     return (
       <div style={{maxWidth: 800}}>
         <p style={{marginBottom: 8, fontSize: 14, color: '#666'}}>
-          Inline filtering + Column resize composed. Drag column borders to
-          resize. Filters: {JSON.stringify(filters)}
+          Inline filtering + Resize. Showing {data.length}/{employees.length}{' '}
+          rows.
         </p>
         <XDSTable
-          data={employees}
+          data={data}
           columns={columns}
           idKey="id"
           plugins={{filter: filterPlugin, resize: resizePlugin}}
@@ -564,46 +429,23 @@ export const WithResize: Story = {
 
 export const WithAllPlugins: Story = {
   render: () => {
+    const {config, applyFilters} = usePowerSearchConfig(fieldDefs);
     const {filters, onFilterChange} = useFilterState();
     const [sort, setSort] = useState<XDSTableSortState>([]);
     const [columnWidths, setColumnWidths] = useState<Record<string, number>>(
       {},
     );
     const [selectedKeys, setSelectedKeys] = useState(new Set<string>());
-
     const columns: XDSTableColumn<Employee>[] = [
-      {
-        key: 'name',
-        header: 'Name',
-        sortable: true,
-        filter: {type: 'text'},
-      },
-      {
-        key: 'role',
-        header: 'Role',
-        sortable: true,
-        filter: {
-          type: 'selector',
-          options: [
-            {value: 'Engineer'},
-            {value: 'Designer'},
-            {value: 'Manager'},
-            {value: 'Admin'},
-          ],
-        },
-      },
-      {
-        key: 'level',
-        header: 'Level',
-        sortable: true,
-        filter: {type: 'number', min: 1, max: 10},
-      },
+      {key: 'name', header: 'Name', sortable: true, filter: 'name'},
+      {key: 'role', header: 'Role', sortable: true, filter: 'role'},
+      {key: 'level', header: 'Level', sortable: true, filter: 'level'},
       {key: 'department', header: 'Department', sortable: true},
     ];
-
     const filterPlugin = useXDSTableFiltering<Employee>({
       filters,
       onFilterChange,
+      searchConfig: config,
     });
     const sortPlugin = useXDSTableSortable<Employee>({
       sort,
@@ -615,24 +457,25 @@ export const WithAllPlugins: Story = {
         setColumnWidths(prev => ({...prev, ...updates})),
       columns,
     });
-    const {config: selectionConfig} = useXDSTableSelectionState({
+    const {selectionConfig} = useXDSTableSelectionState({
       data: employees,
       idKey: 'id',
       selectedKeys,
       setSelectedKeys,
     });
     const selectionPlugin = useXDSTableSelection<Employee>(selectionConfig);
-
+    const data = applyFilters(
+      toSearchFilters(filters, columns, config) as PowerSearchFilter[],
+      employees,
+    );
     return (
       <div style={{maxWidth: 900}}>
         <p style={{marginBottom: 8, fontSize: 14, color: '#666'}}>
-          All plugins composed: Selection + Sort + Filter (popover) + Resize.
-          Selected: {selectedKeys.size} | Sort:{' '}
-          {sort.length > 0 ? JSON.stringify(sort) : 'none'} | Filters:{' '}
-          {JSON.stringify(filters)}
+          All plugins. Selected: {selectedKeys.size} | Showing {data.length}/
+          {employees.length} rows.
         </p>
         <XDSTable
-          data={employees}
+          data={data}
           columns={columns}
           idKey="id"
           plugins={{
