@@ -45,7 +45,7 @@ const styles = stylex.create({
     overflow: 'hidden',
   },
   rootCollapsed: {
-    width: 52,
+    width: spacingVars['--spacing-12'],
   },
   stickyTop: {
     display: 'flex',
@@ -56,11 +56,12 @@ const styles = stylex.create({
     zIndex: 1,
     backgroundColor: 'inherit',
     paddingBlockStart: spacingVars['--spacing-2'],
-    paddingBlockEnd: spacingVars['--spacing-1'],
+    paddingBlockEnd: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-2'],
     gap: spacingVars['--spacing-2'],
-    overflow: 'hidden',
-    minWidth: 0,
+  },
+  stickyTopCollapsed: {
+    alignItems: 'center',
   },
   topContent: {},
   scrollable: {
@@ -68,6 +69,11 @@ const styles = stylex.create({
     overflowY: 'auto',
     overflowX: 'hidden',
     paddingInline: spacingVars['--spacing-2'],
+  },
+  scrollableCollapsed: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    alignItems: 'center',
   },
   scrollableNoTop: {
     paddingBlockStart: spacingVars['--spacing-2'],
@@ -448,7 +454,11 @@ export function XDSSideNav({
       )}
       {...props}>
       {hasStickyTop && (
-        <div {...stylex.props(styles.stickyTop)}>
+        <div
+          {...stylex.props(
+            styles.stickyTop,
+            collapsed && styles.stickyTopCollapsed,
+          )}>
           {header}
           {topContent && (
             <div {...stylex.props(styles.topContent)}>{topContent}</div>
@@ -458,6 +468,7 @@ export function XDSSideNav({
       <div
         {...stylex.props(
           styles.scrollable,
+          collapsed && styles.scrollableCollapsed,
           hasStickyTop ? styles.scrollableWithTop : styles.scrollableNoTop,
           hasStickyBottom
             ? styles.scrollableWithBottom

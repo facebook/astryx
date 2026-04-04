@@ -1,7 +1,7 @@
 /**
  * @file navItemStyles.stylex.ts
- * @input Uses theme tokens (color, spacing, radius, typography, transition)
- * @output Exports shared nav item appearance styles
+ * @input Uses theme tokens (color, spacing, radius, typography, transition, size)
+ * @output Exports shared nav item appearance styles and NavItemSize type
  * @position Shared styles consumed by SideNavItem, TopNavItem (drawer mode),
  *   TopNavMenu (drawer mode), and any custom nav items that need to match.
  *
@@ -13,6 +13,8 @@
  * focus outlines) via stylex.props composition.
  */
 
+export type NavItemSize = 'sm' | 'md' | 'lg';
+
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -20,6 +22,7 @@ import {
   radiusVars,
   typeScaleVars,
   fontWeightVars,
+  sizeVars,
 } from '../theme/tokens.stylex';
 
 /**
@@ -46,8 +49,9 @@ export const navItemStyles = stylex.create({
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
     width: '100%',
+    height: sizeVars['--size-element-md'],
     paddingInline: spacingVars['--spacing-2'],
-    paddingBlock: spacingVars['--spacing-2'],
+    paddingBlock: 0,
     borderRadius: radiusVars['--radius-element'],
     borderWidth: 0,
     borderStyle: 'none',
@@ -90,5 +94,23 @@ export const navItemStyles = stylex.create({
     color: colorVars['--color-text-disabled'],
     cursor: 'not-allowed',
     pointerEvents: 'none' as const,
+  },
+
+  /** Small size variant */
+  sm: {
+    height: sizeVars['--size-element-sm'],
+    paddingInline: spacingVars['--spacing-1'],
+  },
+
+  /** Medium size variant (default) */
+  md: {
+    height: sizeVars['--size-element-md'],
+    paddingInline: spacingVars['--spacing-2'],
+  },
+
+  /** Large size variant */
+  lg: {
+    height: sizeVars['--size-element-lg'],
+    paddingInline: spacingVars['--spacing-2'],
   },
 });
