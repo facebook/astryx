@@ -1,0 +1,67 @@
+{
+  "name": "creatable-naming",
+  "description": "Vibe test comparing prop names for XDSTokenizer free-text token creation: isCreatable vs hasCreate vs hasAddNew",
+  "variants": [
+    "isCreatable",
+    "hasCreate",
+    "hasAddNew"
+  ],
+  "prompts": [
+    {
+      "id": "cr-1",
+      "category": "tag-input",
+      "prompt": "Build a blog post editor form with a title field, body textarea, and a tag input where users can type custom tags and add them. Tags don't come from a predefined list \u2014 users create whatever tags they want.",
+      "tests": "Basic free-text token creation, no search source needed",
+      "notes": "Core use case \u2014 does the LLM discover and use the creatable prop for a pure free-text tag input?"
+    },
+    {
+      "id": "cr-2",
+      "category": "tag-input",
+      "prompt": "Create a project settings page with a 'Labels' section. Users should be able to search from existing labels (Bug, Feature, Enhancement, Documentation, Question) but also type and create new custom labels that don't exist yet.",
+      "tests": "Hybrid: search source + creatable mode together",
+      "notes": "Tests whether the LLM combines searchSource with the creatable prop correctly"
+    },
+    {
+      "id": "cr-3",
+      "category": "invite-flow",
+      "prompt": "Build an invite flow where users type email addresses to invite team members. Each email becomes a token chip. Users should be able to type any email, not just pick from a list. Show validation that emails are properly formatted.",
+      "tests": "Free-text creation with validation pattern",
+      "notes": "Tests whether the LLM naturally reaches for creatable when building an email input"
+    },
+    {
+      "id": "cr-4",
+      "category": "filter-builder",
+      "prompt": "Create a search filter component for a log viewer. Users can add multiple search terms as token chips \u2014 each term is free text that they type. Include a clear-all button.",
+      "tests": "Free-text tokens in a non-tag context (search terms)",
+      "notes": "Tests whether 'creatable' naming generalizes beyond the tag metaphor"
+    },
+    {
+      "id": "cr-5",
+      "category": "tag-input",
+      "prompt": "Build a recipe ingredient entry. Users type ingredient names (like 'flour', 'sugar', 'vanilla extract') and each one becomes a chip. The list is open-ended \u2014 any ingredient name is valid. Show a count of total ingredients added.",
+      "tests": "Domain-specific free-text, count display alongside tokenizer",
+      "notes": "Tests creatable in a domain where no search source makes sense"
+    },
+    {
+      "id": "cr-6",
+      "category": "hybrid",
+      "prompt": "Build a skills selector for a job posting form. Provide a search source with common skills (React, TypeScript, Python, Java, CSS, SQL, Docker, AWS, Node.js, GraphQL) but let hiring managers also type and add niche skills that aren't in the predefined list.",
+      "tests": "Hybrid with onChange distinguishing created vs selected",
+      "notes": "Tests whether the LLM uses the change.type to distinguish 'add' vs 'create'"
+    },
+    {
+      "id": "cr-7",
+      "category": "filter-builder",
+      "prompt": "Create a CSV column mapper. Show a tokenizer for each target field where users can either search from detected CSV headers (Name, Email, Phone, Address, City, State, Zip) or type a custom column name if the CSV has different headers.",
+      "tests": "Multiple tokenizers with maxEntries=1 and creatable",
+      "notes": "Tests creatable with maxEntries constraint \u2014 single-select creatable typeahead pattern"
+    },
+    {
+      "id": "cr-8",
+      "category": "invite-flow",
+      "prompt": "Build a notification rules editor. Users configure alert recipients by typing Slack channel names (like #engineering, #incidents, #on-call). Channels are free-text \u2014 no predefined list. Each channel becomes a removable chip. Limit to 5 channels max.",
+      "tests": "Free-text creation with maxEntries limit",
+      "notes": "Tests creatable + maxEntries interaction"
+    }
+  ]
+}
