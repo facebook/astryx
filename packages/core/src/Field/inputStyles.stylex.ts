@@ -31,6 +31,7 @@ export const inputWrapperStyles = stylex.create({
   base: {
     boxSizing: 'border-box',
     position: 'relative',
+    zIndex: 1,
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],

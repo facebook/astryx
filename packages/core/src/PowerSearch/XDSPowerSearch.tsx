@@ -27,6 +27,7 @@ import {
 } from '../Tokenizer';
 import {XDSTypeaheadItem} from '../Typeahead/XDSTypeaheadItem';
 import {XDSToken} from '../Token';
+import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import {XDSIcon} from '../Icon';
 import type {XDSIconType} from '../Icon';
 import type {XDSIconName} from '../Icon/globalIconRegistry';
@@ -856,7 +857,7 @@ export function XDSPowerSearch({
         {
           placement: 'below',
           alignment: 'start',
-          xstyle: popoverLayerStyles.layer,
+          xstyle: [popoverLayerStyles.layer, layerAnimations.below],
         },
       )}
     </>

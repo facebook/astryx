@@ -29,6 +29,7 @@ import type {XDSIconType} from '../Icon';
 
 import {XDSDivider} from '../Divider';
 import {XDSDropdownMenuItem} from './XDSDropdownMenuItem';
+import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import {
   colorVars,
   spacingVars,
@@ -649,7 +650,7 @@ export function XDSDropdownMenu({
         {
           placement: 'below',
           alignment: 'start',
-          xstyle: [popoverXstyle, styles.popoverGap],
+          xstyle: [popoverXstyle, styles.popoverGap, layerAnimations.below],
         },
       )}
     </>

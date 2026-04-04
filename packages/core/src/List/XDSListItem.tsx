@@ -152,15 +152,15 @@ const styles = stylex.create({
   },
   interactive: {
     cursor: 'pointer',
-    transitionProperty: 'background-image',
-    transitionDuration: durationVars['--duration-fast'],
+    transitionProperty: 'background-color',
+    transitionDuration: durationVars['--duration-fast-min'],
     transitionTimingFunction: easeVars['--ease-standard'],
-    backgroundImage: {
-      default: null,
+    backgroundColor: {
+      default: 'transparent',
       ':hover': {
-        '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
+        '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
-      ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
+      ':active': colorVars['--color-overlay-pressed'],
     },
   },
   focusWithinOutline: {
