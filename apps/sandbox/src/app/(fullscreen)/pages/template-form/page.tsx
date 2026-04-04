@@ -14,6 +14,7 @@ import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
 import {XDSTextArea} from '@xds/core/TextArea';
 import Image from 'next/image';
 import {XDSDivider} from '@xds/core/Divider';
+import bannerImg from '../../../../assets/template-form/banner.png';
 import whyUs1 from '../../../../assets/template-form/why-us-1.png';
 import whyUs2 from '../../../../assets/template-form/why-us-2.png';
 import whyUs3 from '../../../../assets/template-form/why-us-3.png';
@@ -137,6 +138,15 @@ export default function FormSimplePage() {
     <div
       {...stylex.props(styles.pageBg)}
       style={{minHeight: '100svh', display: 'flex', flexDirection: 'column'}}>
+      {/* Full-bleed banner */}
+      <div style={{width: '100%', aspectRatio: '3 / 1', overflow: 'hidden', minHeight: 200}}>
+        <Image
+          src={bannerImg}
+          alt="Banner"
+          style={{width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center'}}
+        />
+      </div>
+
       <div
         style={{
           maxWidth: 800,
