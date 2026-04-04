@@ -157,8 +157,8 @@ export default function FormSimplePage() {
           </XDSVStack>
 
           {/* Why work with us */}
+          <div style={{paddingTop: '5%', paddingBottom: '5%'}}>
           <XDSVStack gap={5}>
-            <span {...stylex.props(styles.sectionLabel)}>Why work with us?</span>
             <div style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16}}>
               {WHY_US.map(item => (
                 <XDSVStack key={item.title} gap={3}>
@@ -177,8 +177,7 @@ export default function FormSimplePage() {
               ))}
             </div>
           </XDSVStack>
-
-          <XDSDivider />
+          </div>
 
           {/* Your details */}
           <XDSVStack gap={5}>
