@@ -12,16 +12,14 @@ import {XDSBadge} from '@xds/core/Badge';
 import {XDSAvatar} from '@xds/core/Avatar';
 import {XDSButton} from '@xds/core/Button';
 import {XDSNavIcon} from '@xds/core/NavIcon';
-import {XDSTable, proportional, pixel} from '@xds/core/Table';
+import {XDSProgressBar} from '@xds/core/ProgressBar';
+import {XDSTable, proportional} from '@xds/core/Table';
 import type {XDSTableColumn} from '@xds/core/Table';
-import {XDSTabList, XDSTab} from '@xds/core/TabList';
 import {XDSLink} from '@xds/core/Link';
-import {
-  XDSSegmentedControl,
-  XDSSegmentedControlItem,
-} from '@xds/core/SegmentedControl';
 
-// Icons
+// ============= ICONS =============
+
+// SideNav icons
 const DashboardIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     viewBox="0 0 24 24"
@@ -167,161 +165,136 @@ const MoreIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <circle cx="5" cy="12" r="1" />
   </svg>
 );
-const TrendUpIcon = () => (
+
+// Content icons
+const ReloadIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth={2}
-    width={16}
-    height={16}>
-    <path d="M23 6l-9.5 9.5-5-5L1 18" />
-    <path d="M17 6h6v6" />
-  </svg>
-);
-const TrendDownIcon = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    width={16}
-    height={16}>
-    <path d="M23 18l-9.5-9.5-5 5L1 6" />
-    <path d="M17 18h6v-6" />
+    strokeWidth={1.5}
+    {...props}>
+    <path d="M21 2v6h-6" />
+    <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+    <path d="M3 22v-6h6" />
+    <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
   </svg>
 );
 
-// Mock data
-const stats = [
+// ============= DATA =============
+
+// Active users chart data (24 points over 24h: Apr 1 14:00 → Apr 2 14:00)
+const allUsersLine = [
+  115, 118, 120, 112, 100, 85, 65, 55, 58, 65, 82, 80, 75, 65, 52, 48, 50, 58,
+  72, 90, 105, 115, 125, 130,
+];
+const desktopLine = [
+  45, 48, 52, 58, 62, 68, 75, 80, 78, 76, 74, 72, 68, 64, 58, 55, 56, 60, 65,
+  70, 76, 74, 70, 65,
+];
+const mobileLine = [
+  25, 27, 32, 36, 40, 44, 45, 42, 36, 30, 25, 22, 18, 15, 12, 10, 12, 16, 22,
+  28, 30, 28, 24, 20,
+];
+
+// Metric cards
+const metrics = [
   {
-    label: 'Total Revenue',
-    value: '$1,250.00',
-    change: '+12.5%',
+    label: 'Monthly Visitors',
+    value: '27.3 k',
+    change: '+5.8%',
     positive: true,
-    desc: 'Trending up this month',
   },
   {
-    label: 'New Customers',
-    value: '1,234',
-    change: '-20%',
+    label: 'Monthly Page Views',
+    value: '48.2 k',
+    change: '+2.4%',
+    positive: true,
+  },
+  {
+    label: 'Avg. Session',
+    value: '4.5 min',
+    change: '-2s',
     positive: false,
-    desc: 'Down 20% this period',
   },
   {
-    label: 'Active Accounts',
-    value: '45,678',
-    change: '+12.5%',
-    positive: true,
-    desc: 'Strong user retention',
-  },
-  {
-    label: 'Growth Rate',
-    value: '4.5%',
-    change: '+4.5%',
-    positive: true,
-    desc: 'Steady performance increase',
+    label: 'Bounce Rate',
+    value: '42.3%',
+    change: '-3.1%',
+    positive: false,
   },
 ];
 
-interface DocRow extends Record<string, unknown> {
+// Sparkline data for each metric card
+const sparklines = [
+  [20, 25, 22, 28, 30, 35, 32, 38, 40, 45, 42, 48, 50, 55, 52, 58, 60],
+  [30, 45, 35, 50, 40, 55, 45, 60, 50, 55, 48, 52, 58, 50, 55, 62, 58],
+  [55, 52, 50, 48, 52, 45, 48, 42, 45, 40, 38, 42, 35, 38, 32, 30, 28],
+  [48, 46, 44, 46, 42, 44, 40, 42, 38, 40, 36, 38, 34, 36, 32, 34, 30],
+];
+
+// Demographics
+const regionData = [
+  {label: 'NORAM', value: 38, color: '#3B82F6'},
+  {label: 'EMEA', value: 28, color: '#EF4444'},
+  {label: 'APAC', value: 22, color: '#8B5CF6'},
+  {label: 'LATAM', value: 8, color: '#EC4899'},
+  {label: 'Other', value: 4, color: '#334155'},
+];
+
+const roleData = [
+  {label: 'Engineer', value: 45, color: '#3B82F6'},
+  {label: 'Manager', value: 20, color: '#F97316'},
+  {label: 'Designer', value: 15, color: '#14B8A6'},
+  {label: 'Data Scientist', value: 12, color: '#8B5CF6'},
+  {label: 'Other', value: 8, color: '#1E3A5F'},
+];
+
+// Engagement — Top pages
+interface PageRow extends Record<string, unknown> {
   id: string;
-  header: string;
-  sectionType: string;
-  status: 'In Process' | 'Done' | 'Draft';
-  target: number;
-  limit: number;
-  reviewer: string;
+  page: string;
+  views: number;
+  newUsers: string;
+  avgTime: string;
+  exits: string;
 }
 
-const docRows: DocRow[] = [
-  {
-    id: '1',
-    header: 'Cover page',
-    sectionType: 'Cover page',
-    status: 'In Process',
-    target: 18,
-    limit: 5,
-    reviewer: 'Eddie Lake',
-  },
-  {
-    id: '2',
-    header: 'Table of contents',
-    sectionType: 'Table of contents',
-    status: 'Done',
-    target: 20,
-    limit: 24,
-    reviewer: 'Eddie Lake',
-  },
-  {
-    id: '3',
-    header: 'Executive summary',
-    sectionType: 'Summary',
-    status: 'In Process',
-    target: 12,
-    limit: 8,
-    reviewer: 'Eddie Lake',
-  },
-  {
-    id: '4',
-    header: 'Technical approach',
-    sectionType: 'Technical',
-    status: 'Draft',
-    target: 45,
-    limit: 30,
-    reviewer: 'Eddie Lake',
-  },
-  {
-    id: '5',
-    header: 'Design methodology',
-    sectionType: 'Design',
-    status: 'In Process',
-    target: 22,
-    limit: 15,
-    reviewer: 'Eddie Lake',
-  },
+const topPagesData: PageRow[] = [
+  {id: '1', page: '/home', views: 8420, newUsers: '62.3%', avgTime: '3:42', exits: '18.5%'},
+  {id: '2', page: '/products', views: 6150, newUsers: '45.1%', avgTime: '4:15', exits: '22.8%'},
+  {id: '3', page: '/pricing', views: 4830, newUsers: '38.7%', avgTime: '2:58', exits: '35.2%'},
+  {id: '4', page: '/blog', views: 3920, newUsers: '71.4%', avgTime: '5:30', exits: '12.1%'},
+  {id: '5', page: '/docs', views: 3410, newUsers: '29.8%', avgTime: '6:12', exits: '8.4%'},
+  {id: '6', page: '/about', views: 2980, newUsers: '55.6%', avgTime: '2:15', exits: '28.3%'},
+  {id: '7', page: '/contact', views: 2540, newUsers: '48.2%', avgTime: '1:48', exits: '41.7%'},
+  {id: '8', page: '/changelog', views: 2210, newUsers: '22.1%', avgTime: '4:55', exits: '15.6%'},
+  {id: '9', page: '/support', views: 1870, newUsers: '59.3%', avgTime: '3:22', exits: '30.9%'},
+  {id: '10', page: '/careers', views: 1520, newUsers: '83.1%', avgTime: '2:34', exits: '45.2%'},
 ];
 
-const docColumns: XDSTableColumn<DocRow>[] = [
-  {key: 'header', header: 'Header', width: proportional(3)},
-  {key: 'sectionType', header: 'Section Type', width: proportional(2)},
-  {
-    key: 'status',
-    header: 'Status',
-    width: pixel(130),
-    renderCell: (item: DocRow) => (
-      <XDSBadge
-        variant={
-          item.status === 'Done'
-            ? 'success'
-            : item.status === 'Draft'
-              ? undefined
-              : 'info'
-        }
-        label={item.status}
-      />
-    ),
-  },
-  {key: 'target', header: 'Target', width: pixel(80)},
-  {key: 'limit', header: 'Limit', width: pixel(80)},
-  {
-    key: 'reviewer',
-    header: 'Reviewer',
-    width: pixel(140),
-    renderCell: (item: DocRow) => (
-      <XDSText type="body">{item.reviewer}</XDSText>
-    ),
-  },
+// Engagement — Top events
+interface EventRow extends Record<string, unknown> {
+  id: string;
+  event: string;
+  count: number;
+  users: number;
+}
+
+const topEventsData: EventRow[] = [
+  {id: '1', event: 'page_view', count: 18420, users: 12300},
+  {id: '2', event: 'session_start', count: 14850, users: 9870},
+  {id: '3', event: 'first_visit', count: 8230, users: 8230},
+  {id: '4', event: 'user_engagement', count: 6120, users: 4510},
+  {id: '5', event: 'click', count: 3540, users: 2680},
+  {id: '6', event: 'scroll', count: 2910, users: 2140},
+  {id: '7', event: 'form_submit', count: 1870, users: 1350},
+  {id: '8', event: 'video_play', count: 1240, users: 980},
+  {id: '9', event: 'search', count: 960, users: 720},
+  {id: '10', event: 'share', count: 580, users: 410},
 ];
 
-// Chart data — approximate the area chart from the screenshot
-const chartPoints = [
-  10, 15, 12, 18, 25, 30, 28, 35, 32, 38, 42, 35, 30, 28, 32, 25, 20, 22, 28,
-  35, 30, 25, 22, 28, 32, 38, 42, 45, 40, 35, 38, 42, 48, 45, 40, 38, 42, 45,
-  50, 48, 42, 38, 35, 40, 45, 42, 38, 35, 30, 28, 32, 35, 38, 42, 45, 48, 52,
-  50, 45, 42, 38, 35, 32, 30, 28, 25, 22, 20, 18, 22, 25, 28, 32, 35, 38, 42,
-  45, 48, 42, 38, 35, 32, 35, 38, 42, 45, 48, 52, 55, 50,
-];
+// ============= STYLES =============
 
 const styles = stylex.create({
   statsGrid: {
@@ -329,143 +302,371 @@ const styles = stylex.create({
     gridTemplateColumns: 'repeat(4, 1fr)',
     gap: 16,
   },
-  statRow: {
+  twoColGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(2, 1fr)',
+    gap: 16,
+  },
+  spaceBetween: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  changePositive: {color: 'var(--color-text-success, #16a34a)'},
-  changeNegative: {color: 'var(--color-text-error, #dc2626)'},
   chartContainer: {
     position: 'relative',
-    height: 260,
-    overflow: 'hidden',
+    height: 280,
   },
   chartSvg: {
     width: '100%',
     height: '100%',
   },
-  tabRow: {
+  stackedBar: {
+    display: 'flex',
+    height: 12,
+    borderRadius: 6,
+    overflow: 'hidden',
+  },
+  legendGrid: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: 16,
+  },
+  cardHeader: {
+    paddingTop: 16,
+    paddingBottom: 12,
+    paddingLeft: 16,
+    paddingRight: 16,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 16,
   },
 });
 
-function AreaChart() {
-  const max = Math.max(...chartPoints);
-  const w = 900;
-  const h = 220;
-  const pad = 20;
-  const points = chartPoints.map((v, i) => ({
-    x: pad + (i / (chartPoints.length - 1)) * (w - pad * 2),
-    y: h - pad - (v / max) * (h - pad * 2),
-  }));
-  const line = points
-    .map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`)
-    .join(' ');
-  const area = `${line} L${points[points.length - 1].x},${h} L${points[0].x},${h} Z`;
+// ============= CHART COMPONENTS =============
 
-  const months = [
-    'Apr 7',
-    'Apr 13',
-    'Apr 19',
-    'Apr 26',
-    'May 2',
-    'May 8',
-    'May 14',
-    'May 21',
-    'May 28',
-    'Jun 3',
-    'Jun 9',
-    'Jun 15',
-    'Jun 22',
-    'Jun 30',
-  ];
-
+function ChartLegendItem({color, label}: {color: string; label: string}) {
   return (
-    <div {...stylex.props(styles.chartContainer)}>
-      <svg
-        viewBox={`0 0 ${w} ${h + 30}`}
-        {...stylex.props(styles.chartSvg)}
-        preserveAspectRatio="none">
-        <defs>
-          <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop
-              offset="0%"
-              stopColor="var(--color-accent, #000)"
-              stopOpacity="0.15"
-            />
-            <stop
-              offset="100%"
-              stopColor="var(--color-accent, #000)"
-              stopOpacity="0.01"
-            />
-          </linearGradient>
-        </defs>
-        {/* Grid lines */}
-        {[0.25, 0.5, 0.75].map(pct => (
-          <line
-            key={pct}
-            x1={pad}
-            y1={h - pad - pct * (h - pad * 2)}
-            x2={w - pad}
-            y2={h - pad - pct * (h - pad * 2)}
-            stroke="var(--color-divider, #e5e5e5)"
-            strokeWidth="1"
-          />
-        ))}
-        <path d={area} fill="url(#areaGrad)" />
-        <path
-          d={line}
-          fill="none"
-          stroke="var(--color-text-primary, #000)"
-          strokeWidth="1.5"
-        />
-        {/* X-axis labels */}
-        {months.map((label, i) => (
-          <text
-            key={label}
-            x={pad + (i / (months.length - 1)) * (w - pad * 2)}
-            y={h + 20}
-            textAnchor="middle"
-            fontSize="11"
-            fill="var(--color-text-secondary, #888)">
-            {label}
-          </text>
-        ))}
+    <XDSHStack gap={2} vAlign="center">
+      <svg width="16" height="3">
+        <line x1="0" y1="1.5" x2="16" y2="1.5" stroke={color} strokeWidth="2" />
       </svg>
-    </div>
+      <XDSText type="supporting" color="secondary">
+        {label}
+      </XDSText>
+    </XDSHStack>
   );
 }
 
-function StatCard({label, value, change, positive, desc}: (typeof stats)[0]) {
+function ActiveUsersChart() {
+  const w = 900;
+  const h = 250;
+  const padL = 35;
+  const padR = 10;
+  const padT = 10;
+  const padB = 30;
+  const maxY = 140;
+  const yTicks = [0, 20, 40, 60, 80, 100, 120];
+  const xLabels = ['Apr 1 14:00', 'Apr 1 22:00', 'Apr 2 06:00', 'Apr 2 14:00'];
+
+  const toX = (i: number, len: number) =>
+    padL + (i / (len - 1)) * (w - padL - padR);
+  const toY = (v: number) => padT + (1 - v / maxY) * (h - padT - padB);
+
+  const makePath = (data: number[]) =>
+    data
+      .map((v, i) => `${i === 0 ? 'M' : 'L'}${toX(i, data.length)},${toY(v)}`)
+      .join(' ');
+
+  return (
+    <XDSVStack gap={3}>
+      <div {...stylex.props(styles.chartContainer)}>
+        <svg
+          viewBox={`0 0 ${w} ${h}`}
+          {...stylex.props(styles.chartSvg)}
+          preserveAspectRatio="xMidYMid meet">
+          {/* Y-axis grid lines and labels */}
+          {yTicks.map(tick => (
+            <g key={tick}>
+              <line
+                x1={padL}
+                y1={toY(tick)}
+                x2={w - padR}
+                y2={toY(tick)}
+                stroke="var(--color-divider, #e5e5e5)"
+                strokeWidth="1"
+              />
+              <text
+                x={padL - 8}
+                y={toY(tick) + 4}
+                textAnchor="end"
+                fontSize="11"
+                fill="var(--color-text-secondary, #888)">
+                {tick}
+              </text>
+            </g>
+          ))}
+          {/* X-axis labels */}
+          {xLabels.map((label, i) => (
+            <text
+              key={label}
+              x={padL + (i / (xLabels.length - 1)) * (w - padL - padR)}
+              y={h - 5}
+              textAnchor="middle"
+              fontSize="11"
+              fill="var(--color-text-secondary, #888)">
+              {label}
+            </text>
+          ))}
+          {/* Data lines */}
+          <path
+            d={makePath(allUsersLine)}
+            fill="none"
+            stroke="#3B82F6"
+            strokeWidth="2"
+          />
+          <path
+            d={makePath(desktopLine)}
+            fill="none"
+            stroke="#F97316"
+            strokeWidth="2"
+          />
+          <path
+            d={makePath(mobileLine)}
+            fill="none"
+            stroke="#4F46E5"
+            strokeWidth="2"
+          />
+        </svg>
+      </div>
+      {/* Legend */}
+      <XDSHStack gap={6} vAlign="center">
+        <ChartLegendItem color="#3B82F6" label="All Users" />
+        <ChartLegendItem color="#F97316" label="Desktop" />
+        <ChartLegendItem color="#4F46E5" label="Mobile" />
+      </XDSHStack>
+    </XDSVStack>
+  );
+}
+
+function Sparkline({data}: {data: number[]}) {
+  const max = Math.max(...data);
+  const min = Math.min(...data);
+  const range = max - min || 1;
+  const w = 120;
+  const h = 40;
+  const pad = 2;
+  const points = data
+    .map((v, i) => {
+      const x = pad + (i / (data.length - 1)) * (w - pad * 2);
+      const y = pad + (1 - (v - min) / range) * (h - pad * 2);
+      return `${x},${y}`;
+    })
+    .join(' ');
+
+  return (
+    <svg
+      viewBox={`0 0 ${w} ${h}`}
+      width="100%"
+      height={40}
+      preserveAspectRatio="none">
+      <polyline
+        points={points}
+        fill="none"
+        stroke="var(--color-text-secondary, #999)"
+        strokeWidth="1.5"
+      />
+    </svg>
+  );
+}
+
+// ============= CARD COMPONENTS =============
+
+function MetricCard({
+  label,
+  value,
+  change,
+  positive,
+  sparkline,
+}: {
+  label: string;
+  value: string;
+  change: string;
+  positive: boolean;
+  sparkline: number[];
+}) {
   return (
     <XDSCard>
       <XDSVStack gap={2}>
-        <div {...stylex.props(styles.statRow)}>
-          <XDSText type="supporting" color="secondary">
-            {label}
-          </XDSText>
-          <XDSHStack gap={1} vAlign="center">
-            {positive ? <TrendUpIcon /> : <TrendDownIcon />}
-            <span
-              {...stylex.props(
-                positive ? styles.changePositive : styles.changeNegative,
-              )}>
-              <XDSText type="supporting">{change}</XDSText>
-            </span>
-          </XDSHStack>
-        </div>
-        <XDSHeading level={2}>{value}</XDSHeading>
-        <XDSText type="supporting" color="secondary">
-          {desc}
+        <XDSText type="body" weight="semibold">
+          {label}
         </XDSText>
+        <XDSHeading level={2}>{value}</XDSHeading>
+        <XDSBadge
+          variant={positive ? 'success' : 'error'}
+          label={`${positive ? '↑' : '↓'} ${change}`}
+        />
+        <XDSText type="supporting" color="secondary">
+          Last 30 days vs. Previous
+        </XDSText>
+        <Sparkline data={sparkline} />
       </XDSVStack>
     </XDSCard>
   );
 }
+
+function StackedBarCard({
+  title,
+  data,
+}: {
+  title: string;
+  data: Array<{label: string; value: number; color: string}>;
+}) {
+  const total = data.reduce((sum, d) => sum + d.value, 0);
+  return (
+    <XDSCard>
+      <XDSVStack gap={4}>
+        <XDSText type="body" weight="bold">
+          {title}
+        </XDSText>
+        {/* Stacked horizontal bar */}
+        <div {...stylex.props(styles.stackedBar)}>
+          {data.map(d => (
+            <div
+              key={d.label}
+              style={{flex: d.value, backgroundColor: d.color}}
+            />
+          ))}
+        </div>
+        {/* Legend */}
+        <div {...stylex.props(styles.legendGrid)}>
+          {data.map(d => (
+            <XDSVStack key={d.label} gap={0}>
+              <XDSHStack gap={2} vAlign="center">
+                <div
+                  style={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: '50%',
+                    backgroundColor: d.color,
+                    flexShrink: 0,
+                  }}
+                />
+                <XDSText type="supporting">{d.label}</XDSText>
+              </XDSHStack>
+              <XDSText type="supporting" color="secondary">
+                {d.value} - {((d.value / total) * 100).toFixed(2)}%
+              </XDSText>
+            </XDSVStack>
+          ))}
+        </div>
+      </XDSVStack>
+    </XDSCard>
+  );
+}
+
+// ============= TABLE COMPONENTS =============
+
+function TopPagesCard() {
+  const maxViews = Math.max(...topPagesData.map(d => d.views));
+
+  const columns: XDSTableColumn<PageRow>[] = [
+    {key: 'page', header: 'Page', width: proportional(1.5)},
+    {
+      key: 'views',
+      header: 'Views',
+      width: proportional(2),
+      renderCell: (item: PageRow) => (
+        <XDSVStack gap={1}>
+          <XDSProgressBar
+            value={item.views}
+            max={maxViews}
+            label={`${item.page} views`}
+            isLabelHidden
+          />
+          <XDSText type="supporting">
+            {item.views.toLocaleString()} views
+          </XDSText>
+        </XDSVStack>
+      ),
+    },
+    {key: 'newUsers', header: 'New Users', width: proportional(1)},
+    {key: 'avgTime', header: 'Avg. Time', width: proportional(1)},
+    {key: 'exits', header: '% Exits', width: proportional(1)},
+  ];
+
+  return (
+    <XDSCard padding={0}>
+      <XDSVStack>
+        <div {...stylex.props(styles.cardHeader)}>
+          <XDSText type="body" weight="bold">
+            Top pages
+          </XDSText>
+          <XDSLink label="All pages" href="#">
+            All pages
+          </XDSLink>
+        </div>
+        <XDSTable<PageRow>
+          data={topPagesData}
+          columns={columns}
+          idKey="id"
+          density="compact"
+          dividers="rows"
+        />
+      </XDSVStack>
+    </XDSCard>
+  );
+}
+
+function TopEventsCard() {
+  const maxCount = Math.max(...topEventsData.map(d => d.count));
+
+  const columns: XDSTableColumn<EventRow>[] = [
+    {key: 'event', header: 'Event', width: proportional(2)},
+    {
+      key: 'count',
+      header: 'Count',
+      width: proportional(2),
+      renderCell: (item: EventRow) => (
+        <XDSVStack gap={1}>
+          <XDSProgressBar
+            value={item.count}
+            max={maxCount}
+            label={`${item.count}`}
+            isLabelHidden
+          />
+          <XDSText type="supporting">
+            {item.count.toLocaleString()}
+          </XDSText>
+        </XDSVStack>
+      ),
+    },
+    {key: 'users', header: 'Users', width: proportional(1)},
+  ];
+
+  return (
+    <XDSCard padding={0}>
+      <XDSVStack>
+        <div {...stylex.props(styles.cardHeader)}>
+          <XDSText type="body" weight="bold">
+            Top events
+          </XDSText>
+          <XDSLink label="All events" href="#">
+            All events
+          </XDSLink>
+        </div>
+        <XDSTable<EventRow>
+          data={topEventsData}
+          columns={columns}
+          idKey="id"
+          density="compact"
+          dividers="rows"
+        />
+      </XDSVStack>
+    </XDSCard>
+  );
+}
+
+// ============= SIDENAV =============
 
 function DashboardSideNav() {
   const [active, setActive] = useState('dashboard');
@@ -604,10 +805,9 @@ function DashboardSideNav() {
   );
 }
 
-export default function DashboardTemplate() {
-  const [period, setPeriod] = useState('3m');
-  const [docTab, setDocTab] = useState('outline');
+// ============= MAIN COMPONENT =============
 
+export default function DashboardTemplate() {
   return (
     <XDSAppShell
       sideNav={<DashboardSideNav />}
@@ -618,70 +818,59 @@ export default function DashboardTemplate() {
               GitHub
             </XDSLink>
           }>
-          <XDSTopNavHeading>Documents</XDSTopNavHeading>
+          <XDSTopNavHeading>Analytics</XDSTopNavHeading>
         </XDSTopNav>
       }
       variant="elevated"
       contentPadding={6}>
       <XDSVStack gap={6}>
-        {/* Stats Grid */}
-        <div {...stylex.props(styles.statsGrid)}>
-          {stats.map(stat => (
-            <StatCard key={stat.label} {...stat} />
-          ))}
-        </div>
-
-        {/* Area Chart */}
+        {/* Active Users Chart */}
         <XDSCard>
           <XDSVStack gap={4}>
-            <div {...stylex.props(styles.statRow)}>
-              <XDSVStack gap={1}>
-                <XDSHeading level={3}>Total Visitors</XDSHeading>
-                <XDSText type="supporting" color="secondary">
-                  Total for the last 3 months
-                </XDSText>
-              </XDSVStack>
-              <XDSSegmentedControl
-                label="Time period"
-                value={period}
-                onChange={setPeriod}>
-                <XDSSegmentedControlItem value="3m" label="Last 3 months" />
-                <XDSSegmentedControlItem value="30d" label="Last 30 days" />
-                <XDSSegmentedControlItem value="7d" label="Last 7 days" />
-              </XDSSegmentedControl>
+            <div {...stylex.props(styles.spaceBetween)}>
+              <XDSHeading level={3}>Active users</XDSHeading>
+              <XDSButton
+                label="Reload"
+                variant="secondary"
+                size="sm"
+                icon={<ReloadIcon style={{width: 16, height: 16}} />}>
+                Reload
+              </XDSButton>
             </div>
-            <AreaChart />
+            <ActiveUsersChart />
           </XDSVStack>
         </XDSCard>
 
-        {/* Document Tabs + Table */}
-        <div {...stylex.props(styles.tabRow)}>
-          <XDSTabList value={docTab} onChange={setDocTab}>
-            <XDSTab value="outline" label="Outline" />
-            <XDSTab value="performance" label="Past Performance" />
-            <XDSTab value="personnel" label="Key Personnel" />
-            <XDSTab value="focus" label="Focus Documents" />
-          </XDSTabList>
-          <XDSHStack gap={3}>
-            <XDSButton
-              label="Customize Columns"
-              variant="secondary"
-              size="sm"
-            />
-            <XDSButton label="+ Add Section" variant="secondary" size="sm" />
-          </XDSHStack>
+        {/* Metric Cards */}
+        <div {...stylex.props(styles.statsGrid)}>
+          {metrics.map((m, i) => (
+            <MetricCard key={m.label} {...m} sparkline={sparklines[i]} />
+          ))}
         </div>
 
-        <XDSCard padding={0}>
-          <XDSTable<DocRow>
-            data={docRows}
-            columns={docColumns}
-            idKey="id"
-            density="balanced"
-            dividers="rows"
-            hasHover
-          />
-        </XDSCard>
+        {/* Demographics */}
+        <XDSVStack gap={4}>
+          <div {...stylex.props(styles.spaceBetween)}>
+            <XDSHeading level={3}>Demographics</XDSHeading>
+            <XDSButton label="View more" variant="secondary" size="sm" />
+          </div>
+          <div {...stylex.props(styles.twoColGrid)}>
+            <StackedBarCard title="Region" data={regionData} />
+            <StackedBarCard title="Role" data={roleData} />
+          </div>
+        </XDSVStack>
+
+        {/* Engagement */}
+        <XDSVStack gap={4}>
+          <div {...stylex.props(styles.spaceBetween)}>
+            <XDSHeading level={3}>Engagement</XDSHeading>
+            <XDSButton label="View more" variant="secondary" size="sm" />
+          </div>
+          <div {...stylex.props(styles.twoColGrid)}>
+            <TopPagesCard />
+            <TopEventsCard />
+          </div>
+        </XDSVStack>
       </XDSVStack>
     </XDSAppShell>
   );
