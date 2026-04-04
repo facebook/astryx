@@ -11,11 +11,14 @@
  * - /packages/markdown/src/markdown.stylex.ts (if new elements need styles)
  */
 
-import {type ReactNode, useMemo} from 'react';
+import {type ReactNode, useMemo, Children, isValidElement, cloneElement} from 'react';
 import Markdown from 'markdown-to-jsx';
 import type {MarkdownToJSX} from 'markdown-to-jsx';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
+import {useXDSStreamingText} from '@xds/core/hooks';
+import {useXDSLinkify} from '@xds/core/Link';
+import type {LinkifyPattern} from '@xds/core/Link';
 import {
   rootStyles,
   blockStyles,
@@ -81,10 +84,31 @@ export interface XDSMarkdownProps {
    */
   maxHeadingLevel?: 1 | 2 | 3 | 4 | 5 | 6;
   /**
-   * Whether content is actively streaming. Shows cursor, suppresses trailing margin.
+   * Whether content is actively streaming. When true:
+   * - Smooths bursty token delivery into steady character reveal
+   * - Shows a blinking cursor at the end
+   * - Suppresses trailing margin to prevent layout jumping
+   *
+   * The component handles streaming text buffering internally —
+   * just pass the raw accumulating string as children.
    * @default false
    */
   isStreaming?: boolean;
+  /**
+   * Custom patterns to auto-detect and linkify in text content.
+   * Detected patterns render as XDSLink elements that respect XDSLinkProvider.
+   * URLs and emails are always detected by default.
+   *
+   * @example
+   * ```
+   * <XDSMarkdown linkifyPatterns={[
+   *   { pattern: /\bT(\d+)\b/g, href: m => `https://tasks.example.com/${m[1]}` },
+   * ]}>
+   *   {text}
+   * </XDSMarkdown>
+   * ```
+   */
+  linkifyPatterns?: LinkifyPattern[];
   /** Callback when a link is clicked. Return false to prevent navigation. */
   onLinkClick?: (href: string, event: React.MouseEvent) => void | false;
   xstyle?: StyleXStyles;
@@ -138,8 +162,8 @@ function createHeadingComponent(
 // Override components
 // =============================================================================
 
-function ParagraphOverride({children, density}: {children: ReactNode; density: 'default' | 'compact'}) {
-  return <p {...stylex.props(blockStyles[density])}>{children}</p>;
+function ParagraphOverride({children, density, linkifyPatterns}: {children: ReactNode; density: 'default' | 'compact'; linkifyPatterns?: LinkifyPattern[]}) {
+  return <p {...stylex.props(blockStyles[density])}>{linkifyChildren(children, linkifyPatterns)}</p>;
 }
 
 function LinkOverride({children, href, onLinkClick, ...props}: any) {
@@ -195,8 +219,8 @@ function ThOverride({children, ...props}: any) {
   return <th {...stylex.props(tableStyles.th)} {...props}>{children}</th>;
 }
 
-function TdOverride({children, ...props}: any) {
-  return <td {...stylex.props(tableStyles.td)} {...props}>{children}</td>;
+function TdOverride({children, linkifyPatterns, ...props}: any) {
+  return <td {...stylex.props(tableStyles.td)} {...props}>{linkifyChildren(children, linkifyPatterns)}</td>;
 }
 
 function HrOverride({density}: {density: 'default' | 'compact'}) {
@@ -215,8 +239,8 @@ function OlOverride({children, density}: {children: ReactNode; density: 'default
   return <ol {...stylex.props(listStyles.ol, blockStyles[density])}>{children}</ol>;
 }
 
-function LiOverride({children, density}: {children: ReactNode; density: 'default' | 'compact'}) {
-  return <li {...stylex.props(density === 'compact' ? listStyles.liCompact : listStyles.li)}>{children}</li>;
+function LiOverride({children, density, linkifyPatterns}: {children: ReactNode; density: 'default' | 'compact'; linkifyPatterns?: LinkifyPattern[]}) {
+  return <li {...stylex.props(density === 'compact' ? listStyles.liCompact : listStyles.li)}>{linkifyChildren(children, linkifyPatterns)}</li>;
 }
 
 function StrongOverride({children}: {children: ReactNode}) {
@@ -232,6 +256,33 @@ function DelOverride({children}: {children: ReactNode}) {
 }
 
 // =============================================================================
+// Linkify component — renders a string with auto-detected links
+// =============================================================================
+
+function LinkifiedText({children, patterns}: {children: string; patterns: LinkifyPattern[]}) {
+  const nodes = useXDSLinkify(children, {patterns});
+  return <>{nodes}</>;
+}
+
+/**
+ * Walk a ReactNode tree and replace string leaves with LinkifiedText components.
+ * Non-string children (elements, numbers, etc.) are passed through unchanged.
+ */
+function linkifyChildren(
+  children: ReactNode,
+  patterns: LinkifyPattern[] | undefined,
+): ReactNode {
+  if (!patterns) return children;
+
+  return Children.map(children, (child) => {
+    if (typeof child === 'string' && child.length > 0) {
+      return <LinkifiedText patterns={patterns}>{child}</LinkifiedText>;
+    }
+    return child;
+  });
+}
+
+// =============================================================================
 // Build overrides for markdown-to-jsx
 // =============================================================================
 
@@ -240,7 +291,9 @@ function buildOverrides(
   maxHeadingLevel: HeadingLevel,
   onLinkClick: XDSMarkdownProps['onLinkClick'] | undefined,
   components: XDSMarkdownComponents | undefined,
+  linkifyPatterns: LinkifyPattern[] | undefined,
 ): MarkdownToJSX.Overrides {
+  const lp = linkifyPatterns && linkifyPatterns.length > 0 ? linkifyPatterns : undefined;
   return {
     h1: {component: components?.h1 ?? createHeadingComponent(1, density, maxHeadingLevel)},
     h2: {component: components?.h2 ?? createHeadingComponent(2, density, maxHeadingLevel)},
@@ -248,19 +301,19 @@ function buildOverrides(
     h4: {component: components?.h4 ?? createHeadingComponent(4, density, maxHeadingLevel)},
     h5: {component: components?.h5 ?? createHeadingComponent(5, density, maxHeadingLevel)},
     h6: {component: components?.h6 ?? createHeadingComponent(6, density, maxHeadingLevel)},
-    p: {component: components?.p ?? ParagraphOverride, props: {density}},
+    p: {component: components?.p ?? ParagraphOverride, props: {density, linkifyPatterns: lp}},
     a: {component: components?.a ?? LinkOverride, props: {onLinkClick}},
     blockquote: {component: components?.blockquote ?? BlockquoteOverride, props: {density}},
     pre: {component: components?.pre ?? PreOverride, props: {density}},
     code: {component: components?.code ?? CodeOverride},
     table: {component: components?.table ?? TableWrapperOverride, props: {density}},
     th: {component: components?.th ?? ThOverride},
-    td: {component: components?.td ?? TdOverride},
+    td: {component: components?.td ?? TdOverride, props: {linkifyPatterns: lp}},
     hr: {component: components?.hr ?? HrOverride, props: {density}},
     img: {component: components?.img ?? ImgOverride},
     ul: {component: components?.ul ?? UlOverride, props: {density}},
     ol: {component: components?.ol ?? OlOverride, props: {density}},
-    li: {component: components?.li ?? LiOverride, props: {density}},
+    li: {component: components?.li ?? LiOverride, props: {density, linkifyPatterns: lp}},
     strong: {component: components?.strong ?? StrongOverride},
     em: {component: components?.em ?? EmOverride},
     del: {component: components?.del ?? DelOverride},
@@ -291,9 +344,18 @@ function buildOverrides(
  *
  * @example
  * ```
- * import {useStreamingText} from '@xds/core';
- * const displayed = useStreamingText(rawText, isStreaming);
- * <XDSMarkdown isStreaming={isStreaming}>{displayed}</XDSMarkdown>
+ * // Streaming — just pass isStreaming, component handles the rest
+ * <XDSMarkdown isStreaming={isStreaming}>{partialText}</XDSMarkdown>
+ * ```
+ *
+ * @example
+ * ```
+ * // Auto-linkify task references
+ * <XDSMarkdown linkifyPatterns={[
+ *   { pattern: /\bT(\d+)\b/g, href: m => `/tasks/${m[1]}` },
+ * ]}>
+ *   {text}
+ * </XDSMarkdown>
  * ```
  */
 export function XDSMarkdown({
@@ -302,6 +364,7 @@ export function XDSMarkdown({
   density = 'default',
   maxHeadingLevel = 6,
   isStreaming = false,
+  linkifyPatterns,
   onLinkClick,
   xstyle,
   className,
@@ -309,9 +372,12 @@ export function XDSMarkdown({
   ref,
   ...props
 }: XDSMarkdownProps) {
+  // When streaming, smooth the bursty text into a steady reveal
+  const displayedText = useXDSStreamingText(children, isStreaming);
+
   const overrides = useMemo(
-    () => buildOverrides(density, maxHeadingLevel, onLinkClick, components),
-    [density, maxHeadingLevel, onLinkClick, components],
+    () => buildOverrides(density, maxHeadingLevel, onLinkClick, components, linkifyPatterns),
+    [density, maxHeadingLevel, onLinkClick, components, linkifyPatterns],
   );
 
   const options: MarkdownToJSX.Options = useMemo(
@@ -330,7 +396,7 @@ export function XDSMarkdown({
       style={style ? {...rootProps.style, ...style} : rootProps.style}
       data-testid={props['data-testid']}
     >
-      <Markdown options={options}>{children}</Markdown>
+      <Markdown options={options}>{displayedText}</Markdown>
       {isStreaming && <span {...stylex.props(streamingStyles.cursor)} aria-hidden="true" />}
     </div>
   );

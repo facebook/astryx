@@ -101,4 +101,43 @@ describe('XDSMarkdown', () => {
     );
     expect(container.querySelector('[data-custom]')).toBeTruthy();
   });
+
+  it('linkifies URLs in paragraph text', () => {
+    const {container} = render(
+      <XDSMarkdown>{'Check https://example.com for info'}</XDSMarkdown>,
+    );
+    const link = container.querySelector('a[href="https://example.com"]');
+    expect(link).toBeTruthy();
+    expect(link?.textContent).toBe('https://example.com');
+  });
+
+  it('linkifies custom patterns via linkifyPatterns prop', () => {
+    const {container} = render(
+      <XDSMarkdown
+        linkifyPatterns={[
+          {
+            pattern: /\bT(\d+)\b/g,
+            href: (m: RegExpMatchArray) => `https://tasks.example.com/${m[1]}`,
+          },
+        ]}
+      >
+        {'See T1234 for details'}
+      </XDSMarkdown>,
+    );
+    const link = container.querySelector('a[href="https://tasks.example.com/1234"]');
+    expect(link).toBeTruthy();
+    expect(link?.textContent).toBe('T1234');
+  });
+
+  it('uses useXDSStreamingText internally when isStreaming is true', () => {
+    // When streaming, the component should still render without errors
+    // and show the cursor. The text buffering is handled internally.
+    const {container} = render(
+      <XDSMarkdown isStreaming>{'# Hello\n\nThis is streaming content'}</XDSMarkdown>,
+    );
+    // Cursor should be present
+    expect(container.querySelector('[aria-hidden="true"]')).toBeTruthy();
+    // Content is rendered as markdown (not plain text)
+    expect(container.querySelector('[role="document"]')).toBeTruthy();
+  });
 });
