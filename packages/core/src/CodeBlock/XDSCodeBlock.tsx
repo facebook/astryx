@@ -130,6 +130,21 @@ const styles = stylex.create({
   gutterMd: {
     fontSize: textSizeVars['--font-size-base'],
   },
+  copyButton: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacingVars['--spacing-1'],
+    border: 'none',
+    borderRadius: radiusVars['--radius-inner'],
+    backgroundColor: {
+      default: 'transparent',
+      ':hover': colorVars['--color-overlay-hover'],
+    },
+    color: colorVars['--color-text-secondary'],
+    cursor: 'pointer',
+    lineHeight: 0,
+  },
   copyButtonAbsolute: {
     position: 'absolute',
     top: spacingVars['--spacing-2'],
@@ -150,6 +165,11 @@ export interface XDSCodeBlockProps extends XDSBaseProps<HTMLPreElement> {
   language?: string;
   /** Filename/label in header bar */
   title?: string;
+  /**
+   * Show the language name in the header bar.
+   * @default true
+   */
+  hasLanguageLabel?: boolean;
   /** Show line number gutter. @default false */
   hasLineNumbers?: boolean;
   /** 1-indexed lines to highlight. */
@@ -266,6 +286,7 @@ export function XDSCodeBlock({
   code,
   language = 'plaintext',
   title,
+  hasLanguageLabel = true,
   hasLineNumbers = false,
   highlightLines,
   hasCopyButton = true,
@@ -389,19 +410,29 @@ export function XDSCodeBlock({
 
   const sizeStyle = size === 'sm' ? styles.sizeSm : styles.sizeMd;
   const gutterSizeStyle = size === 'sm' ? styles.gutterSm : styles.gutterMd;
-  const showHeader = title != null;
+  const languageLabel = hasLanguageLabel && language !== 'plaintext' ? language : null;
+  const showHeader = title != null || languageLabel != null;
 
   const scrollStyle: React.CSSProperties | undefined = maxHeight
     ? {maxHeight: typeof maxHeight === 'number' ? `${maxHeight}px` : maxHeight}
     : undefined;
+
+  const copyIcon = copied ? (
+    <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"><path d="M5 13l4 4L19 7" /></svg>
+  ) : (
+    <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"><path d="M8 4v12a2 2 0 002 2h8a2 2 0 002-2V7.242a2 2 0 00-.602-1.43L16.083 2.57A2 2 0 0014.685 2H10a2 2 0 00-2 2z" /><path d="M16 18v2a2 2 0 01-2 2H6a2 2 0 01-2-2V9a2 2 0 012-2h2" /></svg>
+  );
 
   const copyButtonEl = hasCopyButton ? (
     <button
       type="button"
       onClick={handleCopy}
       aria-label={copied ? 'Copied' : 'Copy code'}
-      {...stylex.props(!showHeader && styles.copyButtonAbsolute)}>
-      {copied ? '\u2713' : 'Copy'}
+      {...stylex.props(
+        styles.copyButton,
+        !showHeader && styles.copyButtonAbsolute,
+      )}>
+      {copyIcon}
     </button>
   ) : null;
 
@@ -432,7 +463,11 @@ export function XDSCodeBlock({
       {...props}>
       {showHeader && (
         <div {...stylex.props(styles.header)}>
-          <span {...stylex.props(styles.headerTitle)}>{title}</span>
+          <span {...stylex.props(styles.headerTitle)}>
+            {languageLabel}
+            {languageLabel && title ? ' — ' : ''}
+            {title}
+          </span>
           {copyButtonEl}
         </div>
       )}
