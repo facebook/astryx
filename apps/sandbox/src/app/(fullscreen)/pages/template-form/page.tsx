@@ -52,18 +52,18 @@ const BUDGET_OPTIONS = [
 const WHY_US = [
   {
     image: whyUs1,
-    title: 'We move fast',
-    description: 'We cut through the noise and get straight to work.',
+    title: 'We move fast for you',
+    description: 'We cut through the noise and get straight to the work.',
   },
   {
     image: whyUs2,
-    title: 'We build around your goals',
-    description: "We tailor everything around what you're trying to achieve.",
+    title: 'We build around you',
+    description: "We tailor everything to what you're trying to achieve.",
   },
   {
     image: whyUs3,
     title: 'We show up for you',
-    description: 'A dedicated team that knows your brand and wants you to win.',
+    description: 'A dedicated team that knows your brand and wants to win.',
   },
 ];
 
