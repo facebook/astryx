@@ -220,6 +220,37 @@ describe('XDSLink', () => {
     expect(link).not.toHaveAttribute('data-another-link');
   });
 
+  it('renders emphasized type with semibold weight', () => {
+    render(
+      <XDSLink label="Emphasized" href="/test" type="emphasized">
+        Emphasized Link
+      </XDSLink>,
+    );
+    const link = screen.getByRole('link', {name: 'Emphasized'});
+    expect(link).toBeInTheDocument();
+    // The inner XDSText span should have semibold weight
+    const textSpan = link.querySelector('span');
+    expect(textSpan).toBeInTheDocument();
+  });
+
+  it('renders emphasized type with isExternalLink', () => {
+    render(
+      <XDSLink
+        label="Emphasized External"
+        href="https://example.com"
+        type="emphasized"
+        isExternalLink>
+        Emphasized External
+      </XDSLink>,
+    );
+    const link = screen.getByRole('link', {name: 'Emphasized External'});
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link.querySelector('svg')).toBeInTheDocument();
+    // The inner XDSText span should still be present with semibold weight
+    const textSpan = link.querySelector('span');
+    expect(textSpan).toBeInTheDocument();
+  });
+
   it('renders xds-* class names for theme targeting', () => {
     render(
       <XDSLink label="Themed" href="/test" color="secondary">

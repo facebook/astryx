@@ -10,7 +10,7 @@
  */
 
 export {XDSLink} from './XDSLink';
-export type {XDSLinkProps} from './XDSLink';
+export type {XDSLinkProps, XDSLinkType} from './XDSLink';
 
 export {XDSLinkProvider} from './XDSLinkProvider';
 export type {XDSLinkProviderProps} from './XDSLinkProvider';

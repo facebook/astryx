@@ -241,6 +241,48 @@ export const ExternalLinks: Story = {
   ),
 };
 
+export const EmphasizedVariants: Story = {
+  render: () => (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px',
+      }}>
+      <XDSLink
+        label="Emphasized"
+        href="/emphasized"
+        type="emphasized"
+        isStandalone>
+        Emphasized
+      </XDSLink>
+      <XDSLink
+        label="Emphasized with underline"
+        href="/emphasized"
+        type="emphasized"
+        hasUnderline
+        isStandalone>
+        Emphasized with underline
+      </XDSLink>
+      <XDSLink
+        label="Emphasized external"
+        href="https://example.com"
+        type="emphasized"
+        isExternalLink
+        isStandalone>
+        Emphasized external
+      </XDSLink>
+      <XDSText type="body">
+        Inline text with an{' '}
+        <XDSLink label="emphasized link" href="/emphasized" type="emphasized">
+          emphasized link
+        </XDSLink>{' '}
+        inside it.
+      </XDSText>
+    </div>
+  ),
+};
+
 export const LinksWithTooltips: Story = {
   render: () => (
     <div style={{display: 'flex', gap: '16px', alignItems: 'center'}}>

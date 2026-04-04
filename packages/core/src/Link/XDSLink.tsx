@@ -34,6 +34,12 @@ import type {
   XDSTextWeight,
   XDSTextDisplay,
 } from '../theme/types';
+
+/**
+ * Link-specific type that extends XDSTextType with link variants.
+ * - 'emphasized': Renders as body text with semibold weight for visual prominence.
+ */
+export type XDSLinkType = XDSTextType | 'emphasized';
 import {useXDSLinkComponent} from './useXDSLinkComponent';
 import type {XDSLinkComponentType} from './types';
 import {xdsClassName, mergeProps} from '../utils';
@@ -177,10 +183,11 @@ export interface XDSLinkProps extends XDSBaseProps<HTMLAnchorElement> {
    */
   isStandalone?: boolean;
   /**
-   * Semantic text type for XDSText. Determines base typography.
+   * Semantic text type. Determines base typography.
+   * Accepts all XDSTextType values plus 'emphasized' (body with semibold weight).
    * @default 'body'
    */
-  type?: XDSTextType;
+  type?: XDSLinkType;
   /**
    * Explicit font size override. Forwarded to XDSText.
    */
@@ -250,6 +257,12 @@ export function XDSLink({
   ...props
 }: XDSLinkProps) {
   const LinkComponent = useXDSLinkComponent(as);
+
+  // Resolve link-specific types to XDSText props
+  const resolvedTextType: XDSTextType = type === 'emphasized' ? 'body' : type;
+  const resolvedWeight: XDSTextWeight | undefined =
+    weight ?? (type === 'emphasized' ? 'semibold' : undefined);
+
   // Determine target and rel based on isExternalLink
   const computedTarget = isExternalLink ? '_blank' : target;
   const computedRel = isExternalLink
@@ -283,9 +296,9 @@ export function XDSLink({
       )}
       {...props}>
       <XDSText
-        type={type}
+        type={resolvedTextType}
         size={size}
-        weight={weight}
+        weight={resolvedWeight}
         color={color}
         display={display}
         maxLines={maxLines}>
