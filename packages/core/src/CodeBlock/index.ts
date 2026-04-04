@@ -14,3 +14,5 @@ export type {XDSCodeProps} from './XDSCode';
 
 export {tokenize, tokenizeAsync, SYNC_TOKENIZE_THRESHOLD} from './tokenizer';
 export type {Token} from './tokenizer';
+
+export {ensureHighlightStyles, TOKEN_TYPES} from './highlightStyles';

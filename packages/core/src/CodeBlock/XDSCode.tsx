@@ -18,14 +18,14 @@ import {
   spacingVars,
   radiusVars,
   typographyVars,
-  textSizeVars,
+  typeScaleVars,
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 
 const styles = stylex.create({
   base: {
     fontFamily: typographyVars['--font-family-code'],
-    fontSize: textSizeVars['--font-size-sm'],
+    fontSize: typeScaleVars['--text-code-size'],
     lineHeight: 'inherit',
     backgroundColor: colorVars['--color-background-muted'],
     paddingInline: spacingVars['--spacing-1'],
