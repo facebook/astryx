@@ -1,7 +1,7 @@
 'use client';
 
 import {useState} from 'react';
-import * as stylex from '@stylexjs/stylex';
+
 import {XDSAppShell} from '@xds/core/AppShell';
 import {XDSSideNav, XDSSideNavItem, XDSSideNavSection} from '@xds/core/SideNav';
 import {XDSTopNav, XDSTopNavHeading} from '@xds/core/TopNav';
@@ -13,8 +13,10 @@ import {XDSAvatar} from '@xds/core/Avatar';
 import {XDSButton} from '@xds/core/Button';
 import {XDSNavIcon} from '@xds/core/NavIcon';
 import {XDSProgressBar} from '@xds/core/ProgressBar';
+import {XDSStack} from '@xds/core/Stack';
 import {XDSTable, proportional} from '@xds/core/Table';
 import type {XDSTableColumn} from '@xds/core/Table';
+import {XDSDivider} from '@xds/core/Divider';
 import {XDSLink} from '@xds/core/Link';
 
 // ============= ICONS =============
@@ -294,53 +296,7 @@ const topEventsData: EventRow[] = [
   {id: '10', event: 'share', count: 580, users: 410},
 ];
 
-// ============= STYLES =============
 
-const styles = stylex.create({
-  statsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(4, 1fr)',
-    gap: 16,
-  },
-  twoColGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(2, 1fr)',
-    gap: 16,
-  },
-  spaceBetween: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  chartContainer: {
-    position: 'relative',
-    height: 280,
-  },
-  chartSvg: {
-    width: '100%',
-    height: '100%',
-  },
-  stackedBar: {
-    display: 'flex',
-    height: 12,
-    borderRadius: 6,
-    overflow: 'hidden',
-  },
-  legendGrid: {
-    display: 'flex',
-    flexWrap: 'wrap',
-    gap: 16,
-  },
-  cardHeader: {
-    paddingTop: 16,
-    paddingBottom: 12,
-    paddingLeft: 16,
-    paddingRight: 16,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-});
 
 // ============= CHART COMPONENTS =============
 
@@ -379,10 +335,10 @@ function ActiveUsersChart() {
 
   return (
     <XDSVStack gap={3}>
-      <div {...stylex.props(styles.chartContainer)}>
+      <div style={{position: 'relative', height: 280}}>
         <svg
           viewBox={`0 0 ${w} ${h}`}
-          {...stylex.props(styles.chartSvg)}
+          style={{width: '100%', height: '100%'}}
           preserveAspectRatio="xMidYMid meet">
           {/* Y-axis grid lines and labels */}
           {yTicks.map(tick => (
@@ -497,9 +453,9 @@ function MetricCard({
   return (
     <XDSCard>
       <XDSVStack gap={2}>
-        <XDSText type="body" weight="semibold">
+        <XDSHeading level={3}>
           {label}
-        </XDSText>
+        </XDSHeading>
         <XDSHeading level={2}>{value}</XDSHeading>
         <XDSBadge
           variant={positive ? 'success' : 'error'}
@@ -525,11 +481,11 @@ function StackedBarCard({
   return (
     <XDSCard>
       <XDSVStack gap={4}>
-        <XDSText type="body" weight="bold">
+        <XDSHeading level={3}>
           {title}
-        </XDSText>
+        </XDSHeading>
         {/* Stacked horizontal bar */}
-        <div {...stylex.props(styles.stackedBar)}>
+        <div style={{display: 'flex', height: 24, borderRadius: 8, overflow: 'hidden'}}>
           {data.map(d => (
             <div
               key={d.label}
@@ -538,7 +494,7 @@ function StackedBarCard({
           ))}
         </div>
         {/* Legend */}
-        <div {...stylex.props(styles.legendGrid)}>
+        <div style={{display: 'flex', flexWrap: 'wrap', gap: 16}}>
           {data.map(d => (
             <XDSVStack key={d.label} gap={0}>
               <XDSHStack gap={2} vAlign="center">
@@ -597,7 +553,7 @@ function TopPagesCard() {
   return (
     <XDSCard padding={0}>
       <XDSVStack>
-        <div {...stylex.props(styles.cardHeader)}>
+        <div style={{padding: '16px 16px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
           <XDSText type="body" weight="bold">
             Top pages
           </XDSText>
@@ -646,7 +602,7 @@ function TopEventsCard() {
   return (
     <XDSCard padding={0}>
       <XDSVStack>
-        <div {...stylex.props(styles.cardHeader)}>
+        <div style={{padding: '16px 16px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
           <XDSText type="body" weight="bold">
             Top events
           </XDSText>
@@ -825,52 +781,50 @@ export default function DashboardTemplate() {
       contentPadding={6}>
       <XDSVStack gap={6}>
         {/* Active Users Chart */}
-        <XDSCard>
-          <XDSVStack gap={4}>
-            <div {...stylex.props(styles.spaceBetween)}>
-              <XDSHeading level={3}>Active users</XDSHeading>
-              <XDSButton
-                label="Reload"
-                variant="secondary"
-                size="sm"
-                icon={<ReloadIcon style={{width: 16, height: 16}} />}>
-                Reload
-              </XDSButton>
-            </div>
-            <ActiveUsersChart />
-          </XDSVStack>
-        </XDSCard>
+        <XDSVStack gap={4}>
+          <XDSHStack hAlign="between" vAlign="center">
+            <XDSHeading level={3}>Active users</XDSHeading>
+            <XDSButton
+              label="Reload"
+              variant="secondary"
+              size="md"
+              icon={<ReloadIcon style={{width: 16, height: 16}} />}>
+              Reload
+            </XDSButton>
+          </XDSHStack>
+          <ActiveUsersChart />
+        </XDSVStack>
 
         {/* Metric Cards */}
-        <div {...stylex.props(styles.statsGrid)}>
+        <XDSStack direction="horizontal" gap={4}>
           {metrics.map((m, i) => (
             <MetricCard key={m.label} {...m} sparkline={sparklines[i]} />
           ))}
-        </div>
+        </XDSStack>
+
+        <XDSDivider />
 
         {/* Demographics */}
-        <XDSVStack gap={4}>
-          <div {...stylex.props(styles.spaceBetween)}>
-            <XDSHeading level={3}>Demographics</XDSHeading>
-            <XDSButton label="View more" variant="secondary" size="sm" />
-          </div>
-          <div {...stylex.props(styles.twoColGrid)}>
-            <StackedBarCard title="Region" data={regionData} />
-            <StackedBarCard title="Role" data={roleData} />
-          </div>
-        </XDSVStack>
+        <XDSHStack hAlign="between" vAlign="center">
+          <XDSHeading level={3}>Demographics</XDSHeading>
+          <XDSButton label="View more" variant="secondary" size="sm" />
+        </XDSHStack>
+        <XDSHStack gap={16}>
+          <StackedBarCard title="Region" data={regionData} />
+          <StackedBarCard title="Role" data={roleData} />
+        </XDSHStack>
+
+        <XDSDivider />
 
         {/* Engagement */}
-        <XDSVStack gap={4}>
-          <div {...stylex.props(styles.spaceBetween)}>
-            <XDSHeading level={3}>Engagement</XDSHeading>
-            <XDSButton label="View more" variant="secondary" size="sm" />
-          </div>
-          <div {...stylex.props(styles.twoColGrid)}>
-            <TopPagesCard />
-            <TopEventsCard />
-          </div>
-        </XDSVStack>
+        <XDSHStack hAlign="between" vAlign="center">
+          <XDSHeading level={3}>Engagement</XDSHeading>
+          <XDSButton label="View more" variant="secondary" size="sm" />
+        </XDSHStack>
+        <XDSHStack gap={16}>
+          <TopPagesCard />
+          <TopEventsCard />
+        </XDSHStack>
       </XDSVStack>
     </XDSAppShell>
   );
