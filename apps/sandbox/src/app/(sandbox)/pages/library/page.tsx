@@ -1,0 +1,335 @@
+'use client';
+
+import {useState, useMemo} from 'react';
+import * as stylex from '@stylexjs/stylex';
+import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {XDSText, XDSHeading} from '@xds/core/Text';
+import {XDSCard} from '@xds/core/Card';
+import {XDSTabList, XDSTab} from '@xds/core/TabList';
+import {XDSTextInput} from '@xds/core/TextInput';
+import {XDSSelector} from '@xds/core/Selector';
+import {XDSDivider} from '@xds/core/Divider';
+
+// =============================================================================
+// Types
+// =============================================================================
+
+interface LibraryItem {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  type: 'Component' | 'Pattern' | 'Utility';
+}
+
+// =============================================================================
+// Mock Data
+// =============================================================================
+
+const CATEGORIES = ['All', 'Layout', 'Forms', 'Navigation', 'Feedback', 'Data'];
+
+const SORT_OPTIONS = ['Name (A–Z)', 'Name (Z–A)', 'Category'];
+
+const TYPE_OPTIONS = ['All types', 'Component', 'Pattern', 'Utility'];
+
+const ITEMS: LibraryItem[] = [
+  // Layout
+  {id: '1', name: 'Stack', description: 'Vertical and horizontal stack layouts with configurable gap and alignment.', category: 'Layout', type: 'Component'},
+  {id: '2', name: 'Grid', description: 'Responsive grid container with auto-fit columns and gap control.', category: 'Layout', type: 'Component'},
+  {id: '3', name: 'Card', description: 'Surface container with optional padding, border, and shadow variants.', category: 'Layout', type: 'Component'},
+  {id: '4', name: 'Center', description: 'Centers its child both horizontally and vertically.', category: 'Layout', type: 'Utility'},
+  {id: '5', name: 'Section', description: 'Semantic page section with optional heading and divider.', category: 'Layout', type: 'Pattern'},
+  {id: '6', name: 'Collapsible', description: 'Expandable region with animated height transition.', category: 'Layout', type: 'Component'},
+
+  // Forms
+  {id: '7', name: 'TextInput', description: 'Single-line text field with label, placeholder, and validation states.', category: 'Forms', type: 'Component'},
+  {id: '8', name: 'TextArea', description: 'Multi-line text field with auto-resize and character count.', category: 'Forms', type: 'Component'},
+  {id: '9', name: 'CheckboxInput', description: 'Checkbox with label, indeterminate state, and group support.', category: 'Forms', type: 'Component'},
+  {id: '10', name: 'RadioList', description: 'Group of radio buttons with accessible fieldset wrapper.', category: 'Forms', type: 'Component'},
+  {id: '11', name: 'Switch', description: 'Toggle switch for binary on/off settings.', category: 'Forms', type: 'Component'},
+  {id: '12', name: 'Selector', description: 'Dropdown or inline option selector with single and multi-select modes.', category: 'Forms', type: 'Component'},
+
+  // Navigation
+  {id: '13', name: 'TabList', description: 'Horizontal tab navigation with underline indicator and keyboard support.', category: 'Navigation', type: 'Component'},
+  {id: '14', name: 'TopNav', description: 'Application top bar with logo, nav links, and action slots.', category: 'Navigation', type: 'Pattern'},
+  {id: '15', name: 'SideNav', description: 'Vertical sidebar navigation with collapsible groups and active states.', category: 'Navigation', type: 'Pattern'},
+  {id: '16', name: 'Breadcrumbs', description: 'Path trail navigation with separator and truncation support.', category: 'Navigation', type: 'Component'},
+  {id: '17', name: 'Pagination', description: 'Page navigation with prev/next controls and page count display.', category: 'Navigation', type: 'Component'},
+  {id: '18', name: 'MobileNav', description: 'Bottom tab bar for mobile viewports with icon and label slots.', category: 'Navigation', type: 'Pattern'},
+
+  // Feedback
+  {id: '19', name: 'Badge', description: 'Compact label for status, count, or category with semantic color variants.', category: 'Feedback', type: 'Component'},
+  {id: '20', name: 'Banner', description: 'Full-width alert bar for info, success, warning, and error messages.', category: 'Feedback', type: 'Component'},
+  {id: '21', name: 'Spinner', description: 'Animated loading indicator with size and color variants.', category: 'Feedback', type: 'Component'},
+  {id: '22', name: 'ProgressBar', description: 'Horizontal bar indicating task completion percentage.', category: 'Feedback', type: 'Component'},
+  {id: '23', name: 'StatusDot', description: 'Small dot indicator for presence, health, or pipeline status.', category: 'Feedback', type: 'Component'},
+  {id: '24', name: 'Tooltip', description: 'Contextual label that appears on hover with configurable placement.', category: 'Feedback', type: 'Component'},
+
+  // Data
+  {id: '25', name: 'Table', description: 'Feature-rich data table with sorting, selection, and column resizing.', category: 'Data', type: 'Component'},
+  {id: '26', name: 'Avatar', description: 'User profile image with fallback initials and status dot support.', category: 'Data', type: 'Component'},
+  {id: '27', name: 'Skeleton', description: 'Placeholder shimmer for loading states matching content shapes.', category: 'Data', type: 'Utility'},
+  {id: '28', name: 'HoverCard', description: 'Rich popover that appears on hover with arbitrary content.', category: 'Data', type: 'Component'},
+  {id: '29', name: 'PowerSearch', description: 'Command-palette style search with grouped results and keyboard nav.', category: 'Data', type: 'Pattern'},
+  {id: '30', name: 'Typeahead', description: 'Autocomplete input with async suggestion loading and selection.', category: 'Data', type: 'Component'},
+];
+
+// =============================================================================
+// Styles
+// =============================================================================
+
+const styles = stylex.create({
+  page: {
+    width: '100%',
+  },
+  tabsRow: {
+    borderBottomWidth: '1px',
+    borderBottomStyle: 'solid',
+    borderBottomColor: '#e0e0e0',
+  },
+  filterBar: {
+    paddingTop: '1rem',
+    paddingBottom: '1rem',
+  },
+  filterSearch: {
+    flex: 1,
+    minWidth: 0,
+  },
+  filterSelectors: {
+    display: 'flex',
+    gap: '0.5rem',
+    flexShrink: 0,
+  },
+  selectorWrapper: {
+    width: 160,
+  },
+  dividerRow: {
+    paddingTop: '1.5rem',
+    paddingBottom: '1.5rem',
+  },
+  sectionHeader: {
+    paddingBottom: '0.75rem',
+  },
+  grid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(3, 1fr)',
+    gap: '1rem',
+    '@media (max-width: 900px)': {
+      gridTemplateColumns: 'repeat(2, 1fr)',
+    },
+    '@media (max-width: 580px)': {
+      gridTemplateColumns: '1fr',
+    },
+  },
+  cardInner: {
+    padding: '1rem 1.25rem 1.25rem',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.375rem',
+    minHeight: 100,
+  },
+  typePill: {
+    display: 'inline-block',
+    fontSize: '0.6875rem',
+    fontWeight: 600,
+    letterSpacing: '0.05em',
+    textTransform: 'uppercase',
+    color: '#888',
+    marginBottom: '0.125rem',
+  },
+  itemName: {
+    fontSize: '0.9375rem',
+    fontWeight: 600,
+    color: '#111',
+    lineHeight: 1.3,
+  },
+  itemDescription: {
+    fontSize: '0.8125rem',
+    color: '#555',
+    lineHeight: 1.5,
+    marginTop: '0.125rem',
+  },
+  emptyState: {
+    padding: '3rem',
+    textAlign: 'center',
+  },
+});
+
+// =============================================================================
+// Card
+// =============================================================================
+
+function LibraryCard({item}: {item: LibraryItem}) {
+  return (
+    <XDSCard>
+      <div {...stylex.props(styles.cardInner)}>
+        <span {...stylex.props(styles.typePill)}>{item.type}</span>
+        <span {...stylex.props(styles.itemName)}>{item.name}</span>
+        <span {...stylex.props(styles.itemDescription)}>{item.description}</span>
+      </div>
+    </XDSCard>
+  );
+}
+
+// =============================================================================
+// Section (category group with heading + grid)
+// =============================================================================
+
+function LibrarySection({
+  category,
+  items,
+}: {
+  category: string;
+  items: LibraryItem[];
+}) {
+  return (
+    <XDSVStack gap={0}>
+      <div {...stylex.props(styles.sectionHeader)}>
+        <XDSHeading level={3}>{category}</XDSHeading>
+      </div>
+      <div {...stylex.props(styles.grid)}>
+        {items.map(item => (
+          <LibraryCard key={item.id} item={item} />
+        ))}
+      </div>
+    </XDSVStack>
+  );
+}
+
+// =============================================================================
+// Page
+// =============================================================================
+
+export default function LibraryPage() {
+  const [activeTab, setActiveTab] = useState('All');
+  const [search, setSearch] = useState('');
+  const [sortBy, setSortBy] = useState('Name (A–Z)');
+  const [typeFilter, setTypeFilter] = useState('All types');
+
+  const filtered = useMemo(() => {
+    let items = activeTab === 'All'
+      ? ITEMS
+      : ITEMS.filter(item => item.category === activeTab);
+
+    if (typeFilter !== 'All types') {
+      items = items.filter(item => item.type === typeFilter);
+    }
+
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      items = items.filter(
+        item =>
+          item.name.toLowerCase().includes(q) ||
+          item.description.toLowerCase().includes(q),
+      );
+    }
+
+    if (sortBy === 'Name (A–Z)') {
+      items = [...items].sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sortBy === 'Name (Z–A)') {
+      items = [...items].sort((a, b) => b.name.localeCompare(a.name));
+    } else if (sortBy === 'Category') {
+      items = [...items].sort((a, b) => a.category.localeCompare(b.category));
+    }
+
+    return items;
+  }, [activeTab, search, sortBy, typeFilter]);
+
+  // Group by category for the "All" tab
+  const groupedSections = useMemo(() => {
+    if (activeTab !== 'All') return null;
+    const order = CATEGORIES.filter(c => c !== 'All');
+    const map = new Map<string, LibraryItem[]>();
+    for (const item of filtered) {
+      if (!map.has(item.category)) map.set(item.category, []);
+      map.get(item.category)!.push(item);
+    }
+    return order.filter(cat => map.has(cat)).map(cat => ({
+      category: cat,
+      items: map.get(cat)!,
+    }));
+  }, [activeTab, filtered]);
+
+  return (
+    <div {...stylex.props(styles.page)}>
+      <XDSVStack gap={0}>
+        {/* Tabs */}
+        <div {...stylex.props(styles.tabsRow)}>
+          <XDSTabList value={activeTab} onChange={setActiveTab}>
+            {CATEGORIES.map(cat => (
+              <XDSTab key={cat} value={cat} label={cat} />
+            ))}
+          </XDSTabList>
+        </div>
+
+        {/* Filter bar */}
+        <div {...stylex.props(styles.filterBar)}>
+          <XDSHStack gap={3} vAlign="center">
+            <div {...stylex.props(styles.filterSearch)}>
+              <XDSTextInput
+                label="Search"
+                isLabelHidden
+                placeholder="Search..."
+                value={search}
+                onChange={setSearch}
+              />
+            </div>
+            <div {...stylex.props(styles.filterSelectors)}>
+              <div {...stylex.props(styles.selectorWrapper)}>
+                <XDSSelector
+                  label="Type"
+                  isLabelHidden
+                  options={TYPE_OPTIONS}
+                  value={typeFilter}
+                  onChange={v => setTypeFilter(v as string)}
+                />
+              </div>
+              <div {...stylex.props(styles.selectorWrapper)}>
+                <XDSSelector
+                  label="Sort by"
+                  isLabelHidden
+                  options={SORT_OPTIONS}
+                  value={sortBy}
+                  onChange={v => setSortBy(v as string)}
+                />
+              </div>
+            </div>
+          </XDSHStack>
+        </div>
+
+        {/* Content */}
+        {filtered.length === 0 ? (
+          <div {...stylex.props(styles.emptyState)}>
+            <XDSText type="supporting" color="secondary">
+              No results found.
+            </XDSText>
+          </div>
+        ) : groupedSections != null ? (
+          // All tab — grouped sections with dividers
+          <XDSVStack gap={0}>
+            {groupedSections.map((section, i) => (
+              <XDSVStack gap={0} key={section.category}>
+                {i > 0 && (
+                  <div {...stylex.props(styles.dividerRow)}>
+                    <XDSDivider />
+                  </div>
+                )}
+                <LibrarySection
+                  category={section.category}
+                  items={section.items}
+                />
+              </XDSVStack>
+            ))}
+          </XDSVStack>
+        ) : (
+          // Single category tab — flat grid
+          <div {...stylex.props(styles.grid)}>
+            {filtered.map(item => (
+              <LibraryCard key={item.id} item={item} />
+            ))}
+          </div>
+        )}
+      </XDSVStack>
+    </div>
+  );
+}

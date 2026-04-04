@@ -89,6 +89,11 @@ export const categories: SandboxCategory[] = [
         href: '/pages/example/',
         description: 'General component composition examples',
       },
+      {
+        name: 'Library',
+        href: '/pages/library/',
+        description: 'Browsable grid of XDS components organized by category',
+      },
     ],
   },
   {
