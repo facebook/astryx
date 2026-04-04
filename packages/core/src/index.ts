@@ -23,6 +23,7 @@ export * from './Button';
 export * from './Card';
 export * from './Calendar';
 export * from './Center';
+export * from './CodeBlock';
 export * from './CheckboxInput';
 export * from './Collapsible';
 export * from './RadioList';

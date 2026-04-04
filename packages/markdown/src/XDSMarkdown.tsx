@@ -11,7 +11,7 @@
  * - /packages/markdown/src/markdown.stylex.ts (if new elements need styles)
  */
 
-import {type ReactNode, useMemo, Children, isValidElement, cloneElement} from 'react';
+import {type ReactNode, useMemo, Children, isValidElement} from 'react';
 import Markdown from 'markdown-to-jsx';
 import type {MarkdownToJSX} from 'markdown-to-jsx';
 import * as stylex from '@stylexjs/stylex';
@@ -19,6 +19,8 @@ import type {StyleXStyles} from '@stylexjs/stylex';
 import {useXDSStreamingText} from '@xds/core/hooks';
 import {useXDSLinkify} from '@xds/core/Link';
 import type {LinkifyPattern} from '@xds/core/Link';
+import {XDSCodeBlock} from '@xds/core/CodeBlock';
+import {XDSCode} from '@xds/core/CodeBlock';
 import {
   rootStyles,
   blockStyles,
@@ -27,7 +29,6 @@ import {
   linkStyles,
   blockquoteStyles,
   listStyles,
-  codeBlockStyles,
   tableStyles,
   hrStyles,
   imgStyles,
@@ -38,6 +39,7 @@ import {
 // Types
 // =============================================================================
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Component overrides receive arbitrary HTML attributes from markdown-to-jsx
 export interface XDSMarkdownComponents {
   h1?: React.ComponentType<any>;
   h2?: React.ComponentType<any>;
@@ -187,20 +189,33 @@ function BlockquoteOverride({children, density}: {children: ReactNode; density: 
   return <blockquote {...stylex.props(blockquoteStyles[density])}>{children}</blockquote>;
 }
 
-function PreOverride({children, density}: {children: ReactNode; density: 'default' | 'compact'}) {
-  return (
-    <pre {...stylex.props(density === 'compact' ? codeBlockStyles.preCompact : codeBlockStyles.pre)}>
-      {children}
-    </pre>
-  );
+function PreOverride({children}: {children: ReactNode}) {
+  // markdown-to-jsx renders fenced blocks as: <pre><code class="lang-xxx">content</code></pre>
+  // Extract language and code text from the child code element and render XDSCodeBlock.
+  const child = Children.only(children) as React.ReactElement<any>;
+  if (child && isValidElement(child)) {
+    const props = child.props as any;
+    const className = props?.className ?? '';
+    const langMatch = typeof className === 'string' && className.match(/lang-(\S+)/);
+    const language = langMatch ? langMatch[1] : 'plaintext';
+    const codeText = typeof props?.children === 'string' ? props.children : String(props?.children ?? '');
+
+    return (
+      <XDSCodeBlock
+        code={codeText}
+        language={language}
+        title={language !== 'plaintext' ? language : undefined}
+      />
+    );
+  }
+
+  // Fallback: render as-is
+  return <pre>{children}</pre>;
 }
 
-function CodeOverride({children, className}: {children: string; className?: string}) {
-  const isBlock = className?.startsWith('lang-');
-  if (isBlock) {
-    return <code {...stylex.props(codeBlockStyles.code)}>{children}</code>;
-  }
-  return <code {...stylex.props(inlineStyles.inlineCode)}>{children}</code>;
+function CodeOverride({children, className: _className}: {children: string; className?: string}) {
+  // Inline code only — fenced blocks are handled by PreOverride
+  return <XDSCode>{children}</XDSCode>;
 }
 
 function TableWrapperOverride({children, density}: {children: ReactNode; density: 'default' | 'compact'}) {
@@ -304,7 +319,7 @@ function buildOverrides(
     p: {component: components?.p ?? ParagraphOverride, props: {density, linkifyPatterns: lp}},
     a: {component: components?.a ?? LinkOverride, props: {onLinkClick}},
     blockquote: {component: components?.blockquote ?? BlockquoteOverride, props: {density}},
-    pre: {component: components?.pre ?? PreOverride, props: {density}},
+    pre: {component: components?.pre ?? PreOverride},
     code: {component: components?.code ?? CodeOverride},
     table: {component: components?.table ?? TableWrapperOverride, props: {density}},
     th: {component: components?.th ?? ThOverride},
