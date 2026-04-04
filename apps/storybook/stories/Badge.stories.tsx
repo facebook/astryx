@@ -8,7 +8,22 @@ const meta: Meta<typeof XDSBadge> = {
   argTypes: {
     variant: {
       control: 'select',
-      options: ['neutral', 'info', 'success', 'warning', 'error'],
+      options: [
+        'neutral',
+        'info',
+        'success',
+        'warning',
+        'error',
+        'blue',
+        'cyan',
+        'green',
+        'orange',
+        'pink',
+        'purple',
+        'red',
+        'teal',
+        'yellow',
+      ],
       description: 'Visual style variant',
     },
     label: {
@@ -56,6 +71,22 @@ export const StatusLabels: Story = {
       <XDSBadge variant="warning" label="Pending" />
       <XDSBadge variant="error" label="Failed" />
       <XDSBadge variant="neutral" label="Draft" />
+    </div>
+  ),
+};
+
+export const NonSemanticColors: Story = {
+  render: () => (
+    <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap'}}>
+      <XDSBadge variant="blue" label="Design" />
+      <XDSBadge variant="cyan" label="DevOps" />
+      <XDSBadge variant="green" label="Backend" />
+      <XDSBadge variant="orange" label="Urgent" />
+      <XDSBadge variant="pink" label="Marketing" />
+      <XDSBadge variant="purple" label="Engineering" />
+      <XDSBadge variant="red" label="Critical" />
+      <XDSBadge variant="teal" label="Research" />
+      <XDSBadge variant="yellow" label="Review" />
     </div>
   ),
 };
