@@ -97,64 +97,6 @@ export const categories: SandboxCategory[] = [
     description:
       'Full-page application templates — dashboards, forms, and data views built with XDS.',
     pages: [
-      {
-        name: 'Dashboard (WIP)',
-        href: '/pages/template-dashboard/',
-        description:
-          'Analytics dashboard with KPI cards, charts, and data tables',
-      },
-      {
-        name: 'Login (Card)',
-        href: '/pages/template-login/',
-        description: 'Centered login card with social sign-in and email form',
-      },
-      {
-        name: 'Login (Split)',
-        href: '/pages/template-login-02/',
-        description: 'Split-screen login with form and cover image',
-      },
-      {
-        name: 'Login (SSO)',
-        href: '/pages/template-login-sso/',
-        description: 'SSO login with email-based provider detection',
-      },
-      {
-        name: 'Settings (Sidebar)',
-        href: '/pages/template-settings-02/',
-        description: 'Account settings with sidebar nav and inline editing',
-      },
-      {
-        name: 'Settings (Dialog)',
-        href: '/pages/template-settings-03/',
-        description: 'Account settings in a dialog with sidebar nav',
-      },
-      {
-        name: 'Data Table (WIP)',
-        href: '/pages/template-data-table/',
-        description: 'Sortable data table with search and pagination',
-      },
-      {
-        name: 'File Explorer',
-        href: '/pages/file-explorer/',
-        description: 'Column-based file browser inspired by macOS Finder',
-      },
-      {
-        name: 'Detail Page',
-        href: '/pages/template-detail-2/',
-        description: 'Order detail page with timeline and line items',
-      },
-      {
-        name: 'Product Detail',
-        href: '/pages/template-product-detail/',
-        description: 'Product page with image gallery and collapsible sections',
-      },
-      {
-        name: 'Page Editor',
-        href: '/pages/editor/',
-        description:
-          'Block-based page builder with sidebar config and live preview',
-      },
-      // Auto-discovered templates from packages/cli/templates/
       ...autoDiscoveredTemplates.map(t => ({
         name: t.isReady ? t.name : t.name + ' (WIP)',
         href: t.href,

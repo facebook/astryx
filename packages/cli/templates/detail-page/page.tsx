@@ -199,10 +199,13 @@ const ArrowLeftIcon = (props: React.SVGProps<SVGSVGElement>) => (
     stroke="currentColor"
     strokeWidth={1.5}
     {...props}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"
+    />
   </svg>
 );
-
 
 // ─── Styles ─────────────────────────────────────────────────────────────────
 const pageStyles = stylex.create({
@@ -388,9 +391,7 @@ function ShopSideNav() {
       header={
         <XDSHStack gap={2} vAlign="center" style={{padding: '8px 12px'}}>
           <XDSNavIcon icon={<ShopIcon style={{width: 16, height: 16}} />} />
-          <XDSHeading level={4}>
-            Acme
-          </XDSHeading>
+          <XDSHeading level={4}>Acme</XDSHeading>
         </XDSHStack>
       }
       footer={
@@ -515,7 +516,9 @@ function PageHeader({
                 <XDSText type="body">Needs attention</XDSText>
               </XDSHStack>
               <Bullet />
-              <XDSLink href="#" label="See all" color="secondary">See all</XDSLink>
+              <XDSLink href="#" label="See all" color="secondary">
+                See all
+              </XDSLink>
             </XDSHStack>
           </XDSVStack>
 
@@ -555,10 +558,7 @@ function ItemsCard() {
           </XDSHStack>
           <XDSHStack gap={2}>
             <XDSButton label="Fulfill item" variant="ghost" />
-            <XDSButton
-              label="Create shipping label"
-              variant="secondary"
-            />
+            <XDSButton label="Create shipping label" variant="secondary" />
           </XDSHStack>
         </XDSHStack>
 
@@ -757,7 +757,9 @@ function RightPanel() {
               Customer is a repeat buyer — 3rd order this quarter. Prefers brown
               leather goods and grid-format notebooks. Requested gift wrapping
               for this order. Ships to a residential address in CA.{' '}
-              <XDSLink href="#" label="Show more" color="secondary">Show more</XDSLink>
+              <XDSLink href="#" label="Show more" color="secondary">
+                Show more
+              </XDSLink>
             </XDSText>
           </XDSCollapsible>
         </div>

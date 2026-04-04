@@ -27,7 +27,9 @@ const columns: XDSTableColumn<Item>[] = [
     key: 'name',
     header: 'Name',
     renderCell: (item: Item) => (
-      <XDSText weight="semibold">{item.name}</XDSText>
+      <XDSText type="body" weight="semibold">
+        {item.name}
+      </XDSText>
     ),
   },
   {
@@ -44,7 +46,9 @@ const columns: XDSTableColumn<Item>[] = [
     key: 'updatedAt',
     header: 'Updated',
     renderCell: (item: Item) => (
-      <XDSText color="secondary">{item.updatedAt}</XDSText>
+      <XDSText type="body" color="secondary">
+        {item.updatedAt}
+      </XDSText>
     ),
   },
   {
@@ -71,7 +75,7 @@ export default function TablePage() {
       }
       content={
         <XDSLayoutContent>
-          <XDSTable<Item> data={data} columns={columns} rowKey="id" hasHover />
+          <XDSTable<Item> data={data} columns={columns} idKey="id" hasHover />
         </XDSLayoutContent>
       }
     />
