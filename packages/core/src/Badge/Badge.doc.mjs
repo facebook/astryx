@@ -4,7 +4,7 @@ export const docs = {
   name: 'Badge',
   description:
     'A badge component for displaying status indicators, counts, or labels.',
-  keywords: ["badge","tag","chip","label","status","indicator","dot","count","counter","pill","notification","marker"],
+  keywords: ["badge","tag","chip","label","status","indicator","count","counter","pill","notification","marker"],
   props: [
     {
       name: 'variant',
@@ -14,25 +14,14 @@ export const docs = {
       default: "'neutral'",
     },
     {
-      name: 'children',
-      type: 'ReactNode',
-      description: 'Badge content. Omit for dot indicator.',
-    },
-    {
       name: 'label',
       type: 'ReactNode',
-      description: 'Badge text content. When both label and children are omitted, renders as a dot indicator.',
+      description: 'Badge text content.',
     },
     {
       name: 'icon',
       type: 'ReactNode',
       description: 'Optional leading icon.',
-    },
-    {
-      name: 'shape',
-      type: "'pill' | 'dot'",
-      description: "Visual shape. 'pill' is the default rounded pill for text/icon content. 'dot' renders a small circular indicator with no visible content (label becomes visually hidden for screen readers).",
-      default: "'pill'",
     },
   ],
   examples: [
@@ -51,10 +40,6 @@ export const docs = {
       code: '<XDSBadge variant="info" label={42} />',
     },
     {
-      label: 'Dot indicator',
-      code: '<XDSBadge variant="error" shape="dot" label="Unread" />',
-    },
-    {
       label: 'Non-semantic color variants',
       code: `<XDSBadge variant="blue" label="Design" />
 <XDSBadge variant="purple" label="Engineering" />
@@ -64,7 +49,7 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'xds-badge', visualProps: ['variant', 'shape']},
+      {className: 'xds-badge', visualProps: ['variant']},
     ],
   },
 };
@@ -77,30 +62,19 @@ export const docsZh = {
   props: [
     {
       name: 'variant',
-      type: "'neutral' | 'info' | 'success' | 'warning' | 'error'",
-      description: '视觉样式变体。',
+      type: "'neutral' | 'info' | 'success' | 'warning' | 'error' | 'blue' | 'cyan' | 'green' | 'orange' | 'pink' | 'purple' | 'red' | 'teal' | 'yellow'",
+      description: '视觉样式变体。语义变体使用实色背景，非语义颜色变体使用浅色背景配彩色文字。',
       default: "'neutral'",
-    },
-    {
-      name: 'children',
-      type: 'ReactNode',
-      description: '徽章内容。省略则显示圆点指示器。',
     },
     {
       name: 'label',
       type: 'ReactNode',
-      description: '徽章文本内容。当 label 和 children 都省略时，渲染为圆点指示器。',
+      description: '徽章文本内容。',
     },
     {
       name: 'icon',
       type: 'ReactNode',
       description: '可选的前置图标。',
-    },
-    {
-      name: 'shape',
-      type: "'pill' | 'dot'",
-      description: "视觉形状。'pill' 是文本/图标内容的默认圆角药丸形状。'dot' 渲染一个无可见内容的小圆形指示器（label 变为屏幕阅读器专用的隐藏文本）。",
-      default: "'pill'",
     },
   ],
   examples: [
@@ -119,13 +93,16 @@ export const docsZh = {
       code: '<XDSBadge variant="info" label={42} />',
     },
     {
-      label: '圆点指示器',
-      code: '<XDSBadge variant="error" shape="dot" label="Unread" />',
+      label: '非语义颜色变体',
+      code: `<XDSBadge variant="blue" label="Design" />
+<XDSBadge variant="purple" label="Engineering" />
+<XDSBadge variant="teal" label="Research" />
+<XDSBadge variant="orange" label="Urgent" />`,
     },
   ],
   theming: {
     targets: [
-      {className: 'xds-badge', visualProps: ['variant', 'shape']},
+      {className: 'xds-badge', visualProps: ['variant']},
     ],
   },
 };
@@ -135,9 +112,7 @@ export const docsDense = {
   description: 'badge for status indicators, counts, or labels',
   propDescriptions: {
     variant: 'visual style variant',
-    label: 'badge text; omit with children for dot indicator',
-    children: 'badge content; omit for dot indicator',
+    label: 'badge text content',
     icon: 'optional leading icon',
-    shape: "visual shape: 'pill' (default rounded) or 'dot' (small circular, label visually hidden)",
   },
 };

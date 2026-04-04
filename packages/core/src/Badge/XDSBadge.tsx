@@ -44,30 +44,14 @@ const styles = stylex.create({
     fontWeight: fontWeightVars['--font-weight-medium'],
     whiteSpace: 'nowrap',
   },
-  dot: {
-    width: spacingVars['--spacing-2'],
-    height: spacingVars['--spacing-2'],
-    paddingInline: 0,
-    paddingBlock: 0,
-    borderRadius: radiusVars['--radius-full'],
-  },
-  visuallyHidden: {
-    position: 'absolute',
-    width: '1px',
-    height: '1px',
-    padding: 0,
-    margin: '-1px',
-    overflow: 'hidden',
-    clip: 'rect(0, 0, 0, 0)',
-    whiteSpace: 'nowrap',
-    borderWidth: 0,
-  },
 });
 
 /**
- * Semantic variant styles — solid backgrounds with on-media text
+ * Variant styles for different badge appearances.
+ * Semantic variants use solid backgrounds; non-semantic use tinted backgrounds.
  */
 const variants = stylex.create({
+  // Semantic variants
   neutral: {
     backgroundColor: colorVars['--color-neutral'],
     color: colorVars['--color-text-primary'],
@@ -90,40 +74,40 @@ const variants = stylex.create({
   },
   // Non-semantic color variants — tinted backgrounds with colored text
   blue: {
-    backgroundColor: colorVars['--color-blue-background'],
-    color: colorVars['--color-blue-text'],
+    backgroundColor: colorVars['--color-background-blue'],
+    color: colorVars['--color-text-blue'],
   },
   cyan: {
-    backgroundColor: colorVars['--color-cyan-background'],
-    color: colorVars['--color-cyan-text'],
+    backgroundColor: colorVars['--color-background-cyan'],
+    color: colorVars['--color-text-cyan'],
   },
   green: {
-    backgroundColor: colorVars['--color-green-background'],
-    color: colorVars['--color-green-text'],
+    backgroundColor: colorVars['--color-background-green'],
+    color: colorVars['--color-text-green'],
   },
   orange: {
-    backgroundColor: colorVars['--color-orange-background'],
-    color: colorVars['--color-orange-text'],
+    backgroundColor: colorVars['--color-background-orange'],
+    color: colorVars['--color-text-orange'],
   },
   pink: {
-    backgroundColor: colorVars['--color-pink-background'],
-    color: colorVars['--color-pink-text'],
+    backgroundColor: colorVars['--color-background-pink'],
+    color: colorVars['--color-text-pink'],
   },
   purple: {
-    backgroundColor: colorVars['--color-purple-background'],
-    color: colorVars['--color-purple-text'],
+    backgroundColor: colorVars['--color-background-purple'],
+    color: colorVars['--color-text-purple'],
   },
   red: {
-    backgroundColor: colorVars['--color-red-background'],
-    color: colorVars['--color-red-text'],
+    backgroundColor: colorVars['--color-background-red'],
+    color: colorVars['--color-text-red'],
   },
   teal: {
-    backgroundColor: colorVars['--color-teal-background'],
-    color: colorVars['--color-teal-text'],
+    backgroundColor: colorVars['--color-background-teal'],
+    color: colorVars['--color-text-teal'],
   },
   yellow: {
-    backgroundColor: colorVars['--color-yellow-background'],
-    color: colorVars['--color-yellow-text'],
+    backgroundColor: colorVars['--color-background-yellow'],
+    color: colorVars['--color-text-yellow'],
   },
 });
 
@@ -146,6 +130,15 @@ export interface XDSBadgeVariantMap {
   success: true;
   warning: true;
   error: true;
+  blue: true;
+  cyan: true;
+  green: true;
+  orange: true;
+  pink: true;
+  purple: true;
+  red: true;
+  teal: true;
+  yellow: true;
 }
 
 /**
@@ -163,8 +156,7 @@ export interface XDSBadgeProps extends XDSBaseProps<HTMLSpanElement> {
    */
   variant?: XDSBadgeVariant;
   /**
-   * The badge label. Displayed as visible text for pill badges.
-   * Used as the accessible name (visually hidden) for dot badges.
+   * The badge label text.
    */
   label: ReactNode;
 
@@ -172,22 +164,6 @@ export interface XDSBadgeProps extends XDSBaseProps<HTMLSpanElement> {
    * Optional icon to display before the label.
    */
   icon?: ReactNode;
-
-  /**
-   * Visual shape of the badge.
-   * - `'pill'`: Default rounded pill shape for text/icon content
-   * - `'dot'`: Small circular indicator with no content
-   *
-   * When using `shape="dot"`, the `label` is rendered as visually hidden
-   * text for screen reader accessibility.
-   * @default 'pill'
-   *
-   * @example
-   * ```
-   * <XDSBadge variant="error" shape="dot" label="Unread" />
-   * ```
-   */
-  shape?: 'pill' | 'dot';
 }
 
 /**
@@ -201,40 +177,31 @@ export interface XDSBadgeProps extends XDSBaseProps<HTMLSpanElement> {
  * <XDSBadge label="Active" />
  * <XDSBadge variant="success" label="Active" />
  * <XDSBadge variant="error" label="3" />
- * <XDSBadge variant="info" shape="dot" label="New" />
+ * <XDSBadge variant="purple" label="Engineering" />
  * ```
  */
 export function XDSBadge({
   variant = 'neutral',
   label,
   icon,
-  shape = 'pill',
   xstyle,
   className,
   style,
   ref,
   ...props
 }: XDSBadgeProps) {
-  const isDot = shape === 'dot';
-
   return (
     <span
       ref={ref}
       {...mergeProps(
-        xdsClassName('badge', {variant, shape}),
-        stylex.props(
-          styles.base,
-          variants[variant],
-          isDot && styles.dot,
-          xstyle,
-        ),
+        xdsClassName('badge', {variant}),
+        stylex.props(styles.base, variants[variant], xstyle),
         className,
         style,
       )}
       {...props}>
-      {isDot && <span {...stylex.props(styles.visuallyHidden)}>{label}</span>}
-      {!isDot && icon}
-      {!isDot && label}
+      {icon}
+      {label}
     </span>
   );
 }
