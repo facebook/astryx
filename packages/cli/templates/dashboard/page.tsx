@@ -263,16 +263,86 @@ interface PageRow extends Record<string, unknown> {
 }
 
 const topPagesData: PageRow[] = [
-  {id: '1', page: '/home', views: 8420, newUsers: '62.3%', avgTime: '3:42', exits: '18.5%'},
-  {id: '2', page: '/products', views: 6150, newUsers: '45.1%', avgTime: '4:15', exits: '22.8%'},
-  {id: '3', page: '/pricing', views: 4830, newUsers: '38.7%', avgTime: '2:58', exits: '35.2%'},
-  {id: '4', page: '/blog', views: 3920, newUsers: '71.4%', avgTime: '5:30', exits: '12.1%'},
-  {id: '5', page: '/docs', views: 3410, newUsers: '29.8%', avgTime: '6:12', exits: '8.4%'},
-  {id: '6', page: '/about', views: 2980, newUsers: '55.6%', avgTime: '2:15', exits: '28.3%'},
-  {id: '7', page: '/contact', views: 2540, newUsers: '48.2%', avgTime: '1:48', exits: '41.7%'},
-  {id: '8', page: '/changelog', views: 2210, newUsers: '22.1%', avgTime: '4:55', exits: '15.6%'},
-  {id: '9', page: '/support', views: 1870, newUsers: '59.3%', avgTime: '3:22', exits: '30.9%'},
-  {id: '10', page: '/careers', views: 1520, newUsers: '83.1%', avgTime: '2:34', exits: '45.2%'},
+  {
+    id: '1',
+    page: '/home',
+    views: 8420,
+    newUsers: '62.3%',
+    avgTime: '3:42',
+    exits: '18.5%',
+  },
+  {
+    id: '2',
+    page: '/products',
+    views: 6150,
+    newUsers: '45.1%',
+    avgTime: '4:15',
+    exits: '22.8%',
+  },
+  {
+    id: '3',
+    page: '/pricing',
+    views: 4830,
+    newUsers: '38.7%',
+    avgTime: '2:58',
+    exits: '35.2%',
+  },
+  {
+    id: '4',
+    page: '/blog',
+    views: 3920,
+    newUsers: '71.4%',
+    avgTime: '5:30',
+    exits: '12.1%',
+  },
+  {
+    id: '5',
+    page: '/docs',
+    views: 3410,
+    newUsers: '29.8%',
+    avgTime: '6:12',
+    exits: '8.4%',
+  },
+  {
+    id: '6',
+    page: '/about',
+    views: 2980,
+    newUsers: '55.6%',
+    avgTime: '2:15',
+    exits: '28.3%',
+  },
+  {
+    id: '7',
+    page: '/contact',
+    views: 2540,
+    newUsers: '48.2%',
+    avgTime: '1:48',
+    exits: '41.7%',
+  },
+  {
+    id: '8',
+    page: '/changelog',
+    views: 2210,
+    newUsers: '22.1%',
+    avgTime: '4:55',
+    exits: '15.6%',
+  },
+  {
+    id: '9',
+    page: '/support',
+    views: 1870,
+    newUsers: '59.3%',
+    avgTime: '3:22',
+    exits: '30.9%',
+  },
+  {
+    id: '10',
+    page: '/careers',
+    views: 1520,
+    newUsers: '83.1%',
+    avgTime: '2:34',
+    exits: '45.2%',
+  },
 ];
 
 // Engagement — Top events
@@ -295,8 +365,6 @@ const topEventsData: EventRow[] = [
   {id: '9', event: 'search', count: 960, users: 720},
   {id: '10', event: 'share', count: 580, users: 410},
 ];
-
-
 
 // ============= CHART COMPONENTS =============
 
@@ -453,9 +521,7 @@ function MetricCard({
   return (
     <XDSCard>
       <XDSVStack gap={2}>
-        <XDSHeading level={3}>
-          {label}
-        </XDSHeading>
+        <XDSHeading level={3}>{label}</XDSHeading>
         <XDSHeading level={2}>{value}</XDSHeading>
         <XDSBadge
           variant={positive ? 'success' : 'error'}
@@ -481,11 +547,15 @@ function StackedBarCard({
   return (
     <XDSCard>
       <XDSVStack gap={4}>
-        <XDSHeading level={3}>
-          {title}
-        </XDSHeading>
+        <XDSHeading level={3}>{title}</XDSHeading>
         {/* Stacked horizontal bar */}
-        <div style={{display: 'flex', height: 24, borderRadius: 8, overflow: 'hidden'}}>
+        <div
+          style={{
+            display: 'flex',
+            height: 24,
+            borderRadius: 8,
+            overflow: 'hidden',
+          }}>
           {data.map(d => (
             <div
               key={d.label}
@@ -553,7 +623,13 @@ function TopPagesCard() {
   return (
     <XDSCard padding={0}>
       <XDSVStack>
-        <div style={{padding: '16px 16px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
+        <div
+          style={{
+            padding: '16px 16px 12px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}>
           <XDSText type="body" weight="bold">
             Top pages
           </XDSText>
@@ -590,9 +666,7 @@ function TopEventsCard() {
             label={`${item.count}`}
             isLabelHidden
           />
-          <XDSText type="supporting">
-            {item.count.toLocaleString()}
-          </XDSText>
+          <XDSText type="supporting">{item.count.toLocaleString()}</XDSText>
         </XDSVStack>
       ),
     },
@@ -602,7 +676,13 @@ function TopEventsCard() {
   return (
     <XDSCard padding={0}>
       <XDSVStack>
-        <div style={{padding: '16px 16px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
+        <div
+          style={{
+            padding: '16px 16px 12px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}>
           <XDSText type="body" weight="bold">
             Top events
           </XDSText>
@@ -809,7 +889,7 @@ export default function DashboardTemplate() {
           <XDSHeading level={3}>Demographics</XDSHeading>
           <XDSButton label="View more" variant="secondary" size="sm" />
         </XDSHStack>
-        <XDSHStack gap={16}>
+        <XDSHStack gap={4}>
           <StackedBarCard title="Region" data={regionData} />
           <StackedBarCard title="Role" data={roleData} />
         </XDSHStack>
@@ -821,7 +901,7 @@ export default function DashboardTemplate() {
           <XDSHeading level={3}>Engagement</XDSHeading>
           <XDSButton label="View more" variant="secondary" size="sm" />
         </XDSHStack>
-        <XDSHStack gap={16}>
+        <XDSHStack gap={4}>
           <TopPagesCard />
           <TopEventsCard />
         </XDSHStack>
