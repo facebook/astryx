@@ -33,6 +33,7 @@ import {
   Filter,
   EyeOff,
   Columns,
+  Copy,
 } from 'lucide-react';
 
 const iconProps = {
@@ -62,4 +63,5 @@ export const neutralIconRegistry: XDSIconRegistry = {
   funnel: <Filter {...iconProps} />,
   eyeSlash: <EyeOff {...iconProps} />,
   viewColumns: <Columns {...iconProps} />,
+  copy: <Copy {...iconProps} />,
 };

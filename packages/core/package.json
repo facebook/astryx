@@ -88,17 +88,17 @@
       "import": "./dist/Center/index.mjs",
       "require": "./dist/Center/index.js"
     },
-    "./CodeBlock": {
-      "source": "./src/CodeBlock/index.ts",
-      "types": "./dist/CodeBlock/index.d.ts",
-      "import": "./dist/CodeBlock/index.mjs",
-      "require": "./dist/CodeBlock/index.js"
-    },
     "./CheckboxInput": {
       "source": "./src/CheckboxInput/index.ts",
       "types": "./dist/CheckboxInput/index.d.ts",
       "import": "./dist/CheckboxInput/index.mjs",
       "require": "./dist/CheckboxInput/index.js"
+    },
+    "./CodeBlock": {
+      "source": "./src/CodeBlock/index.ts",
+      "types": "./dist/CodeBlock/index.d.ts",
+      "import": "./dist/CodeBlock/index.mjs",
+      "require": "./dist/CodeBlock/index.js"
     },
     "./Collapsible": {
       "source": "./src/Collapsible/index.ts",
