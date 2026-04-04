@@ -13,7 +13,6 @@
  * - /apps/storybook/stories/TopNav.stories.tsx
  */
 
-
 import {type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
@@ -34,13 +33,10 @@ const styles = stylex.create({
   base: {
     alignItems: 'center',
     width: '100%',
-    height: spacingVars['--spacing-12'],
-    paddingInline: spacingVars['--spacing-4'],
+    padding: spacingVars['--spacing-2'],
     boxSizing: 'border-box',
     // Publish inline padding for edge compensation (ghost buttons at edges).
-    // Uses --container-padding-inline (not --container-padding) because TopNav
-    // has no block padding (fixed height) — the isotropic variable would be misleading.
-    '--container-padding-inline': spacingVars['--spacing-4'],
+    '--container-padding-inline': spacingVars['--spacing-2'],
   },
   // Flex layout (default, used when no centerContent)
   baseFlex: {
@@ -92,8 +88,7 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     width: '100%',
-    height: spacingVars['--spacing-12'],
-    paddingInline: spacingVars['--spacing-4'],
+    padding: spacingVars['--spacing-2'],
     boxSizing: 'border-box',
   },
   mobileBarEnd: {

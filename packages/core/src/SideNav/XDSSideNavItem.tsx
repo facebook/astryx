@@ -20,6 +20,7 @@ import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
   spacingVars,
+  sizeVars,
   fontWeightVars,
   typeScaleVars,
   durationVars,
@@ -33,7 +34,7 @@ import type {XDSLinkComponentType} from '../Link/types';
 import {useXDSPopover} from '../Popover/useXDSPopover';
 import {xdsClassName, mergeProps} from '../utils';
 import {XDSTooltip} from '../Tooltip';
-import {navItemStyles} from '../NavItem/navItemStyles.stylex';
+import {navItemStyles, type NavItemSize} from '../NavItem/navItemStyles.stylex';
 import {
   useXDSSideNavCollapse,
   XDSSideNavCollapseContext,
@@ -52,8 +53,11 @@ const styles = stylex.create({
   },
   itemCollapsed: {
     justifyContent: 'center',
-    paddingInline: spacingVars['--spacing-1'],
+    width: sizeVars['--size-element-md'],
+    paddingInline: 0,
   },
+  itemCollapsedSm: {width: sizeVars['--size-element-sm']},
+  itemCollapsedLg: {width: sizeVars['--size-element-lg']},
   label: {
     flex: 1,
     minWidth: 0,
@@ -92,7 +96,7 @@ const styles = stylex.create({
     transitionTimingFunction: easeVars['--ease-standard'],
     flexShrink: 0,
   },
-  expandChevronCollapsed: {
+  expandChevronExpanded: {
     transform: 'rotate(180deg)',
   },
   // Popover surface for collapsed items with children
@@ -192,6 +196,11 @@ export interface XDSSideNavItemProps {
         onCollapsedChange?: (isCollapsed: boolean) => void;
       };
   /**
+   * Size variant for the nav item.
+   * @default 'md'
+   */
+  size?: NavItemSize;
+  /**
    * Test ID for the item element.
    */
   'data-testid'?: string;
@@ -233,6 +242,7 @@ export function XDSSideNavItem({
   endContent,
   children,
   collapsible: itemCollapsible,
+  size = 'md',
   'data-testid': testId,
   ref,
 }: XDSSideNavItemProps) {
@@ -345,7 +355,10 @@ export function XDSSideNavItem({
       xdsClassName('side-nav-item'),
       stylex.props(
         navItemStyles.item,
+        navItemStyles[size],
         styles.itemCollapsed,
+        size === 'sm' && styles.itemCollapsedSm,
+        size === 'lg' && styles.itemCollapsedLg,
         isSelected && navItemStyles.selected,
         isDisabled && navItemStyles.disabled,
       ),
@@ -447,7 +460,7 @@ export function XDSSideNavItem({
         <span
           {...stylex.props(
             styles.expandChevron,
-            isItemCollapsed && styles.expandChevronCollapsed,
+            !isItemCollapsed && styles.expandChevronExpanded,
           )}>
           {getIcon('chevronDown')}
         </span>
@@ -474,6 +487,7 @@ export function XDSSideNavItem({
           xdsClassName('side-nav-item'),
           stylex.props(
             navItemStyles.item,
+            navItemStyles[size],
             isSelected && navItemStyles.selected,
             isDisabled && navItemStyles.disabled,
           ),
@@ -491,6 +505,7 @@ export function XDSSideNavItem({
           xdsClassName('side-nav-item'),
           stylex.props(
             navItemStyles.item,
+            navItemStyles[size],
             isSelected && navItemStyles.selected,
             isDisabled && navItemStyles.disabled,
           ),

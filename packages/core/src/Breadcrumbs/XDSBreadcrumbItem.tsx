@@ -15,7 +15,6 @@
 
 import {useContext, type ReactNode, type MouseEvent} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars, spacingVars, typeScaleVars} from '../theme/tokens.stylex';
 import {BreadcrumbCtx} from './XDSBreadcrumbs';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
@@ -59,27 +58,6 @@ export interface XDSBreadcrumbItemProps {
    * Test ID for the list item.
    */
   'data-testid'?: string;
-  /**
-   * StyleX styles created via `stylex.create()`. Merged with the component's
-   * base styles inside a single `stylex.props()` call for optimal deduplication.
-   *
-   * @example
-   * ```
-   * const overrides = stylex.create({ root: { marginBottom: 8 } });
-   * <Component xstyle={overrides.root} />
-   * ```
-   */
-  xstyle?: StyleXStyles;
-  /**
-   * CSS class name(s) appended to the root element.
-   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
-   */
-  className?: string;
-  /**
-   * Inline styles to apply to the root element. Spread after StyleX
-   * inline styles, so these values take priority.
-   */
-  style?: React.CSSProperties;
 }
 
 // =============================================================================
@@ -120,7 +98,7 @@ const itemStyles = stylex.create({
     cursor: 'pointer',
   },
   defaultLink: {
-    color: colorVars['--color-text-accent'],
+    color: colorVars['--color-text-secondary'],
   },
   supportingLink: {
     color: colorVars['--color-text-secondary'],
@@ -163,9 +141,6 @@ export function XDSBreadcrumbItem({
   isCurrent: isCurrentProp,
   startIcon,
   'data-testid': testId,
-  xstyle,
-  className,
-  style,
 }: XDSBreadcrumbItemProps) {
   const ctx = useContext(BreadcrumbCtx);
   const isCurrent = isCurrentProp ?? ctx.isAutoLast;
@@ -187,10 +162,7 @@ export function XDSBreadcrumbItem({
           stylex.props(
             itemStyles.root,
             isSupporting ? itemStyles.supportingSize : itemStyles.defaultSize,
-            xstyle,
           ),
-          className,
-          style,
         )}
         data-testid={testId}>
         <span
@@ -215,10 +187,7 @@ export function XDSBreadcrumbItem({
         stylex.props(
           itemStyles.root,
           isSupporting ? itemStyles.supportingSize : itemStyles.defaultSize,
-          xstyle,
         ),
-        className,
-        style,
       )}
       data-testid={testId}>
       <LinkComponent

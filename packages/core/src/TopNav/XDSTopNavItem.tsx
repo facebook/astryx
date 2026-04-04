@@ -28,7 +28,7 @@ import {
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import type {XDSLinkComponentType} from '../Link/types';
 import {useXDSTopNavRenderMode} from './XDSTopNavRenderContext';
-import {navItemStyles} from '../NavItem/navItemStyles.stylex';
+import {navItemStyles, type NavItemSize} from '../NavItem/navItemStyles.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 
 /**
@@ -39,7 +39,7 @@ const styles = stylex.create({
     display: 'inline-flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
-    paddingBlock: spacingVars['--spacing-2'],
+    paddingBlock: spacingVars['--spacing-1-5'],
     paddingInline: spacingVars['--spacing-3'],
     borderRadius: radiusVars['--radius-element'],
     fontSize: typeScaleVars['--text-label-size'],
@@ -138,6 +138,12 @@ export interface XDSTopNavItemProps extends XDSBaseProps<HTMLAnchorElement> {
    * If omitted and icon is provided, item becomes icon-only.
    */
   children?: ReactNode;
+  /**
+   * Size variant for the nav item. Has no effect in horizontal mode;
+   * controls height/padding in drawer mode.
+   * @default 'md'
+   */
+  size?: NavItemSize;
 }
 
 /**
@@ -166,6 +172,7 @@ export function XDSTopNavItem({
   isDisabled = false,
   icon,
   children,
+  size = 'md',
   xstyle,
   className,
   style,
@@ -191,6 +198,7 @@ export function XDSTopNavItem({
           xdsClassName('top-nav-item', {mode: 'drawer'}),
           stylex.props(
             navItemStyles.item,
+            navItemStyles[size],
             styles.drawerFocus,
             isSelected && navItemStyles.selected,
             isDisabled && navItemStyles.disabled,

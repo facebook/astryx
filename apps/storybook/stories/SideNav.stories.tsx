@@ -9,6 +9,7 @@ import {XDSBadge} from '@xds/core/Badge';
 import {XDSButton} from '@xds/core/Button';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSList, XDSListItem} from '@xds/core/List';
+import {XDSMoreMenu} from '@xds/core/MoreMenu';
 import {XDSNavIcon} from '@xds/core/NavIcon';
 import {XDSText} from '@xds/core/Text';
 import {
@@ -396,11 +397,11 @@ export const HiddenSectionHeader: Story = {
 };
 
 // =============================================================================
-// Long Heading with Tooltip
+// End Content
 // =============================================================================
 
-export const LongHeadingText: Story = {
-  name: 'Long Heading with Tooltip',
+export const EndContent: Story = {
+  name: 'End Content (Badges & Menus)',
   render: () => (
     <XDSSideNav
       header={
@@ -408,20 +409,91 @@ export const LongHeadingText: Story = {
           icon={
             <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
           }
-          heading="Enterprise Resource Planning Dashboard"
-          superheading="Acme Corporation International"
-          subheading="admin@acmecorp-international.com"
+          heading="My App"
           headingHref="/"
         />
       }>
-      <XDSSideNavSection title="Main">
+      <XDSSideNavSection title="Navigation" isHeaderHidden>
         <XDSSideNavItem
           label="Dashboard"
           icon={HomeIcon}
           selectedIcon={HomeIconSolid}
           isSelected
+          href="/dashboard"
+          endContent={
+            <XDSMoreMenu
+              size="sm"
+              items={[
+                {label: 'Pin to top', onClick: () => {}},
+                {label: 'Rename', onClick: () => {}},
+                {label: 'Hide from sidebar', onClick: () => {}},
+              ]}
+            />
+          }
         />
-        <XDSSideNavItem label="Projects" icon={FolderIcon} />
+        <XDSSideNavItem
+          label="Projects"
+          icon={FolderIcon}
+          href="/projects"
+          endContent={<XDSBadge label={12} />}
+        />
+        <XDSSideNavItem
+          label="Analytics"
+          icon={ChartBarIcon}
+          href="/analytics"
+          endContent={<XDSBadge label="New" />}
+        />
+        <XDSSideNavItem
+          label="Team"
+          icon={UserGroupIcon}
+          href="/team"
+          endContent={
+            <XDSText type="supporting" color="secondary">
+              8 members
+            </XDSText>
+          }
+        />
+        <XDSSideNavItem
+          label="Notifications"
+          icon={BellIcon}
+          href="/notifications"
+          endContent={
+            <XDSButton
+              label="Settings"
+              icon={
+                <XDSIcon icon={Cog6ToothIcon} size="sm" color="secondary" />
+              }
+              variant="ghost"
+              size="sm"
+            />
+          }
+        />
+        <XDSSideNavItem
+          label="Documents"
+          icon={DocumentTextIcon}
+          href="/documents"
+          endContent={
+            <XDSText type="supporting" color="secondary">
+              ⌘D
+            </XDSText>
+          }
+        />
+        <XDSSideNavItem
+          label="Settings"
+          icon={Cog6ToothIcon}
+          href="/settings"
+          endContent={
+            <XDSText type="supporting" color="secondary">
+              3 pending
+            </XDSText>
+          }
+        />
+        <XDSSideNavItem
+          label="A very long navigation label that should truncate with ellipsis"
+          icon={DocumentTextIcon}
+          href="/long"
+          endContent={<XDSBadge label={99} />}
+        />
       </XDSSideNavSection>
     </XDSSideNav>
   ),
