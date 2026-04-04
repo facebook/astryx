@@ -2,7 +2,7 @@
  * @file index.ts
  * @input Imports CommandPalette components and types
  * @output Exports all CommandPalette components and types
- * @position Component entry point; re-exported by /packages/core/src/index.ts
+ * @position Component entry point; re-exported by /packages/lab/src/index.ts
  *
  * SYNC: When modified, update this header
  */
@@ -27,6 +27,3 @@ export type {XDSCommandPaletteFooterProps} from './XDSCommandPaletteFooter';
 
 export {useCommandPaletteContext} from './CommandPaletteContext';
 export type {CommandPaletteContextValue} from './CommandPaletteContext';
-
-export {defaultFilter} from './filter';
-export type {CommandPaletteFilterFn} from './types';

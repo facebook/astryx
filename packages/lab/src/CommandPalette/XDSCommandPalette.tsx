@@ -1,12 +1,11 @@
 /**
  * @file XDSCommandPalette.tsx
- * @input Uses React, StyleX, XDSDialog, CommandPaletteContext
+ * @input Uses React, XDSDialog, XDSLayout, CommandPaletteContext, XDSSearchSource, useCombobox
  * @output Exports XDSCommandPalette root component and props
- * @position Core root component; dialog shell with optional state management
+ * @position Core root component; dialog shell with searchSource-driven items
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/CommandPalette/README.md
- * - /packages/core/src/CommandPalette/index.ts
+ * - /packages/lab/src/CommandPalette/README.md
  * - /apps/storybook/stories/CommandPalette.stories.tsx
  */
 
@@ -14,80 +13,67 @@
 
 import {
   useCallback,
+  useEffect,
   useId,
   useMemo,
   useRef,
   useState,
   type ReactNode,
 } from 'react';
-import * as stylex from '@stylexjs/stylex';
 import {XDSDialog} from '@xds/core/Dialog';
-import type {XDSBaseProps} from '@xds/core/XDSBaseProps';
-import {xdsClassName, mergeProps} from '@xds/core/utils';
+import {
+  XDSLayout,
+  XDSLayoutHeader,
+  XDSLayoutContent,
+  XDSLayoutFooter,
+} from '@xds/core/Layout';
+import type {XDSSearchSource, XDSSearchableItem} from '@xds/core/Typeahead';
+import {useCombobox} from '@xds/core/Selector';
+import type {XDSSelectorOptionData} from '@xds/core/Selector';
 import {CommandPaletteContext} from './CommandPaletteContext';
-import {defaultFilter} from './filter';
-import type {CommandPaletteFilterFn} from './types';
+import {XDSCommandPaletteList} from './XDSCommandPaletteList';
+import {XDSCommandPaletteItem} from './XDSCommandPaletteItem';
+import {XDSCommandPaletteGroup} from './XDSCommandPaletteGroup';
 
-const styles = stylex.create({
-  wrapper: {
-    display: 'flex',
-    flexDirection: 'column',
-    height: '100%',
-    overflow: 'hidden',
-  },
-});
-
-// =============================================================================
-// Module Augmentation - Register CommandPalette's style surfaces
-// =============================================================================
-
-declare module '../theme/types' {
-  interface ComponentStyles {
-    commandPalette?: {
-      root?: import('../theme/types').StyleXStyles;
-    };
-  }
-}
-
-export interface XDSCommandPaletteProps extends XDSBaseProps<HTMLDivElement> {
-  /**
-   * Ref forwarded to the root wrapper element inside the dialog.
-   */
-  ref?: React.Ref<HTMLDivElement>;
-  /**
-   * Whether the command palette is open.
-   */
+export interface XDSCommandPaletteProps<
+  T extends XDSSearchableItem = XDSSearchableItem,
+> {
+  /** Whether the command palette is open. */
   isOpen: boolean;
 
-  /**
-   * Called when the command palette visibility changes.
-   * Called with `false` when the palette requests to close
-   * (via Escape key or backdrop click).
-   */
+  /** Called when the command palette visibility changes. */
   onOpenChange: (isOpen: boolean) => void;
 
   /**
-   * Controlled selected value.
+   * Search source providing items. Implements `search(query)` and `bootstrap()`.
+   * Same interface as XDSTypeahead's searchSource.
+   * Use `createStaticSource` for simple static lists.
    */
+  searchSource: XDSSearchSource<T>;
+
+  /**
+   * The search input slot. Pass XDSCommandPaletteInput here.
+   */
+  input?: ReactNode;
+
+  /**
+   * The footer slot. Pass XDSCommandPaletteFooter here.
+   */
+  footer?: ReactNode;
+
+  /**
+   * Custom render function for items. Receives the filtered items array.
+   * When omitted, items are rendered with default rendering:
+   * - Each item shows its `label` text
+   * - Items with `auxiliaryData.group` are auto-grouped
+   */
+  children?: (items: T[]) => ReactNode;
+
+  /** Controlled selected value (for picker mode). */
   value?: string;
 
-  /**
-   * Called when the selected value changes.
-   */
+  /** Called when the selected value changes. */
   onValueChange?: (value: string) => void;
-
-  /**
-   * Custom filter function. Return a score between 0 and 1.
-   * When provided, replaces the built-in substring filter.
-   */
-  filter?: CommandPaletteFilterFn;
-
-  /**
-   * Whether built-in filtering is enabled.
-   * Set to false when filtering is handled externally (e.g., server-side).
-   * @default true
-   */
-  isFiltered?: boolean;
 
   /**
    * Accessible label for the command palette dialog.
@@ -97,87 +83,192 @@ export interface XDSCommandPaletteProps extends XDSBaseProps<HTMLDivElement> {
 
   /**
    * Width of the command palette dialog.
-   * Numbers are treated as pixels, strings are used as-is.
    * @default 640
    */
   width?: number | string;
 
   /**
    * Maximum height of the command palette dialog.
-   * Numbers are treated as pixels, strings are used as-is.
    * @default 480
    */
   maxHeight?: number | string;
+}
 
-  /**
-   * Composable content slots.
-   * Typically includes XDSCommandPaletteInput, XDSCommandPaletteList, and XDSCommandPaletteFooter.
-   *
-   * @example
-   * ```
-   * <XDSCommandPalette isOpen={isOpen} onOpenChange={setIsOpen}>
-   *   <XDSCommandPaletteInput placeholder="Search commands..." />
-   *   <XDSCommandPaletteList>
-   *     <XDSCommandPaletteItem value="home">Go Home</XDSCommandPaletteItem>
-   *   </XDSCommandPaletteList>
-   *   <XDSCommandPaletteFooter />
-   * </XDSCommandPalette>
-   * ```
-   */
-  children: ReactNode;
+function getGroup(item: XDSSearchableItem): string | undefined {
+  const aux = item.auxiliaryData as Record<string, unknown> | undefined;
+  return typeof aux?.group === 'string' ? aux.group : undefined;
+}
+
+/**
+ * Build a flat list of selectable items in DOM order from search results.
+ * When groups are present, items are ordered by group (preserving insertion order),
+ * with ungrouped items at the end — matching the DefaultRenderer layout.
+ */
+function buildSelectableItems(
+  items: XDSSearchableItem[],
+): XDSSelectorOptionData[] {
+  const hasGroups = items.some(item => getGroup(item) != null);
+
+  if (!hasGroups) {
+    return items.map(item => ({
+      value: item.id,
+      label: item.label,
+    }));
+  }
+
+  // Group items preserving insertion order of groups
+  const groupOrder: string[] = [];
+  const groups = new Map<string, XDSSearchableItem[]>();
+  const ungrouped: XDSSearchableItem[] = [];
+
+  for (const item of items) {
+    const group = getGroup(item);
+    if (group != null) {
+      if (!groups.has(group)) {
+        groupOrder.push(group);
+        groups.set(group, []);
+      }
+      groups.get(group)!.push(item);
+    } else {
+      ungrouped.push(item);
+    }
+  }
+
+  const result: XDSSelectorOptionData[] = [];
+  for (const heading of groupOrder) {
+    for (const item of groups.get(heading)!) {
+      result.push({value: item.id, label: item.label});
+    }
+  }
+  for (const item of ungrouped) {
+    result.push({value: item.id, label: item.label});
+  }
+  return result;
+}
+
+/**
+ * Default renderer for search results.
+ * Renders items as XDSCommandPaletteItem with label text.
+ * Auto-groups items by auxiliaryData.group when present.
+ */
+function DefaultRenderer({items}: {items: XDSSearchableItem[]}) {
+  const hasGroups = items.some(item => getGroup(item) != null);
+
+  if (!hasGroups) {
+    return (
+      <>
+        {items.map(item => (
+          <XDSCommandPaletteItem key={item.id} value={item.id}>
+            {item.label}
+          </XDSCommandPaletteItem>
+        ))}
+      </>
+    );
+  }
+
+  // Group items preserving insertion order of groups
+  const groupOrder: string[] = [];
+  const groups = new Map<string, XDSSearchableItem[]>();
+  const ungrouped: XDSSearchableItem[] = [];
+
+  for (const item of items) {
+    const group = getGroup(item);
+    if (group != null) {
+      if (!groups.has(group)) {
+        groupOrder.push(group);
+        groups.set(group, []);
+      }
+      groups.get(group)!.push(item);
+    } else {
+      ungrouped.push(item);
+    }
+  }
+
+  return (
+    <>
+      {groupOrder.map(heading => (
+        <XDSCommandPaletteGroup key={heading} heading={heading}>
+          {groups.get(heading)!.map(item => (
+            <XDSCommandPaletteItem key={item.id} value={item.id}>
+              {item.label}
+            </XDSCommandPaletteItem>
+          ))}
+        </XDSCommandPaletteGroup>
+      ))}
+      {ungrouped.map(item => (
+        <XDSCommandPaletteItem key={item.id} value={item.id}>
+          {item.label}
+        </XDSCommandPaletteItem>
+      ))}
+    </>
+  );
 }
 
 /**
  * Command palette root component.
  *
- * Wraps XDSDialog with command palette defaults and provides context
- * for state management (search, filtering, keyboard navigation, selection).
+ * Uses `searchSource` for all search logic — same interface as XDSTypeahead.
+ * For static lists, use `createStaticSource` from `@xds/core/Typeahead`.
  *
- * Sub-components (Input, List, Item, Group, Footer) can be used as
- * controlled components via props, or they can consume the context
- * for automatic state wiring.
+ * Keyboard navigation is handled by `useCombobox` from XDSSelector,
+ * ensuring consistent arrow key, Home/End, Enter, and Escape behavior
+ * across all combobox-pattern components.
  *
- * @compositionHint Compose with XDSCommandPaletteInput (search),
- *   XDSCommandPaletteList (scrollable items), and XDSCommandPaletteFooter
- *   (keyboard hints) as children.
+ * Progressive disclosure:
+ * - No children: default rendering (label text, auto-groups by auxiliaryData.group)
+ * - Children render function: full control over item layout and grouping
+ *
+ * @compositionHint
+ *   - `input` slot: XDSCommandPaletteInput
+ *   - `children`: optional render function `(items) => ReactNode`
+ *   - `footer` slot: XDSCommandPaletteFooter
  *
  * @example
  * ```
- * const [isOpen, setIsOpen] = useState(false);
+ * // Simplest — no children, default rendering
+ * <XDSCommandPalette
+ *   isOpen={isOpen}
+ *   onOpenChange={setIsOpen}
+ *   searchSource={createStaticSource(commands)}
+ *   input={<XDSCommandPaletteInput placeholder="Search..." />}
+ *   footer={<XDSCommandPaletteFooter />}
+ * />
  *
- * <XDSCommandPalette isOpen={isOpen} onOpenChange={setIsOpen}>
- *   <XDSCommandPaletteInput placeholder="Type a command..." />
- *   <XDSCommandPaletteList>
- *     <XDSCommandPaletteItem value="home" onSelect={() => navigate('/')}>
- *       Go Home
+ * // Custom rendering
+ * <XDSCommandPalette
+ *   isOpen={isOpen}
+ *   onOpenChange={setIsOpen}
+ *   searchSource={source}
+ *   input={<XDSCommandPaletteInput placeholder="Search..." />}>
+ *   {(items) => items.map(item => (
+ *     <XDSCommandPaletteItem key={item.id} value={item.id}>
+ *       {item.label}
  *     </XDSCommandPaletteItem>
- *   </XDSCommandPaletteList>
- *   <XDSCommandPaletteFooter />
+ *   ))}
  * </XDSCommandPalette>
  * ```
  */
-export function XDSCommandPalette({
+export function XDSCommandPalette<
+  T extends XDSSearchableItem = XDSSearchableItem,
+>({
   isOpen,
   onOpenChange,
+  searchSource,
+  input,
+  children,
+  footer,
   value: controlledValue,
   onValueChange,
-  filter = defaultFilter,
-  isFiltered = true,
   label = 'Command palette',
   width = 640,
   maxHeight = 480,
-  children,
-  ref,
-  xstyle,
-  className,
-  style,
-  ...props
-}: XDSCommandPaletteProps) {
+}: XDSCommandPaletteProps<T>) {
   const listId = useId();
   const [search, setSearch] = useState('');
   const [internalValue, setInternalValue] = useState('');
-  const [highlightedIndex, setHighlightedIndex] = useState(0);
-  const itemsRef = useRef<Array<{value: string; isDisabled?: boolean}>>([]);
+  const [searchResults, setSearchResults] = useState<T[]>([]);
+  const [isBusy, setIsBusy] = useState(false);
+  const searchVersionRef = useRef(0);
 
   const value = controlledValue ?? internalValue;
 
@@ -191,17 +282,21 @@ export function XDSCommandPalette({
     [controlledValue, onValueChange],
   );
 
-  const registerItem = useCallback(
-    (itemValue: string, isDisabled?: boolean) => {
-      itemsRef.current = [...itemsRef.current, {value: itemValue, isDisabled}];
-      return () => {
-        itemsRef.current = itemsRef.current.filter(
-          item => item.value !== itemValue,
-        );
-      };
-    },
-    [],
+  // Build flat selectable items in DOM order from search results.
+  // This must match the order that DefaultRenderer (or custom children) renders.
+  const selectableItems = useMemo(
+    () => buildSelectableItems(searchResults),
+    [searchResults],
   );
+
+  const handleClose = useCallback(() => {
+    setSearch('');
+    if (controlledValue === undefined) {
+      setInternalValue('');
+    }
+    searchSource.cancel?.();
+    onOpenChange(false);
+  }, [onOpenChange, searchSource, controlledValue]);
 
   const selectItem = useCallback(
     (itemValue: string) => {
@@ -210,12 +305,93 @@ export function XDSCommandPalette({
     [setValue],
   );
 
-  // Reset search and highlight when closing
-  const handleClose = useCallback(() => {
-    setSearch('');
-    setHighlightedIndex(0);
-    onOpenChange(false);
-  }, [onOpenChange]);
+  // useCombobox handles all keyboard navigation and highlight state.
+  // We treat the palette as always "open" from the combobox's perspective
+  // (since the dialog itself handles open/close), and use onClose as a no-op
+  // for the combobox — the palette's own close is handled by handleClose.
+  const combobox = useCombobox({
+    selectableItems,
+    value,
+    isOpen: true, // Always "open" from combobox POV — the dialog handles visibility
+    onOpen: () => {}, // Dialog handles open
+    onClose: () => {}, // We handle close via handleClose
+    onSelect: (itemValue: string) => {
+      selectItem(itemValue);
+      handleClose();
+    },
+    listboxId: listId,
+  });
+
+  // When the dialog opens, set highlight to selected item or first item
+  useEffect(() => {
+    if (isOpen && selectableItems.length > 0) {
+      const selectedIdx = selectableItems.findIndex(
+        item => item.value === value,
+      );
+      combobox.setHighlightedIndex(selectedIdx >= 0 ? selectedIdx : 0);
+    }
+  }, [isOpen, selectableItems, value, combobox]);
+
+  // Unified search effect: bootstrap on open or empty query, search otherwise
+  useEffect(() => {
+    if (!isOpen) return;
+
+    searchSource.cancel?.();
+    const version = ++searchVersionRef.current;
+
+    const result =
+      search === '' ? searchSource.bootstrap() : searchSource.search(search);
+
+    if (result instanceof Promise) {
+      setIsBusy(true);
+      result
+        .then(items => {
+          if (searchVersionRef.current === version) {
+            setSearchResults(items);
+            setIsBusy(false);
+          }
+        })
+        .catch(() => {
+          if (searchVersionRef.current === version) {
+            setIsBusy(false);
+          }
+        });
+    } else {
+      setSearchResults(result);
+      setIsBusy(false);
+    }
+  }, [search, isOpen, searchSource]);
+
+  // Wrap combobox's onKeyDown to intercept Escape (close palette) and
+  // Enter on highlight (select + close), since we're not using combobox's
+  // built-in open/close lifecycle.
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        handleClose();
+        return;
+      }
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (
+          combobox.highlightedIndex >= 0 &&
+          combobox.highlightedIndex < selectableItems.length
+        ) {
+          const item = selectableItems[combobox.highlightedIndex];
+          if (item && !item.disabled) {
+            selectItem(item.value);
+            handleClose();
+          }
+        }
+        return;
+      }
+      // Space should type in the input, not trigger selection
+      if (e.key === ' ') return;
+      combobox.onKeyDown(e);
+    },
+    [combobox, handleClose, selectableItems, selectItem],
+  );
 
   const contextValue = useMemo(
     () => ({
@@ -223,28 +399,40 @@ export function XDSCommandPalette({
       setSearch,
       value,
       setValue,
-      filter,
-      isFiltered,
       listId,
-      highlightedIndex,
-      setHighlightedIndex,
-      items: itemsRef.current,
-      registerItem,
+      highlightedIndex: combobox.highlightedIndex,
+      setHighlightedIndex: combobox.setHighlightedIndex,
+      getItemId: combobox.getItemId,
+      selectableItems,
+      searchResults,
       selectItem,
+      onKeyDown: handleKeyDown,
       onClose: handleClose,
+      isOpen,
+      isBusy,
     }),
     [
       search,
       value,
       setValue,
-      filter,
-      isFiltered,
       listId,
-      highlightedIndex,
-      registerItem,
+      combobox.highlightedIndex,
+      combobox.setHighlightedIndex,
+      combobox.getItemId,
+      selectableItems,
+      searchResults,
       selectItem,
+      handleKeyDown,
       handleClose,
+      isOpen,
+      isBusy,
     ],
+  );
+
+  const listContent = children ? (
+    children(searchResults)
+  ) : (
+    <DefaultRenderer items={searchResults} />
   );
 
   return (
@@ -259,17 +447,28 @@ export function XDSCommandPalette({
       purpose="info"
       aria-label={label}>
       <CommandPaletteContext.Provider value={contextValue}>
-        <div
-          ref={ref}
-          {...mergeProps(
-            xdsClassName('command-palette'),
-            stylex.props(styles.wrapper, xstyle),
-            className,
-            style,
-          )}
-          {...props}>
-          {children}
-        </div>
+        <XDSLayout
+          defaultHasDividers
+          header={
+            input != null ? (
+              <XDSLayoutHeader hasDivider padding={0}>
+                {input}
+              </XDSLayoutHeader>
+            ) : undefined
+          }
+          content={
+            <XDSLayoutContent padding={0}>
+              <XDSCommandPaletteList>{listContent}</XDSCommandPaletteList>
+            </XDSLayoutContent>
+          }
+          footer={
+            footer != null ? (
+              <XDSLayoutFooter hasDivider padding={0}>
+                {footer}
+              </XDSLayoutFooter>
+            ) : undefined
+          }
+        />
       </CommandPaletteContext.Provider>
     </XDSDialog>
   );

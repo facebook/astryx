@@ -24,6 +24,9 @@ const styles = stylex.create({
     maxHeight: '100%',
     padding: spacingVars['--spacing-1'],
     flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacingVars['--spacing-0-5'],
   },
 });
 

@@ -5,8 +5,7 @@
  * @position Sub-component; visual grouping with heading
  *
  * SYNC: When modified, update:
- * - /packages/core/src/CommandPalette/README.md
- * - /packages/core/src/CommandPalette/index.ts
+ * - /packages/lab/src/CommandPalette/README.md
  */
 
 'use client';
@@ -18,47 +17,42 @@ import {xdsClassName, mergeProps} from '@xds/core/utils';
 import {
   colorVars,
   spacingVars,
-  textSizeVars,
+  typeScaleVars,
   typographyVars,
-  fontWeightVars,
 } from '@xds/core/theme/tokens.stylex';
 
 const styles = stylex.create({
   group: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacingVars['--spacing-0-5'],
     paddingBlock: spacingVars['--spacing-1'],
   },
   heading: {
     paddingInline: spacingVars['--spacing-3'],
     paddingBlock: spacingVars['--spacing-1'],
     fontFamily: typographyVars['--font-family-body'],
-    fontSize: textSizeVars['--font-size-xs'],
-    fontWeight: fontWeightVars['--font-weight-semibold'],
+    fontSize: typeScaleVars['--text-supporting-size'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
     color: colorVars['--color-text-secondary'],
-    textTransform: 'uppercase' as const,
-    letterSpacing: '0.05em',
     userSelect: 'none',
   },
 });
 
 export interface XDSCommandPaletteGroupProps extends XDSBaseProps<HTMLDivElement> {
-  /**
-   * Ref forwarded to the root element.
-   */
+  /** Ref forwarded to the root element. */
   ref?: React.Ref<HTMLDivElement>;
-
-  /**
-   * Group heading text.
-   */
+  /** Group heading text. */
   heading: string;
-
-  /**
-   * Items within this group.
-   */
+  /** Items within this group. */
   children: ReactNode;
 }
 
 /**
  * Visual grouping for command palette items with a heading label.
+ *
+ * Heading style matches DropdownMenu section headings:
+ * supporting-size (12px), secondary color, no uppercase/letterSpacing.
  *
  * @compositionHint Place inside XDSCommandPaletteList.
  *   Contains XDSCommandPaletteItem children.

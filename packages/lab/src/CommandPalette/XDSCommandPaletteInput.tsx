@@ -5,8 +5,7 @@
  * @position Search input for the command palette
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/CommandPalette/README.md
- * - /packages/core/src/CommandPalette/index.ts
+ * - /packages/lab/src/CommandPalette/README.md
  * - /apps/storybook/stories/CommandPalette.stories.tsx
  */
 
@@ -16,6 +15,7 @@ import {useCallback, useEffect, useRef, type InputHTMLAttributes} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {XDSIcon} from '@xds/core/Icon';
+import {XDSSpinner} from '@xds/core/Spinner';
 import {xdsClassName, mergeProps} from '@xds/core/utils';
 import {
   colorVars,
@@ -35,7 +35,10 @@ const styles = stylex.create({
     paddingBlock: spacingVars['--spacing-3'],
     flexShrink: 0,
   },
+  // The icon span needs explicit flex centering to avoid line-height offset
   icon: {
+    display: 'flex',
+    alignItems: 'center',
     flexShrink: 0,
     color: colorVars['--color-text-secondary'],
   },
@@ -60,9 +63,7 @@ export interface XDSCommandPaletteInputProps extends Omit<
   InputHTMLAttributes<HTMLInputElement>,
   'type' | 'role' | 'children' | 'autoFocus'
 > {
-  /**
-   * Ref forwarded to the input element (for focus management).
-   */
+  /** Ref forwarded to the input element (for focus management). */
   ref?: React.Ref<HTMLInputElement>;
 
   /**
@@ -89,9 +90,7 @@ export interface XDSCommandPaletteInputProps extends Omit<
    */
   hasAutoFocus?: boolean;
 
-  /**
-   * StyleX styles for the wrapper element.
-   */
+  /** StyleX styles for the wrapper element. */
   xstyle?: StyleXStyles;
 }
 
@@ -102,17 +101,15 @@ export interface XDSCommandPaletteInputProps extends Omit<
  * so users can start typing immediately.
  *
  * When used inside XDSCommandPalette, automatically wires to the
- * context for search state. Can also be used standalone with explicit
- * value/onValueChange props.
+ * context for search state and keyboard navigation (via useCombobox).
+ * Can also be used standalone with explicit value/onValueChange props.
  *
  * @compositionHint Place as the first child of XDSCommandPalette.
  *
  * @example
  * ```
  * <XDSCommandPalette isOpen={isOpen} onOpenChange={setIsOpen}>
- *   <XDSCommandPaletteInput
- *     placeholder="Search commands..."
- *   />
+ *   <XDSCommandPaletteInput placeholder="Search commands..." />
  * </XDSCommandPalette>
  * ```
  */
@@ -155,47 +152,13 @@ export function XDSCommandPaletteInput({
     }
   }, [hasAutoFocus]);
 
-  // Keyboard navigation when context is available
+  // Keyboard navigation — delegates to useCombobox via context
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
       onKeyDown?.(e);
-      if (!ctx || e.defaultPrevented) return;
-
-      const items = ctx.items.filter(item => !item.isDisabled);
-      if (items.length === 0) return;
-
-      switch (e.key) {
-        case 'ArrowDown': {
-          e.preventDefault();
-          ctx.setHighlightedIndex(
-            Math.min(ctx.highlightedIndex + 1, items.length - 1),
-          );
-          break;
-        }
-        case 'ArrowUp': {
-          e.preventDefault();
-          ctx.setHighlightedIndex(Math.max(ctx.highlightedIndex - 1, 0));
-          break;
-        }
-        case 'Home': {
-          e.preventDefault();
-          ctx.setHighlightedIndex(0);
-          break;
-        }
-        case 'End': {
-          e.preventDefault();
-          ctx.setHighlightedIndex(items.length - 1);
-          break;
-        }
-        case 'Enter': {
-          e.preventDefault();
-          const highlighted = items[ctx.highlightedIndex];
-          if (highlighted) {
-            ctx.selectItem(highlighted.value);
-          }
-          break;
-        }
-      }
+      if (e.defaultPrevented) return;
+      // Delegate to useCombobox's keyboard handler from context
+      ctx?.onKeyDown(e);
     },
     [ctx, onKeyDown],
   );
@@ -207,18 +170,22 @@ export function XDSCommandPaletteInput({
         stylex.props(styles.wrapper, xstyle),
       )}>
       <span {...stylex.props(styles.icon)}>
-        <XDSIcon icon="search" size="sm" color="inherit" />
+        {ctx?.isBusy ? (
+          <XDSSpinner size="sm" />
+        ) : (
+          <XDSIcon icon="search" size="sm" color="inherit" />
+        )}
       </span>
       <input
         ref={setRefs}
         type="text"
         role="combobox"
-        aria-expanded={true}
+        aria-expanded={ctx?.isOpen ?? true}
         aria-autocomplete="list"
         aria-controls={ctx?.listId}
         aria-activedescendant={
           ctx && ctx.highlightedIndex >= 0
-            ? `${ctx.listId}-item-${ctx.highlightedIndex}`
+            ? ctx.getItemId(ctx.highlightedIndex)
             : undefined
         }
         placeholder={placeholder}
@@ -226,8 +193,6 @@ export function XDSCommandPaletteInput({
         onChange={e => {
           handleValueChange?.(e.target.value);
           onChange?.(e);
-          // Reset highlight when search changes
-          ctx?.setHighlightedIndex(0);
         }}
         onKeyDown={handleKeyDown}
         {...stylex.props(styles.input)}

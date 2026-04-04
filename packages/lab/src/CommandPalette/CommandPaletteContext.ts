@@ -6,7 +6,7 @@
  */
 
 import {createContext, useContext} from 'react';
-import type {CommandPaletteFilterFn} from './types';
+import type {XDSSearchableItem} from '@xds/core/Typeahead';
 
 export interface CommandPaletteContextValue {
   /** Current search query. */
@@ -17,24 +17,28 @@ export interface CommandPaletteContextValue {
   value: string;
   /** Update the selected value. */
   setValue: (value: string) => void;
-  /** Filter function. */
-  filter: CommandPaletteFilterFn;
-  /** Whether built-in filtering is enabled. */
-  isFiltered: boolean;
-  /** Unique ID prefix for ARIA. */
+  /** Unique ID prefix for ARIA (listbox id). */
   listId: string;
-  /** Index of the currently highlighted item. */
+  /** Index-based highlight from useCombobox. -1 = none. */
   highlightedIndex: number;
   /** Update highlighted index. */
   setHighlightedIndex: (index: number) => void;
-  /** All registered item values (for keyboard navigation). */
-  items: Array<{value: string; isDisabled?: boolean}>;
-  /** Register an item. Returns unregister function. */
-  registerItem: (value: string, isDisabled?: boolean) => () => void;
-  /** Select an item by value. */
+  /** Get the DOM id for an item by its flat index. */
+  getItemId: (index: number) => string;
+  /** Flat list of selectable items in DOM order (after grouping/filtering). */
+  selectableItems: Array<{value: string; label?: string; disabled?: boolean}>;
+  /** The search result items (typed). */
+  searchResults: XDSSearchableItem[];
+  /** Select an item by value and close. */
   selectItem: (value: string) => void;
+  /** Keyboard handler from useCombobox — attach to the input. */
+  onKeyDown: (e: React.KeyboardEvent) => void;
   /** Close the palette. */
   onClose: () => void;
+  /** Whether the palette is open (for aria-expanded). */
+  isOpen: boolean;
+  /** Whether an async search is in flight. */
+  isBusy: boolean;
 }
 
 export const CommandPaletteContext =
@@ -42,8 +46,7 @@ export const CommandPaletteContext =
 
 /**
  * Access the command palette context.
- * Throws if used outside of a CommandPalette with context enabled.
- * Returns null when context is not available (for standalone usage).
+ * Returns null when used outside a CommandPalette (for standalone usage).
  */
 export function useCommandPaletteContext(): CommandPaletteContextValue | null {
   return useContext(CommandPaletteContext);

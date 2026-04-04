@@ -12,6 +12,10 @@
 // Shared types
 export type {XDSSearchableItem, XDSSearchSource} from './types';
 
+// Search source utilities
+export {createStaticSource} from './createStaticSource';
+export type {CreateStaticSourceOptions} from './createStaticSource';
+
 // Base (unstyled) typeahead
 export {XDSBaseTypeahead} from './XDSBaseTypeahead';
 export type {XDSBaseTypeaheadProps} from './XDSBaseTypeahead';
