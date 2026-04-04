@@ -13,7 +13,7 @@ import {XDSAvatar} from '@xds/core/Avatar';
 import {XDSButton} from '@xds/core/Button';
 import {XDSNavIcon} from '@xds/core/NavIcon';
 import {XDSProgressBar} from '@xds/core/ProgressBar';
-import {XDSStack} from '@xds/core/Stack';
+import {XDSStack, XDSStackItem} from '@xds/core/Stack';
 import {XDSTable, proportional} from '@xds/core/Table';
 import type {XDSTableColumn} from '@xds/core/Table';
 import {XDSDivider} from '@xds/core/Divider';
@@ -186,18 +186,16 @@ const ReloadIcon = (props: React.SVGProps<SVGSVGElement>) => (
 // ============= DATA =============
 
 // Active users chart data (24 points over 24h: Apr 1 14:00 → Apr 2 14:00)
-const allUsersLine = [
-  115, 118, 120, 112, 100, 85, 65, 55, 58, 65, 82, 80, 75, 65, 52, 48, 50, 58,
-  72, 90, 105, 115, 125, 130,
-];
+// Hours: 14:00 → 15 → 16 → 17 → 18 → 19 → 20 → 21 → 22 → 23 → 00 → 01 → 02 → 03 → 04 → 05 → 06 → 07 → 08 → 09 → 10 → 11 → 12 → 13
 const desktopLine = [
-  45, 48, 52, 58, 62, 68, 75, 80, 78, 76, 74, 72, 68, 64, 58, 55, 56, 60, 65,
-  70, 76, 74, 70, 65,
+  72, 70, 65, 60, 52, 45, 38, 32, 25, 20, 16, 12, 10, 8, 8, 10, 15, 28, 48, 62,
+  72, 75, 74, 72,
 ];
 const mobileLine = [
-  25, 27, 32, 36, 40, 44, 45, 42, 36, 30, 25, 22, 18, 15, 12, 10, 12, 16, 22,
-  28, 30, 28, 24, 20,
+  30, 28, 25, 35, 45, 50, 42, 35, 24, 16, 12, 8, 6, 5, 5, 6, 10, 32, 42, 35,
+  28, 25, 30, 32,
 ];
+const allUsersLine = desktopLine.map((v, i) => v + mobileLine[i]);
 
 // Metric cards
 const metrics = [
@@ -407,7 +405,7 @@ function ActiveUsersChart() {
         <svg
           viewBox={`0 0 ${w} ${h}`}
           style={{width: '100%', height: '100%'}}
-          preserveAspectRatio="xMidYMid meet">
+          preserveAspectRatio="none">
           {/* Y-axis grid lines and labels */}
           {yTicks.map(tick => (
             <g key={tick}>
@@ -878,7 +876,9 @@ export default function DashboardTemplate() {
         {/* Metric Cards */}
         <XDSStack direction="horizontal" gap={4}>
           {metrics.map((m, i) => (
-            <MetricCard key={m.label} {...m} sparkline={sparklines[i]} />
+            <XDSStackItem key={m.label} size="fill">
+              <MetricCard {...m} sparkline={sparklines[i]} />
+            </XDSStackItem>
           ))}
         </XDSStack>
 
@@ -887,19 +887,23 @@ export default function DashboardTemplate() {
         {/* Demographics */}
         <XDSHStack hAlign="between" vAlign="center">
           <XDSHeading level={3}>Demographics</XDSHeading>
-          <XDSButton label="View more" variant="secondary" size="sm" />
+          <XDSButton label="View more" variant="secondary" size="md" />
         </XDSHStack>
-        <XDSHStack gap={4}>
-          <StackedBarCard title="Region" data={regionData} />
-          <StackedBarCard title="Role" data={roleData} />
-        </XDSHStack>
+        <XDSStack direction="horizontal" gap={4}>
+          <XDSStackItem size="fill">
+            <StackedBarCard title="Region" data={regionData} />
+          </XDSStackItem>
+          <XDSStackItem size="fill">
+            <StackedBarCard title="Role" data={roleData} />
+          </XDSStackItem>
+        </XDSStack>
 
         <XDSDivider />
 
         {/* Engagement */}
         <XDSHStack hAlign="between" vAlign="center">
           <XDSHeading level={3}>Engagement</XDSHeading>
-          <XDSButton label="View more" variant="secondary" size="sm" />
+          <XDSButton label="View more" variant="secondary" size="md" />
         </XDSHStack>
         <XDSHStack gap={4}>
           <TopPagesCard />
