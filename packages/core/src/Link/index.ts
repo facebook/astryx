@@ -18,3 +18,6 @@ export type {XDSLinkProviderProps} from './XDSLinkProvider';
 export {useXDSLinkComponent} from './useXDSLinkComponent';
 
 export type {XDSLinkComponentType} from './types';
+
+export {useXDSLinkify} from './useXDSLinkify';
+export type {LinkifyPattern, UseXDSLinkifyOptions} from './useXDSLinkify';
