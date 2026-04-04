@@ -259,7 +259,7 @@ describe('EntityListEditor (#1106)', () => {
 // =============================================================================
 
 describe('StringListEditor (#1107)', () => {
-  it('allows committing free-text tokens when no searchSource', async () => {
+  it('shows a "Create" item in the dropdown when typing free-text without searchSource', async () => {
     const onChange = vi.fn();
     render(
       <PowerSearchValueEditor
@@ -272,18 +272,46 @@ describe('StringListEditor (#1107)', () => {
 
     const input = screen.getByRole('combobox');
 
-    // Type a free-text value
+    // Type a free-text value — should show 'Create "my-tag"' in the dropdown
     await act(async () => {
       fireEvent.change(input, {target: {value: 'my-tag'}});
     });
 
-    // Press Enter to commit
+    // Wait for debounce
     await act(async () => {
-      fireEvent.keyDown(input, {key: 'Enter'});
+      await new Promise(r => setTimeout(r, 50));
     });
 
-    // onChange should be called with the committed value
-    // Bug #1107: currently this never fires because there's no creatable mode
+    const createOption = screen.queryByText('Create "my-tag"');
+    expect(createOption).toBeInTheDocument();
+  });
+
+  it('commits free-text token when clicking the Create item', async () => {
+    const onChange = vi.fn();
+    render(
+      <PowerSearchValueEditor
+        operatorValue={{type: 'string_list'}}
+        filterValue={undefined}
+        onChange={onChange}
+        config={stubConfig}
+      />,
+    );
+
+    const input = screen.getByRole('combobox');
+
+    await act(async () => {
+      fireEvent.change(input, {target: {value: 'my-tag'}});
+    });
+
+    await act(async () => {
+      await new Promise(r => setTimeout(r, 50));
+    });
+
+    const createOption = screen.getByText('Create "my-tag"');
+    await act(async () => {
+      fireEvent.click(createOption);
+    });
+
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'string_list',
@@ -292,7 +320,7 @@ describe('StringListEditor (#1107)', () => {
     );
   });
 
-  it('allows committing free-text when isArbitraryStringAllowed is true', async () => {
+  it('commits free-text via Enter when the Create item is highlighted', async () => {
     const onChange = vi.fn();
     render(
       <PowerSearchValueEditor
@@ -312,6 +340,14 @@ describe('StringListEditor (#1107)', () => {
       fireEvent.change(input, {target: {value: 'custom-value'}});
     });
 
+    await act(async () => {
+      await new Promise(r => setTimeout(r, 50));
+    });
+
+    // Arrow down to highlight the Create item, then Enter
+    await act(async () => {
+      fireEvent.keyDown(input, {key: 'ArrowDown'});
+    });
     await act(async () => {
       fireEvent.keyDown(input, {key: 'Enter'});
     });

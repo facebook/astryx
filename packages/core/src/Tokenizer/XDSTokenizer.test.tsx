@@ -467,4 +467,164 @@ describe('XDSTokenizer', () => {
       expect(wrapper).toBeInTheDocument();
     });
   });
+
+  describe('isCreatable', () => {
+    const emptySource: XDSSearchSource = {
+      search: () => [],
+      bootstrap: () => [],
+    };
+
+    it('shows a "Create" option when typing with isCreatable', async () => {
+      render(
+        <XDSTokenizer
+          label="Tags"
+          searchSource={emptySource}
+          value={[]}
+          onChange={() => {}}
+          isCreatable
+          debounceMs={0}
+        />,
+      );
+
+      const input = screen.getByRole('combobox');
+      await act(async () => {
+        fireEvent.change(input, {target: {value: 'new-tag'}});
+      });
+      await act(async () => {
+        await new Promise(r => setTimeout(r, 50));
+      });
+
+      expect(screen.queryByText('Create "new-tag"')).toBeInTheDocument();
+    });
+
+    it('fires onChange with type "create" when the Create item is clicked', async () => {
+      const onChange = vi.fn();
+      render(
+        <XDSTokenizer
+          label="Tags"
+          searchSource={emptySource}
+          value={[]}
+          onChange={onChange}
+          isCreatable
+          debounceMs={0}
+        />,
+      );
+
+      const input = screen.getByRole('combobox');
+      await act(async () => {
+        fireEvent.change(input, {target: {value: 'new-tag'}});
+      });
+      await act(async () => {
+        await new Promise(r => setTimeout(r, 50));
+      });
+
+      const createOption = screen.getByText('Create "new-tag"');
+      await act(async () => {
+        fireEvent.click(createOption);
+      });
+
+      expect(onChange).toHaveBeenCalledWith(
+        [{id: 'new-tag', label: 'new-tag'}],
+        {item: {id: 'new-tag', label: 'new-tag'}, type: 'create'},
+      );
+    });
+
+    it('does not show Create option for already-selected values', async () => {
+      render(
+        <XDSTokenizer
+          label="Tags"
+          searchSource={emptySource}
+          value={[{id: 'existing', label: 'existing'}]}
+          onChange={() => {}}
+          isCreatable
+          debounceMs={0}
+        />,
+      );
+
+      const input = screen.getByRole('combobox');
+      await act(async () => {
+        fireEvent.change(input, {target: {value: 'existing'}});
+      });
+      await act(async () => {
+        await new Promise(r => setTimeout(r, 50));
+      });
+
+      expect(screen.queryByText('Create "existing"')).not.toBeInTheDocument();
+    });
+
+    it('does not show Create option when isCreatable is false', async () => {
+      render(
+        <XDSTokenizer
+          label="Tags"
+          searchSource={emptySource}
+          value={[]}
+          onChange={() => {}}
+          isCreatable={false}
+          debounceMs={0}
+        />,
+      );
+
+      const input = screen.getByRole('combobox');
+      await act(async () => {
+        fireEvent.change(input, {target: {value: 'something'}});
+      });
+      await act(async () => {
+        await new Promise(r => setTimeout(r, 50));
+      });
+
+      expect(screen.queryByText('Create "something"')).not.toBeInTheDocument();
+    });
+
+    it('appends Create option alongside real search results', async () => {
+      const onChange = vi.fn();
+      render(
+        <XDSTokenizer
+          label="Tags"
+          searchSource={userSource}
+          value={[]}
+          onChange={onChange}
+          isCreatable
+          debounceMs={0}
+        />,
+      );
+
+      const input = screen.getByRole('combobox');
+      // "Ali" matches Alice but "Ali" itself is a new value
+      await act(async () => {
+        fireEvent.change(input, {target: {value: 'Ali'}});
+      });
+      await act(async () => {
+        await new Promise(r => setTimeout(r, 50));
+      });
+
+      // Both the real result and the Create option should appear
+      expect(screen.getByText('Alice')).toBeInTheDocument();
+      expect(screen.getByText('Create "Ali"')).toBeInTheDocument();
+    });
+
+    it('does not show Create when typed text exactly matches a result label', async () => {
+      render(
+        <XDSTokenizer
+          label="Tags"
+          searchSource={userSource}
+          value={[]}
+          onChange={() => {}}
+          isCreatable
+          debounceMs={0}
+        />,
+      );
+
+      const input = screen.getByRole('combobox');
+      await act(async () => {
+        fireEvent.change(input, {target: {value: 'Alice'}});
+      });
+      await act(async () => {
+        await new Promise(r => setTimeout(r, 50));
+      });
+
+      // "Alice" exactly matches a result — no Create option
+      expect(screen.getByText('Alice')).toBeInTheDocument();
+      expect(screen.queryByText('Create "Alice"')).not.toBeInTheDocument();
+    });
+  });
 });
