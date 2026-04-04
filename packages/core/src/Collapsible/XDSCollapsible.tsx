@@ -32,6 +32,7 @@ import {
 import {useXDSCollapsible} from './useXDSCollapsible';
 import {getIcon} from '../Icon/globalIconRegistry';
 import {xdsClassName, mergeProps} from '../utils';
+import type {XDSBaseProps} from '../XDSBaseProps';
 
 const styles = stylex.create({
   // Trigger button — full width, flex row, no browser button styling
@@ -76,7 +77,7 @@ const styles = stylex.create({
   },
 });
 
-export interface XDSCollapsibleProps {
+export interface XDSCollapsibleProps extends Omit<XDSBaseProps, 'children'> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLDivElement>;
   /**
@@ -163,6 +164,9 @@ export function XDSCollapsible({
   onOpenChange,
   value,
   ref,
+  xstyle,
+  className,
+  style,
   ...props
 }: XDSCollapsibleProps) {
   // Build the config for the hook
@@ -179,7 +183,15 @@ export function XDSCollapsible({
   const chevronIcon = getIcon('chevronDown');
 
   return (
-    <div ref={ref} className={xdsClassName('collapsible')} {...props}>
+    <div
+      ref={ref}
+      {...mergeProps(
+        xdsClassName('collapsible'),
+        stylex.props(xstyle),
+        className,
+        style,
+      )}
+      {...props}>
       <button
         type="button"
         onClick={toggle}

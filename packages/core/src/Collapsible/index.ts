@@ -17,7 +17,7 @@ export type {XDSCollapsibleGroupProps} from './XDSCollapsibleGroup';
 
 export {useXDSCollapsible} from './useXDSCollapsible';
 export type {
-  CollapsibleConfig,
+  XDSCollapsibleConfig,
   UseXDSCollapsibleOptions,
   UseXDSCollapsibleReturn,
 } from './useXDSCollapsible';

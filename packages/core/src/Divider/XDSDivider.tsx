@@ -16,7 +16,12 @@ import {type HTMLAttributes, type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
-import {colorVars, spacingVars, typeScaleVars} from '../theme/tokens.stylex';
+import {
+  colorVars,
+  spacingVars,
+  typeScaleVars,
+  borderVars,
+} from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 
 /**
@@ -114,12 +119,12 @@ const baseStyles = stylex.create({
 
 const lineStyles = stylex.create({
   horizontalLine: {
-    height: '1px',
+    height: borderVars['--border-width'],
     flexGrow: 1,
     flexShrink: 1,
   },
   verticalLine: {
-    width: '1px',
+    width: borderVars['--border-width'],
     flexGrow: 1,
     flexShrink: 1,
   },
