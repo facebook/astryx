@@ -94,6 +94,12 @@
       "import": "./dist/CheckboxInput/index.mjs",
       "require": "./dist/CheckboxInput/index.js"
     },
+    "./CodeBlock": {
+      "source": "./src/CodeBlock/index.ts",
+      "types": "./dist/CodeBlock/index.d.ts",
+      "import": "./dist/CodeBlock/index.mjs",
+      "require": "./dist/CodeBlock/index.js"
+    },
     "./Collapsible": {
       "source": "./src/Collapsible/index.ts",
       "types": "./dist/Collapsible/index.d.ts",

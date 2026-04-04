@@ -35,4 +35,4 @@ export {
   tokenizeAsync,
   SYNC_TOKENIZE_THRESHOLD,
   type Token,
-} from './CodeBlock/tokenizer';
+} from '@xds/core/CodeBlock';

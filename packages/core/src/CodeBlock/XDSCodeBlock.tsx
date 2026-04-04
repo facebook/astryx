@@ -5,9 +5,9 @@
  * @position Core implementation; read-only syntax-highlighted code display
  *
  * SYNC: When modified, update:
- * - /packages/lab/src/CodeBlock/index.ts (exports if types change)
- * - /packages/lab/src/CodeBlock/tokenizer.ts (shared tokenizer)
- * - /packages/lab/src/CodeBlock/highlightStyles.ts (::highlight rules)
+ * - /packages/core/src/CodeBlock/index.ts (exports if types change)
+ * - /packages/core/src/CodeBlock/tokenizer.ts (shared tokenizer)
+ * - /packages/core/src/CodeBlock/highlightStyles.ts (::highlight rules)
  */
 
 'use client';
@@ -15,12 +15,13 @@
 import {
   useLayoutEffect,
   useEffect,
+  useId,
   useRef,
   useState,
   useCallback,
   useMemo,
 } from 'react';
-import type {XDSBaseProps} from '@xds/core/XDSBaseProps';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -31,8 +32,8 @@ import {
   fontWeightVars,
   typeScaleVars,
   borderVars,
-} from '@xds/core/theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '@xds/core/utils';
+} from '../theme/tokens.stylex';
+import {xdsClassName, mergeProps} from '../utils';
 import {tokenize, tokenizeAsync, SYNC_TOKENIZE_THRESHOLD} from './tokenizer';
 import type {Token} from './tokenizer';
 import {ensureHighlightStyles, TOKEN_TYPES} from './highlightStyles';
@@ -116,7 +117,6 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-accent-muted'],
     marginInline: `calc(-1 * ${spacingVars['--spacing-4']})`,
     paddingInline: spacingVars['--spacing-4'],
-    borderLeft: `2px solid ${colorVars['--color-accent']}`,
   },
   sizeSm: {
     fontSize: textSizeVars['--font-size-sm'],
@@ -137,13 +137,13 @@ const styles = stylex.create({
     padding: spacingVars['--spacing-1'],
     border: 'none',
     borderRadius: radiusVars['--radius-inner'],
-    backgroundColor: 'transparent',
+    backgroundColor: {
+      default: 'transparent',
+      ':hover': colorVars['--color-overlay-hover'],
+    },
     color: colorVars['--color-text-secondary'],
     cursor: 'pointer',
-    fontFamily: typographyVars['--font-family-code'],
-    fontSize: textSizeVars['--font-size-sm'],
-    lineHeight: '1',
-    transition: 'background-color 0.15s ease, color 0.15s ease',
+    lineHeight: 0,
   },
   copyButtonAbsolute: {
     position: 'absolute',
@@ -165,6 +165,11 @@ export interface XDSCodeBlockProps extends XDSBaseProps<HTMLPreElement> {
   language?: string;
   /** Filename/label in header bar */
   title?: string;
+  /**
+   * Show the language name in the header bar.
+   * @default true
+   */
+  hasLanguageLabel?: boolean;
   /** Show line number gutter. @default false */
   hasLineNumbers?: boolean;
   /** 1-indexed lines to highlight. */
@@ -184,14 +189,6 @@ export interface XDSCodeBlockProps extends XDSBaseProps<HTMLPreElement> {
     code: string,
     language: string,
   ) => Array<{type: string; start: number; end: number}>;
-  /**
-   * How to apply syntax highlighting.
-   * - 'css-highlight': Uses CSS Custom Highlight API (zero DOM overhead).
-   *   Falls back to 'spans' if the API is not available.
-   * - 'spans': Renders `<span>` elements with CSS classes per token.
-   * @default 'css-highlight'
-   */
-  highlightMode?: 'css-highlight' | 'spans';
 }
 
 // ---------------------------------------------------------------------------
@@ -208,12 +205,6 @@ function hasHighlightAPI(): boolean {
     typeof Highlight !== 'undefined'
   );
 }
-
-/**
- * Unique instance counter to namespace highlights when multiple
- * code blocks are on the same page.
- */
-let instanceCounter = 0;
 
 /**
  * Build span-based highlighted line content from tokens.
@@ -295,6 +286,7 @@ export function XDSCodeBlock({
   code,
   language = 'plaintext',
   title,
+  hasLanguageLabel = true,
   hasLineNumbers = false,
   highlightLines,
   hasCopyButton = true,
@@ -303,7 +295,6 @@ export function XDSCodeBlock({
   maxHeight,
   size = 'md',
   tokenizer: customTokenizer,
-  highlightMode: highlightModeProp = 'css-highlight',
   xstyle,
   className,
   style,
@@ -311,11 +302,11 @@ export function XDSCodeBlock({
   ...props
 }: XDSCodeBlockProps) {
   const codeRef = useRef<HTMLElement>(null);
-  const [instanceId] = useState(() => ++instanceCounter);
+  const instanceId = useId();
   const [copied, setCopied] = useState(false);
 
-  // Resolve effective highlight mode — fall back to spans if API unavailable
-  const useSpans = highlightModeProp === 'spans' || !hasHighlightAPI();
+  // Auto-detect: use CSS Custom Highlight API when available, fall back to spans
+  const useSpans = !hasHighlightAPI();
 
   // For span mode: we need tokens to render. Small code is tokenized sync,
   // large code is tokenized async.
@@ -419,11 +410,18 @@ export function XDSCodeBlock({
 
   const sizeStyle = size === 'sm' ? styles.sizeSm : styles.sizeMd;
   const gutterSizeStyle = size === 'sm' ? styles.gutterSm : styles.gutterMd;
-  const showHeader = title != null;
+  const languageLabel = hasLanguageLabel && language !== 'plaintext' ? language : null;
+  const showHeader = title != null || languageLabel != null;
 
   const scrollStyle: React.CSSProperties | undefined = maxHeight
     ? {maxHeight: typeof maxHeight === 'number' ? `${maxHeight}px` : maxHeight}
     : undefined;
+
+  const copyIcon = copied ? (
+    <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"><path d="M5 13l4 4L19 7" /></svg>
+  ) : (
+    <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"><path d="M8 4v12a2 2 0 002 2h8a2 2 0 002-2V7.242a2 2 0 00-.602-1.43L16.083 2.57A2 2 0 0014.685 2H10a2 2 0 00-2 2z" /><path d="M16 18v2a2 2 0 01-2 2H6a2 2 0 01-2-2V9a2 2 0 012-2h2" /></svg>
+  );
 
   const copyButtonEl = hasCopyButton ? (
     <button
@@ -434,7 +432,7 @@ export function XDSCodeBlock({
         styles.copyButton,
         !showHeader && styles.copyButtonAbsolute,
       )}>
-      {copied ? '\u2713' : '\u2398'}
+      {copyIcon}
     </button>
   ) : null;
 
@@ -465,7 +463,11 @@ export function XDSCodeBlock({
       {...props}>
       {showHeader && (
         <div {...stylex.props(styles.header)}>
-          <span {...stylex.props(styles.headerTitle)}>{title}</span>
+          <span {...stylex.props(styles.headerTitle)}>
+            {languageLabel}
+            {languageLabel && title ? ' — ' : ''}
+            {title}
+          </span>
           {copyButtonEl}
         </div>
       )}
