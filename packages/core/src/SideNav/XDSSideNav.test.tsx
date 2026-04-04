@@ -326,6 +326,113 @@ describe('XDSSideNavHeading collapsed', () => {
 });
 
 // =============================================================================
+// XDSSideNavHeading — headerEndContent
+// =============================================================================
+
+describe('XDSSideNavHeading headerEndContent', () => {
+  it('renders headerEndContent in the default static path', () => {
+    render(
+      <XDSSideNavHeading
+        heading="My App"
+        headerEndContent={<span data-testid="end-badge">3</span>}
+      />,
+    );
+    expect(screen.getByTestId('end-badge')).toBeInTheDocument();
+  });
+
+  it('renders headerEndContent outside the link in isWholeHeadingLink path', () => {
+    render(
+      <XDSSideNavHeading
+        heading="My App"
+        headingHref="/home"
+        headerEndContent={<span data-testid="end-badge">3</span>}
+      />,
+    );
+    const badge = screen.getByTestId('end-badge');
+    expect(badge).toBeInTheDocument();
+    // Badge should NOT be inside the link
+    expect(badge.closest('a')).toBeNull();
+  });
+
+  it('renders headerEndContent outside the button trigger in isWholeHeadingTrigger path', () => {
+    render(
+      <XDSSideNavHeading
+        heading="My App"
+        menu={<div>Menu</div>}
+        headerEndContent={<span data-testid="end-badge">3</span>}
+      />,
+    );
+    const badge = screen.getByTestId('end-badge');
+    expect(badge).toBeInTheDocument();
+    // Badge should NOT be inside the button
+    expect(badge.closest('button')).toBeNull();
+  });
+
+  it('renders headerEndContent in mixed mode (menu + href)', () => {
+    render(
+      <XDSSideNavHeading
+        heading="My App"
+        headingHref="/home"
+        menu={<div>Menu</div>}
+        headerEndContent={<span data-testid="end-badge">3</span>}
+      />,
+    );
+    expect(screen.getByTestId('end-badge')).toBeInTheDocument();
+  });
+
+  it('renders headerEndContent with independent links (no menu)', () => {
+    render(
+      <XDSSideNavHeading
+        heading="Product"
+        headingHref="/product"
+        superheading="Suite"
+        superheadingHref="/suite"
+        headerEndContent={<span data-testid="end-badge">3</span>}
+      />,
+    );
+    expect(screen.getByTestId('end-badge')).toBeInTheDocument();
+  });
+
+  it('hides headerEndContent when collapsed', () => {
+    render(
+      <CollapsedWrapper>
+        <XDSSideNavHeading
+          heading="My App"
+          icon={<span>🏠</span>}
+          headerEndContent={<span data-testid="end-badge">3</span>}
+        />
+      </CollapsedWrapper>,
+    );
+    expect(screen.queryByTestId('end-badge')).not.toBeInTheDocument();
+  });
+});
+
+// =============================================================================
+// XDSSideNavHeading — truncation tooltips
+// =============================================================================
+
+describe('XDSSideNavHeading truncation tooltips', () => {
+  it('attaches truncation refs to heading text spans', () => {
+    const {container} = render(
+      <XDSSideNavHeading
+        heading="My App"
+        superheading="Acme Corp"
+        subheading="admin@acme.com"
+      />,
+    );
+    // All three text spans should be present
+    expect(screen.getByText('My App')).toBeInTheDocument();
+    expect(screen.getByText('Acme Corp')).toBeInTheDocument();
+    expect(screen.getByText('admin@acme.com')).toBeInTheDocument();
+  });
+
+  it('does not crash with truncation hooks when only heading is provided', () => {
+    render(<XDSSideNavHeading heading="My App" />);
+    expect(screen.getByText('My App')).toBeInTheDocument();
+  });
+});
+
+// =============================================================================
 // XDSSideNavItem
 // =============================================================================
 

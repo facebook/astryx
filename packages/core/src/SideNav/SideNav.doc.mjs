@@ -15,6 +15,8 @@ export const docs = {
     'Accessible — nav landmark, aria-current="page", role="group" with aria-labelledby on sections',
     'Keyboard navigable — Tab through items, Enter/Space to activate',
     'Resizable sidebar via resizable prop — drag handle at inline-end edge, pointer-based resize with min/max constraints',
+    'Heading text overflow detection with tooltip — shows full text on hover when heading, superheading, or subheading is truncated by ellipsis',
+    'Header end content slot — headerEndContent prop on XDSSideNavHeading for badges, status indicators, or action buttons at the trailing edge of the heading row',
   ],
   accessibility: [
     '<nav aria-label="Side navigation"> wraps the entire component',
@@ -220,6 +222,11 @@ export const docs = {
           type: 'ReactNode',
           description: 'Menu content rendered inside a popover.',
         },
+        {
+          name: 'headerEndContent',
+          type: 'ReactNode',
+          description: 'Content rendered at the trailing edge of the heading row, between text and chevron. Useful for badges, status indicators, or compact action buttons. Hidden when collapsed.',
+        },
       ],
       examples: [
         {
@@ -244,6 +251,15 @@ export const docs = {
   heading="My App"
   headingHref="/"
   menu={<WorkspaceSwitcher />}
+/>`,
+        },
+        {
+          label: 'With header end content',
+          code: `<XDSSideNavHeading
+  icon={<AppIcon />}
+  heading="My App"
+  headingHref="/"
+  headerEndContent={<XDSBadge label="3" variant="error" />}
 />`,
         },
       ],
@@ -661,6 +677,11 @@ export const docsZh = {
           type: 'ReactNode',
           description: '在弹出框内渲染的菜单内容。',
         },
+        {
+          name: 'headerEndContent',
+          type: 'ReactNode',
+          description: '在标题行尾部渲染的内容，位于文本和箭头之间。适用于徽章、状态指示器或紧凑操作按钮。折叠时隐藏。',
+        },
       ],
       examples: [
         {
@@ -932,6 +953,7 @@ export const docsDense = {
         subheading: 'Text below heading.',
         subheadingHref: 'Link for subheading.',
         menu: 'Menu content rendered inside popover.',
+        headerEndContent: 'Content at trailing edge of heading row. For badges, status indicators, action buttons. Hidden when collapsed.',
       },
     },
     {
