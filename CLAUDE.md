@@ -2,52 +2,6 @@
 
 A design system for building internal tools and products.
 
-## Custom Commands
-
-### `/vibe-test [count]` - Run vibeability tests
-
-Tests how well AGENTS.md helps LLMs generate correct XDS component code.
-
-**Usage:**
-
-```
-/vibe-test 5                    # Run 5 stratified sample tests (one-shot)
-/vibe-test                      # Run all 21 tests (one-shot)
-/vibe-test 5 --degradation      # Run 5 tests with degradation curve (10-turn)
-```
-
-**How to execute:**
-
-1. Run `yarn workspace @xds/vibe-tests interactive --sample <count>` to set up iteration
-2. Spawn parallel subagents (one per test prompt) to:
-   - Read the task file from `results/<iteration>/tasks/{promptId}.json`
-   - Generate code for the prompt using XDS components (AGENTS.md auto-injected)
-   - Self-evaluate for success/escape hatches
-   - Write `.tsx` result to `results/<iteration>/results/{promptId}.tsx`
-   - Write `.json` metadata to `results/<iteration>/results/{promptId}.json`
-3. Trigger `gh workflow run vibe-screenshots.yml` to build previews and capture screenshots
-4. Run `yarn workspace @xds/vibe-tests aggregate --iteration <id>` to see results
-
-**Degradation mode (--degradation):**
-Tests context retention across 10-turn conversations with filler, distractor, and recovery turns.
-Probes at turns 0, 6, 8, 10 to measure quality degradation. Results show a line graph of each test's progression.
-
-**Result format:**
-
-```json
-{
-  "id": "<iter>-<promptId>",
-  "timestamp": "...",
-  "model": "claude-code-interactive",
-  "persona": "naive",
-  "promptCategory": "...",
-  "trajectoryDepth": 0,
-  "prompt": "...",
-  "response": "<code>",
-  "evaluation": {"success": true, "componentsUsed": [...], "escapeHatches": [...]}
-}
-```
-
 ## AI Context
 
 For architectural context, decisions, and research, see the **[GitHub Wiki](https://github.com/facebookexperimental/xds/wiki)**:
