@@ -53,17 +53,17 @@ const WHY_US = [
   {
     image: whyUs1,
     title: 'We move fast',
-    description: 'We cut through the noise and get to the work.',
+    description: 'We cut through the noise and get straight to work.',
   },
   {
     image: whyUs2,
     title: 'We build around your goals',
-    description: "We tailor everything to what you're actually trying to achieve.",
+    description: "We tailor everything around what you're trying to achieve.",
   },
   {
     image: whyUs3,
     title: 'We show up for you',
-    description: 'A dedicated team who knows your brand and is invested in your success.',
+    description: 'A dedicated team that knows your brand and wants you to win.',
   },
 ];
 
