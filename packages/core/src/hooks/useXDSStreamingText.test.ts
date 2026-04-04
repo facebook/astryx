@@ -14,7 +14,7 @@ describe('useXDSStreamingText', () => {
     globalThis.requestAnimationFrame = vi.fn((cb) => {
       rafCallbacks.push(cb);
       return rafCallbacks.length;
-    }) as any;
+    }) as unknown as typeof requestAnimationFrame;
     globalThis.cancelAnimationFrame = vi.fn();
 
     // Mock matchMedia for useXDSTheme → useMediaQuery

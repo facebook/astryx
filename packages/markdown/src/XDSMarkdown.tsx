@@ -39,34 +39,36 @@ import {
 // Types
 // =============================================================================
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Component overrides receive arbitrary HTML attributes from markdown-to-jsx
+/** Props passed by markdown-to-jsx to component overrides (arbitrary HTML attributes). */
+type MarkdownOverrideProps = Record<string, unknown>;
+
 export interface XDSMarkdownComponents {
-  h1?: React.ComponentType<any>;
-  h2?: React.ComponentType<any>;
-  h3?: React.ComponentType<any>;
-  h4?: React.ComponentType<any>;
-  h5?: React.ComponentType<any>;
-  h6?: React.ComponentType<any>;
-  p?: React.ComponentType<any>;
-  a?: React.ComponentType<any>;
-  img?: React.ComponentType<any>;
+  h1?: React.ComponentType<MarkdownOverrideProps>;
+  h2?: React.ComponentType<MarkdownOverrideProps>;
+  h3?: React.ComponentType<MarkdownOverrideProps>;
+  h4?: React.ComponentType<MarkdownOverrideProps>;
+  h5?: React.ComponentType<MarkdownOverrideProps>;
+  h6?: React.ComponentType<MarkdownOverrideProps>;
+  p?: React.ComponentType<MarkdownOverrideProps>;
+  a?: React.ComponentType<MarkdownOverrideProps>;
+  img?: React.ComponentType<MarkdownOverrideProps>;
   code?: React.ComponentType<{language?: string; children: string; inline?: boolean}>;
-  pre?: React.ComponentType<any>;
-  blockquote?: React.ComponentType<any>;
-  ul?: React.ComponentType<any>;
-  ol?: React.ComponentType<any>;
-  li?: React.ComponentType<any>;
-  table?: React.ComponentType<any>;
-  thead?: React.ComponentType<any>;
-  tbody?: React.ComponentType<any>;
-  tr?: React.ComponentType<any>;
-  th?: React.ComponentType<any>;
-  td?: React.ComponentType<any>;
-  hr?: React.ComponentType<any>;
-  strong?: React.ComponentType<any>;
-  em?: React.ComponentType<any>;
-  del?: React.ComponentType<any>;
-  input?: React.ComponentType<any>;
+  pre?: React.ComponentType<MarkdownOverrideProps>;
+  blockquote?: React.ComponentType<MarkdownOverrideProps>;
+  ul?: React.ComponentType<MarkdownOverrideProps>;
+  ol?: React.ComponentType<MarkdownOverrideProps>;
+  li?: React.ComponentType<MarkdownOverrideProps>;
+  table?: React.ComponentType<MarkdownOverrideProps>;
+  thead?: React.ComponentType<MarkdownOverrideProps>;
+  tbody?: React.ComponentType<MarkdownOverrideProps>;
+  tr?: React.ComponentType<MarkdownOverrideProps>;
+  th?: React.ComponentType<MarkdownOverrideProps>;
+  td?: React.ComponentType<MarkdownOverrideProps>;
+  hr?: React.ComponentType<MarkdownOverrideProps>;
+  strong?: React.ComponentType<MarkdownOverrideProps>;
+  em?: React.ComponentType<MarkdownOverrideProps>;
+  del?: React.ComponentType<MarkdownOverrideProps>;
+  input?: React.ComponentType<MarkdownOverrideProps>;
 }
 
 export interface XDSMarkdownProps {
@@ -151,10 +153,10 @@ function createHeadingComponent(
   const Tag = ('h' + clamped) as keyof JSX.IntrinsicElements;
   const style = HEADING_STYLES[density][clamped];
 
-  return function HeadingOverride({children, ...props}: any) {
+  return function HeadingOverride({children, ...props}: Record<string, unknown>) {
     return (
       <Tag {...stylex.props(headingStyles.base, style)} {...props}>
-        {children}
+        {children as ReactNode}
       </Tag>
     );
   };
@@ -168,7 +170,9 @@ function ParagraphOverride({children, density, linkifyPatterns}: {children: Reac
   return <p {...stylex.props(blockStyles[density])}>{linkifyChildren(children, linkifyPatterns)}</p>;
 }
 
-function LinkOverride({children, href, onLinkClick, ...props}: any) {
+function LinkOverride({children, href: rawHref, onLinkClick: rawOnLinkClick, ...props}: Record<string, unknown>) {
+  const href = rawHref as string | undefined;
+  const onLinkClick = rawOnLinkClick as ((href: string, event: React.MouseEvent) => void | false) | undefined;
   const isExternal = href?.startsWith('http');
   return (
     <a
@@ -180,7 +184,7 @@ function LinkOverride({children, href, onLinkClick, ...props}: any) {
       } : undefined}
       {...props}
     >
-      {children}
+      {children as ReactNode}
     </a>
   );
 }
@@ -192,9 +196,9 @@ function BlockquoteOverride({children, density}: {children: ReactNode; density: 
 function PreOverride({children}: {children: ReactNode}) {
   // markdown-to-jsx renders fenced blocks as: <pre><code class="lang-xxx">content</code></pre>
   // Extract language and code text from the child code element and render XDSCodeBlock.
-  const child = Children.only(children) as React.ReactElement<any>;
+  const child = Children.only(children) as React.ReactElement<Record<string, unknown>>;
   if (child && isValidElement(child)) {
-    const props = child.props as any;
+    const props = child.props as Record<string, unknown>;
     const className = props?.className ?? '';
     const langMatch = typeof className === 'string' && className.match(/lang-(\S+)/);
     const language = langMatch ? langMatch[1] : 'plaintext';
@@ -230,20 +234,20 @@ function TableWrapperOverride({children, density}: {children: ReactNode; density
   );
 }
 
-function ThOverride({children, ...props}: any) {
-  return <th {...stylex.props(tableStyles.th)} {...props}>{children}</th>;
+function ThOverride({children, ...props}: Record<string, unknown>) {
+  return <th {...stylex.props(tableStyles.th)} {...props}>{children as ReactNode}</th>;
 }
 
-function TdOverride({children, linkifyPatterns, ...props}: any) {
-  return <td {...stylex.props(tableStyles.td)} {...props}>{linkifyChildren(children, linkifyPatterns)}</td>;
+function TdOverride({children, linkifyPatterns, ...props}: Record<string, unknown>) {
+  return <td {...stylex.props(tableStyles.td)} {...props}>{linkifyChildren(children as ReactNode, linkifyPatterns as LinkifyPattern[] | undefined)}</td>;
 }
 
 function HrOverride({density}: {density: 'default' | 'compact'}) {
   return <hr {...stylex.props(hrStyles[density])} />;
 }
 
-function ImgOverride({src, alt, ...props}: any) {
-  return <img src={src} alt={alt || ''} {...stylex.props(imgStyles.base)} {...props} />;
+function ImgOverride({src, alt, ...props}: Record<string, unknown>) {
+  return <img src={src as string} alt={(alt as string) || ''} {...stylex.props(imgStyles.base)} {...props} />;
 }
 
 function UlOverride({children, density}: {children: ReactNode; density: 'default' | 'compact'}) {

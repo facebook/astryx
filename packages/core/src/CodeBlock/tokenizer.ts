@@ -9,6 +9,12 @@
  * - /packages/lab/src/CodeEditor/XDSCodeEditor.tsx
  */
 
+/**
+ * The Scheduling API (scheduler.yield()) is not yet in TypeScript's DOM lib.
+ * Declare the global to avoid TS2304 while keeping the runtime feature detection.
+ */
+declare const scheduler: {yield?: () => Promise<void>} | undefined;
+
 export type Token = {type: string; start: number; end: number};
 
 // ---------------------------------------------------------------------------
@@ -300,11 +306,9 @@ const ASYNC_CHUNK_SIZE = 5000;
 function yieldToMain(): Promise<void> {
   if (
     typeof scheduler !== 'undefined' &&
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    typeof (scheduler as any).yield === 'function'
+    typeof scheduler.yield === 'function'
   ) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (scheduler as any).yield();
+    return scheduler.yield();
   }
   return new Promise(resolve => setTimeout(resolve, 0));
 }
