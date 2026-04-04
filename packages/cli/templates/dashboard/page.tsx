@@ -8,7 +8,6 @@ import {XDSTopNav, XDSTopNavHeading} from '@xds/core/TopNav';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSCard} from '@xds/core/Card';
-import {XDSBadge} from '@xds/core/Badge';
 import {XDSAvatar} from '@xds/core/Avatar';
 import {XDSButton} from '@xds/core/Button';
 import {XDSNavIcon} from '@xds/core/NavIcon';
@@ -401,11 +400,11 @@ function ActiveUsersChart() {
 
   return (
     <XDSVStack gap={3}>
-      <div style={{position: 'relative', height: 280}}>
+      <div style={{position: 'relative'}}>
         <svg
           viewBox={`0 0 ${w} ${h}`}
-          style={{width: '100%', height: '100%'}}
-          preserveAspectRatio="none">
+          style={{width: '100%', height: 'auto', display: 'block'}}
+          preserveAspectRatio="xMidYMid meet">
           {/* Y-axis grid lines and labels */}
           {yTicks.map(tick => (
             <g key={tick}>
@@ -519,12 +518,26 @@ function MetricCard({
   return (
     <XDSCard>
       <XDSVStack gap={2}>
-        <XDSHeading level={3}>{label}</XDSHeading>
-        <XDSHeading level={2}>{value}</XDSHeading>
-        <XDSBadge
-          variant={positive ? 'success' : 'error'}
-          label={`${positive ? '↑' : '↓'} ${change}`}
-        />
+        <XDSHeading level={4}>{label}</XDSHeading>
+        <XDSHStack gap={2} vAlign="center">
+          <XDSHeading level={2}>{value}</XDSHeading>
+          <XDSHStack gap={1} vAlign="center">
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 12 12"
+              fill={positive ? '#16a34a' : '#dc2626'}>
+              {positive ? (
+                <path d="M6 2L10 7H2L6 2Z" />
+              ) : (
+                <path d="M6 10L2 5H10L6 10Z" />
+              )}
+            </svg>
+            <XDSText type="body" color="secondary">
+              {change}
+            </XDSText>
+          </XDSHStack>
+        </XDSHStack>
         <XDSText type="supporting" color="secondary">
           Last 30 days vs. Previous
         </XDSText>
@@ -628,9 +641,9 @@ function TopPagesCard() {
             alignItems: 'center',
             justifyContent: 'space-between',
           }}>
-          <XDSText type="body" weight="bold">
+          <XDSHeading level={4}>
             Top pages
-          </XDSText>
+          </XDSHeading>
           <XDSLink label="All pages" href="#">
             All pages
           </XDSLink>
@@ -681,9 +694,9 @@ function TopEventsCard() {
             alignItems: 'center',
             justifyContent: 'space-between',
           }}>
-          <XDSText type="body" weight="bold">
+          <XDSHeading level={4}>
             Top events
-          </XDSText>
+          </XDSHeading>
           <XDSLink label="All events" href="#">
             All events
           </XDSLink>
@@ -905,10 +918,14 @@ export default function DashboardTemplate() {
           <XDSHeading level={3}>Engagement</XDSHeading>
           <XDSButton label="View more" variant="secondary" size="md" />
         </XDSHStack>
-        <XDSHStack gap={4}>
-          <TopPagesCard />
-          <TopEventsCard />
-        </XDSHStack>
+        <XDSStack direction="horizontal" gap={4}>
+          <XDSStackItem size="fill">
+            <TopPagesCard />
+          </XDSStackItem>
+          <XDSStackItem size="fill">
+            <TopEventsCard />
+          </XDSStackItem>
+        </XDSStack>
       </XDSVStack>
     </XDSAppShell>
   );
