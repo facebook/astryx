@@ -1,0 +1,17 @@
+{
+  "name": "@xds/markdown",
+  "version": "0.0.10",
+  "description": "Styled markdown renderer for XDS — maps markdown to XDS components with design-system-consistent typography, spacing, and theming",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "sideEffects": false,
+  "peerDependencies": {
+    "@stylexjs/stylex": ">=0.10.0",
+    "@xds/core": "*",
+    "react": ">=19.0.0",
+    "react-dom": ">=19.0.0"
+  },
+  "dependencies": {
+    "markdown-to-jsx": "^9.7.13"
+  }
+}

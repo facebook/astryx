@@ -27,3 +27,9 @@ export {useScrollLock} from './useScrollLock';
 
 export {useEntryAnimation} from './useEntryAnimation';
 export type {EntryAnimationPreset} from './useEntryAnimation';
+
+export {useStreamingText} from './useStreamingText';
+export type {
+  StreamingTextSpeed,
+  UseStreamingTextOptions,
+} from './useStreamingText';
