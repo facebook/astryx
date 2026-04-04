@@ -78,11 +78,12 @@ const styles = stylex.create({
     fontSize: typeScaleVars['--text-supporting-size'],
   },
   displayHeading: {
-    fontSize: 56,
+    fontSize: '56px',
     fontWeight: fontWeightVars['--font-weight-bold'],
     lineHeight: '1.05',
     letterSpacing: '-0.03em',
     margin: 0,
+    textAlign: 'center',
   },
 
   whyGrid: {
@@ -150,7 +151,7 @@ export default function FormSimplePage() {
 
           {/* Header */}
           <XDSVStack gap={2} hAlign="center">
-            <h1 {...stylex.props(styles.displayHeading)} style={{textAlign: 'center'}}>Let's work together</h1>
+            <h1 {...stylex.props(styles.displayHeading)}>Let's work together</h1>
             <XDSText type="body" color="secondary">
               Tell us a bit about what you're working on — we'd love to help.
             </XDSText>
