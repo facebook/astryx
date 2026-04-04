@@ -142,7 +142,7 @@ export default function FormSimplePage() {
       <div style={{width: '100%', maxHeight: '15vh', overflow: 'hidden'}}>
         <Image
           src={bannerImg}
-          alt="Banner"
+          alt="Decorative banner"
           style={{width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center'}}
         />
       </div>
