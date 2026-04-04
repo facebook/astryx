@@ -139,7 +139,7 @@ export default function FormSimplePage() {
       {...stylex.props(styles.pageBg)}
       style={{minHeight: '100svh', display: 'flex', flexDirection: 'column'}}>
       {/* Full-bleed banner */}
-      <div style={{width: '100%', aspectRatio: '3 / 1', overflow: 'hidden', minHeight: 200}}>
+      <div style={{width: '100%', maxHeight: '15vh', overflow: 'hidden'}}>
         <Image
           src={bannerImg}
           alt="Banner"
