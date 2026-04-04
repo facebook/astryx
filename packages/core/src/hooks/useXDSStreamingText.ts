@@ -1,9 +1,9 @@
 'use client';
 
 /**
- * @file useStreamingText.ts
- * @input Uses React useState, useEffect, useRef
- * @output Exports useStreamingText hook for smooth text streaming
+ * @file useXDSStreamingText.ts
+ * @input Uses React useState, useEffect, useRef, useXDSTheme
+ * @output Exports useXDSStreamingText hook for smooth text streaming
  * @position Core hook; smooths bursty streamed text into steady character reveal
  *
  * Decouples the arrival rate of streamed chunks from the display rate,
@@ -11,12 +11,17 @@
  * Advances on word/syntax boundaries to avoid slicing mid-markdown or
  * mid-word, preventing visual glitches when used with markdown renderers.
  *
+ * Animation timing derives from XDS motion tokens (via useXDSTheme) when
+ * an XDSTheme provider is present. Falls back to sensible defaults when
+ * used outside a theme provider.
+ *
  * SYNC: When modified, update:
  * - /packages/core/src/hooks/index.ts (exports)
- * - /packages/core/src/hooks/useStreamingText.test.ts (tests)
+ * - /packages/core/src/hooks/useXDSStreamingText.test.ts (tests)
  */
 
-import {useEffect, useRef, useState} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
+import {useXDSTheme} from '../theme/useXDSTheme';
 
 /**
  * Speed presets for streaming text reveal.
@@ -48,10 +53,26 @@ const PARTIAL_SYNTAX_PATTERNS = [
   /\]\([^)]*$/, // unclosed link url: ](url
 ];
 
-const SPEED_CONFIG = {
-  natural: {charsPerTick: 2, tickMs: 12},
-  fast: {charsPerTick: 4, tickMs: 8},
-  instant: {charsPerTick: Infinity, tickMs: 0},
+// Fallback values when no XDSTheme provider is present
+const FALLBACK_TICK_MS = 12;
+const FALLBACK_TICK_MS_FAST = 8;
+
+/**
+ * Parse a CSS duration string (e.g. "175ms", "0.15s") to milliseconds.
+ * Returns null if unparseable.
+ */
+function parseDuration(value: string): number | null {
+  const ms = value.match(/^([\d.]+)ms$/);
+  if (ms) return parseFloat(ms[1]);
+  const s = value.match(/^([\d.]+)s$/);
+  if (s) return parseFloat(s[1]) * 1000;
+  return null;
+}
+
+const CHARS_PER_TICK = {
+  natural: 2,
+  fast: 4,
+  instant: Infinity,
 } as const;
 
 /**
@@ -66,22 +87,38 @@ const SPEED_CONFIG = {
  *
  * @example
  * ```
- * const displayed = useStreamingText(rawText, isStreaming);
+ * const displayed = useXDSStreamingText(rawText, isStreaming);
  * return <XDSMarkdown>{displayed}</XDSMarkdown>;
  * ```
  *
  * @example
  * ```
- * const displayed = useStreamingText(rawText, isStreaming, { speed: 'fast' });
+ * const displayed = useXDSStreamingText(rawText, isStreaming, { speed: 'fast' });
  * ```
  */
-export function useStreamingText(
+export function useXDSStreamingText(
   targetText: string,
   isStreaming: boolean,
   options?: UseStreamingTextOptions,
 ): string {
   const speed = options?.speed ?? 'natural';
-  const {charsPerTick, tickMs} = SPEED_CONFIG[speed];
+  const charsPerTick = CHARS_PER_TICK[speed];
+
+  // Derive tick timing from XDS motion tokens when available.
+  // natural → --duration-fast-min (frame-level cadence from the theme)
+  // fast → half that, floored at 4ms (roughly 2x speed)
+  const {token} = useXDSTheme();
+  const tickMs = useMemo(() => {
+    if (speed === 'instant') return 0;
+    const base = parseDuration(token('--duration-fast-min'));
+    if (base == null) {
+      return speed === 'fast' ? FALLBACK_TICK_MS_FAST : FALLBACK_TICK_MS;
+    }
+    // Scale: use ~1/10th of the theme's fast-min duration as the per-frame tick.
+    // This maps a 130ms token to ~13ms tick (natural) or ~6.5ms tick (fast).
+    const tick = speed === 'fast' ? base / 20 : base / 10;
+    return Math.max(4, Math.round(tick));
+  }, [token, speed]);
 
   const [displayedLen, setDisplayedLen] = useState(0);
   const targetRef = useRef(targetText);

@@ -1,8 +1,8 @@
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {renderHook, act} from '@testing-library/react';
-import {useStreamingText} from './useStreamingText';
+import {useXDSStreamingText} from './useXDSStreamingText';
 
-describe('useStreamingText', () => {
+describe('useXDSStreamingText', () => {
   let rafCallbacks: Array<(time: number) => void>;
   let originalRAF: typeof requestAnimationFrame;
   let originalCAF: typeof cancelAnimationFrame;
@@ -16,6 +16,23 @@ describe('useStreamingText', () => {
       return rafCallbacks.length;
     }) as any;
     globalThis.cancelAnimationFrame = vi.fn();
+
+    // Mock matchMedia for useXDSTheme → useMediaQuery
+    if (!window.matchMedia) {
+      Object.defineProperty(window, 'matchMedia', {
+        writable: true,
+        value: vi.fn().mockImplementation((query: string) => ({
+          matches: false,
+          media: query,
+          onchange: null,
+          addListener: vi.fn(),
+          removeListener: vi.fn(),
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          dispatchEvent: vi.fn(),
+        })),
+      });
+    }
   });
 
   afterEach(() => {
@@ -25,28 +42,28 @@ describe('useStreamingText', () => {
 
   it('returns full text when not streaming', () => {
     const {result} = renderHook(() =>
-      useStreamingText('Hello world', false),
+      useXDSStreamingText('Hello world', false),
     );
     expect(result.current).toBe('Hello world');
   });
 
   it('returns full text with instant speed', () => {
     const {result} = renderHook(() =>
-      useStreamingText('Hello world', true, {speed: 'instant'}),
+      useXDSStreamingText('Hello world', true, {speed: 'instant'}),
     );
     expect(result.current).toBe('Hello world');
   });
 
   it('starts with empty string when streaming', () => {
     const {result} = renderHook(() =>
-      useStreamingText('Hello world', true),
+      useXDSStreamingText('Hello world', true),
     );
     expect(result.current).toBe('');
   });
 
   it('snaps to full text when streaming ends', () => {
     const {result, rerender} = renderHook(
-      ({text, streaming}) => useStreamingText(text, streaming),
+      ({text, streaming}) => useXDSStreamingText(text, streaming),
       {initialProps: {text: 'Hello world', streaming: true}},
     );
 
@@ -59,7 +76,7 @@ describe('useStreamingText', () => {
 
   it('resets when target text clears', () => {
     const {result, rerender} = renderHook(
-      ({text, streaming}) => useStreamingText(text, streaming),
+      ({text, streaming}) => useXDSStreamingText(text, streaming),
       {initialProps: {text: 'Hello', streaming: false}},
     );
 
@@ -72,7 +89,7 @@ describe('useStreamingText', () => {
 
   it('progressively reveals text through animation frames', () => {
     const {result} = renderHook(() =>
-      useStreamingText('Hello, world! This is a test.', true),
+      useXDSStreamingText('Hello, world! This is a test.', true),
     );
 
     expect(result.current).toBe('');

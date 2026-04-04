@@ -28,8 +28,8 @@ export {useScrollLock} from './useScrollLock';
 export {useEntryAnimation} from './useEntryAnimation';
 export type {EntryAnimationPreset} from './useEntryAnimation';
 
-export {useStreamingText} from './useStreamingText';
+export {useXDSStreamingText} from './useXDSStreamingText';
 export type {
   StreamingTextSpeed,
   UseStreamingTextOptions,
-} from './useStreamingText';
+} from './useXDSStreamingText';
