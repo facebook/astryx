@@ -226,7 +226,7 @@ export default function FormSimplePage() {
             </div>
           </XDSVStack>
 
-          <XDSDivider />
+          <div style={{paddingTop: 10, paddingBottom: 10}}><XDSDivider /></div>
 
           {/* Your project */}
           <XDSVStack gap={5}>
@@ -289,8 +289,6 @@ export default function FormSimplePage() {
               onChange={setIsDecider}
             />
           </XDSVStack>
-
-          <XDSDivider />
 
           {/* Submit */}
           <XDSVStack gap={3}>
