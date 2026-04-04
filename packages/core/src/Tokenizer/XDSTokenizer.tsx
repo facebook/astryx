@@ -155,6 +155,13 @@ export interface XDSTokenizerProps<T extends XDSSearchableItem> {
    * @default 150
    */
   debounceMs?: number;
+  /**
+   * Allow users to create new tokens from free-text input.
+   * When true, pressing Enter with text in the input commits the typed value
+   * as a new token — even if the search source returned no results.
+   * @default false
+   */
+  isCreatable?: boolean;
   /** Query change callback. */
   onChangeQuery?: (query: string) => void;
   /**
@@ -349,6 +356,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
   size = 'md',
   tokenOverflowBehavior = 'none',
   debounceMs,
+  isCreatable = false,
   onChangeQuery,
   xstyle,
   className,
@@ -498,6 +506,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
   }, [value, onChange]);
 
   // Handle backspace on empty input — remove last token
+  // Handle Enter in creatable mode — commit typed text as a new token
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
       if (
@@ -509,8 +518,17 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
         const lastItem = value[value.length - 1];
         handleRemove(lastItem);
       }
+
+      if (isCreatable && e.key === 'Enter') {
+        const text = e.currentTarget.value.trim();
+        if (text && !selectedIds.has(text)) {
+          e.preventDefault();
+          const newItem = {id: text, label: text} as T;
+          handleAdd(newItem);
+        }
+      }
     },
-    [value, handleRemove],
+    [value, handleRemove, isCreatable, selectedIds, handleAdd],
   );
 
   // Click wrapper to focus input

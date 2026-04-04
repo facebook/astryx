@@ -10,7 +10,6 @@
  * - /packages/core/src/PowerSearch/index.ts
  */
 
-
 import React, {useCallback, useMemo} from 'react';
 import type {
   OperatorValue,
@@ -30,6 +29,7 @@ import {XDSDateInput} from '../DateInput';
 import {XDSTimeInput} from '../TimeInput';
 import {XDSSelector} from '../Selector';
 import {XDSTokenizer} from '../Tokenizer';
+import {XDSTypeahead} from '../Typeahead';
 
 export interface PowerSearchValueEditorProps {
   operatorValue: OperatorValue;
@@ -85,6 +85,32 @@ function StringEditor({
 }) {
   const currentValue = filterValue?.type === 'string' ? filterValue.value : '';
 
+  // When a searchSource is provided, render a typeahead instead of a plain
+  // text input so users get suggestions (#1103).
+  if (operatorValue.searchSource) {
+    const selectedItem: XDSSearchableItem | null = currentValue
+      ? {id: currentValue, label: currentValue}
+      : null;
+
+    return (
+      <XDSTypeahead
+        label="Value"
+        isLabelHidden
+        searchSource={operatorValue.searchSource}
+        value={selectedItem}
+        onChange={item => {
+          if (item) {
+            onChange({type: 'string', value: item.label}, true);
+          } else {
+            onChange({type: 'string', value: ''});
+          }
+        }}
+        placeholder="Search..."
+        debounceMs={150}
+      />
+    );
+  }
+
   return (
     <XDSTextInput
       label="Value"
@@ -123,6 +149,11 @@ function StringListEditor({
     };
   }, [operatorValue.searchSource]);
 
+  // Enable creatable mode when no searchSource is provided (free-text tags)
+  // or when isArbitraryStringAllowed is explicitly set (#1107).
+  const isCreatable =
+    operatorValue.isArbitraryStringAllowed || !operatorValue.searchSource;
+
   return (
     <XDSTokenizer
       label="Values"
@@ -137,6 +168,7 @@ function StringListEditor({
       }}
       placeholder="Add values..."
       debounceMs={operatorValue.searchSource ? 150 : 0}
+      isCreatable={isCreatable}
     />
   );
 }
@@ -497,11 +529,13 @@ function EntityListEditor({
     };
   }, [operatorValue.searchSource]);
 
+  // Preserve photo in auxiliaryData so it round-trips through the tokenizer (#1106).
   const currentValue: XDSSearchableItem[] = useMemo(() => {
     if (filterValue?.type !== 'entity_list') return [];
     return filterValue.value.map((entity: PowerSearchEntity) => ({
       id: entity.id,
       label: entity.label,
+      auxiliaryData: entity.photo ? {photo: entity.photo} : undefined,
     }));
   }, [filterValue]);
 
@@ -514,12 +548,18 @@ function EntityListEditor({
       onChange={items => {
         onChange({
           type: 'entity_list',
-          value: items.map(item => ({
-            id: item.id,
-            label: item.label,
-          })),
+          // Round-trip photo from auxiliaryData back to PowerSearchEntity (#1106).
+          value: items.map(item => {
+            const aux = item.auxiliaryData as {photo?: string} | undefined;
+            return {
+              id: item.id,
+              label: item.label,
+              ...(aux?.photo ? {photo: aux.photo} : {}),
+            };
+          }),
         });
       }}
+      renderItem={operatorValue.renderItem}
       placeholder="Search..."
       debounceMs={operatorValue.searchSource ? 150 : 0}
     />
