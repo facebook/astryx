@@ -62,6 +62,7 @@ export type {
  */
 export type XDSTokenizerChange<T extends XDSSearchableItem> =
   | {item: T; type: 'add'}
+  | {item: T; type: 'create'}
   | {item: T; type: 'remove'}
   | {type: 'reorder'};
 
@@ -155,6 +156,13 @@ export interface XDSTokenizerProps<T extends XDSSearchableItem> {
    * @default 150
    */
   debounceMs?: number;
+  /**
+   * Allow users to create new tokens from free-text input.
+   * When true, pressing Enter with text in the input commits the typed value
+   * as a new token — even if the search source returned no results.
+   * @default false
+   */
+  hasCreate?: boolean;
   /** Query change callback. */
   onChangeQuery?: (query: string) => void;
   /**
@@ -287,6 +295,10 @@ const styles = stylex.create({
 // Component
 // =============================================================================
 
+// Sentinel prefix for creatable items — used to distinguish
+// "Create: X" suggestions from real search results.
+const CREATABLE_ID_PREFIX = '__xds_create__';
+
 /**
  * Multi-select input with token chips and typeahead search.
  *
@@ -349,6 +361,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
   size = 'md',
   tokenOverflowBehavior = 'none',
   debounceMs,
+  hasCreate = false,
   onChangeQuery,
   xstyle,
   className,
@@ -443,18 +456,43 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
     [value],
   );
 
+  // Track the current query for creatable mode
+  const [creatableQuery, setCreatableQuery] = useState('');
+
   const filteredSource: XDSSearchSource<T> = useMemo(
     () => ({
       search: async (query: string) => {
         const results = await searchSource.search(query);
-        return results.filter(item => !selectedIds.has(item.id));
+        const filtered = results.filter(item => !selectedIds.has(item.id));
+
+        // Append a "Create: X" synthetic item when hasCreate is true,
+        // the user has typed something, and it doesn't exactly match an
+        // existing result.
+        if (hasCreate && query.trim()) {
+          const trimmed = query.trim();
+          const alreadyExists =
+            selectedIds.has(trimmed) ||
+            filtered.some(
+              item => item.label.toLowerCase() === trimmed.toLowerCase(),
+            );
+          if (!alreadyExists) {
+            const creatableItem = {
+              id: `${CREATABLE_ID_PREFIX}${trimmed}`,
+              label: `Create "${trimmed}"`,
+              auxiliaryData: {__createdValue: trimmed},
+            } as unknown as T;
+            filtered.push(creatableItem);
+          }
+        }
+
+        return filtered;
       },
       bootstrap: async () => {
         const results = await searchSource.bootstrap();
         return results.filter(item => !selectedIds.has(item.id));
       },
     }),
-    [searchSource, selectedIds],
+    [searchSource, selectedIds, hasCreate],
   );
 
   const emptySource: XDSSearchSource<T> = useMemo(
@@ -465,17 +503,31 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
     [],
   );
 
-  // Handle adding an item
+  // Handle adding an item — detect creatable synthetic items
   const handleAdd = useCallback(
     (item: T | null) => {
       if (!item) return;
       if (isAtMax) return;
-      if (selectedIds.has(item.id)) return;
 
+      // Detect "Create: X" synthetic items from the creatable source
+      if (
+        hasCreate &&
+        typeof item.id === 'string' &&
+        item.id.startsWith(CREATABLE_ID_PREFIX)
+      ) {
+        const createdValue = item.id.slice(CREATABLE_ID_PREFIX.length);
+        if (selectedIds.has(createdValue)) return;
+        const realItem = {id: createdValue, label: createdValue} as T;
+        const newItems = [...value, realItem];
+        onChange(newItems, {item: realItem, type: 'create'});
+        return;
+      }
+
+      if (selectedIds.has(item.id)) return;
       const newItems = [...value, item];
       onChange(newItems, {item, type: 'add'});
     },
-    [value, onChange, isAtMax, selectedIds],
+    [value, onChange, isAtMax, selectedIds, hasCreate],
   );
 
   // Handle removing an item
@@ -645,7 +697,14 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
               hasAutoFocus={hasAutoFocus}
               inputId={inputId}
               ariaDescribedBy={ariaDescribedBy}
-              onChangeQuery={onChangeQuery}
+              onChangeQuery={
+                hasCreate
+                  ? (q: string) => {
+                      setCreatableQuery(q);
+                      onChangeQuery?.(q);
+                    }
+                  : onChangeQuery
+              }
               debounceMs={debounceMs}
               onKeyDown={handleKeyDown}
               anchorRef={wrapperRef}

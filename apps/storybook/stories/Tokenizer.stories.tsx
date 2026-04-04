@@ -294,3 +294,59 @@ export const WithEndContent: Story = {
   },
   name: 'With End Content',
 };
+
+// Empty source for free-text-only tokenizers
+const emptySource: XDSSearchSource = {
+  search: () => [],
+  bootstrap: () => [],
+};
+
+export const Creatable: Story = {
+  render: args => {
+    const [tags, setTags] = useState<XDSSearchableItem[]>([]);
+    return (
+      <div>
+        <XDSTokenizer
+          {...args}
+          searchSource={emptySource}
+          value={tags}
+          onChange={(items, change) => {
+            setTags(items);
+          }}
+          hasCreate
+          placeholder="Type a tag and press Enter..."
+        />
+        <p style={{marginTop: 8, fontSize: 14, color: '#666'}}>
+          {tags.length} tag{tags.length !== 1 ? 's' : ''} added
+        </p>
+      </div>
+    );
+  },
+  args: {
+    label: 'Tags',
+  },
+  name: 'Creatable (Free Text)',
+};
+
+export const CreatableWithSearch: Story = {
+  render: args => {
+    const [value, setValue] = useState<XDSSearchableItem[]>([]);
+    return (
+      <XDSTokenizer
+        {...args}
+        searchSource={userSource}
+        value={value}
+        onChange={(items, change) => {
+          setValue(items);
+        }}
+        hasCreate
+        hasEntriesOnFocus
+        placeholder="Search or type a new name..."
+      />
+    );
+  },
+  args: {
+    label: 'Team Members',
+  },
+  name: 'Creatable + Search',
+};

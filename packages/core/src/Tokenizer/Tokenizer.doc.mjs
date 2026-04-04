@@ -29,7 +29,7 @@ export const docs = {
       name: 'onChange',
       type: '(items: T[], change: XDSTokenizerChange<T>) => void',
       description:
-        "Called when selection changes. The change argument includes the affected item and type ('add' | 'remove' | 'reorder').",
+        "Called when selection changes. The change argument includes the affected item and type ('add' | 'create' | 'remove' | 'reorder').",
       required: true,
     },
     {
@@ -140,6 +140,13 @@ export const docs = {
       default: '150',
     },
     {
+      name: 'hasCreate',
+      type: 'boolean',
+      description:
+        "Allow users to create new tokens from free-text input. When true, a \"Create\" option appears in the dropdown for typed text that doesn't match existing results. The onChange change type is 'create' for these items.",
+      default: 'false',
+    },
+    {
       name: 'onChangeQuery',
       type: '(query: string) => void',
       description: 'Callback fired when the search query text changes.',
@@ -188,6 +195,24 @@ export const docs = {
 />`,
     },
     {
+      label: 'Free-text tags (hasCreate)',
+      code: `const emptySource = { search: () => [], bootstrap: () => [] };
+
+<XDSTokenizer
+  label="Tags"
+  searchSource={emptySource}
+  value={tags}
+  onChange={(items, change) => {
+    setTags(items);
+    if (change.type === 'create') {
+      console.log('New tag:', change.item.label);
+    }
+  }}
+  hasCreate
+  placeholder="Type a tag and press Enter..."
+/>`,
+    },
+    {
       label: 'Custom token rendering',
       code: `<XDSTokenizer
   label="Tags"
@@ -212,7 +237,8 @@ export const docs = {
     'Clear all button for bulk removal of all tokens',
     'Custom token and item rendering via renderToken and renderItem',
     'Backspace on empty input removes the last token',
-    "Change metadata: onChange receives a second argument with type ('add' | 'remove' | 'reorder')",
+    "Change metadata: onChange receives a second argument with type ('add' | 'create' | 'remove' | 'reorder')",
+    'Free-text token creation via hasCreate prop — shows a "Create" option in the dropdown for new values',
   ],
   theming: {
     targets: [
@@ -258,7 +284,7 @@ export const docsZh = {
       name: 'onChange',
       type: '(items: T[], change: XDSTokenizerChange<T>) => void',
       description:
-        "选择变更时调用。change 参数包含受影响的项目和类型（'add' | 'remove' | 'reorder'）。",
+        "选择变更时调用。change 参数包含受影响的项目和类型（'add' | 'create' | 'remove' | 'reorder'）。",
       required: true,
     },
     {
@@ -441,7 +467,8 @@ export const docsZh = {
     '全部清除按钮用于批量移除所有标记',
     '通过 renderToken 和 renderItem 自定义标记和项目渲染',
     '在空输入框上按退格键移除最后一个标记',
-    "变更元数据：onChange 接收第二个参数，包含类型（'add' | 'remove' | 'reorder'）",
+    "变更元数据：onChange 接收第二个参数，包含类型（'add' | 'create' | 'remove' | 'reorder'）",
+    '通过 hasCreate 属性支持自由文本令牌创建 — 在下拉列表中为新值显示 "Create" 选项',
   ],
   theming: {
     targets: [
@@ -468,7 +495,8 @@ export const docsDense = {
     'Clear all button for bulk removal of all tokens',
     'Custom token+item rendering via renderToken+renderItem',
     'Backspace on empty input removes last token',
-    "Change metadata: onChange receives second arg w/ type ('add'|'remove'|'reorder')",
+    "Change metadata: onChange receives second arg w/ type ('add'|'create'|'remove'|'reorder')",
+    'Free-text token creation via hasCreate — "Create" option in dropdown for new values',
   ],
   accessibility: [
     'Wrapped in XDSField for label, description, status message association.',
@@ -481,7 +509,8 @@ export const docsDense = {
     label: 'Accessible label for input.',
     searchSource: 'Data source w/ search+bootstrap methods for populating dropdown.',
     value: 'Array of currently selected items.',
-    onChange: "Fired on selection change. Change arg includes affected item+type ('add'|'remove'|'reorder').",
+    onChange: "Fired on selection change. Change arg includes affected item+type ('add'|'create'|'remove'|'reorder').",
+    hasCreate: 'Enable free-text token creation. Shows "Create" dropdown option for unmatched typed text.',
     placeholder: 'Input placeholder. Only shown when no tokens selected.',
     maxEntries: 'Max selections allowed. Input hidden at limit.',
     hasClear: 'Clear-all button for bulk removal.',
