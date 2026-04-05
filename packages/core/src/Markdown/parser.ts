@@ -473,6 +473,29 @@ function findSettledBoundary(lines: string[]): number {
   return inFence ? -1 : lastBoundary;
 }
 
+/**
+ * Strip trailing incomplete inline syntax that appears during streaming.
+ * Only affects the tail of the last line — safe to apply to the full string.
+ */
+export function trimStreamingArtifacts(input: string): string {
+  const lastNL = input.lastIndexOf('\n');
+  const prefix = lastNL === -1 ? '' : input.slice(0, lastNL + 1);
+  let tail = lastNL === -1 ? input : input.slice(lastNL + 1);
+
+  // Unclosed link with URL: [text](url
+  tail = tail.replace(/\[[^\]]*\]\([^)]*$/, '');
+  // Unclosed link text: [text
+  tail = tail.replace(/\[[^\]]*$/, '');
+  // Unclosed inline code: `content (1+ non-backtick chars)
+  tail = tail.replace(/`{1,3}[^`]+$/, '');
+  // Unclosed bold/italic: *content (1+ non-* chars)
+  tail = tail.replace(/\*{1,3}[^*]+$/, '');
+  // Unclosed strikethrough: ~~content (1+ non-~ chars)
+  tail = tail.replace(/~{2}[^~]+$/, '');
+
+  return prefix + tail;
+}
+
 export function parseMarkdownIncremental(
   input: string,
   state: IncrementalState,

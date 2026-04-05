@@ -26,6 +26,7 @@ import {
   parseMarkdown,
   parseMarkdownIncremental,
   createIncrementalState,
+  trimStreamingArtifacts,
 } from './parser';
 import type {
   BlockNode,
@@ -103,22 +104,85 @@ const styles = stylex.create({
     fontWeight: typeScaleVars['--text-heading-6-weight'],
     lineHeight: typeScaleVars['--text-heading-6-leading'],
   },
-  // Block spacing
-  blockDefault: {
+  // Block spacing — per element type, default density
+  spacingHeadingMajorDefault: {
+    marginBlockStart: spacingVars['--spacing-6'],
+    marginBlockEnd: spacingVars['--spacing-3'],
+  },
+  spacingHeadingMinorDefault: {
+    marginBlockStart: spacingVars['--spacing-4'],
+    marginBlockEnd: spacingVars['--spacing-2'],
+  },
+  spacingParagraphDefault: {
     marginBlockStart: spacingVars['--spacing-3'],
     marginBlockEnd: spacingVars['--spacing-3'],
   },
-  blockCompact: {
+  spacingCodeblockDefault: {
+    marginBlockStart: spacingVars['--spacing-4'],
+    marginBlockEnd: spacingVars['--spacing-4'],
+  },
+  spacingBlockquoteDefault: {
+    marginBlockStart: spacingVars['--spacing-4'],
+    marginBlockEnd: spacingVars['--spacing-4'],
+  },
+  spacingListDefault: {
+    marginBlockStart: spacingVars['--spacing-3'],
+    marginBlockEnd: spacingVars['--spacing-3'],
+  },
+  spacingTableDefault: {
+    marginBlockStart: spacingVars['--spacing-4'],
+    marginBlockEnd: spacingVars['--spacing-4'],
+  },
+  spacingHrDefault: {
+    marginBlockStart: spacingVars['--spacing-6'],
+    marginBlockEnd: spacingVars['--spacing-6'],
+  },
+  spacingImageDefault: {
+    marginBlockStart: spacingVars['--spacing-3'],
+    marginBlockEnd: spacingVars['--spacing-3'],
+  },
+  // Block spacing — per element type, compact density
+  spacingHeadingMajorCompact: {
+    marginBlockStart: spacingVars['--spacing-4'],
+    marginBlockEnd: spacingVars['--spacing-2'],
+  },
+  spacingHeadingMinorCompact: {
+    marginBlockStart: spacingVars['--spacing-3'],
+    marginBlockEnd: spacingVars['--spacing-1'],
+  },
+  spacingParagraphCompact: {
     marginBlockStart: spacingVars['--spacing-1'],
     marginBlockEnd: spacingVars['--spacing-1'],
   },
-  headingDefault: {
-    marginBlockStart: spacingVars['--spacing-5'],
+  spacingCodeblockCompact: {
+    marginBlockStart: spacingVars['--spacing-2'],
+    marginBlockEnd: spacingVars['--spacing-2'],
+  },
+  spacingBlockquoteCompact: {
+    marginBlockStart: spacingVars['--spacing-2'],
+    marginBlockEnd: spacingVars['--spacing-2'],
+  },
+  spacingListCompact: {
+    marginBlockStart: spacingVars['--spacing-1'],
+    marginBlockEnd: spacingVars['--spacing-1'],
+  },
+  spacingTableCompact: {
+    marginBlockStart: spacingVars['--spacing-2'],
+    marginBlockEnd: spacingVars['--spacing-2'],
+  },
+  spacingHrCompact: {
+    marginBlockStart: spacingVars['--spacing-3'],
     marginBlockEnd: spacingVars['--spacing-3'],
   },
-  headingCompact: {
-    marginBlockStart: spacingVars['--spacing-3'],
-    marginBlockEnd: spacingVars['--spacing-1'],
+  spacingImageCompact: {
+    marginBlockStart: spacingVars['--spacing-2'],
+    marginBlockEnd: spacingVars['--spacing-2'],
+  },
+  noMarginBlockStart: {
+    marginBlockStart: 0,
+  },
+  noMarginBlockEnd: {
+    marginBlockEnd: 0,
   },
   // Blockquote
   blockquote: {
@@ -290,45 +354,109 @@ function renderInline(
 }
 
 // ---------------------------------------------------------------------------
+// Block spacing helper
+// ---------------------------------------------------------------------------
+
+function getElementSpacing(
+  node: BlockNode,
+  density: 'default' | 'compact',
+): StyleXStyles {
+  const compact = density === 'compact';
+  switch (node.type) {
+    case 'heading':
+      return node.level <= 3
+        ? (compact ? styles.spacingHeadingMajorCompact : styles.spacingHeadingMajorDefault)
+        : (compact ? styles.spacingHeadingMinorCompact : styles.spacingHeadingMinorDefault);
+    case 'paragraph':
+      return compact ? styles.spacingParagraphCompact : styles.spacingParagraphDefault;
+    case 'codeblock':
+      return compact ? styles.spacingCodeblockCompact : styles.spacingCodeblockDefault;
+    case 'blockquote':
+      return compact ? styles.spacingBlockquoteCompact : styles.spacingBlockquoteDefault;
+    case 'list':
+      return compact ? styles.spacingListCompact : styles.spacingListDefault;
+    case 'table':
+      return compact ? styles.spacingTableCompact : styles.spacingTableDefault;
+    case 'hr':
+      return compact ? styles.spacingHrCompact : styles.spacingHrDefault;
+    case 'image':
+      return compact ? styles.spacingImageCompact : styles.spacingImageDefault;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Block renderer
 // ---------------------------------------------------------------------------
 
 function renderBlock(
   node: BlockNode,
   index: number,
+  blockCount: number,
   density: 'default' | 'compact',
   headingLevelStart: 1 | 2 | 3 | 4 | 5 | 6,
   onLinkClick?: XDSMarkdownProps['onLinkClick'],
 ): React.ReactNode {
-  const blockSpacing = density === 'compact' ? styles.blockCompact : styles.blockDefault;
-  const headingSpacing = density === 'compact' ? styles.headingCompact : styles.headingDefault;
+  const spacing = getElementSpacing(node, density);
+  const isFirst = index === 0;
+  const isLast = index === blockCount - 1;
 
   switch (node.type) {
     case 'heading': {
       const level = Math.min(node.level + headingLevelStart - 1, 6) as 1 | 2 | 3 | 4 | 5 | 6;
       const Tag = `h${level}` as const;
       return (
-        <Tag key={index} {...stylex.props(styles.headingBase, headingStyles[level], headingSpacing)}>
+        <Tag
+          key={index}
+          {...stylex.props(
+            styles.headingBase,
+            headingStyles[level],
+            spacing,
+            isFirst && styles.noMarginBlockStart,
+            isLast && styles.noMarginBlockEnd,
+          )}
+        >
           {node.children.map((c, i) => renderInline(c, i, onLinkClick))}
         </Tag>
       );
     }
     case 'paragraph':
       return (
-        <p key={index} {...stylex.props(blockSpacing)}>
+        <p
+          key={index}
+          {...stylex.props(
+            spacing,
+            isFirst && styles.noMarginBlockStart,
+            isLast && styles.noMarginBlockEnd,
+          )}
+        >
           {node.children.map((c, i) => renderInline(c, i, onLinkClick))}
         </p>
       );
     case 'codeblock':
       return (
-        <div key={index} {...stylex.props(blockSpacing)}>
+        <div
+          key={index}
+          {...stylex.props(
+            spacing,
+            isFirst && styles.noMarginBlockStart,
+            isLast && styles.noMarginBlockEnd,
+          )}
+        >
           <XDSCodeBlock code={node.content} language={node.language} />
         </div>
       );
     case 'blockquote':
       return (
-        <blockquote key={index} {...stylex.props(styles.blockquote, blockSpacing)}>
-          {node.children.map((c, i) => renderBlock(c, i, density, headingLevelStart, onLinkClick))}
+        <blockquote
+          key={index}
+          {...stylex.props(
+            styles.blockquote,
+            spacing,
+            isFirst && styles.noMarginBlockStart,
+            isLast && styles.noMarginBlockEnd,
+          )}
+        >
+          {node.children.map((c, i) => renderBlock(c, i, node.children.length, density, headingLevelStart, onLinkClick))}
         </blockquote>
       );
     case 'list': {
@@ -337,13 +465,15 @@ function renderBlock(
         <Tag
           key={index}
           {...(node.ordered && node.start != null ? {start: node.start} : {})}
-          {...stylex.props(styles.list, blockSpacing)}
+          {...stylex.props(
+            styles.list,
+            spacing,
+            isFirst && styles.noMarginBlockStart,
+            isLast && styles.noMarginBlockEnd,
+          )}
         >
           {node.items.map((item, i) => {
             const isTask = item.checked != null;
-            // For task items with a single paragraph child, render the
-            // paragraph's inline children directly so they flow inline
-            // with the checkbox instead of as a block below it.
             const firstChild = item.children[0];
             const inlineTask = isTask && item.children.length === 1 && firstChild?.type === 'paragraph';
 
@@ -364,7 +494,7 @@ function renderBlock(
                 {inlineTask ? (
                   <span>{firstChild.children.map((c, j) => renderInline(c, j, onLinkClick))}</span>
                 ) : (
-                  item.children.map((c, j) => renderBlock(c, j, density, headingLevelStart, onLinkClick))
+                  item.children.map((c, j) => renderBlock(c, j, item.children.length, density, headingLevelStart, onLinkClick))
                 )}
               </li>
             );
@@ -376,7 +506,15 @@ function renderBlock(
       const alignStyle = (a: typeof node.alignments[number]) =>
         a === 'center' ? styles.alignCenter : a === 'right' ? styles.alignRight : styles.alignLeft;
       return (
-        <div key={index} {...stylex.props(styles.tableWrapper, blockSpacing)}>
+        <div
+          key={index}
+          {...stylex.props(
+            styles.tableWrapper,
+            spacing,
+            isFirst && styles.noMarginBlockStart,
+            isLast && styles.noMarginBlockEnd,
+          )}
+        >
           <table {...stylex.props(styles.table)}>
             <thead>
               <tr>
@@ -403,12 +541,42 @@ function renderBlock(
       );
     }
     case 'hr':
-      return <hr key={index} {...stylex.props(styles.hr, blockSpacing)} />;
+      return (
+        <hr
+          key={index}
+          {...stylex.props(
+            styles.hr,
+            spacing,
+            isFirst && styles.noMarginBlockStart,
+            isLast && styles.noMarginBlockEnd,
+          )}
+        />
+      );
     case 'image': {
       const safeSrc = sanitizeUrl(node.src);
-      if (safeSrc == null) return <p key={index} {...stylex.props(blockSpacing)}>[{node.alt}]</p>;
+      if (safeSrc == null) {
+        return (
+          <p
+            key={index}
+            {...stylex.props(
+              spacing,
+              isFirst && styles.noMarginBlockStart,
+              isLast && styles.noMarginBlockEnd,
+            )}
+          >
+            [{node.alt}]
+          </p>
+        );
+      }
       return (
-        <p key={index} {...stylex.props(blockSpacing)}>
+        <p
+          key={index}
+          {...stylex.props(
+            spacing,
+            isFirst && styles.noMarginBlockStart,
+            isLast && styles.noMarginBlockEnd,
+          )}
+        >
           <img src={safeSrc} alt={node.alt} {...stylex.props(styles.image)} />
         </p>
       );
@@ -440,7 +608,8 @@ export function XDSMarkdown({
         incrementalState.current = createIncrementalState();
         return [];
       }
-      return parseMarkdownIncremental(children, incrementalState.current);
+      const input = trimStreamingArtifacts(children);
+      return parseMarkdownIncremental(input, incrementalState.current);
     }
     return parseMarkdown(children);
   }, [children, isStreaming]);
@@ -457,7 +626,7 @@ export function XDSMarkdown({
         style,
       )}
     >
-      {blocks.map((block, i) => renderBlock(block, i, density, headingLevelStart, onLinkClick))}
+      {blocks.map((block, i) => renderBlock(block, i, blocks.length, density, headingLevelStart, onLinkClick))}
     </div>
   );
 }
