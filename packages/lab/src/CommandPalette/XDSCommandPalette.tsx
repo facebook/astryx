@@ -16,8 +16,10 @@ import {
   useEffect,
   useId,
   useMemo,
+  useOptimistic,
   useRef,
   useState,
+  useTransition,
   type ReactNode,
 } from 'react';
 import {XDSDialog} from '@xds/core/Dialog';
@@ -280,7 +282,13 @@ export function XDSCommandPalette<
   const [search, setSearch] = useState('');
   const [internalValue, setInternalValue] = useState('');
   const [searchResults, setSearchResults] = useState<T[]>([]);
-  const [isBusy, setIsBusy] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  // useOptimistic keeps the previous results visible while a new query is pending.
+  // This prevents the list from blanking out during async searches.
+  const [optimisticResults, setOptimisticResults] =
+    useOptimistic(searchResults);
+  // isBusy: spinner in input. True while a transition is running.
+  const isBusy = isPending;
   const searchVersionRef = useRef(0);
 
   const value = controlledValue ?? internalValue;
@@ -298,12 +306,13 @@ export function XDSCommandPalette<
   // Build flat selectable items in DOM order from search results.
   // Must match the render order of ItemRenderer.
   const selectableItems = useMemo(
-    () => buildSelectableItems(searchResults),
-    [searchResults],
+    () => buildSelectableItems(optimisticResults),
+    [optimisticResults],
   );
 
   const handleClose = useCallback(() => {
     setSearch('');
+    setSearchResults([]);
     if (controlledValue === undefined) {
       setInternalValue('');
     }
@@ -345,34 +354,29 @@ export function XDSCommandPalette<
     }
   }, [isOpen, selectableItems, value, combobox]);
 
-  // Unified search effect: bootstrap on open or empty query, search otherwise
+  // Unified search effect: bootstrap on open or empty query, search otherwise.
+  // Wrapped in startTransition so the current optimisticResults remain visible
+  // while the new query is in flight — no blank flash between queries.
   useEffect(() => {
     if (!isOpen) return;
 
     searchSource.cancel?.();
     const version = ++searchVersionRef.current;
 
-    const result =
-      search === '' ? searchSource.bootstrap() : searchSource.search(search);
+    startTransition(async () => {
+      const isBootstrap = search === '';
+      const result = isBootstrap
+        ? searchSource.bootstrap()
+        : searchSource.search(search);
 
-    if (result instanceof Promise) {
-      setIsBusy(true);
-      result
-        .then(items => {
-          if (searchVersionRef.current === version) {
-            setSearchResults(items);
-            setIsBusy(false);
-          }
-        })
-        .catch(() => {
-          if (searchVersionRef.current === version) {
-            setIsBusy(false);
-          }
-        });
-    } else {
-      setSearchResults(result);
-      setIsBusy(false);
-    }
+      // Show stale results while waiting
+      const items = await Promise.resolve(result);
+
+      if (searchVersionRef.current === version) {
+        setOptimisticResults(items);
+        setSearchResults(items);
+      }
+    });
   }, [search, isOpen, searchSource]);
 
   // Wrap combobox's onKeyDown to intercept Escape (close palette) and
@@ -417,7 +421,7 @@ export function XDSCommandPalette<
       setHighlightedIndex: combobox.setHighlightedIndex,
       getItemId: combobox.getItemId,
       selectableItems,
-      searchResults,
+      searchResults: optimisticResults,
       selectItem,
       onKeyDown: handleKeyDown,
       onClose: handleClose,
@@ -433,7 +437,7 @@ export function XDSCommandPalette<
       combobox.setHighlightedIndex,
       combobox.getItemId,
       selectableItems,
-      searchResults,
+      optimisticResults,
       selectItem,
       handleKeyDown,
       handleClose,
@@ -442,11 +446,14 @@ export function XDSCommandPalette<
     ],
   );
 
-  // Determine list content — empty states take priority over item rendering
+  // Empty states: only show after the transition settles (not while pending),
+  // and only when there are truly no results to show — not stale ones.
+  // During a pending transition, optimisticResults holds the previous results,
+  // so the list stays populated rather than flashing blank.
   const showEmptyBootstrap =
-    !isBusy && search === '' && searchResults.length === 0;
+    !isPending && search === '' && optimisticResults.length === 0;
   const showEmptySearch =
-    !isBusy && search !== '' && searchResults.length === 0;
+    !isPending && search !== '' && optimisticResults.length === 0;
 
   let listContent: ReactNode;
   if (showEmptyBootstrap) {
@@ -460,7 +467,7 @@ export function XDSCommandPalette<
   } else {
     listContent = (
       <ItemRenderer
-        items={searchResults}
+        items={optimisticResults}
         value={value}
         renderItem={renderItem}
       />
