@@ -17,7 +17,7 @@ import {
   spacingVars,
   typeScaleVars,
   typographyVars,
-} from '@xds/core/theme/tokens.stylex';
+} from '../theme/tokens.stylex';
 
 const styles = stylex.create({
   empty: {

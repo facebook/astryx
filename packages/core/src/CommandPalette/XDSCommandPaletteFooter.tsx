@@ -12,15 +12,15 @@
 
 import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {XDSBaseProps} from '@xds/core/XDSBaseProps';
-import {xdsClassName, mergeProps} from '@xds/core/utils';
+import type {XDSBaseProps} from '../XDSBaseProps';
+import {xdsClassName, mergeProps} from '../utils';
 import {
   colorVars,
   spacingVars,
   typeScaleVars,
   typographyVars,
-} from '@xds/core/theme/tokens.stylex';
-import {XDSKbd} from '@xds/core/Kbd';
+} from '../theme/tokens.stylex';
+import {XDSKbd} from '../Kbd';
 
 const styles = stylex.create({
   footer: {

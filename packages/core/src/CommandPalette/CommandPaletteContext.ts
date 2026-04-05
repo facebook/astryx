@@ -6,7 +6,7 @@
  */
 
 import {createContext, useContext} from 'react';
-import type {XDSSearchableItem} from '@xds/core/Typeahead';
+import type {XDSSearchableItem} from '../Typeahead';
 
 export interface CommandPaletteContextValue {
   /** Current search query. */

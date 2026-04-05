@@ -13,9 +13,9 @@
 
 import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {XDSBaseProps} from '@xds/core/XDSBaseProps';
-import {xdsClassName, mergeProps} from '@xds/core/utils';
-import {spacingVars} from '@xds/core/theme/tokens.stylex';
+import type {XDSBaseProps} from '../XDSBaseProps';
+import {xdsClassName, mergeProps} from '../utils';
+import {spacingVars} from '../theme/tokens.stylex';
 import {useCommandPaletteContext} from './CommandPaletteContext';
 
 const styles = stylex.create({

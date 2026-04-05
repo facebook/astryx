@@ -22,16 +22,16 @@ import {
   useTransition,
   type ReactNode,
 } from 'react';
-import {XDSDialog} from '@xds/core/Dialog';
+import {XDSDialog} from '../Dialog';
 import {
   XDSLayout,
   XDSLayoutHeader,
   XDSLayoutContent,
   XDSLayoutFooter,
-} from '@xds/core/Layout';
-import type {XDSSearchSource, XDSSearchableItem} from '@xds/core/Typeahead';
-import {useCombobox} from '@xds/core/Selector';
-import type {XDSSelectorOptionData} from '@xds/core/Selector';
+} from '../Layout';
+import type {XDSSearchSource, XDSSearchableItem} from '../Typeahead';
+import {useCombobox} from '../Selector';
+import type {XDSSelectorOptionData} from '../Selector';
 import {CommandPaletteContext} from './CommandPaletteContext';
 import {XDSCommandPaletteList} from './XDSCommandPaletteList';
 import {XDSCommandPaletteItem} from './XDSCommandPaletteItem';

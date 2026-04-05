@@ -8,9 +8,6 @@
  * This package is never published to npm.
  */
 
-// CommandPalette — graduated to @xds/core
-export * from '@xds/core/CommandPalette';
-
 // Code components — syntax highlighting domain
 export {XDSCodeBlock, type XDSCodeBlockProps} from './CodeBlock';
 export {XDSCodeEditor, type XDSCodeEditorProps} from './CodeEditor';
