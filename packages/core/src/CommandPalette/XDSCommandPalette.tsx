@@ -239,25 +239,11 @@ function ItemRenderer<T extends XDSSearchableItem>({
  *   - `renderItem(item, isSelected)`: custom per-item content (grouping preserved)
  *
  * @example
- * ```tsx
- * // Simplest — zero config beyond open state and source
+ * ```
  * <XDSCommandPalette
  *   isOpen={isOpen}
  *   onOpenChange={setIsOpen}
  *   searchSource={createStaticSource(commands)}
- * />
- *
- * // Custom item rendering (grouping still automatic)
- * <XDSCommandPalette
- *   isOpen={isOpen}
- *   onOpenChange={setIsOpen}
- *   searchSource={source}
- *   renderItem={(item, isSelected) => (
- *     <>
- *       <XDSIcon icon={item.auxiliaryData.icon} size="sm" />
- *       {item.label}
- *     </>
- *   )}
  * />
  * ```
  */
