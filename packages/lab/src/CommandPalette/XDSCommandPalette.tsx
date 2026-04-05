@@ -279,29 +279,19 @@ export function XDSCommandPalette<
   maxHeight = 480,
 }: XDSCommandPaletteProps<T>) {
   const listId = useId();
-  const [search, setSearchRaw] = useState('');
+  const [search, setSearch] = useState('');
   const [internalValue, setInternalValue] = useState('');
   const [searchResults, setSearchResults] = useState<T[]>([]);
   const [isPending, startTransition] = useTransition();
-  // Results are optimistic so the previous list stays visible while the
-  // new query is in flight.
+  // optimisticResults: previous results stay visible while a new query is in flight
   const [optimisticResults, setOptimisticResults] =
     useOptimistic(searchResults);
+  // optimisticSearch: lags behind real search — only advances when the transition
+  // commits. Used for empty state logic so showEmptyBootstrap stays true while
+  // the async query is pending. The input uses real search for immediate feedback.
+  const [optimisticSearch, setOptimisticSearch] = useOptimistic(search);
   const isBusy = isPending;
   const searchVersionRef = useRef(0);
-
-  // Wrap setSearch in startTransition so the query update and the async
-  // search are part of the same transition. This keeps search and
-  // optimisticResults in the same snapshot — search only advances when
-  // the transition commits, so empty-state conditions are always coherent.
-  const setSearch = useCallback(
-    (newSearch: string) => {
-      startTransition(() => {
-        setSearchRaw(newSearch);
-      });
-    },
-    [startTransition],
-  );
 
   const value = controlledValue ?? internalValue;
 
@@ -323,7 +313,7 @@ export function XDSCommandPalette<
   );
 
   const handleClose = useCallback(() => {
-    setSearchRaw('');
+    setSearch('');
     setSearchResults([]);
     if (controlledValue === undefined) {
       setInternalValue('');
@@ -382,6 +372,10 @@ export function XDSCommandPalette<
     startTransition(async () => {
       const isBootstrap = search === '';
 
+      // Advance optimisticSearch to match the real query now that we're
+      // inside the transition. This keeps it coherent with optimisticResults.
+      setOptimisticSearch(search);
+
       // Only client-filter if there are previous results to narrow.
       if (!isBootstrap && searchResults.length > 0) {
         const lower = search.toLowerCase().trim();
@@ -437,6 +431,7 @@ export function XDSCommandPalette<
 
   const contextValue = useMemo(
     () => ({
+      // Expose real search to the input so it reflects keystrokes immediately
       search,
       setSearch,
       value,
@@ -472,11 +467,14 @@ export function XDSCommandPalette<
     ],
   );
 
-  // search is only updated inside startTransition, so it stays at '' while
-  // the transition is pending — coherent with optimisticResults.
-  const showEmptyBootstrap = search === '' && optimisticResults.length === 0;
+  // Empty state uses optimisticSearch (lags behind real search) so that
+  // showEmptyBootstrap stays true while the transition is pending — the input
+  // already shows the typed query via real search, but the list hasn't
+  // transitioned yet so we hold at the bootstrap empty state.
+  const showEmptyBootstrap =
+    optimisticSearch === '' && optimisticResults.length === 0;
   const showEmptySearch =
-    !isPending && search !== '' && optimisticResults.length === 0;
+    !isPending && optimisticSearch !== '' && optimisticResults.length === 0;
 
   let listContent: ReactNode;
   if (showEmptyBootstrap) {
