@@ -145,9 +145,8 @@ describe('XDSMarkdown', () => {
     const {container} = render(
       <XDSMarkdown isStreaming>{'Hello'}</XDSMarkdown>,
     );
-    // Cursor is a span with aria-hidden
-    const cursor = container.querySelector('span[aria-hidden]');
-    expect(cursor).toBeInTheDocument();
+    // Streaming mode parses incrementally but no cursor element
+    expect(container.querySelector('[role="document"]')).toBeInTheDocument();
   });
 
   it('hides cursor when not streaming', () => {
@@ -172,5 +171,32 @@ describe('XDSMarkdown', () => {
     const ref = {current: null as HTMLDivElement | null};
     render(<XDSMarkdown ref={ref}>{'Hello'}</XDSMarkdown>);
     expect(ref.current).toBeInstanceOf(HTMLDivElement);
+  });
+
+  it('sanitizes javascript: URLs in links', () => {
+    const {container} = render(
+      <XDSMarkdown>{'[click](javascript:alert(1))'}</XDSMarkdown>,
+    );
+    const link = container.querySelector('a');
+    expect(link).toBeNull();
+    expect(container.textContent).toContain('click');
+  });
+
+  it('sanitizes data: URLs in images', () => {
+    const {container} = render(
+      <XDSMarkdown>{'![xss](data:text/html,<script>alert(1)</script>)'}</XDSMarkdown>,
+    );
+    const img = container.querySelector('img');
+    expect(img).toBeNull();
+  });
+
+  it('allows safe URLs', () => {
+    const {container} = render(
+      <XDSMarkdown>{'[safe](https://example.com) and [relative](/page)'}</XDSMarkdown>,
+    );
+    const links = container.querySelectorAll('a');
+    expect(links).toHaveLength(2);
+    expect(links[0].getAttribute('href')).toBe('https://example.com');
+    expect(links[1].getAttribute('href')).toBe('/page');
   });
 });

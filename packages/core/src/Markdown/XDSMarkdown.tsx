@@ -61,11 +61,6 @@ export interface XDSMarkdownProps {
 // Styles
 // ---------------------------------------------------------------------------
 
-const cursorBlink = stylex.keyframes({
-  '0%, 100%': {opacity: 1},
-  '50%': {opacity: 0},
-});
-
 const styles = stylex.create({
   root: {
     fontFamily: typographyVars['--font-family-body'],
@@ -141,9 +136,14 @@ const styles = stylex.create({
   },
   taskItem: {
     listStyleType: 'none',
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: spacingVars['--spacing-2'],
   },
   taskCheckbox: {
-    marginInlineEnd: spacingVars['--spacing-2'],
+    marginBlockStart: '0.3em',
+    flexShrink: 0,
+    accentColor: colorVars['--color-accent'],
   },
   // Table
   tableWrapper: {
@@ -196,19 +196,6 @@ const styles = stylex.create({
       ':hover': 'underline',
     },
   },
-  // Streaming cursor
-  cursor: {
-    display: 'inline-block',
-    width: '2px',
-    height: '1em',
-    backgroundColor: colorVars['--color-text-primary'],
-    marginInlineStart: spacingVars['--spacing-0-5'],
-    verticalAlign: 'text-bottom',
-    animationName: cursorBlink,
-    animationDuration: '1s',
-    animationIterationCount: 'infinite',
-    animationTimingFunction: 'step-end',
-  },
 });
 
 const headingStyles = {
@@ -219,6 +206,19 @@ const headingStyles = {
   5: styles.h5,
   6: styles.h6,
 } as const;
+
+// ---------------------------------------------------------------------------
+// URL sanitization — block dangerous protocols
+// ---------------------------------------------------------------------------
+
+const DANGEROUS_URL_PATTERN = /^(javascript|data|vbscript):/i;
+
+function sanitizeUrl(url: string): string | null {
+  const trimmed = url.trim();
+  if (trimmed.length === 0) return null;
+  if (DANGEROUS_URL_PATTERN.test(trimmed)) return null;
+  return trimmed;
+}
 
 // ---------------------------------------------------------------------------
 // Inline renderer
@@ -253,10 +253,15 @@ function renderInline(
     case 'code':
       return <XDSCode key={index}>{node.content}</XDSCode>;
     case 'link': {
-      const isExternal = node.href.startsWith('http');
+      const safeHref = sanitizeUrl(node.href);
+      if (safeHref == null) {
+        // Unsafe URL — render as plain text
+        return <span key={index}>{node.children.map((c, i) => renderInline(c, i, onLinkClick))}</span>;
+      }
+      const isExternal = safeHref.startsWith('http');
       const handleClick = onLinkClick
         ? (e: React.MouseEvent<HTMLAnchorElement>) => {
-            const result = onLinkClick(node.href, e);
+            const result = onLinkClick(safeHref, e);
             if (result === false) {
               e.preventDefault();
             }
@@ -265,7 +270,7 @@ function renderInline(
       return (
         <a
           key={index}
-          href={node.href}
+          href={safeHref}
           onClick={handleClick}
           {...(isExternal ? {target: '_blank', rel: 'noopener noreferrer'} : {})}
           {...stylex.props(styles.link)}
@@ -274,8 +279,11 @@ function renderInline(
         </a>
       );
     }
-    case 'image':
-      return <img key={index} src={node.src} alt={node.alt} {...stylex.props(styles.image)} />;
+    case 'image': {
+      const safeSrc = sanitizeUrl(node.src);
+      if (safeSrc == null) return <span key={index}>[{node.alt}]</span>;
+      return <img key={index} src={safeSrc} alt={node.alt} {...stylex.props(styles.image)} />;
+    }
   }
 }
 
@@ -329,23 +337,36 @@ function renderBlock(
           {...(node.ordered && node.start != null ? {start: node.start} : {})}
           {...stylex.props(styles.list, blockSpacing)}
         >
-          {node.items.map((item, i) => (
-            <li
-              key={i}
-              {...(item.checked != null ? stylex.props(styles.taskItem) : {})}
-            >
-              {item.checked != null && (
-                <input
-                  type="checkbox"
-                  checked={item.checked}
-                  disabled
-                  readOnly
-                  {...stylex.props(styles.taskCheckbox)}
-                />
-              )}
-              {item.children.map((c, j) => renderBlock(c, j, density, headingLevelStart, onLinkClick))}
-            </li>
-          ))}
+          {node.items.map((item, i) => {
+            const isTask = item.checked != null;
+            // For task items with a single paragraph child, render the
+            // paragraph's inline children directly so they flow inline
+            // with the checkbox instead of as a block below it.
+            const firstChild = item.children[0];
+            const inlineTask = isTask && item.children.length === 1 && firstChild?.type === 'paragraph';
+
+            return (
+              <li
+                key={i}
+                {...(isTask ? stylex.props(styles.taskItem) : {})}
+              >
+                {isTask && (
+                  <input
+                    type="checkbox"
+                    checked={item.checked}
+                    disabled
+                    readOnly
+                    {...stylex.props(styles.taskCheckbox)}
+                  />
+                )}
+                {inlineTask ? (
+                  <span>{firstChild.children.map((c, j) => renderInline(c, j, onLinkClick))}</span>
+                ) : (
+                  item.children.map((c, j) => renderBlock(c, j, density, headingLevelStart, onLinkClick))
+                )}
+              </li>
+            );
+          })}
         </Tag>
       );
     }
@@ -381,12 +402,15 @@ function renderBlock(
     }
     case 'hr':
       return <hr key={index} {...stylex.props(styles.hr, blockSpacing)} />;
-    case 'image':
+    case 'image': {
+      const safeSrc = sanitizeUrl(node.src);
+      if (safeSrc == null) return <p key={index} {...stylex.props(blockSpacing)}>[{node.alt}]</p>;
       return (
         <p key={index} {...stylex.props(blockSpacing)}>
-          <img src={node.src} alt={node.alt} {...stylex.props(styles.image)} />
+          <img src={safeSrc} alt={node.alt} {...stylex.props(styles.image)} />
         </p>
       );
+    }
   }
 }
 
@@ -432,7 +456,6 @@ export function XDSMarkdown({
       )}
     >
       {blocks.map((block, i) => renderBlock(block, i, density, headingLevelStart, onLinkClick))}
-      {isStreaming && <span {...stylex.props(styles.cursor)} aria-hidden="true" />}
     </div>
   );
 }
