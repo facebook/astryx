@@ -357,6 +357,10 @@ export function XDSCommandPalette<
   // Unified search effect: bootstrap on open or empty query, search otherwise.
   // Wrapped in startTransition so the current optimisticResults remain visible
   // while the new query is in flight — no blank flash between queries.
+  //
+  // While pending, we immediately client-filter the previous result set by the
+  // current query so something relevant shows up rather than holding stale results
+  // verbatim. The async source result replaces this once it resolves.
   useEffect(() => {
     if (!isOpen) return;
 
@@ -365,11 +369,20 @@ export function XDSCommandPalette<
 
     startTransition(async () => {
       const isBootstrap = search === '';
+
+      // Optimistically narrow the previous results while the real query is in flight
+      if (!isBootstrap) {
+        const lower = search.toLowerCase().trim();
+        const optimistic = searchResults.filter(item =>
+          item.label.toLowerCase().includes(lower),
+        );
+        setOptimisticResults(optimistic);
+      }
+
       const result = isBootstrap
         ? searchSource.bootstrap()
         : searchSource.search(search);
 
-      // Show stale results while waiting
       const items = await Promise.resolve(result);
 
       if (searchVersionRef.current === version) {
