@@ -94,6 +94,12 @@
       "import": "./dist/CheckboxInput/index.mjs",
       "require": "./dist/CheckboxInput/index.js"
     },
+    "./CheckboxList": {
+      "source": "./src/CheckboxList/index.ts",
+      "types": "./dist/CheckboxList/index.d.ts",
+      "import": "./dist/CheckboxList/index.mjs",
+      "require": "./dist/CheckboxList/index.js"
+    },
     "./CodeBlock": {
       "source": "./src/CodeBlock/index.ts",
       "types": "./dist/CodeBlock/index.d.ts",
