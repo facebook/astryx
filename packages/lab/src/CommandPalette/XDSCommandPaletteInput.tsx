@@ -170,11 +170,7 @@ export function XDSCommandPaletteInput({
         stylex.props(styles.wrapper, xstyle),
       )}>
       <span {...stylex.props(styles.icon)}>
-        {ctx?.isBusy ? (
-          <XDSSpinner size="sm" />
-        ) : (
-          <XDSIcon icon="search" size="sm" color="inherit" />
-        )}
+        <XDSIcon icon="search" size="sm" color="inherit" />
       </span>
       <input
         ref={setRefs}
@@ -198,6 +194,11 @@ export function XDSCommandPaletteInput({
         {...stylex.props(styles.input)}
         {...props}
       />
+      {ctx?.isBusy && (
+        <span {...stylex.props(styles.icon)}>
+          <XDSSpinner size="sm" />
+        </span>
+      )}
     </div>
   );
 }
