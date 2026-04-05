@@ -20,16 +20,16 @@ import {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSSpinner} from '@xds/core/Spinner';
-import {xdsClassName, mergeProps} from '@xds/core/utils';
+import {XDSIcon} from '../Icon';
+import {XDSSpinner} from '../Spinner';
+import {xdsClassName, mergeProps} from '../utils';
 import {
   colorVars,
   typeScaleVars,
   spacingVars,
   typographyVars,
   textSizeVars,
-} from '@xds/core/theme/tokens.stylex';
+} from '../theme/tokens.stylex';
 import {useCommandPaletteContext} from './CommandPaletteContext';
 
 const styles = stylex.create({

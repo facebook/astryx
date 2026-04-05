@@ -12,15 +12,15 @@
 
 import {useCallback, useEffect, useMemo, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {XDSBaseProps} from '@xds/core/XDSBaseProps';
-import {xdsClassName, mergeProps} from '@xds/core/utils';
+import type {XDSBaseProps} from '../XDSBaseProps';
+import {xdsClassName, mergeProps} from '../utils';
 import {
   colorVars,
   spacingVars,
   radiusVars,
   typographyVars,
   textSizeVars,
-} from '@xds/core/theme/tokens.stylex';
+} from '../theme/tokens.stylex';
 import {useCommandPaletteContext} from './CommandPaletteContext';
 
 const HOVER_HOVER = '@media (hover: hover)';
@@ -66,7 +66,10 @@ const styles = stylex.create({
   },
 });
 
-export interface XDSCommandPaletteItemProps extends XDSBaseProps<HTMLDivElement> {
+export interface XDSCommandPaletteItemProps extends Omit<
+  XDSBaseProps<HTMLDivElement>,
+  'onChange' | 'onSelect'
+> {
   /** Ref forwarded to the root element. */
   ref?: React.Ref<HTMLDivElement>;
   /** Unique value for identification and selection. */

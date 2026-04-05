@@ -2,7 +2,7 @@
  * @file index.ts
  * @input Imports CommandPalette components and types
  * @output Exports all CommandPalette components and types
- * @position Component entry point; re-exported by /packages/lab/src/index.ts
+ * @position Component entry point; re-exported by /packages/core/src/index.ts
  *
  * SYNC: When modified, update this header
  */

@@ -69,7 +69,10 @@ describe('XDSCommandPaletteItem', () => {
         Item
       </XDSCommandPaletteItem>,
     );
-    expect(screen.getByRole('option')).toHaveAttribute('aria-selected', 'false');
+    expect(screen.getByRole('option')).toHaveAttribute(
+      'aria-selected',
+      'false',
+    );
   });
 
   it('sets data-value attribute', () => {

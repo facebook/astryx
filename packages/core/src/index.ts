@@ -24,6 +24,7 @@ export * from './Card';
 export * from './Calendar';
 export * from './Center';
 export * from './CodeBlock';
+export * from './CommandPalette';
 export * from './CheckboxInput';
 export * from './Collapsible';
 export * from './RadioList';
