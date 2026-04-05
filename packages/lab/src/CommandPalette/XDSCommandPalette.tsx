@@ -462,15 +462,20 @@ export function XDSCommandPalette<
     ],
   );
 
-  // Empty states: shown whenever there's nothing to render — including during
-  // a pending transition when optimisticResults is empty (e.g. typing from
-  // an empty bootstrap). The list stays at the empty state rather than
-  // flashing blank while the async query is in flight.
+  // Empty states:
+  // - Bootstrap empty: no query and nothing to show
+  // - Search empty: query returned nothing — only after the transition settles
+  //   so we don't flash "No results" while the async query is still in flight
+  // - Pending from empty: query is in flight but we have no optimistic results
+  //   to show (e.g. typed from bootstrap-empty state) — hold at bootstrap empty
   const showEmptyBootstrap = search === '' && optimisticResults.length === 0;
-  const showEmptySearch = search !== '' && optimisticResults.length === 0;
+  const showEmptySearch =
+    !isPending && search !== '' && optimisticResults.length === 0;
+  const showEmptyPending =
+    isPending && search !== '' && optimisticResults.length === 0;
 
   let listContent: ReactNode;
-  if (showEmptyBootstrap) {
+  if (showEmptyBootstrap || showEmptyPending) {
     listContent = (
       <XDSCommandPaletteEmpty>{emptyBootstrapText}</XDSCommandPaletteEmpty>
     );
