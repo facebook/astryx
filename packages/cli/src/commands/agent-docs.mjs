@@ -129,7 +129,7 @@ export function generateCompressedIndex(version, {coreDir, zh = false, lang, run
     }
   }
 
-  // Templates from live discovery
+  // Templates — list shows compositions, skeleton shows spatial structure
   const templatesDir = path.join(CLI_ROOT, 'templates');
   if (fs.existsSync(templatesDir)) {
     const templates = fs.readdirSync(templatesDir, {withFileTypes: true})
@@ -137,7 +137,9 @@ export function generateCompressedIndex(version, {coreDir, zh = false, lang, run
       .map(e => e.name)
       .sort();
     if (templates.length > 0) {
-      lines.push(`${run} template <name> [path]  scaffold page (${templates.join(', ')})`);
+      lines.push(`${run} template --list             layout recipes with component compositions`);
+      lines.push(`${run} template <name> --skeleton   spatial reference (padding, gap, nesting)`);
+      lines.push(`${run} template <name> [path]       scaffold page from template`);
     }
   }
 
