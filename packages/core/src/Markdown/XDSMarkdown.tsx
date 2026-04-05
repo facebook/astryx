@@ -41,7 +41,14 @@ export interface XDSMarkdownProps {
   ref?: React.Ref<HTMLDivElement>;
   children: string;
   density?: 'default' | 'compact';
-  maxHeadingLevel?: 1 | 2 | 3 | 4 | 5 | 6;
+  /**
+   * The HTML heading level that markdown `#` maps to.
+   * Shifts all heading levels down to fit the surrounding page hierarchy.
+   * E.g. headingLevelStart={3} renders `#` as h3, `##` as h4, `###` as h5.
+   * Levels that would exceed h6 are clamped to h6.
+   * @default 1
+   */
+  headingLevelStart?: 1 | 2 | 3 | 4 | 5 | 6;
   isStreaming?: boolean;
   onLinkClick?: (href: string, event: React.MouseEvent<HTMLAnchorElement>) => void | false;
   xstyle?: StyleXStyles;
@@ -67,6 +74,10 @@ const styles = stylex.create({
     fontSize: typeScaleVars['--text-body-size'],
   },
   // Headings
+  headingBase: {
+    fontFamily: typographyVars['--font-family-heading'],
+    color: colorVars['--color-text-primary'],
+  },
   h1: {
     fontSize: typeScaleVars['--text-heading-1-size'],
     fontWeight: typeScaleVars['--text-heading-1-weight'],
@@ -99,42 +110,45 @@ const styles = stylex.create({
   },
   // Block spacing
   blockDefault: {
-    marginTop: spacingVars['--spacing-3'],
-    marginBottom: spacingVars['--spacing-3'],
+    marginBlockStart: spacingVars['--spacing-3'],
+    marginBlockEnd: spacingVars['--spacing-3'],
   },
   blockCompact: {
-    marginTop: spacingVars['--spacing-1'],
-    marginBottom: spacingVars['--spacing-1'],
+    marginBlockStart: spacingVars['--spacing-1'],
+    marginBlockEnd: spacingVars['--spacing-1'],
   },
   headingDefault: {
-    marginTop: spacingVars['--spacing-5'],
-    marginBottom: spacingVars['--spacing-3'],
+    marginBlockStart: spacingVars['--spacing-5'],
+    marginBlockEnd: spacingVars['--spacing-3'],
   },
   headingCompact: {
-    marginTop: spacingVars['--spacing-3'],
-    marginBottom: spacingVars['--spacing-1'],
+    marginBlockStart: spacingVars['--spacing-3'],
+    marginBlockEnd: spacingVars['--spacing-1'],
   },
   // Blockquote
   blockquote: {
-    borderLeftWidth: '3px',
-    borderLeftStyle: 'solid',
-    borderLeftColor: colorVars['--color-border-emphasized'],
-    paddingLeft: spacingVars['--spacing-4'],
+    borderInlineStartWidth: spacingVars['--spacing-0-5'],
+    borderInlineStartStyle: 'solid',
+    borderInlineStartColor: colorVars['--color-accent'],
+    paddingInlineStart: spacingVars['--spacing-4'],
     color: colorVars['--color-text-secondary'],
-    marginLeft: 0,
-    marginRight: 0,
+    marginInlineStart: 0,
+    marginInlineEnd: 0,
   },
   // List
   list: {
-    paddingLeft: spacingVars['--spacing-6'],
+    paddingInlineStart: spacingVars['--spacing-6'],
   },
   taskItem: {
     listStyleType: 'none',
   },
   taskCheckbox: {
-    marginRight: spacingVars['--spacing-2'],
+    marginInlineEnd: spacingVars['--spacing-2'],
   },
   // Table
+  tableWrapper: {
+    overflowX: 'auto',
+  },
   table: {
     borderCollapse: 'collapse',
     width: '100%',
@@ -177,7 +191,10 @@ const styles = stylex.create({
   },
   link: {
     color: colorVars['--color-text-accent'],
-    textDecoration: 'none',
+    textDecoration: {
+      default: 'none',
+      ':hover': 'underline',
+    },
   },
   // Streaming cursor
   cursor: {
@@ -185,7 +202,7 @@ const styles = stylex.create({
     width: '2px',
     height: '1em',
     backgroundColor: colorVars['--color-text-primary'],
-    marginLeft: spacingVars['--spacing-0-5'],
+    marginInlineStart: spacingVars['--spacing-0-5'],
     verticalAlign: 'text-bottom',
     animationName: cursorBlink,
     animationDuration: '1s',
@@ -270,7 +287,7 @@ function renderBlock(
   node: BlockNode,
   index: number,
   density: 'default' | 'compact',
-  maxHeadingLevel: 1 | 2 | 3 | 4 | 5 | 6,
+  headingLevelStart: 1 | 2 | 3 | 4 | 5 | 6,
   onLinkClick?: XDSMarkdownProps['onLinkClick'],
 ): React.ReactNode {
   const blockSpacing = density === 'compact' ? styles.blockCompact : styles.blockDefault;
@@ -278,10 +295,10 @@ function renderBlock(
 
   switch (node.type) {
     case 'heading': {
-      const level = Math.max(node.level, maxHeadingLevel) as 1 | 2 | 3 | 4 | 5 | 6;
+      const level = Math.min(node.level + headingLevelStart - 1, 6) as 1 | 2 | 3 | 4 | 5 | 6;
       const Tag = `h${level}` as const;
       return (
-        <Tag key={index} {...stylex.props(headingStyles[level], headingSpacing)}>
+        <Tag key={index} {...stylex.props(styles.headingBase, headingStyles[level], headingSpacing)}>
           {node.children.map((c, i) => renderInline(c, i, onLinkClick))}
         </Tag>
       );
@@ -301,7 +318,7 @@ function renderBlock(
     case 'blockquote':
       return (
         <blockquote key={index} {...stylex.props(styles.blockquote, blockSpacing)}>
-          {node.children.map((c, i) => renderBlock(c, i, density, maxHeadingLevel, onLinkClick))}
+          {node.children.map((c, i) => renderBlock(c, i, density, headingLevelStart, onLinkClick))}
         </blockquote>
       );
     case 'list': {
@@ -326,7 +343,7 @@ function renderBlock(
                   {...stylex.props(styles.taskCheckbox)}
                 />
               )}
-              {item.children.map((c, j) => renderBlock(c, j, density, maxHeadingLevel, onLinkClick))}
+              {item.children.map((c, j) => renderBlock(c, j, density, headingLevelStart, onLinkClick))}
             </li>
           ))}
         </Tag>
@@ -336,7 +353,7 @@ function renderBlock(
       const alignStyle = (a: typeof node.alignments[number]) =>
         a === 'center' ? styles.alignCenter : a === 'right' ? styles.alignRight : styles.alignLeft;
       return (
-        <div key={index} {...stylex.props(blockSpacing)}>
+        <div key={index} {...stylex.props(styles.tableWrapper, blockSpacing)}>
           <table {...stylex.props(styles.table)}>
             <thead>
               <tr>
@@ -381,7 +398,7 @@ export function XDSMarkdown({
   ref,
   children,
   density = 'default',
-  maxHeadingLevel = 1,
+  headingLevelStart = 1,
   isStreaming = false,
   onLinkClick,
   xstyle,
@@ -414,7 +431,7 @@ export function XDSMarkdown({
         style,
       )}
     >
-      {blocks.map((block, i) => renderBlock(block, i, density, maxHeadingLevel, onLinkClick))}
+      {blocks.map((block, i) => renderBlock(block, i, density, headingLevelStart, onLinkClick))}
       {isStreaming && <span {...stylex.props(styles.cursor)} aria-hidden="true" />}
     </div>
   );

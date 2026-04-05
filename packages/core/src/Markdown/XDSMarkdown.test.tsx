@@ -134,11 +134,11 @@ describe('XDSMarkdown', () => {
     expect(img!.getAttribute('src')).toBe('image.png');
   });
 
-  it('clamps headings with maxHeadingLevel', () => {
+  it('shifts heading levels with headingLevelStart', () => {
     render(
-      <XDSMarkdown maxHeadingLevel={2}>{'# Heading 1'}</XDSMarkdown>,
+      <XDSMarkdown headingLevelStart={3}>{'# Heading 1'}</XDSMarkdown>,
     );
-    expect(screen.getByText('Heading 1').tagName).toBe('H2');
+    expect(screen.getByText('Heading 1').tagName).toBe('H3');
   });
 
   it('shows streaming cursor when isStreaming is true', () => {
