@@ -19,3 +19,21 @@ if (typeof HTMLElement.prototype.showPopover === 'undefined') {
     return false;
   };
 }
+
+// Polyfill for matchMedia (not supported in jsdom)
+// Used by useMediaQuery → useXDSTheme → useXDSStreamingText
+if (typeof window.matchMedia === 'undefined') {
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: (query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => false,
+    }),
+  });
+}
