@@ -117,7 +117,18 @@ function isBlockStart(line: string): boolean {
 }
 
 function splitTableRow(line: string): string[] {
-  return line.replace(/^\|\s*/, '').replace(/\s*\|$/, '').split('|').map(s => s.trim());
+  // Trim leading/trailing pipes and whitespace without backtracking-prone regex
+  let start = 0;
+  let end = line.length;
+  // Skip leading pipe + whitespace
+  if (line[0] === '|') {
+    start = 1;
+    while (start < end && line[start] === ' ') start++;
+  }
+  // Skip trailing whitespace + pipe
+  while (end > start && line[end - 1] === ' ') end--;
+  if (end > start && line[end - 1] === '|') end--;
+  return line.slice(start, end).split('|').map(s => s.trim());
 }
 
 function parseTable(lines: string[], i: number): {node: BlockNode; nextIndex: number} {
