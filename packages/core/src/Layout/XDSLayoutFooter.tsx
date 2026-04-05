@@ -43,6 +43,11 @@ const styles = stylex.create({
     borderBlockStartStyle: 'solid',
     borderBlockStartColor: colorVars['--color-border'],
   },
+  // Width constraint wrapper — inert when --layout-content-width is not set
+  contentWidth: {
+    maxWidth: 'var(--layout-content-width, none)',
+    marginInline: 'auto',
+  },
 });
 
 // Dynamic styles for sizing props
@@ -149,7 +154,7 @@ export function XDSLayoutFooter({
         style,
       )}
       {...props}>
-      {children}
+      <div {...stylex.props(styles.contentWidth)}>{children}</div>
     </div>
   );
 }
