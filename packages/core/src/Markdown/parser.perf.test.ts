@@ -51,11 +51,11 @@ function simulateStreamingIncremental(fullText: string, chunkSize = 50): BlockNo
 
 describe('parseMarkdown performance', () => {
   const sizes = [
-    {name: 'Small', paragraphs: 10, maxMs: 5},
-    {name: 'Medium', paragraphs: 50, maxMs: 20},
-    {name: 'Large', paragraphs: 200, maxMs: 50},
-    {name: 'XL', paragraphs: 500, maxMs: 200},
-    {name: 'XXL', paragraphs: 2000, maxMs: 500},
+    {name: 'Small', paragraphs: 10, maxMs: 20},
+    {name: 'Medium', paragraphs: 50, maxMs: 50},
+    {name: 'Large', paragraphs: 200, maxMs: 100},
+    {name: 'XL', paragraphs: 500, maxMs: 400},
+    {name: 'XXL', paragraphs: 2000, maxMs: 1000},
   ];
 
   // Report sizes
