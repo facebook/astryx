@@ -153,6 +153,7 @@ export function XDSCheckboxList({
   const statusMessageID = useId();
 
   const [, startTransition] = useTransition();
+  const isCollectionMode = value !== undefined;
   const effectiveValue = value ?? EMPTY_ARRAY;
   const [optimisticValue, setOptimisticValue] = useOptimistic(effectiveValue);
   const isBusy = isLoading || optimisticValue !== effectiveValue;
@@ -168,8 +169,8 @@ export function XDSCheckboxList({
   };
 
   const contextValue: XDSCheckboxListContextValue = {
-    value: optimisticValue,
-    onChange: handleChange,
+    value: isCollectionMode ? optimisticValue : undefined,
+    onChange: isCollectionMode ? handleChange : undefined,
     isDisabled,
     isBusy,
   };

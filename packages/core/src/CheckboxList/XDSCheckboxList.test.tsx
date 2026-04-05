@@ -132,7 +132,7 @@ describe('XDSCheckboxList', () => {
     expect(checkboxes[1]).toBeDisabled();
   });
 
-  it('throws when item has no value prop inside XDSCheckboxList', () => {
+  it('throws when item has no value prop inside collection-mode XDSCheckboxList', () => {
     // Suppress console.error for expected error
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
     expect(() => {
@@ -142,7 +142,7 @@ describe('XDSCheckboxList', () => {
         </XDSCheckboxList>,
       );
     }).toThrow(
-      'XDSCheckboxListItem requires a `value` prop when used inside XDSCheckboxList.',
+      'XDSCheckboxListItem requires a `value` prop when used inside XDSCheckboxList with a value array.',
     );
     spy.mockRestore();
   });
@@ -240,6 +240,39 @@ describe('XDSCheckboxList', () => {
 
     await user.click(screen.getByTestId('end-btn'));
     expect(handleChange).not.toHaveBeenCalled();
+  });
+
+  it('allows standalone items inside XDSCheckboxList without parent value (select-all pattern)', async () => {
+    const user = userEvent.setup();
+    const handleSelectAll = vi.fn();
+    const handleCheck = vi.fn();
+    render(
+      <XDSCheckboxList label="Columns" hasDividers>
+        <XDSCheckboxListItem
+          label="Select all"
+          isChecked={false}
+          onCheck={handleSelectAll}
+        />
+        <XDSCheckboxListItem
+          label="Name"
+          isChecked={true}
+          onCheck={handleCheck}
+        />
+        <XDSCheckboxListItem
+          label="Email"
+          isChecked={false}
+          onCheck={handleCheck}
+        />
+      </XDSCheckboxList>,
+    );
+
+    // All items render without throwing
+    expect(screen.getAllByRole('checkbox')).toHaveLength(3);
+
+    // Select all triggers its own handler
+    await user.click(screen.getByRole('checkbox', {name: 'Select all'}));
+    expect(handleSelectAll).toHaveBeenCalledWith(true);
+    expect(handleCheck).not.toHaveBeenCalled();
   });
 });
 

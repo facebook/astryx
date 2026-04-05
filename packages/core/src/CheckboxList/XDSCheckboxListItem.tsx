@@ -114,9 +114,9 @@ export function XDSCheckboxListItem({
 }: XDSCheckboxListItemProps) {
   const ctx = useContext(XDSCheckboxListContext);
 
-  if (ctx && value === undefined) {
+  if (ctx && ctx.value !== undefined && value === undefined) {
     throw new Error(
-      'XDSCheckboxListItem requires a `value` prop when used inside XDSCheckboxList.',
+      'XDSCheckboxListItem requires a `value` prop when used inside XDSCheckboxList with a value array.',
     );
   }
 
