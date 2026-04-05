@@ -16,8 +16,10 @@ import {
   useEffect,
   useId,
   useMemo,
+  useOptimistic,
   useRef,
   useState,
+  useTransition,
   type ReactNode,
 } from 'react';
 import {XDSDialog} from '@xds/core/Dialog';
@@ -34,6 +36,9 @@ import {CommandPaletteContext} from './CommandPaletteContext';
 import {XDSCommandPaletteList} from './XDSCommandPaletteList';
 import {XDSCommandPaletteItem} from './XDSCommandPaletteItem';
 import {XDSCommandPaletteGroup} from './XDSCommandPaletteGroup';
+import {XDSCommandPaletteInput} from './XDSCommandPaletteInput';
+import {XDSCommandPaletteFooter} from './XDSCommandPaletteFooter';
+import {XDSCommandPaletteEmpty} from './XDSCommandPaletteEmpty';
 
 export interface XDSCommandPaletteProps<
   T extends XDSSearchableItem = XDSSearchableItem,
@@ -52,22 +57,35 @@ export interface XDSCommandPaletteProps<
   searchSource: XDSSearchSource<T>;
 
   /**
-   * The search input slot. Pass XDSCommandPaletteInput here.
+   * The search input slot.
+   * @default <XDSCommandPaletteInput />
    */
   input?: ReactNode;
 
   /**
-   * The footer slot. Pass XDSCommandPaletteFooter here.
+   * The footer slot.
+   * @default <XDSCommandPaletteFooter />
    */
   footer?: ReactNode;
 
   /**
-   * Custom render function for items. Receives the filtered items array.
-   * When omitted, items are rendered with default rendering:
-   * - Each item shows its `label` text
-   * - Items with `auxiliaryData.group` are auto-grouped
+   * Per-item render function. Receives the item and whether it is currently selected.
+   * Auto-grouping by `auxiliaryData.group` is preserved.
+   * When omitted, renders each item's `label` text.
    */
-  children?: (items: T[]) => ReactNode;
+  renderItem?: (item: T, isSelected: boolean) => ReactNode;
+
+  /**
+   * Content shown when a search query returns no results.
+   * @default 'No results'
+   */
+  emptySearchText?: ReactNode;
+
+  /**
+   * Content shown when there is no search query and bootstrap() returns nothing.
+   * @default 'Type to search'
+   */
+  emptyBootstrapText?: ReactNode;
 
   /** Controlled selected value (for picker mode). */
   value?: string;
@@ -146,30 +164,37 @@ function buildSelectableItems(
   return result;
 }
 
+interface RendererProps<T extends XDSSearchableItem> {
+  items: T[];
+  value: string;
+  renderItem?: (item: T, isSelected: boolean) => ReactNode;
+}
+
 /**
- * Default renderer for search results.
- * Renders items as XDSCommandPaletteItem with label text.
- * Auto-groups items by auxiliaryData.group when present.
+ * Renders items with optional per-item customization.
+ * Auto-groups by auxiliaryData.group when present.
+ * Passes `isSelected` so renderItem can handle picker-mode visuals.
  */
-function DefaultRenderer({items}: {items: XDSSearchableItem[]}) {
+function ItemRenderer<T extends XDSSearchableItem>({
+  items,
+  value,
+  renderItem,
+}: RendererProps<T>) {
+  const renderOne = (item: T) => (
+    <XDSCommandPaletteItem key={item.id} value={item.id}>
+      {renderItem ? renderItem(item, item.id === value) : item.label}
+    </XDSCommandPaletteItem>
+  );
+
   const hasGroups = items.some(item => getGroup(item) != null);
 
   if (!hasGroups) {
-    return (
-      <>
-        {items.map(item => (
-          <XDSCommandPaletteItem key={item.id} value={item.id}>
-            {item.label}
-          </XDSCommandPaletteItem>
-        ))}
-      </>
-    );
+    return <>{items.map(renderOne)}</>;
   }
 
-  // Group items preserving insertion order of groups
   const groupOrder: string[] = [];
-  const groups = new Map<string, XDSSearchableItem[]>();
-  const ungrouped: XDSSearchableItem[] = [];
+  const groups = new Map<string, T[]>();
+  const ungrouped: T[] = [];
 
   for (const item of items) {
     const group = getGroup(item);
@@ -188,18 +213,10 @@ function DefaultRenderer({items}: {items: XDSSearchableItem[]}) {
     <>
       {groupOrder.map(heading => (
         <XDSCommandPaletteGroup key={heading} heading={heading}>
-          {groups.get(heading)!.map(item => (
-            <XDSCommandPaletteItem key={item.id} value={item.id}>
-              {item.label}
-            </XDSCommandPaletteItem>
-          ))}
+          {groups.get(heading)!.map(renderOne)}
         </XDSCommandPaletteGroup>
       ))}
-      {ungrouped.map(item => (
-        <XDSCommandPaletteItem key={item.id} value={item.id}>
-          {item.label}
-        </XDSCommandPaletteItem>
-      ))}
+      {ungrouped.map(renderOne)}
     </>
   );
 }
@@ -214,38 +231,34 @@ function DefaultRenderer({items}: {items: XDSSearchableItem[]}) {
  * ensuring consistent arrow key, Home/End, Enter, and Escape behavior
  * across all combobox-pattern components.
  *
- * Progressive disclosure:
- * - No children: default rendering (label text, auto-groups by auxiliaryData.group)
- * - Children render function: full control over item layout and grouping
+ * Input and footer are rendered by default — only pass them to replace the defaults.
  *
  * @compositionHint
- *   - `input` slot: XDSCommandPaletteInput
- *   - `children`: optional render function `(items) => ReactNode`
- *   - `footer` slot: XDSCommandPaletteFooter
+ *   - `input` slot: XDSCommandPaletteInput (default)
+ *   - `footer` slot: XDSCommandPaletteFooter (default)
+ *   - `renderItem(item, isSelected)`: custom per-item content (grouping preserved)
  *
  * @example
- * ```
- * // Simplest — no children, default rendering
+ * ```tsx
+ * // Simplest — zero config beyond open state and source
  * <XDSCommandPalette
  *   isOpen={isOpen}
  *   onOpenChange={setIsOpen}
  *   searchSource={createStaticSource(commands)}
- *   input={<XDSCommandPaletteInput placeholder="Search..." />}
- *   footer={<XDSCommandPaletteFooter />}
  * />
  *
- * // Custom rendering
+ * // Custom item rendering (grouping still automatic)
  * <XDSCommandPalette
  *   isOpen={isOpen}
  *   onOpenChange={setIsOpen}
  *   searchSource={source}
- *   input={<XDSCommandPaletteInput placeholder="Search..." />}>
- *   {(items) => items.map(item => (
- *     <XDSCommandPaletteItem key={item.id} value={item.id}>
+ *   renderItem={(item, isSelected) => (
+ *     <>
+ *       <XDSIcon icon={item.auxiliaryData.icon} size="sm" />
  *       {item.label}
- *     </XDSCommandPaletteItem>
- *   ))}
- * </XDSCommandPalette>
+ *     </>
+ *   )}
+ * />
  * ```
  */
 export function XDSCommandPalette<
@@ -255,8 +268,10 @@ export function XDSCommandPalette<
   onOpenChange,
   searchSource,
   input,
-  children,
   footer,
+  renderItem,
+  emptySearchText = 'No results',
+  emptyBootstrapText = 'Type to search',
   value: controlledValue,
   onValueChange,
   label = 'Command palette',
@@ -264,10 +279,18 @@ export function XDSCommandPalette<
   maxHeight = 480,
 }: XDSCommandPaletteProps<T>) {
   const listId = useId();
+  // search: the committed query — only advances when async results arrive.
+  // optimisticSearch: updates immediately on keystroke, drives input + empty state.
+  // This way optimisticSearch is always what the user sees, and search is what
+  // the current results actually correspond to.
   const [search, setSearch] = useState('');
   const [internalValue, setInternalValue] = useState('');
   const [searchResults, setSearchResults] = useState<T[]>([]);
-  const [isBusy, setIsBusy] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const [optimisticSearch, setOptimisticSearch] = useOptimistic(search);
+  const [optimisticResults, setOptimisticResults] =
+    useOptimistic(searchResults);
+  const isBusy = isPending;
   const searchVersionRef = useRef(0);
 
   const value = controlledValue ?? internalValue;
@@ -283,14 +306,16 @@ export function XDSCommandPalette<
   );
 
   // Build flat selectable items in DOM order from search results.
-  // This must match the order that DefaultRenderer (or custom children) renders.
+  // Must match the render order of ItemRenderer.
   const selectableItems = useMemo(
-    () => buildSelectableItems(searchResults),
-    [searchResults],
+    () => buildSelectableItems(optimisticResults),
+    [optimisticResults],
   );
 
   const handleClose = useCallback(() => {
+    // Reset both committed and optimistic search on close
     setSearch('');
+    setSearchResults([]);
     if (controlledValue === undefined) {
       setInternalValue('');
     }
@@ -332,35 +357,49 @@ export function XDSCommandPalette<
     }
   }, [isOpen, selectableItems, value, combobox]);
 
-  // Unified search effect: bootstrap on open or empty query, search otherwise
+  // Run a search for the given query and commit results.
+  // Called directly when the user types — no effect needed.
+  const runSearch = useCallback(
+    (query: string) => {
+      searchSource.cancel?.();
+      const version = ++searchVersionRef.current;
+
+      startTransition(async () => {
+        const isBootstrap = query === '';
+
+        // Client-filter previous results for instant narrowing while fetch is in flight
+        if (!isBootstrap && searchResults.length > 0) {
+          const lower = query.toLowerCase().trim();
+          setOptimisticResults(
+            searchResults.filter(item =>
+              item.label.toLowerCase().includes(lower),
+            ),
+          );
+        }
+
+        const result = isBootstrap
+          ? searchSource.bootstrap()
+          : searchSource.search(query);
+
+        const items = await Promise.resolve(result);
+
+        if (searchVersionRef.current === version) {
+          // Commit query and results together
+          setSearch(query);
+          setOptimisticResults(items);
+          setSearchResults(items);
+        }
+      });
+    },
+    [searchSource, searchResults, startTransition],
+  );
+
+  // Bootstrap on open — the only remaining effect.
   useEffect(() => {
-    if (!isOpen) return;
-
-    searchSource.cancel?.();
-    const version = ++searchVersionRef.current;
-
-    const result =
-      search === '' ? searchSource.bootstrap() : searchSource.search(search);
-
-    if (result instanceof Promise) {
-      setIsBusy(true);
-      result
-        .then(items => {
-          if (searchVersionRef.current === version) {
-            setSearchResults(items);
-            setIsBusy(false);
-          }
-        })
-        .catch(() => {
-          if (searchVersionRef.current === version) {
-            setIsBusy(false);
-          }
-        });
-    } else {
-      setSearchResults(result);
-      setIsBusy(false);
+    if (isOpen) {
+      runSearch('');
     }
-  }, [search, isOpen, searchSource]);
+  }, [isOpen]);
 
   // Wrap combobox's onKeyDown to intercept Escape (close palette) and
   // Enter on highlight (select + close), since we're not using combobox's
@@ -395,8 +434,14 @@ export function XDSCommandPalette<
 
   const contextValue = useMemo(
     () => ({
-      search,
-      setSearch,
+      // Input uses optimisticSearch — reflects keystrokes immediately.
+      // setSearch calls setOptimisticSearch for instant feedback then
+      // triggers the async search directly (no effect indirection).
+      search: optimisticSearch,
+      setSearch: (query: string) => {
+        setOptimisticSearch(query);
+        runSearch(query);
+      },
       value,
       setValue,
       listId,
@@ -404,7 +449,7 @@ export function XDSCommandPalette<
       setHighlightedIndex: combobox.setHighlightedIndex,
       getItemId: combobox.getItemId,
       selectableItems,
-      searchResults,
+      searchResults: optimisticResults,
       selectItem,
       onKeyDown: handleKeyDown,
       onClose: handleClose,
@@ -412,7 +457,9 @@ export function XDSCommandPalette<
       isBusy,
     }),
     [
-      search,
+      optimisticSearch,
+      setOptimisticSearch,
+      runSearch,
       value,
       setValue,
       listId,
@@ -420,7 +467,7 @@ export function XDSCommandPalette<
       combobox.setHighlightedIndex,
       combobox.getItemId,
       selectableItems,
-      searchResults,
+      optimisticResults,
       selectItem,
       handleKeyDown,
       handleClose,
@@ -429,11 +476,32 @@ export function XDSCommandPalette<
     ],
   );
 
-  const listContent = children ? (
-    children(searchResults)
-  ) : (
-    <DefaultRenderer items={searchResults} />
-  );
+  // Empty state uses committed search (= what current results correspond to),
+  // not optimisticSearch (= what the user typed).
+  // While the transition is pending, search stays at '' so showEmptyBootstrap
+  // remains true even after the user has started typing.
+  const showEmptyBootstrap = search === '' && optimisticResults.length === 0;
+  const showEmptySearch =
+    !isPending && search !== '' && optimisticResults.length === 0;
+
+  let listContent: ReactNode;
+  if (showEmptyBootstrap) {
+    listContent = (
+      <XDSCommandPaletteEmpty>{emptyBootstrapText}</XDSCommandPaletteEmpty>
+    );
+  } else if (showEmptySearch) {
+    listContent = (
+      <XDSCommandPaletteEmpty>{emptySearchText}</XDSCommandPaletteEmpty>
+    );
+  } else {
+    listContent = (
+      <ItemRenderer
+        items={optimisticResults}
+        value={value}
+        renderItem={renderItem}
+      />
+    );
+  }
 
   return (
     <XDSDialog
@@ -450,11 +518,9 @@ export function XDSCommandPalette<
         <XDSLayout
           defaultHasDividers
           header={
-            input != null ? (
-              <XDSLayoutHeader hasDivider padding={0}>
-                {input}
-              </XDSLayoutHeader>
-            ) : undefined
+            <XDSLayoutHeader hasDivider padding={0}>
+              {input ?? <XDSCommandPaletteInput />}
+            </XDSLayoutHeader>
           }
           content={
             <XDSLayoutContent padding={0}>
@@ -462,11 +528,9 @@ export function XDSCommandPalette<
             </XDSLayoutContent>
           }
           footer={
-            footer != null ? (
-              <XDSLayoutFooter hasDivider padding={0}>
-                {footer}
-              </XDSLayoutFooter>
-            ) : undefined
+            <XDSLayoutFooter hasDivider padding={0}>
+              {footer ?? <XDSCommandPaletteFooter />}
+            </XDSLayoutFooter>
           }
         />
       </CommandPaletteContext.Provider>
