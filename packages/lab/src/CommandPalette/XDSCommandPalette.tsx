@@ -370,8 +370,11 @@ export function XDSCommandPalette<
     startTransition(async () => {
       const isBootstrap = search === '';
 
-      // Optimistically narrow the previous results while the real query is in flight
-      if (!isBootstrap) {
+      // Only client-filter if there are previous results to narrow.
+      // If the current set is empty (e.g. bootstrap returned nothing),
+      // leave optimisticResults as-is so the empty state stays visible
+      // rather than flashing a blank list.
+      if (!isBootstrap && searchResults.length > 0) {
         const lower = search.toLowerCase().trim();
         const optimistic = searchResults.filter(item =>
           item.label.toLowerCase().includes(lower),
@@ -459,14 +462,12 @@ export function XDSCommandPalette<
     ],
   );
 
-  // Empty states: only show after the transition settles (not while pending),
-  // and only when there are truly no results to show — not stale ones.
-  // During a pending transition, optimisticResults holds the previous results,
-  // so the list stays populated rather than flashing blank.
-  const showEmptyBootstrap =
-    !isPending && search === '' && optimisticResults.length === 0;
-  const showEmptySearch =
-    !isPending && search !== '' && optimisticResults.length === 0;
+  // Empty states: shown whenever there's nothing to render — including during
+  // a pending transition when optimisticResults is empty (e.g. typing from
+  // an empty bootstrap). The list stays at the empty state rather than
+  // flashing blank while the async query is in flight.
+  const showEmptyBootstrap = search === '' && optimisticResults.length === 0;
+  const showEmptySearch = search !== '' && optimisticResults.length === 0;
 
   let listContent: ReactNode;
   if (showEmptyBootstrap) {
