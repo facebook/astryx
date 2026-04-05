@@ -13,14 +13,14 @@ import {
   XDSCommandPaletteItem,
   XDSCommandPaletteGroup,
   XDSCommandPaletteFooter,
-} from '@xds/lab';
+} from '@xds/core/CommandPalette';
 import {XDSButton} from '@xds/core/Button';
 import {XDSIcon} from '@xds/core/Icon';
 import {createStaticSource} from '@xds/core/Typeahead';
 import type {XDSSearchSource, XDSSearchableItem} from '@xds/core/Typeahead';
 
 const meta: Meta<typeof XDSCommandPalette> = {
-  title: 'Lab/XDSCommandPalette',
+  title: 'CommandPalette/XDSCommandPalette',
   component: XDSCommandPalette,
   tags: ['autodocs'],
 };

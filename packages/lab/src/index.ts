@@ -8,24 +8,8 @@
  * This package is never published to npm.
  */
 
-export {
-  XDSCommandPalette,
-  type XDSCommandPaletteProps,
-  XDSCommandPaletteInput,
-  type XDSCommandPaletteInputProps,
-  XDSCommandPaletteList,
-  type XDSCommandPaletteListProps,
-  XDSCommandPaletteItem,
-  type XDSCommandPaletteItemProps,
-  XDSCommandPaletteGroup,
-  type XDSCommandPaletteGroupProps,
-  XDSCommandPaletteFooter,
-  type XDSCommandPaletteFooterProps,
-  useCommandPaletteContext,
-  type CommandPaletteContextValue,
-  defaultFilter,
-  type CommandPaletteFilterFn,
-} from './CommandPalette';
+// CommandPalette — graduated to @xds/core
+export * from '@xds/core/CommandPalette';
 
 // Code components — syntax highlighting domain
 export {XDSCodeBlock, type XDSCodeBlockProps} from './CodeBlock';
