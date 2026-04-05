@@ -21,6 +21,8 @@ import type {SpacingToken} from '../Layout/container.stylex';
 import {
   paddingStyles,
   containerPaddingInlineVarStyles,
+  containerPaddingBlockStartVarStyles,
+  containerPaddingBlockEndVarStyles,
   spacingStepToToken,
 } from '../Layout/padding.stylex';
 import type {SizeValue, SpacingStep} from '../utils/types';
@@ -68,21 +70,23 @@ const nestedStyles = stylex.create({
   // Outer wrapper escapes parent's container padding
   outer: {
     // Always escape horizontal padding
-    marginInline: 'calc(-1 * var(--container-padding, 0px))',
+    marginInline: 'calc(-1 * var(--container-padding-inline, 0px))',
     // Escape top padding only if first child
     marginTop: {
       default: null,
-      ':first-child': 'calc(-1 * var(--container-padding, 0px))',
+      ':first-child': 'calc(-1 * var(--container-padding-block-start, 0px))',
     },
     // Escape bottom padding only if last child
     marginBottom: {
       default: null,
-      ':last-child': 'calc(-1 * var(--container-padding, 0px))',
+      ':last-child': 'calc(-1 * var(--container-padding-block-end, 0px))',
     },
   },
   // Inner wrapper resets container padding for descendants
   inner: {
-    '--container-padding': '0px',
+    '--container-padding-inline': '0px',
+    '--container-padding-block-start': '0px',
+    '--container-padding-block-end': '0px',
     height: '100%',
   },
 });
@@ -286,6 +290,12 @@ export function XDSSection({
             !useThemeDefault &&
               effectivePadding !== 4 &&
               containerPaddingInlineVarStyles[effectivePadding],
+            !useThemeDefault &&
+              effectivePadding !== 4 &&
+              containerPaddingBlockStartVarStyles[effectivePadding],
+            !useThemeDefault &&
+              effectivePadding !== 4 &&
+              containerPaddingBlockEndVarStyles[effectivePadding],
             variantStyles[variant],
             dividers?.includes('top') && dividerStyles.top,
             dividers?.includes('bottom') && dividerStyles.bottom,

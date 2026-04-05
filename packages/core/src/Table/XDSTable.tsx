@@ -76,12 +76,12 @@ const tableStyles = stylex.create({
     color: colorVars['--color-text-primary'],
   },
   /**
-   * Container bleed: table escapes parent container padding horizontally
+   * Container bleed: table escapes parent container padding
    * so rows span edge-to-edge inside Cards and Layout areas.
-   * Uses --container-padding-inline set by Card/Section/Layout containers.
    *
-   * Vertical bleed uses :first-child / :last-child to escape container
-   * block padding at the edges — same pattern as XDSSection.
+   * Inline bleed uses --container-padding-inline set by containers.
+   * Block bleed uses --container-padding-block-start/end for :first-child / :last-child
+   * margins, Block bleed uses --container-padding-block-start / --container-padding-block-end for :first-child / :last-child.
    */
   containerBleed: {
     marginInlineStart: 'calc(-1 * var(--container-padding-inline, 0px))',
@@ -89,11 +89,11 @@ const tableStyles = stylex.create({
     width: 'calc(100% + 2 * var(--container-padding-inline, 0px))',
     marginTop: {
       default: null,
-      ':first-child': 'calc(-1 * var(--container-padding, 0px))',
+      ':first-child': 'calc(-1 * var(--container-padding-block-start, 0px))',
     },
     marginBottom: {
       default: null,
-      ':last-child': 'calc(-1 * var(--container-padding, 0px))',
+      ':last-child': 'calc(-1 * var(--container-padding-block-end, 0px))',
     },
   },
 });

@@ -184,3 +184,17 @@ export const InCard: Story = {
     </XDSSection>
   ),
 };
+
+export const FullBleedVertical: Story = {
+  render: () => (
+    <XDSSection variant="wash">
+      <XDSCard height={200}>
+        <XDSHStack gap={4} xstyle={styles.fullHeight}>
+          <XDSText type="body">Left content</XDSText>
+          <XDSDivider orientation="vertical" isFullBleed />
+          <XDSText type="body">Right content</XDSText>
+        </XDSHStack>
+      </XDSCard>
+    </XDSSection>
+  ),
+};

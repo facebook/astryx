@@ -20,7 +20,12 @@ import {XDSLayoutDividerContext} from './XDSLayoutDividerContext';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 import type {SpacingStep} from '../utils/types';
-import {paddingStyles, containerPaddingInlineVarStyles} from './padding.stylex';
+import {
+  paddingStyles,
+  containerPaddingInlineVarStyles,
+  containerPaddingBlockStartVarStyles,
+  containerPaddingBlockEndVarStyles,
+} from './padding.stylex';
 
 const styles = stylex.create({
   // Outer shell: owns border/divider and sizing. No padding — that lives on inner.
@@ -38,12 +43,18 @@ const styles = stylex.create({
     paddingInlineEnd: `var(--layout-padding-outer-x, ${spacingVars['--spacing-4']})`,
     paddingBlockStart: `var(--layout-padding-inner-y, ${spacingVars['--spacing-4']})`,
     paddingBlockEnd: `var(--layout-padding-outer-y, ${spacingVars['--spacing-4']})`,
+    '--container-padding-inline': `var(--layout-padding-outer-x, ${spacingVars['--spacing-4']})`,
+    '--container-padding-block-start': `var(--layout-padding-inner-y, ${spacingVars['--spacing-4']})`,
+    '--container-padding-block-end': `var(--layout-padding-outer-y, ${spacingVars['--spacing-4']})`,
   },
   fullBleed: {
     paddingInlineStart: 0,
     paddingInlineEnd: 0,
     paddingBlockStart: 0,
     paddingBlockEnd: 0,
+    '--container-padding-inline': '0px',
+    '--container-padding-block-start': '0px',
+    '--container-padding-block-end': '0px',
   },
   divider: {
     borderBlockStartWidth: 1,
@@ -146,6 +157,7 @@ export function XDSLayoutFooter({
         stylex.props(
           styles.footer,
           dynamicStyles.sizing(height ?? null),
+
           resolvedHasDivider && styles.divider,
           xstyle,
         ),
@@ -159,6 +171,8 @@ export function XDSLayoutFooter({
           isZeroPadding && styles.fullBleed,
           padding != null && paddingStyles[padding],
           padding != null && containerPaddingInlineVarStyles[padding],
+          padding != null && containerPaddingBlockStartVarStyles[padding],
+          padding != null && containerPaddingBlockEndVarStyles[padding],
         )}>
         {children}
       </div>

@@ -422,14 +422,6 @@ export function XDSDialog({
       {...mergeProps(
         xdsClassName('dialog', {variant}),
         stylex.props(
-          ...container({
-            padding: 'spacing0',
-            maxHeight: isFullscreen
-              ? undefined
-              : typeof maxHeight === 'number'
-                ? `${maxHeight}px`
-                : maxHeight,
-          }),
           styles.dialog,
           styles.backdrop,
           !isFullscreen && dynamicStyles.sizing(width, maxHeight),
@@ -447,7 +439,20 @@ export function XDSDialog({
         style,
       )}
       {...safeProps}>
-      <div {...stylex.props(styles.inner)}>{children}</div>
+      <div
+        {...stylex.props(
+          styles.inner,
+          ...container({
+            useThemeDefault: 'dialog',
+            maxHeight: isFullscreen
+              ? undefined
+              : typeof maxHeight === 'number'
+                ? `${maxHeight}px`
+                : maxHeight,
+          }),
+        )}>
+        {children}
+      </div>
     </dialog>
   );
 }
