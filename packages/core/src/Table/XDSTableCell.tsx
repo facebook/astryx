@@ -21,7 +21,7 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import type {StyleXStyles} from '../theme/types';
-import {overflowStyles} from './table.stylex';
+import {overflowStyles, containerEdgeStyles} from './table.stylex';
 import {
   useTableContext,
   buildDividerStyles,
@@ -121,6 +121,7 @@ export function XDSTableCell({
   const cellStyles: StyleXStyles[] = [
     densityStyles[ctx.density],
     overflowStyles.cell,
+    containerEdgeStyles.cell,
     ...buildDividerStyles(ctx, dividerRowStyles.cell, dividerColumnStyles.cell),
   ];
 

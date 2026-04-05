@@ -22,7 +22,7 @@ import {
   borderVars,
 } from '../theme/tokens.stylex';
 import type {StyleXStyles} from '../theme/types';
-import {overflowStyles} from './table.stylex';
+import {overflowStyles, containerEdgeStyles} from './table.stylex';
 import {
   useTableContext,
   buildDividerStyles,
@@ -145,6 +145,7 @@ export function XDSTableHeaderCell({
     densityStyles[ctx.density],
     headerDividerStyles.cell,
     overflowStyles.cell,
+    containerEdgeStyles.cell,
   ];
 
   // Only add column dividers from the shared builder
