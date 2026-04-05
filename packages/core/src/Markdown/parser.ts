@@ -482,16 +482,44 @@ export function trimStreamingArtifacts(input: string): string {
   const prefix = lastNL === -1 ? '' : input.slice(0, lastNL + 1);
   let tail = lastNL === -1 ? input : input.slice(lastNL + 1);
 
-  // Unclosed link with URL: [text](url
-  tail = tail.replace(/\[[^\]]*\]\([^)]*$/, '');
-  // Unclosed link text: [text
-  tail = tail.replace(/\[[^\]]*$/, '');
-  // Unclosed inline code: `content (1+ non-backtick chars)
-  tail = tail.replace(/`{1,3}[^`]+$/, '');
-  // Unclosed bold/italic: *content (1+ non-* chars)
-  tail = tail.replace(/\*{1,3}[^*]+$/, '');
-  // Unclosed strikethrough: ~~content (1+ non-~ chars)
-  tail = tail.replace(/~{2}[^~]+$/, '');
+  // Scan backwards for unclosed syntax markers — no regex to avoid ReDoS
+  // Find the last unclosed [ (link start)
+  const lastBracket = tail.lastIndexOf('[');
+  if (lastBracket !== -1 && !tail.slice(lastBracket).includes('])')) {
+    tail = tail.slice(0, lastBracket);
+  }
+
+  // Find trailing unclosed backticks
+  let end = tail.length;
+  while (end > 0 && tail[end - 1] === '`') end--;
+  if (end < tail.length && end > 0) {
+    // There are trailing backticks — check if they opened inline code
+    const ticks = tail.length - end;
+    const opener = tail.lastIndexOf('`'.repeat(ticks), end - 1);
+    if (opener === -1) {
+      // Unclosed — trim from the backticks
+      tail = tail.slice(0, end);
+    }
+  }
+
+  // Find trailing unclosed bold/italic markers (*)
+  end = tail.length;
+  while (end > 0 && tail[end - 1] === '*') end--;
+  if (end < tail.length && end > 0) {
+    const stars = tail.length - end;
+    if (stars <= 3) tail = tail.slice(0, end);
+  }
+
+  // Find trailing unclosed strikethrough (~~)
+  if (tail.length >= 2 && tail.endsWith('~~')) {
+    tail = tail.slice(0, -2);
+  } else if (tail.endsWith('~')) {
+    // Single trailing ~ after content — might be start of ~~
+    const secondLast = tail.length - 2;
+    if (secondLast >= 0 && tail[secondLast] !== '~') {
+      tail = tail.slice(0, -1);
+    }
+  }
 
   return prefix + tail;
 }
