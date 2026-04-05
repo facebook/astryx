@@ -23,9 +23,16 @@ import type {SpacingStep} from '../utils/types';
 import {paddingStyles, containerPaddingInlineVarStyles} from './padding.stylex';
 
 const styles = stylex.create({
+  // Outer shell: owns border/divider and sizing. No padding — that lives on inner.
   footer: {
-    boxSizing: 'border-box',
     flexShrink: 0,
+  },
+  // Inner wrapper: owns padding and optional content-width constraint.
+  // When --layout-content-width is not set, maxWidth defaults to 'none' (inert).
+  inner: {
+    boxSizing: 'border-box',
+    maxWidth: 'var(--layout-content-width, none)',
+    marginInline: 'auto',
     // Default: outer padding on edges that touch container, inner on interior edges
     paddingInlineStart: `var(--layout-padding-outer-x, ${spacingVars['--spacing-4']})`,
     paddingInlineEnd: `var(--layout-padding-outer-x, ${spacingVars['--spacing-4']})`,
@@ -42,11 +49,6 @@ const styles = stylex.create({
     borderBlockStartWidth: 1,
     borderBlockStartStyle: 'solid',
     borderBlockStartColor: colorVars['--color-border'],
-  },
-  // Width constraint wrapper — inert when --layout-content-width is not set
-  contentWidth: {
-    maxWidth: 'var(--layout-content-width, none)',
-    marginInline: 'auto',
   },
 });
 
@@ -144,9 +146,6 @@ export function XDSLayoutFooter({
         stylex.props(
           styles.footer,
           dynamicStyles.sizing(height ?? null),
-          isZeroPadding && styles.fullBleed,
-          padding != null && paddingStyles[padding],
-          padding != null && containerPaddingInlineVarStyles[padding],
           resolvedHasDivider && styles.divider,
           xstyle,
         ),
@@ -154,7 +153,15 @@ export function XDSLayoutFooter({
         style,
       )}
       {...props}>
-      <div {...stylex.props(styles.contentWidth)}>{children}</div>
+      <div
+        {...stylex.props(
+          styles.inner,
+          isZeroPadding && styles.fullBleed,
+          padding != null && paddingStyles[padding],
+          padding != null && containerPaddingInlineVarStyles[padding],
+        )}>
+        {children}
+      </div>
     </div>
   );
 }
