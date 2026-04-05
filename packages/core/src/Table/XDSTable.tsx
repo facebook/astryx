@@ -13,7 +13,6 @@
  * - /apps/storybook/stories/Table.stories.tsx (storybook stories)
  */
 
-
 import {useMemo, type ReactElement, type Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
@@ -76,6 +75,27 @@ const tableStyles = stylex.create({
     fontFamily: 'inherit',
     color: colorVars['--color-text-primary'],
   },
+  /**
+   * Container bleed: table escapes parent container padding horizontally
+   * so rows span edge-to-edge inside Cards and Layout areas.
+   * Uses --container-padding-inline set by Card/Section/Layout containers.
+   *
+   * Vertical bleed uses :first-child / :last-child to escape container
+   * block padding at the edges — same pattern as XDSSection.
+   */
+  containerBleed: {
+    marginInlineStart: 'calc(-1 * var(--container-padding-inline, 0px))',
+    marginInlineEnd: 'calc(-1 * var(--container-padding-inline, 0px))',
+    width: 'calc(100% + 2 * var(--container-padding-inline, 0px))',
+    marginTop: {
+      default: null,
+      ':first-child': 'calc(-1 * var(--container-padding, 0px))',
+    },
+    marginBottom: {
+      default: null,
+      ':last-child': 'calc(-1 * var(--container-padding, 0px))',
+    },
+  },
 });
 
 // =============================================================================
@@ -89,7 +109,7 @@ function buildTableStylePlugin<
     transformTable(props: TableRenderProps): TableRenderProps {
       return {
         ...props,
-        styles: [...props.styles, tableStyles.base],
+        styles: [...props.styles, tableStyles.base, tableStyles.containerBleed],
       };
     },
   };
