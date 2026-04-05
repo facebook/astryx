@@ -357,46 +357,49 @@ export function XDSCommandPalette<
     }
   }, [isOpen, selectableItems, value, combobox]);
 
-  // Effect triggers on optimisticSearch (immediate) not search (committed).
-  // Inside the transition:
-  //   - Client-filter previous results for instant feedback while fetching
-  //   - Await the real async result
-  //   - Commit both search and searchResults together when done
-  // This means search always reflects what the current results correspond to,
-  // and optimisticSearch is always what the user sees.
+  // Run a search for the given query and commit results.
+  // Called directly when the user types — no effect needed.
+  const runSearch = useCallback(
+    (query: string) => {
+      searchSource.cancel?.();
+      const version = ++searchVersionRef.current;
+
+      startTransition(async () => {
+        const isBootstrap = query === '';
+
+        // Client-filter previous results for instant narrowing while fetch is in flight
+        if (!isBootstrap && searchResults.length > 0) {
+          const lower = query.toLowerCase().trim();
+          setOptimisticResults(
+            searchResults.filter(item =>
+              item.label.toLowerCase().includes(lower),
+            ),
+          );
+        }
+
+        const result = isBootstrap
+          ? searchSource.bootstrap()
+          : searchSource.search(query);
+
+        const items = await Promise.resolve(result);
+
+        if (searchVersionRef.current === version) {
+          // Commit query and results together
+          setSearch(query);
+          setOptimisticResults(items);
+          setSearchResults(items);
+        }
+      });
+    },
+    [searchSource, searchResults, startTransition],
+  );
+
+  // Bootstrap on open — the only remaining effect.
   useEffect(() => {
-    if (!isOpen) return;
-
-    searchSource.cancel?.();
-    const version = ++searchVersionRef.current;
-
-    startTransition(async () => {
-      const isBootstrap = optimisticSearch === '';
-
-      // Client-filter previous results for instant narrowing while fetch is in flight
-      if (!isBootstrap && searchResults.length > 0) {
-        const lower = optimisticSearch.toLowerCase().trim();
-        setOptimisticResults(
-          searchResults.filter(item =>
-            item.label.toLowerCase().includes(lower),
-          ),
-        );
-      }
-
-      const result = isBootstrap
-        ? searchSource.bootstrap()
-        : searchSource.search(optimisticSearch);
-
-      const items = await Promise.resolve(result);
-
-      if (searchVersionRef.current === version) {
-        // Commit the query and results together — search now reflects the results
-        setSearch(optimisticSearch);
-        setOptimisticResults(items);
-        setSearchResults(items);
-      }
-    });
-  }, [optimisticSearch, isOpen, searchSource]);
+    if (isOpen) {
+      runSearch('');
+    }
+  }, [isOpen]);
 
   // Wrap combobox's onKeyDown to intercept Escape (close palette) and
   // Enter on highlight (select + close), since we're not using combobox's
@@ -431,9 +434,14 @@ export function XDSCommandPalette<
 
   const contextValue = useMemo(
     () => ({
-      // Input uses optimisticSearch — reflects keystrokes immediately
+      // Input uses optimisticSearch — reflects keystrokes immediately.
+      // setSearch calls setOptimisticSearch for instant feedback then
+      // triggers the async search directly (no effect indirection).
       search: optimisticSearch,
-      setSearch: setOptimisticSearch,
+      setSearch: (query: string) => {
+        setOptimisticSearch(query);
+        runSearch(query);
+      },
       value,
       setValue,
       listId,
@@ -451,6 +459,7 @@ export function XDSCommandPalette<
     [
       optimisticSearch,
       setOptimisticSearch,
+      runSearch,
       value,
       setValue,
       listId,
