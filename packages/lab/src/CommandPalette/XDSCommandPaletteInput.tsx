@@ -11,7 +11,13 @@
 
 'use client';
 
-import {useCallback, useEffect, useRef, type InputHTMLAttributes} from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  type InputHTMLAttributes,
+  type ReactNode,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {XDSIcon} from '@xds/core/Icon';
@@ -41,6 +47,13 @@ const styles = stylex.create({
     alignItems: 'center',
     flexShrink: 0,
     color: colorVars['--color-text-secondary'],
+  },
+  // Groups spinner + endContent on the right with a consistent gap
+  end: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-1'],
+    flexShrink: 0,
   },
   input: {
     flex: 1,
@@ -90,6 +103,13 @@ export interface XDSCommandPaletteInputProps extends Omit<
    */
   hasAutoFocus?: boolean;
 
+  /**
+   * Content rendered at the trailing end of the input, after the spinner.
+   * Use for clear buttons, keyboard shortcuts, or other trailing actions.
+   * The spinner (when busy) appears immediately before this content with a 4px gap.
+   */
+  endContent?: ReactNode;
+
   /** StyleX styles for the wrapper element. */
   xstyle?: StyleXStyles;
 }
@@ -118,6 +138,7 @@ export function XDSCommandPaletteInput({
   onValueChange,
   placeholder = 'Search...',
   hasAutoFocus = true,
+  endContent,
   onChange,
   onKeyDown,
   ref,
@@ -194,11 +215,16 @@ export function XDSCommandPaletteInput({
         {...stylex.props(styles.input)}
         {...props}
       />
-      {ctx?.isBusy && (
-        <span {...stylex.props(styles.icon)}>
-          <XDSSpinner size="sm" />
+      {(ctx?.isBusy || endContent) && (
+        <span {...stylex.props(styles.end)}>
+          {ctx?.isBusy && (
+            <span {...stylex.props(styles.icon)}>
+              <XDSSpinner size="sm" />
+            </span>
+          )}
+          {endContent}
         </span>
-      )}
+      )}{' '}
     </div>
   );
 }
