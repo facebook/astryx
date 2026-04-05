@@ -32,6 +32,13 @@ import {
 } from '@xds/core/theme/tokens.stylex';
 import {useCommandPaletteContext} from './CommandPaletteContext';
 
+// Keyframe for delayed fade-in — spinner only appears after 150ms
+// so it doesn't flicker on near-instant (synchronous) searches.
+const fadeIn = stylex.keyframes({
+  from: {opacity: 0},
+  to: {opacity: 1},
+});
+
 const styles = stylex.create({
   wrapper: {
     display: 'flex',
@@ -54,6 +61,14 @@ const styles = stylex.create({
     alignItems: 'center',
     gap: spacingVars['--spacing-1'],
     flexShrink: 0,
+  },
+  // Delay spinner appearance to avoid flickering on near-instant searches.
+  // The spinner fades in only if the search is still pending after 150ms.
+  spinner: {
+    animationName: fadeIn,
+    animationDuration: '1ms',
+    animationDelay: '150ms',
+    animationFillMode: 'both',
   },
   input: {
     flex: 1,
@@ -218,7 +233,7 @@ export function XDSCommandPaletteInput({
       {(ctx?.isBusy || endContent) && (
         <span {...stylex.props(styles.end)}>
           {ctx?.isBusy && (
-            <span {...stylex.props(styles.icon)}>
+            <span {...stylex.props(styles.icon, styles.spinner)}>
               <XDSSpinner size="sm" />
             </span>
           )}

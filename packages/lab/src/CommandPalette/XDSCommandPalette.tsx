@@ -279,17 +279,17 @@ export function XDSCommandPalette<
   maxHeight = 480,
 }: XDSCommandPaletteProps<T>) {
   const listId = useId();
+  // search: the committed query — only advances when async results arrive.
+  // optimisticSearch: updates immediately on keystroke, drives input + empty state.
+  // This way optimisticSearch is always what the user sees, and search is what
+  // the current results actually correspond to.
   const [search, setSearch] = useState('');
   const [internalValue, setInternalValue] = useState('');
   const [searchResults, setSearchResults] = useState<T[]>([]);
   const [isPending, startTransition] = useTransition();
-  // optimisticResults: previous results stay visible while a new query is in flight
+  const [optimisticSearch, setOptimisticSearch] = useOptimistic(search);
   const [optimisticResults, setOptimisticResults] =
     useOptimistic(searchResults);
-  // optimisticSearch: lags behind real search — only advances when the transition
-  // commits. Used for empty state logic so showEmptyBootstrap stays true while
-  // the async query is pending. The input uses real search for immediate feedback.
-  const [optimisticSearch, setOptimisticSearch] = useOptimistic(search);
   const isBusy = isPending;
   const searchVersionRef = useRef(0);
 
@@ -313,6 +313,7 @@ export function XDSCommandPalette<
   );
 
   const handleClose = useCallback(() => {
+    // Reset both committed and optimistic search on close
     setSearch('');
     setSearchResults([]);
     if (controlledValue === undefined) {
@@ -356,13 +357,13 @@ export function XDSCommandPalette<
     }
   }, [isOpen, selectableItems, value, combobox]);
 
-  // Unified search effect: bootstrap on open or empty query, search otherwise.
-  // Wrapped in startTransition so the current optimisticResults remain visible
-  // while the new query is in flight — no blank flash between queries.
-  //
-  // While pending, we immediately client-filter the previous result set by the
-  // current query so something relevant shows up rather than holding stale results
-  // verbatim. The async source result replaces this once it resolves.
+  // Effect triggers on optimisticSearch (immediate) not search (committed).
+  // Inside the transition:
+  //   - Client-filter previous results for instant feedback while fetching
+  //   - Await the real async result
+  //   - Commit both search and searchResults together when done
+  // This means search always reflects what the current results correspond to,
+  // and optimisticSearch is always what the user sees.
   useEffect(() => {
     if (!isOpen) return;
 
@@ -370,33 +371,32 @@ export function XDSCommandPalette<
     const version = ++searchVersionRef.current;
 
     startTransition(async () => {
-      const isBootstrap = search === '';
+      const isBootstrap = optimisticSearch === '';
 
-      // Advance optimisticSearch to match the real query now that we're
-      // inside the transition. This keeps it coherent with optimisticResults.
-      setOptimisticSearch(search);
-
-      // Only client-filter if there are previous results to narrow.
+      // Client-filter previous results for instant narrowing while fetch is in flight
       if (!isBootstrap && searchResults.length > 0) {
-        const lower = search.toLowerCase().trim();
-        const optimistic = searchResults.filter(item =>
-          item.label.toLowerCase().includes(lower),
+        const lower = optimisticSearch.toLowerCase().trim();
+        setOptimisticResults(
+          searchResults.filter(item =>
+            item.label.toLowerCase().includes(lower),
+          ),
         );
-        setOptimisticResults(optimistic);
       }
 
       const result = isBootstrap
         ? searchSource.bootstrap()
-        : searchSource.search(search);
+        : searchSource.search(optimisticSearch);
 
       const items = await Promise.resolve(result);
 
       if (searchVersionRef.current === version) {
+        // Commit the query and results together — search now reflects the results
+        setSearch(optimisticSearch);
         setOptimisticResults(items);
         setSearchResults(items);
       }
     });
-  }, [search, isOpen, searchSource]);
+  }, [optimisticSearch, isOpen, searchSource]);
 
   // Wrap combobox's onKeyDown to intercept Escape (close palette) and
   // Enter on highlight (select + close), since we're not using combobox's
@@ -431,9 +431,9 @@ export function XDSCommandPalette<
 
   const contextValue = useMemo(
     () => ({
-      // Expose real search to the input so it reflects keystrokes immediately
-      search,
-      setSearch,
+      // Input uses optimisticSearch — reflects keystrokes immediately
+      search: optimisticSearch,
+      setSearch: setOptimisticSearch,
       value,
       setValue,
       listId,
@@ -449,8 +449,8 @@ export function XDSCommandPalette<
       isBusy,
     }),
     [
-      search,
-      setSearch,
+      optimisticSearch,
+      setOptimisticSearch,
       value,
       setValue,
       listId,
@@ -467,14 +467,13 @@ export function XDSCommandPalette<
     ],
   );
 
-  // Empty state uses optimisticSearch (lags behind real search) so that
-  // showEmptyBootstrap stays true while the transition is pending — the input
-  // already shows the typed query via real search, but the list hasn't
-  // transitioned yet so we hold at the bootstrap empty state.
-  const showEmptyBootstrap =
-    optimisticSearch === '' && optimisticResults.length === 0;
+  // Empty state uses committed search (= what current results correspond to),
+  // not optimisticSearch (= what the user typed).
+  // While the transition is pending, search stays at '' so showEmptyBootstrap
+  // remains true even after the user has started typing.
+  const showEmptyBootstrap = search === '' && optimisticResults.length === 0;
   const showEmptySearch =
-    !isPending && optimisticSearch !== '' && optimisticResults.length === 0;
+    !isPending && search !== '' && optimisticResults.length === 0;
 
   let listContent: ReactNode;
   if (showEmptyBootstrap) {
