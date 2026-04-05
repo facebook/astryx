@@ -558,7 +558,7 @@ function StackedBarCard({
   return (
     <XDSCard>
       <XDSVStack gap={4}>
-        <XDSHeading level={3}>{title}</XDSHeading>
+        <XDSHeading level={4}>{title}</XDSHeading>
         {/* Stacked horizontal bar */}
         <div
           style={{
@@ -869,6 +869,7 @@ export default function DashboardTemplate() {
         </XDSTopNav>
       }
       variant="elevated"
+      height="auto"
       contentPadding={6}>
       <XDSVStack gap={6}>
         {/* Active Users Chart */}
@@ -903,10 +904,10 @@ export default function DashboardTemplate() {
           <XDSButton label="View more" variant="secondary" size="md" />
         </XDSHStack>
         <XDSStack direction="horizontal" gap={4}>
-          <XDSStackItem size="fill">
+          <XDSStackItem size="fill" style={{flexBasis: 0}}>
             <StackedBarCard title="Region" data={regionData} />
           </XDSStackItem>
-          <XDSStackItem size="fill">
+          <XDSStackItem size="fill" style={{flexBasis: 0}}>
             <StackedBarCard title="Role" data={roleData} />
           </XDSStackItem>
         </XDSStack>
