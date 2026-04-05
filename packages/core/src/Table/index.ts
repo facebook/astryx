@@ -21,6 +21,7 @@ export {useXDSTableSortable} from './plugins/sortable';
 export {useXDSTablePagination} from './plugins/pagination';
 export {useXDSTableColumnSettings} from './plugins/columnSettings';
 export {useXDSTableColumnResize} from './plugins/columnResize';
+export {useXDSTableFiltering, toSearchFilters} from './plugins/filtering';
 export {useXDSBaseTablePlugins} from './useXDSBaseTablePlugins';
 export {
   proportional,
@@ -76,3 +77,10 @@ export type {
   XDSColumnSettingsOption,
 } from './plugins/columnSettings';
 export type {UseXDSTableColumnResizeConfig} from './plugins/columnResize';
+export type {
+  UseXDSTableFilteringConfig,
+  XDSTableFilterState,
+  XDSTableFilterVariant,
+  XDSTableFilterValue,
+  XDSTableFilterFieldRef,
+} from './plugins/filtering';

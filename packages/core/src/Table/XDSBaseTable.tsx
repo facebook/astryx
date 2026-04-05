@@ -12,6 +12,7 @@
 
 import {memo, useRef, type ReactElement, type ReactNode, type Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
+import {spacingVars} from '../theme/tokens.stylex';
 import type {
   XDSBaseTableProps,
   XDSTableColumn,
@@ -41,6 +42,17 @@ const styles = stylex.create({
     borderCollapse: 'collapse',
     borderSpacing: '0',
     tableLayout: 'fixed',
+  },
+  /**
+   * Inline flex row that keeps the header label and any "after" slot content
+   * (sort icons, filter buttons, etc.) on the same line with a small gap.
+   * Applied only when `after` is present so plain cells are unaffected.
+   */
+  headerLabelRow: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-0-5'],
+    minWidth: 0,
   },
 });
 
@@ -308,8 +320,9 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
       typeof resolvedContent === 'string' && resolvedContent.length > 0
         ? {title: resolvedContent}
         : {};
-    const {before, after, overlay} = cellRenderProps;
-    const hasSlots = before != null || after != null || overlay != null;
+    const {before, after, overlay, below} = cellRenderProps;
+    const hasSlots =
+      before != null || after != null || overlay != null || below != null;
 
     return (
       <HeaderCellComponent
@@ -320,9 +333,16 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
         {hasSlots ? (
           <>
             {before}
-            {resolvedContent}
-            {after}
+            {after != null ? (
+              <div {...stylex.props(styles.headerLabelRow)}>
+                {resolvedContent}
+                {after}
+              </div>
+            ) : (
+              resolvedContent
+            )}
             {overlay}
+            {below}
           </>
         ) : (
           resolvedContent
