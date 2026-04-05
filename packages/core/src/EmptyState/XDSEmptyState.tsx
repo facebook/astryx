@@ -177,7 +177,7 @@ export function XDSEmptyState({
       ref={ref}
       role="status"
       {...mergeProps(
-        xdsClassName('emptystate'),
+        xdsClassName('emptystate', {variant: isCompact ? 'compact' : null}),
         stylex.props(
           styles.container,
           isCompact && styles.containerCompact,

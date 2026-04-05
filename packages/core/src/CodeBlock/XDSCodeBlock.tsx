@@ -1,3 +1,4 @@
+'use client';
 /**
  * @file XDSCodeBlock.tsx
  * @input Uses React, StyleX, theme tokens, CSS Custom Highlight API
@@ -9,8 +10,6 @@
  * - /packages/core/src/CodeBlock/tokenizer.ts (shared tokenizer)
  * - /packages/core/src/CodeBlock/highlightStyles.ts (::highlight rules)
  */
-
-'use client';
 
 import {
   useLayoutEffect,
@@ -410,7 +409,8 @@ export function XDSCodeBlock({
 
   const sizeStyle = size === 'sm' ? styles.sizeSm : styles.sizeMd;
   const gutterSizeStyle = size === 'sm' ? styles.gutterSm : styles.gutterMd;
-  const languageLabel = hasLanguageLabel && language !== 'plaintext' ? language : null;
+  const languageLabel =
+    hasLanguageLabel && language !== 'plaintext' ? language : null;
   const showHeader = title != null || languageLabel != null;
 
   const scrollStyle: React.CSSProperties | undefined = maxHeight
@@ -418,9 +418,30 @@ export function XDSCodeBlock({
     : undefined;
 
   const copyIcon = copied ? (
-    <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"><path d="M5 13l4 4L19 7" /></svg>
+    <svg
+      width="1em"
+      height="1em"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round">
+      <path d="M5 13l4 4L19 7" />
+    </svg>
   ) : (
-    <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"><path d="M8 4v12a2 2 0 002 2h8a2 2 0 002-2V7.242a2 2 0 00-.602-1.43L16.083 2.57A2 2 0 0014.685 2H10a2 2 0 00-2 2z" /><path d="M16 18v2a2 2 0 01-2 2H6a2 2 0 01-2-2V9a2 2 0 012-2h2" /></svg>
+    <svg
+      width="1em"
+      height="1em"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round">
+      <path d="M8 4v12a2 2 0 002 2h8a2 2 0 002-2V7.242a2 2 0 00-.602-1.43L16.083 2.57A2 2 0 0014.685 2H10a2 2 0 00-2 2z" />
+      <path d="M16 18v2a2 2 0 01-2 2H6a2 2 0 01-2-2V9a2 2 0 012-2h2" />
+    </svg>
   );
 
   const copyButtonEl = hasCopyButton ? (

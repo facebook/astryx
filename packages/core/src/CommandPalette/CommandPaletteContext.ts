@@ -1,3 +1,4 @@
+'use client';
 /**
  * @file CommandPaletteContext.ts
  * @input Uses React createContext

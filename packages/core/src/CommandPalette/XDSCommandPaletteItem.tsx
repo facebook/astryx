@@ -1,3 +1,4 @@
+'use client';
 /**
  * @file XDSCommandPaletteItem.tsx
  * @input Uses React, StyleX, CommandPaletteContext
@@ -7,8 +8,6 @@
  * SYNC: When modified, update:
  * - /packages/lab/src/CommandPalette/README.md
  */
-
-'use client';
 
 import {useCallback, useEffect, useMemo, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';

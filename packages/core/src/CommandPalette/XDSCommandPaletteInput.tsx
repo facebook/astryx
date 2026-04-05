@@ -1,3 +1,4 @@
+'use client';
 /**
  * @file XDSCommandPaletteInput.tsx
  * @input Uses React, StyleX, XDSIcon, CommandPaletteContext
@@ -8,8 +9,6 @@
  * - /packages/lab/src/CommandPalette/README.md
  * - /apps/storybook/stories/CommandPalette.stories.tsx
  */
-
-'use client';
 
 import {
   useCallback,
