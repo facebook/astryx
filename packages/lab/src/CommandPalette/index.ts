@@ -25,5 +25,8 @@ export type {XDSCommandPaletteGroupProps} from './XDSCommandPaletteGroup';
 export {XDSCommandPaletteFooter} from './XDSCommandPaletteFooter';
 export type {XDSCommandPaletteFooterProps} from './XDSCommandPaletteFooter';
 
+export {XDSCommandPaletteEmpty} from './XDSCommandPaletteEmpty';
+export type {XDSCommandPaletteEmptyProps} from './XDSCommandPaletteEmpty';
+
 export {useCommandPaletteContext} from './CommandPaletteContext';
 export type {CommandPaletteContextValue} from './CommandPaletteContext';

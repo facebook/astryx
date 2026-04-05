@@ -20,6 +20,8 @@ const groupedSource = createStaticSource([
   {id: 'save', label: 'Save', auxiliaryData: {group: 'Actions'}},
 ]);
 
+const emptySource = createStaticSource([]);
+
 // Mock showModal and close since jsdom doesn't implement them
 beforeEach(() => {
   HTMLDialogElement.prototype.showModal = vi.fn(function (
@@ -39,7 +41,6 @@ describe('XDSCommandPalette', () => {
         isOpen={true}
         onOpenChange={() => {}}
         searchSource={simpleSource}
-        input={<div>Input</div>}
       />,
     );
     expect(screen.getByRole('dialog')).toBeInTheDocument();
@@ -51,7 +52,6 @@ describe('XDSCommandPalette', () => {
         isOpen={false}
         onOpenChange={() => {}}
         searchSource={simpleSource}
-        input={<div>Input</div>}
       />,
     );
     const dialog = screen.getByRole('dialog', {hidden: true});
@@ -64,7 +64,6 @@ describe('XDSCommandPalette', () => {
         isOpen={true}
         onOpenChange={() => {}}
         searchSource={simpleSource}
-        input={<div>Input</div>}
       />,
     );
     expect(screen.getByRole('dialog')).toHaveAttribute(
@@ -80,7 +79,6 @@ describe('XDSCommandPalette', () => {
         onOpenChange={() => {}}
         searchSource={simpleSource}
         label="Quick search"
-        input={<div>Input</div>}
       />,
     );
     expect(screen.getByRole('dialog')).toHaveAttribute(
@@ -89,30 +87,30 @@ describe('XDSCommandPalette', () => {
     );
   });
 
-  it('renders input and footer slots', () => {
+  it('renders default input and footer when not provided', () => {
     render(
       <XDSCommandPalette
         isOpen={true}
         onOpenChange={() => {}}
         searchSource={simpleSource}
-        input={<div data-testid="input-slot">Input</div>}
-        footer={<div data-testid="footer-slot">Footer</div>}
+      />,
+    );
+    expect(screen.getByRole('combobox')).toBeInTheDocument();
+    expect(screen.getByText(/Navigate/)).toBeInTheDocument();
+  });
+
+  it('renders custom input and footer slots', () => {
+    render(
+      <XDSCommandPalette
+        isOpen={true}
+        onOpenChange={() => {}}
+        searchSource={simpleSource}
+        input={<div data-testid="input-slot">Custom Input</div>}
+        footer={<div data-testid="footer-slot">Custom Footer</div>}
       />,
     );
     expect(screen.getByTestId('input-slot')).toBeInTheDocument();
     expect(screen.getByTestId('footer-slot')).toBeInTheDocument();
-  });
-
-  it('renders without footer slot', () => {
-    render(
-      <XDSCommandPalette
-        isOpen={true}
-        onOpenChange={() => {}}
-        searchSource={simpleSource}
-        input={<div>Input</div>}
-      />,
-    );
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
   });
 
   it('default renders items from searchSource bootstrap', async () => {
@@ -121,7 +119,6 @@ describe('XDSCommandPalette', () => {
         isOpen={true}
         onOpenChange={() => {}}
         searchSource={simpleSource}
-        input={<div>Input</div>}
       />,
     );
     await waitFor(() => {
@@ -136,7 +133,6 @@ describe('XDSCommandPalette', () => {
         isOpen={true}
         onOpenChange={() => {}}
         searchSource={groupedSource}
-        input={<div>Input</div>}
       />,
     );
     await waitFor(() => {
@@ -147,26 +143,63 @@ describe('XDSCommandPalette', () => {
     });
   });
 
-  it('uses render function children when provided', async () => {
+  it('uses renderItem for custom item content', async () => {
     render(
       <XDSCommandPalette
         isOpen={true}
         onOpenChange={() => {}}
         searchSource={simpleSource}
-        input={<div>Input</div>}>
-        {(items) => (
-          <div data-testid="custom-render">
-            {items.map(item => (
-              <span key={item.id}>{item.label.toUpperCase()}</span>
-            ))}
-          </div>
-        )}
-      </XDSCommandPalette>,
+        renderItem={item => <span>{item.label.toUpperCase()}</span>}
+      />,
     );
     await waitFor(() => {
-      expect(screen.getByTestId('custom-render')).toBeInTheDocument();
       expect(screen.getByText('HOME')).toBeInTheDocument();
       expect(screen.getByText('SETTINGS')).toBeInTheDocument();
+    });
+  });
+
+  it('passes isSelected=true to renderItem for the selected value', async () => {
+    render(
+      <XDSCommandPalette
+        isOpen={true}
+        onOpenChange={() => {}}
+        searchSource={simpleSource}
+        value="home"
+        renderItem={(item, isSelected) => (
+          <span>{isSelected ? `checked-${item.label}` : item.label}</span>
+        )}
+      />,
+    );
+    await waitFor(() => {
+      expect(screen.getByText('checked-Home')).toBeInTheDocument();
+      expect(screen.getByText('Settings')).toBeInTheDocument();
+    });
+  });
+
+  it('shows emptyBootstrapText when bootstrap returns nothing', async () => {
+    render(
+      <XDSCommandPalette
+        isOpen={true}
+        onOpenChange={() => {}}
+        searchSource={emptySource}
+        emptyBootstrapText="Nothing to show"
+      />,
+    );
+    await waitFor(() => {
+      expect(screen.getByText('Nothing to show')).toBeInTheDocument();
+    });
+  });
+
+  it('shows default emptyBootstrapText when not provided', async () => {
+    render(
+      <XDSCommandPalette
+        isOpen={true}
+        onOpenChange={() => {}}
+        searchSource={emptySource}
+      />,
+    );
+    await waitFor(() => {
+      expect(screen.getByText('Type to search')).toBeInTheDocument();
     });
   });
 
@@ -177,7 +210,6 @@ describe('XDSCommandPalette', () => {
         isOpen={true}
         onOpenChange={handleOpenChange}
         searchSource={simpleSource}
-        input={<div>Input</div>}
       />,
     );
     const dialog = screen.getByRole('dialog');
