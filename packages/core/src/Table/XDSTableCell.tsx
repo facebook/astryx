@@ -121,7 +121,7 @@ export function XDSTableCell({
   const cellStyles: StyleXStyles[] = [
     densityStyles[ctx.density],
     overflowStyles.cell,
-    containerEdgeStyles.cell,
+    containerEdgeStyles[ctx.density],
     ...buildDividerStyles(ctx, dividerRowStyles.cell, dividerColumnStyles.cell),
   ];
 

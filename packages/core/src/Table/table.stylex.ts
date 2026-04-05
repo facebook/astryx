@@ -38,22 +38,39 @@ export const overflowStyles = stylex.create({
  * first and last columns' outer padding aligns with the container's
  * content inset, with a minimum of --spacing-2 (8px).
  *
- * Uses `max()` so that even in small-padding containers the table
- * cells always have at least 8px of breathing room.
- *
- * When no container is present (--container-padding-inline is unset/0px),
- * these resolve to 8px — matching the compact density default and
- * providing a sensible standalone baseline.
+ * Each density variant uses its own paddingInline as the fallback,
+ * so standalone tables (where --container-padding-inline is unset)
+ * keep their normal density-based cell padding unchanged.
  */
 export const containerEdgeStyles = stylex.create({
-  cell: {
+  compact: {
     paddingInlineStart: {
       default: null,
-      ':first-child': `max(var(--container-padding-inline, 0px), ${spacingVars['--spacing-2']})`,
+      ':first-child': `max(var(--container-padding-inline, ${spacingVars['--spacing-2']}), ${spacingVars['--spacing-2']})`,
     },
     paddingInlineEnd: {
       default: null,
-      ':last-child': `max(var(--container-padding-inline, 0px), ${spacingVars['--spacing-2']})`,
+      ':last-child': `max(var(--container-padding-inline, ${spacingVars['--spacing-2']}), ${spacingVars['--spacing-2']})`,
+    },
+  },
+  balanced: {
+    paddingInlineStart: {
+      default: null,
+      ':first-child': `max(var(--container-padding-inline, ${spacingVars['--spacing-3']}), ${spacingVars['--spacing-2']})`,
+    },
+    paddingInlineEnd: {
+      default: null,
+      ':last-child': `max(var(--container-padding-inline, ${spacingVars['--spacing-3']}), ${spacingVars['--spacing-2']})`,
+    },
+  },
+  spacious: {
+    paddingInlineStart: {
+      default: null,
+      ':first-child': `max(var(--container-padding-inline, ${spacingVars['--spacing-4']}), ${spacingVars['--spacing-2']})`,
+    },
+    paddingInlineEnd: {
+      default: null,
+      ':last-child': `max(var(--container-padding-inline, ${spacingVars['--spacing-4']}), ${spacingVars['--spacing-2']})`,
     },
   },
 });

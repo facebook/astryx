@@ -145,7 +145,7 @@ export function XDSTableHeaderCell({
     densityStyles[ctx.density],
     headerDividerStyles.cell,
     overflowStyles.cell,
-    containerEdgeStyles.cell,
+    containerEdgeStyles[ctx.density],
   ];
 
   // Only add column dividers from the shared builder
