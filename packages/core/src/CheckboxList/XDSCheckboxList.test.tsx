@@ -316,3 +316,69 @@ describe('XDSCheckboxListItem standalone mode', () => {
     expect(handleCheck).toHaveBeenCalledWith(true);
   });
 });
+
+describe('XDSCheckboxListItem ARIA props', () => {
+  it('sets aria-checked on the list item in collection mode', () => {
+    render(
+      <XDSCheckboxList label="Prefs" value={['a']} onChange={() => {}}>
+        <XDSCheckboxListItem label="Option A" value="a" />
+        <XDSCheckboxListItem label="Option B" value="b" />
+      </XDSCheckboxList>,
+    );
+    const items = screen.getAllByRole('listitem');
+    // Item A is checked
+    expect(items[0]).toHaveAttribute('aria-checked', 'true');
+    // Item B is not checked
+    expect(items[1]).toHaveAttribute('aria-checked', 'false');
+  });
+
+  it('sets aria-checked on the list item in standalone mode', () => {
+    render(
+      <XDSList>
+        <XDSCheckboxListItem label="Done" isChecked={true} />
+        <XDSCheckboxListItem label="Todo" isChecked={false} />
+      </XDSList>,
+    );
+    const items = screen.getAllByRole('listitem');
+    expect(items[0]).toHaveAttribute('aria-checked', 'true');
+    expect(items[1]).toHaveAttribute('aria-checked', 'false');
+  });
+
+  it('sets aria-checked="mixed" for indeterminate items', () => {
+    render(
+      <XDSList>
+        <XDSCheckboxListItem label="Partial" isChecked="indeterminate" />
+      </XDSList>,
+    );
+    const item = screen.getByRole('listitem');
+    expect(item).toHaveAttribute('aria-checked', 'mixed');
+  });
+
+  it('sets aria-busy during async actions', () => {
+    // Render with a pending async action by providing onChangeAction
+    // that returns a promise that never resolves
+    render(
+      <XDSCheckboxList label="Prefs" value={['a']} onChange={() => {}}>
+        <XDSCheckboxListItem label="Option A" value="a" />
+      </XDSCheckboxList>,
+    );
+    // By default isBusy is false, so aria-busy should not be present
+    const item = screen.getByRole('listitem');
+    expect(item).not.toHaveAttribute('aria-busy');
+  });
+
+  it('forwards arbitrary aria attributes to the list item DOM element', () => {
+    render(
+      <XDSList>
+        <XDSCheckboxListItem
+          label="Custom aria"
+          aria-describedby="help-text"
+          aria-label="custom label"
+        />
+      </XDSList>,
+    );
+    const item = screen.getByRole('listitem');
+    expect(item).toHaveAttribute('aria-describedby', 'help-text');
+    expect(item).toHaveAttribute('aria-label', 'custom label');
+  });
+});

@@ -25,6 +25,7 @@ import {
   typeScaleVars,
   borderVars,
 } from '../theme/tokens.stylex';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import {XDSListContext} from './XDSListContext';
 import {xdsClassName, mergeProps} from '../utils';
 
@@ -32,7 +33,7 @@ import {xdsClassName, mergeProps} from '../utils';
 // Types
 // =============================================================================
 
-export interface XDSListItemProps {
+export interface XDSListItemProps extends XDSBaseProps<HTMLLIElement> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLLIElement>;
   /**
@@ -88,33 +89,6 @@ export interface XDSListItemProps {
    * @default false
    */
   isSelected?: boolean;
-
-  /**
-   * StyleX styles created via `stylex.create()`. Merged with the component's
-   * base styles inside a single `stylex.props()` call for optimal deduplication.
-   *
-   * @example
-   * ```
-   * const overrides = stylex.create({ root: { marginBottom: 8 } });
-   * <Component xstyle={overrides.root} />
-   * ```
-   */
-  xstyle?: StyleXStyles;
-  /**
-   * CSS class name(s) appended to the root element.
-   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
-   */
-  className?: string;
-  /**
-   * Inline styles to apply to the root element. Spread after StyleX
-   * inline styles, so these values take priority.
-   */
-  style?: React.CSSProperties;
-
-  /**
-   * Test ID for testing frameworks.
-   */
-  'data-testid'?: string;
 }
 
 // =============================================================================
@@ -354,6 +328,7 @@ export function XDSListItem({
   style,
   'data-testid': testId,
   ref,
+  ...restProps
 }: XDSListItemProps) {
   const ctx = useContext(XDSListContext);
   const density = ctx?.density ?? 'balanced';
@@ -440,6 +415,7 @@ export function XDSListItem({
       data-testid={testId}
       aria-selected={isSelected || undefined}
       aria-disabled={isDisabled || undefined}
+      {...restProps}
       {...mergeProps(
         xdsClassName('list-item'),
         stylex.props(

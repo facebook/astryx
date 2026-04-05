@@ -17,6 +17,7 @@ import {useContext, useState, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import {XDSCheckboxInput} from '../CheckboxInput/XDSCheckboxInput';
 import {XDSListItem} from '../List/XDSListItem';
 import {XDSListContext} from '../List/XDSListContext';
@@ -36,7 +37,7 @@ const styles = stylex.create({
 // Types
 // =============================================================================
 
-export interface XDSCheckboxListItemProps {
+export interface XDSCheckboxListItemProps extends XDSBaseProps<HTMLLIElement> {
   /**
    * Primary text label for the item.
    */
@@ -71,31 +72,6 @@ export interface XDSCheckboxListItemProps {
   onCheck?: (checked: boolean) => void;
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLLIElement>;
-  /**
-   * StyleX styles created via `stylex.create()`. Merged with the component's
-   * base styles inside a single `stylex.props()` call for optimal deduplication.
-   *
-   * @example
-   * ```
-   * const overrides = stylex.create({ root: { marginBottom: 8 } });
-   * <Component xstyle={overrides.root} />
-   * ```
-   */
-  xstyle?: StyleXStyles;
-  /**
-   * CSS class name(s) appended to the root element.
-   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
-   */
-  className?: string;
-  /**
-   * Inline styles to apply to the root element. Spread after StyleX
-   * inline styles, so these values take priority.
-   */
-  style?: React.CSSProperties;
-  /**
-   * Test ID for the checkbox list item container.
-   */
-  'data-testid'?: string;
 }
 
 // =============================================================================
@@ -135,6 +111,7 @@ export function XDSCheckboxListItem({
   className,
   style,
   'data-testid': dataTestId,
+  ...restProps
 }: XDSCheckboxListItemProps) {
   const ctx = useContext(XDSCheckboxListContext);
 
@@ -189,6 +166,7 @@ export function XDSCheckboxListItem({
 
   return (
     <XDSListItem
+      {...restProps}
       ref={ref}
       label={label}
       description={description}
