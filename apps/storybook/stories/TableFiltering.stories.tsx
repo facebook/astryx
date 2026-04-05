@@ -16,6 +16,7 @@ import type {
   XDSTableSortState,
 } from '@xds/core/Table';
 import {usePowerSearchConfig} from '@xds/core/PowerSearch';
+import {XDSEmptyState} from '@xds/core/EmptyState';
 import type {PowerSearchFilter} from '@xds/core/PowerSearch';
 
 interface Employee extends Record<string, unknown> {
@@ -484,6 +485,86 @@ export const WithAllPlugins: Story = {
             filter: filterPlugin,
             resize: resizePlugin,
           }}
+        />
+      </div>
+    );
+  },
+};
+
+export const InlineWithClear: Story = {
+  render: () => {
+    const {config, applyFilters} = usePowerSearchConfig(fieldDefs);
+    const {filters, onFilterChange} = useFilterState();
+    const columns: XDSTableColumn<Employee>[] = [
+      {key: 'name', header: 'Name', filter: 'name'},
+      {key: 'role', header: 'Role', filter: 'role'},
+      {key: 'level', header: 'Level', filter: 'level'},
+      {key: 'department', header: 'Department'},
+    ];
+    const filterPlugin = useXDSTableFiltering<Employee>({
+      filters,
+      onFilterChange,
+      variant: 'inline',
+      searchConfig: config,
+    });
+    const data = applyFilters(
+      toSearchFilters(filters, columns, config) as PowerSearchFilter[],
+      employees,
+    );
+    return (
+      <div style={{maxWidth: 800}}>
+        <p style={{marginBottom: 8, fontSize: 14, color: '#666'}}>
+          Inline variant with clear buttons. Type to filter, then click ✕ to
+          clear. Showing {data.length}/{employees.length} rows.
+        </p>
+        <XDSTable
+          data={data}
+          columns={columns}
+          idKey="id"
+          plugins={{filter: filterPlugin}}
+        />
+      </div>
+    );
+  },
+};
+
+export const EmptyState: Story = {
+  render: () => {
+    const {config, applyFilters} = usePowerSearchConfig(fieldDefs);
+    const {filters, onFilterChange} = useFilterState();
+    const columns: XDSTableColumn<Employee>[] = [
+      {key: 'name', header: 'Name', filter: 'name'},
+      {key: 'role', header: 'Role', filter: 'role'},
+      {key: 'level', header: 'Level', filter: 'level'},
+      {key: 'department', header: 'Department'},
+    ];
+    const filterPlugin = useXDSTableFiltering<Employee>({
+      filters,
+      onFilterChange,
+      variant: 'inline',
+      searchConfig: config,
+    });
+    const data = applyFilters(
+      toSearchFilters(filters, columns, config) as PowerSearchFilter[],
+      employees,
+    );
+    return (
+      <div style={{maxWidth: 800}}>
+        <p style={{marginBottom: 8, fontSize: 14, color: '#666'}}>
+          Try filtering to get zero results — empty state appears.
+        </p>
+        <XDSTable
+          data={data}
+          columns={columns}
+          idKey="id"
+          plugins={{filter: filterPlugin}}
+          emptyState={
+            <XDSEmptyState
+              title="No results"
+              description="Try adjusting your filters to find what you're looking for."
+              size="compact"
+            />
+          }
         />
       </div>
     );

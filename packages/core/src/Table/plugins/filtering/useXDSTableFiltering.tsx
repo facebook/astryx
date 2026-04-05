@@ -527,7 +527,6 @@ const filterStyles = stylex.create({
   afterPopover: {
     display: 'flex',
     alignItems: 'center',
-    gap: spacingVars['--spacing-1'],
     flexShrink: 0,
   },
   afterInline: {

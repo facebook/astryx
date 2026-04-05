@@ -36,6 +36,7 @@ import {XDSTableRow} from './XDSTableRow';
 import {XDSTableCell} from './XDSTableCell';
 import {XDSTableHeaderCell} from './XDSTableHeaderCell';
 import {xdsClassName, mergeProps} from '../utils';
+import {XDSEmptyState} from '../EmptyState';
 
 const styles = stylex.create({
   table: {
@@ -242,6 +243,7 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
   components,
   children,
   tableProps: userTableProps,
+  emptyState,
   ref,
 }: XDSBaseTableProps<T> & {ref?: Ref<HTMLTableElement>}): ReactElement {
   // Use stable empty array when no plugins provided
@@ -399,28 +401,36 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
       <tbody>
         {children
           ? children
-          : hasData &&
-            data.map((item, rowIndex) => {
-              const rowKey =
-                idKey == null
-                  ? rowIndex
-                  : typeof idKey === 'function'
-                    ? idKey(item)
-                    : String(item[idKey]);
+          : hasData
+            ? data.map((item, rowIndex) => {
+                const rowKey =
+                  idKey == null
+                    ? rowIndex
+                    : typeof idKey === 'function'
+                      ? idKey(item)
+                      : String(item[idKey]);
 
-              return (
-                <MemoizedTableRow<T>
-                  key={rowKey}
-                  item={item}
-                  rowIndex={rowIndex}
-                  rowKey={rowKey}
-                  columns={resolvedColumns}
-                  plugins={plugins}
-                  RowComponent={RowComponent}
-                  CellComponent={CellComponent}
-                />
-              );
-            })}
+                return (
+                  <MemoizedTableRow<T>
+                    key={rowKey}
+                    item={item}
+                    rowIndex={rowIndex}
+                    rowKey={rowKey}
+                    columns={resolvedColumns}
+                    plugins={plugins}
+                    RowComponent={RowComponent}
+                    CellComponent={CellComponent}
+                  />
+                );
+              })
+            : data != null &&
+              emptyState !== false && (
+                <tr>
+                  <td colSpan={resolvedColumns.length}>
+                    {emptyState ?? <XDSEmptyState title="No data" isCompact />}
+                  </td>
+                </tr>
+              )}
       </tbody>
     </table>
   );
