@@ -1,3 +1,4 @@
+'use client';
 /**
  * @file XDSBaseTable.tsx
  * @input React, types.ts, columnUtils.ts
