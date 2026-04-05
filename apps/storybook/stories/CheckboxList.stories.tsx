@@ -167,34 +167,34 @@ export const SelectAllWithIndeterminate: Story = {
         ? false
         : ('indeterminate' as const);
 
-    const handleSelectAll = () => {
-      if (allChecked) {
-        setSelected([]);
-      } else {
+    const handleSelectAll = (checked: boolean) => {
+      if (checked) {
         setSelected([...allItems]);
+      } else {
+        setSelected([]);
       }
     };
 
     return (
-      <div>
-        <XDSList>
+      <XDSCheckboxList label="Notifications" hasDividers>
+        <XDSCheckboxListItem
+          label="Select all"
+          isChecked={selectAllState}
+          onCheck={handleSelectAll}
+        />
+        {allItems.map(item => (
           <XDSCheckboxListItem
-            label="Select all"
-            isChecked={selectAllState}
-            onCheck={handleSelectAll}
+            key={item}
+            label={item.charAt(0).toUpperCase() + item.slice(1)}
+            isChecked={selected.includes(item)}
+            onCheck={checked => {
+              setSelected(prev =>
+                checked ? [...prev, item] : prev.filter(v => v !== item),
+              );
+            }}
           />
-        </XDSList>
-        <XDSCheckboxList
-          label="Notifications"
-          isLabelHidden
-          value={selected}
-          onChange={setSelected}
-          hasDividers>
-          <XDSCheckboxListItem label="Email" value="email" />
-          <XDSCheckboxListItem label="SMS" value="sms" />
-          <XDSCheckboxListItem label="Push notification" value="push" />
-        </XDSCheckboxList>
-      </div>
+        ))}
+      </XDSCheckboxList>
     );
   },
 };

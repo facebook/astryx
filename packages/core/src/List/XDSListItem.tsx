@@ -149,8 +149,10 @@ const styles = stylex.create({
   },
   disabled: {
     cursor: 'not-allowed',
-    opacity: 0.5,
     pointerEvents: 'none' as const,
+  },
+  disabledContent: {
+    opacity: 0.5,
   },
   selected: {
     backgroundColor: colorVars['--color-accent-muted'],
@@ -365,7 +367,13 @@ export function XDSListItem({
   const innerContent = (
     <>
       {startContent != null && (
-        <span {...stylex.props(styles.startContent)}>{startContent}</span>
+        <span
+          {...stylex.props(
+            styles.startContent,
+            isDisabled && styles.disabledContent,
+          )}>
+          {startContent}
+        </span>
       )}
 
       {href != null ? (
@@ -374,7 +382,10 @@ export function XDSListItem({
           target={target}
           aria-disabled={isDisabled || undefined}
           tabIndex={isDisabled ? -1 : undefined}
-          {...stylex.props(styles.invisibleAnchor)}>
+          {...stylex.props(
+            styles.invisibleAnchor,
+            isDisabled && styles.disabledContent,
+          )}>
           {labelAndDescription}
         </a>
       ) : onClick != null ? (
@@ -382,15 +393,30 @@ export function XDSListItem({
           type="button"
           onClick={onClick}
           disabled={isDisabled}
-          {...stylex.props(styles.invisibleButton)}>
+          {...stylex.props(
+            styles.invisibleButton,
+            isDisabled && styles.disabledContent,
+          )}>
           {labelAndDescription}
         </button>
       ) : (
-        <span {...stylex.props(styles.content)}>{labelAndDescription}</span>
+        <span
+          {...stylex.props(
+            styles.content,
+            isDisabled && styles.disabledContent,
+          )}>
+          {labelAndDescription}
+        </span>
       )}
 
       {endContent != null && (
-        <span {...stylex.props(styles.endContent)}>{endContent}</span>
+        <span
+          {...stylex.props(
+            styles.endContent,
+            isDisabled && styles.disabledContent,
+          )}>
+          {endContent}
+        </span>
       )}
     </>
   );
