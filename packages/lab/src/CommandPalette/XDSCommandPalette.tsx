@@ -279,18 +279,29 @@ export function XDSCommandPalette<
   maxHeight = 480,
 }: XDSCommandPaletteProps<T>) {
   const listId = useId();
-  const [search, setSearch] = useState('');
+  const [search, setSearchRaw] = useState('');
   const [internalValue, setInternalValue] = useState('');
   const [searchResults, setSearchResults] = useState<T[]>([]);
   const [isPending, startTransition] = useTransition();
-  // Both search query and results are optimistic so they stay in the same
-  // snapshot during a transition — no mismatch between "query says non-empty"
-  // and "results still reflect the previous query".
+  // Results are optimistic so the previous list stays visible while the
+  // new query is in flight.
   const [optimisticResults, setOptimisticResults] =
     useOptimistic(searchResults);
-  const [optimisticSearch, setOptimisticSearch] = useOptimistic(search);
   const isBusy = isPending;
   const searchVersionRef = useRef(0);
+
+  // Wrap setSearch in startTransition so the query update and the async
+  // search are part of the same transition. This keeps search and
+  // optimisticResults in the same snapshot — search only advances when
+  // the transition commits, so empty-state conditions are always coherent.
+  const setSearch = useCallback(
+    (newSearch: string) => {
+      startTransition(() => {
+        setSearchRaw(newSearch);
+      });
+    },
+    [startTransition],
+  );
 
   const value = controlledValue ?? internalValue;
 
@@ -312,7 +323,7 @@ export function XDSCommandPalette<
   );
 
   const handleClose = useCallback(() => {
-    setSearch('');
+    setSearchRaw('');
     setSearchResults([]);
     if (controlledValue === undefined) {
       setInternalValue('');
@@ -371,14 +382,7 @@ export function XDSCommandPalette<
     startTransition(async () => {
       const isBootstrap = search === '';
 
-      // Set optimistic search query so it stays in sync with optimistic results.
-      // Both are updated together inside the transition — no snapshot mismatch.
-      setOptimisticSearch(search);
-
       // Only client-filter if there are previous results to narrow.
-      // If the current set is empty (e.g. bootstrap returned nothing),
-      // leave optimisticResults as-is so the empty state stays visible
-      // rather than flashing a blank list.
       if (!isBootstrap && searchResults.length > 0) {
         const lower = search.toLowerCase().trim();
         const optimistic = searchResults.filter(item =>
@@ -433,7 +437,7 @@ export function XDSCommandPalette<
 
   const contextValue = useMemo(
     () => ({
-      search: optimisticSearch,
+      search,
       setSearch,
       value,
       setValue,
@@ -450,7 +454,8 @@ export function XDSCommandPalette<
       isBusy,
     }),
     [
-      optimisticSearch,
+      search,
+      setSearch,
       value,
       setValue,
       listId,
@@ -467,16 +472,11 @@ export function XDSCommandPalette<
     ],
   );
 
-  // Both optimisticSearch and optimisticResults are updated together inside
-  // the transition, so they're always in the same snapshot.
-  // showEmptyBootstrap: no query and no results — covers pending-from-empty too,
-  // since optimisticSearch stays '' while the transition runs.
-  // showEmptySearch: only shown once settled so we don't flash "No results"
-  // while the async query is still in flight.
-  const showEmptyBootstrap =
-    optimisticSearch === '' && optimisticResults.length === 0;
+  // search is only updated inside startTransition, so it stays at '' while
+  // the transition is pending — coherent with optimisticResults.
+  const showEmptyBootstrap = search === '' && optimisticResults.length === 0;
   const showEmptySearch =
-    !isPending && optimisticSearch !== '' && optimisticResults.length === 0;
+    !isPending && search !== '' && optimisticResults.length === 0;
 
   let listContent: ReactNode;
   if (showEmptyBootstrap) {
