@@ -176,7 +176,7 @@ export function parseInline(text: string): InlineNode[] {
     let end = i + 1;
     while (end < text.length && !'*_~`[!\\\n'.includes(text[end])) end++;
 
-    let content = text.slice(i, end);
+    const content = text.slice(i, end);
 
     // Detect trailing-space line break: 2+ spaces immediately before \n
     if (end < text.length && text[end] === '\n') {
