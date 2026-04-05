@@ -44,7 +44,7 @@ function LinkifyDemo({
   });
 
   return (
-    <XDSStack gap="md">
+    <XDSStack gap={4}>
       <div
         style={{
           padding: 16,
@@ -165,7 +165,7 @@ export const Interactive: Story = {
     });
 
     return (
-      <XDSStack gap="md">
+      <XDSStack gap={4}>
         <XDSTextInput
           label="Input text"
           value={text}
