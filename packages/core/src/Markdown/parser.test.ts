@@ -60,6 +60,102 @@ describe('parseInline', () => {
     const hasItalic = result.some(n => n.type === 'italic');
     expect(hasItalic).toBe(false);
   });
+
+  // --- Bold-italic ---
+
+  it('parses ***bold italic*** with asterisks', () => {
+    const result = parseInline('***bold italic***');
+    expect(result).toHaveLength(1);
+    expect(result[0].type).toBe('bold');
+    if (result[0].type === 'bold') {
+      expect(result[0].children).toHaveLength(1);
+      expect(result[0].children[0].type).toBe('italic');
+      if (result[0].children[0].type === 'italic') {
+        expect(result[0].children[0].children[0]).toEqual({type: 'text', content: 'bold italic'});
+      }
+    }
+  });
+
+  it('parses ___bold italic___ with underscores', () => {
+    const result = parseInline('___bold italic___');
+    expect(result).toHaveLength(1);
+    expect(result[0].type).toBe('bold');
+    if (result[0].type === 'bold') {
+      expect(result[0].children[0].type).toBe('italic');
+    }
+  });
+
+  // --- Underscore word boundary ---
+
+  it('does NOT italicize underscores inside words', () => {
+    const result = parseInline('some_variable_name');
+    expect(result).toHaveLength(1);
+    expect(result[0].type).toBe('text');
+    if (result[0].type === 'text') {
+      expect(result[0].content).toBe('some_variable_name');
+    }
+  });
+
+  it('does NOT bold underscores inside words', () => {
+    const result = parseInline('foo__bar__baz');
+    expect(result).toHaveLength(1);
+    expect(result[0].type).toBe('text');
+    if (result[0].type === 'text') {
+      expect(result[0].content).toBe('foo__bar__baz');
+    }
+  });
+
+  it('italicizes underscores at word boundaries', () => {
+    const result = parseInline('hello _world_ end');
+    const italic = result.find(n => n.type === 'italic');
+    expect(italic).toBeDefined();
+    if (italic?.type === 'italic') {
+      expect(italic.children[0]).toEqual({type: 'text', content: 'world'});
+    }
+  });
+
+  it('asterisk italic works mid-word', () => {
+    const result = parseInline('some*thing*here');
+    const italic = result.find(n => n.type === 'italic');
+    expect(italic).toBeDefined();
+  });
+
+  // --- Balanced parentheses in URLs ---
+
+  it('handles parentheses in link URLs', () => {
+    const result = parseInline('[text](https://example.com/wiki/Foo_(bar))');
+    expect(result[0].type).toBe('link');
+    if (result[0].type === 'link') {
+      expect(result[0].href).toBe('https://example.com/wiki/Foo_(bar)');
+    }
+  });
+
+  it('handles parentheses in image URLs', () => {
+    const result = parseInline('![alt](https://example.com/img_(1).png)');
+    expect(result[0].type).toBe('image');
+    if (result[0].type === 'image') {
+      expect(result[0].src).toBe('https://example.com/img_(1).png');
+    }
+  });
+
+  // --- Line breaks ---
+
+  it('detects line break from two trailing spaces before newline', () => {
+    const result = parseInline('hello  \nworld');
+    const breakNode = result.find(n => n.type === 'break');
+    expect(breakNode).toBeDefined();
+    expect(result).toEqual([
+      {type: 'text', content: 'hello'},
+      {type: 'break'},
+      {type: 'text', content: 'world'},
+    ]);
+  });
+
+  it('does NOT produce break with only one trailing space', () => {
+    const result = parseInline('hello \nworld');
+    const breakNode = result.find(n => n.type === 'break');
+    expect(breakNode).toBeUndefined();
+  });
 });
 
 describe('parseMarkdown', () => {
@@ -209,5 +305,64 @@ describe('parseMarkdown', () => {
     expect(types).toContain('list');
     expect(types).toContain('blockquote');
     expect(types).toContain('table');
+  });
+
+  // --- Nested lists ---
+
+  it('parses nested unordered lists', () => {
+    const input = '- Item 1\n  - Nested 1a\n  - Nested 1b\n- Item 2';
+    const result = parseMarkdown(input);
+    expect(result[0].type).toBe('list');
+    if (result[0].type === 'list') {
+      expect(result[0].items).toHaveLength(2);
+      // Item 1 should have children that include a nested list
+      const item1Children = result[0].items[0].children;
+      const nestedList = item1Children.find(c => c.type === 'list');
+      expect(nestedList).toBeDefined();
+      if (nestedList?.type === 'list') {
+        expect(nestedList.items).toHaveLength(2);
+      }
+    }
+  });
+
+  it('parses deeply nested lists', () => {
+    const input = '- L1\n  - L2\n    - L3';
+    const result = parseMarkdown(input);
+    expect(result[0].type).toBe('list');
+    if (result[0].type === 'list') {
+      const item = result[0].items[0];
+      const l2 = item.children.find(c => c.type === 'list');
+      expect(l2).toBeDefined();
+      if (l2?.type === 'list') {
+        const l3 = l2.items[0].children.find(c => c.type === 'list');
+        expect(l3).toBeDefined();
+      }
+    }
+  });
+
+  // --- Table without leading pipe ---
+
+  it('parses table without leading pipe', () => {
+    const input = 'Name | Age\n--- | ---\nAlice | 30\nBob | 25';
+    const result = parseMarkdown(input);
+    expect(result[0].type).toBe('table');
+    if (result[0].type === 'table') {
+      expect(result[0].headers).toHaveLength(2);
+      expect(result[0].rows).toHaveLength(2);
+    }
+  });
+
+  // --- HR variants ---
+
+  it('parses spaced HR: - - -', () => {
+    expect(parseMarkdown('- - -')[0].type).toBe('hr');
+  });
+
+  it('parses spaced HR: * * *', () => {
+    expect(parseMarkdown('* * *')[0].type).toBe('hr');
+  });
+
+  it('parses spaced HR: _ _ _', () => {
+    expect(parseMarkdown('_ _ _')[0].type).toBe('hr');
   });
 });

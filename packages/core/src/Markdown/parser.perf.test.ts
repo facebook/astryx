@@ -109,4 +109,30 @@ describe('parseMarkdown performance', () => {
       expect(result.length).toBeGreaterThan(0);
     });
   }
+
+  // --- Incremental vs Full speedup benchmark ---
+  it('incremental parse is faster than full re-parse for streaming', () => {
+    const text = generateAIResponse(200);
+    const chunkSize = 50;
+
+    // Full re-parse timing
+    const fullStart = performance.now();
+    simulateStreamingFullReparse(text, chunkSize);
+    const fullElapsed = performance.now() - fullStart;
+
+    // Incremental timing
+    const incrStart = performance.now();
+    simulateStreamingIncremental(text, chunkSize);
+    const incrElapsed = performance.now() - incrStart;
+
+    const speedup = fullElapsed / incrElapsed;
+    console.log(`\n  === Incremental vs Full Re-parse Speedup ===`);
+    console.log(`  Input: ${text.length} chars, chunk size: ${chunkSize}`);
+    console.log(`  Full re-parse:  ${fullElapsed.toFixed(2)}ms`);
+    console.log(`  Incremental:    ${incrElapsed.toFixed(2)}ms`);
+    console.log(`  Speedup ratio:  ${speedup.toFixed(2)}x\n`);
+
+    // Incremental should be at least as fast (allowing small margin for noise)
+    expect(incrElapsed).toBeLessThanOrEqual(fullElapsed * 1.1);
+  });
 });

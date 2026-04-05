@@ -88,6 +88,7 @@ describe('parseMarkdownIncremental', () => {
     expect(state.prevInput).toBe('');
     expect(state.settledBlocks).toEqual([]);
     expect(state.settledUpTo).toBe(0);
+    expect(state.settledText).toBe('');
   });
 
   it('unclosed fence keeps everything unsettled', () => {
@@ -136,5 +137,23 @@ describe('parseMarkdownIncremental', () => {
     const {final} = simulateStreaming(text, 15);
     const full = parseMarkdown(text);
     expect(final).toEqual(full);
+  });
+
+  it('reuses cached settled blocks when settled portion is unchanged', () => {
+    const state = createIncrementalState();
+    // First call: establish settled content
+    parseMarkdownIncremental('# Title\n\nParagraph\n\nStill typing', state);
+    const cachedBlocks = state.settledBlocks;
+
+    // Second call: only unsettled tail changed
+    parseMarkdownIncremental('# Title\n\nParagraph\n\nStill typing more', state);
+    // The settled blocks array reference should be the same (reused, not re-parsed)
+    expect(state.settledBlocks).toBe(cachedBlocks);
+  });
+
+  it('tracks settledText correctly', () => {
+    const state = createIncrementalState();
+    parseMarkdownIncremental('# Hello\n\nWorld', state);
+    expect(state.settledText).toBe('# Hello');
   });
 });

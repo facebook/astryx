@@ -284,6 +284,8 @@ function renderInline(
       if (safeSrc == null) return <span key={index}>[{node.alt}]</span>;
       return <img key={index} src={safeSrc} alt={node.alt} {...stylex.props(styles.image)} />;
     }
+    case 'break':
+      return <br key={index} />;
   }
 }
 
