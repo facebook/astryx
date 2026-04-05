@@ -283,11 +283,12 @@ export function XDSCommandPalette<
   const [internalValue, setInternalValue] = useState('');
   const [searchResults, setSearchResults] = useState<T[]>([]);
   const [isPending, startTransition] = useTransition();
-  // useOptimistic keeps the previous results visible while a new query is pending.
-  // This prevents the list from blanking out during async searches.
+  // Both search query and results are optimistic so they stay in the same
+  // snapshot during a transition — no mismatch between "query says non-empty"
+  // and "results still reflect the previous query".
   const [optimisticResults, setOptimisticResults] =
     useOptimistic(searchResults);
-  // isBusy: spinner in input. True while a transition is running.
+  const [optimisticSearch, setOptimisticSearch] = useOptimistic(search);
   const isBusy = isPending;
   const searchVersionRef = useRef(0);
 
@@ -370,6 +371,10 @@ export function XDSCommandPalette<
     startTransition(async () => {
       const isBootstrap = search === '';
 
+      // Set optimistic search query so it stays in sync with optimistic results.
+      // Both are updated together inside the transition — no snapshot mismatch.
+      setOptimisticSearch(search);
+
       // Only client-filter if there are previous results to narrow.
       // If the current set is empty (e.g. bootstrap returned nothing),
       // leave optimisticResults as-is so the empty state stays visible
@@ -428,7 +433,7 @@ export function XDSCommandPalette<
 
   const contextValue = useMemo(
     () => ({
-      search,
+      search: optimisticSearch,
       setSearch,
       value,
       setValue,
@@ -445,7 +450,7 @@ export function XDSCommandPalette<
       isBusy,
     }),
     [
-      search,
+      optimisticSearch,
       value,
       setValue,
       listId,
@@ -462,20 +467,19 @@ export function XDSCommandPalette<
     ],
   );
 
-  // Empty states:
-  // - Bootstrap empty: no query and nothing to show
-  // - Search empty: query returned nothing — only after the transition settles
-  //   so we don't flash "No results" while the async query is still in flight
-  // - Pending from empty: query is in flight but we have no optimistic results
-  //   to show (e.g. typed from bootstrap-empty state) — hold at bootstrap empty
-  const showEmptyBootstrap = search === '' && optimisticResults.length === 0;
+  // Both optimisticSearch and optimisticResults are updated together inside
+  // the transition, so they're always in the same snapshot.
+  // showEmptyBootstrap: no query and no results — covers pending-from-empty too,
+  // since optimisticSearch stays '' while the transition runs.
+  // showEmptySearch: only shown once settled so we don't flash "No results"
+  // while the async query is still in flight.
+  const showEmptyBootstrap =
+    optimisticSearch === '' && optimisticResults.length === 0;
   const showEmptySearch =
-    !isPending && search !== '' && optimisticResults.length === 0;
-  const showEmptyPending =
-    isPending && search !== '' && optimisticResults.length === 0;
+    !isPending && optimisticSearch !== '' && optimisticResults.length === 0;
 
   let listContent: ReactNode;
-  if (showEmptyBootstrap || showEmptyPending) {
+  if (showEmptyBootstrap) {
     listContent = (
       <XDSCommandPaletteEmpty>{emptyBootstrapText}</XDSCommandPaletteEmpty>
     );
