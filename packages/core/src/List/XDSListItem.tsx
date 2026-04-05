@@ -326,7 +326,6 @@ export function XDSListItem({
   xstyle,
   className,
   style,
-  'data-testid': testId,
   ref,
   ...restProps
 }: XDSListItemProps) {
@@ -412,7 +411,6 @@ export function XDSListItem({
   return (
     <li
       ref={ref}
-      data-testid={testId}
       aria-selected={isSelected || undefined}
       aria-disabled={isDisabled || undefined}
       {...restProps}

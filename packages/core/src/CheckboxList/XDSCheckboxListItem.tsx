@@ -110,7 +110,6 @@ export function XDSCheckboxListItem({
   xstyle,
   className,
   style,
-  'data-testid': dataTestId,
   ...restProps
 }: XDSCheckboxListItemProps) {
   const ctx = useContext(XDSCheckboxListContext);
@@ -182,7 +181,6 @@ export function XDSCheckboxListItem({
       }
       className={className}
       style={style}
-      data-testid={dataTestId}
       startContent={
         <XDSCheckboxInput
           label={label}
