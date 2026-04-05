@@ -2,6 +2,7 @@ import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSCheckboxList, XDSCheckboxListItem} from '@xds/core/CheckboxList';
 import {XDSList} from '@xds/core/List';
+import {XDSCard} from '@xds/core/Card';
 
 const meta: Meta<typeof XDSCheckboxList> = {
   title: 'Form/XDSCheckboxList',
@@ -362,6 +363,53 @@ export const AllVariations: Story = {
             />
           </XDSList>
         </div>
+      </div>
+    );
+  },
+};
+
+export const InsideCard: Story = {
+  render() {
+    const [selected, setSelected] = useState<string[]>(['email']);
+    return (
+      <div style={{maxWidth: 400}}>
+        <XDSCard>
+          <XDSCheckboxList
+            label="Notifications"
+            description="Choose how to be notified"
+            value={selected}
+            onChange={setSelected}>
+            <XDSCheckboxListItem
+              value="email"
+              label="Email"
+              description="Weekly digest"
+            />
+            <XDSCheckboxListItem value="push" label="Push notifications" />
+            <XDSCheckboxListItem value="sms" label="SMS" isDisabled />
+          </XDSCheckboxList>
+        </XDSCard>
+      </div>
+    );
+  },
+};
+
+export const InsideCardWithDividers: Story = {
+  render() {
+    const [selected, setSelected] = useState<string[]>(['admin']);
+    return (
+      <div style={{maxWidth: 400}}>
+        <XDSCard>
+          <XDSCheckboxList
+            label="Assign Roles"
+            value={selected}
+            onChange={setSelected}
+            hasDividers>
+            <XDSCheckboxListItem value="admin" label="Admin" />
+            <XDSCheckboxListItem value="editor" label="Editor" />
+            <XDSCheckboxListItem value="viewer" label="Viewer" />
+            <XDSCheckboxListItem value="guest" label="Guest" />
+          </XDSCheckboxList>
+        </XDSCard>
       </div>
     );
   },
