@@ -39,9 +39,6 @@ export interface UseStreamingTextOptions {
   speed?: StreamingTextSpeed;
 }
 
-// Characters that are safe word/syntax boundaries for slicing
-const BOUNDARY_PATTERN = /[\s,.;:!?)\]}>]/;
-
 // Markdown syntax markers to avoid slicing inside.
 const PARTIAL_SYNTAX_PATTERNS = [
   /\*{1,2}$/, // partial bold/italic: * or **
@@ -54,7 +51,7 @@ const PARTIAL_SYNTAX_PATTERNS = [
 ];
 
 // Fallback values when no XDSTheme provider is present
-const FALLBACK_TICK_MS = 10;
+const FALLBACK_TICK_MS = 50;
 const FALLBACK_TICK_MS_FAST = 8;
 
 /**
@@ -70,7 +67,7 @@ function parseDuration(value: string): number | null {
 }
 
 const CHARS_PER_TICK = {
-  natural: 1,
+  natural: 10,
   fast: 4,
   instant: Infinity,
 } as const;
@@ -152,25 +149,17 @@ export function useXDSStreamingText(
         const currentLen = displayedLenRef.current;
 
         if (currentLen < target.length) {
-          // Scale chars with backlog to avoid falling behind
+          // Scale chars with backlog to avoid falling behind, but gently.
+          // Cap at 3 chars/tick to prevent whole-line jumps.
           const backlog = target.length - currentLen;
           const scaledChars =
             backlog > 200
-              ? Math.max(charsPerTick, Math.ceil(backlog * 0.15))
+              ? Math.max(charsPerTick, Math.min(3, Math.ceil(backlog * 0.05)))
               : backlog > 80
-                ? Math.max(charsPerTick, Math.ceil(backlog * 0.08))
+                ? Math.max(charsPerTick, Math.min(2, Math.ceil(backlog * 0.03)))
                 : charsPerTick;
 
           let nextLen = Math.min(currentLen + scaledChars, target.length);
-
-          // Snap to a word/punctuation boundary
-          if (nextLen < target.length) {
-            const searchWindow = target.slice(nextLen, nextLen + 12);
-            const boundaryOffset = searchWindow.search(BOUNDARY_PATTERN);
-            if (boundaryOffset >= 0 && boundaryOffset <= 8) {
-              nextLen = nextLen + boundaryOffset + 1;
-            }
-          }
 
           nextLen = Math.min(nextLen, target.length);
 
