@@ -71,7 +71,7 @@ const dynamicStyles = stylex.create({
   }),
   contentWidth: (width: number) => ({
     width: '100%',
-    maxWidth: `min(${width}px, 100%)`,
+    maxWidth: width,
     marginInline: 'auto',
   }),
 });
