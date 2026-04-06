@@ -447,7 +447,7 @@ export const AllVariations: Story = {
 
 export const Clearable: Story = {
   render: args => {
-    const [value, setValue] = useState<string | null>('banana');
+    const [value, setValue] = useState<string | null>('Banana');
     return (
       <XDSSelector
         {...args}
@@ -466,7 +466,7 @@ export const Clearable: Story = {
 
 export const ClearableWithStatus: Story = {
   render: args => {
-    const [value, setValue] = useState<string | null>('banana');
+    const [value, setValue] = useState<string | null>('Banana');
     return (
       <XDSSelector
         {...args}
