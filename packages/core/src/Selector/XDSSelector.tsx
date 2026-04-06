@@ -109,7 +109,7 @@ const styles = stylex.create({
   },
   triggerLabel: {
     flexGrow: 1,
-    flexShrink: 1,
+    minWidth: 0,
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
