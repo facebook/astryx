@@ -2,7 +2,7 @@
 
 /**
  * @file XDSBanner.tsx
- * @input Uses ReactuseState, @heroicons/react/24/solid icons, XDSButton, XDSIcon, StyleX
+ * @input Uses React useState, XDSButton, XDSIcon (with registry string names), StyleX
  * @output Exports XDSBanner component, XDSBannerProps, XDSBannerStatus, XDSBannerContainer types
  * @position Core implementation; consumed by index.ts, tested by XDSBanner.test.tsx
  *
@@ -22,16 +22,9 @@
 import {useState, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
-import {
-  InformationCircleIcon,
-  ExclamationTriangleIcon,
-  XCircleIcon,
-  CheckCircleIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
-} from '@heroicons/react/24/solid';
 import {XDSButton} from '../Button';
 import {XDSIcon} from '../Icon';
+import type {XDSIconName} from '../Icon';
 import {
   colorVars,
   spacingVars,
@@ -189,11 +182,11 @@ export interface XDSBannerProps {
 // Status → Icon mapping
 // =============================================================================
 
-const defaultIcons: Record<XDSBannerStatus, typeof InformationCircleIcon> = {
-  info: InformationCircleIcon,
-  warning: ExclamationTriangleIcon,
-  error: XCircleIcon,
-  success: CheckCircleIcon,
+const defaultIconNames: Record<XDSBannerStatus, XDSIconName> = {
+  info: 'info',
+  warning: 'warning',
+  error: 'xCircle',
+  success: 'checkCircle',
 };
 
 // =============================================================================
@@ -307,6 +300,13 @@ const styles = stylex.create({
     borderBottomLeftRadius: 'var(--banner-radius)',
     borderBottomRightRadius: 'var(--banner-radius)',
   },
+  chevron: {
+    display: 'inline-flex',
+    transition: 'transform 150ms ease',
+  },
+  chevronExpanded: {
+    transform: 'rotate(180deg)',
+  },
 });
 
 const statusStyles = stylex.create({
@@ -392,7 +392,7 @@ export function XDSBanner({
 }: XDSBannerProps) {
   const [isDismissed, setIsDismissed] = useState(false);
   const [isExpanded, setIsExpanded] = useState(defaultIsExpanded);
-  const DefaultIcon = defaultIcons[status];
+  const defaultIconName = defaultIconNames[status];
   const role = statusRole[status];
   const iconColor = statusIconColor[status];
   const hasChildren = children != null;
@@ -449,7 +449,7 @@ export function XDSBanner({
           {icon != null ? (
             icon
           ) : (
-            <XDSIcon icon={DefaultIcon} size="md" color={iconColor} />
+            <XDSIcon icon={defaultIconName} size="md" color={iconColor} />
           )}
         </div>
         <div {...stylex.props(styles.headerContent)}>
@@ -468,11 +468,13 @@ export function XDSBanner({
                 label={isExpanded ? 'Collapse' : 'Expand'}
                 tooltip={isExpanded ? 'Collapse' : 'Expand'}
                 icon={
-                  <XDSIcon
-                    icon={isExpanded ? ChevronUpIcon : ChevronDownIcon}
-                    size="sm"
-                    color="inherit"
-                  />
+                  <span
+                    {...stylex.props(
+                      styles.chevron,
+                      isExpanded && styles.chevronExpanded,
+                    )}>
+                    <XDSIcon icon="chevronDown" size="sm" color="inherit" />
+                  </span>
                 }
                 onClick={handleToggleExpand}
                 aria-expanded={isExpanded}
