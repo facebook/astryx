@@ -11,8 +11,11 @@
 
 /**
  * Output a typed JSON response envelope and mark as handled.
- * @param {import('../types/base').CLIResponseType} type
- * @param {unknown} data
+ * Type safety enforced via declaration in types/base.d.ts —
+ * data must match the declared shape for the given type discriminator.
+ * @template {import('../types/base').CLIResponseType} T
+ * @param {T} type
+ * @param {import('../types/base').CLIResponseDataMap[T]} data
  * @returns {void}
  */
 export function jsonOut(type, data) {

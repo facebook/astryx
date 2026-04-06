@@ -82,6 +82,31 @@ export type CLIAnyResponse =
 /** Union of all type discriminator string literals. */
 export type CLIResponseType = CLIAnyResponse['type'];
 
+/**
+ * Map from type discriminator to the data shape for that response.
+ * Used by jsonOut to enforce type-safe data payloads.
+ */
+export type CLIResponseDataMap = {
+  [R in CLIAnyResponse as R['type']]: R['data'];
+};
+
+/**
+ * Output a typed JSON response envelope. The data parameter is
+ * constrained to match the declared shape for the given type discriminator.
+ */
+export function jsonOut<T extends CLIResponseType>(
+  type: T,
+  data: CLIResponseDataMap[T],
+): void;
+
+/**
+ * Output a structured JSON error and exit.
+ */
+export function jsonError(
+  message: string,
+  suggestions?: Array<{name: string; reason: string}>,
+): never;
+
 /** Parse raw CLI output (string or object) into typed result. */
 export function parseResponse(
   raw: unknown,
