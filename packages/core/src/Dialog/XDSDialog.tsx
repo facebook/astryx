@@ -13,7 +13,7 @@
  * - /apps/storybook/stories/Dialog.stories.tsx (storybook stories)
  */
 
-import {useEffect, useRef, type ReactNode, type RefObject} from 'react';
+import {useEffect, useRef, type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {useScrollLock} from '../hooks/useScrollLock';
@@ -216,14 +216,6 @@ export interface XDSDialogProps extends XDSBaseProps<HTMLDialogElement> {
   onOpenChange: (isOpen: boolean) => unknown;
 
   /**
-   * Ref to the trigger element that opens the dialog.
-   * When provided, the dialog entry animation slides from the direction
-   * of the trigger toward the viewport center. Focus is returned to
-   * the trigger when the dialog closes.
-   */
-  triggerRef?: RefObject<HTMLElement | null>;
-
-  /**
    * The width of the dialog.
    * Numbers are treated as pixels, strings are used as-is.
    * Ignored when variant is 'fullscreen'.
@@ -292,7 +284,6 @@ export interface XDSDialogProps extends XDSBaseProps<HTMLDialogElement> {
 export function XDSDialog({
   isOpen,
   onOpenChange,
-  triggerRef,
   width = 400,
   maxHeight = '75vh',
   position,
@@ -306,6 +297,10 @@ export function XDSDialog({
   ...props
 }: XDSDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+
+  // Capture the element that was focused when the dialog opened,
+  // for directional animation origin and focus restoration on close.
+  const triggerElementRef = useRef<HTMLElement | null>(null);
 
   // Derive dismissal behavior from purpose
   const allowEscape = purpose !== 'required';
@@ -328,9 +323,13 @@ export function XDSDialog({
     if (!dialog) return;
 
     if (isOpen) {
+      // Capture the currently focused element as the trigger — used for
+      // directional animation origin and focus restoration on close.
+      triggerElementRef.current = document.activeElement as HTMLElement | null;
+
       // Set directional CSS custom properties before opening
-      const trigger = triggerRef?.current;
-      if (trigger) {
+      const trigger = triggerElementRef.current;
+      if (trigger && trigger !== document.body) {
         const dir = getDialogDirection(trigger);
         dialog.style.setProperty('--dialog-dir-x', `${dir.x}px`);
         dialog.style.setProperty('--dialog-dir-y', `${dir.y}px`);
@@ -354,10 +353,11 @@ export function XDSDialog({
       if (dialog.open) {
         dialog.close();
       }
-      // Return focus to trigger
-      triggerRef?.current?.focus();
+      // Return focus to the element that opened the dialog
+      triggerElementRef.current?.focus();
+      triggerElementRef.current = null;
     }
-  }, [isOpen, triggerRef]);
+  }, [isOpen]);
 
   // Lock body scroll when dialog is open (iOS Safari workaround)
   useScrollLock(isOpen);
