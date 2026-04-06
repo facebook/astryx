@@ -285,6 +285,66 @@ interface StreamingCursor {
   active: boolean;
 }
 
+/**
+ * Count the total text characters in inline nodes without rendering.
+ * Used to advance the cursor past a block that will be faded as a whole unit.
+ */
+function countInlineTextLength(nodes: InlineNode[]): number {
+  let len = 0;
+  for (const node of nodes) {
+    switch (node.type) {
+      case 'text':
+        len += node.content.length;
+        break;
+      case 'code':
+        len += node.content.length;
+        break;
+      case 'bold':
+      case 'italic':
+      case 'strikethrough':
+      case 'link':
+        len += countInlineTextLength(node.children);
+        break;
+      case 'break':
+        len += 1;
+        break;
+    }
+  }
+  return len;
+}
+
+/**
+ * Count total text characters in a block node tree.
+ */
+function countBlockTextLength(nodes: BlockNode[]): number {
+  let len = 0;
+  for (const node of nodes) {
+    switch (node.type) {
+      case 'heading':
+      case 'paragraph':
+        len += countInlineTextLength(node.children);
+        break;
+      case 'codeblock':
+        len += node.content.length;
+        break;
+      case 'blockquote':
+        len += countBlockTextLength(node.children);
+        break;
+      case 'list':
+        for (const item of node.items) {
+          len += countBlockTextLength(item.children);
+        }
+        break;
+      case 'table':
+        for (const h of node.headers) len += countInlineTextLength(h.children);
+        for (const row of node.rows)
+          for (const cell of row) len += countInlineTextLength(cell.children);
+        break;
+    }
+  }
+  return len;
+}
+
 const headingStyles = {
   1: styles.h1,
   2: styles.h2,
@@ -611,6 +671,9 @@ function renderBlock(
                   item.children.length === 1 &&
                   firstChild?.type === 'paragraph';
 
+                const itemIsNew =
+                  cursor.active && cursor.offset >= cursor.boundary;
+
                 const label = isInline ? (
                   <>
                     {firstChild.children.map((c, j) =>
@@ -633,13 +696,25 @@ function renderBlock(
                   </>
                 );
 
-                return (
+                const checkboxItem = (
                   <XDSCheckboxListItem
                     key={i}
                     value={`task-${i}`}
                     label={label}
                   />
                 );
+
+                if (itemIsNew) {
+                  return (
+                    <span
+                      key={`fade-task-${i}`}
+                      {...stylex.props(streamingStyles.fadeIn)}>
+                      {checkboxItem}
+                    </span>
+                  );
+                }
+
+                return checkboxItem;
               })}
             </XDSCheckboxList>
           </div>
@@ -662,6 +737,12 @@ function renderBlock(
               const isInline =
                 item.children.length === 1 && firstChild?.type === 'paragraph';
 
+              // Check if this entire list item is "new" — if so, fade the
+              // whole item as a block instead of fading individual text spans.
+              const itemTextLen = countBlockTextLength(item.children);
+              const itemIsNew =
+                cursor.active && cursor.offset >= cursor.boundary;
+
               const label = isInline ? (
                 <>
                   {firstChild.children.map((c, j) =>
@@ -683,6 +764,16 @@ function renderBlock(
                   )}
                 </>
               );
+
+              if (itemIsNew) {
+                return (
+                  <span
+                    key={`fade-li-${i}-${cursor.offset - itemTextLen}`}
+                    {...stylex.props(streamingStyles.fadeIn)}>
+                    <XDSListItem label={label} />
+                  </span>
+                );
+              }
 
               return <XDSListItem key={i} label={label} />;
             })}
@@ -724,22 +815,29 @@ function renderBlock(
               </tr>
             </thead>
             <tbody>
-              {node.rows.map((row, i) => (
-                <tr key={i}>
-                  {row.map((cell, j) => (
-                    <td
-                      key={j}
-                      {...stylex.props(
-                        styles.td,
-                        alignStyle(node.alignments[j]),
-                      )}>
-                      {cell.children.map((c, k) =>
-                        renderInline(c, k, onLinkClick, cursor),
-                      )}
-                    </td>
-                  ))}
-                </tr>
-              ))}
+              {node.rows.map((row, i) => {
+                const rowIsNew =
+                  cursor.active && cursor.offset >= cursor.boundary;
+                const cells = row.map((cell, j) => (
+                  <td
+                    key={j}
+                    {...stylex.props(
+                      styles.td,
+                      alignStyle(node.alignments[j]),
+                    )}>
+                    {cell.children.map((c, k) =>
+                      renderInline(c, k, onLinkClick, cursor),
+                    )}
+                  </td>
+                ));
+                return (
+                  <tr
+                    key={rowIsNew ? `fade-row-${i}` : i}
+                    {...(rowIsNew ? stylex.props(streamingStyles.fadeIn) : {})}>
+                    {cells}
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
