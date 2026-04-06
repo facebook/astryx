@@ -32,7 +32,6 @@ import {
 } from '@heroicons/react/24/solid';
 import {XDSButton} from '../Button';
 import {XDSIcon} from '../Icon';
-import {edgeSignals} from '../Layout/edgeCompensation.stylex';
 import {
   colorVars,
   spacingVars,
@@ -243,10 +242,6 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-2'],
     paddingBlock: spacingVars['--spacing-3'],
     paddingInline: spacingVars['--spacing-4'],
-    // Publish inline padding for edge compensation (ghost buttons at edges).
-    // Uses --container-padding-inline (not --container-padding) because Banner
-    // has different block padding (spacing-3) vs inline padding (spacing-4).
-    '--container-padding-inline': spacingVars['--spacing-4'],
   },
   // When there's only a title (no description) and actions, center everything vertically
   headerCentered: {
@@ -287,10 +282,10 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-2'],
     flexShrink: 0,
     marginInlineStart: 'auto',
+    // Edge compensation: align end content flush with container edge.
+    marginInlineEnd: `calc(-1 * ${spacingVars['--spacing-2']})`,
+    marginBlock: `calc(-1 * (${spacingVars['--spacing-3']} - ${spacingVars['--spacing-2']}))`,
   },
-  // dismissButton negative margin removed — edge compensation handles this
-  // automatically via --edge-end signal on the endArea
-  // Content area — card background for additional content below the header
   contentArea: {
     backgroundColor: colorVars['--color-background-card'],
     paddingBlock: spacingVars['--spacing-3'],
@@ -461,7 +456,7 @@ export function XDSBanner({
           )}
         </div>
         {showEndArea && (
-          <div {...stylex.props(styles.endArea, edgeSignals.end)}>
+          <div {...stylex.props(styles.endArea)}>
             {endContent}
             {hasChildren && (
               <XDSButton
