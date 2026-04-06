@@ -13,6 +13,7 @@ import {scanAllPackages, findComponentInPackages} from '../lib/package-scanner.m
 import {loadDocs} from '../lib/component-loader.mjs';
 import {formatFull, formatBrief, formatCompact} from '../lib/component-format.mjs';
 import {levenshteinDistance} from '../lib/string-utils.mjs';
+import {jsonOut, jsonError} from '../lib/json.mjs';
 
 export function registerDiscover(program) {
   program
@@ -22,8 +23,13 @@ export function registerDiscover(program) {
     .action(async (query, options) => {
       const config = await loadConfig();
       const detail = program.opts().detail || 'full';
+      const json = program.opts().json || false;
+
+      /** @param {object} pkg */
+      const toEntry = (pkg) => ({name: pkg.name, category: pkg.category, components: pkg.components});
 
       if (config.packages.length === 0) {
+        if (json) return jsonOut('discover.list', []);
         console.log('');
         console.log('No package directories configured.');
         console.log('');
@@ -39,6 +45,7 @@ export function registerDiscover(program) {
       const packages = scanAllPackages(config.packages);
 
       if (packages.length === 0) {
+        if (json) return jsonOut('discover.list', []);
         console.log('');
         console.log('No external XDS packages found.');
         console.log('');
@@ -54,24 +61,22 @@ export function registerDiscover(program) {
         return;
       }
 
-      // No query: list all packages
       if (!query) {
+        if (json) return jsonOut('discover.list', packages.map(toEntry));
         printPackageList(packages, options.components);
         return;
       }
 
-      // Starts with @: package navigation
       if (query.startsWith('@')) {
         const slashIdx = query.indexOf('/', query.indexOf('/') + 1);
         if (slashIdx > 0) {
-          // @scope/name/Component
           const pkgName = query.slice(0, slashIdx);
           const compName = query.slice(slashIdx + 1);
-          await showComponentDocs(packages, compName, pkgName, program, detail);
+          await showComponentDocs(packages, compName, pkgName, program, detail, json);
         } else {
-          // @scope/name — list that package
           const pkg = packages.find(p => p.name === query);
           if (!pkg) {
+            if (json) return jsonError('Package "' + query + '" not found', packages.map(p => ({name: p.name, reason: 'available package'})));
             console.error('Package "' + query + '" not found.');
             console.error('');
             console.error('Available packages:');
@@ -80,13 +85,13 @@ export function registerDiscover(program) {
             }
             process.exit(1);
           }
+          if (json) return jsonOut('discover.detail', toEntry(pkg));
           printSinglePackage(pkg);
         }
         return;
       }
 
-      // No @: search across all packages
-      await searchComponents(packages, query, program, detail);
+      await searchComponents(packages, query, program, detail, json);
     });
 }
 
@@ -133,22 +138,23 @@ function printSinglePackage(pkg) {
   console.log('');
 }
 
-async function showComponentDocs(packages, compName, pkgName, program, detail) {
+async function showComponentDocs(packages, compName, pkgName, program, detail, json) {
   const pkg = packages.find(p => p.name === pkgName);
   if (!pkg) {
+    if (json) return jsonError('Package "' + pkgName + '" not found');
     console.error('Package "' + pkgName + '" not found.');
     process.exit(1);
   }
 
   const result = findComponentInPackages([pkg], compName);
   if (!result) {
-    // Substring match first, then fuzzy
     const substringHits = pkg.components.filter(
       c => c.toLowerCase().includes(compName.toLowerCase()),
     );
     const suggestions = substringHits.length > 0
       ? substringHits
       : fuzzyMatch(compName, pkg.components);
+    if (json) return jsonError('Component "' + compName + '" not found in ' + pkgName, suggestions.map(s => ({name: s, reason: 'similar name'})));
     if (suggestions.length > 0) {
       console.error('Component "' + compName + '" not found in ' + pkgName + '.');
       console.error('');
@@ -164,22 +170,22 @@ async function showComponentDocs(packages, compName, pkgName, program, detail) {
     process.exit(1);
   }
 
-  await renderDocs(result, program, detail);
+  await renderDocs(result, program, detail, json);
 }
 
-async function searchComponents(packages, query, program, detail) {
+async function searchComponents(packages, query, program, detail, json) {
   const lower = query.toLowerCase();
 
-  // Exact match first
   const exact = findComponentInPackages(packages, query);
   if (exact) {
-    console.log('Found: ' + exact.pkg.name + '/' + exact.componentName);
-    console.log('');
-    await renderDocs(exact, program, detail);
+    if (!json) {
+      console.log('Found: ' + exact.pkg.name + '/' + exact.componentName);
+      console.log('');
+    }
+    await renderDocs(exact, program, detail, json);
     return;
   }
 
-  // Substring match
   const substringMatches = [];
   for (const pkg of packages) {
     for (const comp of pkg.components) {
@@ -193,14 +199,17 @@ async function searchComponents(packages, query, program, detail) {
     const match = substringMatches[0];
     const result = findComponentInPackages([match.pkg], match.comp);
     if (result) {
-      console.log('Found: ' + match.pkg.name + '/' + match.comp);
-      console.log('');
-      await renderDocs(result, program, detail);
+      if (!json) {
+        console.log('Found: ' + match.pkg.name + '/' + match.comp);
+        console.log('');
+      }
+      await renderDocs(result, program, detail, json);
       return;
     }
   }
 
   if (substringMatches.length > 1) {
+    if (json) return jsonOut('discover.search', {query, matches: substringMatches.map(m => ({package: m.pkg.name, component: m.comp}))});
     console.log('');
     console.log('Found ' + substringMatches.length + ' matches for "' + query + '":');
     console.log('');
@@ -211,7 +220,6 @@ async function searchComponents(packages, query, program, detail) {
     return;
   }
 
-  // Fuzzy match across all packages
   const allComponents = [];
   for (const pkg of packages) {
     for (const comp of pkg.components) {
@@ -228,12 +236,14 @@ async function searchComponents(packages, query, program, detail) {
     .slice(0, 5);
 
   if (fuzzyMatches.length > 0) {
+    if (json) return jsonError('"' + query + '" not found', fuzzyMatches.map(m => ({name: m.pkg.name + '/' + m.comp, reason: 'similar name'})));
     console.error('"' + query + '" not found. Did you mean?');
     console.error('');
     for (const m of fuzzyMatches) {
       console.error('  xds discover ' + m.pkg.name + '/' + m.comp);
     }
   } else {
+    if (json) return jsonError('"' + query + '" not found in any package');
     console.error('"' + query + '" not found in any package.');
     console.error('');
     console.error('Run xds discover to see available packages.');
@@ -265,13 +275,14 @@ function validateDocs(docs) {
   return null;
 }
 
-async function renderDocs(result, program, detail) {
+async function renderDocs(result, program, detail, json) {
   let docs;
   try {
     const zh = program.opts().zh || false;
     const lang = program.opts().lang || null;
     docs = await loadDocs(result.docPath, {zh, lang});
   } catch (e) {
+    if (json) return jsonError('Failed to load docs for ' + result.componentName + ': ' + e.message);
     console.error('Failed to load docs for ' + result.componentName + ': ' + e.message);
     console.error('File: ' + result.docPath);
     process.exit(1);
@@ -279,10 +290,13 @@ async function renderDocs(result, program, detail) {
 
   const validationError = validateDocs(docs);
   if (validationError) {
+    if (json) return jsonError('Invalid docs for ' + result.componentName + ': ' + validationError);
     console.error('Invalid docs for ' + result.componentName + ': ' + validationError);
     console.error('File: ' + result.docPath);
     process.exit(1);
   }
+
+  if (json) return jsonOut('discover.detail.doc', docs);
 
   if (detail === 'brief') {
     console.log(formatBrief(docs, result.componentName, result.pkg.name + '/' + result.componentName));

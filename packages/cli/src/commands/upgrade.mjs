@@ -35,6 +35,7 @@ import {
 import {runCodemods} from '../codemods/runner.mjs';
 import {installAgentDocs, discoverAgentDocs} from './agent-docs.mjs';
 import {detectPackageManager, getRunPrefix} from '../utils/package-manager.mjs';
+import {jsonOut, jsonError} from '../lib/json.mjs';
 
 /**
  * Detect the installed @xds/core version from the consumer's package.json.
@@ -142,11 +143,24 @@ export function registerUpgrade(program) {
     .option('--install-deps', 'Auto-install jscodeshift without prompting', false)
     .option('--list', 'List available codemods', false)
     .action(async (options) => {
-      p.intro('XDS Upgrade');
+      const json = program.opts().json || false;
+      if (!json) p.intro('XDS Upgrade');
 
       if (options.list) {
+        const codemods = [];
+        for (const version of versions) {
+          const manifests = await getTransformsBetween('0.0.0', version);
+          for (const {transforms} of manifests) {
+            for (const {name, meta} of transforms) {
+              codemods.push({name, title: meta.title, version, pr: meta.pr});
+            }
+          }
+        }
+        if (json) return jsonOut('upgrade.list', codemods.map(({name, title, version}) => ({name, title, version})));
         p.log.step('Available codemods:');
-        await listCodemods();
+        for (const {name, title, pr} of codemods) {
+          p.log.info(`  ${name} — ${title} (${pr})`);
+        }
         p.outro('Done');
         return;
       }
@@ -158,9 +172,9 @@ export function registerUpgrade(program) {
       // Detect current version (--from overrides package.json)
       const currentVersion = options.from ?? detectCurrentVersion();
       if (!currentVersion && !skipVersionCheck) {
-        p.log.error(
-          'Could not detect @xds/core version. Make sure package.json is in the current directory, or use --from <version>.',
-        );
+        const msg = 'Could not detect @xds/core version. Make sure package.json is in the current directory, or use --from <version>.';
+        if (json) return jsonError(msg);
+        p.log.error(msg);
         p.outro('Aborted');
         process.exitCode = 1;
         return;
@@ -169,13 +183,17 @@ export function registerUpgrade(program) {
       const targetVersion = options.to;
 
       if (!skipVersionCheck) {
-        p.log.info(`Current version: ${currentVersion}`);
-        p.log.info(`Target version:  ${targetVersion}`);
+        if (!json) {
+          p.log.info(`Current version: ${currentVersion}`);
+          p.log.info(`Target version:  ${targetVersion}`);
+        }
 
         if (!options.force && currentVersion >= targetVersion) {
-          p.log.success('Already up to date — no codemods to run.');
-          p.log.info('Use --force to run codemods anyway, or --from <version> to specify the previous version.');
-          p.outro('Done');
+          if (!json) {
+            p.log.success('Already up to date — no codemods to run.');
+            p.log.info('Use --force to run codemods anyway, or --from <version> to specify the previous version.');
+            p.outro('Done');
+          }
           return;
         }
       }
@@ -187,8 +205,10 @@ export function registerUpgrade(program) {
       );
 
       if (versionManifests.length === 0) {
-        p.log.success('No codemods available for this version range.');
-        p.outro('Done');
+        if (!json) {
+          p.log.success('No codemods available for this version range.');
+          p.outro('Done');
+        }
         return;
       }
 
@@ -203,31 +223,36 @@ export function registerUpgrade(program) {
       }
 
       if (totalTransforms === 0) {
-        p.log.error(
-          `Codemod "${options.codemod}" not found. Use --list to see available codemods.`,
-        );
+        const msg = `Codemod "${options.codemod}" not found. Use --list to see available codemods.`;
+        if (json) return jsonError(msg);
+        p.log.error(msg);
         p.outro('Aborted');
         process.exitCode = 1;
         return;
       }
 
-      p.log.step(
-        `${totalTransforms} codemod${totalTransforms === 1 ? '' : 's'} to run${options.apply ? '' : ' (dry run)'}`,
-      );
+      if (!json) {
+        p.log.step(
+          `${totalTransforms} codemod${totalTransforms === 1 ? '' : 's'} to run${options.apply ? '' : ' (dry run)'}`,
+        );
+      }
+
+      const receipt = {from: currentVersion, to: targetVersion, codemods: totalTransforms, depsUpdated: [], agentDocsRefreshed: false};
 
       // Bump @xds/* deps and install before running codemods
       if (options.apply && !skipVersionCheck) {
         const result = bumpXdsDeps(targetVersion);
         if (result && result.bumped.length > 0) {
-          p.log.info(`Bumped ${result.bumped.join(', ')} → ${targetVersion}`);
+          receipt.depsUpdated = result.bumped;
+          if (!json) p.log.info(`Bumped ${result.bumped.join(', ')} → ${targetVersion}`);
 
           const installCmd = getInstallCommand();
-          p.log.step(`Running ${installCmd}...`);
+          if (!json) p.log.step(`Running ${installCmd}...`);
           try {
             execSync(installCmd, {stdio: 'inherit', cwd: process.cwd()});
-            p.log.success('Dependencies installed.');
+            if (!json) p.log.success('Dependencies installed.');
           } catch {
-            p.log.warn('Install failed — codemods will still run against existing code.');
+            if (!json) p.log.warn('Install failed — codemods will still run against existing code.');
           }
         }
       }
@@ -235,6 +260,7 @@ export function registerUpgrade(program) {
       // Ensure jscodeshift is available
       const ready = await ensureJscodeshift({installDeps: options.installDeps});
       if (!ready) {
+        if (json) return jsonError('jscodeshift is required but could not be installed.');
         p.outro('Aborted');
         process.exitCode = 1;
         return;
@@ -254,14 +280,18 @@ export function registerUpgrade(program) {
       if (existingDocs.length > 0) {
         try {
           const written = installAgentDocs(process.cwd());
-          p.log.success(`Agent docs updated: ${written.join(', ')}`);
+          receipt.agentDocsRefreshed = true;
+          if (!json) p.log.success(`Agent docs updated: ${written.join(', ')}`);
         } catch {
-          p.log.warn(
-            `Could not update agent docs. Run \`${getRunPrefix()} xds agent-docs\` to update manually.`,
-          );
+          if (!json) {
+            p.log.warn(
+              `Could not update agent docs. Run \`${getRunPrefix()} xds agent-docs\` to update manually.`,
+            );
+          }
         }
       }
 
+      if (json) return jsonOut('upgrade.run', receipt);
       p.outro(options.apply ? 'Upgrade complete' : 'Dry run complete');
     });
 }
