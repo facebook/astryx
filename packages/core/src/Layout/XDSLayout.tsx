@@ -69,10 +69,6 @@ const dynamicStyles = stylex.create({
   contentWidthVar: (width: number) => ({
     '--layout-content-width': `${width}px`,
   }),
-  contentWidth: (width: number) => ({
-    maxWidth: `min(${width}px, 100%)`,
-    marginInline: 'auto',
-  }),
 });
 
 export interface XDSLayoutProps extends Omit<XDSBaseProps, 'content'> {
@@ -277,7 +273,6 @@ export function XDSLayout({
             {...stylex.props(
               ...stack({direction: 'horizontal'}),
               styles.middle,
-              contentWidth != null && dynamicStyles.contentWidth(contentWidth),
             )}>
             <AreaProvider area="start">{start}</AreaProvider>
             <div {...stylex.props(...stackItem({size: 'fill'}))}>
