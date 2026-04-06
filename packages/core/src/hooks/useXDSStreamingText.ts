@@ -54,7 +54,7 @@ const PARTIAL_SYNTAX_PATTERNS = [
 ];
 
 // Fallback values when no XDSTheme provider is present
-const FALLBACK_TICK_MS = 12;
+const FALLBACK_TICK_MS = 10;
 const FALLBACK_TICK_MS_FAST = 8;
 
 /**
@@ -70,7 +70,7 @@ function parseDuration(value: string): number | null {
 }
 
 const CHARS_PER_TICK = {
-  natural: 2,
+  natural: 1,
   fast: 4,
   instant: Infinity,
 } as const;

@@ -28,6 +28,7 @@ import {XDSCheckboxListItem} from '../CheckboxList/XDSCheckboxListItem';
 import {XDSList} from '../List/XDSList';
 import {XDSListItem} from '../List/XDSListItem';
 import {xdsClassName, mergeProps} from '../utils';
+import {useXDSStreamingText} from '../hooks/useXDSStreamingText';
 import {
   parseMarkdown,
   parseMarkdownIncremental,
@@ -802,6 +803,10 @@ export function XDSMarkdown({
   style,
   'data-testid': testId,
 }: XDSMarkdownProps): React.ReactElement {
+  // Smooth bursty streamed chunks into a steady character-by-character reveal.
+  // When not streaming, the hook returns children unchanged (no-op).
+  const smoothedText = useXDSStreamingText(children, isStreaming);
+
   const incrementalState = useRef<IncrementalState>(createIncrementalState());
   // Track how much text content was rendered on the previous pass.
   // Everything beyond this boundary is "new" and gets the fade-in animation.
@@ -809,16 +814,16 @@ export function XDSMarkdown({
 
   const blocks = useMemo(() => {
     if (isStreaming) {
-      if (children === '') {
+      if (smoothedText === '') {
         incrementalState.current = createIncrementalState();
         prevTextLenRef.current = 0;
         return [];
       }
-      const input = trimStreamingArtifacts(children);
+      const input = trimStreamingArtifacts(smoothedText);
       return parseMarkdownIncremental(input, incrementalState.current);
     }
     return parseMarkdown(children);
-  }, [children, isStreaming]);
+  }, [smoothedText, children, isStreaming]);
 
   // Build the streaming cursor for this render pass.
   // The boundary is where "old" text ends and "new" text begins.
