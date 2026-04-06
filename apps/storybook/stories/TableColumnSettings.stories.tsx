@@ -3,6 +3,8 @@ import type {Meta, StoryObj} from '@storybook/react';
 import {
   XDSTable,
   useXDSTableColumnSettings,
+  useXDSTableColumnSettingsState,
+  toColumnSelectorOptions,
   useXDSTableSelection,
   useXDSTableSelectionState,
 } from '@xds/core/Table';
@@ -111,11 +113,13 @@ export const BasicColumnToggle: Story = {
     const [activeKeys, setActiveKeys] =
       useState<UserColumnKey[]>(defaultActiveKeys);
 
-    const columnSettings = useXDSTableColumnSettings<User, UserColumnKey>({
+    const state = useXDSTableColumnSettingsState<UserColumnKey>({
       columns: columnOptions,
       activeColumnKeys: activeKeys,
       onChangeActiveColumnKeys: setActiveKeys,
     });
+    const plugin = useXDSTableColumnSettings<User>(state.columnSettingsConfig);
+    const selectorOptions = toColumnSelectorOptions(columnOptions);
 
     return (
       <div style={{maxWidth: 700}}>
@@ -126,9 +130,9 @@ export const BasicColumnToggle: Story = {
             <XDSMultiSelector
               label="Columns"
               isLabelHidden
-              options={columnSettings.columnOptions}
-              value={[...columnSettings.activeColumnKeys]}
-              onChange={columnSettings.setActiveColumnKeys}
+              options={selectorOptions}
+              value={[...state.activeColumnKeys]}
+              onChange={state.setActiveColumnKeys}
             />
           }
         />
@@ -136,7 +140,7 @@ export const BasicColumnToggle: Story = {
           data={users}
           columns={allColumns}
           idKey="id"
-          plugins={{columnSettings: columnSettings.plugin}}
+          plugins={{columnSettings: plugin}}
         />
       </div>
     );
@@ -151,11 +155,13 @@ export const DisabledColumns: Story = {
       'role',
     ]);
 
-    const columnSettings = useXDSTableColumnSettings<User, UserColumnKey>({
+    const state = useXDSTableColumnSettingsState<UserColumnKey>({
       columns: columnOptions,
       activeColumnKeys: activeKeys,
       onChangeActiveColumnKeys: setActiveKeys,
     });
+    const plugin = useXDSTableColumnSettings<User>(state.columnSettingsConfig);
+    const selectorOptions = toColumnSelectorOptions(columnOptions);
 
     return (
       <div style={{maxWidth: 700}}>
@@ -169,9 +175,9 @@ export const DisabledColumns: Story = {
             <XDSMultiSelector
               label="Columns"
               isLabelHidden
-              options={columnSettings.columnOptions}
-              value={[...columnSettings.activeColumnKeys]}
-              onChange={columnSettings.setActiveColumnKeys}
+              options={selectorOptions}
+              value={[...state.activeColumnKeys]}
+              onChange={state.setActiveColumnKeys}
             />
           }
         />
@@ -179,7 +185,7 @@ export const DisabledColumns: Story = {
           data={users}
           columns={allColumns}
           idKey="id"
-          plugins={{columnSettings: columnSettings.plugin}}
+          plugins={{columnSettings: plugin}}
         />
       </div>
     );
@@ -190,15 +196,16 @@ export const ResetToDefault: Story = {
   render: () => {
     const defaultKeys: UserColumnKey[] = ['name', 'email', 'role'];
 
-    const [activeKeys, setActiveKeys] =
-      useState<UserColumnKey[]>(defaultKeys);
+    const [activeKeys, setActiveKeys] = useState<UserColumnKey[]>(defaultKeys);
 
-    const columnSettings = useXDSTableColumnSettings<User, UserColumnKey>({
+    const state = useXDSTableColumnSettingsState<UserColumnKey>({
       columns: columnOptions,
       activeColumnKeys: activeKeys,
       onChangeActiveColumnKeys: setActiveKeys,
       defaultColumnKeys: defaultKeys,
     });
+    const plugin = useXDSTableColumnSettings<User>(state.columnSettingsConfig);
+    const selectorOptions = toColumnSelectorOptions(columnOptions);
 
     return (
       <div style={{maxWidth: 700}}>
@@ -214,14 +221,14 @@ export const ResetToDefault: Story = {
               <XDSButton
                 label="Reset to default"
                 variant="secondary"
-                onClick={columnSettings.resetToDefault}
+                onClick={state.resetToDefault}
               />
               <XDSMultiSelector
                 label="Columns"
                 isLabelHidden
-                options={columnSettings.columnOptions}
-                value={[...columnSettings.activeColumnKeys]}
-                onChange={columnSettings.setActiveColumnKeys}
+                options={selectorOptions}
+                value={[...state.activeColumnKeys]}
+                onChange={state.setActiveColumnKeys}
               />
             </>
           }
@@ -230,7 +237,7 @@ export const ResetToDefault: Story = {
           data={users}
           columns={allColumns}
           idKey="id"
-          plugins={{columnSettings: columnSettings.plugin}}
+          plugins={{columnSettings: plugin}}
         />
       </div>
     );
@@ -243,11 +250,15 @@ export const WithSelection: Story = {
       useState<UserColumnKey[]>(defaultActiveKeys);
     const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
 
-    const columnSettings = useXDSTableColumnSettings<User, UserColumnKey>({
+    const state = useXDSTableColumnSettingsState<UserColumnKey>({
       columns: columnOptions,
       activeColumnKeys: activeKeys,
       onChangeActiveColumnKeys: setActiveKeys,
     });
+    const columnPlugin = useXDSTableColumnSettings<User>(
+      state.columnSettingsConfig,
+    );
+    const selectorOptions = toColumnSelectorOptions(columnOptions);
 
     const {selectionConfig} = useXDSTableSelectionState<User>({
       data: users,
@@ -270,9 +281,9 @@ export const WithSelection: Story = {
             <XDSMultiSelector
               label="Columns"
               isLabelHidden
-              options={columnSettings.columnOptions}
-              value={[...columnSettings.activeColumnKeys]}
-              onChange={columnSettings.setActiveColumnKeys}
+              options={selectorOptions}
+              value={[...state.activeColumnKeys]}
+              onChange={state.setActiveColumnKeys}
             />
           }
         />
@@ -281,7 +292,7 @@ export const WithSelection: Story = {
           columns={allColumns}
           idKey="id"
           plugins={{
-            columnSettings: columnSettings.plugin,
+            columnSettings: columnPlugin,
             selection: selectionPlugin,
           }}
         />
