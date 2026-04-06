@@ -149,19 +149,7 @@ export function useXDSStreamingText(
         const currentLen = displayedLenRef.current;
 
         if (currentLen < target.length) {
-          // Scale chars with backlog to avoid falling behind, but gently.
-          // Cap at 3 chars/tick to prevent whole-line jumps.
-          const backlog = target.length - currentLen;
-          const scaledChars =
-            backlog > 200
-              ? Math.max(charsPerTick, Math.min(3, Math.ceil(backlog * 0.05)))
-              : backlog > 80
-                ? Math.max(charsPerTick, Math.min(2, Math.ceil(backlog * 0.03)))
-                : charsPerTick;
-
-          let nextLen = Math.min(currentLen + scaledChars, target.length);
-
-          nextLen = Math.min(nextLen, target.length);
+          let nextLen = Math.min(currentLen + charsPerTick, target.length);
 
           // Back up if we'd slice inside a markdown syntax marker
           const candidate = target.slice(0, nextLen);
