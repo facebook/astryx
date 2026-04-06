@@ -1079,7 +1079,7 @@ function PopoverFilterTrigger({
               columnKey={columnKey}
               header={header}
               filterConfig={filterConfig}
-              size="sm"
+              size="md"
             />
             <div {...stylex.props(filterStyles.popoverActions)}>
               <XDSButton
@@ -1177,7 +1177,7 @@ function InlineFilterSlot({
 }) {
   const variant = useContext(FilterVariantContext);
   const store = useContext(FilterStoreContext);
-  const size = variant === 'inline-compact' ? 'sm' : 'md';
+  const size = 'sm';
   const placeholderStyle =
     variant === 'inline-compact'
       ? filterStyles.placeholderCompact

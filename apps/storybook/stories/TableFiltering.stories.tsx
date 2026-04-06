@@ -314,11 +314,10 @@ export const WithSelection: Story = {
       onFilterChange,
       searchConfig: config,
     });
-    const filtered = applyFilters(
+    const data = applyFilters(
       toSearchFilters(filters, columns, config) as PowerSearchFilter[],
       employees,
     );
-    const data = applySorting(filtered, sort);
     const {selectionConfig} = useXDSTableSelectionState({
       data,
       idKey: 'id',
