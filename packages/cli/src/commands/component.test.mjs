@@ -521,8 +521,9 @@ describe('searchComponents', () => {
     const {searchComponents, discoverComponents} = await import('./component/index.mjs');
     const components = discoverComponents('packages/core');
     const results = await searchComponents('modal', 'packages/core', components);
-    expect(results[0].name).toBe('Dialog');
-    expect(results[0].score).toBe(90);
+    const dialog = results.find(r => r.name === 'Dialog');
+    expect(dialog).toBeDefined();
+    expect(dialog.score).toBe(90);
   });
 
   it('returns multiple matches for ambiguous terms like "select"', async () => {

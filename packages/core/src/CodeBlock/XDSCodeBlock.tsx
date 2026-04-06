@@ -273,7 +273,7 @@ function buildSpanLine(
  * `highlightMode="spans"` is explicitly set.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSCodeBlock
  *   code={`const x = 42;`}
  *   language="typescript"
