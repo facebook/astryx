@@ -111,23 +111,26 @@ const styles = stylex.create({
     },
   },
   hoverUnderline: {
-    position: 'absolute',
-    bottom: 0,
-    left: spacingVars['--spacing-3'],
-    right: spacingVars['--spacing-3'],
-    height: '2px',
-    backgroundColor: colorVars['--color-border'],
-    borderRadius: radiusVars['--radius-full'],
-    opacity: {
-      default: 0,
-      [stylex.when.ancestor(':hover')]: {
-        '@media (hover: hover)': 1,
+    '::before': {
+      content: '""',
+      position: 'absolute',
+      bottom: 0,
+      left: spacingVars['--spacing-3'],
+      right: spacingVars['--spacing-3'],
+      height: '2px',
+      backgroundColor: colorVars['--color-border'],
+      borderRadius: radiusVars['--radius-full'],
+      opacity: 0,
+      transitionProperty: 'opacity',
+      transitionDuration: durationVars['--duration-fast'],
+      transitionTimingFunction: easeVars['--ease-standard'],
+      pointerEvents: 'none',
+    },
+    ':hover::before': {
+      '@media (hover: hover)': {
+        opacity: 1,
       },
     },
-    transitionProperty: 'opacity',
-    transitionDuration: durationVars['--duration-fast'],
-    transitionTimingFunction: easeVars['--ease-standard'],
-    pointerEvents: 'none',
   },
   icon: {
     display: 'inline-flex',
@@ -209,14 +212,10 @@ export function XDSTab({
         sizeStyles[size],
         isSelected && styles.selected,
         isSelected && styles.underlineSelected,
-        !isSelected && stylex.defaultMarker(),
+        !isSelected && styles.hoverUnderline,
       ),
     ),
   };
-
-  const hoverUnderlineElement = !isSelected ? (
-    <span {...stylex.props(styles.hoverUnderline)} />
-  ) : null;
 
   const labelElement = (
     <span {...stylex.props(styles.labelContainer)}>
@@ -232,7 +231,6 @@ export function XDSTab({
       <LinkComponent href={href} onClick={handleSelect} {...sharedProps}>
         {iconElement}
         {labelElement}
-        {hoverUnderlineElement}
       </LinkComponent>
     );
   }
@@ -241,7 +239,6 @@ export function XDSTab({
     <button type="button" onClick={handleSelect} {...sharedProps}>
       {iconElement}
       {labelElement}
-      {hoverUnderlineElement}
     </button>
   );
 }

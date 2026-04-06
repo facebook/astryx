@@ -26,7 +26,6 @@ import {XDSList, XDSListItem} from '@xds/core/List';
 import {XDSMetadataList, XDSMetadataListItem} from '@xds/core/MetadataList';
 import {XDSProgressBar} from '@xds/core/ProgressBar';
 import {XDSCollapsible} from '@xds/core/Collapsible';
-import {XDSCenter} from '@xds/core/Center';
 
 // ─── Icons ──────────────────────────────────────────────────────────────────
 const HomeIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -209,8 +208,6 @@ const ArrowLeftIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 // ─── Styles ─────────────────────────────────────────────────────────────────
 const pageStyles = stylex.create({
-
-
   bulletSeparator: {
     fontSize: 12,
     lineHeight: '16px',
@@ -457,79 +454,77 @@ function PageHeader({
 }) {
   return (
     <XDSLayoutHeader hasDivider padding={4}>
-      <XDSCenter axis="horizontal">
+      <XDSVStack gap={0}>
+        {/* Back link */}
+        <XDSLink href="#" label="All orders" color="secondary">
+          <XDSHStack gap={1} vAlign="center">
+            <ArrowLeftIcon style={{width: 16, height: 16}} />
+            All orders
+          </XDSHStack>
+        </XDSLink>
+        {/* Title + metadata */}
         <XDSVStack gap={0}>
-          {/* Back link */}
-          <XDSLink href="#" label="All orders" color="secondary">
-            <XDSHStack gap={1} vAlign="center">
-              <ArrowLeftIcon style={{width: 16, height: 16}} />
-              All orders
-            </XDSHStack>
-          </XDSLink>
-          {/* Title + metadata */}
-          <XDSVStack gap={0}>
-            {/* Title row */}
-            <XDSHStack
-              gap={2}
-              vAlign="center"
-              style={{justifyContent: 'space-between'}}>
-              <XDSHStack gap={2} vAlign="center">
-                <XDSHeading level={1}>#1001</XDSHeading>
-              </XDSHStack>
-              <XDSHStack gap={2} vAlign="start">
-                <XDSButton label="← 2/9 →" variant="ghost" />
-                <XDSButton label="Restock" variant="secondary" />
-                <XDSButton label="Edit" variant="secondary" />
-              </XDSHStack>
-            </XDSHStack>
-
-            {/* Metadata row */}
-            <XDSHStack gap={1} vAlign="center" style={{flexWrap: 'wrap'}}>
-              <XDSText type="body">{PRODUCTS.length} ordered items</XDSText>
-              <Bullet />
-              <XDSHStack gap={1} vAlign="center">
-                <XDSAvatar name="Jane Doe" size="xsmall" />
-                <XDSText type="body">Jane Doe</XDSText>
-              </XDSHStack>
-              <Bullet />
-              <XDSBadge variant="warning" label="Unfulfilled" />
-              <Bullet />
-              <XDSHStack gap={1} vAlign="center">
-                <CalendarIcon {...stylex.props(pageStyles.metaIcon)} />
-                <XDSText type="body">02/23/2026</XDSText>
-              </XDSHStack>
-              <Bullet />
-              <XDSHStack gap={1} vAlign="center">
-                <FlagIcon {...stylex.props(pageStyles.metaIcon)} />
-                <XDSText type="body">Needs attention</XDSText>
-              </XDSHStack>
-              <Bullet />
-              <XDSLink href="#" label="See all" color="secondary">
-                See all
-              </XDSLink>
-            </XDSHStack>
-          </XDSVStack>
-
-          {/* Tabs */}
+          {/* Title row */}
           <XDSHStack
+            gap={2}
             vAlign="center"
-            style={{
-              justifyContent: 'space-between',
-              marginInline: -12,
-              marginBottom: -16,
-              marginTop: 12,
-            }}>
-            <XDSTabList value={activeTab} onChange={onTabChange} size="lg">
-              <XDSTab value="details" label="Details" />
-              <XDSTab value="invoices" label="Invoices" />
-              <XDSTab value="timeline" label="Timeline" />
-              <XDSTab value="customer" label="Customer" />
-              <XDSTab value="analysis" label="Analysis" />
-            </XDSTabList>
-            <XDSButton label="View options" variant="ghost" size="md" />
+            style={{justifyContent: 'space-between'}}>
+            <XDSHStack gap={2} vAlign="center">
+              <XDSHeading level={1}>#1001</XDSHeading>
+            </XDSHStack>
+            <XDSHStack gap={2} vAlign="start">
+              <XDSButton label="← 2/9 →" variant="ghost" />
+              <XDSButton label="Restock" variant="secondary" />
+              <XDSButton label="Edit" variant="secondary" />
+            </XDSHStack>
+          </XDSHStack>
+
+          {/* Metadata row */}
+          <XDSHStack gap={1} vAlign="center" style={{flexWrap: 'wrap'}}>
+            <XDSText type="body">{PRODUCTS.length} ordered items</XDSText>
+            <Bullet />
+            <XDSHStack gap={1} vAlign="center">
+              <XDSAvatar name="Jane Doe" size="xsmall" />
+              <XDSText type="body">Jane Doe</XDSText>
+            </XDSHStack>
+            <Bullet />
+            <XDSBadge variant="warning" label="Unfulfilled" />
+            <Bullet />
+            <XDSHStack gap={1} vAlign="center">
+              <CalendarIcon {...stylex.props(pageStyles.metaIcon)} />
+              <XDSText type="body">02/23/2026</XDSText>
+            </XDSHStack>
+            <Bullet />
+            <XDSHStack gap={1} vAlign="center">
+              <FlagIcon {...stylex.props(pageStyles.metaIcon)} />
+              <XDSText type="body">Needs attention</XDSText>
+            </XDSHStack>
+            <Bullet />
+            <XDSLink href="#" label="See all" color="secondary">
+              See all
+            </XDSLink>
           </XDSHStack>
         </XDSVStack>
-      </XDSCenter>
+
+        {/* Tabs */}
+        <XDSHStack
+          vAlign="center"
+          style={{
+            justifyContent: 'space-between',
+            marginInline: -12,
+            marginBottom: -16,
+            marginTop: 12,
+          }}>
+          <XDSTabList value={activeTab} onChange={onTabChange} size="lg">
+            <XDSTab value="details" label="Details" />
+            <XDSTab value="invoices" label="Invoices" />
+            <XDSTab value="timeline" label="Timeline" />
+            <XDSTab value="customer" label="Customer" />
+            <XDSTab value="analysis" label="Analysis" />
+          </XDSTabList>
+          <XDSButton label="View options" variant="ghost" size="md" />
+        </XDSHStack>
+      </XDSVStack>
     </XDSLayoutHeader>
   );
 }
@@ -809,14 +804,9 @@ export default function DetailPage2Template() {
   const [activeTab, setActiveTab] = useState('details');
 
   return (
-    <XDSAppShell
-      sideNav={<ShopSideNav />}
-      variant="elevated"
-      contentPadding={0}>
+    <XDSAppShell sideNav={<ShopSideNav />} variant="elevated">
       <XDSLayout
         height="fill"
-        contentWidth={1000}
-        defaultHasDividers
         header={<PageHeader activeTab={activeTab} onTabChange={setActiveTab} />}
         content={
           <XDSLayoutContent role="main">
