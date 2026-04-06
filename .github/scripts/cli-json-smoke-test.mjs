@@ -2,12 +2,16 @@
 /**
  * CLI JSON smoke test — validates --json output for every supported command.
  *
- * Checks:
+ * Auto-discovers components and doc topics (same as cli-smoke-test.mjs)
+ * then runs every command with --json and validates:
  * 1. Output is valid JSON
  * 2. Success responses have `type` (string) and `data` fields
  * 3. Error responses have `error` (string) field
- * 4. `type` values are from the known discriminator set
- * 5. Commands without --json support return CLIUnsupportedError
+ * 4. `type` values follow the dot-separated naming pattern
+ * 5. Envelope shape is consistent across all commands
+ *
+ * No hardcoded type allowlist — validates shape, not specific strings.
+ * The .d.ts type declarations are the source of truth for valid types.
  *
  * Usage: node .github/scripts/cli-json-smoke-test.mjs
  */
@@ -20,25 +24,13 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '../..');
 const CLI = path.join(ROOT, 'packages/cli/bin/xds.mjs');
 
-const KNOWN_TYPES = new Set([
-  'component.list', 'component.brief', 'component.detail',
-  'component.detail.props', 'component.detail.source',
-  'discover.list', 'discover.detail', 'discover.detail.doc', 'discover.search',
-  'docs.list', 'docs.detail', 'docs.detail.section',
-  'template.list', 'template.copy',
-  'swizzle.list', 'swizzle.copy',
-  'theme.build',
-  'upgrade.list', 'upgrade.run',
-  'gap-report.categories', 'gap-report.file',
-  'markdown',
-]);
-
 let passed = 0;
 let failed = 0;
 const failures = [];
+const seenTypes = new Set();
 
 function run(args) {
-  const result = spawnSync(process.execPath, [CLI, '--json', ...args], {
+  const result = spawnSync(process.execPath, [CLI, ...args], {
     cwd: ROOT,
     encoding: 'utf8',
     timeout: 30_000,
@@ -50,8 +42,12 @@ function run(args) {
   };
 }
 
+function runJson(args) {
+  return run(['--json', ...args]);
+}
+
 function checkJson(label, args, {expectError = false, expectType = null} = {}) {
-  const {stdout, status} = run(args);
+  const {stdout, status} = runJson(args);
 
   let parsed;
   try {
@@ -71,12 +67,25 @@ function checkJson(label, args, {expectError = false, expectType = null} = {}) {
       failed++;
       return;
     }
+    if (typeof parsed.error !== 'string') {
+      console.log(`  FAIL  ${label}  (error field is not a string)`);
+      failures.push({label, reason: 'error field not a string'});
+      failed++;
+      return;
+    }
     console.log(`  ok    ${label}  (error: "${parsed.error.slice(0, 60)}")`);
     passed++;
     return;
   }
 
+  // Error responses
   if (parsed.error) {
+    if (typeof parsed.error !== 'string') {
+      console.log(`  FAIL  ${label}  (error field is not a string)`);
+      failures.push({label, reason: 'error field not a string'});
+      failed++;
+      return;
+    }
     if (status !== 1) {
       console.log(`  FAIL  ${label}  (error without exit code 1)`);
       failures.push({label, reason: 'error without exit code 1'});
@@ -88,8 +97,9 @@ function checkJson(label, args, {expectError = false, expectType = null} = {}) {
     return;
   }
 
+  // Success responses must have type + data
   if (typeof parsed.type !== 'string') {
-    console.log(`  FAIL  ${label}  (missing type field)`);
+    console.log(`  FAIL  ${label}  (missing or non-string type field)`);
     failures.push({label, reason: 'missing type field'});
     failed++;
     return;
@@ -102,9 +112,19 @@ function checkJson(label, args, {expectError = false, expectType = null} = {}) {
     return;
   }
 
-  if (!KNOWN_TYPES.has(parsed.type)) {
-    console.log(`  FAIL  ${label}  (unknown type "${parsed.type}")`);
-    failures.push({label, reason: `unknown type "${parsed.type}"`});
+  // Type discriminators must follow the dot-separated pattern
+  if (!/^[a-z][a-z0-9-]*(\.[a-z][a-z0-9-]*)*$/.test(parsed.type)) {
+    console.log(`  FAIL  ${label}  (type "${parsed.type}" doesn't match naming pattern)`);
+    failures.push({label, reason: `invalid type format "${parsed.type}"`});
+    failed++;
+    return;
+  }
+
+  // Envelope should only have type + data keys (no extra fields)
+  const extraKeys = Object.keys(parsed).filter(k => k !== 'type' && k !== 'data');
+  if (extraKeys.length > 0) {
+    console.log(`  FAIL  ${label}  (extra fields in envelope: ${extraKeys.join(', ')})`);
+    failures.push({label, reason: `extra envelope fields: ${extraKeys.join(', ')}`});
     failed++;
     return;
   }
@@ -116,41 +136,86 @@ function checkJson(label, args, {expectError = false, expectType = null} = {}) {
     return;
   }
 
+  seenTypes.add(parsed.type);
   console.log(`  ok    ${label}  (type: ${parsed.type})`);
   passed++;
 }
 
-// ── Component ────────────────────────────────────────────────────────
+// ---------------------------------------------------------------------------
+// 1. Auto-discover components from xds component --list (text mode)
+// ---------------------------------------------------------------------------
+const listResult = run(['component', '--list']);
+const componentNames = listResult.stdout
+  .split('\n')
+  .filter(line => /^\s+[A-Z]/.test(line))
+  .map(line => line.trim());
 
+console.log(`\ndiscovered ${componentNames.length} components`);
+
+// Pick a sample component for detail tests
+const sampleComponent = componentNames.includes('Button') ? 'Button' : componentNames[0];
+
+// ---------------------------------------------------------------------------
+// 2. Auto-discover doc topics from xds docs (text mode)
+// ---------------------------------------------------------------------------
+const docsResult = run(['docs']);
+const docTopics = docsResult.stdout
+  .split('\n')
+  .filter(line => /^\s{2}\w+\s{2,}/.test(line))
+  .map(line => line.trim().split(/\s{2,}/)[0]);
+
+console.log(`discovered ${docTopics.length} doc topics: ${docTopics.join(', ')}`);
+
+// ---------------------------------------------------------------------------
+// 3. Run all checks
+// ---------------------------------------------------------------------------
+
+// ── Component ────────────────────────────────────────────────────────
 console.log('\ncomponent --json');
 checkJson('component --list', ['component', '--list'], {expectType: 'component.list'});
-checkJson('component Button', ['component', 'Button'], {expectType: 'component.detail'});
-checkJson('component Button --props', ['component', 'Button', '--props'], {expectType: 'component.detail.props'});
-checkJson('component NotAReal', ['component', 'NotARealComponent'], {expectError: true});
+
+// Pick a sample category from the JSON output
+const catResult = runJson(['component', '--list']);
+try {
+  const catData = JSON.parse(catResult.stdout);
+  const firstCategory = Object.keys(catData.data)[0];
+  if (firstCategory) {
+    checkJson(`component --category ${firstCategory}`, ['component', '--category', firstCategory], {expectType: 'component.list'});
+  }
+} catch { /* skip if parse fails */ }
+
+if (sampleComponent) {
+  checkJson(`component ${sampleComponent}`, ['component', sampleComponent], {expectType: 'component.detail'});
+  checkJson(`component ${sampleComponent} --props`, ['component', sampleComponent, '--props'], {expectType: 'component.detail.props'});
+  checkJson(`component ${sampleComponent} --source`, ['component', sampleComponent, '--source'], {expectType: 'component.detail.source'});
+}
+checkJson('component (not found)', ['component', 'NotARealComponentName99'], {expectError: true});
 
 // ── Docs ─────────────────────────────────────────────────────────────
-
 console.log('\ndocs --json');
 checkJson('docs (list)', ['docs'], {expectType: 'docs.list'});
+if (docTopics.length > 0) {
+  checkJson(`docs ${docTopics[0]}`, ['docs', docTopics[0]], {expectType: 'docs.detail'});
+}
+checkJson('docs (not found)', ['docs', 'nonexistent_topic_xyz'], {expectError: true});
 
 // ── Template ─────────────────────────────────────────────────────────
-
 console.log('\ntemplate --json');
 checkJson('template --list', ['template', '--list'], {expectType: 'template.list'});
+checkJson('template (not found)', ['template', 'nonexistent_template_xyz'], {expectError: true});
 
 // ── Swizzle ──────────────────────────────────────────────────────────
-
 console.log('\nswizzle --json');
 checkJson('swizzle --list', ['swizzle', '--list'], {expectType: 'swizzle.list'});
+checkJson('swizzle (not found)', ['swizzle', 'NonexistentComponent99'], {expectError: true});
 
 // ── Gap report ───────────────────────────────────────────────────────
-
 console.log('\ngap-report --json');
 checkJson('gap-report --list-categories', ['gap-report', '--list-categories'], {expectType: 'gap-report.categories'});
 
 // ── Summary ──────────────────────────────────────────────────────────
-
 console.log(`\n${passed + failed} checks: ${passed} passed, ${failed} failed`);
+console.log(`types seen: ${[...seenTypes].sort().join(', ')}`);
 
 if (failed > 0) {
   console.log('\nFailed:');
