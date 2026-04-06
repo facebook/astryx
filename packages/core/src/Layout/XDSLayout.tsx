@@ -65,6 +65,17 @@ const styles = stylex.create({
   },
 });
 
+const dynamicStyles = stylex.create({
+  contentWidthVar: (width: number) => ({
+    '--layout-content-width': `${width}px`,
+  }),
+  contentWidth: (width: number) => ({
+    width: '100%',
+    maxWidth: width,
+    marginInline: 'auto',
+  }),
+});
+
 export interface XDSLayoutProps extends Omit<XDSBaseProps, 'content'> {
   /**
    * Ref forwarded to the root DOM element.
@@ -75,6 +86,17 @@ export interface XDSLayoutProps extends Omit<XDSBaseProps, 'content'> {
    * Main content area (center).
    */
   content?: ReactNode;
+
+  /**
+   * Maximum width of the content within each slot (header, content, footer,
+   * panels). Dividers remain full-bleed. Content is centered with
+   * `margin-inline: auto` when narrower than the available space.
+   *
+   * Accepts any pixel value. Common page widths from internal patterns:
+   * - `640` — forms, settings, text-focused pages
+   * - `960` — content pages, component demos, wider layouts
+   */
+  contentWidth?: number;
 
   /**
    * End panel slot (right in LTR, left in RTL).
@@ -195,6 +217,7 @@ function AreaProvider({
  */
 export function XDSLayout({
   content,
+  contentWidth,
   defaultHasDividers,
   end,
   footer,
@@ -248,12 +271,14 @@ export function XDSLayout({
             padding === 0 && styles.fullBleed,
             padding != null && layoutPaddingOuterXVarStyles[padding],
             padding != null && layoutPaddingOuterYVarStyles[padding],
+            contentWidth != null && dynamicStyles.contentWidthVar(contentWidth),
           )}>
           <AreaProvider area="header">{header}</AreaProvider>
           <div
             {...stylex.props(
               ...stack({direction: 'horizontal'}),
               styles.middle,
+              contentWidth != null && dynamicStyles.contentWidth(contentWidth),
             )}>
             <AreaProvider area="start">{start}</AreaProvider>
             <div {...stylex.props(...stackItem({size: 'fill'}))}>
