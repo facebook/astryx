@@ -18,7 +18,6 @@
 import {useState, useMemo, useCallback, useRef} from 'react';
 import type {
   XDSTableSortState,
-  XDSTableSortDirection,
   UseXDSTableSortableConfig,
 } from './useXDSTableSortable';
 
@@ -44,7 +43,7 @@ export type XDSTableSortComparator<T> = (a: T, b: T) => number;
  * @template T - The row data type
  * @template TSortKey - Union of valid sort key strings
  *
- * @example Uncontrolled (internal state)
+ * @example
  * ```
  * const { sortedData, sortConfig } = useXDSTableSortableState({
  *   data: users,
@@ -55,7 +54,7 @@ export type XDSTableSortComparator<T> = (a: T, b: T) => number;
  * <XDSTable data={sortedData} plugins={{ sort: sortPlugin }} />
  * ```
  *
- * @example Controlled (external state)
+ * @example
  * ```
  * const [sort, setSort] = useState<XDSTableSortState>([]);
  * const { sortedData, sortConfig } = useXDSTableSortableState({
