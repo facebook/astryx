@@ -13,6 +13,7 @@
  * components: {
  *   card: { base: { '--xds-card-padding': 'var(--spacing-3)' } },
  *   section: { base: { '--xds-section-padding': 'var(--spacing-3)' } },
+ *   dialog: { base: { '--xds-dialog-padding': 'var(--spacing-3)' } },
  * }
  * ```
  *
@@ -49,7 +50,9 @@ export type SpacingToken =
 const baseStyles = stylex.create({
   container: {
     boxSizing: 'border-box',
-    padding: 'var(--container-padding)',
+    paddingInline: 'var(--container-padding-inline)',
+    paddingBlockStart: 'var(--container-padding-block-start)',
+    paddingBlockEnd: 'var(--container-padding-block-end)',
   },
 });
 
@@ -61,11 +64,14 @@ const baseStyles = stylex.create({
  * with a fallback to --spacing-4 (the default).
  */
 const cardDefaultPaddingStyles = stylex.create({
-  containerPadding: {
-    '--container-padding': `var(--xds-card-padding, ${spacingVars['--spacing-4']})`,
-  },
   containerPaddingInline: {
     '--container-padding-inline': `var(--xds-card-padding, ${spacingVars['--spacing-4']})`,
+  },
+  containerPaddingBlockStart: {
+    '--container-padding-block-start': `var(--xds-card-padding, ${spacingVars['--spacing-4']})`,
+  },
+  containerPaddingBlockEnd: {
+    '--container-padding-block-end': `var(--xds-card-padding, ${spacingVars['--spacing-4']})`,
   },
   layoutPaddingOuterX: {
     '--layout-padding-outer-x': `var(--xds-card-padding, ${spacingVars['--spacing-4']})`,
@@ -89,11 +95,14 @@ const cardDefaultPaddingStyles = stylex.create({
  * with a fallback to --spacing-4 (the default).
  */
 const sectionDefaultPaddingStyles = stylex.create({
-  containerPadding: {
-    '--container-padding': `var(--xds-section-padding, ${spacingVars['--spacing-4']})`,
-  },
   containerPaddingInline: {
     '--container-padding-inline': `var(--xds-section-padding, ${spacingVars['--spacing-4']})`,
+  },
+  containerPaddingBlockStart: {
+    '--container-padding-block-start': `var(--xds-section-padding, ${spacingVars['--spacing-4']})`,
+  },
+  containerPaddingBlockEnd: {
+    '--container-padding-block-end': `var(--xds-section-padding, ${spacingVars['--spacing-4']})`,
   },
   layoutPaddingOuterX: {
     '--layout-padding-outer-x': `var(--xds-section-padding, ${spacingVars['--spacing-4']})`,
@@ -110,45 +119,52 @@ const sectionDefaultPaddingStyles = stylex.create({
 });
 
 /**
+ * Dialog default padding styles that cascade from --xds-dialog-padding.
+ *
+ * When no explicit padding prop is set on Dialog, the internal
+ * layout padding variables read from --xds-dialog-padding (set by theme)
+ * with a fallback to --spacing-4 (the default).
+ */
+const dialogDefaultPaddingStyles = stylex.create({
+  containerPaddingInline: {
+    '--container-padding-inline': `var(--xds-dialog-padding, ${spacingVars['--spacing-4']})`,
+  },
+  containerPaddingBlockStart: {
+    '--container-padding-block-start': `var(--xds-dialog-padding, ${spacingVars['--spacing-4']})`,
+  },
+  containerPaddingBlockEnd: {
+    '--container-padding-block-end': `var(--xds-dialog-padding, ${spacingVars['--spacing-4']})`,
+  },
+  layoutPaddingOuterX: {
+    '--layout-padding-outer-x': `var(--xds-dialog-padding, ${spacingVars['--spacing-4']})`,
+  },
+  layoutPaddingOuterY: {
+    '--layout-padding-outer-y': `var(--xds-dialog-padding, ${spacingVars['--spacing-4']})`,
+  },
+  layoutPaddingInnerX: {
+    '--layout-padding-inner-x': `var(--xds-dialog-padding, ${spacingVars['--spacing-4']})`,
+  },
+  layoutPaddingInnerY: {
+    '--layout-padding-inner-y': `var(--xds-dialog-padding, ${spacingVars['--spacing-4']})`,
+  },
+});
+
+/**
  * Map from component name to its theme default padding styles.
  * Each component reads from its own public CSS custom property.
  */
 const themeDefaultStyles = {
   card: cardDefaultPaddingStyles,
   section: sectionDefaultPaddingStyles,
+  dialog: dialogDefaultPaddingStyles,
 };
 
 export type ContainerComponent = keyof typeof themeDefaultStyles;
 
 /**
- * Container padding styles.
- * Sets --container-padding CSS variable for simple content padding.
- * XDSLayout will override this to 0 and handle its own padding.
- */
-const containerPaddingStyles = stylex.create({
-  spacing0: {'--container-padding': spacingVars['--spacing-0']},
-  spacing0_5: {'--container-padding': spacingVars['--spacing-0-5']},
-  spacing1: {'--container-padding': spacingVars['--spacing-1']},
-  spacing1_5: {'--container-padding': spacingVars['--spacing-1-5']},
-  spacing2: {'--container-padding': spacingVars['--spacing-2']},
-  spacing3: {'--container-padding': spacingVars['--spacing-3']},
-  spacing4: {'--container-padding': spacingVars['--spacing-4']},
-  spacing5: {'--container-padding': spacingVars['--spacing-5']},
-  spacing6: {'--container-padding': spacingVars['--spacing-6']},
-  spacing7: {'--container-padding': spacingVars['--spacing-7']},
-  spacing8: {'--container-padding': spacingVars['--spacing-8']},
-  spacing9: {'--container-padding': spacingVars['--spacing-9']},
-  spacing10: {'--container-padding': spacingVars['--spacing-10']},
-  spacing11: {'--container-padding': spacingVars['--spacing-11']},
-  spacing12: {'--container-padding': spacingVars['--spacing-12']},
-});
-
-/**
  * Container inline padding styles for edge compensation.
  * Sets --container-padding-inline so edge-compensating children (ghost buttons, etc.)
- * know the inline padding to compensate against. Defaults to the same value as
- * --container-padding for isotropic containers; containers with asymmetric padding
- * (e.g., TopNav, Banner) set this directly.
+ * know the inline padding to compensate against.
  */
 const containerPaddingInlineStyles = stylex.create({
   spacing0: {'--container-padding-inline': spacingVars['--spacing-0']},
@@ -166,6 +182,47 @@ const containerPaddingInlineStyles = stylex.create({
   spacing10: {'--container-padding-inline': spacingVars['--spacing-10']},
   spacing11: {'--container-padding-inline': spacingVars['--spacing-11']},
   spacing12: {'--container-padding-inline': spacingVars['--spacing-12']},
+});
+
+/**
+ * Container block-start/block-end padding styles for vertical bleed.
+ * Split into start and end because Layout areas have asymmetric block padding
+ * (e.g., Header: block-start=outer-y, block-end=inner-y).
+ */
+const containerPaddingBlockStartStyles = stylex.create({
+  spacing0: {'--container-padding-block-start': spacingVars['--spacing-0']},
+  spacing0_5: {'--container-padding-block-start': spacingVars['--spacing-0-5']},
+  spacing1: {'--container-padding-block-start': spacingVars['--spacing-1']},
+  spacing1_5: {'--container-padding-block-start': spacingVars['--spacing-1-5']},
+  spacing2: {'--container-padding-block-start': spacingVars['--spacing-2']},
+  spacing3: {'--container-padding-block-start': spacingVars['--spacing-3']},
+  spacing4: {'--container-padding-block-start': spacingVars['--spacing-4']},
+  spacing5: {'--container-padding-block-start': spacingVars['--spacing-5']},
+  spacing6: {'--container-padding-block-start': spacingVars['--spacing-6']},
+  spacing7: {'--container-padding-block-start': spacingVars['--spacing-7']},
+  spacing8: {'--container-padding-block-start': spacingVars['--spacing-8']},
+  spacing9: {'--container-padding-block-start': spacingVars['--spacing-9']},
+  spacing10: {'--container-padding-block-start': spacingVars['--spacing-10']},
+  spacing11: {'--container-padding-block-start': spacingVars['--spacing-11']},
+  spacing12: {'--container-padding-block-start': spacingVars['--spacing-12']},
+});
+
+const containerPaddingBlockEndStyles = stylex.create({
+  spacing0: {'--container-padding-block-end': spacingVars['--spacing-0']},
+  spacing0_5: {'--container-padding-block-end': spacingVars['--spacing-0-5']},
+  spacing1: {'--container-padding-block-end': spacingVars['--spacing-1']},
+  spacing1_5: {'--container-padding-block-end': spacingVars['--spacing-1-5']},
+  spacing2: {'--container-padding-block-end': spacingVars['--spacing-2']},
+  spacing3: {'--container-padding-block-end': spacingVars['--spacing-3']},
+  spacing4: {'--container-padding-block-end': spacingVars['--spacing-4']},
+  spacing5: {'--container-padding-block-end': spacingVars['--spacing-5']},
+  spacing6: {'--container-padding-block-end': spacingVars['--spacing-6']},
+  spacing7: {'--container-padding-block-end': spacingVars['--spacing-7']},
+  spacing8: {'--container-padding-block-end': spacingVars['--spacing-8']},
+  spacing9: {'--container-padding-block-end': spacingVars['--spacing-9']},
+  spacing10: {'--container-padding-block-end': spacingVars['--spacing-10']},
+  spacing11: {'--container-padding-block-end': spacingVars['--spacing-11']},
+  spacing12: {'--container-padding-block-end': spacingVars['--spacing-12']},
 });
 
 const paddingOuterXStyles = stylex.create({
@@ -248,38 +305,38 @@ const maxHeightStyles = stylex.create({
 
 export interface ContainerOptions {
   /**
-   * Default container padding for simple content.
-   * Sets --container-padding CSS variable.
-   * XDSLayout overrides this to 0 and manages its own padding.
+   * Shortcut to set all padding values at once.
+   * Sets paddingOuterX, paddingOuterY, paddingInnerX, and paddingInnerY
+   * to the same value. Individual properties override this when set.
    * @default 'spacing4'
    */
   padding?: SpacingToken;
 
   /**
    * Outer horizontal padding (left/right).
-   * Sets --layout-padding-outer-x CSS variable.
-   * @default 'spacing4'
+   * Sets --container-padding-inline and --layout-padding-outer-x CSS variables.
+   * Overrides `padding` for the horizontal outer axis.
    */
   paddingOuterX?: SpacingToken;
 
   /**
    * Outer vertical padding (top/bottom).
-   * Sets --layout-padding-outer-y CSS variable.
-   * @default 'spacing4'
+   * Sets --container-padding-block-start, --container-padding-block-end, and --layout-padding-outer-y CSS variables.
+   * Overrides `padding` for the vertical outer axis.
    */
   paddingOuterY?: SpacingToken;
 
   /**
    * Inner horizontal padding for content areas.
    * Sets --layout-padding-inner-x CSS variable.
-   * @default 'spacing4'
+   * Overrides `padding` for the horizontal inner axis.
    */
   paddingInnerX?: SpacingToken;
 
   /**
    * Inner vertical padding for content areas.
    * Sets --layout-padding-inner-y CSS variable.
-   * @default 'spacing4'
+   * Overrides `padding` for the vertical inner axis.
    */
   paddingInnerY?: SpacingToken;
 
@@ -310,8 +367,8 @@ export interface ContainerOptions {
  * StyleX utility to add layout container styles to any element.
  *
  * Sets CSS variables for padding that child layout components read:
- * - `--container-padding` — Default padding for simple content
- * - `--container-padding-inline` — Inline padding for edge compensation
+ * - `--container-padding-inline` — Inline padding for edge compensation and bleed
+ * - `--container-padding-block-start` / `--container-padding-block-end` — Block padding for vertical bleed
  * - `--layout-padding-outer-x`, `--layout-padding-outer-y` (internal)
  * - `--layout-padding-inner-x`, `--layout-padding-inner-y` (internal)
  *
@@ -329,9 +386,14 @@ export interface ContainerOptions {
  *   <XDSLayout ... />
  * </div>
  *
- * // Explicit padding values (not theme-overridable)
+ * // Uniform padding
+ * <div {...stylex.props(...container({ padding: 'spacing3' }))}>
+ *   <XDSLayout ... />
+ * </div>
+ *
+ * // Asymmetric — padding as base, paddingOuterY overrides vertical
  * <div {...stylex.props(
- *   ...container({ padding: 'spacing3', paddingOuterY: 'spacing2', paddingInnerX: 'spacing3' }),
+ *   ...container({ padding: 'spacing3', paddingOuterY: 'spacing2' }),
  *   customStyles.card
  * )}>
  *   <XDSLayout ... />
@@ -340,13 +402,18 @@ export interface ContainerOptions {
  */
 export function container({
   padding = 'spacing4',
-  paddingOuterX = 'spacing4',
-  paddingOuterY = 'spacing4',
-  paddingInnerX = 'spacing4',
-  paddingInnerY = 'spacing4',
+  paddingOuterX,
+  paddingOuterY,
+  paddingInnerX,
+  paddingInnerY,
   useThemeDefault,
   maxHeight,
 }: ContainerOptions) {
+  const outerX = paddingOuterX ?? padding;
+  const outerY = paddingOuterY ?? padding;
+  const innerX = paddingInnerX ?? padding;
+  const innerY = paddingInnerY ?? padding;
+
   const maxHeightStyle = maxHeight
     ? maxHeightStyles.containerMaxHeight(maxHeight)
     : null;
@@ -358,8 +425,9 @@ export function container({
     const defaults = themeDefaultStyles[useThemeDefault];
     return [
       baseStyles.container,
-      defaults.containerPadding,
       defaults.containerPaddingInline,
+      defaults.containerPaddingBlockStart,
+      defaults.containerPaddingBlockEnd,
       defaults.layoutPaddingOuterX,
       defaults.layoutPaddingOuterY,
       defaults.layoutPaddingInnerX,
@@ -370,15 +438,13 @@ export function container({
 
   return [
     baseStyles.container,
-    containerPaddingStyles[padding],
-    // Set --container-padding-inline for edge compensation. When paddingOuterX
-    // differs from the base padding, use paddingOuterX since that's the actual
-    // inline padding at the container edges.
-    containerPaddingInlineStyles[paddingOuterX],
-    paddingOuterXStyles[paddingOuterX],
-    paddingOuterYStyles[paddingOuterY],
-    paddingInnerXStyles[paddingInnerX],
-    paddingInnerYStyles[paddingInnerY],
+    containerPaddingInlineStyles[outerX],
+    containerPaddingBlockStartStyles[outerY],
+    containerPaddingBlockEndStyles[outerY],
+    paddingOuterXStyles[outerX],
+    paddingOuterYStyles[outerY],
+    paddingInnerXStyles[innerX],
+    paddingInnerYStyles[innerY],
     maxHeightStyle,
   ] as const;
 }

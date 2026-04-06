@@ -12,7 +12,6 @@
  * - /apps/storybook/stories/Layout.stories.tsx
  */
 
-
 import type {AriaRole, ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {useContext} from 'react';
@@ -22,7 +21,12 @@ import {XDSLayoutAreaContext} from './XDSLayoutAreaContext';
 import {XDSLayoutSlotsContext} from './XDSLayoutSlotsContext';
 import {xdsClassName, mergeProps} from '../utils';
 import type {SpacingStep} from '../utils/types';
-import {paddingStyles, containerPaddingInlineVarStyles} from './padding.stylex';
+import {
+  paddingStyles,
+  containerPaddingInlineVarStyles,
+  containerPaddingBlockStartVarStyles,
+  containerPaddingBlockEndVarStyles,
+} from './padding.stylex';
 
 const styles = stylex.create({
   panel: {
@@ -34,6 +38,9 @@ const styles = stylex.create({
     paddingInlineEnd: `var(--layout-padding-inner-x, ${spacingVars['--spacing-4']})`,
     paddingBlockStart: `var(--layout-padding-inner-y, ${spacingVars['--spacing-4']})`,
     paddingBlockEnd: `var(--layout-padding-inner-y, ${spacingVars['--spacing-4']})`,
+    '--container-padding-inline': `var(--layout-padding-inner-x, ${spacingVars['--spacing-4']})`,
+    '--container-padding-block-start': `var(--layout-padding-inner-y, ${spacingVars['--spacing-4']})`,
+    '--container-padding-block-end': `var(--layout-padding-inner-y, ${spacingVars['--spacing-4']})`,
   },
   // Start panel: outer-x on left edge
   startPanel: {
@@ -56,6 +63,9 @@ const styles = stylex.create({
     paddingInlineEnd: 0,
     paddingBlockStart: 0,
     paddingBlockEnd: 0,
+    '--container-padding-inline': '0px',
+    '--container-padding-block-start': '0px',
+    '--container-padding-block-end': '0px',
   },
   scrollable: {
     overflow: 'auto',
@@ -231,6 +241,8 @@ export function XDSLayoutPanel({
           isZeroPadding && styles.fullBleed,
           padding != null && paddingStyles[padding],
           padding != null && containerPaddingInlineVarStyles[padding],
+          padding != null && containerPaddingBlockStartVarStyles[padding],
+          padding != null && containerPaddingBlockEndVarStyles[padding],
           hasDivider && dividerStyle,
           shouldCollapseSpacing && collapseStyle,
           xstyle,
