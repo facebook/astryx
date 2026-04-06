@@ -20,6 +20,7 @@ import {
   radiusVars,
   shadowVars,
 } from '@xds/core/theme/tokens.stylex';
+import {XDSAppShell} from '@xds/core/AppShell';
 import {XDSTheme} from '@xds/core';
 import {defaultTheme} from '@xds/theme-default';
 import {neutralTheme} from '@xds/theme-neutral';
@@ -114,6 +115,31 @@ const styles = stylex.create({
   demoSize: {
     width: 300,
     height: 220,
+  },
+  // contentWidth demo containers
+  cwContainer: {
+    border: '2px dashed',
+    borderColor: colorVars['--color-border-default'],
+    borderRadius: radiusVars['--radius-container'],
+    overflow: 'hidden',
+  },
+  cwContainer900: {
+    width: 900,
+  },
+  cwContainer1200: {
+    width: 1200,
+  },
+  cwContainer350: {
+    width: 350,
+  },
+  cwContainer1000: {
+    width: 1000,
+  },
+  cwContainer640: {
+    width: 640,
+  },
+  cwContainer400: {
+    width: 400,
   },
 });
 
@@ -899,6 +925,444 @@ export const OuterPaddingDemo: Story = {
           </div>
         </XDSVStack>
       </XDSHStack>
+    </XDSVStack>
+  ),
+};
+
+// =============================================================================
+// Content Width Stories
+// =============================================================================
+
+export const ContentWidthWithDividers: Story = {
+  name: 'Content Width — Dividers, No Panels',
+  render: () => (
+    <XDSVStack gap={4} xstyle={styles.storySection}>
+      <p {...stylex.props(styles.sectionLabel)}>
+        contentWidth=640 in a 900px container — dividers remain full-bleed while
+        content is constrained
+      </p>
+      <div {...stylex.props(styles.cwContainer, styles.cwContainer900)}>
+        <XDSLayout
+          contentWidth={640}
+          defaultHasDividers
+          header={
+            <XDSLayoutHeader>
+              <h3 {...stylex.props(styles.heading)}>Header</h3>
+              <p {...stylex.props(styles.bodyText)}>
+                Header content is constrained to 640px
+              </p>
+            </XDSLayoutHeader>
+          }
+          content={
+            <XDSLayoutContent>
+              <p {...stylex.props(styles.bodyText)}>
+                Main content is constrained to 640px and centered. The dividers
+                above and below span the full width of the container.
+              </p>
+              <br />
+              <div {...stylex.props(styles.placeholder)}>
+                Placeholder content block
+              </div>
+            </XDSLayoutContent>
+          }
+          footer={
+            <XDSLayoutFooter>
+              <XDSHStack gap={2} hAlign="end">
+                <XDSButton label="Cancel" variant="secondary">
+                  Cancel
+                </XDSButton>
+                <XDSButton label="Save" variant="primary">
+                  Save
+                </XDSButton>
+              </XDSHStack>
+            </XDSLayoutFooter>
+          }
+        />
+      </div>
+    </XDSVStack>
+  ),
+};
+
+export const ContentWidthWithStartPanel: Story = {
+  name: 'Content Width — Start Panel',
+  render: () => (
+    <XDSVStack gap={4} xstyle={styles.storySection}>
+      <p {...stylex.props(styles.sectionLabel)}>
+        contentWidth=640 with a 200px start panel — the middle row (panel +
+        content) is constrained
+      </p>
+      <div {...stylex.props(styles.cwContainer, styles.cwContainer900)}>
+        <XDSLayout
+          contentWidth={640}
+          defaultHasDividers
+          header={
+            <XDSLayoutHeader>
+              <h3 {...stylex.props(styles.heading)}>Settings</h3>
+            </XDSLayoutHeader>
+          }
+          start={
+            <XDSLayoutPanel width={200} hasDivider role="navigation">
+              <NavItem active>General</NavItem>
+              <NavItem>Account</NavItem>
+              <NavItem>Privacy</NavItem>
+              <NavItem>Notifications</NavItem>
+            </XDSLayoutPanel>
+          }
+          content={
+            <XDSLayoutContent>
+              <h4 {...stylex.props(styles.subheading)}>General Settings</h4>
+              <br />
+              <p {...stylex.props(styles.bodyText)}>
+                The start panel and content area together are constrained to
+                640px and centered within the container.
+              </p>
+            </XDSLayoutContent>
+          }
+          footer={
+            <XDSLayoutFooter>
+              <XDSHStack gap={2} hAlign="end">
+                <XDSButton label="Save Changes" variant="primary">
+                  Save Changes
+                </XDSButton>
+              </XDSHStack>
+            </XDSLayoutFooter>
+          }
+        />
+      </div>
+    </XDSVStack>
+  ),
+};
+
+export const ContentWidthWithBothPanels: Story = {
+  name: 'Content Width — Both Panels',
+  render: () => (
+    <XDSVStack gap={4} xstyle={styles.storySection}>
+      <p {...stylex.props(styles.sectionLabel)}>
+        contentWidth=800 with start=200 and end=200 panels in a 1200px container
+      </p>
+      <div {...stylex.props(styles.cwContainer, styles.cwContainer1200)}>
+        <XDSLayout
+          contentWidth={800}
+          defaultHasDividers
+          header={
+            <XDSLayoutHeader>
+              <h3 {...stylex.props(styles.heading)}>File Browser</h3>
+            </XDSLayoutHeader>
+          }
+          start={
+            <XDSLayoutPanel width={200} hasDivider>
+              <p {...stylex.props(styles.sectionLabel)}>Folders</p>
+              <NavItem>Documents</NavItem>
+              <NavItem active>Projects</NavItem>
+              <NavItem>Downloads</NavItem>
+            </XDSLayoutPanel>
+          }
+          content={
+            <XDSLayoutContent>
+              <p {...stylex.props(styles.sectionLabel)}>Files</p>
+              <div {...stylex.props(styles.placeholder)}>
+                Select a folder to view its contents
+              </div>
+            </XDSLayoutContent>
+          }
+          end={
+            <XDSLayoutPanel width={200} hasDivider>
+              <p {...stylex.props(styles.sectionLabel)}>Details</p>
+              <p {...stylex.props(styles.bodyText)}>
+                Select a file to view details
+              </p>
+            </XDSLayoutPanel>
+          }
+          footer={
+            <XDSLayoutFooter>
+              <p {...stylex.props(styles.bodyText)}>3 items</p>
+            </XDSLayoutFooter>
+          }
+        />
+      </div>
+    </XDSVStack>
+  ),
+};
+
+export const ContentWidthNoDividers: Story = {
+  name: 'Content Width — No Dividers',
+  render: () => (
+    <XDSVStack gap={4} xstyle={styles.storySection}>
+      <p {...stylex.props(styles.sectionLabel)}>
+        contentWidth=640 without dividers — constraint works the same
+      </p>
+      <div {...stylex.props(styles.cwContainer, styles.cwContainer900)}>
+        <XDSLayout
+          contentWidth={640}
+          header={
+            <XDSLayoutHeader>
+              <h3 {...stylex.props(styles.heading)}>Seamless Layout</h3>
+            </XDSLayoutHeader>
+          }
+          content={
+            <XDSLayoutContent>
+              <p {...stylex.props(styles.bodyText)}>
+                Even without dividers, the content is constrained to 640px and
+                centered. The visual flow is seamless with no divider lines.
+              </p>
+              <br />
+              <div {...stylex.props(styles.placeholder)}>
+                Placeholder content block
+              </div>
+            </XDSLayoutContent>
+          }
+          footer={
+            <XDSLayoutFooter>
+              <XDSHStack gap={2} hAlign="end">
+                <XDSButton label="Continue" variant="primary">
+                  Continue
+                </XDSButton>
+              </XDSHStack>
+            </XDSLayoutFooter>
+          }
+        />
+      </div>
+    </XDSVStack>
+  ),
+};
+
+export const ContentWidthNarrower: Story = {
+  name: 'Content Width — Narrower Than Container',
+  render: () => (
+    <XDSVStack gap={4} xstyle={styles.storySection}>
+      <p {...stylex.props(styles.sectionLabel)}>
+        contentWidth=400 in a 900px container — content is visibly centered
+      </p>
+      <div {...stylex.props(styles.cwContainer, styles.cwContainer900)}>
+        <XDSLayout
+          contentWidth={400}
+          defaultHasDividers
+          header={
+            <XDSLayoutHeader>
+              <h3 {...stylex.props(styles.heading)}>Narrow Content</h3>
+            </XDSLayoutHeader>
+          }
+          content={
+            <XDSLayoutContent>
+              <p {...stylex.props(styles.bodyText)}>
+                This content is constrained to 400px inside a 900px container.
+                Notice the visible centering — great for focused forms or
+                settings pages.
+              </p>
+              <br />
+              <div {...stylex.props(styles.placeholder)}>
+                Narrow placeholder block
+              </div>
+            </XDSLayoutContent>
+          }
+          footer={
+            <XDSLayoutFooter>
+              <XDSHStack gap={2} hAlign="end">
+                <XDSButton label="Submit" variant="primary">
+                  Submit
+                </XDSButton>
+              </XDSHStack>
+            </XDSLayoutFooter>
+          }
+        />
+      </div>
+    </XDSVStack>
+  ),
+};
+
+export const ContentWidthWider: Story = {
+  name: 'Content Width — Wider Than Container',
+  render: () => (
+    <XDSVStack gap={4} xstyle={styles.storySection}>
+      <p {...stylex.props(styles.sectionLabel)}>
+        contentWidth=2000 in a 350px container — degrades gracefully to 100%
+      </p>
+      <div {...stylex.props(styles.cwContainer, styles.cwContainer350)}>
+        <XDSLayout
+          contentWidth={2000}
+          defaultHasDividers
+          header={
+            <XDSLayoutHeader>
+              <h3 {...stylex.props(styles.heading)}>Overflow</h3>
+            </XDSLayoutHeader>
+          }
+          content={
+            <XDSLayoutContent>
+              <p {...stylex.props(styles.bodyText)}>
+                The contentWidth is 2000px but the container is only 350px. The
+                content fills 100% of the available space — no overflow or
+                scrollbar.
+              </p>
+            </XDSLayoutContent>
+          }
+          footer={
+            <XDSLayoutFooter>
+              <p {...stylex.props(styles.bodyText)}>Footer</p>
+            </XDSLayoutFooter>
+          }
+        />
+      </div>
+    </XDSVStack>
+  ),
+};
+
+export const ContentWidthResponsive: Story = {
+  name: 'Content Width — Responsive Panels',
+  render: () => (
+    <XDSVStack gap={6} xstyle={styles.storySection}>
+      <p {...stylex.props(styles.sectionLabel)}>
+        contentWidth=640 with a start panel at three container widths — 1000px,
+        640px, and 400px
+      </p>
+      <XDSHStack gap={4} wrap="wrap">
+        <XDSVStack gap={2}>
+          <p {...stylex.props(styles.subheading)}>1000px container</p>
+          <div {...stylex.props(styles.cwContainer, styles.cwContainer1000)}>
+            <XDSLayout
+              contentWidth={640}
+              defaultHasDividers
+              header={
+                <XDSLayoutHeader>
+                  <h3 {...stylex.props(styles.heading)}>Wide</h3>
+                </XDSLayoutHeader>
+              }
+              start={
+                <XDSLayoutPanel width={160} hasDivider role="navigation">
+                  <NavItem active>Dashboard</NavItem>
+                  <NavItem>Settings</NavItem>
+                </XDSLayoutPanel>
+              }
+              content={
+                <XDSLayoutContent>
+                  <p {...stylex.props(styles.bodyText)}>
+                    Content is centered with room to spare.
+                  </p>
+                </XDSLayoutContent>
+              }
+              footer={
+                <XDSLayoutFooter>
+                  <p {...stylex.props(styles.bodyText)}>Footer</p>
+                </XDSLayoutFooter>
+              }
+            />
+          </div>
+        </XDSVStack>
+
+        <XDSVStack gap={2}>
+          <p {...stylex.props(styles.subheading)}>640px container</p>
+          <div {...stylex.props(styles.cwContainer, styles.cwContainer640)}>
+            <XDSLayout
+              contentWidth={640}
+              defaultHasDividers
+              header={
+                <XDSLayoutHeader>
+                  <h3 {...stylex.props(styles.heading)}>Medium</h3>
+                </XDSLayoutHeader>
+              }
+              start={
+                <XDSLayoutPanel width={160} hasDivider role="navigation">
+                  <NavItem active>Dashboard</NavItem>
+                  <NavItem>Settings</NavItem>
+                </XDSLayoutPanel>
+              }
+              content={
+                <XDSLayoutContent>
+                  <p {...stylex.props(styles.bodyText)}>
+                    Content fills the available space.
+                  </p>
+                </XDSLayoutContent>
+              }
+              footer={
+                <XDSLayoutFooter>
+                  <p {...stylex.props(styles.bodyText)}>Footer</p>
+                </XDSLayoutFooter>
+              }
+            />
+          </div>
+        </XDSVStack>
+
+        <XDSVStack gap={2}>
+          <p {...stylex.props(styles.subheading)}>400px container</p>
+          <div {...stylex.props(styles.cwContainer, styles.cwContainer400)}>
+            <XDSLayout
+              contentWidth={640}
+              defaultHasDividers
+              header={
+                <XDSLayoutHeader>
+                  <h3 {...stylex.props(styles.heading)}>Narrow</h3>
+                </XDSLayoutHeader>
+              }
+              start={
+                <XDSLayoutPanel width={160} hasDivider role="navigation">
+                  <NavItem active>Dashboard</NavItem>
+                  <NavItem>Settings</NavItem>
+                </XDSLayoutPanel>
+              }
+              content={
+                <XDSLayoutContent>
+                  <p {...stylex.props(styles.bodyText)}>Degrades to 100%.</p>
+                </XDSLayoutContent>
+              }
+              footer={
+                <XDSLayoutFooter>
+                  <p {...stylex.props(styles.bodyText)}>Footer</p>
+                </XDSLayoutFooter>
+              }
+            />
+          </div>
+        </XDSVStack>
+      </XDSHStack>
+    </XDSVStack>
+  ),
+};
+
+export const ContentWidthInAppShell: Story = {
+  name: 'Content Width — Nested in AppShell',
+  render: () => (
+    <XDSVStack gap={4} xstyle={styles.storySection}>
+      <p {...stylex.props(styles.sectionLabel)}>
+        XDSLayout with contentWidth=640 nested inside an XDSAppShell
+      </p>
+      <div {...stylex.props(styles.cwContainer, styles.cwContainer900)}>
+        <XDSAppShell height={400}>
+          <XDSLayout
+            contentWidth={640}
+            defaultHasDividers
+            header={
+              <XDSLayoutHeader>
+                <h3 {...stylex.props(styles.heading)}>
+                  App Shell + Content Width
+                </h3>
+              </XDSLayoutHeader>
+            }
+            content={
+              <XDSLayoutContent>
+                <p {...stylex.props(styles.bodyText)}>
+                  This layout is nested inside an XDSAppShell. The contentWidth
+                  constraint applies to the inner layout while the app shell
+                  provides the outer structure.
+                </p>
+                <br />
+                <div {...stylex.props(styles.placeholder)}>
+                  Placeholder content block
+                </div>
+              </XDSLayoutContent>
+            }
+            footer={
+              <XDSLayoutFooter>
+                <XDSHStack gap={2} hAlign="end">
+                  <XDSButton label="Cancel" variant="secondary">
+                    Cancel
+                  </XDSButton>
+                  <XDSButton label="Save" variant="primary">
+                    Save
+                  </XDSButton>
+                </XDSHStack>
+              </XDSLayoutFooter>
+            }
+          />
+        </XDSAppShell>
+      </div>
     </XDSVStack>
   ),
 };
