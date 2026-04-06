@@ -575,4 +575,61 @@ describe('XDSNumberInput', () => {
       );
     });
   });
+
+  describe('hasClear', () => {
+    it('shows clear button when hasClear is true and value exists', () => {
+      render(
+        <XDSNumberInput label="Qty" value={5} onChange={() => {}} hasClear />,
+      );
+      expect(
+        screen.getByRole('button', {name: 'Clear Qty'}),
+      ).toBeInTheDocument();
+    });
+
+    it('does not show clear button when value is null', () => {
+      render(
+        <XDSNumberInput
+          label="Qty"
+          value={null}
+          onChange={() => {}}
+          hasClear
+        />,
+      );
+      expect(
+        screen.queryByRole('button', {name: 'Clear Qty'}),
+      ).not.toBeInTheDocument();
+    });
+
+    it('does not show clear button when hasClear is false', () => {
+      render(<XDSNumberInput label="Qty" value={5} onChange={() => {}} />);
+      expect(
+        screen.queryByRole('button', {name: 'Clear Qty'}),
+      ).not.toBeInTheDocument();
+    });
+
+    it('does not show clear button when disabled', () => {
+      render(
+        <XDSNumberInput
+          label="Qty"
+          value={5}
+          onChange={() => {}}
+          hasClear
+          isDisabled
+        />,
+      );
+      expect(
+        screen.queryByRole('button', {name: 'Clear Qty'}),
+      ).not.toBeInTheDocument();
+    });
+
+    it('calls onChange with null when clear is clicked', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <XDSNumberInput label="Qty" value={5} onChange={onChange} hasClear />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Clear Qty'}));
+      expect(onChange).toHaveBeenCalledWith(null);
+    });
+  });
 });

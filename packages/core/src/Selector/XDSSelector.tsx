@@ -107,6 +107,14 @@ const styles = stylex.create({
   triggerPlaceholder: {
     color: colorVars['--color-text-secondary'],
   },
+  triggerLabel: {
+    flexGrow: 1,
+    minWidth: 0,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+    textAlign: 'start',
+  },
   triggerIcon: {
     flexShrink: 0,
     display: 'flex',
@@ -126,6 +134,25 @@ const styles = stylex.create({
   triggerIconStatus: {
     // Disable rotation transition for status icons
     transition: 'none',
+  },
+
+  // Clear button
+  clearButton: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 0,
+    margin: 0,
+    borderWidth: 0,
+    borderStyle: 'none',
+    backgroundColor: 'transparent',
+    cursor: 'pointer',
+    borderRadius: radiusVars['--radius-element'],
+    outline: {
+      default: 'none',
+      ':focus-visible': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
+    },
+    outlineOffset: 1,
   },
 
   // Dropdown container
@@ -246,7 +273,7 @@ export interface XDSSelectorStatus {
   message?: string;
 }
 
-export interface XDSSelectorProps<
+interface XDSSelectorPropsBase<
   T extends XDSSelectorOptionType = XDSSelectorOptionType,
 > extends Omit<XDSBaseProps, 'onChange' | 'defaultValue' | 'children'> {
   /**
@@ -289,20 +316,7 @@ export interface XDSSelectorProps<
    */
   options: T[];
 
-  /**
-   * The currently selected value.
-   */
-  value?: string;
-
-  /**
-   * Callback when selection changes.
-   */
-  onChange?: (value: string) => void;
-
-  /**
-   * Async action on change. Fires after onChange.
-   */
-  onChangeAction?: (value: string) => void | Promise<void>;
+  // value, onChange, onChangeAction, and hasClear are in the discriminated union below
 
   /**
    * Whether the selector is in a loading state.
@@ -349,6 +363,38 @@ export interface XDSSelectorProps<
 }
 
 /**
+ * Without `hasClear`, the selector always has a string value (or undefined for placeholder).
+ * With `hasClear`, the value can be `null` and onChange receives `null` on clear.
+ */
+type XDSSelectorPropsNonClearable<
+  T extends XDSSelectorOptionType = XDSSelectorOptionType,
+> = XDSSelectorPropsBase<T> & {
+  hasClear?: false;
+  value?: string;
+  onChange?: (value: string) => void;
+  onChangeAction?: (value: string) => void | Promise<void>;
+};
+
+type XDSSelectorPropsClearable<
+  T extends XDSSelectorOptionType = XDSSelectorOptionType,
+> = XDSSelectorPropsBase<T> & {
+  /**
+   * Whether to show a clear button when a value is selected.
+   * When clicked, resets the value to `null` and returns focus to the trigger.
+   *
+   * When enabled, `value` and `onChange` widen to include `null`.
+   */
+  hasClear: true;
+  value: string | null;
+  onChange?: (value: string | null) => void;
+  onChangeAction?: (value: string | null) => void | Promise<void>;
+};
+
+export type XDSSelectorProps<
+  T extends XDSSelectorOptionType = XDSSelectorOptionType,
+> = XDSSelectorPropsNonClearable<T> | XDSSelectorPropsClearable<T>;
+
+/**
  * Default option renderer
  */
 function DefaultOption({option}: {option: XDSSelectorOptionData}) {
@@ -374,28 +420,35 @@ function DefaultOption({option}: {option: XDSSelectorOptionData}) {
  * />
  * ```
  */
-export function XDSSelector<T extends XDSSelectorOptionType>({
-  label,
-  isLabelHidden = false,
-  description,
-  isOptional = false,
-  isRequired = false,
-  isDisabled = false,
-  options,
-  value,
-  onChange,
-  onChangeAction,
-  isLoading = false,
-  placeholder = 'Select...',
-  size = 'md',
-  status,
-  labelTooltip,
-  children,
-  'data-testid': testId,
-  xstyle,
-  className,
-  style,
-}: XDSSelectorProps<T>) {
+export function XDSSelector<T extends XDSSelectorOptionType>(
+  props: XDSSelectorProps<T>,
+) {
+  const {
+    label,
+    isLabelHidden = false,
+    description,
+    isOptional = false,
+    isRequired = false,
+    isDisabled = false,
+    options,
+    value,
+    onChange,
+    onChangeAction,
+    isLoading = false,
+    placeholder = 'Select...',
+    size = 'md',
+    status,
+    labelTooltip,
+    children,
+    'data-testid': testId,
+    xstyle,
+    className,
+    style,
+  } = props;
+  const hasClear = 'hasClear' in props && props.hasClear === true;
+
+  // Normalize null to undefined for internal use (null is the clear sentinel)
+  const normalizedValue = value === null ? undefined : value;
   const triggerId = useId();
   const listboxId = useId();
   const descriptionId = useId();
@@ -403,8 +456,8 @@ export function XDSSelector<T extends XDSSelectorOptionType>({
   const triggerRef = useRef<HTMLButtonElement>(null);
 
   const [, startTransition] = useTransition();
-  const [optimisticValue, setOptimisticValue] = useOptimistic(value);
-  const isBusy = isLoading || optimisticValue !== value;
+  const [optimisticValue, setOptimisticValue] = useOptimistic(normalizedValue);
+  const isBusy = isLoading || optimisticValue !== normalizedValue;
 
   // Build aria-describedby
   const ariaDescribedBy =
@@ -467,7 +520,7 @@ export function XDSSelector<T extends XDSSelectorOptionType>({
     onItemMouseEnter,
   } = useCombobox({
     selectableItems,
-    value,
+    value: normalizedValue,
     isDisabled,
     isOpen: popover.isOpen,
     onOpen: popover.show,
@@ -487,11 +540,28 @@ export function XDSSelector<T extends XDSSelectorOptionType>({
     listboxId,
   });
 
+  // Handle clear button click
+  const handleClear = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation(); // Don't open dropdown
+      (onChange as ((value: string | null) => void) | undefined)?.(null);
+      if (onChangeAction) {
+        startTransition(async () => {
+          setOptimisticValue(undefined as unknown as string);
+          await (
+            onChangeAction as (value: string | null) => void | Promise<void>
+          )(null);
+        });
+      }
+    },
+    [onChange, onChangeAction, startTransition, setOptimisticValue],
+  );
+
   // Render an individual item
   const renderItem = useCallback(
     (item: XDSSelectorOptionData, flatIndex: number) => {
       const isHighlighted = flatIndex === highlightedIndex;
-      const isSelected = item.value === value;
+      const isSelected = item.value === normalizedValue;
 
       return (
         <div
@@ -627,7 +697,19 @@ export function XDSSelector<T extends XDSSelectorOptionType>({
           className,
           style,
         )}>
-        <span>{selectedItem?.label ?? placeholder}</span>
+        <span {...stylex.props(styles.triggerLabel)}>
+          {selectedItem?.label ?? placeholder}
+        </span>
+        {hasClear && value != null && !isDisabled && (
+          <button
+            type="button"
+            tabIndex={-1}
+            onClick={handleClear}
+            aria-label={`Clear ${label}`}
+            {...stylex.props(styles.clearButton)}>
+            <XDSIcon icon="close" size="sm" color="secondary" />
+          </button>
+        )}
         {isBusy && <XDSSpinner size="sm" />}
         <span
           {...stylex.props(

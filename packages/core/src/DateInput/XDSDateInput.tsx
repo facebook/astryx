@@ -225,6 +225,13 @@ export interface XDSDateInputProps extends Omit<
   labelTooltip?: string;
 
   /**
+   * Whether to show a clear button when a date is set.
+   * When clicked, resets the value to undefined and returns focus to the input.
+   * @default false
+   */
+  hasClear?: boolean;
+
+  /**
    * Number of months to display in the calendar popover.
    * @default 1
    */
@@ -261,6 +268,7 @@ export function XDSDateInput({
   size = 'md',
   status,
   labelTooltip,
+  hasClear = false,
   numberOfMonths = 1,
   xstyle,
   className,
@@ -371,6 +379,12 @@ export function XDSDateInput({
     },
     [isBusy, onChange, onChangeAction, startTransition, setOptimisticValue],
   );
+
+  // Handle clear button click
+  const handleClear = useCallback(() => {
+    fireChange(undefined);
+    inputRef.current?.focus();
+  }, [fireChange]);
 
   // Handle date selection from calendar
   const handleDateSelect = useCallback(
@@ -519,6 +533,15 @@ export function XDSDateInput({
             !isInputValid && styles.inputInvalid,
           )}
         />
+        {hasClear && value !== undefined && !isEffectivelyDisabled && (
+          <button
+            type="button"
+            onClick={handleClear}
+            aria-label={`Clear ${label}`}
+            {...stylex.props(styles.iconButton)}>
+            <XDSIcon icon="close" size="sm" color="secondary" />
+          </button>
+        )}
         <button
           type="button"
           onClick={handleToggle}

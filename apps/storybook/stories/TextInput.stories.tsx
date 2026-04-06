@@ -465,3 +465,27 @@ export const TooltipWithOptional: Story = {
     isOptional: true,
   },
 };
+
+export const Clearable: Story = {
+  render: args => {
+    const [value, setValue] = useState(args.value ?? 'Hello world');
+    return <XDSTextInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Search',
+    placeholder: 'Type to search...',
+    hasClear: true,
+  },
+};
+
+export const ClearableWithStatus: Story = {
+  render: args => {
+    const [value, setValue] = useState(args.value ?? 'invalid-email');
+    return <XDSTextInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Email',
+    hasClear: true,
+    status: {type: 'error', message: 'Invalid email address'},
+  },
+};
