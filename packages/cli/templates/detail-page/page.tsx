@@ -209,20 +209,8 @@ const ArrowLeftIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 // ─── Styles ─────────────────────────────────────────────────────────────────
 const pageStyles = stylex.create({
-  maxWidth: {
-    maxWidth: 1000,
-    width: '100%',
-  },
-  centeredContent: {
-    maxWidth: 1000,
-    width: '100%',
-    marginInline: 'auto',
-  },
-  sectionGap: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 16,
-  },
+
+
   bulletSeparator: {
     fontSize: 12,
     lineHeight: '16px',
@@ -470,7 +458,7 @@ function PageHeader({
   return (
     <XDSLayoutHeader hasDivider padding={4}>
       <XDSCenter axis="horizontal">
-        <XDSVStack xstyle={pageStyles.maxWidth} gap={0}>
+        <XDSVStack gap={0}>
           {/* Back link */}
           <XDSLink href="#" label="All orders" color="secondary">
             <XDSHStack gap={1} vAlign="center">
@@ -827,19 +815,16 @@ export default function DetailPage2Template() {
       contentPadding={0}>
       <XDSLayout
         height="fill"
+        contentWidth={1000}
         defaultHasDividers
         header={<PageHeader activeTab={activeTab} onTabChange={setActiveTab} />}
         content={
-          <XDSLayoutContent role="main" padding={0}>
-            <div
-              {...stylex.props(
-                pageStyles.centeredContent,
-                pageStyles.sectionGap,
-              )}>
+          <XDSLayoutContent role="main">
+            <XDSVStack gap={4}>
               <ItemsCard />
               <InvoiceCard />
               <TimelineSection />
-            </div>
+            </XDSVStack>
           </XDSLayoutContent>
         }
         end={<RightPanel />}
