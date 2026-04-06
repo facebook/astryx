@@ -175,6 +175,27 @@ describe('trimStreamingArtifacts', () => {
     expect(trimStreamingArtifacts('Hello ***')).toBe('Hello ');
   });
 
+  it('trims unclosed mid-line bold', () => {
+    expect(trimStreamingArtifacts('Hello **bold')).toBe('Hello ');
+    expect(trimStreamingArtifacts('Hello **bo')).toBe('Hello ');
+  });
+
+  it('trims unclosed mid-line italic', () => {
+    expect(trimStreamingArtifacts('Hello *ital')).toBe('Hello ');
+  });
+
+  it('preserves complete bold+italic in same line', () => {
+    expect(trimStreamingArtifacts('Hello **bold** and *italic*')).toBe(
+      'Hello **bold** and *italic*',
+    );
+  });
+
+  it('trims unclosed bold after closed bold', () => {
+    expect(trimStreamingArtifacts('Hello **done** and **open')).toBe(
+      'Hello **done** and ',
+    );
+  });
+
   it('preserves closed bold markers', () => {
     expect(trimStreamingArtifacts('Hello **world**')).toBe('Hello **world**');
   });

@@ -614,20 +614,40 @@ export function trimStreamingArtifacts(input: string): string {
   }
 
   // Find trailing unclosed bold/italic markers (*)
-  // Use the same opener-matching approach as backticks:
-  // count trailing stars, look for a matching opener before them.
+  // First check trailing stars (no content after them yet):
   end = tail.length;
   while (end > 0 && tail[end - 1] === '*') end--;
   if (end < tail.length && end > 0) {
     const stars = tail.length - end;
     if (stars <= 3) {
-      // Look for a matching opener: same number of * before end
       const opener = tail.lastIndexOf('*'.repeat(stars), end - 1);
       if (opener === -1) {
-        // No opener found — these are unclosed markers, trim them
         tail = tail.slice(0, end);
       }
-      // else: opener exists, markers are balanced — leave them
+    }
+  }
+
+  // Then check for unclosed opening markers mid-line: e.g. "Hello **bold"
+  // where ** opened but hasn't closed yet. Scan for *, **, *** that have
+  // content after them but no matching closer.
+  for (const marker of ['***', '**', '*']) {
+    const openIdx = tail.lastIndexOf(marker);
+    if (openIdx !== -1 && openIdx + marker.length < tail.length) {
+      const afterOpen = tail.slice(openIdx + marker.length);
+      // Check the opener isn't preceded by the same marker (which would be a closer)
+      const beforeOpen = tail.slice(0, openIdx);
+      const isOpener =
+        openIdx === 0 ||
+        /[\s,.;:!?(]$/.test(beforeOpen) ||
+        beforeOpen.endsWith(marker);
+      // Check if there's a matching closer after it
+      const hasCloser = afterOpen.includes(marker);
+      if (!hasCloser && isOpener) {
+        // Also handle the case where ** is preceded by another ** (nested)
+        // Only trim if this is genuinely unclosed
+        tail = tail.slice(0, openIdx);
+        break;
+      }
     }
   }
 
