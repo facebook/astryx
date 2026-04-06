@@ -309,6 +309,15 @@ export interface XDSButtonProps extends XDSBaseProps<HTMLButtonElement> {
    */
   isLoading?: boolean;
   /**
+   * Whether the button is currently pressed/active (toggle state).
+   * When provided, the button renders with `aria-pressed` and a
+   * pressed visual style (overlay background, primary icon/text color).
+   *
+   * For a controlled toggle pattern with `onPressedChange`, use
+   * `XDSToggleButton` instead — it wraps XDSButton with this prop.
+   */
+  isPressed?: boolean;
+  /**
    * Click handler. For async actions that should show a loading state,
    * use `onClickAction` instead.
    */
@@ -366,6 +375,18 @@ export interface XDSButtonProps extends XDSBaseProps<HTMLButtonElement> {
 /**
  * Loading state styles
  */
+/**
+ * Pressed state styles — applied when isPressed is true.
+ * Layered on top of the variant style. Uses overlay background
+ * and primary text/icon colors for a clear visual indicator.
+ */
+const pressedStyles = stylex.create({
+  pressed: {
+    backgroundColor: colorVars['--color-overlay-pressed'],
+    color: colorVars['--color-text-primary'],
+  },
+});
+
 const loadingStyles = stylex.create({
   loading: {
     position: 'relative',
@@ -430,6 +451,7 @@ export function XDSButton({
   type = 'button',
   isDisabled = false,
   isLoading = false,
+  isPressed,
   onClickAction,
   icon,
   children,
@@ -508,6 +530,7 @@ export function XDSButton({
     styles.base,
     sizeStyles[size],
     variants[variant],
+    isPressed && pressedStyles.pressed,
     isIconOnly && styles.iconOnly,
     buttonDisabled && styles.disabled,
     useAriaDisabled && styles.ariaDisabled,
@@ -592,6 +615,7 @@ export function XDSButton({
         {...sharedMergedProps}
         {...props}
         {...ariaLabelProp}
+        aria-pressed={isPressed != null ? isPressed : undefined}
         aria-busy={isLoadingState || undefined}
         aria-disabled={useAriaDisabled || undefined}
         onClick={handleClick}
