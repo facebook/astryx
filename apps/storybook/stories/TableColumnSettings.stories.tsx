@@ -4,7 +4,6 @@ import {
   XDSTable,
   useXDSTableColumnSettings,
   useXDSTableColumnSettingsState,
-  toColumnSelectorOptions,
   useXDSTableSelection,
   useXDSTableSelectionState,
 } from '@xds/core/Table';
@@ -119,7 +118,11 @@ export const BasicColumnToggle: Story = {
       onChangeActiveColumnKeys: setActiveKeys,
     });
     const plugin = useXDSTableColumnSettings<User>(state.columnSettingsConfig);
-    const selectorOptions = toColumnSelectorOptions(columnOptions);
+    const selectorOptions = columnOptions.map(c => ({
+      value: c.key,
+      label: c.label,
+      disabled: c.isAlwaysVisible === true,
+    }));
 
     return (
       <div style={{maxWidth: 700}}>
@@ -161,7 +164,11 @@ export const DisabledColumns: Story = {
       onChangeActiveColumnKeys: setActiveKeys,
     });
     const plugin = useXDSTableColumnSettings<User>(state.columnSettingsConfig);
-    const selectorOptions = toColumnSelectorOptions(columnOptions);
+    const selectorOptions = columnOptions.map(c => ({
+      value: c.key,
+      label: c.label,
+      disabled: c.isAlwaysVisible === true,
+    }));
 
     return (
       <div style={{maxWidth: 700}}>
@@ -205,7 +212,11 @@ export const ResetToDefault: Story = {
       defaultColumnKeys: defaultKeys,
     });
     const plugin = useXDSTableColumnSettings<User>(state.columnSettingsConfig);
-    const selectorOptions = toColumnSelectorOptions(columnOptions);
+    const selectorOptions = columnOptions.map(c => ({
+      value: c.key,
+      label: c.label,
+      disabled: c.isAlwaysVisible === true,
+    }));
 
     return (
       <div style={{maxWidth: 700}}>
@@ -258,7 +269,11 @@ export const WithSelection: Story = {
     const columnPlugin = useXDSTableColumnSettings<User>(
       state.columnSettingsConfig,
     );
-    const selectorOptions = toColumnSelectorOptions(columnOptions);
+    const selectorOptions = columnOptions.map(c => ({
+      value: c.key,
+      label: c.label,
+      disabled: c.isAlwaysVisible === true,
+    }));
 
     const {selectionConfig} = useXDSTableSelectionState<User>({
       data: users,

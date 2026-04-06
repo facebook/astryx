@@ -2,7 +2,7 @@
  * @file useXDSTableColumnSettings.test.tsx
  * @input useXDSTableColumnSettings, useXDSTableColumnSettingsState, XDSTable, React testing utilities
  * @output Functional tests for the column settings plugin, selector adapter, and integration
- * @position Test file; validates plugin behavior, toColumnSelectorOptions, filterActiveColumns
+ * @position Test file; validates plugin behavior and integration
  */
 
 import {describe, it, expect, vi} from 'vitest';
@@ -12,8 +12,6 @@ import {renderHook} from '@testing-library/react';
 import {XDSTable} from '../../XDSTable';
 import {
   useXDSTableColumnSettings,
-  toColumnSelectorOptions,
-  filterActiveColumns,
   type UseXDSTableColumnSettingsConfig,
   type XDSColumnSettingsOption,
 } from './useXDSTableColumnSettings';
@@ -115,129 +113,6 @@ describe('useXDSTableColumnSettings', () => {
     const firstPlugin = result.current;
     rerender();
     expect(result.current).toBe(firstPlugin);
-  });
-});
-
-// =============================================================================
-// toColumnSelectorOptions Tests
-// =============================================================================
-
-describe('toColumnSelectorOptions', () => {
-  it('generates one item per column for ungrouped columns', () => {
-    const options = toColumnSelectorOptions(columnOptions);
-    expect(options).toHaveLength(5);
-  });
-
-  it('marks always-visible columns as disabled', () => {
-    const options = toColumnSelectorOptions(columnOptions);
-    const nameItem = options[0];
-    expect(nameItem).toHaveProperty('disabled', true);
-    const emailItem = options[1];
-    expect(emailItem).toHaveProperty('disabled', false);
-  });
-
-  it('generates items with value and label', () => {
-    const options = toColumnSelectorOptions(columnOptions);
-    const first = options[0] as {value: string; label: string};
-    expect(first.value).toBe('name');
-    expect(first.label).toBe('Name');
-  });
-
-  it('groups columns by group field into sections', () => {
-    const groupedColumns: XDSColumnSettingsOption[] = [
-      {key: 'name', label: 'Name', isAlwaysVisible: true, group: 'Basic'},
-      {key: 'email', label: 'Email', group: 'Basic'},
-      {key: 'role', label: 'Role', group: 'Details'},
-      {key: 'status', label: 'Status'},
-    ];
-
-    const options = toColumnSelectorOptions(groupedColumns);
-
-    const sections = options.filter(
-      i => typeof i === 'object' && 'type' in i && i.type === 'section',
-    );
-    expect(sections).toHaveLength(2);
-
-    const basicSection = sections[0] as {
-      type: 'section';
-      title: string;
-      options: Array<{value: string}>;
-    };
-    expect(basicSection.title).toBe('Basic');
-    expect(basicSection.options).toHaveLength(2);
-
-    const lastItem = options[options.length - 1] as {value: string};
-    expect(lastItem.value).toBe('status');
-  });
-
-  it('handles empty columns', () => {
-    const options = toColumnSelectorOptions([]);
-    expect(options).toHaveLength(0);
-  });
-});
-
-// =============================================================================
-// filterActiveColumns Tests
-// =============================================================================
-
-describe('filterActiveColumns', () => {
-  it('filters columns to only active keys', () => {
-    const filtered = filterActiveColumns(allTableColumns, [
-      'name',
-      'email',
-      'role',
-    ]);
-    expect(filtered).toHaveLength(3);
-    expect(filtered.map(c => c.key)).toEqual(['name', 'email', 'role']);
-  });
-
-  it('preserves activeColumnKeys order', () => {
-    const filtered = filterActiveColumns(allTableColumns, [
-      'role',
-      'name',
-      'email',
-    ]);
-    expect(filtered.map(c => c.key)).toEqual(['role', 'name', 'email']);
-  });
-
-  it('handles unknown keys gracefully', () => {
-    const filtered = filterActiveColumns(allTableColumns, [
-      'name',
-      'nonexistent',
-      'email',
-    ]);
-    expect(filtered).toHaveLength(2);
-    expect(filtered.map(c => c.key)).toEqual(['name', 'email']);
-  });
-
-  it('returns empty array for empty activeColumnKeys', () => {
-    const filtered = filterActiveColumns(allTableColumns, []);
-    expect(filtered).toHaveLength(0);
-  });
-
-  it('returns all columns when all keys active', () => {
-    const filtered = filterActiveColumns(allTableColumns, [
-      'name',
-      'email',
-      'role',
-      'status',
-      'lastLogin',
-    ]);
-    expect(filtered).toHaveLength(5);
-  });
-
-  it('maintains XDSTableColumn shape', () => {
-    const columnsWithRenderCell: XDSTableColumn<User>[] = [
-      {key: 'name', header: 'Name', renderCell: item => item.name},
-      {key: 'email', header: 'Email'},
-    ];
-    const filtered = filterActiveColumns(columnsWithRenderCell, [
-      'name',
-      'email',
-    ]);
-    expect(filtered[0].key).toBe('name');
-    expect(filtered[0].header).toBe('Name');
-    expect(filtered[0].renderCell).toBeInstanceOf(Function);
   });
 });
 

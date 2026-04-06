@@ -12,17 +12,13 @@
  * For state management (toggle, reset, visibility checks), use
  * `useXDSTableColumnSettingsState` which produces the config this hook needs.
  *
- * For MultiSelector integration, use `toColumnSelectorOptions` to convert
- * column definitions into XDSMultiSelector-compatible options.
- *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Table/plugins/columnSettings/index.ts (exports)
  * - /packages/core/src/Table/index.ts (exports)
  */
 
-import {useCallback, useMemo, useRef} from 'react';
+import {useMemo, useRef} from 'react';
 import type {TablePlugin, XDSTableColumn} from '../../types';
-import type {XDSMultiSelectorOptionType} from '../../../MultiSelector/types';
 import type {UseXDSTableColumnSettingsStateConfig} from './useXDSTableColumnSettingsState';
 
 // =============================================================================
@@ -126,108 +122,4 @@ export function useXDSTableColumnSettings<
     }),
     [],
   );
-}
-
-// =============================================================================
-// MultiSelector Adapter
-// =============================================================================
-
-/**
- * Convert column settings options to XDSMultiSelector-compatible options.
- *
- * Pure data transform — no React, no hooks. Converts column definitions
- * into the shape XDSMultiSelector expects. Columns with `group` are
- * organized into sections; always-visible columns are marked `disabled`.
- *
- * @example
- * ```
- * const options = toColumnSelectorOptions(columns);
- *
- * <XDSMultiSelector
- *   label="Columns"
- *   options={options}
- *   value={[...state.activeColumnKeys]}
- *   onChange={state.setActiveColumnKeys}
- * />
- * ```
- */
-export function toColumnSelectorOptions<TColumnKey extends string = string>(
-  columns: ReadonlyArray<XDSColumnSettingsOption<TColumnKey>>,
-): XDSMultiSelectorOptionType[] {
-  const hasGroups = columns.some(c => c.group);
-
-  if (!hasGroups) {
-    return columns.map(col => ({
-      value: col.key,
-      label: col.label,
-      disabled: col.isAlwaysVisible === true,
-    }));
-  }
-
-  // Build grouped sections
-  const groups = new Map<string, XDSColumnSettingsOption<TColumnKey>[]>();
-  const ungrouped: XDSColumnSettingsOption<TColumnKey>[] = [];
-
-  for (const col of columns) {
-    if (col.group) {
-      const group = groups.get(col.group) ?? [];
-      group.push(col);
-      groups.set(col.group, group);
-    } else {
-      ungrouped.push(col);
-    }
-  }
-
-  const items: XDSMultiSelectorOptionType[] = [];
-
-  for (const [groupName, groupCols] of groups) {
-    items.push({
-      type: 'section' as const,
-      title: groupName,
-      options: groupCols.map(col => ({
-        value: col.key,
-        label: col.label,
-        disabled: col.isAlwaysVisible === true,
-      })),
-    });
-  }
-
-  for (const col of ungrouped) {
-    items.push({
-      value: col.key,
-      label: col.label,
-      disabled: col.isAlwaysVisible === true,
-    });
-  }
-
-  return items;
-}
-
-// =============================================================================
-// activeColumns Utility
-// =============================================================================
-
-/**
- * Filter and reorder a columns array based on active column keys.
- *
- * Use this when you need the filtered column array outside the table
- * (e.g., for rendering column headers in a toolbar or for data export).
- * Inside XDSTable, the plugin's `transformColumns` handles this automatically.
- *
- * @example
- * ```
- * const visibleColumns = filterActiveColumns(allColumns, activeColumnKeys);
- * ```
- */
-export function filterActiveColumns<
-  T extends Record<string, unknown>,
-  TColumnKey extends string = string,
->(
-  columns: XDSTableColumn<T>[],
-  activeColumnKeys: ReadonlyArray<TColumnKey>,
-): XDSTableColumn<T>[] {
-  const columnMap = new Map(columns.map(c => [c.key, c]));
-  return activeColumnKeys
-    .map(key => columnMap.get(key))
-    .filter((c): c is XDSTableColumn<T> => c != null);
 }

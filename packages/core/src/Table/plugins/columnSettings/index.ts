@@ -1,8 +1,4 @@
-export {
-  useXDSTableColumnSettings,
-  toColumnSelectorOptions,
-  filterActiveColumns,
-} from './useXDSTableColumnSettings';
+export {useXDSTableColumnSettings} from './useXDSTableColumnSettings';
 export type {
   UseXDSTableColumnSettingsConfig,
   XDSColumnSettingsOption,
