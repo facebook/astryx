@@ -6,6 +6,13 @@
   "bin": {
     "xds": "./bin/xds.mjs"
   },
+  "exports": {
+    ".": "./bin/xds.mjs",
+    "./json": {
+      "types": "./src/types/index.d.ts",
+      "import": "./src/lib/parse.mjs"
+    }
+  },
   "files": [
     "bin",
     "src",
