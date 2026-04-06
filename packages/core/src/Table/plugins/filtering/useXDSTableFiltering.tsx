@@ -106,14 +106,14 @@ export interface XDSTableFilterOption {
 /** Text filter — free-form text input. */
 export interface XDSTableFilterTypeText {
   type: 'text';
-  /** Placeholder text for the input. @default 'Filter...' */
+  /** Placeholder text for the input. @default 'Filter <column header>' */
   placeholder?: string;
 }
 
 /** Number filter — numeric input for exact match. */
 export interface XDSTableFilterTypeNumber {
   type: 'number';
-  /** Placeholder text. @default 'Filter...' */
+  /** Placeholder text. @default 'Filter <column header>' */
   placeholder?: string;
   /** Minimum allowed value */
   min?: number;
@@ -163,7 +163,7 @@ export interface XDSTableFilterTypeMultiSelector {
 /** Date filter — date picker input (ISO date string). */
 export interface XDSTableFilterTypeDate {
   type: 'date';
-  /** Placeholder text. @default 'Filter...' */
+  /** Placeholder text. @default 'Filter <column header>' */
   placeholder?: string;
   /** Minimum allowed date (ISO string) */
   min?: string;
@@ -174,7 +174,7 @@ export interface XDSTableFilterTypeDate {
 /** Time filter — time picker input (ISO time string). */
 export interface XDSTableFilterTypeTime {
   type: 'time';
-  /** Placeholder text. @default 'Filter...' */
+  /** Placeholder text. @default 'Filter <column header>' */
   placeholder?: string;
   /** Minimum allowed time */
   min?: string;
@@ -573,14 +573,15 @@ const filterStyles = stylex.create({
     opacity: 1,
   },
   popoverContent: {
-    padding: spacingVars['--spacing-2'],
     width: '240px',
   },
   popoverActions: {
     display: 'flex',
-    justifyContent: 'flex-end',
     gap: spacingVars['--spacing-2'],
     marginTop: spacingVars['--spacing-2'],
+  },
+  popoverActionsSpacer: {
+    flex: 1,
   },
   numberRangeRow: {
     display: 'flex',
@@ -624,7 +625,7 @@ function TextFilterControl({
           .getConfig()
           .onFilterChange(columnKey, newValue === '' ? null : newValue);
       }}
-      placeholder={filterConfig.placeholder ?? 'Filter...'}
+      placeholder={filterConfig.placeholder ?? `Filter ${header}`}
       size={size}
     />
   );
@@ -654,7 +655,7 @@ function NumberFilterControl({
       onChange={(newValue: number) => {
         store.getConfig().onFilterChange(columnKey, newValue);
       }}
-      placeholder={filterConfig.placeholder ?? 'Filter...'}
+      placeholder={filterConfig.placeholder ?? `Filter ${header}`}
       min={filterConfig.min ?? null}
       max={filterConfig.max ?? null}
       step={filterConfig.step ?? null}
@@ -1082,11 +1083,12 @@ function PopoverFilterTrigger({
             />
             <div {...stylex.props(filterStyles.popoverActions)}>
               <XDSButton
-                label="Clear"
-                variant="secondary"
+                label="Reset"
+                variant="ghost"
                 size="sm"
                 onClick={handleClear}
               />
+              <div {...stylex.props(filterStyles.popoverActionsSpacer)} />
               <XDSButton
                 label="Apply"
                 variant="primary"
