@@ -25,7 +25,12 @@ export type BlockNode =
   | {type: 'codeblock'; language: string; content: string}
   | {type: 'blockquote'; children: BlockNode[]}
   | {type: 'list'; ordered: boolean; start?: number; items: ListItemNode[]}
-  | {type: 'table'; headers: TableCellNode[]; alignments: TableAlignment[]; rows: TableCellNode[][]}
+  | {
+      type: 'table';
+      headers: TableCellNode[];
+      alignments: TableAlignment[];
+      rows: TableCellNode[][];
+    }
   | {type: 'hr'}
   | {type: 'image'; src: string; alt: string};
 
@@ -89,7 +94,11 @@ export function parseInline(text: string): InlineNode[] {
       if (altClose !== -1 && text[altClose + 1] === '(') {
         const srcClose = findClosingParen(text, altClose + 2);
         if (srcClose !== -1) {
-          nodes.push({type: 'image', src: text.slice(altClose + 2, srcClose), alt: text.slice(i + 2, altClose)});
+          nodes.push({
+            type: 'image',
+            src: text.slice(altClose + 2, srcClose),
+            alt: text.slice(i + 2, altClose),
+          });
           i = srcClose + 1;
           continue;
         }
@@ -102,7 +111,11 @@ export function parseInline(text: string): InlineNode[] {
       if (textClose !== -1 && text[textClose + 1] === '(') {
         const urlClose = findClosingParen(text, textClose + 2);
         if (urlClose !== -1) {
-          nodes.push({type: 'link', href: text.slice(textClose + 2, urlClose), children: parseInline(text.slice(i + 1, textClose))});
+          nodes.push({
+            type: 'link',
+            href: text.slice(textClose + 2, urlClose),
+            children: parseInline(text.slice(i + 1, textClose)),
+          });
           i = urlClose + 1;
           continue;
         }
@@ -120,8 +133,19 @@ export function parseInline(text: string): InlineNode[] {
         // mid-word underscore — fall through
       } else {
         const closeIndex = text.indexOf(marker, i + 3);
-        if (closeIndex !== -1 && (!isUnderscore || !isWordChar(text[closeIndex + 3]))) {
-          nodes.push({type: 'bold', children: [{type: 'italic', children: parseInline(text.slice(i + 3, closeIndex))}]});
+        if (
+          closeIndex !== -1 &&
+          (!isUnderscore || !isWordChar(text[closeIndex + 3]))
+        ) {
+          nodes.push({
+            type: 'bold',
+            children: [
+              {
+                type: 'italic',
+                children: parseInline(text.slice(i + 3, closeIndex)),
+              },
+            ],
+          });
           i = closeIndex + 3;
           continue;
         }
@@ -139,8 +163,14 @@ export function parseInline(text: string): InlineNode[] {
         // mid-word underscore — fall through
       } else {
         const closeIndex = text.indexOf(marker, i + 2);
-        if (closeIndex !== -1 && (!isUnderscore || !isWordChar(text[closeIndex + 2]))) {
-          nodes.push({type: 'bold', children: parseInline(text.slice(i + 2, closeIndex))});
+        if (
+          closeIndex !== -1 &&
+          (!isUnderscore || !isWordChar(text[closeIndex + 2]))
+        ) {
+          nodes.push({
+            type: 'bold',
+            children: parseInline(text.slice(i + 2, closeIndex)),
+          });
           i = closeIndex + 2;
           continue;
         }
@@ -151,7 +181,10 @@ export function parseInline(text: string): InlineNode[] {
     if (text[i] === '~' && text[i + 1] === '~') {
       const closeIndex = text.indexOf('~~', i + 2);
       if (closeIndex !== -1) {
-        nodes.push({type: 'strikethrough', children: parseInline(text.slice(i + 2, closeIndex))});
+        nodes.push({
+          type: 'strikethrough',
+          children: parseInline(text.slice(i + 2, closeIndex)),
+        });
         i = closeIndex + 2;
         continue;
       }
@@ -164,8 +197,15 @@ export function parseInline(text: string): InlineNode[] {
         // mid-word underscore — fall through
       } else {
         const closeIndex = text.indexOf(text[i], i + 1);
-        if (closeIndex !== -1 && closeIndex > i + 1 && (!isUnderscore || !isWordChar(text[closeIndex + 1]))) {
-          nodes.push({type: 'italic', children: parseInline(text.slice(i + 1, closeIndex))});
+        if (
+          closeIndex !== -1 &&
+          closeIndex > i + 1 &&
+          (!isUnderscore || !isWordChar(text[closeIndex + 1]))
+        ) {
+          nodes.push({
+            type: 'italic',
+            children: parseInline(text.slice(i + 1, closeIndex)),
+          });
           i = closeIndex + 1;
           continue;
         }
@@ -258,27 +298,58 @@ function splitTableRow(line: string): string[] {
   }
   while (end > start && line[end - 1] === ' ') end--;
   if (end > start && line[end - 1] === '|') end--;
-  return line.slice(start, end).split('|').map(segment => segment.trim());
+  return line
+    .slice(start, end)
+    .split('|')
+    .map(segment => segment.trim());
 }
 
-function parseTable(lines: string[], lineIndex: number): {node: BlockNode; nextIndex: number} {
-  const headers: TableCellNode[] = splitTableRow(lines[lineIndex]).map(cell => ({children: parseInline(cell)}));
-  const alignments: TableAlignment[] = splitTableRow(lines[lineIndex + 1]).map(cell => {
-    const trimmed = cell.trim();
-    const leftAligned = trimmed.startsWith(':');
-    const rightAligned = trimmed.endsWith(':');
-    return leftAligned && rightAligned ? 'center' : rightAligned ? 'right' : leftAligned ? 'left' : null;
-  });
+function parseTable(
+  lines: string[],
+  lineIndex: number,
+): {node: BlockNode; nextIndex: number} {
+  const headers: TableCellNode[] = splitTableRow(lines[lineIndex]).map(
+    cell => ({children: parseInline(cell)}),
+  );
+  const alignments: TableAlignment[] = splitTableRow(lines[lineIndex + 1]).map(
+    cell => {
+      const trimmed = cell.trim();
+      const leftAligned = trimmed.startsWith(':');
+      const rightAligned = trimmed.endsWith(':');
+      return leftAligned && rightAligned
+        ? 'center'
+        : rightAligned
+          ? 'right'
+          : leftAligned
+            ? 'left'
+            : null;
+    },
+  );
   const rows: TableCellNode[][] = [];
   let rowIndex = lineIndex + 2;
-  while (rowIndex < lines.length && lines[rowIndex].includes('|') && lines[rowIndex].trim() !== '') {
-    rows.push(splitTableRow(lines[rowIndex]).map(cell => ({children: parseInline(cell)})));
+  while (
+    rowIndex < lines.length &&
+    lines[rowIndex].includes('|') &&
+    lines[rowIndex].trim() !== ''
+  ) {
+    rows.push(
+      splitTableRow(lines[rowIndex]).map(cell => ({
+        children: parseInline(cell),
+      })),
+    );
     rowIndex++;
   }
-  return {node: {type: 'table', headers, alignments, rows}, nextIndex: rowIndex};
+  return {
+    node: {type: 'table', headers, alignments, rows},
+    nextIndex: rowIndex,
+  };
 }
 
-function parseList(lines: string[], startIndex: number, ordered: boolean): {node: BlockNode; nextIndex: number} {
+function parseList(
+  lines: string[],
+  startIndex: number,
+  ordered: boolean,
+): {node: BlockNode; nextIndex: number} {
   const items: ListItemNode[] = [];
   const baseIndent = getIndent(lines[startIndex]);
   const itemPattern = ordered
@@ -308,13 +379,19 @@ function parseList(lines: string[], startIndex: number, ordered: boolean): {node
 
     // Collect sub-content (nested items or continuation lines)
     const subLines: string[] = [];
-    while (index < lines.length && lines[index].trim() !== '' && getIndent(lines[index]) > baseIndent) {
+    while (
+      index < lines.length &&
+      lines[index].trim() !== '' &&
+      getIndent(lines[index]) > baseIndent
+    ) {
       subLines.push(lines[index]);
       index++;
     }
 
     if (subLines.length > 0) {
-      const minSubIndent = Math.min(...subLines.map(subLine => getIndent(subLine)));
+      const minSubIndent = Math.min(
+        ...subLines.map(subLine => getIndent(subLine)),
+      );
       const deindented = subLines.map(subLine => subLine.slice(minSubIndent));
       itemText += '\n' + deindented.join('\n');
     }
@@ -335,7 +412,10 @@ export function parseMarkdown(input: string): BlockNode[] {
 
   while (index < lines.length) {
     const line = lines[index];
-    if (line.trim() === '') { index++; continue; }
+    if (line.trim() === '') {
+      index++;
+      continue;
+    }
 
     // --- Fenced code block ---
     const fenceMatch = line.match(/^(`{3,}|~{3,})(\w*)/);
@@ -356,7 +436,11 @@ export function parseMarkdown(input: string): BlockNode[] {
     // --- Heading ---
     const headingMatch = line.match(/^(#{1,6}) +(.*)/);
     if (headingMatch) {
-      blocks.push({type: 'heading', level: headingMatch[1].length as 1 | 2 | 3 | 4 | 5 | 6, children: parseInline(headingMatch[2])});
+      blocks.push({
+        type: 'heading',
+        level: headingMatch[1].length as 1 | 2 | 3 | 4 | 5 | 6,
+        children: parseInline(headingMatch[2]),
+      });
       index++;
       continue;
     }
@@ -377,7 +461,11 @@ export function parseMarkdown(input: string): BlockNode[] {
     }
 
     // --- Table (with or without leading pipe) ---
-    if (index + 1 < lines.length && line.includes('|') && isTableSeparator(lines[index + 1])) {
+    if (
+      index + 1 < lines.length &&
+      line.includes('|') &&
+      isTableSeparator(lines[index + 1])
+    ) {
       const tableResult = parseTable(lines, index);
       blocks.push(tableResult.node);
       index = tableResult.nextIndex;
@@ -387,11 +475,17 @@ export function parseMarkdown(input: string): BlockNode[] {
     // --- Blockquote ---
     if (line.startsWith('> ') || line === '>') {
       const quoteLines: string[] = [];
-      while (index < lines.length && (lines[index].startsWith('> ') || lines[index] === '>')) {
+      while (
+        index < lines.length &&
+        (lines[index].startsWith('> ') || lines[index] === '>')
+      ) {
         quoteLines.push(lines[index].replace(/^> ?/, ''));
         index++;
       }
-      blocks.push({type: 'blockquote', children: parseMarkdown(quoteLines.join('\n'))});
+      blocks.push({
+        type: 'blockquote',
+        children: parseMarkdown(quoteLines.join('\n')),
+      });
       continue;
     }
 
@@ -414,11 +508,18 @@ export function parseMarkdown(input: string): BlockNode[] {
     // --- Paragraph ---
     const paraLines: string[] = [line];
     index++;
-    while (index < lines.length && !isBlockStart(lines[index]) && lines[index].trim() !== '') {
+    while (
+      index < lines.length &&
+      !isBlockStart(lines[index]) &&
+      lines[index].trim() !== ''
+    ) {
       paraLines.push(lines[index]);
       index++;
     }
-    blocks.push({type: 'paragraph', children: parseInline(paraLines.join('\n'))});
+    blocks.push({
+      type: 'paragraph',
+      children: parseInline(paraLines.join('\n')),
+    });
   }
   return blocks;
 }
@@ -524,6 +625,76 @@ export function trimStreamingArtifacts(input: string): string {
   return prefix + tail;
 }
 
+/**
+ * Trim trailing lines from the unsettled zone that look like the start of
+ * a structural block (list item, table row, heading) but may not be complete
+ * yet. This prevents flashes of partial syntax like bare `-` bullets or
+ * incomplete `| col |` table rows during streaming.
+ *
+ * Only applied to the unsettled portion — settled blocks are already cached.
+ */
+function trimUnsettledStructural(text: string): string {
+  const lines = text.split('\n');
+
+  // Walk backwards from the end, trimming lines that are ambiguous
+  while (lines.length > 0) {
+    const last = lines[lines.length - 1];
+    const trimmed = last.trim();
+
+    // Empty trailing lines — safe to drop
+    if (trimmed === '') {
+      lines.pop();
+      continue;
+    }
+
+    // Partial list item: line starts with `- `, `* `, `+ `, or `1. `
+    // but has very little content (just the marker or marker + a few chars).
+    // A complete list item would typically have more than just the marker.
+    // We check: is this the ONLY line that looks like a list item, and is it short?
+    if (/^ {0,9}[-*+] $/.test(last) || /^ {0,9}\d+\. $/.test(last)) {
+      // Just the marker with trailing space — definitely incomplete
+      lines.pop();
+      continue;
+    }
+
+    // Partial table: line contains `|` but the next line (separator) hasn't
+    // arrived yet. A table needs at least a header + separator row.
+    // If this is the only `|`-containing line at the tail, hold it back.
+    if (trimmed.includes('|')) {
+      // Check if there's a separator line following (would mean table is forming)
+      // If this is the last line and no separator follows, it's incomplete
+      const hasSeparatorBefore =
+        lines.length >= 2 && isTableSeparator(lines[lines.length - 2]);
+      if (!hasSeparatorBefore) {
+        // Check if THIS line is the separator (header is above)
+        if (isTableSeparator(last)) {
+          // Separator without a complete row after — hold back both header and separator
+          lines.pop(); // remove separator
+          if (lines.length > 0 && lines[lines.length - 1].includes('|')) {
+            lines.pop(); // remove header too
+          }
+          continue;
+        }
+        // Single pipe line — could be start of a table header, hold it back
+        // unless there are already complete table rows above it
+        const hasTableAbove =
+          lines.length >= 3 &&
+          lines[lines.length - 3].includes('|') &&
+          isTableSeparator(lines[lines.length - 2]);
+        if (!hasTableAbove) {
+          lines.pop();
+          continue;
+        }
+      }
+    }
+
+    // This line looks complete — stop trimming
+    break;
+  }
+
+  return lines.join('\n');
+}
+
 export function parseMarkdownIncremental(
   input: string,
   state: IncrementalState,
@@ -546,14 +717,18 @@ export function parseMarkdownIncremental(
   }
 
   const settledText = lines.slice(0, boundary).join('\n');
-  const unsettledText = lines.slice(boundary).join('\n').trim();
+  const unsettledRaw = lines.slice(boundary).join('\n').trim();
+  const unsettledText = trimUnsettledStructural(unsettledRaw);
 
   let settledBlocks: BlockNode[];
 
   if (settledText === state.settledText) {
     // Settled portion unchanged — reuse cached blocks
     settledBlocks = state.settledBlocks;
-  } else if (state.settledText.length > 0 && settledText.startsWith(state.settledText)) {
+  } else if (
+    state.settledText.length > 0 &&
+    settledText.startsWith(state.settledText)
+  ) {
     // Settled portion grew — parse only the new delta
     const delta = settledText.slice(state.settledText.length);
     const deltaBlocks = parseMarkdown(delta);
