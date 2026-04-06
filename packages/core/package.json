@@ -208,6 +208,12 @@
       "import": "./dist/List/index.mjs",
       "require": "./dist/List/index.js"
     },
+    "./Markdown": {
+      "source": "./src/Markdown/index.ts",
+      "types": "./dist/Markdown/index.d.ts",
+      "import": "./dist/Markdown/index.mjs",
+      "require": "./dist/Markdown/index.js"
+    },
     "./MetadataList": {
       "source": "./src/MetadataList/index.ts",
       "types": "./dist/MetadataList/index.d.ts",
