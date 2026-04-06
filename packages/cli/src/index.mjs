@@ -27,18 +27,41 @@ program
   .option('--dense', 'Output docs in compressed dense format (token-efficient)')
   .option('--lang <locale>', 'Output docs in specified language/format (en, zh, dense)')
   .option('--detail <level>', 'Output detail level (full, compact, brief)', 'full')
+  .option('--json', 'Output as typed JSON (envelope: { type, data })')
   .addHelpCommand('help', 'Show all commands')
   .action(() => {
     program.help();
   });
 
 /**
+ * Fallback hook: if --json was requested but the command didn't call
+ * jsonOut/jsonError, return a structured "not supported" error.
+ * Registered BEFORE the update-check hook so it fires first.
+ */
+program.hook('postAction', (thisCommand, actionCommand) => {
+  if (program.opts().json && !process.__xdsJsonHandled) {
+    const parts = [];
+    let cmd = actionCommand;
+    while (cmd && cmd !== program) {
+      parts.unshift(cmd.name());
+      cmd = cmd.parent;
+    }
+    const fullName = parts.join(' ');
+    console.log(JSON.stringify({
+      error: `JSON output is not supported for the '${fullName}' command`,
+    }, null, 2));
+    process.exit(1);
+  }
+});
+
+/**
  * Post-action hook: print update hint after any command output.
  * Only fires for commands that produce output agents read (component, docs, etc.).
- * Uses the FYI format validated by vibe testing — never triggers injection defenses.
+ * Suppressed when --json is active to avoid contaminating stdout.
  */
 const UPDATE_HINT_COMMANDS = new Set(['component', 'docs', 'doctor']);
 program.hook('postAction', (thisCommand, actionCommand) => {
+  if (program.opts().json) return;
   try {
     if (UPDATE_HINT_COMMANDS.has(actionCommand.name())) {
       const hint = checkForUpdate();
