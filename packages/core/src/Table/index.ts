@@ -21,7 +21,11 @@ export {useXDSTableSortable} from './plugins/sortable';
 export {useXDSTablePagination} from './plugins/pagination';
 export {useXDSTableColumnSettings} from './plugins/columnSettings';
 export {useXDSTableColumnResize} from './plugins/columnResize';
-export {useXDSTableFiltering, toSearchFilters} from './plugins/filtering';
+export {
+  useXDSTableFiltering,
+  useXDSTableFilterState,
+  toSearchFilters,
+} from './plugins/filtering';
 export {useXDSBaseTablePlugins} from './useXDSBaseTablePlugins';
 export {
   proportional,
