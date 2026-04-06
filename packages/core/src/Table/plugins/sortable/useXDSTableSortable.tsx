@@ -139,7 +139,11 @@ const sortStyles = stylex.create({
   },
   iconWrapperUnsorted: {
     display: 'inline-flex',
-    opacity: 0.35,
+    opacity: {
+      default: 0.35,
+      ':is(th:hover *)': 1,
+      ':focus-visible': 1,
+    },
   },
   iconWrapperActive: {
     display: 'inline-flex',

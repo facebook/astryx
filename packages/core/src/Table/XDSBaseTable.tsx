@@ -53,7 +53,7 @@ const styles = stylex.create({
   headerLabelRow: {
     display: 'inline-flex',
     alignItems: 'center',
-    gap: spacingVars['--spacing-0-5'],
+    gap: spacingVars['--spacing-1'],
     minWidth: 0,
   },
 });
