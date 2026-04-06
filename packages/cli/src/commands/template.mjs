@@ -12,6 +12,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {CLI_ROOT} from '../utils/paths.mjs';
+import {jsonOut, jsonError} from '../lib/json.mjs';
 
 // ── Template discovery ───────────────────────────────────────────────
 
@@ -223,9 +224,16 @@ export function registerTemplate(program) {
       const templatesDir = path.join(CLI_ROOT, 'templates');
       const templates = await discoverTemplates();
       const templateNames = templates.map(t => t.dirName);
+      const json = program.opts().json || false;
 
-      // --list: show all templates with compositions
       if (options.list || (!name && !options.skeleton)) {
+        if (json) {
+          return jsonOut('template.list', templates.map(t => ({
+            name: t.dirName,
+            description: t.description,
+            isReady: t.isReady,
+          })));
+        }
         console.log('\nAvailable templates:\n');
         for (const t of templates) {
           const status = t.isReady ? '' : ' (WIP)';
@@ -248,8 +256,8 @@ export function registerTemplate(program) {
         return;
       }
 
-      // Validate template name
       if (name && !templateNames.includes(name)) {
+        if (json) return jsonError(`Unknown template "${name}"`, templateNames.map(n => ({name: n, reason: 'available template'})));
         console.error(`Error: Unknown template "${name}".`);
         console.error(`Available: ${templateNames.join(', ')}`);
         process.exit(1);
@@ -307,6 +315,7 @@ export function registerTemplate(program) {
       }
 
       const relOutput = path.relative(process.cwd(), outputDir);
+      if (json) return jsonOut('template.copy', {template: name, outputDir: relOutput, filesCopied: copied});
       console.log(`\n✓ Copied ${copied} template files to ${relOutput}/\n`);
     });
 }
