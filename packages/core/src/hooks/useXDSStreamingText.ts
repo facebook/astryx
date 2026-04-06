@@ -39,17 +39,6 @@ export interface UseStreamingTextOptions {
   speed?: StreamingTextSpeed;
 }
 
-// Markdown syntax markers to avoid slicing inside.
-const PARTIAL_SYNTAX_PATTERNS = [
-  /\*{1,2}$/, // partial bold/italic: * or **
-  /_{1,2}$/, // partial bold/italic: _ or __
-  /~{1,2}$/, // partial strikethrough: ~ or ~~
-  /`{1,3}$/, // partial inline code or fence
-  /\[(?:[^\]]*)$/, // unclosed link text: [text
-  /!\[(?:[^\]]*)$/, // unclosed image alt: ![alt
-  /\]\([^)]*$/, // unclosed link url: ](url
-];
-
 // Fallback values when no XDSTheme provider is present
 const FALLBACK_TICK_MS = 50;
 const FALLBACK_TICK_MS_FAST = 8;
@@ -149,20 +138,7 @@ export function useXDSStreamingText(
         const currentLen = displayedLenRef.current;
 
         if (currentLen < target.length) {
-          let nextLen = Math.min(currentLen + charsPerTick, target.length);
-
-          // Back up if we'd slice inside a markdown syntax marker
-          const candidate = target.slice(0, nextLen);
-          for (const pattern of PARTIAL_SYNTAX_PATTERNS) {
-            const match = candidate.match(pattern);
-            if (match && match.index != null) {
-              nextLen = match.index;
-              break;
-            }
-          }
-
-          // Never go backwards
-          nextLen = Math.max(nextLen, currentLen);
+          const nextLen = Math.min(currentLen + charsPerTick, target.length);
 
           displayedLenRef.current = nextLen;
           setDisplayedLen(nextLen);

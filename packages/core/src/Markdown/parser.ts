@@ -667,16 +667,21 @@ export function trimStreamingArtifacts(input: string): string {
 
 /**
  * Trim trailing lines from the unsettled zone that look like the start of
- * a structural block (list item, table row, heading) but may not be complete
- * yet. This prevents flashes of partial syntax like bare `-` bullets or
- * incomplete `| col |` table rows during streaming.
+ * a structural block but aren't complete yet. This prevents flashes of
+ * partial syntax like bare `-` bullets or incomplete table headers.
  *
- * Only applied to the unsettled portion — settled blocks are already cached.
+ * Only trims the minimal set of clearly-incomplete patterns:
+ * 1. Bare list markers (`- `, `1. `) with no content after them
+ * 2. A lone table header line without its separator row
+ * 3. Empty trailing lines
+ *
+ * Once a table is established (header + separator exist), new data rows
+ * render immediately — no suppression.
  */
 function trimUnsettledStructural(text: string): string {
   const lines = text.split('\n');
 
-  // Walk backwards from the end, trimming lines that are ambiguous
+  // Walk backwards, but only trim clearly-incomplete trailing lines
   while (lines.length > 0) {
     const last = lines[lines.length - 1];
     const trimmed = last.trim();
@@ -687,44 +692,38 @@ function trimUnsettledStructural(text: string): string {
       continue;
     }
 
-    // Partial list item: line starts with `- `, `* `, `+ `, or `1. `
-    // but has very little content (just the marker or marker + a few chars).
-    // A complete list item would typically have more than just the marker.
-    // We check: is this the ONLY line that looks like a list item, and is it short?
+    // Bare list marker with no content: "- " or "1. " (just whitespace after marker)
     if (/^ {0,9}[-*+] $/.test(last) || /^ {0,9}\d+\. $/.test(last)) {
-      // Just the marker with trailing space — definitely incomplete
       lines.pop();
       continue;
     }
 
-    // Partial table: line contains `|` but the next line (separator) hasn't
-    // arrived yet. A table needs at least a header + separator row.
-    // If this is the only `|`-containing line at the tail, hold it back.
-    if (trimmed.includes('|')) {
-      // Check if there's a separator line following (would mean table is forming)
-      // If this is the last line and no separator follows, it's incomplete
-      const hasSeparatorBefore =
-        lines.length >= 2 && isTableSeparator(lines[lines.length - 2]);
-      if (!hasSeparatorBefore) {
-        // Check if THIS line is the separator (header is above)
-        if (isTableSeparator(last)) {
-          // Separator without a complete row after — hold back both header and separator
-          lines.pop(); // remove separator
-          if (lines.length > 0 && lines[lines.length - 1].includes('|')) {
-            lines.pop(); // remove header too
-          }
-          continue;
+    // Table: only suppress if this is a lone header without a separator.
+    // If the line has `|` and the line before it is NOT a separator,
+    // and THIS line is not a separator, and there's no established table
+    // above (header + separator pair), hold it back.
+    if (trimmed.includes('|') && !isTableSeparator(last)) {
+      // Is there a separator anywhere above that would make this part of
+      // an established table? Walk up to find header+separator pair.
+      let tableEstablished = false;
+      for (let i = lines.length - 2; i >= 1; i--) {
+        if (isTableSeparator(lines[i]) && lines[i - 1].includes('|')) {
+          tableEstablished = true;
+          break;
         }
-        // Single pipe line — could be start of a table header, hold it back
-        // unless there are already complete table rows above it
-        const hasTableAbove =
-          lines.length >= 3 &&
-          lines[lines.length - 3].includes('|') &&
-          isTableSeparator(lines[lines.length - 2]);
-        if (!hasTableAbove) {
-          lines.pop();
-          continue;
-        }
+      }
+      if (!tableEstablished) {
+        // Lone pipe line — could be a table header waiting for separator
+        lines.pop();
+        continue;
+      }
+    }
+
+    // Separator line without a header above it
+    if (isTableSeparator(last)) {
+      if (lines.length < 2 || !lines[lines.length - 2].includes('|')) {
+        lines.pop();
+        continue;
       }
     }
 
