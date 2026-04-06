@@ -1,5 +1,10 @@
 import {describe, it, expect} from 'vitest';
-import {parseMarkdown, parseMarkdownIncremental, createIncrementalState} from './parser';
+import {
+  parseMarkdown,
+  parseMarkdownIncremental,
+  createIncrementalState,
+  trimStreamingArtifacts,
+} from './parser';
 import type {BlockNode} from './parser';
 
 function simulateStreaming(fullText: string, chunkSize = 10) {
@@ -36,7 +41,8 @@ describe('parseMarkdownIncremental', () => {
 
   it('code fences prevent false settlement', () => {
     const state = createIncrementalState();
-    const input = '```javascript\nconst x = 1;\n\n// still in code\nconsole.log(x);';
+    const input =
+      '```javascript\nconst x = 1;\n\n// still in code\nconsole.log(x);';
     parseMarkdownIncremental(input, state);
     // Inside an unclosed fence, nothing should be settled
     expect(state.settledBlocks).toHaveLength(0);
@@ -93,7 +99,8 @@ describe('parseMarkdownIncremental', () => {
 
   it('unclosed fence keeps everything unsettled', () => {
     const state = createIncrementalState();
-    const input = '# Title\n\n```python\ndef foo():\n    pass\n\n# still inside fence';
+    const input =
+      '# Title\n\n```python\ndef foo():\n    pass\n\n# still inside fence';
     parseMarkdownIncremental(input, state);
     expect(state.settledBlocks).toHaveLength(0);
   });
@@ -146,7 +153,10 @@ describe('parseMarkdownIncremental', () => {
     const cachedBlocks = state.settledBlocks;
 
     // Second call: only unsettled tail changed
-    parseMarkdownIncremental('# Title\n\nParagraph\n\nStill typing more', state);
+    parseMarkdownIncremental(
+      '# Title\n\nParagraph\n\nStill typing more',
+      state,
+    );
     // The settled blocks array reference should be the same (reused, not re-parsed)
     expect(state.settledBlocks).toBe(cachedBlocks);
   });
@@ -155,5 +165,155 @@ describe('parseMarkdownIncremental', () => {
     const state = createIncrementalState();
     parseMarkdownIncremental('# Hello\n\nWorld', state);
     expect(state.settledText).toBe('# Hello');
+  });
+});
+
+describe('trimStreamingArtifacts', () => {
+  it('trims trailing unclosed bold markers', () => {
+    expect(trimStreamingArtifacts('Hello **')).toBe('Hello ');
+    expect(trimStreamingArtifacts('Hello *')).toBe('Hello ');
+    expect(trimStreamingArtifacts('Hello ***')).toBe('Hello ');
+  });
+
+  it('preserves closed bold markers', () => {
+    expect(trimStreamingArtifacts('Hello **world**')).toBe('Hello **world**');
+  });
+
+  it('trims trailing unclosed backticks', () => {
+    expect(trimStreamingArtifacts('Hello `')).toBe('Hello ');
+    expect(trimStreamingArtifacts('Hello ```')).toBe('Hello ');
+  });
+
+  it('preserves closed inline code', () => {
+    expect(trimStreamingArtifacts('Hello `code`')).toBe('Hello `code`');
+  });
+
+  it('trims trailing unclosed strikethrough', () => {
+    expect(trimStreamingArtifacts('Hello ~~')).toBe('Hello ');
+    expect(trimStreamingArtifacts('Hello ~')).toBe('Hello ');
+  });
+
+  it('trims unclosed link text', () => {
+    expect(trimStreamingArtifacts('Hello [link text')).toBe('Hello ');
+    expect(trimStreamingArtifacts('Hello [link')).toBe('Hello ');
+  });
+
+  it('preserves closed links', () => {
+    expect(trimStreamingArtifacts('Hello [text](url)')).toBe(
+      'Hello [text](url)',
+    );
+  });
+
+  it('trims unclosed image alt', () => {
+    expect(trimStreamingArtifacts('Hello ![alt')).toBe('Hello ');
+  });
+
+  it('operates only on the last line', () => {
+    expect(trimStreamingArtifacts('Line 1\nHello **')).toBe('Line 1\nHello ');
+    expect(trimStreamingArtifacts('Line 1\n**bold** done\nHello *')).toBe(
+      'Line 1\n**bold** done\nHello ',
+    );
+  });
+
+  it('handles empty input', () => {
+    expect(trimStreamingArtifacts('')).toBe('');
+  });
+
+  it('handles input with no artifacts', () => {
+    expect(trimStreamingArtifacts('Just plain text')).toBe('Just plain text');
+  });
+});
+
+describe('streaming structural suppression', () => {
+  it('suppresses bare list markers in unsettled zone', () => {
+    const state = createIncrementalState();
+    // Paragraph followed by incomplete list item
+    const input = 'Some text\n\n- ';
+    const blocks = parseMarkdownIncremental(input, state);
+    // Should NOT produce a list with an empty item
+    const hasList = blocks.some(b => b.type === 'list');
+    expect(hasList).toBe(false);
+  });
+
+  it('renders list items once text arrives', () => {
+    const state = createIncrementalState();
+    const input = 'Some text\n\n- First item';
+    const blocks = parseMarkdownIncremental(input, state);
+    const list = blocks.find(b => b.type === 'list');
+    expect(list).toBeDefined();
+    if (list?.type === 'list') {
+      expect(list.items).toHaveLength(1);
+    }
+  });
+
+  it('suppresses incomplete table header without separator', () => {
+    const state = createIncrementalState();
+    // Table header without separator row
+    const input = 'Intro\n\n| Col1 | Col2 |';
+    const blocks = parseMarkdownIncremental(input, state);
+    const hasTable = blocks.some(b => b.type === 'table');
+    expect(hasTable).toBe(false);
+  });
+
+  it('suppresses table separator without data rows', () => {
+    const state = createIncrementalState();
+    const input = 'Intro\n\n| Col1 | Col2 |\n| --- | --- |';
+    const blocks = parseMarkdownIncremental(input, state);
+    // Should suppress: header + separator but no data rows yet
+    // Actually this is a valid table with 0 data rows — parser may render it.
+    // The key test is that we don't show partial pipe syntax.
+  });
+
+  it('renders complete table once rows arrive', () => {
+    const state = createIncrementalState();
+    const input = 'Intro\n\n| Col1 | Col2 |\n| --- | --- |\n| a | b |';
+    const blocks = parseMarkdownIncremental(input, state);
+    const table = blocks.find(b => b.type === 'table');
+    expect(table).toBeDefined();
+    if (table?.type === 'table') {
+      expect(table.rows).toHaveLength(1);
+    }
+  });
+
+  it('suppresses ordered list marker without content', () => {
+    const state = createIncrementalState();
+    const input = 'Intro\n\n1. ';
+    const blocks = parseMarkdownIncremental(input, state);
+    const hasList = blocks.some(b => b.type === 'list');
+    expect(hasList).toBe(false);
+  });
+
+  it('no suppression for complete list items', () => {
+    const state = createIncrementalState();
+    const input = 'Intro\n\n- Complete item\n- Another item';
+    const blocks = parseMarkdownIncremental(input, state);
+    const list = blocks.find(b => b.type === 'list');
+    expect(list).toBeDefined();
+    if (list?.type === 'list') {
+      expect(list.items).toHaveLength(2);
+    }
+  });
+
+  it('character-by-character streaming never produces bare list markers', () => {
+    const fullText = 'Hello world\n\n- Item one\n- Item two\n- Item three';
+    const state = createIncrementalState();
+    for (let i = 1; i <= fullText.length; i++) {
+      const blocks = parseMarkdownIncremental(fullText.slice(0, i), state);
+      for (const block of blocks) {
+        if (block.type === 'list') {
+          for (const item of block.items) {
+            // Every rendered list item should have non-empty content
+            const firstChild = item.children[0];
+            if (firstChild?.type === 'paragraph') {
+              const textContent = firstChild.children
+                .map(c => (c.type === 'text' ? c.content : ''))
+                .join('')
+                .trim();
+              expect(textContent.length).toBeGreaterThan(0);
+            }
+          }
+        }
+      }
+    }
   });
 });

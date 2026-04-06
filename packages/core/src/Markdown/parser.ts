@@ -584,10 +584,20 @@ export function trimStreamingArtifacts(input: string): string {
   let tail = lastNL === -1 ? input : input.slice(lastNL + 1);
 
   // Scan backwards for unclosed syntax markers — no regex to avoid ReDoS
-  // Find the last unclosed [ (link start)
+  // Find the last unclosed [ or ![ (link/image start)
   const lastBracket = tail.lastIndexOf('[');
-  if (lastBracket !== -1 && !tail.slice(lastBracket).includes('])')) {
-    tail = tail.slice(0, lastBracket);
+  if (lastBracket !== -1) {
+    const afterBracket = tail.slice(lastBracket);
+    // A closed link/image has ](...)  somewhere after the [
+    const hasClose = afterBracket.includes('](') && afterBracket.includes(')');
+    if (!hasClose) {
+      // Also trim a preceding `!` for images
+      const trimTo =
+        lastBracket > 0 && tail[lastBracket - 1] === '!'
+          ? lastBracket - 1
+          : lastBracket;
+      tail = tail.slice(0, trimTo);
+    }
   }
 
   // Find trailing unclosed backticks
@@ -604,11 +614,21 @@ export function trimStreamingArtifacts(input: string): string {
   }
 
   // Find trailing unclosed bold/italic markers (*)
+  // Use the same opener-matching approach as backticks:
+  // count trailing stars, look for a matching opener before them.
   end = tail.length;
   while (end > 0 && tail[end - 1] === '*') end--;
   if (end < tail.length && end > 0) {
     const stars = tail.length - end;
-    if (stars <= 3) tail = tail.slice(0, end);
+    if (stars <= 3) {
+      // Look for a matching opener: same number of * before end
+      const opener = tail.lastIndexOf('*'.repeat(stars), end - 1);
+      if (opener === -1) {
+        // No opener found — these are unclosed markers, trim them
+        tail = tail.slice(0, end);
+      }
+      // else: opener exists, markers are balanced — leave them
+    }
   }
 
   // Find trailing unclosed strikethrough (~~)

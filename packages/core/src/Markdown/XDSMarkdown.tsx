@@ -264,10 +264,11 @@ const streamingFadeIn = stylex.keyframes({
 
 const streamingStyles = stylex.create({
   fadeIn: {
+    opacity: 0,
     animationName: streamingFadeIn,
     animationDuration: durationVars['--duration-fast'],
     animationTimingFunction: easeVars['--ease-standard'],
-    animationFillMode: 'backwards',
+    animationFillMode: 'forwards',
   },
 });
 
