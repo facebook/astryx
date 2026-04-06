@@ -38,8 +38,12 @@ export interface XDSListItemProps extends XDSBaseProps<HTMLLIElement> {
   ref?: React.Ref<HTMLLIElement>;
   /**
    * Primary text label for the item.
+   *
+   * Accepts a plain string (single-line truncation applied automatically)
+   * or a ReactNode for rich content (no truncation constraints —
+   * child components control their own text behavior).
    */
-  label: string;
+  label: ReactNode;
 
   /**
    * Secondary description below the label.
@@ -189,6 +193,8 @@ const styles = stylex.create({
   },
   label: {
     color: colorVars['--color-text-primary'],
+  },
+  labelTruncate: {
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
@@ -338,11 +344,15 @@ export function XDSListItem({
   const hasMarkers = listStyle !== 'none';
   const isInteractive = onClick != null || href != null;
 
+  const isStringLabel = typeof label === 'string';
   const isStringDescription = typeof description === 'string';
 
   const labelAndDescription = (
     <>
-      <span {...stylex.props(styles.label)}>{label}</span>
+      <span
+        {...stylex.props(styles.label, isStringLabel && styles.labelTruncate)}>
+        {label}
+      </span>
       {description != null && (
         <span
           {...stylex.props(

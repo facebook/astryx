@@ -23,6 +23,8 @@ import {
 import {XDSCodeBlock, XDSCode} from '../CodeBlock';
 import {XDSCheckboxList} from '../CheckboxList/XDSCheckboxList';
 import {XDSCheckboxListItem} from '../CheckboxList/XDSCheckboxListItem';
+import {XDSList} from '../List/XDSList';
+import {XDSListItem} from '../List/XDSListItem';
 import {xdsClassName, mergeProps} from '../utils';
 import {
   parseMarkdown,
@@ -30,11 +32,7 @@ import {
   createIncrementalState,
   trimStreamingArtifacts,
 } from './parser';
-import type {
-  BlockNode,
-  InlineNode,
-  IncrementalState,
-} from './parser';
+import type {BlockNode, InlineNode, IncrementalState} from './parser';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -53,7 +51,10 @@ export interface XDSMarkdownProps {
    */
   headingLevelStart?: 1 | 2 | 3 | 4 | 5 | 6;
   isStreaming?: boolean;
-  onLinkClick?: (href: string, event: React.MouseEvent<HTMLAnchorElement>) => void | false;
+  onLinkClick?: (
+    href: string,
+    event: React.MouseEvent<HTMLAnchorElement>,
+  ) => void | false;
   xstyle?: StyleXStyles;
   className?: string;
   style?: React.CSSProperties;
@@ -196,11 +197,6 @@ const styles = stylex.create({
     marginInlineStart: 0,
     marginInlineEnd: 0,
   },
-  // List
-  list: {
-    paddingInlineStart: spacingVars['--spacing-6'],
-  },
-
   // Table
   tableWrapper: {
     overflowX: 'auto',
@@ -312,7 +308,11 @@ function renderInline(
       const safeHref = sanitizeUrl(node.href);
       if (safeHref == null) {
         // Unsafe URL — render as plain text
-        return <span key={index}>{node.children.map((c, i) => renderInline(c, i, onLinkClick))}</span>;
+        return (
+          <span key={index}>
+            {node.children.map((c, i) => renderInline(c, i, onLinkClick))}
+          </span>
+        );
       }
       const isExternal = safeHref.startsWith('http');
       const handleClick = onLinkClick
@@ -328,9 +328,10 @@ function renderInline(
           key={index}
           href={safeHref}
           onClick={handleClick}
-          {...(isExternal ? {target: '_blank', rel: 'noopener noreferrer'} : {})}
-          {...stylex.props(styles.link)}
-        >
+          {...(isExternal
+            ? {target: '_blank', rel: 'noopener noreferrer'}
+            : {})}
+          {...stylex.props(styles.link)}>
           {node.children.map((c, i) => renderInline(c, i, onLinkClick))}
         </a>
       );
@@ -338,7 +339,14 @@ function renderInline(
     case 'image': {
       const safeSrc = sanitizeUrl(node.src);
       if (safeSrc == null) return <span key={index}>[{node.alt}]</span>;
-      return <img key={index} src={safeSrc} alt={node.alt} {...stylex.props(styles.image)} />;
+      return (
+        <img
+          key={index}
+          src={safeSrc}
+          alt={node.alt}
+          {...stylex.props(styles.image)}
+        />
+      );
     }
     case 'break':
       return <br key={index} />;
@@ -357,14 +365,24 @@ function getElementSpacing(
   switch (node.type) {
     case 'heading':
       return node.level <= 3
-        ? (compact ? styles.spacingHeadingMajorCompact : styles.spacingHeadingMajorDefault)
-        : (compact ? styles.spacingHeadingMinorCompact : styles.spacingHeadingMinorDefault);
+        ? compact
+          ? styles.spacingHeadingMajorCompact
+          : styles.spacingHeadingMajorDefault
+        : compact
+          ? styles.spacingHeadingMinorCompact
+          : styles.spacingHeadingMinorDefault;
     case 'paragraph':
-      return compact ? styles.spacingParagraphCompact : styles.spacingParagraphDefault;
+      return compact
+        ? styles.spacingParagraphCompact
+        : styles.spacingParagraphDefault;
     case 'codeblock':
-      return compact ? styles.spacingCodeblockCompact : styles.spacingCodeblockDefault;
+      return compact
+        ? styles.spacingCodeblockCompact
+        : styles.spacingCodeblockDefault;
     case 'blockquote':
-      return compact ? styles.spacingBlockquoteCompact : styles.spacingBlockquoteDefault;
+      return compact
+        ? styles.spacingBlockquoteCompact
+        : styles.spacingBlockquoteDefault;
     case 'list':
       return compact ? styles.spacingListCompact : styles.spacingListDefault;
     case 'table':
@@ -394,7 +412,13 @@ function renderBlock(
 
   switch (node.type) {
     case 'heading': {
-      const level = Math.min(node.level + headingLevelStart - 1, 6) as 1 | 2 | 3 | 4 | 5 | 6;
+      const level = Math.min(node.level + headingLevelStart - 1, 6) as
+        | 1
+        | 2
+        | 3
+        | 4
+        | 5
+        | 6;
       const Tag = `h${level}` as const;
       return (
         <Tag
@@ -405,8 +429,7 @@ function renderBlock(
             spacing,
             isFirst && styles.noMarginBlockStart,
             isLast && styles.noMarginBlockEnd,
-          )}
-        >
+          )}>
           {node.children.map((c, i) => renderInline(c, i, onLinkClick))}
         </Tag>
       );
@@ -419,8 +442,7 @@ function renderBlock(
             spacing,
             isFirst && styles.noMarginBlockStart,
             isLast && styles.noMarginBlockEnd,
-          )}
-        >
+          )}>
           {node.children.map((c, i) => renderInline(c, i, onLinkClick))}
         </p>
       );
@@ -432,8 +454,7 @@ function renderBlock(
             spacing,
             isFirst && styles.noMarginBlockStart,
             isLast && styles.noMarginBlockEnd,
-          )}
-        >
+          )}>
           <XDSCodeBlock code={node.content} language={node.language} />
         </div>
       );
@@ -446,17 +467,26 @@ function renderBlock(
             spacing,
             isFirst && styles.noMarginBlockStart,
             isLast && styles.noMarginBlockEnd,
+          )}>
+          {node.children.map((c, i) =>
+            renderBlock(
+              c,
+              i,
+              node.children.length,
+              density,
+              headingLevelStart,
+              onLinkClick,
+            ),
           )}
-        >
-          {node.children.map((c, i) => renderBlock(c, i, node.children.length, density, headingLevelStart, onLinkClick))}
         </blockquote>
       );
     case 'list': {
       // Detect task lists: all items have a checked state
-      const isTaskList = node.items.length > 0 && node.items.every(item => item.checked != null);
+      const isTaskList =
+        node.items.length > 0 && node.items.every(item => item.checked != null);
 
       if (isTaskList) {
-        // Extract labels from task items — use first paragraph's inline text
+        // Extract labels from task items — render as rich inline content
         const checkedValues = node.items
           .map((item, i) => ({item, key: `task-${i}`}))
           .filter(({item}) => item.checked)
@@ -469,33 +499,45 @@ function renderBlock(
               spacing,
               isFirst && styles.noMarginBlockStart,
               isLast && styles.noMarginBlockEnd,
-            )}
-          >
+            )}>
             <XDSCheckboxList
               label="Task list"
               isLabelHidden
               value={checkedValues}
-              isDisabled
-              density={density === 'compact' ? 'compact' : 'balanced'}
-            >
+              isReadOnly
+              density="compact">
               {node.items.map((item, i) => {
                 const firstChild = item.children[0];
-                const isInline = item.children.length === 1 && firstChild?.type === 'paragraph';
-                // Build label from first paragraph text
-                const label = isInline
-                  ? firstChild.children.map(c => c.type === 'text' ? c.content : '').join('')
-                  : `Item ${i + 1}`;
+                const isInline =
+                  item.children.length === 1 &&
+                  firstChild?.type === 'paragraph';
+
+                const label = isInline ? (
+                  <>
+                    {firstChild.children.map((c, j) =>
+                      renderInline(c, j, onLinkClick),
+                    )}
+                  </>
+                ) : (
+                  <>
+                    {item.children.map((c, j) =>
+                      renderBlock(
+                        c,
+                        j,
+                        item.children.length,
+                        density,
+                        headingLevelStart,
+                        onLinkClick,
+                      ),
+                    )}
+                  </>
+                );
 
                 return (
                   <XDSCheckboxListItem
                     key={i}
                     value={`task-${i}`}
                     label={label}
-                    description={
-                      isInline
-                        ? undefined
-                        : undefined
-                    }
                   />
                 );
               })}
@@ -504,38 +546,56 @@ function renderBlock(
         );
       }
 
-      const Tag = node.ordered ? 'ol' : 'ul';
       return (
-        <Tag
+        <div
           key={index}
-          {...(node.ordered && node.start != null ? {start: node.start} : {})}
           {...stylex.props(
-            styles.list,
             spacing,
             isFirst && styles.noMarginBlockStart,
             isLast && styles.noMarginBlockEnd,
-          )}
-        >
-          {node.items.map((item, i) => {
-            const firstChild = item.children[0];
-            const isInline = item.children.length === 1 && firstChild?.type === 'paragraph';
+          )}>
+          <XDSList
+            listStyle={node.ordered ? 'decimal' : 'disc'}
+            density="compact">
+            {node.items.map((item, i) => {
+              const firstChild = item.children[0];
+              const isInline =
+                item.children.length === 1 && firstChild?.type === 'paragraph';
 
-            return (
-              <li key={i}>
-                {isInline ? (
-                  <span>{firstChild.children.map((c, j) => renderInline(c, j, onLinkClick))}</span>
-                ) : (
-                  item.children.map((c, j) => renderBlock(c, j, item.children.length, density, headingLevelStart, onLinkClick))
-                )}
-              </li>
-            );
-          })}
-        </Tag>
+              const label = isInline ? (
+                <>
+                  {firstChild.children.map((c, j) =>
+                    renderInline(c, j, onLinkClick),
+                  )}
+                </>
+              ) : (
+                <>
+                  {item.children.map((c, j) =>
+                    renderBlock(
+                      c,
+                      j,
+                      item.children.length,
+                      density,
+                      headingLevelStart,
+                      onLinkClick,
+                    ),
+                  )}
+                </>
+              );
+
+              return <XDSListItem key={i} label={label} />;
+            })}
+          </XDSList>
+        </div>
       );
     }
     case 'table': {
-      const alignStyle = (a: typeof node.alignments[number]) =>
-        a === 'center' ? styles.alignCenter : a === 'right' ? styles.alignRight : styles.alignLeft;
+      const alignStyle = (a: (typeof node.alignments)[number]) =>
+        a === 'center'
+          ? styles.alignCenter
+          : a === 'right'
+            ? styles.alignRight
+            : styles.alignLeft;
       return (
         <div
           key={index}
@@ -544,13 +604,17 @@ function renderBlock(
             spacing,
             isFirst && styles.noMarginBlockStart,
             isLast && styles.noMarginBlockEnd,
-          )}
-        >
+          )}>
           <table {...stylex.props(styles.table)}>
             <thead>
               <tr>
                 {node.headers.map((h, i) => (
-                  <th key={i} {...stylex.props(styles.th, alignStyle(node.alignments[i]))}>
+                  <th
+                    key={i}
+                    {...stylex.props(
+                      styles.th,
+                      alignStyle(node.alignments[i]),
+                    )}>
                     {h.children.map((c, j) => renderInline(c, j, onLinkClick))}
                   </th>
                 ))}
@@ -560,8 +624,15 @@ function renderBlock(
               {node.rows.map((row, i) => (
                 <tr key={i}>
                   {row.map((cell, j) => (
-                    <td key={j} {...stylex.props(styles.td, alignStyle(node.alignments[j]))}>
-                      {cell.children.map((c, k) => renderInline(c, k, onLinkClick))}
+                    <td
+                      key={j}
+                      {...stylex.props(
+                        styles.td,
+                        alignStyle(node.alignments[j]),
+                      )}>
+                      {cell.children.map((c, k) =>
+                        renderInline(c, k, onLinkClick),
+                      )}
                     </td>
                   ))}
                 </tr>
@@ -593,8 +664,7 @@ function renderBlock(
               spacing,
               isFirst && styles.noMarginBlockStart,
               isLast && styles.noMarginBlockEnd,
-            )}
-          >
+            )}>
             [{node.alt}]
           </p>
         );
@@ -606,8 +676,7 @@ function renderBlock(
             spacing,
             isFirst && styles.noMarginBlockStart,
             isLast && styles.noMarginBlockEnd,
-          )}
-        >
+          )}>
           <img src={safeSrc} alt={node.alt} {...stylex.props(styles.image)} />
         </p>
       );
@@ -655,9 +724,17 @@ export function XDSMarkdown({
         stylex.props(styles.root, xstyle),
         className,
         style,
+      )}>
+      {blocks.map((block, i) =>
+        renderBlock(
+          block,
+          i,
+          blocks.length,
+          density,
+          headingLevelStart,
+          onLinkClick,
+        ),
       )}
-    >
-      {blocks.map((block, i) => renderBlock(block, i, blocks.length, density, headingLevelStart, onLinkClick))}
     </div>
   );
 }
