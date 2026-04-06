@@ -11,7 +11,7 @@
  * - /packages/core/src/Table/index.ts (exports)
  */
 
-import {useRef, useMemo, useCallback, type ReactNode} from 'react';
+import {useRef, useMemo, useCallback, useEffect, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../../../theme/tokens.stylex';
 import type {
@@ -188,26 +188,50 @@ const handleStyles = stylex.create({
     // adjacent <th>'s overflow:hidden.
     insetInlineEnd: 0,
     top: 0,
-    bottom: 0,
-    // Wide transparent hit area; the right 1px becomes the visible indicator.
+    // Extend the handle the full height of the table, not just the header.
+    // The <th> has overflow:visible (from headerCellRelative), so the handle
+    // visually reaches through the body rows. The CSS variable is set by
+    // the plugin's ResizeObserver — falls back to 100% (header only) when
+    // the observer hasn't fired yet.
+    height: 'var(--table-resize-height, 100%)',
+    // Wide transparent hit area; the visible indicator uses ::after to span
+    // the full handle height independently of the border box.
     width: '8px',
     cursor: 'ew-resize',
     zIndex: 1,
     touchAction: 'none',
     userSelect: 'none',
-    // The rightmost 1px acts as the resize indicator line.
-    // Use a right border rather than ::after so it reliably renders
-    // without needing pseudo-element content/dimensions.
-    borderInlineEndWidth: '1px',
-    borderInlineEndStyle: 'solid',
-    borderInlineEndColor: {
+    // Drive the indicator color via a CSS variable that ::after reads.
+    // The parent handle is the hover/focus target — pseudo-elements
+    // can't receive :hover directly.
+    '--indicator-color': {
       default: 'transparent',
       ':hover': colorVars['--color-accent'],
       ':focus-visible': colorVars['--color-accent'],
     },
-    transition: 'border-color 150ms ease',
     '@media (pointer: coarse)': {
-      width: '20px',
+      display: 'none',
+    },
+  },
+  /**
+   * The 1px indicator line as a pseudo-element on the trailing edge.
+   * Spans the full height of the handle (which extends the table height).
+   * Reads --indicator-color from the parent, which toggles on
+   * hover, focus-visible, and during drag.
+   */
+  indicator: {
+    '::after': {
+      content: '""',
+      position: 'absolute',
+      // Position on the column boundary (right edge of the handle)
+      // so the visual line aligns with the column divider. The 8px
+      // hit area extends to the left of it.
+      insetInlineEnd: 0,
+      top: 0,
+      bottom: 0,
+      width: 'var(--indicator-width, 1px)',
+      backgroundColor: 'var(--indicator-color, transparent)',
+      transition: 'background-color 150ms ease, width 150ms ease',
     },
   },
 });
@@ -256,7 +280,6 @@ interface ResizeHandleProps {
   maxWidth: number;
   /** For proportional-preserving: the neighbor column to resize instead */
   neighborKey: string | null;
-  neighborMinWidth: number;
   configRef: React.RefObject<UseXDSTableColumnResizeConfig>;
   dragStateRef: React.RefObject<DragState | null>;
   isDraggingRef: React.RefObject<boolean>;
@@ -270,34 +293,11 @@ function ResizeHandle({
   minWidth,
   maxWidth,
   neighborKey,
-  neighborMinWidth,
   configRef,
   dragStateRef,
   isDraggingRef,
   tableRef,
 }: ResizeHandleProps) {
-  /**
-   * Resolve the effective maximum width. When no explicit maxWidth is set,
-   * use the table's current width as a natural ceiling — no single column
-   * should exceed the table's bounds.
-   */
-  const clamp = useCallback(
-    (value: number, min: number = minWidth, max: number = maxWidth) =>
-      Math.max(min, Math.min(max, value)),
-    [minWidth, maxWidth],
-  );
-
-  const applyWidth = useCallback(
-    (th: HTMLTableCellElement, width: number, min?: number, max?: number) => {
-      const clamped = clamp(width, min, max);
-      const px = `${clamped}px`;
-      th.style.width = px;
-      th.style.minWidth = px;
-      th.style.maxWidth = px;
-    },
-    [clamp],
-  );
-
   const setTableDragging = useCallback(
     (dragging: boolean) => {
       const table = tableRef.current;
@@ -312,22 +312,6 @@ function ResizeHandle({
     const dir = getComputedStyle(el).direction;
     return dir === 'rtl' ? -1 : 1;
   }, []);
-
-  /**
-   * Resolve the neighbor <th> element from the handle's <th>.
-   * The neighbor is the next sibling <th> in DOM order.
-   */
-  const resolveNeighborTh = useCallback(
-    (th: HTMLTableCellElement): HTMLTableCellElement | null => {
-      if (!neighborKey) return null;
-      const row = th.parentElement;
-      if (!row) return null;
-      return row.querySelector<HTMLTableCellElement>(
-        `th[data-column-key="${neighborKey}"]`,
-      );
-    },
-    [neighborKey],
-  );
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
@@ -393,6 +377,8 @@ function ResizeHandle({
       dragStateRef.current = drag;
       isDraggingRef.current = true;
       handle.setAttribute('data-resizing', 'true');
+      handle.style.setProperty('--indicator-color', 'var(--color-accent)');
+      handle.style.setProperty('--indicator-width', '2px');
 
       // Apply initial snapshot widths to ALL columns (freezes layout)
       const initialWidths = computeColumnWidths(drag, 0);
@@ -429,6 +415,8 @@ function ResizeHandle({
         if (!d || !isDraggingRef.current) return;
 
         handle.removeAttribute('data-resizing');
+        handle.style.removeProperty('--indicator-color');
+        handle.style.removeProperty('--indicator-width');
         isDraggingRef.current = false;
         dragStateRef.current = null;
         setTableDragging(false);
@@ -462,6 +450,8 @@ function ResizeHandle({
         if (!d || !isDraggingRef.current) return;
 
         handle.removeAttribute('data-resizing');
+        handle.style.removeProperty('--indicator-color');
+        handle.style.removeProperty('--indicator-width');
         isDraggingRef.current = false;
         dragStateRef.current = null;
         setTableDragging(false);
@@ -488,7 +478,6 @@ function ResizeHandle({
       columnKey,
       neighborKey,
       minWidth,
-      resolveNeighborTh,
       getRTLMultiplier,
       dragStateRef,
       isDraggingRef,
@@ -499,9 +488,90 @@ function ResizeHandle({
   );
 
   /**
+   * Build a DragState snapshot from the current DOM, then use
+   * computeColumnWidths to calculate the result — same code path
+   * as pointer drag. This ensures keyboard and pointer resize
+   * produce identical column width distributions (especially when
+   * hitting min/max limits and the last column absorbs overflow).
+   */
+  const buildSnapshotAndResize = useCallback(
+    (th: HTMLTableCellElement, delta: number) => {
+      const headerRow = th.parentElement;
+      if (!headerRow) return;
+
+      const cols = configRef.current.columns;
+      const colsByKey = new Map(cols?.map(c => [c.key, c]));
+      const allThs = Array.from(
+        headerRow.querySelectorAll<HTMLTableCellElement>(':scope > th'),
+      );
+      const tableWidth = tableRef.current?.getBoundingClientRect().width ?? 0;
+      const currentWidths = configRef.current.columnWidths ?? {};
+
+      const snapshots: ColumnSnapshot[] = [];
+      for (const cell of allThs) {
+        const key = cell.getAttribute('data-column-key');
+        if (!key) continue;
+        const col = colsByKey.get(key);
+        if (col?.resizable === false) continue;
+        const rendered = cell.getBoundingClientRect().width;
+        const override = currentWidths[key];
+        snapshots.push({
+          key,
+          th: cell,
+          initialWidth: override ?? (rendered > 0 ? rendered : 0),
+          minWidth: col
+            ? resolveColumnMinWidth(col.width, configRef.current.minWidth)
+            : minWidth,
+          maxWidth: configRef.current.maxWidth ?? Infinity,
+        });
+      }
+
+      const resizeIndex = snapshots.findIndex(s => s.key === columnKey);
+      let neighborIdx: number | null = null;
+      if (neighborKey) {
+        const idx = snapshots.findIndex(s => s.key === neighborKey);
+        if (idx >= 0) neighborIdx = idx;
+      }
+
+      const drag: DragState = {
+        columnKey,
+        startX: 0,
+        resizeIndex,
+        neighborIndex: neighborIdx,
+        snapshots,
+        tableWidth,
+      };
+
+      const widths = computeColumnWidths(drag, delta);
+
+      // Apply computed widths to DOM
+      snapshots.forEach((s, i) => {
+        const px = `${widths[i]}px`;
+        s.th.style.width = px;
+        s.th.style.minWidth = px;
+        s.th.style.maxWidth = px;
+      });
+
+      // Build updates — all columns except the last (which flexes)
+      const updates: Record<string, number> = {};
+      const lastIndex = snapshots.length - 1;
+      snapshots.forEach((s, i) => {
+        if (i === lastIndex) return;
+        updates[s.key] = widths[i];
+      });
+
+      if (Object.keys(updates).length > 0) {
+        configRef.current.onColumnResizeEnd?.(updates);
+      }
+    },
+    [columnKey, neighborKey, minWidth, configRef, tableRef],
+  );
+
+  /**
    * Keyboard resize per WAI-ARIA Window Splitter pattern.
    * Arrow keys resize immediately on focus — no activation step.
-   * Each keypress commits the new width directly.
+   * Each keypress commits the new width directly via computeColumnWidths
+   * (same code path as pointer drag).
    * Home/End jump to min/max width.
    */
   const handleKeyDown = useCallback(
@@ -522,64 +592,32 @@ function ResizeHandle({
           e.preventDefault();
           const direction = e.key === 'ArrowRight' ? 1 : -1;
           const delta = step * direction * rtl;
-
-          if (neighborKey) {
-            // Proportional-preserving: adjust neighbor inversely, clamped so
-            // it never drops below its min (which also prevents this column
-            // from growing into the last column's reserved minimum space).
-            const nTh = resolveNeighborTh(th);
-            if (nTh) {
-              const curNeighbor = nTh.getBoundingClientRect().width;
-              const newWidth = Math.max(neighborMinWidth, curNeighbor - delta);
-              applyWidth(nTh, newWidth, neighborMinWidth);
-              configRef.current.onColumnResizeEnd?.({[neighborKey]: newWidth});
-            }
-          } else {
-            const curWidth = currentWidth ?? th.getBoundingClientRect().width;
-            const newWidth = clamp(curWidth + delta);
-            applyWidth(th, newWidth);
-            configRef.current.onColumnResizeEnd?.({[columnKey]: newWidth});
-          }
+          buildSnapshotAndResize(th, delta);
           break;
         }
         case 'Home': {
           e.preventDefault();
-          if (neighborKey) {
-            const nTh = resolveNeighborTh(th);
-            if (nTh) {
-              applyWidth(nTh, neighborMinWidth, neighborMinWidth);
-              configRef.current.onColumnResizeEnd?.({
-                [neighborKey]: neighborMinWidth,
-              });
-            }
-          } else {
-            applyWidth(th, minWidth);
-            configRef.current.onColumnResizeEnd?.({[columnKey]: minWidth});
-          }
+          // Jump to minimum: delta that brings current width to min
+          const curWidth = currentWidth ?? th.getBoundingClientRect().width;
+          buildSnapshotAndResize(th, minWidth - curWidth);
           break;
         }
         case 'End': {
           e.preventDefault();
           if (maxWidth !== Infinity) {
-            applyWidth(th, maxWidth);
-            configRef.current.onColumnResizeEnd?.({[columnKey]: maxWidth});
+            const curWidth = currentWidth ?? th.getBoundingClientRect().width;
+            buildSnapshotAndResize(th, maxWidth - curWidth);
           }
           break;
         }
       }
     },
     [
-      columnKey,
       currentWidth,
-      neighborKey,
-      neighborMinWidth,
-      resolveNeighborTh,
       getRTLMultiplier,
-      clamp,
       minWidth,
       maxWidth,
-      applyWidth,
-      configRef,
+      buildSnapshotAndResize,
       tableRef,
     ],
   );
@@ -600,7 +638,7 @@ function ResizeHandle({
       tabIndex={0}
       onPointerDown={handlePointerDown}
       onKeyDown={handleKeyDown}
-      {...stylex.props(handleStyles.base)}
+      {...stylex.props(handleStyles.base, handleStyles.indicator)}
     />
   );
 }
@@ -634,8 +672,47 @@ export function useXDSTableColumnResize<T extends Record<string, unknown>>(
     [columns],
   );
 
+  // Measure the table height via ResizeObserver and expose as
+  // --table-resize-height on the <table> element. This is initialized
+  // entirely by the resize plugin — the base table has no knowledge of it.
+  const observerRef = useRef<ResizeObserver | null>(null);
+
+  const measureRef = useCallback((el: HTMLDivElement | null) => {
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+      observerRef.current = null;
+    }
+    if (!el) return;
+
+    const table = el.querySelector('table');
+    if (table) tableRef.current = table;
+
+    if (table && typeof ResizeObserver !== 'undefined') {
+      const observer = new ResizeObserver(() => {
+        const height = table.getBoundingClientRect().height;
+        table.style.setProperty('--table-resize-height', `${height}px`);
+      });
+      observer.observe(table);
+      observerRef.current = observer;
+    }
+  }, []);
+
+  // Clean up observer on unmount
+  useEffect(() => {
+    return () => {
+      observerRef.current?.disconnect();
+    };
+  }, []);
+
   return useMemo(
     (): TablePlugin<T> => ({
+      transformTableContext(children) {
+        return (
+          <div ref={measureRef} style={{display: 'contents'}}>
+            {children}
+          </div>
+        );
+      },
       transformHeaderCell(
         props: HeaderCellRenderProps,
         column: XDSTableColumn<T>,
@@ -658,7 +735,6 @@ export function useXDSTableColumnResize<T extends Record<string, unknown>>(
         // Uses resizableColumns so indices aren't shifted by non-resizable
         // synthetic columns (e.g. selection).
         let neighborKey: string | null = null;
-        let neighborMinWidth = FALLBACK_MIN_WIDTH;
 
         if (resizableColumns && isProportionalColumn(column.width)) {
           const colIndex = resizableColumns.findIndex(
@@ -667,10 +743,6 @@ export function useXDSTableColumnResize<T extends Record<string, unknown>>(
           if (colIndex >= 0 && colIndex < resizableColumns.length - 1) {
             const nextCol = resizableColumns[colIndex + 1];
             neighborKey = nextCol.key;
-            neighborMinWidth = resolveColumnMinWidth(
-              nextCol.width,
-              globalMinWidth,
-            );
           }
         }
 
@@ -714,7 +786,6 @@ export function useXDSTableColumnResize<T extends Record<string, unknown>>(
             minWidth={effectiveMinWidth}
             maxWidth={maxWidth}
             neighborKey={neighborKey}
-            neighborMinWidth={neighborMinWidth}
             configRef={configRef}
             dragStateRef={dragStateRef}
             isDraggingRef={isDraggingRef}
@@ -738,6 +809,6 @@ export function useXDSTableColumnResize<T extends Record<string, unknown>>(
         };
       },
     }),
-    [columnWidths, globalMinWidth, maxWidth, resizableColumns],
+    [columnWidths, globalMinWidth, maxWidth, resizableColumns, measureRef],
   );
 }
