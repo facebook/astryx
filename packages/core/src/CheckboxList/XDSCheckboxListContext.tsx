@@ -13,6 +13,7 @@ export interface XDSCheckboxListContextValue {
   value?: string[];
   onChange?: (values: string[]) => void;
   isDisabled: boolean;
+  isReadOnly: boolean;
   isBusy: boolean;
 }
 

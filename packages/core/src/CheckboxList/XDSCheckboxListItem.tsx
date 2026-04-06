@@ -40,8 +40,12 @@ const styles = stylex.create({
 export interface XDSCheckboxListItemProps extends XDSBaseProps<HTMLLIElement> {
   /**
    * Primary text label for the item.
+   *
+   * Accepts a plain string (single-line truncation applied automatically)
+   * or a ReactNode for rich content (no truncation constraints —
+   * child components control their own text behavior).
    */
-  label: string;
+  label: ReactNode;
   /**
    * Identity key for collection mode (REQUIRED inside XDSCheckboxList).
    * Throws a runtime error if missing when used inside XDSCheckboxList.
@@ -129,6 +133,7 @@ export function XDSCheckboxListItem({
 
   // Disabled: parent-level OR item-level
   const effectiveDisabled = (ctx?.isDisabled ?? false) || isItemDisabled;
+  const effectiveReadOnly = ctx?.isReadOnly ?? false;
   const isBusy = ctx?.isBusy ?? false;
 
   // Resolve checked state:
@@ -143,10 +148,10 @@ export function XDSCheckboxListItem({
   }
 
   // Whether this item is interactive (has a toggle handler)
-  const isInteractive = ctx != null || onCheck != null;
+  const isInteractive = !effectiveReadOnly && (ctx != null || onCheck != null);
 
   const handleToggle = () => {
-    if (effectiveDisabled || isBusy) return;
+    if (effectiveDisabled || effectiveReadOnly || isBusy) return;
 
     if (ctx && ctx.value !== undefined) {
       // Collection mode
@@ -186,13 +191,14 @@ export function XDSCheckboxListItem({
       style={style}
       startContent={
         <XDSCheckboxInput
-          label={label}
+          label={typeof label === 'string' ? label : 'Checkbox'}
           isLabelHidden
           value={resolvedChecked}
           onChange={() => handleToggle()}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           isDisabled={effectiveDisabled}
+          isReadOnly={effectiveReadOnly}
           size={checkboxSize}
         />
       }

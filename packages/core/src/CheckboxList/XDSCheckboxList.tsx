@@ -79,6 +79,13 @@ export interface XDSCheckboxListProps {
    */
   isDisabled?: boolean;
   /**
+   * Whether all checkbox items are read-only.
+   * Displays the current state at full opacity but prevents interaction.
+   * Unlike `isDisabled`, read-only checkboxes are not visually dimmed.
+   * @default false
+   */
+  isReadOnly?: boolean;
+  /**
    * Checkbox list items to render.
    */
   children: ReactNode;
@@ -141,6 +148,7 @@ export function XDSCheckboxList({
   density = 'balanced',
   hasDividers = false,
   isDisabled = false,
+  isReadOnly = false,
   children,
   ref,
   xstyle,
@@ -172,6 +180,7 @@ export function XDSCheckboxList({
     value: isCollectionMode ? optimisticValue : undefined,
     onChange: isCollectionMode ? handleChange : undefined,
     isDisabled,
+    isReadOnly,
     isBusy,
   };
 
