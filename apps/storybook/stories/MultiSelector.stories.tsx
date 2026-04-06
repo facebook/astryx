@@ -355,3 +355,27 @@ export const ColumnVisibility: Story = {
   },
   decorators: [Story => <Story />],
 };
+
+export const Clearable: Story = {
+  render: args => {
+    const [value, setValue] = useState<string[]>(['react', 'typescript']);
+    return (
+      <XDSMultiSelector
+        {...args}
+        options={[
+          {value: 'react', label: 'React'},
+          {value: 'typescript', label: 'TypeScript'},
+          {value: 'stylex', label: 'StyleX'},
+          {value: 'vitest', label: 'Vitest'},
+        ]}
+        value={value}
+        onChange={setValue}
+        hasClear
+      />
+    );
+  },
+  args: {
+    label: 'Technologies',
+    placeholder: 'Select technologies...',
+  },
+};

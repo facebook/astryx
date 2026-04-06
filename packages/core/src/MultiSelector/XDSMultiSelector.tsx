@@ -162,6 +162,25 @@ const styles = stylex.create({
     transition: 'none',
   },
 
+  // Clear button
+  clearButton: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 0,
+    margin: 0,
+    borderWidth: 0,
+    borderStyle: 'none',
+    backgroundColor: 'transparent',
+    cursor: 'pointer',
+    borderRadius: radiusVars['--radius-element'],
+    outline: {
+      default: 'none',
+      ':focus-visible': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
+    },
+    outlineOffset: 1,
+  },
+
   // Dropdown container
   dropdown: {
     boxSizing: 'border-box',
@@ -419,6 +438,13 @@ export interface XDSMultiSelectorProps<
   labelTooltip?: string;
 
   /**
+   * Whether to show a clear button when values are selected.
+   * When clicked, resets the value to an empty array and returns focus to the trigger.
+   * @default false
+   */
+  hasClear?: boolean;
+
+  /**
    * Whether to show a "Select all" checkbox.
    * @default false
    */
@@ -501,6 +527,7 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
   size = 'md',
   status,
   labelTooltip,
+  hasClear = false,
   hasSelectAll = false,
   selectAllLabel = 'Select all',
   hasSearch = false,
@@ -638,6 +665,21 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
   });
 
   // Handle toggle
+  // Handle clear button click
+  const handleClear = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation(); // Don't open dropdown
+      onChange([]);
+      if (onChangeAction) {
+        startTransition(async () => {
+          setOptimisticValue([]);
+          await onChangeAction([]);
+        });
+      }
+    },
+    [onChange, onChangeAction, startTransition, setOptimisticValue],
+  );
+
   const handleToggle = useCallback(
     (itemValue: string) => {
       const newValue = optimisticValue.includes(itemValue)
@@ -1072,6 +1114,16 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
         <span {...stylex.props(styles.triggerContent)}>
           {renderTriggerContent()}
         </span>
+        {hasClear && value.length > 0 && !isDisabled && (
+          <button
+            type="button"
+            tabIndex={-1}
+            onClick={handleClear}
+            aria-label={`Clear all ${label}`}
+            {...stylex.props(styles.clearButton)}>
+            <XDSIcon icon="close" size="sm" color="secondary" />
+          </button>
+        )}
         {isBusy && <XDSSpinner size="sm" />}
         <span
           {...stylex.props(

@@ -27,8 +27,10 @@ import type {XDSIconName} from '../Icon';
 import {
   colorVars,
   sizeVars,
+  radiusVars,
   typographyVars,
   typeScaleVars,
+  borderVars,
 } from '../theme/tokens.stylex';
 import {
   XDSField,
@@ -44,6 +46,23 @@ import {XDSIcon, type XDSIconType} from '../Icon';
 const styles = stylex.create({
   wrapper: {
     zIndex: 1,
+  },
+  clearButton: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 0,
+    margin: 0,
+    borderWidth: 0,
+    borderStyle: 'none',
+    backgroundColor: 'transparent',
+    cursor: 'pointer',
+    borderRadius: radiusVars['--radius-element'],
+    outline: {
+      default: 'none',
+      ':focus-visible': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
+    },
+    outlineOffset: 1,
   },
   input: {
     display: 'block',
@@ -100,7 +119,7 @@ export type {
 import {xdsClassName, mergeProps} from '../utils';
 import {XDSBaseProps} from '../XDSBaseProps';
 
-export interface XDSNumberInputProps extends Omit<
+interface XDSNumberInputPropsBase extends Omit<
   XDSBaseProps,
   'onChange' | 'defaultValue'
 > {
@@ -157,11 +176,7 @@ export interface XDSNumberInputProps extends Omit<
    * @default 'md'
    */
   size?: XDSNumberInputSize;
-  /**
-   * Callback fired when the input value changes to a valid number.
-   * Only called when the entered value passes validation.
-   */
-  onChange: (value: number) => void;
+  // onChange and hasClear defined in discriminated union below
   /**
    * The current value of the input.
    * Use null or undefined to represent an empty/unset value.
@@ -224,6 +239,31 @@ export interface XDSNumberInputProps extends Omit<
    */
   onEnter?: () => void;
 }
+
+/**
+ * Without `hasClear`, onChange only receives valid numbers.
+ * With `hasClear`, onChange also receives `null` when the user clears the input.
+ */
+type XDSNumberInputPropsNonClearable = XDSNumberInputPropsBase & {
+  hasClear?: false;
+  onChange: (value: number) => void;
+};
+
+type XDSNumberInputPropsClearable = XDSNumberInputPropsBase & {
+  /**
+   * Whether to show a clear button when a value is set.
+   * When clicked, resets the value to null and returns focus to the input.
+   *
+   * When enabled, the `onChange` callback type widens to also accept `null`,
+   * signaling that the user cleared the input.
+   */
+  hasClear: true;
+  onChange: (value: number | null) => void;
+};
+
+export type XDSNumberInputProps =
+  | XDSNumberInputPropsNonClearable
+  | XDSNumberInputPropsClearable;
 
 /**
  * Parse and validate a string input as a number.
@@ -300,6 +340,7 @@ export function XDSNumberInput({
   isIntegerOnly = false,
   onFocus,
   onBlur,
+  hasClear,
   onEnter,
   xstyle,
   className,
@@ -435,6 +476,15 @@ export function XDSNumberInput({
     [ref],
   );
 
+  // Handle clear button click
+  const handleClear = useCallback(() => {
+    if (hasClear) {
+      (onChange as (value: number | null) => void)(null);
+    }
+    setPendingInput(null);
+    inputRef.current?.focus();
+  }, [hasClear, onChange]);
+
   return (
     <XDSField
       label={label}
@@ -500,6 +550,15 @@ export function XDSNumberInput({
           )}
         />
         {units && <span {...stylex.props(styles.units)}>{units}</span>}
+        {hasClear && value != null && !isDisabled && (
+          <button
+            type="button"
+            onClick={handleClear}
+            aria-label={`Clear ${label}`}
+            {...stylex.props(styles.clearButton)}>
+            <XDSIcon icon="close" size="sm" color="secondary" />
+          </button>
+        )}
         {status && (
           <XDSIcon
             icon={statusIconMap[status.type]}

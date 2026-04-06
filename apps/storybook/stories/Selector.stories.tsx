@@ -444,3 +444,41 @@ export const AllVariations: Story = {
   },
   decorators: [Story => <Story />],
 };
+
+export const Clearable: Story = {
+  render: args => {
+    const [value, setValue] = useState<string | null>('Banana');
+    return (
+      <XDSSelector
+        {...args}
+        options={['Apple', 'Banana', 'Cherry', 'Date']}
+        value={value}
+        onChange={setValue}
+        hasClear
+      />
+    );
+  },
+  args: {
+    label: 'Fruit',
+    placeholder: 'Select a fruit...',
+  },
+};
+
+export const ClearableWithStatus: Story = {
+  render: args => {
+    const [value, setValue] = useState<string | null>('Banana');
+    return (
+      <XDSSelector
+        {...args}
+        options={['Apple', 'Banana', 'Cherry']}
+        value={value}
+        onChange={setValue}
+        hasClear
+      />
+    );
+  },
+  args: {
+    label: 'Required fruit',
+    status: {type: 'warning', message: 'Selection is recommended'},
+  },
+};

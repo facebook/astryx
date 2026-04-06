@@ -323,4 +323,66 @@ describe('XDSTextInput', () => {
       expect(screen.getByRole('textbox')).not.toHaveAttribute('name');
     });
   });
+
+  describe('hasClear', () => {
+    it('shows clear button when hasClear is true and value is non-empty', () => {
+      render(
+        <XDSTextInput
+          label="Name"
+          value="hello"
+          onChange={() => {}}
+          hasClear
+        />,
+      );
+      expect(
+        screen.getByRole('button', {name: 'Clear Name'}),
+      ).toBeInTheDocument();
+    });
+
+    it('does not show clear button when value is empty', () => {
+      render(
+        <XDSTextInput label="Name" value="" onChange={() => {}} hasClear />,
+      );
+      expect(
+        screen.queryByRole('button', {name: 'Clear Name'}),
+      ).not.toBeInTheDocument();
+    });
+
+    it('does not show clear button when hasClear is false', () => {
+      render(<XDSTextInput label="Name" value="hello" onChange={() => {}} />);
+      expect(
+        screen.queryByRole('button', {name: 'Clear Name'}),
+      ).not.toBeInTheDocument();
+    });
+
+    it('does not show clear button when disabled', () => {
+      render(
+        <XDSTextInput
+          label="Name"
+          value="hello"
+          onChange={() => {}}
+          hasClear
+          isDisabled
+        />,
+      );
+      expect(
+        screen.queryByRole('button', {name: 'Clear Name'}),
+      ).not.toBeInTheDocument();
+    });
+
+    it('calls onChange with empty string when clear is clicked', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <XDSTextInput
+          label="Name"
+          value="hello"
+          onChange={onChange}
+          hasClear
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Clear Name'}));
+      expect(onChange).toHaveBeenCalledWith('', null);
+    });
+  });
 });
