@@ -92,7 +92,8 @@ const styles = stylex.create({
   iconOnly: {
     '--button-icon-only-aspect': '1 / 1',
     aspectRatio: 'var(--button-icon-only-aspect)',
-    paddingInline: spacingVars['--spacing-2'],
+    paddingInline: 0,
+    paddingBlock: 0,
   },
   endContentWrapper: {
     display: 'inline-flex',
@@ -540,8 +541,7 @@ export function XDSButton({
         {...stylex.props(styles.contentWrapper)}
         aria-hidden={isLoadingState || undefined}>
         {icon && (
-          <span
-            {...stylex.props(styles.iconWrapper, iconSizeStyles[size])}>
+          <span {...stylex.props(styles.iconWrapper, iconSizeStyles[size])}>
             {icon}
           </span>
         )}

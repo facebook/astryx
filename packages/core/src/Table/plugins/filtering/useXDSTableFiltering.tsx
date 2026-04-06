@@ -39,6 +39,7 @@ import type {
   XDSTableColumn,
   HeaderCellRenderProps,
 } from '../../types';
+import {proportional} from '../../columnUtils';
 import type {
   PowerSearchConfig,
   PowerSearchField,
@@ -105,14 +106,14 @@ export interface XDSTableFilterOption {
 /** Text filter — free-form text input. */
 export interface XDSTableFilterTypeText {
   type: 'text';
-  /** Placeholder text for the input. @default 'Filter...' */
+  /** Placeholder text for the input. @default 'Filter <column header>' */
   placeholder?: string;
 }
 
 /** Number filter — numeric input for exact match. */
 export interface XDSTableFilterTypeNumber {
   type: 'number';
-  /** Placeholder text. @default 'Filter...' */
+  /** Placeholder text. @default 'Filter <column header>' */
   placeholder?: string;
   /** Minimum allowed value */
   min?: number;
@@ -162,7 +163,7 @@ export interface XDSTableFilterTypeMultiSelector {
 /** Date filter — date picker input (ISO date string). */
 export interface XDSTableFilterTypeDate {
   type: 'date';
-  /** Placeholder text. @default 'Filter...' */
+  /** Placeholder text. @default 'Filter <column header>' */
   placeholder?: string;
   /** Minimum allowed date (ISO string) */
   min?: string;
@@ -173,7 +174,7 @@ export interface XDSTableFilterTypeDate {
 /** Time filter — time picker input (ISO time string). */
 export interface XDSTableFilterTypeTime {
   type: 'time';
-  /** Placeholder text. @default 'Filter...' */
+  /** Placeholder text. @default 'Filter <column header>' */
   placeholder?: string;
   /** Minimum allowed time */
   min?: string;
@@ -527,7 +528,6 @@ const filterStyles = stylex.create({
   afterPopover: {
     display: 'flex',
     alignItems: 'center',
-    gap: spacingVars['--spacing-1'],
     flexShrink: 0,
   },
   afterInline: {
@@ -537,6 +537,15 @@ const filterStyles = stylex.create({
     marginTop: spacingVars['--spacing-1'],
     minWidth: 0,
   },
+  inlineClearRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-0-5'],
+  },
+  inlineClearGrow: {
+    flex: 1,
+    minWidth: 0,
+  },
   triggerButton: {
     background: 'none',
     border: 'none',
@@ -544,7 +553,7 @@ const filterStyles = stylex.create({
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: spacingVars['--spacing-1'],
+    padding: 0,
     borderRadius: radiusVars['--radius-element'],
     flexShrink: 0,
     // Minimum 44px touch target on coarse pointer devices (iOS guideline).
@@ -564,14 +573,15 @@ const filterStyles = stylex.create({
     opacity: 1,
   },
   popoverContent: {
-    padding: spacingVars['--spacing-2'],
     width: '240px',
   },
   popoverActions: {
     display: 'flex',
-    justifyContent: 'flex-end',
     gap: spacingVars['--spacing-2'],
     marginTop: spacingVars['--spacing-2'],
+  },
+  popoverActionsSpacer: {
+    flex: 1,
   },
   numberRangeRow: {
     display: 'flex',
@@ -615,7 +625,7 @@ function TextFilterControl({
           .getConfig()
           .onFilterChange(columnKey, newValue === '' ? null : newValue);
       }}
-      placeholder={filterConfig.placeholder ?? 'Filter...'}
+      placeholder={filterConfig.placeholder ?? `Filter ${header}`}
       size={size}
     />
   );
@@ -645,7 +655,7 @@ function NumberFilterControl({
       onChange={(newValue: number) => {
         store.getConfig().onFilterChange(columnKey, newValue);
       }}
-      placeholder={filterConfig.placeholder ?? 'Filter...'}
+      placeholder={filterConfig.placeholder ?? `Filter ${header}`}
       min={filterConfig.min ?? null}
       max={filterConfig.max ?? null}
       step={filterConfig.step ?? null}
@@ -1069,15 +1079,16 @@ function PopoverFilterTrigger({
               columnKey={columnKey}
               header={header}
               filterConfig={filterConfig}
-              size="sm"
+              size="md"
             />
             <div {...stylex.props(filterStyles.popoverActions)}>
               <XDSButton
-                label="Clear"
-                variant="secondary"
+                label="Reset"
+                variant="ghost"
                 size="sm"
                 onClick={handleClear}
               />
+              <div {...stylex.props(filterStyles.popoverActionsSpacer)} />
               <XDSButton
                 label="Apply"
                 variant="primary"
@@ -1165,21 +1176,43 @@ function InlineFilterSlot({
   filterConfig: XDSTableFilterType | undefined;
 }) {
   const variant = useContext(FilterVariantContext);
-  const size = variant === 'inline-compact' ? 'sm' : 'md';
+  const store = useContext(FilterStoreContext);
+  const size = 'sm';
   const placeholderStyle =
     variant === 'inline-compact'
       ? filterStyles.placeholderCompact
       : filterStyles.placeholder;
 
+  const config = store?.getConfig();
+  const value = config?.filters[columnKey];
+  const hasValue = value != null && value !== '';
+
+  const handleClear = useCallback(() => {
+    store?.getConfig().onFilterChange(columnKey, null);
+  }, [store, columnKey]);
+
   return (
     <div {...stylex.props(filterStyles.afterInline)}>
       {filterConfig != null ? (
-        <FilterControl
-          columnKey={columnKey}
-          header={header}
-          filterConfig={filterConfig}
-          size={size}
-        />
+        <div {...stylex.props(filterStyles.inlineClearRow)}>
+          <div {...stylex.props(filterStyles.inlineClearGrow)}>
+            <FilterControl
+              columnKey={columnKey}
+              header={header}
+              filterConfig={filterConfig}
+              size={size}
+            />
+          </div>
+          {hasValue && (
+            <XDSButton
+              variant="ghost"
+              size="sm"
+              icon={<XDSIcon icon="close" size="xsm" />}
+              label="Clear"
+              onClick={handleClear}
+            />
+          )}
+        </div>
       ) : (
         <div aria-hidden="true" {...stylex.props(placeholderStyle)} />
       )}
@@ -1253,6 +1286,20 @@ export function useXDSTableFiltering<T extends Record<string, unknown>>(
 
   return useMemo(
     (): TablePlugin<T> => ({
+      // For inline variants, upgrade columns with filters and no explicit width
+      // to proportional(1) so they get a default minWidth from the width resolver.
+      // Without this, inline filter inputs can collapse to unusable sizes.
+      transformColumns:
+        variant === 'inline' || variant === 'inline-compact'
+          ? (columns: XDSTableColumn<T>[]) =>
+              columns.map(col => {
+                if (col.filter != null && col.width == null) {
+                  return {...col, width: proportional(1)};
+                }
+                return col;
+              })
+          : undefined,
+
       transformTableContext(children: ReactNode) {
         return (
           <FilterStoreContext.Provider value={store}>
