@@ -21,6 +21,8 @@ import {
   borderVars,
 } from '../theme/tokens.stylex';
 import {XDSCodeBlock, XDSCode} from '../CodeBlock';
+import {XDSCheckboxList} from '../CheckboxList/XDSCheckboxList';
+import {XDSCheckboxListItem} from '../CheckboxList/XDSCheckboxListItem';
 import {xdsClassName, mergeProps} from '../utils';
 import {
   parseMarkdown,
@@ -198,17 +200,7 @@ const styles = stylex.create({
   list: {
     paddingInlineStart: spacingVars['--spacing-6'],
   },
-  taskItem: {
-    listStyleType: 'none',
-    display: 'flex',
-    alignItems: 'flex-start',
-    gap: spacingVars['--spacing-2'],
-  },
-  taskCheckbox: {
-    marginBlockStart: '0.3em',
-    flexShrink: 0,
-    accentColor: colorVars['--color-accent'],
-  },
+
   // Table
   tableWrapper: {
     overflowX: 'auto',
@@ -460,6 +452,58 @@ function renderBlock(
         </blockquote>
       );
     case 'list': {
+      // Detect task lists: all items have a checked state
+      const isTaskList = node.items.length > 0 && node.items.every(item => item.checked != null);
+
+      if (isTaskList) {
+        // Extract labels from task items — use first paragraph's inline text
+        const checkedValues = node.items
+          .map((item, i) => ({item, key: `task-${i}`}))
+          .filter(({item}) => item.checked)
+          .map(({key}) => key);
+
+        return (
+          <div
+            key={index}
+            {...stylex.props(
+              spacing,
+              isFirst && styles.noMarginBlockStart,
+              isLast && styles.noMarginBlockEnd,
+            )}
+          >
+            <XDSCheckboxList
+              label="Task list"
+              isLabelHidden
+              value={checkedValues}
+              isDisabled
+              density={density === 'compact' ? 'compact' : 'balanced'}
+            >
+              {node.items.map((item, i) => {
+                const firstChild = item.children[0];
+                const isInline = item.children.length === 1 && firstChild?.type === 'paragraph';
+                // Build label from first paragraph text
+                const label = isInline
+                  ? firstChild.children.map(c => c.type === 'text' ? c.content : '').join('')
+                  : `Item ${i + 1}`;
+
+                return (
+                  <XDSCheckboxListItem
+                    key={i}
+                    value={`task-${i}`}
+                    label={label}
+                    description={
+                      isInline
+                        ? undefined
+                        : undefined
+                    }
+                  />
+                );
+              })}
+            </XDSCheckboxList>
+          </div>
+        );
+      }
+
       const Tag = node.ordered ? 'ol' : 'ul';
       return (
         <Tag
@@ -473,25 +517,12 @@ function renderBlock(
           )}
         >
           {node.items.map((item, i) => {
-            const isTask = item.checked != null;
             const firstChild = item.children[0];
-            const inlineTask = isTask && item.children.length === 1 && firstChild?.type === 'paragraph';
+            const isInline = item.children.length === 1 && firstChild?.type === 'paragraph';
 
             return (
-              <li
-                key={i}
-                {...(isTask ? stylex.props(styles.taskItem) : {})}
-              >
-                {isTask && (
-                  <input
-                    type="checkbox"
-                    checked={item.checked}
-                    disabled
-                    readOnly
-                    {...stylex.props(styles.taskCheckbox)}
-                  />
-                )}
-                {inlineTask ? (
+              <li key={i}>
+                {isInline ? (
                   <span>{firstChild.children.map((c, j) => renderInline(c, j, onLinkClick))}</span>
                 ) : (
                   item.children.map((c, j) => renderBlock(c, j, item.children.length, density, headingLevelStart, onLinkClick))
