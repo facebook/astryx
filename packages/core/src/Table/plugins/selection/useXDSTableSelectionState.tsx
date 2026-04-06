@@ -26,7 +26,11 @@ import type {UseXDSTableSelectionConfig} from './useXDSTableSelection';
 export interface UseXDSTableSelectionStateConfig<
   T extends Record<string, unknown>,
 > {
-  /** The full data array rendered in the table. */
+  /**
+   * The data array currently rendered in the table.
+   * Pass the **filtered/visible** data, not the full dataset — select-all
+   * operates on this array, so passing unfiltered data would select hidden rows.
+   */
   data: T[];
   /**
    * Key extractor — returns a unique string ID for each item.

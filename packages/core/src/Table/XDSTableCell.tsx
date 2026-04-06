@@ -68,7 +68,12 @@ const densityStyles = stylex.create({
 
 const dividerRowStyles = stylex.create({
   cell: {
-    borderBottomWidth: borderVars['--border-width'],
+    borderBottomWidth: {
+      default: borderVars['--border-width'],
+      // Skip border on cells in the last body row to avoid a
+      // redundant line at the bottom of the table.
+      [stylex.when.ancestor(':last-child')]: '0',
+    },
     borderBottomStyle: 'solid',
     borderBottomColor: colorVars['--color-border'],
   },

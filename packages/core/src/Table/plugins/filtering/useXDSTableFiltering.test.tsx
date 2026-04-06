@@ -191,7 +191,7 @@ describe('useXDSTableFiltering', () => {
 
     it('renders text input for string field', () => {
       render(<FilterTable variant="inline" />);
-      const textInputs = screen.getAllByPlaceholderText('Filter...');
+      const textInputs = screen.getAllByPlaceholderText(/^Filter /);
       expect(textInputs.length).toBeGreaterThanOrEqual(1);
     });
 
@@ -206,7 +206,7 @@ describe('useXDSTableFiltering', () => {
     it('updates text filter on type', async () => {
       const user = userEvent.setup();
       render(<FilterTable variant="inline" />);
-      const textInputs = screen.getAllByPlaceholderText('Filter...');
+      const textInputs = screen.getAllByPlaceholderText(/^Filter /);
       await user.type(textInputs[0], 'Alice');
       expect(textInputs[0]).toHaveValue('Alice');
     });
@@ -222,7 +222,7 @@ describe('useXDSTableFiltering', () => {
         },
       ];
       render(<FilterTable columns={columns} variant="inline" />);
-      const textInputs = screen.getAllByPlaceholderText('Filter...');
+      const textInputs = screen.getAllByPlaceholderText(/^Filter /);
       expect(textInputs.length).toBeGreaterThanOrEqual(1);
     });
 

@@ -330,4 +330,24 @@ export interface XDSBaseTableProps<T extends Record<string, unknown>> {
   children?: ReactNode;
   /** Additional HTML attributes for the `<table>` element */
   tableProps?: HTMLAttributes<HTMLTableElement>;
+  /**
+   * Content displayed when `data` is an empty array.
+   * Rendered as a full-width row spanning all columns.
+   *
+   * - **Omit or `undefined`** — renders a default compact "No data" empty state
+   * - **`ReactNode`** — renders your custom content (e.g. `<XDSEmptyState>`)
+   * - **`false`** — disables the empty state entirely (renders empty `<tbody>`)
+   *
+   * @default <XDSEmptyState title="No data" isCompact />
+   *
+   * @example
+   * ```
+   * <XDSTable
+   *   data={filteredUsers}
+   *   columns={columns}
+   *   emptyState={<XDSEmptyState title="No results" description="Try adjusting your filters." />}
+   * />
+   * ```
+   */
+  emptyState?: ReactNode | false;
 }
