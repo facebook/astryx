@@ -39,6 +39,7 @@ import type {
   XDSTableColumn,
   HeaderCellRenderProps,
 } from '../../types';
+import {proportional} from '../../columnUtils';
 import type {
   PowerSearchConfig,
   PowerSearchField,
@@ -536,6 +537,15 @@ const filterStyles = stylex.create({
     marginTop: spacingVars['--spacing-1'],
     minWidth: 0,
   },
+  inlineClearRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-0-5'],
+  },
+  inlineClearGrow: {
+    flex: 1,
+    minWidth: 0,
+  },
   triggerButton: {
     background: 'none',
     border: 'none',
@@ -543,7 +553,7 @@ const filterStyles = stylex.create({
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: spacingVars['--spacing-1'],
+    padding: 0,
     borderRadius: radiusVars['--radius-element'],
     flexShrink: 0,
     // Minimum 44px touch target on coarse pointer devices (iOS guideline).
@@ -1164,21 +1174,43 @@ function InlineFilterSlot({
   filterConfig: XDSTableFilterType | undefined;
 }) {
   const variant = useContext(FilterVariantContext);
+  const store = useContext(FilterStoreContext);
   const size = variant === 'inline-compact' ? 'sm' : 'md';
   const placeholderStyle =
     variant === 'inline-compact'
       ? filterStyles.placeholderCompact
       : filterStyles.placeholder;
 
+  const config = store?.getConfig();
+  const value = config?.filters[columnKey];
+  const hasValue = value != null && value !== '';
+
+  const handleClear = useCallback(() => {
+    store?.getConfig().onFilterChange(columnKey, null);
+  }, [store, columnKey]);
+
   return (
     <div {...stylex.props(filterStyles.afterInline)}>
       {filterConfig != null ? (
-        <FilterControl
-          columnKey={columnKey}
-          header={header}
-          filterConfig={filterConfig}
-          size={size}
-        />
+        <div {...stylex.props(filterStyles.inlineClearRow)}>
+          <div {...stylex.props(filterStyles.inlineClearGrow)}>
+            <FilterControl
+              columnKey={columnKey}
+              header={header}
+              filterConfig={filterConfig}
+              size={size}
+            />
+          </div>
+          {hasValue && (
+            <XDSButton
+              variant="ghost"
+              size="sm"
+              icon="close"
+              label={`Clear ${header} filter`}
+              onClick={handleClear}
+            />
+          )}
+        </div>
       ) : (
         <div aria-hidden="true" {...stylex.props(placeholderStyle)} />
       )}
@@ -1252,6 +1284,20 @@ export function useXDSTableFiltering<T extends Record<string, unknown>>(
 
   return useMemo(
     (): TablePlugin<T> => ({
+      // For inline variants, upgrade columns with filters and no explicit width
+      // to proportional(1) so they get a default minWidth from the width resolver.
+      // Without this, inline filter inputs can collapse to unusable sizes.
+      transformColumns:
+        variant === 'inline' || variant === 'inline-compact'
+          ? (columns: XDSTableColumn<T>[]) =>
+              columns.map(col => {
+                if (col.filter != null && col.width == null) {
+                  return {...col, width: proportional(1)};
+                }
+                return col;
+              })
+          : undefined,
+
       transformTableContext(children: ReactNode) {
         return (
           <FilterStoreContext.Provider value={store}>
