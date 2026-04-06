@@ -1669,7 +1669,6 @@ function MotionPreview() {
   >(null);
   const [modalOpen, setModalOpen] = React.useState(false);
   const containerRef = React.useRef<HTMLDivElement>(null);
-  const modalTriggerRef = React.useRef<HTMLButtonElement>(null);
   const [containerWidth, setContainerWidth] = React.useState(1200);
 
   React.useEffect(() => {
@@ -1849,7 +1848,6 @@ function MotionPreview() {
               </div>
               <XDSHStack gap={1}>
                 <XDSButton
-                  ref={modalTriggerRef}
                   label="Modal"
                   variant="secondary"
                   onClick={() => setModalOpen(true)}
@@ -2008,10 +2006,7 @@ function MotionPreview() {
           </div>
         </div>
       </XDSAppShell>
-      <XDSDialog
-        isOpen={modalOpen}
-        onOpenChange={setModalOpen}
-        triggerRef={modalTriggerRef}>
+      <XDSDialog isOpen={modalOpen} onOpenChange={setModalOpen}>
         <div style={{padding: 'var(--spacing-3)', flex: 1}}>
           <XDSText type="body" color="secondary">
             This modal uses XDSDialog with directional entry animation from the
@@ -2095,7 +2090,6 @@ function NavigationOverlaysPreview({
   setOverlayOpen: (v: boolean) => void;
 }) {
   const [modalOpen, setModalOpen] = React.useState(false);
-  const modalTriggerRef = React.useRef<HTMLButtonElement>(null);
 
   return (
     <>
@@ -2110,7 +2104,6 @@ function NavigationOverlaysPreview({
             </XDSText>
             <div style={{marginTop: 8}}>
               <XDSButton
-                ref={modalTriggerRef}
                 label="Open Modal"
                 onClick={() => setModalOpen(true)}
               />
@@ -2139,10 +2132,7 @@ function NavigationOverlaysPreview({
           </div>
         </XDSVStack>
       </XDSCard>
-      <XDSDialog
-        isOpen={modalOpen}
-        onOpenChange={setModalOpen}
-        triggerRef={modalTriggerRef}>
+      <XDSDialog isOpen={modalOpen} onOpenChange={setModalOpen}>
         <div style={{padding: 'var(--spacing-3)'}}>
           <XDSText type="body" color="secondary">
             This modal uses the XDSDialog component with directional entry
