@@ -113,6 +113,7 @@ const styles = stylex.create({
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
+    textAlign: 'start',
   },
   triggerIcon: {
     flexShrink: 0,
