@@ -88,24 +88,42 @@ function useThemeStyleInjection(theme: XDSDefinedTheme): void {
     const themeKey = `xds-theme-${theme.name}`;
     if (injectedThemes.has(themeKey)) return;
 
-    const css = generateThemeCSS(theme);
-    if (!css) return;
+    const {prose, component} = generateThemeCSS(theme);
+    if (!prose && !component) return;
 
-    const style = document.createElement('style');
-    style.setAttribute('data-xds-theme', theme.name);
-    style.setAttribute('data-xds-id', id);
-    style.textContent = `@layer xds-theme {\n${css}\n}`;
-    document.head.appendChild(style);
+    // Prose defaults go into @layer reset — lowest priority, scoped to
+    // the theme region. Any class-based style (StyleX, .xds-*) wins.
+    if (prose) {
+      const proseStyle = document.createElement('style');
+      proseStyle.setAttribute('data-xds-theme-prose', theme.name);
+      proseStyle.setAttribute('data-xds-id', id);
+      proseStyle.textContent = `@layer reset {\n${prose}\n}`;
+      document.head.appendChild(proseStyle);
+    }
+
+    // Component overrides go into @layer xds-theme — above StyleX layers
+    // so themes can intentionally restyle components.
+    if (component) {
+      const compStyle = document.createElement('style');
+      compStyle.setAttribute('data-xds-theme', theme.name);
+      compStyle.setAttribute('data-xds-id', id);
+      compStyle.textContent = `@layer xds-theme {\n${component}\n}`;
+      document.head.appendChild(compStyle);
+    }
+
     injectedThemes.add(themeKey);
 
     return () => {
-      const existing = document.querySelector(
+      // Remove both prose and component style tags
+      const proseEl = document.querySelector(
+        `style[data-xds-theme-prose="${theme.name}"][data-xds-id="${id}"]`,
+      );
+      const compEl = document.querySelector(
         `style[data-xds-theme="${theme.name}"][data-xds-id="${id}"]`,
       );
-      if (existing) {
-        existing.remove();
-        injectedThemes.delete(themeKey);
-      }
+      proseEl?.remove();
+      compEl?.remove();
+      injectedThemes.delete(themeKey);
     };
   }, [theme, id]);
 }

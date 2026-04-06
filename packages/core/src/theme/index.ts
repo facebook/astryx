@@ -17,7 +17,11 @@ export {XDSTheme} from './XDSTheme';
 export {
   defineTheme,
   generateThemeCSS,
+  generateThemeCSSFlat,
   generateThemeRules,
+  generateThemeRulesSplit,
+  type ThemeCSSOutput,
+  type ThemeRulesSplit,
   isDefinedTheme,
   xdsTokenDefaults,
 } from './defineTheme';
