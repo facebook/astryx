@@ -1205,8 +1205,8 @@ function InlineFilterSlot({
             <XDSButton
               variant="ghost"
               size="sm"
-              icon="close"
-              label={`Clear ${header} filter`}
+              icon={<XDSIcon icon="close" size="xsm" />}
+              label="Clear"
               onClick={handleClear}
             />
           )}
