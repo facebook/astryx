@@ -257,18 +257,18 @@ const styles = stylex.create({
 // Streaming fade-in animation
 // ---------------------------------------------------------------------------
 
-const streamingFadeIn = stylex.keyframes({
-  from: {opacity: 0},
-  to: {opacity: 1},
-});
-
 const streamingStyles = stylex.create({
   fadeIn: {
-    opacity: 0,
-    animationName: streamingFadeIn,
-    animationDuration: durationVars['--duration-fast'],
-    animationTimingFunction: easeVars['--ease-standard'],
-    animationFillMode: 'forwards',
+    // Resting state is fully visible — safe fallback if animation doesn't fire.
+    // @starting-style declares the entry state (opacity: 0) so the browser
+    // transitions from invisible to visible when the element first mounts.
+    opacity: 1,
+    transitionProperty: 'opacity',
+    transitionDuration: durationVars['--duration-fast'],
+    transitionTimingFunction: easeVars['--ease-standard'],
+    '@starting-style': {
+      opacity: 0,
+    },
   },
 });
 
