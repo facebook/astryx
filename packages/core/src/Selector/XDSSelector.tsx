@@ -107,6 +107,13 @@ const styles = stylex.create({
   triggerPlaceholder: {
     color: colorVars['--color-text-secondary'],
   },
+  triggerLabel: {
+    flexGrow: 1,
+    flexShrink: 1,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
   triggerIcon: {
     flexShrink: 0,
     display: 'flex',
@@ -689,7 +696,9 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
           className,
           style,
         )}>
-        <span>{selectedItem?.label ?? placeholder}</span>
+        <span {...stylex.props(styles.triggerLabel)}>
+          {selectedItem?.label ?? placeholder}
+        </span>
         {hasClear && value != null && !isDisabled && (
           <button
             type="button"
