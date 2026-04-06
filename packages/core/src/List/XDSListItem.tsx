@@ -367,13 +367,7 @@ export function XDSListItem({
   const innerContent = (
     <>
       {startContent != null && (
-        <span
-          {...stylex.props(
-            styles.startContent,
-            isDisabled && styles.disabledContent,
-          )}>
-          {startContent}
-        </span>
+        <span {...stylex.props(styles.startContent)}>{startContent}</span>
       )}
 
       {href != null ? (

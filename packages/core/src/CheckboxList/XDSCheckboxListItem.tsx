@@ -177,10 +177,7 @@ export function XDSCheckboxListItem({
       }
       aria-busy={isBusy || undefined}
       xstyle={
-        [
-          resolvedChecked === true && !effectiveDisabled && styles.selected,
-          xstyle,
-        ] as StyleXStyles
+        [resolvedChecked === true && styles.selected, xstyle] as StyleXStyles
       }
       className={className}
       style={style}
