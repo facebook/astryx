@@ -26,6 +26,7 @@ export * from './Center';
 export * from './CodeBlock';
 export * from './CommandPalette';
 export * from './CheckboxInput';
+export * from './CheckboxList';
 export * from './Collapsible';
 export * from './RadioList';
 export * from './Divider';
