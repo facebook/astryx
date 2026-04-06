@@ -21,10 +21,12 @@ import {getRunPrefix} from '../utils/package-manager.mjs';
 const _require = createRequire(import.meta.url);
 let _defineTheme = null;
 let _generateThemeRules = null;
+let _generateThemeRulesSplit = null;
 try {
   const coreTheme = _require('@xds/core/theme');
   _defineTheme = coreTheme.defineTheme;
   _generateThemeRules = coreTheme.generateThemeRules;
+  _generateThemeRulesSplit = coreTheme.generateThemeRulesSplit;
 } catch {
   // Core not available — fall back to legacy generation
 }
@@ -783,18 +785,42 @@ export function registerTheme(program) {
           tokens: themeDef.tokens,
           components: themeDef.components,
         });
-        const rules = _generateThemeRules(resolvedTheme);
-        if (rules.length === 0) {
-          console.log('No overrides found — nothing to build.');
-          return;
-        }
         const scopeSelector = `[data-xds-theme="${themeDef.name}"]`;
-        const inner = rules.join('\n\n');
-        const scopeBlock = `@scope (${scopeSelector}) to ([data-xds-theme]) {\n${inner}\n}`;
-        const colorSchemeDecl = scopeBlock.includes('light-dark(')
-          ? '  :root { color-scheme: light dark; }\n\n'
-          : '';
-        css = `@layer xds-theme {\n${colorSchemeDecl}${scopeBlock}\n}\n`;
+        const scopeTo = `[data-xds-theme]`;
+
+        if (_generateThemeRulesSplit) {
+          const {component, prose} = _generateThemeRulesSplit(resolvedTheme);
+          if (component.length === 0 && prose.length === 0) {
+            console.log('No overrides found — nothing to build.');
+            return;
+          }
+          const cssParts = [];
+          if (prose.length > 0) {
+            const proseInner = prose.join('\n\n');
+            cssParts.push(`@layer reset {\n@scope (${scopeSelector}) to (${scopeTo}) {\n${proseInner}\n}\n}`);
+          }
+          if (component.length > 0) {
+            const componentInner = component.join('\n\n');
+            const componentScope = `@scope (${scopeSelector}) to (${scopeTo}) {\n${componentInner}\n}`;
+            const colorSchemeDecl = componentScope.includes('light-dark(')
+              ? '  :root { color-scheme: light dark; }\n\n'
+              : '';
+            cssParts.push(`@layer xds-theme {\n${colorSchemeDecl}${componentScope}\n}`);
+          }
+          css = cssParts.join('\n\n') + '\n';
+        } else {
+          const rules = _generateThemeRules(resolvedTheme);
+          if (rules.length === 0) {
+            console.log('No overrides found — nothing to build.');
+            return;
+          }
+          const inner = rules.join('\n\n');
+          const scopeBlock = `@scope (${scopeSelector}) to (${scopeTo}) {\n${inner}\n}`;
+          const colorSchemeDecl = scopeBlock.includes('light-dark(')
+            ? '  :root { color-scheme: light dark; }\n\n'
+            : '';
+          css = `@layer xds-theme {\n${colorSchemeDecl}${scopeBlock}\n}\n`;
+        }
       } else {
         // Legacy fallback when core isn't built yet
         const scopeBlocks = [];
