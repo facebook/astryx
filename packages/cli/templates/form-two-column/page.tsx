@@ -5,12 +5,13 @@ import * as stylex from '@stylexjs/stylex';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSCard} from '@xds/core/Card';
 import {XDSButton} from '@xds/core/Button';
-import {XDSText, XDSHeading} from '@xds/core/Text';
+import {XDSText} from '@xds/core/Text';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSSelector} from '@xds/core/Selector';
 import {XDSTextArea} from '@xds/core/TextArea';
 import {XDSLink} from '@xds/core/Link';
-import {colorVars} from '@xds/core/theme/tokens.stylex';
+import {XDSAvatar} from '@xds/core/Avatar';
+import {colorVars, fontWeightVars} from '@xds/core/theme/tokens.stylex';
 
 // ─────────────────────────────────────────────────────────────
 // Constants
@@ -29,11 +30,36 @@ const USE_CASES = [
   {label: 'Managed service', value: 'managed'},
 ];
 
-const BULLETS = [
-  'Connect with a solutions specialist',
-  'Get a personalized demo tailored to your needs',
-  'Learn which plan fits your operations',
-  'Explore partnership opportunities',
+const CONTACT_GRID = [
+  {
+    category: 'General inquiries',
+    name: 'Alex Johnson',
+    email: 'hello@company.com',
+  },
+  {
+    category: 'New business',
+    name: 'Jordan Lee',
+    email: 'newbiz@company.com',
+  },
+  {
+    category: 'Press & partnerships',
+    name: 'Morgan Smith',
+    email: 'press@company.com',
+  },
+  {
+    category: 'Recurring work',
+    name: 'Taylor Brown',
+    email: 'work@company.com',
+  },
+  {
+    category: 'Find us',
+    address: ['123 Main Street', 'Suite 400', 'San Francisco, CA 94103'],
+  },
+  {
+    category: 'Give us a ring',
+    phone: '+1 (415) 000-0000',
+    hours: ['9am – 6pm', 'Mon to Fri'],
+  },
 ];
 
 // ─────────────────────────────────────────────────────────────
@@ -47,18 +73,66 @@ const styles = stylex.create({
   fullWidth: {
     width: '100%',
   },
-  bulletDot: {
-    width: 20,
-    height: 20,
-    borderRadius: 4,
-    backgroundColor: colorVars['--color-background-gray'],
-    flexShrink: 0,
-    marginTop: 2,
-  },
   goalButton: {
     flex: 1,
   },
+  contactGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: 32,
+  },
+  categoryLabel: {
+    color: colorVars['--color-text-secondary'],
+    fontSize: 13,
+  },
 });
+
+// ─────────────────────────────────────────────────────────────
+// Contact cell
+// ─────────────────────────────────────────────────────────────
+
+function ContactCell(item: (typeof CONTACT_GRID)[number]) {
+  return (
+    <XDSVStack gap={2}>
+      <XDSText type="supporting" color="secondary">
+        {item.category}
+      </XDSText>
+
+      {'name' in item && item.name != null ? (
+        <XDSHStack gap={3} vAlign="center">
+          <XDSAvatar name={item.name} size="medium" />
+          <XDSVStack gap={0}>
+            <XDSText type="body" weight="semibold">
+              {item.name}
+            </XDSText>
+            <XDSLink label={item.email ?? ''} href={`mailto:${item.email}`} type="supporting">
+              {item.email}
+            </XDSLink>
+          </XDSVStack>
+        </XDSHStack>
+      ) : 'address' in item && item.address != null ? (
+        <XDSVStack gap={0}>
+          {item.address.map(line => (
+            <XDSText key={line} type="body">
+              {line}
+            </XDSText>
+          ))}
+        </XDSVStack>
+      ) : 'phone' in item && item.phone != null ? (
+        <XDSVStack gap={0}>
+          <XDSText type="body" weight="semibold">
+            {item.phone}
+          </XDSText>
+          {(item.hours ?? []).map(line => (
+            <XDSText key={line} type="body" color="secondary">
+              {line}
+            </XDSText>
+          ))}
+        </XDSVStack>
+      ) : null}
+    </XDSVStack>
+  );
+}
 
 // ─────────────────────────────────────────────────────────────
 // Page
@@ -67,9 +141,8 @@ const styles = stylex.create({
 /**
  * Form (Two-column) — marketing lead-gen / demo request form template.
  *
- * Layout: full-height split. Left side is a marketing hero with large headline
- * and benefit bullets. Right side is a contained form card. Mirrors the Login
- * (Two-Column) structural pattern applied to a lead-capture context.
+ * Layout: full-height split. Left side has a large display heading and a
+ * 2x3 contact info grid. Right side is a contained form card.
  */
 export default function FormTwoColumnPage() {
   const [fullName, setFullName] = useState('');
@@ -112,22 +185,26 @@ export default function FormTwoColumnPage() {
           width: '100%',
           alignItems: 'center',
         }}>
-        {/* ── Left: Marketing hero ── */}
+        {/* ── Left: Hero + contact grid ── */}
         <XDSVStack gap={8}>
-          <XDSHeading level={1}>
-            Let&apos;s bring our platform
-            <br />
-            to your operations
-          </XDSHeading>
+          {/* Display heading — matches contact-form template size */}
+          <div
+            style={{
+              fontSize: 64,
+              fontWeight: fontWeightVars['--font-weight-bold'],
+              lineHeight: 1.05,
+              letterSpacing: '-0.03em',
+              margin: 0,
+            }}>
+            Let&apos;s work together
+          </div>
 
-          <XDSVStack gap={3}>
-            {BULLETS.map(bullet => (
-              <XDSHStack key={bullet} gap={3} vAlign="start">
-                <div {...stylex.props(styles.bulletDot)} />
-                <XDSText type="body">{bullet}</XDSText>
-              </XDSHStack>
+          {/* 2x3 contact grid */}
+          <div {...stylex.props(styles.contactGrid)}>
+            {CONTACT_GRID.map(item => (
+              <ContactCell key={item.category} {...item} />
             ))}
-          </XDSVStack>
+          </div>
         </XDSVStack>
 
         {/* ── Right: Form card ── */}
@@ -135,7 +212,15 @@ export default function FormTwoColumnPage() {
           <XDSVStack gap={5}>
             {/* Card header */}
             <XDSVStack gap={1}>
-              <XDSHeading level={2}>Request a demo</XDSHeading>
+              <div
+                style={{
+                  fontSize: 22,
+                  fontWeight: fontWeightVars['--font-weight-bold'],
+                  lineHeight: 1.2,
+                  margin: 0,
+                }}>
+                Request a demo
+              </div>
               <XDSText type="supporting" color="secondary">
                 Fill out the form and we&apos;ll be in touch within one business
                 day.
