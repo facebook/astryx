@@ -130,15 +130,14 @@ const styles = stylex.create({
         '@media (hover: hover)': colorVars['--color-border'],
       },
     },
-    backgroundColor: {
-      default: 'unset',
-      [stylex.when.ancestor(':hover')]: {
-        '@media (hover: hover)': 'unset',
-      },
-    },
   },
   checkboxDisabledUnchecked: {
-    backgroundColor: colorVars['--color-background-muted'],
+    backgroundColor: {
+      default: colorVars['--color-background-muted'],
+      [stylex.when.ancestor(':hover')]: {
+        '@media (hover: hover)': colorVars['--color-background-muted'],
+      },
+    },
   },
   checkmark: {
     display: 'none',
