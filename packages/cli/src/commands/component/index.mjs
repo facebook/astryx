@@ -201,10 +201,12 @@ export function registerComponent(program) {
       if (options.source) {
         const sourcePath = findComponentSource(coreDir, dirName);
         if (!sourcePath) {
+          if (json) return jsonError(`Source for "${name}" not found`);
           console.error(`Error: Source for "${name}" not found.`);
           process.exit(1);
         }
         const source = fs.readFileSync(sourcePath, 'utf-8');
+        if (json) return jsonOut('component.detail.source', {component: dirName, source});
         console.log(source);
         return;
       }
@@ -238,19 +240,17 @@ export function registerComponent(program) {
           const gap = topScore - secondScore;
 
           if (topScore >= 90 && topTied.length === 1 && gap >= 20) {
-            // Crystal clear single winner: show docs directly
             resolvedName = topTied[0].name;
             readmePath = findComponentReadme(coreDir, resolvedName);
-            if (readmePath && topScore < 100) {
+            if (readmePath && topScore < 100 && !json) {
               console.log(`Showing results for ${resolvedName} (matched ${topTied[0].reason})\n`);
             }
           } else {
-            // Multiple strong matches or ambiguous: show options
-            // Include everything within 20 points of the top, min 2, max 5
             const threshold = Math.max(topScore - 20, 1);
             const candidates = results.filter(r => r.score >= threshold).slice(0, 5);
             if (candidates.length < 2) candidates.push(...results.slice(candidates.length, 2));
 
+            if (json) return jsonError(`No component named "${name}"`, candidates.map(c => ({name: c.name, reason: c.reason})));
             console.error(`No component named "${name}". Did you mean:\n`);
             for (const match of candidates) {
               console.error(`  ${match.name}  (${match.reason})`);
@@ -259,6 +259,7 @@ export function registerComponent(program) {
             process.exit(1);
           }
         } else {
+          if (json) return jsonError(`No component named "${name}"`);
           console.error(`No component named "${name}".`);
           console.error(`Run \`${run} xds component --list\` to see available components.`);
           process.exit(1);
@@ -268,6 +269,13 @@ export function registerComponent(program) {
       if (readmePath.endsWith('.doc.mjs')) {
         const docs = await loadDocs(readmePath, {zh, dense, lang});
         const importHint = fromExternal ? fromExternal.name : resolveImportPath(coreDir, resolvedName);
+        if (json) {
+          if (options.props) {
+            const props = docs.props || (docs.components ? docs.components.flatMap(c => c.props || []) : []);
+            return jsonOut('component.detail.props', props);
+          }
+          return jsonOut('component.detail', docs);
+        }
         if (options.props) {
           console.log(formatProps(docs, resolvedName));
         } else if (detail === 'brief') {
@@ -280,6 +288,7 @@ export function registerComponent(program) {
       } else {
         // Legacy path for README.md files
         const content = fs.readFileSync(readmePath, 'utf-8');
+        if (json) return jsonOut('markdown', {name: resolvedName, format: 'markdown', content});
         if (options.props) {
           console.log(extractProps(content, resolvedName));
         } else if (detail === 'brief') {
