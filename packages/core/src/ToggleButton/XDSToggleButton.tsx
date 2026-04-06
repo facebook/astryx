@@ -21,7 +21,7 @@
 
 import {useCallback, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {fontWeightVars, colorVars} from '../theme/tokens.stylex';
+import {fontWeightVars} from '../theme/tokens.stylex';
 import {XDSButton, type XDSButtonSize} from '../Button';
 import {useToggleButtonGroup} from './XDSToggleButtonGroup';
 
@@ -55,24 +55,25 @@ export type XDSToggleButtonIconColor =
   | 'yellow';
 
 /**
- * Map from color name to the corresponding icon color token.
- * Uses StyleX-generated CSS variable references.
+ * Map from color name to the corresponding CSS custom property name.
+ * Used as inline style to guarantee the color overrides any class-based
+ * `color` from parent elements (e.g., the pressed button style).
  */
-const iconColorTokenStyles = stylex.create({
-  accent: {color: colorVars['--color-icon-accent']},
-  primary: {color: colorVars['--color-icon-primary']},
-  secondary: {color: colorVars['--color-icon-secondary']},
-  blue: {color: colorVars['--color-icon-blue']},
-  cyan: {color: colorVars['--color-icon-cyan']},
-  gray: {color: colorVars['--color-icon-gray']},
-  green: {color: colorVars['--color-icon-green']},
-  orange: {color: colorVars['--color-icon-orange']},
-  pink: {color: colorVars['--color-icon-pink']},
-  purple: {color: colorVars['--color-icon-purple']},
-  red: {color: colorVars['--color-icon-red']},
-  teal: {color: colorVars['--color-icon-teal']},
-  yellow: {color: colorVars['--color-icon-yellow']},
-});
+const iconColorVarMap: Record<XDSToggleButtonIconColor, string> = {
+  accent: 'var(--color-icon-accent)',
+  primary: 'var(--color-icon-primary)',
+  secondary: 'var(--color-icon-secondary)',
+  blue: 'var(--color-icon-blue)',
+  cyan: 'var(--color-icon-cyan)',
+  gray: 'var(--color-icon-gray)',
+  green: 'var(--color-icon-green)',
+  orange: 'var(--color-icon-orange)',
+  pink: 'var(--color-icon-pink)',
+  purple: 'var(--color-icon-purple)',
+  red: 'var(--color-icon-red)',
+  teal: 'var(--color-icon-teal)',
+  yellow: 'var(--color-icon-yellow)',
+};
 
 // =============================================================================
 // Styles
@@ -290,14 +291,14 @@ export function XDSToggleButton({
   const isIconOnly = icon != null && children == null;
   const resolvedIcon = isPressed && pressedIcon ? pressedIcon : icon;
 
-  // Wrap icon with token color when pressed
+  // Wrap icon with token color when pressed.
+  // Uses inline style to guarantee the color overrides any class-based
+  // `color` inherited from the pressed button element.
   const coloredIcon =
     resolvedIcon != null && isPressed && pressedIconColor != null ? (
       <span
-        {...stylex.props(
-          iconColorWrapperStyles.wrapper,
-          iconColorTokenStyles[pressedIconColor],
-        )}>
+        {...stylex.props(iconColorWrapperStyles.wrapper)}
+        style={{color: iconColorVarMap[pressedIconColor]}}>
         {resolvedIcon}
       </span>
     ) : (
