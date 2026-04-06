@@ -672,7 +672,7 @@ export default function DashboardTemplate() {
           </XDSHStack>
         </div>
 
-        <XDSCard padding={0}>
+        <XDSCard>
           <XDSTable<DocRow>
             data={docRows}
             columns={docColumns}
