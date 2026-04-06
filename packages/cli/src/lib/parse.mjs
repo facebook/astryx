@@ -7,8 +7,8 @@
 
 /**
  * Parse raw CLI output into a typed result.
- * @param {unknown} raw - JSON string or already-parsed object
- * @returns {import('../types/base').CLIAnyResponse | import('../types/base').CLIError | import('../types/base').CLIUnsupportedError}
+ * Consumer types are declared in types/base.d.ts — this is the runtime implementation.
+ * @param {unknown} raw
  */
 export function parseResponse(raw) {
   return typeof raw === 'string' ? JSON.parse(raw) : raw;
@@ -17,7 +17,7 @@ export function parseResponse(raw) {
 /**
  * Type guard: returns true if result is a CLI error.
  * @param {unknown} result
- * @returns {result is import('../types/base').CLIError | import('../types/base').CLIUnsupportedError}
+ * @returns {boolean}
  */
 export function isError(result) {
   return result != null && typeof result === 'object' && 'error' in result;
@@ -25,17 +25,16 @@ export function isError(result) {
 
 /**
  * Assert a specific response type. Throws on error or type mismatch.
- * @template {import('../types/base').CLIResponseType} T
- * @param {unknown} raw - JSON string or already-parsed object
- * @param {T} expectedType - The type discriminator to assert
- * @returns {Extract<import('../types/base').CLIAnyResponse, { type: T }>}
+ * Consumer types are declared in types/base.d.ts — this is the runtime implementation.
+ * @param {unknown} raw
+ * @param {string} expectedType
  */
 export function assertResponse(raw, expectedType) {
   const result = parseResponse(raw);
-  if (isError(result)) throw new Error(result.error);
-  if (result.type !== expectedType) {
+  if (isError(result)) throw new Error(/** @type {any} */ (result).error);
+  if (/** @type {any} */ (result).type !== expectedType) {
     throw new Error(
-      `Expected type "${expectedType}", got "${result.type}"`,
+      `Expected type "${expectedType}", got "${/** @type {any} */ (result).type}"`,
     );
   }
   return result;

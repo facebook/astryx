@@ -24,7 +24,6 @@ export function jsonOut(type, data) {
  * Output a structured JSON error and exit.
  * @param {string} message
  * @param {Array<{name: string, reason: string}>} [suggestions]
- * @returns {never}
  */
 export function jsonError(message, suggestions) {
   process.__xdsJsonHandled = true;

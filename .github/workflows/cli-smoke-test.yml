@@ -29,3 +29,9 @@ jobs:
 
       - name: CLI smoke test
         run: node .github/scripts/cli-smoke-test.mjs
+
+      - name: Typecheck JSON API types
+        run: cd packages/cli && yarn typecheck:json-api
+
+      - name: CLI --json smoke test
+        run: node .github/scripts/cli-json-smoke-test.mjs
