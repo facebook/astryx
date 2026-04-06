@@ -6,6 +6,13 @@
   "bin": {
     "xds": "./bin/xds.mjs"
   },
+  "exports": {
+    ".": "./bin/xds.mjs",
+    "./json": {
+      "types": "./src/types/index.d.ts",
+      "import": "./src/lib/parse.mjs"
+    }
+  },
   "files": [
     "bin",
     "src",
@@ -14,7 +21,8 @@
   ],
   "scripts": {
     "xds": "node bin/xds.mjs",
-    "typecheck:template-docs": "tsc --project tsconfig.template-docs.json"
+    "typecheck:template-docs": "tsc --project tsconfig.template-docs.json",
+    "typecheck:json-api": "tsc --project tsconfig.json-api.json"
   },
   "dependencies": {
     "@clack/prompts": "^0.9.1",
