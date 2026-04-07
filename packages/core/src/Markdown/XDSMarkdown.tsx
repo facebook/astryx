@@ -19,6 +19,8 @@ import {
   typographyVars,
   fontWeightVars,
   borderVars,
+  durationVars,
+  easeVars,
 } from '../theme/tokens.stylex';
 import {XDSCodeBlock, XDSCode} from '../CodeBlock';
 import {XDSCheckboxList} from '../CheckboxList/XDSCheckboxList';
@@ -26,6 +28,7 @@ import {XDSCheckboxListItem} from '../CheckboxList/XDSCheckboxListItem';
 import {XDSList} from '../List/XDSList';
 import {XDSListItem} from '../List/XDSListItem';
 import {xdsClassName, mergeProps} from '../utils';
+import {useXDSStreamingText} from '../hooks/useXDSStreamingText';
 import {
   parseMarkdown,
   parseMarkdownIncremental,
@@ -250,6 +253,99 @@ const styles = stylex.create({
   },
 });
 
+// ---------------------------------------------------------------------------
+// Streaming fade-in animation
+// ---------------------------------------------------------------------------
+
+const streamingStyles = stylex.create({
+  fadeIn: {
+    // Resting state is fully visible — safe fallback if animation doesn't fire.
+    // @starting-style declares the entry state (opacity: 0) so the browser
+    // transitions from invisible to visible when the element first mounts.
+    opacity: 1,
+    transitionProperty: 'opacity',
+    transitionDuration: durationVars['--duration-fast-max'],
+    transitionTimingFunction: easeVars['--ease-standard'],
+    '@starting-style': {
+      opacity: 0,
+    },
+  },
+});
+
+/**
+ * Mutable cursor threaded through the render tree during streaming.
+ * Tracks how many text characters we've visited so far. When `offset`
+ * crosses `boundary`, newly rendered content is wrapped in a fade-in span.
+ */
+interface StreamingCursor {
+  /** Characters visited so far in this render pass */
+  offset: number;
+  /** Character position where "new" content begins */
+  boundary: number;
+  /** Whether streaming fade is active */
+  active: boolean;
+}
+
+/**
+ * Count the total text characters in inline nodes without rendering.
+ * Used to advance the cursor past a block that will be faded as a whole unit.
+ */
+function countInlineTextLength(nodes: InlineNode[]): number {
+  let len = 0;
+  for (const node of nodes) {
+    switch (node.type) {
+      case 'text':
+        len += node.content.length;
+        break;
+      case 'code':
+        len += node.content.length;
+        break;
+      case 'bold':
+      case 'italic':
+      case 'strikethrough':
+      case 'link':
+        len += countInlineTextLength(node.children);
+        break;
+      case 'break':
+        len += 1;
+        break;
+    }
+  }
+  return len;
+}
+
+/**
+ * Count total text characters in a block node tree.
+ */
+function countBlockTextLength(nodes: BlockNode[]): number {
+  let len = 0;
+  for (const node of nodes) {
+    switch (node.type) {
+      case 'heading':
+      case 'paragraph':
+        len += countInlineTextLength(node.children);
+        break;
+      case 'codeblock':
+        len += node.content.length;
+        break;
+      case 'blockquote':
+        len += countBlockTextLength(node.children);
+        break;
+      case 'list':
+        for (const item of node.items) {
+          len += countBlockTextLength(item.children);
+        }
+        break;
+      case 'table':
+        for (const h of node.headers) len += countInlineTextLength(h.children);
+        for (const row of node.rows)
+          for (const cell of row) len += countInlineTextLength(cell.children);
+        break;
+    }
+  }
+  return len;
+}
+
 const headingStyles = {
   1: styles.h1,
   2: styles.h2,
@@ -276,41 +372,99 @@ function sanitizeUrl(url: string): string | null {
 // Inline renderer
 // ---------------------------------------------------------------------------
 
+/**
+ * Wrap a text string with a fade-in span for the portion that is "new".
+ * If the entire string is old, returns it as-is. If partially new, splits
+ * into [old, <span fade>new</span>]. If entirely new, wraps the whole thing.
+ */
+function wrapTextWithFade(
+  content: string,
+  cursor: StreamingCursor,
+  key: string | number,
+): React.ReactNode {
+  const startOffset = cursor.offset;
+  cursor.offset += content.length;
+
+  if (!cursor.active) return content;
+  if (startOffset >= cursor.boundary) {
+    // Entirely new text
+    return (
+      <span
+        key={`fade-${key}-${startOffset}`}
+        {...stylex.props(streamingStyles.fadeIn)}>
+        {content}
+      </span>
+    );
+  }
+  if (startOffset + content.length <= cursor.boundary) {
+    // Entirely old text
+    return content;
+  }
+  // Split: some old, some new
+  const splitAt = cursor.boundary - startOffset;
+  return (
+    <>
+      {content.slice(0, splitAt)}
+      <span
+        key={`fade-${key}-${cursor.boundary}`}
+        {...stylex.props(streamingStyles.fadeIn)}>
+        {content.slice(splitAt)}
+      </span>
+    </>
+  );
+}
+
 function renderInline(
   node: InlineNode,
   index: number,
-  onLinkClick?: XDSMarkdownProps['onLinkClick'],
+  onLinkClick: XDSMarkdownProps['onLinkClick'] | undefined,
+  cursor: StreamingCursor,
 ): React.ReactNode {
   switch (node.type) {
     case 'text':
-      return node.content;
+      return wrapTextWithFade(node.content, cursor, index);
     case 'bold':
       return (
         <strong key={index} {...stylex.props(styles.bold)}>
-          {node.children.map((c, i) => renderInline(c, i, onLinkClick))}
+          {node.children.map((c, i) => renderInline(c, i, onLinkClick, cursor))}
         </strong>
       );
     case 'italic':
       return (
         <em key={index}>
-          {node.children.map((c, i) => renderInline(c, i, onLinkClick))}
+          {node.children.map((c, i) => renderInline(c, i, onLinkClick, cursor))}
         </em>
       );
     case 'strikethrough':
       return (
         <del key={index} {...stylex.props(styles.strikethrough)}>
-          {node.children.map((c, i) => renderInline(c, i, onLinkClick))}
+          {node.children.map((c, i) => renderInline(c, i, onLinkClick, cursor))}
         </del>
       );
-    case 'code':
+    case 'code': {
+      // Track code content length for cursor but don't split inside code
+      const startOffset = cursor.offset;
+      cursor.offset += node.content.length;
+      if (cursor.active && startOffset >= cursor.boundary) {
+        return (
+          <span
+            key={`fade-code-${index}-${startOffset}`}
+            {...stylex.props(streamingStyles.fadeIn)}>
+            <XDSCode>{node.content}</XDSCode>
+          </span>
+        );
+      }
       return <XDSCode key={index}>{node.content}</XDSCode>;
+    }
     case 'link': {
       const safeHref = sanitizeUrl(node.href);
       if (safeHref == null) {
         // Unsafe URL — render as plain text
         return (
           <span key={index}>
-            {node.children.map((c, i) => renderInline(c, i, onLinkClick))}
+            {node.children.map((c, i) =>
+              renderInline(c, i, onLinkClick, cursor),
+            )}
           </span>
         );
       }
@@ -332,7 +486,7 @@ function renderInline(
             ? {target: '_blank', rel: 'noopener noreferrer'}
             : {})}
           {...stylex.props(styles.link)}>
-          {node.children.map((c, i) => renderInline(c, i, onLinkClick))}
+          {node.children.map((c, i) => renderInline(c, i, onLinkClick, cursor))}
         </a>
       );
     }
@@ -349,6 +503,7 @@ function renderInline(
       );
     }
     case 'break':
+      cursor.offset += 1;
       return <br key={index} />;
   }
 }
@@ -404,7 +559,8 @@ function renderBlock(
   blockCount: number,
   density: 'default' | 'compact',
   headingLevelStart: 1 | 2 | 3 | 4 | 5 | 6,
-  onLinkClick?: XDSMarkdownProps['onLinkClick'],
+  onLinkClick: XDSMarkdownProps['onLinkClick'] | undefined,
+  cursor: StreamingCursor,
 ): React.ReactNode {
   const spacing = getElementSpacing(node, density);
   const isFirst = index === 0;
@@ -430,7 +586,7 @@ function renderBlock(
             isFirst && styles.noMarginBlockStart,
             isLast && styles.noMarginBlockEnd,
           )}>
-          {node.children.map((c, i) => renderInline(c, i, onLinkClick))}
+          {node.children.map((c, i) => renderInline(c, i, onLinkClick, cursor))}
         </Tag>
       );
     }
@@ -443,10 +599,12 @@ function renderBlock(
             isFirst && styles.noMarginBlockStart,
             isLast && styles.noMarginBlockEnd,
           )}>
-          {node.children.map((c, i) => renderInline(c, i, onLinkClick))}
+          {node.children.map((c, i) => renderInline(c, i, onLinkClick, cursor))}
         </p>
       );
-    case 'codeblock':
+    case 'codeblock': {
+      // Track codeblock content in cursor for accurate character counting
+      cursor.offset += node.content.length;
       return (
         <div
           key={index}
@@ -458,6 +616,7 @@ function renderBlock(
           <XDSCodeBlock code={node.content} language={node.language} />
         </div>
       );
+    }
     case 'blockquote':
       return (
         <blockquote
@@ -476,6 +635,7 @@ function renderBlock(
               density,
               headingLevelStart,
               onLinkClick,
+              cursor,
             ),
           )}
         </blockquote>
@@ -512,10 +672,13 @@ function renderBlock(
                   item.children.length === 1 &&
                   firstChild?.type === 'paragraph';
 
+                const itemIsNew =
+                  cursor.active && cursor.offset >= cursor.boundary;
+
                 const label = isInline ? (
                   <>
                     {firstChild.children.map((c, j) =>
-                      renderInline(c, j, onLinkClick),
+                      renderInline(c, j, onLinkClick, cursor),
                     )}
                   </>
                 ) : (
@@ -528,18 +691,31 @@ function renderBlock(
                         density,
                         headingLevelStart,
                         onLinkClick,
+                        cursor,
                       ),
                     )}
                   </>
                 );
 
-                return (
+                const checkboxItem = (
                   <XDSCheckboxListItem
                     key={i}
                     value={`task-${i}`}
                     label={label}
                   />
                 );
+
+                if (itemIsNew) {
+                  return (
+                    <span
+                      key={`fade-task-${i}`}
+                      {...stylex.props(streamingStyles.fadeIn)}>
+                      {checkboxItem}
+                    </span>
+                  );
+                }
+
+                return checkboxItem;
               })}
             </XDSCheckboxList>
           </div>
@@ -562,10 +738,16 @@ function renderBlock(
               const isInline =
                 item.children.length === 1 && firstChild?.type === 'paragraph';
 
+              // Check if this entire list item is "new" — if so, fade the
+              // whole item as a block instead of fading individual text spans.
+              const itemTextLen = countBlockTextLength(item.children);
+              const itemIsNew =
+                cursor.active && cursor.offset >= cursor.boundary;
+
               const label = isInline ? (
                 <>
                   {firstChild.children.map((c, j) =>
-                    renderInline(c, j, onLinkClick),
+                    renderInline(c, j, onLinkClick, cursor),
                   )}
                 </>
               ) : (
@@ -578,10 +760,21 @@ function renderBlock(
                       density,
                       headingLevelStart,
                       onLinkClick,
+                      cursor,
                     ),
                   )}
                 </>
               );
+
+              if (itemIsNew) {
+                return (
+                  <span
+                    key={`fade-li-${i}-${cursor.offset - itemTextLen}`}
+                    {...stylex.props(streamingStyles.fadeIn)}>
+                    <XDSListItem label={label} />
+                  </span>
+                );
+              }
 
               return <XDSListItem key={i} label={label} />;
             })}
@@ -615,28 +808,37 @@ function renderBlock(
                       styles.th,
                       alignStyle(node.alignments[i]),
                     )}>
-                    {h.children.map((c, j) => renderInline(c, j, onLinkClick))}
+                    {h.children.map((c, j) =>
+                      renderInline(c, j, onLinkClick, cursor),
+                    )}
                   </th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {node.rows.map((row, i) => (
-                <tr key={i}>
-                  {row.map((cell, j) => (
-                    <td
-                      key={j}
-                      {...stylex.props(
-                        styles.td,
-                        alignStyle(node.alignments[j]),
-                      )}>
-                      {cell.children.map((c, k) =>
-                        renderInline(c, k, onLinkClick),
-                      )}
-                    </td>
-                  ))}
-                </tr>
-              ))}
+              {node.rows.map((row, i) => {
+                const rowIsNew =
+                  cursor.active && cursor.offset >= cursor.boundary;
+                const cells = row.map((cell, j) => (
+                  <td
+                    key={j}
+                    {...stylex.props(
+                      styles.td,
+                      alignStyle(node.alignments[j]),
+                    )}>
+                    {cell.children.map((c, k) =>
+                      renderInline(c, k, onLinkClick, cursor),
+                    )}
+                  </td>
+                ));
+                return (
+                  <tr
+                    key={rowIsNew ? `fade-row-${i}` : i}
+                    {...(rowIsNew ? stylex.props(streamingStyles.fadeIn) : {})}>
+                    {cells}
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -700,21 +902,37 @@ export function XDSMarkdown({
   style,
   'data-testid': testId,
 }: XDSMarkdownProps): React.ReactElement {
+  // Smooth bursty streamed chunks into a steady character-by-character reveal.
+  // When not streaming, the hook returns children unchanged (no-op).
+  const smoothedText = useXDSStreamingText(children, isStreaming);
+
   const incrementalState = useRef<IncrementalState>(createIncrementalState());
+  // Track how much text content was rendered on the previous pass.
+  // Everything beyond this boundary is "new" and gets the fade-in animation.
+  const prevTextLenRef = useRef(0);
 
   const blocks = useMemo(() => {
     if (isStreaming) {
-      if (children === '') {
+      if (smoothedText === '') {
         incrementalState.current = createIncrementalState();
+        prevTextLenRef.current = 0;
         return [];
       }
-      const input = trimStreamingArtifacts(children);
+      const input = trimStreamingArtifacts(smoothedText);
       return parseMarkdownIncremental(input, incrementalState.current);
     }
     return parseMarkdown(children);
-  }, [children, isStreaming]);
+  }, [smoothedText, children, isStreaming]);
 
-  return (
+  // Build the streaming cursor for this render pass.
+  // The boundary is where "old" text ends and "new" text begins.
+  const cursor: StreamingCursor = {
+    offset: 0,
+    boundary: prevTextLenRef.current,
+    active: isStreaming,
+  };
+
+  const rendered = (
     <div
       role="document"
       ref={ref}
@@ -733,10 +951,17 @@ export function XDSMarkdown({
           density,
           headingLevelStart,
           onLinkClick,
+          cursor,
         ),
       )}
     </div>
   );
+
+  // After rendering, update the boundary for the next pass.
+  // cursor.offset now holds the total character count of the rendered tree.
+  prevTextLenRef.current = cursor.offset;
+
+  return rendered;
 }
 
 XDSMarkdown.displayName = 'XDSMarkdown';

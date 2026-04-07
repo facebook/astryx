@@ -39,22 +39,8 @@ export interface UseStreamingTextOptions {
   speed?: StreamingTextSpeed;
 }
 
-// Characters that are safe word/syntax boundaries for slicing
-const BOUNDARY_PATTERN = /[\s,.;:!?)\]}>]/;
-
-// Markdown syntax markers to avoid slicing inside.
-const PARTIAL_SYNTAX_PATTERNS = [
-  /\*{1,2}$/, // partial bold/italic: * or **
-  /_{1,2}$/, // partial bold/italic: _ or __
-  /~{1,2}$/, // partial strikethrough: ~ or ~~
-  /`{1,3}$/, // partial inline code or fence
-  /\[(?:[^\]]*)$/, // unclosed link text: [text
-  /!\[(?:[^\]]*)$/, // unclosed image alt: ![alt
-  /\]\([^)]*$/, // unclosed link url: ](url
-];
-
 // Fallback values when no XDSTheme provider is present
-const FALLBACK_TICK_MS = 12;
+const FALLBACK_TICK_MS = 50;
 const FALLBACK_TICK_MS_FAST = 8;
 
 /**
@@ -70,7 +56,7 @@ function parseDuration(value: string): number | null {
 }
 
 const CHARS_PER_TICK = {
-  natural: 2,
+  natural: 10,
   fast: 4,
   instant: Infinity,
 } as const;
@@ -152,40 +138,7 @@ export function useXDSStreamingText(
         const currentLen = displayedLenRef.current;
 
         if (currentLen < target.length) {
-          // Scale chars with backlog to avoid falling behind
-          const backlog = target.length - currentLen;
-          const scaledChars =
-            backlog > 200
-              ? Math.max(charsPerTick, Math.ceil(backlog * 0.15))
-              : backlog > 80
-                ? Math.max(charsPerTick, Math.ceil(backlog * 0.08))
-                : charsPerTick;
-
-          let nextLen = Math.min(currentLen + scaledChars, target.length);
-
-          // Snap to a word/punctuation boundary
-          if (nextLen < target.length) {
-            const searchWindow = target.slice(nextLen, nextLen + 12);
-            const boundaryOffset = searchWindow.search(BOUNDARY_PATTERN);
-            if (boundaryOffset >= 0 && boundaryOffset <= 8) {
-              nextLen = nextLen + boundaryOffset + 1;
-            }
-          }
-
-          nextLen = Math.min(nextLen, target.length);
-
-          // Back up if we'd slice inside a markdown syntax marker
-          const candidate = target.slice(0, nextLen);
-          for (const pattern of PARTIAL_SYNTAX_PATTERNS) {
-            const match = candidate.match(pattern);
-            if (match && match.index != null) {
-              nextLen = match.index;
-              break;
-            }
-          }
-
-          // Never go backwards
-          nextLen = Math.max(nextLen, currentLen);
+          const nextLen = Math.min(currentLen + charsPerTick, target.length);
 
           displayedLenRef.current = nextLen;
           setDisplayedLen(nextLen);

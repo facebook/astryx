@@ -107,4 +107,54 @@ describe('useXDSStreamingText', () => {
 
     expect(result.current.length).toBeGreaterThan(0);
   });
+
+  it('advances monotonically without stalls or backwards jumps', () => {
+    const targetText = 'Hello **world**, this is `code` and [a link](http://example.com).';
+    const {result} = renderHook(() =>
+      useXDSStreamingText(targetText, true),
+    );
+
+    expect(result.current).toBe('');
+
+    // Fire many animation frames — the revealed length should only increase
+    const lengths: number[] = [0];
+    for (let i = 0; i < 50; i++) {
+      if (rafCallbacks.length > 0) {
+        const cb = rafCallbacks.pop()!;
+        act(() => cb(performance.now() + i * 20));
+      }
+      const len = result.current.length;
+      expect(len).toBeGreaterThanOrEqual(lengths[lengths.length - 1]);
+      lengths.push(len);
+    }
+
+    // Should have made progress (not stuck at 0)
+    expect(lengths[lengths.length - 1]).toBeGreaterThan(0);
+
+    // Should never have gone backwards
+    for (let i = 1; i < lengths.length; i++) {
+      expect(lengths[i]).toBeGreaterThanOrEqual(lengths[i - 1]);
+    }
+  });
+
+  it('does not stall on markdown syntax characters', () => {
+    // Text with lots of markdown syntax that previously caused stalls
+    const targetText = '- **bold** and *italic* with `code` and [link](url) and ~~strike~~';
+    const {result} = renderHook(() =>
+      useXDSStreamingText(targetText, true),
+    );
+
+    // Fire enough frames to drain the entire text
+    for (let i = 0; i < 100; i++) {
+      if (rafCallbacks.length > 0) {
+        const cb = rafCallbacks.pop()!;
+        act(() => cb(performance.now() + i * 60));
+      }
+    }
+
+    // With enough frames and time elapsed, should have revealed everything
+    // (or close to it — the hook drains charsPerTick per tickMs)
+    expect(result.current.length).toBeGreaterThan(targetText.length * 0.5);
+  });
+
 });
