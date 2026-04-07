@@ -49,7 +49,7 @@ const CONTACT_COLUMNS = [
 // Styles
 // ─────────────────────────────────────────────────────────────
 
-const MOBILE = '@media (max-width: 768px)';
+const MOBILE = '@media (max-width: 480px)';
 
 const styles = stylex.create({
   pageBg: {
