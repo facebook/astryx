@@ -70,6 +70,7 @@ const styles = stylex.create({
     zIndex: 1,
     display: 'flex',
     flexDirection: 'column',
+    overflow: 'hidden',
     paddingInline: spacingVars['--spacing-4'],
     paddingBlockStart: spacingVars['--spacing-3'],
     paddingBlockEnd: `calc(${spacingVars['--spacing-3']} + ${radiusVars['--radius-page']})`,
@@ -161,12 +162,18 @@ const styles = stylex.create({
     gridTemplateRows: '0fr',
   },
   content: {
-    overflow: 'hidden',
     minHeight: 0,
     display: 'flex',
     flexWrap: 'wrap',
     gap: spacingVars['--spacing-2'],
     alignItems: 'flex-start',
+    transform: 'translateY(0)',
+    transitionProperty: 'transform',
+    transitionDuration: durationVars['--duration-medium'],
+    transitionTimingFunction: easeVars['--ease-standard'],
+  },
+  contentCollapsed: {
+    transform: `translateY(calc(100% + ${spacingVars['--spacing-3']} + ${radiusVars['--radius-page']}))`,
   },
 });
 
@@ -255,7 +262,13 @@ export function XDSChatComposerAttachments({
           styles.contentGrid,
           canCollapse && isCollapsed && styles.contentGridCollapsed,
         )}>
-        <div {...stylex.props(styles.content)}>{children}</div>
+        <div
+          {...stylex.props(
+            styles.content,
+            canCollapse && isCollapsed && styles.contentCollapsed,
+          )}>
+          {children}
+        </div>
       </div>
     </div>
   );
