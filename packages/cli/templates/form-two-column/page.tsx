@@ -190,7 +190,7 @@ export default function FormTwoColumnPage() {
           {/* Display heading — matches contact-form template size */}
           <div
             style={{
-              fontSize: 64,
+              fontSize: 48,
               fontWeight: fontWeightVars['--font-weight-bold'],
               lineHeight: 1.05,
               letterSpacing: '-0.03em',
