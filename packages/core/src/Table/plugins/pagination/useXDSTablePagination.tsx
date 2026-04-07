@@ -3,13 +3,11 @@
 /**
  * @file useXDSTablePagination.tsx
  * @input React, XDSPagination, Table plugin types
- * @output Exports useXDSTablePagination hook, config type, and paginateData utility
+ * @output Exports useXDSTablePagination hook and config type
  * @position Pagination plugin; consumed by XDSTable via plugins prop
  *
  * Returns a `TablePlugin` directly (same pattern as useXDSTableSortable,
  * useXDSTableSelection, useXDSTableColumnSettings).
- *
- * For client-side data slicing, use the `paginateData` utility.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Table/plugins/pagination/index.ts (exports)
@@ -202,38 +200,6 @@ export interface UseXDSTablePaginationConfig {
    * @default 'Table pagination'
    */
   label?: string;
-}
-
-// =============================================================================
-// Utility
-// =============================================================================
-
-/**
- * Slice a data array for the current page.
- *
- * Pure utility for client-side pagination. For server-side pagination
- * where data is already sliced, pass it directly to XDSTable.
- *
- * @param data - Full data array
- * @param page - Current page number (1-based)
- * @param pageSize - Number of items per page
- * @returns Slice of data for the current page
- *
- * @example
- * ```
- * const [page, setPage] = useState(1);
- * const pageSize = 10;
- *
- * <XDSTable data={paginateData(data, page, pageSize)} ... />
- * ```
- */
-export function paginateData<T>(
-  data: T[],
-  page: number,
-  pageSize: number,
-): T[] {
-  const start = (page - 1) * pageSize;
-  return data.slice(start, start + pageSize);
 }
 
 // =============================================================================

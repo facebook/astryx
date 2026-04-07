@@ -12,7 +12,8 @@ import {describe, it, expect} from 'vitest';
 import {render, screen, act} from '@testing-library/react';
 import {useState, useMemo, useRef, useEffect} from 'react';
 import {XDSTable} from '../../XDSTable';
-import {useXDSTablePagination, paginateData} from './useXDSTablePagination';
+import {useXDSTablePagination} from './useXDSTablePagination';
+import {paginateData} from './paginateData';
 import type {XDSTableColumn} from '../../types';
 
 // =============================================================================

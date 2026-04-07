@@ -11,7 +11,8 @@ import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {renderHook} from '@testing-library/react';
 import {XDSTable} from '../../XDSTable';
-import {useXDSTablePagination, paginateData} from './useXDSTablePagination';
+import {useXDSTablePagination} from './useXDSTablePagination';
+import {paginateData} from './paginateData';
 import {useXDSTableSelection} from '../selection/useXDSTableSelection';
 import type {XDSTableColumn} from '../../types';
 
