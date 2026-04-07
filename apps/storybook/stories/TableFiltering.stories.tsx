@@ -7,10 +7,11 @@ import {
   useXDSTableSelection,
   useXDSTableSelectionState,
   useXDSTableSortable,
+  useXDSTableSortableState,
   useXDSTableColumnResize,
   toSearchFilters,
 } from '@xds/core/Table';
-import type {XDSTableColumn, XDSTableSortState} from '@xds/core/Table';
+import type {XDSTableColumn} from '@xds/core/Table';
 import {usePowerSearchConfig} from '@xds/core/PowerSearch';
 import {XDSEmptyState} from '@xds/core/EmptyState';
 import type {PowerSearchFilter} from '@xds/core/PowerSearch';
@@ -95,23 +96,6 @@ const fieldDefs = [
   {key: 'level', type: 'number', label: 'Level'},
 ] as const;
 
-function applySorting<T extends Record<string, unknown>>(
-  data: T[],
-  sort: XDSTableSortState,
-): T[] {
-  if (sort.length === 0) return data;
-  return [...data].sort((a, b) => {
-    for (const {sortKey, direction} of sort) {
-      const aVal = a[sortKey];
-      const bVal = b[sortKey];
-      const cmp = String(aVal).localeCompare(String(bVal), undefined, {
-        numeric: true,
-      });
-      if (cmp !== 0) return direction === 'ascending' ? cmp : -cmp;
-    }
-    return 0;
-  });
-}
 const meta: Meta = {
   title: 'Core/XDSTable/Filtering',
   tags: ['autodocs'],
@@ -346,7 +330,14 @@ export const WithSorting: Story = {
   render: () => {
     const {config, applyFilters} = usePowerSearchConfig(fieldDefs);
     const {filters, onFilterChange} = useXDSTableFilterState();
-    const [sort, setSort] = useState<XDSTableSortState>([]);
+    const {
+      sortedData: _unused,
+      sort,
+      sortConfig,
+      applySort,
+    } = useXDSTableSortableState<Employee>({
+      data: employees,
+    });
     const columns: XDSTableColumn<Employee>[] = [
       {key: 'name', header: 'Name', sortable: true, filter: 'name'},
       {key: 'role', header: 'Role', sortable: true, filter: 'role'},
@@ -358,15 +349,12 @@ export const WithSorting: Story = {
       onFilterChange,
       searchConfig: config,
     });
-    const sortPlugin = useXDSTableSortable<Employee>({
-      sort,
-      onSortChange: setSort,
-    });
+    const sortPlugin = useXDSTableSortable<Employee>(sortConfig);
     const filtered = applyFilters(
       toSearchFilters(filters, columns, config) as PowerSearchFilter[],
       employees,
     );
-    const data = applySorting(filtered, sort);
+    const data = applySort(filtered);
     return (
       <div style={{maxWidth: 800}}>
         <p style={{marginBottom: 8, fontSize: 14, color: '#666'}}>
@@ -433,7 +421,9 @@ export const WithAllPlugins: Story = {
   render: () => {
     const {config, applyFilters} = usePowerSearchConfig(fieldDefs);
     const {filters, onFilterChange} = useXDSTableFilterState();
-    const [sort, setSort] = useState<XDSTableSortState>([]);
+    const {sortConfig, applySort} = useXDSTableSortableState<Employee>({
+      data: employees,
+    });
     const [columnWidths, setColumnWidths] = useState<Record<string, number>>(
       {},
     );
@@ -449,10 +439,7 @@ export const WithAllPlugins: Story = {
       onFilterChange,
       searchConfig: config,
     });
-    const sortPlugin = useXDSTableSortable<Employee>({
-      sort,
-      onSortChange: setSort,
-    });
+    const sortPlugin = useXDSTableSortable<Employee>(sortConfig);
     const resizePlugin = useXDSTableColumnResize<Employee>({
       columnWidths,
       onColumnResizeEnd: updates =>
@@ -463,7 +450,7 @@ export const WithAllPlugins: Story = {
       toSearchFilters(filters, columns, config) as PowerSearchFilter[],
       employees,
     );
-    const data = applySorting(filtered, sort);
+    const data = applySort(filtered);
     const {selectionConfig} = useXDSTableSelectionState({
       data,
       idKey: 'id',

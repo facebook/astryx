@@ -3,13 +3,11 @@ import type {Meta, StoryObj} from '@storybook/react';
 import {
   XDSTable,
   useXDSTableSortable,
+  useXDSTableSortableState,
   useXDSTableSelection,
   useXDSTableSelectionState,
 } from '@xds/core/Table';
-import type {
-  XDSTableColumn,
-  XDSTableSortState,
-} from '@xds/core/Table';
+import type {XDSTableColumn, XDSTableSortState} from '@xds/core/Table';
 
 // =============================================================================
 // Sample Data
@@ -88,33 +86,21 @@ type Story = StoryObj;
 
 export const SingleSort: Story = {
   render: () => {
-    const [sort, setSort] = useState<XDSTableSortState>([
-      {sortKey: 'name', direction: 'ascending'},
-    ]);
-
-    const sortablePlugin = useXDSTableSortable({sort, onSortChange: setSort});
-
-    const sorted = [...employees].sort((a, b) => {
-      if (sort.length === 0) return 0;
-      const {sortKey, direction} = sort[0];
-      const aVal = a[sortKey];
-      const bVal = b[sortKey];
-      const cmp = String(aVal).localeCompare(String(bVal), undefined, {
-        numeric: true,
-      });
-      return direction === 'ascending' ? cmp : -cmp;
+    const {sortedData, sort, sortConfig} = useXDSTableSortableState<Employee>({
+      data: employees,
+      defaultSort: [{sortKey: 'name', direction: 'ascending'}],
     });
+
+    const sortablePlugin = useXDSTableSortable(sortConfig);
 
     return (
       <div style={{maxWidth: 700}}>
         <p style={{marginBottom: 8, fontSize: 14, color: '#666'}}>
           Click a column header to sort. Current:{' '}
-          {sort.length > 0
-            ? `${sort[0].sortKey} ${sort[0].direction}`
-            : 'none'}
+          {sort.length > 0 ? `${sort[0].sortKey} ${sort[0].direction}` : 'none'}
         </p>
         <XDSTable
-          data={sorted}
+          data={sortedData}
           columns={columns}
           idKey="id"
           plugins={{sortable: sortablePlugin}}
@@ -126,27 +112,13 @@ export const SingleSort: Story = {
 
 export const MultiSort: Story = {
   render: () => {
-    const [sort, setSort] = useState<XDSTableSortState>([
-      {sortKey: 'role', direction: 'ascending'},
-    ]);
-
-    const sortablePlugin = useXDSTableSortable({
-      sort,
-      onSortChange: setSort,
+    const {sortedData, sort, sortConfig} = useXDSTableSortableState<Employee>({
+      data: employees,
+      defaultSort: [{sortKey: 'role', direction: 'ascending'}],
       isMultiSortEnabled: true,
     });
 
-    const sorted = [...employees].sort((a, b) => {
-      for (const {sortKey, direction} of sort) {
-        const aVal = a[sortKey];
-        const bVal = b[sortKey];
-        const cmp = String(aVal).localeCompare(String(bVal), undefined, {
-          numeric: true,
-        });
-        if (cmp !== 0) return direction === 'ascending' ? cmp : -cmp;
-      }
-      return 0;
-    });
+    const sortablePlugin = useXDSTableSortable(sortConfig);
 
     return (
       <div style={{maxWidth: 700}}>
@@ -155,7 +127,7 @@ export const MultiSort: Story = {
           {sort.map(s => `${s.sortKey} (${s.direction})`).join(', ') || 'none'}
         </p>
         <XDSTable
-          data={sorted}
+          data={sortedData}
           columns={columns}
           idKey="id"
           plugins={{sortable: sortablePlugin}}
@@ -174,40 +146,26 @@ export const CustomSortKey: Story = {
       {key: 'age', header: 'Age', sortable: {sortKey: 'yearsOld'}},
     ];
 
-    const [sort, setSort] = useState<XDSTableSortState>([
-      {sortKey: 'yearsOld', direction: 'ascending'},
-    ]);
-
-    const sortablePlugin = useXDSTableSortable({sort, onSortChange: setSort});
-
-    const sorted = [...employees].sort((a, b) => {
-      if (sort.length === 0) return 0;
-      const {sortKey, direction} = sort[0];
-      // Map custom sortKeys back to data fields
-      const fieldMap: Record<string, string> = {
-        yearsOld: 'age',
-        emailSort: 'email',
-      };
-      const field = fieldMap[sortKey] ?? sortKey;
-      const aVal = a[field];
-      const bVal = b[field];
-      const cmp = String(aVal).localeCompare(String(bVal), undefined, {
-        numeric: true,
-      });
-      return direction === 'ascending' ? cmp : -cmp;
+    const {sortedData, sort, sortConfig} = useXDSTableSortableState<Employee>({
+      data: employees,
+      defaultSort: [{sortKey: 'yearsOld', direction: 'ascending'}],
+      comparators: {
+        yearsOld: (a, b) => a.age - b.age,
+        emailSort: (a, b) => a.email.localeCompare(b.email),
+      },
     });
+
+    const sortablePlugin = useXDSTableSortable(sortConfig);
 
     return (
       <div style={{maxWidth: 700}}>
         <p style={{marginBottom: 8, fontSize: 14, color: '#666'}}>
           Age column uses sortKey &quot;yearsOld&quot;, Email uses
           &quot;emailSort&quot;. Current:{' '}
-          {sort.length > 0
-            ? `${sort[0].sortKey} ${sort[0].direction}`
-            : 'none'}
+          {sort.length > 0 ? `${sort[0].sortKey} ${sort[0].direction}` : 'none'}
         </p>
         <XDSTable
-          data={sorted}
+          data={sortedData}
           columns={customColumns}
           idKey="id"
           plugins={{sortable: sortablePlugin}}
@@ -219,24 +177,12 @@ export const CustomSortKey: Story = {
 
 export const AllowUnsortedState: Story = {
   render: () => {
-    const [sort, setSort] = useState<XDSTableSortState>([]);
-
-    const sortablePlugin = useXDSTableSortable({
-      sort,
-      onSortChange: setSort,
+    const {sortedData, sort, sortConfig} = useXDSTableSortableState<Employee>({
+      data: employees,
       allowUnsortedState: true,
     });
 
-    const sorted = [...employees].sort((a, b) => {
-      if (sort.length === 0) return 0;
-      const {sortKey, direction} = sort[0];
-      const aVal = a[sortKey];
-      const bVal = b[sortKey];
-      const cmp = String(aVal).localeCompare(String(bVal), undefined, {
-        numeric: true,
-      });
-      return direction === 'ascending' ? cmp : -cmp;
-    });
+    const sortablePlugin = useXDSTableSortable(sortConfig);
 
     return (
       <div style={{maxWidth: 700}}>
@@ -247,7 +193,7 @@ export const AllowUnsortedState: Story = {
             : 'unsorted'}
         </p>
         <XDSTable
-          data={sorted}
+          data={sortedData}
           columns={columns}
           idKey="id"
           plugins={{sortable: sortablePlugin}}
@@ -259,26 +205,17 @@ export const AllowUnsortedState: Story = {
 
 export const WithSelection: Story = {
   render: () => {
-    const [sort, setSort] = useState<XDSTableSortState>([
-      {sortKey: 'name', direction: 'ascending'},
-    ]);
     const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
 
-    const sortablePlugin = useXDSTableSortable({sort, onSortChange: setSort});
-
-    const sorted = [...employees].sort((a, b) => {
-      if (sort.length === 0) return 0;
-      const {sortKey, direction} = sort[0];
-      const aVal = a[sortKey];
-      const bVal = b[sortKey];
-      const cmp = String(aVal).localeCompare(String(bVal), undefined, {
-        numeric: true,
-      });
-      return direction === 'ascending' ? cmp : -cmp;
+    const {sortedData, sort, sortConfig} = useXDSTableSortableState<Employee>({
+      data: employees,
+      defaultSort: [{sortKey: 'name', direction: 'ascending'}],
     });
 
+    const sortablePlugin = useXDSTableSortable(sortConfig);
+
     const {selectionConfig} = useXDSTableSelectionState<Employee>({
-      data: sorted,
+      data: sortedData,
       idKey: 'id',
       selectedKeys,
       setSelectedKeys,
@@ -288,17 +225,61 @@ export const WithSelection: Story = {
     return (
       <div style={{maxWidth: 700}}>
         <p style={{marginBottom: 8, fontSize: 14, color: '#666'}}>
-          Sorting + Selection composed together. Selected: {selectedKeys.size} of{' '}
-          {employees.length}. Sort:{' '}
-          {sort.length > 0
-            ? `${sort[0].sortKey} ${sort[0].direction}`
-            : 'none'}
+          Sorting + Selection composed together. Selected: {selectedKeys.size}{' '}
+          of {employees.length}. Sort:{' '}
+          {sort.length > 0 ? `${sort[0].sortKey} ${sort[0].direction}` : 'none'}
         </p>
         <XDSTable
-          data={sorted}
+          data={sortedData}
           columns={columns}
           idKey="id"
           plugins={{sortable: sortablePlugin, selection: selectionPlugin}}
+        />
+      </div>
+    );
+  },
+};
+
+export const Controlled: Story = {
+  render: () => {
+    const [sort, setSort] = useState<XDSTableSortState>([
+      {sortKey: 'age', direction: 'descending'},
+    ]);
+
+    const {sortedData, sortConfig} = useXDSTableSortableState<Employee>({
+      data: employees,
+      sort,
+      onSortChange: setSort,
+    });
+
+    const sortablePlugin = useXDSTableSortable(sortConfig);
+
+    return (
+      <div style={{maxWidth: 700}}>
+        <p style={{marginBottom: 8, fontSize: 14, color: '#666'}}>
+          Controlled mode — external state. Current:{' '}
+          {sort.length > 0 ? `${sort[0].sortKey} ${sort[0].direction}` : 'none'}
+        </p>
+        <div style={{display: 'flex', gap: 8, marginBottom: 8}}>
+          <button
+            onClick={() =>
+              setSort([{sortKey: 'name', direction: 'ascending'}])
+            }>
+            Sort by Name ↑
+          </button>
+          <button
+            onClick={() =>
+              setSort([{sortKey: 'age', direction: 'descending'}])
+            }>
+            Sort by Age ↓
+          </button>
+          <button onClick={() => setSort([])}>Clear Sort</button>
+        </div>
+        <XDSTable
+          data={sortedData}
+          columns={columns}
+          idKey="id"
+          plugins={{sortable: sortablePlugin}}
         />
       </div>
     );

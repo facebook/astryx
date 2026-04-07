@@ -5,3 +5,9 @@ export type {
   XDSTableSortEntry,
   XDSTableSortState,
 } from './useXDSTableSortable';
+export {useXDSTableSortableState} from './useXDSTableSortableState';
+export type {
+  UseXDSTableSortableStateConfig,
+  UseXDSTableSortableStateResult,
+  XDSTableSortComparator,
+} from './useXDSTableSortableState';
