@@ -890,6 +890,17 @@ function renderBlock(
 // Component
 // ---------------------------------------------------------------------------
 
+/**
+ * Renders a markdown string as XDS components. Supports streaming with
+ * smooth fade-in animation via isStreaming.
+ *
+ * @example
+ * ```
+ * <XDSMarkdown>
+ *   {'# Hello\n\nThis is **bold** and _italic_ text.\n\n- Item one\n- Item two'}
+ * </XDSMarkdown>
+ * ```
+ */
 export function XDSMarkdown({
   ref,
   children,

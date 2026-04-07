@@ -162,6 +162,19 @@ export const docs = {
       description: 'Tooltip text displayed via an info icon at the end of the label.',
     },
     {
+      name: 'hasClear',
+      type: 'boolean',
+      description:
+        'Shows a clear (\u00d7) button when a date value is set. Clicking it clears the value and returns focus to the input.',
+      default: 'false',
+    },
+    {
+      name: 'hasClear',
+      type: 'boolean',
+      description: '设置日期值时显示清除 (×) 按鈕。点击后清空值并将焦点返回输入框。',
+      default: 'false',
+    },
+    {
       name: 'numberOfMonths',
       type: '1 | 2',
       description:
@@ -410,6 +423,7 @@ export const docsDense = {
     size: 'input control size',
     status: 'error/warning/success status w/ message',
     labelTooltip: 'tooltip text via info icon at label end',
+    hasClear: 'Shows clear button when date is set. Clears value on click.',
     numberOfMonths: 'months shown simultaneously in calendar popover',
     xstyle: 'StyleX styles for layout; must be stylex.create() value',
   },

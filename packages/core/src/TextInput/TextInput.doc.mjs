@@ -181,6 +181,13 @@ export const docs = {
         'Validation status — applies a colored border and status icon. If message is provided, displays a floating message below the input. Error type also sets aria-invalid.',
     },
     {
+      name: 'hasClear',
+      type: 'boolean',
+      description:
+        'Shows a clear (\u00d7) button when the input has a value. Clicking it clears the value and returns focus to the input.',
+      default: 'false',
+    },
+    {
       name: 'hasAutoFocus',
       type: 'boolean',
       description: 'Automatically focuses the input on mount.',
@@ -389,6 +396,12 @@ export const docsZh = {
         '验证状态 — 应用彩色边框和状态图标。如果提供了 message，在输入框下方显示浮动消息。错误类型还会设置 aria-invalid。',
     },
     {
+      name: 'hasClear',
+      type: 'boolean',
+      description: '输入有值时显示清除 (×) 按鈕。点击后清空值并将焦点返回输入框。',
+      default: 'false',
+    },
+    {
       name: 'hasAutoFocus',
       type: 'boolean',
       description: '挂载时自动聚焦输入框。',
@@ -466,6 +479,7 @@ export const docsDense = {
     labelTooltip: 'Tooltip in info icon at label end.',
     startIcon: 'SVG icon at input start (e.g. heroicons or lucide).',
     status: 'Validation status; colored border+icon. Message floats below. Error sets aria-invalid.',
+    hasClear: 'Shows clear button when input has value. Clears value on click.',
     hasAutoFocus: 'Auto-focus input on mount.',
     htmlName: 'HTML name attr for form submissions.',
   },
