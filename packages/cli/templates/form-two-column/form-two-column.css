@@ -1,12 +1,10 @@
 .ftc-page {
+  background-color: var(--color-background-surface);
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 100svh;
   padding: 48px;
-  position: fixed;
-  inset: 0;
-  overflow: auto;
 }
 .ftc-inner {
   max-width: 1100px;
@@ -21,12 +19,21 @@
   gap: 80px;
   align-items: center;
 }
+.ftc-headline {
+  font-size: 48px;
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  margin: 0;
+}
 .ftc-image {
   width: 85%;
   aspect-ratio: 4 / 3;
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: 12px;
+  overflow: hidden;
 }
 .ftc-inline-grid {
   display: grid;
@@ -39,6 +46,10 @@
   gap: 32px;
   padding-top: 32px;
   text-align: center;
+}
+.ftc-footer-label {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 @media (max-width: 767px) {
   .ftc-page {

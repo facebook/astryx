@@ -14,12 +14,7 @@ import {XDSCard} from '@xds/core/Card';
 import {XDSSelector} from '@xds/core/Selector';
 import Image from 'next/image';
 import illustrationSrc from './illustration.png';
-import {
-  colorVars,
-  fontWeightVars,
-  spacingVars,
-  radiusVars,
-} from '@xds/core/theme/tokens.stylex';
+import {colorVars, spacingVars, radiusVars} from '@xds/core/theme/tokens.stylex';
 import './form-two-column.css';
 
 // ─────────────────────────────────────────────────────────────
@@ -52,34 +47,21 @@ const CONTACT_COLUMNS = [
 ];
 
 // ─────────────────────────────────────────────────────────────
-// Styles — tokens only, no layout (layout lives in form-two-column.css)
+// Styles — tokens for colors, radius, spacing only
+// Grid layout lives in form-two-column.css
 // ─────────────────────────────────────────────────────────────
 
 const styles = stylex.create({
-  pageWrap: {
-    backgroundColor: colorVars['--color-background-surface'],
-  },
   imagePlaceholder: {
     backgroundColor: colorVars['--color-background-surface'],
     borderRadius: radiusVars['--radius-container'],
     overflow: 'hidden',
     alignSelf: 'flex-start',
   },
-  headline: {
-    fontSize: '48px',
-    fontWeight: fontWeightVars['--font-weight-bold'],
-    lineHeight: '1.05',
-    letterSpacing: '-0.03em',
-    margin: '0',
-  },
   tokenWrap: {
     display: 'flex',
     flexWrap: 'wrap',
     gap: spacingVars['--spacing-2'],
-  },
-  footerLabel: {
-    textTransform: 'uppercase',
-    letterSpacing: '0.08em',
   },
   fullWidth: {
     width: '100%',
@@ -121,7 +103,7 @@ export default function FormTwoColumnPage() {
   const handleSubmit = () => setSubmitted(true);
 
   return (
-    <div className="ftc-page" {...stylex.props(styles.pageWrap)}>
+    <div className="ftc-page">
       <div className="ftc-inner">
 
         {/* ── Top: two-column ── */}
@@ -130,7 +112,7 @@ export default function FormTwoColumnPage() {
           {/* Left: headline + description + illustration */}
           <XDSVStack gap={6}>
             <XDSVStack gap={3}>
-              <div {...stylex.props(styles.headline)}>
+              <div className="ftc-headline">
                 Let&apos;s work together
               </div>
               <XDSText type="body" color="secondary">
@@ -241,8 +223,8 @@ export default function FormTwoColumnPage() {
           <div className="ftc-footer-grid">
             {CONTACT_COLUMNS.map(col => (
               <XDSVStack key={col.label} gap={1} hAlign="center">
-                <XDSText type="supporting" color="secondary" xstyle={styles.footerLabel}>
-                  {col.label}
+                <XDSText type="supporting" color="secondary">
+                  <span className="ftc-footer-label">{col.label}</span>
                 </XDSText>
                 <XDSLink
                   label={col.email}
