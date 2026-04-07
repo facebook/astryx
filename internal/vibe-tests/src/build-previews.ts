@@ -36,6 +36,52 @@ const LIGHTNINGCSS_TARGETS_JS = `{
   safari: (17 << 16) | (5 << 8),
 }`;
 
+
+/**
+ * Fix missing XDS component imports in AI-generated .tsx files.
+ * Scans for XDS* identifiers used in JSX that aren't imported,
+ * and prepends the missing import. Returns list of auto-imported components.
+ */
+function fixMissingXDSImports(filePath: string): string[] {
+  const code = fs.readFileSync(filePath, 'utf-8');
+  const usedComponents = new Set<string>();
+  const jsxPattern = /(?:<|jsxs?\(\s*)(XDS\w+)/g;
+  let match;
+  while ((match = jsxPattern.exec(code)) !== null) {
+    usedComponents.add(match[1]);
+  }
+  if (usedComponents.size === 0) return [];
+  const importedComponents = new Set<string>();
+  const importPattern =
+    /import\s*\{([^}]+)\}\s*from\s*['"]@xds\/core[^'"]*['"]/g;
+  while ((match = importPattern.exec(code)) !== null) {
+    for (const specifier of match[1].split(',')) {
+      const name = specifier.trim().split(/\s+as\s+/)[0].trim();
+      if (name.startsWith('XDS')) importedComponents.add(name);
+    }
+  }
+  const missing = [...usedComponents].filter(c => !importedComponents.has(c));
+  if (missing.length === 0) return [];
+  const importLine = `import {${missing.sort().join(', ')}} from '@xds/core';\n`;
+  fs.writeFileSync(filePath, importLine + code);
+  return missing.sort();
+}
+
+/**
+ * Validate a built preview HTML for unresolved XDS component references.
+ * Returns list of unresolved component names (empty if clean).
+ */
+function validatePreviewHtml(htmlPath: string): string[] {
+  const html = fs.readFileSync(htmlPath, 'utf-8');
+  const unresolved = new Set<string>();
+  const pattern = /\.jsxs?\((XDS[A-Z]\w+)/g;
+  let match;
+  while ((match = pattern.exec(html)) !== null) {
+    unresolved.add(match[1]);
+  }
+  return [...unresolved].sort();
+}
+
 interface PreviewManifest {
   [promptId: string]: {
     [target: string]: string; // relative path to preview HTML
@@ -611,6 +657,8 @@ async function main() {
   console.log('='.repeat(40));
 
   const manifest: PreviewManifest = {};
+  /** Track which prompts needed auto-imported components (quality signal) */
+  const importFixes: Record<string, string[]> = {};
 
   for (const iterationId of iterations) {
     const iterDir = path.join(resultsDir, iterationId);
@@ -639,12 +687,31 @@ async function main() {
 
       console.log(`  📄 ${promptId} (${target})...`);
 
+      // Auto-fix missing XDS imports before building
+      if (target === 'xds' || target === 'xds-tailwind') {
+        const autoImported = fixMissingXDSImports(componentPath);
+        if (autoImported.length > 0) {
+          console.log(`  ⚡ Auto-imported: ${autoImported.join(', ')}`);
+          importFixes[promptId] = autoImported;
+        }
+      }
+
       if (target === 'baseline') {
         ensureBaselineShims();
       }
 
       const ok = buildPreview(componentPath, target, promptId, previewPath);
       if (ok) {
+        // Post-build validation: ensure no unresolved XDS references
+        if (target === 'xds' || target === 'xds-tailwind') {
+          const unresolved = validatePreviewHtml(previewPath);
+          if (unresolved.length > 0) {
+            console.error(
+              `  ⚠ Unresolved XDS components in ${previewFile}: ${unresolved.join(', ')}`,
+            );
+          }
+        }
+
         if (!manifest[promptId]) manifest[promptId] = {};
         manifest[promptId][target] = `previews/${previewFile}`;
         console.log(`  ✓ ${previewFile}`);
@@ -665,6 +732,18 @@ async function main() {
     }
   }
   writeJson(manifestOutPath, manifest);
+
+  // Write import-fixes sidecar so evaluators can penalize missing imports
+  if (Object.keys(importFixes).length > 0) {
+    const fixesPath = path.join(outDir, 'import-fixes.json');
+    writeJson(fixesPath, importFixes);
+    console.log(
+      `\n⚠ ${Object.keys(importFixes).length} prompt(s) had missing XDS imports (auto-fixed):`,
+    );
+    for (const [promptId, components] of Object.entries(importFixes)) {
+      console.log(`   ${promptId}: ${components.join(', ')}`);
+    }
+  }
 
   const totalPreviews = Object.values(manifest).reduce(
     (sum, targets) => sum + Object.keys(targets).length,
