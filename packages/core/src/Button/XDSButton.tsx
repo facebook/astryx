@@ -377,12 +377,12 @@ export interface XDSButtonProps extends XDSBaseProps<HTMLButtonElement> {
  */
 /**
  * Pressed state styles — applied when isPressed is true.
- * Layered on top of the variant style. Uses overlay background
- * and primary text/icon colors for a clear visual indicator.
+ * Uses the neutral fill (same as secondary variant) to create a clear
+ * visual indicator that the button is in the "on" state.
  */
 const pressedStyles = stylex.create({
   pressed: {
-    backgroundColor: colorVars['--color-overlay-pressed'],
+    backgroundColor: colorVars['--color-neutral'],
     color: colorVars['--color-text-primary'],
   },
 });
