@@ -1,7 +1,6 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {useState} from 'react';
-import {XDSToggleButton} from '@xds/core/ToggleButton';
-import {XDSToggleButtonGroup} from '@xds/core/ToggleButton';
+import {XDSToggleButton, XDSToggleButtonGroup} from '@xds/core/ToggleButton';
 import {
   BoldIcon,
   ItalicIcon,
@@ -53,67 +52,61 @@ type Story = StoryObj<typeof XDSToggleButton>;
 // =============================================================================
 
 /** Interactive standalone toggle — click to toggle. */
-function StandaloneDemo() {
-  const [isPressed, setIsPressed] = useState(false);
-  return (
-    <XDSToggleButton
-      label="Bold"
-      icon={<BoldIcon />}
-      isPressed={isPressed}
-      onPressedChange={setIsPressed}
-    />
-  );
-}
-
 export const Standalone: Story = {
-  render: () => <StandaloneDemo />,
+  render: function Render() {
+    const [isPressed, setIsPressed] = useState(false);
+    return (
+      <XDSToggleButton
+        label="Bold"
+        icon={<BoldIcon />}
+        isPressed={isPressed}
+        onPressedChange={setIsPressed}
+      />
+    );
+  },
 };
 
-/** Icon-only toggles with label text and icon swap. */
-function IconSwapDemo() {
-  const [isFavorited, setIsFavorited] = useState(false);
-  const [isBookmarked, setIsBookmarked] = useState(true);
-  return (
-    <div style={{display: 'flex', gap: 8}}>
-      <XDSToggleButton
-        label="Favorite"
-        icon={<StarIcon />}
-        pressedIcon={<StarIconSolid />}
-        pressedIconColor="yellow"
-        isPressed={isFavorited}
-        onPressedChange={setIsFavorited}
-      />
-      <XDSToggleButton
-        label="Bookmark"
-        icon={<BookmarkIcon />}
-        pressedIcon={<BookmarkIconSolid />}
-        pressedIconColor="accent"
-        isPressed={isBookmarked}
-        onPressedChange={setIsBookmarked}
-      />
-    </div>
-  );
-}
-
+/** Icon-only toggles with icon swap and semantic color. */
 export const IconSwap: Story = {
-  render: () => <IconSwapDemo />,
+  render: function Render() {
+    const [isFavorited, setIsFavorited] = useState(false);
+    const [isBookmarked, setIsBookmarked] = useState(true);
+    return (
+      <div style={{display: 'flex', gap: 8}}>
+        <XDSToggleButton
+          label="Favorite"
+          icon={<StarIcon />}
+          pressedIcon={<StarIconSolid />}
+          pressedIconColor="yellow"
+          isPressed={isFavorited}
+          onPressedChange={setIsFavorited}
+        />
+        <XDSToggleButton
+          label="Bookmark"
+          icon={<BookmarkIcon />}
+          pressedIcon={<BookmarkIconSolid />}
+          pressedIconColor="accent"
+          isPressed={isBookmarked}
+          onPressedChange={setIsBookmarked}
+        />
+      </div>
+    );
+  },
 };
 
-/** Toggle with visible label text — shows font weight shift. */
-function LabelDemo() {
-  const [isActive, setIsActive] = useState(false);
-  return (
-    <XDSToggleButton
-      label="Active"
-      isPressed={isActive}
-      onPressedChange={setIsActive}>
-      Active
-    </XDSToggleButton>
-  );
-}
-
+/** Toggle with visible label text — shows font weight shift on press. */
 export const WithLabel: Story = {
-  render: () => <LabelDemo />,
+  render: function Render() {
+    const [isActive, setIsActive] = useState(false);
+    return (
+      <XDSToggleButton
+        label="Active"
+        isPressed={isActive}
+        onPressedChange={setIsActive}>
+        Active
+      </XDSToggleButton>
+    );
+  },
 };
 
 /** Disabled state. */
@@ -137,40 +130,37 @@ export const Loading: Story = {
 };
 
 /** All sizes side by side. */
-function SizesDemo() {
-  const [pressed, setPressed] = useState<Record<string, boolean>>({});
-  const toggle = (key: string) =>
-    setPressed(prev => ({...prev, [key]: !prev[key]}));
-
-  return (
-    <div style={{display: 'flex', gap: 8, alignItems: 'center'}}>
-      <XDSToggleButton
-        label="Small"
-        size="sm"
-        icon={<BoldIcon />}
-        isPressed={!!pressed.sm}
-        onPressedChange={() => toggle('sm')}
-      />
-      <XDSToggleButton
-        label="Medium"
-        size="md"
-        icon={<BoldIcon />}
-        isPressed={!!pressed.md}
-        onPressedChange={() => toggle('md')}
-      />
-      <XDSToggleButton
-        label="Large"
-        size="lg"
-        icon={<BoldIcon />}
-        isPressed={!!pressed.lg}
-        onPressedChange={() => toggle('lg')}
-      />
-    </div>
-  );
-}
-
 export const Sizes: Story = {
-  render: () => <SizesDemo />,
+  render: function Render() {
+    const [pressed, setPressed] = useState<Record<string, boolean>>({});
+    const toggle = (key: string) =>
+      setPressed(prev => ({...prev, [key]: !prev[key]}));
+    return (
+      <div style={{display: 'flex', gap: 8, alignItems: 'center'}}>
+        <XDSToggleButton
+          label="Small"
+          size="sm"
+          icon={<BoldIcon />}
+          isPressed={!!pressed.sm}
+          onPressedChange={() => toggle('sm')}
+        />
+        <XDSToggleButton
+          label="Medium"
+          size="md"
+          icon={<BoldIcon />}
+          isPressed={!!pressed.md}
+          onPressedChange={() => toggle('md')}
+        />
+        <XDSToggleButton
+          label="Large"
+          size="lg"
+          icon={<BoldIcon />}
+          isPressed={!!pressed.lg}
+          onPressedChange={() => toggle('lg')}
+        />
+      </div>
+    );
+  },
 };
 
 // =============================================================================
@@ -178,103 +168,94 @@ export const Sizes: Story = {
 // =============================================================================
 
 /** Single-select group — view mode switcher. Click active to deselect. */
-function SingleGroupDemo() {
-  const [view, setView] = useState<string | null>('list');
-  return (
-    <XDSToggleButtonGroup value={view} onChange={setView} label="View mode">
-      <XDSToggleButton
-        value="list"
-        label="List view"
-        icon={<ListBulletIcon />}
-      />
-      <XDSToggleButton
-        value="grid"
-        label="Grid view"
-        icon={<Squares2X2Icon />}
-      />
-    </XDSToggleButtonGroup>
-  );
-}
-
 export const GroupSingle: Story = {
-  render: () => <SingleGroupDemo />,
+  render: function Render() {
+    const [view, setView] = useState<string | null>('list');
+    return (
+      <XDSToggleButtonGroup value={view} onChange={setView} label="View mode">
+        <XDSToggleButton
+          value="list"
+          label="List view"
+          icon={<ListBulletIcon />}
+        />
+        <XDSToggleButton
+          value="grid"
+          label="Grid view"
+          icon={<Squares2X2Icon />}
+        />
+      </XDSToggleButtonGroup>
+    );
+  },
 };
 
 /** Multi-select group — text formatting toolbar. */
-function MultiGroupDemo() {
-  const [formats, setFormats] = useState<string[]>([]);
-  return (
-    <XDSToggleButtonGroup
-      type="multiple"
-      value={formats}
-      onChange={setFormats}
-      label="Text formatting">
-      <XDSToggleButton value="bold" label="Bold" icon={<BoldIcon />} />
-      <XDSToggleButton value="italic" label="Italic" icon={<ItalicIcon />} />
-      <XDSToggleButton
-        value="underline"
-        label="Underline"
-        icon={<UnderlineIcon />}
-      />
-    </XDSToggleButtonGroup>
-  );
-}
-
 export const GroupMultiple: Story = {
-  render: () => <MultiGroupDemo />,
+  render: function Render() {
+    const [formats, setFormats] = useState<string[]>([]);
+    return (
+      <XDSToggleButtonGroup
+        type="multiple"
+        value={formats}
+        onChange={setFormats}
+        label="Text formatting">
+        <XDSToggleButton value="bold" label="Bold" icon={<BoldIcon />} />
+        <XDSToggleButton value="italic" label="Italic" icon={<ItalicIcon />} />
+        <XDSToggleButton
+          value="underline"
+          label="Underline"
+          icon={<UnderlineIcon />}
+        />
+      </XDSToggleButtonGroup>
+    );
+  },
 };
 
 /** Notification toggle — icon swap between bell and bell-slash. */
-function NotificationDemo() {
-  const [isMuted, setIsMuted] = useState(false);
-  return (
-    <XDSToggleButton
-      label={isMuted ? 'Unmute notifications' : 'Mute notifications'}
-      icon={<BellIcon />}
-      pressedIcon={<BellSlashIcon />}
-      isPressed={isMuted}
-      onPressedChange={setIsMuted}
-    />
-  );
-}
-
 export const NotificationToggle: Story = {
-  render: () => <NotificationDemo />,
+  render: function Render() {
+    const [isMuted, setIsMuted] = useState(false);
+    return (
+      <XDSToggleButton
+        label={isMuted ? 'Unmute notifications' : 'Mute notifications'}
+        icon={<BellIcon />}
+        pressedIcon={<BellSlashIcon />}
+        isPressed={isMuted}
+        onPressedChange={setIsMuted}
+      />
+    );
+  },
 };
 
-/** Icon color palette — all available pressedIconColor values. */
-function ColorPaletteDemo() {
-  const colors = [
-    'accent',
-    'blue',
-    'cyan',
-    'green',
-    'orange',
-    'pink',
-    'purple',
-    'red',
-    'teal',
-    'yellow',
-  ] as const;
-
-  return (
-    <div style={{display: 'flex', gap: 8, flexWrap: 'wrap'}}>
-      {colors.map(color => (
-        <XDSToggleButton
-          key={color}
-          label={color}
-          icon={<StarIcon />}
-          pressedIcon={<StarIconSolid />}
-          pressedIconColor={color}
-          isPressed={true}
-          onPressedChange={() => {}}>
-          {color}
-        </XDSToggleButton>
-      ))}
-    </div>
-  );
-}
-
+/** All available pressedIconColor values shown in pressed state. */
 export const PressedIconColors: Story = {
-  render: () => <ColorPaletteDemo />,
+  render: function Render() {
+    const colors = [
+      'accent',
+      'blue',
+      'cyan',
+      'green',
+      'orange',
+      'pink',
+      'purple',
+      'red',
+      'teal',
+      'yellow',
+    ] as const;
+    return (
+      <div style={{display: 'flex', gap: 8, flexWrap: 'wrap'}}>
+        {colors.map(color => (
+          <XDSToggleButton
+            key={color}
+            label={color}
+            icon={<StarIcon />}
+            pressedIcon={<StarIconSolid />}
+            pressedIconColor={color}
+            isPressed={true}
+            onPressedChange={() => {}}>
+            {color}
+          </XDSToggleButton>
+        ))}
+      </div>
+    );
+  },
 };
