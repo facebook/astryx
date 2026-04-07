@@ -276,6 +276,7 @@ const styles = stylex.create({
     alignItems: 'center',
     gap: spacingVars['--spacing-1'],
     verticalAlign: 'baseline',
+    height: spacingVars['--spacing-4'],
     fontSize: typeScaleVars['--text-supporting-size'],
     fontWeight: typeScaleVars['--text-supporting-weight'],
     lineHeight: typeScaleVars['--text-supporting-leading'],
@@ -315,8 +316,8 @@ const styles = stylex.create({
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
-    width: spacingVars['--spacing-4'],
-    height: spacingVars['--spacing-4'],
+    width: spacingVars['--spacing-3'],
+    height: spacingVars['--spacing-3'],
     borderRadius: radiusVars['--radius-full'],
     backgroundColor: colorVars['--color-background-surface'],
     borderWidth: borderVars['--border-width'],
@@ -326,8 +327,8 @@ const styles = stylex.create({
     flexShrink: 0,
   },
   citationIcon: {
-    width: spacingVars['--spacing-3'],
-    height: spacingVars['--spacing-3'],
+    width: spacingVars['--spacing-2'],
+    height: spacingVars['--spacing-2'],
   },
 });
 
