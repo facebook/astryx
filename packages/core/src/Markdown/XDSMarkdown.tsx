@@ -76,9 +76,6 @@ export interface XDSMarkdownProps {
   /**
    * Citation sources keyed by ID. When provided, `[id]` and `【id】` markers
    * in the markdown that match a key are rendered as superscript citation pills.
-   *
-   * Sources are also rendered as a numbered reference list at the bottom
-   * of the markdown when at least one citation is used.
    */
   sources?: Record<string, XDSMarkdownSource>;
   xstyle?: StyleXStyles;
@@ -619,6 +616,8 @@ function renderInline(
       const pill = (
         <Tag
           key={index}
+          role="doc-noteref"
+          aria-label={`Citation ${num}: ${title}`}
           {...linkProps}
           {...stylex.props(
             styles.citation,
