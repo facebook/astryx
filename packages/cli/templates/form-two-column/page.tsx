@@ -156,7 +156,7 @@ export default function FormTwoColumnPage() {
           <XDSCard padding={8} >
             <XDSVStack gap={6}>
               <XDSVStack gap={4}>
-                <XDSText type="title3">Your details</XDSText>
+                <XDSText type="large">Your details</XDSText>
               <XDSTextInput
                 label="Full name"
                 isLabelHidden
@@ -201,7 +201,7 @@ export default function FormTwoColumnPage() {
 
               </XDSVStack>
 
-              <XDSText type="title3">Tell us more</XDSText>
+              <XDSText type="large">Tell us more</XDSText>
 
               <XDSVStack gap={2}>
                 <XDSText type="label">What are you reaching out about?</XDSText>
