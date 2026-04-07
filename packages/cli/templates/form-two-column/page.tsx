@@ -81,6 +81,7 @@ export default function FormTwoColumnPage() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [company, setCompany] = useState('');
+  const [jobTitle, setJobTitle] = useState('');
   const [phone, setPhone] = useState('');
   const [inquiryReason, setInquiryReason] = useState('');
   const [budget, setBudget] = useState('');
@@ -91,6 +92,7 @@ export default function FormTwoColumnPage() {
     ? {
         fullName: !fullName.trim() ? 'Required' : undefined,
         email: !email.trim() ? 'Required' : undefined,
+        details: !details.trim() ? 'Required' : undefined,
       }
     : {};
 
@@ -154,9 +156,8 @@ export default function FormTwoColumnPage() {
 
           {/* Right: form on a card */}
           <XDSCard padding={8} >
-            <XDSVStack gap={6}>
-              <XDSVStack gap={4}>
-                <XDSText type="large">Your details</XDSText>
+            <XDSVStack gap={4}>
+              <XDSText type="label">Your details</XDSText>
               <XDSTextInput
                 label="Full name"
                 isLabelHidden
@@ -184,11 +185,11 @@ export default function FormTwoColumnPage() {
               </div>
               <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12}}>
                 <XDSTextInput
-                  label="Company name"
+                  label="Job title"
                   isLabelHidden
-                  placeholder="Company name"
-                  value={company}
-                  onChange={setCompany}
+                  placeholder="Job title"
+                  value={jobTitle}
+                  onChange={setJobTitle}
                 />
                 <XDSTextInput
                   label="Phone number"
@@ -198,10 +199,6 @@ export default function FormTwoColumnPage() {
                   onChange={setPhone}
                 />
               </div>
-
-              </XDSVStack>
-
-              <XDSText type="large">Tell us more</XDSText>
 
               <XDSVStack gap={2}>
                 <XDSText type="label">What are you reaching out about?</XDSText>
@@ -233,6 +230,7 @@ export default function FormTwoColumnPage() {
                 placeholder="Project details*"
                 value={details}
                 onChange={setDetails}
+                status={errors.details ? {type: 'error', message: errors.details} : undefined}
               />
               <XDSButton
                 label="Let's connect"
