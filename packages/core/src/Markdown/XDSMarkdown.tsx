@@ -293,11 +293,15 @@ const styles = stylex.create({
     transitionTimingFunction: easeVars['--ease-standard'],
     maxWidth: '15em',
     overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
   },
   citationWithIcon: {
     paddingInlineStart: spacingVars['--spacing-0-5'],
+  },
+  citationLabel: {
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+    minWidth: 0,
   },
   citationHover: {
     backgroundColor: {
@@ -655,7 +659,7 @@ function renderInline(
               />
             </span>
           )}
-          {title}
+          <span {...stylex.props(styles.citationLabel)}>{title}</span>
         </Tag>
       );
 
