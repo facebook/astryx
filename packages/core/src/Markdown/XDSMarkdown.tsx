@@ -18,7 +18,6 @@ import {
   typeScaleVars,
   typographyVars,
   fontWeightVars,
-  textSizeVars,
   borderVars,
   durationVars,
   easeVars,
@@ -271,38 +270,60 @@ const styles = stylex.create({
       ':hover': 'underline',
     },
   },
-  // Citation pill
+  // Citation chip — inline capsule matching XDSTextCitation treatment
   citation: {
     display: 'inline-flex',
     alignItems: 'center',
-    justifyContent: 'center',
-    verticalAlign: 'super',
-    fontSize: textSizeVars['--font-size-xs'],
-    // eslint-disable-next-line @xds/no-hardcoded-styles -- pill needs tight line-height
-    lineHeight: 1,
-    fontWeight: fontWeightVars['--font-weight-semibold'],
-    color: colorVars['--color-text-accent'],
-    backgroundColor: colorVars['--color-accent-muted'],
-    borderRadius: radiusVars['--radius-full'],
-    minWidth: '1.3em',
-    height: '1.3em',
-    paddingInline: spacingVars['--spacing-0-5'],
+    gap: spacingVars['--spacing-1'],
+    verticalAlign: 'baseline',
+    fontSize: typeScaleVars['--text-supporting-size'],
+    fontWeight: typeScaleVars['--text-supporting-weight'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
+    color: colorVars['--color-text-secondary'],
+    borderRadius: radiusVars['--radius-element'],
+    borderWidth: borderVars['--border-width'],
+    borderStyle: 'solid',
+    borderColor: colorVars['--color-border'],
+    paddingInline: spacingVars['--spacing-2'],
+    marginInlineStart: spacingVars['--spacing-0-5'],
     textDecoration: 'none',
     cursor: 'pointer',
-    transitionProperty: 'background-color',
+    transitionProperty: 'background-color, border-color, color',
     transitionDuration: durationVars['--duration-fast-max'],
     transitionTimingFunction: easeVars['--ease-standard'],
+    maxWidth: '15em',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+  citationWithIcon: {
+    paddingInlineStart: spacingVars['--spacing-0-5'],
   },
   citationHover: {
     backgroundColor: {
       ':hover': colorVars['--color-overlay-hover'],
     },
+    color: {
+      ':hover': colorVars['--color-text-primary'],
+    },
+  },
+  citationIconWrap: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: spacingVars['--spacing-4'],
+    height: spacingVars['--spacing-4'],
+    borderRadius: radiusVars['--radius-full'],
+    backgroundColor: colorVars['--color-background-surface'],
+    borderWidth: borderVars['--border-width'],
+    borderStyle: 'solid',
+    borderColor: colorVars['--color-border'],
+    overflow: 'hidden',
+    flexShrink: 0,
   },
   citationIcon: {
-    width: '0.85em',
-    height: '0.85em',
-    borderRadius: radiusVars['--radius-full'],
-    marginInlineEnd: '0.15em',
+    width: spacingVars['--spacing-3'],
+    height: spacingVars['--spacing-3'],
   },
 });
 
@@ -613,7 +634,7 @@ function renderInline(
         : {title};
 
       const isNew = cursor.active && cursor.offset >= cursor.boundary;
-      const pill = (
+      const chip = (
         <Tag
           key={index}
           role="doc-noteref"
@@ -621,17 +642,20 @@ function renderInline(
           {...linkProps}
           {...stylex.props(
             styles.citation,
+            icon != null && styles.citationWithIcon,
             href != null && styles.citationHover,
           )}>
           {icon && (
-            <img
-              src={icon}
-              alt=""
-              aria-hidden="true"
-              {...stylex.props(styles.citationIcon)}
-            />
+            <span {...stylex.props(styles.citationIconWrap)}>
+              <img
+                src={icon}
+                alt=""
+                aria-hidden="true"
+                {...stylex.props(styles.citationIcon)}
+              />
+            </span>
           )}
-          {num}
+          {title}
         </Tag>
       );
 
@@ -639,10 +663,10 @@ function renderInline(
         <span
           key={`fade-cite-${index}`}
           {...stylex.props(streamingStyles.fadeIn)}>
-          {pill}
+          {chip}
         </span>
       ) : (
-        pill
+        chip
       );
     }
   }
