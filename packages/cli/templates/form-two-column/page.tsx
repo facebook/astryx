@@ -57,7 +57,7 @@ const styles = stylex.create({
     width: '100%',
   },
   imagePlaceholder: {
-    backgroundColor: colorVars['--color-background-base'],
+    backgroundColor: colorVars['--color-background-surface'],
     borderRadius: 12,
     width: '100%',
     aspectRatio: '4 / 3',
