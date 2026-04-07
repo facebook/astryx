@@ -37,16 +37,16 @@ const CONTACT_COLUMNS = [
 
 const styles = stylex.create({
   pageBg: {
-    backgroundColor: colorVars['--color-surface'],
+    backgroundColor: colorVars['--color-background-surface'],
   },
   fullWidth: {
     width: '100%',
   },
   cardOverride: {
-    backgroundColor: colorVars['--color-wash'],
+    backgroundColor: colorVars['--color-background-gray'],
   },
   imagePlaceholder: {
-    backgroundColor: colorVars['--color-deemphasized'],
+    backgroundColor: colorVars['--color-background-gray'],
     borderRadius: 12,
     width: '100%',
     aspectRatio: '4 / 3',
