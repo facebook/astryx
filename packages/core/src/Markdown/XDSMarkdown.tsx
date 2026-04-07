@@ -18,6 +18,7 @@ import {
   typeScaleVars,
   typographyVars,
   fontWeightVars,
+  textSizeVars,
   borderVars,
   durationVars,
   easeVars,
@@ -279,7 +280,8 @@ const styles = stylex.create({
     alignItems: 'center',
     justifyContent: 'center',
     verticalAlign: 'super',
-    fontSize: '0.7em',
+    fontSize: textSizeVars['--font-size-xs'],
+    // eslint-disable-next-line @xds/no-hardcoded-styles -- pill needs tight line-height
     lineHeight: 1,
     fontWeight: fontWeightVars['--font-weight-semibold'],
     color: colorVars['--color-text-accent'],
