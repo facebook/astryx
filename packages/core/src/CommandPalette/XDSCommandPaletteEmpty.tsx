@@ -47,6 +47,15 @@ export interface XDSCommandPaletteEmptyProps {
  * - `emptySearchText`: a search query returned no results
  *
  * Can also be composed manually inside a custom render function.
+ *
+ * @example
+ * ```
+ * <XDSCommandPalette
+ *   emptyBootstrapText={<XDSCommandPaletteEmpty>Start typing to search</XDSCommandPaletteEmpty>}
+ *   emptySearchText={<XDSCommandPaletteEmpty>No results found</XDSCommandPaletteEmpty>}
+ *   searchSource={source}
+ * />
+ * ```
  */
 export function XDSCommandPaletteEmpty({
   children,
