@@ -131,15 +131,8 @@ export default function FormTwoColumnPage() {
             alignItems: 'center',
           }}>
 
-          {/* Left: illustration + headline + description */}
+          {/* Left: headline + description + illustration */}
           <XDSVStack gap={6}>
-            <div {...stylex.props(styles.imagePlaceholder)}>
-              <Image
-                src={illustrationSrc}
-                alt="Illustration"
-                style={{width: '100%', height: '100%', objectFit: 'contain', borderRadius: 12}}
-              />
-            </div>
             <XDSVStack gap={3}>
               <div
                 style={{
@@ -156,6 +149,13 @@ export default function FormTwoColumnPage() {
                 figure out the best path forward.
               </XDSText>
             </XDSVStack>
+            <div {...stylex.props(styles.imagePlaceholder)}>
+              <Image
+                src={illustrationSrc}
+                alt="Illustration"
+                style={{width: '100%', height: '100%', objectFit: 'contain', borderRadius: 12}}
+              />
+            </div>
           </XDSVStack>
 
           {/* Right: form on a card */}
