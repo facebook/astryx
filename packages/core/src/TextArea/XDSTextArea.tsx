@@ -66,7 +66,6 @@ const styles = stylex.create({
       color: colorVars['--color-text-secondary'],
     },
     resize: 'vertical',
-    minHeight: '80px',
   },
   textareaDisabled: {
     cursor: 'not-allowed',
