@@ -49,75 +49,29 @@ const CONTACT_COLUMNS = [
 // Styles
 // ─────────────────────────────────────────────────────────────
 
-const MOBILE = '@media (max-width: 767px)';
-
 const styles = stylex.create({
-  pageWrap: {
+  pageBg: {
     backgroundColor: colorVars['--color-background-surface'],
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: '100svh',
-    padding: '48px',
-    position: 'fixed',
-    inset: 0,
-    overflow: 'auto',
   },
-  inner: {
-    maxWidth: '1100px',
+  fullWidth: {
     width: '100%',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '56px',
-  },
-  topGrid: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: '80px',
-    alignItems: 'center',
-    [MOBILE]: {
-      gridTemplateColumns: '1fr',
-      gap: '32px',
-    },
   },
   imagePlaceholder: {
     backgroundColor: colorVars['--color-background-surface'],
-    borderRadius: '12px',
+    borderRadius: 12,
     width: '85%',
     aspectRatio: '4 / 3',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'flex-start',
-    [MOBILE]: {
-      width: '100%',
-    },
   },
   headline: {
-    fontSize: '48px',
+    fontSize: 48,
     fontWeight: fontWeightVars['--font-weight-bold'],
     lineHeight: 1.05,
     letterSpacing: '-0.03em',
     margin: 0,
-  },
-  inlineGrid2: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: '12px',
-  },
-  footerGrid: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr 1fr',
-    gap: '32px',
-    paddingTop: '32px',
-    textAlign: 'center',
-    [MOBILE]: {
-      gridTemplateColumns: '1fr',
-      textAlign: 'left',
-    },
-  },
-  fullWidth: {
-    width: '100%',
   },
 });
 
@@ -125,15 +79,6 @@ const styles = stylex.create({
 // Page
 // ─────────────────────────────────────────────────────────────
 
-/**
- * Form (Two-column) — marketing contact form template.
- *
- * Layout:
- *   Top: two-column — left has headline + description + illustration,
- *        right has the contact form on a card.
- *   Bottom: three-column contact info strip.
- *   Mobile (<768px): single column stack.
- */
 export default function FormTwoColumnPage() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -156,142 +101,201 @@ export default function FormTwoColumnPage() {
   const handleSubmit = () => setSubmitted(true);
 
   return (
-    <div {...stylex.props(styles.pageWrap)}>
-      <div {...stylex.props(styles.inner)}>
+    <>
+      <style>{`
+        .ftc-page {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          min-height: 100svh;
+          padding: 48px;
+          position: fixed;
+          inset: 0;
+          overflow: auto;
+        }
+        .ftc-inner {
+          max-width: 1100px;
+          width: 100%;
+          display: flex;
+          flex-direction: column;
+          gap: 56px;
+        }
+        .ftc-top-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 80px;
+          align-items: center;
+        }
+        .ftc-inline-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 12px;
+        }
+        .ftc-footer-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr 1fr;
+          gap: 32px;
+          padding-top: 32px;
+          text-align: center;
+        }
+        @media (max-width: 767px) {
+          .ftc-page {
+            padding: 20px;
+            align-items: flex-start;
+          }
+          .ftc-top-grid {
+            grid-template-columns: 1fr;
+            gap: 32px;
+          }
+          .ftc-image {
+            width: 100% !important;
+          }
+          .ftc-footer-grid {
+            grid-template-columns: 1fr;
+            text-align: left;
+          }
+          .ftc-inline-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+      `}</style>
+      <div className="ftc-page" {...stylex.props(styles.pageBg)}>
+        <div className="ftc-inner">
 
-        {/* ── Top: two-column ── */}
-        <div {...stylex.props(styles.topGrid)}>
+          {/* ── Top: two-column ── */}
+          <div className="ftc-top-grid">
 
-          {/* Left: headline + description + illustration */}
-          <XDSVStack gap={6}>
-            <XDSVStack gap={3}>
-              <div {...stylex.props(styles.headline)}>
-                Let&apos;s work together
-              </div>
-              <XDSText type="body" color="secondary">
-                Tell us what you&apos;re working on and we&apos;ll help you
-                figure out the best path forward.
-              </XDSText>
-            </XDSVStack>
-            <div {...stylex.props(styles.imagePlaceholder)}>
-              <Image
-                src={illustrationSrc}
-                alt="Illustration"
-                style={{width: '100%', height: '100%', objectFit: 'contain', borderRadius: 12}}
-              />
-            </div>
-          </XDSVStack>
-
-          {/* Right: form on a card */}
-          <XDSCard padding={8}>
-            <XDSVStack gap={4}>
-              <XDSText type="label">Your details</XDSText>
-              <XDSTextInput
-                label="Full name"
-                isLabelHidden
-                placeholder="Full name*"
-                value={fullName}
-                onChange={setFullName}
-                status={errors.fullName ? {type: 'error', message: errors.fullName} : undefined}
-              />
-              <div {...stylex.props(styles.inlineGrid2)}>
-                <XDSTextInput
-                  label="Email"
-                  isLabelHidden
-                  placeholder="Email*"
-                  value={email}
-                  onChange={setEmail}
-                  status={errors.email ? {type: 'error', message: errors.email} : undefined}
-                />
-                <XDSTextInput
-                  label="Company name"
-                  isLabelHidden
-                  placeholder="Company name"
-                  value={company}
-                  onChange={setCompany}
-                />
-              </div>
-              <div {...stylex.props(styles.inlineGrid2)}>
-                <XDSTextInput
-                  label="Job title"
-                  isLabelHidden
-                  placeholder="Job title"
-                  value={jobTitle}
-                  onChange={setJobTitle}
-                />
-                <XDSTextInput
-                  label="Phone number"
-                  isLabelHidden
-                  placeholder="Phone number"
-                  value={phone}
-                  onChange={setPhone}
-                />
-              </div>
-
-              <XDSVStack gap={2}>
-                <XDSText type="label">What are you reaching out about?</XDSText>
-                <div style={{display: 'flex', flexWrap: 'wrap', gap: 8}}>
-                  {INQUIRY_REASONS.map(reason => (
-                    <XDSToken
-                      key={reason}
-                      label={reason}
-                      color={inquiryReason === reason ? 'blue' : 'default'}
-                      onClick={() =>
-                        setInquiryReason(prev =>
-                          prev === reason ? '' : reason,
-                        )
-                      }
-                    />
-                  ))}
+            {/* Left: headline + description + illustration */}
+            <XDSVStack gap={6}>
+              <XDSVStack gap={3}>
+                <div {...stylex.props(styles.headline)}>
+                  Let&apos;s work together
                 </div>
-              </XDSVStack>
-              <XDSSelector
-                label="Budget range"
-                options={BUDGET_OPTIONS}
-                value={budget}
-                onChange={setBudget}
-                placeholder="Select a budget range..."
-              />
-              <XDSTextArea
-                label="Project details"
-                isLabelHidden
-                placeholder="Project details*"
-                value={details}
-                onChange={setDetails}
-                status={errors.details ? {type: 'error', message: errors.details} : undefined}
-              />
-              <XDSButton
-                label="Let's connect"
-                variant="primary"
-                xstyle={styles.fullWidth}
-                onClick={handleSubmit}
-              />
-            </XDSVStack>
-          </XDSCard>
-        </div>
-
-        {/* ── Bottom: contact strip ── */}
-        <div>
-          <XDSDivider />
-          <div {...stylex.props(styles.footerGrid)}>
-            {CONTACT_COLUMNS.map(col => (
-              <XDSVStack key={col.label} gap={1} hAlign="center">
-                <XDSText type="supporting" color="secondary">
-                  {col.label}
+                <XDSText type="body" color="secondary">
+                  Tell us what you&apos;re working on and we&apos;ll help you
+                  figure out the best path forward.
                 </XDSText>
-                <XDSLink
-                  label={col.email}
-                  href={`mailto:${col.email}`}
-                  type="body"
-                  size="sm">
-                  {col.email}
-                </XDSLink>
               </XDSVStack>
-            ))}
-          </div>
-        </div>
+              <div className="ftc-image" {...stylex.props(styles.imagePlaceholder)}>
+                <Image
+                  src={illustrationSrc}
+                  alt="Illustration"
+                  style={{width: '100%', height: '100%', objectFit: 'contain', borderRadius: 12}}
+                />
+              </div>
+            </XDSVStack>
 
+            {/* Right: form on a card */}
+            <XDSCard padding={8}>
+              <XDSVStack gap={4}>
+                <XDSText type="label">Your details</XDSText>
+                <XDSTextInput
+                  label="Full name"
+                  isLabelHidden
+                  placeholder="Full name*"
+                  value={fullName}
+                  onChange={setFullName}
+                  status={errors.fullName ? {type: 'error', message: errors.fullName} : undefined}
+                />
+                <div className="ftc-inline-grid">
+                  <XDSTextInput
+                    label="Email"
+                    isLabelHidden
+                    placeholder="Email*"
+                    value={email}
+                    onChange={setEmail}
+                    status={errors.email ? {type: 'error', message: errors.email} : undefined}
+                  />
+                  <XDSTextInput
+                    label="Company name"
+                    isLabelHidden
+                    placeholder="Company name"
+                    value={company}
+                    onChange={setCompany}
+                  />
+                </div>
+                <div className="ftc-inline-grid">
+                  <XDSTextInput
+                    label="Job title"
+                    isLabelHidden
+                    placeholder="Job title"
+                    value={jobTitle}
+                    onChange={setJobTitle}
+                  />
+                  <XDSTextInput
+                    label="Phone number"
+                    isLabelHidden
+                    placeholder="Phone number"
+                    value={phone}
+                    onChange={setPhone}
+                  />
+                </div>
+
+                <XDSVStack gap={2}>
+                  <XDSText type="label">What are you reaching out about?</XDSText>
+                  <div style={{display: 'flex', flexWrap: 'wrap', gap: 8}}>
+                    {INQUIRY_REASONS.map(reason => (
+                      <XDSToken
+                        key={reason}
+                        label={reason}
+                        color={inquiryReason === reason ? 'blue' : 'default'}
+                        onClick={() =>
+                          setInquiryReason(prev =>
+                            prev === reason ? '' : reason,
+                          )
+                        }
+                      />
+                    ))}
+                  </div>
+                </XDSVStack>
+                <XDSSelector
+                  label="Budget range"
+                  options={BUDGET_OPTIONS}
+                  value={budget}
+                  onChange={setBudget}
+                  placeholder="Select a budget range..."
+                />
+                <XDSTextArea
+                  label="Project details"
+                  isLabelHidden
+                  placeholder="Project details*"
+                  value={details}
+                  onChange={setDetails}
+                  status={errors.details ? {type: 'error', message: errors.details} : undefined}
+                />
+                <XDSButton
+                  label="Let's connect"
+                  variant="primary"
+                  xstyle={styles.fullWidth}
+                  onClick={handleSubmit}
+                />
+              </XDSVStack>
+            </XDSCard>
+          </div>
+
+          {/* ── Bottom: contact strip ── */}
+          <div>
+            <XDSDivider />
+            <div className="ftc-footer-grid">
+              {CONTACT_COLUMNS.map(col => (
+                <XDSVStack key={col.label} gap={1} hAlign="center">
+                  <XDSText type="supporting" color="secondary">
+                    {col.label}
+                  </XDSText>
+                  <XDSLink
+                    label={col.email}
+                    href={`mailto:${col.email}`}
+                    type="body"
+                    size="sm">
+                    {col.email}
+                  </XDSLink>
+                </XDSVStack>
+              ))}
+            </div>
+          </div>
+
+        </div>
       </div>
-    </div>
+    </>
   );
 }
