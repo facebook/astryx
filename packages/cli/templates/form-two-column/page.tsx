@@ -104,6 +104,7 @@ export default function FormTwoColumnPage() {
     <>
       <style>{`
         .ftc-page {
+          background-color: var(--color-background-surface);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -159,7 +160,7 @@ export default function FormTwoColumnPage() {
           }
         }
       `}</style>
-      <div className="ftc-page" {...stylex.props(styles.pageBg)}>
+      <div className="ftc-page">
         <div className="ftc-inner">
 
           {/* ── Top: two-column ── */}
