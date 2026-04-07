@@ -41,6 +41,20 @@ import type {BlockNode, InlineNode, IncrementalState} from './parser';
 // Props
 // ---------------------------------------------------------------------------
 
+/**
+ * A citation source referenced inline in the markdown via `[id]` or `【id】`.
+ * When `sources` is provided, bracket content matching a source key is rendered
+ * as a compact superscript citation pill instead of plain text.
+ */
+export interface XDSMarkdownSource {
+  /** Human-readable title for the source. */
+  title?: string;
+  /** URL to navigate to when the citation is clicked. */
+  url?: string;
+  /** Optional favicon or icon URL to display in the citation pill. */
+  icon?: string;
+}
+
 export interface XDSMarkdownProps {
   ref?: React.Ref<HTMLDivElement>;
   children: string;
@@ -58,6 +72,18 @@ export interface XDSMarkdownProps {
     href: string,
     event: React.MouseEvent<HTMLAnchorElement>,
   ) => void | false;
+  /**
+   * Citation sources keyed by ID. When provided, `[id]` and `【id】` markers
+   * in the markdown that match a key are rendered as citation chips.
+   */
+  sources?: Record<string, XDSMarkdownSource>;
+  /**
+   * How citations are displayed inline.
+   * - `'label'` (default) — chip with source title text, icon, and border
+   * - `'number'` — compact numbered badge (1, 2, 3…)
+   * @default 'label'
+   */
+  citationStyle?: 'label' | 'number';
   xstyle?: StyleXStyles;
   className?: string;
   style?: React.CSSProperties;
@@ -251,6 +277,92 @@ const styles = stylex.create({
       ':hover': 'underline',
     },
   },
+  // Citation chip — inline capsule matching XDSTextCitation treatment
+  citation: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-1'],
+    verticalAlign: 'baseline',
+    height: spacingVars['--spacing-5'],
+    fontSize: typeScaleVars['--text-supporting-size'],
+    fontWeight: typeScaleVars['--text-supporting-weight'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
+    color: colorVars['--color-text-secondary'],
+    borderRadius: radiusVars['--radius-element'],
+    borderWidth: borderVars['--border-width'],
+    borderStyle: 'solid',
+    borderColor: colorVars['--color-border'],
+    paddingInline: spacingVars['--spacing-2'],
+    marginInlineStart: spacingVars['--spacing-0-5'],
+    textDecoration: 'none',
+    cursor: 'pointer',
+    transitionProperty: 'background-color, border-color, color',
+    transitionDuration: durationVars['--duration-fast-max'],
+    transitionTimingFunction: easeVars['--ease-standard'],
+    maxWidth: '15em',
+    overflow: 'hidden',
+  },
+  citationWithIcon: {
+    paddingInlineStart: spacingVars['--spacing-0-5'],
+  },
+  citationLabel: {
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+    minWidth: 0,
+  },
+  // Number mode — compact superscript badge
+  citationNumber: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    verticalAlign: 'super',
+    fontSize: typeScaleVars['--text-supporting-size'],
+    fontWeight: fontWeightVars['--font-weight-semibold'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
+    color: colorVars['--color-text-accent'],
+    backgroundColor: colorVars['--color-accent-muted'],
+    borderRadius: radiusVars['--radius-full'],
+    minWidth: spacingVars['--spacing-5'],
+    height: spacingVars['--spacing-5'],
+    paddingInline: spacingVars['--spacing-1'],
+    textDecoration: 'none',
+    cursor: 'pointer',
+    transitionProperty: 'background-color',
+    transitionDuration: durationVars['--duration-fast-max'],
+    transitionTimingFunction: easeVars['--ease-standard'],
+  },
+  citationNumberHover: {
+    backgroundColor: {
+      ':hover': colorVars['--color-overlay-hover'],
+    },
+  },
+  citationHover: {
+    backgroundColor: {
+      ':hover': colorVars['--color-overlay-hover'],
+    },
+    color: {
+      ':hover': colorVars['--color-text-primary'],
+    },
+  },
+  citationIconWrap: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: spacingVars['--spacing-4'],
+    height: spacingVars['--spacing-4'],
+    borderRadius: radiusVars['--radius-full'],
+    backgroundColor: colorVars['--color-background-surface'],
+    borderWidth: borderVars['--border-width'],
+    borderStyle: 'solid',
+    borderColor: colorVars['--color-border'],
+    overflow: 'hidden',
+    flexShrink: 0,
+  },
+  citationIcon: {
+    width: spacingVars['--spacing-3'],
+    height: spacingVars['--spacing-3'],
+  },
 });
 
 // ---------------------------------------------------------------------------
@@ -307,6 +419,9 @@ function countInlineTextLength(nodes: InlineNode[]): number {
         len += countInlineTextLength(node.children);
         break;
       case 'break':
+        len += 1;
+        break;
+      case 'citation':
         len += 1;
         break;
     }
@@ -414,11 +529,32 @@ function wrapTextWithFade(
   );
 }
 
+/**
+ * Context for citation rendering, threaded through the inline/block render tree.
+ * Tracks which sources have been cited and assigns sequential display numbers.
+ */
+interface CitationContext {
+  sources: Record<string, XDSMarkdownSource>;
+  numberMap: Map<string, number>;
+  nextNumber: number;
+  style: 'label' | 'number';
+}
+
+function getCitationNumber(ctx: CitationContext, sourceId: string): number {
+  let num = ctx.numberMap.get(sourceId);
+  if (num == null) {
+    num = ctx.nextNumber++;
+    ctx.numberMap.set(sourceId, num);
+  }
+  return num;
+}
+
 function renderInline(
   node: InlineNode,
   index: number,
   onLinkClick: XDSMarkdownProps['onLinkClick'] | undefined,
   cursor: StreamingCursor,
+  citationCtx: CitationContext | null,
 ): React.ReactNode {
   switch (node.type) {
     case 'text':
@@ -426,19 +562,25 @@ function renderInline(
     case 'bold':
       return (
         <strong key={index} {...stylex.props(styles.bold)}>
-          {node.children.map((c, i) => renderInline(c, i, onLinkClick, cursor))}
+          {node.children.map((c, i) =>
+            renderInline(c, i, onLinkClick, cursor, citationCtx),
+          )}
         </strong>
       );
     case 'italic':
       return (
         <em key={index}>
-          {node.children.map((c, i) => renderInline(c, i, onLinkClick, cursor))}
+          {node.children.map((c, i) =>
+            renderInline(c, i, onLinkClick, cursor, citationCtx),
+          )}
         </em>
       );
     case 'strikethrough':
       return (
         <del key={index} {...stylex.props(styles.strikethrough)}>
-          {node.children.map((c, i) => renderInline(c, i, onLinkClick, cursor))}
+          {node.children.map((c, i) =>
+            renderInline(c, i, onLinkClick, cursor, citationCtx),
+          )}
         </del>
       );
     case 'code': {
@@ -463,7 +605,7 @@ function renderInline(
         return (
           <span key={index}>
             {node.children.map((c, i) =>
-              renderInline(c, i, onLinkClick, cursor),
+              renderInline(c, i, onLinkClick, cursor, citationCtx),
             )}
           </span>
         );
@@ -486,7 +628,9 @@ function renderInline(
             ? {target: '_blank', rel: 'noopener noreferrer'}
             : {})}
           {...stylex.props(styles.link)}>
-          {node.children.map((c, i) => renderInline(c, i, onLinkClick, cursor))}
+          {node.children.map((c, i) =>
+            renderInline(c, i, onLinkClick, cursor, citationCtx),
+          )}
         </a>
       );
     }
@@ -505,6 +649,77 @@ function renderInline(
     case 'break':
       cursor.offset += 1;
       return <br key={index} />;
+    case 'citation': {
+      cursor.offset += 1;
+      if (!citationCtx) {
+        // No sources provided — render as plain text
+        return <span key={index}>[{node.sourceId}]</span>;
+      }
+      const num = getCitationNumber(citationCtx, node.sourceId);
+      const source = citationCtx.sources[node.sourceId];
+      const title = source?.title ?? node.sourceId;
+      const href = source?.url;
+      const icon = source?.icon;
+      const Tag = href ? 'a' : 'span';
+      const linkProps = href
+        ? {
+            href,
+            target: '_blank' as const,
+            rel: 'noopener noreferrer' as const,
+            title,
+          }
+        : {title};
+
+      const isNew = cursor.active && cursor.offset >= cursor.boundary;
+      const isNumberMode = citationCtx.style === 'number';
+
+      const chip = isNumberMode ? (
+        <Tag
+          key={index}
+          role="doc-noteref"
+          aria-label={`Citation ${num}: ${title}`}
+          {...linkProps}
+          {...stylex.props(
+            styles.citationNumber,
+            href != null && styles.citationNumberHover,
+          )}>
+          {num}
+        </Tag>
+      ) : (
+        <Tag
+          key={index}
+          role="doc-noteref"
+          aria-label={`Citation ${num}: ${title}`}
+          {...linkProps}
+          {...stylex.props(
+            styles.citation,
+            icon != null && styles.citationWithIcon,
+            href != null && styles.citationHover,
+          )}>
+          {icon && (
+            <span {...stylex.props(styles.citationIconWrap)}>
+              <img
+                src={icon}
+                alt=""
+                aria-hidden="true"
+                {...stylex.props(styles.citationIcon)}
+              />
+            </span>
+          )}
+          <span {...stylex.props(styles.citationLabel)}>{title}</span>
+        </Tag>
+      );
+
+      return isNew ? (
+        <span
+          key={`fade-cite-${index}`}
+          {...stylex.props(streamingStyles.fadeIn)}>
+          {chip}
+        </span>
+      ) : (
+        chip
+      );
+    }
   }
 }
 
@@ -561,6 +776,7 @@ function renderBlock(
   headingLevelStart: 1 | 2 | 3 | 4 | 5 | 6,
   onLinkClick: XDSMarkdownProps['onLinkClick'] | undefined,
   cursor: StreamingCursor,
+  citationCtx: CitationContext | null,
 ): React.ReactNode {
   const spacing = getElementSpacing(node, density);
   const isFirst = index === 0;
@@ -586,7 +802,9 @@ function renderBlock(
             isFirst && styles.noMarginBlockStart,
             isLast && styles.noMarginBlockEnd,
           )}>
-          {node.children.map((c, i) => renderInline(c, i, onLinkClick, cursor))}
+          {node.children.map((c, i) =>
+            renderInline(c, i, onLinkClick, cursor, citationCtx),
+          )}
         </Tag>
       );
     }
@@ -599,7 +817,9 @@ function renderBlock(
             isFirst && styles.noMarginBlockStart,
             isLast && styles.noMarginBlockEnd,
           )}>
-          {node.children.map((c, i) => renderInline(c, i, onLinkClick, cursor))}
+          {node.children.map((c, i) =>
+            renderInline(c, i, onLinkClick, cursor, citationCtx),
+          )}
         </p>
       );
     case 'codeblock': {
@@ -636,6 +856,7 @@ function renderBlock(
               headingLevelStart,
               onLinkClick,
               cursor,
+              citationCtx,
             ),
           )}
         </blockquote>
@@ -678,7 +899,7 @@ function renderBlock(
                 const label = isInline ? (
                   <>
                     {firstChild.children.map((c, j) =>
-                      renderInline(c, j, onLinkClick, cursor),
+                      renderInline(c, j, onLinkClick, cursor, citationCtx),
                     )}
                   </>
                 ) : (
@@ -692,6 +913,7 @@ function renderBlock(
                         headingLevelStart,
                         onLinkClick,
                         cursor,
+                        citationCtx,
                       ),
                     )}
                   </>
@@ -747,7 +969,7 @@ function renderBlock(
               const label = isInline ? (
                 <>
                   {firstChild.children.map((c, j) =>
-                    renderInline(c, j, onLinkClick, cursor),
+                    renderInline(c, j, onLinkClick, cursor, citationCtx),
                   )}
                 </>
               ) : (
@@ -761,6 +983,7 @@ function renderBlock(
                       headingLevelStart,
                       onLinkClick,
                       cursor,
+                      citationCtx,
                     ),
                   )}
                 </>
@@ -809,7 +1032,7 @@ function renderBlock(
                       alignStyle(node.alignments[i]),
                     )}>
                     {h.children.map((c, j) =>
-                      renderInline(c, j, onLinkClick, cursor),
+                      renderInline(c, j, onLinkClick, cursor, citationCtx),
                     )}
                   </th>
                 ))}
@@ -827,7 +1050,7 @@ function renderBlock(
                       alignStyle(node.alignments[j]),
                     )}>
                     {cell.children.map((c, k) =>
-                      renderInline(c, k, onLinkClick, cursor),
+                      renderInline(c, k, onLinkClick, cursor, citationCtx),
                     )}
                   </td>
                 ));
@@ -908,11 +1131,19 @@ export function XDSMarkdown({
   headingLevelStart = 1,
   isStreaming = false,
   onLinkClick,
+  sources,
+  citationStyle = 'label',
   xstyle,
   className,
   style,
   'data-testid': testId,
 }: XDSMarkdownProps): React.ReactElement {
+  // Derive the set of source IDs for the parser (stable across renders when sources don't change)
+  const sourceIds = useMemo(
+    () => (sources ? new Set(Object.keys(sources)) : undefined),
+    [sources],
+  );
+
   // Smooth bursty streamed chunks into a steady character-by-character reveal.
   // When not streaming, the hook returns children unchanged (no-op).
   const smoothedText = useXDSStreamingText(children, isStreaming);
@@ -930,10 +1161,14 @@ export function XDSMarkdown({
         return [];
       }
       const input = trimStreamingArtifacts(smoothedText);
-      return parseMarkdownIncremental(input, incrementalState.current);
+      return parseMarkdownIncremental(
+        input,
+        incrementalState.current,
+        sourceIds,
+      );
     }
-    return parseMarkdown(children);
-  }, [smoothedText, children, isStreaming]);
+    return parseMarkdown(children, sourceIds);
+  }, [smoothedText, children, isStreaming, sourceIds]);
 
   // Build the streaming cursor for this render pass.
   // The boundary is where "old" text ends and "new" text begins.
@@ -942,6 +1177,12 @@ export function XDSMarkdown({
     boundary: prevTextLenRef.current,
     active: isStreaming,
   };
+
+  // Build citation context — numbers are assigned in encounter order during rendering.
+  // This is recreated each render so numbering stays consistent with the AST.
+  const citationCtx: CitationContext | null = sources
+    ? {sources, numberMap: new Map(), nextNumber: 1, style: citationStyle}
+    : null;
 
   const rendered = (
     <div
@@ -963,6 +1204,7 @@ export function XDSMarkdown({
           headingLevelStart,
           onLinkClick,
           cursor,
+          citationCtx,
         ),
       )}
     </div>

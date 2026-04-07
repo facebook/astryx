@@ -11,7 +11,10 @@ describe('parseInline', () => {
     const result = parseInline('**bold text**');
     expect(result[0].type).toBe('bold');
     if (result[0].type === 'bold') {
-      expect(result[0].children[0]).toEqual({type: 'text', content: 'bold text'});
+      expect(result[0].children[0]).toEqual({
+        type: 'text',
+        content: 'bold text',
+      });
     }
   });
 
@@ -19,7 +22,10 @@ describe('parseInline', () => {
     const result = parseInline('*italic text*');
     expect(result[0].type).toBe('italic');
     if (result[0].type === 'italic') {
-      expect(result[0].children[0]).toEqual({type: 'text', content: 'italic text'});
+      expect(result[0].children[0]).toEqual({
+        type: 'text',
+        content: 'italic text',
+      });
     }
   });
 
@@ -51,7 +57,9 @@ describe('parseInline', () => {
   });
 
   it('parses mixed inline formatting', () => {
-    const result = parseInline('Hello **bold** and *italic* with `code` and [link](url)');
+    const result = parseInline(
+      'Hello **bold** and *italic* with `code` and [link](url)',
+    );
     expect(result.length).toBeGreaterThanOrEqual(5);
   });
 
@@ -71,7 +79,10 @@ describe('parseInline', () => {
       expect(result[0].children).toHaveLength(1);
       expect(result[0].children[0].type).toBe('italic');
       if (result[0].children[0].type === 'italic') {
-        expect(result[0].children[0].children[0]).toEqual({type: 'text', content: 'bold italic'});
+        expect(result[0].children[0].children[0]).toEqual({
+          type: 'text',
+          content: 'bold italic',
+        });
       }
     }
   });
@@ -260,7 +271,8 @@ describe('parseMarkdown', () => {
   });
 
   it('parses table alignment', () => {
-    const input = '| Left | Center | Right |\n| :--- | :---: | ---: |\n| a | b | c |';
+    const input =
+      '| Left | Center | Right |\n| :--- | :---: | ---: |\n| a | b | c |';
     const result = parseMarkdown(input);
     expect(result[0].type).toBe('table');
     if (result[0].type === 'table') {
@@ -364,5 +376,145 @@ describe('parseMarkdown', () => {
 
   it('parses spaced HR: _ _ _', () => {
     expect(parseMarkdown('_ _ _')[0].type).toBe('hr');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Citation parsing
+// ---------------------------------------------------------------------------
+
+describe('citation parsing', () => {
+  const sourceIds = new Set(['abc1', 'def2', 'src3']);
+
+  describe('bracket notation [id]', () => {
+    it('parses a bracket citation when sourceId matches', () => {
+      const result = parseInline('Tokyo is large[abc1].', sourceIds);
+      expect(result).toEqual([
+        {type: 'text', content: 'Tokyo is large'},
+        {type: 'citation', sourceId: 'abc1'},
+        {type: 'text', content: '.'},
+      ]);
+    });
+
+    it('parses multiple bracket citations', () => {
+      const result = parseInline('Fact[abc1][def2].', sourceIds);
+      expect(result).toEqual([
+        {type: 'text', content: 'Fact'},
+        {type: 'citation', sourceId: 'abc1'},
+        {type: 'citation', sourceId: 'def2'},
+        {type: 'text', content: '.'},
+      ]);
+    });
+
+    it('does NOT treat [id] as citation when id is not in sourceIds', () => {
+      const result = parseInline('Use [PID] here.', sourceIds);
+      expect(result.some(n => n.type === 'citation')).toBe(false);
+    });
+
+    it('does NOT treat [text](url) as citation', () => {
+      const result = parseInline(
+        '[click here](https://example.com)',
+        sourceIds,
+      );
+      expect(result).toEqual([
+        {
+          type: 'link',
+          href: 'https://example.com',
+          children: [{type: 'text', content: 'click here'}],
+        },
+      ]);
+    });
+
+    it('handles citation next to link', () => {
+      const result = parseInline(
+        'See [link](https://example.com)[abc1].',
+        sourceIds,
+      );
+      expect(result[0]).toEqual({type: 'text', content: 'See '});
+      expect(result[1]).toEqual({
+        type: 'link',
+        href: 'https://example.com',
+        children: [{type: 'text', content: 'link'}],
+      });
+      expect(result[2]).toEqual({type: 'citation', sourceId: 'abc1'});
+    });
+
+    it('ignores brackets when no sourceIds provided', () => {
+      const result = parseInline('Text [abc1] here.');
+      expect(result.some(n => n.type === 'citation')).toBe(false);
+    });
+  });
+
+  describe('fullwidth bracket notation 【id】', () => {
+    it('parses a fullwidth bracket citation', () => {
+      const result = parseInline('Data【abc1】.', sourceIds);
+      expect(result).toEqual([
+        {type: 'text', content: 'Data'},
+        {type: 'citation', sourceId: 'abc1'},
+        {type: 'text', content: '.'},
+      ]);
+    });
+
+    it('parses consecutive fullwidth citations', () => {
+      const result = parseInline('Info【abc1】【def2】end.', sourceIds);
+      expect(result).toEqual([
+        {type: 'text', content: 'Info'},
+        {type: 'citation', sourceId: 'abc1'},
+        {type: 'citation', sourceId: 'def2'},
+        {type: 'text', content: 'end.'},
+      ]);
+    });
+
+    it('preserves fullwidth brackets when id is not in sourceIds', () => {
+      const result = parseInline('Keep【hello world】.', sourceIds);
+      expect(result.some(n => n.type === 'citation')).toBe(false);
+    });
+  });
+
+  describe('mixed formats', () => {
+    it('handles both bracket and fullwidth in same text', () => {
+      const result = parseInline('A[abc1] B【def2】.', sourceIds);
+      expect(result).toEqual([
+        {type: 'text', content: 'A'},
+        {type: 'citation', sourceId: 'abc1'},
+        {type: 'text', content: ' B'},
+        {type: 'citation', sourceId: 'def2'},
+        {type: 'text', content: '.'},
+      ]);
+    });
+  });
+
+  describe('block-level threading', () => {
+    it('detects citations inside paragraphs', () => {
+      const blocks = parseMarkdown('Tokyo is big[abc1].', sourceIds);
+      expect(blocks).toHaveLength(1);
+      if (blocks[0].type === 'paragraph') {
+        expect(blocks[0].children.some(n => n.type === 'citation')).toBe(true);
+      }
+    });
+
+    it('detects citations inside list items', () => {
+      const blocks = parseMarkdown('- Item[abc1]\n- Item[def2]', sourceIds);
+      expect(blocks).toHaveLength(1);
+      if (blocks[0].type === 'list') {
+        const firstItem = blocks[0].items[0].children[0];
+        if (firstItem.type === 'paragraph') {
+          expect(firstItem.children.some(n => n.type === 'citation')).toBe(
+            true,
+          );
+        }
+      }
+    });
+
+    it('detects citations inside table cells', () => {
+      const md = '| A | B |\n|---|---|\n| data[abc1] | ok |';
+      const blocks = parseMarkdown(md, sourceIds);
+      expect(blocks).toHaveLength(1);
+      if (blocks[0].type === 'table') {
+        expect(
+          blocks[0].rows[0][0].children.some(n => n.type === 'citation'),
+        ).toBe(true);
+      }
+    });
   });
 });
