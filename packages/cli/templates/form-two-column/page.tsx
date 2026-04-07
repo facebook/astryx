@@ -6,7 +6,7 @@ import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSButton} from '@xds/core/Button';
 import {XDSText} from '@xds/core/Text';
 import {XDSTextInput} from '@xds/core/TextInput';
-import {XDSSelector} from '@xds/core/Selector';
+import {XDSToken} from '@xds/core/Token';
 import {XDSTextArea} from '@xds/core/TextArea';
 import {XDSLink} from '@xds/core/Link';
 import {XDSDivider} from '@xds/core/Divider';
@@ -18,10 +18,10 @@ import {colorVars, fontWeightVars} from '@xds/core/theme/tokens.stylex';
 // ─────────────────────────────────────────────────────────────
 
 const INQUIRY_REASONS = [
-  'General inquiry',
   'New business',
-  'Press & partnerships',
-  'Recurring work',
+  'General inquiry',
+  'Press & media',
+  'Partnerships',
   'Other',
 ];
 
@@ -71,8 +71,8 @@ const styles = stylex.create({
 export default function FormTwoColumnPage() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
   const [company, setCompany] = useState('');
+  const [phone, setPhone] = useState('');
   const [inquiryReason, setInquiryReason] = useState('');
   const [details, setDetails] = useState('');
   const [submitted, setSubmitted] = useState(false);
@@ -163,11 +163,11 @@ export default function FormTwoColumnPage() {
                   status={errors.email ? {type: 'error', message: errors.email} : undefined}
                 />
                 <XDSTextInput
-                  label="Phone number"
+                  label="Company name"
                   isLabelHidden
-                  placeholder="Phone number"
-                  value={phone}
-                  onChange={setPhone}
+                  placeholder="Company name"
+                  value={company}
+                  onChange={setCompany}
                 />
               </div>
               <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12}}>
@@ -178,15 +178,32 @@ export default function FormTwoColumnPage() {
                   value={company}
                   onChange={setCompany}
                 />
-                <XDSSelector
-                  label="Inquiry reason"
+                <XDSTextInput
+                  label="Phone number"
                   isLabelHidden
-                  placeholder="Inquiry reason*"
-                  options={INQUIRY_REASONS}
-                  value={inquiryReason}
-                  onChange={setInquiryReason}
+                  placeholder="Phone number"
+                  value={phone}
+                  onChange={setPhone}
                 />
               </div>
+
+              <XDSVStack gap={2}>
+                <XDSText type="label">What are you reaching out about?</XDSText>
+                <div style={{display: 'flex', flexWrap: 'wrap', gap: 8}}>
+                  {INQUIRY_REASONS.map(reason => (
+                    <XDSToken
+                      key={reason}
+                      label={reason}
+                      color={inquiryReason === reason ? 'blue' : 'default'}
+                      onClick={() =>
+                        setInquiryReason(prev =>
+                          prev === reason ? '' : reason,
+                        )
+                      }
+                    />
+                  ))}
+                </div>
+              </XDSVStack>
               <XDSTextArea
                 label="Project details"
                 isLabelHidden
