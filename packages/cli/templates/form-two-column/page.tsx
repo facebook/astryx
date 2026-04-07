@@ -57,7 +57,7 @@ const styles = stylex.create({
     width: '100%',
   },
   imagePlaceholder: {
-    backgroundColor: colorVars['--color-background-gray'],
+    backgroundColor: colorVars['--color-background-base'],
     borderRadius: 12,
     width: '100%',
     aspectRatio: '4 / 3',
@@ -131,8 +131,15 @@ export default function FormTwoColumnPage() {
             alignItems: 'center',
           }}>
 
-          {/* Left: headline + description + illustration */}
+          {/* Left: illustration + headline + description */}
           <XDSVStack gap={6}>
+            <div {...stylex.props(styles.imagePlaceholder)}>
+              <Image
+                src={illustrationSrc}
+                alt="Illustration"
+                style={{width: '100%', height: '100%', objectFit: 'contain', borderRadius: 12}}
+              />
+            </div>
             <XDSVStack gap={3}>
               <div
                 style={{
@@ -149,13 +156,6 @@ export default function FormTwoColumnPage() {
                 figure out the best path forward.
               </XDSText>
             </XDSVStack>
-            <div {...stylex.props(styles.imagePlaceholder)}>
-              <Image
-                src={illustrationSrc}
-                alt="Illustration"
-                style={{width: '100%', height: '100%', objectFit: 'contain', borderRadius: 12}}
-              />
-            </div>
           </XDSVStack>
 
           {/* Right: form on a card */}
