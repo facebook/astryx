@@ -12,6 +12,16 @@ import {XDSAvatar} from '@xds/core/Avatar';
 import {XDSButton} from '@xds/core/Button';
 import {XDSNavIcon} from '@xds/core/NavIcon';
 import {XDSProgressBar} from '@xds/core/ProgressBar';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts';
 import {XDSStack, XDSStackItem} from '@xds/core/Stack';
 import {XDSTable, proportional} from '@xds/core/Table';
 import type {XDSTableColumn} from '@xds/core/Table';
@@ -185,16 +195,32 @@ const ReloadIcon = (props: React.SVGProps<SVGSVGElement>) => (
 // ============= DATA =============
 
 // Active users chart data (24 points over 24h: Apr 1 14:00 → Apr 2 14:00)
-// Hours: 14:00 → 15 → 16 → 17 → 18 → 19 → 20 → 21 → 22 → 23 → 00 → 01 → 02 → 03 → 04 → 05 → 06 → 07 → 08 → 09 → 10 → 11 → 12 → 13
-const desktopLine = [
-  72, 70, 65, 60, 52, 45, 38, 32, 25, 20, 16, 12, 10, 8, 8, 10, 15, 28, 48, 62,
-  72, 75, 74, 72,
+const activeUsersData = [
+  {time: 'Apr 1 14:00', allUsers: 102, desktop: 72, mobile: 30},
+  {time: '15:00', allUsers: 98, desktop: 70, mobile: 28},
+  {time: '16:00', allUsers: 90, desktop: 65, mobile: 25},
+  {time: '17:00', allUsers: 95, desktop: 60, mobile: 35},
+  {time: '18:00', allUsers: 97, desktop: 52, mobile: 45},
+  {time: '19:00', allUsers: 95, desktop: 45, mobile: 50},
+  {time: '20:00', allUsers: 80, desktop: 38, mobile: 42},
+  {time: '21:00', allUsers: 67, desktop: 32, mobile: 35},
+  {time: 'Apr 1 22:00', allUsers: 49, desktop: 25, mobile: 24},
+  {time: '23:00', allUsers: 36, desktop: 20, mobile: 16},
+  {time: '00:00', allUsers: 28, desktop: 16, mobile: 12},
+  {time: '01:00', allUsers: 20, desktop: 12, mobile: 8},
+  {time: '02:00', allUsers: 16, desktop: 10, mobile: 6},
+  {time: '03:00', allUsers: 13, desktop: 8, mobile: 5},
+  {time: '04:00', allUsers: 13, desktop: 8, mobile: 5},
+  {time: '05:00', allUsers: 16, desktop: 10, mobile: 6},
+  {time: 'Apr 2 06:00', allUsers: 25, desktop: 15, mobile: 10},
+  {time: '07:00', allUsers: 60, desktop: 28, mobile: 32},
+  {time: '08:00', allUsers: 90, desktop: 48, mobile: 42},
+  {time: '09:00', allUsers: 97, desktop: 62, mobile: 35},
+  {time: '10:00', allUsers: 100, desktop: 72, mobile: 28},
+  {time: '11:00', allUsers: 100, desktop: 75, mobile: 25},
+  {time: '12:00', allUsers: 104, desktop: 74, mobile: 30},
+  {time: 'Apr 2 14:00', allUsers: 104, desktop: 72, mobile: 32},
 ];
-const mobileLine = [
-  30, 28, 25, 35, 45, 50, 42, 35, 24, 16, 12, 8, 6, 5, 5, 6, 10, 32, 42, 35,
-  28, 25, 30, 32,
-];
-const allUsersLine = desktopLine.map((v, i) => v + mobileLine[i]);
 
 // Metric cards
 const metrics = [
@@ -365,107 +391,41 @@ const topEventsData: EventRow[] = [
 
 // ============= CHART COMPONENTS =============
 
-function ChartLegendItem({color, label}: {color: string; label: string}) {
-  return (
-    <XDSHStack gap={2} vAlign="center">
-      <svg width="16" height="3">
-        <line x1="0" y1="1.5" x2="16" y2="1.5" stroke={color} strokeWidth="2" />
-      </svg>
-      <XDSText type="supporting" color="secondary">
-        {label}
-      </XDSText>
-    </XDSHStack>
-  );
-}
-
 function ActiveUsersChart() {
-  const w = 900;
-  const h = 250;
-  const padL = 35;
-  const padR = 10;
-  const padT = 10;
-  const padB = 30;
-  const maxY = 140;
-  const yTicks = [0, 20, 40, 60, 80, 100, 120];
-  const xLabels = ['Apr 1 14:00', 'Apr 1 22:00', 'Apr 2 06:00', 'Apr 2 14:00'];
-
-  const toX = (i: number, len: number) =>
-    padL + (i / (len - 1)) * (w - padL - padR);
-  const toY = (v: number) => padT + (1 - v / maxY) * (h - padT - padB);
-
-  const makePath = (data: number[]) =>
-    data
-      .map((v, i) => `${i === 0 ? 'M' : 'L'}${toX(i, data.length)},${toY(v)}`)
-      .join(' ');
-
   return (
-    <XDSVStack gap={3}>
-      <div style={{position: 'relative'}}>
-        <svg
-          viewBox={`0 0 ${w} ${h}`}
-          style={{width: '100%', height: 'auto', display: 'block'}}
-          preserveAspectRatio="xMidYMid meet">
-          {/* Y-axis grid lines and labels */}
-          {yTicks.map(tick => (
-            <g key={tick}>
-              <line
-                x1={padL}
-                y1={toY(tick)}
-                x2={w - padR}
-                y2={toY(tick)}
-                stroke="var(--color-divider, #e5e5e5)"
-                strokeWidth="1"
-              />
-              <text
-                x={padL - 8}
-                y={toY(tick) + 4}
-                textAnchor="end"
-                fontSize="11"
-                fill="var(--color-text-secondary, #888)">
-                {tick}
-              </text>
-            </g>
-          ))}
-          {/* X-axis labels */}
-          {xLabels.map((label, i) => (
-            <text
-              key={label}
-              x={padL + (i / (xLabels.length - 1)) * (w - padL - padR)}
-              y={h - 5}
-              textAnchor="middle"
-              fontSize="11"
-              fill="var(--color-text-secondary, #888)">
-              {label}
-            </text>
-          ))}
-          {/* Data lines */}
-          <path
-            d={makePath(allUsersLine)}
-            fill="none"
-            stroke="#3B82F6"
-            strokeWidth="2"
-          />
-          <path
-            d={makePath(desktopLine)}
-            fill="none"
-            stroke="#F97316"
-            strokeWidth="2"
-          />
-          <path
-            d={makePath(mobileLine)}
-            fill="none"
-            stroke="#4F46E5"
-            strokeWidth="2"
-          />
-        </svg>
-      </div>
-      {/* Legend */}
-      <XDSHStack gap={6} vAlign="center">
-        <ChartLegendItem color="#3B82F6" label="All Users" />
-        <ChartLegendItem color="#F97316" label="Desktop" />
-        <ChartLegendItem color="#4F46E5" label="Mobile" />
-      </XDSHStack>
-    </XDSVStack>
+    <ResponsiveContainer width="100%" height={300}>
+      <LineChart data={activeUsersData}>
+        <CartesianGrid strokeDasharray="3 3" />
+        <XAxis dataKey="time" />
+        <YAxis />
+        <Tooltip />
+        <Legend />
+        <Line
+          type="monotone"
+          dataKey="allUsers"
+          name="All Users"
+          stroke="#3B82F6"
+          strokeWidth={2}
+          dot={false}
+        />
+        <Line
+          type="monotone"
+          dataKey="desktop"
+          name="Desktop"
+          stroke="#F97316"
+          strokeWidth={2}
+          dot={false}
+        />
+        <Line
+          type="monotone"
+          dataKey="mobile"
+          name="Mobile"
+          stroke="#4F46E5"
+          strokeWidth={2}
+          dot={false}
+        />
+      </LineChart>
+    </ResponsiveContainer>
   );
 }
 
@@ -641,9 +601,7 @@ function TopPagesCard() {
             alignItems: 'center',
             justifyContent: 'space-between',
           }}>
-          <XDSHeading level={4}>
-            Top pages
-          </XDSHeading>
+          <XDSHeading level={4}>Top pages</XDSHeading>
           <XDSLink label="All pages" href="#">
             All pages
           </XDSLink>
@@ -694,9 +652,7 @@ function TopEventsCard() {
             alignItems: 'center',
             justifyContent: 'space-between',
           }}>
-          <XDSHeading level={4}>
-            Top events
-          </XDSHeading>
+          <XDSHeading level={4}>Top events</XDSHeading>
           <XDSLink label="All events" href="#">
             All events
           </XDSLink>
