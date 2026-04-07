@@ -1,6 +1,10 @@
 export {useXDSTableColumnSettings} from './useXDSTableColumnSettings';
 export type {
   UseXDSTableColumnSettingsConfig,
-  UseXDSTableColumnSettingsReturn,
   XDSColumnSettingsOption,
 } from './useXDSTableColumnSettings';
+export {useXDSTableColumnSettingsState} from './useXDSTableColumnSettingsState';
+export type {
+  UseXDSTableColumnSettingsStateConfig,
+  UseXDSTableColumnSettingsStateReturn,
+} from './useXDSTableColumnSettingsState';
