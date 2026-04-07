@@ -537,15 +537,6 @@ const filterStyles = stylex.create({
     marginTop: spacingVars['--spacing-1'],
     minWidth: 0,
   },
-  inlineClearRow: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: spacingVars['--spacing-0-5'],
-  },
-  inlineClearGrow: {
-    flex: 1,
-    minWidth: 0,
-  },
   triggerButton: {
     background: 'none',
     border: 'none',
@@ -604,11 +595,13 @@ function TextFilterControl({
   header,
   filterConfig,
   size,
+  hasClear,
 }: {
   columnKey: string;
   header: string;
   filterConfig: XDSTableFilterTypeText;
   size: 'sm' | 'md';
+  hasClear?: boolean;
 }) {
   const store = useContext(FilterStoreContext)!;
   const config = store.getConfig();
@@ -627,6 +620,7 @@ function TextFilterControl({
       }}
       placeholder={filterConfig.placeholder ?? `Filter ${header}`}
       size={size}
+      hasClear={hasClear}
     />
   );
 }
@@ -636,25 +630,49 @@ function NumberFilterControl({
   header,
   filterConfig,
   size,
+  hasClear,
 }: {
   columnKey: string;
   header: string;
   filterConfig: XDSTableFilterTypeNumber;
   size: 'sm' | 'md';
+  hasClear?: boolean;
 }) {
   const store = useContext(FilterStoreContext)!;
   const config = store.getConfig();
   const value = config.filters[columnKey];
   const numValue = typeof value === 'number' ? value : null;
 
+  const handleChange = useCallback(
+    (newValue: number | null) => {
+      store.getConfig().onFilterChange(columnKey, newValue);
+    },
+    [store, columnKey],
+  );
+
+  if (hasClear) {
+    return (
+      <XDSNumberInput
+        label={`Filter ${header}`}
+        isLabelHidden
+        value={numValue}
+        onChange={handleChange}
+        placeholder={filterConfig.placeholder ?? `Filter ${header}`}
+        min={filterConfig.min ?? null}
+        max={filterConfig.max ?? null}
+        step={filterConfig.step ?? null}
+        size={size}
+        hasClear
+      />
+    );
+  }
+
   return (
     <XDSNumberInput
       label={`Filter ${header}`}
       isLabelHidden
       value={numValue}
-      onChange={(newValue: number) => {
-        store.getConfig().onFilterChange(columnKey, newValue);
-      }}
+      onChange={handleChange as (value: number) => void}
       placeholder={filterConfig.placeholder ?? `Filter ${header}`}
       min={filterConfig.min ?? null}
       max={filterConfig.max ?? null}
@@ -669,11 +687,13 @@ function NumberRangeFilterControl({
   header,
   filterConfig,
   size,
+  hasClear,
 }: {
   columnKey: string;
   header: string;
   filterConfig: XDSTableFilterTypeNumberRange;
   size: 'sm' | 'md';
+  hasClear?: boolean;
 }) {
   const store = useContext(FilterStoreContext)!;
   const config = store.getConfig();
@@ -684,7 +704,7 @@ function NumberRangeFilterControl({
       : undefined;
 
   const handleMinChange = useCallback(
-    (newMin: number) => {
+    (newMin: number | null) => {
       const cfg = store.getConfig();
       const current = cfg.filters[columnKey];
       const existing =
@@ -693,13 +713,19 @@ function NumberRangeFilterControl({
         !Array.isArray(current)
           ? (current as XDSTableFilterNumberRangeValue)
           : {};
-      cfg.onFilterChange(columnKey, {...existing, min: newMin});
+      if (newMin == null) {
+        // Cleared — if max is also empty, clear the whole filter
+        const {min: _min, ...rest} = existing;
+        cfg.onFilterChange(columnKey, rest.max != null ? rest : null);
+      } else {
+        cfg.onFilterChange(columnKey, {...existing, min: newMin});
+      }
     },
     [store, columnKey],
   );
 
   const handleMaxChange = useCallback(
-    (newMax: number) => {
+    (newMax: number | null) => {
       const cfg = store.getConfig();
       const current = cfg.filters[columnKey];
       const existing =
@@ -708,10 +734,47 @@ function NumberRangeFilterControl({
         !Array.isArray(current)
           ? (current as XDSTableFilterNumberRangeValue)
           : {};
-      cfg.onFilterChange(columnKey, {...existing, max: newMax});
+      if (newMax == null) {
+        // Cleared — if min is also empty, clear the whole filter
+        const {max: _max, ...rest} = existing;
+        cfg.onFilterChange(columnKey, rest.min != null ? rest : null);
+      } else {
+        cfg.onFilterChange(columnKey, {...existing, max: newMax});
+      }
     },
     [store, columnKey],
   );
+
+  if (hasClear) {
+    return (
+      <div {...stylex.props(filterStyles.numberRangeRow)}>
+        <XDSNumberInput
+          label={`Min ${header}`}
+          isLabelHidden
+          value={rangeValue?.min ?? null}
+          onChange={handleMinChange}
+          placeholder={filterConfig.minPlaceholder ?? 'Min'}
+          min={filterConfig.min ?? null}
+          max={filterConfig.max ?? null}
+          step={filterConfig.step ?? null}
+          size={size}
+          hasClear
+        />
+        <XDSNumberInput
+          label={`Max ${header}`}
+          isLabelHidden
+          value={rangeValue?.max ?? null}
+          onChange={handleMaxChange}
+          placeholder={filterConfig.maxPlaceholder ?? 'Max'}
+          min={filterConfig.min ?? null}
+          max={filterConfig.max ?? null}
+          step={filterConfig.step ?? null}
+          size={size}
+          hasClear
+        />
+      </div>
+    );
+  }
 
   return (
     <div {...stylex.props(filterStyles.numberRangeRow)}>
@@ -719,7 +782,7 @@ function NumberRangeFilterControl({
         label={`Min ${header}`}
         isLabelHidden
         value={rangeValue?.min ?? null}
-        onChange={handleMinChange}
+        onChange={handleMinChange as (value: number) => void}
         placeholder={filterConfig.minPlaceholder ?? 'Min'}
         min={filterConfig.min ?? null}
         max={filterConfig.max ?? null}
@@ -730,7 +793,7 @@ function NumberRangeFilterControl({
         label={`Max ${header}`}
         isLabelHidden
         value={rangeValue?.max ?? null}
-        onChange={handleMaxChange}
+        onChange={handleMaxChange as (value: number) => void}
         placeholder={filterConfig.maxPlaceholder ?? 'Max'}
         min={filterConfig.min ?? null}
         max={filterConfig.max ?? null}
@@ -746,11 +809,13 @@ function SelectorFilterControl({
   header,
   filterConfig,
   size,
+  hasClear,
 }: {
   columnKey: string;
   header: string;
   filterConfig: XDSTableFilterTypeSelector;
   size: 'sm' | 'md';
+  hasClear?: boolean;
 }) {
   const store = useContext(FilterStoreContext)!;
   const config = store.getConfig();
@@ -762,17 +827,40 @@ function SelectorFilterControl({
     label: opt.label,
   }));
 
+  const handleChange = useCallback(
+    (newValue: string | null) => {
+      store
+        .getConfig()
+        .onFilterChange(
+          columnKey,
+          newValue === '' || newValue == null ? null : newValue,
+        );
+    },
+    [store, columnKey],
+  );
+
+  if (hasClear) {
+    return (
+      <XDSSelector
+        label={`Filter ${header}`}
+        isLabelHidden
+        options={options}
+        value={strValue || null}
+        onChange={handleChange}
+        placeholder={filterConfig.placeholder ?? 'All'}
+        size={size}
+        hasClear
+      />
+    );
+  }
+
   return (
     <XDSSelector
       label={`Filter ${header}`}
       isLabelHidden
       options={options}
       value={strValue}
-      onChange={(newValue: string) => {
-        store
-          .getConfig()
-          .onFilterChange(columnKey, newValue === '' ? null : newValue);
-      }}
+      onChange={handleChange as (value: string) => void}
       placeholder={filterConfig.placeholder ?? 'All'}
       size={size}
     />
@@ -784,11 +872,13 @@ function MultiSelectorFilterControl({
   header,
   filterConfig,
   size,
+  hasClear,
 }: {
   columnKey: string;
   header: string;
   filterConfig: XDSTableFilterTypeMultiSelector;
   size: 'sm' | 'md';
+  hasClear?: boolean;
 }) {
   const store = useContext(FilterStoreContext)!;
   const config = store.getConfig();
@@ -815,6 +905,7 @@ function MultiSelectorFilterControl({
       size={size}
       hasSelectAll={filterConfig.hasSelectAll ?? true}
       hasSearch={filterConfig.isSearchable ?? false}
+      hasClear={hasClear}
     />
   );
 }
@@ -824,11 +915,13 @@ function DateFilterControl({
   header,
   filterConfig,
   size,
+  hasClear,
 }: {
   columnKey: string;
   header: string;
   filterConfig: XDSTableFilterTypeDate;
   size: 'sm' | 'md';
+  hasClear?: boolean;
 }) {
   const store = useContext(FilterStoreContext)!;
   const value = store.getConfig().filters[columnKey] as string | undefined;
@@ -844,6 +937,7 @@ function DateFilterControl({
       min={filterConfig.min as ISODateString | undefined}
       max={filterConfig.max as ISODateString | undefined}
       size={size}
+      hasClear={hasClear}
     />
   );
 }
@@ -853,11 +947,13 @@ function TimeFilterControl({
   header,
   filterConfig,
   size,
+  hasClear,
 }: {
   columnKey: string;
   header: string;
   filterConfig: XDSTableFilterTypeTime;
   size: 'sm' | 'md';
+  hasClear?: boolean;
 }) {
   const store = useContext(FilterStoreContext)!;
   const value = store.getConfig().filters[columnKey] as string | undefined;
@@ -873,6 +969,7 @@ function TimeFilterControl({
       min={filterConfig.min as ISOTimeString | undefined}
       max={filterConfig.max as ISOTimeString | undefined}
       size={size}
+      hasClear={hasClear}
     />
   );
 }
@@ -881,10 +978,12 @@ function StringListFilterControl({
   columnKey,
   header,
   size,
+  hasClear,
 }: {
   columnKey: string;
   header: string;
   size: 'sm' | 'md';
+  hasClear?: boolean;
 }) {
   const store = useContext(FilterStoreContext)!;
   const value =
@@ -913,6 +1012,7 @@ function StringListFilterControl({
           .onFilterChange(columnKey, newValues.length > 0 ? newValues : null);
       }}
       size={size}
+      hasClear={hasClear}
     />
   );
 }
@@ -923,11 +1023,13 @@ function FilterControl({
   header,
   filterConfig,
   size,
+  hasClear,
 }: {
   columnKey: string;
   header: string;
   filterConfig: XDSTableFilterType;
   size: 'sm' | 'md';
+  hasClear?: boolean;
 }) {
   switch (filterConfig.type) {
     case 'text':
@@ -937,6 +1039,7 @@ function FilterControl({
           header={header}
           filterConfig={filterConfig}
           size={size}
+          hasClear={hasClear}
         />
       );
     case 'number':
@@ -946,6 +1049,7 @@ function FilterControl({
           header={header}
           filterConfig={filterConfig}
           size={size}
+          hasClear={hasClear}
         />
       );
     case 'number-range':
@@ -955,6 +1059,7 @@ function FilterControl({
           header={header}
           filterConfig={filterConfig}
           size={size}
+          hasClear={hasClear}
         />
       );
     case 'selector':
@@ -964,6 +1069,7 @@ function FilterControl({
           header={header}
           filterConfig={filterConfig}
           size={size}
+          hasClear={hasClear}
         />
       );
     case 'multi-selector':
@@ -973,6 +1079,7 @@ function FilterControl({
           header={header}
           filterConfig={filterConfig}
           size={size}
+          hasClear={hasClear}
         />
       );
     case 'date':
@@ -982,6 +1089,7 @@ function FilterControl({
           header={header}
           filterConfig={filterConfig}
           size={size}
+          hasClear={hasClear}
         />
       );
     case 'time':
@@ -991,6 +1099,7 @@ function FilterControl({
           header={header}
           filterConfig={filterConfig}
           size={size}
+          hasClear={hasClear}
         />
       );
     case 'string-list':
@@ -999,6 +1108,7 @@ function FilterControl({
           columnKey={columnKey}
           header={header}
           size={size}
+          hasClear={hasClear}
         />
       );
   }
@@ -1164,7 +1274,7 @@ function FilterSlot({
 
 /**
  * Inline variant slot — renders the filter control (or placeholder) for one
- * column. Reads variant and filter config from context.
+ * column. Uses native `hasClear` on each input component for clearing.
  */
 function InlineFilterSlot({
   columnKey,
@@ -1176,43 +1286,22 @@ function InlineFilterSlot({
   filterConfig: XDSTableFilterType | undefined;
 }) {
   const variant = useContext(FilterVariantContext);
-  const store = useContext(FilterStoreContext);
   const size = 'sm';
   const placeholderStyle =
     variant === 'inline-compact'
       ? filterStyles.placeholderCompact
       : filterStyles.placeholder;
 
-  const config = store?.getConfig();
-  const value = config?.filters[columnKey];
-  const hasValue = value != null && value !== '';
-
-  const handleClear = useCallback(() => {
-    store?.getConfig().onFilterChange(columnKey, null);
-  }, [store, columnKey]);
-
   return (
     <div {...stylex.props(filterStyles.afterInline)}>
       {filterConfig != null ? (
-        <div {...stylex.props(filterStyles.inlineClearRow)}>
-          <div {...stylex.props(filterStyles.inlineClearGrow)}>
-            <FilterControl
-              columnKey={columnKey}
-              header={header}
-              filterConfig={filterConfig}
-              size={size}
-            />
-          </div>
-          {hasValue && (
-            <XDSButton
-              variant="ghost"
-              size="sm"
-              icon={<XDSIcon icon="close" size="xsm" />}
-              label="Clear"
-              onClick={handleClear}
-            />
-          )}
-        </div>
+        <FilterControl
+          columnKey={columnKey}
+          header={header}
+          filterConfig={filterConfig}
+          size={size}
+          hasClear
+        />
       ) : (
         <div aria-hidden="true" {...stylex.props(placeholderStyle)} />
       )}
