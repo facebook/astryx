@@ -10,6 +10,7 @@ import {XDSSelector} from '@xds/core/Selector';
 import {XDSTextArea} from '@xds/core/TextArea';
 import {XDSLink} from '@xds/core/Link';
 import {XDSDivider} from '@xds/core/Divider';
+import {XDSCard} from '@xds/core/Card';
 import {colorVars, fontWeightVars} from '@xds/core/theme/tokens.stylex';
 
 // ─────────────────────────────────────────────────────────────
@@ -35,8 +36,21 @@ const CONTACT_COLUMNS = [
 // ─────────────────────────────────────────────────────────────
 
 const styles = stylex.create({
-  pageBg: {
+  page: {
     backgroundColor: colorVars['--color-background-body'],
+    minHeight: '100svh',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  inner: {
+    maxWidth: 1100,
+    width: '100%',
+    padding: '64px 48px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 64,
   },
   fullWidth: {
     width: '100%',
@@ -61,8 +75,8 @@ const styles = stylex.create({
  *
  * Layout:
  *   Top: two-column — left has headline + description + illustration placeholder,
- *        right has the contact form fields.
- *   Bottom: three-column contact info strip with email links.
+ *        right has the contact form on a card.
+ *   Bottom: three-column contact info strip.
  */
 export default function FormTwoColumnPage() {
   const [fullName, setFullName] = useState('');
@@ -83,20 +97,8 @@ export default function FormTwoColumnPage() {
   const handleSubmit = () => setSubmitted(true);
 
   return (
-    <div
-      {...stylex.props(styles.pageBg)}
-      style={{minHeight: '100svh', display: 'flex', flexDirection: 'column'}}>
-      <div
-        style={{
-          maxWidth: 1100,
-          margin: '0 auto',
-          width: '100%',
-          padding: '64px 48px 0',
-          flex: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 64,
-        }}>
+    <div {...stylex.props(styles.page)}>
+      <div {...stylex.props(styles.inner)}>
 
         {/* ── Top: two-column ── */}
         <div
@@ -104,7 +106,7 @@ export default function FormTwoColumnPage() {
             display: 'grid',
             gridTemplateColumns: '1fr 1fr',
             gap: 80,
-            alignItems: 'start',
+            alignItems: 'center',
           }}>
 
           {/* Left: headline + description + illustration */}
@@ -126,7 +128,7 @@ export default function FormTwoColumnPage() {
               </XDSText>
             </XDSVStack>
 
-            {/* Illustration placeholder — replace src with your image */}
+            {/* Illustration placeholder — replace with your image */}
             <div {...stylex.props(styles.imagePlaceholder)}>
               <XDSText type="supporting" color="secondary">
                 Illustration coming soon
@@ -134,76 +136,78 @@ export default function FormTwoColumnPage() {
             </div>
           </XDSVStack>
 
-          {/* Right: form */}
-          <XDSVStack gap={4}>
-            <XDSTextInput
-              label="Full name"
-              isLabelHidden
-              placeholder="Full name*"
-              value={fullName}
-              onChange={setFullName}
-              status={
-                errors.fullName
-                  ? {type: 'error', message: errors.fullName}
-                  : undefined
-              }
-            />
-
-            <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16}}>
+          {/* Right: form on a card */}
+          <XDSCard padding={8}>
+            <XDSVStack gap={4}>
               <XDSTextInput
-                label="Email"
+                label="Full name"
                 isLabelHidden
-                placeholder="Email*"
-                value={email}
-                onChange={setEmail}
+                placeholder="Full name*"
+                value={fullName}
+                onChange={setFullName}
                 status={
-                  errors.email
-                    ? {type: 'error', message: errors.email}
+                  errors.fullName
+                    ? {type: 'error', message: errors.fullName}
                     : undefined
                 }
               />
-              <XDSTextInput
-                label="Phone number"
-                isLabelHidden
-                placeholder="Phone number"
-                value={phone}
-                onChange={setPhone}
-              />
-            </div>
 
-            <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16}}>
-              <XDSTextInput
-                label="Company name"
-                isLabelHidden
-                placeholder="Company name"
-                value={company}
-                onChange={setCompany}
-              />
-              <XDSSelector
-                label="Inquiry reason"
-                isLabelHidden
-                placeholder="Inquiry reason*"
-                options={INQUIRY_REASONS}
-                value={inquiryReason}
-                onChange={setInquiryReason}
-              />
-            </div>
+              <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12}}>
+                <XDSTextInput
+                  label="Email"
+                  isLabelHidden
+                  placeholder="Email*"
+                  value={email}
+                  onChange={setEmail}
+                  status={
+                    errors.email
+                      ? {type: 'error', message: errors.email}
+                      : undefined
+                  }
+                />
+                <XDSTextInput
+                  label="Phone number"
+                  isLabelHidden
+                  placeholder="Phone number"
+                  value={phone}
+                  onChange={setPhone}
+                />
+              </div>
 
-            <XDSTextArea
-              label="Project details"
-              isLabelHidden
-              placeholder="Project details*"
-              value={details}
-              onChange={setDetails}
-            />
+              <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12}}>
+                <XDSTextInput
+                  label="Company name"
+                  isLabelHidden
+                  placeholder="Company name"
+                  value={company}
+                  onChange={setCompany}
+                />
+                <XDSSelector
+                  label="Inquiry reason"
+                  isLabelHidden
+                  placeholder="Inquiry reason*"
+                  options={INQUIRY_REASONS}
+                  value={inquiryReason}
+                  onChange={setInquiryReason}
+                />
+              </div>
 
-            <XDSButton
-              label="Let's connect"
-              variant="primary"
-              xstyle={styles.fullWidth}
-              onClick={handleSubmit}
-            />
-          </XDSVStack>
+              <XDSTextArea
+                label="Project details"
+                isLabelHidden
+                placeholder="Project details*"
+                value={details}
+                onChange={setDetails}
+              />
+
+              <XDSButton
+                label="Let's connect"
+                variant="primary"
+                xstyle={styles.fullWidth}
+                onClick={handleSubmit}
+              />
+            </XDSVStack>
+          </XDSCard>
         </div>
 
         {/* ── Bottom: contact strip ── */}
@@ -215,7 +219,6 @@ export default function FormTwoColumnPage() {
               gridTemplateColumns: '1fr 1fr 1fr',
               gap: 32,
               paddingTop: 32,
-              paddingBottom: 48,
               textAlign: 'center',
             }}>
             {CONTACT_COLUMNS.map(col => (
