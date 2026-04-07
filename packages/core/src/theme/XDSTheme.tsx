@@ -8,6 +8,16 @@
  * - Token overrides set as CSS custom properties on [data-xds-theme]
  * - Component overrides scoped via @scope'd CSS selectors on .xds-* classes
  *
+ * Root detection: The first XDSTheme in the tree (no parent XDSTheme)
+ * automatically syncs `data-theme` to `document.documentElement`, which
+ * drives `color-scheme` via reset.css rules. This ensures browser chrome
+ * (scrollbars, native form controls, date pickers) reflects the active mode.
+ *
+ * For RSC / SSR, set `data-theme` on `<html>` in your root server layout
+ * to avoid a flash of wrong theme before hydration:
+ *
+ *   <html lang="en" data-theme="dark">
+ *
  * @example
  * ```
  * const ocean = defineTheme({
@@ -65,6 +75,17 @@ const wrapperStyles = stylex.create({
     colorScheme: 'light dark',
   },
 });
+
+// =============================================================================
+// Nesting context — detect root vs nested XDSTheme
+// =============================================================================
+
+/**
+ * Context to detect whether this XDSTheme is nested inside another.
+ * The root provider (no parent context) syncs data-theme to <html>.
+ * @internal
+ */
+const XDSThemeNestingContext = React.createContext(false);
 
 // =============================================================================
 // Style injection for unbuilt themes
@@ -195,6 +216,38 @@ function useThemeFontLoading(theme: XDSDefinedTheme): void {
 }
 
 // =============================================================================
+// Root color-scheme sync
+// =============================================================================
+
+/**
+ * Hook to sync data-theme to document.documentElement for the root provider.
+ * Skipped for nested XDSTheme instances.
+ *
+ * reset.css maps [data-theme] to color-scheme, which controls browser chrome
+ * (scrollbars, native form controls, date pickers).
+ *
+ * - 'light' | 'dark' → sets data-theme="light" | "dark"
+ * - 'system' → removes data-theme (reset.css defaults to color-scheme: light dark)
+ */
+function useRootColorSchemeSync(isNested: boolean, mode: ThemeMode): void {
+  useLayoutEffect(() => {
+    if (isNested) return;
+    if (typeof document === 'undefined') return;
+
+    if (mode === 'light' || mode === 'dark') {
+      document.documentElement.setAttribute('data-theme', mode);
+    } else {
+      // system — remove attribute, let reset.css default apply
+      document.documentElement.removeAttribute('data-theme');
+    }
+
+    return () => {
+      document.documentElement.removeAttribute('data-theme');
+    };
+  }, [isNested, mode]);
+}
+
+// =============================================================================
 // Component
 // =============================================================================
 
@@ -204,14 +257,22 @@ function useThemeFontLoading(theme: XDSDefinedTheme): void {
  * Sets data-xds-theme attribute so @scope'd CSS takes effect.
  * Component overrides are pure CSS scoped under the theme attribute —
  * components render with their .xds-* class and don't need context.
+ *
+ * When this is the root XDSTheme (no parent XDSTheme in the tree),
+ * it syncs `data-theme` to `<html>` so browser chrome elements
+ * (scrollbars, form controls, date pickers) reflect the active mode.
+ * Nested XDSTheme instances skip the sync.
  */
 export function XDSTheme({
   theme,
   mode = 'system',
   children,
 }: XDSThemeProps): React.ReactElement {
+  const isNested = React.useContext(XDSThemeNestingContext);
+
   useThemeStyleInjection(theme);
   useThemeFontLoading(theme);
+  useRootColorSchemeSync(isNested, mode);
 
   // Get color-scheme style
   const colorSchemeStyle =
@@ -232,12 +293,14 @@ export function XDSTheme({
 
   return (
     <XDSThemeContext.Provider value={ctxValue}>
-      <div
-        {...stylex.props(wrapperStyles.base, colorSchemeStyle)}
-        data-xds-theme={theme.name}
-        data-theme={mode === 'system' ? undefined : mode}>
-        {children}
-      </div>
+      <XDSThemeNestingContext.Provider value={true}>
+        <div
+          {...stylex.props(wrapperStyles.base, colorSchemeStyle)}
+          data-xds-theme={theme.name}
+          data-theme={mode === 'system' ? undefined : mode}>
+          {children}
+        </div>
+      </XDSThemeNestingContext.Provider>
     </XDSThemeContext.Provider>
   );
 }
