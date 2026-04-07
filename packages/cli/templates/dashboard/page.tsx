@@ -195,32 +195,42 @@ const ReloadIcon = (props: React.SVGProps<SVGSVGElement>) => (
 // ============= DATA =============
 
 // Active users chart data (24 points over 24h: Apr 1 14:00 → Apr 2 14:00)
+// Each point has an hour index (0–23) for even spacing, plus a label for display
 const activeUsersData = [
-  {time: 'Apr 1 14:00', allUsers: 102, desktop: 72, mobile: 30},
-  {time: '15:00', allUsers: 98, desktop: 70, mobile: 28},
-  {time: '16:00', allUsers: 90, desktop: 65, mobile: 25},
-  {time: '17:00', allUsers: 95, desktop: 60, mobile: 35},
-  {time: '18:00', allUsers: 97, desktop: 52, mobile: 45},
-  {time: '19:00', allUsers: 95, desktop: 45, mobile: 50},
-  {time: '20:00', allUsers: 80, desktop: 38, mobile: 42},
-  {time: '21:00', allUsers: 67, desktop: 32, mobile: 35},
-  {time: 'Apr 1 22:00', allUsers: 49, desktop: 25, mobile: 24},
-  {time: '23:00', allUsers: 36, desktop: 20, mobile: 16},
-  {time: '00:00', allUsers: 28, desktop: 16, mobile: 12},
-  {time: '01:00', allUsers: 20, desktop: 12, mobile: 8},
-  {time: '02:00', allUsers: 16, desktop: 10, mobile: 6},
-  {time: '03:00', allUsers: 13, desktop: 8, mobile: 5},
-  {time: '04:00', allUsers: 13, desktop: 8, mobile: 5},
-  {time: '05:00', allUsers: 16, desktop: 10, mobile: 6},
-  {time: 'Apr 2 06:00', allUsers: 25, desktop: 15, mobile: 10},
-  {time: '07:00', allUsers: 60, desktop: 28, mobile: 32},
-  {time: '08:00', allUsers: 90, desktop: 48, mobile: 42},
-  {time: '09:00', allUsers: 97, desktop: 62, mobile: 35},
-  {time: '10:00', allUsers: 100, desktop: 72, mobile: 28},
-  {time: '11:00', allUsers: 100, desktop: 75, mobile: 25},
-  {time: '12:00', allUsers: 104, desktop: 74, mobile: 30},
-  {time: 'Apr 2 14:00', allUsers: 104, desktop: 72, mobile: 32},
+  {hour: 0, label: 'Apr 1 14:00', allUsers: 102, desktop: 72, mobile: 30},
+  {hour: 1, label: 'Apr 1 15:00', allUsers: 98, desktop: 70, mobile: 28},
+  {hour: 2, label: 'Apr 1 16:00', allUsers: 90, desktop: 65, mobile: 25},
+  {hour: 3, label: 'Apr 1 17:00', allUsers: 95, desktop: 60, mobile: 35},
+  {hour: 4, label: 'Apr 1 18:00', allUsers: 97, desktop: 52, mobile: 45},
+  {hour: 5, label: 'Apr 1 19:00', allUsers: 95, desktop: 45, mobile: 50},
+  {hour: 6, label: 'Apr 1 20:00', allUsers: 80, desktop: 38, mobile: 42},
+  {hour: 7, label: 'Apr 1 21:00', allUsers: 67, desktop: 32, mobile: 35},
+  {hour: 8, label: 'Apr 1 22:00', allUsers: 49, desktop: 25, mobile: 24},
+  {hour: 9, label: 'Apr 1 23:00', allUsers: 36, desktop: 20, mobile: 16},
+  {hour: 10, label: 'Apr 2 00:00', allUsers: 28, desktop: 16, mobile: 12},
+  {hour: 11, label: 'Apr 2 01:00', allUsers: 20, desktop: 12, mobile: 8},
+  {hour: 12, label: 'Apr 2 02:00', allUsers: 16, desktop: 10, mobile: 6},
+  {hour: 13, label: 'Apr 2 03:00', allUsers: 13, desktop: 8, mobile: 5},
+  {hour: 14, label: 'Apr 2 04:00', allUsers: 13, desktop: 8, mobile: 5},
+  {hour: 15, label: 'Apr 2 05:00', allUsers: 16, desktop: 10, mobile: 6},
+  {hour: 16, label: 'Apr 2 06:00', allUsers: 25, desktop: 15, mobile: 10},
+  {hour: 17, label: 'Apr 2 07:00', allUsers: 60, desktop: 28, mobile: 32},
+  {hour: 18, label: 'Apr 2 08:00', allUsers: 90, desktop: 48, mobile: 42},
+  {hour: 19, label: 'Apr 2 09:00', allUsers: 97, desktop: 62, mobile: 35},
+  {hour: 20, label: 'Apr 2 10:00', allUsers: 100, desktop: 72, mobile: 28},
+  {hour: 21, label: 'Apr 2 11:00', allUsers: 100, desktop: 75, mobile: 25},
+  {hour: 22, label: 'Apr 2 12:00', allUsers: 104, desktop: 74, mobile: 30},
+  {hour: 23, label: 'Apr 2 14:00', allUsers: 104, desktop: 72, mobile: 32},
 ];
+
+// X-axis tick indices and their display labels
+const xAxisTicks = [0, 8, 16, 23];
+const xAxisLabels: Record<number, string> = {
+  0: 'Apr 1 14:00',
+  8: 'Apr 1 22:00',
+  16: 'Apr 2 06:00',
+  23: 'Apr 2 14:00',
+};
 
 // Metric cards
 const metrics = [
@@ -394,12 +404,39 @@ const topEventsData: EventRow[] = [
 function ActiveUsersChart() {
   return (
     <ResponsiveContainer width="100%" height={300}>
-      <LineChart data={activeUsersData}>
-        <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="time" />
-        <YAxis />
-        <Tooltip />
-        <Legend />
+      <LineChart
+        data={activeUsersData}
+        margin={{top: 5, right: 10, left: 0, bottom: 5}}>
+        <CartesianGrid
+          horizontal
+          vertical={false}
+          stroke="var(--color-divider, #e5e5e5)"
+        />
+        <XAxis
+          dataKey="hour"
+          type="number"
+          domain={[0, 23]}
+          ticks={xAxisTicks}
+          tickFormatter={(v: number) => xAxisLabels[v] ?? ''}
+          tick={{fontSize: 11}}
+          axisLine={false}
+          tickLine={false}
+        />
+        <YAxis
+          domain={[0, 120]}
+          ticks={[0, 20, 40, 60, 80, 100, 120]}
+          tick={{fontSize: 11}}
+          axisLine={false}
+          tickLine={false}
+          width={30}
+        />
+        <Tooltip
+          labelFormatter={(v: number) => {
+            const point = activeUsersData.find(d => d.hour === v);
+            return point?.label ?? '';
+          }}
+        />
+        <Legend wrapperStyle={{fontSize: 12}} />
         <Line
           type="monotone"
           dataKey="allUsers"
