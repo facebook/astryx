@@ -111,7 +111,7 @@ Look for `<!-- SYNC: ... -->` comments and `SYNC:` in file headers as reminders.
 |VARS: stylex.defineVars, stylex.createTheme (require .stylex.ts files) — YES
 |LAYOUT: grid, flex+gap, aspect-ratio, overscrollBehavior, scrollbar-gutter/width — YES
 |PATTERN: dialog entry animation -> @starting-style (not useState+rAF)
-|PATTERN: parent hover child style -> stylex.when.ancestor(':hover') (not CSS nesting)
+|PATTERN: parent hover child style -> stylex.when.ancestor(':hover') (not CSS nesting). Ancestor element MUST have stylex.defaultMarker() in its stylex.props() call
 |PATTERN: hover on touch -> @media (hover: hover) guard
 |PATTERN: zebra striping -> :nth-child(even) (not index%2 JS)
 |PATTERN: container responsive -> @container (not ResizeObserver)
@@ -123,6 +123,7 @@ Look for `<!-- SYNC: ... -->` comments and `SYNC:` in file headers as reminders.
 <!-- STYLEX-CAPS:END -->
 
 <!-- XDS-CLI:START -->
+
 XDS v0.0.4|Always run npx xds component <Name> before writing XDS component code.
 npx xds component <Name> props, usage, examples for any component
 npx xds component --list 95 components by category
@@ -132,4 +133,5 @@ npx xds upgrade --apply run version migration codemods
 --detail compact|brief less output | --lang dense|zh translation
 RULE: after @xds/core bump, always run npx xds upgrade --apply
 RULE: when swizzling, always use --gap to report missing capabilities
+
 <!-- XDS-CLI:END -->
