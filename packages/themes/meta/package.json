@@ -1,6 +1,6 @@
 {
   "name": "@xds/theme-meta",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "private": false,
   "description": "Meta theme for XDS components — Meta's brand identity with blue accent and clean aesthetics",
   "license": "MIT",
