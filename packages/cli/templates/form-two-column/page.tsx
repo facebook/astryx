@@ -37,13 +37,16 @@ const CONTACT_COLUMNS = [
 
 const styles = stylex.create({
   pageBg: {
-    backgroundColor: colorVars['--color-background-body'],
+    backgroundColor: colorVars['--color-surface'],
   },
   fullWidth: {
     width: '100%',
   },
+  cardOverride: {
+    backgroundColor: colorVars['--color-wash'],
+  },
   imagePlaceholder: {
-    backgroundColor: colorVars['--color-background-muted'],
+    backgroundColor: colorVars['--color-deemphasized'],
     borderRadius: 12,
     width: '100%',
     aspectRatio: '4 / 3',
@@ -140,7 +143,7 @@ export default function FormTwoColumnPage() {
           </XDSVStack>
 
           {/* Right: form on a card */}
-          <XDSCard padding={8}>
+          <XDSCard padding={8} xstyle={styles.cardOverride}>
             <XDSVStack gap={4}>
               <XDSTextInput
                 label="Full name"
