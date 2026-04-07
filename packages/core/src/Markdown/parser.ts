@@ -17,6 +17,7 @@ export type InlineNode =
   | {type: 'code'; content: string}
   | {type: 'link'; href: string; children: InlineNode[]}
   | {type: 'image'; src: string; alt: string}
+  | {type: 'citation'; sourceId: string}
   | {type: 'break'};
 
 export type BlockNode =
@@ -64,7 +65,45 @@ function isWordChar(ch: string | undefined): boolean {
 // Inline parser
 // ---------------------------------------------------------------------------
 
-export function parseInline(text: string): InlineNode[] {
+/**
+ * Match a fullwidth bracket citation 【id】 at position `i`.
+ * Returns the sourceId and end index, or null if no match.
+ */
+function matchFullwidthCitation(
+  text: string,
+  i: number,
+  sourceIds: ReadonlySet<string> | undefined,
+): {sourceId: string; end: number} | null {
+  if (!sourceIds || text[i] !== '\u3010') return null;
+  const closeIndex = text.indexOf('\u3011', i + 1);
+  if (closeIndex === -1) return null;
+  const id = text.slice(i + 1, closeIndex);
+  if (id.length === 0 || !sourceIds.has(id)) return null;
+  return {sourceId: id, end: closeIndex + 1};
+}
+
+/**
+ * Match a bracket citation [id] at position `i`.
+ * Only matches if the id exists in sourceIds and is NOT followed by `(` (link).
+ */
+function matchBracketCitation(
+  text: string,
+  i: number,
+  sourceIds: ReadonlySet<string> | undefined,
+): {sourceId: string; end: number} | null {
+  if (!sourceIds || text[i] !== '[') return null;
+  const closeIndex = text.indexOf(']', i + 1);
+  if (closeIndex === -1) return null;
+  if (text[closeIndex + 1] === '(') return null;
+  const id = text.slice(i + 1, closeIndex);
+  if (id.length === 0 || !sourceIds.has(id)) return null;
+  return {sourceId: id, end: closeIndex + 1};
+}
+
+export function parseInline(
+  text: string,
+  sourceIds?: ReadonlySet<string>,
+): InlineNode[] {
   const nodes: InlineNode[] = [];
   let i = 0;
 
@@ -88,6 +127,16 @@ export function parseInline(text: string): InlineNode[] {
       }
     }
 
+    // --- Citation: fullwidth 【id】 ---
+    {
+      const citation = matchFullwidthCitation(text, i, sourceIds);
+      if (citation) {
+        nodes.push({type: 'citation', sourceId: citation.sourceId});
+        i = citation.end;
+        continue;
+      }
+    }
+
     // --- Image ![alt](src) ---
     if (text[i] === '!' && text[i + 1] === '[') {
       const altClose = text.indexOf(']', i + 2);
@@ -105,6 +154,16 @@ export function parseInline(text: string): InlineNode[] {
       }
     }
 
+    // --- Citation: bracket [id] (before link — link requires `(` after `]`) ---
+    {
+      const citation = matchBracketCitation(text, i, sourceIds);
+      if (citation) {
+        nodes.push({type: 'citation', sourceId: citation.sourceId});
+        i = citation.end;
+        continue;
+      }
+    }
+
     // --- Link [text](url) ---
     if (text[i] === '[') {
       const textClose = text.indexOf(']', i + 1);
@@ -114,7 +173,7 @@ export function parseInline(text: string): InlineNode[] {
           nodes.push({
             type: 'link',
             href: text.slice(textClose + 2, urlClose),
-            children: parseInline(text.slice(i + 1, textClose)),
+            children: parseInline(text.slice(i + 1, textClose), sourceIds),
           });
           i = urlClose + 1;
           continue;
@@ -142,7 +201,7 @@ export function parseInline(text: string): InlineNode[] {
             children: [
               {
                 type: 'italic',
-                children: parseInline(text.slice(i + 3, closeIndex)),
+                children: parseInline(text.slice(i + 3, closeIndex), sourceIds),
               },
             ],
           });
@@ -169,7 +228,7 @@ export function parseInline(text: string): InlineNode[] {
         ) {
           nodes.push({
             type: 'bold',
-            children: parseInline(text.slice(i + 2, closeIndex)),
+            children: parseInline(text.slice(i + 2, closeIndex), sourceIds),
           });
           i = closeIndex + 2;
           continue;
@@ -183,7 +242,7 @@ export function parseInline(text: string): InlineNode[] {
       if (closeIndex !== -1) {
         nodes.push({
           type: 'strikethrough',
-          children: parseInline(text.slice(i + 2, closeIndex)),
+          children: parseInline(text.slice(i + 2, closeIndex), sourceIds),
         });
         i = closeIndex + 2;
         continue;
@@ -204,7 +263,7 @@ export function parseInline(text: string): InlineNode[] {
         ) {
           nodes.push({
             type: 'italic',
-            children: parseInline(text.slice(i + 1, closeIndex)),
+            children: parseInline(text.slice(i + 1, closeIndex), sourceIds),
           });
           i = closeIndex + 1;
           continue;
@@ -214,7 +273,7 @@ export function parseInline(text: string): InlineNode[] {
 
     // --- Plain text (with line-break detection) ---
     let end = i + 1;
-    while (end < text.length && !'*_~`[!\\\n'.includes(text[end])) end++;
+    while (end < text.length && !'*_~`[!\\\n\u3010'.includes(text[end])) end++;
 
     const content = text.slice(i, end);
 
@@ -307,9 +366,10 @@ function splitTableRow(line: string): string[] {
 function parseTable(
   lines: string[],
   lineIndex: number,
+  sourceIds?: ReadonlySet<string>,
 ): {node: BlockNode; nextIndex: number} {
   const headers: TableCellNode[] = splitTableRow(lines[lineIndex]).map(
-    cell => ({children: parseInline(cell)}),
+    cell => ({children: parseInline(cell, sourceIds)}),
   );
   const alignments: TableAlignment[] = splitTableRow(lines[lineIndex + 1]).map(
     cell => {
@@ -334,7 +394,7 @@ function parseTable(
   ) {
     rows.push(
       splitTableRow(lines[rowIndex]).map(cell => ({
-        children: parseInline(cell),
+        children: parseInline(cell, sourceIds),
       })),
     );
     rowIndex++;
@@ -349,6 +409,7 @@ function parseList(
   lines: string[],
   startIndex: number,
   ordered: boolean,
+  sourceIds?: ReadonlySet<string>,
 ): {node: BlockNode; nextIndex: number} {
   const items: ListItemNode[] = [];
   const baseIndent = getIndent(lines[startIndex]);
@@ -396,7 +457,7 @@ function parseList(
       itemText += '\n' + deindented.join('\n');
     }
 
-    items.push({checked, children: parseMarkdown(itemText)});
+    items.push({checked, children: parseMarkdown(itemText, sourceIds)});
   }
   return {node: {type: 'list', ordered, start, items}, nextIndex: index};
 }
@@ -405,7 +466,10 @@ function parseList(
 // Main block parser
 // ---------------------------------------------------------------------------
 
-export function parseMarkdown(input: string): BlockNode[] {
+export function parseMarkdown(
+  input: string,
+  sourceIds?: ReadonlySet<string>,
+): BlockNode[] {
   const lines = input.split('\n');
   const blocks: BlockNode[] = [];
   let index = 0;
@@ -439,7 +503,7 @@ export function parseMarkdown(input: string): BlockNode[] {
       blocks.push({
         type: 'heading',
         level: headingMatch[1].length as 1 | 2 | 3 | 4 | 5 | 6,
-        children: parseInline(headingMatch[2]),
+        children: parseInline(headingMatch[2], sourceIds),
       });
       index++;
       continue;
@@ -466,7 +530,7 @@ export function parseMarkdown(input: string): BlockNode[] {
       line.includes('|') &&
       isTableSeparator(lines[index + 1])
     ) {
-      const tableResult = parseTable(lines, index);
+      const tableResult = parseTable(lines, index, sourceIds);
       blocks.push(tableResult.node);
       index = tableResult.nextIndex;
       continue;
@@ -484,14 +548,14 @@ export function parseMarkdown(input: string): BlockNode[] {
       }
       blocks.push({
         type: 'blockquote',
-        children: parseMarkdown(quoteLines.join('\n')),
+        children: parseMarkdown(quoteLines.join('\n'), sourceIds),
       });
       continue;
     }
 
     // --- Unordered list ---
     if (/^ {0,9}[-*+] /.test(line)) {
-      const listResult = parseList(lines, index, false);
+      const listResult = parseList(lines, index, false, sourceIds);
       blocks.push(listResult.node);
       index = listResult.nextIndex;
       continue;
@@ -499,7 +563,7 @@ export function parseMarkdown(input: string): BlockNode[] {
 
     // --- Ordered list ---
     if (/^ {0,9}\d+\. /.test(line)) {
-      const listResult = parseList(lines, index, true);
+      const listResult = parseList(lines, index, true, sourceIds);
       blocks.push(listResult.node);
       index = listResult.nextIndex;
       continue;
@@ -518,7 +582,7 @@ export function parseMarkdown(input: string): BlockNode[] {
     }
     blocks.push({
       type: 'paragraph',
-      children: parseInline(paraLines.join('\n')),
+      children: parseInline(paraLines.join('\n'), sourceIds),
     });
   }
   return blocks;
@@ -736,6 +800,7 @@ function trimUnsettledStructural(text: string): string {
 export function parseMarkdownIncremental(
   input: string,
   state: IncrementalState,
+  sourceIds?: ReadonlySet<string>,
 ): BlockNode[] {
   if (input === '') {
     state.prevInput = '';
@@ -751,7 +816,7 @@ export function parseMarkdownIncremental(
   if (boundary < 0) {
     // Inside an unclosed fence or no blank-line boundary — full re-parse
     state.prevInput = input;
-    return parseMarkdown(input);
+    return parseMarkdown(input, sourceIds);
   }
 
   const settledText = lines.slice(0, boundary).join('\n');
@@ -769,14 +834,16 @@ export function parseMarkdownIncremental(
   ) {
     // Settled portion grew — parse only the new delta
     const delta = settledText.slice(state.settledText.length);
-    const deltaBlocks = parseMarkdown(delta);
+    const deltaBlocks = parseMarkdown(delta, sourceIds);
     settledBlocks = [...state.settledBlocks, ...deltaBlocks];
   } else {
     // Content before the boundary changed — full re-parse of settled portion
-    settledBlocks = parseMarkdown(settledText);
+    settledBlocks = parseMarkdown(settledText, sourceIds);
   }
 
-  const unsettledBlocks = unsettledText ? parseMarkdown(unsettledText) : [];
+  const unsettledBlocks = unsettledText
+    ? parseMarkdown(unsettledText, sourceIds)
+    : [];
 
   state.settledText = settledText;
   state.settledBlocks = settledBlocks;
