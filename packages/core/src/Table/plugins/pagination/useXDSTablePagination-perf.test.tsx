@@ -13,6 +13,7 @@ import {render, screen, act} from '@testing-library/react';
 import {useState, useMemo, useRef, useEffect} from 'react';
 import {XDSTable} from '../../XDSTable';
 import {useXDSTablePagination} from './useXDSTablePagination';
+import {paginateData} from './paginateData';
 import type {XDSTableColumn} from '../../types';
 
 // =============================================================================
@@ -47,7 +48,7 @@ function PluginStabilityTracker({
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
 
-  const pagination = useXDSTablePagination<TestRow>({
+  const plugin = useXDSTablePagination<TestRow>({
     page,
     onPageChange: setPage,
     totalItems: data.length,
@@ -56,11 +57,11 @@ function PluginStabilityTracker({
     pageSizeOptions: [5, 10, 20],
   });
 
-  const prevPluginRef = useRef(pagination.plugin);
+  const prevPluginRef = useRef(plugin);
   useEffect(() => {
-    if (prevPluginRef.current !== pagination.plugin) {
+    if (prevPluginRef.current !== plugin) {
       pluginChanges.count++;
-      prevPluginRef.current = pagination.plugin;
+      prevPluginRef.current = plugin;
     }
   });
 
@@ -82,10 +83,10 @@ function PluginStabilityTracker({
       </button>
       <span data-testid="page">{page}</span>
       <XDSTable
-        data={pagination.paginatedData(data)}
+        data={paginateData(data, page, pageSize)}
         columns={columns}
         idKey="id"
-        plugins={{pagination: pagination.plugin}}
+        plugins={{pagination: plugin}}
       />
     </div>
   );
@@ -105,7 +106,7 @@ function PaginationRenderCountTable({
   const [page, setPage] = useState(1);
   const pageSize = 5;
 
-  const pagination = useXDSTablePagination<TestRow>({
+  const plugin = useXDSTablePagination<TestRow>({
     page,
     onPageChange: setPage,
     totalItems: data.length,
@@ -132,10 +133,10 @@ function PaginationRenderCountTable({
         Next
       </button>
       <XDSTable
-        data={pagination.paginatedData(data)}
+        data={paginateData(data, page, pageSize)}
         columns={columns}
         idKey="id"
-        plugins={{pagination: pagination.plugin}}
+        plugins={{pagination: plugin}}
       />
     </div>
   );
@@ -150,7 +151,9 @@ describe('Pagination plugin render performance', () => {
     const data = createTestData(20);
     const pluginChanges = {count: 0};
 
-    render(<PluginStabilityTracker data={data} pluginChanges={pluginChanges} />);
+    render(
+      <PluginStabilityTracker data={data} pluginChanges={pluginChanges} />,
+    );
 
     // Go to page 2
     await act(async () => {
@@ -171,7 +174,9 @@ describe('Pagination plugin render performance', () => {
     const data = createTestData(20);
     const pluginChanges = {count: 0};
 
-    render(<PluginStabilityTracker data={data} pluginChanges={pluginChanges} />);
+    render(
+      <PluginStabilityTracker data={data} pluginChanges={pluginChanges} />,
+    );
 
     // Change page size
     await act(async () => {
@@ -209,46 +214,5 @@ describe('Pagination plugin render performance', () => {
     for (let i = 5; i < 10; i++) {
       expect(renderCounts[`row-${i}`]).toBe(1);
     }
-  });
-
-  it('paginatedData should return stable reference when page/pageSize unchanged', () => {
-    const data = createTestData(20);
-    let capturedPaginatedData: ((d: TestRow[]) => TestRow[]) | null = null;
-    let renderCount = 0;
-
-    function TestComponent() {
-      const [, setForceUpdate] = useState(0);
-      renderCount++;
-
-      const pagination = useXDSTablePagination<TestRow>({
-        page: 1,
-        onPageChange: () => {},
-        totalItems: data.length,
-        pageSize: 5,
-      });
-
-      capturedPaginatedData = pagination.paginatedData;
-
-      return (
-        <button
-          data-testid="force-update"
-          onClick={() => setForceUpdate(n => n + 1)}>
-          Force
-        </button>
-      );
-    }
-
-    render(<TestComponent />);
-    const firstRef = capturedPaginatedData;
-    expect(renderCount).toBe(1);
-
-    // Force re-render without changing page or pageSize
-    act(() => {
-      screen.getByTestId('force-update').click();
-    });
-
-    expect(renderCount).toBe(2);
-    // paginatedData should be the same reference
-    expect(capturedPaginatedData).toBe(firstRef);
   });
 });

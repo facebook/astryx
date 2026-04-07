@@ -20,6 +20,8 @@ import type {SpacingToken} from '../Layout/container.stylex';
 import {
   paddingStyles,
   containerPaddingInlineVarStyles,
+  containerPaddingBlockStartVarStyles,
+  containerPaddingBlockEndVarStyles,
   spacingStepToToken,
 } from '../Layout/padding.stylex';
 import type {SizeValue, SpacingStep} from '../utils/types';
@@ -194,6 +196,12 @@ export function XDSCard({
           !useThemeDefault &&
             effectivePadding !== 4 &&
             containerPaddingInlineVarStyles[effectivePadding],
+          !useThemeDefault &&
+            effectivePadding !== 4 &&
+            containerPaddingBlockStartVarStyles[effectivePadding],
+          !useThemeDefault &&
+            effectivePadding !== 4 &&
+            containerPaddingBlockEndVarStyles[effectivePadding],
         )}>
         {children}
       </div>

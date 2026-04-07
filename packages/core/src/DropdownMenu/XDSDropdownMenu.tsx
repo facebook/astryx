@@ -45,6 +45,9 @@ import {xdsClassName, mergeProps} from '../utils';
  * Size-aware item padding.
  * sm triggers → tighter vertical padding (4px block, 8px inline)
  * md/lg triggers → standard padding (8px all around, inherited from base item style)
+ *
+ * Note: menuSize is passed to xdsClassName on the item wrapper so themes
+ * can target `.xds-dropdown-menu-item[data-size="sm"]` etc.
  */
 const itemSizeStyles = stylex.create({
   sm: {
@@ -536,11 +539,14 @@ export function XDSDropdownMenu({
           aria-disabled={item.isDisabled}
           onClick={() => handleItemClick(item)}
           onMouseEnter={() => handleItemMouseEnter(item, flatIndex)}
-          {...stylex.props(
-            styles.item,
-            itemSizeStyles[menuSize],
-            isHighlighted && styles.itemHighlighted,
-            item.isDisabled && styles.itemDisabled,
+          {...mergeProps(
+            xdsClassName('dropdown-menu-item', {size: menuSize}),
+            stylex.props(
+              styles.item,
+              itemSizeStyles[menuSize],
+              isHighlighted && styles.itemHighlighted,
+              item.isDisabled && styles.itemDisabled,
+            ),
           )}>
           {children ? children(item) : <DefaultItem item={item} />}
         </div>

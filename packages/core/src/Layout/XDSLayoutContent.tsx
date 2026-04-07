@@ -20,7 +20,12 @@ import {spacingVars} from '../theme/tokens.stylex';
 import {XDSLayoutSlotsContext} from './XDSLayoutSlotsContext';
 import {xdsClassName, mergeProps} from '../utils';
 import type {SpacingStep} from '../utils/types';
-import {paddingStyles, containerPaddingInlineVarStyles} from './padding.stylex';
+import {
+  paddingStyles,
+  containerPaddingInlineVarStyles,
+  containerPaddingBlockStartVarStyles,
+  containerPaddingBlockEndVarStyles,
+} from './padding.stylex';
 
 const styles = stylex.create({
   content: {
@@ -44,10 +49,15 @@ const styles = stylex.create({
       [stylex.when.ancestor(':has(> .xds-layout-footer:not([data-divider]))')]:
         0,
     },
+    // Publish container padding vars for bleed children (Table, Divider, etc.)
+    '--container-padding-inline': `var(--layout-padding-inner-x, ${spacingVars['--spacing-4']})`,
+    '--container-padding-block-start': `var(--layout-padding-inner-y, ${spacingVars['--spacing-4']})`,
+    '--container-padding-block-end': `var(--layout-padding-inner-y, ${spacingVars['--spacing-4']})`,
   },
   // When no start panel: outer-x on left edge
   noStart: {
     paddingInlineStart: `var(--layout-padding-outer-x, ${spacingVars['--spacing-4']})`,
+    '--container-padding-inline': `var(--layout-padding-outer-x, ${spacingVars['--spacing-4']})`,
   },
   // When no end panel: outer-x on right edge
   noEnd: {
@@ -56,10 +66,12 @@ const styles = stylex.create({
   // When no header: outer-y on top
   noHeader: {
     paddingBlockStart: `var(--layout-padding-outer-y, ${spacingVars['--spacing-4']})`,
+    '--container-padding-block-start': `var(--layout-padding-outer-y, ${spacingVars['--spacing-4']})`,
   },
   // When no footer: outer-y on bottom
   noFooter: {
     paddingBlockEnd: `var(--layout-padding-outer-y, ${spacingVars['--spacing-4']})`,
+    '--container-padding-block-end': `var(--layout-padding-outer-y, ${spacingVars['--spacing-4']})`,
   },
   scrollable: {
     overflow: 'auto',
@@ -69,6 +81,9 @@ const styles = stylex.create({
     paddingInlineEnd: 0,
     paddingBlockStart: 0,
     paddingBlockEnd: 0,
+    '--container-padding-inline': '0px',
+    '--container-padding-block-start': '0px',
+    '--container-padding-block-end': '0px',
   },
 });
 
@@ -178,6 +193,8 @@ export function XDSLayoutContent({
           isZeroPadding && styles.fullBleed,
           padding != null && paddingStyles[padding],
           padding != null && containerPaddingInlineVarStyles[padding],
+          padding != null && containerPaddingBlockStartVarStyles[padding],
+          padding != null && containerPaddingBlockEndVarStyles[padding],
           xstyle,
         ),
         className,

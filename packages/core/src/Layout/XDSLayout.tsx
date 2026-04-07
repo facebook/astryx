@@ -40,15 +40,20 @@ export type XDSLayoutHeight = 'fill' | 'auto';
 const styles = stylex.create({
   // Outer wrapper uses negative margin to escape container padding
   layoutOuter: {
-    margin: 'calc(-1 * var(--container-padding, 0px))',
+    marginInline: 'calc(-1 * var(--container-padding-inline, 0px))',
+    marginBlockStart: 'calc(-1 * var(--container-padding-block-start, 0px))',
+    marginBlockEnd: 'calc(-1 * var(--container-padding-block-end, 0px))',
   },
-  // Inner wrapper resets --container-padding for descendants
+  // Inner wrapper resets container padding vars for descendants
   layoutInner: {
-    '--container-padding': '0px',
+    '--container-padding-inline': '0px',
+    '--container-padding-block-start': '0px',
+    '--container-padding-block-end': '0px',
   },
   fill: {
-    // Add 2x container padding to compensate for negative margins on top/bottom
-    height: 'calc(100% + 2 * var(--container-padding, 0px))',
+    // Add 2x container block padding to compensate for negative block margins
+    height:
+      'calc(100% + var(--container-padding-block-start, 0px) + var(--container-padding-block-end, 0px))',
     maxHeight: 'var(--container-max-height, none)',
   },
   auto: {
@@ -65,6 +70,17 @@ const styles = stylex.create({
   },
 });
 
+const dynamicStyles = stylex.create({
+  contentWidthVar: (width: number) => ({
+    '--layout-content-width': `${width}px`,
+  }),
+  contentWidth: (width: number) => ({
+    width: '100%',
+    maxWidth: width,
+    marginInline: 'auto',
+  }),
+});
+
 export interface XDSLayoutProps extends Omit<XDSBaseProps, 'content'> {
   /**
    * Ref forwarded to the root DOM element.
@@ -75,6 +91,17 @@ export interface XDSLayoutProps extends Omit<XDSBaseProps, 'content'> {
    * Main content area (center).
    */
   content?: ReactNode;
+
+  /**
+   * Maximum width of the content within each slot (header, content, footer,
+   * panels). Dividers remain full-bleed. Content is centered with
+   * `margin-inline: auto` when narrower than the available space.
+   *
+   * Accepts any pixel value. Common page widths from internal patterns:
+   * - `640` — forms, settings, text-focused pages
+   * - `960` — content pages, component demos, wider layouts
+   */
+  contentWidth?: number;
 
   /**
    * End panel slot (right in LTR, left in RTL).
@@ -195,6 +222,7 @@ function AreaProvider({
  */
 export function XDSLayout({
   content,
+  contentWidth,
   defaultHasDividers,
   end,
   footer,
@@ -248,12 +276,14 @@ export function XDSLayout({
             padding === 0 && styles.fullBleed,
             padding != null && layoutPaddingOuterXVarStyles[padding],
             padding != null && layoutPaddingOuterYVarStyles[padding],
+            contentWidth != null && dynamicStyles.contentWidthVar(contentWidth),
           )}>
           <AreaProvider area="header">{header}</AreaProvider>
           <div
             {...stylex.props(
               ...stack({direction: 'horizontal'}),
               styles.middle,
+              contentWidth != null && dynamicStyles.contentWidth(contentWidth),
             )}>
             <AreaProvider area="start">{start}</AreaProvider>
             <div {...stylex.props(...stackItem({size: 'fill'}))}>

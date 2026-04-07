@@ -33,6 +33,7 @@ import {
 import {findClosestComponents, searchComponents} from '../../lib/string-utils.mjs';
 import {resolveTheme} from '../../lib/resolve-theme.mjs';
 import {getRunPrefix} from '../../utils/package-manager.mjs';
+import {jsonOut, jsonError} from '../../lib/json.mjs';
 
 export function registerComponent(program) {
   program
@@ -49,15 +50,18 @@ export function registerComponent(program) {
       const dense = program.opts().dense || false;
       const lang = program.opts().lang || null;
       const detail = program.opts().detail || 'full';
+      const json = program.opts().json || false;
 
       const validDetails = ['full', 'compact', 'brief'];
       if (!validDetails.includes(detail)) {
+        if (json) return jsonError(`Invalid --detail value "${detail}". Valid levels: ${validDetails.join(', ')}`);
         console.error(`Error: Invalid --detail value "${detail}".`);
         console.error(`Valid levels: ${validDetails.join(', ')}`);
         process.exit(1);
       }
 
       if (!coreDir) {
+        if (json) return jsonError('Could not find @xds/core package');
         console.error(
           'Error: Could not find @xds/core package.\n' +
             'Make sure you are inside the XDS monorepo or have @xds/core installed.',
@@ -77,6 +81,7 @@ export function registerComponent(program) {
             ([key]) => key.toLowerCase() === cat.toLowerCase(),
           );
           if (!match) {
+            if (json) return jsonError(`Unknown category "${cat}"`, Object.keys(components).map(k => ({name: k, reason: 'valid category'})));
             console.error(`Error: Unknown category "${cat}".`);
             console.error(
               `Available categories: ${Object.keys(components).join(', ')}`,
@@ -84,8 +89,26 @@ export function registerComponent(program) {
             process.exit(1);
           }
 
+          if (json && detail === 'brief') {
+            const entries = [];
+            for (const comp of match[1]) {
+              const readme = findComponentReadme(coreDir, comp);
+              if (readme && readme.endsWith('.doc.mjs')) {
+                try {
+                  const docs = await loadDocs(readme, {zh, lang});
+                  entries.push({name: comp, description: docs.description, import: resolveImportPath(coreDir, comp)});
+                } catch {
+                  entries.push({name: comp, description: '', import: resolveImportPath(coreDir, comp)});
+                }
+              } else {
+                entries.push({name: comp, description: '', import: resolveImportPath(coreDir, comp)});
+              }
+            }
+            return jsonOut('component.brief', {[match[0]]: entries});
+          }
+          if (json) return jsonOut('component.list', {[match[0]]: match[1]});
+
           if (detail === 'brief') {
-            // Brief list: name + one-line description for each component
             for (const comp of match[1]) {
               const readme = findComponentReadme(coreDir, comp);
               if (readme && readme.endsWith('.doc.mjs')) {
@@ -111,8 +134,39 @@ export function registerComponent(program) {
         }
 
         // --list or no name: show all components
+        if (json && detail === 'brief') {
+          /** @type {Record<string, Array<import('../../types/component').ComponentBriefEntry>>} */
+          const result = {};
+          for (const [category, comps] of Object.entries(components)) {
+            result[category] = [];
+            for (const comp of comps) {
+              const readme = findComponentReadme(coreDir, comp);
+              if (readme && readme.endsWith('.doc.mjs')) {
+                try {
+                  const docs = await loadDocs(readme, {zh, lang});
+                  result[category].push({name: comp, description: docs.description, import: resolveImportPath(coreDir, comp)});
+                } catch {
+                  result[category].push({name: comp, description: '', import: resolveImportPath(coreDir, comp)});
+                }
+              } else {
+                result[category].push({name: comp, description: '', import: resolveImportPath(coreDir, comp)});
+              }
+            }
+          }
+          return jsonOut('component.brief', result);
+        }
+        if (json) {
+          const externals = discoverExternalPackages(process.cwd());
+          for (const ext of externals) {
+            const extComps = discoverExternalComponents(ext.docsDir);
+            if (extComps.length > 0) {
+              components[`${ext.category} (${ext.name})`] = extComps;
+            }
+          }
+          return jsonOut('component.list', components);
+        }
+
         if (detail === 'brief') {
-          // Brief list: brief summaries of ALL components
           console.log(await formatBriefAll(coreDir, {zh, lang, themeData}));
         } else {
           console.log('');
@@ -123,7 +177,6 @@ export function registerComponent(program) {
             }
             console.log('');
           }
-          // Show external packages
           const externals = discoverExternalPackages(process.cwd());
           for (const ext of externals) {
             const extComponents = discoverExternalComponents(ext.docsDir);
@@ -148,10 +201,12 @@ export function registerComponent(program) {
       if (options.source) {
         const sourcePath = findComponentSource(coreDir, dirName);
         if (!sourcePath) {
+          if (json) return jsonError(`Source for "${name}" not found`);
           console.error(`Error: Source for "${name}" not found.`);
           process.exit(1);
         }
         const source = fs.readFileSync(sourcePath, 'utf-8');
+        if (json) return jsonOut('component.detail.source', {component: dirName, source});
         console.log(source);
         return;
       }
@@ -185,19 +240,17 @@ export function registerComponent(program) {
           const gap = topScore - secondScore;
 
           if (topScore >= 90 && topTied.length === 1 && gap >= 20) {
-            // Crystal clear single winner: show docs directly
             resolvedName = topTied[0].name;
             readmePath = findComponentReadme(coreDir, resolvedName);
-            if (readmePath && topScore < 100) {
+            if (readmePath && topScore < 100 && !json) {
               console.log(`Showing results for ${resolvedName} (matched ${topTied[0].reason})\n`);
             }
           } else {
-            // Multiple strong matches or ambiguous: show options
-            // Include everything within 20 points of the top, min 2, max 5
             const threshold = Math.max(topScore - 20, 1);
             const candidates = results.filter(r => r.score >= threshold).slice(0, 5);
             if (candidates.length < 2) candidates.push(...results.slice(candidates.length, 2));
 
+            if (json) return jsonError(`No component named "${name}"`, candidates.map(c => ({name: c.name, reason: c.reason})));
             console.error(`No component named "${name}". Did you mean:\n`);
             for (const match of candidates) {
               console.error(`  ${match.name}  (${match.reason})`);
@@ -206,6 +259,7 @@ export function registerComponent(program) {
             process.exit(1);
           }
         } else {
+          if (json) return jsonError(`No component named "${name}"`);
           console.error(`No component named "${name}".`);
           console.error(`Run \`${run} xds component --list\` to see available components.`);
           process.exit(1);
@@ -215,6 +269,13 @@ export function registerComponent(program) {
       if (readmePath.endsWith('.doc.mjs')) {
         const docs = await loadDocs(readmePath, {zh, dense, lang});
         const importHint = fromExternal ? fromExternal.name : resolveImportPath(coreDir, resolvedName);
+        if (json) {
+          if (options.props) {
+            const props = docs.props || (docs.components ? docs.components.flatMap(c => c.props || []) : []);
+            return jsonOut('component.detail.props', props);
+          }
+          return jsonOut('component.detail', docs);
+        }
         if (options.props) {
           console.log(formatProps(docs, resolvedName));
         } else if (detail === 'brief') {
@@ -227,6 +288,7 @@ export function registerComponent(program) {
       } else {
         // Legacy path for README.md files
         const content = fs.readFileSync(readmePath, 'utf-8');
+        if (json) return jsonOut('markdown', {name: resolvedName, format: 'markdown', content});
         if (options.props) {
           console.log(extractProps(content, resolvedName));
         } else if (detail === 'brief') {

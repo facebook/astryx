@@ -126,7 +126,7 @@ describe('generateThemeRules', () => {
 
   it('includes prose heading rules with computed values', () => {
     const h1Rule = rules.find(
-      r => r.trimStart().startsWith('h1 {') || r.includes('\n  h1 {'),
+      r => r.trimStart().startsWith(':where(h1)') || r.includes(':where(h1)'),
     );
     expect(h1Rule).toBeDefined();
     // Prose rules use val() helper which resolves to the token value (now a var ref)
@@ -136,7 +136,7 @@ describe('generateThemeRules', () => {
 
   it('includes prose p rule with computed values', () => {
     const pRule = rules.find(
-      r => r.trimStart().startsWith('p {') || r.includes('\n  p {'),
+      r => r.trimStart().startsWith(':where(p)') || r.includes(':where(p)'),
     );
     expect(pRule).toBeDefined();
     expect(pRule).toContain('var(--font-size-base)');
@@ -144,9 +144,9 @@ describe('generateThemeRules', () => {
   });
 
   it('includes prose small, code, hr rules', () => {
-    expect(rules.some(r => r.includes('small {'))).toBe(true);
-    expect(rules.some(r => r.includes('code, pre {'))).toBe(true);
-    expect(rules.some(r => r.includes('hr {'))).toBe(true);
+    expect(rules.some(r => r.includes(':where(small)'))).toBe(true);
+    expect(rules.some(r => r.includes(':where(code, pre)'))).toBe(true);
+    expect(rules.some(r => r.includes(':where(hr)'))).toBe(true);
   });
 
   // --- Prop-level color overrides ---
@@ -161,13 +161,14 @@ describe('generateThemeRules', () => {
 
   // --- Consistency ---
 
-  it('generateThemeCSS wraps rules in @scope', () => {
-    const css = generateThemeCSS(theme);
-    expect(css).toContain('@scope ([data-xds-theme="default"])');
-    expect(css).toContain('to ([data-xds-theme])');
-    // Every rule from generateThemeRules should appear in generateThemeCSS
+  it('generateThemeCSS returns prose and component blocks with @scope', () => {
+    const {prose, component} = generateThemeCSS(theme);
+    const combined = prose + component;
+    expect(combined).toContain('@scope ([data-xds-theme="default"])');
+    expect(combined).toContain('to ([data-xds-theme])');
+    // Every rule from generateThemeRules should appear in one of the blocks
     for (const rule of rules) {
-      expect(css).toContain(rule);
+      expect(combined).toContain(rule);
     }
   });
 });
@@ -197,7 +198,7 @@ describe('generateThemeRules with weight overrides', () => {
 
   it('reflects weight override in prose h3', () => {
     const h3Rule = rules.find(
-      r => r.trimStart().startsWith('h3 {') || r.includes('\n  h3 {'),
+      r => r.trimStart().startsWith(':where(h3)') || r.includes(':where(h3)'),
     );
     expect(h3Rule).toBeDefined();
     expect(h3Rule).toContain('var(--font-weight-bold)');

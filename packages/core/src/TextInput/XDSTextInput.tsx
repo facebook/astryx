@@ -13,14 +13,23 @@
  * - /apps/storybook/stories/TextInput.stories.tsx (storybook stories)
  */
 
-import {useId, useOptimistic, useTransition, type ChangeEvent} from 'react';
+import {
+  useId,
+  useOptimistic,
+  useTransition,
+  useCallback,
+  useRef,
+  type ChangeEvent,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {XDSIconName} from '../Icon';
 import {
   colorVars,
   sizeVars,
+  radiusVars,
   typographyVars,
   typeScaleVars,
+  borderVars,
 } from '../theme/tokens.stylex';
 import {
   XDSField,
@@ -37,6 +46,23 @@ import {XDSSpinner} from '../Spinner';
 const styles = stylex.create({
   wrapper: {
     zIndex: 1,
+  },
+  clearButton: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 0,
+    margin: 0,
+    borderWidth: 0,
+    borderStyle: 'none',
+    backgroundColor: 'transparent',
+    cursor: 'pointer',
+    borderRadius: radiusVars['--radius-element'],
+    outline: {
+      default: 'none',
+      ':focus-visible': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
+    },
+    outlineOffset: 1,
   },
   input: {
     display: 'block',
@@ -166,6 +192,12 @@ export interface XDSTextInputProps extends Omit<
    */
   labelTooltip?: string;
   /**
+   * Whether to show a clear button when a value is set.
+   * When clicked, resets the value to an empty string and returns focus to the input.
+   * @default false
+   */
+  hasClear?: boolean;
+  /**
    * Whether to automatically focus the input on mount.
    * @default false
    */
@@ -203,6 +235,7 @@ export function XDSTextInput({
   value,
   placeholder,
   labelTooltip,
+  hasClear = false,
   hasAutoFocus = false,
   htmlName,
   xstyle,
@@ -213,6 +246,7 @@ export function XDSTextInput({
   const id = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
@@ -252,6 +286,25 @@ export function XDSTextInput({
     }
   };
 
+  // Handle clear button click
+  const handleClear = useCallback(() => {
+    onChange?.('', null as unknown as ChangeEvent<HTMLInputElement>);
+    inputRef.current?.focus();
+  }, [onChange]);
+
+  // Combine refs
+  const setRefs = useCallback(
+    (el: HTMLInputElement | null) => {
+      inputRef.current = el;
+      if (typeof ref === 'function') {
+        ref(el);
+      } else if (ref) {
+        (ref as React.MutableRefObject<HTMLInputElement | null>).current = el;
+      }
+    },
+    [ref],
+  );
+
   return (
     <XDSField
       label={label}
@@ -290,7 +343,7 @@ export function XDSTextInput({
         )}>
         {startIcon && <XDSIcon icon={startIcon} size="sm" color="primary" />}
         <input
-          ref={ref}
+          ref={setRefs}
           id={id}
           name={htmlName}
           type={type}
@@ -306,6 +359,15 @@ export function XDSTextInput({
           aria-busy={isBusy || undefined}
           {...stylex.props(styles.input, isDisabled && styles.inputDisabled)}
         />
+        {hasClear && value !== '' && !isDisabled && (
+          <button
+            type="button"
+            onClick={handleClear}
+            aria-label={`Clear ${label}`}
+            {...stylex.props(styles.clearButton)}>
+            <XDSIcon icon="close" size="sm" color="secondary" />
+          </button>
+        )}
         {isBusy && <XDSSpinner size="sm" />}
         {status && (
           <XDSIcon

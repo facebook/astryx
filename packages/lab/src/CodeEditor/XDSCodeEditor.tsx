@@ -36,9 +36,9 @@ import {
   tokenize,
   tokenizeAsync,
   SYNC_TOKENIZE_THRESHOLD,
-} from '../CodeBlock/tokenizer';
-import type {Token} from '../CodeBlock/tokenizer';
-import {ensureHighlightStyles, TOKEN_TYPES} from '../CodeBlock/highlightStyles';
+} from '@xds/core/CodeBlock';
+import type {Token} from '@xds/core/CodeBlock';
+import {ensureHighlightStyles, TOKEN_TYPES} from '@xds/core/CodeBlock';
 
 // ---------------------------------------------------------------------------
 // Styles

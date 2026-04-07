@@ -1,3 +1,4 @@
+'use client';
 /**
  * @file XDSBaseTable.tsx
  * @input React, types.ts, columnUtils.ts
@@ -12,6 +13,7 @@
 
 import {memo, useRef, type ReactElement, type ReactNode, type Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
+import {spacingVars} from '../theme/tokens.stylex';
 import type {
   XDSBaseTableProps,
   XDSTableColumn,
@@ -34,6 +36,7 @@ import {XDSTableRow} from './XDSTableRow';
 import {XDSTableCell} from './XDSTableCell';
 import {XDSTableHeaderCell} from './XDSTableHeaderCell';
 import {xdsClassName, mergeProps} from '../utils';
+import {XDSEmptyState} from '../EmptyState';
 
 const styles = stylex.create({
   table: {
@@ -41,6 +44,17 @@ const styles = stylex.create({
     borderCollapse: 'collapse',
     borderSpacing: '0',
     tableLayout: 'fixed',
+  },
+  /**
+   * Inline flex row that keeps the header label and any "after" slot content
+   * (sort icons, filter buttons, etc.) on the same line with a small gap.
+   * Applied only when `after` is present so plain cells are unaffected.
+   */
+  headerLabelRow: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-1'],
+    minWidth: 0,
   },
 });
 
@@ -229,6 +243,7 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
   components,
   children,
   tableProps: userTableProps,
+  emptyState,
   ref,
 }: XDSBaseTableProps<T> & {ref?: Ref<HTMLTableElement>}): ReactElement {
   // Use stable empty array when no plugins provided
@@ -308,8 +323,9 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
       typeof resolvedContent === 'string' && resolvedContent.length > 0
         ? {title: resolvedContent}
         : {};
-    const {before, after, overlay} = cellRenderProps;
-    const hasSlots = before != null || after != null || overlay != null;
+    const {before, after, overlay, below} = cellRenderProps;
+    const hasSlots =
+      before != null || after != null || overlay != null || below != null;
 
     return (
       <HeaderCellComponent
@@ -320,9 +336,16 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
         {hasSlots ? (
           <>
             {before}
-            {resolvedContent}
-            {after}
+            {after != null ? (
+              <div {...stylex.props(styles.headerLabelRow)}>
+                {resolvedContent}
+                {after}
+              </div>
+            ) : (
+              resolvedContent
+            )}
             {overlay}
+            {below}
           </>
         ) : (
           resolvedContent
@@ -378,28 +401,36 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
       <tbody>
         {children
           ? children
-          : hasData &&
-            data.map((item, rowIndex) => {
-              const rowKey =
-                idKey == null
-                  ? rowIndex
-                  : typeof idKey === 'function'
-                    ? idKey(item)
-                    : String(item[idKey]);
+          : hasData
+            ? data.map((item, rowIndex) => {
+                const rowKey =
+                  idKey == null
+                    ? rowIndex
+                    : typeof idKey === 'function'
+                      ? idKey(item)
+                      : String(item[idKey]);
 
-              return (
-                <MemoizedTableRow<T>
-                  key={rowKey}
-                  item={item}
-                  rowIndex={rowIndex}
-                  rowKey={rowKey}
-                  columns={resolvedColumns}
-                  plugins={plugins}
-                  RowComponent={RowComponent}
-                  CellComponent={CellComponent}
-                />
-              );
-            })}
+                return (
+                  <MemoizedTableRow<T>
+                    key={rowKey}
+                    item={item}
+                    rowIndex={rowIndex}
+                    rowKey={rowKey}
+                    columns={resolvedColumns}
+                    plugins={plugins}
+                    RowComponent={RowComponent}
+                    CellComponent={CellComponent}
+                  />
+                );
+              })
+            : data != null &&
+              emptyState !== false && (
+                <tr>
+                  <td colSpan={resolvedColumns.length}>
+                    {emptyState ?? <XDSEmptyState title="No data" isCompact />}
+                  </td>
+                </tr>
+              )}
       </tbody>
     </table>
   );

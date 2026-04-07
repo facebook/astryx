@@ -18,6 +18,7 @@ import type {
   ReactNode,
 } from 'react';
 import type {StyleXStyles} from '../theme/types';
+import type {XDSTableFilterFieldRef} from './plugins/filtering/useXDSTableFiltering';
 
 // =============================================================================
 // Column Width
@@ -109,6 +110,27 @@ export interface XDSTableColumn<T extends Record<string, unknown>> {
   resizable?: boolean;
   sortable?: boolean | XDSTableSortableColumnConfig;
   /**
+   * Filter configuration for this column.
+   *
+   * References a field in the shared `PowerSearchConfig` passed to
+   * `useXDSTableFiltering`. The plugin resolves the operator's value
+   * type and renders the matching control.
+   *
+   * Accepts:
+   * - **Field key** — `'status'` — uses the field's `defaultOperator`
+   * - **Field ref** — `{ field: 'status', operator: 'is_not' }` — explicit operator
+   *
+   * @example
+   * ```
+   * // Field key (uses defaultOperator)
+   * { key: 'status', header: 'Status', filter: 'status' }
+   *
+   * // Field + explicit operator
+   * { key: 'status', header: 'Status', filter: { field: 'status', operator: 'is_not' } }
+   * ```
+   */
+  filter?: XDSTableFilterFieldRef | string;
+  /**
    * Custom cell renderer. Receives the row item and returns rich JSX content.
    * Defaults to `String(item[key])` — use renderCell for rich content like
    * badges, status dots, formatted text, icons, or composed layouts.
@@ -156,13 +178,14 @@ export interface HeaderRowRenderProps {
  * Uses named slots so multiple plugins can contribute content without
  * conflicts. Each plugin writes to its own slot; XDSBaseTable renders
  * them in order: `before | content | after`, with `overlay` positioned
- * absolutely on top.
+ * absolutely on top and `below` underneath the header row.
  *
  * Slot semantics:
  * - **before** — content before the label (e.g. selection checkbox)
  * - **content** — the header label; plugins may wrap (e.g. sort button)
  * - **after** — content after the label (e.g. sort icon, filter icon)
  * - **overlay** — absolutely positioned layer (e.g. resize handle)
+ * - **below** — content below the header label row (e.g. inline filter controls)
  */
 export interface HeaderCellRenderProps {
   htmlProps: ThHTMLAttributes<HTMLTableCellElement>;
@@ -175,6 +198,8 @@ export interface HeaderCellRenderProps {
   after?: ReactNode;
   /** Absolutely positioned overlay content (e.g. resize handle). */
   overlay?: ReactNode;
+  /** Content rendered below the header label row (e.g. inline filter controls). */
+  below?: ReactNode;
 }
 
 /** Props passed through the plugin pipeline for each body `<tr>` */
@@ -305,4 +330,24 @@ export interface XDSBaseTableProps<T extends Record<string, unknown>> {
   children?: ReactNode;
   /** Additional HTML attributes for the `<table>` element */
   tableProps?: HTMLAttributes<HTMLTableElement>;
+  /**
+   * Content displayed when `data` is an empty array.
+   * Rendered as a full-width row spanning all columns.
+   *
+   * - **Omit or `undefined`** — renders a default compact "No data" empty state
+   * - **`ReactNode`** — renders your custom content (e.g. `<XDSEmptyState>`)
+   * - **`false`** — disables the empty state entirely (renders empty `<tbody>`)
+   *
+   * @default <XDSEmptyState title="No data" isCompact />
+   *
+   * @example
+   * ```
+   * <XDSTable
+   *   data={filteredUsers}
+   *   columns={columns}
+   *   emptyState={<XDSEmptyState title="No results" description="Try adjusting your filters." />}
+   * />
+   * ```
+   */
+  emptyState?: ReactNode | false;
 }

@@ -601,20 +601,26 @@ export function generateThemeRules(theme: XDSDefinedTheme): string[] {
   }
 
   // 3. Prose HTML element rules (h1-h6, p, small, code, hr)
-  parts.push(`  :is(h1, h2, h3, h4, h5, h6) {
+  //
+  // Default styles for bare HTML elements inside a themed scope.
+  // Wrapped in :where() for zero specificity — these are defaults that
+  // any class-based style (StyleX, .xds-* overrides) should beat.
+  // The caller places these in the reset layer (not xds-theme) so they
+  // sit below all component styles in the cascade.
+  parts.push(`  :where(h1, h2, h3, h4, h5, h6) {
     font-family: var(--font-family-heading);
     color: var(--color-text-primary);
   }`);
 
   for (let level = 1; level <= 6; level++) {
-    parts.push(`  h${level} {
+    parts.push(`  :where(h${level}) {
     font-size: ${val(`--text-heading-${level}-size`)};
     font-weight: ${val(`--text-heading-${level}-weight`)};
     line-height: ${val(`--text-heading-${level}-leading`)};
   }`);
   }
 
-  parts.push(`  p {
+  parts.push(`  :where(p) {
     font-family: var(--font-family-heading);
     font-size: ${val('--text-body-size')};
     font-weight: ${val('--text-body-weight')};
@@ -622,20 +628,20 @@ export function generateThemeRules(theme: XDSDefinedTheme): string[] {
     color: var(--color-text-primary);
   }`);
 
-  parts.push(`  small {
+  parts.push(`  :where(small) {
     font-size: ${val('--text-supporting-size')};
     font-weight: ${val('--text-supporting-weight')};
     line-height: ${val('--text-supporting-leading')};
     color: var(--color-text-secondary);
   }`);
 
-  parts.push(`  code, pre {
+  parts.push(`  :where(code, pre) {
     font-family: var(--font-family-code);
     font-size: ${val('--text-code-size')};
     line-height: ${val('--text-code-leading')};
   }`);
 
-  parts.push(`  hr {
+  parts.push(`  :where(hr) {
     border: none;
     border-top: 1px solid var(--color-border);
   }`);
@@ -672,10 +678,112 @@ export function generateThemeRules(theme: XDSDefinedTheme): string[] {
 }
 
 /**
- * Generate the full CSS string for a theme — runtime path.
- * Wraps rules in @scope (no @layer — runtime injects into <style> tag).
+ * Structured output from generateThemeRulesSplit.
+ * Separates prose element defaults from component/token overrides
+ * so callers can place them in different CSS layers.
  */
-export function generateThemeCSS(theme: XDSDefinedTheme): string {
+export interface ThemeRulesSplit {
+  /** Token overrides + component .xds-* overrides + prop-level color rules */
+  component: string[];
+  /** Prose element defaults (h1-h6, p, small, code, hr) — belongs in reset layer */
+  prose: string[];
+}
+
+/**
+ * Generate theme rules split into component and prose groups.
+ *
+ * Prose element rules (h1-h6, p, small, code, hr) style bare HTML elements
+ * as themed defaults — conceptually the same tier as the CSS reset. They
+ * belong in the reset layer so any class-based style wins.
+ *
+ * Component rules (tokens, .xds-* overrides) are intentional theme overrides
+ * that need to beat StyleX — they stay in xds-theme (above StyleX layers).
+ */
+export function generateThemeRulesSplit(
+  theme: XDSDefinedTheme,
+): ThemeRulesSplit {
+  const allRules = generateThemeRules(theme);
+
+  const prose: string[] = [];
+  const component: string[] = [];
+
+  for (const rule of allRules) {
+    if (rule.trimStart().startsWith(':where(')) {
+      prose.push(rule);
+    } else {
+      component.push(rule);
+    }
+  }
+
+  return {component, prose};
+}
+
+/**
+ * Generate the full CSS string for a theme — runtime path.
+ *
+ * Produces two layer blocks:
+ * - `@layer reset`: Prose element defaults (p, h1-h6, small, code, hr) scoped
+ *   to the theme. These sit at reset-layer priority so any class-based style
+ *   (StyleX, .xds-* overrides) wins. Uses :where() for zero specificity.
+ * - Unlayered: Token overrides + component .xds-* overrides. The caller
+ *   (XDSTheme.tsx) wraps this in @layer xds-theme, which sits above StyleX
+ *   layers so theme component overrides take effect.
+ */
+/**
+ * Output from generateThemeCSS — two CSS blocks for different layers.
+ */
+export interface ThemeCSSOutput {
+  /**
+   * Prose element defaults (p, h1-h6, small, code, hr) scoped to the theme.
+   * Should be injected into @layer reset — lowest priority, any class wins.
+   * Empty string if no prose rules.
+   */
+  prose: string;
+  /**
+   * Token overrides + component .xds-* overrides scoped to the theme.
+   * Should be injected into @layer xds-theme — above StyleX layers so
+   * theme component overrides take effect. Empty string if no rules.
+   */
+  component: string;
+}
+
+/**
+ * Generate layered CSS for a theme — runtime path.
+ *
+ * Returns two CSS blocks for injection into different layers:
+ * - `prose`: @scope'd element defaults → inject into @layer reset
+ * - `component`: @scope'd token + .xds-* overrides → inject into @layer xds-theme
+ *
+ * This separation ensures prose defaults (what bare HTML looks like in a theme)
+ * sit at reset-layer priority where any class-based style wins, while component
+ * overrides sit above StyleX so themes can restyle components intentionally.
+ */
+export function generateThemeCSS(theme: XDSDefinedTheme): ThemeCSSOutput {
+  const {component, prose} = generateThemeRulesSplit(theme);
+  const scopeSelector = `[data-xds-theme="${theme.name}"]`;
+  const scopeTo = `[data-xds-theme]`;
+
+  let proseCss = '';
+  if (prose.length > 0) {
+    const proseInner = prose.join('\n\n');
+    proseCss = `@scope (${scopeSelector}) to (${scopeTo}) {\n${proseInner}\n}`;
+  }
+
+  let componentCss = '';
+  if (component.length > 0) {
+    const componentInner = component.join('\n\n');
+    componentCss = `@scope (${scopeSelector}) to (${scopeTo}) {\n${componentInner}\n}`;
+  }
+
+  return {prose: proseCss, component: componentCss};
+}
+
+/**
+ * Generate the full CSS string for a theme as a single string.
+ * @deprecated Use generateThemeCSS() which returns { prose, component } for proper layering.
+ * This flat version is kept for backwards compatibility with tests and simple cases.
+ */
+export function generateThemeCSSFlat(theme: XDSDefinedTheme): string {
   const rules = generateThemeRules(theme);
   if (rules.length === 0) return '';
   const scopeSelector = `[data-xds-theme="${theme.name}"]`;

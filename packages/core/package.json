@@ -94,11 +94,29 @@
       "import": "./dist/CheckboxInput/index.mjs",
       "require": "./dist/CheckboxInput/index.js"
     },
+    "./CheckboxList": {
+      "source": "./src/CheckboxList/index.ts",
+      "types": "./dist/CheckboxList/index.d.ts",
+      "import": "./dist/CheckboxList/index.mjs",
+      "require": "./dist/CheckboxList/index.js"
+    },
+    "./CodeBlock": {
+      "source": "./src/CodeBlock/index.ts",
+      "types": "./dist/CodeBlock/index.d.ts",
+      "import": "./dist/CodeBlock/index.mjs",
+      "require": "./dist/CodeBlock/index.js"
+    },
     "./Collapsible": {
       "source": "./src/Collapsible/index.ts",
       "types": "./dist/Collapsible/index.d.ts",
       "import": "./dist/Collapsible/index.mjs",
       "require": "./dist/Collapsible/index.js"
+    },
+    "./CommandPalette": {
+      "source": "./src/CommandPalette/index.ts",
+      "types": "./dist/CommandPalette/index.d.ts",
+      "import": "./dist/CommandPalette/index.mjs",
+      "require": "./dist/CommandPalette/index.js"
     },
     "./DateInput": {
       "source": "./src/DateInput/index.ts",
@@ -189,6 +207,12 @@
       "types": "./dist/List/index.d.ts",
       "import": "./dist/List/index.mjs",
       "require": "./dist/List/index.js"
+    },
+    "./Markdown": {
+      "source": "./src/Markdown/index.ts",
+      "types": "./dist/Markdown/index.d.ts",
+      "import": "./dist/Markdown/index.mjs",
+      "require": "./dist/Markdown/index.js"
     },
     "./MetadataList": {
       "source": "./src/MetadataList/index.ts",

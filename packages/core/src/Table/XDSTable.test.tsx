@@ -262,8 +262,9 @@ describe('XDSBaseTable', () => {
   it('renders empty table when data is empty array', () => {
     render(<XDSBaseTable data={[]} columns={columns} />);
     expect(screen.getByRole('table')).toBeInTheDocument();
-    // Header row only, no data rows
-    expect(screen.getAllByRole('row')).toHaveLength(1);
+    // Header row + empty state row
+    expect(screen.getAllByRole('row')).toHaveLength(2);
+    expect(screen.getByText('No data')).toBeInTheDocument();
   });
 
   it('does not render colgroup', () => {
@@ -908,5 +909,95 @@ describe('XDSTableCell', () => {
       </table>,
     );
     expect(screen.getByTestId('rowspan-cell')).toHaveAttribute('rowspan', '2');
+  });
+});
+
+describe('emptyState', () => {
+  it('renders default empty state when data is empty', () => {
+    render(
+      <XDSTable
+        data={[]}
+        columns={[
+          {key: 'name', header: 'Name'},
+          {key: 'age', header: 'Age'},
+        ]}
+      />,
+    );
+    expect(screen.getByText('No data')).toBeInTheDocument();
+  });
+
+  it('renders custom empty state when provided', () => {
+    render(
+      <XDSTable
+        data={[]}
+        columns={[
+          {key: 'name', header: 'Name'},
+          {key: 'age', header: 'Age'},
+        ]}
+        emptyState={<div data-testid="empty">No results found</div>}
+      />,
+    );
+    expect(screen.getByTestId('empty')).toBeInTheDocument();
+    expect(screen.getByText('No results found')).toBeInTheDocument();
+  });
+
+  it('does not render empty state when data has rows', () => {
+    render(
+      <XDSTable
+        data={[{name: 'Alice', age: 30}]}
+        columns={[
+          {key: 'name', header: 'Name'},
+          {key: 'age', header: 'Age'},
+        ]}
+      />,
+    );
+    expect(screen.queryByText('No data')).not.toBeInTheDocument();
+    expect(screen.getByText('Alice')).toBeInTheDocument();
+  });
+
+  it('does not render empty state when data is undefined', () => {
+    render(<XDSTable columns={[{key: 'name', header: 'Name'}]} />);
+    expect(screen.queryByText('No data')).not.toBeInTheDocument();
+  });
+
+  it('disables empty state with false', () => {
+    render(
+      <XDSTable
+        data={[]}
+        columns={[{key: 'name', header: 'Name'}]}
+        emptyState={false}
+      />,
+    );
+    expect(screen.queryByText('No data')).not.toBeInTheDocument();
+  });
+
+  it('empty state row spans all columns', () => {
+    render(
+      <XDSTable
+        data={[]}
+        columns={[
+          {key: 'name', header: 'Name'},
+          {key: 'age', header: 'Age'},
+          {key: 'role', header: 'Role'},
+        ]}
+        emptyState={<div data-testid="empty">Nothing here</div>}
+      />,
+    );
+    const td = screen.getByTestId('empty').closest('td');
+    expect(td).toHaveAttribute('colspan', '3');
+  });
+
+  it('still renders headers even when data is empty', () => {
+    render(
+      <XDSTable
+        data={[]}
+        columns={[
+          {key: 'name', header: 'Name'},
+          {key: 'age', header: 'Age'},
+        ]}
+      />,
+    );
+    expect(screen.getByText('Name')).toBeInTheDocument();
+    expect(screen.getByText('Age')).toBeInTheDocument();
   });
 });

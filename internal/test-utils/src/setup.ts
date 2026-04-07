@@ -10,6 +10,21 @@
 /// <reference types="@testing-library/jest-dom" />
 import '@testing-library/jest-dom/vitest';
 
+// Polyfill for matchMedia (not supported in jsdom)
+if (typeof window !== 'undefined' && !window.matchMedia) {
+  window.matchMedia = (query: string) =>
+    ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => false,
+    }) as MediaQueryList;
+}
+
 // Polyfill for Popover API (not supported in jsdom)
 // This prevents errors when testing components that use XDSTooltip
 if (typeof HTMLElement.prototype.showPopover === 'undefined') {
@@ -18,4 +33,22 @@ if (typeof HTMLElement.prototype.showPopover === 'undefined') {
   HTMLElement.prototype.togglePopover = function () {
     return false;
   };
+}
+
+// Polyfill for matchMedia (not supported in jsdom)
+// Used by useMediaQuery → useXDSTheme → useXDSStreamingText
+if (typeof window.matchMedia === 'undefined') {
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: (query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => false,
+    }),
+  });
 }

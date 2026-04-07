@@ -1,5 +1,3 @@
 export {useXDSTablePagination} from './useXDSTablePagination';
-export type {
-  UseXDSTablePaginationConfig,
-  UseXDSTablePaginationReturn,
-} from './useXDSTablePagination';
+export type {UseXDSTablePaginationConfig} from './useXDSTablePagination';
+export {paginateData} from './paginateData';

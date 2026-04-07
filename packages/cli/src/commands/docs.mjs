@@ -15,6 +15,7 @@ import * as path from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {CLI_ROOT} from '../utils/paths.mjs';
 import {getRunPrefix} from '../utils/package-manager.mjs';
+import {jsonOut, jsonError} from '../lib/json.mjs';
 
 const DOCS_DIR = path.join(CLI_ROOT, 'docs');
 
@@ -192,9 +193,23 @@ export function registerDocs(program) {
       const zh = program.opts().zh || false;
       const dense = program.opts().dense || false;
       const detail = program.opts().detail || 'full';
+      const json = program.opts().json || false;
       const effectiveLang = lang || (dense ? 'dense' : zh ? 'zh' : null);
 
       if (!topic) {
+        if (json) {
+          /** @type {Array<import('../types/docs').DocsListEntry>} */
+          const entries = [];
+          for (const [name, docPath] of Object.entries(topics)) {
+            try {
+              const mod = await import(pathToFileURL(docPath).href);
+              entries.push({topic: name, description: mod.docs.description});
+            } catch {
+              entries.push({topic: name, description: ''});
+            }
+          }
+          return jsonOut('docs.list', entries);
+        }
         console.log('\nAvailable docs:\n');
         for (const [name, docPath] of Object.entries(topics)) {
           try {
@@ -212,13 +227,15 @@ export function registerDocs(program) {
       const normalized = topic.toLowerCase();
 
       if (!topics[normalized]) {
-        // Fallback: try legacy .md file
         const mdPath = path.join(DOCS_DIR, `${normalized}.md`);
         if (fs.existsSync(mdPath)) {
-          console.log(fs.readFileSync(mdPath, 'utf-8'));
+          const content = fs.readFileSync(mdPath, 'utf-8');
+          if (json) return jsonOut('markdown', {name: normalized, format: 'markdown', content});
+          console.log(content);
           return;
         }
 
+        if (json) return jsonError(`Unknown topic "${topic}"`, Object.keys(topics).map(t => ({name: t, reason: 'available topic'})));
         console.error(`Error: Unknown topic "${topic}".`);
         console.error(`Available topics: ${Object.keys(topics).join(', ')}`);
         process.exit(1);
@@ -232,16 +249,19 @@ export function registerDocs(program) {
           s => s.title.toLowerCase().includes(normalizedSection),
         );
         if (!match) {
+          if (json) return jsonError(`Section "${section}" not found in "${topic}"`, docs.sections.map(s => ({name: s.title, reason: 'available section'})));
           console.error(`Error: Section "${section}" not found in "${topic}".`);
           console.error(
             `Available sections: ${docs.sections.map(s => s.title).join(', ')}`,
           );
           process.exit(1);
         }
+        if (json) return jsonOut('docs.detail.section', match);
         console.log(formatSection(match, detail));
         return;
       }
 
+      if (json) return jsonOut('docs.detail', docs);
       console.log(formatReferenceFull(docs, detail));
     });
 }

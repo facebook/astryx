@@ -508,3 +508,31 @@ export const WithEventHandlers: Story = {
     description: 'Events are logged below',
   },
 };
+
+export const Clearable: Story = {
+  render: args => {
+    const [value, setValue] = useState<number | null>(args.value ?? 42);
+    return (
+      <XDSNumberInput {...args} value={value} onChange={setValue} hasClear />
+    );
+  },
+  args: {
+    label: 'Quantity',
+    placeholder: 'Enter a number',
+  },
+};
+
+export const ClearableWithUnits: Story = {
+  render: args => {
+    const [value, setValue] = useState<number | null>(args.value ?? 75);
+    return (
+      <XDSNumberInput {...args} value={value} onChange={setValue} hasClear />
+    );
+  },
+  args: {
+    label: 'Progress',
+    units: '%',
+    min: 0,
+    max: 100,
+  },
+};

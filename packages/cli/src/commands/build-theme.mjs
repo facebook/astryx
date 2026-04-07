@@ -15,16 +15,19 @@ import * as path from 'node:path';
 import {createRequire} from 'node:module';
 import {pathToFileURL, fileURLToPath} from 'node:url';
 import {getRunPrefix} from '../utils/package-manager.mjs';
+import {jsonOut, jsonError} from '../lib/json.mjs';
 
 // Import shared theme processing from core — ensures build and runtime
 // use the same logic for typography.scale expansion, prose, and component rules.
 const _require = createRequire(import.meta.url);
 let _defineTheme = null;
 let _generateThemeRules = null;
+let _generateThemeRulesSplit = null;
 try {
   const coreTheme = _require('@xds/core/theme');
   _defineTheme = coreTheme.defineTheme;
   _generateThemeRules = coreTheme.generateThemeRules;
+  _generateThemeRulesSplit = coreTheme.generateThemeRulesSplit;
 } catch {
   // Core not available — fall back to legacy generation
 }
@@ -739,32 +742,38 @@ export function registerTheme(program) {
     .option('--no-prose', 'Skip prose mappings (h1, p, code, hr, etc.)')
     .action(async (file, options) => {
       const filePath = path.resolve(process.cwd(), file);
+      const json = program.opts().json || false;
 
       if (!fs.existsSync(filePath)) {
+        if (json) return jsonError('File not found: ' + filePath);
         console.error(`Error: File not found: ${filePath}`);
         process.exit(1);
       }
 
-      console.log(`\nBuilding theme from ${path.relative(process.cwd(), filePath)}...`);
+      if (!json) console.log(`\nBuilding theme from ${path.relative(process.cwd(), filePath)}...`);
 
       // Extract theme definition
       let themeDef;
       try {
         themeDef = await extractThemeDefinition(filePath);
       } catch (e) {
+        if (json) return jsonError(e.message);
         console.error(`Error: ${e.message}`);
         process.exit(1);
       }
 
       if (!themeDef.name) {
+        if (json) return jsonError('Theme must have a name property.');
         console.error('Error: Theme must have a name property.');
         process.exit(1);
       }
 
       // Validate component overrides
       const warnings = validateComponentOverrides(themeDef);
+      const warningMessages = [];
       for (const w of warnings) {
-        console.warn(`  ⚠ ${w}`);
+        warningMessages.push(w);
+        if (!json) console.warn(`  ⚠ ${w}`);
       }
 
       // Generate CSS using the shared generateThemeRules from core.
@@ -783,18 +792,42 @@ export function registerTheme(program) {
           tokens: themeDef.tokens,
           components: themeDef.components,
         });
-        const rules = _generateThemeRules(resolvedTheme);
-        if (rules.length === 0) {
-          console.log('No overrides found — nothing to build.');
-          return;
-        }
         const scopeSelector = `[data-xds-theme="${themeDef.name}"]`;
-        const inner = rules.join('\n\n');
-        const scopeBlock = `@scope (${scopeSelector}) to ([data-xds-theme]) {\n${inner}\n}`;
-        const colorSchemeDecl = scopeBlock.includes('light-dark(')
-          ? '  :root { color-scheme: light dark; }\n\n'
-          : '';
-        css = `@layer xds-theme {\n${colorSchemeDecl}${scopeBlock}\n}\n`;
+        const scopeTo = `[data-xds-theme]`;
+
+        if (_generateThemeRulesSplit) {
+          const {component, prose} = _generateThemeRulesSplit(resolvedTheme);
+          if (component.length === 0 && prose.length === 0) {
+            if (!json) console.log('No overrides found — nothing to build.');
+            return;
+          }
+          const cssParts = [];
+          if (prose.length > 0) {
+            const proseInner = prose.join('\n\n');
+            cssParts.push(`@layer reset {\n@scope (${scopeSelector}) to (${scopeTo}) {\n${proseInner}\n}\n}`);
+          }
+          if (component.length > 0) {
+            const componentInner = component.join('\n\n');
+            const componentScope = `@scope (${scopeSelector}) to (${scopeTo}) {\n${componentInner}\n}`;
+            const colorSchemeDecl = componentScope.includes('light-dark(')
+              ? '  :root { color-scheme: light dark; }\n\n'
+              : '';
+            cssParts.push(`@layer xds-theme {\n${colorSchemeDecl}${componentScope}\n}`);
+          }
+          css = cssParts.join('\n\n') + '\n';
+        } else {
+          const rules = _generateThemeRules(resolvedTheme);
+          if (rules.length === 0) {
+            if (!json) console.log('No overrides found — nothing to build.');
+            return;
+          }
+          const inner = rules.join('\n\n');
+          const scopeBlock = `@scope (${scopeSelector}) to (${scopeTo}) {\n${inner}\n}`;
+          const colorSchemeDecl = scopeBlock.includes('light-dark(')
+            ? '  :root { color-scheme: light dark; }\n\n'
+            : '';
+          css = `@layer xds-theme {\n${colorSchemeDecl}${scopeBlock}\n}\n`;
+        }
       } else {
         // Legacy fallback when core isn't built yet
         const scopeBlocks = [];
@@ -803,7 +836,7 @@ export function registerTheme(program) {
         const mainCss = generateCSS(themeDef);
         if (mainCss) scopeBlocks.push(mainCss);
         if (scopeBlocks.length === 0) {
-          console.log('No overrides found — nothing to build.');
+          if (!json) console.log('No overrides found — nothing to build.');
           return;
         }
         const joined = scopeBlocks.join('\n\n');
@@ -826,9 +859,11 @@ export function registerTheme(program) {
       const componentCount = themeDef.components ? Object.keys(themeDef.components).length : 0;
       const size = (Buffer.byteLength(css) / 1024).toFixed(1);
 
-      console.log(`\n✓ ${path.relative(process.cwd(), outPath)}`);
-      console.log(`  ${tokenCount} token overrides, ${componentCount} component overrides`);
-      console.log(`  ${size} KB`);
+      if (!json) {
+        console.log(`\n✓ ${path.relative(process.cwd(), outPath)}`);
+        console.log(`  ${tokenCount} token overrides, ${componentCount} component overrides`);
+        console.log(`  ${size} KB`);
+      }
 
       // Always generate JS module + types alongside CSS
       const outDir = path.dirname(outPath);
@@ -843,17 +878,36 @@ export function registerTheme(program) {
       fs.writeFileSync(jsPath, generateBuiltModule(themeDef, iconImportPath));
       fs.writeFileSync(dtsPath, generateBuiltTypes(themeDef));
 
-      console.log(`✓ ${path.relative(process.cwd(), jsPath)}`);
-      console.log(`✓ ${path.relative(process.cwd(), dtsPath)}`);
+      if (!json) {
+        console.log(`✓ ${path.relative(process.cwd(), jsPath)}`);
+        console.log(`✓ ${path.relative(process.cwd(), dtsPath)}`);
+      }
 
       // Generate type augmentation .d.ts if theme has custom prop values
       const augmentationSource = resolvedTheme || themeDef;
       const variantDecl = await generateVariantDeclarationsAsync(augmentationSource);
+      let variantDtsPath;
       if (variantDecl) {
-        const variantDtsPath = path.join(outDir, `${baseName}.variants.d.ts`);
+        variantDtsPath = path.join(outDir, `${baseName}.variants.d.ts`);
         fs.writeFileSync(variantDtsPath, variantDecl);
         const augCount = (variantDecl.match(/': true;/g) || []).length;
-        console.log(`✓ ${path.relative(process.cwd(), variantDtsPath)} (${augCount} type augmentations)`);
+        if (!json) console.log(`✓ ${path.relative(process.cwd(), variantDtsPath)} (${augCount} type augmentations)`);
+      }
+
+      if (json) {
+        return jsonOut('theme.build', {
+          name: themeDef.name,
+          tokenCount,
+          componentCount,
+          sizeKB: parseFloat(size),
+          outputs: {
+            css: path.relative(process.cwd(), outPath),
+            js: path.relative(process.cwd(), jsPath),
+            dts: path.relative(process.cwd(), dtsPath),
+            ...(variantDecl ? {variantsDts: path.relative(process.cwd(), variantDtsPath)} : {}),
+          },
+          warnings: warningMessages,
+        });
       }
 
       // Print install instructions

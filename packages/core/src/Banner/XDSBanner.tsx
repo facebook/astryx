@@ -2,7 +2,7 @@
 
 /**
  * @file XDSBanner.tsx
- * @input Uses ReactuseState, @heroicons/react/24/solid icons, XDSButton, XDSIcon, StyleX
+ * @input Uses React useState, XDSButton, XDSIcon (with registry string names), StyleX
  * @output Exports XDSBanner component, XDSBannerProps, XDSBannerStatus, XDSBannerContainer types
  * @position Core implementation; consumed by index.ts, tested by XDSBanner.test.tsx
  *
@@ -22,17 +22,9 @@
 import {useState, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
-import {
-  InformationCircleIcon,
-  ExclamationTriangleIcon,
-  XCircleIcon,
-  CheckCircleIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
-} from '@heroicons/react/24/solid';
 import {XDSButton} from '../Button';
 import {XDSIcon} from '../Icon';
-import {edgeSignals} from '../Layout/edgeCompensation.stylex';
+import type {XDSIconName} from '../Icon';
 import {
   colorVars,
   spacingVars,
@@ -190,11 +182,11 @@ export interface XDSBannerProps {
 // Status → Icon mapping
 // =============================================================================
 
-const defaultIcons: Record<XDSBannerStatus, typeof InformationCircleIcon> = {
-  info: InformationCircleIcon,
-  warning: ExclamationTriangleIcon,
-  error: XCircleIcon,
-  success: CheckCircleIcon,
+const defaultIconNames: Record<XDSBannerStatus, XDSIconName> = {
+  info: 'info',
+  warning: 'warning',
+  error: 'xCircle',
+  success: 'checkCircle',
 };
 
 // =============================================================================
@@ -244,8 +236,7 @@ const styles = stylex.create({
     paddingBlock: spacingVars['--spacing-3'],
     paddingInline: spacingVars['--spacing-4'],
     // Publish inline padding for edge compensation (ghost buttons at edges).
-    // Uses --container-padding-inline (not --container-padding) because Banner
-    // has different block padding (spacing-3) vs inline padding (spacing-4).
+    // Banner has different block padding (spacing-3) vs inline padding (spacing-4).
     '--container-padding-inline': spacingVars['--spacing-4'],
   },
   // When there's only a title (no description) and actions, center everything vertically
@@ -287,10 +278,10 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-2'],
     flexShrink: 0,
     marginInlineStart: 'auto',
+    // Edge compensation: align end content flush with container edge.
+    marginInlineEnd: `calc(-1 * ${spacingVars['--spacing-2']})`,
+    marginBlock: `calc(-1 * (${spacingVars['--spacing-3']} - ${spacingVars['--spacing-2']}))`,
   },
-  // dismissButton negative margin removed — edge compensation handles this
-  // automatically via --edge-end signal on the endArea
-  // Content area — card background for additional content below the header
   contentArea: {
     backgroundColor: colorVars['--color-background-card'],
     paddingBlock: spacingVars['--spacing-3'],
@@ -308,6 +299,13 @@ const styles = stylex.create({
   contentAreaCard: {
     borderBottomLeftRadius: 'var(--banner-radius)',
     borderBottomRightRadius: 'var(--banner-radius)',
+  },
+  chevron: {
+    display: 'inline-flex',
+    transition: 'transform 150ms ease',
+  },
+  chevronExpanded: {
+    transform: 'rotate(180deg)',
   },
 });
 
@@ -394,7 +392,7 @@ export function XDSBanner({
 }: XDSBannerProps) {
   const [isDismissed, setIsDismissed] = useState(false);
   const [isExpanded, setIsExpanded] = useState(defaultIsExpanded);
-  const DefaultIcon = defaultIcons[status];
+  const defaultIconName = defaultIconNames[status];
   const role = statusRole[status];
   const iconColor = statusIconColor[status];
   const hasChildren = children != null;
@@ -451,7 +449,7 @@ export function XDSBanner({
           {icon != null ? (
             icon
           ) : (
-            <XDSIcon icon={DefaultIcon} size="md" color={iconColor} />
+            <XDSIcon icon={defaultIconName} size="md" color={iconColor} />
           )}
         </div>
         <div {...stylex.props(styles.headerContent)}>
@@ -461,7 +459,7 @@ export function XDSBanner({
           )}
         </div>
         {showEndArea && (
-          <div {...stylex.props(styles.endArea, edgeSignals.end)}>
+          <div {...stylex.props(styles.endArea)}>
             {endContent}
             {hasChildren && (
               <XDSButton
@@ -470,11 +468,13 @@ export function XDSBanner({
                 label={isExpanded ? 'Collapse' : 'Expand'}
                 tooltip={isExpanded ? 'Collapse' : 'Expand'}
                 icon={
-                  <XDSIcon
-                    icon={isExpanded ? ChevronUpIcon : ChevronDownIcon}
-                    size="sm"
-                    color="inherit"
-                  />
+                  <span
+                    {...stylex.props(
+                      styles.chevron,
+                      isExpanded && styles.chevronExpanded,
+                    )}>
+                    <XDSIcon icon="chevronDown" size="sm" color="inherit" />
+                  </span>
                 }
                 onClick={handleToggleExpand}
                 aria-expanded={isExpanded}

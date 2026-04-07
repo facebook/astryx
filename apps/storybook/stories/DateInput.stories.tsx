@@ -320,3 +320,29 @@ export const AllVariations: Story = {
     );
   },
 };
+
+export const Clearable: Story = {
+  render: args => {
+    const [value, setValue] = useState<string | undefined>('2026-04-06');
+    return (
+      <XDSDateInput {...args} value={value} onChange={setValue} hasClear />
+    );
+  },
+  args: {
+    label: 'Event date',
+    placeholder: 'Select a date',
+  },
+};
+
+export const ClearableWithStatus: Story = {
+  render: args => {
+    const [value, setValue] = useState<string | undefined>('2026-04-06');
+    return (
+      <XDSDateInput {...args} value={value} onChange={setValue} hasClear />
+    );
+  },
+  args: {
+    label: 'Deadline',
+    status: {type: 'error', message: 'Date is in the past'},
+  },
+};

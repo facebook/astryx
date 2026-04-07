@@ -13,13 +13,13 @@
 
 import {type ReactNode, createElement} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
 import {
   colorVars,
   spacingVars,
   fontWeightVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import {xdsClassName, mergeProps} from '../utils';
 
 const styles = stylex.create({
@@ -78,7 +78,7 @@ const styles = stylex.create({
   },
 });
 
-export interface XDSEmptyStateProps {
+export interface XDSEmptyStateProps extends XDSBaseProps<HTMLDivElement> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLDivElement>;
   /**
@@ -110,31 +110,6 @@ export interface XDSEmptyStateProps {
    * @default false
    */
   isCompact?: boolean;
-  /**
-   * StyleX styles created via `stylex.create()`. Merged with the component's
-   * base styles inside a single `stylex.props()` call for optimal deduplication.
-   *
-   * @example
-   * ```
-   * const overrides = stylex.create({ root: { marginBottom: 8 } });
-   * <Component xstyle={overrides.root} />
-   * ```
-   */
-  xstyle?: StyleXStyles;
-  /**
-   * CSS class name(s) appended to the root element.
-   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
-   */
-  className?: string;
-  /**
-   * Inline styles to apply to the root element. Spread after StyleX
-   * inline styles, so these values take priority.
-   */
-  style?: React.CSSProperties;
-  /**
-   * Test ID for the container element.
-   */
-  'data-testid'?: string;
 }
 
 /**
@@ -177,7 +152,7 @@ export function XDSEmptyState({
       ref={ref}
       role="status"
       {...mergeProps(
-        xdsClassName('emptystate'),
+        xdsClassName('emptystate', {variant: isCompact ? 'compact' : null}),
         stylex.props(
           styles.container,
           isCompact && styles.containerCompact,

@@ -30,16 +30,14 @@
  * - When at an edge: margin pulls the component toward the edge by the smaller
  *   of its own padding or the container's inline padding
  *
- * ### Why --container-padding-inline instead of --container-padding?
+ * ### Why --container-padding-inline?
  *
  * Edge compensation is always an inline (horizontal) adjustment. Many containers
  * have different inline vs block padding (e.g., Banner: paddingInline=spacing-4,
  * paddingBlock=spacing-3; TopNav: paddingInline=spacing-4, no block padding).
- * Using the isotropic `--container-padding` would be semantically misleading and
- * could cause incorrect vertical compensation if a future component reads it for
- * block-direction adjustments. The existing `--container-padding` variable is used
- * by Divider and Section for edge-to-edge bleeds in both directions — we don't
- * want to overload it with a value that only represents one axis.
+ * The container system uses two directional vars: --container-padding-inline for
+ * horizontal padding and --container-padding-block-start/end for vertical. Edge compensation
+ * only reads the inline var since it only adjusts horizontal margins.
  *
  * SYNC: When modified, update /packages/core/src/Layout/Layout.doc.mjs
  */

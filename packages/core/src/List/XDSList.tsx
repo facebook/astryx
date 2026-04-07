@@ -102,6 +102,12 @@ const styles = stylex.create({
     margin: 0,
     paddingInlineStart: 0,
     listStyleType: 'none',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacingVars['--spacing-0-5'],
+  },
+  withDividers: {
+    gap: 0,
   },
   withCounter: {
     counterReset: 'xds-list',
@@ -170,6 +176,7 @@ export function XDSList({
           xdsClassName('list', {density, listStyle}),
           stylex.props(
             styles.list,
+            hasDividers && styles.withDividers,
             listStyle !== 'none' && styles.withCounter,
             xstyle,
           ),

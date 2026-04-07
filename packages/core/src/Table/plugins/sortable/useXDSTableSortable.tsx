@@ -97,7 +97,7 @@ export interface UseXDSTableSortableConfig<TSortKey extends string = string> {
    * When true, clicking a sorted column cycles: asc → desc → unsorted.
    * When false, clicking cycles: asc → desc → asc.
    *
-   * @default false
+   * @default true
    */
   allowUnsortedState?: boolean;
 
@@ -139,12 +139,10 @@ const sortStyles = stylex.create({
   },
   iconWrapperUnsorted: {
     display: 'inline-flex',
-    opacity: 0,
-    [stylex.when.ancestor(':hover')]: {
-      opacity: 1,
-    },
-    [stylex.when.ancestor(':focus-within')]: {
-      opacity: 1,
+    opacity: {
+      default: 0.35,
+      ':is(th:hover *)': 1,
+      ':focus-visible': 1,
     },
   },
   iconWrapperActive: {
@@ -241,7 +239,7 @@ function SortHeaderButton<T extends Record<string, unknown>>({
   const handleClick = (e: React.MouseEvent | React.KeyboardEvent) => {
     const cfg = configRef.current;
     const isShift = e.shiftKey && cfg.isMultiSortEnabled;
-    const allowUnsorted = cfg.allowUnsortedState ?? false;
+    const allowUnsorted = cfg.allowUnsortedState ?? true;
 
     if (isShift) {
       // Multi-sort: toggle in place or append
