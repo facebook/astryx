@@ -58,16 +58,6 @@ const styles = stylex.create({
   fullWidth: {
     width: '100%',
   },
-  topGrid: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: 80,
-    alignItems: 'center',
-    [MOBILE]: {
-      gridTemplateColumns: '1fr',
-      gap: 32,
-    },
-  },
   imagePlaceholder: {
     backgroundColor: colorVars['--color-background-surface'],
     borderRadius: 12,
@@ -77,19 +67,21 @@ const styles = stylex.create({
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'flex-start',
+  },
+  mobileStack: {
+    [MOBILE]: {
+      gridTemplateColumns: '1fr',
+      gap: 32,
+    },
+  },
+  mobileImageFull: {
     [MOBILE]: {
       width: '100%',
     },
   },
-  footerGrid: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr 1fr',
-    gap: 32,
-    paddingTop: 32,
-    textAlign: 'center',
+  mobileFooterStack: {
     [MOBILE]: {
       gridTemplateColumns: '1fr',
-      textAlign: 'left',
     },
   },
 });
@@ -150,7 +142,14 @@ export default function FormTwoColumnPage() {
         }}>
 
         {/* ── Top: two-column ── */}
-        <div {...stylex.props(styles.topGrid)}>
+        <div
+          {...stylex.props(styles.mobileStack)}
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: 80,
+            alignItems: 'center',
+          }}>
 
           {/* Left: headline + description + illustration */}
           <XDSVStack gap={6}>
@@ -170,7 +169,7 @@ export default function FormTwoColumnPage() {
                 figure out the best path forward.
               </XDSText>
             </XDSVStack>
-            <div {...stylex.props(styles.imagePlaceholder)}>
+            <div {...stylex.props(styles.imagePlaceholder, styles.mobileImageFull)}>
               <Image
                 src={illustrationSrc}
                 alt="Illustration"
@@ -270,7 +269,15 @@ export default function FormTwoColumnPage() {
         {/* ── Bottom: contact strip ── */}
         <div>
           <XDSDivider />
-          <div {...stylex.props(styles.footerGrid)}>
+          <div
+            {...stylex.props(styles.mobileFooterStack)}
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr 1fr',
+              gap: 32,
+              paddingTop: 32,
+              textAlign: 'center',
+            }}>
             {CONTACT_COLUMNS.map(col => (
               <XDSVStack key={col.label} gap={1} hAlign="center">
                 <XDSText type="supporting" color="secondary">
