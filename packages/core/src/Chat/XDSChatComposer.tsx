@@ -92,19 +92,20 @@ const styles = stylex.create({
     display: 'flex',
     flexDirection: 'column',
     borderRadius: radiusVars['--radius-page'],
-    backgroundColor: colorVars['--color-background-surface'],
+    backgroundColor: colorVars['--color-background-popover'],
     boxShadow: {
       default: shadowVars['--shadow-low'],
       ':hover': { '@media (hover: hover)': shadowVars['--shadow-med'] },
     },
     transition: `box-shadow ${durationVars['--duration-fast']} ${easeVars['--ease-standard']}`,
+    ':focus-within': {
+      boxShadow: shadowVars['--shadow-med'],
+    },
     // Scoped radius override: child buttons/tokens get pill shape
     [radiusVars['--radius-element'] as string]: radiusVars['--radius-full'],
     [radiusVars['--radius-container'] as string]: radiusVars['--radius-full'],
   },
-  rootFocused: {
-    boxShadow: shadowVars['--shadow-med'],
-  },
+
   rootDisabled: {
     opacity: 0.6,
     pointerEvents: 'none' as const,
@@ -140,6 +141,8 @@ const styles = stylex.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacingVars['--spacing-2'],
+    // Footer buttons should use size="md" to match 32px send button height
+    minHeight: '32px',
   },
   footerLeft: {
     display: 'flex',
@@ -251,7 +254,6 @@ export function XDSChatComposer(props: XDSChatComposerProps) {
   } = props;
 
   const [internalValue, setInternalValue] = useState('');
-  const [isFocused, setIsFocused] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const isControlled = controlledValue !== undefined;
@@ -334,7 +336,6 @@ export function XDSChatComposer(props: XDSChatComposerProps) {
         xdsClassName('chat-composer', {density}),
         stylex.props(
           styles.root,
-          isFocused && styles.rootFocused,
           isDisabled && styles.rootDisabled,
           xstyle,
         ),
@@ -362,8 +363,6 @@ export function XDSChatComposer(props: XDSChatComposerProps) {
               value={currentValue}
               placeholder={placeholder}
               disabled={isDisabled}
-              onFocus={() => setIsFocused(true)}
-              onBlur={() => setIsFocused(false)}
               onKeyDown={handleKeyDown}
               onChange={handleInput}
               {...stylex.props(styles.textarea)}
