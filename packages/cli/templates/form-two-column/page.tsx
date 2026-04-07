@@ -223,7 +223,7 @@ export default function FormTwoColumnPage() {
               {CONTACT_COLUMNS.map(col => (
                 <XDSVStack key={col.label} gap={1} hAlign="center">
                   <XDSText type="supporting" color="secondary">
-                    {col.label}
+                    <span className="ftc-footer-label">{col.label}</span>
                   </XDSText>
                   <XDSLink
                     label={col.email}

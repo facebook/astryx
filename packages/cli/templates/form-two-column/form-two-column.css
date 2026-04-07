@@ -1,3 +1,7 @@
+.ftc-footer-label {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
 .ftc-headline {
   font-size: 48px;
   font-weight: 700;
