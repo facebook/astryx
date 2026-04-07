@@ -42,9 +42,6 @@ const styles = stylex.create({
   fullWidth: {
     width: '100%',
   },
-  cardOverride: {
-    backgroundColor: colorVars['--color-background-gray'],
-  },
   imagePlaceholder: {
     backgroundColor: colorVars['--color-background-gray'],
     borderRadius: 12,
@@ -143,7 +140,7 @@ export default function FormTwoColumnPage() {
           </XDSVStack>
 
           {/* Right: form on a card */}
-          <XDSCard padding={8} xstyle={styles.cardOverride}>
+          <XDSCard padding={8} >
             <XDSVStack gap={4}>
               <XDSTextInput
                 label="Full name"
