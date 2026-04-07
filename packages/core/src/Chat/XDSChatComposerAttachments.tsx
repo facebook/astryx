@@ -209,7 +209,9 @@ export function XDSChatComposerAttachments({
       ref={ref}
       data-testid={testId}
       {...mergeProps(
-        xdsClassName('chat-composer-attachments', {collapsed: isCollapsed}),
+        xdsClassName('chat-composer-attachments', {
+          collapsed: isCollapsed ? 'collapsed' : null,
+        }),
         stylex.props(styles.root, xstyle),
         className,
         style,
