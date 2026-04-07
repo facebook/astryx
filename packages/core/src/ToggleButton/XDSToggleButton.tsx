@@ -19,9 +19,15 @@
  * - /apps/storybook/stories/ToggleButton.stories.tsx
  */
 
-import {useCallback, type ReactNode} from 'react';
+import {
+  useCallback,
+  isValidElement,
+  cloneElement,
+  type ReactNode,
+  type ReactElement,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {fontWeightVars} from '../theme/tokens.stylex';
+import {fontWeightVars, colorVars} from '../theme/tokens.stylex';
 import {XDSButton, type XDSButtonSize} from '../Button';
 import {useToggleButtonGroup} from './XDSToggleButtonGroup';
 
@@ -55,25 +61,77 @@ export type XDSToggleButtonIconColor =
   | 'yellow';
 
 /**
- * Map from color name to the corresponding CSS custom property name.
- * Used as inline style to guarantee the color overrides any class-based
- * `color` from parent elements (e.g., the pressed button style).
+ * Pressed icon color styles — applied directly to the icon element.
+ * Sets color, fill, AND stroke to guarantee the token color reaches
+ * the SVG regardless of how currentColor inheritance works.
  */
-const iconColorVarMap: Record<XDSToggleButtonIconColor, string> = {
-  accent: 'var(--color-icon-accent)',
-  primary: 'var(--color-icon-primary)',
-  secondary: 'var(--color-icon-secondary)',
-  blue: 'var(--color-icon-blue)',
-  cyan: 'var(--color-icon-cyan)',
-  gray: 'var(--color-icon-gray)',
-  green: 'var(--color-icon-green)',
-  orange: 'var(--color-icon-orange)',
-  pink: 'var(--color-icon-pink)',
-  purple: 'var(--color-icon-purple)',
-  red: 'var(--color-icon-red)',
-  teal: 'var(--color-icon-teal)',
-  yellow: 'var(--color-icon-yellow)',
-};
+const iconColorStyles = stylex.create({
+  accent: {
+    color: colorVars['--color-icon-accent'],
+    fill: colorVars['--color-icon-accent'],
+    stroke: colorVars['--color-icon-accent'],
+  },
+  primary: {
+    color: colorVars['--color-icon-primary'],
+    fill: colorVars['--color-icon-primary'],
+    stroke: colorVars['--color-icon-primary'],
+  },
+  secondary: {
+    color: colorVars['--color-icon-secondary'],
+    fill: colorVars['--color-icon-secondary'],
+    stroke: colorVars['--color-icon-secondary'],
+  },
+  blue: {
+    color: colorVars['--color-icon-blue'],
+    fill: colorVars['--color-icon-blue'],
+    stroke: colorVars['--color-icon-blue'],
+  },
+  cyan: {
+    color: colorVars['--color-icon-cyan'],
+    fill: colorVars['--color-icon-cyan'],
+    stroke: colorVars['--color-icon-cyan'],
+  },
+  gray: {
+    color: colorVars['--color-icon-gray'],
+    fill: colorVars['--color-icon-gray'],
+    stroke: colorVars['--color-icon-gray'],
+  },
+  green: {
+    color: colorVars['--color-icon-green'],
+    fill: colorVars['--color-icon-green'],
+    stroke: colorVars['--color-icon-green'],
+  },
+  orange: {
+    color: colorVars['--color-icon-orange'],
+    fill: colorVars['--color-icon-orange'],
+    stroke: colorVars['--color-icon-orange'],
+  },
+  pink: {
+    color: colorVars['--color-icon-pink'],
+    fill: colorVars['--color-icon-pink'],
+    stroke: colorVars['--color-icon-pink'],
+  },
+  purple: {
+    color: colorVars['--color-icon-purple'],
+    fill: colorVars['--color-icon-purple'],
+    stroke: colorVars['--color-icon-purple'],
+  },
+  red: {
+    color: colorVars['--color-icon-red'],
+    fill: colorVars['--color-icon-red'],
+    stroke: colorVars['--color-icon-red'],
+  },
+  teal: {
+    color: colorVars['--color-icon-teal'],
+    fill: colorVars['--color-icon-teal'],
+    stroke: colorVars['--color-icon-teal'],
+  },
+  yellow: {
+    color: colorVars['--color-icon-yellow'],
+    fill: colorVars['--color-icon-yellow'],
+    stroke: colorVars['--color-icon-yellow'],
+  },
+});
 
 // =============================================================================
 // Styles
@@ -101,14 +159,6 @@ const labelStyles = stylex.create({
     overflow: 'hidden',
     visibility: 'hidden',
     pointerEvents: 'none',
-  },
-});
-
-const iconColorWrapperStyles = stylex.create({
-  wrapper: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 });
 
@@ -291,19 +341,18 @@ export function XDSToggleButton({
   const isIconOnly = icon != null && children == null;
   const resolvedIcon = isPressed && pressedIcon ? pressedIcon : icon;
 
-  // Wrap icon with token color when pressed.
-  // Uses inline style to guarantee the color overrides any class-based
-  // `color` inherited from the pressed button element.
+  // Apply icon color directly to the icon element via cloneElement.
+  // Sets color, fill, and stroke on the icon itself — no wrapper span
+  // needed, no CSS inheritance to fight.
   const coloredIcon =
-    resolvedIcon != null && isPressed && pressedIconColor != null ? (
-      <span
-        {...stylex.props(iconColorWrapperStyles.wrapper)}
-        style={{color: iconColorVarMap[pressedIconColor]}}>
-        {resolvedIcon}
-      </span>
-    ) : (
-      resolvedIcon
-    );
+    resolvedIcon != null &&
+    isPressed &&
+    pressedIconColor != null &&
+    isValidElement(resolvedIcon)
+      ? cloneElement(resolvedIcon as ReactElement<Record<string, unknown>>, {
+          ...stylex.props(iconColorStyles[pressedIconColor]),
+        })
+      : resolvedIcon;
 
   // Auto-tooltip for icon-only buttons
   const resolvedTooltip = tooltip ?? (isIconOnly ? label : undefined);
