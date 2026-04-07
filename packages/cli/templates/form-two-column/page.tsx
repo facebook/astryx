@@ -49,41 +49,12 @@ const CONTACT_COLUMNS = [
 // Styles
 // ─────────────────────────────────────────────────────────────
 
-const MOBILE = '@media (max-width: 768px)';
-
 const styles = stylex.create({
   pageBg: {
     backgroundColor: colorVars['--color-background-surface'],
   },
   fullWidth: {
     width: '100%',
-  },
-  outerPad: {
-    padding: 48,
-    [MOBILE]: {
-      padding: 24,
-    },
-  },
-  topGrid: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gridTemplateAreas: '"headline form" "image form"',
-    gap: 48,
-    alignItems: 'start',
-    [MOBILE]: {
-      gridTemplateColumns: '1fr',
-      gridTemplateAreas: '"headline" "image" "form"',
-      gap: 32,
-    },
-  },
-  headlineArea: {
-    gridArea: 'headline',
-  },
-  imageArea: {
-    gridArea: 'image',
-  },
-  formArea: {
-    gridArea: 'form',
   },
   imagePlaceholder: {
     backgroundColor: colorVars['--color-background-surface'],
@@ -94,30 +65,6 @@ const styles = stylex.create({
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'flex-start',
-    [MOBILE]: {
-      width: '100%',
-    },
-  },
-  footerGrid: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr 1fr',
-    gap: 32,
-    paddingTop: 32,
-    textAlign: 'center',
-    [MOBILE]: {
-      gridTemplateColumns: '1fr',
-      textAlign: 'left',
-    },
-  },
-  headline: {
-    fontSize: 48,
-    fontWeight: fontWeightVars['--font-weight-bold'],
-    lineHeight: 1.05,
-    letterSpacing: '-0.03em',
-    margin: 0,
-    [MOBILE]: {
-      fontSize: 36,
-    },
   },
 });
 
@@ -156,12 +103,13 @@ export default function FormTwoColumnPage() {
 
   return (
     <div
-      {...stylex.props(styles.pageBg, styles.outerPad)}
+      {...stylex.props(styles.pageBg)}
       style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         minHeight: '100svh',
+        padding: 48,
         position: 'fixed',
         inset: 0,
         overflow: 'auto',
@@ -175,22 +123,33 @@ export default function FormTwoColumnPage() {
           gap: 56,
         }}>
 
-        {/* ── Top: responsive grid ── */}
-        <div {...stylex.props(styles.topGrid)}>
+        {/* ── Top: two-column ── */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: 80,
+            alignItems: 'center',
+          }}>
 
-          {/* Headline + description */}
-          <XDSVStack gap={3} xstyle={styles.headlineArea}>
-            <div {...stylex.props(styles.headline)}>
-              Let&apos;s work together
-            </div>
-            <XDSText type="body" color="secondary">
-              Tell us what you&apos;re working on and we&apos;ll help you
-              figure out the best path forward.
-            </XDSText>
-          </XDSVStack>
-
-          {/* Illustration */}
-          <div {...stylex.props(styles.imageArea)}>
+          {/* Left: headline + description + illustration */}
+          <XDSVStack gap={6}>
+            <XDSVStack gap={3}>
+              <div
+                style={{
+                  fontSize: 48,
+                  fontWeight: fontWeightVars['--font-weight-bold'],
+                  lineHeight: 1.05,
+                  letterSpacing: '-0.03em',
+                  margin: 0,
+                }}>
+                Let&apos;s work together
+              </div>
+              <XDSText type="body" color="secondary">
+                Tell us what you&apos;re working on and we&apos;ll help you
+                figure out the best path forward.
+              </XDSText>
+            </XDSVStack>
             <div {...stylex.props(styles.imagePlaceholder)}>
               <Image
                 src={illustrationSrc}
@@ -198,11 +157,10 @@ export default function FormTwoColumnPage() {
                 style={{width: '100%', height: '100%', objectFit: 'contain', borderRadius: 12}}
               />
             </div>
-          </div>
+          </XDSVStack>
 
-          {/* Form */}
-          <div {...stylex.props(styles.formArea)}>
-          <XDSCard padding={8}>
+          {/* Right: form on a card */}
+          <XDSCard padding={8} >
             <XDSVStack gap={4}>
               <XDSText type="label">Your details</XDSText>
               <XDSTextInput
@@ -287,13 +245,19 @@ export default function FormTwoColumnPage() {
               />
             </XDSVStack>
           </XDSCard>
-          </div>
         </div>
 
         {/* ── Bottom: contact strip ── */}
         <div>
           <XDSDivider />
-          <div {...stylex.props(styles.footerGrid)}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr 1fr',
+              gap: 32,
+              paddingTop: 32,
+              textAlign: 'center',
+            }}>
             {CONTACT_COLUMNS.map(col => (
               <XDSVStack key={col.label} gap={1} hAlign="center">
                 <XDSText type="supporting" color="secondary">
