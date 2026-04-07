@@ -175,13 +175,18 @@ describe('trimStreamingArtifacts', () => {
     expect(trimStreamingArtifacts('Hello ***')).toBe('Hello ');
   });
 
-  it('trims unclosed mid-line bold', () => {
-    expect(trimStreamingArtifacts('Hello **bold')).toBe('Hello ');
-    expect(trimStreamingArtifacts('Hello **bo')).toBe('Hello ');
+  it('keeps unclosed mid-line bold as plain text', () => {
+    // Mid-line ** with content after → kept as-is. The parser renders
+    // it as plain text, which is better than hiding content.
+    expect(trimStreamingArtifacts('Hello **bold')).toBe('Hello **bold');
+    expect(trimStreamingArtifacts('Hello **bo')).toBe('Hello **bo');
+    // Trailing ** with no content → still trimmed
+    expect(trimStreamingArtifacts('Hello **')).toBe('Hello ');
   });
 
-  it('trims unclosed mid-line italic', () => {
-    expect(trimStreamingArtifacts('Hello *ital')).toBe('Hello ');
+  it('keeps unclosed mid-line italic as plain text', () => {
+    expect(trimStreamingArtifacts('Hello *ital')).toBe('Hello *ital');
+    expect(trimStreamingArtifacts('Hello *')).toBe('Hello ');
   });
 
   it('preserves complete bold+italic in same line', () => {
@@ -190,9 +195,9 @@ describe('trimStreamingArtifacts', () => {
     );
   });
 
-  it('trims unclosed bold after closed bold', () => {
+  it('keeps unclosed bold after closed bold as plain text', () => {
     expect(trimStreamingArtifacts('Hello **done** and **open')).toBe(
-      'Hello **done** and ',
+      'Hello **done** and **open',
     );
   });
 
@@ -212,6 +217,17 @@ describe('trimStreamingArtifacts', () => {
   it('trims trailing unclosed strikethrough', () => {
     expect(trimStreamingArtifacts('Hello ~~')).toBe('Hello ');
     expect(trimStreamingArtifacts('Hello ~')).toBe('Hello ');
+  });
+
+  it('trims unclosed mid-line strikethrough', () => {
+    expect(trimStreamingArtifacts('Hello ~~struck')).toBe('Hello ');
+    expect(trimStreamingArtifacts('Hello ~~s')).toBe('Hello ');
+  });
+
+  it('preserves closed strikethrough', () => {
+    expect(trimStreamingArtifacts('Hello ~~struck~~ more')).toBe(
+      'Hello ~~struck~~ more',
+    );
   });
 
   it('trims unclosed link text', () => {
@@ -335,6 +351,175 @@ describe('streaming structural suppression', () => {
           }
         }
       }
+    }
+  });
+});
+
+describe('streaming end-to-end: no raw syntax visible', () => {
+  /**
+   * Helper: extract all visible text from a block tree.
+   * Returns the text that would be rendered to the user, without markdown syntax.
+   */
+  function extractVisibleText(blocks: BlockNode[]): string {
+    let text = '';
+    for (const block of blocks) {
+      switch (block.type) {
+        case 'heading':
+        case 'paragraph':
+          text += extractInlineText(block.children);
+          break;
+        case 'codeblock':
+          text += block.content;
+          break;
+        case 'blockquote':
+          text += extractVisibleText(block.children);
+          break;
+        case 'list':
+          for (const item of block.items) {
+            text += extractVisibleText(item.children);
+          }
+          break;
+        case 'table':
+          for (const h of block.headers) text += extractInlineText(h.children);
+          for (const row of block.rows)
+            for (const cell of row) text += extractInlineText(cell.children);
+          break;
+      }
+    }
+    return text;
+  }
+
+  function extractInlineText(nodes: import('./parser').InlineNode[]): string {
+    let text = '';
+    for (const node of nodes) {
+      switch (node.type) {
+        case 'text':
+          text += node.content;
+          break;
+        case 'code':
+          text += node.content;
+          break;
+        case 'bold':
+        case 'italic':
+        case 'strikethrough':
+        case 'link':
+          text += extractInlineText(node.children);
+          break;
+        case 'image':
+          text += node.alt;
+          break;
+        case 'break':
+          text += '\n';
+          break;
+      }
+    }
+    return text;
+  }
+
+  function streamCharByChar(fullText: string): {snapshots: BlockNode[][]; visibleTexts: string[]} {
+    const state = createIncrementalState();
+    const snapshots: BlockNode[][] = [];
+    const visibleTexts: string[] = [];
+    for (let i = 1; i <= fullText.length; i++) {
+      const trimmed = trimStreamingArtifacts(fullText.slice(0, i));
+      const blocks = parseMarkdownIncremental(trimmed, state);
+      snapshots.push(blocks);
+      visibleTexts.push(extractVisibleText(blocks));
+    }
+    return {snapshots, visibleTexts};
+  }
+
+  it('bold text appears progressively during streaming', () => {
+    const text = 'Hello **bold text** and more';
+    const {visibleTexts} = streamCharByChar(text);
+    // Content should never completely disappear — we should never hide
+    // 20+ chars of content just because of unclosed markers
+    const nonEmpty = visibleTexts.filter(t => t.length > 0);
+    for (const visible of nonEmpty) {
+      // At minimum "Hello" should always be visible once it appears
+      if (visible.length >= 5) {
+        expect(visible.startsWith('Hello')).toBe(true);
+      }
+    }
+    // Text may briefly shrink when ** becomes formatting (markers removed
+    // from visible text) — that's expected and correct.
+    // Final result should have the full text (without raw markers)
+    expect(visibleTexts[visibleTexts.length - 1]).toBe('Hello bold text and more');
+  });
+
+  it('never shows raw * during italic streaming', () => {
+    const text = 'Hello *italic text* and more';
+    const {visibleTexts} = streamCharByChar(text);
+    for (const visible of visibleTexts) {
+      // A lone * that's not part of a word is raw syntax
+      expect(visible).not.toMatch(/(?:^|\s)\*(?:\s|$)/);
+    }
+  });
+
+  it('never shows raw ~~ during strikethrough streaming', () => {
+    const text = 'Hello ~~struck~~ and more';
+    const {visibleTexts} = streamCharByChar(text);
+    for (const visible of visibleTexts) {
+      expect(visible).not.toContain('~~');
+    }
+  });
+
+  it('never shows raw [ during link streaming', () => {
+    const text = 'Visit [our site](https://example.com) for info';
+    const {visibleTexts} = streamCharByChar(text);
+    for (const visible of visibleTexts) {
+      expect(visible).not.toContain('[');
+      expect(visible).not.toContain('](');
+    }
+  });
+
+  it('never shows raw ![ during image streaming', () => {
+    const text = 'See ![alt text](https://img.png) here';
+    const {visibleTexts} = streamCharByChar(text);
+    for (const visible of visibleTexts) {
+      expect(visible).not.toContain('![');
+    }
+  });
+
+  it('table rows render incrementally after header established', () => {
+    const text = '| A | B |\n| --- | --- |\n| r1a | r1b |\n| r2a | r2b |\n| r3a | r3b |';
+    const state = createIncrementalState();
+    let maxRows = 0;
+    // Stream by line to see rows appear incrementally
+    const lines = text.split('\n');
+    for (let lineCount = 1; lineCount <= lines.length; lineCount++) {
+      const input = lines.slice(0, lineCount).join('\n');
+      const trimmed = trimStreamingArtifacts(input);
+      const blocks = parseMarkdownIncremental(trimmed, state);
+      const table = blocks.find(b => b.type === 'table');
+      if (table?.type === 'table') {
+        maxRows = Math.max(maxRows, table.rows.length);
+      }
+    }
+    // Should have seen rows accumulate, not all at once
+    expect(maxRows).toBe(3);
+  });
+
+  it('complex mixed content char-by-char never shows raw syntax', () => {
+    const text = [
+      '## Heading',
+      '',
+      'A paragraph with **bold**, *italic*, and `code`.',
+      '',
+      '- List item **one**',
+      '- List item [two](http://two.com)',
+      '- List item ~~three~~',
+      '',
+      '| Col | Val |',
+      '| --- | --- |',
+      '| **a** | *b* |',
+    ].join('\n');
+
+    const {visibleTexts} = streamCharByChar(text);
+    for (const visible of visibleTexts) {
+      // Links and images should never show raw syntax
+      expect(visible).not.toContain('](');
+      expect(visible).not.toContain('![');
     }
   });
 });

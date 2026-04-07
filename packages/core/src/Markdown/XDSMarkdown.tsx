@@ -264,7 +264,7 @@ const streamingStyles = stylex.create({
     // transitions from invisible to visible when the element first mounts.
     opacity: 1,
     transitionProperty: 'opacity',
-    transitionDuration: durationVars['--duration-fast'],
+    transitionDuration: durationVars['--duration-fast-max'],
     transitionTimingFunction: easeVars['--ease-standard'],
     '@starting-style': {
       opacity: 0,

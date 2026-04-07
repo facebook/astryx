@@ -627,38 +627,37 @@ export function trimStreamingArtifacts(input: string): string {
     }
   }
 
-  // Then check for unclosed opening markers mid-line: e.g. "Hello **bold"
-  // where ** opened but hasn't closed yet. Scan for *, **, *** that have
-  // content after them but no matching closer.
-  for (const marker of ['***', '**', '*']) {
-    const openIdx = tail.lastIndexOf(marker);
-    if (openIdx !== -1 && openIdx + marker.length < tail.length) {
-      const afterOpen = tail.slice(openIdx + marker.length);
-      // Check the opener isn't preceded by the same marker (which would be a closer)
-      const beforeOpen = tail.slice(0, openIdx);
-      const isOpener =
-        openIdx === 0 ||
-        /[\s,.;:!?(]$/.test(beforeOpen) ||
-        beforeOpen.endsWith(marker);
-      // Check if there's a matching closer after it
-      const hasCloser = afterOpen.includes(marker);
-      if (!hasCloser && isOpener) {
-        // Also handle the case where ** is preceded by another ** (nested)
-        // Only trim if this is genuinely unclosed
-        tail = tail.slice(0, openIdx);
-        break;
-      }
-    }
-  }
-
   // Find trailing unclosed strikethrough (~~)
   if (tail.length >= 2 && tail.endsWith('~~')) {
-    tail = tail.slice(0, -2);
+    // Check if there's an opener before these closing ~~
+    const opener = tail.lastIndexOf('~~', tail.length - 3);
+    if (opener === -1) {
+      tail = tail.slice(0, -2);
+    }
   } else if (tail.endsWith('~')) {
     // Single trailing ~ after content — might be start of ~~
     const secondLast = tail.length - 2;
     if (secondLast >= 0 && tail[secondLast] !== '~') {
       tail = tail.slice(0, -1);
+    }
+  }
+
+  // Check for unclosed ~~ mid-line: e.g. "Hello ~~struck"
+  // Count ~~ occurrences — if odd, the last one is unclosed.
+  {
+    let count = 0;
+    let searchFrom = 0;
+    const positions: number[] = [];
+    while (true) {
+      const idx = tail.indexOf('~~', searchFrom);
+      if (idx === -1) break;
+      positions.push(idx);
+      count++;
+      searchFrom = idx + 2;
+    }
+    if (count % 2 === 1) {
+      // Odd number of ~~ — the last one is unclosed, trim from it
+      tail = tail.slice(0, positions[positions.length - 1]);
     }
   }
 
