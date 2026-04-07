@@ -87,14 +87,13 @@ export function resolveAgentPaths(targetDir, agent) {
 /**
  * Generate the agent cheat sheet from live CLI metadata.
  *
- * Format C (one-liner per command) chosen after testing three formats
- * against Claude Opus for AI agent usability (scored 5/5).
+ * Structured as: workflow (behavioral) → rules (error prevention) → CLI reference.
+ * Templates are positioned first in the workflow to teach agents the
+ * "look at reference code" reflex before writing any UI.
  */
 export function generateCompressedIndex(version, {coreDir, zh = false, lang, runPrefix = getRunPrefix()} = {}) {
   const run = `${runPrefix} xds`;
   const lines = [XDS_MARKER_START];
-
-  lines.push(`XDS v${version}|Always run ${run} component <Name> before writing XDS component code.`);
 
   // Component count from live discovery
   let componentCount = '90+';
@@ -107,8 +106,31 @@ export function generateCompressedIndex(version, {coreDir, zh = false, lang, run
     } catch {}
   }
 
-  lines.push(`${run} component <Name>       props, usage, examples for any component`);
-  lines.push(`${run} component --list       ${componentCount} components by category`);
+  // Header
+  lines.push(`XDS v${version} — ${componentCount} components`);
+  lines.push('');
+
+  // Behavioral workflow — templates first, then component lookup
+  lines.push('Before writing any UI code:');
+  lines.push(`1. \`${run} template --list\` — find a related page pattern`);
+  lines.push(`2. \`${run} template <name> --skeleton\` — study layout structure (gap, padding, nesting)`);
+  lines.push(`3. \`${run} component <Name>\` — read props + examples for EVERY component you use`);
+  lines.push('');
+  lines.push('Templates are reference code — read them for composition patterns, not just scaffolding.');
+  lines.push('Full pages → dashboard (uses XDSAppShell). Forms → contact-form. Tables → data-table. Settings → settings-sidebar.');
+  lines.push('');
+
+  // Rules — inline, compact, prevents the top error categories
+  lines.push('No <div> anywhere — not for layout, not for wrappers, not for spacing. Use XDS components.');
+  lines.push('Full-page shells → XDSAppShell (not XDSLayout). Sidebar nav → XDSSideNav (not XDSList).');
+  lines.push('No style={{}} — use the xstyle prop on XDS components for custom styling.');
+  lines.push('If a component prop does what you need, use it — never replicate with CSS/stylex.');
+  lines.push(`No magic values — run \`${run} docs tokens\` for spacing/color/radius.`);
+  lines.push('');
+
+  // CLI quick reference
+  lines.push(`${run} component --list         ${componentCount} components by category`);
+  lines.push(`${run} component <Name>         props, types, examples`);
 
   // Doc topics from live discovery
   const docsDir = path.join(CLI_ROOT, 'docs');
@@ -117,19 +139,18 @@ export function generateCompressedIndex(version, {coreDir, zh = false, lang, run
       const match = file.match(/^(\w+)\.doc\.mjs$/);
       if (!match) continue;
       const topic = match[1];
-
       let desc = topic;
       try {
         const fileContent = fs.readFileSync(path.join(docsDir, file), 'utf-8');
         const descMatch = fileContent.match(/description:\s*['"](.+?)['"]/);
         if (descMatch) desc = descMatch[1];
       } catch {}
-
+      if (desc.length > 50) desc = desc.slice(0, 47) + '...';
       lines.push(`${run} docs ${topic.padEnd(20)} ${desc}`);
     }
   }
 
-  // Templates — list shows compositions, skeleton shows spatial structure
+  // Templates
   const templatesDir = path.join(CLI_ROOT, 'templates');
   if (fs.existsSync(templatesDir)) {
     const templates = fs.readdirSync(templatesDir, {withFileTypes: true})
@@ -137,17 +158,14 @@ export function generateCompressedIndex(version, {coreDir, zh = false, lang, run
       .map(e => e.name)
       .sort();
     if (templates.length > 0) {
-      lines.push(`${run} template --list             layout recipes with component compositions`);
-      lines.push(`${run} template <name> --skeleton   spatial reference (padding, gap, nesting)`);
-      lines.push(`${run} template <name> [path]       scaffold page from template`);
+      lines.push(`${run} template --list           page recipes with component lists`);
+      lines.push(`${run} template <name> [path]     scaffold from template`);
     }
   }
 
-  lines.push(`${run} swizzle <Name>          eject component source (use --gap to report why)`);
-  lines.push(`${run} upgrade --apply [--from <v> --to ${version}]  run version migration codemods`);
-  lines.push(`--detail compact|brief          less output | --lang dense|zh  translation`);
-  lines.push(`RULE: after @xds/core bump, always run ${run} upgrade --apply`);
-  lines.push(`RULE: when swizzling, always use --gap to report missing capabilities`);
+  lines.push(`${run} swizzle <Name>            eject source (--gap to report why)`);
+  lines.push(`${run} upgrade --apply            codemods after version bump`);
+  lines.push(`after @xds/core bump, always run ${run} upgrade --apply`);
   lines.push(XDS_MARKER_END);
 
   return lines.join('\n');
