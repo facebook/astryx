@@ -49,7 +49,7 @@ const CONTACT_COLUMNS = [
 // Styles
 // ─────────────────────────────────────────────────────────────
 
-const MOBILE = '@media (max-width: 375px)';
+const MOBILE = '@media (max-width: 860px)';
 
 const styles = stylex.create({
   pageBg: {
@@ -72,6 +72,11 @@ const styles = stylex.create({
     [MOBILE]: {
       gridTemplateColumns: '1fr',
       gap: 32,
+    },
+  },
+  mobilePad: {
+    [MOBILE]: {
+      padding: 20,
     },
   },
   mobileImageFull: {
@@ -121,7 +126,7 @@ export default function FormTwoColumnPage() {
 
   return (
     <div
-      {...stylex.props(styles.pageBg)}
+      {...stylex.props(styles.pageBg, styles.mobilePad)}
       style={{
         display: 'flex',
         alignItems: 'center',
