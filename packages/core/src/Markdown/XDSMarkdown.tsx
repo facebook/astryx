@@ -74,9 +74,16 @@ export interface XDSMarkdownProps {
   ) => void | false;
   /**
    * Citation sources keyed by ID. When provided, `[id]` and `【id】` markers
-   * in the markdown that match a key are rendered as superscript citation pills.
+   * in the markdown that match a key are rendered as citation chips.
    */
   sources?: Record<string, XDSMarkdownSource>;
+  /**
+   * How citations are displayed inline.
+   * - `'label'` (default) — chip with source title text, icon, and border
+   * - `'number'` — compact numbered badge (1, 2, 3…)
+   * @default 'label'
+   */
+  citationStyle?: 'label' | 'number';
   xstyle?: StyleXStyles;
   className?: string;
   style?: React.CSSProperties;
@@ -276,7 +283,7 @@ const styles = stylex.create({
     alignItems: 'center',
     gap: spacingVars['--spacing-1'],
     verticalAlign: 'baseline',
-    height: spacingVars['--spacing-4'],
+    height: spacingVars['--spacing-5'],
     fontSize: typeScaleVars['--text-supporting-size'],
     fontWeight: typeScaleVars['--text-supporting-weight'],
     lineHeight: typeScaleVars['--text-supporting-leading'],
@@ -304,6 +311,32 @@ const styles = stylex.create({
     whiteSpace: 'nowrap',
     minWidth: 0,
   },
+  // Number mode — compact superscript badge
+  citationNumber: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    verticalAlign: 'super',
+    fontSize: typeScaleVars['--text-supporting-size'],
+    fontWeight: fontWeightVars['--font-weight-semibold'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
+    color: colorVars['--color-text-accent'],
+    backgroundColor: colorVars['--color-accent-muted'],
+    borderRadius: radiusVars['--radius-full'],
+    minWidth: spacingVars['--spacing-5'],
+    height: spacingVars['--spacing-5'],
+    paddingInline: spacingVars['--spacing-1'],
+    textDecoration: 'none',
+    cursor: 'pointer',
+    transitionProperty: 'background-color',
+    transitionDuration: durationVars['--duration-fast-max'],
+    transitionTimingFunction: easeVars['--ease-standard'],
+  },
+  citationNumberHover: {
+    backgroundColor: {
+      ':hover': colorVars['--color-overlay-hover'],
+    },
+  },
   citationHover: {
     backgroundColor: {
       ':hover': colorVars['--color-overlay-hover'],
@@ -316,8 +349,8 @@ const styles = stylex.create({
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
-    width: spacingVars['--spacing-3'],
-    height: spacingVars['--spacing-3'],
+    width: spacingVars['--spacing-4'],
+    height: spacingVars['--spacing-4'],
     borderRadius: radiusVars['--radius-full'],
     backgroundColor: colorVars['--color-background-surface'],
     borderWidth: borderVars['--border-width'],
@@ -327,8 +360,8 @@ const styles = stylex.create({
     flexShrink: 0,
   },
   citationIcon: {
-    width: spacingVars['--spacing-2'],
-    height: spacingVars['--spacing-2'],
+    width: spacingVars['--spacing-3'],
+    height: spacingVars['--spacing-3'],
   },
 });
 
@@ -502,10 +535,9 @@ function wrapTextWithFade(
  */
 interface CitationContext {
   sources: Record<string, XDSMarkdownSource>;
-  /** Maps sourceId → display number (1-based, assigned in encounter order) */
   numberMap: Map<string, number>;
-  /** Next number to assign */
   nextNumber: number;
+  style: 'label' | 'number';
 }
 
 function getCitationNumber(ctx: CitationContext, sourceId: string): number {
@@ -639,7 +671,21 @@ function renderInline(
         : {title};
 
       const isNew = cursor.active && cursor.offset >= cursor.boundary;
-      const chip = (
+      const isNumberMode = citationCtx.style === 'number';
+
+      const chip = isNumberMode ? (
+        <Tag
+          key={index}
+          role="doc-noteref"
+          aria-label={`Citation ${num}: ${title}`}
+          {...linkProps}
+          {...stylex.props(
+            styles.citationNumber,
+            href != null && styles.citationNumberHover,
+          )}>
+          {num}
+        </Tag>
+      ) : (
         <Tag
           key={index}
           role="doc-noteref"
@@ -1086,6 +1132,7 @@ export function XDSMarkdown({
   isStreaming = false,
   onLinkClick,
   sources,
+  citationStyle = 'label',
   xstyle,
   className,
   style,
@@ -1134,7 +1181,7 @@ export function XDSMarkdown({
   // Build citation context — numbers are assigned in encounter order during rendering.
   // This is recreated each render so numbering stays consistent with the AST.
   const citationCtx: CitationContext | null = sources
-    ? {sources, numberMap: new Map(), nextNumber: 1}
+    ? {sources, numberMap: new Map(), nextNumber: 1, style: citationStyle}
     : null;
 
   const rendered = (
