@@ -15,6 +15,7 @@ import {XDSSelector} from '@xds/core/Selector';
 import Image from 'next/image';
 import illustrationSrc from './illustration.png';
 import {colorVars, fontWeightVars} from '@xds/core/theme/tokens.stylex';
+import './form-two-column.css';
 
 // ─────────────────────────────────────────────────────────────
 // Constants
@@ -101,65 +102,6 @@ export default function FormTwoColumnPage() {
   const handleSubmit = () => setSubmitted(true);
 
   return (
-    <>
-      <style>{`
-        .ftc-page {
-          background-color: var(--color-background-surface);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          min-height: 100svh;
-          padding: 48px;
-          position: fixed;
-          inset: 0;
-          overflow: auto;
-        }
-        .ftc-inner {
-          max-width: 1100px;
-          width: 100%;
-          display: flex;
-          flex-direction: column;
-          gap: 56px;
-        }
-        .ftc-top-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 80px;
-          align-items: center;
-        }
-        .ftc-inline-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 12px;
-        }
-        .ftc-footer-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr 1fr;
-          gap: 32px;
-          padding-top: 32px;
-          text-align: center;
-        }
-        @media (max-width: 767px) {
-          .ftc-page {
-            padding: 20px;
-            align-items: flex-start;
-          }
-          .ftc-top-grid {
-            grid-template-columns: 1fr;
-            gap: 32px;
-          }
-          .ftc-image {
-            width: 100% !important;
-          }
-          .ftc-footer-grid {
-            grid-template-columns: 1fr;
-            text-align: left;
-          }
-          .ftc-inline-grid {
-            grid-template-columns: 1fr;
-          }
-        }
-      `}</style>
       <div className="ftc-page">
         <div className="ftc-inner">
 
@@ -297,6 +239,5 @@ export default function FormTwoColumnPage() {
 
         </div>
       </div>
-    </>
   );
 }
