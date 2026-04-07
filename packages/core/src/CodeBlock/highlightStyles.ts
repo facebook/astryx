@@ -5,7 +5,7 @@
  * @position Shared utility; consumed by XDSCodeBlock and XDSCodeEditor
  *
  * SYNC: When modified, update:
- * - /packages/core/src/theme/domainTokens.ts (syntax color token names/defaults)
+ * - /packages/core/src/theme/domainTokens/syntaxTokens.ts (syntax color token names/defaults)
  */
 
 import {syntaxTokenDefaults} from '../theme';
