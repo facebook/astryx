@@ -3,63 +3,31 @@
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
-import {XDSCard} from '@xds/core/Card';
 import {XDSButton} from '@xds/core/Button';
 import {XDSText} from '@xds/core/Text';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSSelector} from '@xds/core/Selector';
 import {XDSTextArea} from '@xds/core/TextArea';
 import {XDSLink} from '@xds/core/Link';
-import {XDSAvatar} from '@xds/core/Avatar';
+import {XDSDivider} from '@xds/core/Divider';
 import {colorVars, fontWeightVars} from '@xds/core/theme/tokens.stylex';
 
 // ─────────────────────────────────────────────────────────────
 // Constants
 // ─────────────────────────────────────────────────────────────
 
-const COMPANY_SIZES = [
-  '1–10 employees',
-  '11–50 employees',
-  '51–200 employees',
-  '201–1000 employees',
-  '1000+ employees',
+const INQUIRY_REASONS = [
+  'General inquiry',
+  'New business',
+  'Press & partnerships',
+  'Recurring work',
+  'Other',
 ];
 
-const USE_CASES = [
-  {label: 'Run it ourselves', value: 'self'},
-  {label: 'Managed service', value: 'managed'},
-];
-
-const CONTACT_GRID = [
-  {
-    category: 'General inquiries',
-    name: 'Alex Johnson',
-    email: 'hello@company.com',
-  },
-  {
-    category: 'New business',
-    name: 'Jordan Lee',
-    email: 'newbiz@company.com',
-  },
-  {
-    category: 'Press & partnerships',
-    name: 'Morgan Smith',
-    email: 'press@company.com',
-  },
-  {
-    category: 'Recurring work',
-    name: 'Taylor Brown',
-    email: 'work@company.com',
-  },
-  {
-    category: 'Find us',
-    address: ['123 Main Street', 'Suite 400', 'San Francisco, CA 94103'],
-  },
-  {
-    category: 'Give us a ring',
-    phone: '+1 (415) 000-0000',
-    hours: ['9am – 6pm', 'Mon to Fri'],
-  },
+const CONTACT_COLUMNS = [
+  {label: 'General inquiries', email: 'hello@company.com'},
+  {label: 'New business', email: 'newbiz@company.com'},
+  {label: 'Press & partnerships', email: 'press@company.com'},
 ];
 
 // ─────────────────────────────────────────────────────────────
@@ -73,85 +41,36 @@ const styles = stylex.create({
   fullWidth: {
     width: '100%',
   },
-  goalButton: {
-    flex: 1,
-  },
-  contactGrid: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: '32px',
-  },
-  categoryLabel: {
-    color: colorVars['--color-text-secondary'],
-    fontSize: 13,
+  imagePlaceholder: {
+    backgroundColor: colorVars['--color-background-muted'],
+    borderRadius: 12,
+    width: '100%',
+    aspectRatio: '4 / 3',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
-
-// ─────────────────────────────────────────────────────────────
-// Contact cell
-// ─────────────────────────────────────────────────────────────
-
-function ContactCell(item: (typeof CONTACT_GRID)[number]) {
-  return (
-    <XDSVStack gap={2}>
-      <XDSText type="supporting" color="secondary">
-        {item.category}
-      </XDSText>
-
-      {'name' in item && item.name != null ? (
-        <XDSHStack gap={3} vAlign="center">
-          <XDSAvatar name={item.name} size="medium" />
-          <XDSVStack gap={0}>
-            <XDSText type="body" weight="semibold">
-              {item.name}
-            </XDSText>
-            <XDSLink label={item.email ?? ''} href={`mailto:${item.email}`} type="supporting">
-              {item.email}
-            </XDSLink>
-          </XDSVStack>
-        </XDSHStack>
-      ) : 'address' in item && item.address != null ? (
-        <XDSVStack gap={0}>
-          {item.address.map(line => (
-            <XDSText key={line} type="body">
-              {line}
-            </XDSText>
-          ))}
-        </XDSVStack>
-      ) : 'phone' in item && item.phone != null ? (
-        <XDSVStack gap={0}>
-          <XDSText type="body" weight="semibold">
-            {item.phone}
-          </XDSText>
-          {(item.hours ?? []).map(line => (
-            <XDSText key={line} type="body" color="secondary">
-              {line}
-            </XDSText>
-          ))}
-        </XDSVStack>
-      ) : null}
-    </XDSVStack>
-  );
-}
 
 // ─────────────────────────────────────────────────────────────
 // Page
 // ─────────────────────────────────────────────────────────────
 
 /**
- * Form (Two-column) — marketing lead-gen / demo request form template.
+ * Form (Two-column) — marketing contact form template.
  *
- * Layout: full-height split. Left side has a large display heading and a
- * 2x3 contact info grid. Right side is a contained form card.
+ * Layout:
+ *   Top: two-column — left has headline + description + illustration placeholder,
+ *        right has the contact form fields.
+ *   Bottom: three-column contact info strip with email links.
  */
 export default function FormTwoColumnPage() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
-  const [company, setCompany] = useState('');
-  const [companySize, setCompanySize] = useState('');
   const [phone, setPhone] = useState('');
-  const [goal, setGoal] = useState('');
-  const [notes, setNotes] = useState('');
+  const [company, setCompany] = useState('');
+  const [inquiryReason, setInquiryReason] = useState('');
+  const [details, setDetails] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
   const errors = submitted
@@ -166,182 +85,155 @@ export default function FormTwoColumnPage() {
   return (
     <div
       {...stylex.props(styles.pageBg)}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '100svh',
-        padding: 48,
-        position: 'fixed',
-        inset: 0,
-        overflow: 'auto',
-      }}>
+      style={{minHeight: '100svh', display: 'flex', flexDirection: 'column'}}>
       <div
         style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 480px',
-          gap: 80,
           maxWidth: 1100,
+          margin: '0 auto',
           width: '100%',
-          alignItems: 'center',
+          padding: '64px 48px 0',
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 64,
         }}>
-        {/* ── Left: Hero + contact grid ── */}
-        <XDSVStack gap={8}>
-          {/* Display heading — matches contact-form template size */}
-          <div
-            style={{
-              fontSize: 48,
-              fontWeight: fontWeightVars['--font-weight-bold'],
-              lineHeight: 1.05,
-              letterSpacing: '-0.03em',
-              margin: 0,
-            }}>
-            Let&apos;s work together
-          </div>
 
-          {/* 2x3 contact grid */}
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: 32,
-            }}>
-            {CONTACT_GRID.map(item => (
-              <ContactCell key={item.category} {...item} />
-            ))}
-          </div>
-        </XDSVStack>
+        {/* ── Top: two-column ── */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: 80,
+            alignItems: 'start',
+          }}>
 
-        {/* ── Right: Form card ── */}
-        <XDSCard padding={8}>
-          <XDSVStack gap={5}>
-            {/* Card header */}
-            <XDSVStack gap={1}>
+          {/* Left: headline + description + illustration */}
+          <XDSVStack gap={6}>
+            <XDSVStack gap={3}>
               <div
                 style={{
-                  fontSize: 22,
+                  fontSize: 48,
                   fontWeight: fontWeightVars['--font-weight-bold'],
-                  lineHeight: 1.2,
+                  lineHeight: 1.05,
+                  letterSpacing: '-0.03em',
                   margin: 0,
                 }}>
-                Request a demo
+                Let&apos;s work together
               </div>
-              <XDSText type="supporting" color="secondary">
-                Fill out the form and we&apos;ll be in touch within one business
-                day.
+              <XDSText type="body" color="secondary">
+                Tell us what you&apos;re working on and we&apos;ll help you
+                figure out the best path forward.
               </XDSText>
             </XDSVStack>
 
-            {/* Fields */}
-            <XDSVStack gap={3}>
+            {/* Illustration placeholder — replace src with your image */}
+            <div {...stylex.props(styles.imagePlaceholder)}>
+              <XDSText type="supporting" color="secondary">
+                Illustration coming soon
+              </XDSText>
+            </div>
+          </XDSVStack>
+
+          {/* Right: form */}
+          <XDSVStack gap={4}>
+            <XDSTextInput
+              label="Full name"
+              isLabelHidden
+              placeholder="Full name*"
+              value={fullName}
+              onChange={setFullName}
+              status={
+                errors.fullName
+                  ? {type: 'error', message: errors.fullName}
+                  : undefined
+              }
+            />
+
+            <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16}}>
               <XDSTextInput
-                label="Full Name"
+                label="Email"
                 isLabelHidden
-                placeholder="Full Name*"
-                value={fullName}
-                onChange={setFullName}
+                placeholder="Email*"
+                value={email}
+                onChange={setEmail}
                 status={
-                  errors.fullName
-                    ? {type: 'error', message: errors.fullName}
+                  errors.email
+                    ? {type: 'error', message: errors.email}
                     : undefined
                 }
               />
-
-              <XDSVStack gap={1}>
-                <XDSTextInput
-                  label="Business Email"
-                  isLabelHidden
-                  placeholder="Business Email*"
-                  value={email}
-                  onChange={setEmail}
-                  status={
-                    errors.email
-                      ? {type: 'error', message: errors.email}
-                      : undefined
-                  }
-                />
-                <XDSText type="supporting" color="secondary">
-                  Work email required — no personal accounts
-                </XDSText>
-              </XDSVStack>
-
               <XDSTextInput
-                label="Company"
+                label="Phone number"
                 isLabelHidden
-                placeholder="Company"
-                value={company}
-                onChange={setCompany}
-              />
-
-              <XDSSelector
-                label="Company size"
-                isLabelHidden
-                placeholder="Company size"
-                options={COMPANY_SIZES}
-                value={companySize}
-                onChange={setCompanySize}
-              />
-
-              <XDSTextInput
-                label="Business Phone"
-                isLabelHidden
-                placeholder="Business Phone"
+                placeholder="Phone number"
                 value={phone}
                 onChange={setPhone}
               />
-            </XDSVStack>
+            </div>
 
-            {/* Goal toggle */}
-            <XDSVStack gap={2}>
-              <XDSText type="label" weight="semibold">
-                What&apos;s your primary goal?
-              </XDSText>
-              <XDSHStack gap={2}>
-                {USE_CASES.map(opt => (
-                  <XDSButton
-                    key={opt.value}
-                    label={opt.label}
-                    variant={goal === opt.value ? 'primary' : 'secondary'}
-                    xstyle={styles.goalButton}
-                    onClick={() =>
-                      setGoal(prev => (prev === opt.value ? '' : opt.value))
-                    }
-                  />
-                ))}
-              </XDSHStack>
-            </XDSVStack>
+            <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16}}>
+              <XDSTextInput
+                label="Company name"
+                isLabelHidden
+                placeholder="Company name"
+                value={company}
+                onChange={setCompany}
+              />
+              <XDSSelector
+                label="Inquiry reason"
+                isLabelHidden
+                placeholder="Inquiry reason*"
+                options={INQUIRY_REASONS}
+                value={inquiryReason}
+                onChange={setInquiryReason}
+              />
+            </div>
 
-            {/* Notes */}
             <XDSTextArea
-              label="Additional notes"
+              label="Project details"
               isLabelHidden
-              placeholder="Tell us more about your use case (optional)"
-              value={notes}
-              onChange={setNotes}
+              placeholder="Project details*"
+              value={details}
+              onChange={setDetails}
             />
 
-            {/* CTA */}
             <XDSButton
-              label="Request a demo"
+              label="Let's connect"
               variant="primary"
               xstyle={styles.fullWidth}
               onClick={handleSubmit}
             />
-
-            {/* Legal */}
-            <XDSText type="supporting" color="secondary">
-              By submitting this form, you agree to our{' '}
-              <XDSLink label="Terms" href="#" type="supporting">
-                Terms
-              </XDSLink>{' '}
-              and{' '}
-              <XDSLink label="Privacy Policy" href="#" type="supporting">
-                Privacy Policy
-              </XDSLink>
-              .
-            </XDSText>
           </XDSVStack>
-        </XDSCard>
+        </div>
+
+        {/* ── Bottom: contact strip ── */}
+        <div>
+          <XDSDivider />
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr 1fr',
+              gap: 32,
+              paddingTop: 32,
+              paddingBottom: 48,
+              textAlign: 'center',
+            }}>
+            {CONTACT_COLUMNS.map(col => (
+              <XDSVStack key={col.label} gap={1} hAlign="center">
+                <XDSText type="supporting" color="secondary">
+                  {col.label}
+                </XDSText>
+                <XDSLink
+                  label={col.email}
+                  href={`mailto:${col.email}`}
+                  type="body">
+                  {col.email}
+                </XDSLink>
+              </XDSVStack>
+            ))}
+          </div>
+        </div>
+
       </div>
     </div>
   );
