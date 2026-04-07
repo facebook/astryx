@@ -49,12 +49,24 @@ const CONTACT_COLUMNS = [
 // Styles
 // ─────────────────────────────────────────────────────────────
 
+const MOBILE = '@media (max-width: 768px)';
+
 const styles = stylex.create({
   pageBg: {
     backgroundColor: colorVars['--color-background-surface'],
   },
   fullWidth: {
     width: '100%',
+  },
+  topGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: 80,
+    alignItems: 'center',
+    [MOBILE]: {
+      gridTemplateColumns: '1fr',
+      gap: 32,
+    },
   },
   imagePlaceholder: {
     backgroundColor: colorVars['--color-background-surface'],
@@ -65,6 +77,20 @@ const styles = stylex.create({
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'flex-start',
+    [MOBILE]: {
+      width: '100%',
+    },
+  },
+  footerGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr 1fr',
+    gap: 32,
+    paddingTop: 32,
+    textAlign: 'center',
+    [MOBILE]: {
+      gridTemplateColumns: '1fr',
+      textAlign: 'left',
+    },
   },
 });
 
@@ -124,13 +150,7 @@ export default function FormTwoColumnPage() {
         }}>
 
         {/* ── Top: two-column ── */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gap: 80,
-            alignItems: 'center',
-          }}>
+        <div {...stylex.props(styles.topGrid)}>
 
           {/* Left: headline + description + illustration */}
           <XDSVStack gap={6}>
@@ -250,14 +270,7 @@ export default function FormTwoColumnPage() {
         {/* ── Bottom: contact strip ── */}
         <div>
           <XDSDivider />
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr 1fr',
-              gap: 32,
-              paddingTop: 32,
-              textAlign: 'center',
-            }}>
+          <div {...stylex.props(styles.footerGrid)}>
             {CONTACT_COLUMNS.map(col => (
               <XDSVStack key={col.label} gap={1} hAlign="center">
                 <XDSText type="supporting" color="secondary">
