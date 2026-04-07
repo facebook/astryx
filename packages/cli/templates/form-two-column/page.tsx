@@ -11,6 +11,7 @@ import {XDSTextArea} from '@xds/core/TextArea';
 import {XDSLink} from '@xds/core/Link';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSCard} from '@xds/core/Card';
+import {XDSSelector} from '@xds/core/Selector';
 import {colorVars, fontWeightVars} from '@xds/core/theme/tokens.stylex';
 
 // ─────────────────────────────────────────────────────────────
@@ -22,7 +23,18 @@ const INQUIRY_REASONS = [
   'General inquiry',
   'Press & media',
   'Partnerships',
+  'Product feedback',
+  'Technical support',
   'Other',
+];
+
+const BUDGET_OPTIONS = [
+  'Under $10k',
+  '$10k – $50k',
+  '$50k – $100k',
+  '$100k – $500k',
+  '$500k+',
+  'Not sure yet',
 ];
 
 const CONTACT_COLUMNS = [
@@ -71,6 +83,7 @@ export default function FormTwoColumnPage() {
   const [company, setCompany] = useState('');
   const [phone, setPhone] = useState('');
   const [inquiryReason, setInquiryReason] = useState('');
+  const [budget, setBudget] = useState('');
   const [details, setDetails] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
@@ -141,7 +154,9 @@ export default function FormTwoColumnPage() {
 
           {/* Right: form on a card */}
           <XDSCard padding={8} >
-            <XDSVStack gap={4}>
+            <XDSVStack gap={6}>
+              <XDSVStack gap={4}>
+                <XDSText type="title3">Your details</XDSText>
               <XDSTextInput
                 label="Full name"
                 isLabelHidden
@@ -184,6 +199,10 @@ export default function FormTwoColumnPage() {
                 />
               </div>
 
+              </XDSVStack>
+
+              <XDSText type="title3">Tell us more</XDSText>
+
               <XDSVStack gap={2}>
                 <XDSText type="label">What are you reaching out about?</XDSText>
                 <div style={{display: 'flex', flexWrap: 'wrap', gap: 8}}>
@@ -201,6 +220,13 @@ export default function FormTwoColumnPage() {
                   ))}
                 </div>
               </XDSVStack>
+              <XDSSelector
+                label="Budget range"
+                options={BUDGET_OPTIONS}
+                value={budget}
+                onChange={setBudget}
+                placeholder="Select a budget range..."
+              />
               <XDSTextArea
                 label="Project details"
                 isLabelHidden
