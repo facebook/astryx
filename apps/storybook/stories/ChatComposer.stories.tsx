@@ -17,7 +17,7 @@ const meta: Meta<typeof XDSChatComposer> = {
     layout: 'centered',
   },
   decorators: [
-    (Story) => (
+    Story => (
       <div style={{width: 600, padding: 40}}>
         <Story />
       </div>
@@ -36,7 +36,7 @@ type Story = StoryObj<typeof XDSChatComposer>;
 export const Simplest: Story = {
   render: () => (
     <XDSChatComposer
-      onSubmit={(value) => {
+      onSubmit={value => {
         console.log('Submit:', value);
         alert(`Sent: ${value}`);
       }}
@@ -50,7 +50,7 @@ export const WithStreaming: Story = {
     const [isStreaming, setIsStreaming] = useState(true);
     return (
       <XDSChatComposer
-        onSubmit={(value) => {
+        onSubmit={value => {
           console.log('Submit:', value);
           setIsStreaming(true);
         }}
@@ -68,11 +68,11 @@ export const WithStreaming: Story = {
 export const WithFooterActions: Story = {
   render: () => (
     <XDSChatComposer
-      onSubmit={(value) => console.log('Submit:', value)}
+      onSubmit={value => console.log('Submit:', value)}
       footerActions={
         <>
-          <XDSButton label="GPT-4" variant="ghost" size="sm" />
-          <XDSButton label="Mic" variant="ghost" size="sm" />
+          <XDSButton label="GPT-4" variant="ghost" size="md" />
+          <XDSButton label="Mic" variant="ghost" size="md" />
         </>
       }
     />
@@ -83,7 +83,7 @@ export const WithFooterActions: Story = {
 export const WithAttachments: Story = {
   render: () => (
     <XDSChatComposer
-      onSubmit={(value) => console.log('Submit:', value)}
+      onSubmit={value => console.log('Submit:', value)}
       attachments={
         <XDSChatComposerAttachments>
           <XDSToken label="report.pdf" onDismiss={() => {}} />
@@ -105,7 +105,7 @@ export const FullFeatured: Story = {
     const [isStreaming, setIsStreaming] = useState(false);
     return (
       <XDSChatComposer
-        onSubmit={(value) => {
+        onSubmit={value => {
           console.log('Submit:', value);
           setIsStreaming(true);
           setTimeout(() => setIsStreaming(false), 3000);
@@ -125,13 +125,11 @@ export const FullFeatured: Story = {
         }
         footerActions={
           <>
-            <XDSButton label="Attach" variant="ghost" size="sm" />
-            <XDSButton label="GPT-4o" variant="ghost" size="sm" />
+            <XDSButton label="Attach" variant="ghost" size="md" />
+            <XDSButton label="GPT-4o" variant="ghost" size="md" />
           </>
         }
-        sendActions={
-          <XDSButton label="Schedule" variant="ghost" size="sm" />
-        }
+        sendActions={<XDSButton label="Schedule" variant="ghost" size="md" />}
       />
     );
   },
@@ -148,11 +146,64 @@ export const Disabled: Story = {
   ),
 };
 
+/** With many attachments and collapsible drawer */
+export const WithManyAttachments: Story = {
+  render: () => (
+    <XDSChatComposer
+      onSubmit={value => console.log('Submit:', value)}
+      attachments={
+        <XDSChatComposerAttachments count={6}>
+          <XDSToken label="new_feature_prd.docx" onDismiss={() => {}} />
+          <XDSToken label="2026_roadmap.docx" onDismiss={() => {}} />
+          <XDSToken label="user_flow.pdf" onDismiss={() => {}} />
+          <XDSToken label="launch_plan.docx" onDismiss={() => {}} />
+          <XDSToken label="user_feedback.csv" onDismiss={() => {}} />
+          <XDSToken label="kpis.csv" onDismiss={() => {}} />
+        </XDSChatComposerAttachments>
+      }
+    />
+  ),
+};
+
 /** With error status */
 export const WithError: Story = {
   render: () => (
     <XDSChatComposer
-      onSubmit={(value) => console.log('Submit:', value)}
+      onSubmit={value => console.log('Submit:', value)}
+      status={{
+        type: 'error',
+        message: 'Failed to send message. Please try again.',
+      }}
+    />
+  ),
+};
+
+/** With attachments and status on top */
+export const WithAttachmentsAndStatusTop: Story = {
+  render: () => (
+    <XDSChatComposer
+      onSubmit={value => console.log('Submit:', value)}
+      statusPosition="top"
+      attachments={
+        <XDSChatComposerAttachments count={3}>
+          <XDSToken label="report.pdf" onDismiss={() => {}} />
+          <XDSToken label="data.csv" onDismiss={() => {}} />
+          <XDSToken label="notes.docx" onDismiss={() => {}} />
+        </XDSChatComposerAttachments>
+      }
+      status={{
+        type: 'warning',
+        message: 'Large files may take longer to process.',
+      }}
+    />
+  ),
+};
+
+/** With status on bottom */
+export const WithStatusBottom: Story = {
+  render: () => (
+    <XDSChatComposer
+      onSubmit={value => console.log('Submit:', value)}
       status={{
         type: 'error',
         message: 'Failed to send message. Please try again.',

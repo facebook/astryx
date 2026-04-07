@@ -5,7 +5,8 @@
  * @input Uses React, StyleX, theme tokens
  * @output Exports XDSChatComposerAttachments component
  * @position Layout container for attachment items inside XDSChatComposer.
- *   Supports expanded (full content) and collapsed (count + label) states.
+ *   Supports expanded (full content) and collapsed (count + label) states
+ *   with animated grid-template-rows transition.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Chat/index.ts (exports)
@@ -18,9 +19,11 @@ import {
   colorVars,
   spacingVars,
   radiusVars,
+  durationVars,
+  easeVars,
   typeScaleVars,
-  fontWeightVars,
 } from '../theme/tokens.stylex';
+import {XDSBadge} from '../Badge';
 import {xdsClassName, mergeProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 
@@ -63,40 +66,107 @@ export interface XDSChatComposerAttachmentsProps extends XDSBaseProps<HTMLDivEle
 
 const styles = stylex.create({
   root: {
+    position: 'relative',
+    zIndex: 1,
     display: 'flex',
     flexDirection: 'column',
-    gap: spacingVars['--spacing-2'],
+    paddingInline: spacingVars['--spacing-4'],
+    paddingBlockStart: spacingVars['--spacing-3'],
+    paddingBlockEnd: `calc(${spacingVars['--spacing-3']} + ${radiusVars['--radius-page']})`,
+    marginBlockEnd: `calc(-1 * ${radiusVars['--radius-page']})`,
+    backgroundColor: colorVars['--color-background-surface'],
+    '::before': {
+      content: '""',
+      position: 'absolute',
+      inset: 0,
+      borderTopLeftRadius: 'inherit',
+      borderTopRightRadius: 'inherit',
+      backgroundColor: colorVars['--color-background-muted'],
+      pointerEvents: 'none',
+    },
+    borderTopLeftRadius: radiusVars['--radius-page'],
+    borderTopRightRadius: radiusVars['--radius-page'],
   },
-  content: {
-    display: 'flex',
-    flexWrap: 'wrap',
-    gap: spacingVars['--spacing-1'],
-    alignItems: 'center',
-  },
-  collapsed: {
+
+  // Toggle row — click target area for collapse/expand
+  toggleRow: {
     display: 'flex',
     alignItems: 'center',
-    gap: spacingVars['--spacing-2'],
+    justifyContent: 'center',
+    paddingBlock: spacingVars['--spacing-2'],
+    paddingInline: spacingVars['--spacing-4'],
+    marginBlockStart: `calc(-1 * ${spacingVars['--spacing-2']})`,
+    marginInline: `calc(-1 * ${spacingVars['--spacing-4']})`,
     cursor: 'pointer',
     userSelect: 'none',
   },
-  badge: {
+  toggleCollapsed: {
+    justifyContent: 'flex-start',
+    paddingBlockEnd: 0,
+  },
+  toggleContent: {
     display: 'inline-flex',
     alignItems: 'center',
-    justifyContent: 'center',
-    minWidth: '24px',
-    height: '24px',
-    paddingInline: spacingVars['--spacing-1'],
+    gap: spacingVars['--spacing-2'],
     borderRadius: radiusVars['--radius-full'],
-    backgroundColor: colorVars['--color-accent-muted'],
-    color: colorVars['--color-accent'],
-    fontSize: typeScaleVars['--text-label-size'],
-    fontWeight: fontWeightVars['--font-weight-semibold'],
+    opacity: 1,
+    transitionProperty: 'opacity',
+    transitionDuration: durationVars['--duration-fast'],
+    transitionTimingFunction: easeVars['--ease-standard'],
+    '@starting-style': {
+      opacity: 0,
+    },
   },
   collapseLabel: {
-    color: colorVars['--color-text-secondary'],
-    fontSize: typeScaleVars['--text-label-size'],
-    fontWeight: fontWeightVars['--font-weight-medium'],
+    color: {
+      default: colorVars['--color-text-secondary'],
+      [stylex.when.ancestor(':hover')]: {
+        '@media (hover: hover)': colorVars['--color-text-primary'],
+      },
+    },
+    fontSize: typeScaleVars['--text-body-size'],
+    lineHeight: typeScaleVars['--text-body-leading'],
+    transitionProperty: 'color',
+    transitionDuration: durationVars['--duration-fast'],
+    transitionTimingFunction: easeVars['--ease-standard'],
+  },
+  collapseBarHandle: {
+    width: '20px',
+    height: '2px',
+    borderRadius: radiusVars['--radius-full'],
+    backgroundColor: {
+      default: colorVars['--color-border-emphasized'],
+      [stylex.when.ancestor(':hover')]: {
+        '@media (hover: hover)': colorVars['--color-text-primary'],
+      },
+    },
+    opacity: 1,
+    transitionProperty: 'background-color, opacity',
+    transitionDuration: durationVars['--duration-fast'],
+    transitionTimingFunction: easeVars['--ease-standard'],
+    '@starting-style': {
+      opacity: 0,
+    },
+  },
+
+  // Animated content area
+  contentGrid: {
+    display: 'grid',
+    gridTemplateRows: '1fr',
+    transitionProperty: 'grid-template-rows',
+    transitionDuration: durationVars['--duration-medium'],
+    transitionTimingFunction: easeVars['--ease-standard'],
+  },
+  contentGridCollapsed: {
+    gridTemplateRows: '0fr',
+  },
+  content: {
+    overflow: 'hidden',
+    minHeight: 0,
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: spacingVars['--spacing-2'],
+    alignItems: 'flex-start',
   },
 });
 
@@ -114,7 +184,8 @@ export function XDSChatComposerAttachments({
   'data-testid': testId,
   ...htmlProps
 }: XDSChatComposerAttachmentsProps): React.ReactElement {
-  const [internalCollapsed, setInternalCollapsed] = useState(defaultIsCollapsed);
+  const [internalCollapsed, setInternalCollapsed] =
+    useState(defaultIsCollapsed);
   const isControlled = controlledCollapsed !== undefined;
   const isCollapsed = isControlled ? controlledCollapsed : internalCollapsed;
 
@@ -126,67 +197,65 @@ export function XDSChatComposerAttachments({
     onCollapsedChange?.(next);
   };
 
-  if (canCollapse && isCollapsed) {
-    return (
-      <div
-        ref={ref}
-        data-testid={testId}
-        role="button"
-        tabIndex={0}
-        aria-expanded={false}
-        onClick={toggle}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            toggle();
-          }
-        }}
-        {...mergeProps(
-          xdsClassName('chat-composer-attachments.collapsed'),
-          stylex.props(styles.collapsed, xstyle),
-          className,
-          style,
-        )}
-        {...htmlProps}
-      >
-        <span {...stylex.props(styles.badge)}>{count}</span>
-        <span {...stylex.props(styles.collapseLabel)}>{label}</span>
-      </div>
-    );
-  }
-
   return (
     <div
       ref={ref}
       data-testid={testId}
       {...mergeProps(
-        xdsClassName('chat-composer-attachments'),
+        xdsClassName('chat-composer-attachments', {collapsed: isCollapsed}),
         stylex.props(styles.root, xstyle),
         className,
         style,
       )}
-      {...htmlProps}
-    >
+      {...htmlProps}>
       {canCollapse && (
         <div
-          role="button"
-          tabIndex={0}
-          aria-expanded={true}
-          onClick={toggle}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              toggle();
-            }
-          }}
-          {...stylex.props(styles.collapsed)}
-        >
-          <span {...stylex.props(styles.badge)}>{count}</span>
-          <span {...stylex.props(styles.collapseLabel)}>{label}</span>
+          {...stylex.props(
+            styles.toggleRow,
+            isCollapsed && styles.toggleCollapsed,
+            stylex.defaultMarker(),
+          )}
+          onClick={toggle}>
+          {isCollapsed ? (
+            <div
+              role="button"
+              tabIndex={0}
+              aria-expanded={false}
+              aria-label={`Expand ${label}`}
+              onKeyDown={e => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  toggle();
+                }
+              }}
+              {...stylex.props(styles.toggleContent)}>
+              <XDSBadge variant="neutral" label={count} />
+              <span {...stylex.props(styles.collapseLabel)}>{label}</span>
+            </div>
+          ) : (
+            <div
+              role="button"
+              tabIndex={0}
+              aria-expanded={true}
+              aria-label={`Collapse ${label}`}
+              onKeyDown={e => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  toggle();
+                }
+              }}
+              {...stylex.props(styles.collapseBarHandle)}
+            />
+          )}
         </div>
       )}
-      <div {...stylex.props(styles.content)}>
-        {children}
+
+      <div
+        {...stylex.props(
+          styles.contentGrid,
+          canCollapse && isCollapsed && styles.contentGridCollapsed,
+        )}>
+        <div {...stylex.props(styles.content)}>{children}</div>
       </div>
     </div>
   );

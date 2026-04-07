@@ -12,12 +12,7 @@
  * override for child elements.
  */
 
-import {
-  useState,
-  useRef,
-  useCallback,
-  type ReactNode,
-} from 'react';
+import {useState, useRef, useCallback, type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -31,6 +26,7 @@ import {
   typographyVars,
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
+import {XDSIcon} from '../Icon';
 
 // =============================================================================
 // Types
@@ -43,8 +39,10 @@ export type XDSChatComposerStatus = {
 
 export type XDSChatComposerDensity = 'compact' | 'balanced' | 'spacious';
 
-export interface XDSChatComposerProps
-  extends Omit<XDSBaseProps<HTMLDivElement>, 'onChange' | 'onSubmit'> {
+export interface XDSChatComposerProps extends Omit<
+  XDSBaseProps<HTMLDivElement>,
+  'onChange' | 'onSubmit'
+> {
   /** Called when the user submits the message */
   onSubmit: (value: string) => void;
   /** Called when the user clicks stop during streaming */
@@ -70,15 +68,15 @@ export interface XDSChatComposerProps
   contextToolbar?: ReactNode;
   /** Custom input element — replaces the default textarea */
   input?: ReactNode;
-  /** Actions rendered on the left side of the footer */
+  /** Actions rendered on the left side of the footer. Use `size="md"` buttons to match the send button height. */
   footerActions?: ReactNode;
-  /** Actions rendered to the left of the send button */
+  /** Actions rendered to the left of the send button. Use `size="md"` buttons to match the send button height. */
   sendActions?: ReactNode;
   /** Custom send button — replaces the default */
   sendButton?: ReactNode;
   /** Status message rendered below the footer */
   status?: XDSChatComposerStatus;
-  /** Where to render the status. @default 'top' */
+  /** Where to render the status. @default 'bottom' */
   statusPosition?: 'top' | 'bottom';
 }
 
@@ -89,18 +87,10 @@ export interface XDSChatComposerProps
 const styles = stylex.create({
   root: {
     position: 'relative',
+    zIndex: 0,
+    isolation: 'isolate',
     display: 'flex',
     flexDirection: 'column',
-    borderRadius: radiusVars['--radius-page'],
-    backgroundColor: colorVars['--color-background-popover'],
-    boxShadow: {
-      default: shadowVars['--shadow-low'],
-      ':hover': { '@media (hover: hover)': shadowVars['--shadow-med'] },
-    },
-    transition: `box-shadow ${durationVars['--duration-fast']} ${easeVars['--ease-standard']}`,
-    ':focus-within': {
-      boxShadow: shadowVars['--shadow-med'],
-    },
     // Scoped radius override: child buttons/tokens get pill shape
     [radiusVars['--radius-element'] as string]: radiusVars['--radius-full'],
     [radiusVars['--radius-container'] as string]: radiusVars['--radius-full'],
@@ -110,11 +100,23 @@ const styles = stylex.create({
     opacity: 0.6,
     pointerEvents: 'none' as const,
   },
-  inner: {
+  body: {
+    position: 'relative',
+    zIndex: 2,
     display: 'flex',
     flexDirection: 'column',
     padding: spacingVars['--spacing-3'],
     gap: spacingVars['--spacing-2'],
+    borderRadius: radiusVars['--radius-page'],
+    backgroundColor: colorVars['--color-background-popover'],
+    boxShadow: {
+      default: shadowVars['--shadow-low'],
+      ':hover': {'@media (hover: hover)': shadowVars['--shadow-med']},
+    },
+    transition: `box-shadow ${durationVars['--duration-fast']} ${easeVars['--ease-standard']}`,
+    ':focus-within': {
+      boxShadow: shadowVars['--shadow-med'],
+    },
   },
   inputArea: {
     display: 'flex',
@@ -129,6 +131,7 @@ const styles = stylex.create({
     lineHeight: typeScaleVars['--text-body-leading'],
     fontFamily: typographyVars['--font-family-body'],
     color: colorVars['--color-text-primary'],
+    backgroundColor: 'transparent',
     caretColor: colorVars['--color-accent'],
     overflowY: 'auto' as const,
     maxHeight: '176px',
@@ -179,19 +182,37 @@ const styles = stylex.create({
     cursor: 'default',
   },
   statusBar: {
+    position: 'relative',
+    zIndex: 0,
     display: 'flex',
     alignItems: 'center',
-    gap: spacingVars['--spacing-1'],
-    paddingInline: spacingVars['--spacing-3'],
-    paddingBlockEnd: spacingVars['--spacing-2'],
-    fontSize: typeScaleVars['--text-label-size'],
-    lineHeight: typeScaleVars['--text-label-leading'],
+    gap: spacingVars['--spacing-2'],
+    paddingInline: spacingVars['--spacing-4'],
+    fontSize: typeScaleVars['--text-supporting-size'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
+    fontFamily: typographyVars['--font-family-body'],
+  },
+  statusTop: {
+    paddingBlockStart: spacingVars['--spacing-3'],
+    paddingBlockEnd: `calc(${spacingVars['--spacing-3']} + ${radiusVars['--radius-page']})`,
+    marginBlockEnd: `calc(-1 * ${radiusVars['--radius-page']})`,
+    borderTopLeftRadius: radiusVars['--radius-page'],
+    borderTopRightRadius: radiusVars['--radius-page'],
+  },
+  statusBottom: {
+    paddingBlockStart: `calc(${spacingVars['--spacing-3']} + ${radiusVars['--radius-page']})`,
+    paddingBlockEnd: spacingVars['--spacing-3'],
+    marginBlockStart: `calc(-1 * ${radiusVars['--radius-page']})`,
+    borderBottomLeftRadius: radiusVars['--radius-page'],
+    borderBottomRightRadius: radiusVars['--radius-page'],
   },
   statusError: {
-    color: colorVars['--color-error'],
+    backgroundColor: colorVars['--color-error-muted'],
+    color: colorVars['--color-text-red'],
   },
   statusWarning: {
-    color: colorVars['--color-warning'],
+    backgroundColor: colorVars['--color-warning-muted'],
+    color: colorVars['--color-text-yellow'],
   },
   compact: {
     padding: spacingVars['--spacing-2'],
@@ -246,7 +267,7 @@ export function XDSChatComposer(props: XDSChatComposerProps) {
     sendActions,
     sendButton,
     status,
-    statusPosition = 'top',
+    statusPosition = 'bottom',
     xstyle,
     className,
     style,
@@ -311,8 +332,7 @@ export function XDSChatComposer(props: XDSChatComposerProps) {
         styles.sendButton,
         isStreaming ? styles.sendButtonStop : styles.sendButtonSend,
         !isStreaming && !canSend && styles.sendButtonDisabled,
-      )}
-    >
+      )}>
       {isStreaming ? <StopIcon /> : <SendIcon />}
     </button>
   );
@@ -322,10 +342,15 @@ export function XDSChatComposer(props: XDSChatComposerProps) {
       role={status.type === 'error' ? 'alert' : 'status'}
       {...stylex.props(
         styles.statusBar,
+        statusPosition === 'top' ? styles.statusTop : styles.statusBottom,
         status.type === 'error' && styles.statusError,
         status.type === 'warning' && styles.statusWarning,
-      )}
-    >
+      )}>
+      <XDSIcon
+        icon={status.type === 'error' ? 'xCircle' : 'warning'}
+        size="md"
+        color={status.type === 'error' ? 'negative' : 'warning'}
+      />
       {status.message}
     </div>
   ) : null;
@@ -334,25 +359,16 @@ export function XDSChatComposer(props: XDSChatComposerProps) {
     <div
       {...mergeProps(
         xdsClassName('chat-composer', {density}),
-        stylex.props(
-          styles.root,
-          isDisabled && styles.rootDisabled,
-          xstyle,
-        ),
+        stylex.props(styles.root, isDisabled && styles.rootDisabled, xstyle),
         className,
         style,
       )}
-      {...rest}
-    >
+      {...rest}>
       {statusPosition === 'top' && statusEl}
-      <div
-        {...stylex.props(
-          styles.inner,
-          density === 'compact' && styles.compact,
-        )}
-      >
-        {attachments}
+      {attachments}
 
+      <div
+        {...stylex.props(styles.body, density === 'compact' && styles.compact)}>
         {contextToolbar}
 
         <div {...stylex.props(styles.inputArea)}>
@@ -371,9 +387,7 @@ export function XDSChatComposer(props: XDSChatComposerProps) {
         </div>
 
         <div {...stylex.props(styles.footer)}>
-          <div {...stylex.props(styles.footerLeft)}>
-            {footerActions}
-          </div>
+          <div {...stylex.props(styles.footerLeft)}>{footerActions}</div>
           <div {...stylex.props(styles.footerRight)}>
             {sendActions}
             {sendButton ?? defaultSendButton}
