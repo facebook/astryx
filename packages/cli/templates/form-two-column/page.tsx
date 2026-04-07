@@ -59,11 +59,12 @@ const styles = stylex.create({
   imagePlaceholder: {
     backgroundColor: colorVars['--color-background-surface'],
     borderRadius: 12,
-    width: '100%',
+    width: '85%',
     aspectRatio: '4 / 3',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+    alignSelf: 'flex-start',
   },
 });
 
