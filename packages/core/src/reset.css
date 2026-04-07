@@ -354,4 +354,35 @@
       outline: none;
     }
   }
+
+  /* ===========================================================================
+     Color Scheme
+     =========================================================================== */
+
+  /*
+   * Map data-theme attribute to CSS color-scheme.
+   *
+   * Setting data-theme on <html> tells the browser which color scheme
+   * to use for native UI elements (scrollbars, form controls, date
+   * pickers) and enables CSS light-dark() to resolve correctly.
+   *
+   * XDSTheme auto-detects when it's the root provider and syncs this
+   * attribute on the client. For RSC / SSR, set it on <html> in your
+   * root layout to avoid a flash of wrong theme:
+   *
+   *   <html lang="en" data-theme="dark">
+   *
+   * Values: "light" | "dark" | omitted (defaults to light dark = system)
+   */
+  :where(html[data-theme="light"]) {
+    color-scheme: light;
+  }
+
+  :where(html[data-theme="dark"]) {
+    color-scheme: dark;
+  }
+
+  :where(html:not([data-theme])) {
+    color-scheme: light dark;
+  }
 }
