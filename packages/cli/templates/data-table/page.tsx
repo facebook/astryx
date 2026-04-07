@@ -415,10 +415,7 @@ export default function DataTableTemplate() {
   const pendingCount = allUsers.filter(u => u.status === 'pending').length;
 
   return (
-    <XDSAppShell
-      sideNav={<DataTableSideNav />}
-      variant="elevated"
-      contentPadding={6}>
+    <XDSAppShell sideNav={<DataTableSideNav />} variant="elevated">
       <XDSVStack gap={6}>
         <XDSHStack gap={3} vAlign="center">
           <div style={{flex: 1}}>

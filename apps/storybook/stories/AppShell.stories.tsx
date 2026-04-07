@@ -295,7 +295,6 @@ export const Playground: StoryObj<
   }) {
     return (
       <XDSAppShell
-        contentPadding={6}
         topNav={args.showTopNav ? <AppTopNav /> : undefined}
         sideNav={
           args.showSideNav ? (
@@ -325,10 +324,7 @@ export const Playground: StoryObj<
  */
 export const TopNavWithSideNav: Story = {
   render: () => (
-    <XDSAppShell
-      contentPadding={6}
-      topNav={<AppTopNav />}
-      sideNav={<SideNavWithoutHeader />}>
+    <XDSAppShell topNav={<AppTopNav />} sideNav={<SideNavWithoutHeader />}>
       <MockContent />
     </XDSAppShell>
   ),
@@ -341,7 +337,7 @@ export const TopNavWithSideNav: Story = {
  */
 export const SideNavOnly: Story = {
   render: () => (
-    <XDSAppShell contentPadding={6} sideNav={<SideNavWithHeader />}>
+    <XDSAppShell sideNav={<SideNavWithHeader />}>
       <MockContent />
     </XDSAppShell>
   ),
@@ -353,7 +349,7 @@ export const SideNavOnly: Story = {
  */
 export const TopNavOnly: Story = {
   render: () => (
-    <XDSAppShell contentPadding={6} topNav={<AppTopNav />}>
+    <XDSAppShell topNav={<AppTopNav />}>
       <MockContent paragraphs={5} />
     </XDSAppShell>
   ),
@@ -370,7 +366,6 @@ export const TopNavOnly: Story = {
 export const FullFeatured: Story = {
   render: () => (
     <XDSAppShell
-      contentPadding={6}
       topNav={<AppTopNav />}
       sideNav={
         <XDSSideNav
@@ -473,7 +468,6 @@ export const FullFeatured: Story = {
 export const AutoHeight: Story = {
   render: () => (
     <XDSAppShell
-      contentPadding={6}
       topNav={<AppTopNav />}
       sideNav={<SideNavWithoutHeader />}
       height="auto">
@@ -494,7 +488,6 @@ export const ControlledCollapse: Story = {
     const [collapsed, setCollapsed] = useState(false);
     return (
       <XDSAppShell
-        contentPadding={6}
         topNav={
           <XDSTopNav
             label="Main navigation"
@@ -524,7 +517,7 @@ export const ControlledCollapse: Story = {
  */
 export const ContentOnly: Story = {
   render: () => (
-    <XDSAppShell contentPadding={6}>
+    <XDSAppShell>
       <MockContent paragraphs={5} />
     </XDSAppShell>
   ),
@@ -537,7 +530,6 @@ export const ContentOnly: Story = {
 export const WithBanner: Story = {
   render: () => (
     <XDSAppShell
-      contentPadding={6}
       topNav={<AppTopNav />}
       sideNav={<SideNavWithoutHeader />}
       banner={
@@ -618,7 +610,6 @@ export const WithMobileNav: Story = {
 
     return (
       <XDSAppShell
-        contentPadding={6}
         topNav={
           <XDSTopNav
             label="Main navigation"

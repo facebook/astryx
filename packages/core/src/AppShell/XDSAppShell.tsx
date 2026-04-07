@@ -170,10 +170,12 @@ export interface XDSAppShellProps {
   /**
    * Padding for the main content area using the spacing scale.
    * Set based on the dominant content pattern for the page:
-   * - `4` (16px) — standard padding for forms, settings, text-heavy pages
+   * - `6` (24px) — default, comfortable padding for most pages
+   * - `4` (16px) — tighter padding for forms, settings, text-heavy pages
    * - `0` — no padding, for dashboards, maps, tables that need edge-to-edge
    * Override individual sections with `<XDSSection padding={...}>`.
    * Accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.
+   * @default 6
    */
   contentPadding?: SpacingStep;
 
@@ -711,7 +713,7 @@ export function XDSAppShell({
 
   const mainInner = (
     <XDSLayoutContent
-      padding={contentPadding ?? 0}
+      padding={contentPadding ?? 6}
       role="main"
       id={MAIN_CONTENT_ID}
       isScrollable={isFill}

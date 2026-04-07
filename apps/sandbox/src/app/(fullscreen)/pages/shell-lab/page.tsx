@@ -825,7 +825,6 @@ export default function ShellLabPage() {
       <XDSAppShell
         variant={config.variant}
         height={config.height}
-        contentPadding={6}
         topNav={
           config.showTopNav ? (
             <SampleTopNav

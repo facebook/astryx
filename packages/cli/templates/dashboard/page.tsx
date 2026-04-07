@@ -621,8 +621,7 @@ export default function DashboardTemplate() {
           <XDSTopNavHeading>Documents</XDSTopNavHeading>
         </XDSTopNav>
       }
-      variant="elevated"
-      contentPadding={6}>
+      variant="elevated">
       <XDSVStack gap={6}>
         {/* Stats Grid */}
         <div {...stylex.props(styles.statsGrid)}>

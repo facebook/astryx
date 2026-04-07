@@ -516,13 +516,13 @@ describe('XDSAppShell', () => {
     expect(screen.getByText('Content')).toBeInTheDocument();
   });
 
-  it('defaults to contentPadding={0} when not specified', () => {
+  it('defaults to contentPadding={6} when not specified', () => {
     render(
       <XDSAppShell data-testid="shell">
         <div>Content</div>
       </XDSAppShell>,
     );
-    // Should render without error — padding=0 is the default
+    // Should render without error — padding=6 is the default
     expect(screen.getByRole('main')).toBeInTheDocument();
   });
 
