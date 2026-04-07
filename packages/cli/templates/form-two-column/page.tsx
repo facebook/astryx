@@ -12,6 +12,8 @@ import {XDSLink} from '@xds/core/Link';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSCard} from '@xds/core/Card';
 import {XDSSelector} from '@xds/core/Selector';
+import Image from 'next/image';
+import illustrationSrc from './illustration.png';
 import {colorVars, fontWeightVars} from '@xds/core/theme/tokens.stylex';
 
 // ─────────────────────────────────────────────────────────────
@@ -148,9 +150,11 @@ export default function FormTwoColumnPage() {
               </XDSText>
             </XDSVStack>
             <div {...stylex.props(styles.imagePlaceholder)}>
-              <XDSText type="supporting" color="secondary">
-                Illustration coming soon
-              </XDSText>
+              <Image
+                src={illustrationSrc}
+                alt="Illustration"
+                style={{width: '100%', height: '100%', objectFit: 'contain', borderRadius: 12}}
+              />
             </div>
           </XDSVStack>
 
