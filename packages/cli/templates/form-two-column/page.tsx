@@ -36,23 +36,8 @@ const CONTACT_COLUMNS = [
 // ─────────────────────────────────────────────────────────────
 
 const styles = stylex.create({
-  page: {
+  pageBg: {
     backgroundColor: colorVars['--color-background-body'],
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'fixed',
-    inset: 0,
-    overflow: 'auto',
-  },
-  inner: {
-    maxWidth: 1100,
-    width: '100%',
-    padding: '64px 48px',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 64,
   },
   fullWidth: {
     width: '100%',
@@ -99,8 +84,25 @@ export default function FormTwoColumnPage() {
   const handleSubmit = () => setSubmitted(true);
 
   return (
-    <div {...stylex.props(styles.page)}>
-      <div {...stylex.props(styles.inner)}>
+    <div
+      {...stylex.props(styles.pageBg)}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'fixed',
+        inset: 0,
+        overflow: 'auto',
+        padding: 48,
+      }}>
+      <div
+        style={{
+          maxWidth: 1100,
+          width: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 56,
+        }}>
 
         {/* ── Top: two-column ── */}
         <div
