@@ -38,11 +38,13 @@ const CONTACT_COLUMNS = [
 const styles = stylex.create({
   page: {
     backgroundColor: colorVars['--color-background-body'],
-    minHeight: '100svh',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'fixed',
+    inset: 0,
+    overflow: 'auto',
   },
   inner: {
     maxWidth: 1100,
