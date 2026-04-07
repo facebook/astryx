@@ -111,7 +111,7 @@ export default function FormTwoColumnPage() {
             {/* Left: headline + description + illustration */}
             <XDSVStack gap={6}>
               <XDSVStack gap={3}>
-                <div {...stylex.props(styles.headline)}>
+                <div className="ftc-headline">
                   Let&apos;s work together
                 </div>
                 <XDSText type="body" color="secondary">

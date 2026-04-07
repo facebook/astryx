@@ -1,3 +1,10 @@
+.ftc-headline {
+  font-size: 48px;
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  margin: 0;
+}
 .ftc-page {
   background-color: var(--color-background-surface);
   display: flex;
