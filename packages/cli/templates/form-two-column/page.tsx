@@ -38,12 +38,6 @@ const CONTACT_COLUMNS = [
 const styles = stylex.create({
   pageBg: {
     backgroundColor: colorVars['--color-background-body'],
-    minHeight: '100svh',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '64px 48px',
-    boxSizing: 'border-box',
   },
   fullWidth: {
     width: '100%',
@@ -63,6 +57,14 @@ const styles = stylex.create({
 // Page
 // ─────────────────────────────────────────────────────────────
 
+/**
+ * Form (Two-column) — marketing contact form template.
+ *
+ * Layout:
+ *   Top: two-column — left has headline + description + illustration placeholder,
+ *        right has the contact form on a card.
+ *   Bottom: three-column contact info strip.
+ */
 export default function FormTwoColumnPage() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -82,28 +84,62 @@ export default function FormTwoColumnPage() {
   const handleSubmit = () => setSubmitted(true);
 
   return (
-    <div {...stylex.props(styles.pageBg)}>
-      <div style={{maxWidth: 1100, width: '100%', display: 'flex', flexDirection: 'column', gap: 56}}>
+    <div
+      {...stylex.props(styles.pageBg)}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '100svh',
+        padding: 48,
+        position: 'fixed',
+        inset: 0,
+        overflow: 'auto',
+      }}>
+      <div
+        style={{
+          maxWidth: 1100,
+          width: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 56,
+        }}>
 
         {/* ── Top: two-column ── */}
-        <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 80, alignItems: 'center'}}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: 80,
+            alignItems: 'center',
+          }}>
 
-          {/* Left */}
+          {/* Left: headline + description + illustration */}
           <XDSVStack gap={6}>
             <XDSVStack gap={3}>
-              <div style={{fontSize: 48, fontWeight: fontWeightVars['--font-weight-bold'], lineHeight: 1.05, letterSpacing: '-0.03em', margin: 0}}>
+              <div
+                style={{
+                  fontSize: 48,
+                  fontWeight: fontWeightVars['--font-weight-bold'],
+                  lineHeight: 1.05,
+                  letterSpacing: '-0.03em',
+                  margin: 0,
+                }}>
                 Let&apos;s work together
               </div>
               <XDSText type="body" color="secondary">
-                Tell us what you&apos;re working on and we&apos;ll help you figure out the best path forward.
+                Tell us what you&apos;re working on and we&apos;ll help you
+                figure out the best path forward.
               </XDSText>
             </XDSVStack>
             <div {...stylex.props(styles.imagePlaceholder)}>
-              <XDSText type="supporting" color="secondary">Illustration coming soon</XDSText>
+              <XDSText type="supporting" color="secondary">
+                Illustration coming soon
+              </XDSText>
             </div>
           </XDSVStack>
 
-          {/* Right */}
+          {/* Right: form on a card */}
           <XDSCard padding={8}>
             <XDSVStack gap={4}>
               <XDSTextInput
@@ -168,11 +204,25 @@ export default function FormTwoColumnPage() {
         {/* ── Bottom: contact strip ── */}
         <div>
           <XDSDivider />
-          <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 32, paddingTop: 32, textAlign: 'center'}}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr 1fr',
+              gap: 32,
+              paddingTop: 32,
+              textAlign: 'center',
+            }}>
             {CONTACT_COLUMNS.map(col => (
               <XDSVStack key={col.label} gap={1} hAlign="center">
-                <XDSText type="supporting" color="secondary">{col.label}</XDSText>
-                <XDSLink label={col.email} href={`mailto:${col.email}`} type="body">{col.email}</XDSLink>
+                <XDSText type="supporting" color="secondary">
+                  {col.label}
+                </XDSText>
+                <XDSLink
+                  label={col.email}
+                  href={`mailto:${col.email}`}
+                  type="body">
+                  {col.email}
+                </XDSLink>
               </XDSVStack>
             ))}
           </div>
