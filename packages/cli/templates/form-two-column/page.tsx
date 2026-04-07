@@ -79,7 +79,7 @@ const styles = stylex.create({
   contactGrid: {
     display: 'grid',
     gridTemplateColumns: '1fr 1fr',
-    gap: 32,
+    gap: '32px',
   },
   categoryLabel: {
     color: colorVars['--color-text-secondary'],
@@ -200,7 +200,12 @@ export default function FormTwoColumnPage() {
           </div>
 
           {/* 2x3 contact grid */}
-          <div {...stylex.props(styles.contactGrid)}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: 32,
+            }}>
             {CONTACT_GRID.map(item => (
               <ContactCell key={item.category} {...item} />
             ))}
