@@ -102,6 +102,12 @@ export const categories: SandboxCategory[] = [
         href: t.href,
         description: t.description,
       })),
+      {
+        name: 'Documentation (WIP)',
+        href: '/pages/documentation/',
+        description:
+          'Stripe-style docs reader with sidebar, code blocks, and config tables',
+      },
     ],
   },
   {
