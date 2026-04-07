@@ -88,6 +88,12 @@
       "import": "./dist/Center/index.mjs",
       "require": "./dist/Center/index.js"
     },
+    "./Chat": {
+      "source": "./src/Chat/index.ts",
+      "types": "./dist/Chat/index.d.ts",
+      "import": "./dist/Chat/index.mjs",
+      "require": "./dist/Chat/index.js"
+    },
     "./CheckboxInput": {
       "source": "./src/CheckboxInput/index.ts",
       "types": "./dist/CheckboxInput/index.d.ts",
