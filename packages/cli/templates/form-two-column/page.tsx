@@ -223,7 +223,8 @@ export default function FormTwoColumnPage() {
                 <XDSLink
                   label={col.email}
                   href={`mailto:${col.email}`}
-                  type="body">
+                  type="body"
+                  size="sm">
                   {col.email}
                 </XDSLink>
               </XDSVStack>
