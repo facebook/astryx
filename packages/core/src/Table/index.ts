@@ -19,7 +19,7 @@ export {useXDSTableSelection} from './plugins/selection';
 export {useXDSTableSelectionState} from './plugins/selection';
 export {useXDSTableSortable} from './plugins/sortable';
 export {useXDSTableSortableState} from './plugins/sortable';
-export {useXDSTablePagination} from './plugins/pagination';
+export {useXDSTablePagination, paginateData} from './plugins/pagination';
 export {useXDSTableColumnSettings} from './plugins/columnSettings';
 export {useXDSTableColumnSettingsState} from './plugins/columnSettings';
 export {useXDSTableColumnResize} from './plugins/columnResize';
@@ -76,10 +76,7 @@ export type {
   XDSTableSortState,
 } from './plugins/sortable';
 export type {XDSTableSortableColumnConfig} from './types';
-export type {
-  UseXDSTablePaginationConfig,
-  UseXDSTablePaginationReturn,
-} from './plugins/pagination';
+export type {UseXDSTablePaginationConfig} from './plugins/pagination';
 export type {
   UseXDSTableColumnSettingsConfig,
   XDSColumnSettingsOption,

@@ -3,6 +3,7 @@ import type {Meta, StoryObj} from '@storybook/react';
 import {
   XDSTable,
   useXDSTablePagination,
+  paginateData,
   useXDSTableSelection,
   useXDSTableSelectionState,
 } from '@xds/core/Table';
@@ -54,12 +55,13 @@ function PaginatedDemo({
   align?: Align;
 }) {
   const [page, setPage] = useState(1);
+  const pageSize = 10;
 
-  const pagination = useXDSTablePagination<User>({
+  const plugin = useXDSTablePagination<User>({
     page,
     onPageChange: setPage,
     totalItems: users.length,
-    pageSize: 10,
+    pageSize,
     variant,
     position,
     align,
@@ -67,10 +69,10 @@ function PaginatedDemo({
 
   return (
     <XDSTable
-      data={pagination.paginatedData(users)}
+      data={paginateData(users, page, pageSize)}
       columns={columns}
       idKey="id"
-      plugins={{pagination: pagination.plugin}}
+      plugins={{pagination: plugin}}
     />
   );
 }
@@ -90,21 +92,22 @@ type Story = StoryObj;
 export const Default: Story = {
   render: () => {
     const [page, setPage] = useState(1);
+    const pageSize = 10;
 
-    const pagination = useXDSTablePagination<User>({
+    const plugin = useXDSTablePagination<User>({
       page,
       onPageChange: setPage,
       totalItems: users.length,
-      pageSize: 10,
+      pageSize,
     });
 
     return (
       <div style={{maxWidth: 600}}>
         <XDSTable
-          data={pagination.paginatedData(users)}
+          data={paginateData(users, page, pageSize)}
           columns={columns}
           idKey="id"
-          plugins={{pagination: pagination.plugin}}
+          plugins={{pagination: plugin}}
         />
       </div>
     );
@@ -118,7 +121,7 @@ export const ServerSide: Story = {
 
     const serverData = users.slice((page - 1) * pageSize, page * pageSize);
 
-    const pagination = useXDSTablePagination<User>({
+    const plugin = useXDSTablePagination<User>({
       page,
       onPageChange: setPage,
       totalItems: users.length,
@@ -134,7 +137,7 @@ export const ServerSide: Story = {
           data={serverData}
           columns={columns}
           idKey="id"
-          plugins={{pagination: pagination.plugin}}
+          plugins={{pagination: plugin}}
         />
       </div>
     );
@@ -146,7 +149,7 @@ export const PageSizeSelector: Story = {
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
 
-    const pagination = useXDSTablePagination<User>({
+    const plugin = useXDSTablePagination<User>({
       page,
       onPageChange: setPage,
       totalItems: users.length,
@@ -158,10 +161,10 @@ export const PageSizeSelector: Story = {
     return (
       <div style={{maxWidth: 600}}>
         <XDSTable
-          data={pagination.paginatedData(users)}
+          data={paginateData(users, page, pageSize)}
           columns={columns}
           idKey="id"
-          plugins={{pagination: pagination.plugin}}
+          plugins={{pagination: plugin}}
         />
       </div>
     );
@@ -175,7 +178,7 @@ export const CursorBased: Story = {
 
     const hasMore = page * pageSize < users.length;
 
-    const pagination = useXDSTablePagination<User>({
+    const plugin = useXDSTablePagination<User>({
       page,
       onPageChange: setPage,
       hasMore,
@@ -188,10 +191,10 @@ export const CursorBased: Story = {
           Cursor-based: total unknown, only hasMore={String(hasMore)}.
         </p>
         <XDSTable
-          data={pagination.paginatedData(users)}
+          data={paginateData(users, page, pageSize)}
           columns={columns}
           idKey="id"
-          plugins={{pagination: pagination.plugin}}
+          plugins={{pagination: plugin}}
         />
       </div>
     );
@@ -201,22 +204,23 @@ export const CursorBased: Story = {
 export const PositionAbove: Story = {
   render: () => {
     const [page, setPage] = useState(1);
+    const pageSize = 10;
 
-    const pagination = useXDSTablePagination<User>({
+    const plugin = useXDSTablePagination<User>({
       page,
       onPageChange: setPage,
       totalItems: users.length,
-      pageSize: 10,
+      pageSize,
       position: 'above',
     });
 
     return (
       <div style={{maxWidth: 600}}>
         <XDSTable
-          data={pagination.paginatedData(users)}
+          data={paginateData(users, page, pageSize)}
           columns={columns}
           idKey="id"
-          plugins={{pagination: pagination.plugin}}
+          plugins={{pagination: plugin}}
         />
       </div>
     );
@@ -226,22 +230,23 @@ export const PositionAbove: Story = {
 export const PositionBoth: Story = {
   render: () => {
     const [page, setPage] = useState(1);
+    const pageSize = 10;
 
-    const pagination = useXDSTablePagination<User>({
+    const plugin = useXDSTablePagination<User>({
       page,
       onPageChange: setPage,
       totalItems: users.length,
-      pageSize: 10,
+      pageSize,
       position: 'both',
     });
 
     return (
       <div style={{maxWidth: 600}}>
         <XDSTable
-          data={pagination.paginatedData(users)}
+          data={paginateData(users, page, pageSize)}
           columns={columns}
           idKey="id"
-          plugins={{pagination: pagination.plugin}}
+          plugins={{pagination: plugin}}
         />
       </div>
     );
@@ -253,14 +258,14 @@ export const WithSelection: Story = {
     const [page, setPage] = useState(1);
     const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
 
-    const pagination = useXDSTablePagination<User>({
+    const plugin = useXDSTablePagination<User>({
       page,
       onPageChange: setPage,
       totalItems: users.length,
-      pageSize: 10,
+      pageSize,
     });
 
-    const pageData = pagination.paginatedData(users);
+    const pageData = paginateData(users, page, pageSize);
 
     const {selectionConfig} = useXDSTableSelectionState<User>({
       data: pageData,
@@ -281,7 +286,7 @@ export const WithSelection: Story = {
           idKey="id"
           plugins={{
             selection: selectionPlugin,
-            pagination: pagination.plugin,
+            pagination: plugin,
           }}
         />
       </div>

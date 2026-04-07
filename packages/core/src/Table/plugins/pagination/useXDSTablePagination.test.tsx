@@ -7,11 +7,11 @@
 
 import {describe, it, expect, vi} from 'vitest';
 import {useState} from 'react';
-import {render, screen, within} from '@testing-library/react';
+import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {renderHook, act} from '@testing-library/react';
+import {renderHook} from '@testing-library/react';
 import {XDSTable} from '../../XDSTable';
-import {useXDSTablePagination} from './useXDSTablePagination';
+import {useXDSTablePagination, paginateData} from './useXDSTablePagination';
 import {useXDSTableSelection} from '../selection/useXDSTableSelection';
 import type {XDSTableColumn} from '../../types';
 
@@ -68,7 +68,7 @@ function PaginatedTable({
   const [page, setPage] = useState(1);
   const [currentPageSize, setCurrentPageSize] = useState(pageSize);
 
-  const pagination = useXDSTablePagination<TestItem>({
+  const plugin = useXDSTablePagination<TestItem>({
     page,
     onPageChange: setPage,
     // Allow overriding with totalPages/hasMore for specific test scenarios
@@ -88,256 +88,79 @@ function PaginatedTable({
 
   return (
     <XDSTable
-      data={pagination.paginatedData(data)}
+      data={paginateData(data, page, currentPageSize)}
       columns={columns}
       idKey="id"
-      plugins={{pagination: pagination.plugin}}
+      plugins={{pagination: plugin}}
     />
   );
 }
 
 // =============================================================================
-// Hook Return Value Tests
+// paginateData Utility Tests
+// =============================================================================
+
+describe('paginateData', () => {
+  it('slices data for page 1', () => {
+    const data = generateItems(30);
+    const sliced = paginateData(data, 1, 10);
+    expect(sliced).toHaveLength(10);
+    expect(sliced[0].id).toBe('1');
+    expect(sliced[9].id).toBe('10');
+  });
+
+  it('slices data for page 2', () => {
+    const data = generateItems(30);
+    const sliced = paginateData(data, 2, 10);
+    expect(sliced).toHaveLength(10);
+    expect(sliced[0].id).toBe('11');
+    expect(sliced[9].id).toBe('20');
+  });
+
+  it('slices data for last page with partial data', () => {
+    const data = generateItems(23);
+    const sliced = paginateData(data, 3, 10);
+    expect(sliced).toHaveLength(3);
+    expect(sliced[0].id).toBe('21');
+    expect(sliced[2].id).toBe('23');
+  });
+
+  it('returns empty array for empty data', () => {
+    expect(paginateData([], 1, 10)).toEqual([]);
+  });
+
+  it('returns empty array when page exceeds data', () => {
+    const data = generateItems(10);
+    expect(paginateData(data, 5, 10)).toEqual([]);
+  });
+
+  it('handles data shorter than pageSize', () => {
+    const data = generateItems(3);
+    expect(paginateData(data, 1, 10)).toHaveLength(3);
+  });
+});
+
+// =============================================================================
+// Plugin Hook Tests
 // =============================================================================
 
 describe('useXDSTablePagination', () => {
-  describe('hook return value', () => {
-    it('returns plugin object with transformTableContext', () => {
+  describe('plugin hook', () => {
+    it('returns a TablePlugin with transformTableContext', () => {
       const {result} = renderHook(() =>
         useXDSTablePagination({page: 1, onPageChange: vi.fn(), totalItems: 50}),
       );
-      expect(result.current.plugin).toBeDefined();
-      expect(result.current.plugin.transformTableContext).toBeTypeOf(
-        'function',
-      );
+      expect(result.current).toBeDefined();
+      expect(result.current.transformTableContext).toBeTypeOf('function');
     });
 
-    it('returns paginationProps matching config', () => {
-      const onChange = vi.fn();
-      const {result} = renderHook(() =>
-        useXDSTablePagination({
-          page: 2,
-          onPageChange: onChange,
-          totalItems: 100,
-          pageSize: 25,
-          variant: 'count',
-          size: 'sm',
-          label: 'Custom label',
-        }),
-      );
-      const props = result.current.paginationProps;
-      expect(props.page).toBe(2);
-      expect(props.onChange).toBe(onChange);
-      expect(props.totalItems).toBe(100);
-      expect(props.pageSize).toBe(25);
-      expect(props.variant).toBe('count');
-      expect(props.size).toBe('sm');
-      expect(props.label).toBe('Custom label');
-    });
-
-    it('returns paginatedData function', () => {
-      const {result} = renderHook(() =>
-        useXDSTablePagination({page: 1, onPageChange: vi.fn(), totalItems: 50}),
-      );
-      expect(result.current.paginatedData).toBeTypeOf('function');
-    });
-
-    it('returns computed totalPages from totalItems and pageSize', () => {
-      const {result} = renderHook(() =>
-        useXDSTablePagination({
-          page: 1,
-          onPageChange: vi.fn(),
-          totalItems: 100,
-          pageSize: 25,
-        }),
-      );
-      expect(result.current.totalPages).toBe(4);
-    });
-
-    it('returns totalPages directly when totalPagesProp is provided', () => {
-      const {result} = renderHook(() =>
-        useXDSTablePagination({
-          page: 1,
-          onPageChange: vi.fn(),
-          totalPages: 7,
-        }),
-      );
-      expect(result.current.totalPages).toBe(7);
-    });
-
-    it('returns undefined totalPages when using hasMore', () => {
-      const {result} = renderHook(() =>
-        useXDSTablePagination({
-          page: 1,
-          onPageChange: vi.fn(),
-          hasMore: true,
-        }),
-      );
-      expect(result.current.totalPages).toBeUndefined();
-    });
-
-    it('defaults pageSize to 10', () => {
-      const {result} = renderHook(() =>
-        useXDSTablePagination({page: 1, onPageChange: vi.fn(), totalItems: 50}),
-      );
-      expect(result.current.pageSize).toBe(10);
-    });
-
-    it('defaults variant to pages', () => {
-      const {result} = renderHook(() =>
-        useXDSTablePagination({page: 1, onPageChange: vi.fn(), totalItems: 50}),
-      );
-      expect(result.current.paginationProps.variant).toBe('pages');
-    });
-
-    it('defaults position to below', () => {
-      // Verify default by checking that pagination renders after the table
-      render(<PaginatedTable data={generateItems(20)} />);
-      const nav = screen.getByRole('navigation', {name: 'Table pagination'});
-      expect(nav).toBeInTheDocument();
-    });
-  });
-
-  // ===========================================================================
-  // paginatedData Helper
-  // ===========================================================================
-
-  describe('paginatedData helper', () => {
-    it('slices data for page 1', () => {
-      const {result} = renderHook(() =>
-        useXDSTablePagination({
-          page: 1,
-          onPageChange: vi.fn(),
-          totalItems: 30,
-          pageSize: 10,
-        }),
-      );
-      const data = generateItems(30);
-      const sliced = result.current.paginatedData(data);
-      expect(sliced).toHaveLength(10);
-      expect(sliced[0].id).toBe('1');
-      expect(sliced[9].id).toBe('10');
-    });
-
-    it('slices data for page 2', () => {
-      const {result} = renderHook(() =>
-        useXDSTablePagination({
-          page: 2,
-          onPageChange: vi.fn(),
-          totalItems: 30,
-          pageSize: 10,
-        }),
-      );
-      const data = generateItems(30);
-      const sliced = result.current.paginatedData(data);
-      expect(sliced).toHaveLength(10);
-      expect(sliced[0].id).toBe('11');
-      expect(sliced[9].id).toBe('20');
-    });
-
-    it('slices data for last page with partial data', () => {
-      const {result} = renderHook(() =>
-        useXDSTablePagination({
-          page: 3,
-          onPageChange: vi.fn(),
-          totalItems: 23,
-          pageSize: 10,
-        }),
-      );
-      const data = generateItems(23);
-      const sliced = result.current.paginatedData(data);
-      expect(sliced).toHaveLength(3);
-      expect(sliced[0].id).toBe('21');
-      expect(sliced[2].id).toBe('23');
-    });
-
-    it('returns empty array for empty data', () => {
-      const {result} = renderHook(() =>
-        useXDSTablePagination({
-          page: 1,
-          onPageChange: vi.fn(),
-          totalItems: 0,
-          pageSize: 10,
-        }),
-      );
-      expect(result.current.paginatedData([])).toEqual([]);
-    });
-
-    it('returns empty array when page exceeds data', () => {
-      const {result} = renderHook(() =>
-        useXDSTablePagination({
-          page: 5,
-          onPageChange: vi.fn(),
-          totalItems: 10,
-          pageSize: 10,
-        }),
-      );
-      const data = generateItems(10);
-      expect(result.current.paginatedData(data)).toEqual([]);
-    });
-
-    it('updates slice when page changes', () => {
-      let page = 1;
+    it('plugin reference is stable across renders', () => {
       const {result, rerender} = renderHook(() =>
-        useXDSTablePagination({
-          page,
-          onPageChange: vi.fn(),
-          totalItems: 30,
-          pageSize: 10,
-        }),
+        useXDSTablePagination({page: 1, onPageChange: vi.fn(), totalItems: 50}),
       );
-      const data = generateItems(30);
-      expect(result.current.paginatedData(data)[0].id).toBe('1');
-
-      page = 2;
+      const first = result.current;
       rerender();
-      expect(result.current.paginatedData(data)[0].id).toBe('11');
-    });
-
-    it('updates slice when pageSize changes', () => {
-      let pageSize = 10;
-      const {result, rerender} = renderHook(() =>
-        useXDSTablePagination({
-          page: 1,
-          onPageChange: vi.fn(),
-          totalItems: 30,
-          pageSize,
-        }),
-      );
-      const data = generateItems(30);
-      expect(result.current.paginatedData(data)).toHaveLength(10);
-
-      pageSize = 5;
-      rerender();
-      expect(result.current.paginatedData(data)).toHaveLength(5);
-    });
-
-    it('handles data shorter than pageSize', () => {
-      const {result} = renderHook(() =>
-        useXDSTablePagination({
-          page: 1,
-          onPageChange: vi.fn(),
-          totalItems: 3,
-          pageSize: 10,
-        }),
-      );
-      const data = generateItems(3);
-      const sliced = result.current.paginatedData(data);
-      expect(sliced).toHaveLength(3);
-    });
-
-    it('memoizes paginatedData callback', () => {
-      const {result, rerender} = renderHook(() =>
-        useXDSTablePagination({
-          page: 1,
-          onPageChange: vi.fn(),
-          totalItems: 30,
-          pageSize: 10,
-        }),
-      );
-      const first = result.current.paginatedData;
-      rerender();
-      expect(result.current.paginatedData).toBe(first);
+      expect(result.current).toBe(first);
     });
   });
 
@@ -513,7 +336,7 @@ describe('useXDSTablePagination', () => {
         const data = generateItems(20);
         const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-        const pagination = useXDSTablePagination<TestItem>({
+        const plugin = useXDSTablePagination<TestItem>({
           page,
           onPageChange: setPage,
           totalItems: data.length,
@@ -529,13 +352,13 @@ describe('useXDSTablePagination', () => {
             setSelectedIds(next);
           },
           onSelectAll: ({isAllSelected}) => {
-            const pageData = pagination.paginatedData(data);
+            const pageData = paginateData(data, page, 10);
             setSelectedIds(
               isAllSelected ? new Set(pageData.map(d => d.id)) : new Set(),
             );
           },
           getIsAllSelected: () => {
-            const pageData = pagination.paginatedData(data);
+            const pageData = paginateData(data, page, 10);
             return (
               pageData.length > 0 && pageData.every(d => selectedIds.has(d.id))
             );
@@ -544,10 +367,10 @@ describe('useXDSTablePagination', () => {
 
         return (
           <XDSTable
-            data={pagination.paginatedData(data)}
+            data={paginateData(data, page, 10)}
             columns={columns}
             idKey="id"
-            plugins={{selection, pagination: pagination.plugin}}
+            plugins={{selection, pagination: plugin}}
           />
         );
       }
@@ -565,7 +388,7 @@ describe('useXDSTablePagination', () => {
         const [page, setPage] = useState(1);
         const data = generateItems(20);
 
-        const pagination = useXDSTablePagination<TestItem>({
+        const plugin = useXDSTablePagination<TestItem>({
           page,
           onPageChange: setPage,
           totalItems: data.length,
@@ -581,10 +404,10 @@ describe('useXDSTablePagination', () => {
 
         return (
           <XDSTable
-            data={pagination.paginatedData(data)}
+            data={paginateData(data, page, 10)}
             columns={columns}
             idKey="id"
-            plugins={{pagination: pagination.plugin, selection}}
+            plugins={{pagination: plugin, selection}}
           />
         );
       }
@@ -594,24 +417,6 @@ describe('useXDSTablePagination', () => {
       expect(
         screen.getByRole('navigation', {name: 'Table pagination'}),
       ).toBeInTheDocument();
-    });
-
-    it('page size change updates totalPages', () => {
-      const {result, rerender} = renderHook(
-        ({pageSize}: {pageSize: number}) =>
-          useXDSTablePagination({
-            page: 1,
-            onPageChange: vi.fn(),
-            totalItems: 50,
-            pageSize,
-          }),
-        {initialProps: {pageSize: 10}},
-      );
-
-      expect(result.current.totalPages).toBe(5);
-
-      rerender({pageSize: 25});
-      expect(result.current.totalPages).toBe(2);
     });
   });
 
@@ -655,7 +460,7 @@ describe('useXDSTablePagination', () => {
     it('passes hasMore for cursor-based pagination', () => {
       function CursorTable() {
         const [page, setPage] = useState(1);
-        const pagination = useXDSTablePagination<TestItem>({
+        const plugin = useXDSTablePagination<TestItem>({
           page,
           onPageChange: setPage,
           hasMore: true,
@@ -666,7 +471,7 @@ describe('useXDSTablePagination', () => {
             data={generateItems(10)}
             columns={columns}
             idKey="id"
-            plugins={{pagination: pagination.plugin}}
+            plugins={{pagination: plugin}}
           />
         );
       }
@@ -698,16 +503,11 @@ describe('useXDSTablePagination', () => {
   // ===========================================================================
 
   describe('edge cases', () => {
-    it('handles totalItems=0 gracefully', () => {
-      const {result} = renderHook(() =>
-        useXDSTablePagination({
-          page: 1,
-          onPageChange: vi.fn(),
-          totalItems: 0,
-          pageSize: 10,
-        }),
-      );
-      expect(result.current.totalPages).toBe(0);
+    it('handles totalItems=0 \u2014 pagination is hidden', () => {
+      render(<PaginatedTable data={[]} pageSize={10} />);
+      expect(
+        screen.queryByRole('navigation', {name: 'Table pagination'}),
+      ).not.toBeInTheDocument();
     });
 
     it('handles totalPages=1 — pagination is hidden', () => {
@@ -720,7 +520,7 @@ describe('useXDSTablePagination', () => {
 
     it('handles page=1 with no totalItems or totalPages (cursor mode)', () => {
       function CursorTable() {
-        const pagination = useXDSTablePagination<TestItem>({
+        const plugin = useXDSTablePagination<TestItem>({
           page: 1,
           onPageChange: vi.fn(),
           hasMore: false,
@@ -730,7 +530,7 @@ describe('useXDSTablePagination', () => {
             data={generateItems(5)}
             columns={columns}
             idKey="id"
-            plugins={{pagination: pagination.plugin}}
+            plugins={{pagination: plugin}}
           />
         );
       }
