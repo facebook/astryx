@@ -11,6 +11,10 @@
     "./json": {
       "types": "./src/types/index.d.ts",
       "import": "./src/lib/parse.mjs"
+    },
+    "./api": {
+      "types": "./src/types/api.d.ts",
+      "import": "./src/api/index.mjs"
     }
   },
   "files": [
