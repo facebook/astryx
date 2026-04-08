@@ -1,7 +1,21 @@
+import React from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSButton} from '@xds/core/Button';
 import {XDSBadge} from '@xds/core/Badge';
 import {Cog6ToothIcon, TrashIcon} from '@heroicons/react/24/outline';
+import {
+  BoldIcon,
+  ItalicIcon,
+  UnderlineIcon,
+  StrikethroughIcon,
+  LinkIcon,
+  ListBulletIcon,
+  StarIcon,
+  HeartIcon,
+  BookmarkIcon,
+  BellIcon,
+} from '@heroicons/react/24/solid';
+import {XDSIcon} from '@xds/core/Icon';
 
 const meta: Meta<typeof XDSButton> = {
   title: 'Core/XDSButton',
@@ -245,6 +259,205 @@ export const AllVariants: Story = {
       </div>
     </div>
   ),
+};
+
+/**
+ * Toggle buttons with colored icons — demonstrates isPressed with XDSIcon color prop.
+ * Each button maintains its own pressed state independently.
+ *
+ * ghost + icon-only is the canonical pattern for toolbar toggles.
+ * The icon color shifts between semantic tones to reinforce the state change.
+ */
+function PressedWithColoredIconsDemo() {
+  const [pressed, setPressed] = React.useState<Record<string, boolean>>({
+    bold: true,
+    italic: false,
+    underline: true,
+    strikethrough: false,
+    link: false,
+  });
+  const toggle = (key: string) => setPressed(p => ({...p, [key]: !p[key]}));
+
+  return (
+    <div style={{display: 'flex', flexDirection: 'column', gap: 24}}>
+      <div>
+        <p style={{fontSize: 12, color: '#888', marginBottom: 8}}>
+          Text formatting toolbar — ghost icon-only (canonical toggle pattern)
+        </p>
+        <div style={{display: 'flex', gap: 4}}>
+          <XDSButton
+            label="Bold"
+            variant="ghost"
+            isPressed={pressed.bold}
+            onClick={() => toggle('bold')}
+            icon={
+              <XDSIcon
+                icon={BoldIcon}
+                size="sm"
+                color={pressed.bold ? 'accent' : 'secondary'}
+              />
+            }
+          />
+          <XDSButton
+            label="Italic"
+            variant="ghost"
+            isPressed={pressed.italic}
+            onClick={() => toggle('italic')}
+            icon={
+              <XDSIcon
+                icon={ItalicIcon}
+                size="sm"
+                color={pressed.italic ? 'accent' : 'secondary'}
+              />
+            }
+          />
+          <XDSButton
+            label="Underline"
+            variant="ghost"
+            isPressed={pressed.underline}
+            onClick={() => toggle('underline')}
+            icon={
+              <XDSIcon
+                icon={UnderlineIcon}
+                size="sm"
+                color={pressed.underline ? 'accent' : 'secondary'}
+              />
+            }
+          />
+          <XDSButton
+            label="Strikethrough"
+            variant="ghost"
+            isPressed={pressed.strikethrough}
+            onClick={() => toggle('strikethrough')}
+            icon={
+              <XDSIcon
+                icon={StrikethroughIcon}
+                size="sm"
+                color={pressed.strikethrough ? 'accent' : 'secondary'}
+              />
+            }
+          />
+          <XDSButton
+            label="Link"
+            variant="ghost"
+            isPressed={pressed.link}
+            onClick={() => toggle('link')}
+            icon={
+              <XDSIcon
+                icon={LinkIcon}
+                size="sm"
+                color={pressed.link ? 'positive' : 'secondary'}
+              />
+            }
+          />
+        </div>
+      </div>
+
+      <div>
+        <p style={{fontSize: 12, color: '#888', marginBottom: 8}}>
+          Reaction / save buttons — secondary with icon + label
+        </p>
+        <div style={{display: 'flex', gap: 8}}>
+          {[
+            {
+              key: 'star',
+              Icon: StarIcon,
+              label: 'Star',
+              color: 'yellow' as const,
+            },
+            {
+              key: 'heart',
+              Icon: HeartIcon,
+              label: 'Like',
+              color: 'red' as const,
+            },
+            {
+              key: 'bookmark',
+              Icon: BookmarkIcon,
+              label: 'Save',
+              color: 'blue' as const,
+            },
+            {
+              key: 'bell',
+              Icon: BellIcon,
+              label: 'Follow',
+              color: 'accent' as const,
+            },
+          ].map(({key, Icon, label, color}) => {
+            const isOn = pressed[key] ?? false;
+            return (
+              <XDSButton
+                key={key}
+                label={label}
+                variant="secondary"
+                isPressed={isOn}
+                onClick={() => setPressed(p => ({...p, [key]: !p[key]}))}
+                icon={
+                  <XDSIcon
+                    icon={Icon}
+                    size="sm"
+                    color={isOn ? color : 'secondary'}
+                  />
+                }>
+                {label}
+              </XDSButton>
+            );
+          })}
+        </div>
+      </div>
+
+      <div>
+        <p style={{fontSize: 12, color: '#888', marginBottom: 8}}>
+          List toggle — ghost with icon + label
+        </p>
+        <div style={{display: 'flex', gap: 4}}>
+          {(['All', 'Unread', 'Starred'] as const).map(filter => {
+            const isOn = pressed[`filter_${filter}`] ?? filter === 'All';
+            return (
+              <XDSButton
+                key={filter}
+                label={filter}
+                variant="ghost"
+                isPressed={isOn}
+                onClick={() =>
+                  setPressed(p => ({
+                    ...p,
+                    [`filter_${filter}`]: !p[`filter_${filter}`],
+                  }))
+                }
+                icon={
+                  filter === 'Starred' ? (
+                    <XDSIcon
+                      icon={StarIcon}
+                      size="sm"
+                      color={isOn ? 'yellow' : 'secondary'}
+                    />
+                  ) : filter === 'Unread' ? (
+                    <XDSIcon
+                      icon={BellIcon}
+                      size="sm"
+                      color={isOn ? 'accent' : 'secondary'}
+                    />
+                  ) : (
+                    <XDSIcon
+                      icon={ListBulletIcon}
+                      size="sm"
+                      color={isOn ? 'accent' : 'secondary'}
+                    />
+                  )
+                }>
+                {filter}
+              </XDSButton>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export const PressedWithColoredIcons: Story = {
+  render: () => <PressedWithColoredIconsDemo />,
 };
 
 /**
