@@ -23,13 +23,6 @@ import {
   formatProps,
   formatBriefAll,
 } from '../../lib/component-format.mjs';
-import {
-  cleanReadme,
-  extractCompact,
-  extractBrief,
-  ensureImportStatement,
-  extractProps,
-} from '../../lib/component-legacy.mjs';
 import {findClosestComponents, searchComponents} from '../../lib/string-utils.mjs';
 import {resolveTheme} from '../../lib/resolve-theme.mjs';
 import {getRunPrefix} from '../../utils/package-manager.mjs';
@@ -266,39 +259,30 @@ export function registerComponent(program) {
         }
       }
 
-      if (readmePath.endsWith('.doc.mjs')) {
-        const docs = await loadDocs(readmePath, {zh, dense, lang});
-        const importHint = fromExternal ? fromExternal.name : resolveImportPath(coreDir, resolvedName);
-        if (json) {
-          if (options.props) {
-            const props = docs.props || (docs.components ? docs.components.flatMap(c => c.props || []) : []);
-            return jsonOut('component.detail.props', props);
-          }
-          return jsonOut('component.detail', docs);
-        }
+      if (!readmePath.endsWith('.doc.mjs')) {
+        const msg = `No .doc.mjs found for "${resolvedName}". The component needs a typed doc file.`;
+        if (json) return jsonError(msg);
+        console.error(`Error: ${msg}`);
+        process.exit(1);
+      }
+
+      const docs = await loadDocs(readmePath, {zh, dense, lang});
+      const importHint = fromExternal ? fromExternal.name : resolveImportPath(coreDir, resolvedName);
+      if (json) {
         if (options.props) {
-          console.log(formatProps(docs, resolvedName));
-        } else if (detail === 'brief') {
-          console.log(formatBrief(docs, resolvedName, importHint, { themeData }));
-        } else if (detail === 'compact') {
-          console.log(formatCompact(docs, resolvedName, importHint));
-        } else {
-          console.log(formatFull(docs, { themeData }));
+          const props = docs.props || (docs.components ? docs.components.flatMap(c => c.props || []) : []);
+          return jsonOut('component.detail.props', props);
         }
+        return jsonOut('component.detail', docs);
+      }
+      if (options.props) {
+        console.log(formatProps(docs, resolvedName));
+      } else if (detail === 'brief') {
+        console.log(formatBrief(docs, resolvedName, importHint, { themeData }));
+      } else if (detail === 'compact') {
+        console.log(formatCompact(docs, resolvedName, importHint));
       } else {
-        // Legacy path for README.md files
-        const content = fs.readFileSync(readmePath, 'utf-8');
-        if (json) return jsonOut('markdown', {name: resolvedName, format: 'markdown', content});
-        if (options.props) {
-          console.log(extractProps(content, resolvedName));
-        } else if (detail === 'brief') {
-          console.log(extractBrief(content, resolvedName));
-        } else if (detail === 'compact') {
-          const compact = extractCompact(content, resolvedName);
-          console.log(ensureImportStatement(compact, resolvedName, coreDir));
-        } else {
-          console.log(cleanReadme(content, resolvedName));
-        }
+        console.log(formatFull(docs, { themeData }));
       }
     });
 }
@@ -310,5 +294,4 @@ export {discoverComponents, discoverExternalComponents, findComponentReadme, fin
 export {discoverExternalPackages} from '../../utils/paths.mjs';
 export {loadDocs} from '../../lib/component-loader.mjs';
 export {formatFull, formatCompact, formatBrief, formatProps, formatBriefAll} from '../../lib/component-format.mjs';
-export {cleanReadme, extractCompact, extractBrief, ensureImportStatement, extractProps} from '../../lib/component-legacy.mjs';
 export {levenshteinDistance, findClosestComponents, searchComponents} from '../../lib/string-utils.mjs';
