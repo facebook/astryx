@@ -23,13 +23,14 @@ import {
   fontWeightVars,
 } from '../theme/tokens.stylex';
 import {XDSMetadataListContext} from './XDSMetadataListContext';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import {xdsClassName, mergeProps} from '../utils';
 
 // =============================================================================
 // Types
 // =============================================================================
 
-export interface XDSMetadataListItemProps {
+export interface XDSMetadataListItemProps extends XDSBaseProps<HTMLDivElement> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLDivElement>;
   /**
@@ -44,18 +45,6 @@ export interface XDSMetadataListItemProps {
    * Label text for this metadata item.
    */
   label: string;
-  /**
-   * StyleX styles created via `stylex.create()`.
-   */
-  xstyle?: StyleXStyles;
-  /**
-   * CSS class name(s) appended to the root element.
-   */
-  className?: string;
-  /**
-   * Inline styles to apply to the root element.
-   */
-  style?: React.CSSProperties;
   /**
    * Test ID for testing frameworks.
    */
