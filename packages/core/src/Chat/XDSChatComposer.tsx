@@ -91,9 +91,11 @@ const styles = stylex.create({
     isolation: 'isolate',
     display: 'flex',
     flexDirection: 'column',
-    // Scoped radius override: child buttons/tokens get pill shape
-    [radiusVars['--radius-element'] as string]: radiusVars['--radius-full'],
-    [radiusVars['--radius-container'] as string]: radiusVars['--radius-full'],
+    // Concentric radius: inner elements follow the outer shell's curvature.
+    // page radius (28px) - body padding (12px) = 16px inner radius,
+    // which still fully rounds a 32px button.
+    [radiusVars['--radius-element'] as string]:
+      `calc(${radiusVars['--radius-page']} - ${spacingVars['--spacing-3']})`,
   },
 
   rootDisabled: {

@@ -101,9 +101,6 @@ const styles = stylex.create({
   },
   popoverSurface: {
     minWidth: '180px',
-    // TODO: the composer's scoped radius override (--radius-element/container
-    // → full) cascades into this popover. Needs a system-level solution for
-    // resetting scoped token overrides in popovers.
   },
   popoverGap: {
     marginBlockStart: spacingVars['--spacing-1'],
