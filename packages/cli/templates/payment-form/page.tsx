@@ -14,7 +14,6 @@ import {XDSCard} from '@xds/core/Card';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSNumberInput} from '@xds/core/NumberInput';
 import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
-import {XDSTopNav, XDSTopNavHeading} from '@xds/core/TopNav';
 import {XDSAppShell} from '@xds/core/AppShell';
 import {XDSCenter} from '@xds/core/Center';
 import {XDSIcon} from '@xds/core/Icon';
@@ -73,34 +72,6 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-5'],
     flexWrap: 'wrap',
   },
-  stepIndicator: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: spacingVars['--spacing-2'],
-  },
-  stepDot: {
-    width: 24,
-    height: 24,
-    borderRadius: radiusVars['--radius-full'],
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: typeScaleVars['--text-supporting-size'],
-    fontWeight: fontWeightVars['--font-weight-bold'],
-  },
-  stepActive: {
-    backgroundColor: colorVars['--color-text-primary'],
-    color: colorVars['--color-background-surface'],
-  },
-  stepInactive: {
-    backgroundColor: colorVars['--color-neutral'],
-    color: colorVars['--color-text-secondary'],
-  },
-  stepLine: {
-    width: 32,
-    height: 1,
-    backgroundColor: colorVars['--color-border'],
-  },
   freeBanner: {
     backgroundColor: colorVars['--color-background-muted'],
     borderRadius: radiusVars['--radius-element'],
@@ -111,29 +82,6 @@ const styles = stylex.create({
   },
 });
 
-function CheckoutNav() {
-  return (
-    <XDSTopNav
-      label="Checkout"
-      heading={<XDSTopNavHeading heading="Store" href="#" />}
-      centerContent={
-        <div {...stylex.props(styles.stepIndicator)}>
-          <div {...stylex.props(styles.stepDot, styles.stepInactive)}>1</div>
-          <XDSText type="supporting" color="secondary">Cart</XDSText>
-          <div {...stylex.props(styles.stepLine)} />
-          <div {...stylex.props(styles.stepDot, styles.stepActive)}>2</div>
-          <XDSText type="supporting">Checkout</XDSText>
-        </div>
-      }
-      endContent={
-        <XDSHStack gap={1} vAlign="center">
-          <XDSIcon icon="checkCircle" size="sm" />
-          <XDSText type="supporting" color="secondary">Secure checkout</XDSText>
-        </XDSHStack>
-      }
-    />
-  );
-}
 
 export default function PaymentFormPage() {
   const [firstName, setFirstName] = useState('');
@@ -165,7 +113,7 @@ export default function PaymentFormPage() {
   } : {};
 
   return (
-    <XDSAppShell topNav={<CheckoutNav />} height="auto" contentPadding={0} variant="surface">
+    <XDSAppShell height="auto" contentPadding={0} variant="surface">
       <XDSCenter axis="horizontal">
         <div style={{maxWidth: 1100, width: '100%', padding: '32px 24px'}}>
 
