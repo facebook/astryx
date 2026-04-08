@@ -8,11 +8,20 @@
  *
  * Layout shell for a chat composer. Arranges slots (attachments, toolbar,
  * input, footer actions, send button, status) in a vertical stack with
- * page-radius container, hover/focus shadows, and scoped pill-radius
- * override for child elements.
+ * page-radius container, hover/focus shadows, and concentric inner radius.
+ *
+ * Component CSS vars (themeable via defineTheme):
+ * - `--composer-radius` (default: --radius-page) — outer border radius
+ * - `--composer-padding` (default: --spacing-3) — body padding
+ * - Inner element radius = calc(--composer-radius - --composer-padding)
+ *
+ * SYNC: When modified, update:
+ * - /packages/core/src/Chat/Chat.doc.mjs
+ * - /packages/core/src/Chat/README.md
+ * - /apps/storybook/stories/ChatComposer.stories.tsx
  */
 
-import {useState, useRef, useCallback, type ReactNode} from 'react';
+import {useState, useCallback, useMemo, type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -27,6 +36,8 @@ import {
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 import {XDSIcon} from '../Icon';
+import {XDSChatComposerInput} from './XDSChatComposerInput';
+import {XDSChatComposerContext} from './XDSChatContext';
 
 // =============================================================================
 // Types
@@ -91,9 +102,14 @@ const styles = stylex.create({
     isolation: 'isolate',
     display: 'flex',
     flexDirection: 'column',
-    // Scoped radius override: child buttons/tokens get pill shape
-    [radiusVars['--radius-element'] as string]: radiusVars['--radius-full'],
-    [radiusVars['--radius-container'] as string]: radiusVars['--radius-full'],
+    // Component CSS vars — themeable via defineTheme({ components: { 'chat-composer': { base: {...} } } })
+    '--composer-radius': radiusVars['--radius-page'],
+    '--composer-padding': spacingVars['--spacing-3'],
+    // Concentric radius: buttons follow the outer shell's curvature.
+    // Sets --button-radius (not --radius-element) so only buttons are
+    // affected — other components in slots keep their own radius.
+    // Default: 28px - 12px = 16px (fully rounds a 32px button).
+    '--button-radius': `max(${radiusVars['--radius-element']}, calc(var(--composer-radius) - var(--composer-padding)))`,
   },
 
   rootDisabled: {
@@ -105,9 +121,9 @@ const styles = stylex.create({
     zIndex: 2,
     display: 'flex',
     flexDirection: 'column',
-    padding: spacingVars['--spacing-3'],
+    padding: 'var(--composer-padding)',
     gap: spacingVars['--spacing-2'],
-    borderRadius: radiusVars['--radius-page'],
+    borderRadius: 'var(--composer-radius)',
     backgroundColor: colorVars['--color-background-popover'],
     boxShadow: {
       default: shadowVars['--shadow-low'],
@@ -121,7 +137,6 @@ const styles = stylex.create({
   inputArea: {
     display: 'flex',
     flexDirection: 'column',
-    minHeight: '40px',
   },
   textarea: {
     all: 'unset',
@@ -163,7 +178,7 @@ const styles = stylex.create({
     justifyContent: 'center',
     width: '32px',
     height: '32px',
-    borderRadius: radiusVars['--radius-full'],
+    borderRadius: 'var(--button-radius, var(--radius-full))',
     border: 'none',
     cursor: 'pointer',
     transition: `opacity ${durationVars['--duration-fast']} ${easeVars['--ease-standard']}`,
@@ -193,18 +208,18 @@ const styles = stylex.create({
     fontFamily: typographyVars['--font-family-body'],
   },
   statusTop: {
-    paddingBlockStart: spacingVars['--spacing-3'],
-    paddingBlockEnd: `calc(${spacingVars['--spacing-3']} + ${radiusVars['--radius-page']})`,
-    marginBlockEnd: `calc(-1 * ${radiusVars['--radius-page']})`,
-    borderTopLeftRadius: radiusVars['--radius-page'],
-    borderTopRightRadius: radiusVars['--radius-page'],
+    paddingBlockStart: 'var(--composer-padding)',
+    paddingBlockEnd: 'calc(var(--composer-padding) + var(--composer-radius))',
+    marginBlockEnd: 'calc(-1 * var(--composer-radius))',
+    borderTopLeftRadius: 'var(--composer-radius)',
+    borderTopRightRadius: 'var(--composer-radius)',
   },
   statusBottom: {
-    paddingBlockStart: `calc(${spacingVars['--spacing-3']} + ${radiusVars['--radius-page']})`,
-    paddingBlockEnd: spacingVars['--spacing-3'],
-    marginBlockStart: `calc(-1 * ${radiusVars['--radius-page']})`,
-    borderBottomLeftRadius: radiusVars['--radius-page'],
-    borderBottomRightRadius: radiusVars['--radius-page'],
+    paddingBlockStart: 'calc(var(--composer-padding) + var(--composer-radius))',
+    paddingBlockEnd: 'var(--composer-padding)',
+    marginBlockStart: 'calc(-1 * var(--composer-radius))',
+    borderBottomLeftRadius: 'var(--composer-radius)',
+    borderBottomRightRadius: 'var(--composer-radius)',
   },
   statusError: {
     backgroundColor: colorVars['--color-error-muted'],
@@ -275,7 +290,6 @@ export function XDSChatComposer(props: XDSChatComposerProps) {
   } = props;
 
   const [internalValue, setInternalValue] = useState('');
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const isControlled = controlledValue !== undefined;
   const currentValue = isControlled ? controlledValue : internalValue;
@@ -295,30 +309,8 @@ export function XDSChatComposer(props: XDSChatComposerProps) {
     if (!trimmed || isDisabled) return;
     onSubmit(trimmed);
     updateValue('');
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-    }
+
   }, [currentValue, isDisabled, onSubmit, updateValue]);
-
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        handleSubmit();
-      }
-    },
-    [handleSubmit],
-  );
-
-  const handleInput = useCallback(
-    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      const el = e.target;
-      updateValue(el.value);
-      el.style.height = 'auto';
-      el.style.height = `${el.scrollHeight}px`;
-    },
-    [updateValue],
-  );
 
   const canSend = currentValue.trim().length > 0 && !isDisabled;
 
@@ -355,7 +347,19 @@ export function XDSChatComposer(props: XDSChatComposerProps) {
     </div>
   ) : null;
 
+  const composerContext = useMemo(
+    () => ({
+      value: currentValue,
+      onChange: updateValue,
+      onSubmit: handleSubmit,
+      placeholder,
+      isDisabled,
+    }),
+    [currentValue, updateValue, handleSubmit, placeholder, isDisabled],
+  );
+
   return (
+    <XDSChatComposerContext.Provider value={composerContext}>
     <div
       {...mergeProps(
         xdsClassName('chat-composer', {density}),
@@ -372,18 +376,7 @@ export function XDSChatComposer(props: XDSChatComposerProps) {
         {contextToolbar}
 
         <div {...stylex.props(styles.inputArea)}>
-          {input ?? (
-            <textarea
-              ref={textareaRef}
-              rows={1}
-              value={currentValue}
-              placeholder={placeholder}
-              disabled={isDisabled}
-              onKeyDown={handleKeyDown}
-              onChange={handleInput}
-              {...stylex.props(styles.textarea)}
-            />
-          )}
+          {input ?? <XDSChatComposerInput />}
         </div>
 
         <div {...stylex.props(styles.footer)}>
@@ -397,6 +390,7 @@ export function XDSChatComposer(props: XDSChatComposerProps) {
 
       {statusPosition === 'bottom' && statusEl}
     </div>
+    </XDSChatComposerContext.Provider>
   );
 }
 

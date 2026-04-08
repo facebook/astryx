@@ -52,8 +52,8 @@ const styles = stylex.create({
     paddingInline: spacingVars['--spacing-3'],
     borderWidth: 0,
     borderStyle: 'none',
-    '--button-radius': radiusVars['--radius-element'],
-    borderRadius: 'var(--button-radius)',
+
+    borderRadius: `var(--button-radius, ${radiusVars['--radius-element']})`,
     fontFamily: 'inherit',
     fontSize: typeScaleVars['--text-label-size'],
     lineHeight: typeScaleVars['--text-label-leading'],
