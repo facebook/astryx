@@ -10,7 +10,7 @@ import {XDSSelector} from '@xds/core/Selector';
 import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
 import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
 import {XDSLink} from '@xds/core/Link';
-import Image from 'next/image';
+import Image, {type StaticImageData} from 'next/image';
 import pinkTeddyImg from './pink-teddy.png';
 import redHeartImg from './red-heart.png';
 import beagleImg from './beagle.png';
@@ -21,7 +21,6 @@ import {XDSBadge} from '@xds/core/Badge';
 import {XDSNumberInput} from '@xds/core/NumberInput';
 import {XDSAppShell} from '@xds/core/AppShell';
 import {XDSCenter} from '@xds/core/Center';
-import {XDSIcon} from '@xds/core/Icon';
 import {
   colorVars, spacingVars, radiusVars, typeScaleVars, fontWeightVars,
 } from '@xds/core/theme/tokens.stylex';
@@ -36,17 +35,6 @@ const US_STATES = [
   'SD','TN','TX','UT','VT','VA','WA','WV','WI','WY',
 ];
 
-const COUNTRIES = ['United States', 'Canada', 'United Kingdom', 'France', 'Germany', 'Australia', 'Japan', 'Other'];
-const MONTHS = ['01','02','03','04','05','06','07','08','09','10','11','12'];
-const YEARS = Array.from({length: 12}, (_, i) => String(2025 + i));
-
-const ITEM_IMAGES: Record<string, any> = {'1': pinkTeddyImg, '2': redHeartImg, '3': beagleImg};
-
-const ORDER_ITEMS = [
-  {id: '1', name: 'Pink Teddy Keychain', variant: 'Soft plush keychain · One size', price: 75, qty: 1, limited: false},
-  {id: '2', name: 'Red Heart Keychain', variant: 'Velvet finish · One size', price: 75, qty: 1, limited: false},
-  {id: '3', name: 'Beagle Keychain', variant: 'Hand-painted resin · One size', price: 80, qty: 1, limited: true},
-];
 
 const SUBTOTAL = 230;
 // SHIPPING is now computed from deliveryMethod state
@@ -105,7 +93,6 @@ export default function PaymentFormPage() {
   const [city, setCity] = useState('');
   const [zip, setZip] = useState('');
   const [state, setState] = useState('');
-  const [country, setCountry] = useState('');
   const [phone, setPhone] = useState('');
   const [saveInfo, setSaveInfo] = useState(false);
   const [email, setEmail] = useState('');
@@ -339,7 +326,7 @@ export default function PaymentFormPage() {
                       <XDSHStack gap={3} vAlign="start">
                         {/* Placeholder thumbnail */}
                         <div {...stylex.props(styles.orderThumb)} style={{overflow: 'hidden'}}>
-                          <Image src={ITEM_IMAGES[item.id]} alt={item.name} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
+                          <Image src={ITEM_IMAGES[item.id]} alt={item.name} width={64} height={64} style={{objectFit: "cover", width: "100%", height: "100%"}} />
                         </div>
                         <XDSVStack gap={1} style={{flex: 1}}>
                           <XDSHStack gap={2} hAlign="between" vAlign="start">
