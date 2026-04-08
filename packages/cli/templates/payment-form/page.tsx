@@ -172,8 +172,6 @@ export default function PaymentFormPage() {
                   <XDSText type="supporting" color="secondary">Sign in to track your order and save your information for faster checkout.</XDSText>
               </XDSVStack>
 
-              <XDSDivider />
-
               <XDSVStack gap={4}>
                   {/* Contact information */}
                   <div {...stylex.props(styles.sectionTitle)}>Contact Information</div>
@@ -197,10 +195,12 @@ export default function PaymentFormPage() {
                   <XDSDivider />
 
                   {/* Delivery */}
-                  <div {...stylex.props(styles.sectionTitle)}>Delivery</div>
-                  <XDSText type="supporting" color="secondary">
-                    Please allow 1–3 business days processing time before your order ships. Thank you for your patience.
-                  </XDSText>
+                  <XDSVStack gap={1}>
+                    <div {...stylex.props(styles.sectionTitle)}>Delivery</div>
+                    <XDSText type="supporting" color="secondary">
+                      Please allow 1–3 business days processing time before your order ships. Thank you for your patience.
+                    </XDSText>
+                  </XDSVStack>
                   <XDSRadioList label="Delivery method" value={deliveryMethod} onChange={setDeliveryMethod}>
                     <XDSRadioListItem value="standard" label="Standard (3–7 business days)" endContent={<XDSText type="body" weight="medium">$4.95</XDSText>} />
                     <XDSRadioListItem value="expedited" label="Expedited (1–2 business days)" endContent={<XDSText type="body" weight="medium">$9.95</XDSText>} />
@@ -211,11 +211,11 @@ export default function PaymentFormPage() {
                   <XDSCheckboxInput label="Save my information for a faster checkout" value={saveInfo} onChange={setSaveInfo} />
               </XDSVStack>
 
-              <XDSDivider />
-
               <XDSVStack gap={5}>
-                  <div {...stylex.props(styles.sectionTitle)}>Payment Method</div>
-                  <XDSText type="supporting" color="secondary">All transactions are secure and encrypted.</XDSText>
+                  <XDSVStack gap={1}>
+                    <div {...stylex.props(styles.sectionTitle)}>Payment Method</div>
+                    <XDSText type="supporting" color="secondary">All transactions are secure and encrypted.</XDSText>
+                  </XDSVStack>
 
                   {/* Express checkout */}
                   <XDSVStack gap={3}>
@@ -276,8 +276,6 @@ export default function PaymentFormPage() {
                   </XDSVStack>
 
               </XDSVStack>
-
-              <XDSDivider />
 
               <XDSVStack gap={5}>
 
