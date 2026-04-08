@@ -560,6 +560,7 @@ function Sparkline({data}: {data: number[]}) {
           stroke="var(--color-border-blue, #0171E3)"
           strokeWidth={1.5}
           dot={false}
+          isAnimationActive={false}
         />
       </LineChart>
     </ResponsiveContainer>
