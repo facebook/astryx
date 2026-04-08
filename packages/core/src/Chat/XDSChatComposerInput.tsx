@@ -185,7 +185,7 @@ const styles = stylex.create({
     left: 0,
     right: 0,
     pointerEvents: 'none',
-    color: colorVars['--color-text-disabled'],
+    color: colorVars['--color-text-secondary'],
     fontSize: typeScaleVars['--text-body-size'],
     lineHeight: `${LINE_HEIGHT_PX}px`,
     fontFamily: typographyVars['--font-family-body'],
