@@ -164,72 +164,47 @@ const styles = stylex.create({
   },
 
   // --- Scroll-to-bottom button ---
-  // The label is always in the DOM but clipped via animated max-width
-  // on the label wrapper. CSS-only reveal — no per-frame DOM mutations.
-  // The button sits on an opaque container (scrollButtonBg) that provides
-  // the popover surface, so hover/focus translucent states don't bleed.
-  // `contain: layout style` isolates the max-width transition so it
-  // doesn't invalidate layout on the parent scroll container.
+  // Container controls dimensions and clips content. The XDSButton inside
+  // is always full-size; the container's width transition reveals the label.
+  // Opaque popover bg on the container prevents hover tint bleed-through.
+  // `contain: layout style` isolates reflow from the scroll area.
   scrollButtonContainer: {
     position: 'absolute',
     bottom: spacingVars['--spacing-3'],
     left: '50%',
     contain: 'layout style',
-    display: 'inline-flex',
+    overflow: 'hidden',
     borderRadius: radiusVars['--radius-full'],
     backgroundColor: colorVars['--color-background-popover'],
     boxShadow: shadowVars['--shadow-med'],
+    height: '32px',
     zIndex: 1,
-    transitionProperty: 'opacity, transform',
+    transitionProperty: 'opacity, transform, max-width',
     transitionTimingFunction: easeVars['--ease-standard'],
+    transitionDuration: durationVars['--duration-fast-max'],
   },
   scrollButtonContainerHidden: {
     opacity: 0,
     pointerEvents: 'none',
+    maxWidth: '32px',
     transform: 'translate(-50%, 8px)',
-    transitionDuration: durationVars['--duration-fast'],
     transitionDelay: '0ms',
   },
   scrollButtonContainerVisible: {
     opacity: 1,
     pointerEvents: 'auto',
     transform: 'translate(-50%, 0)',
-    transitionDuration: durationVars['--duration-fast'],
     transitionDelay: '150ms',
+  },
+  scrollButtonCollapsed: {
+    maxWidth: '32px',
+  },
+  scrollButtonExpanded: {
+    maxWidth: '200px',
   },
   scrollButton: {
     [radiusVars['--radius-element'] as string]: radiusVars['--radius-full'],
-    transitionProperty: 'gap, padding, aspect-ratio',
-    transitionDuration: durationVars['--duration-fast-max'],
-    transitionTimingFunction: easeVars['--ease-standard'],
-  },
-  scrollButtonCollapsed: {
-    gap: 0,
-    ['--button-icon-only-aspect' as string]: '1 / 1',
-  },
-  scrollButtonExpanded: {
-    gap: spacingVars['--spacing-2'],
-    ['--button-icon-only-aspect' as string]: 'auto',
-  },
-  // Label wrapper — always present, width-animated to reveal/hide
-  scrollButtonLabelWrapper: {
-    display: 'inline-flex',
-    overflow: 'hidden',
     whiteSpace: 'nowrap',
-    // max-width transition drives the expand/collapse animation
-    transitionProperty: 'max-width, padding',
-    transitionDuration: durationVars['--duration-fast-max'],
-    transitionTimingFunction: easeVars['--ease-standard'],
-  },
-  scrollButtonLabelCollapsed: {
-    maxWidth: '0px',
-    paddingInlineStart: 0,
-  },
-  scrollButtonLabelExpanded: {
-    // Generous max-width — actual content determines visual width
-    maxWidth: '200px',
-    paddingInlineStart: spacingVars['--spacing-1'],
-    paddingInlineEnd: spacingVars['--spacing-1'],
   },
 
   emptyState: {
@@ -276,6 +251,9 @@ function ScrollToBottomButton({
         isVisible
           ? styles.scrollButtonContainerVisible
           : styles.scrollButtonContainerHidden,
+        hasNewMessages
+          ? styles.scrollButtonExpanded
+          : styles.scrollButtonCollapsed,
       )}>
       <XDSButton
         label={hasNewMessages ? label : 'Scroll to bottom'}
@@ -284,21 +262,8 @@ function ScrollToBottomButton({
         variant="ghost"
         size="sm"
         onClick={onClick}
-        xstyle={[
-          styles.scrollButton,
-          hasNewMessages
-            ? styles.scrollButtonExpanded
-            : styles.scrollButtonCollapsed,
-        ]}>
-        <span
-          {...stylex.props(
-            styles.scrollButtonLabelWrapper,
-            hasNewMessages
-              ? styles.scrollButtonLabelExpanded
-              : styles.scrollButtonLabelCollapsed,
-          )}>
-          {label}
-        </span>
+        xstyle={styles.scrollButton}>
+        {label}
       </XDSButton>
     </div>
   );
