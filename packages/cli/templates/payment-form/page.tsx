@@ -38,7 +38,7 @@ const SAVINGS = '$60.00';
 
 const styles = stylex.create({
   displayHeading: {
-    fontSize: '40px',
+    fontSize: '64px',
     fontWeight: fontWeightVars['--font-weight-bold'],
     lineHeight: '1.1',
     letterSpacing: '-0.02em',
@@ -157,7 +157,7 @@ export default function PaymentFormPage() {
         <div style={{maxWidth: 1100, width: '100%', padding: '48px 24px'}}>
 
           {/* ── Page header ── */}
-          <XDSVStack gap={3} style={{marginBottom: 40}}>
+          <XDSVStack gap={1} style={{marginBottom: 40}}>
             <div {...stylex.props(styles.displayHeading)}>Payment Request</div>
             <XDSText type="body" color="secondary">
               Complete your purchase securely. All transactions are encrypted
