@@ -14,7 +14,7 @@ import {
   shadowVars,
   fontWeightVars,
 } from '../theme/tokens.stylex';
-import {xdsClassName} from '../utils';
+import {xdsClassName, mergeProps} from '../utils';
 import type {XDSToastType, XDSToastDismissReason} from './types';
 
 const TYPE_ICONS: Record<XDSToastType, XDSIconName> = {
@@ -175,11 +175,13 @@ export function XDSToast({
       onMouseLeave={resumeTimer}
       onFocusCapture={pauseTimer}
       onBlurCapture={resumeTimer}
-      {...stylex.props(
-        styles.root,
-        isError ? styles.variantError : styles.variantDefault,
-      )}
-      className={xdsClassName('toast', {type})}>
+      {...mergeProps(
+        xdsClassName('toast', {type}),
+        stylex.props(
+          styles.root,
+          isError ? styles.variantError : styles.variantDefault,
+        ),
+      )}>
       <div {...stylex.props(styles.iconArea)}>
         {icon ?? <XDSIcon icon={iconName} size="md" color="inherit" />}
       </div>
