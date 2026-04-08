@@ -124,7 +124,7 @@ export default function PaymentFormPage() {
   const [cvc, setCvc] = useState('');
   const [cardName, setCardName] = useState('');
   const [promo, setPromo] = useState('');
-  const [quantities, setQuantities] = useState<Record<string, number>>({'1': 1, '2': 2, '3': 1});
+  const [quantities, setQuantities] = useState<Record<string, number>>({'1': 1, '2': 1, '3': 1});
   const [submitted, setSubmitted] = useState(false);
 
   const errors = submitted ? {
