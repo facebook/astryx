@@ -2,7 +2,7 @@
 
 /**
  * @file XDSChatMessageList.tsx
- * @input Uses React, StyleX, XDSChatListContext, XDSIcon, theme tokens, useAutoScroll, useXDSStreamingText
+ * @input Uses React, StyleX, XDSChatListContext, XDSIcon, theme tokens, useAutoScroll
  * @output Exports XDSChatMessageList component and XDSChatMessageListProps
  * @position Scrollable message container — holds XDSChatMessage children with auto-scroll
  *
@@ -41,7 +41,6 @@ import {xdsClassName, mergeProps} from '../utils';
 import {XDSSpinner} from '../Spinner';
 import {XDSIcon} from '../Icon';
 import {useAutoScroll} from './useAutoScroll';
-import {useXDSStreamingText} from '../hooks/useXDSStreamingText';
 
 export interface XDSChatMessageListProps {
   /** Ref forwarded to the scrollable container element */
@@ -166,14 +165,18 @@ const styles = stylex.create({
   },
 
   // --- Scroll-to-bottom button ---
+  // The label is always in the DOM but clipped via animated max-width
+  // on the label wrapper. CSS-only reveal — no per-frame DOM mutations.
+  // `contain: layout style` isolates the max-width transition so it
+  // doesn't invalidate layout on the parent scroll container.
   scrollButton: {
     position: 'absolute',
     bottom: spacingVars['--spacing-3'],
     left: '50%',
+    contain: 'layout style',
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacingVars['--spacing-1'],
     border: `1px solid ${colorVars['--color-border']}`,
     borderRadius: radiusVars['--radius-full'],
     cursor: 'pointer',
@@ -184,15 +187,14 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-background-popover'],
     color: colorVars['--color-text-secondary'],
     boxShadow: shadowVars['--shadow-med'],
-    transitionProperty:
-      'opacity, transform, padding, color, background-color, box-shadow',
+    transitionProperty: 'opacity, transform, box-shadow, color',
     transitionTimingFunction: easeVars['--ease-standard'],
     zIndex: 1,
-    // Icon-only sizing as default
     height: '32px',
-    minWidth: '32px',
     paddingBlock: 0,
-    paddingInline: 0,
+    paddingInlineStart: spacingVars['--spacing-2'],
+    paddingInlineEnd: spacingVars['--spacing-2'],
+    gap: 0,
     ':hover': {
       backgroundColor: colorVars['--color-background-muted'],
       color: colorVars['--color-text-primary'],
@@ -216,15 +218,25 @@ const styles = stylex.create({
     transitionDuration: durationVars['--duration-fast'],
     transitionDelay: '150ms',
   },
-  // When showing new messages label, expand with padding
-  scrollButtonExpanded: {
-    paddingInlineStart: spacingVars['--spacing-2'],
-    paddingInlineEnd: spacingVars['--spacing-3'],
-    color: colorVars['--color-text-primary'],
-  },
-  scrollButtonLabel: {
+  // Label wrapper — always present, width-animated to reveal/hide
+  scrollButtonLabelWrapper: {
+    display: 'inline-flex',
     overflow: 'hidden',
     whiteSpace: 'nowrap',
+    // max-width transition drives the expand/collapse animation
+    transitionProperty: 'max-width, padding',
+    transitionDuration: durationVars['--duration-fast-max'],
+    transitionTimingFunction: easeVars['--ease-standard'],
+  },
+  scrollButtonLabelCollapsed: {
+    maxWidth: '0px',
+    paddingInlineStart: 0,
+  },
+  scrollButtonLabelExpanded: {
+    // Generous max-width — actual content determines visual width
+    maxWidth: '200px',
+    paddingInlineStart: spacingVars['--spacing-1'],
+    paddingInlineEnd: spacingVars['--spacing-1'],
   },
 
   emptyState: {
@@ -244,8 +256,13 @@ const styles = stylex.create({
  * Animated scroll-to-bottom button.
  *
  * - Icon-only (chevron down) when the user is scrolled up
- * - Expands with a streaming-text label when new messages arrive
- * - Muted glass styling, not primary
+ * - Expands via max-width animation to reveal label when new messages arrive
+ * - Muted popover styling, not primary
+ *
+ * The label is always in the DOM but clipped by `max-width: 0` + `overflow: hidden`
+ * on the wrapper span. This keeps the animation CSS-only (no DOM mutations per frame).
+ * `contain: layout style` on the button prevents the max-width transition from
+ * invalidating layout above (the message list / scroll container).
  */
 function ScrollToBottomButton({
   isScrolledUp,
@@ -260,15 +277,6 @@ function ScrollToBottomButton({
 }) {
   const isVisible = isScrolledUp || hasNewMessages;
 
-  // Stream the label in when new messages appear, snap to full when they disappear
-  const streamedLabel = useXDSStreamingText(
-    hasNewMessages ? label : '',
-    hasNewMessages,
-    {speed: 'fast'},
-  );
-
-  const hasLabel = streamedLabel.length > 0;
-
   return (
     <button
       type="button"
@@ -277,12 +285,17 @@ function ScrollToBottomButton({
       {...stylex.props(
         styles.scrollButton,
         isVisible ? styles.scrollButtonVisible : styles.scrollButtonHidden,
-        hasLabel && styles.scrollButtonExpanded,
       )}>
       <XDSIcon icon="chevronDown" size="sm" />
-      {hasLabel && (
-        <span {...stylex.props(styles.scrollButtonLabel)}>{streamedLabel}</span>
-      )}
+      <span
+        {...stylex.props(
+          styles.scrollButtonLabelWrapper,
+          hasNewMessages
+            ? styles.scrollButtonLabelExpanded
+            : styles.scrollButtonLabelCollapsed,
+        )}>
+        {label}
+      </span>
     </button>
   );
 }
