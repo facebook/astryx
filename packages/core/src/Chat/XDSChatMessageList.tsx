@@ -205,8 +205,7 @@ const styles = stylex.create({
   scrollButton: {
     [radiusVars['--radius-element'] as string]: radiusVars['--radius-full'],
     whiteSpace: 'nowrap',
-    paddingInlineStart: spacingVars['--spacing-2'],
-    paddingInlineEnd: spacingVars['--spacing-3'],
+    paddingInline: spacingVars['--spacing-2'],
   },
 
   emptyState: {
