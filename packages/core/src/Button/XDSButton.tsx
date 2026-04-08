@@ -12,7 +12,7 @@
  * - /packages/core/src/Button/index.ts (exports if types change)
  * - /apps/storybook/stories/Button.stories.tsx (storybook stories)
  *
- * Last synced props: label, variant, size, isDisabled, isLoading, isPressed, onClickAction, icon, children, tooltip, endContent, href, as, target, rel
+ * Last synced props: label, variant, size, isDisabled, isLoading, onClickAction, icon, children, tooltip, endContent, href, as, target, rel
  */
 
 import {useRef, useTransition, type ReactNode} from 'react';
@@ -88,9 +88,6 @@ const styles = stylex.create({
       },
       ':active': 'none',
     },
-  },
-  pressed: {
-    backgroundImage: `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
   },
   iconOnly: {
     '--button-icon-only-aspect': '1 / 1',
@@ -313,13 +310,6 @@ export interface XDSButtonProps extends XDSBaseProps<HTMLButtonElement> {
    */
   isLoading?: boolean;
   /**
-   * Whether the button is in a pressed/active toggle state.
-   * Sets `aria-pressed` for accessibility and applies a persistent pressed overlay.
-   * Use this for toggle buttons (bold, italic, filter chips, etc.).
-   * Leave undefined for non-toggle buttons.
-   */
-  isPressed?: boolean;
-  /**
    * Click handler. For async actions that should show a loading state,
    * use `onClickAction` instead.
    */
@@ -438,7 +428,6 @@ export function XDSButton({
   type = 'button',
   isDisabled = false,
   isLoading = false,
-  isPressed,
   onClickAction,
   icon,
   children,
@@ -520,7 +509,6 @@ export function XDSButton({
     isIconOnly && styles.iconOnly,
     buttonDisabled && styles.disabled,
     useAriaDisabled && styles.ariaDisabled,
-    isPressed === true && styles.pressed,
     isLoadingState && loadingStyles.loading,
     edgePaddingSignal,
     edgeCompStyle,
@@ -604,7 +592,6 @@ export function XDSButton({
         {...ariaLabelProp}
         aria-busy={isLoadingState || undefined}
         aria-disabled={useAriaDisabled || undefined}
-        aria-pressed={isPressed}
         onClick={handleClick}
         {...(handleKeyDown ? {onKeyDown: handleKeyDown} : null)}>
         {buttonContent}

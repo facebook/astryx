@@ -3,7 +3,7 @@
 export const docs = {
   name: 'Button',
   description:
-    'XDSButton component with multiple variants, sizes, loading state, and toggle (pressed) state support.',
+    'XDSButton component with multiple variants, sizes, and isLoading state support.',
 
   keywords: ["button","btn","cta","submit","action","loading","primary","secondary","ghost","destructive","danger"],
   features: [
@@ -16,7 +16,6 @@ export const docs = {
     'Tooltip + disabled: Uses aria-disabled instead of native disabled so the button stays focusable for keyboard tooltip access',
     'Form integration: type, name, value, form props for native form submission',
     'Async actions: onClickAction with automatic loading state via useTransition',
-    'Toggle state: isPressed sets aria-pressed and applies persistent pressed overlay for toggle buttons',
   ],
 
   props: [
@@ -71,12 +70,6 @@ export const docs = {
       type: 'boolean',
       description: 'Disables the button. When a tooltip is present, uses aria-disabled instead of native disabled so the button stays focusable.',
       default: 'false',
-    },
-    {
-      name: 'isPressed',
-      type: 'boolean | undefined',
-      description: 'Whether the button is in a pressed/active toggle state. Sets aria-pressed for accessibility and applies a persistent pressed overlay. Use for toggle buttons (bold, italic, filter chips, etc.). Leave undefined for non-toggle buttons.',
-      default: 'undefined',
     },
     {
       name: 'icon',
