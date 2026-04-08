@@ -37,14 +37,14 @@ const MONTHS = ['01','02','03','04','05','06','07','08','09','10','11','12'];
 const YEARS = Array.from({length: 12}, (_, i) => String(2025 + i));
 
 const ORDER_ITEMS = [
-  {id: '1', name: 'iPhone 15 Pro Max', variant: 'Natural Titanium · 256GB', price: 1199, qty: 1, inStock: true},
-  {id: '2', name: 'AirPods Pro 3', variant: 'White', price: 249, qty: 2, inStock: true},
-  {id: '3', name: 'Apple Watch Series 11', variant: 'Midnight · 45mm', price: 399, qty: 1, inStock: false},
+  {id: '1', name: 'Pink Teddy Keychain', variant: 'Soft plush keychain · One size', price: 75, qty: 1, limited: false},
+  {id: '2', name: 'Red Heart Keychain', variant: 'Velvet finish · One size', price: 75, qty: 1, limited: false},
+  {id: '3', name: 'Beagle Keychain', variant: 'Hand-painted resin · One size', price: 80, qty: 1, limited: true},
 ];
 
-const SUBTOTAL = 2096;
-const SHIPPING = 15;
-const TAX = 167.68;
+const SUBTOTAL = 230;
+const SHIPPING = 5.95;
+const TAX = 18.40;
 const TOTAL = SUBTOTAL + SHIPPING + TAX;
 const fmt = (n: number) => `$${n.toFixed(2)}`;
 
