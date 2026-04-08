@@ -5,13 +5,24 @@
  * @input Uses React refs, state, and effects
  * @output Exports useAutoScroll hook for scroll-pinning behavior
  * @position Utility hook — used by XDSChatMessageList, also usable standalone
+ *
+ * Exposes two scroll states:
+ * - `isScrolledUp` — true when the user has scrolled away from the bottom
+ *   (beyond `scrollUpThreshold`), regardless of whether new content arrived.
+ *   Drives a scroll-to-bottom affordance.
+ * - `showNewMessages` — true when new content arrived while scrolled up.
+ *   Layers on top of isScrolledUp to add a "new messages" notification.
+ *
+ * SYNC: When modified, update:
+ * - /packages/core/src/Chat/index.ts (exports)
+ * - /packages/core/src/Chat/XDSChatMessageList.tsx (consumer)
  */
 
 import {useCallback, useEffect, useRef, useState} from 'react';
 
 export interface UseAutoScrollOptions {
   /**
-   * Whether auto-scroll is enabled.
+   * Whether auto-scroll behavior is enabled.
    * @default true
    */
   enabled?: boolean;
@@ -21,13 +32,23 @@ export interface UseAutoScrollOptions {
    * @default 12
    */
   threshold?: number;
+
+  /**
+   * Distance from bottom (in px) beyond which `isScrolledUp` becomes true.
+   * Controls when the scroll-to-bottom button appears.
+   * @default 100
+   */
+  scrollUpThreshold?: number;
 }
 
 export interface UseAutoScrollReturn {
   /** Ref to attach to the scrollable container element. */
   scrollRef: React.RefObject<HTMLDivElement | null>;
 
-  /** Whether the "new messages" indicator should be shown. */
+  /** Whether the user has scrolled up beyond `scrollUpThreshold`. */
+  isScrolledUp: boolean;
+
+  /** Whether new content arrived while the user is scrolled up. */
   showNewMessages: boolean;
 
   /** Scroll handler — attach to onScroll on the scrollable element. */
@@ -46,16 +67,19 @@ export interface UseAutoScrollReturn {
 /**
  * Hook that manages auto-scroll behavior for scrollable containers.
  *
- * Pins to the bottom when the user is near the end. Shows a "new messages"
- * indicator when new content arrives while scrolled up.
+ * Pins to the bottom when the user is near the end. Tracks two
+ * orthogonal states: whether the user has scrolled up (for a
+ * scroll-to-bottom affordance) and whether new content arrived
+ * while scrolled up (for a "new messages" notification).
  *
  * @example
  * ```
- * const {scrollRef, showNewMessages, handleScroll, dismissNewMessages} = useAutoScroll();
+ * const {scrollRef, isScrolledUp, showNewMessages, handleScroll, scrollToBottom, dismissNewMessages} = useAutoScroll();
  *
  * return (
  *   <div ref={scrollRef} onScroll={handleScroll}>
  *     {messages}
+ *     {isScrolledUp && <button onClick={scrollToBottom}>↓</button>}
  *     {showNewMessages && <button onClick={dismissNewMessages}>New messages</button>}
  *   </div>
  * );
@@ -64,9 +88,11 @@ export interface UseAutoScrollReturn {
 export function useAutoScroll({
   enabled = true,
   threshold = 12,
+  scrollUpThreshold = 100,
 }: UseAutoScrollOptions = {}): UseAutoScrollReturn {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const [showNewMessages, setShowNewMessages] = useState(false);
+  const [isScrolledUp, setIsScrolledUp] = useState(false);
   const isNearBottomRef = useRef(true);
 
   const scrollToBottom = useCallback((smooth = true) => {
@@ -82,20 +108,20 @@ export function useAutoScroll({
     }
   }, []);
 
-  const checkNearBottom = useCallback(() => {
-    const el = scrollRef.current;
-    if (!el) return true;
-    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-    return distanceFromBottom <= threshold;
-  }, [threshold]);
-
   const handleScroll = useCallback(() => {
-    const nearBottom = checkNearBottom();
+    const el = scrollRef.current;
+    if (!el) return;
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    const nearBottom = distanceFromBottom <= threshold;
     isNearBottomRef.current = nearBottom;
+
+    // Track whether user is scrolled up beyond the visible threshold
+    setIsScrolledUp(distanceFromBottom > scrollUpThreshold);
+
     if (nearBottom) {
       setShowNewMessages(false);
     }
-  }, [checkNearBottom]);
+  }, [threshold, scrollUpThreshold]);
 
   const onContentChange = useCallback(() => {
     if (!enabled) return;
@@ -118,6 +144,7 @@ export function useAutoScroll({
 
   return {
     scrollRef,
+    isScrolledUp,
     showNewMessages,
     handleScroll,
     scrollToBottom,

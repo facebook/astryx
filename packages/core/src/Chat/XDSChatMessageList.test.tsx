@@ -54,13 +54,13 @@ describe('XDSChatMessageList', () => {
     expect(screen.getByTestId('chat-list')).toBeTruthy();
   });
 
-  it('has new messages button (hidden by default)', () => {
+  it('has scroll-to-bottom button (hidden by default)', () => {
     render(
       <XDSChatMessageList>
         <div>msg</div>
       </XDSChatMessageList>,
     );
-    const button = screen.getByLabelText(/New messages/);
+    const button = screen.getByLabelText(/Scroll to bottom/);
     expect(button).toBeTruthy();
   });
 });

@@ -2,13 +2,14 @@
 
 /**
  * @file XDSChatMessageList.tsx
- * @input Uses React, StyleX, XDSChatListContext, XDSButton, theme tokens
+ * @input Uses React, StyleX, XDSChatListContext, XDSIcon, theme tokens, useAutoScroll, useXDSStreamingText
  * @output Exports XDSChatMessageList component and XDSChatMessageListProps
  * @position Scrollable message container — holds XDSChatMessage children with auto-scroll
  *
  * Renders a scrollable container with role="log" for chat message histories.
- * Handles auto-scroll (pins to bottom during streaming), a "New messages"
- * indicator when scrolled up, and onScrollToTopAction for infinite scroll.
+ * Handles auto-scroll (pins to bottom during streaming), a floating
+ * scroll-to-bottom button when scrolled up, and a "New messages" label
+ * that expands into the button with streaming text when new content arrives.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Chat/index.ts (exports)
@@ -33,11 +34,14 @@ import {
   fontWeightVars,
   durationVars,
   easeVars,
+  shadowVars,
 } from '../theme/tokens.stylex';
 import {XDSChatListContext, type XDSChatDensity} from './XDSChatContext';
 import {xdsClassName, mergeProps} from '../utils';
 import {XDSSpinner} from '../Spinner';
+import {XDSIcon} from '../Icon';
 import {useAutoScroll} from './useAutoScroll';
+import {useXDSStreamingText} from '../hooks/useXDSStreamingText';
 
 export interface XDSChatMessageListProps {
   /** Ref forwarded to the scrollable container element */
@@ -64,6 +68,19 @@ export interface XDSChatMessageListProps {
    * @default 12
    */
   scrollThreshold?: number;
+
+  /**
+   * Distance from bottom (in px) beyond which the scroll-to-bottom button appears.
+   * @default 100
+   */
+  scrollUpThreshold?: number;
+
+  /**
+   * Label shown in the scroll-to-bottom button when new messages arrive.
+   * The label grows in with streaming text animation.
+   * @default 'New messages'
+   */
+  newMessagesLabel?: string;
 
   /**
    * Custom content when the list has no messages.
@@ -147,39 +164,63 @@ const styles = stylex.create({
     justifyContent: 'center',
     paddingBlock: spacingVars['--spacing-3'],
   },
-  newMessagesButton: {
+
+  // --- Scroll-to-bottom button ---
+  scrollButton: {
     position: 'absolute',
     bottom: spacingVars['--spacing-3'],
     left: '50%',
-    transform: 'translateX(-50%)',
     display: 'inline-flex',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: spacingVars['--spacing-1'],
-    paddingBlock: spacingVars['--spacing-1-5'],
-    paddingInline: spacingVars['--spacing-3'],
-    backgroundColor: colorVars['--color-accent'],
-    color: colorVars['--color-on-accent'],
-    border: 'none',
+    border: `1px solid ${colorVars['--color-border']}`,
     borderRadius: radiusVars['--radius-full'],
     cursor: 'pointer',
+    fontFamily: 'inherit',
     fontSize: typeScaleVars['--text-supporting-size'],
-    fontWeight: fontWeightVars['--font-weight-semibold'],
-    boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-    transitionProperty: 'opacity, transform',
+    lineHeight: typeScaleVars['--text-supporting-leading'],
+    fontWeight: fontWeightVars['--font-weight-medium'],
+    backgroundColor: colorVars['--color-background-popover'],
+    color: colorVars['--color-text-secondary'],
+    boxShadow: shadowVars['--shadow-med'],
+    transitionProperty:
+      'opacity, transform, padding, color, background-color, box-shadow',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
     zIndex: 1,
+    // Icon-only sizing as default
+    height: '32px',
+    minWidth: '32px',
+    paddingBlock: 0,
+    paddingInline: 0,
+    ':hover': {
+      backgroundColor: colorVars['--color-background-muted'],
+      color: colorVars['--color-text-primary'],
+      boxShadow: shadowVars['--shadow-high'],
+    },
   },
-  newMessagesHidden: {
+  scrollButtonHidden: {
     opacity: 0,
     pointerEvents: 'none',
     transform: 'translate(-50%, 8px)',
   },
-  newMessagesVisible: {
+  scrollButtonVisible: {
     opacity: 1,
     pointerEvents: 'auto',
     transform: 'translate(-50%, 0)',
   },
+  // When showing new messages label, expand with padding
+  scrollButtonExpanded: {
+    paddingInlineStart: spacingVars['--spacing-2'],
+    paddingInlineEnd: spacingVars['--spacing-3'],
+    color: colorVars['--color-text-primary'],
+  },
+  scrollButtonLabel: {
+    overflow: 'hidden',
+    whiteSpace: 'nowrap',
+  },
+
   emptyState: {
     display: 'flex',
     alignItems: 'center',
@@ -190,14 +231,68 @@ const styles = stylex.create({
 });
 
 // =============================================================================
+// Sub-components
+// =============================================================================
+
+/**
+ * Animated scroll-to-bottom button.
+ *
+ * - Icon-only (chevron down) when the user is scrolled up
+ * - Expands with a streaming-text label when new messages arrive
+ * - Muted glass styling, not primary
+ */
+function ScrollToBottomButton({
+  isScrolledUp,
+  showNewMessages,
+  label,
+  onClick,
+}: {
+  isScrolledUp: boolean;
+  showNewMessages: boolean;
+  label: string;
+  onClick: () => void;
+}) {
+  const isVisible = isScrolledUp || showNewMessages;
+
+  // Stream the label in when new messages appear, snap to full when they disappear
+  const streamedLabel = useXDSStreamingText(
+    showNewMessages ? label : '',
+    showNewMessages,
+    {speed: 'fast'},
+  );
+
+  const hasLabel = streamedLabel.length > 0;
+
+  return (
+    <button
+      type="button"
+      aria-label={showNewMessages ? label : 'Scroll to bottom'}
+      onClick={onClick}
+      {...stylex.props(
+        styles.scrollButton,
+        isVisible ? styles.scrollButtonVisible : styles.scrollButtonHidden,
+        hasLabel && styles.scrollButtonExpanded,
+      )}>
+      <XDSIcon icon="chevronDown" size="sm" />
+      {hasLabel && (
+        <span {...stylex.props(styles.scrollButtonLabel)}>{streamedLabel}</span>
+      )}
+    </button>
+  );
+}
+
+// =============================================================================
 // Component
 // =============================================================================
 
 /**
  * Scrollable container for chat messages with auto-scroll and infinite scroll support.
  *
- * Pins to the bottom when the user is near the end. Shows a "New messages" button
- * when scrolled up. Supports loading older messages via `onScrollToTopAction`.
+ * Pins to the bottom when the user is near the end. Shows a muted
+ * scroll-to-bottom icon button when scrolled up. When new messages
+ * arrive while scrolled up, the button expands to show a streaming
+ * "New messages" label. Supports loading older messages via
+ * `onScrollToTopAction`.
  *
  * @example
  * ```
@@ -215,6 +310,8 @@ export function XDSChatMessageList({
   children,
   hasAutoScroll = true,
   scrollThreshold = 12,
+  scrollUpThreshold = 100,
+  newMessagesLabel = 'New messages',
   emptyState,
   onScrollToTopAction,
   density = 'balanced',
@@ -226,11 +323,17 @@ export function XDSChatMessageList({
 }: XDSChatMessageListProps) {
   const {
     scrollRef,
+    isScrolledUp,
     showNewMessages,
     handleScroll,
+    scrollToBottom,
     dismissNewMessages,
     onContentChange,
-  } = useAutoScroll({enabled: hasAutoScroll, threshold: scrollThreshold});
+  } = useAutoScroll({
+    enabled: hasAutoScroll,
+    threshold: scrollThreshold,
+    scrollUpThreshold,
+  });
 
   const sentinelRef = useRef<HTMLDivElement>(null);
   const [isLoadingTop, startTransition] = useTransition();
@@ -288,6 +391,15 @@ export function XDSChatMessageList({
     [ref, scrollRef],
   );
 
+  // Click handler: dismiss new messages (scrolls to bottom) or just scroll
+  const handleButtonClick = useCallback(() => {
+    if (showNewMessages) {
+      dismissNewMessages();
+    } else {
+      scrollToBottom();
+    }
+  }, [showNewMessages, dismissNewMessages, scrollToBottom]);
+
   return (
     <XDSChatListContext.Provider value={contextValue}>
       <div {...stylex.props(styles.outer)}>
@@ -327,19 +439,13 @@ export function XDSChatMessageList({
           </div>
         </div>
 
-        {/* New messages button */}
-        <button
-          type="button"
-          aria-label="New messages — scroll to bottom"
-          onClick={dismissNewMessages}
-          {...stylex.props(
-            styles.newMessagesButton,
-            showNewMessages
-              ? styles.newMessagesVisible
-              : styles.newMessagesHidden,
-          )}>
-          New messages ↓
-        </button>
+        {/* Scroll-to-bottom button: icon-only when scrolled up, expands with label on new messages */}
+        <ScrollToBottomButton
+          isScrolledUp={isScrolledUp}
+          showNewMessages={showNewMessages}
+          label={newMessagesLabel}
+          onClick={handleButtonClick}
+        />
       </div>
     </XDSChatListContext.Provider>
   );

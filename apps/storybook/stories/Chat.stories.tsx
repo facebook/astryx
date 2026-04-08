@@ -610,3 +610,60 @@ For server state, use a library like **TanStack Query** or **SWR**.`}</XDSMarkdo
     </div>
   ),
 };
+
+export const ScrollToBottom: StoryObj = {
+  name: 'Scroll to Bottom',
+  render: () => {
+    const [messages, setMessages] = useState(
+      Array.from({length: 30}, (_, i) => ({
+        id: i + 1,
+        sender: i % 2 === 0 ? ('user' as const) : ('assistant' as const),
+        text:
+          i % 2 === 0
+            ? `User message #${i + 1}`
+            : `This is assistant response #${i + 1}. It has enough content to require scrolling through the message list.`,
+      })),
+    );
+
+    const addNewMessage = useCallback(() => {
+      setMessages(prev => [
+        ...prev,
+        {
+          id: prev.length + 1,
+          sender: 'assistant' as const,
+          text: `New message arrived at ${new Date().toLocaleTimeString()}. Scroll up to see the button expand with a "New messages" label.`,
+        },
+      ]);
+    }, []);
+
+    return (
+      <div style={{height: 400, display: 'flex', flexDirection: 'column'}}>
+        <div
+          style={{
+            padding: '8px 16px',
+            borderBottom: '1px solid var(--color-border)',
+            display: 'flex',
+            gap: 8,
+            alignItems: 'center',
+          }}>
+          <XDSButton
+            label="Add message"
+            variant="secondary"
+            size="sm"
+            onClick={addNewMessage}
+          />
+          <span style={{fontSize: 12, color: 'var(--color-text-secondary)'}}>
+            Scroll up, then click "Add message" to see the button expand
+          </span>
+        </div>
+        <XDSChatMessageList>
+          {messages.map(msg => (
+            <XDSChatMessage key={msg.id} sender={msg.sender}>
+              <XDSChatMessageBubble>{msg.text}</XDSChatMessageBubble>
+            </XDSChatMessage>
+          ))}
+        </XDSChatMessageList>
+      </div>
+    );
+  },
+};
