@@ -26,7 +26,7 @@ const ORDER_ITEMS = [
 ];
 
 const styles = stylex.create({
-  page: { minHeight: '100svh', backgroundColor: colorVars['--color-background-canvas'] },
+  page: { minHeight: '100svh', backgroundColor: colorVars['--color-background-surface'] },
   inner: { maxWidth: 1080, margin: '0 auto', width: '100%', paddingTop: spacingVars['--spacing-10'], paddingBottom: spacingVars['--spacing-10'], paddingLeft: spacingVars['--spacing-8'], paddingRight: spacingVars['--spacing-8'] },
   displayHeading: { fontSize: '56px', fontWeight: fontWeightVars['--font-weight-bold'], lineHeight: '1.05', letterSpacing: '-0.03em', margin: 0 },
   body: { display: 'grid', gridTemplateColumns: '3fr 2fr', gap: spacingVars['--spacing-8'], alignItems: 'start' },
@@ -106,7 +106,7 @@ export default function PaymentFormPage() {
 
               {/* Express checkout */}
               <XDSVStack gap={3}>
-                <XDSText type="supporting" color="secondary" align="center">Express checkout</XDSText>
+                <XDSText type="supporting" color="secondary">Express checkout</XDSText>
                 <XDSButton label="Pay with saved card" variant="secondary" size="lg" xstyle={styles.fullWidth} onClick={() => {}} />
                 <div {...stylex.props(styles.orDivider)}>
                   <div {...stylex.props(styles.orLine)} />
@@ -117,7 +117,7 @@ export default function PaymentFormPage() {
 
               {/* Contact */}
               <XDSVStack gap={4}>
-                <XDSHStack gap={2} vAlign="center" justify="space-between">
+                <XDSHStack gap={2} vAlign="center" hAlign="between">
                   <div {...stylex.props(styles.sectionHeading)}>Contact</div>
                   <XDSLink label="Sign in" href="#" type="supporting">Sign in</XDSLink>
                 </XDSHStack>
@@ -193,7 +193,7 @@ export default function PaymentFormPage() {
 
               {/* Payment */}
               <XDSVStack gap={4}>
-                <XDSHStack gap={2} vAlign="center" justify="space-between">
+                <XDSHStack gap={2} vAlign="center" hAlign="between">
                   <div {...stylex.props(styles.sectionHeading)}>Payment</div>
                   <XDSHStack gap={1} vAlign="center">
                     <XDSIcon name="checkCircle" size="sm" />
@@ -293,9 +293,9 @@ export default function PaymentFormPage() {
 
                   <div {...stylex.props(styles.totalRow)}>
                     <XDSText type="body" weight="bold">Total</XDSText>
-                    <XDSHStack gap={1} vAlign="baseline">
+                    <XDSHStack gap={1} vAlign="center">
                       <XDSText type="supporting" color="secondary">USD</XDSText>
-                      <XDSText type="title" weight="bold">$299.00</XDSText>
+                      <XDSText type="large" weight="bold">$299.00</XDSText>
                     </XDSHStack>
                   </div>
 
