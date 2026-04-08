@@ -185,11 +185,11 @@ export default function PaymentFormPage() {
                     <XDSTextInput size="lg" label="Last Name" placeholder="Doe" value={lastName} onChange={setLastName} status={errors.lastName ? {type: 'error', message: errors.lastName} : undefined} />
                   </div>
                   <XDSTextInput size="lg" label="Address" placeholder="123 Main Street" value={address} onChange={setAddress} status={errors.address ? {type: 'error', message: errors.address} : undefined} />
-                  <div style={{display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, alignItems: "start"}}>
+                  <div style={{display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12}}>
                     <XDSTextInput size="lg" label="City" placeholder="New York" value={city} onChange={setCity} status={errors.city ? {type: 'error', message: errors.city} : undefined} />
                     <XDSTextInput size="lg" label="ZIP Code" placeholder="10001" value={zip} onChange={setZip} status={errors.zip ? {type: 'error', message: errors.zip} : undefined} />
-                    <XDSSelector size="lg" label="State" placeholder="Select state" options={US_STATES} value={state} onChange={setState} />
                   </div>
+                  <XDSSelector size="lg" label="State" placeholder="Select state" options={US_STATES} value={state} onChange={setState} />
                   <XDSTextInput size="lg" label="Phone Number" placeholder="+1 (555) 123-4567" value={phone} onChange={setPhone} labelTooltip="We use your phone number to provide shipping updates and contact you about your delivery if needed." status={errors.phone ? {type: 'error', message: errors.phone} : undefined} />
                   <XDSDivider />
 
@@ -263,11 +263,11 @@ export default function PaymentFormPage() {
                     {!billingMatchesShipping && (
                       <XDSVStack gap={3}>
                         <XDSTextInput size="lg" label="Address" placeholder="123 Main Street" value={billingAddress} onChange={setBillingAddress} />
-                        <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, alignItems: 'start'}}>
+                        <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12}}>
                           <XDSTextInput size="lg" label="City" placeholder="New York" value={billingCity} onChange={setBillingCity} />
                           <XDSTextInput size="lg" label="ZIP Code" placeholder="10001" value={billingZip} onChange={setBillingZip} />
-                          <XDSSelector size="lg" label="State" placeholder="Select state" options={US_STATES} value={billingState} onChange={setBillingState} />
                         </div>
+                        <XDSSelector size="lg" label="State" placeholder="Select state" options={US_STATES} value={billingState} onChange={setBillingState} />
                       </XDSVStack>
                     )}
                   </XDSVStack>
