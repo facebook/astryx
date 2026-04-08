@@ -145,6 +145,7 @@ const sizeStyles = stylex.create({
 /**
  * Icon size per button size.
  * Matches XDSIcon sizing: sm/md=16px, lg=20px.
+ * fontSize is set so emoji and text-based icons scale correctly.
  */
 const iconSizeStyles = stylex.create({
   sm: {width: 16, height: 16, fontSize: 16},
@@ -309,15 +310,6 @@ export interface XDSButtonProps extends XDSBaseProps<HTMLButtonElement> {
    */
   isLoading?: boolean;
   /**
-   * Whether the button is currently pressed/active (toggle state).
-   * When provided, the button renders with `aria-pressed` and a
-   * pressed visual style (overlay background, primary icon/text color).
-   *
-   * For a controlled toggle pattern with `onPressedChange`, use
-   * `XDSToggleButton` instead — it wraps XDSButton with this prop.
-   */
-  isPressed?: boolean;
-  /**
    * Click handler. For async actions that should show a loading state,
    * use `onClickAction` instead.
    */
@@ -371,18 +363,6 @@ export interface XDSButtonProps extends XDSBaseProps<HTMLButtonElement> {
    */
   rel?: string;
 }
-
-/**
- * Pressed state styles — applied when isPressed is true.
- * Uses the neutral fill (same as secondary variant) to create a clear
- * visual indicator that the button is in the "on" state.
- */
-const pressedStyles = stylex.create({
-  pressed: {
-    backgroundColor: colorVars['--color-neutral'],
-    color: colorVars['--color-text-primary'],
-  },
-});
 
 const loadingStyles = stylex.create({
   loading: {
@@ -448,7 +428,6 @@ export function XDSButton({
   type = 'button',
   isDisabled = false,
   isLoading = false,
-  isPressed,
   onClickAction,
   icon,
   children,
@@ -527,7 +506,6 @@ export function XDSButton({
     styles.base,
     sizeStyles[size],
     variants[variant],
-    isPressed && pressedStyles.pressed,
     isIconOnly && styles.iconOnly,
     buttonDisabled && styles.disabled,
     useAriaDisabled && styles.ariaDisabled,
@@ -612,7 +590,6 @@ export function XDSButton({
         {...sharedMergedProps}
         {...props}
         {...ariaLabelProp}
-        aria-pressed={isPressed != null ? isPressed : undefined}
         aria-busy={isLoadingState || undefined}
         aria-disabled={useAriaDisabled || undefined}
         onClick={handleClick}
