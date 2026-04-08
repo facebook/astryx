@@ -143,19 +143,16 @@ export default function PaymentFormPage() {
               <XDSCard padding={5}>
                 <XDSVStack gap={4}>
                   <div {...stylex.props(styles.sectionTitle)}>Shipping Information</div>
-                  <div {...stylex.props(styles.inlineGrid)}>
+                  <div style={{display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12}}>
                     <XDSTextInput label="First Name" placeholder="John" value={firstName} onChange={setFirstName} status={errors.firstName ? {type: 'error', message: errors.firstName} : undefined} />
                     <XDSTextInput label="Last Name" placeholder="Doe" value={lastName} onChange={setLastName} status={errors.lastName ? {type: 'error', message: errors.lastName} : undefined} />
                   </div>
                   <XDSTextInput label="Address" placeholder="123 Main Street" value={address} onChange={setAddress} status={errors.address ? {type: 'error', message: errors.address} : undefined} />
-                  <div {...stylex.props(styles.inlineGrid)}>
+                  <div style={{display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12}}>
                     <XDSTextInput label="City" placeholder="New York" value={city} onChange={setCity} status={errors.city ? {type: 'error', message: errors.city} : undefined} />
                     <XDSTextInput label="ZIP Code" placeholder="10001" value={zip} onChange={setZip} status={errors.zip ? {type: 'error', message: errors.zip} : undefined} />
                   </div>
-                  <div {...stylex.props(styles.inlineGrid)}>
-                    <XDSTextInput label="State" placeholder="NY" value={state} onChange={setState} />
-                    <XDSSelector label="Country" placeholder="United States" options={COUNTRIES} value={country} onChange={setCountry} />
-                  </div>
+                  <XDSTextInput label="State" placeholder="NY" value={state} onChange={setState} />
                   <XDSTextInput label="Phone Number" placeholder="+1 (555) 123-4567" value={phone} onChange={setPhone} />
                   <XDSCheckboxInput label="Save this information for next time" value={saveInfo} onChange={setSaveInfo} />
                 </XDSVStack>
@@ -172,7 +169,7 @@ export default function PaymentFormPage() {
                   {paymentMethod === 'card' && (
                     <XDSVStack gap={3}>
                       <XDSTextInput label="Card Number" placeholder="1234 5678 9012 3456" value={cardNumber} onChange={setCardNumber} status={errors.cardNumber ? {type: 'error', message: errors.cardNumber} : undefined} />
-                      <div {...stylex.props(styles.inlineGrid)}>
+                      <div style={{display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12}}>
                         <XDSSelector label="Expiry Month" placeholder="MM" options={MONTHS} value={expiry} onChange={setExpiry} />
                         <XDSTextInput label="CVC" placeholder="123" value={cvc} onChange={setCvc} />
                       </div>
