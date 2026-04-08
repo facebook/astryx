@@ -20,6 +20,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '../..');
 const CLI = path.join(ROOT, 'packages/cli/bin/xds.mjs');
 
+const skipBaseline = process.argv.includes('--no-baseline');
 const baselineRef = process.argv.includes('--baseline')
   ? process.argv[process.argv.indexOf('--baseline') + 1]
   : 'main';
@@ -159,42 +160,45 @@ for (const tc of cases) {
 
 // ─── Phase 3: Run CLI calls (old main via worktree) ───────────────────────────
 
-console.log(`Phase 3: Running CLI --json calls (baseline: ${baselineRef})...`);
-const worktreeDir = path.join(ROOT, '.worktree-parity-test');
 const oldResults = {};
 
-let worktreeOk = false;
-try {
-  execSync(`git worktree add "${worktreeDir}" ${baselineRef} --detach 2>/dev/null`, {cwd: ROOT});
-  // Install deps if needed
-  if (!fs.existsSync(path.join(worktreeDir, 'node_modules'))) {
-    execSync('yarn install --frozen-lockfile 2>/dev/null || true', {cwd: worktreeDir, timeout: 60_000});
-  }
-  worktreeOk = true;
-} catch (e) {
-  console.log(`  Warning: could not create worktree for ${baselineRef}: ${e.message}`);
-}
+if (skipBaseline) {
+  console.log('Phase 3: Skipped (--no-baseline)');
+} else {
+  console.log(`Phase 3: Running CLI --json calls (baseline: ${baselineRef})...`);
+  const worktreeDir = path.join(ROOT, '.worktree-parity-test');
 
-if (worktreeOk) {
-  const oldCli = path.join(worktreeDir, 'packages/cli/bin/xds.mjs');
-  for (const tc of cases) {
-    const result = spawnSync(process.execPath, [oldCli, '--json', ...tc.cli], {
-      cwd: worktreeDir,
-      encoding: 'utf8',
-      timeout: 30_000,
-    });
-    try {
-      oldResults[tc.id] = JSON.parse(result.stdout);
-    } catch {
-      oldResults[tc.id] = {__parse_error: true, stdout: result.stdout?.slice(0, 200)};
+  let worktreeOk = false;
+  try {
+    execSync(`git worktree add "${worktreeDir}" ${baselineRef} --detach 2>/dev/null`, {cwd: ROOT});
+    if (!fs.existsSync(path.join(worktreeDir, 'node_modules'))) {
+      execSync('yarn install --frozen-lockfile 2>/dev/null || true', {cwd: worktreeDir, timeout: 60_000});
+    }
+    worktreeOk = true;
+  } catch (e) {
+    console.log(`  Warning: could not create worktree for ${baselineRef}: ${e.message}`);
+  }
+
+  if (worktreeOk) {
+    const oldCli = path.join(worktreeDir, 'packages/cli/bin/xds.mjs');
+    for (const tc of cases) {
+      const result = spawnSync(process.execPath, [oldCli, '--json', ...tc.cli], {
+        cwd: worktreeDir,
+        encoding: 'utf8',
+        timeout: 30_000,
+      });
+      try {
+        oldResults[tc.id] = JSON.parse(result.stdout);
+      } catch {
+        oldResults[tc.id] = {__parse_error: true, stdout: result.stdout?.slice(0, 200)};
+      }
     }
   }
-}
 
-// Clean up worktree
-try {
-  execSync(`git worktree remove "${worktreeDir}" --force 2>/dev/null`, {cwd: ROOT});
-} catch { /* ignore */ }
+  try {
+    execSync(`git worktree remove "${worktreeDir}" --force 2>/dev/null`, {cwd: ROOT});
+  } catch { /* ignore */ }
+}
 
 // ─── Phase 4: Compare and print table ─────────────────────────────────────────
 
