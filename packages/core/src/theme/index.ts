@@ -14,6 +14,8 @@
  */
 
 export {XDSTheme} from './XDSTheme';
+export {XDSMediaTheme} from './XDSMediaTheme';
+export type {XDSMediaThemeProps} from './XDSMediaTheme';
 export {
   defineTheme,
   generateThemeCSS,
@@ -103,6 +105,13 @@ export type {
 
 export {useXDSTheme} from './useXDSTheme';
 export type {UseXDSThemeReturn} from './useXDSTheme';
+
+export {
+  defaultOnDarkTokens,
+  defaultOnLightTokens,
+  resolveOnMedia,
+} from './onMediaTokens';
+export type {OnMediaOverrides, ResolvedOnMedia} from './onMediaTokens';
 
 export type {
   ThemeMode,
