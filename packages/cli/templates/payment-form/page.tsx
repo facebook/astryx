@@ -26,6 +26,9 @@ import {
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
+const MONTHS = ['01','02','03','04','05','06','07','08','09','10','11','12'];
+const YEARS = Array.from({length: 12}, (_, i) => String(2025 + i));
+
 const US_STATES = [
   'AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA',
   'HI','ID','IL','IN','IA','KS','KY','LA','ME','MD',
