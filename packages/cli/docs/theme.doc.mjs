@@ -3,7 +3,7 @@
 export const docs = {
   name: 'theme',
   title: 'XDS Theme System',
-  description: 'XDSTheme provider, custom themes, light/dark mode, and component style overrides.',
+  description: 'XDSTheme provider, custom themes, build-theme for production/SSR, light/dark mode, and component style overrides.',
 
   sections: [
     {
@@ -151,6 +151,90 @@ const myTheme = defineTheme({
             ['typography.body/heading/code', '--font-family-body, --font-family-heading, --font-family-code', 'family, fallbacks?, url?, weight?'],
             ['radius', '--radius-none through --radius-page, --radius-full', 'base (px), multiplier (0–2)'],
             ['motion', '--duration-fast-*, --duration-medium-*, --ease-*', 'fast (ms), medium (ms), ratio, easing?'],
+          ],
+        },
+      ],
+    },
+    {
+      title: 'Building Themes for Production',
+      content: [
+        {
+          type: 'prose',
+          text: "`npx xds build-theme` compiles a defineTheme file into a static CSS file. This is the recommended path for production apps — especially those using server-side rendering (Next.js, Remix, etc.).",
+        },
+        {
+          type: 'code',
+          lang: 'bash',
+          label: 'Build a theme to CSS',
+          code: `npx xds build-theme ./src/themes/ocean.ts -o ./dist/ocean.css`,
+        },
+        {
+          type: 'prose',
+          text: "This generates three files:",
+        },
+        {
+          type: 'list',
+          style: 'unordered',
+          items: [
+            "ocean.css — all token overrides + component overrides as static CSS in @layer xds.theme",
+            "ocean.js — a JS module with __built: true (tells XDSTheme to skip runtime injection)",
+            "ocean.d.ts — TypeScript declarations",
+          ],
+        },
+        {
+          type: 'code',
+          lang: 'tsx',
+          label: 'Using a built theme',
+          code: `import { oceanTheme } from './themes/ocean';
+import './themes/ocean.css'; // static CSS — present on first paint
+
+<XDSTheme theme={oceanTheme}>
+  <App />
+</XDSTheme>`,
+        },
+        {
+          type: 'prose',
+          text: "Options: --no-prose skips HTML element mappings (h1, p, code, etc.). --tailwind generates a Tailwind CSS preset mapping XDS tokens to var() references.",
+        },
+      ],
+    },
+    {
+      title: 'Runtime vs Built Themes',
+      content: [
+        {
+          type: 'prose',
+          text: "XDS themes work in two modes. Choose based on your environment:",
+        },
+        {
+          type: 'table',
+          headers: ['', 'Runtime (unbuilt)', 'Built'],
+          rows: [
+            ['How it works', 'defineTheme() + useInsertionEffect injects <style> at hydration', 'npx xds build-theme pre-compiles to a .css file'],
+            ['Token overrides', 'Inline CSS custom properties on wrapper div — present during SSR ✅', 'Same — inline styles ✅'],
+            ['Component overrides', 'Injected via useInsertionEffect — client-only ❌', 'In static .css file — present during SSR ✅'],
+            ['SSR safe', 'Tokens only — component styles flash on hydration', 'Fully SSR safe — no flash'],
+            ['Best for', 'Dev, prototyping, client-only SPAs', 'Production, SSR apps (Next.js, Remix)'],
+          ],
+        },
+        {
+          type: 'prose',
+          text: "The __built flag on the theme object tells XDSTheme to skip useInsertionEffect entirely — the CSS is already loaded as a static file.",
+        },
+        {
+          type: 'list',
+          style: 'do',
+          items: [
+            "Use build-theme for production SSR apps. Component overrides (heading scale, text styles) require a <style> tag that useInsertionEffect can only inject client-side.",
+            "Import the built .css file alongside the theme JS module. The CSS must be in the initial HTML for SSR to work.",
+            "Use runtime themes during development for fast iteration — no build step needed.",
+          ],
+        },
+        {
+          type: 'list',
+          style: 'dont',
+          items: [
+            "Use runtime (unbuilt) themes in production SSR apps. Component overrides will flash on hydration.",
+            "Forget the CSS import when using a built theme. Without it, component overrides won't apply.",
           ],
         },
       ],
