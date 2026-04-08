@@ -22,7 +22,7 @@ export type SchemaResult =
  *
  * @see https://github.com/vega/schema
  */
-const SCHEMA_RE = /schema\/([\w-]+)\/([\w.\-]+)\.json$/;
+const SCHEMA_RE = /schema\/([\w-]+)\/([\w.-]+)\.json$/;
 
 /**
  * Parse a Vega or Vega-Lite `$schema` URL.

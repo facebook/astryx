@@ -25,12 +25,14 @@
   "peerDependencies": {
     "react": ">=19.0.0",
     "react-dom": ">=19.0.0",
-    "vega": ">=5.0.0",
-    "vega-lite": ">=5.0.0"
+    "vega": ">=6.0.0",
+    "vega-lite": ">=6.0.0"
   },
   "devDependencies": {
     "@types/react": "^19.2.14",
     "tsup": "^8.3.0",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "vega": "^6.2.0",
+    "vega-lite": "^6.4.2"
   }
 }

@@ -137,7 +137,6 @@ export function VegaChart({
     };
   // Object props are intentionally in the dep array. Callers should memoize
   // them to avoid unnecessary re-renders.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [spec, compileOptions, parseConfig, parseOptions, viewOptions]);
 
   return <div ref={containerRef} className={className} style={style} />;
