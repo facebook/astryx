@@ -19,7 +19,7 @@
 
 import {useCallback, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {fontWeightVars} from '../theme/tokens.stylex';
+import {colorVars, fontWeightVars} from '../theme/tokens.stylex';
 import {XDSButton, type XDSButtonSize} from '../Button';
 import {useXDSToggleButtonGroup} from './XDSToggleButtonGroup';
 
@@ -32,6 +32,12 @@ import {useXDSToggleButtonGroup} from './XDSToggleButtonGroup';
  * A hidden span renders the same text at semibold weight to reserve
  * the wider width, preventing layout shift when toggling.
  */
+const pressedStyles = stylex.create({
+  background: {
+    backgroundColor: colorVars['--color-overlay-pressed'],
+  },
+});
+
 const labelStyles = stylex.create({
   wrapper: {
     display: 'inline-flex',
@@ -280,6 +286,7 @@ export function XDSToggleButton({
       aria-pressed={isPressed}
       icon={resolvedIcon}
       tooltip={tooltip}
+      xstyle={isPressed ? pressedStyles.background : undefined}
       onClick={handleClick}
       {...props}>
       {labelContent}
