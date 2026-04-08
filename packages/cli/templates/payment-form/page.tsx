@@ -180,12 +180,12 @@ export default function PaymentFormPage() {
                   <XDSDivider />
 
                   <div {...stylex.props(styles.sectionTitle)}>Shipping Information</div>
-                  <div style={{display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12}}>
+                  <div style={{display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, alignItems: "start"}}>
                     <XDSTextInput size="lg" label="First Name" placeholder="John" value={firstName} onChange={setFirstName} status={errors.firstName ? {type: 'error', message: errors.firstName} : undefined} />
                     <XDSTextInput size="lg" label="Last Name" placeholder="Doe" value={lastName} onChange={setLastName} status={errors.lastName ? {type: 'error', message: errors.lastName} : undefined} />
                   </div>
                   <XDSTextInput size="lg" label="Address" placeholder="123 Main Street" value={address} onChange={setAddress} status={errors.address ? {type: 'error', message: errors.address} : undefined} />
-                  <div style={{display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12}}>
+                  <div style={{display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, alignItems: "start"}}>
                     <XDSTextInput size="lg" label="City" placeholder="New York" value={city} onChange={setCity} status={errors.city ? {type: 'error', message: errors.city} : undefined} />
                     <XDSTextInput size="lg" label="ZIP Code" placeholder="10001" value={zip} onChange={setZip} status={errors.zip ? {type: 'error', message: errors.zip} : undefined} />
                     <XDSSelector size="lg" label="State" placeholder="Select state" options={US_STATES} value={state} onChange={setState} />
@@ -216,7 +216,7 @@ export default function PaymentFormPage() {
 
                   {/* Express checkout */}
                   <XDSVStack gap={3}>
-                    <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12}}>
+                    <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, alignItems: 'start'}}>
                       <button onClick={() => {}} style={{display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFC439', border: 'none', borderRadius: 8, cursor: 'pointer', padding: '0 16px', height: 36}}>
                         <img src="https://www.paypalobjects.com/webstatic/mktg/Logo/pp-logo-100px.png" alt="PayPal" style={{height: 20, width: 'auto'}} />
                       </button>
@@ -255,7 +255,7 @@ export default function PaymentFormPage() {
                         </svg>
                       </div>
                     </div>
-                    <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12}}>
+                    <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, alignItems: 'start'}}>
                       <XDSSelector size="lg" label="Expiry Month" placeholder="MM" options={MONTHS} value={expiry} onChange={setExpiry} status={errors.expiry ? {type: 'error', message: errors.expiry} : undefined} />
                       <XDSSelector size="lg" label="Expiry Year" placeholder="YY" options={YEARS} value={expYear} onChange={setExpYear} status={errors.expYear ? {type: 'error', message: errors.expYear} : undefined} />
                       <XDSTextInput size="lg" label="CVC" placeholder="123" value={cvc} onChange={setCvc} labelTooltip="3-digit security code usually found on the back of your card. American Express cards have a 4-digit code located on the front." status={errors.cvc ? {type: 'error', message: errors.cvc} : undefined} />
@@ -265,7 +265,7 @@ export default function PaymentFormPage() {
                     {!billingMatchesShipping && (
                       <XDSVStack gap={3}>
                         <XDSTextInput size="lg" label="Address" placeholder="123 Main Street" value={billingAddress} onChange={setBillingAddress} />
-                        <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12}}>
+                        <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, alignItems: 'start'}}>
                           <XDSTextInput size="lg" label="City" placeholder="New York" value={billingCity} onChange={setBillingCity} />
                           <XDSTextInput size="lg" label="ZIP Code" placeholder="10001" value={billingZip} onChange={setBillingZip} />
                           <XDSSelector size="lg" label="State" placeholder="Select state" options={US_STATES} value={billingState} onChange={setBillingState} />
@@ -301,7 +301,7 @@ export default function PaymentFormPage() {
                     />
                     {addGiftMessage && (
                       <XDSVStack gap={3}>
-                        <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12}}>
+                        <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, alignItems: 'start'}}>
                           <XDSTextInput size="lg" label="To" isLabelHidden placeholder="To" value={giftTo} onChange={setGiftTo} />
                           <XDSTextInput size="lg" label="From" isLabelHidden placeholder="From" value={giftFrom} onChange={setGiftFrom} />
                         </div>
