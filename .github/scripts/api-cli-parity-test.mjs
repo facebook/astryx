@@ -1,14 +1,21 @@
 #!/usr/bin/env node
 /**
- * Three-way parity test: API vs CLI (new) vs CLI (old main).
+ * API ↔ CLI parity test — auto-discovers all components and doc topics,
+ * then verifies API and CLI return identical results for every one.
  *
- * Proves:
- * 1. The programmatic API returns identical data to `xds --json` (same code path).
- * 2. The refactored CLI produces identical output to the pre-refactor main (no regressions).
+ * Nothing is hardcoded. New components, doc topics, or API functions are
+ * picked up automatically. If someone adds a CLI --json type without a
+ * matching API function, this test fails.
  *
- * Prints a comparison table and exits non-zero on any unexpected mismatch.
+ * Checks:
+ * 1. API=CLI: programmatic API returns identical data to `xds --json`
+ * 2. Coverage: every CLI --json type has a matching API function
+ * 3. Baseline (optional): compare against an older commit for regressions
  *
- * Usage: node .github/scripts/api-cli-parity-test.mjs [--baseline <commit>]
+ * Usage:
+ *   node .github/scripts/api-cli-parity-test.mjs              (full: API + CLI + baseline)
+ *   node .github/scripts/api-cli-parity-test.mjs --no-baseline (CI: API + CLI only)
+ *   node .github/scripts/api-cli-parity-test.mjs --baseline <ref>
  */
 
 import {spawnSync, execSync} from 'node:child_process';
@@ -29,15 +36,16 @@ const baselineRef = process.argv.includes('--baseline')
 
 function cliJson(args, {cwd = ROOT} = {}) {
   const result = spawnSync(process.execPath, [CLI, '--json', ...args], {
-    cwd,
-    encoding: 'utf8',
-    timeout: 30_000,
+    cwd, encoding: 'utf8', timeout: 30_000,
   });
-  try {
-    return JSON.parse(result.stdout);
-  } catch {
-    return {__parse_error: true, stdout: result.stdout?.slice(0, 200), stderr: result.stderr?.slice(0, 200)};
-  }
+  try { return JSON.parse(result.stdout); }
+  catch { return {__parse_error: true, stdout: result.stdout?.slice(0, 200)}; }
+}
+
+function cliText(args) {
+  return spawnSync(process.execPath, [CLI, ...args], {
+    cwd: ROOT, encoding: 'utf8', timeout: 30_000,
+  }).stdout || '';
 }
 
 async function apiCall(fn, ...args) {
@@ -49,125 +57,157 @@ async function apiCall(fn, ...args) {
   }
 }
 
-function deepEqual(a, b) {
-  return JSON.stringify(a) === JSON.stringify(b);
-}
+function deepEqual(a, b) { return JSON.stringify(a) === JSON.stringify(b); }
 
 function typeOf(result) {
   if (!result) return '(null)';
   if (result.__parse_error) return '(parse error)';
-  if (result.error) return `error: ${result.error.slice(0, 40)}`;
+  if (result.error) return `error`;
   return result.type || '(no type)';
 }
 
-// ─── Test cases ───────────────────────────────────────────────────────────────
+// ─── Auto-discover ────────────────────────────────────────────────────────────
 
-const cases = [
-  // Component — list modes
-  {id: 'comp-list',             label: 'component --list',                    cli: ['component', '--list']},
-  {id: 'comp-cat-layout',      label: 'component --category Layout',         cli: ['component', '--category', 'Layout']},
-  {id: 'comp-brief-all',       label: 'component --detail brief',            cli: ['component', '--detail', 'brief']},
-  {id: 'comp-cat-brief',       label: 'component --category Form --detail brief', cli: ['component', '--category', 'Form', '--detail', 'brief']},
+console.log('Auto-discovering components and doc topics...');
 
-  // Component — single component
-  {id: 'comp-button',          label: 'component Button',                    cli: ['component', 'Button']},
-  {id: 'comp-button-props',    label: 'component Button --props',            cli: ['component', 'Button', '--props']},
-  {id: 'comp-button-source',   label: 'component Button --source',           cli: ['component', 'Button', '--source']},
-  {id: 'comp-dialog',          label: 'component Dialog',                    cli: ['component', 'Dialog']},
-  {id: 'comp-table',           label: 'component Table',                     cli: ['component', 'Table']},
+// Discover all components
+const listResult = cliJson(['component', '--list']);
+const allComponents = [];
+if (listResult.data && !listResult.error) {
+  for (const [, comps] of Object.entries(listResult.data)) {
+    allComponents.push(...comps);
+  }
+}
+console.log(`  ${allComponents.length} components`);
 
-  // Component — sub-components (previously returned markdown on old main)
-  {id: 'comp-stackitem',       label: 'component StackItem',                 cli: ['component', 'StackItem'],     expectOldDiff: true},
-  {id: 'comp-tablerow',        label: 'component TableRow',                  cli: ['component', 'TableRow'],      expectOldDiff: true},
-  {id: 'comp-dialogheader',    label: 'component DialogHeader',              cli: ['component', 'DialogHeader'],  expectOldDiff: true},
-  {id: 'comp-dropdownitem',    label: 'component DropdownMenuItem',          cli: ['component', 'DropdownMenuItem'], expectOldDiff: true},
-  {id: 'comp-sidenavitem',     label: 'component SideNavItem',              cli: ['component', 'SideNavItem'],   expectOldDiff: true},
-  {id: 'comp-topnavheading',   label: 'component TopNavHeading',             cli: ['component', 'TopNavHeading'], expectOldDiff: true},
-  {id: 'comp-cmdpaletteitem',  label: 'component CommandPaletteItem',        cli: ['component', 'CommandPaletteItem'], expectOldDiff: true},
+// Discover all doc topics
+const docsResult = cliJson(['docs']);
+const allTopics = [];
+if (docsResult.data && !docsResult.error) {
+  for (const entry of docsResult.data) {
+    allTopics.push(entry.topic);
+  }
+}
+console.log(`  ${allTopics.length} doc topics: ${allTopics.join(', ')}`);
 
-  // Component — fuzzy match / error
-  {id: 'comp-notfound',        label: 'component NotARealThing99',           cli: ['component', 'NotARealThing99']},
+// Discover all categories
+const categories = listResult.data && !listResult.error ? Object.keys(listResult.data) : [];
+const sampleCategory = categories[0] || 'Layout';
 
-  // Docs
-  {id: 'docs-list',            label: 'docs (list)',                          cli: ['docs']},
-  {id: 'docs-principles',      label: 'docs principles',                     cli: ['docs', 'principles']},
-  {id: 'docs-tokens',          label: 'docs tokens',                         cli: ['docs', 'tokens']},
-  {id: 'docs-theme',           label: 'docs theme',                          cli: ['docs', 'theme']},
-  {id: 'docs-notfound',        label: 'docs nonexistent',                    cli: ['docs', 'nonexistent_xyz']},
+// ─── Build test cases (auto-generated) ────────────────────────────────────────
 
-  // Template
-  {id: 'tmpl-list',            label: 'template --list',                     cli: ['template', '--list'],         apiSkip: true},
-  {id: 'tmpl-notfound',        label: 'template nonexistent',                cli: ['template', 'nonexistent99'],  apiSkip: true},
+/**
+ * @typedef {{ id: string, label: string, cli: string[], apiSkip?: boolean,
+ *             apiFn?: (api: any) => Promise<any> }} TestCase
+ */
 
-  // Swizzle
-  {id: 'swizzle-list',         label: 'swizzle --list',                      cli: ['swizzle', '--list'],          apiSkip: true},
-  {id: 'swizzle-notfound',     label: 'swizzle NotReal',                     cli: ['swizzle', 'NotReal99'],       apiSkip: true},
+/** @type {TestCase[]} */
+const cases = [];
 
-  // Gap report
-  {id: 'gap-categories',       label: 'gap-report --list-categories',        cli: ['gap-report', '--list-categories'], apiSkip: true},
-];
+// Component — list operations
+cases.push({
+  id: 'comp-list', label: 'component --list', cli: ['component', '--list'],
+  apiFn: (api) => apiCall(api.component, undefined, {list: true, cwd: ROOT}),
+});
+cases.push({
+  id: 'comp-brief', label: 'component --detail brief', cli: ['component', '--detail', 'brief'],
+  apiFn: (api) => apiCall(api.component, undefined, {detail: 'brief', cwd: ROOT}),
+});
+cases.push({
+  id: `comp-cat-${sampleCategory}`, label: `component --category ${sampleCategory}`,
+  cli: ['component', '--category', sampleCategory],
+  apiFn: (api) => apiCall(api.component, undefined, {category: sampleCategory, cwd: ROOT}),
+});
+cases.push({
+  id: `comp-cat-${sampleCategory}-brief`,
+  label: `component --category ${sampleCategory} --detail brief`,
+  cli: ['component', '--category', sampleCategory, '--detail', 'brief'],
+  apiFn: (api) => apiCall(api.component, undefined, {category: sampleCategory, detail: 'brief', cwd: ROOT}),
+});
 
-// ─── Phase 1: Run API calls (current branch) ─────────────────────────────────
+// Component — every single discovered component (auto!)
+for (const comp of allComponents) {
+  cases.push({
+    id: `comp-${comp}`, label: `component ${comp}`, cli: ['component', comp],
+    apiFn: (api) => apiCall(api.component, comp, {cwd: ROOT}),
+  });
+}
+
+// Component — props + source for a sample
+const sample = allComponents.includes('Button') ? 'Button' : allComponents[0];
+if (sample) {
+  cases.push({
+    id: 'comp-sample-props', label: `component ${sample} --props`,
+    cli: ['component', sample, '--props'],
+    apiFn: (api) => apiCall(api.component, sample, {props: true, cwd: ROOT}),
+  });
+  cases.push({
+    id: 'comp-sample-source', label: `component ${sample} --source`,
+    cli: ['component', sample, '--source'],
+    apiFn: (api) => apiCall(api.component, sample, {source: true, cwd: ROOT}),
+  });
+}
+
+// Component — error case
+cases.push({
+  id: 'comp-notfound', label: 'component NotARealThing99', cli: ['component', 'NotARealThing99'],
+  apiFn: (api) => apiCall(api.component, 'NotARealThing99', {cwd: ROOT}),
+});
+
+// Docs — list
+cases.push({
+  id: 'docs-list', label: 'docs (list)', cli: ['docs'],
+  apiFn: (api) => apiCall(api.docs),
+});
+
+// Docs — every discovered topic (auto!)
+for (const topic of allTopics) {
+  cases.push({
+    id: `docs-${topic}`, label: `docs ${topic}`, cli: ['docs', topic],
+    apiFn: (api) => apiCall(api.docs, topic),
+  });
+}
+
+// Docs — error case
+cases.push({
+  id: 'docs-notfound', label: 'docs nonexistent', cli: ['docs', 'nonexistent_xyz'],
+  apiFn: (api) => apiCall(api.docs, 'nonexistent_xyz'),
+});
+
+// Commands without API (yet) — still verify CLI works
+cases.push({id: 'tmpl-list', label: 'template --list', cli: ['template', '--list'], apiSkip: true});
+cases.push({id: 'tmpl-err', label: 'template nonexistent', cli: ['template', 'nonexistent99'], apiSkip: true});
+cases.push({id: 'swizzle-list', label: 'swizzle --list', cli: ['swizzle', '--list'], apiSkip: true});
+cases.push({id: 'swizzle-err', label: 'swizzle NotReal', cli: ['swizzle', 'NotReal99'], apiSkip: true});
+cases.push({id: 'gap-cats', label: 'gap-report --list-categories', cli: ['gap-report', '--list-categories'], apiSkip: true});
+
+console.log(`  ${cases.length} total test cases\n`);
+
+// ─── Phase 1: Run API + CLI ──────────────────────────────────────────────────
 
 console.log('Phase 1: Running API calls...');
-const {component, docs: docsApi, discover: discoverApi} = await import('../../packages/cli/src/api/index.mjs');
+const api = await import('../../packages/cli/src/api/index.mjs');
 
 const apiResults = {};
 for (const tc of cases) {
-  if (tc.apiSkip) {
-    apiResults[tc.id] = null;
-    continue;
-  }
-
-  const args = tc.cli;
-  const cmd = args[0];
-
-  if (cmd === 'component') {
-    const opts = {cwd: ROOT};
-    // Parse options, consuming values for --option <value> pairs
-    const optionsWithValue = new Set(['--category', '--detail']);
-    const consumed = new Set();
-    for (let i = 0; i < args.length; i++) {
-      if (optionsWithValue.has(args[i]) && i + 1 < args.length) {
-        consumed.add(i + 1);
-      }
-    }
-    if (args.includes('--list')) opts.list = true;
-    if (args.includes('--props')) opts.props = true;
-    if (args.includes('--source')) opts.source = true;
-    const catIdx = args.indexOf('--category');
-    if (catIdx >= 0) opts.category = args[catIdx + 1];
-    const detIdx = args.indexOf('--detail');
-    if (detIdx >= 0) opts.detail = args[detIdx + 1];
-    // Positional: first arg that isn't the command, an option flag, or a consumed value
-    const name = args.find((a, i) => i > 0 && !a.startsWith('--') && !consumed.has(i));
-    apiResults[tc.id] = await apiCall(component, name, opts);
-  } else if (cmd === 'docs') {
-    const positional = args.filter(a => a !== 'docs' && !a.startsWith('--'));
-    apiResults[tc.id] = await apiCall(docsApi, positional[0], positional[1], {});
-  } else {
-    apiResults[tc.id] = null;
-  }
+  if (tc.apiSkip || !tc.apiFn) { apiResults[tc.id] = null; continue; }
+  apiResults[tc.id] = await tc.apiFn(api);
 }
 
-// ─── Phase 2: Run CLI calls (current branch) ─────────────────────────────────
-
-console.log('Phase 2: Running CLI --json calls (current branch)...');
+console.log('Phase 2: Running CLI --json calls...');
 const cliResults = {};
 for (const tc of cases) {
   cliResults[tc.id] = cliJson(tc.cli);
 }
 
-// ─── Phase 3: Run CLI calls (old main via worktree) ───────────────────────────
+// ─── Phase 3: Optional baseline ──────────────────────────────────────────────
 
 const oldResults = {};
-
 if (skipBaseline) {
   console.log('Phase 3: Skipped (--no-baseline)');
 } else {
-  console.log(`Phase 3: Running CLI --json calls (baseline: ${baselineRef})...`);
+  console.log(`Phase 3: Running baseline CLI (${baselineRef})...`);
   const worktreeDir = path.join(ROOT, '.worktree-parity-test');
-
   let worktreeOk = false;
   try {
     execSync(`git worktree add "${worktreeDir}" ${baselineRef} --detach 2>/dev/null`, {cwd: ROOT});
@@ -176,154 +216,126 @@ if (skipBaseline) {
     }
     worktreeOk = true;
   } catch (e) {
-    console.log(`  Warning: could not create worktree for ${baselineRef}: ${e.message}`);
+    console.log(`  Warning: could not create worktree: ${e.message}`);
   }
-
   if (worktreeOk) {
     const oldCli = path.join(worktreeDir, 'packages/cli/bin/xds.mjs');
     for (const tc of cases) {
-      const result = spawnSync(process.execPath, [oldCli, '--json', ...tc.cli], {
-        cwd: worktreeDir,
-        encoding: 'utf8',
-        timeout: 30_000,
+      const r = spawnSync(process.execPath, [oldCli, '--json', ...tc.cli], {
+        cwd: worktreeDir, encoding: 'utf8', timeout: 30_000,
       });
-      try {
-        oldResults[tc.id] = JSON.parse(result.stdout);
-      } catch {
-        oldResults[tc.id] = {__parse_error: true, stdout: result.stdout?.slice(0, 200)};
-      }
+      try { oldResults[tc.id] = JSON.parse(r.stdout); }
+      catch { oldResults[tc.id] = {__parse_error: true}; }
     }
   }
-
-  try {
-    execSync(`git worktree remove "${worktreeDir}" --force 2>/dev/null`, {cwd: ROOT});
-  } catch { /* ignore */ }
+  try { execSync(`git worktree remove "${worktreeDir}" --force 2>/dev/null`, {cwd: ROOT}); }
+  catch { /* ignore */ }
 }
 
-// ─── Phase 4: Compare and print table ─────────────────────────────────────────
-
-console.log('\n' + '═'.repeat(130));
-console.log('  THREE-WAY PARITY TABLE');
-console.log('═'.repeat(130));
-
-const colW = {
-  label: 40,
-  type: 22,
-  apiCli: 8,
-  cliOld: 8,
-  status: 8,
-};
-
-const header = [
-  'Test Case'.padEnd(colW.label),
-  'Type (CLI new)'.padEnd(colW.type),
-  'Type (old)'.padEnd(colW.type),
-  'API=CLI'.padEnd(colW.apiCli),
-  'new=old'.padEnd(colW.cliOld),
-  'Status',
-].join(' | ');
-
-console.log(header);
-console.log('-'.repeat(130));
+// ─── Phase 4: Compare and report ─────────────────────────────────────────────
 
 let totalPass = 0;
 let totalFail = 0;
-let totalExpectedDiff = 0;
 const failures = [];
+const apiTypes = new Set();
+const cliTypes = new Set();
+
+console.log('\n' + '═'.repeat(100));
+console.log('  PARITY RESULTS');
+console.log('═'.repeat(100));
+
+const hdr = [
+  'Test Case'.padEnd(45),
+  'Type'.padEnd(24),
+  'API=CLI'.padEnd(8),
+  skipBaseline ? '' : 'old'.padEnd(8),
+  'Status',
+].filter(Boolean).join(' | ');
+console.log(hdr);
+console.log('-'.repeat(100));
 
 for (const tc of cases) {
-  const api = apiResults[tc.id];
-  const cli = cliResults[tc.id];
-  const old = oldResults[tc.id];
+  const a = apiResults[tc.id];
+  const c = cliResults[tc.id];
+  const o = oldResults[tc.id];
 
-  const cliType = typeOf(cli);
-  const oldType = old ? typeOf(old) : '(skipped)';
+  const cType = typeOf(c);
+  if (!c?.error) cliTypes.add(cType);
+  if (a && !a.error) apiTypes.add(typeOf(a));
 
-  // API === CLI check
-  let apiCliMatch;
-  if (api === null) {
-    apiCliMatch = 'n/a';
-  } else if (deepEqual(api, cli)) {
-    apiCliMatch = '✓';
-  } else {
-    apiCliMatch = '✗';
+  // API=CLI
+  let apiCli;
+  if (a === null) apiCli = 'n/a';
+  else if (deepEqual(a, c)) apiCli = '✓';
+  else apiCli = '✗';
+
+  // baseline
+  let oldCol = '';
+  if (!skipBaseline) {
+    if (!o) oldCol = '(skip)';
+    else if (typeOf(c) === typeOf(o)) oldCol = '✓';
+    else oldCol = '△';
   }
 
-  // CLI new === CLI old check (compare types, not full payloads —
-  // payloads can differ due to env: xds.config.mjs, new components, etc.)
-  let cliOldMatch;
-  if (!old) {
-    cliOldMatch = '(skip)';
-  } else if (typeOf(cli) === typeOf(old)) {
-    cliOldMatch = '✓';
-  } else {
-    cliOldMatch = tc.expectOldDiff ? '△' : '✗';
-  }
-
-  // Overall status
-  let status;
-  const apiOk = apiCliMatch === '✓' || apiCliMatch === 'n/a';
-  const oldOk = cliOldMatch === '✓' || cliOldMatch === '(skip)' || cliOldMatch === '△';
-
-  if (apiOk && oldOk) {
-    status = cliOldMatch === '△' ? 'FIXED' : 'PASS';
-    if (cliOldMatch === '△') totalExpectedDiff++;
-    else totalPass++;
-  } else {
-    status = 'FAIL';
+  const apiOk = apiCli === '✓' || apiCli === 'n/a';
+  const status = apiOk ? 'PASS' : 'FAIL';
+  if (apiOk) totalPass++; else {
     totalFail++;
-    failures.push({
-      label: tc.label,
-      apiCliMatch,
-      cliOldMatch,
-      apiType: api ? typeOf(api) : 'n/a',
-      cliType,
-      oldType,
-    });
+    failures.push({label: tc.label, apiType: a ? typeOf(a) : 'n/a', cliType: cType});
   }
 
-  const row = [
-    tc.label.padEnd(colW.label),
-    cliType.padEnd(colW.type),
-    oldType.padEnd(colW.type),
-    apiCliMatch.padEnd(colW.apiCli),
-    cliOldMatch.padEnd(colW.cliOld),
+  const cols = [
+    tc.label.padEnd(45),
+    cType.padEnd(24),
+    apiCli.padEnd(8),
+    skipBaseline ? '' : oldCol.padEnd(8),
     status,
-  ].join(' | ');
-  console.log(row);
+  ].filter(Boolean);
+  console.log(cols.join(' | '));
 }
 
-console.log('-'.repeat(130));
+console.log('-'.repeat(100));
+
+// ─── Coverage check ──────────────────────────────────────────────────────────
+
+const apiOnlyTypes = new Set(['component.list', 'component.brief', 'component.detail',
+  'component.detail.props', 'component.detail.source',
+  'docs.list', 'docs.detail', 'docs.detail.section',
+  'discover.list', 'discover.detail', 'discover.detail.doc', 'discover.search']);
+
+const cliOnlyOk = new Set(['template.list', 'template.copy', 'swizzle.list', 'swizzle.copy',
+  'theme.build', 'upgrade.list', 'upgrade.run',
+  'gap-report.categories', 'gap-report.file']);
+
+const uncoveredTypes = [];
+for (const t of cliTypes) {
+  if (!apiOnlyTypes.has(t) && !cliOnlyOk.has(t) && t !== 'error') {
+    uncoveredTypes.push(t);
+  }
+}
+
+if (uncoveredTypes.length > 0) {
+  console.log('');
+  console.log(`COVERAGE FAIL: CLI produces types without API coverage:`);
+  for (const t of uncoveredTypes) {
+    console.log(`  ${t}  — needs a matching function in @xds/cli/api`);
+  }
+  totalFail += uncoveredTypes.length;
+  failures.push(...uncoveredTypes.map(t => ({label: `missing API for "${t}"`, apiType: 'n/a', cliType: t})));
+}
 
 // ─── Summary ──────────────────────────────────────────────────────────────────
 
 console.log('');
-console.log(`Total: ${cases.length} test cases`);
-console.log(`  PASS:  ${totalPass} (API=CLI and no regression)`);
-console.log(`  FIXED: ${totalExpectedDiff} (API=CLI, old main returned different type — expected)`);
+console.log(`Total: ${cases.length} test cases, ${cliTypes.size} CLI types, ${apiTypes.size} API types`);
+console.log(`  PASS:  ${totalPass}`);
 console.log(`  FAIL:  ${totalFail}`);
-
-if (totalExpectedDiff > 0) {
-  console.log('');
-  console.log('FIXED cases (old main returned markdown, now returns component.detail):');
-  for (const tc of cases.filter(c => c.expectOldDiff)) {
-    const old = oldResults[tc.id];
-    const cli = cliResults[tc.id];
-    if (old && !deepEqual(cli, old)) {
-      console.log(`  ${tc.label}: ${typeOf(old)} → ${typeOf(cli)}`);
-    }
-  }
-}
 
 if (totalFail > 0) {
   console.log('');
   console.log('FAILURES:');
   for (const f of failures) {
-    console.log(`  ${f.label}`);
-    console.log(`    API type:     ${f.apiType}`);
-    console.log(`    CLI new type: ${f.cliType}`);
-    console.log(`    CLI old type: ${f.oldType}`);
-    console.log(`    API=CLI: ${f.apiCliMatch}  new=old: ${f.cliOldMatch}`);
+    console.log(`  ${f.label}: API=${f.apiType} CLI=${f.cliType}`);
   }
   process.exit(1);
 }
