@@ -267,6 +267,7 @@ export default function SettingsDialogTemplate() {
         onOpenChange={open => setIsOpen(open)}
         width={900}
         maxHeight="85vh"
+        padding={0}
         purpose="form">
         <div
           style={{
@@ -643,8 +644,8 @@ export default function SettingsDialogTemplate() {
                         </div>
                       </XDSVStack>
 
-                      <XDSCard padding={0} xstyle={styles.noBorder}>
-                        <XDSSection variant="wash" style={{padding: 16}}>
+                      <XDSCard>
+                        <XDSSection variant="wash">
                           <div
                             style={{
                               display: 'flex',
@@ -688,7 +689,6 @@ export default function SettingsDialogTemplate() {
                 <XDSVStack gap={6}>
                   <XDSHeading level={2}>Languages &amp; currency</XDSHeading>
                   <XDSVStack gap={0}>
-                    <XDSDivider />
                     <ExpandableRow
                       label="Preferred language"
                       value={
@@ -897,8 +897,8 @@ export default function SettingsDialogTemplate() {
                           </XDSLink>
                         </div>
                       </XDSCard>
-                      <XDSCard padding={0} xstyle={styles.noBorder}>
-                        <XDSSection variant="wash" style={{padding: 16}}>
+                      <XDSCard>
+                        <XDSSection variant="wash">
                           <div
                             style={{
                               display: 'flex',
