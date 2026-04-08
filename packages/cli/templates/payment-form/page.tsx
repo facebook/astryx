@@ -177,7 +177,7 @@ export default function PaymentFormPage() {
                 {deliveryMode === 'pickup' && (
                   <XDSCard padding={4}>
                     <XDSHStack gap={3} vAlign="center">
-                      <XDSIcon name="info" size="sm" />
+                      <XDSIcon icon="info" size="sm" />
                       <XDSVStack gap={1}>
                         <XDSText type="body" weight="medium">In-store pickup</XDSText>
                         <XDSText type="supporting" color="secondary">
@@ -196,7 +196,7 @@ export default function PaymentFormPage() {
                 <XDSHStack gap={2} vAlign="center" hAlign="between">
                   <div {...stylex.props(styles.sectionHeading)}>Payment</div>
                   <XDSHStack gap={1} vAlign="center">
-                    <XDSIcon name="checkCircle" size="sm" />
+                    <XDSIcon icon="checkCircle" size="sm" />
                     <XDSText type="supporting" color="secondary">Secure</XDSText>
                   </XDSHStack>
                 </XDSHStack>
@@ -233,7 +233,7 @@ export default function PaymentFormPage() {
               <XDSVStack gap={3}>
                 <XDSButton label="Pay now — $299.00" variant="primary" size="lg" xstyle={styles.fullWidth} onClick={() => setSubmitted(true)} />
                 <div {...stylex.props(styles.secureNote)}>
-                  <XDSIcon name="checkCircle" size="sm" />
+                  <XDSIcon icon="checkCircle" size="sm" />
                   <XDSText type="supporting" color="secondary">256-bit SSL encryption · PCI DSS compliant</XDSText>
                 </div>
                 <XDSHStack gap={1} hAlign="center">
@@ -265,7 +265,7 @@ export default function PaymentFormPage() {
                         <XDSText type="body" weight="medium">{item.name}</XDSText>
                         <XDSText type="supporting" color="secondary">{item.variant}</XDSText>
                         <XDSHStack gap={1} vAlign="center">
-                          <XDSIcon name="checkCircle" size="sm" />
+                          <XDSIcon icon="checkCircle" size="sm" />
                           <XDSText type="supporting" color="secondary">{item.discount}</XDSText>
                         </XDSHStack>
                       </XDSVStack>
@@ -300,7 +300,7 @@ export default function PaymentFormPage() {
                   </div>
 
                   <XDSHStack gap={1} vAlign="center">
-                    <XDSIcon name="checkCircle" size="sm" />
+                    <XDSIcon icon="checkCircle" size="sm" />
                     <XDSText type="supporting" color="secondary">
                       You&apos;re saving $60.00 with ANNUAL10
                     </XDSText>
