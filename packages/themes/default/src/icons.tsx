@@ -68,4 +68,5 @@ export const defaultIconRegistry: XDSIconRegistry = {
   eyeSlash: <EyeSlashIcon {...iconProps} />,
   viewColumns: <ViewColumnsIcon {...iconProps} />,
   copy: <ClipboardDocumentIcon {...iconProps} />,
+  checkDouble: <CheckIcon {...iconProps} />,
 };

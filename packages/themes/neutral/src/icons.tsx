@@ -34,6 +34,7 @@ import {
   EyeOff,
   Columns,
   Copy,
+  CheckCheck,
 } from 'lucide-react';
 
 const iconProps = {
@@ -64,4 +65,5 @@ export const neutralIconRegistry: XDSIconRegistry = {
   eyeSlash: <EyeOff {...iconProps} />,
   viewColumns: <Columns {...iconProps} />,
   copy: <Copy {...iconProps} />,
+  checkDouble: <CheckCheck {...iconProps} />,
 };
