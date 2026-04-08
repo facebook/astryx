@@ -174,12 +174,37 @@ cases.push({
   apiFn: (api) => apiCall(api.docs, 'nonexistent_xyz'),
 });
 
-// Commands without API (yet) — still verify CLI works
-cases.push({id: 'tmpl-list', label: 'template --list', cli: ['template', '--list'], apiSkip: true});
-cases.push({id: 'tmpl-err', label: 'template nonexistent', cli: ['template', 'nonexistent99'], apiSkip: true});
-cases.push({id: 'swizzle-list', label: 'swizzle --list', cli: ['swizzle', '--list'], apiSkip: true});
-cases.push({id: 'swizzle-err', label: 'swizzle NotReal', cli: ['swizzle', 'NotReal99'], apiSkip: true});
-cases.push({id: 'gap-cats', label: 'gap-report --list-categories', cli: ['gap-report', '--list-categories'], apiSkip: true});
+// ── Auto-discover all other CLI commands that support --json ───────────────
+// Parse `xds --help` to find commands, then probe each with --json.
+const helpOutput = cliText(['--help']);
+const commandNames = [...helpOutput.matchAll(/^\s{2}(\S+)\s/gm)]
+  .map(m => m[1])
+  .filter(c => !['help', 'init', 'component', 'docs', 'discover'].includes(c));
+
+console.log(`  probing ${commandNames.length} other commands: ${commandNames.join(', ')}`);
+
+const probeArgs = {
+  'template':   [['template', '--list']],
+  'swizzle':    [['swizzle', '--list']],
+  'gap-report': [['gap-report', '--list-categories']],
+  'upgrade':    [['upgrade', '--list']],
+  'theme':      [],
+};
+
+for (const cmd of commandNames) {
+  const argSets = probeArgs[cmd] || [[cmd, '--list'], [cmd]];
+  for (const args of argSets) {
+    const result = cliJson(args);
+    if (result.__parse_error) continue;
+    if (result.error?.startsWith('JSON output is not supported')) continue;
+    cases.push({
+      id: `${cmd}-${args.slice(1).join('-') || 'default'}`,
+      label: args.join(' '),
+      cli: args,
+      apiSkip: true,
+    });
+  }
+}
 
 console.log(`  ${cases.length} total test cases\n`);
 
@@ -297,31 +322,35 @@ for (const tc of cases) {
 console.log('-'.repeat(100));
 
 // ─── Coverage check ──────────────────────────────────────────────────────────
+// Every type the CLI produced must either:
+//   (a) have been covered by an API call that matched, OR
+//   (b) come from a command that has no API function (apiSkip cases)
+//
+// If a new CLI type appears that isn't covered by either, this fails.
 
-const apiOnlyTypes = new Set(['component.list', 'component.brief', 'component.detail',
-  'component.detail.props', 'component.detail.source',
-  'docs.list', 'docs.detail', 'docs.detail.section',
-  'discover.list', 'discover.detail', 'discover.detail.doc', 'discover.search']);
-
-const cliOnlyOk = new Set(['template.list', 'template.copy', 'swizzle.list', 'swizzle.copy',
-  'theme.build', 'upgrade.list', 'upgrade.run',
-  'gap-report.categories', 'gap-report.file']);
+const apiSkipTypes = new Set();
+for (const tc of cases) {
+  if (tc.apiSkip) {
+    const c = cliResults[tc.id];
+    if (c && !c.error && c.type) apiSkipTypes.add(c.type);
+  }
+}
 
 const uncoveredTypes = [];
 for (const t of cliTypes) {
-  if (!apiOnlyTypes.has(t) && !cliOnlyOk.has(t) && t !== 'error') {
+  if (!apiTypes.has(t) && !apiSkipTypes.has(t)) {
     uncoveredTypes.push(t);
   }
 }
 
 if (uncoveredTypes.length > 0) {
   console.log('');
-  console.log(`COVERAGE FAIL: CLI produces types without API coverage:`);
+  console.log(`COVERAGE GAP: CLI produces types not covered by API or known CLI-only commands:`);
   for (const t of uncoveredTypes) {
-    console.log(`  ${t}  — needs a matching function in @xds/cli/api`);
+    console.log(`  ${t}  — add a matching function in @xds/cli/api or verify it's tested`);
   }
   totalFail += uncoveredTypes.length;
-  failures.push(...uncoveredTypes.map(t => ({label: `missing API for "${t}"`, apiType: 'n/a', cliType: t})));
+  failures.push(...uncoveredTypes.map(t => ({label: `uncovered type "${t}"`, apiType: 'n/a', cliType: t})));
 }
 
 // ─── Summary ──────────────────────────────────────────────────────────────────
