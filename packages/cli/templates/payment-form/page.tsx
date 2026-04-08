@@ -139,7 +139,7 @@ export default function PaymentFormPage() {
             <div style={{flex: '1 1 55%', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16}}>
 
               <XDSCard padding={5}>
-                <XDSVStack gap={2}>
+                <XDSVStack gap={1}>
                   <XDSHStack gap={2} hAlign="between" vAlign="center">
                     <div {...stylex.props(styles.sectionTitle)}>Checkout as Guest</div>
                     <XDSButton label="Sign In" variant="secondary" size="sm" onClick={() => {}} />
