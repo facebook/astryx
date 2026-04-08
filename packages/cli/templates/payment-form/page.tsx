@@ -38,7 +38,7 @@ const styles = stylex.create({
   fullWidth: { width: '100%' },
   orderRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: spacingVars['--spacing-3'] },
   orderItemImg: { width: 56, height: 56, borderRadius: radiusVars['--radius-element'], backgroundColor: colorVars['--color-neutral'], flexShrink: 0 },
-  strikethrough: { textDecoration: 'line-through', color: colorVars['--color-text-tertiary'], fontSize: typeScaleVars['--text-supporting-size'] },
+  strikethrough: { textDecoration: 'line-through', color: colorVars['--color-text-disabled'], fontSize: typeScaleVars['--text-supporting-size'] },
   totalRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
   secureNote: { display: 'flex', alignItems: 'center', gap: spacingVars['--spacing-2'], justifyContent: 'center' },
   orDivider: { display: 'flex', alignItems: 'center', gap: spacingVars['--spacing-3'] },
