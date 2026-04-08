@@ -227,14 +227,6 @@ export function registerDocs(program) {
       const normalized = topic.toLowerCase();
 
       if (!topics[normalized]) {
-        const mdPath = path.join(DOCS_DIR, `${normalized}.md`);
-        if (fs.existsSync(mdPath)) {
-          const content = fs.readFileSync(mdPath, 'utf-8');
-          if (json) return jsonOut('markdown', {name: normalized, format: 'markdown', content});
-          console.log(content);
-          return;
-        }
-
         if (json) return jsonError(`Unknown topic "${topic}"`, Object.keys(topics).map(t => ({name: t, reason: 'available topic'})));
         console.error(`Error: Unknown topic "${topic}".`);
         console.error(`Available topics: ${Object.keys(topics).join(', ')}`);

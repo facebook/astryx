@@ -75,7 +75,6 @@ Every response has a `type` string that uniquely identifies it:
 | `xds --json upgrade [--apply]`            | `upgrade.run`             | `UpgradeRunResponse`            |
 | `xds --json gap-report --list-categories` | `gap-report.categories`   | `GapReportCategoriesResponse`   |
 | `xds --json gap-report --component X ...` | `gap-report.file`         | `GapReportFileResponse`         |
-| legacy README.md fallback                 | `markdown`                | `CLIMarkdownResponse`           |
 | any error                                 | --                        | `CLIError`                      |
 | unsupported command                       | --                        | `CLIUnsupportedError`           |
 
