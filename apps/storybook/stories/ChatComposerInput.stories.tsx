@@ -198,6 +198,7 @@ export const FilePaste: Story = {
 /** Static @ mentions — type @ to see the menu */
 export const MentionTrigger: Story = {
   render: () => {
+    const [value, setValue] = useState('');
     const [log, setLog] = useState<string[]>([]);
     const mentionTrigger: XDSChatComposerTrigger = {
       character: '@',
@@ -218,14 +219,22 @@ export const MentionTrigger: Story = {
     return (
       <div style={{display: 'flex', flexDirection: 'column', gap: 16}}>
         <XDSChatComposer
-          onSubmit={value => setLog(prev => [...prev, value])}
+          onSubmit={v => {
+            setLog(prev => [...prev, v]);
+            setValue('');
+          }}
           input={
             <XDSChatComposerInput
+              value={value}
+              onChange={setValue}
               triggers={[mentionTrigger]}
               placeholder="Type @ to mention someone..."
             />
           }
         />
+        <div style={{fontSize: 12, fontFamily: 'monospace', color: '#888'}}>
+          Value: {JSON.stringify(value)}
+        </div>
         {log.length > 0 && (
           <div style={{fontSize: 12, fontFamily: 'monospace', color: '#666'}}>
             {log.map((msg, i) => (
@@ -303,6 +312,7 @@ export const AsyncSearch: Story = {
 /** Multiple triggers — @ for mentions, / for commands */
 export const MultipleTriggers: Story = {
   render: () => {
+    const [value, setValue] = useState('');
     const mentionTrigger: XDSChatComposerTrigger = {
       character: '@',
       searchSource: userSource,
@@ -323,15 +333,25 @@ export const MultipleTriggers: Story = {
     };
 
     return (
-      <XDSChatComposer
-        onSubmit={value => alert(`Sent: ${value}`)}
-        input={
-          <XDSChatComposerInput
-            triggers={[mentionTrigger, commandTrigger]}
-            placeholder="Type @ or / ..."
-          />
-        }
-      />
+      <div style={{display: 'flex', flexDirection: 'column', gap: 12}}>
+        <XDSChatComposer
+          onSubmit={v => {
+            alert(`Sent: ${v}`);
+            setValue('');
+          }}
+          input={
+            <XDSChatComposerInput
+              value={value}
+              onChange={setValue}
+              triggers={[mentionTrigger, commandTrigger]}
+              placeholder="Type @ or / ..."
+            />
+          }
+        />
+        <div style={{fontSize: 12, fontFamily: 'monospace', color: '#888'}}>
+          Value: {JSON.stringify(value)}
+        </div>
+      </div>
     );
   },
 };
