@@ -10,6 +10,10 @@ import {XDSSelector} from '@xds/core/Selector';
 import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
 import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
 import {XDSLink} from '@xds/core/Link';
+import Image from 'next/image';
+import pinkTeddyImg from './pink-teddy.png';
+import redHeartImg from './red-heart.png';
+import beagleImg from './beagle.png';
 import {XDSTextArea} from '@xds/core/TextArea';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSCard} from '@xds/core/Card';
@@ -35,6 +39,8 @@ const US_STATES = [
 const COUNTRIES = ['United States', 'Canada', 'United Kingdom', 'France', 'Germany', 'Australia', 'Japan', 'Other'];
 const MONTHS = ['01','02','03','04','05','06','07','08','09','10','11','12'];
 const YEARS = Array.from({length: 12}, (_, i) => String(2025 + i));
+
+const ITEM_IMAGES: Record<string, any> = {'1': pinkTeddyImg, '2': redHeartImg, '3': beagleImg};
 
 const ORDER_ITEMS = [
   {id: '1', name: 'Pink Teddy Keychain', variant: 'Soft plush keychain · One size', price: 75, qty: 1, limited: false},
@@ -231,42 +237,12 @@ export default function PaymentFormPage() {
                   {/* Credit card fields */}
                   <XDSVStack gap={3}>
                     {/* Card type icons */}
-                    <div style={{display: 'flex', gap: 8, alignItems: 'center'}}>
-                      {/* Visa */}
-                      <div style={{border: '1px solid var(--color-border)', borderRadius: 6, padding: '4px 8px', backgroundColor: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', height: 32, minWidth: 48}}>
-                        <svg viewBox="0 0 780 500" style={{height: 16, width: 'auto'}} xmlns="http://www.w3.org/2000/svg">
-                          <path d="M293.2 348.7l33.4-195.7h53.4l-33.4 195.7h-53.4zm246.7-191c-10.6-3.9-27.1-8.1-47.8-8.1-52.7 0-89.8 26.5-90.1 64.4-.3 28 26.6 43.6 46.9 52.9 20.8 9.6 27.8 15.7 27.7 24.2-.1 13.1-16.6 19.1-32 19.1-21.4 0-32.7-2.9-50.3-10.1l-6.9-3.1-7.5 43.6c12.5 5.4 35.6 10.2 59.6 10.4 56.3 0 92.7-26.2 93.1-66.8.2-22.2-14.1-39.2-44.9-53.1-18.7-9-30.2-15-30.1-24.1 0-8.1 9.7-16.7 30.7-16.7 17.5-.3 30.2 3.5 40.1 7.4l4.8 2.3 7.7-44.3zm138.2-4.7h-41.1c-12.7 0-22.3 3.5-27.8 16.1l-79 179.6h55.8l11.2-29.2 68.1.1 6.3 29.1h49.2l-42.7-195.7zm-65.5 128.7l20.8-53.6c-.3.5 4.3-11.1 6.9-18.3l3.5 16.5 12 55.4h-43.2zm-368.3-128.7l-52.3 133.5-5.6-27c-9.7-31.1-40-64.8-73.8-81.6l47.8 171.5 56.5-.1 84-196.3h-56.6z" fill="#1A1F71"/>
-                          <path d="M153.2 152.9H67.5l-.6 4.1c66.7 16.1 110.8 54.9 129.1 101.6l-18.6-89.3c-3.2-12.3-12.6-16-24.2-16.4z" fill="#F9A533"/>
-                        </svg>
-                      </div>
-                      {/* Mastercard */}
-                      <div style={{border: '1px solid var(--color-border)', borderRadius: 6, padding: '4px 8px', backgroundColor: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', height: 32, minWidth: 48}}>
-                        <svg viewBox="0 0 38 24" style={{height: 18, width: 'auto'}} xmlns="http://www.w3.org/2000/svg">
-                          <circle cx="15" cy="12" r="9" fill="#EB001B"/>
-                          <circle cx="23" cy="12" r="9" fill="#F79E1B"/>
-                          <path d="M19 5.9A9 9 0 0123 12a9 9 0 01-4 6.1A9 9 0 0115 12a9 9 0 014-6.1z" fill="#FF5F00"/>
-                        </svg>
-                      </div>
-                      {/* Amex */}
-                      <div style={{border: '1px solid var(--color-border)', borderRadius: 6, padding: '4px 8px', backgroundColor: '#2E77BC', display: 'flex', alignItems: 'center', justifyContent: 'center', height: 32, minWidth: 48}}>
-                        <svg viewBox="0 0 50 16" style={{height: 12, width: 'auto'}} xmlns="http://www.w3.org/2000/svg">
-                          <text x="0" y="13" fontFamily="Arial, sans-serif" fontSize="13" fontWeight="bold" fill="white" letterSpacing="1">AMEX</text>
-                        </svg>
-                      </div>
-                      {/* Discover */}
-                      <div style={{border: '1px solid var(--color-border)', borderRadius: 6, padding: '4px 8px', backgroundColor: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', height: 32, minWidth: 48}}>
-                        <svg viewBox="0 0 780 500" style={{height: 16, width: 'auto'}} xmlns="http://www.w3.org/2000/svg">
-                          <path d="M535 250c0 79.9-64.9 144.7-145 144.7S245 329.9 245 250s64.9-144.7 145-144.7S535 170.1 535 250z" fill="#F76F20"/>
-                          <path d="M780 433.7c0 36.6-29.7 66.3-66.3 66.3H66.3C29.7 500 0 470.3 0 433.7V66.3C0 29.7 29.7 0 66.3 0h647.4C750.3 0 780 29.7 780 66.3v367.4z" fill="none"/>
-                          <text x="140" y="295" fontFamily="Arial" fontSize="120" fontWeight="bold" fill="#231F20">D</text>
-                        </svg>
-                      </div>
-                      {/* JCB */}
-                      <div style={{border: '1px solid var(--color-border)', borderRadius: 6, padding: '4px 8px', backgroundColor: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', height: 32, minWidth: 48}}>
-                        <svg viewBox="0 0 50 16" style={{height: 12, width: 'auto'}} xmlns="http://www.w3.org/2000/svg">
-                          <text x="2" y="13" fontFamily="Arial, sans-serif" fontSize="13" fontWeight="bold" fill="#003087">JCB</text>
-                        </svg>
-                      </div>
+                    <div style={{display: 'flex', gap: 6, alignItems: 'center'}}>
+                      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Visa_Inc._logo.svg/200px-Visa_Inc._logo.svg.png" alt="Visa" style={{height: 10, width: 'auto', border: '1px solid var(--color-border)', borderRadius: 4, padding: '5px 8px', backgroundColor: '#1A1F71', boxSizing: 'content-box'}} />
+                      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Mastercard-logo.svg/200px-Mastercard-logo.svg.png" alt="Mastercard" style={{height: 20, width: 'auto', border: '1px solid var(--color-border)', borderRadius: 4, padding: '2px 6px', backgroundColor: '#fff', boxSizing: 'content-box'}} />
+                      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/fa/American_Express_logo_%282018%29.svg/200px-American_Express_logo_%282018%29.svg.png" alt="Amex" style={{height: 20, width: 'auto', border: '1px solid var(--color-border)', borderRadius: 4, padding: '2px 6px', backgroundColor: '#016FD0', boxSizing: 'content-box'}} />
+                      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Discover_Card_logo.svg/200px-Discover_Card_logo.svg.png" alt="Discover" style={{height: 20, width: 'auto', border: '1px solid var(--color-border)', borderRadius: 4, padding: '2px 6px', backgroundColor: '#fff', boxSizing: 'content-box'}} />
+                      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/40/JCB_logo.svg/200px-JCB_logo.svg.png" alt="JCB" style={{height: 20, width: 'auto', border: '1px solid var(--color-border)', borderRadius: 4, padding: '2px 6px', backgroundColor: '#fff', boxSizing: 'content-box'}} />
                     </div>
                     <div style={{position: 'relative'}}>
                       <XDSTextInput size="lg" label="Card Number" placeholder="1234 5678 9012 3456" value={cardNumber} onChange={setCardNumber} status={errors.cardNumber ? {type: 'error', message: errors.cardNumber} : undefined} />
@@ -362,7 +338,9 @@ export default function PaymentFormPage() {
                     <XDSVStack key={item.id} gap={3}>
                       <XDSHStack gap={3} vAlign="start">
                         {/* Placeholder thumbnail */}
-                        <div {...stylex.props(styles.orderThumb)} />
+                        <div {...stylex.props(styles.orderThumb)} style={{overflow: 'hidden'}}>
+                          <Image src={ITEM_IMAGES[item.id]} alt={item.name} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
+                        </div>
                         <XDSVStack gap={1} style={{flex: 1}}>
                           <XDSHStack gap={2} hAlign="between" vAlign="start">
                             <XDSHStack gap={2} vAlign="center">
@@ -417,7 +395,7 @@ export default function PaymentFormPage() {
                       <svg viewBox="0 0 24 24" style={{width: 14, height: 14}} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
                       <XDSText type="supporting" color="secondary">SSL Encrypted</XDSText>
                     </XDSHStack>
-                    <XDSHStack gap={1} vAlign="center"><XDSIcon icon="checkCircle" size="sm" /><XDSText type="supporting" color="secondary">Free Returns</XDSText></XDSHStack>
+                    <XDSHStack gap={1} vAlign="center"><svg viewBox="0 0 24 24" style={{width: 14, height: 14}} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg><XDSText type="supporting" color="secondary">Free Returns</XDSText></XDSHStack>
                   </div>
                   <XDSVStack gap={2}>
                     <XDSButton
