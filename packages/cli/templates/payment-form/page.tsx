@@ -103,6 +103,7 @@ export default function PaymentFormPage() {
   const [paymentMethod, setPaymentMethod] = useState('card');
   const [cardNumber, setCardNumber] = useState('');
   const [expiry, setExpiry] = useState('');
+  const [expYear, setExpYear] = useState('');
   const [cvc, setCvc] = useState('');
   const [cardName, setCardName] = useState('');
   const [promo, setPromo] = useState('');
