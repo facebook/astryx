@@ -110,6 +110,10 @@ export default function PaymentFormPage() {
   const [expiry, setExpiry] = useState('');
   const [expYear, setExpYear] = useState('');
   const [billingMatchesShipping, setBillingMatchesShipping] = useState(true);
+  const [billingAddress, setBillingAddress] = useState('');
+  const [billingCity, setBillingCity] = useState('');
+  const [billingZip, setBillingZip] = useState('');
+  const [billingState, setBillingState] = useState('');
   const [addGiftMessage, setAddGiftMessage] = useState(false);
   const [giftTo, setGiftTo] = useState('');
   const [giftFrom, setGiftFrom] = useState('');
@@ -280,6 +284,16 @@ export default function PaymentFormPage() {
                     </div>
                     <XDSTextInput size="lg" label="Name on Card" placeholder="John Doe" value={cardName} onChange={setCardName} status={errors.cardName ? {type: 'error', message: errors.cardName} : undefined} />
                     <XDSCheckboxInput label="Use shipping address as billing address" value={billingMatchesShipping} onChange={setBillingMatchesShipping} />
+                    {!billingMatchesShipping && (
+                      <XDSVStack gap={3}>
+                        <XDSTextInput size="lg" label="Address" placeholder="123 Main Street" value={billingAddress} onChange={setBillingAddress} />
+                        <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12}}>
+                          <XDSTextInput size="lg" label="City" placeholder="New York" value={billingCity} onChange={setBillingCity} />
+                          <XDSTextInput size="lg" label="ZIP Code" placeholder="10001" value={billingZip} onChange={setBillingZip} />
+                          <XDSSelector size="lg" label="State" placeholder="Select state" options={US_STATES} value={billingState} onChange={setBillingState} />
+                        </div>
+                      </XDSVStack>
+                    )}
                   </XDSVStack>
 
                 </XDSVStack>
