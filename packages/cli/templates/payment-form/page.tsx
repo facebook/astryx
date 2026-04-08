@@ -163,7 +163,7 @@ export default function PaymentFormPage() {
 
           <div style={{display: 'flex', gap: 32, alignItems: 'flex-start'}}>
 
-            <div style={{flex: '1 1 55%', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16}}>
+            <div style={{flex: '1 1 55%', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 48}}>
 
                 <XDSVStack gap={1}>
                   <XDSHStack gap={2} hAlign="between" vAlign="center">
