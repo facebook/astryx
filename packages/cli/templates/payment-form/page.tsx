@@ -224,7 +224,7 @@ export default function PaymentFormPage() {
                         <img src="https://pay.google.com/about/static_kcs/images/logos/google-pay-logo.svg" alt="Google Pay" style={{height: 22, width: 'auto', filter: 'brightness(0) invert(1)'}} />
                       </button>
                       <button onClick={() => {}} style={{display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#008CFF', border: 'none', borderRadius: 8, cursor: 'pointer', padding: '0 16px', height: 36}}>
-                        <svg viewBox="0 0 111 28" xmlns="http://www.w3.org/2000/svg" style={{height: 16, width: "auto"}}><path d="M15.2.5c1 1.7 1.5 3.4 1.5 5.6 0 7-6 16.1-10.9 22.5H0L-2.4 1.2l8.7-.8 1.3 10.5c1.2-2 2.7-5.1 2.7-7.2 0-1.2-.2-2-.5-2.7L15.2.5zm16.6 0c2.6 0 5.3 1.3 5.3 5.5 0 5.4-3.6 11-6.1 14.2l-1.3-13.6c-.2-2.1.3-5.6-5.5-5.6l8.1-4.5z" fill="white" transform="translate(5,2)"/><text x="38" y="22" fontFamily="Arial, sans-serif" fontSize="20" fontWeight="700" fill="white" letterSpacing="0.5">venmo</text></svg>
+                        <span style={{color: 'white', fontFamily: 'Arial, sans-serif', fontSize: 15, fontWeight: 700, letterSpacing: 0.5}}>venmo</span>
                       </button>
                     </div>
                   </XDSVStack>
