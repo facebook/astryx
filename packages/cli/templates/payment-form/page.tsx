@@ -38,6 +38,14 @@ const US_STATES = [
 ];
 
 
+const ITEM_IMAGES: Record<string, {src: string}> = {'1': pinkTeddyImg, '2': redHeartImg, '3': beagleImg};
+
+const ORDER_ITEMS = [
+  {id: '1', name: 'Pink Teddy Keychain', variant: 'Soft plush keychain · One size', price: 75, qty: 1, limited: false},
+  {id: '2', name: 'Red Heart Keychain', variant: 'Velvet finish · One size', price: 75, qty: 1, limited: false},
+  {id: '3', name: 'Beagle Keychain', variant: 'Hand-painted resin · One size', price: 80, qty: 1, limited: true},
+];
+
 const SUBTOTAL = 230;
 // SHIPPING is now computed from deliveryMethod state
 const TAX = 18.40;
