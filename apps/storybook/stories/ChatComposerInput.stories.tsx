@@ -71,22 +71,28 @@ const asyncUserSource: XDSSearchSource = {
 // Basic input stories
 // =============================================================================
 
-/** Standalone input — no composer shell, just the contentEditable */
-export const Standalone: Story = {
+/** Controlled value — shows the serialized value below */
+export const Controlled: Story = {
   render: () => {
     const [value, setValue] = useState('');
     return (
-      <div>
-        <XDSChatComposerInput
-          value={value}
-          onChange={setValue}
+      <div style={{display: 'flex', flexDirection: 'column', gap: 12}}>
+        <XDSChatComposer
           onSubmit={v => {
             alert(`Submitted: ${v}`);
             setValue('');
           }}
-          placeholder="Type a message..."
+          value={value}
+          onChange={setValue}
+          input={
+            <XDSChatComposerInput
+              value={value}
+              onChange={setValue}
+              placeholder="Type a message..."
+            />
+          }
         />
-        <div style={{marginTop: 8, fontSize: 12, color: '#888'}}>
+        <div style={{fontSize: 12, fontFamily: 'monospace', color: '#888'}}>
           Value: {JSON.stringify(value)}
         </div>
       </div>
@@ -97,9 +103,11 @@ export const Standalone: Story = {
 /** Custom placeholder */
 export const CustomPlaceholder: Story = {
   render: () => (
-    <XDSChatComposerInput
-      placeholder="Ask me anything about XDS..."
+    <XDSChatComposer
       onSubmit={v => alert(v)}
+      input={
+        <XDSChatComposerInput placeholder="Ask me anything about XDS..." />
+      }
     />
   ),
 };
@@ -107,9 +115,12 @@ export const CustomPlaceholder: Story = {
 /** Disabled state */
 export const Disabled: Story = {
   render: () => (
-    <XDSChatComposerInput
+    <XDSChatComposer
+      onSubmit={() => {}}
       isDisabled
-      placeholder="Input is disabled"
+      input={
+        <XDSChatComposerInput isDisabled placeholder="Input is disabled" />
+      }
     />
   ),
 };
@@ -117,10 +128,14 @@ export const Disabled: Story = {
 /** Max rows — scrolls after 3 lines */
 export const MaxRows: Story = {
   render: () => (
-    <XDSChatComposerInput
-      maxRows={3}
-      placeholder="Type a long message — scrolls after 3 lines..."
+    <XDSChatComposer
       onSubmit={v => alert(v)}
+      input={
+        <XDSChatComposerInput
+          maxRows={3}
+          placeholder="Type a long message — scrolls after 3 lines..."
+        />
+      }
     />
   ),
 };
@@ -130,13 +145,17 @@ export const MessageHistory: Story = {
   render: () => {
     const [log, setLog] = useState<string[]>([]);
     return (
-      <div>
-        <XDSChatComposerInput
+      <div style={{display: 'flex', flexDirection: 'column', gap: 12}}>
+        <XDSChatComposer
           onSubmit={v => setLog(prev => [...prev, v])}
-          placeholder="Submit messages, then ArrowUp to recall..."
+          input={
+            <XDSChatComposerInput
+              placeholder="Submit messages, then ArrowUp to recall..."
+            />
+          }
         />
         {log.length > 0 && (
-          <div style={{marginTop: 12, fontSize: 12, fontFamily: 'monospace', color: '#666'}}>
+          <div style={{fontSize: 12, fontFamily: 'monospace', color: '#666'}}>
             {log.map((msg, i) => (
               <div key={i}>→ {msg}</div>
             ))}
@@ -147,19 +166,23 @@ export const MessageHistory: Story = {
   },
 };
 
-/** File drop/paste handler */
-export const FileDrop: Story = {
+/** File paste handler */
+export const FilePaste: Story = {
   render: () => {
     const [files, setFiles] = useState<string[]>([]);
     return (
-      <div>
-        <XDSChatComposerInput
+      <div style={{display: 'flex', flexDirection: 'column', gap: 12}}>
+        <XDSChatComposer
           onSubmit={v => alert(v)}
-          onFiles={f => setFiles(prev => [...prev, ...f.map(x => x.name)])}
-          placeholder="Drop or paste files here..."
+          input={
+            <XDSChatComposerInput
+              onFiles={f => setFiles(prev => [...prev, ...f.map(x => x.name)])}
+              placeholder="Paste files here (Ctrl+V)..."
+            />
+          }
         />
         {files.length > 0 && (
-          <div style={{marginTop: 12, fontSize: 12, color: '#666'}}>
+          <div style={{fontSize: 12, color: '#666'}}>
             Files: {files.join(', ')}
           </div>
         )}

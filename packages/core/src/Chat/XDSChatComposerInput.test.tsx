@@ -127,14 +127,17 @@ describe('XDSChatComposerInput', () => {
   });
 
   describe('file handling', () => {
-    it('calls onFiles on drop', () => {
+    it('calls onFiles on paste with files', () => {
       const onFiles = vi.fn();
       render(<XDSChatComposerInput onFiles={onFiles} />);
       const textbox = screen.getByRole('textbox');
 
       const file = new File(['content'], 'test.txt', {type: 'text/plain'});
-      fireEvent.drop(textbox, {
-        dataTransfer: {files: [file]},
+      fireEvent.paste(textbox, {
+        clipboardData: {
+        files: [file],
+        getData: () => '',
+      },
       });
       expect(onFiles).toHaveBeenCalledWith([file]);
     });

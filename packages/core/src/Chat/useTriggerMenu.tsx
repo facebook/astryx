@@ -548,7 +548,10 @@ export function useTriggerMenu(
                     role="option"
                     aria-selected={idx === state.highlightedIndex}
                     tabIndex={-1}
-                    onClick={() => selectItem(item)}
+                    onMouseDown={e => {
+                    e.preventDefault(); // Keep focus in the editable
+                    selectItem(item);
+                  }}
                     onMouseEnter={() =>
                       setState(prev => ({...prev, highlightedIndex: idx}))
                     }

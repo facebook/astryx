@@ -26,7 +26,6 @@ import {
   type ReactNode,
   type KeyboardEvent,
   type ClipboardEvent,
-  type DragEvent,
 } from 'react';
 import {createPortal} from 'react-dom';
 import type {XDSBaseProps} from '../XDSBaseProps';
@@ -208,6 +207,16 @@ function isCustomToken(
   token: XDSChatComposerToken,
 ): token is XDSChatComposerTokenCustom {
   return 'render' in token && typeof token.render === 'function';
+}
+
+/** Select all text in a contentEditable element. */
+function selectAll(el: HTMLElement): void {
+  const selection = window.getSelection();
+  if (!selection) return;
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  selection.removeAllRanges();
+  selection.addRange(range);
 }
 
 function serialize(node: Node): string {
@@ -402,6 +411,7 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
               : Math.max(0, historyIndexRef.current - 1);
           historyIndexRef.current = nextIndex;
           editableRef.current.textContent = history[nextIndex];
+          selectAll(editableRef.current);
           emitChange();
           e.preventDefault();
         } else if (e.key === 'ArrowDown' && historyIndexRef.current !== -1) {
@@ -409,9 +419,11 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
           if (nextIndex >= history.length) {
             historyIndexRef.current = -1;
             editableRef.current.textContent = currentDraftRef.current;
+            if (currentDraftRef.current) selectAll(editableRef.current);
           } else {
             historyIndexRef.current = nextIndex;
             editableRef.current.textContent = history[nextIndex];
+            selectAll(editableRef.current);
           }
           emitChange();
           e.preventDefault();
@@ -438,17 +450,6 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
       emitChange();
     },
     [onFiles, onPasteProp, emitChange],
-  );
-
-  const handleDrop = useCallback(
-    (e: DragEvent<HTMLDivElement>) => {
-      const files = Array.from(e.dataTransfer.files);
-      if (files.length > 0) {
-        e.preventDefault();
-        onFiles?.(files);
-      }
-    },
-    [onFiles],
   );
 
   const maxHeight = maxRows * LINE_HEIGHT_PX;
@@ -478,7 +479,6 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
         onInput={handleInput}
         onKeyDown={handleKeyDown}
         onPaste={handlePaste}
-        onDrop={handleDrop}
         {...triggerMenu.ariaProps}
         {...stylex.props(styles.editable)}
         style={{maxHeight: `${maxHeight}px`}}

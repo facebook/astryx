@@ -135,7 +135,6 @@ const styles = stylex.create({
   inputArea: {
     display: 'flex',
     flexDirection: 'column',
-    minHeight: '40px',
   },
   textarea: {
     all: 'unset',
