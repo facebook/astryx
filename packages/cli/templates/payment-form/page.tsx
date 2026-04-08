@@ -165,22 +165,24 @@ export default function PaymentFormPage() {
 
             <div style={{flex: '1 1 55%', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 48}}>
 
+                {/* Sign in */}
                 <XDSVStack gap={1}>
                   <XDSHStack gap={2} hAlign="between" vAlign="center">
                     <div {...stylex.props(styles.sectionTitle)}>Sign in to check out</div>
                     <XDSButton label="Sign In" variant="secondary" size="sm" onClick={() => {}} />
                   </XDSHStack>
                   <XDSText type="supporting" color="secondary">Sign in to track your order and save your information for faster checkout.</XDSText>
-              </XDSVStack>
+                </XDSVStack>
 
-              <XDSVStack gap={4}>
-                  {/* Contact information */}
+                {/* Contact Information */}
+                <XDSVStack gap={3}>
                   <div {...stylex.props(styles.sectionTitle)}>Contact Information</div>
                   <XDSTextInput size="lg" label="Email" placeholder="you@example.com" value={email} onChange={setEmail} status={errors.email ? {type: 'error', message: errors.email} : undefined} />
                   <XDSCheckboxInput label="Email me with news and offers" value={emailOffers} onChange={setEmailOffers} />
+                </XDSVStack>
 
-                  <XDSDivider />
-
+                {/* Shipping Information */}
+                <XDSVStack gap={3}>
                   <div {...stylex.props(styles.sectionTitle)}>Shipping Information</div>
                   <div style={{display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, alignItems: "start"}}>
                     <XDSTextInput size="lg" label="First Name" placeholder="John" value={firstName} onChange={setFirstName} status={errors.firstName ? {type: 'error', message: errors.firstName} : undefined} />
@@ -193,9 +195,10 @@ export default function PaymentFormPage() {
                   </div>
                   <XDSSelector size="lg" label="State" placeholder="Select state" options={US_STATES} value={state} onChange={setState} status={errors.state ? {type: 'error', message: errors.state} : undefined} />
                   <XDSTextInput size="lg" label="Phone Number" placeholder="+1 (555) 123-4567" value={phone} onChange={setPhone} labelTooltip="We use your phone number to provide shipping updates and contact you about your delivery if needed." status={errors.phone ? {type: 'error', message: errors.phone} : undefined} />
-                  <XDSDivider />
+                </XDSVStack>
 
-                  {/* Delivery */}
+                {/* Delivery */}
+                <XDSVStack gap={3}>
                   <XDSVStack gap={1}>
                     <div {...stylex.props(styles.sectionTitle)}>Delivery</div>
                     <XDSText type="supporting" color="secondary">
@@ -206,13 +209,12 @@ export default function PaymentFormPage() {
                     <XDSRadioListItem value="standard" label="Standard (3–7 business days)" endContent={<XDSText type="body" weight="medium">$4.95</XDSText>} />
                     <XDSRadioListItem value="expedited" label="Expedited (1–2 business days)" endContent={<XDSText type="body" weight="medium">$9.95</XDSText>} />
                   </XDSRadioList>
-
                   <XDSDivider />
-
                   <XDSCheckboxInput label="Save my information for a faster checkout" value={saveInfo} onChange={setSaveInfo} />
-              </XDSVStack>
+                </XDSVStack>
 
-              <XDSVStack gap={5}>
+                {/* Payment Method */}
+                <XDSVStack gap={3}>
                   <XDSVStack gap={1}>
                     <div {...stylex.props(styles.sectionTitle)}>Payment Method</div>
                     <XDSText type="supporting" color="secondary">All transactions are secure and encrypted.</XDSText>
@@ -276,47 +278,39 @@ export default function PaymentFormPage() {
                     )}
                   </XDSVStack>
 
-              </XDSVStack>
+                {/* Promo Code */}
+                <XDSVStack gap={3}>
+                  <div {...stylex.props(styles.sectionTitle)}>Promo Code</div>
+                  <XDSHStack gap={2} vAlign="center">
+                    <XDSTextInput size="lg" label="Promo code" isLabelHidden placeholder="Enter promo code" value={promo} onChange={setPromo} xstyle={styles.fullWidth} />
+                    <XDSButton label="Apply" variant="secondary" size="lg" onClick={() => {}} />
+                  </XDSHStack>
+                </XDSVStack>
 
-              <XDSVStack gap={5}>
-
-                  {/* Promo Code */}
-                  <XDSVStack gap={3}>
-                    <div {...stylex.props(styles.sectionTitle)}>Promo Code</div>
-                    <XDSHStack gap={2} vAlign="center">
-                      <XDSTextInput size="lg" label="Promo code" isLabelHidden placeholder="Enter promo code" value={promo} onChange={setPromo} xstyle={styles.fullWidth} />
-                      <XDSButton label="Apply" variant="secondary" size="lg" onClick={() => {}} />
-                    </XDSHStack>
-                  </XDSVStack>
-
-                  <XDSDivider />
-
-                  {/* Gift Options */}
-                  <XDSVStack gap={3}>
-                    <div {...stylex.props(styles.sectionTitle)}>Gift Options</div>
-                    <XDSCheckboxInput
-                      label="Add a gift message"
-                      value={addGiftMessage}
-                      onChange={setAddGiftMessage}
-                    />
-                    {addGiftMessage && (
-                      <XDSVStack gap={3}>
-                        <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, alignItems: 'start'}}>
-                          <XDSTextInput size="lg" label="To" isLabelHidden placeholder="To" value={giftTo} onChange={setGiftTo} />
-                          <XDSTextInput size="lg" label="From" isLabelHidden placeholder="From" value={giftFrom} onChange={setGiftFrom} />
-                        </div>
-                        <XDSTextArea
-                          label="Gift message"
-                          isLabelHidden
-                          placeholder="Write something here"
-                          value={giftMessage}
-                          onChange={setGiftMessage}
-                        />
-                      </XDSVStack>
-                    )}
-                  </XDSVStack>
-
-              </XDSVStack>
+                {/* Gift Options */}
+                <XDSVStack gap={3}>
+                  <div {...stylex.props(styles.sectionTitle)}>Gift Options</div>
+                  <XDSCheckboxInput
+                    label="Add a gift message"
+                    value={addGiftMessage}
+                    onChange={setAddGiftMessage}
+                  />
+                  {addGiftMessage && (
+                    <XDSVStack gap={3}>
+                      <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, alignItems: 'start'}}>
+                        <XDSTextInput size="lg" label="To" isLabelHidden placeholder="To" value={giftTo} onChange={setGiftTo} />
+                        <XDSTextInput size="lg" label="From" isLabelHidden placeholder="From" value={giftFrom} onChange={setGiftFrom} />
+                      </div>
+                      <XDSTextArea
+                        label="Gift message"
+                        isLabelHidden
+                        placeholder="Write something here"
+                        value={giftMessage}
+                        onChange={setGiftMessage}
+                      />
+                    </XDSVStack>
+                  )}
+                </XDSVStack>
 
               {/* Policy links */}
               <XDSHStack gap={4} vAlign="center">
