@@ -284,6 +284,23 @@ describe('XDSButton', () => {
     expect(handleKeyDown).toHaveBeenCalledTimes(1);
   });
 
+  it('sets aria-pressed when isPressed is true', () => {
+    render(<XDSButton label="Bold" isPressed />);
+    const button = screen.getByRole('button', {name: 'Bold'});
+    expect(button).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('sets aria-pressed=false when isPressed is false', () => {
+    render(<XDSButton label="Bold" isPressed={false} />);
+    const button = screen.getByRole('button', {name: 'Bold'});
+    expect(button).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('does not set aria-pressed when isPressed is undefined', () => {
+    render(<XDSButton label="Bold" />);
+    const button = screen.getByRole('button', {name: 'Bold'});
+    expect(button).not.toHaveAttribute('aria-pressed');
+  });
   it('has a live region that announces loading state', () => {
     const {rerender} = render(<XDSButton label="Submit" />);
     const button = screen.getByRole('button');

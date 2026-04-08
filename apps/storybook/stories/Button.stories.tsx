@@ -196,6 +196,12 @@ export const AllVariants: Story = {
         <XDSButton label="Disabled" variant="destructive" isDisabled />
       </div>
       <div style={{display: 'flex', gap: '12px'}}>
+        <XDSButton label="Bold" variant="primary" isPressed />
+        <XDSButton label="Bold" variant="secondary" isPressed />
+        <XDSButton label="Bold" variant="ghost" isPressed />
+        <XDSButton label="Bold" variant="destructive" isPressed />
+      </div>
+      <div style={{display: 'flex', gap: '12px'}}>
         <XDSButton
           label="Settings"
           variant="ghost"
