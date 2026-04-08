@@ -336,7 +336,7 @@ export default function PaymentFormPage() {
                       <XDSHStack gap={3} vAlign="start">
                         {/* Placeholder thumbnail */}
                         <div {...stylex.props(styles.orderThumb)} style={{overflow: 'hidden'}}>
-                          <img src={typeof ITEM_IMAGES[item.id] === "string" ? ITEM_IMAGES[item.id] : (ITEM_IMAGES[item.id] as {src: string}).src} alt={item.name} style={{width: 64, height: 64, objectFit: "cover", borderRadius: 8}} />
+                          <img src={(ITEM_IMAGES[item.id] as {src: string}).src} alt={item.name} style={{width: 64, height: 64, objectFit: "cover", borderRadius: 8}} />
                         </div>
                         <XDSVStack gap={1} style={{flex: 1}}>
                           <XDSHStack gap={2} hAlign="between" vAlign="start">
