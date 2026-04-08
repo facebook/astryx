@@ -176,7 +176,7 @@ export async function component(name, options = {}) {
     }
   }
 
-  if (!readmePath.endsWith('.doc.mjs')) {
+  if (!readmePath || !readmePath.endsWith('.doc.mjs')) {
     throw new XDSError(`No .doc.mjs found for "${resolvedName}". The component needs a typed doc file.`);
   }
 
