@@ -19,6 +19,7 @@
     "@xds/theme-brutalist": "*",
     "@xds/theme-meta": "*",
     "@xds/theme-whatsapp": "*",
+    "@xds/theme-daily": "*",
     "next": "^15.5.14",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"

@@ -10,6 +10,7 @@ import type {Metadata} from 'next';
  *   4. @xds/theme-neutral/theme.css   → @layer xds-theme  (neutral theme)
  *   5. @xds/theme-brutalist/theme.css → @layer xds-theme  (brutalist theme)
  *   6. @xds/theme-meta/theme.css      → @layer xds-theme  (meta theme)
+ *   7. @xds/theme-daily/theme.css     → @layer xds-theme  (daily theme)
  *
  * All theme CSS files are in @layer xds-theme and scoped via
  * @scope ([data-xds-theme="name"]), so only the active theme's rules apply.
@@ -23,6 +24,7 @@ import '@xds/theme-default/theme.css';
 import '@xds/theme-neutral/theme.css';
 import '@xds/theme-brutalist/theme.css';
 import '@xds/theme-meta/theme.css';
+import '@xds/theme-daily/theme.css';
 import {Providers} from './providers';
 
 export const metadata: Metadata = {
@@ -33,6 +35,12 @@ export const metadata: Metadata = {
 export default function RootLayout({children}: {children: React.ReactNode}) {
   return (
     <html lang="en">
+      <head>
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap"
+        />
+      </head>
       <body>
         <Providers>{children}</Providers>
       </body>
