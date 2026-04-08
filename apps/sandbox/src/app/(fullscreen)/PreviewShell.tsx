@@ -266,7 +266,6 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
               ? <CheckIcon width={14} height={14} />
               : <CopyIcon width={14} height={14} />
           }
-          isLabelHidden
           onClick={handleCopy}
         />
       </div>
