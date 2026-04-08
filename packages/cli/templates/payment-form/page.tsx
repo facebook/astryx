@@ -10,7 +10,6 @@ import {XDSSelector} from '@xds/core/Selector';
 import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
 import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
 import {XDSLink} from '@xds/core/Link';
-import Image, {type StaticImageData} from 'next/image';
 import pinkTeddyImg from './pink-teddy.png';
 import redHeartImg from './red-heart.png';
 import beagleImg from './beagle.png';
@@ -326,7 +325,7 @@ export default function PaymentFormPage() {
                       <XDSHStack gap={3} vAlign="start">
                         {/* Placeholder thumbnail */}
                         <div {...stylex.props(styles.orderThumb)} style={{overflow: 'hidden'}}>
-                          <Image src={ITEM_IMAGES[item.id]} alt={item.name} width={64} height={64} style={{objectFit: "cover", width: "100%", height: "100%"}} />
+                          <img src={typeof ITEM_IMAGES[item.id] === "string" ? ITEM_IMAGES[item.id] : (ITEM_IMAGES[item.id] as {src: string}).src} alt={item.name} style={{width: 64, height: 64, objectFit: "cover", borderRadius: 8}} />
                         </div>
                         <XDSVStack gap={1} style={{flex: 1}}>
                           <XDSHStack gap={2} hAlign="between" vAlign="start">
