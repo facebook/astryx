@@ -47,10 +47,32 @@ import {XDSBadge, type XDSBadgeProps} from '../Badge';
 // Types
 // =============================================================================
 
-export type XDSChatComposerToken = {
+/** Badge config for the common case \u2014 structured, simple, autocomplete-friendly */
+export type XDSChatComposerTokenBadge = {
   /** Serialized value \u2014 what this token becomes in the onSubmit string */
   value: string;
 } & Omit<XDSBadgeProps, 'ref' | 'xstyle' | 'className' | 'style'>;
+
+/** Custom render for the escape hatch \u2014 tooltips, hovercards, rich content */
+export type XDSChatComposerTokenCustom = {
+  /** Serialized value \u2014 what this token becomes in the onSubmit string */
+  value: string;
+  /** Full control over the token\u2019s rendered content */
+  render: () => ReactNode;
+};
+
+/**
+ * Token inserted into the contentEditable by a trigger menu.
+ *
+ * Two forms:
+ * - **Badge config** (recommended): `{ value, label, variant?, icon? }` \u2014
+ *   renders an XDSBadge. Structured, themeable, autocomplete-friendly.
+ * - **Custom render**: `{ value, render }` \u2014 full control via ReactNode.
+ *   Use for tooltips, hovercards, or any content beyond a badge.
+ */
+export type XDSChatComposerToken =
+  | XDSChatComposerTokenBadge
+  | XDSChatComposerTokenCustom;
 
 export type XDSChatComposerTriggerItem = XDSSearchableItem;
 
@@ -179,6 +201,14 @@ const styles = stylex.create({
 // =============================================================================
 // Helpers
 // =============================================================================
+
+
+/** Type guard: does this token use the custom render path? */
+function isCustomToken(
+  token: XDSChatComposerToken,
+): token is XDSChatComposerTokenCustom {
+  return 'render' in token && typeof token.render === 'function';
+}
 
 function serialize(node: Node): string {
   let result = '';
@@ -456,12 +486,16 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
       {triggerMenu.renderMenu()}
       {tokenPortals.map(({id, span, token}) =>
         createPortal(
-          <XDSBadge
-            key={id}
-            label={token.label}
-            variant={token.variant}
-            icon={token.icon}
-          />,
+          isCustomToken(token) ? (
+            <span key={id}>{token.render()}</span>
+          ) : (
+            <XDSBadge
+              key={id}
+              label={token.label}
+              variant={token.variant}
+              icon={token.icon}
+            />
+          ),
           span,
         ),
       )}
@@ -486,11 +520,15 @@ export function XDSChatComposerTokenElement({
       data-xds-token-value={token.value}
       contentEditable={false}
       style={{display: 'inline-flex', verticalAlign: 'baseline'}}>
-      <XDSBadge
-        label={token.label}
-        variant={token.variant}
-        icon={token.icon}
-      />
+      {isCustomToken(token) ? (
+        token.render()
+      ) : (
+        <XDSBadge
+          label={token.label}
+          variant={token.variant}
+          icon={token.icon}
+        />
+      )}
     </span>
   );
 }

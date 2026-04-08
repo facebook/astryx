@@ -22,6 +22,17 @@ export const docs = {
     'Concentric radius — inner elements follow outer shell curvature',
     'Themeable via --composer-radius and --composer-padding CSS vars',
   ],
+  theming: {
+    targets: [
+      {className: 'xds-chat-composer', visualProps: ['density']},
+      {className: 'xds-chat-composer-input'},
+    ],
+    vars: [
+      {name: '--composer-radius', description: 'Border radius of the composer body. Inner elements derive their radius concentrically.', default: 'var(--radius-page)'},
+      {name: '--composer-padding', description: 'Padding of the composer body. Used in the concentric radius calculation.', default: 'var(--spacing-3)'},
+      {name: '--button-radius', description: 'Concentric button radius inside the composer.', default: 'max(var(--radius-element), calc(var(--composer-radius) - var(--composer-padding)))', derived: true, formula: 'max(var(--radius-element), calc(var(--composer-radius) - var(--composer-padding)))'},
+    ],
+  },
   examples: [
     {
       label: 'Basic conversation',
@@ -118,15 +129,7 @@ export const docs = {
         {name: 'status', type: "{ type: 'error' | 'warning'; message?: string }", description: 'Status message below (or above) the composer.'},
         {name: 'statusPosition', type: "'top' | 'bottom'", description: 'Where to render the status.', default: "'bottom'"},
       ],
-      cssVars: [
-        {name: '--composer-radius', default: 'var(--radius-page)', description: 'Border radius of the composer body. Inner elements derive their radius concentrically.'},
-        {name: '--composer-padding', default: 'var(--spacing-3)', description: 'Padding of the composer body. Used in the concentric radius calculation.'},
-      ],
-      theming: {
-        target: 'chat-composer',
-        variants: ['density'],
-        notes: 'Inner element radius is computed as calc(var(--composer-radius) - var(--composer-padding)). Themes can override both vars to control the outer shape and inner curvature independently.',
-      },
+
       examples: [
         {label: 'Simplest', code: '<XDSChatComposer onSubmit={handleSubmit} />'},
         {label: 'With trigger menus', code: '<XDSChatComposer onSubmit={handleSubmit} input={<XDSChatComposerInput triggers={triggers} />} />'},
