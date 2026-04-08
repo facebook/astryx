@@ -167,13 +167,41 @@ const styles = stylex.create({
   // --- Scroll-to-bottom button ---
   // The label is always in the DOM but clipped via animated max-width
   // on the label wrapper. CSS-only reveal — no per-frame DOM mutations.
+  // The button sits on an opaque container (scrollButtonBg) that provides
+  // the popover surface, so hover/focus translucent states don't bleed.
   // `contain: layout style` isolates the max-width transition so it
   // doesn't invalidate layout on the parent scroll container.
-  scrollButton: {
+  scrollButtonContainer: {
     position: 'absolute',
     bottom: spacingVars['--spacing-3'],
     left: '50%',
     contain: 'layout style',
+    zIndex: 1,
+    transitionProperty: 'opacity, transform',
+    transitionTimingFunction: easeVars['--ease-standard'],
+  },
+  scrollButtonContainerHidden: {
+    opacity: 0,
+    pointerEvents: 'none',
+    transform: 'translate(-50%, 8px)',
+    transitionDuration: durationVars['--duration-fast'],
+    transitionDelay: '0ms',
+  },
+  scrollButtonContainerVisible: {
+    opacity: 1,
+    pointerEvents: 'auto',
+    transform: 'translate(-50%, 0)',
+    transitionDuration: durationVars['--duration-fast'],
+    transitionDelay: '150ms',
+  },
+  // Opaque surface behind the button — matches button size via inline-flex
+  scrollButtonBg: {
+    display: 'inline-flex',
+    borderRadius: radiusVars['--radius-full'],
+    backgroundColor: colorVars['--color-background-popover'],
+    boxShadow: shadowVars['--shadow-med'],
+  },
+  scrollButton: {
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -184,12 +212,11 @@ const styles = stylex.create({
     fontSize: typeScaleVars['--text-supporting-size'],
     lineHeight: typeScaleVars['--text-supporting-leading'],
     fontWeight: fontWeightVars['--font-weight-medium'],
-    backgroundColor: colorVars['--color-background-popover'],
+    backgroundColor: 'transparent',
     color: colorVars['--color-text-secondary'],
-    boxShadow: shadowVars['--shadow-med'],
-    transitionProperty: 'opacity, transform, box-shadow, color',
+    transitionProperty: 'background-color, box-shadow, color',
+    transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
-    zIndex: 1,
     height: '32px',
     paddingBlock: 0,
     paddingInlineStart: spacingVars['--spacing-2'],
@@ -198,25 +225,7 @@ const styles = stylex.create({
     ':hover': {
       backgroundColor: colorVars['--color-background-muted'],
       color: colorVars['--color-text-primary'],
-      boxShadow: shadowVars['--shadow-high'],
     },
-  },
-  scrollButtonHidden: {
-    opacity: 0,
-    pointerEvents: 'none',
-    transform: 'translate(-50%, 8px)',
-    // Hide instantly — no delay
-    transitionDuration: durationVars['--duration-fast'],
-    transitionDelay: '0ms',
-  },
-  scrollButtonVisible: {
-    opacity: 1,
-    pointerEvents: 'auto',
-    transform: 'translate(-50%, 0)',
-    // Delay appearance so transient scroll positions (auto-scroll)
-    // don't flash the button
-    transitionDuration: durationVars['--duration-fast'],
-    transitionDelay: '150ms',
   },
   // Label wrapper — always present, width-animated to reveal/hide
   scrollButtonLabelWrapper: {
@@ -257,12 +266,11 @@ const styles = stylex.create({
  *
  * - Icon-only (chevron down) when the user is scrolled up
  * - Expands via max-width animation to reveal label when new messages arrive
- * - Muted popover styling, not primary
+ * - Ghost button on an opaque popover surface so hover tint doesn't bleed
  *
- * The label is always in the DOM but clipped by `max-width: 0` + `overflow: hidden`
- * on the wrapper span. This keeps the animation CSS-only (no DOM mutations per frame).
- * `contain: layout style` on the button prevents the max-width transition from
- * invalidating layout above (the message list / scroll container).
+ * Structure: container (positioning + fade) → bg (opaque surface) → button (ghost)
+ * The label is always in the DOM but clipped by `max-width: 0` + `overflow: hidden`.
+ * `contain: layout style` on the container isolates reflow from the scroll area.
  */
 function ScrollToBottomButton({
   isScrolledUp,
@@ -278,25 +286,32 @@ function ScrollToBottomButton({
   const isVisible = isScrolledUp || hasNewMessages;
 
   return (
-    <button
-      type="button"
-      aria-label={hasNewMessages ? label : 'Scroll to bottom'}
-      onClick={onClick}
+    <div
       {...stylex.props(
-        styles.scrollButton,
-        isVisible ? styles.scrollButtonVisible : styles.scrollButtonHidden,
+        styles.scrollButtonContainer,
+        isVisible
+          ? styles.scrollButtonContainerVisible
+          : styles.scrollButtonContainerHidden,
       )}>
-      <XDSIcon icon="chevronDown" size="sm" />
-      <span
-        {...stylex.props(
-          styles.scrollButtonLabelWrapper,
-          hasNewMessages
-            ? styles.scrollButtonLabelExpanded
-            : styles.scrollButtonLabelCollapsed,
-        )}>
-        {label}
-      </span>
-    </button>
+      <div {...stylex.props(styles.scrollButtonBg)}>
+        <button
+          type="button"
+          aria-label={hasNewMessages ? label : 'Scroll to bottom'}
+          onClick={onClick}
+          {...stylex.props(styles.scrollButton)}>
+          <XDSIcon icon="chevronDown" size="sm" />
+          <span
+            {...stylex.props(
+              styles.scrollButtonLabelWrapper,
+              hasNewMessages
+                ? styles.scrollButtonLabelExpanded
+                : styles.scrollButtonLabelCollapsed,
+            )}>
+            {label}
+          </span>
+        </button>
+      </div>
+    </div>
   );
 }
 
