@@ -71,7 +71,7 @@ const asyncUserSource: XDSSearchSource = {
 // Basic input stories
 // =============================================================================
 
-/** Standalone input \u2014 no composer shell, just the contentEditable */
+/** Standalone input — no composer shell, just the contentEditable */
 export const Standalone: Story = {
   render: () => {
     const [value, setValue] = useState('');
@@ -114,18 +114,18 @@ export const Disabled: Story = {
   ),
 };
 
-/** Max rows \u2014 scrolls after 3 lines */
+/** Max rows — scrolls after 3 lines */
 export const MaxRows: Story = {
   render: () => (
     <XDSChatComposerInput
       maxRows={3}
-      placeholder="Type a long message \u2014 scrolls after 3 lines..."
+      placeholder="Type a long message — scrolls after 3 lines..."
       onSubmit={v => alert(v)}
     />
   ),
 };
 
-/** Message history \u2014 submit a few messages, then ArrowUp/Down to recall */
+/** Message history — submit a few messages, then ArrowUp/Down to recall */
 export const MessageHistory: Story = {
   render: () => {
     const [log, setLog] = useState<string[]>([]);
@@ -138,7 +138,7 @@ export const MessageHistory: Story = {
         {log.length > 0 && (
           <div style={{marginTop: 12, fontSize: 12, fontFamily: 'monospace', color: '#666'}}>
             {log.map((msg, i) => (
-              <div key={i}>\u2192 {msg}</div>
+              <div key={i}>→ {msg}</div>
             ))}
           </div>
         )}
@@ -172,7 +172,7 @@ export const FileDrop: Story = {
 // Trigger stories
 // =============================================================================
 
-/** Static @ mentions \u2014 type @ to see the menu */
+/** Static @ mentions — type @ to see the menu */
 export const MentionTrigger: Story = {
   render: () => {
     const [log, setLog] = useState<string[]>([]);
@@ -206,7 +206,7 @@ export const MentionTrigger: Story = {
         {log.length > 0 && (
           <div style={{fontSize: 12, fontFamily: 'monospace', color: '#666'}}>
             {log.map((msg, i) => (
-              <div key={i}>\u2192 {msg}</div>
+              <div key={i}>→ {msg}</div>
             ))}
           </div>
         )}
@@ -215,7 +215,7 @@ export const MentionTrigger: Story = {
   },
 };
 
-/** Static / commands \u2014 type / to see commands */
+/** Static / commands — type / to see commands */
 export const SlashCommands: Story = {
   render: () => {
     const commandTrigger: XDSChatComposerTrigger = {
@@ -248,7 +248,7 @@ export const SlashCommands: Story = {
   },
 };
 
-/** Async search source \u2014 type @ to trigger a simulated API search */
+/** Async search source — type @ to trigger a simulated API search */
 export const AsyncSearch: Story = {
   render: () => {
     const asyncTrigger: XDSChatComposerTrigger = {
@@ -259,7 +259,7 @@ export const AsyncSearch: Story = {
         label: item.label,
         variant: 'blue' as const,
       }),
-      loadingText: 'Searching users\u2026',
+      loadingText: 'Searching users…',
       emptySearchResultsText: 'No users found',
     };
 
@@ -277,7 +277,7 @@ export const AsyncSearch: Story = {
   },
 };
 
-/** Multiple triggers \u2014 @ for mentions, / for commands */
+/** Multiple triggers — @ for mentions, / for commands */
 export const MultipleTriggers: Story = {
   render: () => {
     const mentionTrigger: XDSChatComposerTrigger = {
@@ -372,7 +372,7 @@ export const CustomRenderItem: Story = {
         input={
           <XDSChatComposerInput
             triggers={[mentionTrigger]}
-            placeholder="Type @ \u2014 tokens have icons via badge config..."
+            placeholder="Type @ — tokens have icons via badge config..."
           />
         }
       />
@@ -380,7 +380,7 @@ export const CustomRenderItem: Story = {
   },
 };
 
-/** Token color variants \u2014 different badge colors per trigger */
+/** Token color variants — different badge colors per trigger */
 export const TokenVariants: Story = {
   render: () => {
     const mentionTrigger: XDSChatComposerTrigger = {
@@ -417,7 +417,7 @@ export const TokenVariants: Story = {
 };
 
 
-/** Custom render \u2014 full control via render() for rich token content */
+/** Custom render — full control via render() for rich token content */
 export const CustomRender: Story = {
   render: () => {
     const mentionTrigger: XDSChatComposerTrigger = {
@@ -480,7 +480,49 @@ export const CustomRender: Story = {
         input={
           <XDSChatComposerInput
             triggers={[mentionTrigger]}
-            placeholder="Type @ \u2014 tokens are clickable with avatars..."
+            placeholder="Type @ — tokens are clickable with avatars..."
+          />
+        }
+      />
+    );
+  },
+};
+
+/** Grouped menu items — items with auxiliaryData.group render under headings */
+export const GroupedItems: Story = {
+  render: () => {
+    const groupedUsers = createStaticSource([
+      {id: 'cindy', label: 'Cindy Zhang', auxiliaryData: {group: 'Design', role: 'Design Systems'}},
+      {id: 'taylor', label: 'Taylor Kim', auxiliaryData: {group: 'Design', role: 'Product Design'}},
+      {id: 'alex', label: 'Alex Johnson', auxiliaryData: {group: 'Engineering', role: 'Frontend'}},
+      {id: 'sam', label: 'Sam Rivera', auxiliaryData: {group: 'Engineering', role: 'Backend'}},
+      {id: 'morgan', label: 'Morgan Chen', auxiliaryData: {group: 'Engineering', role: 'Infrastructure'}},
+      {id: 'jordan', label: 'Jordan Lee', auxiliaryData: {group: 'Product', role: 'Product Manager'}},
+    ] as XDSSearchableItem[]);
+
+    const mentionTrigger: XDSChatComposerTrigger = {
+      character: '@',
+      searchSource: groupedUsers,
+      renderItem: item => (
+        <XDSTypeaheadItem
+          item={item}
+          description={(item.auxiliaryData as {role?: string})?.role}
+        />
+      ),
+      onSelect: item => ({
+        value: `@${item.id}`,
+        label: item.label,
+        variant: 'blue' as const,
+      }),
+    };
+
+    return (
+      <XDSChatComposer
+        onSubmit={value => alert(`Sent: ${value}`)}
+        input={
+          <XDSChatComposerInput
+            triggers={[mentionTrigger]}
+            placeholder="Type @ to see grouped mentions..."
           />
         }
       />

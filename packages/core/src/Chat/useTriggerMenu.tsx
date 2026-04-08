@@ -35,7 +35,7 @@ import {
   typeScaleVars,
   typographyVars,
 } from '../theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {xdsClassName, mergeProps, groupItems} from '../utils';
 import type {XDSSearchableItem, XDSSearchSource} from '../Typeahead/types';
 import type {
   XDSChatComposerTrigger,
@@ -144,6 +144,15 @@ const styles = stylex.create({
     textAlign: 'center' as const,
     fontSize: typeScaleVars['--text-supporting-size'],
     color: colorVars['--color-text-secondary'],
+  },
+  groupHeading: {
+    paddingInline: spacingVars['--spacing-2'],
+    paddingBlockStart: spacingVars['--spacing-2'],
+    paddingBlockEnd: spacingVars['--spacing-1'],
+    fontSize: typeScaleVars['--text-supporting-size'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
+    color: colorVars['--color-text-secondary'],
+    userSelect: 'none',
   },
 });
 
@@ -526,28 +535,55 @@ export function useTriggerMenu(
         ) : state.items.length === 0 && state.isActive ? (
           <div {...stylex.props(styles.emptyState)}>{emptyText}</div>
         ) : (
-          state.items.map((item, index) => (
-            <div
-              key={item.id}
-              id={getItemId(index)}
-              role="option"
-              aria-selected={index === state.highlightedIndex}
-              tabIndex={-1}
-              onClick={() => selectItem(item)}
-              onMouseEnter={() =>
-                setState(prev => ({...prev, highlightedIndex: index}))
+          (() => {
+            const groups = groupItems(state.items);
+            let flatIndex = 0;
+            return groups.map(group => {
+              const groupItems = group.items.map(item => {
+                const idx = flatIndex++;
+                return (
+                  <div
+                    key={item.id}
+                    id={getItemId(idx)}
+                    role="option"
+                    aria-selected={idx === state.highlightedIndex}
+                    tabIndex={-1}
+                    onClick={() => selectItem(item)}
+                    onMouseEnter={() =>
+                      setState(prev => ({...prev, highlightedIndex: idx}))
+                    }
+                    {...stylex.props(
+                      styles.item,
+                      idx === state.highlightedIndex && styles.itemHighlighted,
+                    )}>
+                    {trigger?.renderItem ? (
+                      trigger.renderItem(item)
+                    ) : (
+                      <span {...stylex.props(styles.itemLabel)}>
+                        {item.label}
+                      </span>
+                    )}
+                  </div>
+                );
+              });
+              if (group.heading) {
+                return (
+                  <div
+                    key={`group-${group.heading}`}
+                    role="group"
+                    aria-label={group.heading}>
+                    <div
+                      aria-hidden="true"
+                      {...stylex.props(styles.groupHeading)}>
+                      {group.heading}
+                    </div>
+                    {groupItems}
+                  </div>
+                );
               }
-              {...stylex.props(
-                styles.item,
-                index === state.highlightedIndex && styles.itemHighlighted,
-              )}>
-              {trigger?.renderItem ? (
-                trigger.renderItem(item)
-              ) : (
-                <span {...stylex.props(styles.itemLabel)}>{item.label}</span>
-              )}
-            </div>
-          ))
+              return groupItems;
+            });
+          })()
         )}
       </div>,
       {
