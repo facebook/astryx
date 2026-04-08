@@ -4,8 +4,7 @@ import {useCallback, useEffect, useRef} from 'react';
 import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSButton} from '../Button';
-import {XDSIcon} from '../Icon';
-import type {XDSIconName} from '../Icon';
+import {XDSIcon, type XDSIconName} from '../Icon';
 import {
   colorVars,
   spacingVars,
@@ -13,15 +12,16 @@ import {
   durationVars,
   easeVars,
   shadowVars,
+  fontWeightVars,
 } from '../theme/tokens.stylex';
 import {xdsClassName} from '../utils';
 import type {XDSToastType, XDSToastDismissReason} from './types';
 
 const TYPE_ICONS: Record<XDSToastType, XDSIconName> = {
-  info: 'information-circle',
-  success: 'check-circle',
-  warning: 'exclamation-triangle',
-  error: 'x-circle',
+  info: 'info',
+  success: 'checkCircle',
+  warning: 'warning',
+  error: 'xCircle',
 };
 
 const styles = stylex.create({
@@ -67,7 +67,7 @@ const styles = stylex.create({
     minWidth: 0,
   },
   title: {
-    fontWeight: 600,
+    fontWeight: fontWeightVars['--font-weight-semibold'],
   },
   body: {
     marginBlockStart: spacingVars['--spacing-1'],
@@ -179,9 +179,9 @@ export function XDSToast({
         styles.root,
         isError ? styles.variantError : styles.variantDefault,
       )}
-      className={xdsClassName('toast', {type}).className}>
+      className={xdsClassName('toast', {type})}>
       <div {...stylex.props(styles.iconArea)}>
-        {icon ?? <XDSIcon name={iconName} size={20} color="inherit" />}
+        {icon ?? <XDSIcon icon={iconName} size="md" color="inherit" />}
       </div>
 
       <div {...stylex.props(styles.content)}>
@@ -193,8 +193,8 @@ export function XDSToast({
         {endContent}
         <XDSButton
           variant="ghost"
-          size="compact"
-          icon={<XDSIcon name="x-mark" size={16} color="inherit" />}
+          size="sm"
+          icon={<XDSIcon icon="close" size="sm" color="inherit" />}
           label="Dismiss notification"
           onClick={handleDismiss}
         />

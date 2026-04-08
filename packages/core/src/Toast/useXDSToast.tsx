@@ -26,7 +26,7 @@ function getFallbackContext(): XDSToastContextValue {
     );
   }
 
-  if (process.env.NODE_ENV !== 'production' && !fallbackWarned) {
+  if (!fallbackWarned) {
     fallbackWarned = true;
     console.warn(
       'useXDSToast: No XDSLayerProvider found. Using fallback viewport. ' +

@@ -129,7 +129,7 @@ function WithActionDemo() {
             <XDSButton
               label="Undo"
               variant="ghost"
-              size="compact"
+              size="sm"
               onClick={() => console.log('Undo!')}
             />
           ),
