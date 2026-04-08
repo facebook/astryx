@@ -10,7 +10,7 @@
  * - `isScrolledUp` — true when the user has scrolled away from the bottom
  *   (beyond `scrollUpThreshold`), regardless of whether new content arrived.
  *   Drives a scroll-to-bottom affordance.
- * - `showNewMessages` — true when new content arrived while scrolled up.
+ * - `hasNewMessages` — true when new content arrived while scrolled up.
  *   Layers on top of isScrolledUp to add a "new messages" notification.
  *
  * SYNC: When modified, update:
@@ -49,7 +49,7 @@ export interface UseAutoScrollReturn {
   isScrolledUp: boolean;
 
   /** Whether new content arrived while the user is scrolled up. */
-  showNewMessages: boolean;
+  hasNewMessages: boolean;
 
   /** Scroll handler — attach to onScroll on the scrollable element. */
   handleScroll: () => void;
@@ -74,13 +74,13 @@ export interface UseAutoScrollReturn {
  *
  * @example
  * ```
- * const {scrollRef, isScrolledUp, showNewMessages, handleScroll, scrollToBottom, dismissNewMessages} = useAutoScroll();
+ * const {scrollRef, isScrolledUp, hasNewMessages, handleScroll, scrollToBottom, dismissNewMessages} = useAutoScroll();
  *
  * return (
  *   <div ref={scrollRef} onScroll={handleScroll}>
  *     {messages}
  *     {isScrolledUp && <button onClick={scrollToBottom}>↓</button>}
- *     {showNewMessages && <button onClick={dismissNewMessages}>New messages</button>}
+ *     {hasNewMessages && <button onClick={dismissNewMessages}>New messages</button>}
  *   </div>
  * );
  * ```
@@ -91,7 +91,7 @@ export function useAutoScroll({
   scrollUpThreshold = 100,
 }: UseAutoScrollOptions = {}): UseAutoScrollReturn {
   const scrollRef = useRef<HTMLDivElement | null>(null);
-  const [showNewMessages, setShowNewMessages] = useState(false);
+  const [hasNewMessages, setHasNewMessages] = useState(false);
   const [isScrolledUp, setIsScrolledUp] = useState(false);
   const isNearBottomRef = useRef(true);
 
@@ -119,7 +119,7 @@ export function useAutoScroll({
     setIsScrolledUp(distanceFromBottom > scrollUpThreshold);
 
     if (nearBottom) {
-      setShowNewMessages(false);
+      setHasNewMessages(false);
     }
   }, [threshold, scrollUpThreshold]);
 
@@ -128,13 +128,13 @@ export function useAutoScroll({
     if (isNearBottomRef.current) {
       scrollToBottom(true);
     } else {
-      setShowNewMessages(true);
+      setHasNewMessages(true);
     }
   }, [enabled, scrollToBottom]);
 
   const dismissNewMessages = useCallback(() => {
     scrollToBottom();
-    setShowNewMessages(false);
+    setHasNewMessages(false);
   }, [scrollToBottom]);
 
   // Scroll to bottom on mount
@@ -145,7 +145,7 @@ export function useAutoScroll({
   return {
     scrollRef,
     isScrolledUp,
-    showNewMessages,
+    hasNewMessages,
     handleScroll,
     scrollToBottom,
     dismissNewMessages,

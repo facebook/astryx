@@ -243,21 +243,21 @@ const styles = stylex.create({
  */
 function ScrollToBottomButton({
   isScrolledUp,
-  showNewMessages,
+  hasNewMessages,
   label,
   onClick,
 }: {
   isScrolledUp: boolean;
-  showNewMessages: boolean;
+  hasNewMessages: boolean;
   label: string;
   onClick: () => void;
 }) {
-  const isVisible = isScrolledUp || showNewMessages;
+  const isVisible = isScrolledUp || hasNewMessages;
 
   // Stream the label in when new messages appear, snap to full when they disappear
   const streamedLabel = useXDSStreamingText(
-    showNewMessages ? label : '',
-    showNewMessages,
+    hasNewMessages ? label : '',
+    hasNewMessages,
     {speed: 'fast'},
   );
 
@@ -266,7 +266,7 @@ function ScrollToBottomButton({
   return (
     <button
       type="button"
-      aria-label={showNewMessages ? label : 'Scroll to bottom'}
+      aria-label={hasNewMessages ? label : 'Scroll to bottom'}
       onClick={onClick}
       {...stylex.props(
         styles.scrollButton,
@@ -324,7 +324,7 @@ export function XDSChatMessageList({
   const {
     scrollRef,
     isScrolledUp,
-    showNewMessages,
+    hasNewMessages,
     handleScroll,
     scrollToBottom,
     dismissNewMessages,
@@ -393,12 +393,12 @@ export function XDSChatMessageList({
 
   // Click handler: dismiss new messages (scrolls to bottom) or just scroll
   const handleButtonClick = useCallback(() => {
-    if (showNewMessages) {
+    if (hasNewMessages) {
       dismissNewMessages();
     } else {
       scrollToBottom();
     }
-  }, [showNewMessages, dismissNewMessages, scrollToBottom]);
+  }, [hasNewMessages, dismissNewMessages, scrollToBottom]);
 
   return (
     <XDSChatListContext.Provider value={contextValue}>
@@ -442,7 +442,7 @@ export function XDSChatMessageList({
         {/* Scroll-to-bottom button: icon-only when scrolled up, expands with label on new messages */}
         <ScrollToBottomButton
           isScrolledUp={isScrolledUp}
-          showNewMessages={showNewMessages}
+          hasNewMessages={hasNewMessages}
           label={newMessagesLabel}
           onClick={handleButtonClick}
         />
