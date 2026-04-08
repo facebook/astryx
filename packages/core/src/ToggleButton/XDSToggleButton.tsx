@@ -34,7 +34,7 @@ import {useXDSToggleButtonGroup} from './XDSToggleButtonGroup';
  */
 const pressedStyles = stylex.create({
   background: {
-    backgroundColor: colorVars['--color-neutral'],
+    backgroundImage: `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
   },
 });
 
