@@ -133,6 +133,11 @@ export default function PaymentFormPage() {
     address: !address.trim() ? 'Required' : undefined,
     city: !city.trim() ? 'Required' : undefined,
     zip: !zip.trim() ? 'Required' : undefined,
+    email: !email.trim() ? 'Required' : undefined,
+    phone: !phone.trim() ? 'Required' : undefined,
+    expiry: !expiry ? 'Required' : undefined,
+    expYear: !expYear ? 'Required' : undefined,
+    cvc: !cvc.trim() ? 'Required' : undefined,
     cardNumber: paymentMethod === 'card' && !cardNumber.trim() ? 'Required' : undefined,
     cardName: paymentMethod === 'card' && !cardName.trim() ? 'Required' : undefined,
   } : {};
@@ -158,7 +163,7 @@ export default function PaymentFormPage() {
               <XDSCard padding={5}>
                 <XDSVStack gap={1}>
                   <XDSHStack gap={2} hAlign="between" vAlign="center">
-                    <div {...stylex.props(styles.sectionTitle)}>Checkout as Guest</div>
+                    <div {...stylex.props(styles.sectionTitle)}>Sign in to check out</div>
                     <XDSButton label="Sign In" variant="secondary" size="sm" onClick={() => {}} />
                   </XDSHStack>
                   <XDSText type="supporting" color="secondary">Sign in to track your order and save your information for faster checkout.</XDSText>
@@ -169,7 +174,7 @@ export default function PaymentFormPage() {
                 <XDSVStack gap={4}>
                   {/* Contact information */}
                   <div {...stylex.props(styles.sectionTitle)}>Contact Information</div>
-                  <XDSTextInput size="lg" label="Email" placeholder="you@example.com" value={email} onChange={setEmail} />
+                  <XDSTextInput size="lg" label="Email" placeholder="you@example.com" value={email} onChange={setEmail} status={errors.email ? {type: 'error', message: errors.email} : undefined} />
                   <XDSCheckboxInput label="Email me with news and offers" value={emailOffers} onChange={setEmailOffers} />
 
                   <XDSDivider />
@@ -185,7 +190,7 @@ export default function PaymentFormPage() {
                     <XDSTextInput size="lg" label="ZIP Code" placeholder="10001" value={zip} onChange={setZip} status={errors.zip ? {type: 'error', message: errors.zip} : undefined} />
                     <XDSSelector size="lg" label="State" placeholder="Select state" options={US_STATES} value={state} onChange={setState} />
                   </div>
-                  <XDSTextInput size="lg" label="Phone Number" placeholder="+1 (555) 123-4567" value={phone} onChange={setPhone} labelTooltip="We use your phone number to provide shipping updates and contact you about your delivery if needed." />
+                  <XDSTextInput size="lg" label="Phone Number" placeholder="+1 (555) 123-4567" value={phone} onChange={setPhone} labelTooltip="We use your phone number to provide shipping updates and contact you about your delivery if needed." status={errors.phone ? {type: 'error', message: errors.phone} : undefined} />
                   <XDSDivider />
 
                   {/* Delivery */}
@@ -251,9 +256,9 @@ export default function PaymentFormPage() {
                       </div>
                     </div>
                     <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12}}>
-                      <XDSSelector size="lg" label="Expiry Month" placeholder="MM" options={MONTHS} value={expiry} onChange={setExpiry} />
-                      <XDSSelector size="lg" label="Expiry Year" placeholder="YY" options={YEARS} value={expYear} onChange={setExpYear} />
-                      <XDSTextInput size="lg" label="CVC" placeholder="123" value={cvc} onChange={setCvc} labelTooltip="3-digit security code usually found on the back of your card. American Express cards have a 4-digit code located on the front." />
+                      <XDSSelector size="lg" label="Expiry Month" placeholder="MM" options={MONTHS} value={expiry} onChange={setExpiry} status={errors.expiry ? {type: 'error', message: errors.expiry} : undefined} />
+                      <XDSSelector size="lg" label="Expiry Year" placeholder="YY" options={YEARS} value={expYear} onChange={setExpYear} status={errors.expYear ? {type: 'error', message: errors.expYear} : undefined} />
+                      <XDSTextInput size="lg" label="CVC" placeholder="123" value={cvc} onChange={setCvc} labelTooltip="3-digit security code usually found on the back of your card. American Express cards have a 4-digit code located on the front." status={errors.cvc ? {type: 'error', message: errors.cvc} : undefined} />
                     </div>
                     <XDSTextInput size="lg" label="Name on Card" placeholder="John Doe" value={cardName} onChange={setCardName} status={errors.cardName ? {type: 'error', message: errors.cardName} : undefined} />
                     <XDSCheckboxInput label="Use shipping address as billing address" value={billingMatchesShipping} onChange={setBillingMatchesShipping} />
