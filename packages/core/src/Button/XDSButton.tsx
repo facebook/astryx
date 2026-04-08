@@ -373,9 +373,6 @@ export interface XDSButtonProps extends XDSBaseProps<HTMLButtonElement> {
 }
 
 /**
- * Loading state styles
- */
-/**
  * Pressed state styles — applied when isPressed is true.
  * Uses the neutral fill (same as secondary variant) to create a clear
  * visual indicator that the button is in the "on" state.

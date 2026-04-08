@@ -277,8 +277,7 @@ export function XDSToggleButton({
       size={size}
       isDisabled={isDisabled}
       isLoading={isLoading}
-      isPressed={pressedIcon != null ? undefined : isPressed}
-      aria-pressed={isPressed}
+      isPressed={isPressed}
       icon={resolvedIcon}
       tooltip={tooltip}
       onClick={handleClick}
