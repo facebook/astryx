@@ -255,7 +255,7 @@ const markerStyles = stylex.create({
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
-    width: spacingVars['--spacing-3'],
+    width: spacingVars['--spacing-4'],
     // Vertically center the dot/circle with the first line of text:
     // shift down by (lineHeight - dotSize) / 2
     marginTop: `calc((1em * ${typeScaleVars['--text-body-leading']} - ${MARKER_DOT_SIZE}px) / 2)`,
@@ -281,7 +281,7 @@ const markerStyles = stylex.create({
     color: colorVars['--color-text-primary'],
     fontSize: typeScaleVars['--text-body-size'],
     lineHeight: typeScaleVars['--text-body-leading'],
-    width: spacingVars['--spacing-3'],
+    width: spacingVars['--spacing-4'],
     '::before': {
       content: 'counter(xds-list) "."',
     },

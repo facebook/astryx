@@ -227,4 +227,12 @@ export const defaultIcons: XDSIconRegistry = {
       <path d="M16 18v2a2 2 0 01-2 2H6a2 2 0 01-2-2V9a2 2 0 012-2h2" />
     </svg>
   ),
+
+  /** ✓✓ — double checkmark (delivered/read) */
+  checkDouble: (
+    <svg {...svgProps}>
+      <path d="M2 13l4 4L14 7" />
+      <path d="M9 13l4 4L21 7" />
+    </svg>
+  ),
 };
