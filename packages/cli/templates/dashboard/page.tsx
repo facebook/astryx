@@ -401,99 +401,168 @@ const topEventsData: EventRow[] = [
 
 // ============= CHART COMPONENTS =============
 
+// Chart line colors via XDS design tokens (CSS custom properties)
+const chartColors = {
+  allUsers: 'var(--color-border-blue, #0171E3)',
+  desktop: 'var(--color-border-orange, #F27902)',
+  mobile: 'var(--color-border-purple, #7952FF)',
+};
+
+function ChartLegendItem({color, label}: {color: string; label: string}) {
+  return (
+    <XDSHStack gap={2} vAlign="center">
+      <svg width="16" height="3">
+        <line
+          x1="0"
+          y1="1.5"
+          x2="16"
+          y2="1.5"
+          stroke={color}
+          strokeWidth="2"
+        />
+      </svg>
+      <XDSText type="supporting" color="secondary">
+        {label}
+      </XDSText>
+    </XDSHStack>
+  );
+}
+
+function ChartTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: Array<{name: string; value: number; color: string}>;
+  label?: number;
+}) {
+  if (!active || !payload?.length) return null;
+  const point = activeUsersData.find(d => d.hour === label);
+  return (
+    <div
+      style={{
+        backgroundColor: 'var(--color-background-popover, #fff)',
+        border: '1px solid var(--color-border, rgba(5, 54, 89, 0.1))',
+        borderRadius: 'var(--radius-element, 8px)',
+        padding: 'var(--spacing-3, 12px)',
+        boxShadow: 'var(--shadow-med)',
+      }}>
+      <XDSVStack gap={1}>
+        <XDSText type="supporting" color="secondary">
+          {point?.label ?? ''}
+        </XDSText>
+        {payload.map(entry => (
+          <XDSHStack key={entry.name} gap={2} vAlign="center">
+            <div
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: 'var(--radius-full, 9999px)',
+                backgroundColor: entry.color,
+                flexShrink: 0,
+              }}
+            />
+            <XDSText type="supporting">
+              {entry.name}: {entry.value}
+            </XDSText>
+          </XDSHStack>
+        ))}
+      </XDSVStack>
+    </div>
+  );
+}
+
 function ActiveUsersChart() {
   return (
-    <ResponsiveContainer width="100%" height={300}>
-      <LineChart
-        data={activeUsersData}
-        margin={{top: 5, right: 10, left: 0, bottom: 5}}>
-        <CartesianGrid
-          horizontal
-          vertical={false}
-          stroke="var(--color-divider, #e5e5e5)"
-        />
-        <XAxis
-          dataKey="hour"
-          type="number"
-          domain={[0, 23]}
-          ticks={xAxisTicks}
-          tickFormatter={(v: number) => xAxisLabels[v] ?? ''}
-          tick={{fontSize: 11}}
-          axisLine={false}
-          tickLine={false}
-        />
-        <YAxis
-          domain={[0, 120]}
-          ticks={[0, 20, 40, 60, 80, 100, 120]}
-          tick={{fontSize: 11}}
-          axisLine={false}
-          tickLine={false}
-          width={30}
-        />
-        <Tooltip
-          labelFormatter={(v: number) => {
-            const point = activeUsersData.find(d => d.hour === v);
-            return point?.label ?? '';
-          }}
-        />
-        <Legend wrapperStyle={{fontSize: 12}} />
+    <XDSVStack gap={3}>
+      <ResponsiveContainer width="100%" height={300}>
+        <LineChart
+          data={activeUsersData}
+          margin={{top: 5, right: 10, left: 0, bottom: 5}}>
+          <CartesianGrid
+            horizontal
+            vertical={false}
+            stroke="var(--color-border, rgba(5, 54, 89, 0.1))"
+          />
+          <XAxis
+            dataKey="hour"
+            type="number"
+            domain={[0, 23]}
+            ticks={xAxisTicks}
+            tickFormatter={(v: number) => xAxisLabels[v] ?? ''}
+            tick={{
+              fontSize: 'var(--font-size-sm, 12px)',
+              fill: 'var(--color-text-secondary, #4E606F)',
+            }}
+            axisLine={false}
+            tickLine={false}
+          />
+          <YAxis
+            domain={[0, 120]}
+            ticks={[0, 20, 40, 60, 80, 100, 120]}
+            tick={{
+              fontSize: 'var(--font-size-sm, 12px)',
+              fill: 'var(--color-text-secondary, #4E606F)',
+            }}
+            axisLine={false}
+            tickLine={false}
+            width={30}
+          />
+          <Tooltip
+            content={<ChartTooltip />}
+            cursor={{stroke: 'var(--color-border, rgba(5, 54, 89, 0.1))'}}
+          />
+          <Line
+            type="monotone"
+            dataKey="allUsers"
+            name="All Users"
+            stroke={chartColors.allUsers}
+            strokeWidth={2}
+            dot={false}
+          />
+          <Line
+            type="monotone"
+            dataKey="desktop"
+            name="Desktop"
+            stroke={chartColors.desktop}
+            strokeWidth={2}
+            dot={false}
+          />
+          <Line
+            type="monotone"
+            dataKey="mobile"
+            name="Mobile"
+            stroke={chartColors.mobile}
+            strokeWidth={2}
+            dot={false}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+      <XDSHStack gap={6} vAlign="center">
+        <ChartLegendItem color={chartColors.allUsers} label="All Users" />
+        <ChartLegendItem color={chartColors.desktop} label="Desktop" />
+        <ChartLegendItem color={chartColors.mobile} label="Mobile" />
+      </XDSHStack>
+    </XDSVStack>
+  );
+}
+
+
+function Sparkline({data}: {data: number[]}) {
+  const chartData = data.map((v, i) => ({i, v}));
+  return (
+    <ResponsiveContainer width="100%" height={40}>
+      <LineChart data={chartData}>
         <Line
           type="monotone"
-          dataKey="allUsers"
-          name="All Users"
-          stroke="#3B82F6"
-          strokeWidth={2}
-          dot={false}
-        />
-        <Line
-          type="monotone"
-          dataKey="desktop"
-          name="Desktop"
-          stroke="#F97316"
-          strokeWidth={2}
-          dot={false}
-        />
-        <Line
-          type="monotone"
-          dataKey="mobile"
-          name="Mobile"
-          stroke="#4F46E5"
-          strokeWidth={2}
+          dataKey="v"
+          stroke="var(--color-text-secondary, #4E606F)"
+          strokeWidth={1.5}
           dot={false}
         />
       </LineChart>
     </ResponsiveContainer>
-  );
-}
-
-function Sparkline({data}: {data: number[]}) {
-  const max = Math.max(...data);
-  const min = Math.min(...data);
-  const range = max - min || 1;
-  const w = 120;
-  const h = 40;
-  const pad = 2;
-  const points = data
-    .map((v, i) => {
-      const x = pad + (i / (data.length - 1)) * (w - pad * 2);
-      const y = pad + (1 - (v - min) / range) * (h - pad * 2);
-      return `${x},${y}`;
-    })
-    .join(' ');
-
-  return (
-    <svg
-      viewBox={`0 0 ${w} ${h}`}
-      width="100%"
-      height={40}
-      preserveAspectRatio="none">
-      <polyline
-        points={points}
-        fill="none"
-        stroke="var(--color-text-secondary, #999)"
-        strokeWidth="1.5"
-      />
-    </svg>
   );
 }
 
@@ -523,7 +592,7 @@ function MetricCard({
               width="12"
               height="12"
               viewBox="0 0 12 12"
-              fill={positive ? '#16a34a' : '#dc2626'}>
+              fill={positive ? 'var(--color-success, #0D8626)' : 'var(--color-error, #E3193B)'}>
               {positive ? (
                 <path d="M6 2L10 7H2L6 2Z" />
               ) : (
