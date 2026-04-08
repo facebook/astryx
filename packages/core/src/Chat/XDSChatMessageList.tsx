@@ -205,6 +205,8 @@ const styles = stylex.create({
   scrollButton: {
     [radiusVars['--radius-element'] as string]: radiusVars['--radius-full'],
     whiteSpace: 'nowrap',
+    paddingInlineStart: spacingVars['--spacing-2'],
+    paddingInlineEnd: spacingVars['--spacing-3'],
   },
 
   emptyState: {
@@ -258,9 +260,9 @@ function ScrollToBottomButton({
       <XDSButton
         label={hasNewMessages ? label : 'Scroll to bottom'}
         aria-label={hasNewMessages ? label : 'Scroll to bottom'}
-        icon={<XDSIcon icon="chevronDown" size="sm" />}
+        icon={<XDSIcon icon="chevronDown" size="md" />}
         variant="ghost"
-        size="sm"
+        size="md"
         onClick={onClick}
         xstyle={styles.scrollButton}>
         {label}
@@ -285,7 +287,7 @@ function ScrollToBottomButton({
  * @example
  * ```
  * <XDSChatMessageList>
- *   <XDSChatMessage sender="assistant" name="Navi" avatar={<XDSAvatar name="Navi" size="sm" />}>
+ *   <XDSChatMessage sender="assistant" name="Navi" avatar={<XDSAvatar name="Navi" size="md" />}>
  *     <XDSChatMessageBubble>Hello!</XDSChatMessageBubble>
  *   </XDSChatMessage>
  *   <XDSChatMessage sender="user" name="Cindy">
@@ -411,7 +413,7 @@ export function XDSChatMessageList({
             {/* Loading spinner at top */}
             {isLoadingTop && (
               <div {...stylex.props(styles.loadingTop)}>
-                <XDSSpinner size="sm" />
+                <XDSSpinner size="md" />
               </div>
             )}
 
