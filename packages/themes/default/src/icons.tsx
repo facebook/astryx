@@ -68,17 +68,5 @@ export const defaultIconRegistry: XDSIconRegistry = {
   eyeSlash: <EyeSlashIcon {...iconProps} />,
   viewColumns: <ViewColumnsIcon {...iconProps} />,
   copy: <ClipboardDocumentIcon {...iconProps} />,
-  checkDouble: (
-    <svg
-      {...iconProps}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round">
-      <path d="M2 13l4 4L14 7" />
-      <path d="M9 13l4 4L21 7" />
-    </svg>
-  ),
+  checkDouble: <CheckIcon {...iconProps} />,
 };

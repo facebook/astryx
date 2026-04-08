@@ -64,19 +64,5 @@ export const neutralIconRegistry: XDSIconRegistry = {
   eyeSlash: <EyeOff {...iconProps} />,
   viewColumns: <Columns {...iconProps} />,
   copy: <Copy {...iconProps} />,
-  checkDouble: (
-    <svg
-      width="1em"
-      height="1em"
-      aria-hidden={true}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round">
-      <path d="M2 13l4 4L14 7" />
-      <path d="M9 13l4 4L21 7" />
-    </svg>
-  ),
+  checkDouble: <Check {...iconProps} />,
 };
