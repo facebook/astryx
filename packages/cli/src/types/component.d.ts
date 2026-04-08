@@ -10,7 +10,6 @@
  * xds --json component Button               -> component.detail
  * xds --json component Button --props       -> component.detail.props
  * xds --json component Button --source      -> component.detail.source
- * xds --json component Button (legacy .md)  -> markdown (CLIMarkdownResponse)
  * (not found)                               -> CLIError
  */
 
