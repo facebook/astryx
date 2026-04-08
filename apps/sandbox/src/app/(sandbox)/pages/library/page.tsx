@@ -9,6 +9,13 @@ import {XDSTabList, XDSTab} from '@xds/core/TabList';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSSelector} from '@xds/core/Selector';
 import {XDSDivider} from '@xds/core/Divider';
+import {
+  colorVars,
+  textSizeVars,
+  fontWeightVars,
+  lineHeightVars,
+  spacingVars,
+} from '@xds/core/theme/tokens.stylex';
 
 // =============================================================================
 // Types
@@ -85,11 +92,11 @@ const styles = stylex.create({
   tabsRow: {
     borderBottomWidth: '1px',
     borderBottomStyle: 'solid',
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: colorVars['--color-divider'],
   },
   filterBar: {
-    paddingTop: '1rem',
-    paddingBottom: '1rem',
+    paddingTop: spacingVars['--spacing-4'],
+    paddingBottom: spacingVars['--spacing-4'],
   },
   filterSearch: {
     flex: 1,
@@ -97,23 +104,23 @@ const styles = stylex.create({
   },
   filterSelectors: {
     display: 'flex',
-    gap: '0.5rem',
+    gap: spacingVars['--spacing-2'],
     flexShrink: 0,
   },
   selectorWrapper: {
     width: 160,
   },
   dividerRow: {
-    paddingTop: '1.5rem',
-    paddingBottom: '1.5rem',
+    paddingTop: spacingVars['--spacing-6'],
+    paddingBottom: spacingVars['--spacing-6'],
   },
   sectionHeader: {
-    paddingBottom: '0.75rem',
+    paddingBottom: spacingVars['--spacing-3'],
   },
   grid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(3, 1fr)',
-    gap: '1rem',
+    gap: spacingVars['--spacing-4'],
     '@media (max-width: 900px)': {
       gridTemplateColumns: 'repeat(2, 1fr)',
     },
@@ -122,35 +129,35 @@ const styles = stylex.create({
     },
   },
   cardInner: {
-    padding: '1rem 1.25rem 1.25rem',
+    padding: `${spacingVars['--spacing-4']} ${spacingVars['--spacing-5']} ${spacingVars['--spacing-5']}`,
     display: 'flex',
     flexDirection: 'column',
-    gap: '0.375rem',
+    gap: spacingVars['--spacing-1-5'],
     minHeight: 100,
   },
   typePill: {
     display: 'inline-block',
-    fontSize: '0.6875rem',
-    fontWeight: 600,
+    fontSize: textSizeVars['--text-2xs'],
+    fontWeight: fontWeightVars['--font-weight-semibold'],
     letterSpacing: '0.05em',
     textTransform: 'uppercase',
-    color: '#888',
-    marginBottom: '0.125rem',
+    color: colorVars['--color-text-secondary'],
+    marginBottom: spacingVars['--spacing-0-5'],
   },
   itemName: {
-    fontSize: '0.9375rem',
-    fontWeight: 600,
-    color: '#111',
-    lineHeight: 1.3,
+    fontSize: textSizeVars['--text-base'],
+    fontWeight: fontWeightVars['--font-weight-semibold'],
+    color: colorVars['--color-text-primary'],
+    lineHeight: lineHeightVars['--leading-snug'],
   },
   itemDescription: {
-    fontSize: '0.8125rem',
-    color: '#555',
-    lineHeight: 1.5,
-    marginTop: '0.125rem',
+    fontSize: textSizeVars['--text-sm'],
+    color: colorVars['--color-text-secondary'],
+    lineHeight: lineHeightVars['--leading-normal'],
+    marginTop: spacingVars['--spacing-0-5'],
   },
   emptyState: {
-    padding: '3rem',
+    padding: spacingVars['--spacing-12'],
     textAlign: 'center',
   },
 });
