@@ -106,7 +106,14 @@ function Sparkline({values}: {values: number[]}) {
 export default function ExampleCardsPage() {
   const {themeName, setThemeName, mode, setMode} = useThemeControls();
 
-  const themeOptions = ['Default', 'Neutral', 'Brutalist', 'Meta', 'WhatsApp'];
+  const themeOptions = [
+    'Default',
+    'Neutral',
+    'Brutalist',
+    'Meta',
+    'WhatsApp',
+    'Daily',
+  ];
   const modeOptions = ['Light', 'Dark'];
 
   const [email, setEmail] = useState('artist@studio.inc');

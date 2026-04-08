@@ -4,7 +4,6 @@ import {XDSTheme} from '@xds/core';
 import {defaultTheme} from '@xds/theme-default';
 import {neutralTheme} from '@xds/theme-neutral';
 import {brutalistTheme} from '@xds/theme-brutalist';
-
 // Import the base reset stylesheet
 import '@xds/core/reset.css';
 

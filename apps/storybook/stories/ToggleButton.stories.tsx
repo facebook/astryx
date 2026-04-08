@@ -5,17 +5,25 @@ import {
   BoldIcon,
   ItalicIcon,
   UnderlineIcon,
+  StrikethroughIcon,
+  LinkIcon,
   ListBulletIcon,
   Squares2X2Icon,
   StarIcon,
   BookmarkIcon,
   BellIcon,
   BellSlashIcon,
+  HeartIcon,
 } from '@heroicons/react/24/outline';
 import {
   StarIcon as StarIconSolid,
   BookmarkIcon as BookmarkIconSolid,
+  HeartIcon as HeartIconSolid,
+  BoldIcon as BoldIconSolid,
+  ItalicIcon as ItalicIconSolid,
+  UnderlineIcon as UnderlineIconSolid,
 } from '@heroicons/react/24/solid';
+import {XDSIcon} from '@xds/core/Icon';
 
 const iconSize = {width: 16, height: 16} as const;
 
@@ -216,6 +224,128 @@ export const NotificationToggle: Story = {
         isPressed={isMuted}
         onPressedChange={setIsMuted}
       />
+    );
+  },
+};
+
+// =============================================================================
+// Colored icons in pressed state
+// =============================================================================
+
+/**
+ * Formatting toolbar with colored icons — icon shifts to accent color when pressed.
+ * Uses outline → solid icon swap + XDSIcon color prop to reinforce state.
+ */
+export const ColoredIconToolbar: Story = {
+  render: function Render() {
+    const [pressed, setPressed] = useState<Record<string, boolean>>({
+      bold: true,
+      italic: false,
+      underline: true,
+      strikethrough: false,
+      link: false,
+    });
+    const toggle = (key: string) => setPressed(p => ({...p, [key]: !p[key]}));
+    return (
+      <div style={{display: 'flex', gap: 4}}>
+        <XDSToggleButton
+          label="Bold"
+          icon={<XDSIcon icon={BoldIcon} size="sm" color="secondary" />}
+          pressedIcon={
+            <XDSIcon icon={BoldIconSolid} size="sm" color="accent" />
+          }
+          isPressed={pressed.bold}
+          onPressedChange={() => toggle('bold')}
+        />
+        <XDSToggleButton
+          label="Italic"
+          icon={<XDSIcon icon={ItalicIcon} size="sm" color="secondary" />}
+          pressedIcon={
+            <XDSIcon icon={ItalicIconSolid} size="sm" color="accent" />
+          }
+          isPressed={pressed.italic}
+          onPressedChange={() => toggle('italic')}
+        />
+        <XDSToggleButton
+          label="Underline"
+          icon={<XDSIcon icon={UnderlineIcon} size="sm" color="secondary" />}
+          pressedIcon={
+            <XDSIcon icon={UnderlineIconSolid} size="sm" color="accent" />
+          }
+          isPressed={pressed.underline}
+          onPressedChange={() => toggle('underline')}
+        />
+        <XDSToggleButton
+          label="Strikethrough"
+          icon={
+            <XDSIcon icon={StrikethroughIcon} size="sm" color="secondary" />
+          }
+          pressedIcon={
+            <XDSIcon icon={StrikethroughIcon} size="sm" color="accent" />
+          }
+          isPressed={pressed.strikethrough}
+          onPressedChange={() => toggle('strikethrough')}
+        />
+        <XDSToggleButton
+          label="Link"
+          icon={<XDSIcon icon={LinkIcon} size="sm" color="secondary" />}
+          pressedIcon={<XDSIcon icon={LinkIcon} size="sm" color="positive" />}
+          isPressed={pressed.link}
+          onPressedChange={() => toggle('link')}
+        />
+      </div>
+    );
+  },
+};
+
+/**
+ * Reaction buttons — semantic icon colors (yellow star, red heart, blue bookmark).
+ * Shows icon swap (outline → solid) paired with color to reinforce the pressed state.
+ */
+export const ColoredIconReactions: Story = {
+  render: function Render() {
+    const [pressed, setPressed] = useState<Record<string, boolean>>({
+      star: false,
+      heart: false,
+      bookmark: true,
+      bell: false,
+    });
+    const toggle = (key: string) => setPressed(p => ({...p, [key]: !p[key]}));
+    return (
+      <div style={{display: 'flex', gap: 8}}>
+        <XDSToggleButton
+          label="Star"
+          icon={<XDSIcon icon={StarIcon} size="sm" color="secondary" />}
+          pressedIcon={
+            <XDSIcon icon={StarIconSolid} size="sm" color="yellow" />
+          }
+          isPressed={pressed.star}
+          onPressedChange={() => toggle('star')}
+        />
+        <XDSToggleButton
+          label="Like"
+          icon={<XDSIcon icon={HeartIcon} size="sm" color="secondary" />}
+          pressedIcon={<XDSIcon icon={HeartIconSolid} size="sm" color="red" />}
+          isPressed={pressed.heart}
+          onPressedChange={() => toggle('heart')}
+        />
+        <XDSToggleButton
+          label="Save"
+          icon={<XDSIcon icon={BookmarkIcon} size="sm" color="secondary" />}
+          pressedIcon={
+            <XDSIcon icon={BookmarkIconSolid} size="sm" color="blue" />
+          }
+          isPressed={pressed.bookmark}
+          onPressedChange={() => toggle('bookmark')}
+        />
+        <XDSToggleButton
+          label="Follow"
+          icon={<XDSIcon icon={BellIcon} size="sm" color="secondary" />}
+          pressedIcon={<XDSIcon icon={BellIcon} size="sm" color="accent" />}
+          isPressed={pressed.bell}
+          onPressedChange={() => toggle('bell')}
+        />
+      </div>
     );
   },
 };

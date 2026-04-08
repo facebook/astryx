@@ -55,6 +55,7 @@ function SandboxHeader() {
     {label: 'Brutalist', onClick: () => setThemeName('brutalist')},
     {label: 'Meta', onClick: () => setThemeName('meta')},
     {label: 'WhatsApp', onClick: () => setThemeName('whatsapp')},
+    {label: 'Daily', onClick: () => setThemeName('daily')},
   ];
 
   const modeItems = [
