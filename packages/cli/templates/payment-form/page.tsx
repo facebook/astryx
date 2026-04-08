@@ -164,18 +164,17 @@ export default function PaymentFormPage() {
 
             <div style={{flex: '1 1 55%', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16}}>
 
-              <XDSCard padding={5}>
                 <XDSVStack gap={1}>
                   <XDSHStack gap={2} hAlign="between" vAlign="center">
                     <div {...stylex.props(styles.sectionTitle)}>Sign in to check out</div>
                     <XDSButton label="Sign In" variant="secondary" size="sm" onClick={() => {}} />
                   </XDSHStack>
                   <XDSText type="supporting" color="secondary">Sign in to track your order and save your information for faster checkout.</XDSText>
-                </XDSVStack>
-              </XDSCard>
+              </XDSVStack>
 
-              <XDSCard padding={5}>
-                <XDSVStack gap={4}>
+              <XDSDivider />
+
+              <XDSVStack gap={4}>
                   {/* Contact information */}
                   <div {...stylex.props(styles.sectionTitle)}>Contact Information</div>
                   <XDSTextInput size="lg" label="Email" placeholder="you@example.com" value={email} onChange={setEmail} status={errors.email ? {type: 'error', message: errors.email} : undefined} />
@@ -210,11 +209,11 @@ export default function PaymentFormPage() {
                   <XDSDivider />
 
                   <XDSCheckboxInput label="Save my information for a faster checkout" value={saveInfo} onChange={setSaveInfo} />
-                </XDSVStack>
-              </XDSCard>
+              </XDSVStack>
 
-              <XDSCard padding={5}>
-                <XDSVStack gap={5}>
+              <XDSDivider />
+
+              <XDSVStack gap={5}>
                   <div {...stylex.props(styles.sectionTitle)}>Payment Method</div>
                   <XDSText type="supporting" color="secondary">All transactions are secure and encrypted.</XDSText>
 
@@ -276,11 +275,11 @@ export default function PaymentFormPage() {
                     )}
                   </XDSVStack>
 
-                </XDSVStack>
-              </XDSCard>
+              </XDSVStack>
 
-              <XDSCard padding={5}>
-                <XDSVStack gap={5}>
+              <XDSDivider />
+
+              <XDSVStack gap={5}>
 
                   {/* Promo Code */}
                   <XDSVStack gap={3}>
@@ -318,8 +317,7 @@ export default function PaymentFormPage() {
                     )}
                   </XDSVStack>
 
-                </XDSVStack>
-              </XDSCard>
+              </XDSVStack>
 
               {/* Policy links */}
               <XDSHStack gap={4} vAlign="center">
