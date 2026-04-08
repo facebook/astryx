@@ -557,7 +557,7 @@ function Sparkline({data}: {data: number[]}) {
         <Line
           type="monotone"
           dataKey="v"
-          stroke="var(--color-text-secondary, #4E606F)"
+          stroke="var(--color-border-blue, #0171E3)"
           strokeWidth={1.5}
           dot={false}
         />
