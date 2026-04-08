@@ -157,23 +157,23 @@ export default function PaymentFormPage() {
                 <XDSVStack gap={4}>
                   {/* Contact information */}
                   <div {...stylex.props(styles.sectionTitle)}>Contact Information</div>
-                  <XDSTextInput label="Email" placeholder="you@example.com" value={email} onChange={setEmail} />
+                  <XDSTextInput size="lg" label="Email" placeholder="you@example.com" value={email} onChange={setEmail} />
                   <XDSCheckboxInput label="Email me with news and offers" value={emailOffers} onChange={setEmailOffers} />
 
                   <XDSDivider />
 
                   <div {...stylex.props(styles.sectionTitle)}>Shipping Information</div>
                   <div style={{display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12}}>
-                    <XDSTextInput label="First Name" placeholder="John" value={firstName} onChange={setFirstName} status={errors.firstName ? {type: 'error', message: errors.firstName} : undefined} />
-                    <XDSTextInput label="Last Name" placeholder="Doe" value={lastName} onChange={setLastName} status={errors.lastName ? {type: 'error', message: errors.lastName} : undefined} />
+                    <XDSTextInput size="lg" label="First Name" placeholder="John" value={firstName} onChange={setFirstName} status={errors.firstName ? {type: 'error', message: errors.firstName} : undefined} />
+                    <XDSTextInput size="lg" label="Last Name" placeholder="Doe" value={lastName} onChange={setLastName} status={errors.lastName ? {type: 'error', message: errors.lastName} : undefined} />
                   </div>
-                  <XDSTextInput label="Address" placeholder="123 Main Street" value={address} onChange={setAddress} status={errors.address ? {type: 'error', message: errors.address} : undefined} />
+                  <XDSTextInput size="lg" label="Address" placeholder="123 Main Street" value={address} onChange={setAddress} status={errors.address ? {type: 'error', message: errors.address} : undefined} />
                   <div style={{display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12}}>
-                    <XDSTextInput label="City" placeholder="New York" value={city} onChange={setCity} status={errors.city ? {type: 'error', message: errors.city} : undefined} />
-                    <XDSTextInput label="ZIP Code" placeholder="10001" value={zip} onChange={setZip} status={errors.zip ? {type: 'error', message: errors.zip} : undefined} />
-                    <XDSSelector label="State" placeholder="Select state" options={US_STATES} value={state} onChange={setState} />
+                    <XDSTextInput size="lg" label="City" placeholder="New York" value={city} onChange={setCity} status={errors.city ? {type: 'error', message: errors.city} : undefined} />
+                    <XDSTextInput size="lg" label="ZIP Code" placeholder="10001" value={zip} onChange={setZip} status={errors.zip ? {type: 'error', message: errors.zip} : undefined} />
+                    <XDSSelector size="lg" label="State" placeholder="Select state" options={US_STATES} value={state} onChange={setState} />
                   </div>
-                  <XDSTextInput label="Phone Number" placeholder="+1 (555) 123-4567" value={phone} onChange={setPhone} labelTooltip="We use your phone number to provide shipping updates and contact you about your delivery if needed." />
+                  <XDSTextInput size="lg" label="Phone Number" placeholder="+1 (555) 123-4567" value={phone} onChange={setPhone} labelTooltip="We use your phone number to provide shipping updates and contact you about your delivery if needed." />
                   <XDSDivider />
 
                   {/* Delivery */}
@@ -260,7 +260,7 @@ export default function PaymentFormPage() {
                       </div>
                     </div>
                     <div style={{position: 'relative'}}>
-                      <XDSTextInput label="Card Number" placeholder="1234 5678 9012 3456" value={cardNumber} onChange={setCardNumber} status={errors.cardNumber ? {type: 'error', message: errors.cardNumber} : undefined} />
+                      <XDSTextInput size="lg" label="Card Number" placeholder="1234 5678 9012 3456" value={cardNumber} onChange={setCardNumber} status={errors.cardNumber ? {type: 'error', message: errors.cardNumber} : undefined} />
                       <div style={{position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', display: 'flex', alignItems: 'center'}}>
                         <svg viewBox="0 0 24 24" style={{width: 16, height: 16, color: 'var(--color-icon-secondary)'}} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
@@ -269,11 +269,11 @@ export default function PaymentFormPage() {
                       </div>
                     </div>
                     <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12}}>
-                      <XDSSelector label="Expiry Month" placeholder="MM" options={MONTHS} value={expiry} onChange={setExpiry} />
-                      <XDSSelector label="Expiry Year" placeholder="YY" options={YEARS} value={expYear} onChange={setExpYear} />
-                      <XDSTextInput label="CVC" placeholder="123" value={cvc} onChange={setCvc} labelTooltip="3-digit security code usually found on the back of your card. American Express cards have a 4-digit code located on the front." />
+                      <XDSSelector size="lg" label="Expiry Month" placeholder="MM" options={MONTHS} value={expiry} onChange={setExpiry} />
+                      <XDSSelector size="lg" label="Expiry Year" placeholder="YY" options={YEARS} value={expYear} onChange={setExpYear} />
+                      <XDSTextInput size="lg" label="CVC" placeholder="123" value={cvc} onChange={setCvc} labelTooltip="3-digit security code usually found on the back of your card. American Express cards have a 4-digit code located on the front." />
                     </div>
-                    <XDSTextInput label="Name on Card" placeholder="John Doe" value={cardName} onChange={setCardName} status={errors.cardName ? {type: 'error', message: errors.cardName} : undefined} />
+                    <XDSTextInput size="lg" label="Name on Card" placeholder="John Doe" value={cardName} onChange={setCardName} status={errors.cardName ? {type: 'error', message: errors.cardName} : undefined} />
                     <XDSCheckboxInput label="Use shipping address as billing address" value={billingMatchesShipping} onChange={setBillingMatchesShipping} />
                   </XDSVStack>
 
@@ -284,8 +284,8 @@ export default function PaymentFormPage() {
                 <XDSVStack gap={3}>
                   <div {...stylex.props(styles.sectionTitle)}>Promo Code</div>
                   <XDSHStack gap={2} vAlign="center">
-                    <XDSTextInput label="Promo code" isLabelHidden placeholder="Enter promo code" value={promo} onChange={setPromo} xstyle={styles.fullWidth} />
-                    <XDSButton label="Apply" variant="secondary" onClick={() => {}} />
+                    <XDSTextInput size="lg" label="Promo code" isLabelHidden placeholder="Enter promo code" value={promo} onChange={setPromo} xstyle={styles.fullWidth} />
+                    <XDSButton label="Apply" variant="secondary" size="lg" onClick={() => {}} />
                   </XDSHStack>
                 </XDSVStack>
               </XDSCard>
