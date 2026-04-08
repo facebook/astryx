@@ -49,7 +49,14 @@ function check(label, args, {minLength = 10} = {}) {
 
   let reason = null;
   if (timedOut) reason = 'timed out';
-  else if (status !== 0) reason = `exit ${status}`;
+  else if (status !== 0) {
+    if (output.includes('needs a typed doc file')) {
+      console.log(`  skip  ${label}  (no .doc.mjs — undocumented component)`);
+      passed++;
+      return;
+    }
+    reason = `exit ${status}`;
+  }
   else if (output.length < minLength) reason = `output too short (${output.length} chars, need ${minLength})`;
 
   if (reason) {

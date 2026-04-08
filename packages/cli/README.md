@@ -26,7 +26,40 @@ Errors:
 }
 ```
 
-### Consumer utilities
+### Programmatic API
+
+The same logic that powers `xds --json` is available as importable, type-safe functions:
+
+```typescript
+import {component, docs, discover, XDSError} from '@xds/cli/api';
+
+// Same result as: xds --json component Button
+const btn = await component('Button');
+btn.type; // 'component.detail'
+btn.data.name; // 'Button' (typed as ComponentDoc)
+
+// Same result as: xds --json component --list
+const list = await component(undefined, {list: true});
+list.data; // Record<string, string[]>
+
+// Same result as: xds --json docs principles
+const principles = await docs('principles');
+principles.data.title; // 'XDS Principles'
+
+// Errors throw XDSError with optional .suggestions
+try {
+  await component('Buttn');
+} catch (e) {
+  e.message; // 'No component named "Buttn"'
+  e.suggestions; // [{ name: 'Button', reason: 'similar name' }]
+}
+```
+
+The CLI command handlers are thin wrappers around these functions — they parse args, call the API, then format the output (JSON or text). This guarantees that `@xds/cli/api` and `xds --json` always return identical data.
+
+### Consumer utilities (for parsing CLI stdout)
+
+If you're spawning the CLI as a subprocess rather than importing the API directly:
 
 ```typescript
 import {parseResponse, isError, assertResponse} from '@xds/cli/json';
@@ -75,7 +108,6 @@ Every response has a `type` string that uniquely identifies it:
 | `xds --json upgrade [--apply]`            | `upgrade.run`             | `UpgradeRunResponse`            |
 | `xds --json gap-report --list-categories` | `gap-report.categories`   | `GapReportCategoriesResponse`   |
 | `xds --json gap-report --component X ...` | `gap-report.file`         | `GapReportFileResponse`         |
-| legacy README.md fallback                 | `markdown`                | `CLIMarkdownResponse`           |
 | any error                                 | --                        | `CLIError`                      |
 | unsupported command                       | --                        | `CLIUnsupportedError`           |
 
@@ -83,13 +115,36 @@ Every response has a `type` string that uniquely identifies it:
 
 ## Adding a new command
 
-### 1. Create the command
+### 1. Write the API function
 
-Add a file in `src/commands/` and register it in `src/index.mjs`:
+Add a file in `src/api/` with the core logic. It returns `{ type, data }` on success and throws `XDSError` on failure:
+
+```javascript
+// src/api/my-command.mjs
+import {XDSError} from './error.mjs';
+
+export async function myCommand(name, options = {}) {
+  if (!name) {
+    return {type: 'my-command.list', data: getAllItems()};
+  }
+
+  const item = findItem(name);
+  if (!item) {
+    throw new XDSError(`Item "${name}" not found`, suggestions);
+  }
+
+  return {type: 'my-command.detail', data: item};
+}
+```
+
+### 2. Create the CLI wrapper
+
+Add a thin wrapper in `src/commands/` that parses args, calls the API, and formats output:
 
 ```javascript
 // src/commands/my-command.mjs
 import {jsonOut, jsonError} from '../lib/json.mjs';
+import {myCommand} from '../api/my-command.mjs';
 
 export function registerMyCommand(program) {
   program
@@ -98,10 +153,17 @@ export function registerMyCommand(program) {
     .action(async (name, options) => {
       const json = program.opts().json || false;
 
-      // ... your logic ...
+      let result;
+      try {
+        result = await myCommand(name, options);
+      } catch (e) {
+        if (json) return jsonError(e.message, e.suggestions);
+        console.error(e.message);
+        process.exit(1);
+      }
 
-      if (json) return jsonOut('my-command.list', data);
-      console.log(textOutput);
+      if (json) return jsonOut(result.type, result.data);
+      console.log(formatText(result));
     });
 }
 ```
@@ -199,33 +261,53 @@ Sub-objects in arrays. No `Response` suffix.
 
 ## Architecture
 
+The CLI is a thin wrapper around type-safe API functions. Each command follows the same pattern:
+
+```
+User calls API function        User runs CLI
+        |                            |
+        v                            v
+  api/component.mjs ◄──────── commands/component/index.mjs
+        |                            |
+        v                            v
+  { type, data }              jsonOut(type, data) or formatText(data)
+```
+
+Both paths run identical code. The CLI handler just adds argument parsing and output formatting.
+
 ```
 src/
-  index.mjs              # Commander setup, --json flag, fallback hook
+  api/                         # Programmatic API (exported as @xds/cli/api)
+    index.mjs                  # barrel: component, docs, discover, XDSError
+    component.mjs              # component(name?, opts?) → { type, data }
+    docs.mjs                   # docs(topic?, section?, opts?) → { type, data }
+    discover.mjs               # discover(query?, opts?) → { type, data }
+    error.mjs                  # XDSError class (carries .suggestions)
+  commands/                    # CLI wrappers (thin: parse args → call API → format output)
+    component/index.mjs        # registerComponent(program) — calls api/component.mjs
+    docs.mjs                   # registerDocs(program) — calls api/docs.mjs
+    discover.mjs               # registerDiscover(program) — calls api/discover.mjs
+    template.mjs               # side-effect command (copies files)
+    swizzle.mjs                # side-effect command (copies + rewrites)
+    build-theme.mjs            # side-effect command (compiles theme)
+    upgrade.mjs                # side-effect command (runs codemods)
+    gap-report.mjs             # side-effect command (files issues)
+    init.mjs                   # interactive only (no --json)
   lib/
-    json.mjs             # jsonOut(type, data), jsonError(msg) -- internal
-    parse.mjs            # parseResponse, isError, assertResponse -- consumer
+    json.mjs                   # jsonOut(type, data), jsonError(msg) — internal
+    parse.mjs                  # parseResponse, isError, assertResponse — consumer
   types/
-    base.d.ts            # CLIError, CLIResult<T>, CLIAnyResponse, CLIResponseType
-    component.d.ts       # ComponentListResponse, ComponentDetailResponse, ...
-    discover.d.ts        # DiscoverListResponse, ...
-    docs.d.ts            # DocsListResponse, ...
-    template.d.ts        # TemplateListResponse, TemplateCopyResponse
-    swizzle.d.ts         # SwizzleListResponse, SwizzleCopyResponse
-    theme.d.ts           # ThemeBuildResponse
-    upgrade.d.ts         # UpgradeListResponse, UpgradeRunResponse
-    gap-report.d.ts      # GapReportCategoriesResponse, GapReportFileResponse
-    index.d.ts           # barrel re-export
-  commands/
-    component/index.mjs  # uses jsonOut('component.list', ...) etc.
-    discover.mjs
-    docs.mjs
-    template.mjs
-    swizzle.mjs
-    build-theme.mjs
-    upgrade.mjs
-    gap-report.mjs
-    init.mjs             # no --json (interactive only, fallback hook handles it)
+    api.d.ts                   # API function signatures + XDSError
+    base.d.ts                  # CLIError, CLIResult<T>, CLIAnyResponse, CLIResponseType
+    component.d.ts             # ComponentListResponse, ComponentDetailResponse, ...
+    discover.d.ts              # DiscoverListResponse, ...
+    docs.d.ts                  # DocsListResponse, ...
+    template.d.ts              # TemplateListResponse, TemplateCopyResponse
+    swizzle.d.ts               # SwizzleListResponse, SwizzleCopyResponse
+    theme.d.ts                 # ThemeBuildResponse
+    upgrade.d.ts               # UpgradeListResponse, UpgradeRunResponse
+    gap-report.d.ts            # GapReportCategoriesResponse, GapReportFileResponse
+    index.d.ts                 # barrel re-export
 ```
 
 ### How the fallback hook works
@@ -239,7 +321,8 @@ src/
 
 - `tsconfig.json-api.json` typechecks `json.mjs` and `parse.mjs` against the `.d.ts` declarations
 - `.github/scripts/cli-json-smoke-test.mjs` validates every `--json` command outputs valid JSON with correct envelope shape
-- Both run in the `cli-smoke-test.yml` workflow on every PR
+- `.github/scripts/api-cli-parity-test.mjs` verifies the programmatic API returns identical data to `xds --json` for every command
+- All three run in the `cli-smoke-test.yml` workflow on every PR
 
 ### Suppressing stdout for --json
 
