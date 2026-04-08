@@ -108,6 +108,7 @@ export default function PaymentFormPage() {
   const [cardNumber, setCardNumber] = useState('');
   const [expiry, setExpiry] = useState('');
   const [expYear, setExpYear] = useState('');
+  const [billingMatchesShipping, setBillingMatchesShipping] = useState(true);
   const [cvc, setCvc] = useState('');
   const [cardName, setCardName] = useState('');
   const [promo, setPromo] = useState('');
@@ -258,13 +259,22 @@ export default function PaymentFormPage() {
                         </svg>
                       </div>
                     </div>
-                    <XDSTextInput label="Card Number" placeholder="1234 5678 9012 3456" value={cardNumber} onChange={setCardNumber} status={errors.cardNumber ? {type: 'error', message: errors.cardNumber} : undefined} />
+                    <div style={{position: 'relative'}}>
+                      <XDSTextInput label="Card Number" placeholder="1234 5678 9012 3456" value={cardNumber} onChange={setCardNumber} status={errors.cardNumber ? {type: 'error', message: errors.cardNumber} : undefined} />
+                      <div style={{position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', display: 'flex', alignItems: 'center'}}>
+                        <svg viewBox="0 0 24 24" style={{width: 16, height: 16, color: 'var(--color-icon-secondary)'}} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                          <path d="M7 11V7a5 5 0 0110 0v4"/>
+                        </svg>
+                      </div>
+                    </div>
                     <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12}}>
                       <XDSSelector label="Expiry Month" placeholder="MM" options={MONTHS} value={expiry} onChange={setExpiry} />
                       <XDSSelector label="Expiry Year" placeholder="YY" options={YEARS} value={expYear} onChange={setExpYear} />
-                      <XDSTextInput label="CVC" placeholder="123" value={cvc} onChange={setCvc} />
+                      <XDSTextInput label="CVC" placeholder="123" value={cvc} onChange={setCvc} labelTooltip="3-digit security code usually found on the back of your card. American Express cards have a 4-digit code located on the front." />
                     </div>
                     <XDSTextInput label="Name on Card" placeholder="John Doe" value={cardName} onChange={setCardName} status={errors.cardName ? {type: 'error', message: errors.cardName} : undefined} />
+                    <XDSCheckboxInput label="Use shipping address as billing address" value={billingMatchesShipping} onChange={setBillingMatchesShipping} />
                   </XDSVStack>
 
                 </XDSVStack>
