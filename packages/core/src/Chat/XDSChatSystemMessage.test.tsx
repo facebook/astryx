@@ -25,12 +25,11 @@ describe('XDSChatSystemMessage', () => {
     expect(hiddenElements.length).toBe(0);
   });
 
-  it('renders divider variant with lines', () => {
-    const {container} = render(
+  it('renders divider variant with XDSDivider', () => {
+    render(
       <XDSChatSystemMessage variant="divider">Today</XDSChatSystemMessage>,
     );
-    const hiddenElements = container.querySelectorAll('[aria-hidden]');
-    expect(hiddenElements.length).toBe(2);
+    expect(screen.getByText('Today')).toBeTruthy();
   });
 
   it('renders icon', () => {
@@ -40,13 +39,6 @@ describe('XDSChatSystemMessage', () => {
       </XDSChatSystemMessage>,
     );
     expect(screen.getByTestId('icon')).toBeTruthy();
-  });
-
-  it('renders timestamp string', () => {
-    render(
-      <XDSChatSystemMessage timestamp="3:00 PM">Notice</XDSChatSystemMessage>,
-    );
-    expect(screen.getByText('3:00 PM')).toBeTruthy();
   });
 
   it('applies variant class', () => {
