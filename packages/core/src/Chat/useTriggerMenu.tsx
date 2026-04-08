@@ -248,7 +248,6 @@ export function useTriggerMenu(
   });
 
   const triggerStartRef = useRef<number>(-1);
-  const virtualAnchorRef = useRef<HTMLSpanElement | null>(null);
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const popover = useXDSPopover({
@@ -262,12 +261,6 @@ export function useTriggerMenu(
         highlightedIndex: 0,
         isLoading: false,
       }));
-      if (virtualAnchorRef.current?.parentNode) {
-        virtualAnchorRef.current.parentNode.removeChild(
-          virtualAnchorRef.current,
-        );
-        virtualAnchorRef.current = null;
-      }
     }, []),
     hasLightDismiss: true,
     hasCloseButton: false,
@@ -297,35 +290,10 @@ export function useTriggerMenu(
     triggerStartRef.current = -1;
   }, [popover, state.activeTrigger]);
 
-  const placeVirtualAnchor = useCallback(() => {
+  const setAnchor = useCallback(() => {
     const editable = editableRef.current;
     if (!editable) return;
-
-    if (virtualAnchorRef.current?.parentNode) {
-      virtualAnchorRef.current.parentNode.removeChild(virtualAnchorRef.current);
-    }
-
-    const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0) return;
-
-    const range = selection.getRangeAt(0).cloneRange();
-    range.collapse(true);
-
-    const anchor = document.createElement('span');
-    anchor.style.display = 'inline';
-    anchor.style.width = '0';
-    anchor.style.height = '0';
-    anchor.style.overflow = 'hidden';
-    anchor.setAttribute('data-xds-trigger-anchor', '');
-    range.insertNode(anchor);
-    virtualAnchorRef.current = anchor;
-
-    range.setStartAfter(anchor);
-    range.collapse(true);
-    selection.removeAllRanges();
-    selection.addRange(range);
-
-    popover.triggerRef(anchor);
+    popover.triggerRef(editable);
   }, [editableRef, popover]);
 
   const searchItems = useCallback(
@@ -387,13 +355,6 @@ export function useTriggerMenu(
       const editable = editableRef.current;
       if (!editable) return;
 
-      if (virtualAnchorRef.current?.parentNode) {
-        virtualAnchorRef.current.parentNode.removeChild(
-          virtualAnchorRef.current,
-        );
-        virtualAnchorRef.current = null;
-      }
-
       deleteTriggerText(editable, triggerStartRef.current);
 
       const result = trigger.onSelect(item);
@@ -445,7 +406,7 @@ export function useTriggerMenu(
         query,
         highlightedIndex: 0,
       }));
-      placeVirtualAnchor();
+      setAnchor();
       searchItems(trigger, query);
       popover.show();
     } else if (state.query !== query) {
@@ -459,7 +420,7 @@ export function useTriggerMenu(
     state.activeTrigger,
     state.query,
     reset,
-    placeVirtualAnchor,
+    setAnchor,
     searchItems,
     popover,
   ]);

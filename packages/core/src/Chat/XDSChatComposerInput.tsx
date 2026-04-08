@@ -200,9 +200,6 @@ function serialize(node: Node): string {
     if (child.nodeType === Node.TEXT_NODE) {
       result += child.textContent ?? '';
     } else if (child instanceof HTMLElement) {
-      if (child.hasAttribute('data-xds-trigger-anchor')) {
-        continue;
-      }
       if (child.hasAttribute('data-xds-token')) {
         result += child.getAttribute('data-xds-token-value') ?? '';
       } else if (child.tagName === 'BR') {
