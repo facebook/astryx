@@ -47,158 +47,20 @@ import type {
   PowerSearchFilter,
   FilterValue,
   OperatorValue,
+  IntegerOperatorValue,
+  FloatOperatorValue,
+  EnumOperatorValue,
+  EnumListOperatorValue,
+  StringListOperatorValue,
+  EntityListOperatorValue,
 } from '../../../PowerSearch/types';
 
 // =============================================================================
 // Filter Value Types
 // =============================================================================
 
-/** Text filter: free-form string search */
-export type XDSTableFilterTextValue = string;
-
-/** Number filter: exact numeric match */
-export type XDSTableFilterNumberValue = number;
-
-/** Number range filter: min/max bounds (either or both may be set) */
-export interface XDSTableFilterNumberRangeValue {
-  min?: number;
-  max?: number;
-}
-
-/** Selector filter: single selected value */
-export type XDSTableFilterSelectorValue = string;
-
-/** Multi-selector filter: set of selected values */
-export type XDSTableFilterMultiSelectorValue = string[];
-
-/** Date filter: ISO date string (YYYY-MM-DD) */
-export type XDSTableFilterDateValue = string;
-
-/** Time filter: ISO time string (HH:MM) */
-export type XDSTableFilterTimeValue = string;
-
-/** String list filter: array of free-form string tags */
-export type XDSTableFilterStringListValue = string[];
-
-/** Union of all filter value types */
-export type XDSTableFilterValue =
-  | XDSTableFilterTextValue
-  | XDSTableFilterNumberValue
-  | XDSTableFilterNumberRangeValue
-  | XDSTableFilterSelectorValue
-  | XDSTableFilterMultiSelectorValue
-  | XDSTableFilterDateValue
-  | XDSTableFilterTimeValue
-  | XDSTableFilterStringListValue;
-
-// =============================================================================
-// Filter Type Discriminated Union (per-column config)
-// =============================================================================
-
-/** Option for selector-based filters. */
-export interface XDSTableFilterOption {
-  /** The value stored when this option is selected */
-  value: string;
-  /** Display label. Defaults to `value` if omitted. */
-  label?: string;
-}
-
-/** Text filter — free-form text input. */
-export interface XDSTableFilterTypeText {
-  type: 'text';
-  /** Placeholder text for the input. @default 'Filter <column header>' */
-  placeholder?: string;
-}
-
-/** Number filter — numeric input for exact match. */
-export interface XDSTableFilterTypeNumber {
-  type: 'number';
-  /** Placeholder text. @default 'Filter <column header>' */
-  placeholder?: string;
-  /** Minimum allowed value */
-  min?: number;
-  /** Maximum allowed value */
-  max?: number;
-  /** Step increment. @default 1 */
-  step?: number;
-}
-
-/** Number range filter — two numeric inputs for min/max bounds. */
-export interface XDSTableFilterTypeNumberRange {
-  type: 'number-range';
-  /** Placeholder for min input. @default 'Min' */
-  minPlaceholder?: string;
-  /** Placeholder for max input. @default 'Max' */
-  maxPlaceholder?: string;
-  /** Minimum allowed value */
-  min?: number;
-  /** Maximum allowed value */
-  max?: number;
-  /** Step increment. @default 1 */
-  step?: number;
-}
-
-/** Selector filter — single-select dropdown. */
-export interface XDSTableFilterTypeSelector {
-  type: 'selector';
-  /** Available options */
-  options: XDSTableFilterOption[];
-  /** Placeholder when no value is selected. @default 'All' */
-  placeholder?: string;
-}
-
-/** Multi-selector filter — multi-select checkboxes. */
-export interface XDSTableFilterTypeMultiSelector {
-  type: 'multi-selector';
-  /** Available options */
-  options: XDSTableFilterOption[];
-  /** Show a "Select all" option. @default true */
-  hasSelectAll?: boolean;
-  /** Enable typeahead search within options. @default false */
-  isSearchable?: boolean;
-  /** Placeholder when no values are selected. @default 'All' */
-  placeholder?: string;
-}
-
-/** Date filter — date picker input (ISO date string). */
-export interface XDSTableFilterTypeDate {
-  type: 'date';
-  /** Placeholder text. @default 'Filter <column header>' */
-  placeholder?: string;
-  /** Minimum allowed date (ISO string) */
-  min?: string;
-  /** Maximum allowed date (ISO string) */
-  max?: string;
-}
-
-/** Time filter — time picker input (ISO time string). */
-export interface XDSTableFilterTypeTime {
-  type: 'time';
-  /** Placeholder text. @default 'Filter <column header>' */
-  placeholder?: string;
-  /** Minimum allowed time */
-  min?: string;
-  /** Maximum allowed time */
-  max?: string;
-}
-
-/** String list filter — tokenizer for free-form string tags. */
-export interface XDSTableFilterTypeStringList {
-  type: 'string-list';
-  /** Placeholder text. @default 'Add...' */
-  placeholder?: string;
-}
-
-/** Discriminated union of all filter type configs. */
-export type XDSTableFilterType =
-  | XDSTableFilterTypeText
-  | XDSTableFilterTypeNumber
-  | XDSTableFilterTypeNumberRange
-  | XDSTableFilterTypeSelector
-  | XDSTableFilterTypeMultiSelector
-  | XDSTableFilterTypeDate
-  | XDSTableFilterTypeTime
-  | XDSTableFilterTypeStringList;
+/** Union of all filter value types (text=string, number=number, enum/list=string[]) */
+export type XDSTableFilterValue = string | number | string[];
 
 /**
  * Reference to a PowerSearch field.
@@ -246,62 +108,7 @@ function resolveOperator(
 }
 
 /**
- * Convert a PowerSearch OperatorValue to the table filter's XDSTableFilterType.
- *
- * Maps:
- * - string → text
- * - integer / float → number
- * - enum → selector
- * - enum_list → multi-selector
- *
- * Unsupported operator value types (date, entity_list, nested, custom, etc.)
- * return undefined — the column is treated as non-filterable.
- */
-function operatorValueToFilterType(
-  opValue: OperatorValue,
-): XDSTableFilterType | undefined {
-  switch (opValue.type) {
-    case 'string':
-      return {type: 'text'};
-    case 'integer':
-      return {
-        type: 'number',
-        min: opValue.minValue,
-        max: opValue.maxValue,
-        step: 1,
-      };
-    case 'float':
-      return {
-        type: 'number',
-        min: opValue.minValue,
-        max: opValue.maxValue,
-      };
-    case 'enum':
-      return {
-        type: 'selector',
-        options: opValue.values.map(v => ({value: v.value, label: v.label})),
-      };
-    case 'enum_list':
-      return {
-        type: 'multi-selector',
-        options: opValue.values.map(v => ({value: v.value, label: v.label})),
-      };
-    case 'date_absolute':
-      return {type: 'date'};
-    case 'time':
-      return {type: 'time'};
-    case 'string_list':
-    case 'entity_list':
-      return {type: 'string-list'};
-    default:
-      // date_relative, date_range, nested, custom, empty —
-      // no simple single-control equivalent yet
-      return undefined;
-  }
-}
-
-/**
- * Resolve a column's filter field reference to a concrete filter type.
+ * Resolve a column's filter field reference to a concrete OperatorValue.
  *
  * - String → field key, uses defaultOperator.
  * - Object with `field` → look up field + optional operator.
@@ -310,7 +117,7 @@ function operatorValueToFilterType(
 function resolveFilterConfig(
   filter: XDSTableFilterFieldRef | string,
   searchConfig: PowerSearchConfig,
-): XDSTableFilterType | undefined {
+): OperatorValue | undefined {
   const fieldKey = typeof filter === 'string' ? filter : filter.field;
   const operatorKey = typeof filter === 'string' ? undefined : filter.operator;
 
@@ -320,7 +127,7 @@ function resolveFilterConfig(
   const operator = resolveOperator(field, operatorKey);
   if (!operator) return undefined;
 
-  return operatorValueToFilterType(operator.value);
+  return operator.value;
 }
 
 /**
@@ -432,7 +239,6 @@ function tableValueToFilterValue(
  * const filters: XDSTableFilterState = {
  *   name: 'alice',
  *   status: 'active',
- *   age: { min: 18, max: 65 },
  *   tags: ['admin', 'user'],
  * };
  * ```
@@ -574,10 +380,6 @@ const filterStyles = stylex.create({
   popoverActionsSpacer: {
     flex: 1,
   },
-  numberRangeRow: {
-    display: 'flex',
-    gap: spacingVars['--spacing-2'],
-  },
   placeholder: {
     height: '32px',
   },
@@ -593,13 +395,11 @@ const filterStyles = stylex.create({
 function TextFilterControl({
   columnKey,
   header,
-  filterConfig,
   size,
   hasClear,
 }: {
   columnKey: string;
   header: string;
-  filterConfig: XDSTableFilterTypeText;
   size: 'sm' | 'md';
   hasClear?: boolean;
 }) {
@@ -618,7 +418,7 @@ function TextFilterControl({
           .getConfig()
           .onFilterChange(columnKey, newValue === '' ? null : newValue);
       }}
-      placeholder={filterConfig.placeholder ?? `Filter ${header}`}
+      placeholder={`Filter ${header}`}
       size={size}
       hasClear={hasClear}
     />
@@ -628,13 +428,13 @@ function TextFilterControl({
 function NumberFilterControl({
   columnKey,
   header,
-  filterConfig,
+  operatorValue,
   size,
   hasClear,
 }: {
   columnKey: string;
   header: string;
-  filterConfig: XDSTableFilterTypeNumber;
+  operatorValue: IntegerOperatorValue | FloatOperatorValue;
   size: 'sm' | 'md';
   hasClear?: boolean;
 }) {
@@ -642,6 +442,8 @@ function NumberFilterControl({
   const config = store.getConfig();
   const value = config.filters[columnKey];
   const numValue = typeof value === 'number' ? value : null;
+
+  const step = operatorValue.type === 'integer' ? 1 : null;
 
   const handleChange = useCallback(
     (newValue: number | null) => {
@@ -657,10 +459,10 @@ function NumberFilterControl({
         isLabelHidden
         value={numValue}
         onChange={handleChange}
-        placeholder={filterConfig.placeholder ?? `Filter ${header}`}
-        min={filterConfig.min ?? null}
-        max={filterConfig.max ?? null}
-        step={filterConfig.step ?? null}
+        placeholder={`Filter ${header}`}
+        min={operatorValue.minValue ?? null}
+        max={operatorValue.maxValue ?? null}
+        step={step}
         size={size}
         hasClear
       />
@@ -673,147 +475,25 @@ function NumberFilterControl({
       isLabelHidden
       value={numValue}
       onChange={handleChange as (value: number) => void}
-      placeholder={filterConfig.placeholder ?? `Filter ${header}`}
-      min={filterConfig.min ?? null}
-      max={filterConfig.max ?? null}
-      step={filterConfig.step ?? null}
+      placeholder={`Filter ${header}`}
+      min={operatorValue.minValue ?? null}
+      max={operatorValue.maxValue ?? null}
+      step={step}
       size={size}
     />
-  );
-}
-
-function NumberRangeFilterControl({
-  columnKey,
-  header,
-  filterConfig,
-  size,
-  hasClear,
-}: {
-  columnKey: string;
-  header: string;
-  filterConfig: XDSTableFilterTypeNumberRange;
-  size: 'sm' | 'md';
-  hasClear?: boolean;
-}) {
-  const store = useContext(FilterStoreContext)!;
-  const config = store.getConfig();
-  const value = config.filters[columnKey];
-  const rangeValue =
-    value != null && typeof value === 'object' && !Array.isArray(value)
-      ? (value as XDSTableFilterNumberRangeValue)
-      : undefined;
-
-  const handleMinChange = useCallback(
-    (newMin: number | null) => {
-      const cfg = store.getConfig();
-      const current = cfg.filters[columnKey];
-      const existing =
-        current != null &&
-        typeof current === 'object' &&
-        !Array.isArray(current)
-          ? (current as XDSTableFilterNumberRangeValue)
-          : {};
-      if (newMin == null) {
-        // Cleared — if max is also empty, clear the whole filter
-        const {min: _min, ...rest} = existing;
-        cfg.onFilterChange(columnKey, rest.max != null ? rest : null);
-      } else {
-        cfg.onFilterChange(columnKey, {...existing, min: newMin});
-      }
-    },
-    [store, columnKey],
-  );
-
-  const handleMaxChange = useCallback(
-    (newMax: number | null) => {
-      const cfg = store.getConfig();
-      const current = cfg.filters[columnKey];
-      const existing =
-        current != null &&
-        typeof current === 'object' &&
-        !Array.isArray(current)
-          ? (current as XDSTableFilterNumberRangeValue)
-          : {};
-      if (newMax == null) {
-        // Cleared — if min is also empty, clear the whole filter
-        const {max: _max, ...rest} = existing;
-        cfg.onFilterChange(columnKey, rest.min != null ? rest : null);
-      } else {
-        cfg.onFilterChange(columnKey, {...existing, max: newMax});
-      }
-    },
-    [store, columnKey],
-  );
-
-  if (hasClear) {
-    return (
-      <div {...stylex.props(filterStyles.numberRangeRow)}>
-        <XDSNumberInput
-          label={`Min ${header}`}
-          isLabelHidden
-          value={rangeValue?.min ?? null}
-          onChange={handleMinChange}
-          placeholder={filterConfig.minPlaceholder ?? 'Min'}
-          min={filterConfig.min ?? null}
-          max={filterConfig.max ?? null}
-          step={filterConfig.step ?? null}
-          size={size}
-          hasClear
-        />
-        <XDSNumberInput
-          label={`Max ${header}`}
-          isLabelHidden
-          value={rangeValue?.max ?? null}
-          onChange={handleMaxChange}
-          placeholder={filterConfig.maxPlaceholder ?? 'Max'}
-          min={filterConfig.min ?? null}
-          max={filterConfig.max ?? null}
-          step={filterConfig.step ?? null}
-          size={size}
-          hasClear
-        />
-      </div>
-    );
-  }
-
-  return (
-    <div {...stylex.props(filterStyles.numberRangeRow)}>
-      <XDSNumberInput
-        label={`Min ${header}`}
-        isLabelHidden
-        value={rangeValue?.min ?? null}
-        onChange={handleMinChange as (value: number) => void}
-        placeholder={filterConfig.minPlaceholder ?? 'Min'}
-        min={filterConfig.min ?? null}
-        max={filterConfig.max ?? null}
-        step={filterConfig.step ?? null}
-        size={size}
-      />
-      <XDSNumberInput
-        label={`Max ${header}`}
-        isLabelHidden
-        value={rangeValue?.max ?? null}
-        onChange={handleMaxChange as (value: number) => void}
-        placeholder={filterConfig.maxPlaceholder ?? 'Max'}
-        min={filterConfig.min ?? null}
-        max={filterConfig.max ?? null}
-        step={filterConfig.step ?? null}
-        size={size}
-      />
-    </div>
   );
 }
 
 function SelectorFilterControl({
   columnKey,
   header,
-  filterConfig,
+  operatorValue,
   size,
   hasClear,
 }: {
   columnKey: string;
   header: string;
-  filterConfig: XDSTableFilterTypeSelector;
+  operatorValue: EnumOperatorValue;
   size: 'sm' | 'md';
   hasClear?: boolean;
 }) {
@@ -822,9 +502,9 @@ function SelectorFilterControl({
   const value = config.filters[columnKey];
   const strValue = typeof value === 'string' ? value : '';
 
-  const options = filterConfig.options.map(opt => ({
-    value: opt.value,
-    label: opt.label,
+  const options = operatorValue.values.map(v => ({
+    value: v.value,
+    label: v.label,
   }));
 
   const handleChange = useCallback(
@@ -847,7 +527,7 @@ function SelectorFilterControl({
         options={options}
         value={strValue || null}
         onChange={handleChange}
-        placeholder={filterConfig.placeholder ?? 'All'}
+        placeholder="All"
         size={size}
         hasClear
       />
@@ -861,7 +541,7 @@ function SelectorFilterControl({
       options={options}
       value={strValue}
       onChange={handleChange as (value: string) => void}
-      placeholder={filterConfig.placeholder ?? 'All'}
+      placeholder="All"
       size={size}
     />
   );
@@ -870,13 +550,13 @@ function SelectorFilterControl({
 function MultiSelectorFilterControl({
   columnKey,
   header,
-  filterConfig,
+  operatorValue,
   size,
   hasClear,
 }: {
   columnKey: string;
   header: string;
-  filterConfig: XDSTableFilterTypeMultiSelector;
+  operatorValue: EnumListOperatorValue;
   size: 'sm' | 'md';
   hasClear?: boolean;
 }) {
@@ -885,9 +565,9 @@ function MultiSelectorFilterControl({
   const value = config.filters[columnKey];
   const arrValue = Array.isArray(value) ? value : [];
 
-  const options = filterConfig.options.map(opt => ({
-    value: opt.value,
-    label: opt.label,
+  const options = operatorValue.values.map(v => ({
+    value: v.value,
+    label: v.label,
   }));
 
   return (
@@ -901,10 +581,10 @@ function MultiSelectorFilterControl({
           .getConfig()
           .onFilterChange(columnKey, newValue.length === 0 ? null : newValue);
       }}
-      placeholder={filterConfig.placeholder ?? 'All'}
+      placeholder="All"
       size={size}
-      hasSelectAll={filterConfig.hasSelectAll ?? true}
-      hasSearch={filterConfig.isSearchable ?? false}
+      hasSelectAll
+      hasSearch={false}
       hasClear={hasClear}
     />
   );
@@ -913,13 +593,11 @@ function MultiSelectorFilterControl({
 function DateFilterControl({
   columnKey,
   header,
-  filterConfig,
   size,
   hasClear,
 }: {
   columnKey: string;
   header: string;
-  filterConfig: XDSTableFilterTypeDate;
   size: 'sm' | 'md';
   hasClear?: boolean;
 }) {
@@ -934,8 +612,6 @@ function DateFilterControl({
       onChange={newValue => {
         store.getConfig().onFilterChange(columnKey, newValue ?? null);
       }}
-      min={filterConfig.min as ISODateString | undefined}
-      max={filterConfig.max as ISODateString | undefined}
       size={size}
       hasClear={hasClear}
     />
@@ -945,13 +621,11 @@ function DateFilterControl({
 function TimeFilterControl({
   columnKey,
   header,
-  filterConfig,
   size,
   hasClear,
 }: {
   columnKey: string;
   header: string;
-  filterConfig: XDSTableFilterTypeTime;
   size: 'sm' | 'md';
   hasClear?: boolean;
 }) {
@@ -966,8 +640,6 @@ function TimeFilterControl({
       onChange={newValue => {
         store.getConfig().onFilterChange(columnKey, newValue ?? null);
       }}
-      min={filterConfig.min as ISOTimeString | undefined}
-      max={filterConfig.max as ISOTimeString | undefined}
       size={size}
       hasClear={hasClear}
     />
@@ -977,11 +649,13 @@ function TimeFilterControl({
 function StringListFilterControl({
   columnKey,
   header,
+  operatorValue,
   size,
   hasClear,
 }: {
   columnKey: string;
   header: string;
+  operatorValue: StringListOperatorValue | EntityListOperatorValue;
   size: 'sm' | 'md';
   hasClear?: boolean;
 }) {
@@ -989,8 +663,9 @@ function StringListFilterControl({
   const value =
     (store.getConfig().filters[columnKey] as string[] | undefined) ?? [];
 
-  // Simple static search source that accepts any typed text as a new tag
-  const searchSource = useMemo(
+  // Use the operator's search source if provided, otherwise fall back
+  // to a simple static source that accepts any typed text as a new tag.
+  const fallbackSource = useMemo(
     () => ({
       search: async (query: string) =>
         query.trim() ? [{id: query.trim(), label: query.trim()}] : [],
@@ -998,6 +673,8 @@ function StringListFilterControl({
     }),
     [],
   );
+
+  const searchSource = operatorValue.searchSource ?? fallbackSource;
 
   return (
     <XDSTokenizer
@@ -1017,77 +694,66 @@ function StringListFilterControl({
   );
 }
 
-/** Renders the appropriate filter control for a column's filter type. */
+/** Renders the appropriate filter control for a column's operator value type. */
 function FilterControl({
   columnKey,
   header,
-  filterConfig,
+  operatorValue,
   size,
   hasClear,
 }: {
   columnKey: string;
   header: string;
-  filterConfig: XDSTableFilterType;
+  operatorValue: OperatorValue;
   size: 'sm' | 'md';
   hasClear?: boolean;
 }) {
-  switch (filterConfig.type) {
-    case 'text':
+  switch (operatorValue.type) {
+    case 'string':
       return (
         <TextFilterControl
           columnKey={columnKey}
           header={header}
-          filterConfig={filterConfig}
           size={size}
           hasClear={hasClear}
         />
       );
-    case 'number':
+    case 'integer':
+    case 'float':
       return (
         <NumberFilterControl
           columnKey={columnKey}
           header={header}
-          filterConfig={filterConfig}
+          operatorValue={operatorValue}
           size={size}
           hasClear={hasClear}
         />
       );
-    case 'number-range':
-      return (
-        <NumberRangeFilterControl
-          columnKey={columnKey}
-          header={header}
-          filterConfig={filterConfig}
-          size={size}
-          hasClear={hasClear}
-        />
-      );
-    case 'selector':
+    case 'enum':
       return (
         <SelectorFilterControl
           columnKey={columnKey}
           header={header}
-          filterConfig={filterConfig}
+          operatorValue={operatorValue}
           size={size}
           hasClear={hasClear}
         />
       );
-    case 'multi-selector':
+    case 'enum_list':
       return (
         <MultiSelectorFilterControl
           columnKey={columnKey}
           header={header}
-          filterConfig={filterConfig}
+          operatorValue={operatorValue}
           size={size}
           hasClear={hasClear}
         />
       );
-    case 'date':
+    case 'date_absolute':
       return (
         <DateFilterControl
           columnKey={columnKey}
           header={header}
-          filterConfig={filterConfig}
           size={size}
           hasClear={hasClear}
         />
@@ -1097,20 +763,23 @@ function FilterControl({
         <TimeFilterControl
           columnKey={columnKey}
           header={header}
-          filterConfig={filterConfig}
           size={size}
           hasClear={hasClear}
         />
       );
-    case 'string-list':
+    case 'string_list':
+    case 'entity_list':
       return (
         <StringListFilterControl
           columnKey={columnKey}
           header={header}
+          operatorValue={operatorValue}
           size={size}
           hasClear={hasClear}
         />
       );
+    default:
+      return null;
   }
 }
 
@@ -1121,11 +790,11 @@ function FilterControl({
 function PopoverFilterTrigger({
   columnKey,
   header,
-  filterConfig,
+  operatorValue,
 }: {
   columnKey: string;
   header: string;
-  filterConfig: XDSTableFilterType;
+  operatorValue: OperatorValue;
 }) {
   const store = useContext(FilterStoreContext)!;
   const config = store.getConfig();
@@ -1188,7 +857,7 @@ function PopoverFilterTrigger({
             <FilterControl
               columnKey={columnKey}
               header={header}
-              filterConfig={filterConfig}
+              operatorValue={operatorValue}
               size="md"
             />
             <div {...stylex.props(filterStyles.popoverActions)}>
@@ -1244,7 +913,7 @@ function getHeaderString(
 // These are stable components rendered by transformHeaderCell. Because the
 // component *type* (`FilterSlot` / `InlineFilterSlot`) never changes across
 // renders, React keeps the same fiber and no remount occurs when filter state
-// updates. All dynamic data (filters, onFilterChange, filterConfig) is read
+// updates. All dynamic data (filters, onFilterChange, operatorValue) is read
 // from FilterStoreContext at render time — not passed as props.
 // =============================================================================
 
@@ -1255,18 +924,18 @@ function getHeaderString(
 function FilterSlot({
   columnKey,
   header,
-  filterConfig,
+  operatorValue,
 }: {
   columnKey: string;
   header: string;
-  filterConfig: XDSTableFilterType;
+  operatorValue: OperatorValue;
 }) {
   return (
     <div {...stylex.props(filterStyles.afterPopover)}>
       <PopoverFilterTrigger
         columnKey={columnKey}
         header={header}
-        filterConfig={filterConfig}
+        operatorValue={operatorValue}
       />
     </div>
   );
@@ -1279,11 +948,11 @@ function FilterSlot({
 function InlineFilterSlot({
   columnKey,
   header,
-  filterConfig,
+  operatorValue,
 }: {
   columnKey: string;
   header: string;
-  filterConfig: XDSTableFilterType | undefined;
+  operatorValue: OperatorValue | undefined;
 }) {
   const variant = useContext(FilterVariantContext);
   const size = 'sm';
@@ -1294,11 +963,11 @@ function InlineFilterSlot({
 
   return (
     <div {...stylex.props(filterStyles.afterInline)}>
-      {filterConfig != null ? (
+      {operatorValue != null ? (
         <FilterControl
           columnKey={columnKey}
           header={header}
-          filterConfig={filterConfig}
+          operatorValue={operatorValue}
           size={size}
           hasClear
         />
@@ -1344,12 +1013,9 @@ function InlineFilterSlot({
  * <XDSTable
  *   data={users}
  *   columns={[
- *     { key: 'name', header: 'Name', filter: { type: 'text' } },
- *     { key: 'status', header: 'Status', filter: {
- *       type: 'selector',
- *       options: [{ value: 'active' }, { value: 'inactive' }],
- *     }},
- *     { key: 'age', header: 'Age', filter: { type: 'number-range', min: 0 } },
+ *     { key: 'name', header: 'Name', filter: 'name' },
+ *     { key: 'status', header: 'Status', filter: 'status' },
+ *     { key: 'age', header: 'Age', filter: 'age' },
  *   ]}
  *   plugins={[filterPlugin]}
  * />
@@ -1408,14 +1074,14 @@ export function useXDSTableFiltering<T extends Record<string, unknown>>(
           column as XDSTableColumn<Record<string, unknown>>,
         );
 
-        // Resolve field references to concrete filter types
-        const filterConfig = rawFilter
+        // Resolve field references to concrete OperatorValue
+        const operatorValue = rawFilter
           ? resolveFilterConfig(rawFilter, store.getConfig().searchConfig)
           : undefined;
 
         if (variant === 'popover') {
-          // No filter config on this column — nothing to render.
-          if (!filterConfig) return props;
+          // No operator value on this column — nothing to render.
+          if (!operatorValue) return props;
 
           return {
             ...props,
@@ -1425,7 +1091,7 @@ export function useXDSTableFiltering<T extends Record<string, unknown>>(
                 <FilterSlot
                   columnKey={column.key}
                   header={header}
-                  filterConfig={filterConfig}
+                  operatorValue={operatorValue}
                 />
               </>
             ),
@@ -1443,7 +1109,7 @@ export function useXDSTableFiltering<T extends Record<string, unknown>>(
               <InlineFilterSlot
                 columnKey={column.key}
                 header={header}
-                filterConfig={filterConfig}
+                operatorValue={operatorValue}
               />
             </>
           ),

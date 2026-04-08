@@ -332,16 +332,6 @@ export function XDSCommandPalette<
     listboxId: listId,
   });
 
-  // When the dialog opens, set highlight to selected item or first item
-  useEffect(() => {
-    if (isOpen && selectableItems.length > 0) {
-      const selectedIdx = selectableItems.findIndex(
-        item => item.value === value,
-      );
-      combobox.setHighlightedIndex(selectedIdx >= 0 ? selectedIdx : 0);
-    }
-  }, [isOpen, selectableItems, value, combobox]);
-
   // Run a search for the given query and commit results.
   // Called directly when the user types — no effect needed.
   const runSearch = useCallback(
@@ -373,10 +363,20 @@ export function XDSCommandPalette<
           setSearch(query);
           setOptimisticResults(items);
           setSearchResults(items);
+
+          // When opening with a preselected value, highlight it once
+          // bootstrap results arrive. No value → highlight stays at -1
+          // and ArrowDown naturally moves to the first item.
+          if (isBootstrap && value != null && value !== '') {
+            const selectedIdx = items.findIndex(item => item.id === value);
+            if (selectedIdx >= 0) {
+              combobox.setHighlightedIndex(selectedIdx);
+            }
+          }
         }
       });
     },
-    [searchSource, searchResults, startTransition],
+    [searchSource, searchResults, startTransition, value, combobox],
   );
 
   // Bootstrap on open — the only remaining effect.

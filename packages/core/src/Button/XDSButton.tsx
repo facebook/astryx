@@ -145,6 +145,7 @@ const sizeStyles = stylex.create({
 /**
  * Icon size per button size.
  * Matches XDSIcon sizing: sm/md=16px, lg=20px.
+ * fontSize is set so emoji and text-based icons scale correctly.
  */
 const iconSizeStyles = stylex.create({
   sm: {width: 16, height: 16, fontSize: 16},
@@ -363,9 +364,6 @@ export interface XDSButtonProps extends XDSBaseProps<HTMLButtonElement> {
   rel?: string;
 }
 
-/**
- * Loading state styles
- */
 const loadingStyles = stylex.create({
   loading: {
     position: 'relative',

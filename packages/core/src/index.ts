@@ -56,6 +56,7 @@ export * from './TextArea';
 export * from './TimeInput';
 export * from './NumberInput';
 export * from './Table';
+export * from './ToggleButton';
 export * from './Token';
 export * from './Typeahead';
 export * from './Tokenizer';
