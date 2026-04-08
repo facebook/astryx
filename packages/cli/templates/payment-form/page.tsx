@@ -30,11 +30,14 @@ const MONTHS = ['01','02','03','04','05','06','07','08','09','10','11','12'];
 const YEARS = Array.from({length: 12}, (_, i) => String(2025 + i));
 
 const US_STATES = [
-  'AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA',
-  'HI','ID','IL','IN','IA','KS','KY','LA','ME','MD',
-  'MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ',
-  'NM','NY','NC','ND','OH','OK','OR','PA','RI','SC',
-  'SD','TN','TX','UT','VT','VA','WA','WV','WI','WY',
+  'Alabama','Alaska','Arizona','Arkansas','California','Colorado','Connecticut',
+  'Delaware','Florida','Georgia','Hawaii','Idaho','Illinois','Indiana','Iowa',
+  'Kansas','Kentucky','Louisiana','Maine','Maryland','Massachusetts','Michigan',
+  'Minnesota','Mississippi','Missouri','Montana','Nebraska','Nevada','New Hampshire',
+  'New Jersey','New Mexico','New York','North Carolina','North Dakota','Ohio',
+  'Oklahoma','Oregon','Pennsylvania','Rhode Island','South Carolina','South Dakota',
+  'Tennessee','Texas','Utah','Vermont','Virginia','Washington','West Virginia',
+  'Wisconsin','Wyoming',
 ];
 
 
@@ -133,6 +136,7 @@ export default function PaymentFormPage() {
     address: !address.trim() ? 'Required' : undefined,
     city: !city.trim() ? 'Required' : undefined,
     zip: !zip.trim() ? 'Required' : undefined,
+    state: !state ? 'Required' : undefined,
     email: !email.trim() ? 'Required' : undefined,
     phone: !phone.trim() ? 'Required' : undefined,
     expiry: !expiry ? 'Required' : undefined,
@@ -189,7 +193,7 @@ export default function PaymentFormPage() {
                     <XDSTextInput size="lg" label="City" placeholder="New York" value={city} onChange={setCity} status={errors.city ? {type: 'error', message: errors.city} : undefined} />
                     <XDSTextInput size="lg" label="ZIP Code" placeholder="10001" value={zip} onChange={setZip} status={errors.zip ? {type: 'error', message: errors.zip} : undefined} />
                   </div>
-                  <XDSSelector size="lg" label="State" placeholder="Select state" options={US_STATES} value={state} onChange={setState} />
+                  <XDSSelector size="lg" label="State" placeholder="Select state" options={US_STATES} value={state} onChange={setState} status={errors.state ? {type: 'error', message: errors.state} : undefined} />
                   <XDSTextInput size="lg" label="Phone Number" placeholder="+1 (555) 123-4567" value={phone} onChange={setPhone} labelTooltip="We use your phone number to provide shipping updates and contact you about your delivery if needed." status={errors.phone ? {type: 'error', message: errors.phone} : undefined} />
                   <XDSDivider />
 
