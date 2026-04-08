@@ -356,9 +356,12 @@ export default function PaymentFormPage() {
               <XDSCard padding={5}>
                 <XDSVStack gap={4}>
                   <div {...stylex.props(styles.sectionTitle)}>Order Summary</div>
+
+                  {/* Line items */}
                   {ORDER_ITEMS.map(item => (
                     <XDSVStack key={item.id} gap={3}>
                       <XDSHStack gap={3} vAlign="start">
+                        {/* Placeholder thumbnail */}
                         <div {...stylex.props(styles.orderThumb)} />
                         <XDSVStack gap={1} style={{flex: 1}}>
                           <XDSHStack gap={2} hAlign="between" vAlign="start">
@@ -366,7 +369,11 @@ export default function PaymentFormPage() {
                             <XDSText type="body" weight="bold">{fmt(item.price)}</XDSText>
                           </XDSHStack>
                           <XDSText type="supporting" color="secondary">{item.variant}</XDSText>
-                          {!item.inStock && <XDSBadge variant="error" label="Out of Stock" />}
+                          {item.limited && (
+                            <div style={{display: 'inline-flex'}}>
+                              <XDSBadge variant="green" label="LIMITED EDITION" />
+                            </div>
+                          )}
                           <XDSHStack gap={2} vAlign="center">
                             <XDSNumberInput label="Qty" isLabelHidden value={quantities[item.id] ?? item.qty} onChange={v => setQuantities(q => ({...q, [item.id]: v}))} min={1} max={10} isIntegerOnly />
                             <XDSLink label="Remove" href="#" type="supporting">Remove</XDSLink>
@@ -377,26 +384,26 @@ export default function PaymentFormPage() {
                       <XDSDivider />
                     </XDSVStack>
                   ))}
-                </XDSVStack>
-              </XDSCard>
 
-              <XDSCard padding={5}>
-                <XDSVStack gap={4}>
-                  <div {...stylex.props(styles.sectionTitle)}>Order Total</div>
-                  <XDSVStack gap={2}>
-                    <div {...stylex.props(styles.summaryRow)}><XDSText type="body" color="secondary">Subtotal</XDSText><XDSText type="body">{fmt(SUBTOTAL)}</XDSText></div>
-                    <div {...stylex.props(styles.summaryRow)}><XDSText type="body" color="secondary">Shipping</XDSText><XDSText type="body">{fmt(SHIPPING)}</XDSText></div>
-                    <div {...stylex.props(styles.summaryRow)}><XDSText type="body" color="secondary">Tax</XDSText><XDSText type="body">{fmt(TAX)}</XDSText></div>
+                  {/* Order total subsection */}
+                  <XDSVStack gap={3}>
+                    <div {...stylex.props(styles.sectionTitle)}>Order Total</div>
+                    <XDSVStack gap={2}>
+                      <div {...stylex.props(styles.summaryRow)}><XDSText type="body" color="secondary">Subtotal</XDSText><XDSText type="body">{fmt(SUBTOTAL)}</XDSText></div>
+                      <div {...stylex.props(styles.summaryRow)}><XDSText type="body" color="secondary">Shipping</XDSText><XDSText type="body">{fmt(SHIPPING)}</XDSText></div>
+                      <div {...stylex.props(styles.summaryRow)}><XDSText type="body" color="secondary">Tax</XDSText><XDSText type="body">{fmt(TAX)}</XDSText></div>
+                    </XDSVStack>
+                    <XDSDivider />
+                    <div {...stylex.props(styles.summaryRow)}>
+                      <XDSText type="large" weight="bold">Total</XDSText>
+                      <XDSText type="large" weight="bold">{fmt(TOTAL)}</XDSText>
+                    </div>
+                    <div {...stylex.props(styles.freeBanner)}>
+                      <XDSIcon icon="checkCircle" size="sm" />
+                      <XDSText type="supporting">Free shipping on orders over $100</XDSText>
+                    </div>
                   </XDSVStack>
-                  <XDSDivider />
-                  <div {...stylex.props(styles.summaryRow)}>
-                    <XDSText type="large" weight="bold">Total</XDSText>
-                    <XDSText type="large" weight="bold">{fmt(TOTAL)}</XDSText>
-                  </div>
-                  <div {...stylex.props(styles.freeBanner)}>
-                    <XDSIcon icon="checkCircle" size="sm" />
-                    <XDSText type="supporting">Free shipping on orders over $500</XDSText>
-                  </div>
+
                   <XDSDivider />
                   <div {...stylex.props(styles.trustBar)}>
                     <XDSHStack gap={1} vAlign="center"><XDSIcon icon="checkCircle" size="sm" /><XDSText type="supporting" color="secondary">Secure Payment</XDSText></XDSHStack>
