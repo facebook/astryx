@@ -176,9 +176,17 @@ function useThemeFontLoading(theme: XDSDefinedTheme): void {
     const newLinks: HTMLLinkElement[] = [];
 
     for (const font of theme.fonts) {
-      // Check if font is already loaded
-      const isLoaded = document.fonts.check(`16px "${font.family}"`);
-      if (isLoaded) continue;
+      // Check if this specific font family has a loaded @font-face
+      // NOTE: document.fonts.check() is unreliable here — it returns true
+      // when ANY font in the fallback stack can render the text, even if
+      // the requested family isn't actually loaded. Instead, check if a
+      // FontFace with this family name exists in the FontFaceSet.
+      const hasFontFace = [...document.fonts].some(
+        f =>
+          f.family.replace(/["']/g, '') === font.family &&
+          f.status === 'loaded',
+      );
+      if (hasFontFace) continue;
 
       // Check if we already injected a link for this URL
       const existing = document.head.querySelector(
