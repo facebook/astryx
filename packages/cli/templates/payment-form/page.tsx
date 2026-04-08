@@ -31,7 +31,7 @@ const styles = stylex.create({
   displayHeading: { fontSize: '56px', fontWeight: fontWeightVars['--font-weight-bold'], lineHeight: '1.05', letterSpacing: '-0.03em', margin: 0 },
   body: { display: 'grid', gridTemplateColumns: '3fr 2fr', gap: spacingVars['--spacing-8'], alignItems: 'start' },
   stickyRight: { position: 'sticky', top: spacingVars['--spacing-8'] },
-  sectionHeading: { fontSize: typeScaleVars['--text-title-size'], fontWeight: fontWeightVars['--font-weight-bold'], lineHeight: typeScaleVars['--text-title-leading'], margin: 0 },
+  sectionHeading: { fontSize: typeScaleVars['--text-large-size'], fontWeight: fontWeightVars['--font-weight-bold'], lineHeight: typeScaleVars['--text-large-leading'], margin: 0 },
   inlineGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacingVars['--spacing-4'] },
   threeGrid: { display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: spacingVars['--spacing-4'] },
   expGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: spacingVars['--spacing-4'] },
