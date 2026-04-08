@@ -258,7 +258,7 @@ export default function PaymentFormPage() {
                       <div style={{position: 'relative'}}>
                         <div {...stylex.props(styles.orderItemImg)} />
                         <div style={{position: 'absolute', top: -6, right: -6}}>
-                          <XDSBadge variant="neutral">{item.qty}</XDSBadge>
+                          <XDSBadge variant="neutral" label={String(item.qty)} />
                         </div>
                       </div>
                       <XDSVStack gap={1} style={{flex: 1}}>
