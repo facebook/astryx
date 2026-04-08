@@ -91,6 +91,22 @@ export type {
   FixedLayerReturn,
 } from './Layer';
 
+// Layer provider
+export {XDSLayerProvider} from './Layer';
+export type {XDSLayerProviderProps, LayerToastConfig} from './Layer';
+
+// Toast
+export {useXDSToast} from './Toast';
+export type {
+  XDSToastType,
+  XDSToastPosition,
+  XDSToastCollisionBehavior,
+  XDSToastDismissReason,
+  XDSToastOptions,
+  XDSToastDismissFn,
+  XDSShowToastFn,
+} from './Toast';
+
 // Popover component and hook
 export * from './Popover';
 

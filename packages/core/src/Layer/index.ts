@@ -27,6 +27,12 @@ export type {
   FixedLayerReturn,
 } from './useXDSLayer';
 
+// Layer provider
+export {XDSLayerProvider} from './XDSLayerProvider';
+export type {XDSLayerProviderProps} from './XDSLayerProvider';
+export {XDSLayerContext, useXDSLayerContext} from './XDSLayerContext';
+export type {XDSLayerContextValue, LayerToastConfig} from './XDSLayerContext';
+
 // Shared entry animation styles for layer-based components
 export {layerAnimations} from './layerAnimations.stylex';
 
