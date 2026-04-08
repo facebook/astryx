@@ -177,7 +177,7 @@ const styles = stylex.create({
     fontFamily: typographyVars['--font-family-body'],
     color: colorVars['--color-text-primary'],
     caretColor: colorVars['--color-accent'],
-    paddingBlock: spacingVars['--spacing-1'],
+    padding: spacingVars['--spacing-1'],
   },
   placeholder: {
     position: 'absolute',
@@ -190,7 +190,7 @@ const styles = stylex.create({
     lineHeight: `${LINE_HEIGHT_PX}px`,
     fontFamily: typographyVars['--font-family-body'],
     userSelect: 'none',
-    paddingBlock: spacingVars['--spacing-1'],
+    padding: spacingVars['--spacing-1'],
   },
   disabled: {
     opacity: 0.5,

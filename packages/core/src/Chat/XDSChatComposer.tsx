@@ -21,7 +21,7 @@
  * - /apps/storybook/stories/ChatComposer.stories.tsx
  */
 
-import {useState, useRef, useCallback, type ReactNode} from 'react';
+import {useState, useCallback, useMemo, type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -36,6 +36,8 @@ import {
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 import {XDSIcon} from '../Icon';
+import {XDSChatComposerInput} from './XDSChatComposerInput';
+import {XDSChatComposerContext} from './XDSChatContext';
 
 // =============================================================================
 // Types
@@ -288,7 +290,6 @@ export function XDSChatComposer(props: XDSChatComposerProps) {
   } = props;
 
   const [internalValue, setInternalValue] = useState('');
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const isControlled = controlledValue !== undefined;
   const currentValue = isControlled ? controlledValue : internalValue;
@@ -308,30 +309,8 @@ export function XDSChatComposer(props: XDSChatComposerProps) {
     if (!trimmed || isDisabled) return;
     onSubmit(trimmed);
     updateValue('');
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-    }
+
   }, [currentValue, isDisabled, onSubmit, updateValue]);
-
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        handleSubmit();
-      }
-    },
-    [handleSubmit],
-  );
-
-  const handleInput = useCallback(
-    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      const el = e.target;
-      updateValue(el.value);
-      el.style.height = 'auto';
-      el.style.height = `${el.scrollHeight}px`;
-    },
-    [updateValue],
-  );
 
   const canSend = currentValue.trim().length > 0 && !isDisabled;
 
@@ -368,7 +347,19 @@ export function XDSChatComposer(props: XDSChatComposerProps) {
     </div>
   ) : null;
 
+  const composerContext = useMemo(
+    () => ({
+      value: currentValue,
+      onChange: updateValue,
+      onSubmit: handleSubmit,
+      placeholder,
+      isDisabled,
+    }),
+    [currentValue, updateValue, handleSubmit, placeholder, isDisabled],
+  );
+
   return (
+    <XDSChatComposerContext.Provider value={composerContext}>
     <div
       {...mergeProps(
         xdsClassName('chat-composer', {density}),
@@ -385,18 +376,7 @@ export function XDSChatComposer(props: XDSChatComposerProps) {
         {contextToolbar}
 
         <div {...stylex.props(styles.inputArea)}>
-          {input ?? (
-            <textarea
-              ref={textareaRef}
-              rows={1}
-              value={currentValue}
-              placeholder={placeholder}
-              disabled={isDisabled}
-              onKeyDown={handleKeyDown}
-              onChange={handleInput}
-              {...stylex.props(styles.textarea)}
-            />
-          )}
+          {input ?? <XDSChatComposerInput />}
         </div>
 
         <div {...stylex.props(styles.footer)}>
@@ -410,6 +390,7 @@ export function XDSChatComposer(props: XDSChatComposerProps) {
 
       {statusPosition === 'bottom' && statusEl}
     </div>
+    </XDSChatComposerContext.Provider>
   );
 }
 

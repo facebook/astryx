@@ -35,3 +35,22 @@ export const XDSChatListContext = createContext<XDSChatListContextValue | null>(
 export function useXDSChatListContext(): XDSChatListContextValue | null {
   return useContext(XDSChatListContext);
 }
+
+// =============================================================================
+// Composer context — shared state between XDSChatComposer and XDSChatComposerInput
+// =============================================================================
+
+export interface XDSChatComposerContextValue {
+  value: string;
+  onChange: (value: string) => void;
+  onSubmit: (value: string) => void;
+  placeholder: string;
+  isDisabled: boolean;
+}
+
+export const XDSChatComposerContext =
+  createContext<XDSChatComposerContextValue | null>(null);
+
+export function useXDSChatComposerContext(): XDSChatComposerContextValue | null {
+  return useContext(XDSChatComposerContext);
+}
