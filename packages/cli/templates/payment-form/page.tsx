@@ -243,9 +243,9 @@ export default function PaymentFormPage() {
                   <XDSVStack gap={3}>
                     {/* Card type icons */}
                     <div style={{display: 'flex', gap: 6, alignItems: 'center'}}>
-                      <img src="https://cdn.jsdelivr.net/npm/payment-icons@1.1.0/min/flat/visa.png" alt="Visa" style={{height: 28, width: 'auto', borderRadius: 4, border: '1px solid var(--color-border)'}} />
-                      <img src="https://cdn.jsdelivr.net/npm/payment-icons@1.1.0/min/flat/mastercard.png" alt="Mastercard" style={{height: 28, width: 'auto', borderRadius: 4, border: '1px solid var(--color-border)'}} />
-                      <img src="https://cdn.jsdelivr.net/npm/payment-icons@1.1.0/min/flat/amex.png" alt="Amex" style={{height: 28, width: 'auto', borderRadius: 4, border: '1px solid var(--color-border)'}} />
+                      <img src="https://raw.githubusercontent.com/aaronfagan/svg-credit-card-payment-icons/main/flat/visa.svg" alt="Visa" style={{height: 28, width: 'auto', borderRadius: 4, border: '1px solid var(--color-border)', backgroundColor: '#fff'}} />
+                      <img src="https://raw.githubusercontent.com/aaronfagan/svg-credit-card-payment-icons/main/flat/mastercard.svg" alt="Mastercard" style={{height: 28, width: 'auto', borderRadius: 4, border: '1px solid var(--color-border)', backgroundColor: '#fff'}} />
+                      <img src="https://raw.githubusercontent.com/aaronfagan/svg-credit-card-payment-icons/main/flat/amex.svg" alt="Amex" style={{height: 28, width: 'auto', borderRadius: 4, border: '1px solid var(--color-border)', backgroundColor: '#fff'}} />
                     </div>
                     <div style={{position: 'relative'}}>
                       <XDSTextInput size="lg" label="Card Number" placeholder="1234 5678 9012 3456" value={cardNumber} onChange={setCardNumber} status={errors.cardNumber ? {type: 'error', message: errors.cardNumber} : undefined} />
@@ -375,7 +375,7 @@ export default function PaymentFormPage() {
                       <XDSText type="large" weight="bold">{fmt(SUBTOTAL + (deliveryMethod === 'expedited' ? 9.95 : 4.95) + TAX)}</XDSText>
                     </div>
                     <div {...stylex.props(styles.freeBanner)}>
-                      <svg viewBox="0 0 24 24" style={{width: 16, height: 16, flexShrink: 0}} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <svg viewBox="0 0 24 24" style={{width: 16, height: 16, flexShrink: 0, color: 'var(--color-text-primary)'}} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <rect x="1" y="3" width="15" height="13" rx="1"/>
                         <path d="M16 8h4l3 5v4h-7V8z"/>
                         <circle cx="5.5" cy="18.5" r="2.5"/>
