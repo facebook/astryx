@@ -182,6 +182,28 @@ if (!skipBaseline) {
 
 // ─── Report ───────────────────────────────────────────────────────────────────
 
+import {createHash} from 'node:crypto';
+
+function sha(obj) {
+  return createHash('sha256').update(JSON.stringify(obj)).digest('hex').slice(0, 12);
+}
+
+function summarize(obj) {
+  if (!obj) return '(null)';
+  if (obj.__parse_error) return '(parse error)';
+  if (obj.error) return `error: "${obj.error}"`;
+  const d = obj.data;
+  if (Array.isArray(d)) return `[${d.length} items]`;
+  if (d && typeof d === 'object') {
+    if (d.name) return `{name: "${d.name}", ${Object.keys(d).length} keys}`;
+    if (d.source) return `{source: ${d.source.length} chars}`;
+    const keys = Object.keys(d);
+    if (keys.length <= 4) return `{${keys.join(', ')}}`;
+    return `{${keys.slice(0, 3).join(', ')}, +${keys.length - 3}}`;
+  }
+  return String(d).slice(0, 60);
+}
+
 let pass = 0;
 let fail = 0;
 const failures = [];
@@ -189,48 +211,59 @@ const apiTypes = new Set();
 const cliTypes = new Set();
 const cliOnlyTypes = new Set();
 
-console.log('\n' + '═'.repeat(95));
-
-const cols = ['Test Case', 'Type', 'API=CLI'];
-if (!skipBaseline) cols.push('old');
-cols.push('');
-console.log(cols.map((c, i) => c.padEnd(i === 0 ? 45 : i === 1 ? 24 : 8)).join(' | '));
-console.log('-'.repeat(95));
+// Write full JSON to a file for inspection
+const fullOutput = {};
 
 for (const r of results) {
-  const ct = typeOf(r.cli);
-  if (!r.cli?.error) cliTypes.add(ct);
+  const cliData = r.cli;
+  const apiData = r.api;
+  const ct = typeOf(cliData);
 
-  let match;
-  if (!r.api) {
-    match = 'n/a';
-    if (!r.cli?.error && r.cli?.type) cliOnlyTypes.add(ct);
+  if (!cliData?.error) cliTypes.add(ct);
+
+  let identical;
+  if (!apiData) {
+    identical = null;
+    if (!cliData?.error && cliData?.type) cliOnlyTypes.add(ct);
   } else {
-    if (!r.api.error) apiTypes.add(typeOf(r.api));
-    match = deepEqual(r.api, r.cli) ? '✓' : '✗';
+    if (!apiData.error) apiTypes.add(typeOf(apiData));
+    identical = deepEqual(apiData, cliData);
   }
 
-  let old = '';
-  if (!skipBaseline) {
-    const o = oldResults.get(r.label);
-    old = !o ? '—' : typeOf(r.cli) === typeOf(o) ? '✓' : '△';
-  }
-
-  const ok = match === '✓' || match === 'n/a';
+  const ok = identical === true || identical === null;
   if (ok) pass++; else {
     fail++;
-    failures.push({label: r.label, api: r.api ? typeOf(r.api) : 'n/a', cli: ct});
+    failures.push(r);
   }
 
-  const row = [r.label.padEnd(45), ct.padEnd(24), match.padEnd(8)];
-  if (!skipBaseline) row.push(old.padEnd(8));
-  row.push(ok ? 'PASS' : 'FAIL');
-  console.log(row.join(' | '));
+  const cliHash = sha(cliData);
+  const apiHash = apiData ? sha(apiData) : '—';
+
+  console.log('');
+  console.log(`${ ok ? 'PASS' : 'FAIL'}  ${r.label}`);
+  console.log(`  CLI: type=${ct}  hash=${cliHash}  ${summarize(cliData)}`);
+  if (apiData) {
+    console.log(`  API: type=${typeOf(apiData)}  hash=${apiHash}  ${summarize(apiData)}`);
+  } else {
+    console.log(`  API: (no API function — CLI-only command)`);
+  }
+  if (identical === true) {
+    console.log(`  Match: identical (${cliHash})`);
+  } else if (identical === false) {
+    console.log(`  MISMATCH — CLI and API returned different data:`);
+    console.log(`    CLI: ${JSON.stringify(cliData).slice(0, 200)}`);
+    console.log(`    API: ${JSON.stringify(apiData).slice(0, 200)}`);
+  }
+
+  fullOutput[r.label] = {cli: cliData, api: apiData, identical};
 }
 
-console.log('-'.repeat(95));
+// Write full results to file for manual inspection
+const outPath = path.join(ROOT, '.parity-test-results.json');
+fs.writeFileSync(outPath, JSON.stringify(fullOutput, null, 2));
+console.log(`\nFull results written to ${path.relative(ROOT, outPath)}`);
 
-// Coverage: any CLI type that no API function produced and no CLI-only probe covered?
+// Coverage check
 const uncovered = [...cliTypes].filter(t => !apiTypes.has(t) && !cliOnlyTypes.has(t));
 if (uncovered.length > 0) {
   console.log(`\nCOVERAGE GAP — CLI types without API or probe coverage:`);
@@ -243,7 +276,11 @@ console.log(`PASS: ${pass}  FAIL: ${fail}`);
 
 if (fail > 0) {
   console.log('\nFAILURES:');
-  for (const f of failures) console.log(`  ${f.label}: api=${f.api} cli=${f.cli}`);
+  for (const f of failures) {
+    console.log(`\n  ${f.label}`);
+    console.log(`    CLI: ${JSON.stringify(f.cli).slice(0, 300)}`);
+    console.log(`    API: ${JSON.stringify(f.api).slice(0, 300)}`);
+  }
   process.exit(1);
 }
 
