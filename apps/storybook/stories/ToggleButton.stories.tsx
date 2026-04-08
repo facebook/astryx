@@ -17,6 +17,8 @@ import {
   BookmarkIcon as BookmarkIconSolid,
 } from '@heroicons/react/24/solid';
 
+const iconSize = {width: 16, height: 16} as const;
+
 const meta: Meta<typeof XDSToggleButton> = {
   title: 'Core/XDSToggleButton',
   component: XDSToggleButton,
@@ -44,7 +46,7 @@ export const Standalone: Story = {
     return (
       <XDSToggleButton
         label="Bold"
-        icon={<BoldIcon />}
+        icon={<BoldIcon style={iconSize} />}
         isPressed={isPressed}
         onPressedChange={setIsPressed}
       />
@@ -61,15 +63,15 @@ export const IconSwap: Story = {
       <div style={{display: 'flex', gap: 8}}>
         <XDSToggleButton
           label="Favorite"
-          icon={<StarIcon />}
-          pressedIcon={<StarIconSolid />}
+          icon={<StarIcon style={iconSize} />}
+          pressedIcon={<StarIconSolid style={iconSize} />}
           isPressed={isFavorited}
           onPressedChange={setIsFavorited}
         />
         <XDSToggleButton
           label="Bookmark"
-          icon={<BookmarkIcon />}
-          pressedIcon={<BookmarkIconSolid />}
+          icon={<BookmarkIcon style={iconSize} />}
+          pressedIcon={<BookmarkIconSolid style={iconSize} />}
           isPressed={isBookmarked}
           onPressedChange={setIsBookmarked}
         />
@@ -99,7 +101,7 @@ export const Disabled: Story = {
     label: 'Disabled toggle',
     isPressed: false,
     isDisabled: true,
-    icon: <BoldIcon />,
+    icon: <BoldIcon style={iconSize} />,
   },
 };
 
@@ -109,7 +111,7 @@ export const Loading: Story = {
     label: 'Loading toggle',
     isPressed: true,
     isLoading: true,
-    icon: <StarIcon />,
+    icon: <StarIcon style={iconSize} />,
   },
 };
 
@@ -124,21 +126,21 @@ export const Sizes: Story = {
         <XDSToggleButton
           label="Small"
           size="sm"
-          icon={<BoldIcon />}
+          icon={<BoldIcon style={iconSize} />}
           isPressed={!!pressed.sm}
           onPressedChange={() => toggle('sm')}
         />
         <XDSToggleButton
           label="Medium"
           size="md"
-          icon={<BoldIcon />}
+          icon={<BoldIcon style={iconSize} />}
           isPressed={!!pressed.md}
           onPressedChange={() => toggle('md')}
         />
         <XDSToggleButton
           label="Large"
           size="lg"
-          icon={<BoldIcon />}
+          icon={<BoldIcon style={{width: 20, height: 20}} />}
           isPressed={!!pressed.lg}
           onPressedChange={() => toggle('lg')}
         />
@@ -160,12 +162,12 @@ export const GroupSingle: Story = {
         <XDSToggleButton
           value="list"
           label="List view"
-          icon={<ListBulletIcon />}
+          icon={<ListBulletIcon style={iconSize} />}
         />
         <XDSToggleButton
           value="grid"
           label="Grid view"
-          icon={<Squares2X2Icon />}
+          icon={<Squares2X2Icon style={iconSize} />}
         />
       </XDSToggleButtonGroup>
     );
@@ -182,12 +184,20 @@ export const GroupMultiple: Story = {
         value={formats}
         onChange={setFormats}
         label="Text formatting">
-        <XDSToggleButton value="bold" label="Bold" icon={<BoldIcon />} />
-        <XDSToggleButton value="italic" label="Italic" icon={<ItalicIcon />} />
+        <XDSToggleButton
+          value="bold"
+          label="Bold"
+          icon={<BoldIcon style={iconSize} />}
+        />
+        <XDSToggleButton
+          value="italic"
+          label="Italic"
+          icon={<ItalicIcon style={iconSize} />}
+        />
         <XDSToggleButton
           value="underline"
           label="Underline"
-          icon={<UnderlineIcon />}
+          icon={<UnderlineIcon style={iconSize} />}
         />
       </XDSToggleButtonGroup>
     );
@@ -201,8 +211,8 @@ export const NotificationToggle: Story = {
     return (
       <XDSToggleButton
         label={isMuted ? 'Unmute notifications' : 'Mute notifications'}
-        icon={<BellIcon />}
-        pressedIcon={<BellSlashIcon />}
+        icon={<BellIcon style={iconSize} />}
+        pressedIcon={<BellSlashIcon style={iconSize} />}
         isPressed={isMuted}
         onPressedChange={setIsMuted}
       />
