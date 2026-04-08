@@ -43,9 +43,9 @@ const ORDER_ITEMS = [
 ];
 
 const SUBTOTAL = 230;
-const SHIPPING = 5.95;
+// SHIPPING is now computed from deliveryMethod state
 const TAX = 18.40;
-const TOTAL = SUBTOTAL + SHIPPING + TAX;
+// TOTAL is computed dynamically based on delivery selection
 const fmt = (n: number) => `$${n.toFixed(2)}`;
 
 // ── Styles ────────────────────────────────────────────────────────────────────
@@ -82,7 +82,7 @@ const styles = stylex.create({
     flexWrap: 'wrap',
   },
   freeBanner: {
-    backgroundColor: colorVars['--color-background-muted'],
+    backgroundColor: colorVars['--color-background-blue'],
     borderRadius: radiusVars['--radius-element'],
     padding: spacingVars['--spacing-3'],
     display: 'flex',
@@ -365,15 +365,13 @@ export default function PaymentFormPage() {
                         <div {...stylex.props(styles.orderThumb)} />
                         <XDSVStack gap={1} style={{flex: 1}}>
                           <XDSHStack gap={2} hAlign="between" vAlign="start">
-                            <XDSText type="body" weight="medium">{item.name}</XDSText>
+                            <XDSHStack gap={2} vAlign="center">
+                              <XDSText type="body" weight="medium">{item.name}</XDSText>
+                              {item.limited && <XDSBadge variant="green" label="LIMITED EDITION" />}
+                            </XDSHStack>
                             <XDSText type="body" weight="bold">{fmt(item.price)}</XDSText>
                           </XDSHStack>
                           <XDSText type="supporting" color="secondary">{item.variant}</XDSText>
-                          {item.limited && (
-                            <div style={{display: 'inline-flex'}}>
-                              <XDSBadge variant="green" label="LIMITED EDITION" />
-                            </div>
-                          )}
                           <XDSHStack gap={2} vAlign="center">
                             <XDSNumberInput label="Qty" isLabelHidden value={quantities[item.id] ?? item.qty} onChange={v => setQuantities(q => ({...q, [item.id]: v}))} min={1} max={10} isIntegerOnly />
                             <XDSLink label="Remove" href="#" type="supporting">Remove</XDSLink>
@@ -390,28 +388,55 @@ export default function PaymentFormPage() {
                     <div {...stylex.props(styles.sectionTitle)}>Order Total</div>
                     <XDSVStack gap={2}>
                       <div {...stylex.props(styles.summaryRow)}><XDSText type="body" color="secondary">Subtotal</XDSText><XDSText type="body">{fmt(SUBTOTAL)}</XDSText></div>
-                      <div {...stylex.props(styles.summaryRow)}><XDSText type="body" color="secondary">Shipping</XDSText><XDSText type="body">{fmt(SHIPPING)}</XDSText></div>
+                      <div {...stylex.props(styles.summaryRow)}><XDSText type="body" color="secondary">Shipping</XDSText><XDSText type="body">{fmt(deliveryMethod === 'expedited' ? 9.95 : 4.95)}</XDSText></div>
                       <div {...stylex.props(styles.summaryRow)}><XDSText type="body" color="secondary">Tax</XDSText><XDSText type="body">{fmt(TAX)}</XDSText></div>
                     </XDSVStack>
                     <XDSDivider />
                     <div {...stylex.props(styles.summaryRow)}>
                       <XDSText type="large" weight="bold">Total</XDSText>
-                      <XDSText type="large" weight="bold">{fmt(TOTAL)}</XDSText>
+                      <XDSText type="large" weight="bold">{fmt(SUBTOTAL + (deliveryMethod === 'expedited' ? 9.95 : 4.95) + TAX)}</XDSText>
                     </div>
                     <div {...stylex.props(styles.freeBanner)}>
-                      <XDSIcon icon="checkCircle" size="sm" />
-                      <XDSText type="supporting">Free shipping on orders over $100</XDSText>
+                      <svg viewBox="0 0 24 24" style={{width: 16, height: 16, flexShrink: 0}} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="1" y="3" width="15" height="13" rx="1"/>
+                        <path d="M16 8h4l3 5v4h-7V8z"/>
+                        <circle cx="5.5" cy="18.5" r="2.5"/>
+                        <circle cx="18.5" cy="18.5" r="2.5"/>
+                      </svg>
+                      <XDSText type="supporting">Free shipping on orders over $300</XDSText>
                     </div>
                   </XDSVStack>
 
                   <XDSDivider />
                   <div {...stylex.props(styles.trustBar)}>
-                    <XDSHStack gap={1} vAlign="center"><XDSIcon icon="checkCircle" size="sm" /><XDSText type="supporting" color="secondary">Secure Payment</XDSText></XDSHStack>
-                    <XDSHStack gap={1} vAlign="center"><XDSIcon icon="checkCircle" size="sm" /><XDSText type="supporting" color="secondary">SSL Encrypted</XDSText></XDSHStack>
+                    <XDSHStack gap={1} vAlign="center">
+                      <svg viewBox="0 0 24 24" style={{width: 14, height: 14}} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                      <XDSText type="supporting" color="secondary">Secure Payment</XDSText>
+                    </XDSHStack>
+                    <XDSHStack gap={1} vAlign="center">
+                      <svg viewBox="0 0 24 24" style={{width: 14, height: 14}} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                      <XDSText type="supporting" color="secondary">SSL Encrypted</XDSText>
+                    </XDSHStack>
                     <XDSHStack gap={1} vAlign="center"><XDSIcon icon="checkCircle" size="sm" /><XDSText type="supporting" color="secondary">Free Returns</XDSText></XDSHStack>
                   </div>
-                  <XDSButton label="Place Order" variant="primary" size="lg" xstyle={styles.fullWidth} onClick={() => setSubmitted(true)} />
-                  <XDSButton label="Continue Shopping" variant="secondary" size="lg" xstyle={styles.fullWidth} onClick={() => {}} />
+                  <XDSVStack gap={2}>
+                    <XDSButton
+                      label="Place Order"
+                      variant="primary"
+                      size="lg"
+                      xstyle={styles.fullWidth}
+                      onClick={() => setSubmitted(true)}
+                      endContent={<svg viewBox="0 0 24 24" style={{width: 16, height: 16}} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>}
+                    />
+                    <XDSButton
+                      label="Continue Shopping"
+                      variant="secondary"
+                      size="lg"
+                      xstyle={styles.fullWidth}
+                      onClick={() => {}}
+                      icon={<svg viewBox="0 0 24 24" style={{width: 16, height: 16}} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>}
+                    />
+                  </XDSVStack>
                 </XDSVStack>
               </XDSCard>
 
