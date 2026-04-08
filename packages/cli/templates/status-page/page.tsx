@@ -425,7 +425,7 @@ function PastIncidents() {
       {PAST_INCIDENTS.map(incident => (
         <XDSCollapsible
           key={incident.id}
-          label={
+          trigger={
             <XDSHStack gap={2} hAlign="center">
               <XDSText type="body" weight="semibold">
                 {incident.title}
@@ -548,9 +548,11 @@ export default function StatusPage() {
           <PastIncidents />
           <XDSDivider />
           <SubscribeSection />
-          <XDSText type="supporting" color="secondary" align="center">
-            \u00A9 2026 Acme Inc. \u00B7 Updated every 60 seconds
-          </XDSText>
+          <div style={{textAlign: 'center'}}>
+            <XDSText type="supporting" color="secondary">
+              {'\u00A9'} 2026 Acme Inc. {'\u00B7'} Updated every 60 seconds
+            </XDSText>
+          </div>
         </XDSVStack>
       </div>
     </div>
