@@ -54,11 +54,6 @@ export interface XDSChatSystemMessageProps {
    */
   icon?: ReactNode;
 
-  /**
-   * Timestamp displayed after the text.
-   */
-  timestamp?: Date | string;
-
   /** StyleX overrides. */
   xstyle?: StyleXStyles;
   /** CSS class name(s). */
@@ -67,14 +62,6 @@ export interface XDSChatSystemMessageProps {
   style?: React.CSSProperties;
   /** Test ID. */
   'data-testid'?: string;
-}
-
-function formatTimestamp(ts: Date | string): string {
-  if (typeof ts === 'string') return ts;
-  return ts.toLocaleTimeString(undefined, {
-    hour: 'numeric',
-    minute: '2-digit',
-  });
 }
 
 // =============================================================================
@@ -104,13 +91,7 @@ const styles = stylex.create({
     alignItems: 'center',
     flexShrink: 0,
   },
-  // Timestamp
-  timestamp: {
-    fontSize: typeScaleVars['--text-heading-6-size'],
-    color: colorVars['--color-text-disabled'],
-    whiteSpace: 'nowrap',
-  },
-  // Content wrapper (to keep text + icon + timestamp together)
+  // Content wrapper (to keep text + icon together)
   content: {
     display: 'inline-flex',
     alignItems: 'center',
@@ -135,25 +116,19 @@ const styles = stylex.create({
  * ```
  * <XDSChatSystemMessage>Conversation started</XDSChatSystemMessage>
  * <XDSChatSystemMessage variant="divider">Today</XDSChatSystemMessage>
- * <XDSChatSystemMessage variant="divider" timestamp={new Date()}>
- *   March 15, 2026
- * </XDSChatSystemMessage>
+ * <XDSChatSystemMessage variant="divider">March 15, 2026</XDSChatSystemMessage>
  * ```
  */
 export function XDSChatSystemMessage({
   children,
   variant = 'default',
   icon,
-  timestamp,
   xstyle,
   className,
   style: styleProp,
   'data-testid': testId,
   ref,
 }: XDSChatSystemMessageProps) {
-  const formattedTimestamp =
-    timestamp != null ? formatTimestamp(timestamp) : null;
-
   if (variant === 'divider') {
     return (
       <div
@@ -185,9 +160,6 @@ export function XDSChatSystemMessage({
       <span {...stylex.props(styles.content)}>
         {icon != null && <span {...stylex.props(styles.icon)}>{icon}</span>}
         {children}
-        {formattedTimestamp != null && (
-          <span {...stylex.props(styles.timestamp)}>{formattedTimestamp}</span>
-        )}
       </span>
     </div>
   );
