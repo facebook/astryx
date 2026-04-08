@@ -23,6 +23,14 @@ import {
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
+const US_STATES = [
+  'AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA',
+  'HI','ID','IL','IN','IA','KS','KY','LA','ME','MD',
+  'MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ',
+  'NM','NY','NC','ND','OH','OK','OR','PA','RI','SC',
+  'SD','TN','TX','UT','VT','VA','WA','WV','WI','WY',
+];
+
 const COUNTRIES = ['United States', 'Canada', 'United Kingdom', 'France', 'Germany', 'Australia', 'Japan', 'Other'];
 const MONTHS = ['01','02','03','04','05','06','07','08','09','10','11','12'];
 const YEARS = Array.from({length: 12}, (_, i) => String(2025 + i));
@@ -148,12 +156,12 @@ export default function PaymentFormPage() {
                     <XDSTextInput label="Last Name" placeholder="Doe" value={lastName} onChange={setLastName} status={errors.lastName ? {type: 'error', message: errors.lastName} : undefined} />
                   </div>
                   <XDSTextInput label="Address" placeholder="123 Main Street" value={address} onChange={setAddress} status={errors.address ? {type: 'error', message: errors.address} : undefined} />
-                  <div style={{display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12}}>
+                  <div style={{display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12}}>
                     <XDSTextInput label="City" placeholder="New York" value={city} onChange={setCity} status={errors.city ? {type: 'error', message: errors.city} : undefined} />
                     <XDSTextInput label="ZIP Code" placeholder="10001" value={zip} onChange={setZip} status={errors.zip ? {type: 'error', message: errors.zip} : undefined} />
+                    <XDSSelector label="State" placeholder="Select state" options={US_STATES} value={state} onChange={setState} />
                   </div>
-                  <XDSTextInput label="State" placeholder="NY" value={state} onChange={setState} />
-                  <XDSTextInput label="Phone Number" placeholder="+1 (555) 123-4567" value={phone} onChange={setPhone} />
+                  <XDSTextInput label="Phone Number" placeholder="+1 (555) 123-4567" value={phone} onChange={setPhone} labelTooltip="We use your phone number to provide shipping updates and contact you about your delivery if needed." />
                   <XDSCheckboxInput label="Save this information for next time" value={saveInfo} onChange={setSaveInfo} />
                 </XDSVStack>
               </XDSCard>
