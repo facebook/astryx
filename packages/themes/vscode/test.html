@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XDS VS Code Theme Test</title>
+<style>
+/* Simulate VS Code CSS vars — in a real webview these are injected automatically */
+
+body.vscode-dark {
+  --vscode-foreground: #CCCCCC;
+  --vscode-descriptionForeground: #9D9D9D;
+  --vscode-editor-background: #1E1E1E;
+  --vscode-editor-font-family: "Cascadia Code", Consolas, monospace;
+  --vscode-font-family: "Segoe WPC", "Segoe UI", sans-serif;
+  --vscode-button-background: #0E639C;
+  --vscode-button-foreground: #FFFFFF;
+  --vscode-button-secondaryBackground: #3A3D41;
+  --vscode-button-secondaryForeground: #FFFFFF;
+  --vscode-focusBorder: #007FD4;
+  --vscode-textLink-foreground: #3794FF;
+  --vscode-input-background: #3C3C3C;
+  --vscode-input-foreground: #CCCCCC;
+  --vscode-input-border: #6B6B6B;
+  --vscode-input-placeholderForeground: #A0A0A0;
+  --vscode-editorWidget-background: #252526;
+  --vscode-editorWidget-border: #454545;
+  --vscode-editorHoverWidget-background: #252526;
+  --vscode-editorError-foreground: #F48771;
+  --vscode-editorWarning-foreground: #CCA700;
+  --vscode-testing-iconPassed: #73C991;
+  --vscode-notificationsInfoIcon-foreground: #75BEFF;
+  --vscode-panel-border: #2B2B2B;
+  --vscode-sideBar-background: #252526;
+  --vscode-list-hoverBackground: #2A2D2E;
+  --vscode-list-activeSelectionBackground: #094771;
+  color-scheme: dark;
+}
+
+body.vscode-light {
+  --vscode-foreground: #333333;
+  --vscode-descriptionForeground: #717171;
+  --vscode-editor-background: #FFFFFF;
+  --vscode-editor-font-family: "Cascadia Code", Consolas, monospace;
+  --vscode-font-family: "Segoe WPC", "Segoe UI", sans-serif;
+  --vscode-button-background: #007ACC;
+  --vscode-button-foreground: #FFFFFF;
+  --vscode-button-secondaryBackground: #E0E0E0;
+  --vscode-button-secondaryForeground: #333333;
+  --vscode-focusBorder: #0090F1;
+  --vscode-textLink-foreground: #006AB1;
+  --vscode-input-background: #FFFFFF;
+  --vscode-input-foreground: #333333;
+  --vscode-input-border: #CECECE;
+  --vscode-input-placeholderForeground: #767676;
+  --vscode-editorWidget-background: #F3F3F3;
+  --vscode-editorWidget-border: #C8C8C8;
+  --vscode-editorHoverWidget-background: #F3F3F3;
+  --vscode-editorError-foreground: #E51400;
+  --vscode-editorWarning-foreground: #BF8803;
+  --vscode-testing-iconPassed: #388A34;
+  --vscode-notificationsInfoIcon-foreground: #1A85FF;
+  --vscode-panel-border: #E5E5E5;
+  --vscode-sideBar-background: #F3F3F3;
+  --vscode-list-hoverBackground: #E8E8E8;
+  --vscode-list-activeSelectionBackground: #0060C0;
+  color-scheme: light;
+}
+
+body {
+  background: var(--vscode-editor-background);
+  color: var(--vscode-foreground);
+  font-family: var(--vscode-font-family);
+  font-size: 13px;
+  margin: 0;
+}
+
+/* XDS VS Code theme bridge — maps --vscode-* → XDS tokens */
+[data-xds-theme="vscode"] {
+  --color-accent: var(--vscode-button-background);
+  --color-accent-deemphasized: color-mix(in srgb, var(--vscode-button-background) 20%, transparent);
+  --color-accent-text: var(--vscode-textLink-foreground);
+  --color-surface: var(--vscode-editor-background);
+  --color-wash: var(--vscode-sideBar-background, var(--vscode-editor-background));
+  --color-overlay: color-mix(in srgb, var(--vscode-editor-background) 70%, transparent);
+  --color-hover-overlay: color-mix(in srgb, var(--vscode-list-hoverBackground) 40%, transparent);
+  --color-focus-outline: var(--vscode-focusBorder);
+  --color-focus-outline-error: var(--vscode-editorError-foreground);
+  --color-focus-outline-success: var(--vscode-testing-iconPassed);
+  --color-focus-outline-warning: var(--vscode-editorWarning-foreground);
+  --color-text-primary: var(--vscode-foreground);
+  --color-text-secondary: var(--vscode-descriptionForeground);
+  --color-text-disabled: color-mix(in srgb, var(--vscode-foreground) 40%, transparent);
+  --color-text-link: var(--vscode-textLink-foreground);
+  --color-text-placeholder: var(--vscode-input-placeholderForeground);
+  --color-text-on-media: var(--vscode-button-foreground);
+  --color-icon-primary: var(--vscode-foreground);
+  --color-icon-secondary: var(--vscode-descriptionForeground);
+  --color-card: var(--vscode-editorWidget-background);
+  --color-popover: var(--vscode-editorHoverWidget-background);
+  --color-positive: var(--vscode-testing-iconPassed);
+  --color-positive-deemphasized: color-mix(in srgb, var(--vscode-testing-iconPassed) 20%, transparent);
+  --color-negative: var(--vscode-editorError-foreground);
+  --color-negative-deemphasized: color-mix(in srgb, var(--vscode-editorError-foreground) 20%, transparent);
+  --color-warning: var(--vscode-editorWarning-foreground);
+  --color-warning-deemphasized: color-mix(in srgb, var(--vscode-editorWarning-foreground) 20%, transparent);
+  --color-divider: var(--vscode-panel-border);
+  --color-divider-emphasized: var(--vscode-editorWidget-border);
+  --color-shadow-elevation: rgba(0, 0, 0, 0.2);
+  --font-body: var(--vscode-font-family);
+  --font-heading: var(--vscode-font-family);
+  --font-code: var(--vscode-editor-font-family);
+  --text-base: 13px; --text-xsm: 11px; --text-sm: 12px; --text-lg: 14px;
+  --text-xl: 16px; --text-2xl: 18px; --text-3xl: 22px; --text-4xl: 28px;
+  --spacing-1: 4px; --spacing-2: 8px; --spacing-3: 12px; --spacing-4: 16px;
+  --radius-container: 8px; --radius-element: 4px; --radius-content: 2px;
+}
+
+/* Mock XDS component styles (simulating dist CSS) */
+.xds-button { display:inline-flex; align-items:center; gap:4px; padding:4px 12px; border:1px solid transparent; border-radius:var(--radius-content,2px); font-family:var(--font-body); font-size:var(--text-base,13px); font-weight:500; cursor:pointer; background:var(--color-accent); color:var(--color-text-on-media); transition:filter .15s; }
+.xds-button:hover { filter:brightness(1.1); }
+.xds-button.secondary { background:var(--vscode-button-secondaryBackground); color:var(--vscode-button-secondaryForeground); }
+.xds-button.destructive { background:var(--color-negative); color:var(--color-text-on-media); }
+.xds-card { background:var(--color-card); border:1px solid var(--color-divider-emphasized); border-radius:var(--radius-element,4px); padding:var(--spacing-3,12px); }
+.xds-text { color:var(--color-text-primary); font-family:var(--font-body); font-size:var(--text-base); }
+.xds-text.secondary { color:var(--color-text-secondary); }
+.xds-text.code { font-family:var(--font-code); }
+.xds-text.link { color:var(--color-text-link); text-decoration:underline; cursor:pointer; }
+.xds-badge { display:inline-flex; align-items:center; padding:2px 8px; border-radius:9999px; font-size:var(--text-xsm,11px); font-weight:500; }
+.xds-badge.positive { background:var(--color-positive-deemphasized); color:var(--color-positive); }
+.xds-badge.negative { background:var(--color-negative-deemphasized); color:var(--color-negative); }
+.xds-badge.warning { background:var(--color-warning-deemphasized); color:var(--color-warning); }
+.xds-badge.info { background:var(--color-accent-deemphasized); color:var(--color-accent-text); }
+.xds-input { background:var(--vscode-input-background); color:var(--vscode-input-foreground); border:1px solid var(--vscode-input-border); border-radius:var(--radius-content,2px); padding:4px 8px; font-family:var(--font-body); font-size:var(--text-base,13px); width:100%; box-sizing:border-box; }
+.xds-input::placeholder { color:var(--color-text-placeholder); }
+.xds-input:focus { outline:1px solid var(--color-focus-outline); outline-offset:-1px; }
+.xds-divider { border:none; border-top:1px solid var(--color-divider); margin:var(--spacing-3,12px) 0; }
+.xds-heading { font-family:var(--font-heading); color:var(--color-text-primary); font-weight:600; margin:0 0 8px 0; }
+.flex{display:flex} .flex-col{flex-direction:column} .gap-1{gap:4px} .gap-2{gap:8px} .gap-3{gap:12px} .items-center{align-items:center} .flex-wrap{flex-wrap:wrap}
+
+.theme-switcher { display:flex; gap:8px; padding:8px; border-bottom:1px solid var(--vscode-panel-border); margin-bottom:16px; }
+.theme-switcher button { padding:4px 12px; border:1px solid var(--vscode-input-border); background:var(--vscode-button-secondaryBackground); color:var(--vscode-button-secondaryForeground); border-radius:2px; cursor:pointer; font-family:inherit; font-size:12px; }
+.theme-switcher button.active { background:var(--vscode-button-background); color:var(--vscode-button-foreground); border-color:var(--vscode-button-background); }
+.test-harness { max-width:600px; margin:0 auto; padding:16px; }
+</style>
+</head>
+<body class="vscode-dark">
+<div class="test-harness" data-xds-theme="vscode">
+  <div class="theme-switcher">
+    <button class="active" onclick="setTheme('dark')">Dark+</button>
+    <button onclick="setTheme('light')">Light+</button>
+  </div>
+  <div class="flex flex-col gap-3">
+    <h2 class="xds-heading" style="font-size:var(--text-2xl)">XDS in VS Code</h2>
+    <p class="xds-text secondary">Components adapt to the active VS Code theme via CSS custom property bridging.</p>
+    <hr class="xds-divider">
+
+    <h3 class="xds-heading" style="font-size:var(--text-lg)">Button</h3>
+    <div class="flex gap-2 flex-wrap">
+      <button class="xds-button">Primary</button>
+      <button class="xds-button secondary">Secondary</button>
+      <button class="xds-button destructive">Destructive</button>
+    </div>
+    <hr class="xds-divider">
+
+    <h3 class="xds-heading" style="font-size:var(--text-lg)">Badge</h3>
+    <div class="flex gap-2 flex-wrap items-center">
+      <span class="xds-badge positive">Passing</span>
+      <span class="xds-badge negative">Failed</span>
+      <span class="xds-badge warning">Warning</span>
+      <span class="xds-badge info">Info</span>
+    </div>
+    <hr class="xds-divider">
+
+    <h3 class="xds-heading" style="font-size:var(--text-lg)">Card</h3>
+    <div class="xds-card">
+      <div class="flex flex-col gap-2">
+        <span class="xds-heading" style="font-size:var(--text-lg);margin:0">Navi Session</span>
+        <span class="xds-text secondary">Connected to devvm46816 · 2h 14m</span>
+        <div class="flex gap-2 items-center">
+          <span class="xds-badge positive">Connected</span>
+          <span class="xds-text code" style="font-size:var(--text-xsm)">pid: 48291</span>
+        </div>
+      </div>
+    </div>
+    <hr class="xds-divider">
+
+    <h3 class="xds-heading" style="font-size:var(--text-lg)">TextInput</h3>
+    <input class="xds-input" placeholder="Ask Navi something…">
+    <hr class="xds-divider">
+
+    <h3 class="xds-heading" style="font-size:var(--text-lg)">Typography</h3>
+    <div class="flex flex-col gap-1">
+      <span class="xds-text" style="font-size:var(--text-2xl);font-weight:600">Heading 1 (18px)</span>
+      <span class="xds-text" style="font-size:var(--text-xl);font-weight:600">Heading 2 (16px)</span>
+      <span class="xds-text" style="font-size:var(--text-lg);font-weight:600">Heading 3 (14px)</span>
+      <span class="xds-text">Body text (13px)</span>
+      <span class="xds-text secondary">Secondary text</span>
+      <span class="xds-text" style="font-size:var(--text-xsm)">Supporting text (11px)</span>
+      <span class="xds-text code">const theme = 'vscode';</span>
+      <span class="xds-text link">Link text</span>
+    </div>
+    <hr class="xds-divider">
+
+    <h3 class="xds-heading" style="font-size:var(--text-lg)">Token Swatches</h3>
+    <div class="flex gap-2 flex-wrap">
+      <div style="width:48px;height:48px;border-radius:var(--radius-element);background:var(--color-accent)" title="accent"></div>
+      <div style="width:48px;height:48px;border-radius:var(--radius-element);background:var(--color-surface);border:1px solid var(--color-divider)" title="surface"></div>
+      <div style="width:48px;height:48px;border-radius:var(--radius-element);background:var(--color-card);border:1px solid var(--color-divider)" title="card"></div>
+      <div style="width:48px;height:48px;border-radius:var(--radius-element);background:var(--color-wash)" title="wash"></div>
+      <div style="width:48px;height:48px;border-radius:var(--radius-element);background:var(--color-positive)" title="positive"></div>
+      <div style="width:48px;height:48px;border-radius:var(--radius-element);background:var(--color-negative)" title="negative"></div>
+      <div style="width:48px;height:48px;border-radius:var(--radius-element);background:var(--color-warning)" title="warning"></div>
+      <div style="width:48px;height:48px;border-radius:var(--radius-element);background:var(--color-focus-outline)" title="focus"></div>
+    </div>
+  </div>
+</div>
+<script>
+function setTheme(m){document.body.className=m==='dark'?'vscode-dark':'vscode-light';document.querySelectorAll('.theme-switcher button').forEach(b=>b.classList.toggle('active',b.textContent.toLowerCase().includes(m)));}
+</script>
+</body>
+</html>

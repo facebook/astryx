@@ -1,0 +1,33 @@
+{
+  "name": "@xds/theme-vscode",
+  "version": "0.0.11",
+  "private": false,
+  "description": "XDS theme for VS Code webviews — maps --vscode-* CSS vars to XDS tokens",
+  "license": "MIT",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    },
+    "./theme.css": "./dist/theme.css"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "xds theme build src/vscodeTheme.ts -o dist/theme.css && tsup"
+  },
+  "peerDependencies": {
+    "@xds/core": "*",
+    "react": ">=19"
+  },
+  "devDependencies": {
+    "@xds/cli": "*"
+  },
+  "module": "./dist/index.mjs"
+}

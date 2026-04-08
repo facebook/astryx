@@ -1,0 +1,1 @@
+export {vscodeTheme} from './vscodeTheme';
