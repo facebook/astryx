@@ -84,7 +84,7 @@ const styles = stylex.create({
 
 const sizeStyles = stylex.create({
   sm: {
-    '--segmented-radius': radiusVars['--radius-inner'],
+    '--segmented-radius': radiusVars['--radius-element'],
     borderRadius: 'var(--segmented-radius)',
   },
   md: {
