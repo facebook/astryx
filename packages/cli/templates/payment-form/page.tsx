@@ -10,6 +10,7 @@ import {XDSSelector} from '@xds/core/Selector';
 import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
 import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
 import {XDSLink} from '@xds/core/Link';
+import {XDSTextArea} from '@xds/core/TextArea';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSCard} from '@xds/core/Card';
 import {XDSBadge} from '@xds/core/Badge';
@@ -109,6 +110,10 @@ export default function PaymentFormPage() {
   const [expiry, setExpiry] = useState('');
   const [expYear, setExpYear] = useState('');
   const [billingMatchesShipping, setBillingMatchesShipping] = useState(true);
+  const [addGiftMessage, setAddGiftMessage] = useState(false);
+  const [giftTo, setGiftTo] = useState('');
+  const [giftFrom, setGiftFrom] = useState('');
+  const [giftMessage, setGiftMessage] = useState('');
   const [cvc, setCvc] = useState('');
   const [cardName, setCardName] = useState('');
   const [promo, setPromo] = useState('');
@@ -188,7 +193,7 @@ export default function PaymentFormPage() {
 
                   <XDSDivider />
 
-                  <XDSCheckboxInput label="Save this information for next time" value={saveInfo} onChange={setSaveInfo} />
+                  <XDSCheckboxInput label="Save my information for a faster checkout" value={saveInfo} onChange={setSaveInfo} />
                 </XDSVStack>
               </XDSCard>
 
@@ -281,12 +286,44 @@ export default function PaymentFormPage() {
               </XDSCard>
 
               <XDSCard padding={5}>
-                <XDSVStack gap={3}>
-                  <div {...stylex.props(styles.sectionTitle)}>Promo Code</div>
-                  <XDSHStack gap={2} vAlign="center">
-                    <XDSTextInput size="lg" label="Promo code" isLabelHidden placeholder="Enter promo code" value={promo} onChange={setPromo} xstyle={styles.fullWidth} />
-                    <XDSButton label="Apply" variant="secondary" size="lg" onClick={() => {}} />
-                  </XDSHStack>
+                <XDSVStack gap={5}>
+
+                  {/* Promo Code */}
+                  <XDSVStack gap={3}>
+                    <div {...stylex.props(styles.sectionTitle)}>Promo Code</div>
+                    <XDSHStack gap={2} vAlign="center">
+                      <XDSTextInput size="lg" label="Promo code" isLabelHidden placeholder="Enter promo code" value={promo} onChange={setPromo} xstyle={styles.fullWidth} />
+                      <XDSButton label="Apply" variant="secondary" size="lg" onClick={() => {}} />
+                    </XDSHStack>
+                  </XDSVStack>
+
+                  <XDSDivider />
+
+                  {/* Gift Options */}
+                  <XDSVStack gap={3}>
+                    <div {...stylex.props(styles.sectionTitle)}>Gift Options</div>
+                    <XDSCheckboxInput
+                      label="Add a gift message"
+                      value={addGiftMessage}
+                      onChange={setAddGiftMessage}
+                    />
+                    {addGiftMessage && (
+                      <XDSVStack gap={3}>
+                        <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12}}>
+                          <XDSTextInput size="lg" label="To" isLabelHidden placeholder="To" value={giftTo} onChange={setGiftTo} />
+                          <XDSTextInput size="lg" label="From" isLabelHidden placeholder="From" value={giftFrom} onChange={setGiftFrom} />
+                        </div>
+                        <XDSTextArea
+                          label="Gift message"
+                          isLabelHidden
+                          placeholder="Write something here"
+                          value={giftMessage}
+                          onChange={setGiftMessage}
+                        />
+                      </XDSVStack>
+                    )}
+                  </XDSVStack>
+
                 </XDSVStack>
               </XDSCard>
 
