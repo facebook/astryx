@@ -11,9 +11,6 @@
  * inline token rendering, serialization, Enter/Shift+Enter, message
  * history, paste/drop file handling.
  *
- * On mobile (no fine pointer), falls back to a plain <textarea> since
- * contentEditable has poor mobile UX (no autocorrect, unreliable
- * selection APIs, no predictive text).
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Chat/index.ts
@@ -191,22 +188,6 @@ const styles = stylex.create({
     verticalAlign: 'baseline',
     userSelect: 'all',
   },
-  // Mobile textarea fallback
-  textarea: {
-    all: 'unset',
-    width: '100%',
-    resize: 'none' as const,
-    fontSize: typeScaleVars['--text-body-size'],
-    lineHeight: `${LINE_HEIGHT_PX}px`,
-    fontFamily: typographyVars['--font-family-body'],
-    color: colorVars['--color-text-primary'],
-    backgroundColor: 'transparent',
-    caretColor: colorVars['--color-accent'],
-    overflowY: 'auto' as const,
-    '::placeholder': {
-      color: colorVars['--color-text-disabled'],
-    },
-  },
 });
 
 // =============================================================================
@@ -252,22 +233,6 @@ function insertTextAtCursor(text: string): void {
   selection.addRange(range);
 }
 
-/**
- * Detect if the device has a coarse pointer (touch).
- * Returns true on mobile/tablet where contentEditable is unreliable.
- */
-function useIsMobile(): boolean {
-  const [isMobile, setIsMobile] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia('(pointer: coarse)');
-    setIsMobile(mq.matches);
-    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
-    mq.addEventListener('change', handler);
-    return () => mq.removeEventListener('change', handler);
-  }, []);
-  return isMobile;
-}
-
 // =============================================================================
 // Component
 // =============================================================================
@@ -294,12 +259,10 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
   } = props;
 
   const editableRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [isEmpty, setIsEmpty] = useState(true);
   const historyRef = useRef<string[]>([]);
   const historyIndexRef = useRef(-1);
   const currentDraftRef = useRef('');
-  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (controlledValue !== undefined && editableRef.current) {
@@ -469,72 +432,8 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
     [onFiles],
   );
 
-  // --- Mobile textarea fallback ---
-  const [mobileValue, setMobileValue] = useState('');
-  const currentMobileValue =
-    controlledValue !== undefined ? controlledValue : mobileValue;
-
-  const handleMobileChange = useCallback(
-    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      const val = e.target.value;
-      setMobileValue(val);
-      onChange?.(val);
-      // Auto-resize
-      const el = e.target;
-      el.style.height = 'auto';
-      el.style.height = `${el.scrollHeight}px`;
-    },
-    [onChange],
-  );
-
-  const handleMobileKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        const text = currentMobileValue.trim();
-        if (!text) return;
-        onSubmit?.(text);
-        setMobileValue('');
-        onChange?.('');
-        if (textareaRef.current) {
-          textareaRef.current.style.height = 'auto';
-        }
-      }
-    },
-    [currentMobileValue, onSubmit, onChange],
-  );
-
   const maxHeight = maxRows * LINE_HEIGHT_PX;
 
-  // --- Mobile: plain textarea (no triggers, no tokens) ---
-  if (isMobile) {
-    return (
-      <div
-        ref={ref}
-        {...mergeProps(
-          xdsClassName('chat-composer-input--mobile'),
-          stylex.props(styles.root, isDisabled && styles.disabled, xstyle),
-          className,
-          style,
-        )}
-        {...rest}>
-        <textarea
-          ref={textareaRef}
-          rows={1}
-          value={currentMobileValue}
-          placeholder={placeholder}
-          disabled={isDisabled}
-          aria-label={label}
-          onChange={handleMobileChange}
-          onKeyDown={handleMobileKeyDown}
-          {...stylex.props(styles.textarea)}
-          style={{maxHeight: `${maxHeight}px`}}
-        />
-      </div>
-    );
-  }
-
-  // --- Desktop: contentEditable with trigger menus ---
   return (
     <div
       ref={ref}
