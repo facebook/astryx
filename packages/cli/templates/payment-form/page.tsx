@@ -166,13 +166,13 @@ export default function PaymentFormPage() {
             <div style={{flex: '1 1 55%', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 48}}>
 
                 {/* Sign in */}
-                <XDSVStack gap={1}>
+                <div style={{display: "flex", flexDirection: "column", gap: 2}}>
                   <XDSHStack gap={2} hAlign="between" vAlign="center">
                     <div {...stylex.props(styles.sectionTitle)}>Sign in to check out</div>
                     <XDSButton label="Sign In" variant="secondary" size="sm" onClick={() => {}} />
                   </XDSHStack>
                   <XDSText type="supporting" color="secondary">Sign in to track your order and save your information for faster checkout.</XDSText>
-                </XDSVStack>
+                </div>
 
                 {/* Contact Information */}
                 <XDSVStack gap={3}>
@@ -199,12 +199,12 @@ export default function PaymentFormPage() {
 
                 {/* Delivery */}
                 <XDSVStack gap={3}>
-                  <XDSVStack gap={1}>
+                  <div style={{display: "flex", flexDirection: "column", gap: 2}}>
                     <div {...stylex.props(styles.sectionTitle)}>Delivery</div>
                     <XDSText type="supporting" color="secondary">
                       Please allow 1–3 business days processing time before your order ships. Thank you for your patience.
                     </XDSText>
-                  </XDSVStack>
+                  </div>
                   <XDSRadioList label="Delivery method" value={deliveryMethod} onChange={setDeliveryMethod}>
                     <XDSRadioListItem value="standard" label="Standard (3–7 business days)" endContent={<XDSText type="body" weight="medium">$4.95</XDSText>} />
                     <XDSRadioListItem value="expedited" label="Expedited (1–2 business days)" endContent={<XDSText type="body" weight="medium">$9.95</XDSText>} />
@@ -215,10 +215,10 @@ export default function PaymentFormPage() {
 
                 {/* Payment Method */}
                 <XDSVStack gap={3}>
-                  <XDSVStack gap={1}>
+                  <div style={{display: "flex", flexDirection: "column", gap: 2}}>
                     <div {...stylex.props(styles.sectionTitle)}>Payment Method</div>
                     <XDSText type="supporting" color="secondary">All transactions are secure and encrypted.</XDSText>
-                  </XDSVStack>
+                  </div>
 
                   {/* Express checkout */}
                   <XDSVStack gap={3}>
