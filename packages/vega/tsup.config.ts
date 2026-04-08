@@ -15,5 +15,5 @@ export default defineConfig({
   dts: true,
   splitting: true,
   clean: true,
-  external: ['react', 'react-dom', 'vega-lite', 'vega-embed'],
+  external: ['react', 'react-dom', 'vega', 'vega-lite'],
 });

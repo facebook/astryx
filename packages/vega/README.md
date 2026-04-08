@@ -2,7 +2,7 @@
 
 XDS Vega wrapper — chart and data visualization components.
 
-Wraps [`vega-embed`](https://github.com/vega/vega-embed) in a React component that integrates cleanly with the XDS design system.
+Compiles [Vega-Lite](https://vega.github.io/vega-lite/) specs and renders them via the [Vega](https://vega.github.io/vega/) runtime directly, giving you full access to the live `View` object for signals, data streaming, and event listeners.
 
 <!-- SYNC: When files in this directory change, update this document. -->
 
@@ -14,13 +14,13 @@ Wraps [`vega-embed`](https://github.com/vega/vega-embed) in a React component th
 | `tsconfig.json` | Config | TypeScript compiler config (extends root) |
 | `tsup.config.ts` | Config | Build config — CJS + ESM + `.d.ts` outputs |
 | `src/index.ts` | Barrel | Public API surface |
-| `src/VegaChart.tsx` | Component | React wrapper around `vega-embed` |
+| `src/VegaChart.tsx` | Component | Compiles Vega-Lite → Vega and owns the View lifecycle |
 | `src/types.ts` | Types | Shared TypeScript types for this package |
 
 ## Installation
 
 ```bash
-yarn add @xds/vega vega-lite vega-embed
+yarn add @xds/vega vega vega-lite
 ```
 
 ## Usage
@@ -40,6 +40,19 @@ const spec = {
 <VegaChart spec={spec} />
 ```
 
+Access the live Vega `View` via `onReady` for signals, streaming data, or event listeners:
+
+```tsx
+<VegaChart
+  spec={spec}
+  onReady={view => {
+    view.addSignalListener('highlight', (name, value) => {
+      console.log('signal:', name, value);
+    });
+  }}
+/>
+```
+
 ## API
 
 ### `<VegaChart>`
@@ -47,11 +60,12 @@ const spec = {
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
 | `spec` | `TopLevelSpec` | — | Vega-Lite specification (required) |
-| `options` | `EmbedOptions` | `{}` | vega-embed options (renderer, actions, tooltip…) |
+| `viewConfig` | `Config` | — | Vega runtime config (renderer defaults, logging, etc.) |
+| `renderer` | `'svg' \| 'canvas'` | `'svg'` | Rendering backend |
 | `className` | `string` | — | CSS class on the container div |
 | `style` | `CSSProperties` | — | Inline styles on the container div |
-| `onReady` | `() => void` | — | Called when the chart is fully rendered |
-| `onError` | `(err: Error) => void` | — | Called on render failure |
+| `onReady` | `(view: View) => void` | — | Called with the live Vega View when ready |
+| `onError` | `(err: Error) => void` | — | Called on compile or render failure |
 
 ## Build
 

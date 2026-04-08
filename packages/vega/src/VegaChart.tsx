@@ -1,25 +1,29 @@
 /**
  * @file VegaChart.tsx
- * @input A Vega-Lite spec + optional embed options
- * @output A React component that renders a Vega-Lite chart via vega-embed
- * @position Primary component in @xds/vega; wraps vega-embed in a React lifecycle
+ * @input A Vega-Lite spec + optional Vega view config
+ * @output A React component that compiles and renders a Vega-Lite spec via the Vega runtime
+ * @position Primary component in @xds/vega; owns the Vega View lifecycle
  *
  * SYNC: When modified, update /packages/vega/README.md
  */
 
 import React, {useEffect, useRef} from 'react';
-import embed, {type Result} from 'vega-embed';
+import {parse, View} from 'vega';
+import {compile} from 'vega-lite';
 import type {VegaChartProps} from './types';
 
 /**
- * `VegaChart` renders a Vega-Lite specification as an interactive chart.
+ * `VegaChart` compiles a Vega-Lite specification and renders it using the
+ * Vega runtime directly — no vega-embed intermediary.
  *
- * It wraps `vega-embed` in a React component, managing the embed lifecycle
- * (mount, spec update, unmount) automatically.
+ * The component owns the full `View` lifecycle: it creates the view on mount,
+ * re-creates it when `spec` or `renderer` changes, exposes the live `View`
+ * via `onReady`, and calls `view.finalize()` on cleanup to release all
+ * runtime resources (timers, event listeners, WebGL contexts).
  *
- * Callbacks (`onReady`, `onError`) are stable across renders via refs — you
- * don't need to memoize them. `options` is a dep-array member: pass a stable
- * reference (or `useMemo`) if you want to avoid re-embedding on every render.
+ * Callbacks (`onReady`, `onError`) are stable across renders via refs —
+ * you don't need to memoize them. Pass a stable `viewConfig` reference
+ * (or `useMemo`) to avoid unnecessary re-renders.
  *
  * @example
  * ```
@@ -34,12 +38,13 @@ import type {VegaChartProps} from './types';
  *   },
  * };
  *
- * <VegaChart spec={spec} />
+ * <VegaChart spec={spec} onReady={view => console.log('view ready', view)} />
  * ```
  */
 export function VegaChart({
   spec,
-  options,
+  viewConfig,
+  renderer = 'svg',
   className,
   style,
   onReady,
@@ -47,52 +52,58 @@ export function VegaChart({
 }: VegaChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Keep callbacks in refs so they never stale-close over old values and
-  // don't need to be in the effect dependency array (avoids spurious re-embeds).
+  // Keep callbacks in refs so they never need to be in the dep array.
   const onReadyRef = useRef(onReady);
   const onErrorRef = useRef(onError);
   onReadyRef.current = onReady;
   onErrorRef.current = onError;
 
-  // Track the active vega-embed result so we can finalize() it on cleanup,
-  // releasing timers, event listeners, and WebGL resources held by the Vega runtime.
-  const resultRef = useRef<Result | null>(null);
-
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
+    let view: View | null = null;
     let cancelled = false;
 
-    embed(container, spec, {
-      actions: false,
-      renderer: 'svg',
-      ...options,
-    })
-      .then(result => {
-        if (cancelled) {
-          // Effect was cleaned up before the promise resolved — finalize immediately.
-          result.finalize();
-          return;
-        }
-        resultRef.current = result;
-        onReadyRef.current?.();
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) {
-          onErrorRef.current?.(err instanceof Error ? err : new Error(String(err)));
-        }
+    try {
+      // Compile Vega-Lite → Vega spec, then parse → Vega runtime.
+      const vegaSpec = compile(spec).spec;
+      const runtime = parse(vegaSpec, viewConfig);
+
+      view = new View(runtime, {
+        renderer,
+        container,
+        hover: true,
       });
+
+      view
+        .runAsync()
+        .then(() => {
+          if (cancelled) {
+            view?.finalize();
+            return;
+          }
+          onReadyRef.current?.(view!);
+        })
+        .catch((err: unknown) => {
+          if (!cancelled) {
+            onErrorRef.current?.(err instanceof Error ? err : new Error(String(err)));
+          }
+        });
+    } catch (err: unknown) {
+      if (!cancelled) {
+        onErrorRef.current?.(err instanceof Error ? err : new Error(String(err)));
+      }
+    }
 
     return () => {
       cancelled = true;
-      resultRef.current?.finalize();
-      resultRef.current = null;
+      view?.finalize();
     };
-  // `options` is intentionally in the dep array — a changed options object
-  // re-embeds the chart. Callers should memoize options to avoid this.
+  // viewConfig is intentionally in the dep array. Callers should memoize it
+  // if they want to avoid re-rendering on every parent render.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [spec, options]);
+  }, [spec, renderer, viewConfig]);
 
   return <div ref={containerRef} className={className} style={style} />;
 }
