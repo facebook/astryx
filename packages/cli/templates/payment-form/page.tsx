@@ -168,6 +168,16 @@ export default function PaymentFormPage() {
     <XDSAppShell topNav={<CheckoutNav />} height="auto" contentPadding={0} variant="surface">
       <XDSCenter axis="horizontal">
         <div style={{maxWidth: 1100, width: '100%', padding: '32px 24px'}}>
+
+          {/* Page header */}
+          <div style={{marginBottom: 32}}>
+            <div style={{fontSize: 56, fontWeight: 700, lineHeight: 1.05, letterSpacing: '-0.03em', margin: '0 0 8px'}}>Payment Request</div>
+            <XDSText type="body" color="secondary">
+              Review your order and complete your purchase. All transactions are secured with 256-bit SSL encryption.
+            </XDSText>
+            <div style={{marginTop: 24}}><XDSDivider /></div>
+          </div>
+
           <div style={{display: 'flex', gap: 32, alignItems: 'flex-start'}}>
 
             <div style={{flex: '1 1 55%', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16}}>
@@ -236,7 +246,7 @@ export default function PaymentFormPage() {
 
             </div>
 
-            <div style={{flex: '1 1 45%', minWidth: 0, position: 'sticky', top: 80, display: 'flex', flexDirection: 'column', gap: 16}}>
+            <div style={{flex: '1 1 45%', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16, position: 'sticky', top: 16, alignSelf: 'flex-start'}}>
 
               <XDSCard padding={5}>
                 <XDSVStack gap={4}>
