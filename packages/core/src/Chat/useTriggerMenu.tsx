@@ -497,6 +497,13 @@ export function useTriggerMenu(
     [listboxId],
   );
 
+  // Scroll highlighted item into view on keyboard navigation
+  useEffect(() => {
+    if (!popover.isOpen || state.highlightedIndex < 0) return;
+    const el = document.getElementById(getItemId(state.highlightedIndex));
+    el?.scrollIntoView({block: 'nearest'});
+  }, [state.highlightedIndex, popover.isOpen, getItemId]);
+
   // ARIA props for the textbox element
   const ariaProps =
     state.isActive && popover.isOpen

@@ -176,7 +176,7 @@ const styles = stylex.create({
     justifyContent: 'center',
     width: '32px',
     height: '32px',
-    borderRadius: radiusVars['--radius-full'],
+    borderRadius: 'var(--button-radius, var(--radius-full))',
     border: 'none',
     cursor: 'pointer',
     transition: `opacity ${durationVars['--duration-fast']} ${easeVars['--ease-standard']}`,
