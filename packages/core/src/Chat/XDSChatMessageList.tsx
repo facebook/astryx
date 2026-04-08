@@ -9,7 +9,7 @@
  * Renders a scrollable container with role="log" for chat message histories.
  * Handles auto-scroll (pins to bottom during streaming), a floating
  * scroll-to-bottom button when scrolled up, and a "New messages" label
- * that expands into the button with streaming text when new content arrives.
+ * that expands into the button via width animation when new content arrives.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Chat/index.ts (exports)
@@ -30,8 +30,6 @@ import {
   colorVars,
   spacingVars,
   radiusVars,
-  typeScaleVars,
-  fontWeightVars,
   durationVars,
   easeVars,
   shadowVars,
@@ -40,6 +38,7 @@ import {XDSChatListContext, type XDSChatDensity} from './XDSChatContext';
 import {xdsClassName, mergeProps} from '../utils';
 import {XDSSpinner} from '../Spinner';
 import {XDSIcon} from '../Icon';
+import {XDSButton} from '../Button';
 import {useAutoScroll} from './useAutoScroll';
 
 export interface XDSChatMessageListProps {
@@ -76,7 +75,7 @@ export interface XDSChatMessageListProps {
 
   /**
    * Label shown in the scroll-to-bottom button when new messages arrive.
-   * The label grows in with streaming text animation.
+   * Revealed via a width animation on the button.
    * @default 'New messages'
    */
   newMessagesLabel?: string;
@@ -176,6 +175,10 @@ const styles = stylex.create({
     bottom: spacingVars['--spacing-3'],
     left: '50%',
     contain: 'layout style',
+    display: 'inline-flex',
+    borderRadius: radiusVars['--radius-full'],
+    backgroundColor: colorVars['--color-background-popover'],
+    boxShadow: shadowVars['--shadow-med'],
     zIndex: 1,
     transitionProperty: 'opacity, transform',
     transitionTimingFunction: easeVars['--ease-standard'],
@@ -194,38 +197,11 @@ const styles = stylex.create({
     transitionDuration: durationVars['--duration-fast'],
     transitionDelay: '150ms',
   },
-  // Opaque surface behind the button — matches button size via inline-flex
-  scrollButtonBg: {
-    display: 'inline-flex',
-    borderRadius: radiusVars['--radius-full'],
-    backgroundColor: colorVars['--color-background-popover'],
-    boxShadow: shadowVars['--shadow-med'],
-  },
   scrollButton: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    border: `1px solid ${colorVars['--color-border']}`,
-    borderRadius: radiusVars['--radius-full'],
-    cursor: 'pointer',
-    fontFamily: 'inherit',
-    fontSize: typeScaleVars['--text-supporting-size'],
-    lineHeight: typeScaleVars['--text-supporting-leading'],
-    fontWeight: fontWeightVars['--font-weight-medium'],
-    backgroundColor: 'transparent',
-    color: colorVars['--color-text-secondary'],
-    transitionProperty: 'background-color, box-shadow, color',
-    transitionDuration: durationVars['--duration-fast'],
-    transitionTimingFunction: easeVars['--ease-standard'],
-    height: '32px',
-    paddingBlock: 0,
-    paddingInlineStart: spacingVars['--spacing-2'],
-    paddingInlineEnd: spacingVars['--spacing-2'],
-    gap: 0,
-    ':hover': {
-      backgroundColor: colorVars['--color-background-muted'],
-      color: colorVars['--color-text-primary'],
-    },
+    // Override element radius to pill and disable icon-only square aspect
+    // so the button can grow with the animated label
+    [radiusVars['--radius-element'] as string]: radiusVars['--radius-full'],
+    ['--button-icon-only-aspect' as string]: 'auto',
   },
   // Label wrapper — always present, width-animated to reveal/hide
   scrollButtonLabelWrapper: {
@@ -264,11 +240,11 @@ const styles = stylex.create({
 /**
  * Animated scroll-to-bottom button.
  *
- * - Icon-only (chevron down) when the user is scrolled up
+ * - Icon-only ghost XDSButton (chevron down) when the user is scrolled up
  * - Expands via max-width animation to reveal label when new messages arrive
- * - Ghost button on an opaque popover surface so hover tint doesn't bleed
+ * - Container provides opaque popover surface so ghost hover tint doesn't bleed
  *
- * Structure: container (positioning + fade) → bg (opaque surface) → button (ghost)
+ * Structure: container (positioning, fade, opaque surface) → XDSButton (ghost)
  * The label is always in the DOM but clipped by `max-width: 0` + `overflow: hidden`.
  * `contain: layout style` on the container isolates reflow from the scroll area.
  */
@@ -293,24 +269,24 @@ function ScrollToBottomButton({
           ? styles.scrollButtonContainerVisible
           : styles.scrollButtonContainerHidden,
       )}>
-      <div {...stylex.props(styles.scrollButtonBg)}>
-        <button
-          type="button"
-          aria-label={hasNewMessages ? label : 'Scroll to bottom'}
-          onClick={onClick}
-          {...stylex.props(styles.scrollButton)}>
-          <XDSIcon icon="chevronDown" size="sm" />
-          <span
-            {...stylex.props(
-              styles.scrollButtonLabelWrapper,
-              hasNewMessages
-                ? styles.scrollButtonLabelExpanded
-                : styles.scrollButtonLabelCollapsed,
-            )}>
-            {label}
-          </span>
-        </button>
-      </div>
+      <XDSButton
+        label={hasNewMessages ? label : 'Scroll to bottom'}
+        aria-label={hasNewMessages ? label : 'Scroll to bottom'}
+        icon={<XDSIcon icon="chevronDown" size="sm" />}
+        variant="ghost"
+        size="sm"
+        onClick={onClick}
+        xstyle={styles.scrollButton}>
+        <span
+          {...stylex.props(
+            styles.scrollButtonLabelWrapper,
+            hasNewMessages
+              ? styles.scrollButtonLabelExpanded
+              : styles.scrollButtonLabelCollapsed,
+          )}>
+          {label}
+        </span>
+      </XDSButton>
     </div>
   );
 }
@@ -324,7 +300,7 @@ function ScrollToBottomButton({
  *
  * Pins to the bottom when the user is near the end. Shows a muted
  * scroll-to-bottom icon button when scrolled up. When new messages
- * arrive while scrolled up, the button expands to show a streaming
+ * arrive while scrolled up, the button expands to show a
  * "New messages" label. Supports loading older messages via
  * `onScrollToTopAction`.
  *

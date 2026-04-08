@@ -60,7 +60,7 @@ describe('XDSChatMessageList', () => {
         <div>msg</div>
       </XDSChatMessageList>,
     );
-    const button = screen.getByLabelText(/Scroll to bottom/);
+    const button = screen.getByRole('button', {name: /Scroll to bottom/});
     expect(button).toBeTruthy();
   });
 });
