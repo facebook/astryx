@@ -175,7 +175,43 @@ export default function PaymentFormPage() {
 
                 {/* Express checkout */}
                 <XDSVStack gap={3}>
-                  <XDSButton label="Pay with saved card" variant="secondary" size="lg" xstyle={styles.fullWidth} onClick={() => {}} />
+                  <div style={{display: 'flex', gap: 12}}>
+                    {/* Saved card */}
+                    <XDSButton label="Pay with card" variant="secondary" size="lg" style={{flex: 1}} onClick={() => {}} />
+
+                    {/* PayPal */}
+                    <XDSButton
+                      label="PayPal"
+                      variant="secondary"
+                      size="lg"
+                      style={{flex: 1, backgroundColor: '#FFC439', borderColor: '#FFC439', color: '#003087'}}
+                      onClick={() => {}}
+                      icon={
+                        <svg viewBox="0 0 24 24" style={{width: 18, height: 18}} xmlns="http://www.w3.org/2000/svg">
+                          <path d="M7.076 21.337H2.47a.641.641 0 01-.633-.74L4.944.901C5.026.382 5.474 0 5.998 0h7.46c2.57 0 4.578.543 5.69 1.81 1.01 1.15 1.304 2.42 1.012 4.287-.023.143-.047.288-.077.437-.983 5.05-4.349 6.797-8.647 6.797h-2.19c-.524 0-.968.382-1.05.9l-1.12 7.106zm14.146-14.42a3.35 3.35 0 00-.607-.541c1.379 3.877-.487 6.686-4.761 6.686h-3.275l-1.096 6.956h3.48c.458 0 .847-.332.918-.784l.038-.196.728-4.617.047-.252a.93.93 0 01.918-.784h.578c3.741 0 6.671-1.52 7.527-5.913.36-1.845.174-3.386-.495-4.555z" fill="#009cde"/>
+                          <path d="M6.35 6.917a.93.93 0 01.918-.784h5.832c.691 0 1.337.045 1.927.14a7.49 7.49 0 011.132.285 5.17 5.17 0 011.364.68c-.312-1.867-1.006-3.086-2.24-4.07C13.98.978 12.27.5 10.08.5H3.83c-.524 0-.97.382-1.052.9L.054 20.437a.641.641 0 00.633.74h4.606l1.057-14.26z" fill="#003087"/>
+                        </svg>
+                      }
+                    />
+
+                    {/* Google Pay */}
+                    <XDSButton
+                      label="G Pay"
+                      variant="secondary"
+                      size="lg"
+                      style={{flex: 1, backgroundColor: '#fff', borderColor: '#dadce0', color: '#202124'}}
+                      onClick={() => {}}
+                      icon={
+                        <svg viewBox="0 0 48 20" style={{width: 48, height: 18}} xmlns="http://www.w3.org/2000/svg">
+                          <path d="M22.6 10.2c0 3.4-2.6 5.8-5.8 5.8s-5.8-2.5-5.8-5.8 2.6-5.8 5.8-5.8c1.6 0 3 .6 4 1.6l-1.6 1.6c-.6-.6-1.5-1-2.4-1-2 0-3.6 1.7-3.6 3.7s1.6 3.7 3.6 3.7c1.8 0 3-1 3.4-2.4h-3.4V9.2h5.7c.1.3.1.7.1 1z" fill="#4285F4"/>
+                          <path d="M33 10c0 3.3-2.5 5.9-5.7 5.9s-5.7-2.6-5.7-5.9 2.5-5.9 5.7-5.9 5.7 2.6 5.7 5.9zm-2.5 0c0-2.1-1.5-3.5-3.2-3.5s-3.2 1.4-3.2 3.5 1.5 3.5 3.2 3.5 3.2-1.4 3.2-3.5z" fill="#EA4335"/>
+                          <path d="M43.6 10c0 3.3-2.5 5.9-5.7 5.9s-5.7-2.6-5.7-5.9 2.5-5.9 5.7-5.9 5.7 2.6 5.7 5.9zm-2.5 0c0-2.1-1.5-3.5-3.2-3.5s-3.2 1.4-3.2 3.5 1.5 3.5 3.2 3.5 3.2-1.4 3.2-3.5z" fill="#FBBC05"/>
+                          <path d="M48 4.4v11.1c0 4.6-2.7 6.5-5.9 6.5-3 0-4.9-2-5.5-3.7l2.2-.9c.4 1 1.3 2.1 3.3 2.1 2.2 0 3.5-1.3 3.5-3.8v-.9h-.1c-.6.8-1.8 1.4-3.3 1.4-3.2 0-6.1-2.8-6.1-6.3s2.9-6.3 6.1-6.3c1.5 0 2.7.6 3.3 1.4h.1V4.4H48zm-2.3 5.6c0-2-1.4-3.5-3.2-3.5-1.9 0-3.4 1.5-3.4 3.5s1.5 3.4 3.4 3.4c1.8 0 3.2-1.4 3.2-3.4z" fill="#4285F4"/>
+                          <path d="M3.5 15.8V4.2H7c1.8 0 3.2 1.2 3.2 3s-1.4 3-3.2 3H5.7v5.6H3.5zm2.2-7.5H7c.7 0 1.1-.5 1.1-1.1S7.7 6.1 7 6.1H5.7v2.2z" fill="#34A853"/>
+                        </svg>
+                      }
+                    />
+                  </div>
                   <div {...stylex.props(styles.orDivider)}>
                     <div {...stylex.props(styles.orLine)} />
                     <XDSText type="supporting" color="secondary">OR</XDSText>
