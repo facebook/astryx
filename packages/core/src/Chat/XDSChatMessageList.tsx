@@ -186,7 +186,6 @@ const styles = stylex.create({
     boxShadow: shadowVars['--shadow-med'],
     transitionProperty:
       'opacity, transform, padding, color, background-color, box-shadow',
-    transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
     zIndex: 1,
     // Icon-only sizing as default
@@ -204,11 +203,18 @@ const styles = stylex.create({
     opacity: 0,
     pointerEvents: 'none',
     transform: 'translate(-50%, 8px)',
+    // Hide instantly — no delay
+    transitionDuration: durationVars['--duration-fast'],
+    transitionDelay: '0ms',
   },
   scrollButtonVisible: {
     opacity: 1,
     pointerEvents: 'auto',
     transform: 'translate(-50%, 0)',
+    // Delay appearance so transient scroll positions (auto-scroll)
+    // don't flash the button
+    transitionDuration: durationVars['--duration-fast'],
+    transitionDelay: '150ms',
   },
   // When showing new messages label, expand with padding
   scrollButtonExpanded: {
