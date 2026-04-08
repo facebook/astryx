@@ -78,7 +78,8 @@ export const MentionTrigger: Story = {
       searchSource: userSource,
       onSelect: item => ({
         value: `@${item.id}`,
-        render: () => <span>@{item.label}</span>,
+        label: `@${item.label}`,
+        variant: 'blue',
       }),
     };
 
@@ -138,7 +139,8 @@ export const AsyncSearch: Story = {
       searchSource: asyncUserSource,
       onSelect: item => ({
         value: `@${item.id}`,
-        render: () => <span>@{item.label}</span>,
+        label: `@${item.label}`,
+        variant: 'blue',
       }),
       loadingText: 'Searching users\u2026',
       emptySearchResultsText: 'No users found',
@@ -166,7 +168,8 @@ export const MultipleTriggers: Story = {
       searchSource: userSource,
       onSelect: item => ({
         value: `@${item.id}`,
-        render: () => <span>@{item.label}</span>,
+        label: `@${item.label}`,
+        variant: 'blue',
       }),
     };
     const commandTrigger: XDSChatComposerTrigger = {
@@ -216,7 +219,8 @@ export const CustomRenderItem: Story = {
       ),
       onSelect: item => ({
         value: `@${item.id}`,
-        render: () => <span>@{item.label}</span>,
+        label: `@${item.label}`,
+        variant: 'blue',
       }),
     };
 

@@ -29,7 +29,8 @@ function createMentionTrigger(
     searchSource: createStaticSource(USERS),
     onSelect: item => ({
       value: `@${item.id}`,
-      render: () => <span>@{item.label}</span>,
+      label: `@${item.label}`,
+      variant: 'blue' as const,
     }),
     ...overrides,
   };
@@ -168,7 +169,8 @@ describe('XDSChatComposerInput', () => {
         },
         onSelect: item => ({
           value: `@${item.id}`,
-          render: () => <span>@{item.label}</span>,
+          label: `@${item.label}`,
+          variant: 'blue' as const,
         }),
       };
       const {container} = render(

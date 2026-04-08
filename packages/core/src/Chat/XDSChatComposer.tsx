@@ -103,12 +103,12 @@ const styles = stylex.create({
     // Component CSS vars — themeable via defineTheme({ components: { 'chat-composer': { base: {...} } } })
     '--composer-radius': radiusVars['--radius-page'],
     '--composer-padding': spacingVars['--spacing-3'],
-    // Concentric radius: inner elements follow the outer shell's curvature.
-    // composer radius - composer padding = inner element radius.
+    // Concentric radius: buttons follow the outer shell's curvature.
+    // Sets --button-radius (not --radius-element) so only buttons are
+    // affected — other components in slots keep their own radius.
     // Default: 28px - 12px = 16px (fully rounds a 32px button).
-    [radiusVars['--radius-element'] as string]:
-      'calc(var(--composer-radius) - var(--composer-padding))',
-  } as Record<string, unknown>,
+    '--button-radius': `max(${radiusVars['--radius-element']}, calc(var(--composer-radius) - var(--composer-padding)))`,
+  },
 
   rootDisabled: {
     opacity: 0.6,

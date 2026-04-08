@@ -28,6 +28,7 @@ import {
   type ClipboardEvent,
   type DragEvent,
 } from 'react';
+import {createPortal} from 'react-dom';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import type {XDSSearchableItem, XDSSearchSource} from '../Typeahead/types';
 import * as stylex from '@stylexjs/stylex';
@@ -35,12 +36,12 @@ import {
   colorVars,
   spacingVars,
   radiusVars,
-  fontWeightVars,
   typeScaleVars,
   typographyVars,
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 import {useTriggerMenu} from './useTriggerMenu';
+import {XDSBadge, type XDSBadgeProps} from '../Badge';
 
 // =============================================================================
 // Types
@@ -49,9 +50,7 @@ import {useTriggerMenu} from './useTriggerMenu';
 export type XDSChatComposerToken = {
   /** Serialized value \u2014 what this token becomes in the onSubmit string */
   value: string;
-  /** How this token renders inside the contentEditable */
-  render: () => ReactNode;
-};
+} & Omit<XDSBadgeProps, 'ref' | 'xstyle' | 'className' | 'style'>;
 
 export type XDSChatComposerTriggerItem = XDSSearchableItem;
 
@@ -174,20 +173,7 @@ const styles = stylex.create({
     opacity: 0.5,
     pointerEvents: 'none' as const,
   },
-  token: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    borderRadius: radiusVars['--radius-full'],
-    backgroundColor: colorVars['--color-accent-muted'],
-    color: colorVars['--color-text-accent'],
-    fontWeight: fontWeightVars['--font-weight-medium'],
-    paddingInline: spacingVars['--spacing-1-5'],
-    paddingBlock: spacingVars['--spacing-0-5'],
-    fontSize: typeScaleVars['--text-label-size'],
-    lineHeight: typeScaleVars['--text-label-leading'],
-    verticalAlign: 'baseline',
-    userSelect: 'all',
-  },
+
 });
 
 // =============================================================================
@@ -276,9 +262,18 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
     const text = serialize(editableRef.current);
     setIsEmpty(text.length === 0);
     onChange?.(text);
+    // Clean up portals for tokens no longer in the DOM
+    setTokenPortals(prev =>
+      prev.filter(p => editableRef.current?.contains(p.span)),
+    );
   }, [onChange]);
 
   // --- Token insertion ---
+  // Track inserted token spans for portal rendering
+  const [tokenPortals, setTokenPortals] = useState<
+    Array<{id: string; span: HTMLSpanElement; token: XDSChatComposerToken}>
+  >([]);
+
   const insertToken = useCallback((token: XDSChatComposerToken) => {
     const editable = editableRef.current;
     if (!editable) return;
@@ -288,21 +283,15 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
 
     const range = selection.getRangeAt(0);
 
-    // Create token span with rendered content
+    // Create a non-editable container — React will portal the Badge into it
     const span = document.createElement('span');
+    const id = `token-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     span.setAttribute('data-xds-token', '');
     span.setAttribute('data-xds-token-value', token.value);
+    span.setAttribute('data-xds-token-id', id);
     span.contentEditable = 'false';
-    // Render the token's visual representation
-    const rendered = token.render();
-    if (typeof rendered === 'string') {
-      span.textContent = rendered;
-    } else {
-      // For ReactNode, fall back to the serialized value as text
-      // (React rendering into imperative DOM isn't possible here \u2014
-      // the token styling comes from the parent's CSS)
-      span.textContent = token.value;
-    }
+    span.style.display = 'inline-flex';
+    span.style.verticalAlign = 'baseline';
 
     range.deleteContents();
     range.insertNode(span);
@@ -316,6 +305,9 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
     newRange.collapse(true);
     selection.removeAllRanges();
     selection.addRange(newRange);
+
+    // Register for portal rendering
+    setTokenPortals(prev => [...prev, {id, span, token}]);
   }, []);
 
   const insertText = useCallback((text: string) => {
@@ -462,6 +454,17 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
         style={{maxHeight: `${maxHeight}px`}}
       />
       {triggerMenu.renderMenu()}
+      {tokenPortals.map(({id, span, token}) =>
+        createPortal(
+          <XDSBadge
+            key={id}
+            label={token.label}
+            variant={token.variant}
+            icon={token.icon}
+          />,
+          span,
+        ),
+      )}
     </div>
   );
 }
@@ -482,8 +485,12 @@ export function XDSChatComposerTokenElement({
       data-xds-token=""
       data-xds-token-value={token.value}
       contentEditable={false}
-      {...stylex.props(styles.token)}>
-      {token.render()}
+      style={{display: 'inline-flex', verticalAlign: 'baseline'}}>
+      <XDSBadge
+        label={token.label}
+        variant={token.variant}
+        icon={token.icon}
+      />
     </span>
   );
 }
