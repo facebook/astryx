@@ -4,8 +4,6 @@ import {XDSTheme} from '@xds/core';
 import {defaultTheme} from '@xds/theme-default';
 import {neutralTheme} from '@xds/theme-neutral';
 import {brutalistTheme} from '@xds/theme-brutalist';
-import {dailyTheme} from '@xds/theme-daily';
-
 // Import the base reset stylesheet
 import '@xds/core/reset.css';
 
@@ -16,7 +14,6 @@ const themes = {
   default: defaultTheme,
   neutral: neutralTheme,
   brutalist: brutalistTheme,
-  daily: dailyTheme,
 };
 
 /**
@@ -92,7 +89,6 @@ const preview: Preview = {
           {value: 'default', title: 'Default', icon: 'circlehollow'},
           {value: 'neutral', title: 'Neutral', icon: 'circle'},
           {value: 'brutalist', title: 'Brutalist', icon: 'lightning'},
-          {value: 'daily', title: 'Daily', icon: 'calendar'},
         ],
         dynamicTitle: true,
       },
