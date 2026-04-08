@@ -91,12 +91,15 @@ const styles = stylex.create({
     isolation: 'isolate',
     display: 'flex',
     flexDirection: 'column',
+    // Component CSS vars — themeable via defineTheme({ components: { 'chat-composer': { base: {...} } } })
+    '--composer-radius': radiusVars['--radius-page'],
+    '--composer-padding': spacingVars['--spacing-3'],
     // Concentric radius: inner elements follow the outer shell's curvature.
-    // page radius (28px) - body padding (12px) = 16px inner radius,
-    // which still fully rounds a 32px button.
+    // composer radius - composer padding = inner element radius.
+    // Default: 28px - 12px = 16px (fully rounds a 32px button).
     [radiusVars['--radius-element'] as string]:
-      `calc(${radiusVars['--radius-page']} - ${spacingVars['--spacing-3']})`,
-  },
+      'calc(var(--composer-radius) - var(--composer-padding))',
+  } as Record<string, unknown>,
 
   rootDisabled: {
     opacity: 0.6,
@@ -107,9 +110,9 @@ const styles = stylex.create({
     zIndex: 2,
     display: 'flex',
     flexDirection: 'column',
-    padding: spacingVars['--spacing-3'],
+    padding: 'var(--composer-padding)',
     gap: spacingVars['--spacing-2'],
-    borderRadius: radiusVars['--radius-page'],
+    borderRadius: 'var(--composer-radius)',
     backgroundColor: colorVars['--color-background-popover'],
     boxShadow: {
       default: shadowVars['--shadow-low'],
@@ -195,18 +198,18 @@ const styles = stylex.create({
     fontFamily: typographyVars['--font-family-body'],
   },
   statusTop: {
-    paddingBlockStart: spacingVars['--spacing-3'],
-    paddingBlockEnd: `calc(${spacingVars['--spacing-3']} + ${radiusVars['--radius-page']})`,
-    marginBlockEnd: `calc(-1 * ${radiusVars['--radius-page']})`,
-    borderTopLeftRadius: radiusVars['--radius-page'],
-    borderTopRightRadius: radiusVars['--radius-page'],
+    paddingBlockStart: 'var(--composer-padding)',
+    paddingBlockEnd: 'calc(var(--composer-padding) + var(--composer-radius))',
+    marginBlockEnd: 'calc(-1 * var(--composer-radius))',
+    borderTopLeftRadius: 'var(--composer-radius)',
+    borderTopRightRadius: 'var(--composer-radius)',
   },
   statusBottom: {
-    paddingBlockStart: `calc(${spacingVars['--spacing-3']} + ${radiusVars['--radius-page']})`,
-    paddingBlockEnd: spacingVars['--spacing-3'],
-    marginBlockStart: `calc(-1 * ${radiusVars['--radius-page']})`,
-    borderBottomLeftRadius: radiusVars['--radius-page'],
-    borderBottomRightRadius: radiusVars['--radius-page'],
+    paddingBlockStart: 'calc(var(--composer-padding) + var(--composer-radius))',
+    paddingBlockEnd: 'var(--composer-padding)',
+    marginBlockStart: 'calc(-1 * var(--composer-radius))',
+    borderBottomLeftRadius: 'var(--composer-radius)',
+    borderBottomRightRadius: 'var(--composer-radius)',
   },
   statusError: {
     backgroundColor: colorVars['--color-error-muted'],
