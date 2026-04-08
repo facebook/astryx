@@ -1,23 +1,21 @@
-import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {describe, it, expect, vi} from 'vitest';
+import {render, screen, fireEvent} from '@testing-library/react';
 import {XDSChatComposerInput} from './XDSChatComposerInput';
-import type {
-  XDSChatComposerTrigger,
-  XDSChatComposerTriggerItem,
-} from './XDSChatComposerInput';
+import type {XDSChatComposerTrigger} from './XDSChatComposerInput';
+import {createStaticSource} from '../Typeahead/createStaticSource';
+import type {XDSSearchableItem} from '../Typeahead/types';
 
 // =============================================================================
 // Helpers
 // =============================================================================
 
-const USERS: XDSChatComposerTriggerItem[] = [
+const USERS: XDSSearchableItem[] = [
   {id: 'cindy', label: 'Cindy Zhang'},
   {id: 'alex', label: 'Alex Johnson'},
   {id: 'sam', label: 'Sam Rivera'},
 ];
 
-const COMMANDS: XDSChatComposerTriggerItem[] = [
+const COMMANDS: XDSSearchableItem[] = [
   {id: 'summarize', label: 'summarize'},
   {id: 'translate', label: 'translate'},
   {id: 'search', label: 'search'},
@@ -28,7 +26,7 @@ function createMentionTrigger(
 ): XDSChatComposerTrigger {
   return {
     character: '@',
-    items: USERS,
+    searchSource: createStaticSource(USERS),
     onSelect: item => ({
       value: `@${item.id}`,
       render: () => <span>@{item.label}</span>,
@@ -42,7 +40,7 @@ function createCommandTrigger(
 ): XDSChatComposerTrigger {
   return {
     character: '/',
-    items: COMMANDS,
+    searchSource: createStaticSource(COMMANDS),
     onSelect: item => `/${item.label} `,
     ...overrides,
   };
@@ -83,7 +81,6 @@ describe('XDSChatComposerInput', () => {
       const onChange = vi.fn();
       render(<XDSChatComposerInput onChange={onChange} />);
       const textbox = screen.getByRole('textbox');
-      // Simulate typing by setting text content and firing input event
       textbox.textContent = 'hello';
       fireEvent.input(textbox);
       expect(onChange).toHaveBeenCalledWith('hello');
@@ -116,7 +113,6 @@ describe('XDSChatComposerInput', () => {
       textbox.textContent = 'hello';
       fireEvent.input(textbox);
       fireEvent.keyDown(textbox, {key: 'Enter'});
-      // onChange called with empty string after clear
       expect(onChange).toHaveBeenLastCalledWith('');
     });
 
@@ -144,7 +140,7 @@ describe('XDSChatComposerInput', () => {
   });
 
   describe('triggers', () => {
-    it('accepts triggers prop without error', () => {
+    it('accepts triggers with searchSource', () => {
       const triggers = [createMentionTrigger()];
       const {container} = render(<XDSChatComposerInput triggers={triggers} />);
       expect(container).toBeTruthy();
@@ -156,13 +152,19 @@ describe('XDSChatComposerInput', () => {
       expect(container).toBeTruthy();
     });
 
-    it('accepts async queryItemsAction trigger', () => {
+    it('accepts async searchSource trigger', () => {
       const asyncTrigger: XDSChatComposerTrigger = {
         character: '@',
-        queryItemsAction: async (query: string) => {
-          return USERS.filter(u =>
-            u.label.toLowerCase().includes(query.toLowerCase()),
-          );
+        searchSource: {
+          async search(query: string) {
+            return USERS.filter(u =>
+              u.label.toLowerCase().includes(query.toLowerCase()),
+            );
+          },
+          async bootstrap() {
+            return USERS;
+          },
+          cancel() {},
         },
         onSelect: item => ({
           value: `@${item.id}`,
@@ -181,6 +183,40 @@ describe('XDSChatComposerInput', () => {
       });
       const {container} = render(<XDSChatComposerInput triggers={[trigger]} />);
       expect(container).toBeTruthy();
+    });
+
+    it('supports configurable empty/loading text', () => {
+      const trigger = createMentionTrigger({
+        emptySearchResultsText: 'Nobody found',
+        loadingText: 'Looking up...',
+        menuLabel: 'People',
+      });
+      const {container} = render(<XDSChatComposerInput triggers={[trigger]} />);
+      expect(container).toBeTruthy();
+    });
+  });
+
+  describe('accessibility', () => {
+    it('has aria-haspopup on the textbox', () => {
+      const triggers = [createMentionTrigger()];
+      render(<XDSChatComposerInput triggers={triggers} />);
+      const textbox = screen.getByRole('textbox');
+      expect(textbox).toHaveAttribute('aria-haspopup', 'listbox');
+    });
+
+    it('has aria-expanded=false when menu is closed', () => {
+      const triggers = [createMentionTrigger()];
+      render(<XDSChatComposerInput triggers={triggers} />);
+      const textbox = screen.getByRole('textbox');
+      expect(textbox).toHaveAttribute('aria-expanded', 'false');
+    });
+  });
+
+  describe('ref', () => {
+    it('forwards ref to root element', () => {
+      const ref = vi.fn();
+      render(<XDSChatComposerInput ref={ref} />);
+      expect(ref).toHaveBeenCalledWith(expect.any(HTMLDivElement));
     });
   });
 

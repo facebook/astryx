@@ -3,8 +3,9 @@ import {
   XDSChatComposer,
   XDSChatComposerInput,
   type XDSChatComposerTrigger,
-  type XDSChatComposerTriggerItem,
 } from '@xds/core/Chat';
+import {createStaticSource} from '@xds/core/Typeahead';
+import type {XDSSearchableItem, XDSSearchSource} from '@xds/core/Typeahead';
 import {useState} from 'react';
 
 const meta: Meta = {
@@ -29,7 +30,7 @@ type Story = StoryObj;
 // Mock data
 // =============================================================================
 
-const USERS: XDSChatComposerTriggerItem[] = [
+const USERS: XDSSearchableItem[] = [
   {id: 'cindy', label: 'Cindy Zhang'},
   {id: 'alex', label: 'Alex Johnson'},
   {id: 'sam', label: 'Sam Rivera'},
@@ -38,7 +39,7 @@ const USERS: XDSChatComposerTriggerItem[] = [
   {id: 'morgan', label: 'Morgan Chen'},
 ];
 
-const COMMANDS: XDSChatComposerTriggerItem[] = [
+const COMMANDS: XDSSearchableItem[] = [
   {id: 'summarize', label: 'summarize'},
   {id: 'translate', label: 'translate'},
   {id: 'search', label: 'search'},
@@ -46,27 +47,35 @@ const COMMANDS: XDSChatComposerTriggerItem[] = [
   {id: 'help', label: 'help'},
 ];
 
-// Simulated async search
-function searchUsers(query: string): Promise<XDSChatComposerTriggerItem[]> {
-  return new Promise(resolve => {
-    setTimeout(() => {
-      const lower = query.toLowerCase();
-      resolve(USERS.filter(u => u.label.toLowerCase().includes(lower)));
-    }, 300);
-  });
-}
+const userSource = createStaticSource(USERS);
+const commandSource = createStaticSource(COMMANDS);
+
+// Async search source with simulated latency
+const asyncUserSource: XDSSearchSource = {
+  search(query: string) {
+    return new Promise(resolve => {
+      setTimeout(() => {
+        const lower = query.toLowerCase();
+        resolve(USERS.filter(u => u.label.toLowerCase().includes(lower)));
+      }, 300);
+    });
+  },
+  bootstrap() {
+    return USERS;
+  },
+};
 
 // =============================================================================
 // Stories
 // =============================================================================
 
-/** Static @ mentions — type @ to see the menu */
+/** Static @ mentions \u2014 type @ to see the menu */
 export const MentionTrigger: Story = {
   render: () => {
     const [log, setLog] = useState<string[]>([]);
     const mentionTrigger: XDSChatComposerTrigger = {
       character: '@',
-      items: USERS,
+      searchSource: userSource,
       onSelect: item => ({
         value: `@${item.id}`,
         render: () => <span>@{item.label}</span>,
@@ -89,7 +98,7 @@ export const MentionTrigger: Story = {
         {log.length > 0 && (
           <div style={{fontSize: 12, fontFamily: 'monospace', color: '#666'}}>
             {log.map((msg, i) => (
-              <div key={i}>→ {msg}</div>
+              <div key={i}>\u2192 {msg}</div>
             ))}
           </div>
         )}
@@ -98,12 +107,12 @@ export const MentionTrigger: Story = {
   },
 };
 
-/** Static / commands — type / to see commands */
+/** Static / commands \u2014 type / to see commands */
 export const SlashCommands: Story = {
   render: () => {
     const commandTrigger: XDSChatComposerTrigger = {
       character: '/',
-      items: COMMANDS,
+      searchSource: commandSource,
       onSelect: item => `/${item.label} `,
     };
 
@@ -121,16 +130,18 @@ export const SlashCommands: Story = {
   },
 };
 
-/** Async search source — type @ to trigger a simulated API search */
+/** Async search source \u2014 type @ to trigger a simulated API search */
 export const AsyncSearch: Story = {
   render: () => {
     const asyncTrigger: XDSChatComposerTrigger = {
       character: '@',
-      queryItemsAction: searchUsers,
+      searchSource: asyncUserSource,
       onSelect: item => ({
         value: `@${item.id}`,
         render: () => <span>@{item.label}</span>,
       }),
+      loadingText: 'Searching users\u2026',
+      emptySearchResultsText: 'No users found',
     };
 
     return (
@@ -147,12 +158,12 @@ export const AsyncSearch: Story = {
   },
 };
 
-/** Multiple triggers — @ for mentions, / for commands */
+/** Multiple triggers \u2014 @ for mentions, / for commands */
 export const MultipleTriggers: Story = {
   render: () => {
     const mentionTrigger: XDSChatComposerTrigger = {
       character: '@',
-      items: USERS,
+      searchSource: userSource,
       onSelect: item => ({
         value: `@${item.id}`,
         render: () => <span>@{item.label}</span>,
@@ -160,7 +171,7 @@ export const MultipleTriggers: Story = {
     };
     const commandTrigger: XDSChatComposerTrigger = {
       character: '/',
-      items: COMMANDS,
+      searchSource: commandSource,
       onSelect: item => `/${item.label} `,
     };
 
@@ -183,7 +194,7 @@ export const CustomRenderItem: Story = {
   render: () => {
     const mentionTrigger: XDSChatComposerTrigger = {
       character: '@',
-      items: USERS,
+      searchSource: userSource,
       renderItem: item => (
         <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
           <div
@@ -215,7 +226,7 @@ export const CustomRenderItem: Story = {
         input={
           <XDSChatComposerInput
             triggers={[mentionTrigger]}
-            placeholder="Type @ — items have custom avatars..."
+            placeholder="Type @ \u2014 items have custom avatars..."
           />
         }
       />

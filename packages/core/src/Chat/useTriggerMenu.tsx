@@ -2,20 +2,27 @@
 
 /**
  * @file useTriggerMenu.tsx
- * @input Uses React, useXDSPopover
+ * @input Uses React, useXDSPopover, XDSSearchSource
  * @output Exports useTriggerMenu hook for trigger-based menus in contentEditable
  * @position Internal hook; consumed by XDSChatComposerInput
  *
  * Detects trigger characters (@ / etc.) typed inside a contentEditable,
  * opens a popover at the cursor position with filtered items, handles
  * keyboard navigation, and inserts tokens or text on selection.
+ *
+ * Reuses XDSSearchSource from Typeahead for async/sync search with
+ * cancel() support and debounce.
+ *
+ * SYNC: When modified, update:
+ * - /packages/core/src/Chat/XDSChatComposerInput.tsx
+ * - /packages/core/src/Chat/index.ts
  */
 
 import {
   useState,
   useCallback,
   useRef,
-  useTransition,
+  useEffect,
   useId,
   type ReactNode,
 } from 'react';
@@ -29,9 +36,9 @@ import {
   typographyVars,
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
+import type {XDSSearchableItem, XDSSearchSource} from '../Typeahead/types';
 import type {
   XDSChatComposerTrigger,
-  XDSChatComposerTriggerItem,
   XDSChatComposerToken,
 } from './XDSChatComposerInput';
 
@@ -43,7 +50,7 @@ export interface TriggerMenuState {
   isActive: boolean;
   activeTrigger: XDSChatComposerTrigger | null;
   query: string;
-  items: XDSChatComposerTriggerItem[];
+  items: XDSSearchableItem[];
   highlightedIndex: number;
   isLoading: boolean;
 }
@@ -54,14 +61,30 @@ export interface UseTriggerMenuOptions {
   onInsertToken: (token: XDSChatComposerToken) => void;
   onInsertText: (text: string) => void;
   onEmitChange: () => void;
+  /**
+   * Debounce delay in ms before triggering search after typing.
+   * @default 150
+   */
+  debounceMs?: number;
 }
 
 export interface UseTriggerMenuReturn {
   state: TriggerMenuState;
+  /** Call on every input event to check for trigger activation */
   handleInput: () => void;
+  /** Call on keydown \u2014 returns true if the event was consumed */
   handleKeyDown: (e: React.KeyboardEvent) => boolean;
+  /** Render the trigger menu popover */
   renderMenu: () => ReactNode;
+  /** Reset/close the trigger menu */
   reset: () => void;
+  /** ARIA props to spread onto the textbox element */
+  ariaProps: {
+    'aria-expanded'?: boolean;
+    'aria-controls'?: string;
+    'aria-activedescendant'?: string;
+    'aria-haspopup'?: 'listbox';
+  };
 }
 
 // =============================================================================
@@ -205,8 +228,14 @@ function deleteTriggerText(
 export function useTriggerMenu(
   options: UseTriggerMenuOptions,
 ): UseTriggerMenuReturn {
-  const {triggers, editableRef, onInsertToken, onInsertText, onEmitChange} =
-    options;
+  const {
+    triggers,
+    editableRef,
+    onInsertToken,
+    onInsertText,
+    onEmitChange,
+    debounceMs = 150,
+  } = options;
 
   const listboxId = useId();
   const [state, setState] = useState<TriggerMenuState>({
@@ -218,9 +247,9 @@ export function useTriggerMenu(
     isLoading: false,
   });
 
-  const [, startTransition] = useTransition();
   const triggerStartRef = useRef<number>(-1);
   const virtualAnchorRef = useRef<HTMLSpanElement | null>(null);
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const popover = useXDSPopover({
     onHide: useCallback(() => {
@@ -245,10 +274,28 @@ export function useTriggerMenu(
     hasAutoFocus: false,
   });
 
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const reset = useCallback(() => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+      searchTimeoutRef.current = null;
+    }
+    // Cancel any in-flight search on the active trigger's searchSource
+    const trigger = state.activeTrigger;
+    if (trigger?.searchSource) {
+      trigger.searchSource.cancel?.();
+    }
     popover.hide();
     triggerStartRef.current = -1;
-  }, [popover]);
+  }, [popover, state.activeTrigger]);
 
   const placeVirtualAnchor = useCallback(() => {
     const editable = editableRef.current;
@@ -283,15 +330,24 @@ export function useTriggerMenu(
 
   const searchItems = useCallback(
     (trigger: XDSChatComposerTrigger, query: string) => {
-      if (trigger.queryItemsAction) {
-        setState(prev => ({...prev, isLoading: true}));
-        startTransition(() => {
-          trigger.queryItemsAction!(query).then(
-            results => {
+      // Clear any pending debounce
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+        searchTimeoutRef.current = null;
+      }
+
+      const doSearch = () => {
+        if (trigger.searchSource) {
+          // Use XDSSearchSource \u2014 cancel previous, then search
+          trigger.searchSource.cancel?.();
+          setState(prev => ({...prev, isLoading: true}));
+          const result = trigger.searchSource.search(query);
+          Promise.resolve(result).then(
+            items => {
               setState(prev => ({
                 ...prev,
-                items: results,
-                highlightedIndex: results.length > 0 ? 0 : -1,
+                items,
+                highlightedIndex: items.length > 0 ? 0 : -1,
                 isLoading: false,
               }));
             },
@@ -304,27 +360,27 @@ export function useTriggerMenu(
               }));
             },
           );
-        });
-      } else if (trigger.items) {
-        const lower = query.toLowerCase();
-        const filtered = lower
-          ? trigger.items.filter(item =>
-              item.label.toLowerCase().includes(lower),
-            )
-          : trigger.items;
-        setState(prev => ({
-          ...prev,
-          items: filtered,
-          highlightedIndex: filtered.length > 0 ? 0 : -1,
-          isLoading: false,
-        }));
+        }
+      };
+
+      // Debounce async sources, immediate for sync
+      if (trigger.searchSource) {
+        // Check if search is likely sync (returns array, not promise)
+        const testResult = trigger.searchSource.search('');
+        const isAsync = testResult instanceof Promise;
+        if (isAsync && debounceMs > 0) {
+          setState(prev => ({...prev, isLoading: true}));
+          searchTimeoutRef.current = setTimeout(doSearch, debounceMs);
+        } else {
+          doSearch();
+        }
       }
     },
-    [],
+    [debounceMs],
   );
 
   const selectItem = useCallback(
-    (item: XDSChatComposerTriggerItem) => {
+    (item: XDSSearchableItem) => {
       const trigger = state.activeTrigger;
       if (!trigger) return;
 
@@ -466,23 +522,48 @@ export function useTriggerMenu(
     ],
   );
 
+  const getItemId = useCallback(
+    (index: number) => `${listboxId}-option-${index}`,
+    [listboxId],
+  );
+
+  // ARIA props for the textbox element
+  const ariaProps =
+    state.isActive && popover.isOpen
+      ? {
+          'aria-expanded': true as const,
+          'aria-controls': listboxId,
+          'aria-activedescendant':
+            state.highlightedIndex >= 0
+              ? getItemId(state.highlightedIndex)
+              : undefined,
+          'aria-haspopup': 'listbox' as const,
+        }
+      : {
+          'aria-expanded': false as const,
+          'aria-haspopup': 'listbox' as const,
+        };
+
   const renderMenu = useCallback((): ReactNode => {
-    const getItemId = (index: number) => `${listboxId}-option-${index}`;
     const trigger = state.activeTrigger;
+    const emptyText = trigger?.emptySearchResultsText ?? 'No results';
+    const loadingText = trigger?.loadingText ?? 'Searching\u2026';
 
     return popover.render(
       <div
         id={listboxId}
         role="listbox"
-        aria-label="Suggestions"
+        aria-label={trigger?.menuLabel ?? 'Suggestions'}
         {...mergeProps(
           xdsClassName('trigger-menu'),
           stylex.props(styles.dropdown),
         )}>
         {state.isLoading ? (
-          <div {...stylex.props(styles.loadingState)}>Searching…</div>
+          <div role="status" {...stylex.props(styles.loadingState)}>
+            {loadingText}
+          </div>
         ) : state.items.length === 0 && state.isActive ? (
-          <div {...stylex.props(styles.emptyState)}>No results</div>
+          <div {...stylex.props(styles.emptyState)}>{emptyText}</div>
         ) : (
           state.items.map((item, index) => (
             <div
@@ -514,7 +595,7 @@ export function useTriggerMenu(
         xstyle: [styles.popoverSurface, styles.popoverGap],
       },
     );
-  }, [popover, listboxId, state, selectItem]);
+  }, [popover, listboxId, state, selectItem, getItemId]);
 
   return {
     state,
@@ -522,5 +603,6 @@ export function useTriggerMenu(
     handleKeyDown,
     renderMenu,
     reset,
+    ariaProps,
   };
 }

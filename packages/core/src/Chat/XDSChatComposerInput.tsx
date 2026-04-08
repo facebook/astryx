@@ -2,9 +2,23 @@
 
 /**
  * @file XDSChatComposerInput.tsx
+ * @input Uses React, StyleX, useTriggerMenu, XDSSearchSource
+ * @output Exports XDSChatComposerInput rich input + trigger types
+ * @position Core implementation; consumed by index.ts, XDSChatComposer
+ *
  * ContentEditable-based rich input for the chat composer.
- * Supports trigger menus (@ mentions, / commands), inline token rendering,
- * serialization, Enter/Shift+Enter, message history, paste/drop file handling.
+ * Supports trigger menus (@ mentions, / commands) via XDSSearchSource,
+ * inline token rendering, serialization, Enter/Shift+Enter, message
+ * history, paste/drop file handling.
+ *
+ * On mobile (no fine pointer), falls back to a plain <textarea> since
+ * contentEditable has poor mobile UX (no autocorrect, unreliable
+ * selection APIs, no predictive text).
+ *
+ * SYNC: When modified, update:
+ * - /packages/core/src/Chat/index.ts
+ * - /apps/storybook/stories/ChatComposer.stories.tsx
+ * - /apps/storybook/stories/ChatComposerTriggers.stories.tsx
  */
 
 import {
@@ -18,6 +32,7 @@ import {
   type DragEvent,
 } from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
+import type {XDSSearchableItem, XDSSearchSource} from '../Typeahead/types';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -35,46 +50,63 @@ import {useTriggerMenu} from './useTriggerMenu';
 // =============================================================================
 
 export type XDSChatComposerToken = {
-  /** Serialized value — what this token becomes in the onSubmit string */
+  /** Serialized value \u2014 what this token becomes in the onSubmit string */
   value: string;
   /** How this token renders inside the contentEditable */
   render: () => ReactNode;
 };
 
-export type XDSChatComposerTriggerItem = {
-  id: string;
-  label: string;
-  [key: string]: unknown;
-};
+export type XDSChatComposerTriggerItem = XDSSearchableItem;
 
 export type XDSChatComposerTrigger = {
   /** Character that activates this trigger menu (e.g. '@', '/') */
   character: string;
-  /** Static items for the trigger menu. Use for small, known lists. */
-  items?: XDSChatComposerTriggerItem[];
   /**
-   * Async action to query items based on user input.
-   * Use for dynamic lists (e.g. contact search, API-backed data).
+   * Search source providing items for this trigger.
+   * Reuses the same XDSSearchSource interface as XDSTypeahead \u2014
+   * supports sync/async search, bootstrap, and cancel().
+   *
+   * Use `createStaticSource()` for static item lists,
+   * or implement XDSSearchSource for API-backed search.
+   *
+   * @example
+   * ```
+   * import {createStaticSource} from '@xds/core/Typeahead';
+   *
+   * const mentionTrigger = {
+   *   character: '@',
+   *   searchSource: createStaticSource(users),
+   *   onSelect: (item) => ({ value: `@${item.id}`, render: () => ... }),
+   * };
+   * ```
    */
-  queryItemsAction?: (query: string) => Promise<XDSChatComposerTriggerItem[]>;
+  searchSource: XDSSearchSource;
   /** How to render each item in the trigger menu */
-  renderItem?: (item: XDSChatComposerTriggerItem) => ReactNode;
+  renderItem?: (item: XDSSearchableItem) => ReactNode;
   /**
    * What to insert when an item is selected.
    * Return a string for plain text, or a Token for an inline chip.
    */
-  onSelect: (item: XDSChatComposerTriggerItem) => string | XDSChatComposerToken;
+  onSelect: (item: XDSSearchableItem) => string | XDSChatComposerToken;
   /**
    * Parse serialized tokens back into rendered tokens.
    * Used when loading a previous message for editing.
    */
   deserialize?: (value: string) => XDSChatComposerToken | null;
+  /** Text shown when no results found. @default 'No results' */
+  emptySearchResultsText?: string;
+  /** Text shown during async search. @default 'Searching\u2026' */
+  loadingText?: string;
+  /** Accessible label for the menu. @default 'Suggestions' */
+  menuLabel?: string;
 };
 
 export interface XDSChatComposerInputProps extends Omit<
   XDSBaseProps<HTMLDivElement>,
   'onChange' | 'onPaste' | 'onSubmit'
 > {
+  /** Ref to the root element */
+  ref?: React.Ref<HTMLDivElement>;
   /** Controlled value */
   value?: string;
   /** Change handler */
@@ -85,6 +117,12 @@ export interface XDSChatComposerInputProps extends Omit<
   maxRows?: number;
   /** Trigger definitions for @ menus, / commands, etc. */
   triggers?: XDSChatComposerTrigger[];
+  /**
+   * Debounce delay in ms before triggering async search.
+   * Set to 0 for immediate search.
+   * @default 150
+   */
+  debounceMs?: number;
   /** Enable message history recall. @default true */
   hasHistory?: boolean;
   /** Accessible label. @default 'Message input' */
@@ -153,6 +191,22 @@ const styles = stylex.create({
     verticalAlign: 'baseline',
     userSelect: 'all',
   },
+  // Mobile textarea fallback
+  textarea: {
+    all: 'unset',
+    width: '100%',
+    resize: 'none' as const,
+    fontSize: typeScaleVars['--text-body-size'],
+    lineHeight: `${LINE_HEIGHT_PX}px`,
+    fontFamily: typographyVars['--font-family-body'],
+    color: colorVars['--color-text-primary'],
+    backgroundColor: 'transparent',
+    caretColor: colorVars['--color-accent'],
+    overflowY: 'auto' as const,
+    '::placeholder': {
+      color: colorVars['--color-text-disabled'],
+    },
+  },
 });
 
 // =============================================================================
@@ -180,17 +234,53 @@ function serialize(node: Node): string {
   return result;
 }
 
+/** Insert plain text at the current selection using the Selection API. */
+function insertTextAtCursor(text: string): void {
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) return;
+
+  const range = selection.getRangeAt(0);
+  range.deleteContents();
+
+  const textNode = document.createTextNode(text);
+  range.insertNode(textNode);
+
+  // Move cursor after inserted text
+  range.setStartAfter(textNode);
+  range.collapse(true);
+  selection.removeAllRanges();
+  selection.addRange(range);
+}
+
+/**
+ * Detect if the device has a coarse pointer (touch).
+ * Returns true on mobile/tablet where contentEditable is unreliable.
+ */
+function useIsMobile(): boolean {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(pointer: coarse)');
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+  return isMobile;
+}
+
 // =============================================================================
 // Component
 // =============================================================================
 
 export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
   const {
+    ref,
     value: controlledValue,
     onChange,
     placeholder = 'Type a message\u2026',
     maxRows = 8,
     triggers,
+    debounceMs = 150,
     hasHistory = true,
     label = 'Message input',
     isDisabled = false,
@@ -204,10 +294,12 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
   } = props;
 
   const editableRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [isEmpty, setIsEmpty] = useState(true);
   const historyRef = useRef<string[]>([]);
   const historyIndexRef = useRef(-1);
   const currentDraftRef = useRef('');
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (controlledValue !== undefined && editableRef.current) {
@@ -236,12 +328,23 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
 
     const range = selection.getRangeAt(0);
 
+    // Create token span with rendered content
     const span = document.createElement('span');
     span.setAttribute('data-xds-token', '');
     span.setAttribute('data-xds-token-value', token.value);
     span.contentEditable = 'false';
-    span.textContent = token.value;
+    // Render the token's visual representation
+    const rendered = token.render();
+    if (typeof rendered === 'string') {
+      span.textContent = rendered;
+    } else {
+      // For ReactNode, fall back to the serialized value as text
+      // (React rendering into imperative DOM isn't possible here \u2014
+      // the token styling comes from the parent's CSS)
+      span.textContent = token.value;
+    }
 
+    range.deleteContents();
     range.insertNode(span);
 
     // Add a non-breaking space after the token and move cursor there
@@ -256,7 +359,7 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
   }, []);
 
   const insertText = useCallback((text: string) => {
-    document.execCommand('insertText', false, text);
+    insertTextAtCursor(text);
   }, []);
 
   // --- Trigger menu ---
@@ -266,6 +369,7 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
     onInsertToken: insertToken,
     onInsertText: insertText,
     onEmitChange: emitChange,
+    debounceMs,
   });
 
   const handleInput = useCallback(() => {
@@ -346,7 +450,7 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
 
       e.preventDefault();
       const text = e.clipboardData.getData('text/plain');
-      document.execCommand('insertText', false, text);
+      insertTextAtCursor(text);
 
       onPasteProp?.(e, text);
       emitChange();
@@ -365,10 +469,75 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
     [onFiles],
   );
 
+  // --- Mobile textarea fallback ---
+  const [mobileValue, setMobileValue] = useState('');
+  const currentMobileValue =
+    controlledValue !== undefined ? controlledValue : mobileValue;
+
+  const handleMobileChange = useCallback(
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      const val = e.target.value;
+      setMobileValue(val);
+      onChange?.(val);
+      // Auto-resize
+      const el = e.target;
+      el.style.height = 'auto';
+      el.style.height = `${el.scrollHeight}px`;
+    },
+    [onChange],
+  );
+
+  const handleMobileKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        const text = currentMobileValue.trim();
+        if (!text) return;
+        onSubmit?.(text);
+        setMobileValue('');
+        onChange?.('');
+        if (textareaRef.current) {
+          textareaRef.current.style.height = 'auto';
+        }
+      }
+    },
+    [currentMobileValue, onSubmit, onChange],
+  );
+
   const maxHeight = maxRows * LINE_HEIGHT_PX;
 
+  // --- Mobile: plain textarea (no triggers, no tokens) ---
+  if (isMobile) {
+    return (
+      <div
+        ref={ref}
+        {...mergeProps(
+          xdsClassName('chat-composer-input--mobile'),
+          stylex.props(styles.root, isDisabled && styles.disabled, xstyle),
+          className,
+          style,
+        )}
+        {...rest}>
+        <textarea
+          ref={textareaRef}
+          rows={1}
+          value={currentMobileValue}
+          placeholder={placeholder}
+          disabled={isDisabled}
+          aria-label={label}
+          onChange={handleMobileChange}
+          onKeyDown={handleMobileKeyDown}
+          {...stylex.props(styles.textarea)}
+          style={{maxHeight: `${maxHeight}px`}}
+        />
+      </div>
+    );
+  }
+
+  // --- Desktop: contentEditable with trigger menus ---
   return (
     <div
+      ref={ref}
       {...mergeProps(
         xdsClassName('chat-composer-input'),
         stylex.props(styles.root, isDisabled && styles.disabled, xstyle),
@@ -392,6 +561,7 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
         onKeyDown={handleKeyDown}
         onPaste={handlePaste}
         onDrop={handleDrop}
+        {...triggerMenu.ariaProps}
         {...stylex.props(styles.editable)}
         style={{maxHeight: `${maxHeight}px`}}
       />
