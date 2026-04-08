@@ -202,6 +202,17 @@ const styles = stylex.create({
     // so the button can grow with the animated label
     [radiusVars['--radius-element'] as string]: radiusVars['--radius-full'],
     ['--button-icon-only-aspect' as string]: 'auto',
+    // Animate gap so collapsed state has no dead space between icon and label
+    transitionProperty: 'gap, padding',
+    transitionDuration: durationVars['--duration-fast-max'],
+    transitionTimingFunction: easeVars['--ease-standard'],
+  },
+  scrollButtonCollapsed: {
+    gap: 0,
+    paddingInlineEnd: 0,
+  },
+  scrollButtonExpanded: {
+    gap: spacingVars['--spacing-2'],
   },
   // Label wrapper — always present, width-animated to reveal/hide
   scrollButtonLabelWrapper: {
@@ -276,7 +287,12 @@ function ScrollToBottomButton({
         variant="ghost"
         size="sm"
         onClick={onClick}
-        xstyle={styles.scrollButton}>
+        xstyle={[
+          styles.scrollButton,
+          hasNewMessages
+            ? styles.scrollButtonExpanded
+            : styles.scrollButtonCollapsed,
+        ]}>
         <span
           {...stylex.props(
             styles.scrollButtonLabelWrapper,
