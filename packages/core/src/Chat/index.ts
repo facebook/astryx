@@ -59,11 +59,9 @@ export type {XDSChatMessageSender, XDSChatDensity} from './XDSChatContext';
 export {XDSChatReasoning} from './XDSChatReasoning';
 export type {XDSChatReasoningProps} from './XDSChatReasoning';
 
-export {XDSChatToolCall} from './XDSChatToolCall';
+export {XDSChatToolCalls} from './XDSChatToolCalls';
 export type {
-  XDSChatToolCallProps,
+  XDSChatToolCallsProps,
+  XDSChatToolCallItem,
   XDSChatToolCallStatus,
-} from './XDSChatToolCall';
-
-export {XDSChatToolCallGroup} from './XDSChatToolCallGroup';
-export type {XDSChatToolCallGroupProps} from './XDSChatToolCallGroup';
+} from './XDSChatToolCalls';
