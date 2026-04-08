@@ -209,13 +209,13 @@ export default function PaymentFormPage() {
                   {/* Express checkout */}
                   <XDSVStack gap={3}>
                     <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12}}>
-                      <button onClick={() => {}} style={{display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFC439', border: 'none', borderRadius: 8, cursor: 'pointer', padding: '10px 16px', height: 48}}>
+                      <button onClick={() => {}} style={{display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFC439', border: 'none', borderRadius: 8, cursor: 'pointer', padding: '0 16px', height: 36}}>
                         <img src="https://www.paypalobjects.com/webstatic/mktg/Logo/pp-logo-100px.png" alt="PayPal" style={{height: 20, width: 'auto'}} />
                       </button>
-                      <button onClick={() => {}} style={{display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#000', border: 'none', borderRadius: 8, cursor: 'pointer', padding: '10px 16px', height: 48}}>
+                      <button onClick={() => {}} style={{display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#000', border: 'none', borderRadius: 8, cursor: 'pointer', padding: '0 16px', height: 36}}>
                         <img src="https://pay.google.com/about/static_kcs/images/logos/google-pay-logo.svg" alt="Google Pay" style={{height: 22, width: 'auto', filter: 'brightness(0) invert(1)'}} />
                       </button>
-                      <button onClick={() => {}} style={{display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#008CFF', border: 'none', borderRadius: 8, cursor: 'pointer', padding: '10px 16px', height: 48}}>
+                      <button onClick={() => {}} style={{display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#008CFF', border: 'none', borderRadius: 8, cursor: 'pointer', padding: '0 16px', height: 36}}>
                         <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Venmo_logo_2021.svg/320px-Venmo_logo_2021.svg.png" alt="Venmo" style={{height: 20, width: 'auto', filter: 'brightness(0) invert(1)'}} />
                       </button>
                     </div>
