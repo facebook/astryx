@@ -45,10 +45,14 @@ export interface XDSChatToolCallItem {
   name: string;
   /** Current execution status. @default 'complete' */
   status?: XDSChatToolCallStatus;
+  /** Short summary label (e.g. "Edit Button.tsx", "git status"). Shown alongside name. */
+  label?: string;
   /** Duration string (e.g. "1.2s", "340ms"). Shown when complete. */
   duration?: string;
-  /** Unique key. Falls back to index if omitted. */
+  /** Unique key for React list rendering. Falls back to index. */
   key?: string;
+  /** Arbitrary data passed through to renderDetail. Store tool args, result, etc. */
+  data?: unknown;
 }
 
 export interface XDSChatToolCallsProps extends XDSBaseProps<HTMLDivElement> {
@@ -182,6 +186,16 @@ const styles = stylex.create({
     fontFamily: typographyVars['--font-family-code'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     color: colorVars['--color-text-secondary'],
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    minWidth: 0,
+  },
+  callLabel: {
+    fontSize: typeScaleVars['--text-supporting-size'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
+    fontFamily: typographyVars['--font-family-body'],
+    color: colorVars['--color-text-disabled'],
     whiteSpace: 'nowrap',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
