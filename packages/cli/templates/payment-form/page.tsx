@@ -13,7 +13,6 @@ import {XDSDivider} from '@xds/core/Divider';
 import {XDSCard} from '@xds/core/Card';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSNumberInput} from '@xds/core/NumberInput';
-import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
 import {XDSAppShell} from '@xds/core/AppShell';
 import {XDSCenter} from '@xds/core/Center';
 import {XDSIcon} from '@xds/core/Icon';
@@ -167,23 +166,46 @@ export default function PaymentFormPage() {
               </XDSCard>
 
               <XDSCard padding={5}>
-                <XDSVStack gap={4}>
+                <XDSVStack gap={5}>
                   <div {...stylex.props(styles.sectionTitle)}>Payment Method</div>
-                  <XDSRadioList label="Payment method" isLabelHidden value={paymentMethod} onChange={setPaymentMethod}>
-                    <XDSRadioListItem value="card" label="Credit / Debit Card" />
-                    <XDSRadioListItem value="paypal" label="PayPal" />
-                    <XDSRadioListItem value="applepay" label="Apple Pay" />
-                  </XDSRadioList>
-                  {paymentMethod === 'card' && (
-                    <XDSVStack gap={3}>
-                      <XDSTextInput label="Card Number" placeholder="1234 5678 9012 3456" value={cardNumber} onChange={setCardNumber} status={errors.cardNumber ? {type: 'error', message: errors.cardNumber} : undefined} />
-                      <div style={{display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12}}>
-                        <XDSSelector label="Expiry Month" placeholder="MM" options={MONTHS} value={expiry} onChange={setExpiry} />
-                        <XDSTextInput label="CVC" placeholder="123" value={cvc} onChange={setCvc} />
-                      </div>
-                      <XDSTextInput label="Name on Card" placeholder="John Doe" value={cardName} onChange={setCardName} status={errors.cardName ? {type: 'error', message: errors.cardName} : undefined} />
-                    </XDSVStack>
-                  )}
+
+                  {/* Express checkout */}
+                  <XDSVStack gap={3}>
+                    <XDSText type="supporting" color="secondary" style={{textAlign: 'center'}}>Express checkout</XDSText>
+                    <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12}}>
+                      <button onClick={() => {}} style={{display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFC439', border: 'none', borderRadius: 8, cursor: 'pointer', padding: '10px 16px', height: 48}}>
+                        <img src="https://www.paypalobjects.com/webstatic/mktg/Logo/pp-logo-100px.png" alt="PayPal" style={{height: 20, width: 'auto'}} />
+                      </button>
+                      <button onClick={() => {}} style={{display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#000', border: 'none', borderRadius: 8, cursor: 'pointer', padding: '10px 16px', height: 48}}>
+                        <img src="https://pay.google.com/about/static_kcs/images/logos/google-pay-logo.svg" alt="Google Pay" style={{height: 22, width: 'auto', filter: 'brightness(0) invert(1)'}} />
+                      </button>
+                      <button onClick={() => {}} style={{display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#008CFF', border: 'none', borderRadius: 8, cursor: 'pointer', padding: '10px 16px', height: 48}}>
+                        <svg viewBox="0 0 90 24" style={{height: 16, width: 'auto'}} xmlns="http://www.w3.org/2000/svg">
+                          <text x="0" y="20" fontFamily="Arial, sans-serif" fontSize="22" fontWeight="bold" fill="white">venmo</text>
+                        </svg>
+                      </button>
+                    </div>
+                  </XDSVStack>
+
+                  {/* OR divider */}
+                  <XDSHStack gap={3} vAlign="center">
+                    <div style={{flex: 1, height: 1, backgroundColor: 'var(--color-border)'}} />
+                    <XDSText type="supporting" color="secondary">OR</XDSText>
+                    <div style={{flex: 1, height: 1, backgroundColor: 'var(--color-border)'}} />
+                  </XDSHStack>
+
+                  {/* Credit card fields */}
+                  <XDSVStack gap={3}>
+                    <XDSText type="label">Credit card information</XDSText>
+                    <XDSTextInput label="Card Number" placeholder="1234 5678 9012 3456" value={cardNumber} onChange={setCardNumber} status={errors.cardNumber ? {type: 'error', message: errors.cardNumber} : undefined} />
+                    <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12}}>
+                      <XDSSelector label="Expiry Month" placeholder="MM" options={MONTHS} value={expiry} onChange={setExpiry} />
+                      <XDSSelector label="Expiry Year" placeholder="YY" options={YEARS} value={expYear} onChange={setExpYear} />
+                      <XDSTextInput label="CVC" placeholder="123" value={cvc} onChange={setCvc} />
+                    </div>
+                    <XDSTextInput label="Name on Card" placeholder="John Doe" value={cardName} onChange={setCardName} status={errors.cardName ? {type: 'error', message: errors.cardName} : undefined} />
+                  </XDSVStack>
+
                 </XDSVStack>
               </XDSCard>
 
