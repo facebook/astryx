@@ -13,7 +13,6 @@ import {
   colorVars,
   textSizeVars,
   fontWeightVars,
-  lineHeightVars,
   spacingVars,
 } from '@xds/core/theme/tokens.stylex';
 
@@ -148,12 +147,12 @@ const styles = stylex.create({
     fontSize: textSizeVars['--text-base'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
     color: colorVars['--color-text-primary'],
-    lineHeight: lineHeightVars['--leading-snug'],
+    lineHeight: 1.375,
   },
   itemDescription: {
     fontSize: textSizeVars['--text-sm'],
     color: colorVars['--color-text-secondary'],
-    lineHeight: lineHeightVars['--leading-normal'],
+    lineHeight: 1.5,
     marginTop: spacingVars['--spacing-0-5'],
   },
   emptyState: {
