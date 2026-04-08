@@ -55,3 +55,15 @@ export {useAutoScroll} from './useAutoScroll';
 export type {UseAutoScrollOptions, UseAutoScrollReturn} from './useAutoScroll';
 
 export type {XDSChatMessageSender, XDSChatDensity} from './XDSChatContext';
+
+export {XDSChatReasoning} from './XDSChatReasoning';
+export type {XDSChatReasoningProps} from './XDSChatReasoning';
+
+export {XDSChatToolCall} from './XDSChatToolCall';
+export type {
+  XDSChatToolCallProps,
+  XDSChatToolCallStatus,
+} from './XDSChatToolCall';
+
+export {XDSChatToolCallGroup} from './XDSChatToolCallGroup';
+export type {XDSChatToolCallGroupProps} from './XDSChatToolCallGroup';
