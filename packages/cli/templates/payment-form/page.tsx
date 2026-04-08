@@ -240,11 +240,9 @@ export default function PaymentFormPage() {
                   <XDSVStack gap={3}>
                     {/* Card type icons */}
                     <div style={{display: 'flex', gap: 6, alignItems: 'center'}}>
-                      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Visa_Inc._logo.svg/200px-Visa_Inc._logo.svg.png" alt="Visa" style={{height: 10, width: 'auto', border: '1px solid var(--color-border)', borderRadius: 4, padding: '5px 8px', backgroundColor: '#1A1F71', boxSizing: 'content-box'}} />
-                      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Mastercard-logo.svg/200px-Mastercard-logo.svg.png" alt="Mastercard" style={{height: 20, width: 'auto', border: '1px solid var(--color-border)', borderRadius: 4, padding: '2px 6px', backgroundColor: '#fff', boxSizing: 'content-box'}} />
-                      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/fa/American_Express_logo_%282018%29.svg/200px-American_Express_logo_%282018%29.svg.png" alt="Amex" style={{height: 20, width: 'auto', border: '1px solid var(--color-border)', borderRadius: 4, padding: '2px 6px', backgroundColor: '#016FD0', boxSizing: 'content-box'}} />
-                      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Discover_Card_logo.svg/200px-Discover_Card_logo.svg.png" alt="Discover" style={{height: 20, width: 'auto', border: '1px solid var(--color-border)', borderRadius: 4, padding: '2px 6px', backgroundColor: '#fff', boxSizing: 'content-box'}} />
-                      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/40/JCB_logo.svg/200px-JCB_logo.svg.png" alt="JCB" style={{height: 20, width: 'auto', border: '1px solid var(--color-border)', borderRadius: 4, padding: '2px 6px', backgroundColor: '#fff', boxSizing: 'content-box'}} />
+                      <img src="https://cdn.jsdelivr.net/npm/payment-icons@1.1.0/min/flat/visa.png" alt="Visa" style={{height: 28, width: 'auto', borderRadius: 4, border: '1px solid var(--color-border)'}} />
+                      <img src="https://cdn.jsdelivr.net/npm/payment-icons@1.1.0/min/flat/mastercard.png" alt="Mastercard" style={{height: 28, width: 'auto', borderRadius: 4, border: '1px solid var(--color-border)'}} />
+                      <img src="https://cdn.jsdelivr.net/npm/payment-icons@1.1.0/min/flat/amex.png" alt="Amex" style={{height: 28, width: 'auto', borderRadius: 4, border: '1px solid var(--color-border)'}} />
                     </div>
                     <div style={{position: 'relative'}}>
                       <XDSTextInput size="lg" label="Card Number" placeholder="1234 5678 9012 3456" value={cardNumber} onChange={setCardNumber} status={errors.cardNumber ? {type: 'error', message: errors.cardNumber} : undefined} />
