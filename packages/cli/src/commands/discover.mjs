@@ -2,10 +2,15 @@
  * @file discover command — find external XDS packages and components
  *
  * Usage:
- *   xds discover                           List all packages
- *   xds discover @scope/name               List components in a package
- *   xds discover @scope/name/Component     Show docs for a component
- *   xds discover searchterm                Search across all packages
+ *   xds discover                              List all packages
+ *   xds discover @scope/name                  List components in a package
+ *   xds discover @scope/name/Component        Show docs for a component
+ *   xds discover searchterm                   Search across all packages
+ *
+ * Flags:
+ *   --component   Explicitly search components (default when neither flag set)
+ *   --template    Search templates instead of components
+ *   --components  List components only (for bare package listing)
  */
 
 import {loadConfig} from '../lib/config.mjs';
@@ -14,17 +19,27 @@ import {loadDocs} from '../lib/component-loader.mjs';
 import {formatFull, formatBrief, formatCompact} from '../lib/component-format.mjs';
 import {levenshteinDistance} from '../lib/string-utils.mjs';
 import {jsonOut, jsonError} from '../lib/json.mjs';
+import {discoverTemplates} from './template.mjs';
 
 export function registerDiscover(program) {
   program
     .command('discover [query]')
     .description('Discover external XDS packages and components')
-    .option('--components', 'List components only')
+    .option('--components', 'List components only (for bare package listing)')
+    .option('--component', 'Search components (default)')
+    .option('--template', 'Search templates instead of components')
     .action(async (query, options) => {
       const config = await loadConfig();
       const detail = program.opts().detail || 'full';
       const json = program.opts().json || false;
 
+      // If --template is set, route to template discovery entirely
+      if (options.template) {
+        await discoverTemplateMode(query, json);
+        return;
+      }
+
+      // --component or neither flag: component search (default behaviour preserved)
       /** @param {object} pkg */
       const toEntry = (pkg) => ({name: pkg.name, category: pkg.category, components: pkg.components});
 
@@ -95,6 +110,134 @@ export function registerDiscover(program) {
     });
 }
 
+// ── Template mode ────────────────────────────────────────────────────
+
+/**
+ * Handle `xds discover [query] --template`
+ *
+ * With no query:    list all templates
+ * With query:       search by name/description (exact -> substring -> fuzzy)
+ */
+async function discoverTemplateMode(query, json) {
+  const templates = await discoverTemplates();
+
+  if (!query) {
+    // List all templates
+    if (json) {
+      return jsonOut('discover.templates', templates.map(t => ({
+        name: t.dirName,
+        displayName: t.name,
+        description: t.description,
+        isReady: t.isReady,
+      })));
+    }
+    console.log('');
+    for (const t of templates) {
+      const status = t.isReady ? '' : ' (WIP)';
+      console.log(t.dirName + status);
+      if (t.description) console.log('  ' + t.description);
+    }
+    console.log('');
+    console.log('Usage:');
+    console.log('  xds discover <name> --template     Search for a template');
+    console.log('  xds template <name>                Scaffold a template');
+    console.log('  xds template <name> --skeleton     View layout skeleton');
+    console.log('');
+    return;
+  }
+
+  const lower = query.toLowerCase();
+
+  // Exact match on dirName or display name
+  const exact = templates.find(
+    t => t.dirName.toLowerCase() === lower || t.name.toLowerCase() === lower,
+  );
+  if (exact) {
+    printTemplate(exact, json);
+    return;
+  }
+
+  // Substring match
+  const substringMatches = templates.filter(
+    t =>
+      t.dirName.toLowerCase().includes(lower) ||
+      t.name.toLowerCase().includes(lower) ||
+      t.description.toLowerCase().includes(lower),
+  );
+
+  if (substringMatches.length === 1) {
+    printTemplate(substringMatches[0], json);
+    return;
+  }
+
+  if (substringMatches.length > 1) {
+    if (json) {
+      return jsonOut('discover.templates.search', {
+        query,
+        matches: substringMatches.map(t => ({name: t.dirName, displayName: t.name, description: t.description})),
+      });
+    }
+    console.log('');
+    console.log('Found ' + substringMatches.length + ' templates matching "' + query + '":');
+    console.log('');
+    for (const t of substringMatches) {
+      const status = t.isReady ? '' : ' (WIP)';
+      console.log('  ' + t.dirName + status + (t.description ? ' -- ' + t.description : ''));
+    }
+    console.log('');
+    console.log('Usage: xds template <name>');
+    console.log('');
+    return;
+  }
+
+  // Fuzzy match on dirName
+  const fuzzyMatches = templates
+    .map(t => ({t, distance: levenshteinDistance(lower, t.dirName.toLowerCase())}))
+    .filter(m => m.distance <= 3)
+    .sort((a, b) => a.distance - b.distance)
+    .slice(0, 5);
+
+  if (fuzzyMatches.length > 0) {
+    if (json) {
+      return jsonError('"' + query + '" not found', fuzzyMatches.map(m => ({name: m.t.dirName, reason: 'similar name'})));
+    }
+    console.error('"' + query + '" not found. Did you mean?');
+    console.error('');
+    for (const m of fuzzyMatches) {
+      console.error('  xds discover ' + m.t.dirName + ' --template');
+    }
+  } else {
+    if (json) return jsonError('"' + query + '" not found in templates');
+    console.error('"' + query + '" not found in templates.');
+    console.error('');
+    console.error('Run xds discover --template to see all templates.');
+  }
+  process.exit(1);
+}
+
+function printTemplate(t, json) {
+  if (json) {
+    return jsonOut('discover.template', {
+      name: t.dirName,
+      displayName: t.name,
+      description: t.description,
+      isReady: t.isReady,
+    });
+  }
+  const status = t.isReady ? '' : ' (WIP)';
+  console.log('');
+  console.log(t.dirName + status);
+  if (t.name && t.name !== t.dirName) console.log('  ' + t.name);
+  if (t.description) console.log('  ' + t.description);
+  console.log('');
+  console.log('Usage:');
+  console.log('  xds template ' + t.dirName + '                Scaffold this template');
+  console.log('  xds template ' + t.dirName + ' --skeleton     View layout skeleton');
+  console.log('');
+}
+
+// ── Component mode (unchanged from original) ─────────────────────────
+
 function printPackageList(packages, showComponents) {
   console.log('');
   for (const pkg of packages) {
@@ -123,6 +266,7 @@ function printPackageList(packages, showComponents) {
   console.log('  xds discover <package>            Browse a package');
   console.log('  xds discover <package>/Component  View component docs');
   console.log('  xds discover <search>             Search all packages');
+  console.log('  xds discover <search> --template  Search templates');
   console.log('');
 }
 
