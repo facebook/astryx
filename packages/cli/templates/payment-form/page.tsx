@@ -8,6 +8,7 @@ import {XDSText} from '@xds/core/Text';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSSelector} from '@xds/core/Selector';
 import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
+import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
 import {XDSLink} from '@xds/core/Link';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSCard} from '@xds/core/Card';
@@ -100,6 +101,9 @@ export default function PaymentFormPage() {
   const [country, setCountry] = useState('');
   const [phone, setPhone] = useState('');
   const [saveInfo, setSaveInfo] = useState(false);
+  const [email, setEmail] = useState('');
+  const [emailOffers, setEmailOffers] = useState(false);
+  const [deliveryMethod, setDeliveryMethod] = useState('standard');
   const [paymentMethod, setPaymentMethod] = useState('card');
   const [cardNumber, setCardNumber] = useState('');
   const [expiry, setExpiry] = useState('');
@@ -150,6 +154,13 @@ export default function PaymentFormPage() {
 
               <XDSCard padding={5}>
                 <XDSVStack gap={4}>
+                  {/* Contact information */}
+                  <div {...stylex.props(styles.sectionTitle)}>Contact Information</div>
+                  <XDSTextInput label="Email" placeholder="you@example.com" value={email} onChange={setEmail} />
+                  <XDSCheckboxInput label="Email me with news and offers" value={emailOffers} onChange={setEmailOffers} />
+
+                  <XDSDivider />
+
                   <div {...stylex.props(styles.sectionTitle)}>Shipping Information</div>
                   <div style={{display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12}}>
                     <XDSTextInput label="First Name" placeholder="John" value={firstName} onChange={setFirstName} status={errors.firstName ? {type: 'error', message: errors.firstName} : undefined} />
@@ -162,6 +173,20 @@ export default function PaymentFormPage() {
                     <XDSSelector label="State" placeholder="Select state" options={US_STATES} value={state} onChange={setState} />
                   </div>
                   <XDSTextInput label="Phone Number" placeholder="+1 (555) 123-4567" value={phone} onChange={setPhone} labelTooltip="We use your phone number to provide shipping updates and contact you about your delivery if needed." />
+                  <XDSDivider />
+
+                  {/* Delivery */}
+                  <div {...stylex.props(styles.sectionTitle)}>Delivery</div>
+                  <XDSText type="supporting" color="secondary">
+                    Please allow 1–3 business days processing time before your order ships. Thank you for your patience.
+                  </XDSText>
+                  <XDSRadioList label="Delivery method" value={deliveryMethod} onChange={setDeliveryMethod}>
+                    <XDSRadioListItem value="standard" label="Standard (3–7 business days)" endContent={<XDSText type="body" weight="medium">$4.95</XDSText>} />
+                    <XDSRadioListItem value="expedited" label="Expedited (1–2 business days)" endContent={<XDSText type="body" weight="medium">$9.95</XDSText>} />
+                  </XDSRadioList>
+
+                  <XDSDivider />
+
                   <XDSCheckboxInput label="Save this information for next time" value={saveInfo} onChange={setSaveInfo} />
                 </XDSVStack>
               </XDSCard>
