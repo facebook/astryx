@@ -180,7 +180,7 @@ export const MentionTrigger: Story = {
       searchSource: userSource,
       onSelect: item => ({
         value: `@${item.id}`,
-        label: `@${item.label}`,
+        label: item.label,
         variant: 'blue' as const,
       }),
     };
@@ -214,7 +214,11 @@ export const SlashCommands: Story = {
     const commandTrigger: XDSChatComposerTrigger = {
       character: '/',
       searchSource: commandSource,
-      onSelect: item => `/${item.label} `,
+      onSelect: item => ({
+        value: `/${item.label}`,
+        label: `/${item.label}`,
+        variant: 'yellow' as const,
+      }),
     };
 
     return (
@@ -239,7 +243,7 @@ export const AsyncSearch: Story = {
       searchSource: asyncUserSource,
       onSelect: item => ({
         value: `@${item.id}`,
-        label: `@${item.label}`,
+        label: item.label,
         variant: 'blue' as const,
       }),
       loadingText: 'Searching users\u2026',
@@ -268,14 +272,18 @@ export const MultipleTriggers: Story = {
       searchSource: userSource,
       onSelect: item => ({
         value: `@${item.id}`,
-        label: `@${item.label}`,
+        label: item.label,
         variant: 'blue' as const,
       }),
     };
     const commandTrigger: XDSChatComposerTrigger = {
       character: '/',
       searchSource: commandSource,
-      onSelect: item => `/${item.label} `,
+      onSelect: item => ({
+        value: `/${item.label}`,
+        label: `/${item.label}`,
+        variant: 'yellow' as const,
+      }),
     };
 
     return (
@@ -319,7 +327,7 @@ export const CustomRenderItem: Story = {
       ),
       onSelect: item => ({
         value: `@${item.id}`,
-        label: `@${item.label}`,
+        label: item.label,
         variant: 'purple' as const,
         icon: (
           <span
@@ -362,7 +370,7 @@ export const TokenVariants: Story = {
       searchSource: userSource,
       onSelect: item => ({
         value: `@${item.id}`,
-        label: `@${item.label}`,
+        label: item.label,
         variant: 'blue' as const,
       }),
     };
