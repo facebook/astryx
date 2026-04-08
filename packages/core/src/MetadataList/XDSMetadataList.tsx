@@ -26,6 +26,7 @@ import {
   XDSMetadataListContext,
   type XDSMetadataListLabelConfig,
 } from './XDSMetadataListContext';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import {xdsClassName, mergeProps} from '../utils';
 
 // =============================================================================
@@ -34,7 +35,10 @@ import {xdsClassName, mergeProps} from '../utils';
 
 export type XDSMetadataListColumns = 'multi' | 'single' | number;
 
-export interface XDSMetadataListProps {
+export interface XDSMetadataListProps extends Omit<
+  XDSBaseProps<HTMLDivElement>,
+  'title'
+> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLDivElement>;
   /**
@@ -79,18 +83,6 @@ export interface XDSMetadataListProps {
    * Optional title or heading rendered above the list.
    */
   title?: ReactNode;
-  /**
-   * StyleX styles created via `stylex.create()`.
-   */
-  xstyle?: StyleXStyles;
-  /**
-   * CSS class name(s) appended to the root element.
-   */
-  className?: string;
-  /**
-   * Inline styles to apply to the root element.
-   */
-  style?: React.CSSProperties;
   /**
    * Test ID for testing frameworks.
    */
