@@ -27,20 +27,6 @@ const meta: Meta<typeof XDSToggleButton> = {
     size: {control: 'select', options: ['sm', 'md', 'lg']},
     isDisabled: {control: 'boolean'},
     isLoading: {control: 'boolean'},
-    pressedIconColor: {
-      control: 'select',
-      options: [
-        undefined,
-        'accent',
-        'blue',
-        'green',
-        'yellow',
-        'pink',
-        'red',
-        'orange',
-        'purple',
-      ],
-    },
   },
 };
 
@@ -66,7 +52,7 @@ export const Standalone: Story = {
   },
 };
 
-/** Icon-only toggles with icon swap and semantic color. */
+/** Icon-only toggles with icon swap. */
 export const IconSwap: Story = {
   render: function Render() {
     const [isFavorited, setIsFavorited] = useState(false);
@@ -77,7 +63,6 @@ export const IconSwap: Story = {
           label="Favorite"
           icon={<StarIcon />}
           pressedIcon={<StarIconSolid />}
-          pressedIconColor="yellow"
           isPressed={isFavorited}
           onPressedChange={setIsFavorited}
         />
@@ -85,7 +70,6 @@ export const IconSwap: Story = {
           label="Bookmark"
           icon={<BookmarkIcon />}
           pressedIcon={<BookmarkIconSolid />}
-          pressedIconColor="accent"
           isPressed={isBookmarked}
           onPressedChange={setIsBookmarked}
         />
@@ -222,40 +206,6 @@ export const NotificationToggle: Story = {
         isPressed={isMuted}
         onPressedChange={setIsMuted}
       />
-    );
-  },
-};
-
-/** All available pressedIconColor values shown in pressed state. */
-export const PressedIconColors: Story = {
-  render: function Render() {
-    const colors = [
-      'accent',
-      'blue',
-      'cyan',
-      'green',
-      'orange',
-      'pink',
-      'purple',
-      'red',
-      'teal',
-      'yellow',
-    ] as const;
-    return (
-      <div style={{display: 'flex', gap: 8, flexWrap: 'wrap'}}>
-        {colors.map(color => (
-          <XDSToggleButton
-            key={color}
-            label={color}
-            icon={<StarIcon />}
-            pressedIcon={<StarIconSolid />}
-            pressedIconColor={color}
-            isPressed={true}
-            onPressedChange={() => {}}>
-            {color}
-          </XDSToggleButton>
-        ))}
-      </div>
     );
   },
 };

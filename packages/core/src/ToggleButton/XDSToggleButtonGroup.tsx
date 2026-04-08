@@ -37,7 +37,7 @@ interface ToggleButtonGroupContextValue {
   selectedValues: Set<string>;
   /** Toggle a value on/off. */
   toggle: (value: string) => void;
-  /** Group size override. */
+  /** Group size default — individual buttons can override. */
   size?: XDSButtonSize;
   /** Group disabled state. */
   isDisabled?: boolean;
@@ -50,7 +50,7 @@ export const ToggleButtonGroupContext =
  * Hook for XDSToggleButton to read group context.
  * Returns null when used outside a group.
  */
-export function useToggleButtonGroup(): ToggleButtonGroupContextValue | null {
+export function useXDSToggleButtonGroup(): ToggleButtonGroupContextValue | null {
   return useContext(ToggleButtonGroupContext);
 }
 
@@ -90,8 +90,8 @@ interface XDSToggleButtonGroupBaseProps {
   orientation?: 'horizontal' | 'vertical';
 
   /**
-   * Size applied to all buttons in the group.
-   * Individual button size props are overridden.
+   * Default size for buttons in the group.
+   * Individual buttons can override this with their own `size` prop.
    * @default 'md'
    */
   size?: XDSButtonSize;

@@ -9,9 +9,7 @@
  * XDSToggleButton wraps XDSButton with `isPressed` and adds:
  * - `onPressedChange` controlled toggle callback
  * - `pressedIcon` for outline-to-filled icon swap
- * - `pressedIconColor` (token-only) for semantic icon coloring
  * - Font weight shift on press with width reservation to prevent layout shift
- * - Auto-tooltip for icon-only buttons
  * - Group integration via ToggleButtonGroupContext
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -19,119 +17,11 @@
  * - /apps/storybook/stories/ToggleButton.stories.tsx
  */
 
-import {
-  useCallback,
-  isValidElement,
-  cloneElement,
-  type ReactNode,
-  type ReactElement,
-} from 'react';
+import {useCallback, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {fontWeightVars, colorVars} from '../theme/tokens.stylex';
+import {fontWeightVars} from '../theme/tokens.stylex';
 import {XDSButton, type XDSButtonSize} from '../Button';
-import {useToggleButtonGroup} from './XDSToggleButtonGroup';
-
-// =============================================================================
-// Pressed icon color — token-only type
-// =============================================================================
-
-/**
- * Allowed values for `pressedIconColor`.
- * Restricted to XDS icon color tokens — no raw hex/rgb values.
- *
- * @example
- * ```
- * <XDSToggleButton pressedIconColor="yellow" ... />
- * <XDSToggleButton pressedIconColor="pink" ... />
- * ```
- */
-export type XDSToggleButtonIconColor =
-  | 'accent'
-  | 'primary'
-  | 'secondary'
-  | 'blue'
-  | 'cyan'
-  | 'gray'
-  | 'green'
-  | 'orange'
-  | 'pink'
-  | 'purple'
-  | 'red'
-  | 'teal'
-  | 'yellow';
-
-/**
- * Pressed icon color styles — applied directly to the icon element.
- * Sets color, fill, AND stroke to guarantee the token color reaches
- * the SVG regardless of how currentColor inheritance works.
- */
-const iconColorStyles = stylex.create({
-  accent: {
-    color: colorVars['--color-icon-accent'],
-    fill: colorVars['--color-icon-accent'],
-    stroke: colorVars['--color-icon-accent'],
-  },
-  primary: {
-    color: colorVars['--color-icon-primary'],
-    fill: colorVars['--color-icon-primary'],
-    stroke: colorVars['--color-icon-primary'],
-  },
-  secondary: {
-    color: colorVars['--color-icon-secondary'],
-    fill: colorVars['--color-icon-secondary'],
-    stroke: colorVars['--color-icon-secondary'],
-  },
-  blue: {
-    color: colorVars['--color-icon-blue'],
-    fill: colorVars['--color-icon-blue'],
-    stroke: colorVars['--color-icon-blue'],
-  },
-  cyan: {
-    color: colorVars['--color-icon-cyan'],
-    fill: colorVars['--color-icon-cyan'],
-    stroke: colorVars['--color-icon-cyan'],
-  },
-  gray: {
-    color: colorVars['--color-icon-gray'],
-    fill: colorVars['--color-icon-gray'],
-    stroke: colorVars['--color-icon-gray'],
-  },
-  green: {
-    color: colorVars['--color-icon-green'],
-    fill: colorVars['--color-icon-green'],
-    stroke: colorVars['--color-icon-green'],
-  },
-  orange: {
-    color: colorVars['--color-icon-orange'],
-    fill: colorVars['--color-icon-orange'],
-    stroke: colorVars['--color-icon-orange'],
-  },
-  pink: {
-    color: colorVars['--color-icon-pink'],
-    fill: colorVars['--color-icon-pink'],
-    stroke: colorVars['--color-icon-pink'],
-  },
-  purple: {
-    color: colorVars['--color-icon-purple'],
-    fill: colorVars['--color-icon-purple'],
-    stroke: colorVars['--color-icon-purple'],
-  },
-  red: {
-    color: colorVars['--color-icon-red'],
-    fill: colorVars['--color-icon-red'],
-    stroke: colorVars['--color-icon-red'],
-  },
-  teal: {
-    color: colorVars['--color-icon-teal'],
-    fill: colorVars['--color-icon-teal'],
-    stroke: colorVars['--color-icon-teal'],
-  },
-  yellow: {
-    color: colorVars['--color-icon-yellow'],
-    fill: colorVars['--color-icon-yellow'],
-    stroke: colorVars['--color-icon-yellow'],
-  },
-});
+import {useXDSToggleButtonGroup} from './XDSToggleButtonGroup';
 
 // =============================================================================
 // Styles
@@ -207,7 +97,7 @@ export interface XDSToggleButtonProps {
 
   /**
    * The size of the toggle button.
-   * When used inside XDSToggleButtonGroup, the group's size overrides this.
+   * When used inside XDSToggleButtonGroup, defaults to the group's size.
    * @default 'md'
    */
   size?: XDSButtonSize;
@@ -236,21 +126,14 @@ export interface XDSToggleButtonProps {
    * Icon element to render when the button is pressed.
    * Use to swap between outline (unpressed) and filled (pressed) icon styles.
    * Falls back to `icon` if not provided.
-   */
-  pressedIcon?: ReactNode;
-
-  /**
-   * Color applied to the icon when pressed.
-   * Accepts only XDS icon color token names — no raw hex/rgb values.
-   * Only affects the icon, not the label text.
    *
+   * To color the pressed icon, pass an already-colored element:
    * @example
    * ```
-   * <XDSToggleButton pressedIconColor="yellow" ... />
-   * <XDSToggleButton pressedIconColor="pink" ... />
+   * pressedIcon={<StarIconSolid style={{color: 'var(--color-icon-yellow)'}} />}
    * ```
    */
-  pressedIconColor?: XDSToggleButtonIconColor;
+  pressedIcon?: ReactNode;
 
   /**
    * Optional visible content. If omitted and icon is provided,
@@ -260,7 +143,7 @@ export interface XDSToggleButtonProps {
 
   /**
    * Tooltip text shown on hover.
-   * Defaults to label for icon-only buttons.
+   * Passed through to XDSButton.
    */
   tooltip?: string;
 
@@ -281,7 +164,7 @@ export interface XDSToggleButtonProps {
 /**
  * A button that toggles between pressed and unpressed states.
  * Thin wrapper over XDSButton — adds controlled toggle pattern,
- * icon swap, semantic icon coloring, and font weight emphasis.
+ * icon swap, and font weight emphasis.
  *
  * Use for toolbar actions, view mode switches, and formatting controls.
  * For on/off settings, use XDSSwitch instead.
@@ -300,12 +183,11 @@ export interface XDSToggleButtonProps {
  *   onPressedChange={setIsBold}
  * />
  *
- * // Favorite with icon swap and color
+ * // Favorite with icon swap
  * <XDSToggleButton
  *   label="Favorite"
  *   icon={<StarIcon />}
  *   pressedIcon={<StarIconSolid />}
- *   pressedIconColor="yellow"
  *   isPressed={isFavorited}
  *   onPressedChange={setIsFavorited}
  * />
@@ -316,46 +198,28 @@ export function XDSToggleButton({
   isPressed: isPressedProp,
   onPressedChange: onPressedChangeProp,
   onPressedChangeAction,
-  size: sizeProp = 'md',
+  size: sizeProp,
   isDisabled: isDisabledProp = false,
   isLoading = false,
   icon,
   pressedIcon,
-  pressedIconColor,
   children,
   tooltip,
   value,
   ...props
 }: XDSToggleButtonProps): ReactNode {
   // Read group context if inside a group
-  const group = useToggleButtonGroup();
+  const group = useXDSToggleButtonGroup();
 
   // Resolve state from group or props
   const isPressed =
     group && value != null
       ? group.selectedValues.has(value)
       : (isPressedProp ?? false);
-  const size = group?.size ?? sizeProp;
+  const size = sizeProp ?? group?.size ?? 'md';
   const isDisabled = group?.isDisabled ?? isDisabledProp;
 
-  const isIconOnly = icon != null && children == null;
   const resolvedIcon = isPressed && pressedIcon ? pressedIcon : icon;
-
-  // Apply icon color directly to the icon element via cloneElement.
-  // Sets color, fill, and stroke on the icon itself — no wrapper span
-  // needed, no CSS inheritance to fight.
-  const coloredIcon =
-    resolvedIcon != null &&
-    isPressed &&
-    pressedIconColor != null &&
-    isValidElement(resolvedIcon)
-      ? cloneElement(resolvedIcon as ReactElement<Record<string, unknown>>, {
-          ...stylex.props(iconColorStyles[pressedIconColor]),
-        })
-      : resolvedIcon;
-
-  // Auto-tooltip for icon-only buttons
-  const resolvedTooltip = tooltip ?? (isIconOnly ? label : undefined);
 
   const handleClick = useCallback(() => {
     if (isDisabled || isLoading) return;
@@ -382,6 +246,7 @@ export function XDSToggleButton({
   ]);
 
   // Label with font weight shift and width reservation
+  const isIconOnly = icon != null && children == null;
   const labelContent =
     children != null ? (
       <span {...stylex.props(labelStyles.wrapper)}>
@@ -414,8 +279,8 @@ export function XDSToggleButton({
       isLoading={isLoading}
       isPressed={pressedIcon != null ? undefined : isPressed}
       aria-pressed={isPressed}
-      icon={coloredIcon}
-      tooltip={resolvedTooltip}
+      icon={resolvedIcon}
+      tooltip={tooltip}
       onClick={handleClick}
       {...props}>
       {labelContent}

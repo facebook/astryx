@@ -8,10 +8,7 @@
  */
 
 export {XDSToggleButton} from './XDSToggleButton';
-export type {
-  XDSToggleButtonProps,
-  XDSToggleButtonIconColor,
-} from './XDSToggleButton';
+export type {XDSToggleButtonProps} from './XDSToggleButton';
 
 export {XDSToggleButtonGroup} from './XDSToggleButtonGroup';
 export type {
