@@ -205,15 +205,11 @@ const styles = stylex.create({
   },
   scrollButtonCollapsed: {
     gap: 0,
-    // Square icon-only appearance
     ['--button-icon-only-aspect' as string]: '1 / 1',
-    paddingInline: 0,
   },
   scrollButtonExpanded: {
     gap: spacingVars['--spacing-2'],
     ['--button-icon-only-aspect' as string]: 'auto',
-    paddingInlineStart: spacingVars['--spacing-2'],
-    paddingInlineEnd: spacingVars['--spacing-3'],
   },
   // Label wrapper — always present, width-animated to reveal/hide
   scrollButtonLabelWrapper: {
