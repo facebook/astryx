@@ -6,6 +6,8 @@ import {XDSText} from '@xds/core/Text';
 import type {SandboxPage} from './sandboxPages';
 import {ImageIcon} from './icons';
 
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+
 export function ProjectCard({page}: {page: SandboxPage}) {
   const [iframeError, setIframeError] = useState(false);
 
@@ -37,7 +39,7 @@ export function ProjectCard({page}: {page: SandboxPage}) {
             </div>
           ) : (
             <iframe
-              src={page.href}
+              src={`${basePath}${page.href}`}
               title={page.name}
               onError={() => setIframeError(true)}
               style={{
