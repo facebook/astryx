@@ -20,6 +20,9 @@ const nextConfig = {
   output: 'export',
   trailingSlash: true,
   basePath: process.env.SANDBOX_BASE_PATH || '',
+  env: {
+    NEXT_PUBLIC_BASE_PATH: process.env.SANDBOX_BASE_PATH || '',
+  },
   transpilePackages: [
     // Only transpile @xds/core in source mode — in dist mode, it's pre-built.
     ...(useSource ? ['@xds/core'] : []),
