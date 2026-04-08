@@ -26,6 +26,7 @@
 import {useCallback, useEffect, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
+  borderVars,
   colorVars,
   durationVars,
   easeVars,
@@ -109,7 +110,7 @@ const styles = stylex.create({
   },
   drawerStart: {
     insetInlineStart: 0,
-    borderInlineEndWidth: 1,
+    borderInlineEndWidth: borderVars['--border-width'],
     borderInlineEndStyle: 'solid',
     borderInlineEndColor: colorVars['--color-border'],
     transform: {
@@ -122,7 +123,7 @@ const styles = stylex.create({
   },
   drawerEnd: {
     insetInlineEnd: 0,
-    borderInlineStartWidth: 1,
+    borderInlineStartWidth: borderVars['--border-width'],
     borderInlineStartStyle: 'solid',
     borderInlineStartColor: colorVars['--color-border'],
     transform: {
@@ -140,7 +141,7 @@ const styles = stylex.create({
     height: spacingVars['--spacing-12'],
     paddingInline: spacingVars['--spacing-2'],
     flexShrink: 0,
-    borderBlockEndWidth: 1,
+    borderBlockEndWidth: borderVars['--border-width'],
     borderBlockEndStyle: 'solid',
     borderBlockEndColor: colorVars['--color-border'],
   },
