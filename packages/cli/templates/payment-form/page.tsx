@@ -341,6 +341,14 @@ export default function PaymentFormPage() {
                 </XDSVStack>
               </XDSCard>
 
+              {/* Policy links */}
+              <XDSHStack gap={4} vAlign="center">
+                <XDSLink label="Refund policy" href="#" type="supporting">Refund policy</XDSLink>
+                <XDSLink label="Privacy policy" href="#" type="supporting">Privacy policy</XDSLink>
+                <XDSLink label="Terms of service" href="#" type="supporting">Terms of service</XDSLink>
+                <XDSLink label="Cancellations" href="#" type="supporting">Cancellations</XDSLink>
+              </XDSHStack>
+
             </div>
 
             <div style={{flex: '1 1 45%', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16, position: 'sticky', top: 16, alignSelf: 'flex-start'}}>
