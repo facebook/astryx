@@ -6,6 +6,7 @@ import {
 } from '@xds/core/Chat';
 import {createStaticSource} from '@xds/core/Typeahead';
 import {XDSBadge} from '@xds/core/Badge';
+import {XDSTypeaheadItem} from '@xds/core/Typeahead';
 import type {XDSSearchableItem, XDSSearchSource} from '@xds/core/Typeahead';
 import {useState} from 'react';
 
@@ -32,21 +33,21 @@ type Story = StoryObj;
 // Mock data
 // =============================================================================
 
-const USERS: XDSSearchableItem[] = [
-  {id: 'cindy', label: 'Cindy Zhang'},
-  {id: 'alex', label: 'Alex Johnson'},
-  {id: 'sam', label: 'Sam Rivera'},
-  {id: 'jordan', label: 'Jordan Lee'},
-  {id: 'taylor', label: 'Taylor Kim'},
-  {id: 'morgan', label: 'Morgan Chen'},
+const USERS: XDSSearchableItem<{role: string}>[] = [
+  {id: 'cindy', label: 'Cindy Zhang', auxiliaryData: {role: 'Design Systems'}},
+  {id: 'alex', label: 'Alex Johnson', auxiliaryData: {role: 'Frontend'}},
+  {id: 'sam', label: 'Sam Rivera', auxiliaryData: {role: 'Backend'}},
+  {id: 'jordan', label: 'Jordan Lee', auxiliaryData: {role: 'Product'}},
+  {id: 'taylor', label: 'Taylor Kim', auxiliaryData: {role: 'Design'}},
+  {id: 'morgan', label: 'Morgan Chen', auxiliaryData: {role: 'Infrastructure'}},
 ];
 
-const COMMANDS: XDSSearchableItem[] = [
-  {id: 'summarize', label: 'summarize'},
-  {id: 'translate', label: 'translate'},
-  {id: 'search', label: 'search'},
-  {id: 'code', label: 'code'},
-  {id: 'help', label: 'help'},
+const COMMANDS: XDSSearchableItem<{description: string}>[] = [
+  {id: 'summarize', label: 'summarize', auxiliaryData: {description: 'Summarize the conversation'}},
+  {id: 'translate', label: 'translate', auxiliaryData: {description: 'Translate text to another language'}},
+  {id: 'search', label: 'search', auxiliaryData: {description: 'Search the web or documents'}},
+  {id: 'code', label: 'code', auxiliaryData: {description: 'Generate or explain code'}},
+  {id: 'help', label: 'help', auxiliaryData: {description: 'Show available commands'}},
 ];
 
 const userSource = createStaticSource(USERS);
@@ -178,6 +179,12 @@ export const MentionTrigger: Story = {
     const mentionTrigger: XDSChatComposerTrigger = {
       character: '@',
       searchSource: userSource,
+      renderItem: item => (
+        <XDSTypeaheadItem
+          item={item}
+          description={(item.auxiliaryData as {role: string})?.role}
+        />
+      ),
       onSelect: item => ({
         value: `@${item.id}`,
         label: item.label,
@@ -214,6 +221,12 @@ export const SlashCommands: Story = {
     const commandTrigger: XDSChatComposerTrigger = {
       character: '/',
       searchSource: commandSource,
+      renderItem: item => (
+        <XDSTypeaheadItem
+          item={item}
+          description={(item.auxiliaryData as {description: string})?.description}
+        />
+      ),
       onSelect: item => ({
         value: `/${item.label}`,
         label: `/${item.label}`,
@@ -307,23 +320,27 @@ export const CustomRenderItem: Story = {
       character: '@',
       searchSource: userSource,
       renderItem: item => (
-        <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
-          <div
-            style={{
-              width: 24,
-              height: 24,
-              borderRadius: '50%',
-              backgroundColor: '#e0e0e0',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 11,
-              fontWeight: 600,
-            }}>
-            {item.label.charAt(0)}
-          </div>
-          <span>{item.label}</span>
-        </div>
+        <XDSTypeaheadItem
+          item={item}
+          description={(item.auxiliaryData as {role: string})?.role}
+          icon={
+            <div
+              style={{
+                width: 24,
+                height: 24,
+                borderRadius: '50%',
+                backgroundColor: '#e8d5f5',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 11,
+                fontWeight: 600,
+                color: '#7c3aed',
+              }}>
+              {item.label.charAt(0)}
+            </div>
+          }
+        />
       ),
       onSelect: item => ({
         value: `@${item.id}`,
@@ -341,6 +358,7 @@ export const CustomRenderItem: Story = {
               justifyContent: 'center',
               fontSize: 8,
               fontWeight: 700,
+              color: '#7c3aed',
             }}>
             {item.label.charAt(0)}
           </span>
