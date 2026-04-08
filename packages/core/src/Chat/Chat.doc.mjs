@@ -3,8 +3,8 @@
 export const docs = {
   name: 'Chat',
   description:
-    'Chat layout components for AI chat interfaces. Composition model: XDSChatMessageList wraps XDSChatMessage and XDSChatSystemMessage. Messages contain optional XDSChatMessageBubble for styled content.',
-  keywords: ['chat', 'message', 'bubble', 'conversation', 'ai', 'assistant', 'thread', 'system-message'],
+    'Chat components for AI chat interfaces. Layout (MessageList, Message, Bubble, SystemMessage) + Composer (Composer, ComposerInput with trigger menus, ComposerAttachments).',
+  keywords: ['chat', 'message', 'bubble', 'conversation', 'ai', 'assistant', 'thread', 'system-message', 'composer', 'mention', 'trigger', 'typeahead', 'token'],
   features: [
     'Composition model — MessageList > Message > Bubble',
     'Sender-aware styling (user, assistant, system) via context',
@@ -16,6 +16,11 @@ export const docs = {
     'Timestamp display: hover or header',
     'Message status indicators (sending, sent, delivered, read, error)',
     'role="log" with aria-live="polite" for accessibility',
+    'Composer layout shell with named semantic slots',
+    'ContentEditable input with @ mention and / command trigger menus',
+    'XDSSearchSource integration — reuses Typeahead search sources',
+    'Concentric radius — inner elements follow outer shell curvature',
+    'Themeable via --composer-radius and --composer-padding CSS vars',
   ],
   examples: [
     {
@@ -90,6 +95,75 @@ export const docs = {
       examples: [
         {label: 'Date divider', code: `<XDSChatSystemMessage variant="divider">Today</XDSChatSystemMessage>`},
         {label: 'Status notice', code: `<XDSChatSystemMessage>Cindy shared a file</XDSChatSystemMessage>`},
+      ],
+    },
+    {
+      name: 'XDSChatComposer',
+      description: 'Layout shell for a chat composer. Arranges named slots (attachments, toolbar, input, footer, send) with page-radius container, hover/focus shadows, and concentric inner radius for child elements.',
+      props: [
+        {name: 'onSubmit', type: '(value: string) => void', description: 'Called when the user submits a message.', required: true},
+        {name: 'onStop', type: '() => void', description: 'Called when the user requests to stop generation.'},
+        {name: 'isStreaming', type: 'boolean', description: 'Whether the assistant is currently streaming.', default: 'false'},
+        {name: 'value', type: 'string', description: 'Controlled input value.'},
+        {name: 'onChange', type: '(value: string) => void', description: 'Change handler for controlled mode.'},
+        {name: 'placeholder', type: 'string', description: 'Placeholder text.', default: "'Type a message\u2026'"},
+        {name: 'isDisabled', type: 'boolean', description: 'Disables the composer.', default: 'false'},
+        {name: 'density', type: "'compact' | 'balanced' | 'spacious'", description: 'Visual density.', default: "'balanced'"},
+        {name: 'attachments', type: 'ReactNode', description: 'Slot: attachment chips above the input. Use XDSChatComposerAttachments.'},
+        {name: 'contextToolbar', type: 'ReactNode', description: 'Slot: toolbar between attachments and input. Use XDSToolbar.'},
+        {name: 'input', type: 'ReactNode', description: 'Slot: custom input element. Replaces the default textarea. Use XDSChatComposerInput for trigger menus.'},
+        {name: 'footerActions', type: 'ReactNode', description: 'Slot: left-aligned footer actions (model selector, etc).'},
+        {name: 'sendActions', type: 'ReactNode', description: 'Slot: actions to the left of the send button.'},
+        {name: 'sendButton', type: 'ReactNode', description: 'Slot: custom send button. Replaces the default send/stop button.'},
+        {name: 'status', type: "{ type: 'error' | 'warning'; message?: string }", description: 'Status message below (or above) the composer.'},
+        {name: 'statusPosition', type: "'top' | 'bottom'", description: 'Where to render the status.', default: "'bottom'"},
+      ],
+      cssVars: [
+        {name: '--composer-radius', default: 'var(--radius-page)', description: 'Border radius of the composer body. Inner elements derive their radius concentrically.'},
+        {name: '--composer-padding', default: 'var(--spacing-3)', description: 'Padding of the composer body. Used in the concentric radius calculation.'},
+      ],
+      theming: {
+        target: 'chat-composer',
+        variants: ['density'],
+        notes: 'Inner element radius is computed as calc(var(--composer-radius) - var(--composer-padding)). Themes can override both vars to control the outer shape and inner curvature independently.',
+      },
+      examples: [
+        {label: 'Simplest', code: '<XDSChatComposer onSubmit={handleSubmit} />'},
+        {label: 'With trigger menus', code: '<XDSChatComposer onSubmit={handleSubmit} input={<XDSChatComposerInput triggers={triggers} />} />'},
+        {label: 'Theme override', code: "defineTheme({ components: { 'chat-composer': { base: { '--composer-radius': '20px' } } } })"},
+      ],
+    },
+    {
+      name: 'XDSChatComposerInput',
+      description: 'ContentEditable-based rich input with trigger menus (@ mentions, / commands), inline tokens, serialization, message history, and paste/drop file handling. Uses XDSSearchSource for search.',
+      props: [
+        {name: 'ref', type: 'React.Ref<HTMLDivElement>', description: 'Ref to the root element.'},
+        {name: 'value', type: 'string', description: 'Controlled value.'},
+        {name: 'onChange', type: '(value: string) => void', description: 'Change handler.'},
+        {name: 'placeholder', type: 'string', description: 'Placeholder text.', default: "'Type a message\u2026'"},
+        {name: 'maxRows', type: 'number', description: 'Max rows before scrolling.', default: '8'},
+        {name: 'triggers', type: 'XDSChatComposerTrigger[]', description: 'Trigger definitions for menus. Each trigger has a character, searchSource, and onSelect.'},
+        {name: 'debounceMs', type: 'number', description: 'Debounce for async search sources.', default: '150'},
+        {name: 'hasHistory', type: 'boolean', description: 'Enable ArrowUp/Down message recall.', default: 'true'},
+        {name: 'label', type: 'string', description: 'Accessible label.', default: "'Message input'"},
+        {name: 'isDisabled', type: 'boolean', description: 'Disabled state.', default: 'false'},
+        {name: 'onPaste', type: '(event, text) => void', description: 'Paste handler.'},
+        {name: 'onFiles', type: '(files: File[]) => void', description: 'File drop/paste handler.'},
+        {name: 'onSubmit', type: '(value: string) => void', description: 'Submit handler (Enter without Shift).'},
+      ],
+      examples: [
+        {label: 'With mentions', code: `<XDSChatComposerInput triggers={[{ character: '@', searchSource: createStaticSource(users), onSelect: (item) => ({ value: '@' + item.id, render: () => <span>@{item.label}</span> }) }]} />`},
+      ],
+    },
+    {
+      name: 'XDSChatComposerAttachments',
+      description: 'Flex-wrap container for attachment items (tokens, thumbnails, previews) inside the composer.',
+      props: [
+        {name: 'children', type: 'ReactNode', description: 'Attachment items to render.', required: true},
+        {name: 'count', type: 'number', description: 'Total attachment count. When provided and exceeds visible children, shows a collapse/expand toggle.'},
+      ],
+      examples: [
+        {label: 'With tokens', code: `<XDSChatComposerAttachments>\n  <XDSToken label="report.pdf" onDismiss={() => {}} />\n</XDSChatComposerAttachments>`},
       ],
     },
   ],

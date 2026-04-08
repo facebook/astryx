@@ -8,8 +8,17 @@
  *
  * Layout shell for a chat composer. Arranges slots (attachments, toolbar,
  * input, footer actions, send button, status) in a vertical stack with
- * page-radius container, hover/focus shadows, and scoped pill-radius
- * override for child elements.
+ * page-radius container, hover/focus shadows, and concentric inner radius.
+ *
+ * Component CSS vars (themeable via defineTheme):
+ * - `--composer-radius` (default: --radius-page) — outer border radius
+ * - `--composer-padding` (default: --spacing-3) — body padding
+ * - Inner element radius = calc(--composer-radius - --composer-padding)
+ *
+ * SYNC: When modified, update:
+ * - /packages/core/src/Chat/Chat.doc.mjs
+ * - /packages/core/src/Chat/README.md
+ * - /apps/storybook/stories/ChatComposer.stories.tsx
  */
 
 import {useState, useRef, useCallback, type ReactNode} from 'react';
