@@ -1,6 +1,6 @@
 /**
  * @file VegaChart.tsx
- * @input A Vega or Vega-Lite spec (distinguished by $schema) + optional view config
+ * @input A Vega or Vega-Lite spec (distinguished by $schema), parse config/options, and view options
  * @output A React component that renders the spec via the Vega runtime
  * @position Primary component in @xds/vega; owns the Vega View lifecycle
  *
@@ -21,13 +21,19 @@ import type {VegaChartProps, VegaSpec} from './types';
  * - `vega` schema -> rendered directly without compilation
  * - Invalid / missing `$schema` -> calls `onError` and renders nothing
  *
- * It owns the full `View` lifecycle: creates the view on mount, re-creates it
- * when `spec`, `renderer`, or `viewConfig` changes, and calls `view.finalize()`
- * on cleanup to release all runtime resources.
+ * Parse and view construction are fully configurable via `parseConfig`,
+ * `parseOptions`, and `viewOptions`, which map directly to the Vega API:
+ *
+ *   vega.parse(spec, parseConfig, parseOptions)
+ *   new vega.View(runtime, { ...viewOptions, container })
+ *
+ * It owns the full `View` lifecycle: creates the view on mount, re-creates
+ * it when `spec`, `parseConfig`, `parseOptions`, or `viewOptions` changes,
+ * and calls `view.finalize()` on cleanup to release all runtime resources.
  *
  * Callbacks (`onReady`, `onError`) are stable across renders via refs --
- * you don't need to memoize them. Pass a stable `viewConfig` reference
- * (or `useMemo`) to avoid unnecessary re-embeds.
+ * you don't need to memoize them. Pass stable references (or `useMemo`)
+ * for `parseConfig`, `parseOptions`, and `viewOptions` to avoid re-renders.
  *
  * @example
  * ```
@@ -44,21 +50,22 @@ import type {VegaChartProps, VegaSpec} from './types';
  *       y: {field: 'b', type: 'quantitative'},
  *     },
  *   }}
+ *   viewOptions={{renderer: 'canvas', hover: true}}
  * />
  *
  * // Vega spec -- rendered directly
  * <VegaChart
- *   spec={{
- *     $schema: 'https://vega.github.io/schema/vega/v5.json',
- *     marks: [],
- *   }}
+ *   spec={{$schema: 'https://vega.github.io/schema/vega/v5.json', marks: []}}
+ *   parseConfig={{background: '#1a1a1a'}}
+ *   viewOptions={{logLevel: 1, tooltip: myTooltipHandler}}
  * />
  * ```
  */
 export function VegaChart({
   spec,
-  viewConfig,
-  renderer = 'svg',
+  parseConfig,
+  parseOptions,
+  viewOptions,
   className,
   style,
   onReady,
@@ -99,12 +106,14 @@ export function VegaChart({
           ? compile(spec).spec
           : (spec as VegaSpec);
 
-      const runtime = parse(vegaSpec, viewConfig);
+      // parse(spec, config?, options?) -> Runtime
+      const runtime = parse(vegaSpec, parseConfig, parseOptions);
 
+      // new View(runtime, viewOptions) -- container is always injected by us.
       view = new View(runtime, {
-        renderer,
-        container,
         hover: true,
+        ...viewOptions,
+        container,
       });
 
       view
@@ -125,8 +134,10 @@ export function VegaChart({
       cancelled = true;
       view?.finalize();
     };
+  // parseConfig, parseOptions, and viewOptions are intentionally in the dep
+  // array. Callers should memoize them to avoid unnecessary re-renders.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [spec, renderer, viewConfig]);
+  }, [spec, parseConfig, parseOptions, viewOptions]);
 
   return <div ref={containerRef} className={className} style={style} />;
 }

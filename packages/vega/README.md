@@ -2,7 +2,7 @@
 
 XDS Vega wrapper -- chart and data visualization components.
 
-Renders [Vega](https://vega.github.io/vega/) and [Vega-Lite](https://vega.github.io/vega-lite/) specifications via the Vega runtime. The component inspects `$schema` to decide whether to compile (Vega-Lite) or render directly (Vega), and validates the schema URL before doing either.
+Renders [Vega](https://vega.github.io/vega/) and [Vega-Lite](https://vega.github.io/vega-lite/) specifications via the Vega runtime. The component inspects `$schema` to decide whether to compile (Vega-Lite) or render directly (Vega), validates the schema URL before doing either, and exposes the full Vega `parse()` and `View` construction APIs as props.
 
 <!-- SYNC: When files in this directory change, update this document. -->
 
@@ -55,11 +55,20 @@ import {VegaChart} from '@xds/vega';
 />
 ```
 
-### Accessing the live View
+### Full configuration
 
 ```tsx
 <VegaChart
   spec={spec}
+  parseConfig={{background: '#1a1a1a'}}
+  parseOptions={{ast: true}}
+  viewOptions={{
+    renderer: 'canvas',
+    logLevel: 1,
+    tooltip: myTooltipHandler,
+    locale: myLocale,
+    loader: myLoader,
+  }}
   onReady={view => {
     view.addSignalListener('highlight', (name, value) => {
       console.log('signal:', name, value);
@@ -75,13 +84,33 @@ import {VegaChart} from '@xds/vega';
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `spec` | `AnySpec` | -- | Vega or Vega-Lite spec. Must include `$schema` (required) |
-| `viewConfig` | `Config` | -- | Vega runtime config (renderer defaults, logging, etc.) |
-| `renderer` | `'svg' | 'canvas'` | `'svg'` | Rendering backend |
+| `spec` | `AnySpec` | -- | Vega or Vega-Lite spec with `$schema` (required) |
+| `parseConfig` | `Config` | -- | Vega config passed to `parse(spec, config)` |
+| `parseOptions` | `ParseOptions` | -- | Options passed to `parse(spec, config, options)` |
+| `viewOptions` | `Omit<ViewOptions, 'container'>` | -- | Options passed to `new View(runtime, options)` |
 | `className` | `string` | -- | CSS class on the container div |
 | `style` | `CSSProperties` | -- | Inline styles on the container div |
 | `onReady` | `(view: View) => void` | -- | Called with the live Vega View when ready |
 | `onError` | `(err: Error) => void` | -- | Called on schema error, compile failure, or render failure |
+
+`viewOptions` maps directly to [`ViewOptions`](https://vega.github.io/vega/docs/api/view/) with `container` omitted (always set by the component). Notable fields:
+
+| `viewOptions` field | Type | Description |
+|---|---|---|
+| `renderer` | `'svg' \| 'canvas'` | Rendering backend (default: `'svg'`) |
+| `hover` | `boolean` | Enable hover encoding (default: `true`) |
+| `logLevel` | `number` | Vega log verbosity |
+| `logger` | `LoggerInterface` | Custom logger |
+| `tooltip` | `TooltipHandler` | Custom tooltip handler |
+| `locale` | `LocaleFormatters` | Number and time format locale |
+| `loader` | `Loader` | Custom data loader |
+| `background` | `Color` | Chart background color |
+
+`parseOptions` fields:
+
+| `parseOptions` field | Type | Description |
+|---|---|---|
+| `ast` | `boolean` | Retain expression AST in the runtime (useful for tooling) |
 
 ### `parseSchema(schema)` (exported utility)
 
