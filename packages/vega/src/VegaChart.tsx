@@ -11,7 +11,7 @@ import React, {useEffect, useRef} from 'react';
 import {parse, View} from 'vega';
 import {compile} from 'vega-lite';
 import {parseSchema} from './schema';
-import type {VegaChartProps, VegaSpec} from './types';
+import type {VegaChartProps, VegaSpec, VegaLiteSpec} from './types';
 
 /**
  * `VegaChart` renders a Vega or Vega-Lite specification using the Vega runtime.
@@ -104,7 +104,7 @@ export function VegaChart({
       // Compile Vega-Lite -> Vega if needed; otherwise use the spec directly.
       const vegaSpec: VegaSpec =
         schemaResult.library === 'vega-lite'
-          ? compile(spec, compileOptions).spec
+          ? compile(spec as VegaLiteSpec, compileOptions).spec
           : (spec as VegaSpec);
 
       // parse(spec, config?, options?) -> Runtime
