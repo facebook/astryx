@@ -169,7 +169,7 @@ export default function PaymentFormPage() {
               <XDSCard padding={5}>
                 <XDSVStack gap={4}>
                   <div {...stylex.props(styles.sectionTitle)}>Payment Method</div>
-                  <XDSRadioList label="Payment method" value={paymentMethod} onChange={setPaymentMethod}>
+                  <XDSRadioList label="Payment method" isLabelHidden value={paymentMethod} onChange={setPaymentMethod}>
                     <XDSRadioListItem value="card" label="Credit / Debit Card" />
                     <XDSRadioListItem value="paypal" label="PayPal" />
                     <XDSRadioListItem value="applepay" label="Apple Pay" />
