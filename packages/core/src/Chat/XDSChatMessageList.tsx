@@ -198,21 +198,22 @@ const styles = stylex.create({
     transitionDelay: '150ms',
   },
   scrollButton: {
-    // Override element radius to pill and disable icon-only square aspect
-    // so the button can grow with the animated label
     [radiusVars['--radius-element'] as string]: radiusVars['--radius-full'],
-    ['--button-icon-only-aspect' as string]: 'auto',
-    // Animate gap so collapsed state has no dead space between icon and label
-    transitionProperty: 'gap, padding',
+    transitionProperty: 'gap, padding, aspect-ratio',
     transitionDuration: durationVars['--duration-fast-max'],
     transitionTimingFunction: easeVars['--ease-standard'],
   },
   scrollButtonCollapsed: {
     gap: 0,
-    paddingInlineEnd: 0,
+    // Square icon-only appearance
+    ['--button-icon-only-aspect' as string]: '1 / 1',
+    paddingInline: 0,
   },
   scrollButtonExpanded: {
     gap: spacingVars['--spacing-2'],
+    ['--button-icon-only-aspect' as string]: 'auto',
+    paddingInlineStart: spacingVars['--spacing-2'],
+    paddingInlineEnd: spacingVars['--spacing-3'],
   },
   // Label wrapper — always present, width-animated to reveal/hide
   scrollButtonLabelWrapper: {
