@@ -1,7 +1,7 @@
 /**
  * @file VegaChart.tsx
- * @input A Vega-Lite spec + optional Vega view config
- * @output A React component that compiles and renders a Vega-Lite spec via the Vega runtime
+ * @input A Vega or Vega-Lite spec (distinguished by $schema) + optional view config
+ * @output A React component that renders the spec via the Vega runtime
  * @position Primary component in @xds/vega; owns the Vega View lifecycle
  *
  * SYNC: When modified, update /packages/vega/README.md
@@ -10,35 +10,49 @@
 import React, {useEffect, useRef} from 'react';
 import {parse, View} from 'vega';
 import {compile} from 'vega-lite';
-import type {VegaChartProps} from './types';
+import {parseSchema} from './schema';
+import type {VegaChartProps, VegaSpec} from './types';
 
 /**
- * `VegaChart` compiles a Vega-Lite specification and renders it using the
- * Vega runtime directly — no vega-embed intermediary.
+ * `VegaChart` renders a Vega or Vega-Lite specification using the Vega runtime.
  *
- * The component owns the full `View` lifecycle: it creates the view on mount,
- * re-creates it when `spec` or `renderer` changes, exposes the live `View`
- * via `onReady`, and calls `view.finalize()` on cleanup to release all
- * runtime resources (timers, event listeners, WebGL contexts).
+ * The component inspects `spec.$schema` to determine how to handle the spec:
+ * - `vega-lite` schema -> compiled to Vega via `vega-lite`'s `compile()`, then rendered
+ * - `vega` schema -> rendered directly without compilation
+ * - Invalid / missing `$schema` -> calls `onError` and renders nothing
  *
- * Callbacks (`onReady`, `onError`) are stable across renders via refs —
+ * It owns the full `View` lifecycle: creates the view on mount, re-creates it
+ * when `spec`, `renderer`, or `viewConfig` changes, and calls `view.finalize()`
+ * on cleanup to release all runtime resources.
+ *
+ * Callbacks (`onReady`, `onError`) are stable across renders via refs --
  * you don't need to memoize them. Pass a stable `viewConfig` reference
- * (or `useMemo`) to avoid unnecessary re-renders.
+ * (or `useMemo`) to avoid unnecessary re-embeds.
  *
  * @example
  * ```
  * import {VegaChart} from '@xds/vega';
  *
- * const spec = {
- *   mark: 'bar',
- *   data: {values: [{a: 'A', b: 28}, {a: 'B', b: 55}]},
- *   encoding: {
- *     x: {field: 'a', type: 'ordinal'},
- *     y: {field: 'b', type: 'quantitative'},
- *   },
- * };
+ * // Vega-Lite spec -- compiled automatically
+ * <VegaChart
+ *   spec={{
+ *     $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
+ *     mark: 'bar',
+ *     data: {values: [{a: 'A', b: 28}, {a: 'B', b: 55}]},
+ *     encoding: {
+ *       x: {field: 'a', type: 'ordinal'},
+ *       y: {field: 'b', type: 'quantitative'},
+ *     },
+ *   }}
+ * />
  *
- * <VegaChart spec={spec} onReady={view => console.log('view ready', view)} />
+ * // Vega spec -- rendered directly
+ * <VegaChart
+ *   spec={{
+ *     $schema: 'https://vega.github.io/schema/vega/v5.json',
+ *     marks: [],
+ *   }}
+ * />
  * ```
  */
 export function VegaChart({
@@ -52,7 +66,7 @@ export function VegaChart({
 }: VegaChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Keep callbacks in refs so they never need to be in the dep array.
+  // Keep callbacks in refs so they don't need to be in the dep array.
   const onReadyRef = useRef(onReady);
   const onErrorRef = useRef(onError);
   onReadyRef.current = onReady;
@@ -65,9 +79,26 @@ export function VegaChart({
     let view: View | null = null;
     let cancelled = false;
 
+    const fail = (err: unknown) => {
+      if (!cancelled) {
+        onErrorRef.current?.(err instanceof Error ? err : new Error(String(err)));
+      }
+    };
+
     try {
-      // Compile Vega-Lite → Vega spec, then parse → Vega runtime.
-      const vegaSpec = compile(spec).spec;
+      // Validate $schema and resolve the library kind.
+      const schemaResult = parseSchema(spec.$schema);
+      if (!schemaResult.ok) {
+        fail(new Error(schemaResult.error));
+        return;
+      }
+
+      // Compile Vega-Lite -> Vega if needed; otherwise use the spec directly.
+      const vegaSpec: VegaSpec =
+        schemaResult.library === 'vega-lite'
+          ? compile(spec).spec
+          : (spec as VegaSpec);
+
       const runtime = parse(vegaSpec, viewConfig);
 
       view = new View(runtime, {
@@ -85,23 +116,15 @@ export function VegaChart({
           }
           onReadyRef.current?.(view!);
         })
-        .catch((err: unknown) => {
-          if (!cancelled) {
-            onErrorRef.current?.(err instanceof Error ? err : new Error(String(err)));
-          }
-        });
-    } catch (err: unknown) {
-      if (!cancelled) {
-        onErrorRef.current?.(err instanceof Error ? err : new Error(String(err)));
-      }
+        .catch(fail);
+    } catch (err) {
+      fail(err);
     }
 
     return () => {
       cancelled = true;
       view?.finalize();
     };
-  // viewConfig is intentionally in the dep array. Callers should memoize it
-  // if they want to avoid re-rendering on every parent render.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [spec, renderer, viewConfig]);
 

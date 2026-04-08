@@ -8,4 +8,6 @@
  */
 
 export {VegaChart} from './VegaChart';
-export type {VegaChartProps, TopLevelSpec} from './types';
+export {parseSchema} from './schema';
+export type {VegaChartProps, AnySpec, VegaSpec, VegaLiteSpec} from './types';
+export type {SchemaLibrary, SchemaResult} from './schema';

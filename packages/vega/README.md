@@ -1,8 +1,8 @@
 # @xds/vega
 
-XDS Vega wrapper — chart and data visualization components.
+XDS Vega wrapper -- chart and data visualization components.
 
-Compiles [Vega-Lite](https://vega.github.io/vega-lite/) specs and renders them via the [Vega](https://vega.github.io/vega/) runtime directly, giving you full access to the live `View` object for signals, data streaming, and event listeners.
+Renders [Vega](https://vega.github.io/vega/) and [Vega-Lite](https://vega.github.io/vega-lite/) specifications via the Vega runtime. The component inspects `$schema` to decide whether to compile (Vega-Lite) or render directly (Vega), and validates the schema URL before doing either.
 
 <!-- SYNC: When files in this directory change, update this document. -->
 
@@ -12,9 +12,10 @@ Compiles [Vega-Lite](https://vega.github.io/vega-lite/) specs and renders them v
 |------|------|---------|
 | `package.json` | Config | Package metadata, deps, build scripts |
 | `tsconfig.json` | Config | TypeScript compiler config (extends root) |
-| `tsup.config.ts` | Config | Build config — CJS + ESM + `.d.ts` outputs |
+| `tsup.config.ts` | Config | Build config -- CJS + ESM + `.d.ts` outputs |
 | `src/index.ts` | Barrel | Public API surface |
-| `src/VegaChart.tsx` | Component | Compiles Vega-Lite → Vega and owns the View lifecycle |
+| `src/VegaChart.tsx` | Component | Inspects `$schema`, compiles or renders, owns View lifecycle |
+| `src/schema.ts` | Utility | Parses and validates Vega/Vega-Lite `$schema` URLs |
 | `src/types.ts` | Types | Shared TypeScript types for this package |
 
 ## Installation
@@ -25,22 +26,36 @@ yarn add @xds/vega vega vega-lite
 
 ## Usage
 
+### Vega-Lite spec (compiled automatically)
+
 ```tsx
 import {VegaChart} from '@xds/vega';
 
-const spec = {
-  mark: 'bar',
-  data: {values: [{a: 'A', b: 28}, {a: 'B', b: 55}]},
-  encoding: {
-    x: {field: 'a', type: 'ordinal'},
-    y: {field: 'b', type: 'quantitative'},
-  },
-};
-
-<VegaChart spec={spec} />
+<VegaChart
+  spec={{
+    $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
+    mark: 'bar',
+    data: {values: [{a: 'A', b: 28}, {a: 'B', b: 55}]},
+    encoding: {
+      x: {field: 'a', type: 'ordinal'},
+      y: {field: 'b', type: 'quantitative'},
+    },
+  }}
+/>
 ```
 
-Access the live Vega `View` via `onReady` for signals, streaming data, or event listeners:
+### Vega spec (rendered directly, no compilation)
+
+```tsx
+<VegaChart
+  spec={{
+    $schema: 'https://vega.github.io/schema/vega/v5.json',
+    marks: [...],
+  }}
+/>
+```
+
+### Accessing the live View
 
 ```tsx
 <VegaChart
@@ -50,6 +65,7 @@ Access the live Vega `View` via `onReady` for signals, streaming data, or event 
       console.log('signal:', name, value);
     });
   }}
+  onError={err => console.error('Chart error:', err.message)}
 />
 ```
 
@@ -59,13 +75,27 @@ Access the live Vega `View` via `onReady` for signals, streaming data, or event 
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `spec` | `TopLevelSpec` | — | Vega-Lite specification (required) |
-| `viewConfig` | `Config` | — | Vega runtime config (renderer defaults, logging, etc.) |
-| `renderer` | `'svg' \| 'canvas'` | `'svg'` | Rendering backend |
-| `className` | `string` | — | CSS class on the container div |
-| `style` | `CSSProperties` | — | Inline styles on the container div |
-| `onReady` | `(view: View) => void` | — | Called with the live Vega View when ready |
-| `onError` | `(err: Error) => void` | — | Called on compile or render failure |
+| `spec` | `AnySpec` | -- | Vega or Vega-Lite spec. Must include `$schema` (required) |
+| `viewConfig` | `Config` | -- | Vega runtime config (renderer defaults, logging, etc.) |
+| `renderer` | `'svg' | 'canvas'` | `'svg'` | Rendering backend |
+| `className` | `string` | -- | CSS class on the container div |
+| `style` | `CSSProperties` | -- | Inline styles on the container div |
+| `onReady` | `(view: View) => void` | -- | Called with the live Vega View when ready |
+| `onError` | `(err: Error) => void` | -- | Called on schema error, compile failure, or render failure |
+
+### `parseSchema(schema)` (exported utility)
+
+Parses and validates a Vega `$schema` URL. Returns:
+- `{ok: true, library: 'vega' | 'vega-lite', version: string}` on success
+- `{ok: false, error: string}` if the URL is missing, malformed, or names an unknown library
+
+## Schema validation
+
+`VegaChart` validates `spec.$schema` before doing any work. It will call `onError` (and render nothing) if:
+
+- `$schema` is missing or not a string
+- The URL doesn't match the expected format (`schema/{library}/{version}.json`)
+- The library name is not `vega` or `vega-lite`
 
 ## Build
 
