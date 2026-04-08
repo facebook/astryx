@@ -9,5 +9,5 @@
 
 export {VegaChart} from './VegaChart';
 export {parseSchema} from './schema';
-export type {VegaChartProps, AnySpec, VegaSpec, VegaLiteSpec, ParseOptions, Config, ViewOptions} from './types';
+export type {VegaChartProps, AnySpec, VegaSpec, VegaLiteSpec, CompileOptions, ParseOptions, Config, ViewOptions} from './types';
 export type {SchemaLibrary, SchemaResult} from './schema';

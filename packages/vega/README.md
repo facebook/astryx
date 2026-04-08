@@ -85,6 +85,7 @@ import {VegaChart} from '@xds/vega';
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
 | `spec` | `AnySpec` | -- | Vega or Vega-Lite spec with `$schema` (required) |
+| `compileOptions` | `CompileOptions` | -- | Options passed to `compile(spec, options)` — Vega-Lite only |
 | `parseConfig` | `Config` | -- | Vega config passed to `parse(spec, config)` |
 | `parseOptions` | `ParseOptions` | -- | Options passed to `parse(spec, config, options)` |
 | `viewOptions` | `Omit<ViewOptions, 'container'>` | -- | Options passed to `new View(runtime, options)` |
@@ -105,6 +106,14 @@ import {VegaChart} from '@xds/vega';
 | `locale` | `LocaleFormatters` | Number and time format locale |
 | `loader` | `Loader` | Custom data loader |
 | `background` | `Color` | Chart background color |
+
+`compileOptions` fields (Vega-Lite specs only, ignored otherwise):
+
+| `compileOptions` field | Type | Description |
+|---|---|---|
+| `config` | `VegaLiteConfig` | Vega-Lite config merged on top of the spec's config |
+| `logger` | `LoggerInterface` | Custom logger used during compilation |
+| `fieldTitle` | `(fieldDef, config) => string` | Custom field title formatter |
 
 `parseOptions` fields:
 

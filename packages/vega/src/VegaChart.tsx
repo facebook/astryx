@@ -63,6 +63,7 @@ import type {VegaChartProps, VegaSpec} from './types';
  */
 export function VegaChart({
   spec,
+  compileOptions,
   parseConfig,
   parseOptions,
   viewOptions,
@@ -103,7 +104,7 @@ export function VegaChart({
       // Compile Vega-Lite -> Vega if needed; otherwise use the spec directly.
       const vegaSpec: VegaSpec =
         schemaResult.library === 'vega-lite'
-          ? compile(spec).spec
+          ? compile(spec, compileOptions).spec
           : (spec as VegaSpec);
 
       // parse(spec, config?, options?) -> Runtime
@@ -134,10 +135,10 @@ export function VegaChart({
       cancelled = true;
       view?.finalize();
     };
-  // parseConfig, parseOptions, and viewOptions are intentionally in the dep
-  // array. Callers should memoize them to avoid unnecessary re-renders.
+  // Object props are intentionally in the dep array. Callers should memoize
+  // them to avoid unnecessary re-renders.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [spec, parseConfig, parseOptions, viewOptions]);
+  }, [spec, compileOptions, parseConfig, parseOptions, viewOptions]);
 
   return <div ref={containerRef} className={className} style={style} />;
 }

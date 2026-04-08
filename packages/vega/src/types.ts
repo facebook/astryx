@@ -8,9 +8,42 @@
  */
 
 import type {Spec as VegaSpec, Config, View, ViewOptions} from 'vega';
-import type {TopLevelSpec as VegaLiteSpec} from 'vega-lite';
+import type {TopLevelSpec as VegaLiteSpec, Config as VegaLiteConfig} from 'vega-lite';
 
 export type {VegaSpec, VegaLiteSpec, Config, View, ViewOptions};
+
+/**
+ * Options for the Vega-Lite `compile()` function.
+ *
+ * Mirrors `CompileOptions` from `vega-lite/src/compile/compile.ts`, which is
+ * not part of the public vega-lite export surface, so we redeclare it here.
+ *
+ * @see https://github.com/vega/vega-lite/blob/main/src/compile/compile.ts
+ */
+export interface CompileOptions {
+  /**
+   * Vega-Lite config merged on top of the spec's own config before compilation.
+   */
+  config?: VegaLiteConfig;
+  /**
+   * Custom logger used during compilation.
+   * Accepts any object matching the `LoggerInterface` shape from `vega-util`.
+   */
+  logger?: {
+    level: (lvl?: number) => number | void;
+    warn: (...args: unknown[]) => void;
+    info: (...args: unknown[]) => void;
+    debug: (...args: unknown[]) => void;
+    error: (...args: unknown[]) => Error | void;
+  };
+  /**
+   * Custom field title formatter. Overrides the global singleton used by
+   * vega-lite to produce axis/legend/header titles from field definitions.
+   *
+   * Signature: `(fieldDef: FieldDefBase<string>, config: Config) => string`
+   */
+  fieldTitle?: (fieldDef: Record<string, unknown>, config: VegaLiteConfig) => string;
+}
 
 /**
  * A spec accepted by `<VegaChart>`. Must include a `$schema` field --
@@ -50,6 +83,13 @@ export interface VegaChartProps {
    * @see https://vega.github.io/vega-lite/docs/spec.html
    */
   spec: AnySpec;
+  /**
+   * Options passed to `vega-lite`'s `compile()` function.
+   * Only applied when `spec.$schema` identifies a `vega-lite` spec.
+   * Ignored for native Vega specs.
+   * @see https://github.com/vega/vega-lite/blob/main/src/compile/compile.ts
+   */
+  compileOptions?: CompileOptions;
   /**
    * Vega config object passed as the second argument to `vega.parse()`.
    * Overrides config values embedded in the spec.
