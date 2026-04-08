@@ -3,10 +3,8 @@
 /**
  * @file XDSChatComposerInput.tsx
  * ContentEditable-based rich input for the chat composer.
- * Supports token rendering, serialization, Enter/Shift+Enter,
- * message history (ArrowUp/Down), paste/drop file handling.
- *
- * NOTE: Trigger menu popover (@ mentions, / commands) is NOT yet implemented.
+ * Supports trigger menus (@ mentions, / commands), inline token rendering,
+ * serialization, Enter/Shift+Enter, message history, paste/drop file handling.
  */
 
 import {
@@ -25,20 +23,21 @@ import {
   colorVars,
   spacingVars,
   radiusVars,
-  durationVars,
-  easeVars,
   fontWeightVars,
   typeScaleVars,
   typographyVars,
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
+import {useTriggerMenu} from './useTriggerMenu';
 
 // =============================================================================
 // Types
 // =============================================================================
 
 export type XDSChatComposerToken = {
+  /** Serialized value — what this token becomes in the onSubmit string */
   value: string;
+  /** How this token renders inside the contentEditable */
   render: () => ReactNode;
 };
 
@@ -49,26 +48,54 @@ export type XDSChatComposerTriggerItem = {
 };
 
 export type XDSChatComposerTrigger = {
+  /** Character that activates this trigger menu (e.g. '@', '/') */
   character: string;
+  /** Static items for the trigger menu. Use for small, known lists. */
   items?: XDSChatComposerTriggerItem[];
+  /**
+   * Async action to query items based on user input.
+   * Use for dynamic lists (e.g. contact search, API-backed data).
+   */
   queryItemsAction?: (query: string) => Promise<XDSChatComposerTriggerItem[]>;
+  /** How to render each item in the trigger menu */
   renderItem?: (item: XDSChatComposerTriggerItem) => ReactNode;
-  onSelect: (item: XDSChatComposerTriggerItem) => XDSChatComposerToken;
+  /**
+   * What to insert when an item is selected.
+   * Return a string for plain text, or a Token for an inline chip.
+   */
+  onSelect: (item: XDSChatComposerTriggerItem) => string | XDSChatComposerToken;
+  /**
+   * Parse serialized tokens back into rendered tokens.
+   * Used when loading a previous message for editing.
+   */
   deserialize?: (value: string) => XDSChatComposerToken | null;
 };
 
-export interface XDSChatComposerInputProps
-  extends Omit<XDSBaseProps<HTMLDivElement>, 'onChange' | 'onPaste' | 'onSubmit'> {
+export interface XDSChatComposerInputProps extends Omit<
+  XDSBaseProps<HTMLDivElement>,
+  'onChange' | 'onPaste' | 'onSubmit'
+> {
+  /** Controlled value */
   value?: string;
+  /** Change handler */
   onChange?: (value: string) => void;
+  /** Placeholder text. @default 'Type a message\u2026' */
   placeholder?: string;
+  /** Max rows before scrolling. @default 8 */
   maxRows?: number;
+  /** Trigger definitions for @ menus, / commands, etc. */
   triggers?: XDSChatComposerTrigger[];
+  /** Enable message history recall. @default true */
   hasHistory?: boolean;
+  /** Accessible label. @default 'Message input' */
   label?: string;
+  /** Disabled state. @default false */
   isDisabled?: boolean;
+  /** Paste handler */
   onPaste?: (event: ClipboardEvent<HTMLDivElement>, text: string) => void;
+  /** File drop/paste handler */
   onFiles?: (files: File[]) => void;
+  /** Submit handler (Enter without Shift) */
   onSubmit?: (value: string) => void;
 }
 
@@ -138,6 +165,9 @@ function serialize(node: Node): string {
     if (child.nodeType === Node.TEXT_NODE) {
       result += child.textContent ?? '';
     } else if (child instanceof HTMLElement) {
+      if (child.hasAttribute('data-xds-trigger-anchor')) {
+        continue;
+      }
       if (child.hasAttribute('data-xds-token')) {
         result += child.getAttribute('data-xds-token-value') ?? '';
       } else if (child.tagName === 'BR') {
@@ -196,12 +226,60 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
     onChange?.(text);
   }, [onChange]);
 
+  // --- Token insertion ---
+  const insertToken = useCallback((token: XDSChatComposerToken) => {
+    const editable = editableRef.current;
+    if (!editable) return;
+
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return;
+
+    const range = selection.getRangeAt(0);
+
+    const span = document.createElement('span');
+    span.setAttribute('data-xds-token', '');
+    span.setAttribute('data-xds-token-value', token.value);
+    span.contentEditable = 'false';
+    span.textContent = token.value;
+
+    range.insertNode(span);
+
+    // Add a non-breaking space after the token and move cursor there
+    const space = document.createTextNode('\u00A0');
+    span.after(space);
+
+    const newRange = document.createRange();
+    newRange.setStartAfter(space);
+    newRange.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(newRange);
+  }, []);
+
+  const insertText = useCallback((text: string) => {
+    document.execCommand('insertText', false, text);
+  }, []);
+
+  // --- Trigger menu ---
+  const triggerMenu = useTriggerMenu({
+    triggers,
+    editableRef,
+    onInsertToken: insertToken,
+    onInsertText: insertText,
+    onEmitChange: emitChange,
+  });
+
   const handleInput = useCallback(() => {
     emitChange();
-  }, [emitChange]);
+    triggerMenu.handleInput();
+  }, [emitChange, triggerMenu]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLDivElement>) => {
+      // Let trigger menu consume the event first
+      if (triggerMenu.handleKeyDown(e)) {
+        return;
+      }
+
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         if (!editableRef.current) return;
@@ -221,15 +299,12 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
         return;
       }
 
-      // History navigation
+      // History navigation (only when trigger menu is not active)
       if (hasHistory && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
         if (!editableRef.current) return;
         const text = serialize(editableRef.current);
         const history = historyRef.current;
         if (history.length === 0) return;
-
-        const selection = window.getSelection();
-        if (!selection || selection.rangeCount === 0) return;
 
         if (e.key === 'ArrowUp') {
           if (historyIndexRef.current === -1) {
@@ -257,7 +332,7 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
         }
       }
     },
-    [hasHistory, onSubmit, onChange, emitChange],
+    [hasHistory, onSubmit, onChange, emitChange, triggerMenu],
   );
 
   const handlePaste = useCallback(
@@ -296,16 +371,11 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
     <div
       {...mergeProps(
         xdsClassName('chat-composer-input'),
-        stylex.props(
-          styles.root,
-          isDisabled && styles.disabled,
-          xstyle,
-        ),
+        stylex.props(styles.root, isDisabled && styles.disabled, xstyle),
         className,
         style,
       )}
-      {...rest}
-    >
+      {...rest}>
       {isEmpty && (
         <div {...stylex.props(styles.placeholder)} aria-hidden="true">
           {placeholder}
@@ -325,6 +395,7 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
         {...stylex.props(styles.editable)}
         style={{maxHeight: `${maxHeight}px`}}
       />
+      {triggerMenu.renderMenu()}
     </div>
   );
 }
@@ -332,7 +403,7 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
 XDSChatComposerInput.displayName = 'XDSChatComposerInput';
 
 // =============================================================================
-// Token element helper
+// Token element helper (for custom rendering in stories/consumers)
 // =============================================================================
 
 export function XDSChatComposerTokenElement({
@@ -345,8 +416,7 @@ export function XDSChatComposerTokenElement({
       data-xds-token=""
       data-xds-token-value={token.value}
       contentEditable={false}
-      {...stylex.props(styles.token)}
-    >
+      {...stylex.props(styles.token)}>
       {token.render()}
     </span>
   );
