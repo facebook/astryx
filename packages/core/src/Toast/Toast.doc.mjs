@@ -68,15 +68,15 @@ export const docs = {
 
   examples: [
     {
-      title: 'Basic',
+      label: 'Basic',
       code: `const toast = useXDSToast();\ntoast({ body: "Changes saved" });`,
     },
     {
-      title: 'Error',
+      label: 'Error',
       code: `toast({ body: "Failed to save", type: "error" });`,
     },
     {
-      title: 'With action',
+      label: 'With action',
       code: `toast({\n  body: "Item deleted",\n  isAutoHide: false,\n  endContent: <XDSButton label="Undo" variant="secondary" size="sm" onClick={undo} />,\n});`,
     },
   ],
