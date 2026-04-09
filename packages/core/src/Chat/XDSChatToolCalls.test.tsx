@@ -95,16 +95,6 @@ describe('XDSChatToolCalls', () => {
     expect(btn).toHaveAttribute('aria-expanded', 'true');
   });
 
-  it('renders detail content via renderDetail', () => {
-    render(
-      <XDSChatToolCalls
-        calls={[{name: 'bash', status: 'complete'}]}
-        renderDetail={() => <div data-testid="detail">Result here</div>}
-      />,
-    );
-    expect(screen.getByTestId('detail')).toBeInTheDocument();
-  });
-
   it('shows label when provided', () => {
     render(
       <XDSChatToolCalls

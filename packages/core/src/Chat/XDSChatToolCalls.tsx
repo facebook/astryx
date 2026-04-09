@@ -87,8 +87,6 @@ export interface XDSChatToolCallsProps extends XDSBaseProps<HTMLDivElement> {
   defaultIsExpanded?: boolean;
   /** Callback when expanded state changes. */
   onExpandedChange?: (isExpanded: boolean) => void;
-  /** Optional render function for per-call detail content. */
-  renderDetail?: (call: XDSChatToolCallItem, index: number) => ReactNode;
 }
 
 // =============================================================================
@@ -282,10 +280,6 @@ const styles = stylex.create({
     transform: 'translateY(-6px) scale(0.97)',
     opacity: 0.15,
   },
-  detailContent: {
-    paddingInlineStart: `calc(14px + ${spacingVars['--spacing-1-5']})`,
-    paddingBlockEnd: spacingVars['--spacing-1'],
-  },
 
   // Status colors
   colorPending: {color: colorVars['--color-text-disabled']},
@@ -396,10 +390,8 @@ const STATUS_STYLES: Record<
 
 function CallRow({
   call,
-  detail,
 }: {
   call: XDSChatToolCallItem;
-  detail?: ReactNode;
 }) {
   const status = call.status ?? 'complete';
   const Icon = STATUS_ICONS[status];
@@ -458,9 +450,6 @@ function CallRow({
           <span {...stylex.props(styles.callDuration)}>{call.duration}</span>
         )}
       </div>
-      {detail != null && (
-        <div {...stylex.props(styles.detailContent)}>{detail}</div>
-      )}
     </div>
   );
 }
@@ -506,7 +495,6 @@ export function XDSChatToolCalls(props: XDSChatToolCallsProps) {
     isExpanded: controlledExpanded,
     defaultIsExpanded,
     onExpandedChange,
-    renderDetail,
     xstyle,
     className,
     style,
@@ -539,7 +527,7 @@ export function XDSChatToolCalls(props: XDSChatToolCallsProps) {
           style,
         )}
         {...rest}>
-        <CallRow call={calls[0]} detail={renderDetail?.(calls[0], 0)} />
+        <CallRow call={calls[0]} />
       </div>
     );
   }
@@ -597,7 +585,6 @@ export function XDSChatToolCalls(props: XDSChatToolCallsProps) {
               <CallRow
                 key={call.key ?? i}
                 call={call}
-                detail={renderDetail?.(call, i)}
               />
             ))}
           </div>

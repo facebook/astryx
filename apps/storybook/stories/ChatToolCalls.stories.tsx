@@ -1,9 +1,10 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSChatToolCalls, type XDSChatToolCallItem} from '@xds/core/Chat';
-import {useState, useEffect, useCallback} from 'react';
-import {XDSDialog} from '@xds/core/Dialog';
+import {useState, useCallback} from 'react';
+import {useXDSImperativeDialog} from '@xds/core/Dialog';
 import {XDSCodeBlock} from '@xds/core/CodeBlock';
 import {XDSBanner} from '@xds/core/Banner';
+import {XDSVStack} from '@xds/core/Stack';
 
 const meta: Meta<typeof XDSChatToolCalls> = {
   title: 'Chat/XDSChatToolCalls',
@@ -191,15 +192,7 @@ export const ManyCalls: Story = {
 /** Interactive calls — edit opens a diff modal, bash opens output */
 export const Interactive: Story = {
   render: () => {
-    const [dialogOpen, setDialogOpen] = useState(false);
-    const [dialogCode, setDialogCode] = useState('');
-    const [dialogLang, setDialogLang] = useState('');
-
-    const openDetail = (code: string, lang: string) => {
-      setDialogCode(code);
-      setDialogLang(lang);
-      setDialogOpen(true);
-    };
+    const dialog = useXDSImperativeDialog({width: 720});
 
     const editDiff = `--- a/packages/core/src/Button/XDSButton.tsx
 +++ b/packages/core/src/Button/XDSButton.tsx
@@ -244,7 +237,7 @@ Time:        6.1s`;
               duration: '85ms',
               node: 'cli:devvm',
               stats: {additions: 12, deletions: 3},
-              onClick: () => openDetail(editDiff, 'typescript'),
+              onClick: () => dialog.show(<XDSCodeBlock code={editDiff} language="typescript" maxHeight="50vh" />),
             },
             {
               name: 'bash',
@@ -252,7 +245,7 @@ Time:        6.1s`;
               status: 'complete',
               duration: '6.1s',
               node: 'cli:devvm',
-              onClick: () => openDetail(testOutput, 'bash'),
+              onClick: () => dialog.show(<XDSCodeBlock code={testOutput} language="bash" maxHeight="50vh" />),
             },
             {
               name: 'web_search',
@@ -262,13 +255,7 @@ Time:        6.1s`;
             },
           ]}
         />
-        <XDSDialog
-          isOpen={dialogOpen}
-          onOpenChange={setDialogOpen}
-          variant="standard"
-          style={{maxWidth: 720, width: '90vw'}}>
-          <XDSCodeBlock code={dialogCode} language={dialogLang} />
-        </XDSDialog>
+        {dialog.element}
       </>
     );
   },
@@ -277,7 +264,7 @@ Time:        6.1s`;
 /** Error with modal — clicking a failed call shows error detail with banner */
 export const ErrorWithModal: Story = {
   render: () => {
-    const [dialogOpen, setDialogOpen] = useState(false);
+    const dialog = useXDSImperativeDialog({width: 720});
 
     const errorOutput = `$ yarn test
  PASS  packages/core/src/Chat/XDSChatReasoning.test.tsx (7 tests)
@@ -316,7 +303,14 @@ Time:        6.84s`;
               duration: '6.8s',
               node: 'cli:devvm',
               errorMessage: '4 tests failed',
-              onClick: () => setDialogOpen(true),
+              onClick: () => dialog.show(
+                <XDSVStack gap={2}>
+                  <XDSCodeBlock code={errorOutput} language="bash" maxHeight="50vh" />
+                  <XDSBanner status="error" title="Test failure">
+                    4 tests failed in XDSChatToolCalls.test.tsx
+                  </XDSBanner>
+                </XDSVStack>,
+              ),
             },
             {
               name: 'read',
@@ -327,17 +321,7 @@ Time:        6.84s`;
             },
           ]}
         />
-        <XDSDialog
-          isOpen={dialogOpen}
-          onOpenChange={setDialogOpen}
-          variant="standard"
-          style={{maxWidth: 720, width: '90vw'}}>
-          <XDSCodeBlock code={errorOutput} language="bash" maxHeight="50vh" />
-          <div style={{height: 8}} />
-          <XDSBanner status="error" title="Test failure">
-            4 tests failed in XDSChatToolCalls.test.tsx
-          </XDSBanner>
-        </XDSDialog>
+        {dialog.element}
       </>
     );
   },
