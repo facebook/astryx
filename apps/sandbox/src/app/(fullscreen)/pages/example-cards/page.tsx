@@ -1574,6 +1574,234 @@ export default function ExampleCardsPage() {
             </XDSVStack>
           </XDSCard>
         </div>
+
+        {/* Input Components */}
+        <div
+          style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden', gridColumn: '1 / -1'}}>
+          <XDSCard>
+            <XDSVStack gap={4}>
+              <XDSText type="label" weight="bold">Input Components</XDSText>
+              <XDSDivider />
+              <XDSVStack gap={4}>
+                <XDSHStack gap={4}>
+                  <XDSTextInput label="Default" placeholder="Enter text..." onChange={() => {}} />
+                  <XDSTextInput label="With value" value="Hello world" onChange={() => {}} />
+                  <XDSTextInput label="Disabled" value="Can't edit" isDisabled onChange={() => {}} />
+                </XDSHStack>
+                <XDSHStack gap={4}>
+                  <XDSTextInput label="Error state" status={{type: "error", message: "This field is required"}} onChange={() => {}} />
+                  <XDSTextInput label="Success state" status={{type: "success", message: "Looks good!"}} value="Valid input" onChange={() => {}} />
+                  <XDSTextInput label="With placeholder" placeholder="Enter email..." onChange={() => {}} />
+                </XDSHStack>
+                <XDSDivider />
+                <XDSText type="supporting" color="secondary">Selector</XDSText>
+                <XDSHStack gap={4}>
+                  <XDSSelector
+                    label="Choose option"
+                    options={['Option A', 'Option B', 'Option C']}
+                    value="Option A"
+                    onChange={() => {}}
+                  />
+                  <XDSSelector
+                    label="Disabled"
+                    options={['Locked']}
+                    value="Locked"
+                    isDisabled
+                    onChange={() => {}}
+                  />
+                </XDSHStack>
+                <XDSDivider />
+                <XDSText type="supporting" color="secondary">Slider</XDSText>
+                <XDSSlider label="Volume" value={65} onChange={() => {}} />
+                <XDSDivider />
+                <XDSText type="supporting" color="secondary">Toggle Controls</XDSText>
+                <XDSHStack gap={6} vAlign="center">
+                  <XDSSwitch label="On" isSelected onChange={() => {}} />
+                  <XDSSwitch label="Off" onChange={() => {}} />
+                  <XDSSwitch label="Disabled on" isSelected isDisabled onChange={() => {}} />
+                  <XDSSwitch label="Disabled off" isDisabled onChange={() => {}} />
+                </XDSHStack>
+                <XDSDivider />
+                <XDSText type="supporting" color="secondary">Checkbox</XDSText>
+                <XDSHStack gap={6}>
+                  <XDSCheckboxInput label="Checked" isSelected onChange={() => {}} />
+                  <XDSCheckboxInput label="Unchecked" onChange={() => {}} />
+                  <XDSCheckboxInput label="Checked disabled" isSelected isDisabled onChange={() => {}} />
+                  <XDSCheckboxInput label="Unchecked disabled" isDisabled onChange={() => {}} />
+                </XDSHStack>
+                <XDSDivider />
+                <XDSText type="supporting" color="secondary">Radio</XDSText>
+                <XDSRadioList value="a" onChange={() => {}}>
+                  <XDSRadioListItem value="a" label="Choice A" />
+                  <XDSRadioListItem value="b" label="Choice B" />
+                  <XDSRadioListItem value="c" label="Choice C (disabled)" isDisabled />
+                </XDSRadioList>
+              </XDSVStack>
+            </XDSVStack>
+          </XDSCard>
+        </div>
+
+        {/* Button Variants */}
+        <div
+          style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden', gridColumn: '1 / -1'}}>
+          <XDSCard>
+            <XDSVStack gap={4}>
+              <XDSText type="label" weight="bold">Button Variants</XDSText>
+              <XDSDivider />
+              <XDSVStack gap={3}>
+                <XDSVStack gap={1}>
+                  <XDSText type="supporting" color="secondary">Primary</XDSText>
+                  <XDSHStack gap={2} vAlign="center">
+                    <XDSButton label="Small" variant="primary" size="sm" />
+                    <XDSButton label="Medium" variant="primary" size="md" />
+                    <XDSButton label="Large" variant="primary" size="lg" />
+                    <XDSButton label="Disabled" variant="primary" isDisabled />
+                  </XDSHStack>
+                </XDSVStack>
+                <XDSVStack gap={1}>
+                  <XDSText type="supporting" color="secondary">Secondary</XDSText>
+                  <XDSHStack gap={2} vAlign="center">
+                    <XDSButton label="Small" variant="secondary" size="sm" />
+                    <XDSButton label="Medium" variant="secondary" size="md" />
+                    <XDSButton label="Large" variant="secondary" size="lg" />
+                    <XDSButton label="Disabled" variant="secondary" isDisabled />
+                  </XDSHStack>
+                </XDSVStack>
+                <XDSVStack gap={1}>
+                  <XDSText type="supporting" color="secondary">Destructive</XDSText>
+                  <XDSHStack gap={2} vAlign="center">
+                    <XDSButton label="Small" variant="destructive" size="sm" />
+                    <XDSButton label="Medium" variant="destructive" size="md" />
+                    <XDSButton label="Large" variant="destructive" size="lg" />
+                    <XDSButton label="Disabled" variant="destructive" isDisabled />
+                  </XDSHStack>
+                </XDSVStack>
+                <XDSVStack gap={1}>
+                  <XDSText type="supporting" color="secondary">Ghost</XDSText>
+                  <XDSHStack gap={2} vAlign="center">
+                    <XDSButton label="Small" variant="ghost" size="sm" />
+                    <XDSButton label="Medium" variant="ghost" size="md" />
+                    <XDSButton label="Large" variant="ghost" size="lg" />
+                    <XDSButton label="Disabled" variant="ghost" isDisabled />
+                  </XDSHStack>
+                </XDSVStack>
+                <XDSDivider />
+                <XDSText type="supporting" color="secondary">Theme-specific variants (Meta)</XDSText>
+                <XDSVStack gap={1}>
+                  <XDSText type="supporting" color="secondary">Primary Muted</XDSText>
+                  <XDSHStack gap={2} vAlign="center">
+                    <XDSButton label="Small" variant={'primary-muted' as never} size="sm" />
+                    <XDSButton label="Medium" variant={'primary-muted' as never} size="md" />
+                    <XDSButton label="Large" variant={'primary-muted' as never} size="lg" />
+                  </XDSHStack>
+                </XDSVStack>
+                <XDSVStack gap={1}>
+                  <XDSText type="supporting" color="secondary">Destructive Muted</XDSText>
+                  <XDSHStack gap={2} vAlign="center">
+                    <XDSButton label="Small" variant={'destructive-muted' as never} size="sm" />
+                    <XDSButton label="Medium" variant={'destructive-muted' as never} size="md" />
+                    <XDSButton label="Large" variant={'destructive-muted' as never} size="lg" />
+                  </XDSHStack>
+                </XDSVStack>
+                <XDSVStack gap={1}>
+                  <XDSText type="supporting" color="secondary">Primary Outline</XDSText>
+                  <XDSHStack gap={2} vAlign="center">
+                    <XDSButton label="Small" variant={'primary-outline' as never} size="sm" />
+                    <XDSButton label="Medium" variant={'primary-outline' as never} size="md" />
+                    <XDSButton label="Large" variant={'primary-outline' as never} size="lg" />
+                  </XDSHStack>
+                </XDSVStack>
+                <XDSVStack gap={1}>
+                  <XDSText type="supporting" color="secondary">Secondary Outline</XDSText>
+                  <XDSHStack gap={2} vAlign="center">
+                    <XDSButton label="Small" variant={'secondary-outline' as never} size="sm" />
+                    <XDSButton label="Medium" variant={'secondary-outline' as never} size="md" />
+                    <XDSButton label="Large" variant={'secondary-outline' as never} size="lg" />
+                  </XDSHStack>
+                </XDSVStack>
+                <XDSVStack gap={1}>
+                  <XDSText type="supporting" color="secondary">Destructive Outline</XDSText>
+                  <XDSHStack gap={2} vAlign="center">
+                    <XDSButton label="Small" variant={'destructive-outline' as never} size="sm" />
+                    <XDSButton label="Medium" variant={'destructive-outline' as never} size="md" />
+                    <XDSButton label="Large" variant={'destructive-outline' as never} size="lg" />
+                  </XDSHStack>
+                </XDSVStack>
+              </XDSVStack>
+            </XDSVStack>
+          </XDSCard>
+        </div>
+
+        {/* Typography Scale */}
+        <div
+          style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden', gridColumn: '1 / -1'}}>
+          <XDSCard>
+            <XDSVStack gap={4}>
+              <XDSText type="label" weight="bold">Typography Scale</XDSText>
+              <XDSDivider />
+              <XDSVStack gap={3}>
+                <XDSVStack gap={0}>
+                  <XDSText type="supporting" color="secondary">Display 1</XDSText>
+                  <XDSHeading level={1} display="display-1">The quick brown fox</XDSHeading>
+                </XDSVStack>
+                <XDSVStack gap={0}>
+                  <XDSText type="supporting" color="secondary">Display 2</XDSText>
+                  <XDSHeading level={1} display="display-2">The quick brown fox</XDSHeading>
+                </XDSVStack>
+                <XDSVStack gap={0}>
+                  <XDSText type="supporting" color="secondary">Display 3</XDSText>
+                  <XDSHeading level={1} display="display-3">The quick brown fox</XDSHeading>
+                </XDSVStack>
+                <XDSDivider />
+                <XDSVStack gap={0}>
+                  <XDSText type="supporting" color="secondary">Heading 1</XDSText>
+                  <XDSHeading level={1}>The quick brown fox</XDSHeading>
+                </XDSVStack>
+                <XDSVStack gap={0}>
+                  <XDSText type="supporting" color="secondary">Heading 2</XDSText>
+                  <XDSHeading level={2}>The quick brown fox</XDSHeading>
+                </XDSVStack>
+                <XDSVStack gap={0}>
+                  <XDSText type="supporting" color="secondary">Heading 3</XDSText>
+                  <XDSHeading level={3}>The quick brown fox</XDSHeading>
+                </XDSVStack>
+                <XDSVStack gap={0}>
+                  <XDSText type="supporting" color="secondary">Heading 4</XDSText>
+                  <XDSHeading level={4}>The quick brown fox</XDSHeading>
+                </XDSVStack>
+                <XDSVStack gap={0}>
+                  <XDSText type="supporting" color="secondary">Heading 5</XDSText>
+                  <XDSHeading level={5}>The quick brown fox</XDSHeading>
+                </XDSVStack>
+                <XDSVStack gap={0}>
+                  <XDSText type="supporting" color="secondary">Heading 6</XDSText>
+                  <XDSHeading level={6}>The quick brown fox</XDSHeading>
+                </XDSVStack>
+                <XDSDivider />
+                <XDSVStack gap={0}>
+                  <XDSText type="supporting" color="secondary">Large</XDSText>
+                  <XDSText type="large">The quick brown fox jumps over the lazy dog</XDSText>
+                </XDSVStack>
+                <XDSVStack gap={0}>
+                  <XDSText type="supporting" color="secondary">Body</XDSText>
+                  <XDSText>The quick brown fox jumps over the lazy dog</XDSText>
+                </XDSVStack>
+                <XDSVStack gap={0}>
+                  <XDSText type="supporting" color="secondary">Label</XDSText>
+                  <XDSText type="label">The quick brown fox jumps over the lazy dog</XDSText>
+                </XDSVStack>
+                <XDSVStack gap={0}>
+                  <XDSText type="supporting" color="secondary">Supporting</XDSText>
+                  <XDSText type="supporting">The quick brown fox jumps over the lazy dog</XDSText>
+                </XDSVStack>
+                <XDSVStack gap={0}>
+                  <XDSText type="supporting" color="secondary">Code</XDSText>
+                  <XDSText type="code">const fox = &apos;quick brown&apos;;</XDSText>
+                </XDSVStack>
+              </XDSVStack>
+            </XDSVStack>
+          </XDSCard>
+        </div>
       </div>
     </>
   );

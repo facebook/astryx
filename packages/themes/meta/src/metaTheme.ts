@@ -17,7 +17,7 @@ export const metaTheme = defineTheme({
 
   // Typography — Figtree font family, default scale
   typography: {
-    scale: {base: 14, ratio: 1.2},
+    scale: {base: 15, ratio: 1.2},
     body: {
       family: 'Figtree',
       fallbacks:
@@ -179,7 +179,62 @@ export const metaTheme = defineTheme({
     // =========================================================================
     // Text size overrides
     // =========================================================================
-    '--font-size-2xl': '1.75rem', // 28px — heading 1
+    // =========================================================================
+    // Element Sizes — aligned to XMDS (32/36/44 vs default 28/32/36)
+    // =========================================================================
+    '--size-element-sm': '32px',
+    '--size-element-md': '36px',
+    '--size-element-lg': '44px',
+
+    // =========================================================================
+    // Typography Scale — aligned to CDS/XMDS
+    // CDS base = 15px, Display = 48px/600, H1/H2 = 24px, H3 = 17px
+    // Body = 15px, Label = 15px, Supporting = 13px
+    // =========================================================================
+
+    // Font size scale (15px base × 1.2 ratio)
+    '--font-size-xs': '0.6875rem', // 11px — CDS Tertiary Label
+    '--font-size-sm': '0.8125rem', // 13px — CDS Secondary Label
+    '--font-size-base': '0.9375rem', // 15px — CDS Body
+    '--font-size-lg': '1.0625rem', // 17px — CDS Headline 3
+    '--font-size-xl': '1.25rem', // 20px
+    '--font-size-2xl': '1.5rem', // 24px — CDS Headline 1/2
+    '--font-size-3xl': '1.8125rem', // 29px
+    '--font-size-4xl': '2.1875rem', // 35px
+    '--font-size-5xl': '3rem', // 48px — CDS Display
+
+    // Display — CDS: 48px / semibold
+    '--text-display-1-size': '3rem',
+    '--text-display-1-weight': 'var(--font-weight-semibold)',
+    '--text-display-1-leading': '1.1667',
+    '--text-display-2-size': '2.1875rem',
+    '--text-display-2-weight': 'var(--font-weight-semibold)',
+    '--text-display-2-leading': '1.2571',
+    '--text-display-3-size': '1.8125rem',
+    '--text-display-3-weight': 'var(--font-weight-semibold)',
+    '--text-display-3-leading': '1.2414',
+
+    // Headings — CDS: H1/H2 = 24px, H3 = 17px
+    '--text-heading-1-size': '1.5rem',
+    '--text-heading-1-leading': '1.3333',
+    '--text-heading-2-size': '1.5rem',
+    '--text-heading-2-leading': '1.3333',
+
+    // Body — CDS: 15px / 400
+    '--text-body-size': '0.9375rem',
+    '--text-body-leading': '1.4667',
+
+    // Large text — CDS: 17px (Headline 3 size)
+    '--text-large-size': '1.0625rem',
+    '--text-large-leading': '1.4118',
+
+    // Label — CDS: 15px / 500
+    '--text-label-size': '0.9375rem',
+    '--text-label-leading': '1.4667',
+
+    // Supporting — CDS: 13px / 400
+    '--text-supporting-size': '0.8125rem',
+    '--text-supporting-leading': '1.5385'
   },
 
   components: {
@@ -189,6 +244,16 @@ export const metaTheme = defineTheme({
     button: {
       base: {
         borderRadius: '9999px !important',
+        gap: '4px',
+      },
+      'size:sm': {
+        paddingInline: '12px',
+      },
+      'size:md': {
+        paddingInline: '16px',
+      },
+      'size:lg': {
+        paddingInline: '20px',
       },
       'variant:primary': {fontWeight: '500'},
       'variant:secondary': {fontWeight: '500'},
@@ -235,8 +300,8 @@ export const metaTheme = defineTheme({
     // =========================================================================
     card: {
       base: {
-        '--xds-card-padding': '20px',
-        '--card-radius': '32px',
+        '--xds-card-padding': '16px',
+        '--card-radius': '16px',
       },
     },
 
@@ -250,24 +315,55 @@ export const metaTheme = defineTheme({
     },
 
     // =========================================================================
-    // Field status — plain text (no background pill)
+    // Text input — CDS: 16px radius, 16px horizontal padding
     // =========================================================================
-    'field-status': {
+    'text-input': {
       base: {
-        backgroundColor: 'transparent',
-        paddingBlock: '0',
-        paddingInline: '0',
+        borderRadius: '8px !important',
+        paddingInline: '12px !important',
+        paddingBlock: '12px !important',
+        minHeight: '44px',
+      },
+      'variant:search': {
+        backgroundColor: 'light-dark(#F3F4F5, #28292C)',
+        borderColor: 'transparent',
+        borderRadius: '9999px !important',
       },
     },
 
     // =========================================================================
-    // Text input — search variant pill
+    // Field status — CDS: plain text below input, 12px gap, no pill bg
     // =========================================================================
-    'text-input': {
-      'variant:search': {
-        backgroundColor: 'light-dark(#F3F4F5, #28292C)',
-        borderColor: 'transparent',
-        borderRadius: '9999px',
+    'field-status': {
+      base: {
+        backgroundColor: 'transparent !important',
+        marginTop: '4px !important',
+        paddingBlockStart: '0 !important',
+        paddingBlockEnd: '0 !important',
+        paddingInline: '0 !important',
+        borderRadius: '0 !important',
+      },
+    },
+
+    // =========================================================================
+    // Selector — CDS: 16px radius to match text input
+    // =========================================================================
+    selector: {
+      base: {
+        borderRadius: '8px !important',
+        paddingInline: '12px !important',
+        paddingBlock: '12px !important',
+        minHeight: '44px',
+      },
+    },
+
+    // =========================================================================
+    // Slider — CDS: 2px track, 24px active handle
+    // =========================================================================
+    'slider-track': {
+      base: {
+        backgroundColor: '#8F9296',
+        height: '2px',
       },
     },
 
@@ -276,7 +372,7 @@ export const metaTheme = defineTheme({
     // =========================================================================
     banner: {
       base: {
-        '--banner-radius': '32px',
+        '--banner-radius': '16px',
       },
       'status:info': {backgroundColor: 'var(--color-background-card)'},
       'status:warning': {backgroundColor: 'var(--color-background-card)'},
@@ -291,7 +387,12 @@ export const metaTheme = defineTheme({
     // Badge — subtle pastel backgrounds
     // =========================================================================
     badge: {
-      base: {fontWeight: '500'},
+      base: {
+        fontWeight: '500',
+        borderRadius: '20px',
+        paddingInline: '8px',
+        paddingBlock: '6px',
+      },
       'variant:info': {
         backgroundColor: 'light-dark(#DBECFF, #14367E)',
         color: 'var(--color-text-primary)',
@@ -337,7 +438,7 @@ export const metaTheme = defineTheme({
       base: {
         borderColor: '#8F9296',
         borderWidth: '2px',
-        borderRadius: '4px',
+        borderRadius: '7px',
       },
       ':hover': {
         borderColor: 'color-mix(in srgb, #8F9296, black 20%)',
@@ -356,17 +457,10 @@ export const metaTheme = defineTheme({
     'switch-thumb': {
       base: {
         boxShadow: '0 1px 3px rgba(0,0,0,0.2), 0 1px 2px rgba(0,0,0,0.15)',
-        width: '22px',
-        height: '22px',
       },
     },
 
-    // =========================================================================
-    // Slider — custom track via sub-element target (#763)
-    // =========================================================================
-    'slider-track': {
-      base: {backgroundColor: '#8F9296'},
-    },
+
 
     // =========================================================================
     // Calendar — selected date via state class (#763)
