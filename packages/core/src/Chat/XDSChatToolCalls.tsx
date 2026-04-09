@@ -111,6 +111,7 @@ const styles = stylex.create({
   root: {
     display: 'flex',
     flexDirection: 'column',
+    marginBlockStart: spacingVars['--spacing-2'],
   },
   groupHeader: {
     display: 'flex',
@@ -146,10 +147,9 @@ const styles = stylex.create({
     height: '14px',
     color: colorVars['--color-text-disabled'],
     transition: `transform ${durationVars['--duration-fast']} ${easeVars['--ease-standard']}`,
-    marginInlineStart: 'auto',
   },
   chevronExpanded: {
-    transform: 'rotate(90deg)',
+    transform: 'rotate(180deg)',
   },
   groupContent: {
     display: 'grid',
@@ -184,8 +184,8 @@ const styles = stylex.create({
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
-    width: '14px',
-    height: '14px',
+    width: '16px',
+    height: '16px',
   },
   spinning: {
     animationName: spinKeyframes,
@@ -337,25 +337,19 @@ function ErrorIcon() {
   );
 }
 
-function ToolsIcon() {
+function WrenchIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-      <path
-        d="M8.5 2.5L11.5 5.5M2 12L5.5 8.5M9.5 5.5L5.5 9.5L2 12L2 9.5L8.5 3L11 5.5L9.5 5.5Z"
-        stroke="currentColor"
-        strokeWidth="1.25"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
     </svg>
   );
 }
 
-function ChevronIcon() {
+function ChevronDownIcon() {
   return (
-    <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
       <path
-        d="M4 2.5L7 5L4 7.5"
+        d="M3 4.5L6 7.5L9 4.5"
         stroke="currentColor"
         strokeWidth="1.5"
         strokeLinecap="round"
@@ -545,7 +539,7 @@ export function XDSChatToolCalls(props: XDSChatToolCallsProps) {
         }}
         {...stylex.props(styles.groupHeader)}>
         <span {...stylex.props(styles.groupIcon)}>
-          <ToolsIcon />
+          <WrenchIcon />
         </span>
         <span {...stylex.props(styles.groupLabel)}>{label}</span>
         <span
@@ -553,7 +547,7 @@ export function XDSChatToolCalls(props: XDSChatToolCallsProps) {
             styles.chevron,
             isExpanded && styles.chevronExpanded,
           )}>
-          <ChevronIcon />
+          <ChevronDownIcon />
         </span>
       </div>
 

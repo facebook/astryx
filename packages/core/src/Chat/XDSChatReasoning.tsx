@@ -66,6 +66,7 @@ const styles = stylex.create({
   root: {
     display: 'flex',
     flexDirection: 'column',
+    marginBlockStart: spacingVars['--spacing-2'],
   },
   header: {
     display: 'flex',
@@ -90,7 +91,6 @@ const styles = stylex.create({
     alignItems: 'center',
     gap: spacingVars['--spacing-1'],
     minWidth: 0,
-    flex: 1,
     overflow: 'hidden',
   },
   label: {
@@ -136,7 +136,7 @@ const styles = stylex.create({
     transition: `transform ${durationVars['--duration-fast']} ${easeVars['--ease-standard']}`,
   },
   chevronExpanded: {
-    transform: 'rotate(90deg)',
+    transform: 'rotate(180deg)',
   },
   shimmer: {
     backgroundImage: `linear-gradient(90deg, ${colorVars['--color-text-secondary']} 0%, ${colorVars['--color-text-disabled']} 50%, ${colorVars['--color-text-secondary']} 100%)`,
@@ -191,11 +191,11 @@ function ThinkingIcon() {
   );
 }
 
-function ChevronIcon() {
+function ChevronDownIcon() {
   return (
-    <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
       <path
-        d="M4 2.5L7 5L4 7.5"
+        d="M3 4.5L6 7.5L9 4.5"
         stroke="currentColor"
         strokeWidth="1.5"
         strokeLinecap="round"
@@ -301,7 +301,7 @@ export function XDSChatReasoning(props: XDSChatReasoningProps) {
             styles.chevron,
             isExpanded && styles.chevronExpanded,
           )}>
-          <ChevronIcon />
+          <ChevronDownIcon />
         </span>
       </div>
 
