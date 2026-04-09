@@ -115,6 +115,13 @@ export const metaTheme = defineTheme({
     '--color-tint-hover': ['black', 'white'],
 
     // =========================================================================
+    // Divider / Focus / Elevation — CDS overrides
+    // =========================================================================
+    '--color-divider-high-contrast': ['#5D6C7B', '#8C939B'],
+    '--color-focus-outline': ['#5D6C7B', '#8C939B'],
+    '--elevation-input-hover': 'none',
+
+    // =========================================================================
     // Named palette — CDS XMDS 3.0 color ramps
     // =========================================================================
     '--color-background-blue': ['#D7E9FF', '#001F4C'],
