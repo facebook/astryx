@@ -329,21 +329,23 @@ export default function PaymentFormPage() {
                     <XDSText type="supporting" color="secondary">Free Returns</XDSText>
                   </XDSHStack>
                 </div>
-                <XDSButton
-                  label="Place Order"
-                  variant="primary"
-                  size="lg"
-                  xstyle={styles.fullWidth}
-                  onClick={() => setSubmitted(true)}
-                  endContent={<svg viewBox="0 0 24 24" style={{width: 16, height: 16}} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>}
-                />
-                <XDSButton
-                  label="← Continue Shopping"
-                  variant="secondary"
-                  size="lg"
-                  xstyle={styles.fullWidth}
-                  onClick={() => {}}
-                />
+                <XDSVStack gap={2}>
+                  <XDSButton
+                    label="Place Order"
+                    variant="primary"
+                    size="lg"
+                    xstyle={styles.fullWidth}
+                    onClick={() => setSubmitted(true)}
+                    endContent={<svg viewBox="0 0 24 24" style={{width: 16, height: 16}} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>}
+                  />
+                  <XDSButton
+                    label="← Continue Shopping"
+                    variant="secondary"
+                    size="lg"
+                    xstyle={styles.fullWidth}
+                    onClick={() => {}}
+                  />
+                </XDSVStack>
                 <XDSDivider />
                 <XDSHStack gap={4} vAlign="center">
                   <XDSLink label="Refund policy" href="#" type="supporting">Refund policy</XDSLink>
