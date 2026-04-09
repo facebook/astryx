@@ -60,23 +60,17 @@ export type XDSCardVariant =
 // =============================================================================
 
 const styles = stylex.create({
-  // Outer wrapper: visual styling with clip for border-radius
-  cardOuter: {
+  card: {
     '--card-radius': radiusVars['--radius-container'],
     borderRadius: 'var(--card-radius)',
     overflow: 'clip',
   },
-  // Border only for the default variant
   withBorder: {
     borderWidth: borderVars['--border-width'],
     borderStyle: 'solid',
     borderColor: colorVars['--color-border-emphasized'],
   },
-  // Inner wrapper: container padding and overflow handling
-  cardInner: {
-    height: '100%',
-  },
-  // Only enable scrolling when card has fixed height
+  // Fixed-height cards scroll content; overflow: auto also clips to border-radius
   scrollable: {
     overflow: 'auto',
   },
@@ -258,25 +252,16 @@ export function XDSCard({
       {...mergeProps(
         xdsClassName('card', {variant}),
         stylex.props(
-          styles.cardOuter,
+          styles.card,
           variantStyles[variant],
           variant === 'default' && styles.withBorder,
+          hasFixedHeight && styles.scrollable,
           dynamicStyles.sizing(
             width ?? null,
             height ?? null,
             maxWidth ?? null,
             minHeight ?? null,
           ),
-          xstyle,
-        ),
-        className,
-        style,
-      )}
-      {...props}>
-      <div
-        {...stylex.props(
-          styles.cardInner,
-          hasFixedHeight && styles.scrollable,
           ...container(
             useThemeDefault
               ? {useThemeDefault: 'card'}
@@ -299,9 +284,13 @@ export function XDSCard({
           !useThemeDefault &&
             effectivePadding !== 4 &&
             containerPaddingBlockEndVarStyles[effectivePadding],
-        )}>
-        {children}
-      </div>
+          xstyle,
+        ),
+        className,
+        style,
+      )}
+      {...props}>
+      {children}
     </div>
   );
 }
