@@ -1,4 +1,5 @@
-# Prune remote branches from merged PRs with no activity for > 1 day
+# Prune remote branches whose PRs are merged/closed, plus stale branches
+# with no PR older than 60 days.
 name: Prune merged branches
 
 on:
@@ -13,46 +14,12 @@ jobs:
   prune:
     runs-on: ubuntu-latest
     steps:
-      - name: Delete stale merged branches
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history needed for commit date checks
+
+      - name: Prune branches
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        shell: bash {0}
-        run: |
-          echo "Finding branches from merged PRs with no activity for > 1 day..."
-          CUTOFF=$(date -u -d '1 day ago' +%Y-%m-%dT%H:%M:%SZ)
-
-          # List remote branches via API (no checkout needed)
-          BRANCHES=$(gh api repos/${{ github.repository }}/branches --paginate --jq '.[].name' | grep -vE '^(main|gh-pages)$' || true)
-
-          if [ -z "$BRANCHES" ]; then
-            echo "No candidate branches found."
-            exit 0
-          fi
-
-          DELETED=0
-          while IFS= read -r branch; do
-            # Check if this branch had a merged PR
-            PR_STATE=$(gh pr list --head "$branch" --state merged --json mergedAt --jq '.[0].mergedAt // empty' 2>/dev/null)
-            if [ -z "$PR_STATE" ]; then
-              continue
-            fi
-
-            # Check last commit date on the branch via API
-            LAST_COMMIT=$(gh api "repos/${{ github.repository }}/branches/${branch}" --jq '.commit.commit.author.date' 2>/dev/null)
-            if [ -z "$LAST_COMMIT" ]; then
-              continue
-            fi
-
-            # Compare: skip if last activity is within the cutoff
-            if [ "$(date -u -d "$LAST_COMMIT" +%s)" -gt "$(date -u -d "$CUTOFF" +%s)" ]; then
-              echo "⏭️  Skip (recent): $branch"
-              continue
-            fi
-
-            echo "🗑️  Deleting: $branch (merged: $PR_STATE)"
-            gh api "repos/${{ github.repository }}/git/refs/heads/${branch}" -X DELETE 2>/dev/null || true
-            DELETED=$((DELETED + 1))
-          done <<< "$BRANCHES"
-
-          echo ""
-          echo "✅ Pruned $DELETED branches"
+        run: ./scripts/prune-branches.sh --delete
