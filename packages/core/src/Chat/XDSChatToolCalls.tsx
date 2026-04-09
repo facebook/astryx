@@ -548,7 +548,7 @@ export function XDSChatToolCalls(props: XDSChatToolCallsProps) {
   const label = customLabel ?? `${calls.length} tool calls`;
   const errorLabel = hasErrors ? (
     <>
-      {label} \u00b7 <span {...stylex.props(styles.errorText)}>{errorCount} failed</span>
+      {label} · <span {...stylex.props(styles.errorText)}>{errorCount} failed</span>
     </>
   ) : label;
 
