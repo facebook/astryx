@@ -693,9 +693,22 @@ function TopPagesCard() {
         </XDSVStack>
       ),
     },
-    {key: 'newUsers', header: 'New Users', width: proportional(1)},
-    {key: 'avgTime', header: 'Avg. Time', width: proportional(1)},
-    {key: 'exits', header: '% Exits', width: proportional(1)},
+    {
+      key: 'newUsers',
+      header: 'New Users',
+      width: proportional(1),
+      renderCell: (item: PageRow) => (
+        <div style={{textAlign: 'right'}}>{item.newUsers}</div>
+      ),
+    },
+    {
+      key: 'avgTime',
+      header: 'Avg. Time',
+      width: proportional(1),
+      renderCell: (item: PageRow) => (
+        <div style={{textAlign: 'right'}}>{item.avgTime}</div>
+      ),
+    },
   ];
 
   return (
@@ -719,6 +732,7 @@ function TopPagesCard() {
           idKey="id"
           density="compact"
           dividers="rows"
+          hasHover
         />
       </XDSVStack>
     </XDSCard>
@@ -746,7 +760,14 @@ function TopEventsCard() {
         </XDSVStack>
       ),
     },
-    {key: 'users', header: 'Users', width: proportional(1)},
+    {
+      key: 'users',
+      header: 'Users',
+      width: proportional(1),
+      renderCell: (item: EventRow) => (
+        <div style={{textAlign: 'right'}}>{item.users.toLocaleString()}</div>
+      ),
+    },
   ];
 
   return (
@@ -770,6 +791,7 @@ function TopEventsCard() {
           idKey="id"
           density="compact"
           dividers="rows"
+          hasHover
         />
       </XDSVStack>
     </XDSCard>
