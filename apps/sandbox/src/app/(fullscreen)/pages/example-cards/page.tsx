@@ -1731,6 +1731,7 @@ export default function ExampleCardsPage() {
                     <XDSButton label="Small" variant={'primary-muted' as never} size="sm" />
                     <XDSButton label="Medium" variant={'primary-muted' as never} size="md" />
                     <XDSButton label="Large" variant={'primary-muted' as never} size="lg" />
+                    <XDSButton label="Disabled" variant={'primary-muted' as never} isDisabled />
                   </XDSHStack>
                 </XDSVStack>
                 <XDSVStack gap={1}>
@@ -1739,6 +1740,7 @@ export default function ExampleCardsPage() {
                     <XDSButton label="Small" variant={'destructive-muted' as never} size="sm" />
                     <XDSButton label="Medium" variant={'destructive-muted' as never} size="md" />
                     <XDSButton label="Large" variant={'destructive-muted' as never} size="lg" />
+                    <XDSButton label="Disabled" variant={'destructive-muted' as never} isDisabled />
                   </XDSHStack>
                 </XDSVStack>
                 <XDSVStack gap={1}>
@@ -1747,6 +1749,7 @@ export default function ExampleCardsPage() {
                     <XDSButton label="Small" variant={'primary-outline' as never} size="sm" />
                     <XDSButton label="Medium" variant={'primary-outline' as never} size="md" />
                     <XDSButton label="Large" variant={'primary-outline' as never} size="lg" />
+                    <XDSButton label="Disabled" variant={'primary-outline' as never} isDisabled />
                   </XDSHStack>
                 </XDSVStack>
                 <XDSVStack gap={1}>
@@ -1755,6 +1758,7 @@ export default function ExampleCardsPage() {
                     <XDSButton label="Small" variant={'secondary-outline' as never} size="sm" />
                     <XDSButton label="Medium" variant={'secondary-outline' as never} size="md" />
                     <XDSButton label="Large" variant={'secondary-outline' as never} size="lg" />
+                    <XDSButton label="Disabled" variant={'secondary-outline' as never} isDisabled />
                   </XDSHStack>
                 </XDSVStack>
                 <XDSVStack gap={1}>
@@ -1763,6 +1767,7 @@ export default function ExampleCardsPage() {
                     <XDSButton label="Small" variant={'destructive-outline' as never} size="sm" />
                     <XDSButton label="Medium" variant={'destructive-outline' as never} size="md" />
                     <XDSButton label="Large" variant={'destructive-outline' as never} size="lg" />
+                    <XDSButton label="Disabled" variant={'destructive-outline' as never} isDisabled />
                   </XDSHStack>
                 </XDSVStack>
               </XDSVStack>
