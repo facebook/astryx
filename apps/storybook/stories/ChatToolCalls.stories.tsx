@@ -246,7 +246,7 @@ Time:        6.1s`;
               duration: '85ms',
               node: 'xds',
               stats: {additions: 12, deletions: 3},
-              onClick: () => openDetail('XDSButton.tsx', editDiff, 'diff'),
+              onClick: () => openDetail('XDSButton.tsx', editDiff, 'typescript'),
             },
             {
               name: 'bash',
@@ -268,11 +268,9 @@ Time:        6.1s`;
           isOpen={dialogOpen}
           onOpenChange={setDialogOpen}
           variant="standard"
-          style={{maxWidth: 640}}>
+          style={{maxWidth: 720, width: '90vw'}}>
           <XDSDialogHeader title={dialogTitle} onDismiss={() => setDialogOpen(false)} />
-          <div style={{padding: 16}}>
-            <XDSCodeBlock code={dialogCode} language={dialogLang} />
-          </div>
+          <XDSCodeBlock code={dialogCode} language={dialogLang} />
         </XDSDialog>
       </>
     );
