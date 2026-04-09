@@ -63,7 +63,8 @@ export const docs = {
   theming: {
     targets: [
       {className: 'xds-tab-list', visualProps: ['size']},
-      {className: 'xds-tab'},
+      {className: 'xds-tab', states: ['selected']},
+      {className: 'xds-tab-indicator', states: ['selected']},
       {className: 'xds-tab-menu'},
       {className: 'xds-tab-menu-dropdown'},
       {className: 'xds-tab-menu-item'},
@@ -306,7 +307,8 @@ export const docsZh = {
   theming: {
     targets: [
       {className: 'xds-tab-list', visualProps: ['size']},
-      {className: 'xds-tab'},
+      {className: 'xds-tab', states: ['selected']},
+      {className: 'xds-tab-indicator', states: ['selected']},
       {className: 'xds-tab-menu'},
       {className: 'xds-tab-menu-dropdown'},
       {className: 'xds-tab-menu-item'},
