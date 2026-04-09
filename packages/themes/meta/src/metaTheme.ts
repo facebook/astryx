@@ -111,7 +111,7 @@ export const metaTheme = defineTheme({
     // =========================================================================
     '--color-skeleton': ['#E7EAED', '#28292C'],
     '--color-shadow': ['rgba(17, 17, 18, 0.12)', 'rgba(17, 17, 18, 0.12)'],
-    '--shadow-inset-hover': 'inset 0 0 0 1px light-dark(#5D6C7B, #8C939B)',
+    '--shadow-inset-hover': 'none',
     '--color-tint-hover': ['black', 'white'],
 
     // =========================================================================
