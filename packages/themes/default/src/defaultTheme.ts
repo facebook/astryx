@@ -11,8 +11,29 @@
  * Only non-typography component overrides need to be specified manually.
  */
 
-import {defineTheme} from '@xds/core/theme';
+import {defineTheme, defineSyntaxTheme} from '@xds/core/theme';
 import {defaultIconRegistry} from './icons';
+
+/** Default syntax palette — tuned to the XDS blue color ramp. */
+const defaultSyntax = defineSyntaxTheme({
+  name: 'xds-default',
+  tokens: {
+    keyword: ['#0064E0', '#2694FE'],
+    string: ['#09441F', '#A5F690'],
+    comment: ['#4E606F', '#6B7D8D'],
+    number: ['#6B2203', '#FDB876'],
+    function: ['#042F97', '#AFD7FF'],
+    type: ['#3E0697', '#B3B0FE'],
+    variable: ['#0A1317', '#DFE2E5'],
+    operator: ['#006D75', '#56C8D8'],
+    constant: ['#6B2203', '#FDB876'],
+    tag: ['#7B0210', '#FFB2B8'],
+    attribute: ['#7A4F1A', '#E8C580'],
+    property: ['#006064', '#B2EBF2'],
+    punctuation: ['#65737E', '#6F747C'],
+    background: ['#F1F4F7', '#111112'],
+  },
+});
 
 export const defaultTheme = defineTheme({
   name: 'default',
@@ -26,8 +47,10 @@ export const defaultTheme = defineTheme({
   //            medium-min=310ms, medium=410ms, medium-max=545ms.
   motion: {fast: 175, medium: 410, ratio: 0.75},
 
+  // Syntax highlighting — tuned to the default palette
+  syntax: defaultSyntax,
+
   // The default theme uses the built-in token defaults from tokens.stylex.ts.
-  // No additional token overrides needed.
   tokens: {},
 
   components: {

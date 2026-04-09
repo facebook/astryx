@@ -14,6 +14,9 @@ export type {
   SyntaxThemeInput,
   SyntaxThemeTokenKey,
   SyntaxThemeTokenMap,
+  SyntaxThemeTokenInput,
+  SyntaxTokenValue,
 } from './defineSyntaxTheme';
 
-export {XDSSyntaxTheme, useSyntaxTheme} from './XDSSyntaxTheme';
+export {XDSSyntaxTheme, useXDSSyntaxTheme} from './XDSSyntaxTheme';
+export type {UseXDSSyntaxThemeReturn} from './XDSSyntaxTheme';

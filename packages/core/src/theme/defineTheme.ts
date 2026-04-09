@@ -66,6 +66,7 @@ import {
 
 import type {DomainTokenName} from './domainTokens';
 import {domainTokenDefaults} from './domainTokens';
+import type {SyntaxTheme} from './syntax';
 
 // =============================================================================
 // Types
@@ -243,6 +244,18 @@ export interface XDSDefineThemeInput {
   components?: XDSComponentStyleMap;
   /** Icon registry — maps semantic icon names to React nodes */
   icons?: Partial<XDSIconRegistry>;
+  /**
+   * Default syntax highlighting theme for code components.
+   * Sets --color-syntax-* tokens at the theme root. Can be overridden
+   * per-region via XDSSyntaxTheme or per-instance via syntaxTheme prop.
+   *
+   * @example
+   * ```tsx
+   * import {dracula} from '@xds/theme-syntax';
+   * defineTheme({ name: 'my-theme', syntax: dracula, ... })
+   * ```
+   */
+  syntax?: SyntaxTheme;
   /**
    * Overrides for content on a dark surface (e.g. inverted toast,
    * dark tooltip). Accepts token and component overrides — same shape
@@ -504,6 +517,15 @@ export function defineTheme(input: XDSDefineThemeInput): XDSDefinedTheme {
     if (bodyFamily) tokens['--font-family-body'] = bodyFamily;
     if (headingFamily) tokens['--font-family-heading'] = headingFamily;
     if (codeFamily) tokens['--font-family-code'] = codeFamily;
+  }
+
+  // 1e. Apply syntax theme tokens (before explicit overrides)
+  if (input.syntax) {
+    const syntaxMap = input.syntax.tokens;
+    const prefix = '--color-syntax-';
+    for (const [key, value] of Object.entries(syntaxMap)) {
+      tokens[prefix + key] = value;
+    }
   }
 
   // 2. Apply explicit token overrides (highest precedence — overwrites generated tokens)

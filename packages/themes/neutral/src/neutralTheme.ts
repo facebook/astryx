@@ -10,8 +10,29 @@
  * use the built-in defaults automatically.
  */
 
-import {defineTheme} from '@xds/core/theme';
+import {defineTheme, defineSyntaxTheme} from '@xds/core/theme';
 import {neutralIconRegistry} from './icons';
+
+/** Neutral syntax palette — desaturated, low-chroma to match grayscale. */
+const neutralSyntax = defineSyntaxTheme({
+  name: 'xds-neutral',
+  tokens: {
+    keyword: ['#7c3aed', '#a78bfa'],
+    string: ['#16653a', '#6ee7a0'],
+    comment: ['#71717a', '#71717a'],
+    number: ['#b45309', '#fbbf24'],
+    function: ['#2563eb', '#60a5fa'],
+    type: ['#7c3aed', '#c4b5fd'],
+    variable: ['#18181b', '#e4e4e7'],
+    operator: ['#71717a', '#a1a1aa'],
+    constant: ['#b45309', '#fbbf24'],
+    tag: ['#dc2626', '#fca5a5'],
+    attribute: ['#a16207', '#fde68a'],
+    property: ['#0d9488', '#5eead4'],
+    punctuation: ['#a1a1aa', '#52525b'],
+    background: ['#fafafa', '#0a0a0a'],
+  },
+});
 
 export const neutralTheme = defineTheme({
   name: 'neutral',
@@ -39,6 +60,9 @@ export const neutralTheme = defineTheme({
   // Produces: fast-min=95ms, fast=125ms, fast-max=165ms,
   //           medium-min=225ms, medium=300ms, medium-max=400ms.
   motion: {fast: 125, medium: 300, ratio: 0.75},
+
+  // Syntax highlighting — desaturated to match grayscale palette
+  syntax: neutralSyntax,
 
   tokens: {
     // =========================================================================
