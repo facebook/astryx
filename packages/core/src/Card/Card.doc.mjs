@@ -10,6 +10,7 @@ export const docs = {
     'Sets CSS variables for child layout components',
     'Supports `padding={0}` for edge-to-edge content',
     'Composable with XDSLayout, XDSCollapsible, and XDSCollapsibleGroup',
+    'Background color variants: default, muted, and 10 non-semantic palette colors',
   ],
   props: [
     {
@@ -43,6 +44,13 @@ export const docs = {
       description: 'Internal padding using the spacing scale.',
       default: '4',
     },
+    {
+      name: 'variant',
+      type: "'default' | 'muted' | 'blue' | 'cyan' | 'gray' | 'green' | 'orange' | 'pink' | 'purple' | 'red' | 'teal' | 'yellow'",
+      description:
+        'Background color variant. `default` uses the standard card background. `muted` uses the wash background for de-emphasised cards. The non-semantic variants use the corresponding `--color-<name>-background` token.',
+      default: "'default'",
+    },
   ],
   examples: [
     {
@@ -59,6 +67,18 @@ export const docs = {
       label: 'Simple content',
       code: `<XDSCard>
   <p>Card content with default padding</p>
+</XDSCard>`,
+    },
+    {
+      label: 'Muted background',
+      code: `<XDSCard variant="muted" width={300}>
+  <p>De-emphasised card with wash background</p>
+</XDSCard>`,
+    },
+    {
+      label: 'Color variant',
+      code: `<XDSCard variant="blue" width={300}>
+  <p>Blue tinted card</p>
 </XDSCard>`,
     },
     {
