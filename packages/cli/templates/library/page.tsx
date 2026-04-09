@@ -285,22 +285,21 @@ const styles = stylex.create({
     width: '100%',
     minHeight: '100%',
   },
-  // Full-width header. paddingBottom is kept so the tab negative-margin
-  // pulls the tabs down to sit exactly on the bottom border line.
+  // Header: flex column so tabs sit at the bottom naturally.
   pageHeader: {
     paddingInline: PAGE_PAD,
     paddingTop: PAGE_PAD,
-    paddingBottom: PAGE_PAD,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacingVars['--spacing-4'],
+  },
+  pageTitle: {},
+  // tabsRow: border lives here; -1px margin overlaps the active tab underline on it.
+  tabsRow: {
+    marginBottom: '-1px',
     borderBottomWidth: '1px',
     borderBottomStyle: 'solid',
     borderBottomColor: colorVars['--color-border'],
-  },
-  pageTitle: {
-    marginBottom: spacingVars['--spacing-4'],
-  },
-  // Negative margin = -(paddingBottom + 1px border) pulls tabs onto the border.
-  tabsRow: {
-    marginBottom: `calc(${PAGE_PAD} * -1 - 1px)`,
   },
   pageContent: {
     paddingInline: PAGE_PAD,
