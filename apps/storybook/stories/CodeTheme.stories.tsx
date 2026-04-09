@@ -1,7 +1,8 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import React from 'react';
 import {XDSCodeBlock} from '@xds/core/CodeBlock';
-import {XDSSyntaxTheme as SyntaxThemeProvider} from '@xds/core/theme/syntax';
+import {XDSSyntaxTheme as SyntaxThemeProvider, defineSyntaxTheme} from '@xds/core/theme/syntax';
+import {defineTheme, XDSTheme} from '@xds/core/theme';
 import {
   oneDarkPro,
   dracula,
@@ -275,5 +276,68 @@ export const NestedOverride: StoryObj = {
         </SyntaxThemeProvider>
       </div>
     </SyntaxThemeProvider>
+  ),
+};
+
+// ---------------------------------------------------------------------------
+// Custom syntax theme — defineSyntaxTheme() with your own colors
+// ---------------------------------------------------------------------------
+
+const cyberpunk = defineSyntaxTheme({
+  name: 'cyberpunk',
+  tokens: {
+    keyword: '#ff2a6d',
+    string: '#05d9e8',
+    comment: '#4a5568',
+    number: '#d1f7ff',
+    function: '#ff6ac1',
+    type: '#7efff5',
+    variable: '#e2e8f0',
+    operator: '#ff9e64',
+    constant: '#d1f7ff',
+    tag: '#ff2a6d',
+    attribute: '#7efff5',
+    property: '#05d9e8',
+    punctuation: '#718096',
+    background: '#0d0221',
+  },
+});
+
+export const CustomTheme: StoryObj = {
+  render: () => (
+    <SyntaxThemeProvider theme={cyberpunk}>
+      <XDSCodeBlock
+        code={sampleCode}
+        language="typescript"
+        title="Custom: Cyberpunk"
+        hasLineNumbers
+      />
+    </SyntaxThemeProvider>
+  ),
+};
+
+// ---------------------------------------------------------------------------
+// Theme with syntax defaults — defineTheme({ syntax: ... })
+// ---------------------------------------------------------------------------
+
+const darkDevTheme = defineTheme({
+  name: 'dark-dev',
+  syntax: dracula,
+  tokens: {
+    '--color-background-surface': '#282a36',
+    '--color-text-primary': '#f8f8f2',
+  },
+});
+
+export const ThemeWithSyntaxDefaults: StoryObj = {
+  render: () => (
+    <XDSTheme theme={darkDevTheme} mode="dark">
+      <XDSCodeBlock
+        code={sampleCode}
+        language="typescript"
+        title="defineTheme with syntax: dracula"
+        hasLineNumbers
+      />
+    </XDSTheme>
   ),
 };
