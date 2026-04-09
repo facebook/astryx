@@ -229,8 +229,8 @@ export default function PaymentFormPage() {
                       <button onClick={() => {}} style={{display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#000', border: 'none', borderRadius: 8, cursor: 'pointer', padding: '0 16px', height: 36}}>
                         <img src="https://pay.google.com/about/static_kcs/images/logos/google-pay-logo.svg" alt="Google Pay" style={{height: 22, width: 'auto', filter: 'brightness(0) invert(1)'}} />
                       </button>
-                      <button onClick={() => {}} style={{display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#008CFF', border: 'none', borderRadius: 8, cursor: 'pointer', padding: '0 16px', height: 36}}>
-                        <span style={{color: 'white', fontFamily: 'Arial, sans-serif', fontSize: 16, fontWeight: 800, letterSpacing: '-0.5px'}}>venmo</span>
+                      <button onClick={() => {}} style={{display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#5433EB', border: 'none', borderRadius: 8, cursor: 'pointer', padding: '0 16px', height: 36}}>
+                        <img src="https://cdn.shopify.com/shopifycloud/checkout-web/assets/0169ce6e1fc4a3e8e2e4f7d64de8f7a7.svg" alt="Shop" style={{height: 18, width: 'auto', filter: 'brightness(0) invert(1)'}} />
                       </button>
                     </div>
                   </XDSVStack>
