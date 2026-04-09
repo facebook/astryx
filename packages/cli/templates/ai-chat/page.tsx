@@ -15,6 +15,9 @@ import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSChatComposer} from '@xds/core/Chat';
 import {XDSToggleButton} from '@xds/core/ToggleButton';
+import {XDSButton} from '@xds/core/Button';
+import {XDSToolbar} from '@xds/core/Toolbar';
+import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
 import {
   HomeIcon,
   FolderIcon,
@@ -116,6 +119,75 @@ function CreativeIcon() {
   );
 }
 
+function PaperclipIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round">
+      <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+    </svg>
+  );
+}
+
+function GlobeIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
+      <path d="M2 12h20" />
+    </svg>
+  );
+}
+
+function MicIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round">
+      <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+      <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+      <line x1="12" x2="12" y1="19" y2="22" />
+    </svg>
+  );
+}
+
+function AtSignIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round">
+      <circle cx="12" cy="12" r="4" />
+      <path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8" />
+    </svg>
+  );
+}
+
 // ============= SIDENAV =============
 
 function AIChatSideNav() {
@@ -202,7 +274,62 @@ export default function AIChatTemplate() {
         </XDSVStack>
 
         {/* Composer */}
-        <XDSChatComposer onSubmit={() => {}} placeholder="Ask anything" />
+        <XDSChatComposer
+          onSubmit={() => {}}
+          placeholder="Ask anything"
+          contextToolbar={
+            <XDSToolbar
+              label="Context"
+              density="compact"
+              startContent={
+                <XDSButton
+                  label="@workspace"
+                  variant="ghost"
+                  size="sm"
+                  icon={<AtSignIcon />}>
+                  workspace
+                </XDSButton>
+              }
+            />
+          }
+          footerActions={
+            <>
+              <XDSButton
+                label="Attach"
+                variant="ghost"
+                size="md"
+                icon={<PaperclipIcon />}
+              />
+              <XDSButton
+                label="Search"
+                variant="ghost"
+                size="md"
+                icon={<GlobeIcon />}
+              />
+              <XDSDropdownMenu
+                trigger={
+                  <XDSButton label="GPT-4o" variant="ghost" size="md">
+                    GPT-4o
+                  </XDSButton>
+                }
+                items={[
+                  {label: 'GPT-4o', onSelect: () => {}},
+                  {label: 'GPT-4o mini', onSelect: () => {}},
+                  {label: 'o3', onSelect: () => {}},
+                  {label: 'o4-mini', onSelect: () => {}},
+                ]}
+              />
+            </>
+          }
+          sendActions={
+            <XDSButton
+              label="Voice input"
+              variant="ghost"
+              size="md"
+              icon={<MicIcon />}
+            />
+          }
+        />
 
         {/* Category toggle buttons */}
         <XDSHStack gap={2} style={{flexWrap: 'wrap'}}>
