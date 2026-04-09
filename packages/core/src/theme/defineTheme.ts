@@ -888,7 +888,7 @@ export function generateOnMediaCSS(theme: XDSDefinedTheme): string {
   if (parts.length === 0) return '';
 
   const inner = parts.join('\n\n');
-  return `@scope (${scopeSelector}) {\n${inner}\n}`;
+  return `@scope (${scopeSelector}) to ([data-xds-theme]) {\n${inner}\n}`;
 }
 
 export function generateThemeCSS(theme: XDSDefinedTheme): ThemeCSSOutput {

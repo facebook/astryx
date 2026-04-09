@@ -135,12 +135,12 @@ describe('defineTheme with onDark/onLight', () => {
 });
 
 describe('generateOnMediaCSS', () => {
-  it('emits unbounded @scope with [data-xds-media] token rules', () => {
+  it('emits @scope with [data-xds-media] token rules', () => {
     const theme = defineTheme({name: 'test'});
     const css = generateOnMediaCSS(theme);
     expect(css).toContain('@scope ([data-xds-theme="test"])');
-    // Unbounded — no "to" clause
-    expect(css).not.toContain('to (');
+    // Same scope boundary as main theme
+    expect(css).toContain('to ([data-xds-theme])');
     expect(css).toContain('[data-xds-media="dark"]');
     expect(css).toContain('color-scheme: dark');
     expect(css).toContain('var(--color-on-dark)');
