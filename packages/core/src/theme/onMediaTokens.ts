@@ -8,9 +8,14 @@
  * "onDark" = content on a dark background (light text, white-tinted interactions)
  * "onLight" = content on a light background (dark text, black-tinted interactions)
  *
- * These defaults are used when a theme doesn't provide explicit onDark/onLight
- * overrides. They use CSS custom property references (var()) so they
- * compose with whatever base tokens the theme defines.
+ * The primary mechanism is `color-scheme` — setting `color-scheme: dark` on the
+ * media element makes all `light-dark()` tokens resolve to their dark-side values.
+ * Only a small set of tokens need explicit overrides (text/icon primary use
+ * `var(--color-on-dark)` instead of the dark-mode grey, accent collapses to
+ * on-color, etc.).
+ *
+ * Themes can provide additional token and component overrides via the
+ * `onDark`/`onLight` fields in `defineTheme()`.
  */
 
 import type {XDSTokenValue, XDSComponentStyleMap} from './defineTheme';
@@ -40,81 +45,33 @@ export interface ResolvedOnMedia {
 /**
  * Default token overrides for content on a dark surface.
  *
- * Uses var(--color-on-dark) as the base text/icon color, with
- * white-tinted overlays for hover/pressed states.
+ * Most tokens work automatically via `color-scheme: dark` which flips
+ * `light-dark()` values. These overrides handle the tokens that need
+ * different values on an inverted surface vs a dark page background.
  */
 export const defaultOnDarkTokens: Record<string, string> = {
-  // Text
+  'color-scheme': 'dark',
+
+  // Text/icon primary — pure on-color, not dark-mode grey
   '--color-text-primary': 'var(--color-on-dark)',
-  '--color-text-secondary':
-    'color-mix(in srgb, var(--color-on-dark) 70%, transparent)',
-  '--color-text-disabled':
-    'color-mix(in srgb, var(--color-on-dark) 40%, transparent)',
-  '--color-text-accent': 'var(--color-on-dark)',
-
-  // Icon
   '--color-icon-primary': 'var(--color-on-dark)',
-  '--color-icon-secondary':
-    'color-mix(in srgb, var(--color-on-dark) 70%, transparent)',
-  '--color-icon-disabled':
-    'color-mix(in srgb, var(--color-on-dark) 40%, transparent)',
 
-  // Accent — collapses to on-color in inverted context
+  // Accent collapses to on-color in inverted context
   '--color-accent': 'var(--color-on-dark)',
-
-  // Neutral — white-tinted for dark surfaces
-  '--color-neutral': 'color-mix(in srgb, white 20%, transparent)',
-
-  // Overlay / interaction
-  '--color-overlay-hover': 'color-mix(in srgb, white 12%, transparent)',
-  '--color-overlay-pressed': 'color-mix(in srgb, white 24%, transparent)',
-
-  // Border
-  '--color-border': 'color-mix(in srgb, white 15%, transparent)',
-  '--color-border-emphasized': 'color-mix(in srgb, white 30%, transparent)',
-
-  // Tint
-  '--color-tint-hover': 'white',
 };
 
 /**
  * Default token overrides for content on a light surface.
- *
- * Uses var(--color-on-light) as the base text/icon color, with
- * black-tinted overlays for hover/pressed states.
  */
 export const defaultOnLightTokens: Record<string, string> = {
-  // Text
+  'color-scheme': 'light',
+
+  // Text/icon primary — pure on-color, not light-mode dark
   '--color-text-primary': 'var(--color-on-light)',
-  '--color-text-secondary':
-    'color-mix(in srgb, var(--color-on-light) 70%, transparent)',
-  '--color-text-disabled':
-    'color-mix(in srgb, var(--color-on-light) 40%, transparent)',
-  '--color-text-accent': 'var(--color-on-light)',
-
-  // Icon
   '--color-icon-primary': 'var(--color-on-light)',
-  '--color-icon-secondary':
-    'color-mix(in srgb, var(--color-on-light) 70%, transparent)',
-  '--color-icon-disabled':
-    'color-mix(in srgb, var(--color-on-light) 40%, transparent)',
 
-  // Accent
+  // Accent collapses to on-color
   '--color-accent': 'var(--color-on-light)',
-
-  // Neutral — black-tinted for light surfaces
-  '--color-neutral': 'color-mix(in srgb, black 10%, transparent)',
-
-  // Overlay / interaction
-  '--color-overlay-hover': 'color-mix(in srgb, black 8%, transparent)',
-  '--color-overlay-pressed': 'color-mix(in srgb, black 16%, transparent)',
-
-  // Border
-  '--color-border': 'color-mix(in srgb, black 10%, transparent)',
-  '--color-border-emphasized': 'color-mix(in srgb, black 20%, transparent)',
-
-  // Tint
-  '--color-tint-hover': 'black',
 };
 
 /**

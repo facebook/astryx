@@ -1,5 +1,5 @@
 import {describe, it, expect} from 'vitest';
-import {defineTheme, generateThemeRules} from './defineTheme';
+import {defineTheme, generateOnMediaCSS} from './defineTheme';
 import {
   defaultOnDarkTokens,
   defaultOnLightTokens,
@@ -8,30 +8,38 @@ import {
 
 describe('onMediaTokens', () => {
   describe('defaultOnDarkTokens', () => {
+    it('sets color-scheme to dark', () => {
+      expect(defaultOnDarkTokens['color-scheme']).toBe('dark');
+    });
+
     it('provides text primary as on-dark color', () => {
       expect(defaultOnDarkTokens['--color-text-primary']).toBe(
         'var(--color-on-dark)',
       );
     });
 
-    it('provides white-tinted overlay hover', () => {
-      expect(defaultOnDarkTokens['--color-overlay-hover']).toContain('white');
+    it('provides icon primary as on-dark color', () => {
+      expect(defaultOnDarkTokens['--color-icon-primary']).toBe(
+        'var(--color-on-dark)',
+      );
     });
 
-    it('provides white-tinted border', () => {
-      expect(defaultOnDarkTokens['--color-border']).toContain('white');
+    it('collapses accent to on-dark color', () => {
+      expect(defaultOnDarkTokens['--color-accent']).toBe(
+        'var(--color-on-dark)',
+      );
     });
   });
 
   describe('defaultOnLightTokens', () => {
+    it('sets color-scheme to light', () => {
+      expect(defaultOnLightTokens['color-scheme']).toBe('light');
+    });
+
     it('provides text primary as on-light color', () => {
       expect(defaultOnLightTokens['--color-text-primary']).toBe(
         'var(--color-on-light)',
       );
-    });
-
-    it('provides black-tinted overlay hover', () => {
-      expect(defaultOnLightTokens['--color-overlay-hover']).toContain('black');
     });
   });
 
@@ -106,12 +114,8 @@ describe('defineTheme with onDark/onLight', () => {
     const theme = defineTheme({name: 'test'});
     expect(theme.__onDark).toBeDefined();
     expect(theme.__onLight).toBeDefined();
-    expect(theme.__onDark!.tokens['--color-text-primary']).toBe(
-      'var(--color-on-dark)',
-    );
-    expect(theme.__onLight!.tokens['--color-text-primary']).toBe(
-      'var(--color-on-light)',
-    );
+    expect(theme.__onDark!.tokens['color-scheme']).toBe('dark');
+    expect(theme.__onLight!.tokens['color-scheme']).toBe('light');
   });
 
   it('stores component overrides on onDark', () => {
@@ -130,50 +134,44 @@ describe('defineTheme with onDark/onLight', () => {
   });
 });
 
-describe('generateThemeRules with onMedia', () => {
-  it('emits [data-xds-media="dark"] token rules', () => {
+describe('generateOnMediaCSS', () => {
+  it('emits unbounded @scope with [data-xds-media] token rules', () => {
     const theme = defineTheme({name: 'test'});
-    const rules = generateThemeRules(theme);
-    const darkRule = rules.find(r => r.includes('[data-xds-media="dark"]'));
-    expect(darkRule).toBeDefined();
-    expect(darkRule).toContain('--color-text-primary');
-    expect(darkRule).toContain('var(--color-on-dark)');
+    const css = generateOnMediaCSS(theme);
+    expect(css).toContain('@scope ([data-xds-theme="test"])');
+    // Unbounded — no "to" clause
+    expect(css).not.toContain('to (');
+    expect(css).toContain('[data-xds-media="dark"]');
+    expect(css).toContain('color-scheme: dark');
+    expect(css).toContain('var(--color-on-dark)');
   });
 
-  it('emits [data-xds-media="light"] token rules', () => {
+  it('emits light media rules', () => {
     const theme = defineTheme({name: 'test'});
-    const rules = generateThemeRules(theme);
-    const lightRule = rules.find(r => r.includes('[data-xds-media="light"]'));
-    expect(lightRule).toBeDefined();
-    expect(lightRule).toContain('--color-text-primary');
-    expect(lightRule).toContain('var(--color-on-light)');
+    const css = generateOnMediaCSS(theme);
+    expect(css).toContain('[data-xds-media="light"]');
+    expect(css).toContain('color-scheme: light');
   });
 
-  it('emits component override rules inside on-media selectors', () => {
+  it('emits component override rules', () => {
     const theme = defineTheme({
       name: 'test',
       onDark: {
         components: {
           button: {
-            'variant:ghost': {
-              borderWidth: '1px',
-              borderStyle: 'solid',
-              borderColor: 'rgba(255,255,255,0.3)',
+            'variant:secondary': {
+              backgroundColor: 'color-mix(in srgb, white 20%, transparent)',
             },
           },
         },
       },
     });
-    const rules = generateThemeRules(theme);
-    const compRule = rules.find(
-      r => r.includes('[data-xds-media="dark"]') && r.includes('.xds-button'),
-    );
-    expect(compRule).toBeDefined();
-    expect(compRule).toContain('border-width: 1px');
-    expect(compRule).toContain('border-style: solid');
+    const css = generateOnMediaCSS(theme);
+    expect(css).toContain('[data-xds-media="dark"] .xds-button.secondary');
+    expect(css).toContain('background-color: color-mix(in srgb, white 20%, transparent)');
   });
 
-  it('emits pseudo-class rules for on-media component overrides', () => {
+  it('emits pseudo-class rules for on-media components', () => {
     const theme = defineTheme({
       name: 'test',
       onDark: {
@@ -187,14 +185,8 @@ describe('generateThemeRules with onMedia', () => {
         },
       },
     });
-    const rules = generateThemeRules(theme);
-    const hoverRule = rules.find(
-      r =>
-        r.includes('[data-xds-media="dark"]') &&
-        r.includes('.xds-button') &&
-        r.includes(':hover'),
-    );
-    expect(hoverRule).toBeDefined();
-    expect(hoverRule).toContain('color: rgba(255,255,255,0.8)');
+    const css = generateOnMediaCSS(theme);
+    expect(css).toContain('.xds-button:hover');
+    expect(css).toContain('color: rgba(255,255,255,0.8)');
   });
 });

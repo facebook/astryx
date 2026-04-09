@@ -722,75 +722,7 @@ export function generateThemeRules(theme: XDSDefinedTheme): string[] {
     }
   }
 
-  // 5. On-media token overrides ([data-xds-media="dark|light"])
-  //
-  // These set semantic tokens for content rendered on inverted surfaces.
-  // The [data-xds-media] element also carries [data-xds-theme] to create
-  // a scope boundary — parent theme component overrides stop there, and
-  // children pick up these token values naturally.
-  for (const surface of ['dark', 'light'] as const) {
-    const onMedia = surface === 'dark' ? theme.__onDark : theme.__onLight;
-    if (!onMedia) continue;
-
-    // Token overrides
-    const tokenEntries = Object.entries(onMedia.tokens);
-    if (tokenEntries.length > 0) {
-      const declarations = tokenEntries
-        .map(([prop, value]) => `      ${prop}: ${value};`)
-        .join('\n');
-      parts.push(`  [data-xds-media="${surface}"] {\n${declarations}\n    }`);
-    }
-
-    // Component overrides
-    if (onMedia.components) {
-      for (const [component, rules] of Object.entries(onMedia.components)) {
-        for (const [key, styles] of Object.entries(
-          rules as Record<
-            string,
-            Record<string, string | Record<string, string>>
-          >,
-        )) {
-          const entries = Object.entries(styles);
-          if (entries.length > 0) {
-            const suffix = parseStyleKey(key);
-            const baseSelector = `[data-xds-media="${surface}"] .xds-${component}${suffix}`;
-
-            const props: [string, string][] = [];
-            const pseudos: [string, Record<string, string>][] = [];
-
-            for (const [prop, value] of entries) {
-              if (prop.startsWith(':') && typeof value === 'object') {
-                pseudos.push([prop, value as Record<string, string>]);
-              } else {
-                props.push([prop, value as string]);
-              }
-            }
-
-            if (props.length > 0) {
-              const declarations = props
-                .map(([prop, value]) => `      ${toKebabCase(prop)}: ${value};`)
-                .join('\n');
-              parts.push(`  ${baseSelector} {\n${declarations}\n    }`);
-            }
-
-            for (const [pseudo, pseudoStyles] of pseudos) {
-              const pseudoEntries = Object.entries(pseudoStyles);
-              if (pseudoEntries.length > 0) {
-                const declarations = pseudoEntries
-                  .map(
-                    ([prop, value]) => `      ${toKebabCase(prop)}: ${value};`,
-                  )
-                  .join('\n');
-                parts.push(
-                  `  ${baseSelector}${pseudo} {\n${declarations}\n    }`,
-                );
-              }
-            }
-          }
-        }
-      }
-    }
-  }
+  // (on-media rules are generated separately -- see generateOnMediaCSS)
 
   return parts;
 }
@@ -876,6 +808,89 @@ export interface ThemeCSSOutput {
  * sit at reset-layer priority where any class-based style wins, while component
  * overrides sit above StyleX so themes can restyle components intentionally.
  */
+
+// =============================================================================
+// On-media CSS generation
+// =============================================================================
+
+/**
+ * Generate CSS for on-media token and component overrides.
+ *
+ * Emitted in an unbounded @scope (no `to` limit) so the rules can reach
+ * [data-xds-media] elements. Parent theme component overrides flow through
+ * to media contexts -- only tokens change. Themes can further customize
+ * via onDark.components / onLight.components.
+ */
+export function generateOnMediaCSS(theme: XDSDefinedTheme): string {
+  const parts: string[] = [];
+  const scopeSelector = `[data-xds-theme="${theme.name}"]`;
+
+  for (const surface of ['dark', 'light'] as const) {
+    const onMedia = surface === 'dark' ? theme.__onDark : theme.__onLight;
+    if (!onMedia) continue;
+
+    // Token overrides
+    const tokenEntries = Object.entries(onMedia.tokens);
+    if (tokenEntries.length > 0) {
+      const declarations = tokenEntries
+        .map(([prop, value]) => `    ${prop}: ${value};`)
+        .join('\n');
+      parts.push(`  [data-xds-media="${surface}"] {\n${declarations}\n  }`);
+    }
+
+    // Component overrides
+    if (onMedia.components) {
+      for (const [component, rules] of Object.entries(onMedia.components)) {
+        for (const [key, styles] of Object.entries(
+          rules as Record<
+            string,
+            Record<string, string | Record<string, string>>
+          >,
+        )) {
+          const entries = Object.entries(styles);
+          if (entries.length > 0) {
+            const suffix = parseStyleKey(key);
+            const baseSelector = `[data-xds-media="${surface}"] .xds-${component}${suffix}`;
+
+            const props: [string, string][] = [];
+            const pseudos: [string, Record<string, string>][] = [];
+
+            for (const [prop, value] of entries) {
+              if (prop.startsWith(':') && typeof value === 'object') {
+                pseudos.push([prop, value as Record<string, string>]);
+              } else {
+                props.push([prop, value as string]);
+              }
+            }
+
+            if (props.length > 0) {
+              const declarations = props
+                .map(([prop, value]) => `    ${toKebabCase(prop)}: ${value};`)
+                .join('\n');
+              parts.push(`  ${baseSelector} {\n${declarations}\n  }`);
+            }
+
+            for (const [pseudo, pseudoStyles] of pseudos) {
+              const pseudoEntries = Object.entries(pseudoStyles);
+              if (pseudoEntries.length > 0) {
+                const declarations = pseudoEntries
+                  .map(([prop, value]) => `    ${toKebabCase(prop)}: ${value};`)
+                  .join('\n');
+                parts.push(`  ${baseSelector}${pseudo} {\n${declarations}\n  }`);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  if (parts.length === 0) return '';
+
+  const inner = parts.join('\n\n');
+  return `@scope (${scopeSelector}) {\n${inner}\n}`;
+}
+
 export function generateThemeCSS(theme: XDSDefinedTheme): ThemeCSSOutput {
   const {component, prose} = generateThemeRulesSplit(theme);
   const scopeSelector = `[data-xds-theme="${theme.name}"]`;
@@ -887,10 +902,17 @@ export function generateThemeCSS(theme: XDSDefinedTheme): ThemeCSSOutput {
     proseCss = `@scope (${scopeSelector}) to (${scopeTo}) {\n${proseInner}\n}`;
   }
 
+  // Component rules: bounded scope (stops at nested themes) +
+  // on-media rules in unbounded scope (can reach [data-xds-media] elements)
   let componentCss = '';
   if (component.length > 0) {
     const componentInner = component.join('\n\n');
     componentCss = `@scope (${scopeSelector}) to (${scopeTo}) {\n${componentInner}\n}`;
+  }
+
+  const onMediaCss = generateOnMediaCSS(theme);
+  if (onMediaCss) {
+    componentCss = componentCss ? `${componentCss}\n\n${onMediaCss}` : onMediaCss;
   }
 
   return {prose: proseCss, component: componentCss};

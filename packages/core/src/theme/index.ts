@@ -20,6 +20,7 @@ export {
   defineTheme,
   generateThemeCSS,
   generateThemeCSSFlat,
+  generateOnMediaCSS,
   generateThemeRules,
   generateThemeRulesSplit,
   type ThemeCSSOutput,
