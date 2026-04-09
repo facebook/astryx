@@ -363,6 +363,55 @@ const styles = stylex.create({
   },
 });
 
+// =============================================================================
+// Side Nav
+// =============================================================================
+
+function LibraryNav() {
+  return (
+    <XDSSideNav
+      header={
+        <XDSSideNavHeading
+          icon={
+            <XDSNavIcon
+              icon={<Squares2X2Icon style={{width: 16, height: 16}} />}
+            />
+          }
+          heading="XDS Library"
+          headingHref="/"
+        />
+      }>
+      <XDSSideNavSection title="Main">
+        <XDSSideNavItem
+          label="Home"
+          href="/"
+          icon={HomeIcon}
+          selectedIcon={HomeIconSolid}
+        />
+        <XDSSideNavItem
+          label="Library"
+          href="/templates/library/"
+          icon={BookOpenIcon}
+          selectedIcon={BookOpenIconSolid}
+          isSelected
+        />
+      </XDSSideNavSection>
+      <XDSSideNavSection title="Browse">
+        <XDSSideNavItem
+          label="Components"
+          href="/components-patterns/"
+          icon={Squares2X2Icon}
+        />
+        <XDSSideNavItem
+          label="Templates"
+          href="/templates/"
+          icon={WrenchScrewdriverIcon}
+        />
+      </XDSSideNavSection>
+    </XDSSideNav>
+  );
+}
+
 function LibraryCard({item}: {item: LibraryItem}) {
   return (
     <XDSCard>
