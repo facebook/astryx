@@ -190,7 +190,7 @@ const styles = stylex.create({
     maxWidth: 1100,
     width: '100%',
     paddingBlock: spacingVars['--spacing-8'],
-    paddingInline: spacingVars['--spacing-6'],
+    paddingInline: spacingVars['--spacing-10'],
   },
 });
 
