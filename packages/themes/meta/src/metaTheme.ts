@@ -104,7 +104,7 @@ export const metaTheme = defineTheme({
     // Borders
     // =========================================================================
     '--color-border': ['#DDE2E8', '#F2F4F619'],
-    '--color-border-emphasized': ['#DDE2E8', '#494D53'],
+    '--color-border-emphasized': ['#CCD3DB', '#494D53'],
 
     // =========================================================================
     // Effects
@@ -300,8 +300,9 @@ export const metaTheme = defineTheme({
     // =========================================================================
     card: {
       base: {
-        '--xds-card-padding': '16px',
-        '--card-radius': '16px',
+        '--card-radius': '32px',
+        '--xds-card-padding-inline': '20px',
+        '--xds-card-padding-block': '24px',
       },
     },
 
@@ -310,7 +311,8 @@ export const metaTheme = defineTheme({
     // =========================================================================
     section: {
       base: {
-        '--xds-section-padding': '20px',
+        paddingInline: '20px !important',
+        paddingBlock: '24px !important',
       },
     },
 
@@ -417,7 +419,11 @@ export const metaTheme = defineTheme({
     radio: {
       base: {
         borderColor: '#8F9296',
-        borderWidth: '2px',
+        borderWidth: '1.5px',
+      },
+      checked: {
+        backgroundColor: 'var(--color-background-surface)',
+        borderColor: 'var(--color-accent)',
       },
       ':hover': {
         borderColor: 'color-mix(in srgb, #8F9296, black 20%)',
@@ -440,6 +446,9 @@ export const metaTheme = defineTheme({
         borderWidth: '2px',
         borderRadius: '7px',
       },
+      checked: {
+        borderColor: 'var(--color-accent)',
+      },
       ':hover': {
         borderColor: 'color-mix(in srgb, #8F9296, black 20%)',
       },
@@ -461,6 +470,32 @@ export const metaTheme = defineTheme({
     },
 
 
+
+    // =========================================================================
+    // Divider — opaque gray instead of transparent blue-gray
+    // =========================================================================
+    divider: {
+      base: {
+        backgroundColor: 'light-dark(#DDE2E8, #3E4042)',
+      },
+    },
+
+    // =========================================================================
+    // Tabs — CDS: 1px underline, primary text when active, 12px padding
+    // =========================================================================
+    tab: {
+      base: {
+        paddingInline: '12px',
+      },
+      selected: {
+        color: 'var(--color-text-primary)',
+        '::after': {
+          height: '1px',
+          borderRadius: '0',
+          backgroundColor: '#111112',
+        },
+      },
+    },
 
     // =========================================================================
     // Calendar — selected date via state class (#763)
