@@ -13,6 +13,7 @@ import {XDSLink} from '@xds/core/Link';
 import pinkTeddyImg from './pink-teddy.png';
 import redHeartImg from './red-heart.png';
 import beagleImg from './beagle.png';
+import './payment-form-responsive.css';
 import {XDSTextArea} from '@xds/core/TextArea';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSCard} from '@xds/core/Card';
@@ -160,7 +161,7 @@ export default function PaymentFormPage() {
             <div style={{marginTop: 24}}><XDSDivider /></div>
           </div>
 
-          <div style={{display: 'flex', gap: 32, alignItems: 'flex-start'}}>
+          <div className="pf-body" style={{display: 'flex', gap: 32, alignItems: 'flex-start'}}>
 
             <div style={{flex: '1 1 55%', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 48}}>
 
@@ -321,7 +322,7 @@ export default function PaymentFormPage() {
 
             </div>
 
-            <div style={{flex: '1 1 45%', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16, position: 'sticky', top: 16, alignSelf: 'flex-start'}}>
+            <div className="pf-right" style={{flex: '1 1 45%', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16, position: 'sticky', top: 16, alignSelf: 'flex-start'}}>
 
               <XDSCard padding={5}>
                 <XDSVStack gap={4}>
