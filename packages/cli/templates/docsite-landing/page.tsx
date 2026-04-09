@@ -762,7 +762,7 @@ function ShimmerText({isActive}: {isActive: boolean}) {
       <XDSSkeleton width="90%" height={14} radius={3} index={0} />
       <XDSSkeleton width="75%" height={14} radius={3} index={1} />
       <XDSSkeleton width="60%" height={14} radius={3} index={2} />
-      <XDSText size="sm" color="secondary">
+      <XDSText type="supporting" color="secondary">
         {isActive ? `Generating templates${dots}` : 'Done'}
       </XDSText>
     </div>
@@ -813,7 +813,7 @@ function ChatPanel({
             }}>
             Template 01
           </div>
-          <XDSText>
+          <XDSText type="body">
             Can you customize this template by adding a divider line under the
             header and use a card for the lists
           </XDSText>
@@ -1036,10 +1036,10 @@ export default function DetailPage() {
           <XDSVStack gap={4}>
             <XDSHStack gap={2} vAlign="center">
               <XDSAvatar name="Jane Doe" size="md" />
-              <XDSText weight="bold">Jane Doe</XDSText>
+              <XDSText type="body" weight="bold">Jane Doe</XDSText>
               <XDSBadge label="Active" variant="success" />
             </XDSHStack>
-            <XDSText>
+            <XDSText type="body">
               This is a detail page template with structured
               content sections, metadata, and action buttons.
             </XDSText>
@@ -1351,11 +1351,11 @@ function TemplatePreview({
               <XDSHeading level={1} variant="display">
                 {templateName}
               </XDSHeading>
-              <XDSText size="sm" color="secondary">
+              <XDSText type="supporting" color="secondary">
                 XDS · 541 usages
               </XDSText>
             </div>
-            <XDSText style={{marginTop: 16}}>
+            <XDSText type="body" style={{marginTop: 16}}>
               Buttons are clickable elements that are used to trigger actions.
               They communicate calls to action to the user and allow users to
               interact with pages in a variety of ways. Button labels express
@@ -1408,7 +1408,7 @@ function TemplatePreview({
             gap: 16,
           }}>
           <XDSHeading level={2}>Component used</XDSHeading>
-          <XDSText>
+          <XDSText type="body">
             XDSAppShell, XDSTopNav, XDSVStack, XDSHStack, XDSHeading, XDSText,
             XDSButton, XDSCard, XDSBadge, XDSAvatar
           </XDSText>
