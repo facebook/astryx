@@ -340,7 +340,7 @@ describe('XDSSideNavHeading headerEndContent', () => {
     expect(screen.getByTestId('end-badge')).toBeInTheDocument();
   });
 
-  it('renders headerEndContent outside the link in isWholeHeadingLink path', () => {
+  it('renders headerEndContent inside the link in isWholeHeadingLink path', () => {
     render(
       <XDSSideNavHeading
         heading="My App"
@@ -350,11 +350,11 @@ describe('XDSSideNavHeading headerEndContent', () => {
     );
     const badge = screen.getByTestId('end-badge');
     expect(badge).toBeInTheDocument();
-    // Badge should NOT be inside the link
-    expect(badge.closest('a')).toBeNull();
+    // Badge renders inside the link
+    expect(badge.closest('a')).not.toBeNull();
   });
 
-  it('renders headerEndContent outside the button trigger in isWholeHeadingTrigger path', () => {
+  it('renders headerEndContent inside the button trigger in isWholeHeadingTrigger path', () => {
     render(
       <XDSSideNavHeading
         heading="My App"
@@ -364,8 +364,8 @@ describe('XDSSideNavHeading headerEndContent', () => {
     );
     const badge = screen.getByTestId('end-badge');
     expect(badge).toBeInTheDocument();
-    // Badge should NOT be inside the button
-    expect(badge.closest('button')).toBeNull();
+    // Badge renders inside the button trigger
+    expect(badge.closest('button')).not.toBeNull();
   });
 
   it('renders headerEndContent in mixed mode (menu + href)', () => {

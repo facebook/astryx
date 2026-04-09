@@ -17,6 +17,7 @@ import {useId, useMemo, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import {
   XDSListContext,
   type XDSListDensity,
@@ -29,7 +30,9 @@ export {
   type XDSListMarkerStyle as XDSListStyle,
 } from './XDSListContext';
 
-export interface XDSListProps {
+export interface XDSListProps extends XDSBaseProps<
+  HTMLUListElement | HTMLOListElement
+> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLUListElement | HTMLOListElement>;
   /**
@@ -66,28 +69,6 @@ export interface XDSListProps {
   listStyle?: XDSListMarkerStyle;
 
   /**
-   * StyleX styles created via `stylex.create()`. Merged with the component's
-   * base styles inside a single `stylex.props()` call for optimal deduplication.
-   *
-   * @example
-   * ```
-   * const overrides = stylex.create({ root: { marginBottom: 8 } });
-   * <Component xstyle={overrides.root} />
-   * ```
-   */
-  xstyle?: StyleXStyles;
-  /**
-   * CSS class name(s) appended to the root element.
-   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
-   */
-  className?: string;
-  /**
-   * Inline styles to apply to the root element. Spread after StyleX
-   * inline styles, so these values take priority.
-   */
-  style?: React.CSSProperties;
-
-  /**
    * Test ID for testing frameworks.
    */
   'data-testid'?: string;
@@ -102,6 +83,12 @@ const styles = stylex.create({
     margin: 0,
     paddingInlineStart: 0,
     listStyleType: 'none',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacingVars['--spacing-0-5'],
+  },
+  withDividers: {
+    gap: 0,
   },
   withCounter: {
     counterReset: 'xds-list',
@@ -170,6 +157,7 @@ export function XDSList({
           xdsClassName('list', {density, listStyle}),
           stylex.props(
             styles.list,
+            hasDividers && styles.withDividers,
             listStyle !== 'none' && styles.withCounter,
             xstyle,
           ),

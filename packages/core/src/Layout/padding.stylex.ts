@@ -119,6 +119,39 @@ export const containerPaddingInlineVarStyles = stylex.create({
 });
 
 /**
+ * Container padding block-start/block-end CSS variable styles for vertical bleed.
+ * Sets --container-padding-block-start and --container-padding-block-end so bleed children (Table, Divider, Section)
+ * know the block padding to compensate against when first/last child.
+ */
+export const containerPaddingBlockStartVarStyles = stylex.create({
+  0: {'--container-padding-block-start': spacingVars['--spacing-0']},
+  0.5: {'--container-padding-block-start': spacingVars['--spacing-0-5']},
+  1: {'--container-padding-block-start': spacingVars['--spacing-1']},
+  1.5: {'--container-padding-block-start': spacingVars['--spacing-1-5']},
+  2: {'--container-padding-block-start': spacingVars['--spacing-2']},
+  3: {'--container-padding-block-start': spacingVars['--spacing-3']},
+  4: {'--container-padding-block-start': spacingVars['--spacing-4']},
+  5: {'--container-padding-block-start': spacingVars['--spacing-5']},
+  6: {'--container-padding-block-start': spacingVars['--spacing-6']},
+  8: {'--container-padding-block-start': spacingVars['--spacing-8']},
+  10: {'--container-padding-block-start': spacingVars['--spacing-10']},
+});
+
+export const containerPaddingBlockEndVarStyles = stylex.create({
+  0: {'--container-padding-block-end': spacingVars['--spacing-0']},
+  0.5: {'--container-padding-block-end': spacingVars['--spacing-0-5']},
+  1: {'--container-padding-block-end': spacingVars['--spacing-1']},
+  1.5: {'--container-padding-block-end': spacingVars['--spacing-1-5']},
+  2: {'--container-padding-block-end': spacingVars['--spacing-2']},
+  3: {'--container-padding-block-end': spacingVars['--spacing-3']},
+  4: {'--container-padding-block-end': spacingVars['--spacing-4']},
+  5: {'--container-padding-block-end': spacingVars['--spacing-5']},
+  6: {'--container-padding-block-end': spacingVars['--spacing-6']},
+  8: {'--container-padding-block-end': spacingVars['--spacing-8']},
+  10: {'--container-padding-block-end': spacingVars['--spacing-10']},
+});
+
+/**
  * Layout outer X padding CSS variable styles.
  */
 export const layoutPaddingOuterXVarStyles = stylex.create({

@@ -8,7 +8,7 @@ describe('XDSBadge', () => {
     expect(screen.getByText('Default')).toBeInTheDocument();
   });
 
-  it('renders with different variants', () => {
+  it('renders with semantic variants', () => {
     const {rerender} = render(<XDSBadge variant="success" label="Success" />);
     expect(screen.getByText('Success')).toBeInTheDocument();
 
@@ -22,46 +22,35 @@ describe('XDSBadge', () => {
     expect(screen.getByText('Info')).toBeInTheDocument();
   });
 
-  it('renders as dot with shape="dot"', () => {
-    render(<XDSBadge variant="success" shape="dot" label="Online" />);
-    // Label is in the DOM as visually hidden text for screen readers
-    expect(screen.getByText('Online')).toBeInTheDocument();
+  it('renders with non-semantic color variants', () => {
+    const colors = [
+      'blue',
+      'cyan',
+      'green',
+      'orange',
+      'pink',
+      'purple',
+      'red',
+      'teal',
+      'yellow',
+    ] as const;
+
+    const {rerender} = render(
+      <XDSBadge variant={colors[0]} label={colors[0]} />,
+    );
+    expect(screen.getByText(colors[0])).toBeInTheDocument();
+
+    for (const color of colors.slice(1)) {
+      rerender(<XDSBadge variant={color} label={color} />);
+      expect(screen.getByText(color)).toBeInTheDocument();
+    }
   });
 
-  it('dot shape has accessible label via visually hidden text', () => {
-    render(
-      <XDSBadge
-        variant="error"
-        shape="dot"
-        label="3 unread"
-        data-testid="dot-badge"
-      />,
-    );
-    const badge = screen.getByTestId('dot-badge');
-    expect(screen.getByText('3 unread')).toBeInTheDocument();
-    // The visually hidden span is inside the badge
-    expect(badge.textContent).toBe('3 unread');
-  });
-
-  it('dot shape suppresses icon', () => {
-    render(
-      <XDSBadge
-        label="Status"
-        icon={<span data-testid="icon">*</span>}
-        shape="dot"
-        data-testid="dot-badge"
-      />,
-    );
-    const badge = screen.getByTestId('dot-badge');
-    expect(badge.querySelector('[data-testid="icon"]')).toBeNull();
-  });
-
-  it('includes shape in xdsClassName', () => {
-    const {container} = render(
-      <XDSBadge variant="info" label="New" shape="dot" />,
-    );
+  it('applies xds class name with non-semantic variant', () => {
+    const {container} = render(<XDSBadge variant="purple" label="Tag" />);
     const root = container.firstElementChild!;
-    expect(root.className).toContain('dot');
+    expect(root.className).toContain('xds-badge');
+    expect(root.className).toContain('purple');
   });
 
   it('renders with icon', () => {

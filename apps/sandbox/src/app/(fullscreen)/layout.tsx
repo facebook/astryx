@@ -1,7 +1,9 @@
+import {PreviewShell} from './PreviewShell';
+
 export default function FullscreenLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return <>{children}</>;
+  return <PreviewShell>{children}</PreviewShell>;
 }

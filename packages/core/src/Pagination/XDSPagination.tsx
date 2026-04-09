@@ -22,6 +22,7 @@ import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {
   colorVars,
+  fontWeightVars,
   sizeVars,
   spacingVars,
   durationVars,
@@ -236,6 +237,10 @@ const styles = stylex.create({
   dotDisabled: {
     cursor: 'not-allowed',
     opacity: 0.5,
+  },
+  activePage: {
+    backgroundColor: colorVars['--color-neutral'],
+    fontWeight: fontWeightVars['--font-weight-medium'],
   },
   pageSizeSelector: {
     display: 'flex',
@@ -453,11 +458,12 @@ export function XDSPagination({
                   key={item}
                   label={`Go to page ${item}`}
                   aria-label={`Go to page ${item}`}
-                  variant={isActive ? 'primary' : 'ghost'}
+                  variant="ghost"
                   size={buttonSize}
                   onClick={() => handlePageChange(item)}
                   isDisabled={isDisabled}
-                  aria-current={isActive ? 'page' : undefined}>
+                  aria-current={isActive ? 'page' : undefined}
+                  xstyle={isActive && styles.activePage}>
                   {item}
                 </XDSButton>
               );

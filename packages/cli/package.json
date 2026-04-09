@@ -1,10 +1,21 @@
 {
   "name": "@xds/cli",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "description": "XDS design system CLI \u2014 init, swizzle, theme, templates, and agent docs",
   "type": "module",
   "bin": {
     "xds": "./bin/xds.mjs"
+  },
+  "exports": {
+    ".": "./bin/xds.mjs",
+    "./json": {
+      "types": "./src/types/index.d.ts",
+      "import": "./src/lib/parse.mjs"
+    },
+    "./api": {
+      "types": "./src/types/api.d.ts",
+      "import": "./src/api/index.mjs"
+    }
   },
   "files": [
     "bin",
@@ -14,7 +25,8 @@
   ],
   "scripts": {
     "xds": "node bin/xds.mjs",
-    "typecheck:template-docs": "tsc --project tsconfig.template-docs.json"
+    "typecheck:template-docs": "tsc --project tsconfig.template-docs.json",
+    "typecheck:json-api": "tsc --project tsconfig.json-api.json"
   },
   "dependencies": {
     "@clack/prompts": "^0.9.1",

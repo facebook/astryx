@@ -12,7 +12,6 @@
  * - /apps/storybook/stories/HoverCard.stories.tsx
  */
 
-
 import React, {
   useCallback,
   useLayoutEffect,
@@ -23,7 +22,7 @@ import React, {
 import * as stylex from '@stylexjs/stylex';
 import {useXDSHoverCard, type HoverCardFocusTrigger} from './useXDSHoverCard';
 import type {LayerAlignment, LayerPlacement} from '../Layer/useXDSLayer';
-import {colorVars} from '../theme/tokens.stylex';
+import {colorVars, spacingVars} from '../theme/tokens.stylex';
 
 export type {HoverCardFocusTrigger} from './useXDSHoverCard';
 
@@ -38,7 +37,7 @@ const styles = stylex.create({
     textDecorationLine: 'underline',
     textDecorationStyle: 'dashed',
     textDecorationColor: colorVars['--color-border-emphasized'],
-    textUnderlineOffset: '2px',
+    textUnderlineOffset: spacingVars['--spacing-0-5'],
   },
 });
 

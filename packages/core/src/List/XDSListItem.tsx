@@ -25,6 +25,7 @@ import {
   typeScaleVars,
   borderVars,
 } from '../theme/tokens.stylex';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import {XDSListContext} from './XDSListContext';
 import {xdsClassName, mergeProps} from '../utils';
 
@@ -32,13 +33,17 @@ import {xdsClassName, mergeProps} from '../utils';
 // Types
 // =============================================================================
 
-export interface XDSListItemProps {
+export interface XDSListItemProps extends XDSBaseProps<HTMLLIElement> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLLIElement>;
   /**
    * Primary text label for the item.
+   *
+   * Accepts a plain string (single-line truncation applied automatically)
+   * or a ReactNode for rich content (no truncation constraints —
+   * child components control their own text behavior).
    */
-  label: string;
+  label: ReactNode;
 
   /**
    * Secondary description below the label.
@@ -88,33 +93,6 @@ export interface XDSListItemProps {
    * @default false
    */
   isSelected?: boolean;
-
-  /**
-   * StyleX styles created via `stylex.create()`. Merged with the component's
-   * base styles inside a single `stylex.props()` call for optimal deduplication.
-   *
-   * @example
-   * ```
-   * const overrides = stylex.create({ root: { marginBottom: 8 } });
-   * <Component xstyle={overrides.root} />
-   * ```
-   */
-  xstyle?: StyleXStyles;
-  /**
-   * CSS class name(s) appended to the root element.
-   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
-   */
-  className?: string;
-  /**
-   * Inline styles to apply to the root element. Spread after StyleX
-   * inline styles, so these values take priority.
-   */
-  style?: React.CSSProperties;
-
-  /**
-   * Test ID for testing frameworks.
-   */
-  'data-testid'?: string;
 }
 
 // =============================================================================
@@ -175,8 +153,10 @@ const styles = stylex.create({
   },
   disabled: {
     cursor: 'not-allowed',
-    opacity: 0.5,
     pointerEvents: 'none' as const,
+  },
+  disabledContent: {
+    opacity: 0.5,
   },
   selected: {
     backgroundColor: colorVars['--color-accent-muted'],
@@ -213,6 +193,8 @@ const styles = stylex.create({
   },
   label: {
     color: colorVars['--color-text-primary'],
+  },
+  labelTruncate: {
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
@@ -273,7 +255,7 @@ const markerStyles = stylex.create({
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
-    width: spacingVars['--spacing-3'],
+    width: spacingVars['--spacing-4'],
     // Vertically center the dot/circle with the first line of text:
     // shift down by (lineHeight - dotSize) / 2
     marginTop: `calc((1em * ${typeScaleVars['--text-body-leading']} - ${MARKER_DOT_SIZE}px) / 2)`,
@@ -299,7 +281,7 @@ const markerStyles = stylex.create({
     color: colorVars['--color-text-primary'],
     fontSize: typeScaleVars['--text-body-size'],
     lineHeight: typeScaleVars['--text-body-leading'],
-    width: spacingVars['--spacing-3'],
+    width: spacingVars['--spacing-4'],
     '::before': {
       content: 'counter(xds-list) "."',
     },
@@ -352,8 +334,8 @@ export function XDSListItem({
   xstyle,
   className,
   style,
-  'data-testid': testId,
   ref,
+  ...restProps
 }: XDSListItemProps) {
   const ctx = useContext(XDSListContext);
   const density = ctx?.density ?? 'balanced';
@@ -362,11 +344,15 @@ export function XDSListItem({
   const hasMarkers = listStyle !== 'none';
   const isInteractive = onClick != null || href != null;
 
+  const isStringLabel = typeof label === 'string';
   const isStringDescription = typeof description === 'string';
 
   const labelAndDescription = (
     <>
-      <span {...stylex.props(styles.label)}>{label}</span>
+      <span
+        {...stylex.props(styles.label, isStringLabel && styles.labelTruncate)}>
+        {label}
+      </span>
       {description != null && (
         <span
           {...stylex.props(
@@ -400,7 +386,10 @@ export function XDSListItem({
           target={target}
           aria-disabled={isDisabled || undefined}
           tabIndex={isDisabled ? -1 : undefined}
-          {...stylex.props(styles.invisibleAnchor)}>
+          {...stylex.props(
+            styles.invisibleAnchor,
+            isDisabled && styles.disabledContent,
+          )}>
           {labelAndDescription}
         </a>
       ) : onClick != null ? (
@@ -408,15 +397,30 @@ export function XDSListItem({
           type="button"
           onClick={onClick}
           disabled={isDisabled}
-          {...stylex.props(styles.invisibleButton)}>
+          {...stylex.props(
+            styles.invisibleButton,
+            isDisabled && styles.disabledContent,
+          )}>
           {labelAndDescription}
         </button>
       ) : (
-        <span {...stylex.props(styles.content)}>{labelAndDescription}</span>
+        <span
+          {...stylex.props(
+            styles.content,
+            isDisabled && styles.disabledContent,
+          )}>
+          {labelAndDescription}
+        </span>
       )}
 
       {endContent != null && (
-        <span {...stylex.props(styles.endContent)}>{endContent}</span>
+        <span
+          {...stylex.props(
+            styles.endContent,
+            isDisabled && styles.disabledContent,
+          )}>
+          {endContent}
+        </span>
       )}
     </>
   );
@@ -437,9 +441,9 @@ export function XDSListItem({
   return (
     <li
       ref={ref}
-      data-testid={testId}
       aria-selected={isSelected || undefined}
       aria-disabled={isDisabled || undefined}
+      {...restProps}
       {...mergeProps(
         xdsClassName('list-item'),
         stylex.props(

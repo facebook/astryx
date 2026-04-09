@@ -1,5 +1,10 @@
 import {describe, it, expect, vi} from 'vitest';
-import {defineTheme, generateThemeCSS, isDefinedTheme} from './defineTheme';
+import {
+  defineTheme,
+  generateThemeCSS,
+  generateThemeCSSFlat,
+  isDefinedTheme,
+} from './defineTheme';
 
 describe('defineTheme', () => {
   it('creates a theme with name', () => {
@@ -93,7 +98,7 @@ describe('generateThemeCSS', () => {
         '--radius-container': '16px',
       },
     });
-    const css = generateThemeCSS(theme);
+    const css = generateThemeCSSFlat(theme);
     expect(css).toContain('@scope');
     expect(css).toContain('--color-accent: light-dark(#0077B6, #48CAE4)');
     expect(css).toContain('--radius-container: 16px');
@@ -103,10 +108,31 @@ describe('generateThemeCSS', () => {
 
   it('includes prose rules even with no overrides', () => {
     const theme = defineTheme({name: 'empty'});
-    const css = generateThemeCSS(theme);
+    const css = generateThemeCSSFlat(theme);
     expect(css).toContain('@scope');
-    expect(css).toContain(':is(h1, h2, h3, h4, h5, h6)');
+    expect(css).toContain(':where(h1, h2, h3, h4, h5, h6)');
     expect(css).toContain('font-family: var(--font-family-heading)');
+  });
+
+  it('splits prose into reset layer and components into xds-theme', () => {
+    const theme = defineTheme({
+      name: 'split-test',
+      components: {
+        button: {'variant:secondary': {backgroundColor: 'red'}},
+      },
+    });
+    const {prose, component} = generateThemeCSS(theme);
+    // Prose block should contain element defaults
+    expect(prose).toContain(':where(p)');
+    expect(prose).toContain(':where(h1, h2, h3, h4, h5, h6)');
+    expect(prose).toContain('@scope');
+    // Prose should NOT contain component overrides
+    expect(prose).not.toContain('.xds-button');
+    // Component block should contain overrides
+    expect(component).toContain('.xds-button');
+    expect(component).toContain('@scope');
+    // Component should NOT contain prose element rules
+    expect(component).not.toContain(':where(p)');
   });
 });
 
@@ -164,7 +190,7 @@ describe('generateThemeCSS with components', () => {
         },
       },
     });
-    const css = generateThemeCSS(theme);
+    const css = generateThemeCSSFlat(theme);
     expect(css).toContain('.xds-card {');
     expect(css).toContain('border-width: 2px');
     expect(css).toContain('border-color: var(--color-accent)');
@@ -183,7 +209,7 @@ describe('generateThemeCSS with components', () => {
         },
       },
     });
-    const css = generateThemeCSS(theme);
+    const css = generateThemeCSSFlat(theme);
     expect(css).toContain('.xds-button.secondary');
     expect(css).toContain('background-color: rgba(0,0,0,0.06)');
   });
@@ -199,7 +225,7 @@ describe('generateThemeCSS with components', () => {
         },
       },
     });
-    const css = generateThemeCSS(theme);
+    const css = generateThemeCSSFlat(theme);
     expect(css).toContain('.xds-button.destructive.sm');
     expect(css).toContain('padding: 2px 6px');
   });
@@ -213,7 +239,7 @@ describe('generateThemeCSS with components', () => {
         },
       },
     });
-    const css = generateThemeCSS(theme);
+    const css = generateThemeCSSFlat(theme);
     expect(css).toContain('font-family: "Playfair Display", serif');
     expect(css).not.toContain('fontFamily');
   });
@@ -226,7 +252,7 @@ describe('generateThemeCSS with components', () => {
         card: {base: {borderWidth: '1px'}},
       },
     });
-    const css = generateThemeCSS(theme);
+    const css = generateThemeCSSFlat(theme);
     expect(css).toContain('@scope');
     expect(css).toContain('--radius-container: 20px');
     expect(css).toContain('.xds-card {');
@@ -460,7 +486,7 @@ describe('custom status via components', () => {
         },
       },
     });
-    const css = generateThemeCSS(theme);
+    const css = generateThemeCSSFlat(theme);
     // parseStyleKey('status:neutral') → '.neutral', so CSS should have .xds-banner.neutral
     expect(css).toContain('.xds-banner.neutral');
     expect(css).toContain('background-color: var(--color-background-muted)');
@@ -493,7 +519,7 @@ describe('custom status via components', () => {
         },
       },
     });
-    const css = generateThemeCSS(theme);
+    const css = generateThemeCSSFlat(theme);
     expect(css).toContain('.xds-button.primary-muted');
     expect(css).toContain('background-color: #ECF5FF');
   });
@@ -760,7 +786,7 @@ describe('pseudo-class overrides in components', () => {
         },
       },
     });
-    const css = generateThemeCSS(theme);
+    const css = generateThemeCSSFlat(theme);
     // Base rule
     expect(css).toContain('.xds-radio {');
     expect(css).toContain('border-color: #8F9296');
@@ -788,7 +814,7 @@ describe('pseudo-class overrides in components', () => {
         },
       },
     });
-    const css = generateThemeCSS(theme);
+    const css = generateThemeCSSFlat(theme);
     expect(css).toContain('.xds-button.primary-muted {');
     expect(css).toContain('background-color: #ECF5FF');
     expect(css).toContain('.xds-button.primary-muted:hover {');
@@ -810,7 +836,7 @@ describe('pseudo-class overrides in components', () => {
         },
       },
     });
-    const css = generateThemeCSS(theme);
+    const css = generateThemeCSSFlat(theme);
     // Should NOT emit an empty base rule
     expect(css).not.toMatch(/\.xds-switch\s*\{\s*\}/);
     // Should emit the pseudo rule
@@ -829,7 +855,7 @@ describe('pseudo-class overrides in components', () => {
         },
       },
     });
-    const css = generateThemeCSS(theme);
+    const css = generateThemeCSSFlat(theme);
     expect(css).toContain('.xds-card {');
     expect(css).toContain('border-width: 2px');
     expect(css).toContain('border-color: var(--color-accent)');

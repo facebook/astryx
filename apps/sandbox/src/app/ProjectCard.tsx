@@ -1,16 +1,19 @@
 'use client';
 
+import {useState} from 'react';
 import Link from 'next/link';
 import {XDSText} from '@xds/core/Text';
 import type {SandboxPage} from './sandboxPages';
 import {ImageIcon} from './icons';
 
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+
 export function ProjectCard({page}: {page: SandboxPage}) {
+  const [iframeError, setIframeError] = useState(false);
+
   return (
     <Link
       href={page.href}
-      target="_blank"
-      rel="noopener noreferrer"
       style={{textDecoration: 'none', color: 'inherit', display: 'flex'}}>
       <div
         style={{
@@ -27,20 +30,33 @@ export function ProjectCard({page}: {page: SandboxPage}) {
             width: '100%',
             height: 160,
             backgroundColor: 'var(--color-background-body)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
             overflow: 'hidden',
-            flexShrink: 0,
+            position: 'relative',
           }}>
-          <ImageIcon
-            style={{
-              width: 48,
-              height: 48,
-              opacity: 0.3,
-              color: 'var(--color-text-disabled)',
-            }}
-          />
+          {iframeError ? (
+            <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%'}}>
+              <ImageIcon style={{width: 48, height: 48, opacity: 0.3, color: 'var(--color-text-disabled)'}} />
+            </div>
+          ) : (
+            <iframe
+              src={`${basePath}${page.href}`}
+              title={page.name}
+              onError={() => setIframeError(true)}
+              style={{
+                width: 1280,
+                height: 800,
+                border: 'none',
+                transform: 'scale(0.2)',
+                transformOrigin: 'top left',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                pointerEvents: 'none',
+              }}
+              tabIndex={-1}
+              loading="lazy"
+            />
+          )}
         </div>
         <div
           style={{
@@ -48,7 +64,6 @@ export function ProjectCard({page}: {page: SandboxPage}) {
             flexDirection: 'column',
             gap: 4,
             padding: '12px 16px',
-            flex: 1,
           }}>
           <XDSText type="body" weight="semibold" maxLines={1}>
             {page.name}

@@ -21,7 +21,7 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import type {StyleXStyles} from '../theme/types';
-import {overflowStyles} from './table.stylex';
+import {overflowStyles, containerEdgeStyles} from './table.stylex';
 import {
   useTableContext,
   buildDividerStyles,
@@ -68,7 +68,12 @@ const densityStyles = stylex.create({
 
 const dividerRowStyles = stylex.create({
   cell: {
-    borderBottomWidth: borderVars['--border-width'],
+    borderBottomWidth: {
+      default: borderVars['--border-width'],
+      // Skip border on cells in the last body row to avoid a
+      // redundant line at the bottom of the table.
+      [stylex.when.ancestor(':last-child')]: '0',
+    },
     borderBottomStyle: 'solid',
     borderBottomColor: colorVars['--color-border'],
   },
@@ -121,6 +126,7 @@ export function XDSTableCell({
   const cellStyles: StyleXStyles[] = [
     densityStyles[ctx.density],
     overflowStyles.cell,
+    containerEdgeStyles[ctx.density],
     ...buildDividerStyles(ctx, dividerRowStyles.cell, dividerColumnStyles.cell),
   ];
 

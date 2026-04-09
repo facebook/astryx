@@ -116,6 +116,13 @@ export const docs = {
           description: 'Callback fired when the selection changes.',
         },
         {
+          name: 'hasClear',
+          type: 'boolean',
+          description:
+            'Shows a clear (\u00d7) button when a value is selected. When true, onChange also accepts null to signal the user cleared the selection.',
+          default: 'false',
+        },
+        {
           name: 'placeholder',
           type: 'string',
           description: 'Placeholder text shown when no value is selected.',
@@ -349,6 +356,12 @@ export const docsZh = {
           description: '选择变更时触发的回调函数。',
         },
         {
+          name: 'hasClear',
+          type: 'boolean',
+          description: '选中值时显示清除 (×) 按鈕。启用后，onChange 还接受 null 表示用户已清除选择。',
+          default: 'false',
+        },
+        {
           name: 'placeholder',
           type: 'string',
           description: '未选择值时显示的占位文本。',
@@ -495,6 +508,7 @@ export const docsDense = {
         options: 'Array of items; strings, objects w/ value/label/icon/disabled, dividers ({type: "divider"}), sections ({type: "section", title, items}).',
         value: 'Currently selected value.',
         onChange: 'Callback fired when selection changes.',
+        hasClear: 'Shows clear button when value selected. onChange also accepts null on clear.',
         placeholder: 'Placeholder text when no value selected.',
         size: 'Size variant for selector.',
         isDisabled: 'Disables selector.',

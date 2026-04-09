@@ -1,3 +1,4 @@
+'use client';
 /**
  * @file useEntryAnimation.ts
  * @input Uses React, StyleX, theme tokens
@@ -8,8 +9,6 @@
  * Only animates when the element is dynamically mounted after the initial
  * page paint — statically rendered elements on page load are not animated.
  */
-
-'use client';
 
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';

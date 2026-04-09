@@ -27,6 +27,7 @@ import {
   FunnelIcon,
   EyeSlashIcon,
   ViewColumnsIcon,
+  ClipboardDocumentIcon,
 } from '@heroicons/react/24/outline';
 
 import {
@@ -64,4 +65,6 @@ export const whatsappIconRegistry: XDSIconRegistry = {
   funnel: <FunnelIcon {...iconProps} />,
   eyeSlash: <EyeSlashIcon {...iconProps} />,
   viewColumns: <ViewColumnsIcon {...iconProps} />,
+  copy: <ClipboardDocumentIcon {...iconProps} />,
+  checkDouble: <CheckIcon {...iconProps} />,
 };

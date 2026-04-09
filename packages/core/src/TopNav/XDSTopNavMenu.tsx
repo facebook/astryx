@@ -47,7 +47,7 @@ const styles = stylex.create({
     display: 'inline-flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
-    paddingBlock: spacingVars['--spacing-2'],
+    paddingBlock: spacingVars['--spacing-1-5'],
     paddingInline: spacingVars['--spacing-3'],
     borderRadius: radiusVars['--radius-element'],
     fontSize: typeScaleVars['--text-label-size'],

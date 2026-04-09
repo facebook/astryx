@@ -1,4 +1,5 @@
 import type {Meta, StoryObj} from '@storybook/react';
+import * as stylex from '@stylexjs/stylex';
 import {
   XDSTable,
   XDSTableRow,
@@ -7,12 +8,29 @@ import {
   pixel,
 } from '@xds/core/Table';
 import type {XDSTableColumn} from '@xds/core/Table';
+import {XDSCard} from '@xds/core/Card';
+import {XDSSection} from '@xds/core/Section';
+import {
+  XDSLayout,
+  XDSLayoutHeader,
+  XDSLayoutContent,
+  XDSLayoutFooter,
+  XDSVStack,
+  XDSHStack,
+} from '@xds/core/Layout';
+import {XDSHeading} from '@xds/core/Text';
+import {XDSButton} from '@xds/core/Button';
 import {
   colorDefaults,
   spacingDefaults,
   radiusDefaults,
   textSizeDefaults,
 } from '@xds/core/theme';
+import {
+  colorVars,
+  spacingVars,
+  typographyVars,
+} from '@xds/core/theme/tokens.stylex';
 
 // =============================================================================
 // Sample Data
@@ -375,4 +393,238 @@ export const OverflowBehavior: Story = {
       </div>
     );
   },
+};
+
+// =============================================================================
+// Container Bleed — Table inside Card, Section, and Layout
+// =============================================================================
+
+const containerStoryStyles = stylex.create({
+  pageWrapper: {
+    backgroundColor: colorVars['--color-background-body'],
+    padding: spacingVars['--spacing-6'],
+  },
+  storyWrapper: {
+    display: 'flex',
+    gap: spacingVars['--spacing-6'],
+    flexWrap: 'wrap',
+    alignItems: 'start',
+  },
+  text: {
+    fontFamily: typographyVars['--font-family-body'],
+    color: colorVars['--color-text-secondary'],
+    fontSize: 14,
+    margin: 0,
+  },
+  heading: {
+    margin: `0 0 ${spacingVars['--spacing-2']} 0`,
+    fontFamily: typographyVars['--font-family-body'],
+    fontSize: 14,
+    color: colorVars['--color-text-secondary'],
+  },
+});
+
+const simpleColumns: XDSTableColumn<User>[] = [
+  {key: 'name', header: 'Name'},
+  {key: 'role', header: 'Role'},
+  {key: 'email', header: 'Email'},
+];
+
+/**
+ * Table inside a Card automatically bleeds to the card edges.
+ * The first column's start padding and last column's end padding
+ * align with the card's content padding, so text lines up with
+ * other content in the card.
+ */
+export const InCard: Story = {
+  decorators: [
+    Story => (
+      <div {...stylex.props(containerStoryStyles.pageWrapper)}>
+        <Story />
+      </div>
+    ),
+  ],
+  render: () => (
+    <div {...stylex.props(containerStoryStyles.storyWrapper)}>
+      <div>
+        <h4 {...stylex.props(containerStoryStyles.heading)}>
+          Table in Card (auto bleed)
+        </h4>
+        <XDSCard width={480}>
+          <XDSTable data={users.slice(0, 4)} columns={simpleColumns} />
+        </XDSCard>
+      </div>
+      <div>
+        <h4 {...stylex.props(containerStoryStyles.heading)}>
+          Before: Card padding={0} (old pattern)
+        </h4>
+        <XDSCard width={480} padding={0}>
+          <XDSTable data={users.slice(0, 4)} columns={simpleColumns} />
+        </XDSCard>
+      </div>
+    </div>
+  ),
+};
+
+/**
+ * Card with a heading above the table. The table bleeds edge-to-edge
+ * while the heading respects the card's content padding — text in the
+ * first column aligns with the heading.
+ */
+export const InCardWithHeading: Story = {
+  decorators: [
+    Story => (
+      <div {...stylex.props(containerStoryStyles.pageWrapper)}>
+        <Story />
+      </div>
+    ),
+  ],
+  render: () => (
+    <XDSCard width={520}>
+      <XDSVStack gap={3}>
+        <XDSHeading level={3}>Team Members</XDSHeading>
+        <XDSTable data={users.slice(0, 4)} columns={simpleColumns} hasHover />
+      </XDSVStack>
+    </XDSCard>
+  ),
+};
+
+/**
+ * Table inside a Card with XDSLayout — header, content with table, footer.
+ * The table bleeds within the layout content area while header/footer
+ * retain their own padding.
+ */
+export const InCardWithLayout: Story = {
+  decorators: [
+    Story => (
+      <div {...stylex.props(containerStoryStyles.pageWrapper)}>
+        <Story />
+      </div>
+    ),
+  ],
+  render: () => (
+    <XDSCard width={560}>
+      <XDSLayout
+        header={
+          <XDSLayoutHeader hasDivider>
+            <XDSHeading level={3}>User Directory</XDSHeading>
+          </XDSLayoutHeader>
+        }
+        content={
+          <XDSLayoutContent>
+            <XDSTable data={users} columns={simpleColumns} hasHover isStriped />
+          </XDSLayoutContent>
+        }
+        footer={
+          <XDSLayoutFooter hasDivider>
+            <XDSHStack gap={2} hAlign="end">
+              <XDSButton label="Export" variant="secondary">
+                Export
+              </XDSButton>
+              <XDSButton label="Add User" variant="primary">
+                Add User
+              </XDSButton>
+            </XDSHStack>
+          </XDSLayoutFooter>
+        }
+      />
+    </XDSCard>
+  ),
+};
+
+/**
+ * Table inside a Section with wash background. The section escapes
+ * the card padding, and the table bleeds within the section.
+ */
+export const InCardWithSection: Story = {
+  decorators: [
+    Story => (
+      <div {...stylex.props(containerStoryStyles.pageWrapper)}>
+        <Story />
+      </div>
+    ),
+  ],
+  render: () => (
+    <XDSCard width={520}>
+      <XDSVStack gap={3}>
+        <XDSHeading level={3}>Dashboard</XDSHeading>
+        <p {...stylex.props(containerStoryStyles.text)}>
+          The table below is in a wash section for visual separation.
+        </p>
+      </XDSVStack>
+      <XDSSection variant="wash">
+        <XDSTable
+          data={users.slice(0, 3)}
+          columns={simpleColumns}
+          density="compact"
+        />
+      </XDSSection>
+    </XDSCard>
+  ),
+};
+
+/**
+ * Compares all three density levels inside cards to show how
+ * the edge padding adapts — it always matches the container padding,
+ * with a minimum of 8px even for compact tables.
+ */
+export const InCardDensities: Story = {
+  decorators: [
+    Story => (
+      <div {...stylex.props(containerStoryStyles.pageWrapper)}>
+        <Story />
+      </div>
+    ),
+  ],
+  render: () => (
+    <div {...stylex.props(containerStoryStyles.storyWrapper)}>
+      {(['compact', 'balanced', 'spacious'] as const).map(density => (
+        <div key={density}>
+          <h4 {...stylex.props(containerStoryStyles.heading)}>{density}</h4>
+          <XDSCard width={400}>
+            <XDSVStack gap={2}>
+              <XDSHeading level={4}>Team</XDSHeading>
+              <XDSTable
+                data={users.slice(0, 3)}
+                columns={simpleColumns}
+                density={density}
+              />
+            </XDSVStack>
+          </XDSCard>
+        </div>
+      ))}
+    </div>
+  ),
+};
+
+/**
+ * Standalone table (no container) — behaves normally with
+ * density-based cell padding. No bleed, no edge compensation.
+ */
+export const StandaloneVsContainer: Story = {
+  decorators: [
+    Story => (
+      <div {...stylex.props(containerStoryStyles.pageWrapper)}>
+        <Story />
+      </div>
+    ),
+  ],
+  render: () => (
+    <div {...stylex.props(containerStoryStyles.storyWrapper)}>
+      <div>
+        <h4 {...stylex.props(containerStoryStyles.heading)}>
+          Standalone (no container)
+        </h4>
+        <div style={{width: 400}}>
+          <XDSTable data={users.slice(0, 3)} columns={simpleColumns} />
+        </div>
+      </div>
+      <div>
+        <h4 {...stylex.props(containerStoryStyles.heading)}>Inside Card</h4>
+        <XDSCard width={400}>
+          <XDSTable data={users.slice(0, 3)} columns={simpleColumns} />
+        </XDSCard>
+      </div>
+    </div>
+  ),
 };

@@ -374,35 +374,66 @@ export const OnBackgrounds: Story = {
 };
 
 /**
- * Callout card: a card with a wash section used as a callout/highlight area.
- * This pattern pairs XDSCard with a wash XDSSection for visual emphasis.
+ * Callout card: a muted card used as a callout/highlight area.
+ * Uses `variant="muted"` directly on XDSCard instead of wrapping content
+ * in a wash section — simpler and semantically cleaner.
  */
 export const Callout: Story = {
   render: () => (
     <div {...stylex.props(styles.storyWrapper)}>
-      <XDSCard width={350}>
-        <XDSSection variant="wash">
-          <XDSVStack gap={2}>
-            <XDSHeading level={3}>💡 Tip</XDSHeading>
-            <p {...stylex.props(styles.text, styles.textSecondary)}>
-              Use a wash section inside a card for callouts, tips, or
-              highlighted information. The wash background provides visual
-              contrast against the card surface.
-            </p>
-          </XDSVStack>
-        </XDSSection>
+      <XDSCard width={350} variant="muted">
+        <XDSVStack gap={2}>
+          <XDSHeading level={3}>💡 Tip</XDSHeading>
+          <p {...stylex.props(styles.text, styles.textSecondary)}>
+            Use <code>variant="muted"</code> for callouts, tips, or highlighted
+            information. The muted background provides visual contrast without
+            needing a nested section.
+          </p>
+        </XDSVStack>
       </XDSCard>
-      <XDSCard width={350}>
-        <XDSSection variant="wash">
-          <XDSVStack gap={2}>
-            <XDSHeading level={3}>⚠️ Warning</XDSHeading>
-            <p {...stylex.props(styles.text, styles.textSecondary)}>
-              Callout cards work well for alerts and warnings too. The full
-              bleed wash fills the card edge-to-edge.
-            </p>
-          </XDSVStack>
-        </XDSSection>
+      <XDSCard width={350} variant="muted">
+        <XDSVStack gap={2}>
+          <XDSHeading level={3}>⚠️ Warning</XDSHeading>
+          <p {...stylex.props(styles.text, styles.textSecondary)}>
+            Muted cards work well for alerts and warnings too.
+          </p>
+        </XDSVStack>
       </XDSCard>
+    </div>
+  ),
+};
+
+/**
+ * All background color variants in one view.
+ * `muted` uses the wash background for de-emphasised cards;
+ * the non-semantic variants use the `--color-<name>-background` token.
+ */
+export const ColorVariants: Story = {
+  render: () => (
+    <div {...stylex.props(styles.storyWrapper)}>
+      {(
+        [
+          'default',
+          'muted',
+          'blue',
+          'cyan',
+          'gray',
+          'green',
+          'orange',
+          'pink',
+          'purple',
+          'red',
+          'teal',
+          'yellow',
+        ] as const
+      ).map(variant => (
+        <div key={variant}>
+          <h4 {...stylex.props(styles.heading)}>{variant}</h4>
+          <XDSCard width={160} variant={variant}>
+            <p {...stylex.props(styles.text)}>{variant}</p>
+          </XDSCard>
+        </div>
+      ))}
     </div>
   ),
 };

@@ -2,13 +2,12 @@
 
 /**
  * @file XDSSideNavHeading.tsx
- * @input Uses React, useRef, useCallback, ReactNode, StyleX, useXDSPopover, useTruncation
+ * @input Uses React, useRef, useCallback, ReactNode, StyleX, useXDSPopover
  * @output Exports XDSSideNavHeading component and XDSSideNavHeadingProps
  * @position Core implementation; used inside XDSSideNav header slot
  *
  * Product/suite/account heading with smart interaction boundary logic.
  * Composes useXDSPopover internally when menu prop is provided.
- * Detects text truncation and shows tooltip on hover for overflowing text.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/SideNav/SideNav.doc.mjs
@@ -17,7 +16,7 @@
  * - /apps/storybook/stories/SideNav.stories.tsx
  */
 
-import {lazy, Suspense, useCallback, useRef, type ReactNode} from 'react';
+import {useCallback, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {
@@ -34,14 +33,9 @@ import {useXDSPopover} from '../Popover/useXDSPopover';
 import {XDSLink} from '../Link';
 import {getIcon} from '../Icon/globalIconRegistry';
 import {XDSTooltip} from '../Tooltip';
-import {useTruncation} from '../Text/useTruncation';
 import {navItemStyles} from '../NavItem/navItemStyles.stylex';
 import {useXDSSideNavCollapse} from './XDSSideNavCollapseContext';
 import {xdsClassName, mergeProps} from '../utils';
-
-const LazyXDSTooltip = lazy(() =>
-  import('../Tooltip/XDSTooltip').then(mod => ({default: mod.XDSTooltip})),
-);
 
 // =============================================================================
 // Styles
@@ -52,18 +46,15 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
-    paddingInline: spacingVars['--spacing-2'],
-    paddingBlock: spacingVars['--spacing-2'],
+    padding: 0,
     boxSizing: 'border-box',
     textDecoration: 'none',
     color: 'inherit',
     cursor: 'default',
-    overflow: 'hidden',
-    minWidth: 0,
   },
   rootCollapsed: {
     justifyContent: 'center',
-    paddingInline: spacingVars['--spacing-0-5'],
+    paddingInline: 0,
   },
   interactive: {
     cursor: 'pointer',
@@ -73,10 +64,19 @@ const styles = stylex.create({
     backgroundColor: 'transparent',
     fontFamily: 'inherit',
     fontSize: 'inherit',
+    fontWeight: fontWeightVars['--font-weight-normal'],
     textAlign: 'start',
     ':hover': {
       '@media (hover: hover)': {
         backgroundColor: colorVars['--color-overlay-hover'],
+      },
+    },
+  },
+  interactiveCollapsed: {
+    backgroundColor: {
+      default: 'transparent',
+      ':hover': {
+        '@media (hover: hover)': 'transparent',
       },
     },
   },
@@ -116,6 +116,7 @@ const styles = stylex.create({
   // When super/sub headings are present, scale down the app name
   headingCompact: {
     fontSize: typeScaleVars['--text-label-size'],
+    fontWeight: fontWeightVars['--font-weight-semibold'],
   },
   subheading: {
     fontSize: typeScaleVars['--text-supporting-size'],
@@ -139,17 +140,7 @@ const styles = stylex.create({
     flexShrink: 0,
     display: 'flex',
     alignItems: 'center',
-  },
-  // Inner interactive element (link/button) when headerEndContent splits
-  // the interactive boundary — stretches to fill remaining space so
-  // headerEndContent hugs the trailing edge of the nav.
-  interactiveInner: {
-    display: 'flex',
-    alignItems: 'center',
-    flex: 1,
-    minWidth: 0,
-    padding: 0,
-    gap: 'inherit',
+    marginInlineStart: 'auto',
   },
   popoverContent: {
     padding: spacingVars['--spacing-1'],
@@ -197,6 +188,11 @@ export interface XDSSideNavHeadingProps {
    */
   subheadingHref?: string;
   /**
+   * Content rendered at the trailing edge of the heading row.
+   * Hidden in collapsed mode.
+   */
+  headerEndContent?: ReactNode;
+  /**
    * Menu content shown in a popover. When provided, the header composes
    * useXDSPopover internally and shows a dropdown chevron. The trigger
    * boundary is determined automatically:
@@ -204,13 +200,6 @@ export interface XDSSideNavHeadingProps {
    * - With hrefs → links are independent, chevron/remaining area is the trigger
    */
   menu?: ReactNode;
-  /**
-   * Content rendered at the trailing edge of the heading row.
-   * Useful for badges, status indicators, or compact action buttons.
-   * Not part of the popover trigger or heading link — purely decorative/interactive.
-   * Hidden when the sidebar is collapsed.
-   */
-  headerEndContent?: ReactNode;
   /**
    * StyleX styles created via `stylex.create()`. Merged with the component's
    * base styles inside a single `stylex.props()` call for optimal deduplication.
@@ -282,8 +271,8 @@ export function XDSSideNavHeading({
   superheadingHref,
   subheading,
   subheadingHref,
-  menu,
   headerEndContent,
+  menu,
   xstyle,
   className,
   style,
@@ -294,45 +283,6 @@ export function XDSSideNavHeading({
   const {isCollapsed} = useXDSSideNavCollapse();
   const rootRef = useRef<HTMLDivElement>(null);
   const collapsedItemRef = useRef<HTMLElement>(null);
-
-  // Truncation detection for heading text elements
-  const headingTruncation = useTruncation({maxLines: 1});
-  const superheadingTruncation = useTruncation({maxLines: 1});
-  const subheadingTruncation = useTruncation({maxLines: 1});
-
-  // Refs for tooltip anchors
-  const headingSpanRef = useRef<HTMLSpanElement>(null);
-  const superheadingSpanRef = useRef<HTMLSpanElement>(null);
-  const subheadingSpanRef = useRef<HTMLSpanElement>(null);
-
-  // Merged ref callbacks for truncation + tooltip anchor
-  const mergedHeadingRef = useCallback(
-    (el: HTMLSpanElement | null) => {
-      headingTruncation.ref(el);
-      (
-        headingSpanRef as React.MutableRefObject<HTMLSpanElement | null>
-      ).current = el;
-    },
-    [headingTruncation.ref],
-  );
-  const mergedSuperheadingRef = useCallback(
-    (el: HTMLSpanElement | null) => {
-      superheadingTruncation.ref(el);
-      (
-        superheadingSpanRef as React.MutableRefObject<HTMLSpanElement | null>
-      ).current = el;
-    },
-    [superheadingTruncation.ref],
-  );
-  const mergedSubheadingRef = useCallback(
-    (el: HTMLSpanElement | null) => {
-      subheadingTruncation.ref(el);
-      (
-        subheadingSpanRef as React.MutableRefObject<HTMLSpanElement | null>
-      ).current = el;
-    },
-    [subheadingTruncation.ref],
-  );
 
   const popover = useXDSPopover({
     dialogLabel: 'Navigation menu',
@@ -393,6 +343,36 @@ export function XDSSideNavHeading({
           {collapsedIcon}
         </a>
       );
+    } else if (menu) {
+      collapsedElement = (
+        <>
+          <button
+            ref={collapsedSetRef as React.Ref<HTMLButtonElement>}
+            type="button"
+            onClick={handleToggle}
+            aria-label={heading}
+            data-testid={testId}
+            {...popover.triggerProps}
+            {...mergeProps(
+              xdsClassName('side-nav-heading'),
+              stylex.props(
+                navItemStyles.item,
+                styles.rootCollapsed,
+                styles.interactive,
+                styles.interactiveCollapsed,
+                xstyle,
+              ),
+              className,
+              style,
+            )}>
+            {collapsedIcon}
+          </button>
+          {popover.render(
+            <div {...stylex.props(styles.popoverContent)}>{menu}</div>,
+            {placement: 'below', alignment: 'start', xstyle: styles.popover},
+          )}
+        </>
+      );
     } else {
       collapsedElement = (
         <div
@@ -431,30 +411,6 @@ export function XDSSideNavHeading({
   const isWholeHeadingLink =
     !!headingHref && !menu && !superheadingHref && !subheadingHref;
 
-  // Render truncation tooltips for text spans (only in expanded mode)
-  const renderTruncationTooltips = () => (
-    <>
-      {superheadingTruncation.isTruncated && (
-        <Suspense fallback={null}>
-          <LazyXDSTooltip
-            content={superheading!}
-            anchorRef={superheadingSpanRef}
-          />
-        </Suspense>
-      )}
-      {headingTruncation.isTruncated && (
-        <Suspense fallback={null}>
-          <LazyXDSTooltip content={heading} anchorRef={headingSpanRef} />
-        </Suspense>
-      )}
-      {subheadingTruncation.isTruncated && (
-        <Suspense fallback={null}>
-          <LazyXDSTooltip content={subheading!} anchorRef={subheadingSpanRef} />
-        </Suspense>
-      )}
-    </>
-  );
-
   // Render text content
   const renderTextContent = () => (
     <span {...stylex.props(styles.textContainer)}>
@@ -468,11 +424,7 @@ export function XDSSideNavHeading({
             {superheading}
           </XDSLink>
         ) : (
-          <span
-            ref={mergedSuperheadingRef}
-            {...stylex.props(styles.superheading)}>
-            {superheading}
-          </span>
+          <span {...stylex.props(styles.superheading)}>{superheading}</span>
         ))}
       {hasAnyHref && headingHref && menu ? (
         <XDSLink
@@ -484,7 +436,6 @@ export function XDSSideNavHeading({
         </XDSLink>
       ) : (
         <span
-          ref={mergedHeadingRef}
           {...stylex.props(
             styles.heading,
             hasCompactHeading && styles.headingCompact,
@@ -502,9 +453,7 @@ export function XDSSideNavHeading({
             {subheading}
           </XDSLink>
         ) : (
-          <span ref={mergedSubheadingRef} {...stylex.props(styles.subheading)}>
-            {subheading}
-          </span>
+          <span {...stylex.props(styles.subheading)}>{subheading}</span>
         ))}
     </span>
   );
@@ -519,97 +468,28 @@ export function XDSSideNavHeading({
 
   // Whole heading is a link (no menu, single headingHref)
   if (isWholeHeadingLink) {
-    // When headerEndContent is provided, render it outside the link
-    if (headerEndContent) {
-      return (
-        <>
-          <div
-            ref={ref}
-            data-testid={testId}
-            {...mergeProps(
-              xdsClassName('side-nav-heading'),
-              stylex.props(styles.root, xstyle),
-              className,
-              style,
-            )}>
-            <a
-              href={headingHref}
-              {...stylex.props(
-                styles.root,
-                styles.interactive,
-                styles.interactiveInner,
-              )}
-              {...(props as React.AnchorHTMLAttributes<HTMLAnchorElement>)}>
-              {icon && <span {...stylex.props(styles.icon)}>{icon}</span>}
-              {renderTextContent()}
-            </a>
-            {headerEndContentElement}
-            {chevronElement}
-          </div>
-          {renderTruncationTooltips()}
-        </>
-      );
-    }
     return (
-      <>
-        <a
-          ref={ref as React.Ref<HTMLAnchorElement>}
-          href={headingHref}
-          data-testid={testId}
-          {...mergeProps(
-            xdsClassName('side-nav-heading'),
-            stylex.props(styles.root, styles.interactive, xstyle),
-            className,
-            style,
-          )}
-          {...(props as React.AnchorHTMLAttributes<HTMLAnchorElement>)}>
-          {icon && <span {...stylex.props(styles.icon)}>{icon}</span>}
-          {renderTextContent()}
-          {chevronElement}
-        </a>
-        {renderTruncationTooltips()}
-      </>
+      <a
+        ref={ref as React.Ref<HTMLAnchorElement>}
+        href={headingHref}
+        data-testid={testId}
+        {...mergeProps(
+          xdsClassName('side-nav-heading'),
+          stylex.props(styles.root, styles.interactive, xstyle),
+          className,
+          style,
+        )}
+        {...(props as React.AnchorHTMLAttributes<HTMLAnchorElement>)}>
+        {icon && <span {...stylex.props(styles.icon)}>{icon}</span>}
+        {renderTextContent()}
+        {headerEndContentElement}
+        {chevronElement}
+      </a>
     );
   }
 
   // Whole header is the popover trigger (menu, no hrefs)
   if (isWholeHeadingTrigger) {
-    // When headerEndContent is provided, render it outside the button trigger
-    if (headerEndContent) {
-      return (
-        <>
-          <div
-            data-testid={testId}
-            {...mergeProps(
-              xdsClassName('side-nav-heading'),
-              stylex.props(styles.root, xstyle),
-              className,
-              style,
-            )}>
-            <button
-              ref={setRef as React.Ref<HTMLButtonElement>}
-              type="button"
-              onClick={handleToggle}
-              {...popover.triggerProps}
-              {...stylex.props(
-                styles.root,
-                styles.interactive,
-                styles.interactiveInner,
-              )}>
-              {icon && <span {...stylex.props(styles.icon)}>{icon}</span>}
-              {renderTextContent()}
-              {chevronElement}
-            </button>
-            {headerEndContentElement}
-          </div>
-          {renderTruncationTooltips()}
-          {popover.render(
-            <div {...stylex.props(styles.popoverContent)}>{menu}</div>,
-            {placement: 'below', alignment: 'start', xstyle: styles.popover},
-          )}
-        </>
-      );
-    }
     return (
       <>
         <button
@@ -626,9 +506,9 @@ export function XDSSideNavHeading({
           )}>
           {icon && <span {...stylex.props(styles.icon)}>{icon}</span>}
           {renderTextContent()}
+          {headerEndContentElement}
           {chevronElement}
         </button>
-        {renderTruncationTooltips()}
         {popover.render(
           <div {...stylex.props(styles.popoverContent)}>{menu}</div>,
           {placement: 'below', alignment: 'start', xstyle: styles.popover},
@@ -673,7 +553,6 @@ export function XDSSideNavHeading({
             </button>
           )}
         </div>
-        {renderTruncationTooltips()}
         {popover.render(
           <div {...stylex.props(styles.popoverContent)}>{menu}</div>,
           {placement: 'below', alignment: 'start', xstyle: styles.popover},
@@ -685,88 +564,6 @@ export function XDSSideNavHeading({
   // Static heading with independent links (no menu)
   if (hasAnyHref && !isWholeHeadingLink) {
     return (
-      <>
-        <div
-          ref={ref}
-          data-testid={testId}
-          {...mergeProps(
-            xdsClassName('side-nav-heading'),
-            stylex.props(styles.root, xstyle),
-            className,
-            style,
-          )}
-          {...props}>
-          {icon &&
-            (headingHref ? (
-              <a href={headingHref} {...stylex.props(styles.icon)}>
-                {icon}
-              </a>
-            ) : (
-              <span {...stylex.props(styles.icon)}>{icon}</span>
-            ))}
-          <span {...stylex.props(styles.textContainer)}>
-            {superheading &&
-              (superheadingHref ? (
-                <XDSLink
-                  label={superheading}
-                  href={superheadingHref}
-                  color="secondary"
-                  size="xsm">
-                  {superheading}
-                </XDSLink>
-              ) : (
-                <span
-                  ref={mergedSuperheadingRef}
-                  {...stylex.props(styles.superheading)}>
-                  {superheading}
-                </span>
-              ))}
-            {headingHref ? (
-              <XDSLink
-                label={heading}
-                href={headingHref}
-                color="primary"
-                weight="semibold">
-                {heading}
-              </XDSLink>
-            ) : (
-              <span
-                ref={mergedHeadingRef}
-                {...stylex.props(
-                  styles.heading,
-                  hasCompactHeading && styles.headingCompact,
-                )}>
-                {heading}
-              </span>
-            )}
-            {subheading &&
-              (subheadingHref ? (
-                <XDSLink
-                  label={subheading}
-                  href={subheadingHref}
-                  color="secondary"
-                  size="xsm">
-                  {subheading}
-                </XDSLink>
-              ) : (
-                <span
-                  ref={mergedSubheadingRef}
-                  {...stylex.props(styles.subheading)}>
-                  {subheading}
-                </span>
-              ))}
-          </span>
-          {headerEndContentElement}
-          {chevronElement}
-        </div>
-        {renderTruncationTooltips()}
-      </>
-    );
-  }
-
-  // Default: static heading, no links, no menu
-  return (
-    <>
       <div
         ref={ref}
         data-testid={testId}
@@ -777,13 +574,80 @@ export function XDSSideNavHeading({
           style,
         )}
         {...props}>
-        {icon && <span {...stylex.props(styles.icon)}>{icon}</span>}
-        {renderTextContent()}
+        {icon &&
+          (headingHref ? (
+            <a href={headingHref} {...stylex.props(styles.icon)}>
+              {icon}
+            </a>
+          ) : (
+            <span {...stylex.props(styles.icon)}>{icon}</span>
+          ))}
+        <span {...stylex.props(styles.textContainer)}>
+          {superheading &&
+            (superheadingHref ? (
+              <XDSLink
+                label={superheading}
+                href={superheadingHref}
+                color="secondary"
+                size="xsm">
+                {superheading}
+              </XDSLink>
+            ) : (
+              <span {...stylex.props(styles.superheading)}>{superheading}</span>
+            ))}
+          {headingHref ? (
+            <XDSLink
+              label={heading}
+              href={headingHref}
+              color="primary"
+              weight="semibold">
+              {heading}
+            </XDSLink>
+          ) : (
+            <span
+              {...stylex.props(
+                styles.heading,
+                hasCompactHeading && styles.headingCompact,
+              )}>
+              {heading}
+            </span>
+          )}
+          {subheading &&
+            (subheadingHref ? (
+              <XDSLink
+                label={subheading}
+                href={subheadingHref}
+                color="secondary"
+                size="xsm">
+                {subheading}
+              </XDSLink>
+            ) : (
+              <span {...stylex.props(styles.subheading)}>{subheading}</span>
+            ))}
+        </span>
         {headerEndContentElement}
         {chevronElement}
       </div>
-      {renderTruncationTooltips()}
-    </>
+    );
+  }
+
+  // Default: static heading, no links, no menu
+  return (
+    <div
+      ref={ref}
+      data-testid={testId}
+      {...mergeProps(
+        xdsClassName('side-nav-heading'),
+        stylex.props(styles.root, xstyle),
+        className,
+        style,
+      )}
+      {...props}>
+      {icon && <span {...stylex.props(styles.icon)}>{icon}</span>}
+      {renderTextContent()}
+      {headerEndContentElement}
+      {chevronElement}
+    </div>
   );
 }
 

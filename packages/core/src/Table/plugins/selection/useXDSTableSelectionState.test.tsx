@@ -225,3 +225,174 @@ describe('useXDSTableSelectionState', () => {
     expect(rows[3]).not.toHaveAttribute('aria-selected');
   });
 });
+
+// =============================================================================
+// Filtering + Selection Interaction Tests
+// =============================================================================
+
+/**
+ * Simulates the pattern where consumers pass filtered data to
+ * useXDSTableSelectionState, scoping select-all to visible rows.
+ * Selections made on filtered views persist when the filter changes.
+ */
+function FilteredSelectionTable({
+  initialFilter = '',
+}: {
+  initialFilter?: string;
+}) {
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+  const [filter, setFilter] = useState(initialFilter);
+
+  // Simulate filtering — only show items whose name includes the filter
+  const filteredData = filter
+    ? testData.filter(item =>
+        item.name.toLowerCase().includes(filter.toLowerCase()),
+      )
+    : testData;
+
+  const {selectionConfig} = useXDSTableSelectionState<TestItem>({
+    data: filteredData,
+    idKey: 'id',
+    selectedKeys,
+    setSelectedKeys,
+  });
+
+  const plugin = useXDSTableSelection<TestItem>(selectionConfig);
+
+  return (
+    <div>
+      <input
+        data-testid="filter-input"
+        value={filter}
+        onChange={e => setFilter(e.target.value)}
+      />
+      <span data-testid="selected-count">{selectedKeys.size}</span>
+      <span data-testid="selected-keys">
+        {[...selectedKeys].sort().join(',')}
+      </span>
+      <XDSTable
+        data={filteredData}
+        columns={columns}
+        idKey="id"
+        plugins={{selection: plugin}}
+      />
+    </div>
+  );
+}
+
+describe('useXDSTableSelectionState with filtered data', () => {
+  it('select-all only selects visible (filtered) rows', async () => {
+    const user = userEvent.setup();
+    // Filter to only show Alice and Charlie (names containing "li")
+    render(<FilteredSelectionTable initialFilter="li" />);
+
+    // Should show 2 rows (Alice, Charlie)
+    const rows = screen.getAllByRole('row');
+    // header + 2 body rows = 3
+    expect(rows).toHaveLength(3);
+
+    await user.click(screen.getByLabelText('Select all rows'));
+
+    // Only Alice (1) and Charlie (3) should be selected
+    expect(screen.getByTestId('selected-count')).toHaveTextContent('2');
+    expect(screen.getByTestId('selected-keys')).toHaveTextContent('1,3');
+  });
+
+  it('selections persist when filter changes', async () => {
+    const user = userEvent.setup();
+    render(<FilteredSelectionTable />);
+
+    // Select Bob (row index 2 in unfiltered view)
+    const checkboxes = screen.getAllByLabelText('Select row');
+    await user.click(checkboxes[1]); // Bob
+
+    expect(screen.getByTestId('selected-keys')).toHaveTextContent('2');
+
+    // Now filter to only "Ali" — Bob disappears but stays selected
+    const input = screen.getByTestId('filter-input');
+    await user.clear(input);
+    await user.type(input, 'Ali');
+
+    // Bob is no longer visible
+    const rows = screen.getAllByRole('row');
+    expect(rows).toHaveLength(2); // header + Alice
+
+    // But selectedKeys still includes Bob
+    expect(screen.getByTestId('selected-count')).toHaveTextContent('1');
+    expect(screen.getByTestId('selected-keys')).toHaveTextContent('2');
+  });
+
+  it('select-all in filtered view preserves selections from other views', async () => {
+    const user = userEvent.setup();
+    render(<FilteredSelectionTable />);
+
+    // Select Bob individually
+    const checkboxes = screen.getAllByLabelText('Select row');
+    await user.click(checkboxes[1]); // Bob (id: 2)
+
+    expect(screen.getByTestId('selected-keys')).toHaveTextContent('2');
+
+    // Filter to "Ali" — shows only Alice
+    const input = screen.getByTestId('filter-input');
+    await user.clear(input);
+    await user.type(input, 'Ali');
+
+    // Select all in filtered view (just Alice)
+    await user.click(screen.getByLabelText('Select all rows'));
+
+    // Both Bob (from before) and Alice (from select-all) should be selected
+    expect(screen.getByTestId('selected-count')).toHaveTextContent('2');
+    expect(screen.getByTestId('selected-keys')).toHaveTextContent('1,2');
+  });
+
+  it('deselect-all in filtered view only deselects visible rows', async () => {
+    const user = userEvent.setup();
+    render(<FilteredSelectionTable />);
+
+    // Select all (unfiltered) — selects all 4
+    await user.click(screen.getByLabelText('Select all rows'));
+    expect(screen.getByTestId('selected-count')).toHaveTextContent('4');
+
+    // Filter to "Ali" — shows only Alice
+    const input = screen.getByTestId('filter-input');
+    await user.clear(input);
+    await user.type(input, 'Ali');
+
+    // Deselect all in filtered view — only deselects Alice
+    await user.click(screen.getByLabelText('Select all rows'));
+
+    // Bob, Charlie, Diana still selected (not visible, so frozen)
+    expect(screen.getByTestId('selected-count')).toHaveTextContent('3');
+    expect(screen.getByTestId('selected-keys')).toHaveTextContent('2,3,4');
+  });
+
+  it('clearing filter restores selections from all views', async () => {
+    const user = userEvent.setup();
+    render(<FilteredSelectionTable />);
+
+    // Select Alice individually
+    const checkboxes = screen.getAllByLabelText('Select row');
+    await user.click(checkboxes[0]); // Alice (id: 1)
+
+    // Filter to "Bob" and select Bob
+    const input = screen.getByTestId('filter-input');
+    await user.clear(input);
+    await user.type(input, 'Bob');
+    const filteredCheckboxes = screen.getAllByLabelText('Select row');
+    await user.click(filteredCheckboxes[0]); // Bob (id: 2)
+
+    // Clear filter
+    await user.clear(input);
+
+    // Both Alice and Bob should be selected
+    expect(screen.getByTestId('selected-count')).toHaveTextContent('2');
+    expect(screen.getByTestId('selected-keys')).toHaveTextContent('1,2');
+
+    // And they should appear selected in the table
+    const rows = screen.getAllByRole('row');
+    expect(rows[1]).toHaveAttribute('aria-selected', 'true'); // Alice
+    expect(rows[2]).toHaveAttribute('aria-selected', 'true'); // Bob
+    expect(rows[3]).not.toHaveAttribute('aria-selected'); // Charlie
+    expect(rows[4]).not.toHaveAttribute('aria-selected'); // Diana
+  });
+});

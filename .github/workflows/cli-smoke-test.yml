@@ -29,3 +29,12 @@ jobs:
 
       - name: CLI smoke test
         run: node .github/scripts/cli-smoke-test.mjs
+
+      - name: Typecheck JSON API types
+        run: cd packages/cli && yarn typecheck:json-api
+
+      - name: CLI --json smoke test
+        run: node .github/scripts/cli-json-smoke-test.mjs
+
+      - name: API ↔ CLI parity test
+        run: node .github/scripts/api-cli-parity-test.mjs --no-baseline

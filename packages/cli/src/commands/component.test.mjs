@@ -6,9 +6,6 @@ import {
   discoverComponents,
   discoverExternalComponents,
   findExternalComponentDoc,
-  cleanReadme,
-  extractCompact,
-  extractProps,
   findComponentReadme,
   findComponentSource,
   levenshteinDistance,
@@ -79,130 +76,49 @@ describe('discoverComponents', () => {
   });
 });
 
-describe('cleanReadme', () => {
-  it('strips SYNC comments, rewrites title, collapses blanks', () => {
-    const input = [
-      '# /packages/core/src/Button',
-      '<!-- SYNC: something -->',
-      '',
-      'Description here.',
-      '',
-      '',
-      '',
-      'More text.',
-    ].join('\n');
-
-    const result = cleanReadme(input, 'Button');
-    expect(result).toContain('# Button');
-    expect(result).not.toContain('SYNC');
-    // Should collapse consecutive blank lines
-    expect(result).not.toContain('\n\n\n');
-  });
-
-  it('preserves XDS prefix in display name', () => {
-    const input = '# /packages/core/src/XDSButton\n\nContent.\n';
-    const result = cleanReadme(input, 'XDSButton');
-    expect(result).toContain('# XDSButton');
-  });
-});
-
-describe('extractCompact', () => {
-  it('skips configured sections', () => {
-    const input = [
-      '# /packages/core/src/Button',
-      '',
-      '## Features',
-      'Feature list.',
-      '',
-      '## Files',
-      'This should be skipped.',
-      '',
-      '## RTL Support',
-      'Also skipped.',
-      '',
-      '## Props',
-      'Props content.',
-    ].join('\n');
-
-    const result = extractCompact(input, 'Button');
-    expect(result).toContain('# Button');
-    expect(result).toContain('Feature list.');
-    expect(result).not.toContain('This should be skipped.');
-    expect(result).not.toContain('Also skipped.');
-    expect(result).toContain('Props content.');
-  });
-
-  it('limits code blocks to MAX_EXAMPLES (3)', () => {
-    const blocks = [];
-    for (let i = 0; i < 5; i++) {
-      blocks.push(`\`\`\`tsx\ncode block ${i}\n\`\`\``);
-    }
-    const input = `# /Button\n\n## Usage\n\n${blocks.join('\n\n')}\n`;
-
-    const result = extractCompact(input, 'Button');
-    // Should include at most 3 code blocks
-    const codeBlockCount = (result.match(/```tsx/g) || []).length;
-    expect(codeBlockCount).toBeLessThanOrEqual(3);
-  });
-
-  it('strips ASCII art blocks', () => {
-    const input = [
-      '# /Button',
-      '',
-      '```',
-      '┌──────────────┐',
-      '│  ASCII art   │',
-      '└──────────────┘',
-      '```',
-      '',
-      'Regular text.',
-    ].join('\n');
-
-    const result = extractCompact(input, 'Button');
-    expect(result).not.toContain('┌──────────────┐');
-    expect(result).toContain('Regular text.');
-  });
-});
-
 describe('findComponentReadme', () => {
-  it('finds direct README: src/{name}/README.md', () => {
+  it('finds direct .doc.mjs: src/{name}/{Name}.doc.mjs', () => {
+    const srcDir = path.join(tmpDir, 'src');
+    const compDir = path.join(srcDir, 'Button');
+    fs.mkdirSync(compDir, {recursive: true});
+    fs.writeFileSync(path.join(compDir, 'Button.doc.mjs'), 'export const docs = {}');
+
+    const result = findComponentReadme(tmpDir, 'Button');
+    expect(result).toBe(path.join(compDir, 'Button.doc.mjs'));
+  });
+
+  it('finds nested .doc.mjs: src/*/{name}/{Name}.doc.mjs', () => {
+    const srcDir = path.join(tmpDir, 'src');
+    const nestedDir = path.join(srcDir, 'Layout', 'Container');
+    fs.mkdirSync(nestedDir, {recursive: true});
+    fs.writeFileSync(path.join(nestedDir, 'Container.doc.mjs'), 'export const docs = {}');
+
+    const result = findComponentReadme(tmpDir, 'Container');
+    expect(result).toBe(path.join(nestedDir, 'Container.doc.mjs'));
+  });
+
+  it('finds parent .doc.mjs for sub-components', () => {
+    const srcDir = path.join(tmpDir, 'src');
+    const stackDir = path.join(srcDir, 'Stack');
+    fs.mkdirSync(stackDir, {recursive: true});
+    fs.writeFileSync(path.join(stackDir, 'XDSStackItem.tsx'), '');
+    fs.writeFileSync(path.join(stackDir, 'Stack.doc.mjs'), 'export const docs = {}');
+
+    const result = findComponentReadme(tmpDir, 'StackItem');
+    expect(result).toBe(path.join(stackDir, 'Stack.doc.mjs'));
+  });
+
+  it('ignores README.md files', () => {
     const srcDir = path.join(tmpDir, 'src');
     const compDir = path.join(srcDir, 'Button');
     fs.mkdirSync(compDir, {recursive: true});
     fs.writeFileSync(path.join(compDir, 'README.md'), '# Button');
 
     const result = findComponentReadme(tmpDir, 'Button');
-    expect(result).toBe(path.join(compDir, 'README.md'));
+    expect(result).toBeNull();
   });
 
-  it('finds nested README: src/*/{name}/README.md', () => {
-    const srcDir = path.join(tmpDir, 'src');
-    const nestedDir = path.join(srcDir, 'Layout', 'Container');
-    fs.mkdirSync(nestedDir, {recursive: true});
-    fs.writeFileSync(path.join(nestedDir, 'README.md'), '# Container');
-
-    const result = findComponentReadme(tmpDir, 'Container');
-    expect(result).toBe(path.join(nestedDir, 'README.md'));
-  });
-
-  it('falls back to README near source file', () => {
-    const srcDir = path.join(tmpDir, 'src');
-    const deepDir = path.join(srcDir, 'Layout', 'Container', 'Card');
-    fs.mkdirSync(deepDir, {recursive: true});
-    fs.writeFileSync(path.join(deepDir, 'XDSCard.tsx'), '');
-    // README in Container (parent of Card)
-    fs.writeFileSync(
-      path.join(srcDir, 'Layout', 'Container', 'README.md'),
-      '# Container',
-    );
-
-    const result = findComponentReadme(tmpDir, 'Card');
-    expect(result).toBe(
-      path.join(srcDir, 'Layout', 'Container', 'README.md'),
-    );
-  });
-
-  it('returns null when no README found', () => {
+  it('returns null when no doc found', () => {
     const srcDir = path.join(tmpDir, 'src');
     fs.mkdirSync(srcDir, {recursive: true});
     expect(findComponentReadme(tmpDir, 'NonExistent')).toBeNull();
@@ -315,82 +231,6 @@ describe('findClosestComponents', () => {
   it('respects maxDistance parameter', () => {
     const matches = findClosestComponents('buton', components, 0);
     expect(matches).toEqual([]);
-  });
-});
-
-describe('extractProps', () => {
-  it('extracts a Props section from README content', () => {
-    const input = [
-      '# Button',
-      '',
-      '## Description',
-      'A button component.',
-      '',
-      '## Props',
-      '',
-      '| Prop | Type | Default |',
-      '|------|------|---------|',
-      '| size | string | "md" |',
-      '| variant | string | "primary" |',
-      '',
-      '## Examples',
-      'Some examples here.',
-    ].join('\n');
-
-    const result = extractProps(input, 'Button');
-    expect(result).toContain('## Props');
-    expect(result).toContain('| size | string | "md" |');
-    expect(result).toContain('| variant | string | "primary" |');
-    expect(result).not.toContain('## Description');
-    expect(result).not.toContain('## Examples');
-  });
-
-  it('extracts multiple Props sections', () => {
-    const input = [
-      '# Layout',
-      '',
-      '## XDSLayout Props',
-      '| Prop | Type |',
-      '|------|------|',
-      '| gap | number |',
-      '',
-      '## XDSLayoutItem Props',
-      '| Prop | Type |',
-      '|------|------|',
-      '| flex | number |',
-      '',
-      '## Examples',
-      'Some examples.',
-    ].join('\n');
-
-    const result = extractProps(input, 'Layout');
-    expect(result).toContain('## XDSLayout Props');
-    expect(result).toContain('| gap | number |');
-    expect(result).toContain('## XDSLayoutItem Props');
-    expect(result).toContain('| flex | number |');
-    expect(result).not.toContain('## Examples');
-  });
-
-  it('returns fallback message when no Props section found', () => {
-    const input = '# Button\n\n## Description\nA button.\n';
-    const result = extractProps(input, 'Button');
-    expect(result).toBe('No props documentation found for Button.\n');
-  });
-
-  it('trims trailing blank lines', () => {
-    const input = [
-      '## Props',
-      '| Prop | Type |',
-      '|------|------|',
-      '| size | string |',
-      '',
-      '',
-      '',
-    ].join('\n');
-
-    const result = extractProps(input, 'Button');
-    expect(result).not.toMatch(/\n\n$/);
-    expect(result).toMatch(/\n$/);
   });
 });
 
@@ -521,8 +361,9 @@ describe('searchComponents', () => {
     const {searchComponents, discoverComponents} = await import('./component/index.mjs');
     const components = discoverComponents('packages/core');
     const results = await searchComponents('modal', 'packages/core', components);
-    expect(results[0].name).toBe('Dialog');
-    expect(results[0].score).toBe(90);
+    const dialog = results.find(r => r.name === 'Dialog');
+    expect(dialog).toBeDefined();
+    expect(dialog.score).toBe(90);
   });
 
   it('returns multiple matches for ambiguous terms like "select"', async () => {

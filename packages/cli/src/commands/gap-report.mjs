@@ -17,6 +17,7 @@ import {
   GAP_CATEGORIES,
 } from '../utils/github.mjs';
 import {getRunPrefix} from '../utils/package-manager.mjs';
+import {jsonOut, jsonError} from '../lib/json.mjs';
 
 function isCancel(value) {
   if (p.isCancel(value)) {
@@ -170,9 +171,21 @@ export function registerGapReport(program) {
     .option('--component <name>', 'Component name')
     .option('--category <category>', 'Gap category')
     .option('--reason <reason>', 'What capability was missing')
+    .option('--list-categories', 'List valid gap categories')
     .action(async options => {
+      const json = program.opts().json || false;
+
+      if (options.listCategories) {
+        if (json) return jsonOut('gap-report.categories', GAP_CATEGORIES);
+        for (const cat of GAP_CATEGORIES) {
+          console.log(`  ${cat.value.padEnd(20)} ${cat.label}`);
+        }
+        return;
+      }
+
       const config = loadGapReportConfig();
       if (!config.enabled) {
+        if (json) return jsonError('Gap reporting is disabled');
         console.log(
           `Gap reporting is disabled. Run \`${getRunPrefix()} xds gap-report setup\` to configure.`,
         );
@@ -197,6 +210,10 @@ export function registerGapReport(program) {
           c => c.value === options.category,
         );
         if (!validCategory) {
+          if (json)
+            return jsonError(
+              `Invalid category "${options.category}". Valid: ${GAP_CATEGORIES.map(c => c.value).join(', ')}`,
+            );
           console.error(
             `Error: Invalid category "${options.category}".\n` +
               `Valid categories: ${GAP_CATEGORIES.map(c => c.value).join(', ')}`,
@@ -211,12 +228,18 @@ export function registerGapReport(program) {
             intention: options.reason,
             source: 'cli',
           });
+          if (json)
+            return jsonOut('gap-report.file', {
+              filed: !!url,
+              url: url || null,
+            });
           if (url) {
             console.log(`\n✓ Gap report filed: ${url}\n`);
           } else {
             console.log('\nGap reporting is disabled via configuration.\n');
           }
         } catch (err) {
+          if (json) return jsonError(err.message);
           console.error(`Error filing gap report: ${err.message}`);
           process.exit(1);
         }

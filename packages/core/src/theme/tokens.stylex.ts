@@ -6,6 +6,9 @@
  * - *Vars: CSS custom properties that themes can override via createTheme
  *
  * SYNC: When modified, update /packages/agent-tools/docs/tokens.md
+ *
+ * Domain tokens (syntax highlighting, data visualization) live separately in
+ * /packages/core/src/theme/domainTokens/ — they're tree-shaken from core components.
  */
 
 import * as stylex from '@stylexjs/stylex';

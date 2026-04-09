@@ -450,4 +450,65 @@ describe('XDSDateInput', () => {
   // Note: Tests involving popover rendering (show/hide with calendar)
   // are limited because jsdom doesn't support the Popover API.
   // Full popover interaction is tested in the browser via Storybook.
+
+  describe('hasClear', () => {
+    it('shows clear button when hasClear is true and value exists', () => {
+      render(
+        <XDSDateInput
+          label="Date"
+          value="2026-01-15"
+          onChange={() => {}}
+          hasClear
+        />,
+      );
+      expect(
+        screen.getByRole('button', {name: 'Clear Date'}),
+      ).toBeInTheDocument();
+    });
+
+    it('does not show clear button when value is undefined', () => {
+      render(<XDSDateInput label="Date" onChange={() => {}} hasClear />);
+      expect(
+        screen.queryByRole('button', {name: 'Clear Date'}),
+      ).not.toBeInTheDocument();
+    });
+
+    it('does not show clear button when hasClear is false', () => {
+      render(
+        <XDSDateInput label="Date" value="2026-01-15" onChange={() => {}} />,
+      );
+      expect(
+        screen.queryByRole('button', {name: 'Clear Date'}),
+      ).not.toBeInTheDocument();
+    });
+
+    it('does not show clear button when disabled', () => {
+      render(
+        <XDSDateInput
+          label="Date"
+          value="2026-01-15"
+          onChange={() => {}}
+          hasClear
+          isDisabled
+        />,
+      );
+      expect(
+        screen.queryByRole('button', {name: 'Clear Date'}),
+      ).not.toBeInTheDocument();
+    });
+
+    it('calls onChange with undefined when clear is clicked', () => {
+      const onChange = vi.fn();
+      render(
+        <XDSDateInput
+          label="Date"
+          value="2026-01-15"
+          onChange={onChange}
+          hasClear
+        />,
+      );
+      fireEvent.click(screen.getByRole('button', {name: 'Clear Date'}));
+      expect(onChange).toHaveBeenCalledWith(undefined);
+    });
+  });
 });

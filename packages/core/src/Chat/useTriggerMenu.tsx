@@ -1,0 +1,615 @@
+'use client';
+
+/**
+ * @file useTriggerMenu.tsx
+ * @input Uses React, useXDSPopover, XDSSearchSource
+ * @output Exports useTriggerMenu hook for trigger-based menus in contentEditable
+ * @position Internal hook; consumed by XDSChatComposerInput
+ *
+ * Detects trigger characters (@ / etc.) typed inside a contentEditable,
+ * opens a popover at the cursor position with filtered items, handles
+ * keyboard navigation, and inserts tokens or text on selection.
+ *
+ * Reuses XDSSearchSource from Typeahead for async/sync search with
+ * cancel() support and debounce.
+ *
+ * SYNC: When modified, update:
+ * - /packages/core/src/Chat/XDSChatComposerInput.tsx
+ * - /packages/core/src/Chat/index.ts
+ */
+
+import {
+  useState,
+  useCallback,
+  useRef,
+  useEffect,
+  useId,
+  type ReactNode,
+} from 'react';
+import * as stylex from '@stylexjs/stylex';
+import {useXDSPopover} from '../Popover/useXDSPopover';
+import {
+  colorVars,
+  spacingVars,
+  radiusVars,
+  typeScaleVars,
+  typographyVars,
+} from '../theme/tokens.stylex';
+import {xdsClassName, mergeProps, groupItems} from '../utils';
+import type {XDSSearchableItem, XDSSearchSource} from '../Typeahead/types';
+import type {
+  XDSChatComposerTrigger,
+  XDSChatComposerToken,
+} from './XDSChatComposerInput';
+
+// =============================================================================
+// Types
+// =============================================================================
+
+export interface TriggerMenuState {
+  isActive: boolean;
+  activeTrigger: XDSChatComposerTrigger | null;
+  query: string;
+  items: XDSSearchableItem[];
+  highlightedIndex: number;
+  isLoading: boolean;
+}
+
+export interface UseTriggerMenuOptions {
+  triggers?: XDSChatComposerTrigger[];
+  editableRef: React.RefObject<HTMLDivElement | null>;
+  onInsertToken: (token: XDSChatComposerToken) => void;
+  onInsertText: (text: string) => void;
+  onEmitChange: () => void;
+  /**
+   * Debounce delay in ms before triggering search after typing.
+   * @default 150
+   */
+  debounceMs?: number;
+}
+
+export interface UseTriggerMenuReturn {
+  state: TriggerMenuState;
+  /** Call on every input event to check for trigger activation */
+  handleInput: () => void;
+  /** Call on keydown \u2014 returns true if the event was consumed */
+  handleKeyDown: (e: React.KeyboardEvent) => boolean;
+  /** Render the trigger menu popover */
+  renderMenu: () => ReactNode;
+  /** Reset/close the trigger menu */
+  reset: () => void;
+  /** ARIA props to spread onto the textbox element */
+  ariaProps: {
+    'aria-expanded'?: boolean;
+    'aria-controls'?: string;
+    'aria-activedescendant'?: string;
+    'aria-haspopup'?: 'listbox';
+  };
+}
+
+// =============================================================================
+// Styles
+// =============================================================================
+
+const styles = stylex.create({
+  dropdown: {
+    boxSizing: 'border-box',
+    maxHeight: '240px',
+    overflowY: 'auto',
+    padding: spacingVars['--spacing-1'],
+    minWidth: '180px',
+  },
+  popoverSurface: {
+    minWidth: '180px',
+  },
+  popoverGap: {
+    marginBlockStart: spacingVars['--spacing-1'],
+    marginBlockEnd: spacingVars['--spacing-1'],
+  },
+  item: {
+    boxSizing: 'border-box',
+    display: 'flex',
+    alignItems: 'center',
+    width: '100%',
+    padding: spacingVars['--spacing-2'],
+    borderRadius: radiusVars['--radius-element'],
+    cursor: 'pointer',
+    outline: 'none',
+    backgroundColor: 'transparent',
+    border: 'none',
+    textAlign: 'left' as const,
+    fontFamily: typographyVars['--font-family-body'],
+    fontSize: typeScaleVars['--text-body-size'],
+    lineHeight: typeScaleVars['--text-body-leading'],
+    color: colorVars['--color-text-primary'],
+  },
+  itemHighlighted: {
+    backgroundColor: colorVars['--color-overlay-hover'],
+  },
+  itemLabel: {
+    flex: 1,
+    minWidth: 0,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+  emptyState: {
+    padding: spacingVars['--spacing-3'],
+    textAlign: 'center' as const,
+    fontSize: typeScaleVars['--text-supporting-size'],
+    color: colorVars['--color-text-secondary'],
+  },
+  loadingState: {
+    padding: spacingVars['--spacing-3'],
+    textAlign: 'center' as const,
+    fontSize: typeScaleVars['--text-supporting-size'],
+    color: colorVars['--color-text-secondary'],
+  },
+  groupHeading: {
+    paddingInline: spacingVars['--spacing-2'],
+    paddingBlockStart: spacingVars['--spacing-2'],
+    paddingBlockEnd: spacingVars['--spacing-1'],
+    fontSize: typeScaleVars['--text-supporting-size'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
+    color: colorVars['--color-text-secondary'],
+    userSelect: 'none',
+  },
+});
+
+// =============================================================================
+// Helpers
+// =============================================================================
+
+function getTextBeforeCursor(editable: HTMLDivElement): string | null {
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) return null;
+
+  const range = selection.getRangeAt(0);
+  if (!range.collapsed) return null;
+  if (!editable.contains(range.startContainer)) return null;
+
+  const node = range.startContainer;
+  if (node.nodeType === Node.TEXT_NODE) {
+    return (node.textContent ?? '').slice(0, range.startOffset);
+  }
+
+  return null;
+}
+
+function findActiveTrigger(
+  textBeforeCursor: string,
+  triggers: XDSChatComposerTrigger[],
+): {
+  trigger: XDSChatComposerTrigger;
+  query: string;
+  triggerStart: number;
+} | null {
+  for (let i = textBeforeCursor.length - 1; i >= 0; i--) {
+    const char = textBeforeCursor[i];
+
+    if (char === ' ' || char === '\n') {
+      return null;
+    }
+
+    for (const trigger of triggers) {
+      if (char === trigger.character) {
+        const prevChar = i > 0 ? textBeforeCursor[i - 1] : null;
+        if (prevChar === null || prevChar === ' ' || prevChar === '\n') {
+          const query = textBeforeCursor.slice(i + 1);
+          return {trigger, query, triggerStart: i};
+        }
+      }
+    }
+  }
+
+  return null;
+}
+
+function deleteTriggerText(
+  editable: HTMLDivElement,
+  triggerStart: number,
+): void {
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) return;
+
+  const range = selection.getRangeAt(0);
+  const node = range.startContainer;
+  if (node.nodeType !== Node.TEXT_NODE) return;
+
+  const text = node.textContent ?? '';
+  const cursorOffset = range.startOffset;
+
+  const before = text.slice(0, triggerStart);
+  const after = text.slice(cursorOffset);
+  node.textContent = before + after;
+
+  const newRange = document.createRange();
+  newRange.setStart(node, triggerStart);
+  newRange.collapse(true);
+  selection.removeAllRanges();
+  selection.addRange(newRange);
+}
+
+// =============================================================================
+// Hook
+// =============================================================================
+
+export function useTriggerMenu(
+  options: UseTriggerMenuOptions,
+): UseTriggerMenuReturn {
+  const {
+    triggers,
+    editableRef,
+    onInsertToken,
+    onInsertText,
+    onEmitChange,
+    debounceMs = 150,
+  } = options;
+
+  const listboxId = useId();
+  const [state, setState] = useState<TriggerMenuState>({
+    isActive: false,
+    activeTrigger: null,
+    query: '',
+    items: [],
+    highlightedIndex: 0,
+    isLoading: false,
+  });
+
+  const triggerStartRef = useRef<number>(-1);
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const popover = useXDSPopover({
+    onHide: useCallback(() => {
+      setState(prev => ({
+        ...prev,
+        isActive: false,
+        activeTrigger: null,
+        query: '',
+        items: [],
+        highlightedIndex: 0,
+        isLoading: false,
+      }));
+    }, []),
+    hasLightDismiss: true,
+    hasCloseButton: false,
+    hasAutoFocus: false,
+  });
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const reset = useCallback(() => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+      searchTimeoutRef.current = null;
+    }
+    // Cancel any in-flight search on the active trigger's searchSource
+    const trigger = state.activeTrigger;
+    if (trigger?.searchSource) {
+      trigger.searchSource.cancel?.();
+    }
+    popover.hide();
+    triggerStartRef.current = -1;
+  }, [popover, state.activeTrigger]);
+
+  const setAnchor = useCallback(() => {
+    const editable = editableRef.current;
+    if (!editable) return;
+    popover.triggerRef(editable);
+  }, [editableRef, popover]);
+
+  const searchItems = useCallback(
+    (trigger: XDSChatComposerTrigger, query: string) => {
+      // Clear any pending debounce
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+        searchTimeoutRef.current = null;
+      }
+
+      const doSearch = () => {
+        if (trigger.searchSource) {
+          // Use XDSSearchSource \u2014 cancel previous, then search
+          trigger.searchSource.cancel?.();
+          setState(prev => ({...prev, isLoading: true}));
+          const result = trigger.searchSource.search(query);
+          Promise.resolve(result).then(
+            items => {
+              setState(prev => ({
+                ...prev,
+                items,
+                highlightedIndex: items.length > 0 ? 0 : -1,
+                isLoading: false,
+              }));
+            },
+            () => {
+              setState(prev => ({
+                ...prev,
+                items: [],
+                highlightedIndex: -1,
+                isLoading: false,
+              }));
+            },
+          );
+        }
+      };
+
+      // Debounce async sources, immediate for sync
+      if (trigger.searchSource) {
+        // Check if search is likely sync (returns array, not promise)
+        const testResult = trigger.searchSource.search('');
+        const isAsync = testResult instanceof Promise;
+        if (isAsync && debounceMs > 0) {
+          setState(prev => ({...prev, isLoading: true}));
+          searchTimeoutRef.current = setTimeout(doSearch, debounceMs);
+        } else {
+          doSearch();
+        }
+      }
+    },
+    [debounceMs],
+  );
+
+  const selectItem = useCallback(
+    (item: XDSSearchableItem) => {
+      const trigger = state.activeTrigger;
+      if (!trigger) return;
+
+      const editable = editableRef.current;
+      if (!editable) return;
+
+      deleteTriggerText(editable, triggerStartRef.current);
+
+      const result = trigger.onSelect(item);
+      if (typeof result === 'string') {
+        onInsertText(result);
+      } else {
+        onInsertToken(result);
+      }
+
+      onEmitChange();
+      reset();
+    },
+    [
+      state.activeTrigger,
+      editableRef,
+      onInsertText,
+      onInsertToken,
+      onEmitChange,
+      reset,
+    ],
+  );
+
+  const handleInput = useCallback(() => {
+    if (!triggers || triggers.length === 0) return;
+
+    const editable = editableRef.current;
+    if (!editable) return;
+
+    const textBefore = getTextBeforeCursor(editable);
+    if (textBefore === null) {
+      if (state.isActive) reset();
+      return;
+    }
+
+    const found = findActiveTrigger(textBefore, triggers);
+    if (!found) {
+      if (state.isActive) reset();
+      return;
+    }
+
+    const {trigger, query, triggerStart} = found;
+
+    if (!state.isActive || state.activeTrigger !== trigger) {
+      triggerStartRef.current = triggerStart;
+      setState(prev => ({
+        ...prev,
+        isActive: true,
+        activeTrigger: trigger,
+        query,
+        highlightedIndex: 0,
+      }));
+      setAnchor();
+      searchItems(trigger, query);
+      popover.show();
+    } else if (state.query !== query) {
+      setState(prev => ({...prev, query}));
+      searchItems(trigger, query);
+    }
+  }, [
+    triggers,
+    editableRef,
+    state.isActive,
+    state.activeTrigger,
+    state.query,
+    reset,
+    setAnchor,
+    searchItems,
+    popover,
+  ]);
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent): boolean => {
+      if (!state.isActive || !popover.isOpen) return false;
+
+      switch (e.key) {
+        case 'ArrowDown': {
+          e.preventDefault();
+          setState(prev => ({
+            ...prev,
+            highlightedIndex:
+              prev.highlightedIndex < prev.items.length - 1
+                ? prev.highlightedIndex + 1
+                : 0,
+          }));
+          return true;
+        }
+        case 'ArrowUp': {
+          e.preventDefault();
+          setState(prev => ({
+            ...prev,
+            highlightedIndex:
+              prev.highlightedIndex > 0
+                ? prev.highlightedIndex - 1
+                : prev.items.length - 1,
+          }));
+          return true;
+        }
+        case 'Enter':
+        case 'Tab': {
+          if (
+            state.highlightedIndex >= 0 &&
+            state.highlightedIndex < state.items.length
+          ) {
+            e.preventDefault();
+            selectItem(state.items[state.highlightedIndex]);
+            return true;
+          }
+          return false;
+        }
+        case 'Escape': {
+          e.preventDefault();
+          reset();
+          return true;
+        }
+        default:
+          return false;
+      }
+    },
+    [
+      state.isActive,
+      state.highlightedIndex,
+      state.items,
+      popover.isOpen,
+      selectItem,
+      reset,
+    ],
+  );
+
+  const getItemId = useCallback(
+    (index: number) => `${listboxId}-option-${index}`,
+    [listboxId],
+  );
+
+  // Scroll highlighted item into view on keyboard navigation
+  useEffect(() => {
+    if (!popover.isOpen || state.highlightedIndex < 0) return;
+    const el = document.getElementById(getItemId(state.highlightedIndex));
+    el?.scrollIntoView({block: 'nearest'});
+  }, [state.highlightedIndex, popover.isOpen, getItemId]);
+
+  // ARIA props for the textbox element
+  const ariaProps =
+    state.isActive && popover.isOpen
+      ? {
+          'aria-expanded': true as const,
+          'aria-controls': listboxId,
+          'aria-activedescendant':
+            state.highlightedIndex >= 0
+              ? getItemId(state.highlightedIndex)
+              : undefined,
+          'aria-haspopup': 'listbox' as const,
+        }
+      : {
+          'aria-expanded': false as const,
+          'aria-haspopup': 'listbox' as const,
+        };
+
+  const renderMenu = useCallback((): ReactNode => {
+    const trigger = state.activeTrigger;
+    const emptyText = trigger?.emptySearchResultsText ?? 'No results';
+    const loadingText = trigger?.loadingText ?? 'Searching\u2026';
+
+    return popover.render(
+      <div
+        id={listboxId}
+        role="listbox"
+        aria-label={trigger?.menuLabel ?? 'Suggestions'}
+        {...mergeProps(
+          xdsClassName('trigger-menu'),
+          stylex.props(styles.dropdown),
+        )}>
+        {state.isLoading ? (
+          <div role="status" {...stylex.props(styles.loadingState)}>
+            {loadingText}
+          </div>
+        ) : state.items.length === 0 && state.isActive ? (
+          <div {...stylex.props(styles.emptyState)}>{emptyText}</div>
+        ) : (
+          (() => {
+            const groups = groupItems(state.items);
+            let flatIndex = 0;
+            return groups.map(group => {
+              const groupItems = group.items.map(item => {
+                const idx = flatIndex++;
+                return (
+                  <div
+                    key={item.id}
+                    id={getItemId(idx)}
+                    role="option"
+                    aria-selected={idx === state.highlightedIndex}
+                    tabIndex={-1}
+                    onMouseDown={e => {
+                    e.preventDefault(); // Keep focus in the editable
+                    selectItem(item);
+                  }}
+                    onMouseEnter={() =>
+                      setState(prev => ({...prev, highlightedIndex: idx}))
+                    }
+                    {...stylex.props(
+                      styles.item,
+                      idx === state.highlightedIndex && styles.itemHighlighted,
+                    )}>
+                    {trigger?.renderItem ? (
+                      trigger.renderItem(item)
+                    ) : (
+                      <span {...stylex.props(styles.itemLabel)}>
+                        {item.label}
+                      </span>
+                    )}
+                  </div>
+                );
+              });
+              if (group.heading) {
+                return (
+                  <div
+                    key={`group-${group.heading}`}
+                    role="group"
+                    aria-label={group.heading}>
+                    <div
+                      aria-hidden="true"
+                      {...stylex.props(styles.groupHeading)}>
+                      {group.heading}
+                    </div>
+                    {groupItems}
+                  </div>
+                );
+              }
+              return groupItems;
+            });
+          })()
+        )}
+      </div>,
+      {
+        placement: 'above',
+        alignment: 'start',
+        xstyle: [styles.popoverSurface, styles.popoverGap],
+      },
+    );
+  }, [popover, listboxId, state, selectItem, getItemId]);
+
+  return {
+    state,
+    handleInput,
+    handleKeyDown,
+    renderMenu,
+    reset,
+    ariaProps,
+  };
+}

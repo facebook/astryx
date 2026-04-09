@@ -52,8 +52,8 @@ const styles = stylex.create({
     paddingInline: spacingVars['--spacing-3'],
     borderWidth: 0,
     borderStyle: 'none',
-    '--button-radius': radiusVars['--radius-element'],
-    borderRadius: 'var(--button-radius)',
+
+    borderRadius: `var(--button-radius, ${radiusVars['--radius-element']})`,
     fontFamily: 'inherit',
     fontSize: typeScaleVars['--text-label-size'],
     lineHeight: typeScaleVars['--text-label-leading'],
@@ -92,7 +92,8 @@ const styles = stylex.create({
   iconOnly: {
     '--button-icon-only-aspect': '1 / 1',
     aspectRatio: 'var(--button-icon-only-aspect)',
-    paddingInline: spacingVars['--spacing-2'],
+    paddingInline: 0,
+    paddingBlock: 0,
   },
   endContentWrapper: {
     display: 'inline-flex',
@@ -144,6 +145,7 @@ const sizeStyles = stylex.create({
 /**
  * Icon size per button size.
  * Matches XDSIcon sizing: sm/md=16px, lg=20px.
+ * fontSize is set so emoji and text-based icons scale correctly.
  */
 const iconSizeStyles = stylex.create({
   sm: {width: 16, height: 16, fontSize: 16},
@@ -362,9 +364,6 @@ export interface XDSButtonProps extends XDSBaseProps<HTMLButtonElement> {
   rel?: string;
 }
 
-/**
- * Loading state styles
- */
 const loadingStyles = stylex.create({
   loading: {
     position: 'relative',
@@ -540,8 +539,7 @@ export function XDSButton({
         {...stylex.props(styles.contentWrapper)}
         aria-hidden={isLoadingState || undefined}>
         {icon && (
-          <span
-            {...stylex.props(styles.iconWrapper, iconSizeStyles[size])}>
+          <span {...stylex.props(styles.iconWrapper, iconSizeStyles[size])}>
             {icon}
           </span>
         )}

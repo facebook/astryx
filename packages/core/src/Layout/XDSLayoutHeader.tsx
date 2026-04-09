@@ -20,23 +20,41 @@ import {XDSLayoutDividerContext} from './XDSLayoutDividerContext';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 import type {SpacingStep} from '../utils/types';
-import {paddingStyles, containerPaddingInlineVarStyles} from './padding.stylex';
+import {
+  paddingStyles,
+  containerPaddingInlineVarStyles,
+  containerPaddingBlockStartVarStyles,
+  containerPaddingBlockEndVarStyles,
+} from './padding.stylex';
 
 const styles = stylex.create({
+  // Outer shell: owns border/divider and sizing. No padding — that lives on inner.
   header: {
-    boxSizing: 'border-box',
     flexShrink: 0,
+  },
+  // Inner wrapper: owns padding and optional content-width constraint.
+  // When --layout-content-width is not set, maxWidth defaults to 'none' (inert).
+  inner: {
+    boxSizing: 'border-box',
+    maxWidth: 'var(--layout-content-width, none)',
+    marginInline: 'auto',
     // Default: outer padding on edges that touch container, inner on interior edges
     paddingInlineStart: `var(--layout-padding-outer-x, ${spacingVars['--spacing-4']})`,
     paddingInlineEnd: `var(--layout-padding-outer-x, ${spacingVars['--spacing-4']})`,
     paddingBlockStart: `var(--layout-padding-outer-y, ${spacingVars['--spacing-4']})`,
     paddingBlockEnd: `var(--layout-padding-inner-y, ${spacingVars['--spacing-4']})`,
+    '--container-padding-inline': `var(--layout-padding-outer-x, ${spacingVars['--spacing-4']})`,
+    '--container-padding-block-start': `var(--layout-padding-outer-y, ${spacingVars['--spacing-4']})`,
+    '--container-padding-block-end': `var(--layout-padding-inner-y, ${spacingVars['--spacing-4']})`,
   },
   fullBleed: {
     paddingInlineStart: 0,
     paddingInlineEnd: 0,
     paddingBlockStart: 0,
     paddingBlockEnd: 0,
+    '--container-padding-inline': '0px',
+    '--container-padding-block-start': '0px',
+    '--container-padding-block-end': '0px',
   },
   divider: {
     borderBlockEndWidth: 1,
@@ -139,9 +157,7 @@ export function XDSLayoutHeader({
         stylex.props(
           styles.header,
           dynamicStyles.sizing(height ?? null),
-          isZeroPadding && styles.fullBleed,
-          padding != null && paddingStyles[padding],
-          padding != null && containerPaddingInlineVarStyles[padding],
+
           resolvedHasDivider && styles.divider,
           xstyle,
         ),
@@ -149,7 +165,17 @@ export function XDSLayoutHeader({
         style,
       )}
       {...props}>
-      {children}
+      <div
+        {...stylex.props(
+          styles.inner,
+          isZeroPadding && styles.fullBleed,
+          padding != null && paddingStyles[padding],
+          padding != null && containerPaddingInlineVarStyles[padding],
+          padding != null && containerPaddingBlockStartVarStyles[padding],
+          padding != null && containerPaddingBlockEndVarStyles[padding],
+        )}>
+        {children}
+      </div>
     </div>
   );
 }

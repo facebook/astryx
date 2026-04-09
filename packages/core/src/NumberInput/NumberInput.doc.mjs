@@ -189,6 +189,13 @@ export const docs = {
       description: 'Only allow integer values (no floating point).',
     },
     {
+      name: 'hasClear',
+      type: 'boolean',
+      description:
+        'Shows a clear (\u00d7) button when the input has a value. When true, the onChange callback also accepts null to signal the user cleared the input.',
+      default: 'false',
+    },
+    {
       name: 'htmlName',
       type: 'string',
       description: 'HTML name attribute for form submissions.',
@@ -427,6 +434,12 @@ export const docsZh = {
       description: '仅允许整数值（不允许浮点数）。',
     },
     {
+      name: 'hasClear',
+      type: 'boolean',
+      description: '输入有值时显示清除 (×) 按鈕。启用后， onChange 回调还接受 null 表示用户已清空输入。',
+      default: 'false',
+    },
+    {
       name: 'htmlName',
       type: 'string',
       description: '用于表单提交的 HTML name 属性。',
@@ -528,6 +541,7 @@ export const docsDense = {
     step: 'Step increment.',
     units: 'Units suffix (e.g. "%" or "GB").',
     isIntegerOnly: 'Only allow integer values.',
+    hasClear: 'Shows clear button when input has value. onChange also accepts null on clear.',
     htmlName: 'HTML name for form submissions.',
     autoComplete: 'HTML autocomplete attribute.',
     hasAutoFocus: 'Focus input on mount.',

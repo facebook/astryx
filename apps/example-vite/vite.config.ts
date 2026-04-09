@@ -23,10 +23,9 @@ const lightningcssTargets = {
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
-    // Declare CSS layer order so theme overrides beat component base styles.
-    // Without this, layers are ordered by first appearance — and the StyleX
-    // priority layers (component styles) would come after xds.theme,
-    // preventing theme overrides from taking effect.
+    // Declare CSS layer order. xds-theme is last (highest priority among
+    // declared layers) so theme component overrides beat StyleX styles.
+    // Prose defaults inject into @layer reset (lowest priority).
     {
       name: 'xds-css-layer-order',
       transformIndexHtml() {
@@ -34,7 +33,7 @@ export default defineConfig({
           {
             tag: 'style',
             children:
-              '@layer reset, priority1, priority2, priority3, priority4, priority5, priority6, priority7, priority8, priority9, xds.theme;',
+              '@layer reset, priority1, priority2, priority3, priority4, priority5, priority6, priority7, priority8, priority9, xds-theme;',
             injectTo: 'head-prepend',
           },
         ];

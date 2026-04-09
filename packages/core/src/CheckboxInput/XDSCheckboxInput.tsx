@@ -130,15 +130,14 @@ const styles = stylex.create({
         '@media (hover: hover)': colorVars['--color-border'],
       },
     },
-    backgroundColor: {
-      default: 'unset',
-      [stylex.when.ancestor(':hover')]: {
-        '@media (hover: hover)': 'unset',
-      },
-    },
   },
   checkboxDisabledUnchecked: {
-    backgroundColor: colorVars['--color-background-muted'],
+    backgroundColor: {
+      default: colorVars['--color-background-muted'],
+      [stylex.when.ancestor(':hover')]: {
+        '@media (hover: hover)': colorVars['--color-background-muted'],
+      },
+    },
   },
   checkmark: {
     display: 'none',
@@ -257,6 +256,13 @@ export interface XDSCheckboxInputProps extends Omit<XDSBaseProps, 'onChange'> {
    */
   isDisabled?: boolean;
   /**
+   * Whether the checkbox is read-only.
+   * Displays the current state at full opacity but prevents interaction.
+   * Unlike `isDisabled`, read-only checkboxes are not visually dimmed.
+   * @default false
+   */
+  isReadOnly?: boolean;
+  /**
    * Whether the field is optional. Mutually exclusive with isRequired.
    * @default false
    */
@@ -319,6 +325,7 @@ export function XDSCheckboxInput({
   isLoading = false,
   value,
   isDisabled = false,
+  isReadOnly = false,
   isOptional = false,
   isRequired = false,
   size = 'md',
@@ -382,9 +389,10 @@ export function XDSCheckboxInput({
             type="checkbox"
             checked={isChecked}
             disabled={isDisabled}
+            readOnly={isReadOnly}
             required={isRequired}
             onChange={e => {
-              if (isBusy) return;
+              if (isBusy || isReadOnly) return;
               const checked = e.target.checked;
               onChange?.(checked, e);
               if (onChangeAction && !e.defaultPrevented) {
@@ -397,6 +405,7 @@ export function XDSCheckboxInput({
             onFocus={onFocus}
             onBlur={onBlur}
             aria-checked={isIndeterminate ? 'mixed' : undefined}
+            aria-readonly={isReadOnly || undefined}
             aria-describedby={ariaDescribedBy}
             aria-invalid={status?.type === 'error' ? true : undefined}
             aria-busy={isBusy || undefined}

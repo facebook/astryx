@@ -103,6 +103,8 @@ export interface EntityListOperatorValue {
   readonly isArbitraryStringAllowed?: boolean;
   /** Tokenization config for paste behavior. */
   readonly tokenization?: OperatorTokenizationConfig;
+  /** Custom renderer for items in the search dropdown. */
+  readonly renderItem?: (item: XDSSearchableItem) => ReactNode;
 }
 
 export interface CustomOperatorValue {

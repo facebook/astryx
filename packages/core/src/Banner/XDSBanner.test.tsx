@@ -7,12 +7,17 @@
  * SYNC: When modified, update this header
  */
 
-import {describe, it, expect, vi} from 'vitest';
+import {describe, it, expect, vi, afterEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {XDSBanner} from './XDSBanner';
+import {registerIcons, resetIcons} from '../Icon';
 
 describe('XDSBanner', () => {
+  afterEach(() => {
+    resetIcons();
+  });
+
   it('renders with title and status', () => {
     render(<XDSBanner status="info" title="Test Banner" />);
     expect(screen.getByText('Test Banner')).toBeInTheDocument();
@@ -277,5 +282,37 @@ describe('XDSBanner', () => {
     const ref = {current: null as HTMLDivElement | null};
     render(<XDSBanner ref={ref} status="info" title="Ref Test" />);
     expect(ref.current).toBeInstanceOf(HTMLDivElement);
+  });
+
+  // =========================================================================
+  // Icon registry integration
+  // =========================================================================
+
+  it('uses icons from the global registry when registered', () => {
+    registerIcons({
+      info: (
+        <svg data-testid="custom-registry-icon">
+          <circle />
+        </svg>
+      ),
+    });
+    render(<XDSBanner status="info" title="Registry Test" />);
+    expect(screen.getByTestId('custom-registry-icon')).toBeInTheDocument();
+  });
+
+  it('uses chevronDown from the registry for expand/collapse', () => {
+    registerIcons({
+      chevronDown: (
+        <svg data-testid="custom-chevron">
+          <path d="M0 0" />
+        </svg>
+      ),
+    });
+    render(
+      <XDSBanner status="info" title="Chevron Test">
+        <div>Content</div>
+      </XDSBanner>,
+    );
+    expect(screen.getByTestId('custom-chevron')).toBeInTheDocument();
   });
 });
