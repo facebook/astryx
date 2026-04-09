@@ -695,7 +695,7 @@ function TopPagesCard() {
     },
     {
       key: 'newUsers',
-      header: 'New Users',
+      header: <div style={{textAlign: 'right', width: '100%'}}>New Users</div>,
       width: proportional(1),
       renderCell: (item: PageRow) => (
         <div style={{textAlign: 'right'}}>{item.newUsers}</div>
@@ -703,7 +703,9 @@ function TopPagesCard() {
     },
     {
       key: 'avgTime',
-      header: 'Avg. Time',
+      header: (
+        <div style={{textAlign: 'right', width: '100%'}}>Avg. Time</div>
+      ),
       width: proportional(1),
       renderCell: (item: PageRow) => (
         <div style={{textAlign: 'right'}}>{item.avgTime}</div>
@@ -762,7 +764,7 @@ function TopEventsCard() {
     },
     {
       key: 'users',
-      header: 'Users',
+      header: <div style={{textAlign: 'right', width: '100%'}}>Users</div>,
       width: proportional(1),
       renderCell: (item: EventRow) => (
         <div style={{textAlign: 'right'}}>{item.users.toLocaleString()}</div>
