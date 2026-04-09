@@ -31,187 +31,24 @@ import {XDSLink} from '@xds/core/Link';
 
 // ============= ICONS =============
 
-// SideNav icons
-const DashboardIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <rect x="3" y="3" width="7" height="7" rx="1" />
-    <rect x="14" y="3" width="7" height="7" rx="1" />
-    <rect x="3" y="14" width="7" height="7" rx="1" />
-    <rect x="14" y="14" width="7" height="7" rx="1" />
-  </svg>
-);
-const LifecycleIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <circle cx="12" cy="12" r="9" />
-    <path d="M12 7v5l3 3" />
-  </svg>
-);
-const AnalyticsIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <path d="M18 20V10M12 20V4M6 20v-6" />
-  </svg>
-);
-const ProjectsIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <path d="M2 17l10 5 10-5M2 12l10 5 10-5M12 2L2 7l10 5 10-5-10-5z" />
-  </svg>
-);
-const TeamIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-    <circle cx="9" cy="7" r="4" />
-    <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
-  </svg>
-);
-const DataIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <ellipse cx="12" cy="5" rx="9" ry="3" />
-    <path d="M21 12c0 1.66-4.03 3-9 3s-9-1.34-9-3" />
-    <path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5" />
-  </svg>
-);
-const ReportsIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-    <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" />
-  </svg>
-);
-const WordIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-  </svg>
-);
-const SettingsIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <circle cx="12" cy="12" r="3" />
-    <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
-  </svg>
-);
-const HelpIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <circle cx="12" cy="12" r="10" />
-    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01" />
-  </svg>
-);
-const SearchIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <circle cx="11" cy="11" r="8" />
-    <path d="M21 21l-4.35-4.35" />
-  </svg>
-);
-const MailIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <rect x="2" y="4" width="20" height="16" rx="2" />
-    <path d="M22 7l-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-  </svg>
-);
-const MoreIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <circle cx="12" cy="12" r="1" />
-    <circle cx="19" cy="12" r="1" />
-    <circle cx="5" cy="12" r="1" />
-  </svg>
-);
-
-// Content icons
-const ArrowUpIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <path d="M12 19V5M5 12l7-7 7 7" />
-  </svg>
-);
-const ArrowDownIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <path d="M12 5v14M19 12l-7 7-7-7" />
-  </svg>
-);
-const ReloadIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <path d="M21 2v6h-6" />
-    <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
-    <path d="M3 22v-6h6" />
-    <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
-  </svg>
-);
+import {
+  Squares2X2Icon,
+  ClockIcon,
+  ChartBarIcon,
+  Square3Stack3DIcon,
+  UserGroupIcon,
+  CircleStackIcon,
+  DocumentTextIcon,
+  PencilSquareIcon,
+  Cog6ToothIcon,
+  QuestionMarkCircleIcon,
+  MagnifyingGlassIcon,
+  EnvelopeIcon,
+  EllipsisHorizontalIcon,
+  ArrowPathIcon,
+  ArrowTrendingUpIcon,
+  ArrowTrendingDownIcon,
+} from '@heroicons/react/24/outline';
 
 // ============= DATA =============
 
@@ -615,7 +452,7 @@ function MetricCard({
           <XDSHeading level={2}>{value}</XDSHeading>
           <XDSHStack gap={1} vAlign="center">
             {positive ? (
-              <ArrowUpIcon
+              <ArrowTrendingUpIcon
                 style={{
                   width: 12,
                   height: 12,
@@ -623,7 +460,7 @@ function MetricCard({
                 }}
               />
             ) : (
-              <ArrowDownIcon
+              <ArrowTrendingDownIcon
                 style={{
                   width: 12,
                   height: 12,
@@ -654,9 +491,7 @@ function StackedBarCard({
 }) {
   const total = data.reduce((sum, d) => sum + d.value, 0);
   // Recharts needs a single data row with each segment as a separate key
-  const chartData = [
-    Object.fromEntries(data.map(d => [d.label, d.value])),
-  ];
+  const chartData = [Object.fromEntries(data.map(d => [d.label, d.value]))];
 
   return (
     <XDSCard>
@@ -861,7 +696,7 @@ function DashboardSideNav() {
         <XDSVStack gap={3} style={{padding: '12px 16px'}}>
           <XDSHStack gap={2} vAlign="center">
             <XDSNavIcon
-              icon={<DashboardIcon style={{width: 16, height: 16}} />}
+              icon={<Squares2X2Icon style={{width: 16, height: 16}} />}
             />
             <XDSText type="body" weight="bold">
               Acme Inc.
@@ -878,7 +713,7 @@ function DashboardSideNav() {
               label="Mail"
               variant="ghost"
               size="sm"
-              icon={<MailIcon style={{width: 16, height: 16}} />}
+              icon={<EnvelopeIcon style={{width: 16, height: 16}} />}
             />
           </XDSHStack>
         </XDSVStack>
@@ -887,19 +722,19 @@ function DashboardSideNav() {
         <XDSVStack gap={0} style={{padding: '8px 0'}}>
           <XDSSideNavItem
             label="Settings"
-            icon={SettingsIcon}
+            icon={Cog6ToothIcon}
             isSelected={active === 'settings'}
             onClick={() => setActive('settings')}
           />
           <XDSSideNavItem
             label="Get Help"
-            icon={HelpIcon}
+            icon={QuestionMarkCircleIcon}
             isSelected={active === 'help'}
             onClick={() => setActive('help')}
           />
           <XDSSideNavItem
             label="Search"
-            icon={SearchIcon}
+            icon={MagnifyingGlassIcon}
             isSelected={active === 'search'}
             onClick={() => setActive('search')}
           />
@@ -922,7 +757,9 @@ function DashboardSideNav() {
                 label="More"
                 variant="ghost"
                 size="sm"
-                icon={<MoreIcon style={{width: 16, height: 16}} />}
+                icon={
+                  <EllipsisHorizontalIcon style={{width: 16, height: 16}} />
+                }
               />
             </XDSHStack>
           </div>
@@ -931,31 +768,31 @@ function DashboardSideNav() {
       <XDSSideNavSection title="Platform">
         <XDSSideNavItem
           label="Dashboard"
-          icon={DashboardIcon}
+          icon={Squares2X2Icon}
           isSelected={active === 'dashboard'}
           onClick={() => setActive('dashboard')}
         />
         <XDSSideNavItem
           label="Lifecycle"
-          icon={LifecycleIcon}
+          icon={ClockIcon}
           isSelected={active === 'lifecycle'}
           onClick={() => setActive('lifecycle')}
         />
         <XDSSideNavItem
           label="Analytics"
-          icon={AnalyticsIcon}
+          icon={ChartBarIcon}
           isSelected={active === 'analytics'}
           onClick={() => setActive('analytics')}
         />
         <XDSSideNavItem
           label="Projects"
-          icon={ProjectsIcon}
+          icon={Square3Stack3DIcon}
           isSelected={active === 'projects'}
           onClick={() => setActive('projects')}
         />
         <XDSSideNavItem
           label="Team"
-          icon={TeamIcon}
+          icon={UserGroupIcon}
           isSelected={active === 'team'}
           onClick={() => setActive('team')}
         />
@@ -963,25 +800,25 @@ function DashboardSideNav() {
       <XDSSideNavSection title="Documents">
         <XDSSideNavItem
           label="Data Library"
-          icon={DataIcon}
+          icon={CircleStackIcon}
           isSelected={active === 'data'}
           onClick={() => setActive('data')}
         />
         <XDSSideNavItem
           label="Reports"
-          icon={ReportsIcon}
+          icon={DocumentTextIcon}
           isSelected={active === 'reports'}
           onClick={() => setActive('reports')}
         />
         <XDSSideNavItem
           label="Word Assistant"
-          icon={WordIcon}
+          icon={PencilSquareIcon}
           isSelected={active === 'word'}
           onClick={() => setActive('word')}
         />
         <XDSSideNavItem
           label="More"
-          icon={MoreIcon}
+          icon={EllipsisHorizontalIcon}
           isSelected={active === 'more'}
           onClick={() => setActive('more')}
         />
@@ -1018,7 +855,7 @@ export default function DashboardTemplate() {
               label="Reload"
               variant="secondary"
               size="md"
-              icon={<ReloadIcon style={{width: 16, height: 16}} />}>
+              icon={<ArrowPathIcon style={{width: 16, height: 16}} />}>
               Reload
             </XDSButton>
           </XDSHStack>

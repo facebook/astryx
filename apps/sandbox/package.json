@@ -11,6 +11,7 @@
     "postinstall": "xds agent-docs"
   },
   "dependencies": {
+    "@heroicons/react": "^2.2.0",
     "@stylexjs/stylex": "^0.17.4",
     "@xds/cli": "*",
     "@xds/core": "*",
