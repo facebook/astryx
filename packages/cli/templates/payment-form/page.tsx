@@ -13,7 +13,6 @@ import {XDSLink} from '@xds/core/Link';
 import pinkTeddyImg from './pink-teddy.png';
 import redHeartImg from './red-heart.png';
 import beagleImg from './beagle.png';
-import venmoLogoUrl from './venmo-logo.svg';
 import {XDSTextArea} from '@xds/core/TextArea';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSCard} from '@xds/core/Card';
@@ -230,7 +229,7 @@ export default function PaymentFormPage() {
                         <img src="https://pay.google.com/about/static_kcs/images/logos/google-pay-logo.svg" alt="Google Pay" style={{height: 22, width: 'auto', filter: 'brightness(0) invert(1)'}} />
                       </button>
                       <button onClick={() => {}} style={{display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#008CFF', border: 'none', borderRadius: 8, cursor: 'pointer', padding: '0 16px', height: 36}}>
-                        <img src={(venmoLogoUrl as unknown as {src: string}).src} alt="Venmo" style={{height: 18, width: 18, filter: 'brightness(0) invert(1)'}} />
+                        <span style={{color: 'white', fontFamily: 'Arial, sans-serif', fontSize: 16, fontWeight: 800, letterSpacing: '-0.5px'}}>venmo</span>
                       </button>
                     </div>
                   </XDSVStack>
