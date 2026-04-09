@@ -120,6 +120,12 @@ export const categories: SandboxCategory[] = [
         description:
           'CodePen-style playground with code panels and live XDS preview',
       },
+      {
+        name: 'CodeBlock Perf',
+        href: '/pages/codeblock-perf/',
+        description:
+          'Compare highlight modes and scroll performance'
+      },
     ],
   },
 ];
