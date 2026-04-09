@@ -174,11 +174,12 @@ function extractSkeleton(source) {
  * @param {string} [options.targetPath]
  * @param {boolean} [options.list]
  * @param {boolean} [options.skeleton]
+ * @param {boolean} [options.show]
  * @param {string} [options.cwd]
  * @returns {Promise<{type: string, data: unknown}>}
  */
 export async function template(name, options = {}) {
-  const {list = false, skeleton = false, targetPath, cwd = process.cwd()} = options;
+  const {list = false, skeleton = false, show = false, targetPath, cwd = process.cwd()} = options;
   const templates = await discoverAll();
   const templateNames = templates.map(t => t.dirName);
 
@@ -225,8 +226,31 @@ export async function template(name, options = {}) {
   }
 
   const templateDir = path.join(TEMPLATES_DIR, name);
-  const outputDir = path.resolve(cwd, targetPath || `./src/pages/${name}`);
+  const doc = await loadTemplateDoc(templateDir);
 
+  // Show mode: return file contents without writing to disk
+  if (show || !targetPath) {
+    const files = fs.readdirSync(templateDir);
+    const fileContents = {};
+    for (const file of files) {
+      if (file === 'template.doc.mjs') continue;
+      const srcPath = path.join(templateDir, file);
+      if (!fs.statSync(srcPath).isFile()) continue;
+      fileContents[file] = fs.readFileSync(srcPath, 'utf-8');
+    }
+    return {
+      type: 'template.show',
+      data: {
+        template: name,
+        description: doc?.description || '',
+        components: extractComponents(path.join(templateDir, 'page.tsx')),
+        files: fileContents,
+      },
+    };
+  }
+
+  // Copy mode: write files to disk
+  const outputDir = path.resolve(cwd, targetPath);
   fs.mkdirSync(outputDir, {recursive: true});
 
   const files = fs.readdirSync(templateDir);
@@ -235,8 +259,7 @@ export async function template(name, options = {}) {
   for (const file of files) {
     if (file === 'template.doc.mjs') continue;
     const srcPath = path.join(templateDir, file);
-    const stat = fs.statSync(srcPath);
-    if (!stat.isFile()) continue;
+    if (!fs.statSync(srcPath).isFile()) continue;
     fs.copyFileSync(srcPath, path.join(outputDir, file));
     copied++;
   }

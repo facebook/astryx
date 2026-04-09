@@ -60,6 +60,14 @@ export function registerTemplate(program) {
           break;
         }
 
+        case 'template.show': {
+          for (const [filename, content] of Object.entries(result.data.files)) {
+            console.log(`// ${filename}`);
+            console.log(content);
+          }
+          break;
+        }
+
         case 'template.copy': {
           console.log(`\n✓ Copied ${result.data.filesCopied} template files to ${result.data.outputDir}/\n`);
           break;
