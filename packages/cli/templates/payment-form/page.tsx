@@ -187,7 +187,6 @@ const styles = stylex.create({
     marginTop: spacingVars['--spacing-6'],
   },
   pageWrapper: {
-    maxWidth: 1100,
     width: '100%',
     paddingBlock: spacingVars['--spacing-8'],
     paddingInline: spacingVars['--spacing-10'],
@@ -269,7 +268,7 @@ export default function PaymentFormPage() {
   return (
     <XDSAppShell height="auto" contentPadding={0} variant="surface">
       <XDSCenter axis="horizontal">
-        <div {...stylex.props(styles.pageWrapper)}>
+        <div style={{maxWidth: 1100}} {...stylex.props(styles.pageWrapper)}>
           {/* Page header */}
           <div {...stylex.props(styles.headerArea)}>
             <div
