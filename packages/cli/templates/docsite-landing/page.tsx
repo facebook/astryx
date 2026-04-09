@@ -4,20 +4,21 @@ import {useState, useEffect, useRef, useCallback} from 'react';
 import {XDSAppShell} from '@xds/core/AppShell';
 import {XDSTopNav, XDSTopNavHeading, XDSTopNavItem} from '@xds/core/TopNav';
 import {XDSVStack} from '@xds/core/Layout';
-import {XDSHeading} from '@xds/core/Text';
+import {XDSHeading, XDSText} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
 import {XDSCard} from '@xds/core/Card';
-import {XDSDialog, XDSDialogHeader} from '@xds/core/Dialog';
+import {XDSCommandPalette} from '@xds/core/CommandPalette';
 import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
 import {XDSGrid} from '@xds/core/Grid';
-import {XDSTextInput} from '@xds/core/TextInput';
 import {
   XDSSegmentedControl,
   XDSSegmentedControlItem,
 } from '@xds/core/SegmentedControl';
+import {XDSSkeleton} from '@xds/core/Skeleton';
 import {XDSToken} from '@xds/core/Token';
 import {XDSToolbar} from '@xds/core/Toolbar';
 import {XDSTooltip} from '@xds/core/Tooltip';
+import {createStaticSource} from '@xds/core/Typeahead';
 
 // ---------------------------------------------------------------------------
 // Icons
@@ -420,12 +421,9 @@ function BoidsCanvas({
 // Template data — real images from /public/templates/
 // ---------------------------------------------------------------------------
 
-const TEMPLATE_IMAGES = [
-  '/templates/ChatGPT Web 22.png',
-  '/templates/ChatGPT Web 120.png',
-  '/templates/ChatGPT Web 122.png',
-  '/templates/ChatGPT Web 140.png',
-];
+const DUMMY_IMAGE = '/templates/dummy-placeholder.png';
+
+const TEMPLATE_IMAGES = [DUMMY_IMAGE, DUMMY_IMAGE, DUMMY_IMAGE, DUMMY_IMAGE];
 
 // ---------------------------------------------------------------------------
 // TemplateCard
@@ -660,7 +658,7 @@ function AIComposer() {
             borderRadius: 20,
             backgroundColor: 'var(--color-background-card)',
             border: '1px solid var(--color-divider)',
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.25)',
+            boxShadow: 'var(--shadow-high)',
             overflow: 'hidden',
             padding: 8,
             display: 'flex',
@@ -761,50 +759,12 @@ function ShimmerText({isActive}: {isActive: boolean}) {
         opacity: isActive ? 1 : 0,
         transition: 'opacity 600ms ease',
       }}>
-      <div
-        style={{
-          height: 14,
-          width: '90%',
-          borderRadius: 7,
-          background:
-            'linear-gradient(90deg, var(--color-divider, #e0e0e0) 25%, var(--color-background-body, #f5f5f5) 50%, var(--color-divider, #e0e0e0) 75%)',
-          backgroundSize: '200% 100%',
-          animation: isActive ? 'shimmer 1.5s ease-in-out infinite' : 'none',
-        }}
-      />
-      <div
-        style={{
-          height: 14,
-          width: '75%',
-          borderRadius: 7,
-          background:
-            'linear-gradient(90deg, var(--color-divider, #e0e0e0) 25%, var(--color-background-body, #f5f5f5) 50%, var(--color-divider, #e0e0e0) 75%)',
-          backgroundSize: '200% 100%',
-          animation: isActive ? 'shimmer 1.5s ease-in-out infinite' : 'none',
-          animationDelay: '0.15s',
-        }}
-      />
-      <div
-        style={{
-          height: 14,
-          width: '60%',
-          borderRadius: 7,
-          background:
-            'linear-gradient(90deg, var(--color-divider, #e0e0e0) 25%, var(--color-background-body, #f5f5f5) 50%, var(--color-divider, #e0e0e0) 75%)',
-          backgroundSize: '200% 100%',
-          animation: isActive ? 'shimmer 1.5s ease-in-out infinite' : 'none',
-          animationDelay: '0.3s',
-        }}
-      />
-      <p
-        style={{
-          fontSize: 13,
-          color: 'var(--color-text-secondary, #666)',
-          marginTop: 4,
-        }}>
+      <XDSSkeleton width="90%" height={14} radius={3} index={0} />
+      <XDSSkeleton width="75%" height={14} radius={3} index={1} />
+      <XDSSkeleton width="60%" height={14} radius={3} index={2} />
+      <XDSText size="small" color="secondary">
         {isActive ? `Generating templates${dots}` : 'Done'}
-      </p>
-      <style>{`@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }`}</style>
+      </XDSText>
     </div>
   );
 }
@@ -853,10 +813,10 @@ function ChatPanel({
             }}>
             Template 01
           </div>
-          <p style={{fontSize: 14, lineHeight: '20px'}}>
+          <XDSText>
             Can you customize this template by adding a divider line under the
             header and use a card for the lists
-          </p>
+          </XDSText>
         </div>
         {/* AI shimmer response */}
         <div style={{padding: '0 4px'}}>
@@ -871,7 +831,7 @@ function ChatPanel({
             borderRadius: 20,
             backgroundColor: 'var(--color-background-card, white)',
             border: '1px solid var(--color-divider)',
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.25)',
+            boxShadow: 'var(--shadow-high)',
             padding: 8,
             display: 'flex',
             flexDirection: 'column' as const,
@@ -1388,38 +1348,19 @@ function TemplatePreview({
                 flexDirection: 'column' as const,
                 gap: 4,
               }}>
-              <h1
-                style={{
-                  fontSize: 42,
-                  fontWeight: 400,
-                  lineHeight: '52px',
-                  margin: 0,
-                  color: '#152e43',
-                }}>
+              <XDSHeading level={1} variant="display">
                 {templateName}
-              </h1>
-              <p
-                style={{
-                  fontSize: 12,
-                  lineHeight: '20px',
-                  margin: 0,
-                  color: 'var(--color-text-secondary, #4e606f)',
-                }}>
+              </XDSHeading>
+              <XDSText size="small" color="secondary">
                 XDS · 541 usages
-              </p>
+              </XDSText>
             </div>
-            <p
-              style={{
-                fontSize: 14,
-                lineHeight: '20px',
-                margin: '16px 0 0',
-                color: '#152e43',
-              }}>
+            <XDSText style={{marginTop: 16}}>
               Buttons are clickable elements that are used to trigger actions.
               They communicate calls to action to the user and allow users to
               interact with pages in a variety of ways. Button labels express
               what action will occur when the user interacts with it.
-            </p>
+            </XDSText>
           </div>
         </div>
 
@@ -1431,16 +1372,7 @@ function TemplatePreview({
             flexDirection: 'column' as const,
             gap: 16,
           }}>
-          <h2
-            style={{
-              fontSize: 20,
-              fontWeight: 600,
-              lineHeight: '28px',
-              margin: 0,
-              color: '#152e43',
-            }}>
-            Similar templates
-          </h2>
+          <XDSHeading level={2}>Similar templates</XDSHeading>
           <div style={{display: 'flex', gap: 16}}>
             {TEMPLATE_IMAGES.slice(0, 3).map((src, i) => (
               <div
@@ -1475,26 +1407,11 @@ function TemplatePreview({
             flexDirection: 'column' as const,
             gap: 16,
           }}>
-          <h2
-            style={{
-              fontSize: 20,
-              fontWeight: 600,
-              lineHeight: '28px',
-              margin: 0,
-              color: '#152e43',
-            }}>
-            Component used
-          </h2>
-          <p
-            style={{
-              fontSize: 14,
-              lineHeight: '20px',
-              margin: 0,
-              color: '#152e43',
-            }}>
+          <XDSHeading level={2}>Component used</XDSHeading>
+          <XDSText>
             XDSAppShell, XDSTopNav, XDSVStack, XDSHStack, XDSHeading, XDSText,
             XDSButton, XDSCard, XDSBadge, XDSAvatar
-          </p>
+          </XDSText>
         </div>
 
         {/* Keywords */}
@@ -1506,16 +1423,7 @@ function TemplatePreview({
             gap: 16,
             paddingBottom: 24,
           }}>
-          <h2
-            style={{
-              fontSize: 20,
-              fontWeight: 600,
-              lineHeight: '28px',
-              margin: 0,
-              color: '#152e43',
-            }}>
-            Keywords
-          </h2>
+          <XDSHeading level={2}>Keywords</XDSHeading>
           <div style={{display: 'flex', flexWrap: 'wrap' as const, gap: 4}}>
             <XDSToken label="Dashboard" size="sm" />
             <XDSToken label="Admin" size="sm" />
@@ -1533,9 +1441,37 @@ function TemplatePreview({
 // Top Nav
 // ---------------------------------------------------------------------------
 
+const SEARCH_COMMANDS = createStaticSource([
+  {
+    id: 'templates',
+    label: 'Browse Templates',
+    auxiliaryData: {group: 'Navigation'},
+  },
+  {
+    id: 'explore',
+    label: 'Explore Components',
+    auxiliaryData: {group: 'Navigation'},
+  },
+  {id: 'docs', label: 'Documentation', auxiliaryData: {group: 'Navigation'}},
+  {id: 'button', label: 'XDSButton', auxiliaryData: {group: 'Components'}},
+  {id: 'card', label: 'XDSCard', auxiliaryData: {group: 'Components'}},
+  {id: 'dialog', label: 'XDSDialog', auxiliaryData: {group: 'Components'}},
+  {id: 'table', label: 'XDSTable', auxiliaryData: {group: 'Components'}},
+  {id: 'topnav', label: 'XDSTopNav', auxiliaryData: {group: 'Components'}},
+  {
+    id: 'theme-default',
+    label: 'Switch to Default Theme',
+    auxiliaryData: {group: 'Settings'},
+  },
+  {
+    id: 'theme-dark',
+    label: 'Switch to Dark Theme',
+    auxiliaryData: {group: 'Settings'},
+  },
+]);
+
 function AppTopNav() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
 
   return (
     <>
@@ -1580,27 +1516,12 @@ function AppTopNav() {
           </>
         }
       />
-      <XDSDialog
+      <XDSCommandPalette
         isOpen={isSearchOpen}
         onOpenChange={setIsSearchOpen}
-        width={560}
-        purpose="info">
-        <XDSDialogHeader
-          title="Search"
-          onOpenChange={setIsSearchOpen}
-          hasDivider={false}
-        />
-        <div style={{padding: '0 24px 24px'}}>
-          <XDSTextInput
-            label="Search"
-            isLabelHidden
-            placeholder="Type a command or search..."
-            value={searchQuery}
-            onChange={setSearchQuery}
-            hasAutoFocus
-          />
-        </div>
-      </XDSDialog>
+        searchSource={SEARCH_COMMANDS}
+        label="Search templates and components"
+      />
     </>
   );
 }
