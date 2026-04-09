@@ -19,7 +19,6 @@
 
 import {useTransition} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
 import {
   colorVars,
   fontWeightVars,
@@ -34,6 +33,7 @@ import {XDSIcon} from '../Icon';
 import {XDSSelector} from '../Selector';
 import {XDSText} from '../Text';
 import {xdsClassName, mergeProps} from '../utils';
+import type {XDSBaseProps} from '../XDSBaseProps';
 
 // =============================================================================
 // Types
@@ -68,7 +68,10 @@ export type XDSPaginationVariant = keyof XDSPaginationVariantMap;
 /** Size of the pagination controls. */
 export type XDSPaginationSize = 'sm' | 'md';
 
-export interface XDSPaginationProps {
+export interface XDSPaginationProps extends Omit<
+  XDSBaseProps<HTMLElement>,
+  'onChange'
+> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLElement>;
   // --- Core (required) ---
@@ -142,27 +145,6 @@ export interface XDSPaginationProps {
   // --- Standard XDS ---
   /** Test ID for automated testing. */
   'data-testid'?: string;
-  /**
-   * StyleX styles created via `stylex.create()`. Merged with the component's
-   * base styles inside a single `stylex.props()` call for optimal deduplication.
-   *
-   * @example
-   * ```
-   * const overrides = stylex.create({ root: { marginBottom: 8 } });
-   * <Component xstyle={overrides.root} />
-   * ```
-   */
-  xstyle?: StyleXStyles;
-  /**
-   * CSS class name(s) appended to the root element.
-   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
-   */
-  className?: string;
-  /**
-   * Inline styles to apply to the root element. Spread after StyleX
-   * inline styles, so these values take priority.
-   */
-  style?: React.CSSProperties;
 }
 
 // =============================================================================
@@ -207,8 +189,8 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-1'],
   },
   dot: {
-    width: 8,
-    height: 8,
+    width: spacingVars['--spacing-2'],
+    height: spacingVars['--spacing-2'],
     borderWidth: 0,
     borderStyle: 'none',
     padding: 0,
@@ -228,8 +210,8 @@ const styles = stylex.create({
     },
   },
   dotSm: {
-    width: 6,
-    height: 6,
+    width: spacingVars['--spacing-1-5'],
+    height: spacingVars['--spacing-1-5'],
   },
   dotActive: {
     backgroundColor: colorVars['--color-accent'],
