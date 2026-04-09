@@ -1584,7 +1584,7 @@ export default function ExampleCardsPage() {
               <XDSDivider />
               <XDSVStack gap={3}>
                 <XDSText type="supporting" color="secondary">Badge Variants</XDSText>
-                <XDSHStack gap={2} vAlign="center">
+                <XDSHStack gap={2} vAlign="center" wrap>
                   <XDSBadge label="Default" />
                   <XDSBadge label="Info" variant="info" />
                   <XDSBadge label="Success" variant="success" />
@@ -1593,7 +1593,7 @@ export default function ExampleCardsPage() {
                 </XDSHStack>
                 <XDSDivider />
                 <XDSText type="supporting" color="secondary">Tokens</XDSText>
-                <XDSHStack gap={2} vAlign="center">
+                <XDSHStack gap={2} vAlign="center" wrap>
                   <XDSToken label="Default" />
                   <XDSToken label="Blue" color="blue" />
                   <XDSToken label="Green" color="green" />
@@ -1603,7 +1603,7 @@ export default function ExampleCardsPage() {
                   <XDSToken label="Pink" color="pink" />
                   <XDSToken label="Gray" color="gray" />
                 </XDSHStack>
-                <XDSHStack gap={2} vAlign="center">
+                <XDSHStack gap={2} vAlign="center" wrap>
                   <XDSToken label="Removable" onRemove={() => {}} />
                   <XDSToken label="Clickable" onClick={() => {}} />
                   <XDSToken label="Disabled" isDisabled />
@@ -1621,19 +1621,19 @@ export default function ExampleCardsPage() {
               <XDSHeading level={3}>Input Components</XDSHeading>
               <XDSDivider />
               <XDSVStack gap={4}>
-                <XDSHStack gap={4}>
+                <XDSHStack gap={4} wrap>
                   <XDSTextInput label="Default" placeholder="Enter text..." onChange={() => {}} />
                   <XDSTextInput label="With value" value="Hello world" onChange={() => {}} />
                   <XDSTextInput label="Disabled" value="Can't edit" isDisabled onChange={() => {}} />
                 </XDSHStack>
-                <XDSHStack gap={4}>
+                <XDSHStack gap={4} wrap>
                   <XDSTextInput label="Error state" status={{type: "error", message: "This field is required"}} onChange={() => {}} />
                   <XDSTextInput label="Success state" status={{type: "success", message: "Looks good!"}} value="Valid input" onChange={() => {}} />
                   <XDSTextInput label="With placeholder" placeholder="Enter email..." onChange={() => {}} />
                 </XDSHStack>
                 <XDSDivider />
                 <XDSText type="supporting" color="secondary">Selector</XDSText>
-                <XDSHStack gap={4}>
+                <XDSHStack gap={4} wrap>
                   <XDSSelector
                     label="Choose option"
                     options={['Option A', 'Option B', 'Option C']}
@@ -1653,7 +1653,7 @@ export default function ExampleCardsPage() {
                 <XDSSlider label="Volume" value={65} onChange={() => {}} />
                 <XDSDivider />
                 <XDSText type="supporting" color="secondary">Toggle Controls</XDSText>
-                <XDSHStack gap={6} vAlign="center">
+                <XDSHStack gap={6} vAlign="center" wrap>
                   <XDSSwitch label="On" isSelected onChange={() => {}} />
                   <XDSSwitch label="Off" onChange={() => {}} />
                   <XDSSwitch label="Disabled on" isSelected isDisabled onChange={() => {}} />
@@ -1661,7 +1661,7 @@ export default function ExampleCardsPage() {
                 </XDSHStack>
                 <XDSDivider />
                 <XDSText type="supporting" color="secondary">Checkbox</XDSText>
-                <XDSHStack gap={6}>
+                <XDSHStack gap={6} wrap>
                   <XDSCheckboxInput label="Checked" isSelected onChange={() => {}} />
                   <XDSCheckboxInput label="Unchecked" onChange={() => {}} />
                   <XDSCheckboxInput label="Checked disabled" isSelected isDisabled onChange={() => {}} />
@@ -1689,7 +1689,7 @@ export default function ExampleCardsPage() {
               <XDSVStack gap={3}>
                 <XDSVStack gap={1}>
                   <XDSText type="supporting" color="secondary">Primary</XDSText>
-                  <XDSHStack gap={2} vAlign="center">
+                  <XDSHStack gap={2} vAlign="center" wrap>
                     <XDSButton label="Small" variant="primary" size="sm" />
                     <XDSButton label="Medium" variant="primary" size="md" />
                     <XDSButton label="Large" variant="primary" size="lg" />
@@ -1698,7 +1698,7 @@ export default function ExampleCardsPage() {
                 </XDSVStack>
                 <XDSVStack gap={1}>
                   <XDSText type="supporting" color="secondary">Secondary</XDSText>
-                  <XDSHStack gap={2} vAlign="center">
+                  <XDSHStack gap={2} vAlign="center" wrap>
                     <XDSButton label="Small" variant="secondary" size="sm" />
                     <XDSButton label="Medium" variant="secondary" size="md" />
                     <XDSButton label="Large" variant="secondary" size="lg" />
@@ -1707,7 +1707,7 @@ export default function ExampleCardsPage() {
                 </XDSVStack>
                 <XDSVStack gap={1}>
                   <XDSText type="supporting" color="secondary">Destructive</XDSText>
-                  <XDSHStack gap={2} vAlign="center">
+                  <XDSHStack gap={2} vAlign="center" wrap>
                     <XDSButton label="Small" variant="destructive" size="sm" />
                     <XDSButton label="Medium" variant="destructive" size="md" />
                     <XDSButton label="Large" variant="destructive" size="lg" />
@@ -1716,7 +1716,7 @@ export default function ExampleCardsPage() {
                 </XDSVStack>
                 <XDSVStack gap={1}>
                   <XDSText type="supporting" color="secondary">Ghost</XDSText>
-                  <XDSHStack gap={2} vAlign="center">
+                  <XDSHStack gap={2} vAlign="center" wrap>
                     <XDSButton label="Small" variant="ghost" size="sm" />
                     <XDSButton label="Medium" variant="ghost" size="md" />
                     <XDSButton label="Large" variant="ghost" size="lg" />
@@ -1727,7 +1727,7 @@ export default function ExampleCardsPage() {
                 <XDSText type="supporting" color="secondary">Theme-specific variants (Meta)</XDSText>
                 <XDSVStack gap={1}>
                   <XDSText type="supporting" color="secondary">Primary Muted</XDSText>
-                  <XDSHStack gap={2} vAlign="center">
+                  <XDSHStack gap={2} vAlign="center" wrap>
                     <XDSButton label="Small" variant={'primary-muted' as never} size="sm" />
                     <XDSButton label="Medium" variant={'primary-muted' as never} size="md" />
                     <XDSButton label="Large" variant={'primary-muted' as never} size="lg" />
@@ -1735,7 +1735,7 @@ export default function ExampleCardsPage() {
                 </XDSVStack>
                 <XDSVStack gap={1}>
                   <XDSText type="supporting" color="secondary">Destructive Muted</XDSText>
-                  <XDSHStack gap={2} vAlign="center">
+                  <XDSHStack gap={2} vAlign="center" wrap>
                     <XDSButton label="Small" variant={'destructive-muted' as never} size="sm" />
                     <XDSButton label="Medium" variant={'destructive-muted' as never} size="md" />
                     <XDSButton label="Large" variant={'destructive-muted' as never} size="lg" />
@@ -1743,7 +1743,7 @@ export default function ExampleCardsPage() {
                 </XDSVStack>
                 <XDSVStack gap={1}>
                   <XDSText type="supporting" color="secondary">Primary Outline</XDSText>
-                  <XDSHStack gap={2} vAlign="center">
+                  <XDSHStack gap={2} vAlign="center" wrap>
                     <XDSButton label="Small" variant={'primary-outline' as never} size="sm" />
                     <XDSButton label="Medium" variant={'primary-outline' as never} size="md" />
                     <XDSButton label="Large" variant={'primary-outline' as never} size="lg" />
@@ -1751,7 +1751,7 @@ export default function ExampleCardsPage() {
                 </XDSVStack>
                 <XDSVStack gap={1}>
                   <XDSText type="supporting" color="secondary">Secondary Outline</XDSText>
-                  <XDSHStack gap={2} vAlign="center">
+                  <XDSHStack gap={2} vAlign="center" wrap>
                     <XDSButton label="Small" variant={'secondary-outline' as never} size="sm" />
                     <XDSButton label="Medium" variant={'secondary-outline' as never} size="md" />
                     <XDSButton label="Large" variant={'secondary-outline' as never} size="lg" />
@@ -1759,7 +1759,7 @@ export default function ExampleCardsPage() {
                 </XDSVStack>
                 <XDSVStack gap={1}>
                   <XDSText type="supporting" color="secondary">Destructive Outline</XDSText>
-                  <XDSHStack gap={2} vAlign="center">
+                  <XDSHStack gap={2} vAlign="center" wrap>
                     <XDSButton label="Small" variant={'destructive-outline' as never} size="sm" />
                     <XDSButton label="Medium" variant={'destructive-outline' as never} size="md" />
                     <XDSButton label="Large" variant={'destructive-outline' as never} size="lg" />
