@@ -98,7 +98,7 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-2'],
   },
   headerArea: {
-    marginBottom: spacingVars['--spacing-12'],
+    marginBottom: spacingVars['--spacing-6'],
   },
   dividerWrap: {
     marginTop: spacingVars['--spacing-6'],
