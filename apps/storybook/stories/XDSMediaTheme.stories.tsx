@@ -403,3 +403,194 @@ export const CustomOverrides: StoryObj = {
     },
   },
 };
+
+// =============================================================================
+// Auto-detected surface from image
+// =============================================================================
+
+import {useImageSurface} from '@xds/core/hooks';
+
+const DEMO_IMAGES = [
+  {
+    label: 'Dark photo (night city)',
+    url: 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?w=600&h=400&fit=crop',
+  },
+  {
+    label: 'Light photo (white wall)',
+    url: 'https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=600&h=400&fit=crop',
+  },
+  {
+    label: 'Mixed (sunset)',
+    url: 'https://images.unsplash.com/photo-1495616811223-4d98c6e9c869?w=600&h=400&fit=crop',
+  },
+  {
+    label: 'Dark (forest)',
+    url: 'https://images.unsplash.com/photo-1448375240586-882707db888b?w=600&h=400&fit=crop',
+  },
+  {
+    label: 'Light (snow)',
+    url: 'https://images.unsplash.com/photo-1491002052546-bf38f186af56?w=600&h=400&fit=crop',
+  },
+];
+
+function ImageCard({url, label}: {url: string; label: string}) {
+  const surface = useImageSurface(url);
+
+  return (
+    <div
+      style={{
+        position: 'relative',
+        borderRadius: 'var(--radius-container, 12px)',
+        overflow: 'hidden',
+        width: 300,
+        height: 200,
+      }}>
+      <img
+        src={url}
+        alt={label}
+        style={{
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          display: 'block',
+        }}
+      />
+      <div
+        style={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          padding: '12px 16px',
+          background:
+            surface === 'light'
+              ? 'linear-gradient(transparent, rgba(255,255,255,0.8))'
+              : 'linear-gradient(transparent, rgba(0,0,0,0.7))',
+        }}>
+        <XDSMediaTheme surface={surface ?? 'dark'}>
+          <XDSStack gap={1}>
+            <XDSText weight="semibold">{label}</XDSText>
+            <XDSText type="supporting">
+              Detected: <strong>{surface ?? 'loading...'}</strong>
+            </XDSText>
+          </XDSStack>
+        </XDSMediaTheme>
+      </div>
+    </div>
+  );
+}
+
+function AutoDetectDemo() {
+  return (
+    <XDSStack gap={3}>
+      <XDSText>
+        Each card auto-detects whether the image is dark or light using{' '}
+        <code>useImageSurface</code>, then applies the correct{' '}
+        <code>XDSMediaTheme</code> surface. Text color adapts automatically.
+      </XDSText>
+      <XDSStack direction="row" gap={3} style={{flexWrap: 'wrap'}}>
+        {DEMO_IMAGES.map(img => (
+          <ImageCard key={img.url} {...img} />
+        ))}
+      </XDSStack>
+    </XDSStack>
+  );
+}
+
+export const AutoDetectFromImage: StoryObj = {
+  render: () => <AutoDetectDemo />,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Auto-detects image luminance via `useImageSurface` hook and applies the correct `XDSMediaTheme` surface. Uses OffscreenCanvas to sample the image without interrupting the render loop.',
+      },
+    },
+  },
+};
+
+// =============================================================================
+// Regional detection
+// =============================================================================
+
+function RegionalDetectDemo() {
+  const url =
+    'https://images.unsplash.com/photo-1495616811223-4d98c6e9c869?w=600&h=400&fit=crop';
+  // Sample just the bottom strip where text overlays
+  const bottomSurface = useImageSurface(url, {
+    region: {x: 0, y: 0.7, width: 1, height: 0.3},
+  });
+  const fullSurface = useImageSurface(url);
+
+  return (
+    <XDSStack gap={3}>
+      <XDSText>
+        The sunset image has a light sky and dark horizon. Full-image detection
+        says <strong>{fullSurface ?? '...'}</strong>, but sampling just the
+        bottom 30% (where text sits) says{' '}
+        <strong>{bottomSurface ?? '...'}</strong>.
+      </XDSText>
+      <div
+        style={{
+          position: 'relative',
+          borderRadius: 'var(--radius-container, 12px)',
+          overflow: 'hidden',
+          width: 400,
+          height: 260,
+        }}>
+        <img
+          src={url}
+          alt="Sunset"
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            display: 'block',
+          }}
+        />
+        {/* Highlight the sampled region */}
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: '30%',
+            border: '2px dashed rgba(255,255,255,0.5)',
+            borderBottom: 'none',
+            pointerEvents: 'none',
+          }}
+        />
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            padding: '12px 16px',
+          }}>
+          <XDSMediaTheme surface={bottomSurface ?? 'dark'}>
+            <XDSStack gap={1}>
+              <XDSText weight="semibold">Regional sampling</XDSText>
+              <XDSText type="supporting">
+                Bottom 30% → {bottomSurface ?? 'loading...'}
+              </XDSText>
+            </XDSStack>
+          </XDSMediaTheme>
+        </div>
+      </div>
+    </XDSStack>
+  );
+}
+
+export const RegionalDetection: StoryObj = {
+  render: () => <RegionalDetectDemo />,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Regional detection samples a specific area of the image instead of the full average. Useful when text overlays a specific region — the sunset image is light overall but dark at the bottom where the text sits.',
+      },
+    },
+  },
+};
