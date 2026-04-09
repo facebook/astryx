@@ -487,29 +487,18 @@ function generateProseCSS(themeDef) {
 
 /**
  * Import a theme module using jiti and find the defineTheme() result.
- *
- * jiti handles TypeScript transpilation at import time, so the theme
- * file is executed as a real module — imports, variables, spread,
- * and function calls all work.
- *
- * Returns the resolved XDSDefinedTheme object (output of defineTheme).
+ * Returns the resolved XDSDefinedTheme object.
  */
 async function importThemeModule(filePath) {
   const jiti = createJiti(import.meta.url, {
-    // Resolve from the theme file's directory so relative imports work
     moduleCache: false,
-    // Theme files may import icon registries that contain JSX
     jsx: true,
   });
 
   const mod = await jiti.import(filePath, {default: true});
 
-  // Find the theme object — look for the defineTheme() result.
-  // It could be the default export, a named export, or any export
-  // that has { name: string, tokens: object }.
   if (isThemeObject(mod)) return mod;
 
-  // Check named exports
   if (mod && typeof mod === 'object') {
     for (const value of Object.values(mod)) {
       if (isThemeObject(value)) return value;
@@ -522,7 +511,6 @@ async function importThemeModule(filePath) {
   );
 }
 
-/** Check if a value looks like a defineTheme() output */
 function isThemeObject(value) {
   return (
     value &&
@@ -535,22 +523,15 @@ function isThemeObject(value) {
 
 /**
  * Extract the theme definition from a JS/TS file.
- *
- * Primary path: import the module using jiti (handles TS, imports, variables).
- * Fallback: regex + eval for plain object literals (legacy, limited).
+ * Tries jiti first (full TS support), falls back to regex+eval.
  */
 async function extractThemeDefinition(filePath) {
-  // Primary: import with jiti — handles full TS, imports, variables, etc.
   try {
     return await importThemeModule(filePath);
   } catch (jitiError) {
-    // If jiti fails, try the legacy regex+eval fallback.
-    // This handles edge cases where jiti can't resolve the module
-    // (e.g., missing dependencies, complex build setups).
     try {
       return extractThemeDefinitionLegacy(filePath);
     } catch {
-      // If both fail, surface the jiti error — it's more informative
       throw new Error(
         `Failed to load theme from ${filePath}: ${jitiError.message}\n` +
         `Make sure all imports in the theme file are resolvable.`,
@@ -560,9 +541,8 @@ async function extractThemeDefinition(filePath) {
 }
 
 /**
- * Legacy extraction: regex + eval on the defineTheme() argument.
+ * Fallback extraction via regex + eval.
  * Only works for plain object literals — can't follow imports or variables.
- * Kept as a fallback for environments where jiti can't resolve dependencies.
  */
 function extractThemeDefinitionLegacy(filePath) {
   const content = fs.readFileSync(filePath, 'utf8');
@@ -850,10 +830,7 @@ export function registerTheme(program) {
       let css;
       let resolvedTheme;
       if (_defineTheme && _generateThemeRules) {
-        // When jiti imports the module, themeDef is already the resolved
-        // XDSDefinedTheme (defineTheme() already ran in the module). When the
-        // legacy regex+eval path is used, themeDef is raw input that still needs
-        // processing. Detect by checking for input-only fields.
+        // jiti returns an already-resolved theme; legacy eval returns raw input.
         const isAlreadyResolved = !themeDef.typography && !themeDef.motion && !themeDef.radius;
         if (isAlreadyResolved) {
           resolvedTheme = themeDef;
