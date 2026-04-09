@@ -3,15 +3,29 @@
 import {useState} from 'react';
 
 import {XDSAppShell} from '@xds/core/AppShell';
-import {XDSSideNav, XDSSideNavItem, XDSSideNavSection} from '@xds/core/SideNav';
-import {XDSTopNav, XDSTopNavHeading} from '@xds/core/TopNav';
+import {
+  XDSSideNav,
+  XDSSideNavHeading,
+  XDSSideNavItem,
+  XDSSideNavSection,
+} from '@xds/core/SideNav';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSCard} from '@xds/core/Card';
-import {XDSAvatar} from '@xds/core/Avatar';
 import {XDSButton} from '@xds/core/Button';
 import {XDSNavIcon} from '@xds/core/NavIcon';
 import {XDSProgressBar} from '@xds/core/ProgressBar';
+import {
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts';
 import {XDSStack, XDSStackItem} from '@xds/core/Stack';
 import {XDSTable, proportional} from '@xds/core/Table';
 import type {XDSTableColumn} from '@xds/core/Table';
@@ -20,181 +34,57 @@ import {XDSLink} from '@xds/core/Link';
 
 // ============= ICONS =============
 
-// SideNav icons
-const DashboardIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <rect x="3" y="3" width="7" height="7" rx="1" />
-    <rect x="14" y="3" width="7" height="7" rx="1" />
-    <rect x="3" y="14" width="7" height="7" rx="1" />
-    <rect x="14" y="14" width="7" height="7" rx="1" />
-  </svg>
-);
-const LifecycleIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <circle cx="12" cy="12" r="9" />
-    <path d="M12 7v5l3 3" />
-  </svg>
-);
-const AnalyticsIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <path d="M18 20V10M12 20V4M6 20v-6" />
-  </svg>
-);
-const ProjectsIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <path d="M2 17l10 5 10-5M2 12l10 5 10-5M12 2L2 7l10 5 10-5-10-5z" />
-  </svg>
-);
-const TeamIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-    <circle cx="9" cy="7" r="4" />
-    <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
-  </svg>
-);
-const DataIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <ellipse cx="12" cy="5" rx="9" ry="3" />
-    <path d="M21 12c0 1.66-4.03 3-9 3s-9-1.34-9-3" />
-    <path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5" />
-  </svg>
-);
-const ReportsIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-    <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" />
-  </svg>
-);
-const WordIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-  </svg>
-);
-const SettingsIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <circle cx="12" cy="12" r="3" />
-    <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
-  </svg>
-);
-const HelpIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <circle cx="12" cy="12" r="10" />
-    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01" />
-  </svg>
-);
-const SearchIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <circle cx="11" cy="11" r="8" />
-    <path d="M21 21l-4.35-4.35" />
-  </svg>
-);
-const MailIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <rect x="2" y="4" width="20" height="16" rx="2" />
-    <path d="M22 7l-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-  </svg>
-);
-const MoreIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <circle cx="12" cy="12" r="1" />
-    <circle cx="19" cy="12" r="1" />
-    <circle cx="5" cy="12" r="1" />
-  </svg>
-);
-
-// Content icons
-const ReloadIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <path d="M21 2v6h-6" />
-    <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
-    <path d="M3 22v-6h6" />
-    <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
-  </svg>
-);
+import {
+  HomeIcon,
+  FolderIcon,
+  ChartBarIcon,
+  UserGroupIcon,
+  CircleStackIcon,
+  DocumentTextIcon,
+  ArrowPathIcon,
+  ArrowUpIcon,
+  ArrowDownIcon,
+} from '@heroicons/react/24/outline';
 
 // ============= DATA =============
 
 // Active users chart data (24 points over 24h: Apr 1 14:00 → Apr 2 14:00)
-// Hours: 14:00 → 15 → 16 → 17 → 18 → 19 → 20 → 21 → 22 → 23 → 00 → 01 → 02 → 03 → 04 → 05 → 06 → 07 → 08 → 09 → 10 → 11 → 12 → 13
-const desktopLine = [
-  72, 70, 65, 60, 52, 45, 38, 32, 25, 20, 16, 12, 10, 8, 8, 10, 15, 28, 48, 62,
-  72, 75, 74, 72,
+// Each point has an hour index (0–23) for even spacing, plus a label for display
+const activeUsersData = [
+  {hour: 0, label: 'Apr 1 14:00', allUsers: 130, desktop: 80, mobile: 50},
+  {hour: 1, label: 'Apr 1 15:00', allUsers: 120, desktop: 70, mobile: 50},
+  {hour: 2, label: 'Apr 1 16:00', allUsers: 115, desktop: 55, mobile: 60},
+  {hour: 3, label: 'Apr 1 17:00', allUsers: 105, desktop: 55, mobile: 50},
+  {hour: 4, label: 'Apr 1 18:00', allUsers: 100, desktop: 55, mobile: 45},
+  {hour: 5, label: 'Apr 1 19:00', allUsers: 95, desktop: 55, mobile: 40},
+  {hour: 6, label: 'Apr 1 20:00', allUsers: 95, desktop: 50, mobile: 45},
+  {hour: 7, label: 'Apr 1 21:00', allUsers: 80, desktop: 42, mobile: 38},
+  {hour: 8, label: 'Apr 1 22:00', allUsers: 70, desktop: 38, mobile: 32},
+  {hour: 9, label: 'Apr 1 23:00', allUsers: 65, desktop: 35, mobile: 30},
+  {hour: 10, label: 'Apr 2 00:00', allUsers: 60, desktop: 35, mobile: 25},
+  {hour: 11, label: 'Apr 2 01:00', allUsers: 58, desktop: 34, mobile: 24},
+  {hour: 12, label: 'Apr 2 02:00', allUsers: 60, desktop: 35, mobile: 25},
+  {hour: 13, label: 'Apr 2 03:00', allUsers: 55, desktop: 32, mobile: 23},
+  {hour: 14, label: 'Apr 2 04:00', allUsers: 50, desktop: 20, mobile: 30},
+  {hour: 15, label: 'Apr 2 05:00', allUsers: 52, desktop: 18, mobile: 34},
+  {hour: 16, label: 'Apr 2 06:00', allUsers: 62, desktop: 20, mobile: 42},
+  {hour: 17, label: 'Apr 2 07:00', allUsers: 80, desktop: 25, mobile: 55},
+  {hour: 18, label: 'Apr 2 08:00', allUsers: 105, desktop: 30, mobile: 75},
+  {hour: 19, label: 'Apr 2 09:00', allUsers: 110, desktop: 30, mobile: 80},
+  {hour: 20, label: 'Apr 2 10:00', allUsers: 115, desktop: 35, mobile: 80},
+  {hour: 21, label: 'Apr 2 11:00', allUsers: 120, desktop: 55, mobile: 65},
+  {hour: 22, label: 'Apr 2 12:00', allUsers: 125, desktop: 75, mobile: 50},
+  {hour: 23, label: 'Apr 2 14:00', allUsers: 130, desktop: 80, mobile: 50},
 ];
-const mobileLine = [
-  30, 28, 25, 35, 45, 50, 42, 35, 24, 16, 12, 8, 6, 5, 5, 6, 10, 32, 42, 35,
-  28, 25, 30, 32,
-];
-const allUsersLine = desktopLine.map((v, i) => v + mobileLine[i]);
+
+// X-axis tick indices and their display labels
+const xAxisTicks = [0, 8, 16, 23];
+const xAxisLabels: Record<number, string> = {
+  0: 'Apr 1 14:00',
+  8: 'Apr 1 22:00',
+  16: 'Apr 2 06:00',
+  23: 'Apr 2 14:00',
+};
 
 // Metric cards
 const metrics = [
@@ -234,19 +124,23 @@ const sparklines = [
 
 // Demographics
 const regionData = [
-  {label: 'NORAM', value: 38, color: '#3B82F6'},
-  {label: 'EMEA', value: 28, color: '#EF4444'},
-  {label: 'APAC', value: 22, color: '#8B5CF6'},
-  {label: 'LATAM', value: 8, color: '#EC4899'},
-  {label: 'Other', value: 4, color: '#334155'},
+  {label: 'NORAM', value: 38, color: 'var(--color-border-blue, #0171E3)'},
+  {label: 'EMEA', value: 28, color: 'var(--color-border-red, #E3193B)'},
+  {label: 'APAC', value: 22, color: 'var(--color-border-purple, #7952FF)'},
+  {label: 'LATAM', value: 8, color: 'var(--color-border-pink, #E91E63)'},
+  {label: 'Other', value: 4, color: 'var(--color-border-gray, #647685)'},
 ];
 
 const roleData = [
-  {label: 'Engineer', value: 45, color: '#3B82F6'},
-  {label: 'Manager', value: 20, color: '#F97316'},
-  {label: 'Designer', value: 15, color: '#14B8A6'},
-  {label: 'Data Scientist', value: 12, color: '#8B5CF6'},
-  {label: 'Other', value: 8, color: '#1E3A5F'},
+  {label: 'Engineer', value: 45, color: 'var(--color-border-blue, #0171E3)'},
+  {label: 'Manager', value: 20, color: 'var(--color-border-orange, #F27902)'},
+  {label: 'Designer', value: 15, color: 'var(--color-border-teal, #0DB7AF)'},
+  {
+    label: 'Data Scientist',
+    value: 12,
+    color: 'var(--color-border-purple, #7952FF)',
+  },
+  {label: 'Other', value: 8, color: 'var(--color-border-gray, #647685)'},
 ];
 
 // Engagement — Top pages
@@ -365,6 +259,21 @@ const topEventsData: EventRow[] = [
 
 // ============= CHART COMPONENTS =============
 
+// Workaround: XDS Table row dividers are not rendering due to a StyleX
+// compilation issue in the core package build. Apply row dividers via CSS.
+const tableDividerStyles = `
+  .dashboard-table tr:not(:last-child) td {
+    border-bottom: 1px solid var(--color-border, rgba(5, 54, 89, 0.1));
+  }
+`;
+
+// Chart line colors via XDS design tokens (CSS custom properties)
+const chartColors = {
+  allUsers: 'var(--color-border-blue, #0171E3)',
+  desktop: 'var(--color-border-orange, #F27902)',
+  mobile: 'var(--color-border-purple, #7952FF)',
+};
+
 function ChartLegendItem({color, label}: {color: string; label: string}) {
   return (
     <XDSHStack gap={2} vAlign="center">
@@ -378,125 +287,141 @@ function ChartLegendItem({color, label}: {color: string; label: string}) {
   );
 }
 
+function ChartTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: Array<{name: string; value: number; color: string}>;
+  label?: number;
+}) {
+  if (!active || !payload?.length) return null;
+  const point = activeUsersData.find(d => d.hour === label);
+  return (
+    <div
+      style={{
+        backgroundColor: 'var(--color-background-popover, #fff)',
+        border: '1px solid var(--color-border, rgba(5, 54, 89, 0.1))',
+        borderRadius: 'var(--radius-element, 8px)',
+        padding: 'var(--spacing-3, 12px)',
+        boxShadow: 'var(--shadow-med)',
+      }}>
+      <XDSVStack gap={1}>
+        <XDSText type="supporting" color="secondary">
+          {point?.label ?? ''}
+        </XDSText>
+        {payload.map(entry => (
+          <XDSHStack key={entry.name} gap={2} vAlign="center">
+            <div
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: 'var(--radius-full, 9999px)',
+                backgroundColor: entry.color,
+                flexShrink: 0,
+              }}
+            />
+            <XDSText type="supporting">
+              {entry.name}: {entry.value}
+            </XDSText>
+          </XDSHStack>
+        ))}
+      </XDSVStack>
+    </div>
+  );
+}
+
 function ActiveUsersChart() {
-  const w = 900;
-  const h = 250;
-  const padL = 35;
-  const padR = 10;
-  const padT = 10;
-  const padB = 30;
-  const maxY = 140;
-  const yTicks = [0, 20, 40, 60, 80, 100, 120];
-  const xLabels = ['Apr 1 14:00', 'Apr 1 22:00', 'Apr 2 06:00', 'Apr 2 14:00'];
-
-  const toX = (i: number, len: number) =>
-    padL + (i / (len - 1)) * (w - padL - padR);
-  const toY = (v: number) => padT + (1 - v / maxY) * (h - padT - padB);
-
-  const makePath = (data: number[]) =>
-    data
-      .map((v, i) => `${i === 0 ? 'M' : 'L'}${toX(i, data.length)},${toY(v)}`)
-      .join(' ');
-
   return (
     <XDSVStack gap={3}>
-      <div style={{position: 'relative'}}>
-        <svg
-          viewBox={`0 0 ${w} ${h}`}
-          style={{width: '100%', height: 'auto', display: 'block'}}
-          preserveAspectRatio="xMidYMid meet">
-          {/* Y-axis grid lines and labels */}
-          {yTicks.map(tick => (
-            <g key={tick}>
-              <line
-                x1={padL}
-                y1={toY(tick)}
-                x2={w - padR}
-                y2={toY(tick)}
-                stroke="var(--color-divider, #e5e5e5)"
-                strokeWidth="1"
-              />
-              <text
-                x={padL - 8}
-                y={toY(tick) + 4}
-                textAnchor="end"
-                fontSize="11"
-                fill="var(--color-text-secondary, #888)">
-                {tick}
-              </text>
-            </g>
-          ))}
-          {/* X-axis labels */}
-          {xLabels.map((label, i) => (
-            <text
-              key={label}
-              x={padL + (i / (xLabels.length - 1)) * (w - padL - padR)}
-              y={h - 5}
-              textAnchor="middle"
-              fontSize="11"
-              fill="var(--color-text-secondary, #888)">
-              {label}
-            </text>
-          ))}
-          {/* Data lines */}
-          <path
-            d={makePath(allUsersLine)}
-            fill="none"
-            stroke="#3B82F6"
-            strokeWidth="2"
+      <ResponsiveContainer width="100%" height={300}>
+        <LineChart
+          data={activeUsersData}
+          margin={{top: 5, right: 10, left: 0, bottom: 5}}>
+          <CartesianGrid
+            horizontal
+            vertical={false}
+            stroke="var(--color-border, rgba(5, 54, 89, 0.1))"
           />
-          <path
-            d={makePath(desktopLine)}
-            fill="none"
-            stroke="#F97316"
-            strokeWidth="2"
+          <XAxis
+            dataKey="hour"
+            type="number"
+            domain={[0, 23]}
+            ticks={xAxisTicks}
+            tickFormatter={(v: number) => xAxisLabels[v] ?? ''}
+            tick={{
+              fontSize: 'var(--font-size-sm, 12px)',
+              fill: 'var(--color-text-secondary, #4E606F)',
+            }}
+            axisLine={false}
+            tickLine={false}
           />
-          <path
-            d={makePath(mobileLine)}
-            fill="none"
-            stroke="#4F46E5"
-            strokeWidth="2"
+          <YAxis
+            domain={[0, 120]}
+            ticks={[0, 20, 40, 60, 80, 100, 120]}
+            tick={{
+              fontSize: 'var(--font-size-sm, 12px)',
+              fill: 'var(--color-text-secondary, #4E606F)',
+            }}
+            axisLine={false}
+            tickLine={false}
+            width={30}
           />
-        </svg>
-      </div>
-      {/* Legend */}
+          <Tooltip
+            content={<ChartTooltip />}
+            cursor={{stroke: 'var(--color-border, rgba(5, 54, 89, 0.1))'}}
+          />
+          <Line
+            type="monotone"
+            dataKey="allUsers"
+            name="All Users"
+            stroke={chartColors.allUsers}
+            strokeWidth={2}
+            dot={false}
+          />
+          <Line
+            type="monotone"
+            dataKey="desktop"
+            name="Desktop"
+            stroke={chartColors.desktop}
+            strokeWidth={2}
+            dot={false}
+          />
+          <Line
+            type="monotone"
+            dataKey="mobile"
+            name="Mobile"
+            stroke={chartColors.mobile}
+            strokeWidth={2}
+            dot={false}
+          />
+        </LineChart>
+      </ResponsiveContainer>
       <XDSHStack gap={6} vAlign="center">
-        <ChartLegendItem color="#3B82F6" label="All Users" />
-        <ChartLegendItem color="#F97316" label="Desktop" />
-        <ChartLegendItem color="#4F46E5" label="Mobile" />
+        <ChartLegendItem color={chartColors.allUsers} label="All Users" />
+        <ChartLegendItem color={chartColors.desktop} label="Desktop" />
+        <ChartLegendItem color={chartColors.mobile} label="Mobile" />
       </XDSHStack>
     </XDSVStack>
   );
 }
 
 function Sparkline({data}: {data: number[]}) {
-  const max = Math.max(...data);
-  const min = Math.min(...data);
-  const range = max - min || 1;
-  const w = 120;
-  const h = 40;
-  const pad = 2;
-  const points = data
-    .map((v, i) => {
-      const x = pad + (i / (data.length - 1)) * (w - pad * 2);
-      const y = pad + (1 - (v - min) / range) * (h - pad * 2);
-      return `${x},${y}`;
-    })
-    .join(' ');
-
+  const chartData = data.map((v, i) => ({i, v}));
   return (
-    <svg
-      viewBox={`0 0 ${w} ${h}`}
-      width="100%"
-      height={40}
-      preserveAspectRatio="none">
-      <polyline
-        points={points}
-        fill="none"
-        stroke="var(--color-text-secondary, #999)"
-        strokeWidth="1.5"
-      />
-    </svg>
+    <ResponsiveContainer width="100%" height={40}>
+      <LineChart data={chartData}>
+        <Line
+          type="monotone"
+          dataKey="v"
+          stroke="var(--color-border-blue, #0171E3)"
+          strokeWidth={1.5}
+          dot={false}
+          isAnimationActive={false}
+        />
+      </LineChart>
+    </ResponsiveContainer>
   );
 }
 
@@ -522,17 +447,23 @@ function MetricCard({
         <XDSHStack gap={2} vAlign="center">
           <XDSHeading level={2}>{value}</XDSHeading>
           <XDSHStack gap={1} vAlign="center">
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 12 12"
-              fill={positive ? '#16a34a' : '#dc2626'}>
-              {positive ? (
-                <path d="M6 2L10 7H2L6 2Z" />
-              ) : (
-                <path d="M6 10L2 5H10L6 10Z" />
-              )}
-            </svg>
+            {positive ? (
+              <ArrowUpIcon
+                style={{
+                  width: 12,
+                  height: 12,
+                  color: 'var(--color-success, #0D8626)',
+                }}
+              />
+            ) : (
+              <ArrowDownIcon
+                style={{
+                  width: 12,
+                  height: 12,
+                  color: 'var(--color-error, #E3193B)',
+                }}
+              />
+            )}
             <XDSText type="body" color="secondary">
               {change}
             </XDSText>
@@ -555,25 +486,39 @@ function StackedBarCard({
   data: Array<{label: string; value: number; color: string}>;
 }) {
   const total = data.reduce((sum, d) => sum + d.value, 0);
+  // Recharts needs a single data row with each segment as a separate key
+  const chartData = [Object.fromEntries(data.map(d => [d.label, d.value]))];
+
   return (
     <XDSCard>
       <XDSVStack gap={4}>
         <XDSHeading level={4}>{title}</XDSHeading>
-        {/* Stacked horizontal bar */}
-        <div
-          style={{
-            display: 'flex',
-            height: 24,
-            borderRadius: 8,
-            overflow: 'hidden',
-          }}>
-          {data.map(d => (
-            <div
-              key={d.label}
-              style={{flex: d.value, backgroundColor: d.color}}
-            />
-          ))}
-        </div>
+        <ResponsiveContainer width="100%" height={24}>
+          <BarChart
+            data={chartData}
+            layout="vertical"
+            margin={{top: 0, right: 0, bottom: 0, left: 0}}
+            barCategoryGap={0}>
+            <XAxis type="number" hide />
+            <YAxis type="category" hide />
+            {data.map((d, i) => (
+              <Bar
+                key={d.label}
+                dataKey={d.label}
+                stackId="stack"
+                fill={d.color}
+                isAnimationActive={false}
+                radius={
+                  i === 0
+                    ? [4, 0, 0, 4]
+                    : i === data.length - 1
+                      ? [0, 4, 4, 0]
+                      : [0, 0, 0, 0]
+                }
+              />
+            ))}
+          </BarChart>
+        </ResponsiveContainer>
         {/* Legend */}
         <div style={{display: 'flex', flexWrap: 'wrap', gap: 16}}>
           {data.map(d => (
@@ -583,7 +528,7 @@ function StackedBarCard({
                   style={{
                     width: 10,
                     height: 10,
-                    borderRadius: '50%',
+                    borderRadius: 'var(--radius-full, 9999px)',
                     backgroundColor: d.color,
                     flexShrink: 0,
                   }}
@@ -626,9 +571,22 @@ function TopPagesCard() {
         </XDSVStack>
       ),
     },
-    {key: 'newUsers', header: 'New Users', width: proportional(1)},
-    {key: 'avgTime', header: 'Avg. Time', width: proportional(1)},
-    {key: 'exits', header: '% Exits', width: proportional(1)},
+    {
+      key: 'newUsers',
+      header: <div style={{textAlign: 'right', width: '100%'}}>New Users</div>,
+      width: proportional(1),
+      renderCell: (item: PageRow) => (
+        <div style={{textAlign: 'right'}}>{item.newUsers}</div>
+      ),
+    },
+    {
+      key: 'avgTime',
+      header: <div style={{textAlign: 'right', width: '100%'}}>Avg. Time</div>,
+      width: proportional(1),
+      renderCell: (item: PageRow) => (
+        <div style={{textAlign: 'right'}}>{item.avgTime}</div>
+      ),
+    },
   ];
 
   return (
@@ -641,20 +599,22 @@ function TopPagesCard() {
             alignItems: 'center',
             justifyContent: 'space-between',
           }}>
-          <XDSHeading level={4}>
-            Top pages
-          </XDSHeading>
+          <XDSHeading level={4}>Top pages</XDSHeading>
           <XDSLink label="All pages" href="#">
             All pages
           </XDSLink>
         </div>
-        <XDSTable<PageRow>
-          data={topPagesData}
-          columns={columns}
-          idKey="id"
-          density="compact"
-          dividers="rows"
-        />
+        <div className="dashboard-table">
+          <style>{tableDividerStyles}</style>
+          <XDSTable<PageRow>
+            data={topPagesData}
+            columns={columns}
+            idKey="id"
+            density="compact"
+            dividers="rows"
+            hasHover
+          />
+        </div>
       </XDSVStack>
     </XDSCard>
   );
@@ -681,7 +641,14 @@ function TopEventsCard() {
         </XDSVStack>
       ),
     },
-    {key: 'users', header: 'Users', width: proportional(1)},
+    {
+      key: 'users',
+      header: <div style={{textAlign: 'right', width: '100%'}}>Users</div>,
+      width: proportional(1),
+      renderCell: (item: EventRow) => (
+        <div style={{textAlign: 'right'}}>{item.users.toLocaleString()}</div>
+      ),
+    },
   ];
 
   return (
@@ -694,20 +661,22 @@ function TopEventsCard() {
             alignItems: 'center',
             justifyContent: 'space-between',
           }}>
-          <XDSHeading level={4}>
-            Top events
-          </XDSHeading>
+          <XDSHeading level={4}>Top events</XDSHeading>
           <XDSLink label="All events" href="#">
             All events
           </XDSLink>
         </div>
-        <XDSTable<EventRow>
-          data={topEventsData}
-          columns={columns}
-          idKey="id"
-          density="compact"
-          dividers="rows"
-        />
+        <div className="dashboard-table">
+          <style>{tableDividerStyles}</style>
+          <XDSTable<EventRow>
+            data={topEventsData}
+            columns={columns}
+            idKey="id"
+            density="compact"
+            dividers="rows"
+            hasHover
+          />
+        </div>
       </XDSVStack>
     </XDSCard>
   );
@@ -720,104 +689,36 @@ function DashboardSideNav() {
   return (
     <XDSSideNav
       header={
-        <XDSVStack gap={3} style={{padding: '12px 16px'}}>
-          <XDSHStack gap={2} vAlign="center">
-            <XDSNavIcon
-              icon={<DashboardIcon style={{width: 16, height: 16}} />}
-            />
-            <XDSText type="body" weight="bold">
-              Acme Inc.
-            </XDSText>
-          </XDSHStack>
-          <XDSHStack gap={2}>
-            <XDSButton
-              label="Quick Create"
-              variant="primary"
-              size="sm"
-              xstyle={{flex: 1} as never}
-            />
-            <XDSButton
-              label="Mail"
-              variant="ghost"
-              size="sm"
-              icon={<MailIcon style={{width: 16, height: 16}} />}
-            />
-          </XDSHStack>
-        </XDSVStack>
-      }
-      footer={
-        <XDSVStack gap={0} style={{padding: '8px 0'}}>
-          <XDSSideNavItem
-            label="Settings"
-            icon={SettingsIcon}
-            isSelected={active === 'settings'}
-            onClick={() => setActive('settings')}
-          />
-          <XDSSideNavItem
-            label="Get Help"
-            icon={HelpIcon}
-            isSelected={active === 'help'}
-            onClick={() => setActive('help')}
-          />
-          <XDSSideNavItem
-            label="Search"
-            icon={SearchIcon}
-            isSelected={active === 'search'}
-            onClick={() => setActive('search')}
-          />
-          <div
-            style={{
-              padding: '12px 16px',
-              borderTop: '1px solid var(--color-divider)',
-            }}>
-            <XDSHStack gap={3} vAlign="center">
-              <XDSAvatar name="shadcn" size="small" />
-              <XDSVStack gap={0} style={{flex: 1}}>
-                <XDSText type="body" weight="bold">
-                  shadcn
-                </XDSText>
-                <XDSText type="supporting" color="secondary">
-                  m@example.com
-                </XDSText>
-              </XDSVStack>
-              <XDSButton
-                label="More"
-                variant="ghost"
-                size="sm"
-                icon={<MoreIcon style={{width: 16, height: 16}} />}
-              />
-            </XDSHStack>
-          </div>
-        </XDSVStack>
+        <XDSSideNavHeading
+          icon={
+            <XDSNavIcon icon={<HomeIcon style={{width: 16, height: 16}} />} />
+          }
+          heading="Analytics"
+          headingHref="/"
+        />
       }>
       <XDSSideNavSection title="Platform">
         <XDSSideNavItem
           label="Dashboard"
-          icon={DashboardIcon}
+          icon={HomeIcon}
           isSelected={active === 'dashboard'}
           onClick={() => setActive('dashboard')}
         />
         <XDSSideNavItem
-          label="Lifecycle"
-          icon={LifecycleIcon}
-          isSelected={active === 'lifecycle'}
-          onClick={() => setActive('lifecycle')}
-        />
-        <XDSSideNavItem
-          label="Analytics"
-          icon={AnalyticsIcon}
-          isSelected={active === 'analytics'}
-          onClick={() => setActive('analytics')}
-        />
-        <XDSSideNavItem
           label="Projects"
-          icon={ProjectsIcon}
+          icon={FolderIcon}
           isSelected={active === 'projects'}
           onClick={() => setActive('projects')}
         />
         <XDSSideNavItem
+          label="Analytics"
+          icon={ChartBarIcon}
+          isSelected={active === 'analytics'}
+          onClick={() => setActive('analytics')}
+        />
+        <XDSSideNavItem
           label="Team"
-          icon={TeamIcon}
+          icon={UserGroupIcon}
           isSelected={active === 'team'}
           onClick={() => setActive('team')}
         />
@@ -825,27 +726,15 @@ function DashboardSideNav() {
       <XDSSideNavSection title="Documents">
         <XDSSideNavItem
           label="Data Library"
-          icon={DataIcon}
+          icon={CircleStackIcon}
           isSelected={active === 'data'}
           onClick={() => setActive('data')}
         />
         <XDSSideNavItem
           label="Reports"
-          icon={ReportsIcon}
+          icon={DocumentTextIcon}
           isSelected={active === 'reports'}
           onClick={() => setActive('reports')}
-        />
-        <XDSSideNavItem
-          label="Word Assistant"
-          icon={WordIcon}
-          isSelected={active === 'word'}
-          onClick={() => setActive('word')}
-        />
-        <XDSSideNavItem
-          label="More"
-          icon={MoreIcon}
-          isSelected={active === 'more'}
-          onClick={() => setActive('more')}
         />
       </XDSSideNavSection>
     </XDSSideNav>
@@ -858,16 +747,6 @@ export default function DashboardTemplate() {
   return (
     <XDSAppShell
       sideNav={<DashboardSideNav />}
-      topNav={
-        <XDSTopNav
-          endContent={
-            <XDSLink label="GitHub" href="#">
-              GitHub
-            </XDSLink>
-          }>
-          <XDSTopNavHeading>Analytics</XDSTopNavHeading>
-        </XDSTopNav>
-      }
       variant="elevated"
       height="auto"
       contentPadding={6}>
@@ -880,7 +759,7 @@ export default function DashboardTemplate() {
               label="Reload"
               variant="secondary"
               size="md"
-              icon={<ReloadIcon style={{width: 16, height: 16}} />}>
+              icon={<ArrowPathIcon style={{width: 16, height: 16}} />}>
               Reload
             </XDSButton>
           </XDSHStack>
