@@ -204,7 +204,7 @@ export default function PaymentFormPage() {
                   <div style={{display: "flex", flexDirection: "column", gap: 2}}>
                     <div {...stylex.props(styles.sectionTitle)}>Delivery</div>
                     <XDSText type="supporting" color="secondary">
-                      Please allow 1–3 business days processing time before your order ships. Thank you for your patience.
+                      Please allow 1–3 business days processing time before your order ships.
                     </XDSText>
                   </div>
                   <XDSRadioList label="Delivery method" value={deliveryMethod} onChange={setDeliveryMethod}>
