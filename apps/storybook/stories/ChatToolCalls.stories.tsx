@@ -1,6 +1,9 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSChatToolCalls, type XDSChatToolCallItem} from '@xds/core/Chat';
 import {useState, useEffect, useCallback} from 'react';
+import {XDSDialog} from '@xds/core/Dialog';
+import {XDSDialogHeader} from '@xds/core/Dialog';
+import {XDSCodeBlock} from '@xds/core/CodeBlock';
 
 const meta: Meta<typeof XDSChatToolCalls> = {
   title: 'Chat/XDSChatToolCalls',
@@ -185,36 +188,93 @@ export const ManyCalls: Story = {
   ),
 };
 
-/** Interactive calls — onClick opens detail (e.g. modal, panel) */
+/** Interactive calls — edit opens a diff modal, bash opens output */
 export const Interactive: Story = {
-  render: () => (
-    <XDSChatToolCalls
-      calls={[
-        {
-          name: 'edit',
-          label: 'XDSButton.tsx',
-          status: 'complete',
-          duration: '85ms',
-          node: 'xds',
-          stats: {additions: 12, deletions: 3},
-          onClick: () => alert('Open diff for XDSButton.tsx'),
-        },
-        {
-          name: 'bash',
-          label: 'yarn test',
-          status: 'complete',
-          duration: '6.1s',
-          node: 'xds',
-          onClick: () => alert('Open test output'),
-        },
-        {
-          name: 'web_search',
-          label: 'CSS anchor positioning',
-          status: 'complete',
-          duration: '1.8s',
-          // no onClick — not interactive
-        },
-      ]}
-    />
-  ),
+  render: () => {
+    const [dialogOpen, setDialogOpen] = useState(false);
+    const [dialogTitle, setDialogTitle] = useState('');
+    const [dialogCode, setDialogCode] = useState('');
+    const [dialogLang, setDialogLang] = useState('');
+
+    const openDetail = (title: string, code: string, lang: string) => {
+      setDialogTitle(title);
+      setDialogCode(code);
+      setDialogLang(lang);
+      setDialogOpen(true);
+    };
+
+    const editDiff = `--- a/packages/core/src/Button/XDSButton.tsx
++++ b/packages/core/src/Button/XDSButton.tsx
+@@ -55,7 +55,7 @@ const styles = stylex.create({
+     gap: spacingVars['--spacing-2'],
+     paddingBlock: spacingVars['--spacing-2'],
+     paddingInline: spacingVars['--spacing-3'],
+-    '--button-radius': radiusVars['--radius-element'],
+-    borderRadius: 'var(--button-radius)',
++    borderRadius: 'var(--button-radius, var(--radius-element))',
+     fontFamily: 'inherit',
+     fontSize: typeScaleVars['--text-label-size'],
+     lineHeight: typeScaleVars['--text-label-leading'],
+@@ -93,6 +93,10 @@ const styles = stylex.create({
+     '--button-icon-only-aspect': '1 / 1',
+     aspectRatio: 'var(--button-icon-only-aspect)',
+   },
++  // Focus ring offset for accessibility
++  focusVisible: {
++    outline: '2px solid var(--color-ring-focus)',
++    outlineOffset: '2px',
++  },
+ });`;
+
+    const testOutput = `$ yarn test
+ PASS  packages/core/src/Button/XDSButton.test.tsx
+ PASS  packages/core/src/Chat/XDSChatToolCalls.test.tsx
+ PASS  packages/core/src/Chat/XDSChatComposerInput.test.tsx
+
+Test Suites: 7 passed, 7 total
+Tests:       67 passed, 67 total
+Time:        6.1s`;
+
+    return (
+      <>
+        <XDSChatToolCalls
+          calls={[
+            {
+              name: 'edit',
+              label: 'XDSButton.tsx',
+              status: 'complete',
+              duration: '85ms',
+              node: 'xds',
+              stats: {additions: 12, deletions: 3},
+              onClick: () => openDetail('XDSButton.tsx', editDiff, 'diff'),
+            },
+            {
+              name: 'bash',
+              label: 'yarn test',
+              status: 'complete',
+              duration: '6.1s',
+              node: 'xds',
+              onClick: () => openDetail('yarn test', testOutput, 'bash'),
+            },
+            {
+              name: 'web_search',
+              label: 'CSS anchor positioning',
+              status: 'complete',
+              duration: '1.8s',
+            },
+          ]}
+        />
+        <XDSDialog
+          isOpen={dialogOpen}
+          onOpenChange={setDialogOpen}
+          variant="standard"
+          style={{maxWidth: 640}}>
+          <XDSDialogHeader title={dialogTitle} onDismiss={() => setDialogOpen(false)} />
+          <div style={{padding: 16}}>
+            <XDSCodeBlock code={dialogCode} language={dialogLang} />
+          </div>
+        </XDSDialog>
+      </>
+    );
+  },
 };
