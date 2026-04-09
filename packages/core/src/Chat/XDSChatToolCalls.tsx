@@ -510,7 +510,9 @@ export function XDSChatToolCalls(props: XDSChatToolCallsProps) {
     ...rest
   } = props;
 
-  const autoDefault = defaultIsExpanded ?? calls.length <= 3;
+  const hasErrors = calls.some(c => c.status === 'error');
+  const errorCount = calls.filter(c => c.status === 'error').length;
+  const autoDefault = defaultIsExpanded ?? (hasErrors || calls.length <= 3);
   const [internalExpanded, setInternalExpanded] = useState(autoDefault);
   const isControlled = controlledExpanded !== undefined;
   const isExpanded = isControlled ? controlledExpanded : internalExpanded;
@@ -540,7 +542,11 @@ export function XDSChatToolCalls(props: XDSChatToolCallsProps) {
   }
 
   // Multiple calls: collapsible group
-  const label = customLabel ?? `${calls.length} tool calls`;
+  const label = customLabel ?? (
+    hasErrors
+      ? `${calls.length} tool calls \u00b7 ${errorCount} failed`
+      : `${calls.length} tool calls`
+  );
 
   return (
     <div
