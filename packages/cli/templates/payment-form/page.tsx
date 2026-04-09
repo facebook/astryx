@@ -146,6 +146,10 @@ export default function PaymentFormPage() {
     cvc: !cvc.trim() ? 'Required' : undefined,
     cardNumber: paymentMethod === 'card' && !cardNumber.trim() ? 'Required' : undefined,
     cardName: paymentMethod === 'card' && !cardName.trim() ? 'Required' : undefined,
+    billingAddress: !billingMatchesShipping && !billingAddress.trim() ? 'Required' : undefined,
+    billingCity: !billingMatchesShipping && !billingCity.trim() ? 'Required' : undefined,
+    billingZip: !billingMatchesShipping && !billingZip.trim() ? 'Required' : undefined,
+    billingState: !billingMatchesShipping && !billingState ? 'Required' : undefined,
   } : {};
 
   return (
@@ -267,12 +271,12 @@ export default function PaymentFormPage() {
                     <XDSCheckboxInput label="Use shipping address as billing address" value={billingMatchesShipping} onChange={setBillingMatchesShipping} />
                     {!billingMatchesShipping && (
                       <XDSVStack gap={3}>
-                        <XDSTextInput size="lg" label="Address" placeholder="123 Main Street" value={billingAddress} onChange={setBillingAddress} />
+                        <XDSTextInput size="lg" label="Address" placeholder="123 Main Street" value={billingAddress} onChange={setBillingAddress} status={errors.billingAddress ? {type: 'error', message: errors.billingAddress} : undefined} />
                         <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12}}>
-                          <XDSTextInput size="lg" label="City" placeholder="New York" value={billingCity} onChange={setBillingCity} />
-                          <XDSTextInput size="lg" label="ZIP Code" placeholder="10001" value={billingZip} onChange={setBillingZip} />
+                          <XDSTextInput size="lg" label="City" placeholder="New York" value={billingCity} onChange={setBillingCity} status={errors.billingCity ? {type: 'error', message: errors.billingCity} : undefined} />
+                          <XDSTextInput size="lg" label="ZIP Code" placeholder="10001" value={billingZip} onChange={setBillingZip} status={errors.billingZip ? {type: 'error', message: errors.billingZip} : undefined} />
                         </div>
-                        <XDSSelector size="lg" label="State" placeholder="Select state" options={US_STATES} value={billingState} onChange={setBillingState} />
+                        <XDSSelector size="lg" label="State" placeholder="Select state" options={US_STATES} value={billingState} onChange={setBillingState} status={errors.billingState ? {type: 'error', message: errors.billingState} : undefined} />
                       </XDSVStack>
                     )}
                   </XDSVStack>
