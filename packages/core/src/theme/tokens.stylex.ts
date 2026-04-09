@@ -48,6 +48,8 @@ export const colorDefaults = {
   // Surface variants
   '--color-background-card': 'light-dark(#FFFFFF, #1F1F22)',
   '--color-background-popover': 'light-dark(#FFFFFF, #28292C)',
+  '--color-background-inverted': 'light-dark(#0A1317, #FFFFFF)',
+  '--color-background-error-inverted': 'light-dark(#AA071E, #E3193B)',
 
   // Status/Sentiment
   '--color-success': 'light-dark(#0D8626, #0D8626)',
