@@ -302,7 +302,7 @@ export default function PaymentFormPage() {
                 gap: 32,
               }}>
               {/* Sign in */}
-              <div style={{display: 'flex', flexDirection: 'column', gap: 2}}>
+              <XDSVStack gap={1}>
                 <XDSHStack gap={2} hAlign="between" vAlign="center">
                   <div {...stylex.props(styles.sectionTitle)}>
                     Sign in to check out
@@ -318,7 +318,7 @@ export default function PaymentFormPage() {
                   Sign in to track your order and save your information for
                   faster checkout.
                 </XDSText>
-              </div>
+              </XDSVStack>
 
               {/* Contact Information */}
               <XDSVStack gap={3}>
@@ -459,13 +459,13 @@ export default function PaymentFormPage() {
 
               {/* Delivery */}
               <XDSVStack gap={3}>
-                <div style={{display: 'flex', flexDirection: 'column', gap: 2}}>
+                <XDSVStack gap={1}>
                   <div {...stylex.props(styles.sectionTitle)}>Delivery</div>
                   <XDSText type="supporting" color="secondary">
                     Please allow 1–3 business days processing time before your
                     order ships.
                   </XDSText>
-                </div>
+                </XDSVStack>
                 <XDSRadioList
                   label="Delivery method"
                   value={deliveryMethod}
@@ -493,14 +493,14 @@ export default function PaymentFormPage() {
 
               {/* Payment Method */}
               <XDSVStack gap={3}>
-                <div style={{display: 'flex', flexDirection: 'column', gap: 2}}>
+                <XDSVStack gap={1}>
                   <div {...stylex.props(styles.sectionTitle)}>
                     Payment Method
                   </div>
                   <XDSText type="supporting" color="secondary">
                     All transactions are secure and encrypted.
                   </XDSText>
-                </div>
+                </XDSVStack>
 
                 {/* Express checkout */}
                 <XDSVStack gap={3}>
