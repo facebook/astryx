@@ -15,6 +15,24 @@ import {
   fontWeightVars,
   spacingVars,
 } from '@xds/core/theme/tokens.stylex';
+import {XDSAppShell} from '@xds/core/AppShell';
+import {
+  XDSSideNav,
+  XDSSideNavHeading,
+  XDSSideNavSection,
+  XDSSideNavItem,
+} from '@xds/core/SideNav';
+import {XDSNavIcon} from '@xds/core/NavIcon';
+import {
+  HomeIcon,
+  BookOpenIcon,
+  Squares2X2Icon,
+  WrenchScrewdriverIcon,
+} from '@heroicons/react/24/outline';
+import {
+  HomeIcon as HomeIconSolid,
+  BookOpenIcon as BookOpenIconSolid,
+} from '@heroicons/react/24/solid';
 
 interface LibraryItem {
   id: string;
@@ -427,92 +445,94 @@ export default function LibraryPage() {
   }, [activeTab, filtered]);
 
   return (
-    <div {...stylex.props(styles.page)}>
-      {/* Page header */}
-      <header {...stylex.props(styles.pageHeader)}>
-        <div {...stylex.props(styles.pageTitle)}>
-          <XDSHeading level={1}>Library</XDSHeading>
-        </div>
-        <div {...stylex.props(styles.tabsRow)}>
-          <XDSTabList value={activeTab} onChange={setActiveTab}>
-            {CATEGORIES.map(cat => (
-              <XDSTab key={cat} value={cat} label={cat} />
-            ))}
-          </XDSTabList>
-        </div>
-      </header>
+    <XDSAppShell sideNav={<LibraryNav />} contentPadding={0}>
+      <div {...stylex.props(styles.page)}>
+        {/* Page header */}
+        <header {...stylex.props(styles.pageHeader)}>
+          <div {...stylex.props(styles.pageTitle)}>
+            <XDSHeading level={1}>Library</XDSHeading>
+          </div>
+          <div {...stylex.props(styles.tabsRow)}>
+            <XDSTabList value={activeTab} onChange={setActiveTab}>
+              {CATEGORIES.map(cat => (
+                <XDSTab key={cat} value={cat} label={cat} />
+              ))}
+            </XDSTabList>
+          </div>
+        </header>
 
-      {/* Page content */}
-      <section {...stylex.props(styles.pageContent)}>
-        <div {...stylex.props(styles.filterBar)}>
-          <XDSHStack gap={3} vAlign="center">
-            <div {...stylex.props(styles.filterSearch)}>
-              <XDSTextInput
-                label="Search"
-                isLabelHidden
-                placeholder="Search..."
-                value={search}
-                onChange={setSearch}
-              />
-            </div>
-            <div {...stylex.props(styles.filterSelectors)}>
-              <div {...stylex.props(styles.selectorWrapper)}>
-                <XDSSelector
-                  label="Type"
+        {/* Page content */}
+        <section {...stylex.props(styles.pageContent)}>
+          <div {...stylex.props(styles.filterBar)}>
+            <XDSHStack gap={3} vAlign="center">
+              <div {...stylex.props(styles.filterSearch)}>
+                <XDSTextInput
+                  label="Search"
                   isLabelHidden
-                  options={TYPE_OPTIONS}
-                  value={typeFilter}
-                  onChange={v => setTypeFilter(v as string)}
+                  placeholder="Search..."
+                  value={search}
+                  onChange={setSearch}
                 />
               </div>
-              <div {...stylex.props(styles.selectorWrapper)}>
-                <XDSSelector
-                  label="Sort by"
-                  isLabelHidden
-                  options={SORT_OPTIONS}
-                  value={sortBy}
-                  onChange={v => setSortBy(v as string)}
-                />
+              <div {...stylex.props(styles.filterSelectors)}>
+                <div {...stylex.props(styles.selectorWrapper)}>
+                  <XDSSelector
+                    label="Type"
+                    isLabelHidden
+                    options={TYPE_OPTIONS}
+                    value={typeFilter}
+                    onChange={v => setTypeFilter(v as string)}
+                  />
+                </div>
+                <div {...stylex.props(styles.selectorWrapper)}>
+                  <XDSSelector
+                    label="Sort by"
+                    isLabelHidden
+                    options={SORT_OPTIONS}
+                    value={sortBy}
+                    onChange={v => setSortBy(v as string)}
+                  />
+                </div>
               </div>
-            </div>
-          </XDSHStack>
-        </div>
+            </XDSHStack>
+          </div>
 
-        {filtered.length === 0 ? (
-          <div {...stylex.props(styles.emptyState)}>
-            <XDSText type="supporting" color="secondary">
-              No results found.
-            </XDSText>
-          </div>
-        ) : groupedSections != null ? (
-          <div>
-            {groupedSections.map((section, i) => (
-              <div key={section.category}>
-                {i > 0 && (
-                  <div {...stylex.props(styles.dividerRow)}>
-                    <XDSDivider />
-                  </div>
-                )}
-                <LibrarySection
-                  category={section.category}
-                  items={section.items}
-                />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(4, 1fr)',
-              gap: 20,
-            }}>
-            {filtered.map(item => (
-              <LibraryCard key={item.id} item={item} />
-            ))}
-          </div>
-        )}
-      </section>
-    </div>
+          {filtered.length === 0 ? (
+            <div {...stylex.props(styles.emptyState)}>
+              <XDSText type="supporting" color="secondary">
+                No results found.
+              </XDSText>
+            </div>
+          ) : groupedSections != null ? (
+            <div>
+              {groupedSections.map((section, i) => (
+                <div key={section.category}>
+                  {i > 0 && (
+                    <div {...stylex.props(styles.dividerRow)}>
+                      <XDSDivider />
+                    </div>
+                  )}
+                  <LibrarySection
+                    category={section.category}
+                    items={section.items}
+                  />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(4, 1fr)',
+                gap: 20,
+              }}>
+              {filtered.map(item => (
+                <LibraryCard key={item.id} item={item} />
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
+    </XDSAppShell>
   );
 }

@@ -89,7 +89,6 @@ export const categories: SandboxCategory[] = [
         href: '/pages/example/',
         description: 'General component composition examples',
       },
-
     ],
   },
   {
@@ -100,7 +99,7 @@ export const categories: SandboxCategory[] = [
     pages: [
       {
         name: 'Library',
-        href: '/pages/library/',
+        href: '/templates/library/',
         description: 'Browsable grid of XDS components organized by category',
       },
       ...autoDiscoveredTemplates.map(t => ({
