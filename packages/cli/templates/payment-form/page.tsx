@@ -223,6 +223,15 @@ export default function PaymentFormPage() {
                   {/* Express checkout */}
                   <XDSVStack gap={3}>
                     <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, alignItems: 'start'}}>
+                      {/* PayPal */}
+                      <button onClick={() => {}} style={{display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFC439', border: 'none', borderRadius: 8, cursor: 'pointer', padding: '0 16px', height: 36}}>
+                        <img src="https://www.paypalobjects.com/webstatic/mktg/Logo/pp-logo-100px.png" alt="PayPal" style={{height: 20, width: 'auto'}} />
+                      </button>
+                      {/* Google Pay */}
+                      <button onClick={() => {}} style={{display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#000', border: 'none', borderRadius: 8, cursor: 'pointer', padding: '0 16px', height: 36}}>
+                        <img src="https://pay.google.com/about/static_kcs/images/logos/google-pay-logo.svg" alt="Google Pay" style={{height: 22, width: 'auto', filter: 'brightness(0) invert(1)'}} />
+                      </button>
+                      {/* Shop Pay */}
                       <button onClick={() => {}} style={{display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#5433EB', border: 'none', borderRadius: 8, cursor: 'pointer', padding: '0 16px', height: 36}}>
                         <span style={{color: 'white', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif', fontSize: 14, fontWeight: 700, letterSpacing: '0.1px'}}>Shop Pay</span>
                       </button>
