@@ -61,8 +61,8 @@ export const neutralTheme = defineTheme({
     '--color-text-secondary': ['oklch(0.556 0 0)', 'oklch(0.708 0 0)'],
     '--color-text-disabled': ['oklch(0.708 0 0)', 'oklch(0.439 0 0)'],
     '--color-text-accent': ['oklch(0.205 0 0)', 'oklch(0.922 0 0)'],
-    '--color-on-dark': ['oklch(1 0 0)', 'oklch(0.145 0 0)'],
-    '--color-on-light': ['oklch(0.145 0 0)', 'oklch(0.145 0 0)'],
+    '--color-on-dark': 'oklch(1 0 0)',
+    '--color-on-light': 'oklch(0.145 0 0)',
     // Contrast: neutral accent is near-black (L) / near-white (D)
     '--color-on-accent': ['oklch(1 0 0)', 'oklch(0.145 0 0)'],
     '--color-on-success': ['oklch(1 0 0)', 'oklch(0.145 0 0)'],

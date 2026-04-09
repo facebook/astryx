@@ -45,5 +45,32 @@ export const defaultTheme = defineTheme({
     // No manual heading: { ... } or text: { ... } blocks needed.
   },
 
+  // =========================================================================
+  // On-media overrides
+  // =========================================================================
+  // Customize how components look on inverted surfaces (e.g. dark toast on
+  // a light page). color-scheme + base token overrides are provided by
+  // default; these add component-level adjustments.
+
+  onDark: {
+    components: {
+      button: {
+        'variant:secondary': {
+          backgroundColor: 'color-mix(in srgb, white 20%, transparent)',
+        },
+      },
+    },
+  },
+
+  onLight: {
+    components: {
+      button: {
+        'variant:secondary': {
+          backgroundColor: 'color-mix(in srgb, black 10%, transparent)',
+        },
+      },
+    },
+  },
+
   icons: defaultIconRegistry,
 });

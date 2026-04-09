@@ -33,3 +33,5 @@ export type {
   StreamingTextSpeed,
   UseStreamingTextOptions,
 } from './useXDSStreamingText';
+export {useImageMode} from './useImageMode';
+export type {ImageSampleRegion, UseImageModeOptions} from './useImageMode';
