@@ -459,6 +459,9 @@ export const metaTheme = defineTheme({
     // =========================================================================
     switch: {
       base: {backgroundColor: '#8F9296'},
+      checked: {
+        backgroundColor: 'var(--color-accent)',
+      },
       ':hover': {
         backgroundColor: 'color-mix(in srgb, #8F9296, black 5%)',
       },
