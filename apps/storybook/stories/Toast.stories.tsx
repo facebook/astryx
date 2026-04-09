@@ -1,6 +1,6 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {useState, useRef} from 'react';
-import {useXDSToast} from '@xds/core/Toast';
+import {useXDSToast, XDSToastViewport} from '@xds/core/Toast';
 import type {XDSToastType} from '@xds/core/Toast';
 import {XDSButton} from '@xds/core/Button';
 import {XDSLink} from '@xds/core/Link';
@@ -319,7 +319,6 @@ export const NoProvider: StoryObj = {
 
 export const ToastOverDialog: StoryObj = {
   render: function ToastOverDialogStory() {
-    const toast = useXDSToast();
     const [isOpen, setIsOpen] = useState(false);
     return (
       <XDSStack gap={2}>
@@ -327,33 +326,10 @@ export const ToastOverDialog: StoryObj = {
         <XDSDialog
           isOpen={isOpen}
           onClose={() => setIsOpen(false)}
-          title="Confirm action"
-          footer={
-            <XDSStack direction="row" gap={2} wrap="wrap">
-              <XDSButton
-                label="Close"
-                variant="secondary"
-                onClick={() => setIsOpen(false)}
-              />
-              <XDSButton
-                label="Toast (stay open)"
-                onClick={() => {
-                  toast({body: 'Toast from inside the dialog!'});
-                }}
-              />
-              <XDSButton
-                label="Error toast"
-                variant="destructive"
-                onClick={() => {
-                  toast({body: 'Something went wrong.', type: 'error'});
-                }}
-              />
-            </XDSStack>
-          }>
-          <p>
-            Fire toasts while the dialog stays open. They should appear above
-            the dialog overlay.
-          </p>
+          title="Dialog with scoped toasts">
+          <XDSToastViewport>
+            <DialogToastContent onClose={() => setIsOpen(false)} />
+          </XDSToastViewport>
         </XDSDialog>
       </XDSStack>
     );
@@ -362,8 +338,40 @@ export const ToastOverDialog: StoryObj = {
     docs: {
       description: {
         story:
-          'Toasts from inside an open dialog. Uses `popover="manual"` on the viewport to render in the top layer above the dialog.',
+          'Dialog with its own `XDSToastViewport` — toasts render inside the dialog\'s top layer context and appear above the dialog overlay.',
       },
     },
   },
 };
+
+function DialogToastContent({onClose}: {onClose: () => void}) {
+  const toast = useXDSToast();
+  return (
+    <XDSStack gap={3}>
+      <p>
+        This dialog has its own toast viewport. Toasts fired here render
+        inside the dialog — above its overlay.
+      </p>
+      <XDSStack direction="row" gap={2} wrap="wrap">
+        <XDSButton
+          label="Close"
+          variant="secondary"
+          onClick={onClose}
+        />
+        <XDSButton
+          label="Show toast"
+          onClick={() => {
+            toast({body: 'Toast from inside the dialog!'});
+          }}
+        />
+        <XDSButton
+          label="Error toast"
+          variant="destructive"
+          onClick={() => {
+            toast({body: 'Something went wrong.', type: 'error'});
+          }}
+        />
+      </XDSStack>
+    </XDSStack>
+  );
+}
