@@ -47,20 +47,142 @@ async function discoverAll() {
   return templates;
 }
 
+const UBIQUITOUS = new Set([
+  'Text', 'Heading', 'Button', 'HStack', 'VStack', 'Link',
+  'StackItem', 'Icon',
+]);
+
+function extractComponents(pagePath) {
+  const src = fs.readFileSync(pagePath, 'utf-8');
+  return [...new Set(
+    (src.match(/XDS[A-Z]\w+/g) || [])
+      .map(n => n.replace(/^XDS/, ''))
+      .filter(n => !['Theme', 'ThemeProvider'].includes(n))
+      .filter(n => !UBIQUITOUS.has(n))
+      .map(n => n.replace(/(Item|Section|Header|Content|Footer|Panel|Heading|CollapseButton|Column|Sortable|Selection|Group|Source)$/, ''))
+      .filter(Boolean),
+  )].sort();
+}
+
+const STRUCTURAL = new Set([
+  'AppShell', 'Layout', 'LayoutHeader', 'LayoutContent', 'LayoutPanel',
+  'LayoutFooter', 'Card', 'Section', 'Grid', 'GridSpan', 'List',
+  'Table', 'TabList', 'Toolbar', 'SideNav', 'TopNav', 'Dialog',
+  'FormLayout', 'Center',
+]);
+
+function extractSkeleton(source) {
+  const lines = source.split('\n');
+  const out = [];
+  let depth = 0;
+  let capturing = false;
+  let inDefaultExport = false;
+  const MAX_LINES = 35;
+  const depthStack = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const t = lines[i].trim();
+
+    if (t.match(/^export\s+default\s+function/)) { inDefaultExport = true; continue; }
+    if (inDefaultExport && t.match(/^return\s*\(/)) { capturing = true; continue; }
+    if (!capturing) continue;
+    if (out.length >= MAX_LINES) {
+      if (!out[out.length - 1]?.includes('...')) out.push('  '.repeat(depth) + '...');
+      continue;
+    }
+
+    const openMatch = t.match(/^<(XDS\w+)/);
+    if (openMatch && !t.startsWith('</')) {
+      const comp = openMatch[1].replace(/^XDS/, '');
+      let tagText = '';
+      for (let j = i; j < Math.min(i + 12, lines.length); j++) {
+        tagText += ' ' + lines[j];
+        if (lines[j].includes('>')) break;
+      }
+
+      const props = [];
+      const propRegex = /\b(padding|contentPadding|gap|rowGap|columnGap|columns|minChildWidth|hasDivider|defaultHasDividers|variant|density|role|height|width|maxWidth)\s*[=]\s*\{?\s*['"]?([^}'"\s,/>]+)/g;
+      let m;
+      while ((m = propRegex.exec(tagText)) !== null) {
+        const val = m[2];
+        if (val === 'true') props.push(m[1]);
+        else if (/^\d+$/.test(val)) props.push(`${m[1]}={${val}}`);
+        else props.push(`${m[1]}="${val}"`);
+      }
+
+      const hasSpatialProps = props.length > 0;
+      const propStr = hasSpatialProps ? ' ' + props.join(' ') : '';
+      const isVStack = comp === 'VStack' || comp === 'HStack';
+      const isSelfClosing = tagText.match(new RegExp('<' + openMatch[1] + '[^>]*/>', 's'));
+
+      if (isVStack && !hasSpatialProps) continue;
+
+      if (isSelfClosing) {
+        out.push('  '.repeat(depth) + `<${comp}${propStr} />`);
+      } else if (STRUCTURAL.has(comp) || (isVStack && hasSpatialProps)) {
+        out.push('  '.repeat(depth) + `<${comp}${propStr}>`);
+        depthStack.push(comp);
+        depth++;
+      } else {
+        out.push('  '.repeat(depth) + `<${comp}${propStr} />`);
+      }
+      continue;
+    }
+
+    const closeMatch = t.match(/^<\/(XDS\w+)>/);
+    if (closeMatch) {
+      const comp = closeMatch[1].replace(/^XDS/, '');
+      if (depthStack.length > 0 && depthStack[depthStack.length - 1] === comp) {
+        depthStack.pop();
+        depth = Math.max(0, depth - 1);
+        out.push('  '.repeat(depth) + `</${comp}>`);
+      }
+      continue;
+    }
+
+    const slotMatch = t.match(/^(header|content|footer|start|end|sideNav|topNav)\s*=\s*\{/);
+    if (slotMatch) {
+      out.push('  '.repeat(depth) + `/* ${slotMatch[1]}: */`);
+      continue;
+    }
+
+    if (t.startsWith('<div') && (t.includes('padding') || t.includes('maxWidth') || t.includes('gap:'))) {
+      const styleProps = [];
+      const divText = lines.slice(i, Math.min(i + 5, lines.length)).join(' ');
+      const pp = divText.match(/padding[^:]*:\s*['"]?([^'"},)]+)/);
+      const mw = divText.match(/maxWidth:\s*(\d+)/);
+      const gp = divText.match(/gap:\s*(\d+)/);
+      const mg = divText.match(/margin:\s*['"]([^'"]+)['"]/);
+      const mi = divText.match(/marginInline:\s*['"]([^'"]+)['"]/);
+      if (pp) styleProps.push(`padding: ${pp[1].trim()}`);
+      if (mw) styleProps.push(`maxWidth: ${mw[1]}`);
+      if (gp) styleProps.push(`gap: ${gp[1]}`);
+      if (mg) styleProps.push(`margin: ${mg[1]}`);
+      if (mi) styleProps.push(`marginInline: ${mi[1]}`);
+      if (styleProps.length > 0) {
+        out.push('  '.repeat(depth) + `/* div: ${styleProps.join(', ')} */`);
+      }
+    }
+  }
+
+  return out.filter(l => l.trim()).join('\n');
+}
+
 /**
  * @param {string} [name]
  * @param {object} [options]
  * @param {string} [options.targetPath]
  * @param {boolean} [options.list]
+ * @param {boolean} [options.skeleton]
  * @param {string} [options.cwd]
  * @returns {Promise<{type: string, data: unknown}>}
  */
 export async function template(name, options = {}) {
-  const {list = false, targetPath, cwd = process.cwd()} = options;
+  const {list = false, skeleton = false, targetPath, cwd = process.cwd()} = options;
   const templates = await discoverAll();
   const templateNames = templates.map(t => t.dirName);
 
-  if (list || !name) {
+  if (list || (!name && !skeleton)) {
     return {
       type: 'template.list',
       data: templates.map(t => ({
@@ -71,11 +193,35 @@ export async function template(name, options = {}) {
     };
   }
 
-  if (!templateNames.includes(name)) {
+  if (name && !templateNames.includes(name)) {
     throw new XDSError(
       `Unknown template "${name}"`,
       templateNames.map(n => ({name: n, reason: 'available template'})),
     );
+  }
+
+  if (skeleton) {
+    if (!name) {
+      throw new XDSError(
+        'Specify a template name for --skeleton',
+        templateNames.map(n => ({name: n, reason: 'available template'})),
+      );
+    }
+    const pagePath = path.join(TEMPLATES_DIR, name, 'page.tsx');
+    if (!fs.existsSync(pagePath)) {
+      throw new XDSError(`No page.tsx found for template "${name}"`);
+    }
+    const src = fs.readFileSync(pagePath, 'utf-8');
+    const doc = await loadTemplateDoc(path.join(TEMPLATES_DIR, name));
+    return {
+      type: 'template.skeleton',
+      data: {
+        template: name,
+        description: doc?.description || '',
+        components: extractComponents(pagePath),
+        skeleton: extractSkeleton(src),
+      },
+    };
   }
 
   const templateDir = path.join(TEMPLATES_DIR, name);
