@@ -258,6 +258,9 @@ const styles = stylex.create({
   statsDeletions: {
     color: colorVars['--color-error'],
   },
+  errorText: {
+    color: colorVars['--color-error'],
+  },
   // Pile effect for grouped tool calls
   pileWrapper: {
     position: 'relative',
@@ -542,11 +545,12 @@ export function XDSChatToolCalls(props: XDSChatToolCallsProps) {
   }
 
   // Multiple calls: collapsible group
-  const label = customLabel ?? (
-    hasErrors
-      ? `${calls.length} tool calls \u00b7 ${errorCount} failed`
-      : `${calls.length} tool calls`
-  );
+  const label = customLabel ?? `${calls.length} tool calls`;
+  const errorLabel = hasErrors ? (
+    <>
+      {label} \u00b7 <span {...stylex.props(styles.errorText)}>{errorCount} failed</span>
+    </>
+  ) : label;
 
   return (
     <div
@@ -572,7 +576,7 @@ export function XDSChatToolCalls(props: XDSChatToolCallsProps) {
         <span {...stylex.props(styles.groupIcon)}>
           <WrenchIcon />
         </span>
-        <span {...stylex.props(styles.groupLabel)}>{label}</span>
+        <span {...stylex.props(styles.groupLabel)}>{errorLabel}</span>
         <span
           {...stylex.props(
             styles.chevron,
