@@ -490,8 +490,7 @@ function generateProseCSS(themeDef) {
  *
  * jiti handles TypeScript transpilation at import time, so the theme
  * file is executed as a real module — imports, variables, spread,
- * function calls all work. This is the same approach Tailwind CSS
- * uses to load tailwind.config.ts.
+ * and function calls all work.
  *
  * Returns the resolved XDSDefinedTheme object (output of defineTheme).
  */
