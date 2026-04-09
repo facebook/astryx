@@ -35,8 +35,7 @@ export const metaTheme = defineTheme({
 
   tokens: {
     // Type workaround: these tokens exist in core but aren't in XDSTokenName yet
-    // @ts-expect-error — token exists in core vars but not in XDSTokenName type
-    '--color-divider-high-contrast': ['#5D6C7B', '#8C939B'],
+    // @ts-expect-error — not in XDSTokenName
     '--color-focus-outline': ['#5D6C7B', '#8C939B'],
     '--elevation-input-hover': 'none',
     // =========================================================================
@@ -321,8 +320,8 @@ export const metaTheme = defineTheme({
     card: {
       base: {
         '--card-radius': '32px',
-        '--xds-card-padding-inline': '20px',
-        '--xds-card-padding-block': '24px',
+        paddingInline: '20px !important',
+        paddingBlock: '24px !important',
       },
     },
 
@@ -439,15 +438,8 @@ export const metaTheme = defineTheme({
     // =========================================================================
     radio: {
       base: {
-        borderColor: '#8F9296',
         borderWidth: '1.5px',
-      },
-      checked: {
-        backgroundColor: 'var(--color-background-surface)',
-        borderColor: 'var(--color-accent)',
-      },
-      ':hover': {
-        borderColor: 'color-mix(in srgb, #8F9296, black 20%)',
+        '--color-border-emphasized': '#8F9296',
       },
     },
     'radio-dot': {
@@ -463,28 +455,19 @@ export const metaTheme = defineTheme({
     // =========================================================================
     checkbox: {
       base: {
-        borderColor: '#8F9296',
         borderWidth: '2px',
         borderRadius: '7px',
-      },
-      checked: {
-        borderColor: 'var(--color-accent)',
-      },
-      ':hover': {
-        borderColor: 'color-mix(in srgb, #8F9296, black 20%)',
+        '--color-border-emphasized': '#8F9296',
       },
     },
 
     // =========================================================================
     // Switch — gray track, pseudo-class hover (#811)
     // =========================================================================
+
     switch: {
-      base: {backgroundColor: '#8F9296'},
-      checked: {
-        backgroundColor: 'var(--color-accent)',
-      },
-      ':hover': {
-        backgroundColor: 'color-mix(in srgb, #8F9296, black 5%)',
+      base: {
+        '--color-background-gray': '#8F9296',
       },
     },
     'switch-thumb': {
@@ -510,14 +493,8 @@ export const metaTheme = defineTheme({
     tab: {
       base: {
         paddingInline: '12px',
-      },
-      selected: {
-        color: 'var(--color-text-primary)',
-        '::after': {
-          height: '1px',
-          borderRadius: '0',
-          backgroundColor: '#111112',
-        },
+        '--color-accent': '#111112',
+        '--color-accent-text': '#111112',
       },
     },
 

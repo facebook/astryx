@@ -28,10 +28,6 @@ export function parseStyleKey(key: string): string {
     .split('+')
     .map(part => {
       const [prop, value] = part.split(':');
-      // Bare key without colon (e.g. 'checked', 'selected') → state class
-      if (value === undefined) {
-        return `.${prop}`;
-      }
       // CSS classes can't start with a digit — prefix with prop name
       if (/^\d/.test(value)) {
         return `.${prop}-${value}`;

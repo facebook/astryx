@@ -203,7 +203,7 @@ export function XDSTab({
   const sharedProps = {
     'aria-current': isSelected ? ('page' as const) : undefined,
     ...mergeProps(
-      xdsClassName('tab', {selected: isSelected ? 'selected' : null}),
+      xdsClassName('tab'),
       stylex.props(
         styles.base,
         sizeStyles[size],

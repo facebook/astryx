@@ -17,13 +17,6 @@
  * }
  * ```
  *
- * For asymmetric padding, use axis-specific overrides that take precedence
- * over the uniform `--xds-{component}-padding`:
- *
- * ```ts
- * card: { base: { '--xds-card-padding-inline': '20px', '--xds-card-padding-block': '24px' } },
- * ```
- *
  * This is the **only** supported way for themes to adjust container padding.
  * Internal variables (`--layout-padding-inner-x`, etc.) are implementation
  * details and must not be referenced by themes.
@@ -72,25 +65,25 @@ const baseStyles = stylex.create({
  */
 const cardDefaultPaddingStyles = stylex.create({
   containerPaddingInline: {
-    '--container-padding-inline': `var(--xds-card-padding-inline, var(--xds-card-padding, ${spacingVars['--spacing-4']}))`,
+    '--container-padding-inline': `var(--xds-card-padding, ${spacingVars['--spacing-4']})`,
   },
   containerPaddingBlockStart: {
-    '--container-padding-block-start': `var(--xds-card-padding-block, var(--xds-card-padding, ${spacingVars['--spacing-4']}))`,
+    '--container-padding-block-start': `var(--xds-card-padding, ${spacingVars['--spacing-4']})`,
   },
   containerPaddingBlockEnd: {
-    '--container-padding-block-end': `var(--xds-card-padding-block, var(--xds-card-padding, ${spacingVars['--spacing-4']}))`,
+    '--container-padding-block-end': `var(--xds-card-padding, ${spacingVars['--spacing-4']})`,
   },
   layoutPaddingOuterX: {
-    '--layout-padding-outer-x': `var(--xds-card-padding-inline, var(--xds-card-padding, ${spacingVars['--spacing-4']}))`,
+    '--layout-padding-outer-x': `var(--xds-card-padding, ${spacingVars['--spacing-4']})`,
   },
   layoutPaddingOuterY: {
-    '--layout-padding-outer-y': `var(--xds-card-padding-block, var(--xds-card-padding, ${spacingVars['--spacing-4']}))`,
+    '--layout-padding-outer-y': `var(--xds-card-padding, ${spacingVars['--spacing-4']})`,
   },
   layoutPaddingInnerX: {
-    '--layout-padding-inner-x': `var(--xds-card-padding-inline, var(--xds-card-padding, ${spacingVars['--spacing-4']}))`,
+    '--layout-padding-inner-x': `var(--xds-card-padding, ${spacingVars['--spacing-4']})`,
   },
   layoutPaddingInnerY: {
-    '--layout-padding-inner-y': `var(--xds-card-padding-block, var(--xds-card-padding, ${spacingVars['--spacing-4']}))`,
+    '--layout-padding-inner-y': `var(--xds-card-padding, ${spacingVars['--spacing-4']})`,
   },
 });
 

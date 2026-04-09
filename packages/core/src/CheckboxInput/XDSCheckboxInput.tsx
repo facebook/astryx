@@ -418,9 +418,7 @@ export function XDSCheckboxInput({
           <div
             aria-hidden="true"
             {...mergeProps(
-              xdsClassName('checkbox', {
-                checked: isCheckedOrIndeterminate ? 'checked' : null,
-              }),
+              xdsClassName('checkbox'),
               stylex.props(
                 styles.checkbox,
                 checkboxSizeStyles[size],
