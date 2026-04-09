@@ -276,6 +276,7 @@ export default function PaymentFormPage() {
                       </XDSVStack>
                     )}
                   </XDSVStack>
+                </XDSVStack>
 
                 {/* Promo Code */}
                 <XDSVStack gap={3}>
