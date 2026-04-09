@@ -2,7 +2,6 @@ import type {Meta, StoryObj} from '@storybook/react';
 import {XDSChatToolCalls, type XDSChatToolCallItem} from '@xds/core/Chat';
 import {useState, useEffect, useCallback} from 'react';
 import {XDSDialog} from '@xds/core/Dialog';
-import {XDSDialogHeader} from '@xds/core/Dialog';
 import {XDSCodeBlock} from '@xds/core/CodeBlock';
 
 const meta: Meta<typeof XDSChatToolCalls> = {
@@ -192,12 +191,10 @@ export const ManyCalls: Story = {
 export const Interactive: Story = {
   render: () => {
     const [dialogOpen, setDialogOpen] = useState(false);
-    const [dialogTitle, setDialogTitle] = useState('');
     const [dialogCode, setDialogCode] = useState('');
     const [dialogLang, setDialogLang] = useState('');
 
-    const openDetail = (title: string, code: string, lang: string) => {
-      setDialogTitle(title);
+    const openDetail = (code: string, lang: string) => {
       setDialogCode(code);
       setDialogLang(lang);
       setDialogOpen(true);
@@ -246,7 +243,7 @@ Time:        6.1s`;
               duration: '85ms',
               node: 'xds',
               stats: {additions: 12, deletions: 3},
-              onClick: () => openDetail('XDSButton.tsx', editDiff, 'typescript'),
+              onClick: () => openDetail(editDiff, 'typescript'),
             },
             {
               name: 'bash',
@@ -254,7 +251,7 @@ Time:        6.1s`;
               status: 'complete',
               duration: '6.1s',
               node: 'xds',
-              onClick: () => openDetail('yarn test', testOutput, 'bash'),
+              onClick: () => openDetail(testOutput, 'bash'),
             },
             {
               name: 'web_search',
@@ -269,7 +266,6 @@ Time:        6.1s`;
           onOpenChange={setDialogOpen}
           variant="standard"
           style={{maxWidth: 720, width: '90vw'}}>
-          <XDSDialogHeader title={dialogTitle} onDismiss={() => setDialogOpen(false)} />
           <XDSCodeBlock code={dialogCode} language={dialogLang} />
         </XDSDialog>
       </>
