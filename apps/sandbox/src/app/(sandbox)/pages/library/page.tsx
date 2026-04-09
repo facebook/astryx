@@ -16,10 +16,6 @@ import {
   spacingVars,
 } from '@xds/core/theme/tokens.stylex';
 
-// =============================================================================
-// Types
-// =============================================================================
-
 interface LibraryItem {
   id: string;
   name: string;
@@ -28,18 +24,11 @@ interface LibraryItem {
   type: 'Component' | 'Pattern' | 'Utility';
 }
 
-// =============================================================================
-// Mock Data
-// =============================================================================
-
 const CATEGORIES = ['All', 'Layout', 'Forms', 'Navigation', 'Feedback', 'Data'];
-
-const SORT_OPTIONS = ['Name (A–Z)', 'Name (Z–A)', 'Category'];
-
+const SORT_OPTIONS = ['Name (A\u2013Z)', 'Name (Z\u2013A)', 'Category'];
 const TYPE_OPTIONS = ['All types', 'Component', 'Pattern', 'Utility'];
 
 const ITEMS: LibraryItem[] = [
-  // Layout
   {
     id: '1',
     name: 'Stack',
@@ -85,7 +74,6 @@ const ITEMS: LibraryItem[] = [
     category: 'Layout',
     type: 'Component',
   },
-  // Forms
   {
     id: '7',
     name: 'TextInput',
@@ -130,7 +118,6 @@ const ITEMS: LibraryItem[] = [
     category: 'Forms',
     type: 'Component',
   },
-  // Navigation
   {
     id: '13',
     name: 'TabList',
@@ -177,7 +164,6 @@ const ITEMS: LibraryItem[] = [
     category: 'Navigation',
     type: 'Pattern',
   },
-  // Feedback
   {
     id: '19',
     name: 'Badge',
@@ -224,7 +210,6 @@ const ITEMS: LibraryItem[] = [
     category: 'Feedback',
     type: 'Component',
   },
-  // Data
   {
     id: '25',
     name: 'Table',
@@ -274,22 +259,20 @@ const ITEMS: LibraryItem[] = [
   },
 ];
 
-// =============================================================================
-// Styles
-// =============================================================================
+// Standard page padding — 24px on all sides for both header and content.
+const PAGE_PAD = spacingVars['--spacing-6'];
 
 const styles = stylex.create({
   page: {
     width: '100%',
+    minHeight: '100%',
   },
-  // Full-width header: use negative horizontal margins to break out of the
-  // AppShell's 16px content padding, then restore it with matching paddingInline.
+  // Full-width header. paddingBottom is kept so the tab negative-margin
+  // pulls the tabs down to sit exactly on the bottom border line.
   pageHeader: {
-    marginInline: `calc(${spacingVars['--spacing-4']} * -1)`,
-    marginTop: `calc(${spacingVars['--spacing-4']} * -1)`,
-    paddingInline: spacingVars['--spacing-6'],
-    paddingTop: spacingVars['--spacing-6'],
-    paddingBottom: spacingVars['--spacing-6'],
+    paddingInline: PAGE_PAD,
+    paddingTop: PAGE_PAD,
+    paddingBottom: PAGE_PAD,
     borderBottomWidth: '1px',
     borderBottomStyle: 'solid',
     borderBottomColor: colorVars['--color-border'],
@@ -297,15 +280,14 @@ const styles = stylex.create({
   pageTitle: {
     marginBottom: spacingVars['--spacing-4'],
   },
-  // Tabs sit at the bottom of the header — negative margin pulls them onto the border
+  // Negative margin = -(paddingBottom + 1px border) pulls tabs onto the border.
   tabsRow: {
-    marginBottom: `calc(${spacingVars['--spacing-6']} * -1 - 1px)`,
+    marginBottom: `calc(${PAGE_PAD} * -1 - 1px)`,
   },
-  // Content section with padding matching the header
   pageContent: {
-    paddingInline: spacingVars['--spacing-6'],
-    paddingTop: spacingVars['--spacing-6'],
-    marginInline: `calc(${spacingVars['--spacing-4']} * -1)`,
+    paddingInline: PAGE_PAD,
+    paddingTop: PAGE_PAD,
+    paddingBottom: PAGE_PAD,
   },
   filterBar: {
     paddingBottom: spacingVars['--spacing-4'],
@@ -363,10 +345,6 @@ const styles = stylex.create({
   },
 });
 
-// =============================================================================
-// Card
-// =============================================================================
-
 function LibraryCard({item}: {item: LibraryItem}) {
   return (
     <XDSCard>
@@ -380,10 +358,6 @@ function LibraryCard({item}: {item: LibraryItem}) {
     </XDSCard>
   );
 }
-
-// =============================================================================
-// Section (category group with heading + grid)
-// =============================================================================
 
 function LibrarySection({
   category,
@@ -411,47 +385,34 @@ function LibrarySection({
   );
 }
 
-// =============================================================================
-// Page
-// =============================================================================
-
 export default function LibraryPage() {
   const [activeTab, setActiveTab] = useState('All');
   const [search, setSearch] = useState('');
-  const [sortBy, setSortBy] = useState('Name (A–Z)');
+  const [sortBy, setSortBy] = useState('Name (A\u2013Z)');
   const [typeFilter, setTypeFilter] = useState('All types');
 
   const filtered = useMemo(() => {
     let items =
-      activeTab === 'All'
-        ? ITEMS
-        : ITEMS.filter(item => item.category === activeTab);
-
-    if (typeFilter !== 'All types') {
-      items = items.filter(item => item.type === typeFilter);
-    }
-
+      activeTab === 'All' ? ITEMS : ITEMS.filter(i => i.category === activeTab);
+    if (typeFilter !== 'All types')
+      items = items.filter(i => i.type === typeFilter);
     if (search.trim()) {
       const q = search.toLowerCase();
       items = items.filter(
-        item =>
-          item.name.toLowerCase().includes(q) ||
-          item.description.toLowerCase().includes(q),
+        i =>
+          i.name.toLowerCase().includes(q) ||
+          i.description.toLowerCase().includes(q),
       );
     }
-
-    if (sortBy === 'Name (A–Z)') {
+    if (sortBy === 'Name (A\u2013Z)')
       items = [...items].sort((a, b) => a.name.localeCompare(b.name));
-    } else if (sortBy === 'Name (Z–A)') {
+    else if (sortBy === 'Name (Z\u2013A)')
       items = [...items].sort((a, b) => b.name.localeCompare(a.name));
-    } else if (sortBy === 'Category') {
+    else if (sortBy === 'Category')
       items = [...items].sort((a, b) => a.category.localeCompare(b.category));
-    }
-
     return items;
   }, [activeTab, search, sortBy, typeFilter]);
 
-  // Group by category for the "All" tab
   const groupedSections = useMemo(() => {
     if (activeTab !== 'All') return null;
     const order = CATEGORIES.filter(c => c !== 'All');
@@ -467,7 +428,7 @@ export default function LibraryPage() {
 
   return (
     <div {...stylex.props(styles.page)}>
-      {/* ── Page header ─────────────────────────────────────────────────── */}
+      {/* Page header */}
       <header {...stylex.props(styles.pageHeader)}>
         <div {...stylex.props(styles.pageTitle)}>
           <XDSHeading level={1}>Library</XDSHeading>
@@ -481,9 +442,8 @@ export default function LibraryPage() {
         </div>
       </header>
 
-      {/* ── Page content ────────────────────────────────────────────────── */}
+      {/* Page content */}
       <section {...stylex.props(styles.pageContent)}>
-        {/* Filter bar */}
         <div {...stylex.props(styles.filterBar)}>
           <XDSHStack gap={3} vAlign="center">
             <div {...stylex.props(styles.filterSearch)}>
@@ -518,7 +478,6 @@ export default function LibraryPage() {
           </XDSHStack>
         </div>
 
-        {/* Grid content */}
         {filtered.length === 0 ? (
           <div {...stylex.props(styles.emptyState)}>
             <XDSText type="supporting" color="secondary">
