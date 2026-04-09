@@ -20,6 +20,7 @@ import {
   useCallback,
   useRef,
   type ChangeEvent,
+  type KeyboardEvent,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {XDSIconName} from '../Icon';
@@ -207,6 +208,14 @@ export interface XDSTextInputProps extends Omit<
    * Useful for form submissions.
    */
   htmlName?: string;
+  /**
+   * Callback fired when the user presses the Enter key.
+   */
+  onEnter?: () => void;
+  /**
+   * Callback fired on keydown events on the input.
+   */
+  onKeyDown?: (e: KeyboardEvent<HTMLInputElement>) => void;
 }
 
 /**
@@ -238,6 +247,8 @@ export function XDSTextInput({
   hasClear = false,
   hasAutoFocus = false,
   htmlName,
+  onEnter,
+  onKeyDown,
   xstyle,
   className,
   style,
@@ -349,6 +360,16 @@ export function XDSTextInput({
           type={type}
           value={String(optimisticValue)}
           onChange={handleChange}
+          onKeyDown={
+            onEnter || onKeyDown
+              ? e => {
+                  if (e.key === 'Enter') {
+                    onEnter?.();
+                  }
+                  onKeyDown?.(e);
+                }
+              : undefined
+          }
           placeholder={placeholder}
           disabled={isDisabled}
           autoFocus={hasAutoFocus}

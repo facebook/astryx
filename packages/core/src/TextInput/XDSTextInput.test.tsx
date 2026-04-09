@@ -324,6 +324,81 @@ describe('XDSTextInput', () => {
     });
   });
 
+  describe('onEnter', () => {
+    it('calls onEnter when Enter key is pressed', async () => {
+      const user = userEvent.setup();
+      const handleEnter = vi.fn();
+      render(
+        <XDSTextInput
+          label="Name"
+          value="hello"
+          onChange={() => {}}
+          onEnter={handleEnter}
+        />,
+      );
+      const input = screen.getByRole('textbox');
+      await user.click(input);
+      await user.keyboard('{Enter}');
+      expect(handleEnter).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not call onEnter for other keys', async () => {
+      const user = userEvent.setup();
+      const handleEnter = vi.fn();
+      render(
+        <XDSTextInput
+          label="Name"
+          value=""
+          onChange={() => {}}
+          onEnter={handleEnter}
+        />,
+      );
+      const input = screen.getByRole('textbox');
+      await user.click(input);
+      await user.keyboard('abc');
+      expect(handleEnter).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('onKeyDown', () => {
+    it('passes through onKeyDown events', async () => {
+      const user = userEvent.setup();
+      const handleKeyDown = vi.fn();
+      render(
+        <XDSTextInput
+          label="Name"
+          value=""
+          onChange={() => {}}
+          onKeyDown={handleKeyDown}
+        />,
+      );
+      const input = screen.getByRole('textbox');
+      await user.click(input);
+      await user.keyboard('a');
+      expect(handleKeyDown).toHaveBeenCalledTimes(1);
+    });
+
+    it('calls both onKeyDown and onEnter on Enter', async () => {
+      const user = userEvent.setup();
+      const handleKeyDown = vi.fn();
+      const handleEnter = vi.fn();
+      render(
+        <XDSTextInput
+          label="Name"
+          value=""
+          onChange={() => {}}
+          onKeyDown={handleKeyDown}
+          onEnter={handleEnter}
+        />,
+      );
+      const input = screen.getByRole('textbox');
+      await user.click(input);
+      await user.keyboard('{Enter}');
+      expect(handleEnter).toHaveBeenCalledTimes(1);
+      expect(handleKeyDown).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe('hasClear', () => {
     it('shows clear button when hasClear is true and value is non-empty', () => {
       render(
