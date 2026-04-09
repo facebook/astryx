@@ -40,44 +40,242 @@ const TYPE_OPTIONS = ['All types', 'Component', 'Pattern', 'Utility'];
 
 const ITEMS: LibraryItem[] = [
   // Layout
-  {id: '1', name: 'Stack', description: 'Vertical and horizontal stack layouts with configurable gap and alignment.', category: 'Layout', type: 'Component'},
-  {id: '2', name: 'Grid', description: 'Responsive grid container with auto-fit columns and gap control.', category: 'Layout', type: 'Component'},
-  {id: '3', name: 'Card', description: 'Surface container with optional padding, border, and shadow variants.', category: 'Layout', type: 'Component'},
-  {id: '4', name: 'Center', description: 'Centers its child both horizontally and vertically.', category: 'Layout', type: 'Utility'},
-  {id: '5', name: 'Section', description: 'Semantic page section with optional heading and divider.', category: 'Layout', type: 'Pattern'},
-  {id: '6', name: 'Collapsible', description: 'Expandable region with animated height transition.', category: 'Layout', type: 'Component'},
+  {
+    id: '1',
+    name: 'Stack',
+    description:
+      'Vertical and horizontal stack layouts with configurable gap and alignment.',
+    category: 'Layout',
+    type: 'Component',
+  },
+  {
+    id: '2',
+    name: 'Grid',
+    description:
+      'Responsive grid container with auto-fit columns and gap control.',
+    category: 'Layout',
+    type: 'Component',
+  },
+  {
+    id: '3',
+    name: 'Card',
+    description:
+      'Surface container with optional padding, border, and shadow variants.',
+    category: 'Layout',
+    type: 'Component',
+  },
+  {
+    id: '4',
+    name: 'Center',
+    description: 'Centers its child both horizontally and vertically.',
+    category: 'Layout',
+    type: 'Utility',
+  },
+  {
+    id: '5',
+    name: 'Section',
+    description: 'Semantic page section with optional heading and divider.',
+    category: 'Layout',
+    type: 'Pattern',
+  },
+  {
+    id: '6',
+    name: 'Collapsible',
+    description: 'Expandable region with animated height transition.',
+    category: 'Layout',
+    type: 'Component',
+  },
 
   // Forms
-  {id: '7', name: 'TextInput', description: 'Single-line text field with label, placeholder, and validation states.', category: 'Forms', type: 'Component'},
-  {id: '8', name: 'TextArea', description: 'Multi-line text field with auto-resize and character count.', category: 'Forms', type: 'Component'},
-  {id: '9', name: 'CheckboxInput', description: 'Checkbox with label, indeterminate state, and group support.', category: 'Forms', type: 'Component'},
-  {id: '10', name: 'RadioList', description: 'Group of radio buttons with accessible fieldset wrapper.', category: 'Forms', type: 'Component'},
-  {id: '11', name: 'Switch', description: 'Toggle switch for binary on/off settings.', category: 'Forms', type: 'Component'},
-  {id: '12', name: 'Selector', description: 'Dropdown or inline option selector with single and multi-select modes.', category: 'Forms', type: 'Component'},
+  {
+    id: '7',
+    name: 'TextInput',
+    description:
+      'Single-line text field with label, placeholder, and validation states.',
+    category: 'Forms',
+    type: 'Component',
+  },
+  {
+    id: '8',
+    name: 'TextArea',
+    description: 'Multi-line text field with auto-resize and character count.',
+    category: 'Forms',
+    type: 'Component',
+  },
+  {
+    id: '9',
+    name: 'CheckboxInput',
+    description: 'Checkbox with label, indeterminate state, and group support.',
+    category: 'Forms',
+    type: 'Component',
+  },
+  {
+    id: '10',
+    name: 'RadioList',
+    description: 'Group of radio buttons with accessible fieldset wrapper.',
+    category: 'Forms',
+    type: 'Component',
+  },
+  {
+    id: '11',
+    name: 'Switch',
+    description: 'Toggle switch for binary on/off settings.',
+    category: 'Forms',
+    type: 'Component',
+  },
+  {
+    id: '12',
+    name: 'Selector',
+    description:
+      'Dropdown or inline option selector with single and multi-select modes.',
+    category: 'Forms',
+    type: 'Component',
+  },
 
   // Navigation
-  {id: '13', name: 'TabList', description: 'Horizontal tab navigation with underline indicator and keyboard support.', category: 'Navigation', type: 'Component'},
-  {id: '14', name: 'TopNav', description: 'Application top bar with logo, nav links, and action slots.', category: 'Navigation', type: 'Pattern'},
-  {id: '15', name: 'SideNav', description: 'Vertical sidebar navigation with collapsible groups and active states.', category: 'Navigation', type: 'Pattern'},
-  {id: '16', name: 'Breadcrumbs', description: 'Path trail navigation with separator and truncation support.', category: 'Navigation', type: 'Component'},
-  {id: '17', name: 'Pagination', description: 'Page navigation with prev/next controls and page count display.', category: 'Navigation', type: 'Component'},
-  {id: '18', name: 'MobileNav', description: 'Bottom tab bar for mobile viewports with icon and label slots.', category: 'Navigation', type: 'Pattern'},
+  {
+    id: '13',
+    name: 'TabList',
+    description:
+      'Horizontal tab navigation with underline indicator and keyboard support.',
+    category: 'Navigation',
+    type: 'Component',
+  },
+  {
+    id: '14',
+    name: 'TopNav',
+    description: 'Application top bar with logo, nav links, and action slots.',
+    category: 'Navigation',
+    type: 'Pattern',
+  },
+  {
+    id: '15',
+    name: 'SideNav',
+    description:
+      'Vertical sidebar navigation with collapsible groups and active states.',
+    category: 'Navigation',
+    type: 'Pattern',
+  },
+  {
+    id: '16',
+    name: 'Breadcrumbs',
+    description: 'Path trail navigation with separator and truncation support.',
+    category: 'Navigation',
+    type: 'Component',
+  },
+  {
+    id: '17',
+    name: 'Pagination',
+    description:
+      'Page navigation with prev/next controls and page count display.',
+    category: 'Navigation',
+    type: 'Component',
+  },
+  {
+    id: '18',
+    name: 'MobileNav',
+    description:
+      'Bottom tab bar for mobile viewports with icon and label slots.',
+    category: 'Navigation',
+    type: 'Pattern',
+  },
 
   // Feedback
-  {id: '19', name: 'Badge', description: 'Compact label for status, count, or category with semantic color variants.', category: 'Feedback', type: 'Component'},
-  {id: '20', name: 'Banner', description: 'Full-width alert bar for info, success, warning, and error messages.', category: 'Feedback', type: 'Component'},
-  {id: '21', name: 'Spinner', description: 'Animated loading indicator with size and color variants.', category: 'Feedback', type: 'Component'},
-  {id: '22', name: 'ProgressBar', description: 'Horizontal bar indicating task completion percentage.', category: 'Feedback', type: 'Component'},
-  {id: '23', name: 'StatusDot', description: 'Small dot indicator for presence, health, or pipeline status.', category: 'Feedback', type: 'Component'},
-  {id: '24', name: 'Tooltip', description: 'Contextual label that appears on hover with configurable placement.', category: 'Feedback', type: 'Component'},
+  {
+    id: '19',
+    name: 'Badge',
+    description:
+      'Compact label for status, count, or category with semantic color variants.',
+    category: 'Feedback',
+    type: 'Component',
+  },
+  {
+    id: '20',
+    name: 'Banner',
+    description:
+      'Full-width alert bar for info, success, warning, and error messages.',
+    category: 'Feedback',
+    type: 'Component',
+  },
+  {
+    id: '21',
+    name: 'Spinner',
+    description: 'Animated loading indicator with size and color variants.',
+    category: 'Feedback',
+    type: 'Component',
+  },
+  {
+    id: '22',
+    name: 'ProgressBar',
+    description: 'Horizontal bar indicating task completion percentage.',
+    category: 'Feedback',
+    type: 'Component',
+  },
+  {
+    id: '23',
+    name: 'StatusDot',
+    description:
+      'Small dot indicator for presence, health, or pipeline status.',
+    category: 'Feedback',
+    type: 'Component',
+  },
+  {
+    id: '24',
+    name: 'Tooltip',
+    description:
+      'Contextual label that appears on hover with configurable placement.',
+    category: 'Feedback',
+    type: 'Component',
+  },
 
   // Data
-  {id: '25', name: 'Table', description: 'Feature-rich data table with sorting, selection, and column resizing.', category: 'Data', type: 'Component'},
-  {id: '26', name: 'Avatar', description: 'User profile image with fallback initials and status dot support.', category: 'Data', type: 'Component'},
-  {id: '27', name: 'Skeleton', description: 'Placeholder shimmer for loading states matching content shapes.', category: 'Data', type: 'Utility'},
-  {id: '28', name: 'HoverCard', description: 'Rich popover that appears on hover with arbitrary content.', category: 'Data', type: 'Component'},
-  {id: '29', name: 'PowerSearch', description: 'Command-palette style search with grouped results and keyboard nav.', category: 'Data', type: 'Pattern'},
-  {id: '30', name: 'Typeahead', description: 'Autocomplete input with async suggestion loading and selection.', category: 'Data', type: 'Component'},
+  {
+    id: '25',
+    name: 'Table',
+    description:
+      'Feature-rich data table with sorting, selection, and column resizing.',
+    category: 'Data',
+    type: 'Component',
+  },
+  {
+    id: '26',
+    name: 'Avatar',
+    description:
+      'User profile image with fallback initials and status dot support.',
+    category: 'Data',
+    type: 'Component',
+  },
+  {
+    id: '27',
+    name: 'Skeleton',
+    description:
+      'Placeholder shimmer for loading states matching content shapes.',
+    category: 'Data',
+    type: 'Utility',
+  },
+  {
+    id: '28',
+    name: 'HoverCard',
+    description: 'Rich popover that appears on hover with arbitrary content.',
+    category: 'Data',
+    type: 'Component',
+  },
+  {
+    id: '29',
+    name: 'PowerSearch',
+    description:
+      'Command-palette style search with grouped results and keyboard nav.',
+    category: 'Data',
+    type: 'Pattern',
+  },
+  {
+    id: '30',
+    name: 'Typeahead',
+    description:
+      'Autocomplete input with async suggestion loading and selection.',
+    category: 'Data',
+    type: 'Component',
+  },
 ];
 
 // =============================================================================
@@ -136,7 +334,7 @@ const styles = stylex.create({
   },
   typePill: {
     display: 'inline-block',
-    fontSize: textSizeVars['--text-2xs'],
+    fontSize: textSizeVars['--font-size-xs'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
     letterSpacing: '0.05em',
     textTransform: 'uppercase',
@@ -144,13 +342,13 @@ const styles = stylex.create({
     marginBottom: spacingVars['--spacing-0-5'],
   },
   itemName: {
-    fontSize: textSizeVars['--text-base'],
+    fontSize: textSizeVars['--font-size-base'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
     color: colorVars['--color-text-primary'],
     lineHeight: 1.375,
   },
   itemDescription: {
-    fontSize: textSizeVars['--text-sm'],
+    fontSize: textSizeVars['--font-size-sm'],
     color: colorVars['--color-text-secondary'],
     lineHeight: 1.5,
     marginTop: spacingVars['--spacing-0-5'],
@@ -171,7 +369,9 @@ function LibraryCard({item}: {item: LibraryItem}) {
       <div {...stylex.props(styles.cardInner)}>
         <span {...stylex.props(styles.typePill)}>{item.type}</span>
         <span {...stylex.props(styles.itemName)}>{item.name}</span>
-        <span {...stylex.props(styles.itemDescription)}>{item.description}</span>
+        <span {...stylex.props(styles.itemDescription)}>
+          {item.description}
+        </span>
       </div>
     </XDSCard>
   );
@@ -213,9 +413,10 @@ export default function LibraryPage() {
   const [typeFilter, setTypeFilter] = useState('All types');
 
   const filtered = useMemo(() => {
-    let items = activeTab === 'All'
-      ? ITEMS
-      : ITEMS.filter(item => item.category === activeTab);
+    let items =
+      activeTab === 'All'
+        ? ITEMS
+        : ITEMS.filter(item => item.category === activeTab);
 
     if (typeFilter !== 'All types') {
       items = items.filter(item => item.type === typeFilter);
@@ -250,10 +451,12 @@ export default function LibraryPage() {
       if (!map.has(item.category)) map.set(item.category, []);
       map.get(item.category)!.push(item);
     }
-    return order.filter(cat => map.has(cat)).map(cat => ({
-      category: cat,
-      items: map.get(cat)!,
-    }));
+    return order
+      .filter(cat => map.has(cat))
+      .map(cat => ({
+        category: cat,
+        items: map.get(cat)!,
+      }));
   }, [activeTab, filtered]);
 
   return (
