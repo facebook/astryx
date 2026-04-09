@@ -327,7 +327,7 @@ export const ToastOverDialog: StoryObj = {
           isOpen={isOpen}
           onClose={() => setIsOpen(false)}
           title="Dialog with scoped toasts">
-          <XDSToastViewport>
+          <XDSToastViewport isTopLayer={false}>
             <DialogToastContent onClose={() => setIsOpen(false)} />
           </XDSToastViewport>
         </XDSDialog>

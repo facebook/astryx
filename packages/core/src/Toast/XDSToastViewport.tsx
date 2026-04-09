@@ -69,6 +69,12 @@ export interface XDSToastViewportProps {
   position?: XDSToastPosition;
   maxVisible?: number;
   inset?: {top?: number; bottom?: number; start?: number; end?: number};
+  /**
+   * Promote viewport to CSS top layer via popover="manual".
+   * Set to false when inside a dialog or other top-layer element.
+   * @default true
+   */
+  isTopLayer?: boolean;
   children?: React.ReactNode;
 }
 
@@ -76,6 +82,7 @@ export function XDSToastViewport({
   position = 'bottomEnd',
   maxVisible = 5,
   inset,
+  isTopLayer = true,
   children,
 }: XDSToastViewportProps) {
   const [toasts, setToasts] = useState<XDSToastEntry[]>([]);
@@ -138,11 +145,12 @@ export function XDSToastViewport({
   // Show the popover on mount so it enters the top layer
   const viewportRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
+    if (!isTopLayer) return;
     const el = viewportRef.current;
     if (el && typeof el.showPopover === 'function') {
       try { el.showPopover(); } catch { /* already showing */ }
     }
-  }, []);
+  }, [isTopLayer]);
 
   const posStyle =
     position === 'topEnd'
@@ -160,9 +168,9 @@ export function XDSToastViewport({
         ref={viewportRef}
         role="region"
         aria-label="Notifications"
-        // popover="manual" promotes to the top layer (above dialogs)
-        // without auto-light-dismiss. We control visibility ourselves.
-        popover="manual"
+        // popover="manual" promotes to the top layer (above dialogs).
+        // Omitted inside dialogs where the viewport is already in a top layer.
+        popover={isTopLayer ? 'manual' : undefined}
         {...stylex.props(styles.viewport, posStyle)}
         style={Object.keys(insetStyle).length > 0 ? insetStyle : undefined}>
         {visibleToasts.map(entry => {
