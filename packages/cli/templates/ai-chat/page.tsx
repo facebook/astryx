@@ -313,10 +313,10 @@ export default function AIChatTemplate() {
                   </XDSButton>
                 }
                 items={[
-                  {label: 'GPT-4o', onSelect: () => {}},
-                  {label: 'GPT-4o mini', onSelect: () => {}},
-                  {label: 'o3', onSelect: () => {}},
-                  {label: 'o4-mini', onSelect: () => {}},
+                  {label: 'GPT-4o', onClick: () => {}},
+                  {label: 'GPT-4o mini', onClick: () => {}},
+                  {label: 'o3', onClick: () => {}},
+                  {label: 'o4-mini', onClick: () => {}},
                 ]}
               />
             </>
