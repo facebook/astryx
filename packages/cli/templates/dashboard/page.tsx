@@ -3,12 +3,15 @@
 import {useState} from 'react';
 
 import {XDSAppShell} from '@xds/core/AppShell';
-import {XDSSideNav, XDSSideNavItem, XDSSideNavSection} from '@xds/core/SideNav';
-import {XDSTopNav, XDSTopNavHeading} from '@xds/core/TopNav';
+import {
+  XDSSideNav,
+  XDSSideNavHeading,
+  XDSSideNavItem,
+  XDSSideNavSection,
+} from '@xds/core/SideNav';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSCard} from '@xds/core/Card';
-import {XDSAvatar} from '@xds/core/Avatar';
 import {XDSButton} from '@xds/core/Button';
 import {XDSNavIcon} from '@xds/core/NavIcon';
 import {XDSProgressBar} from '@xds/core/ProgressBar';
@@ -32,19 +35,12 @@ import {XDSLink} from '@xds/core/Link';
 // ============= ICONS =============
 
 import {
-  Squares2X2Icon,
-  ClockIcon,
+  HomeIcon,
+  FolderIcon,
   ChartBarIcon,
-  Square3Stack3DIcon,
   UserGroupIcon,
   CircleStackIcon,
   DocumentTextIcon,
-  PencilSquareIcon,
-  Cog6ToothIcon,
-  QuestionMarkCircleIcon,
-  MagnifyingGlassIcon,
-  EnvelopeIcon,
-  EllipsisHorizontalIcon,
   ArrowPathIcon,
   ArrowUpIcon,
   ArrowDownIcon,
@@ -693,102 +689,32 @@ function DashboardSideNav() {
   return (
     <XDSSideNav
       header={
-        <XDSVStack gap={3} style={{padding: '12px 16px'}}>
-          <XDSHStack gap={2} vAlign="center">
-            <XDSNavIcon
-              icon={<Squares2X2Icon style={{width: 16, height: 16}} />}
-            />
-            <XDSText type="body" weight="bold">
-              Acme Inc.
-            </XDSText>
-          </XDSHStack>
-          <XDSHStack gap={2}>
-            <XDSButton
-              label="Quick Create"
-              variant="primary"
-              size="sm"
-              xstyle={{flex: 1} as never}
-            />
-            <XDSButton
-              label="Mail"
-              variant="ghost"
-              size="sm"
-              icon={<EnvelopeIcon style={{width: 16, height: 16}} />}
-            />
-          </XDSHStack>
-        </XDSVStack>
-      }
-      footer={
-        <XDSVStack gap={0} style={{padding: '8px 0'}}>
-          <XDSSideNavItem
-            label="Settings"
-            icon={Cog6ToothIcon}
-            isSelected={active === 'settings'}
-            onClick={() => setActive('settings')}
-          />
-          <XDSSideNavItem
-            label="Get Help"
-            icon={QuestionMarkCircleIcon}
-            isSelected={active === 'help'}
-            onClick={() => setActive('help')}
-          />
-          <XDSSideNavItem
-            label="Search"
-            icon={MagnifyingGlassIcon}
-            isSelected={active === 'search'}
-            onClick={() => setActive('search')}
-          />
-          <div
-            style={{
-              padding: '12px 16px',
-              borderTop: '1px solid var(--color-divider)',
-            }}>
-            <XDSHStack gap={3} vAlign="center">
-              <XDSAvatar name="shadcn" size="small" />
-              <XDSVStack gap={0} style={{flex: 1}}>
-                <XDSText type="body" weight="bold">
-                  shadcn
-                </XDSText>
-                <XDSText type="supporting" color="secondary">
-                  m@example.com
-                </XDSText>
-              </XDSVStack>
-              <XDSButton
-                label="More"
-                variant="ghost"
-                size="sm"
-                icon={
-                  <EllipsisHorizontalIcon style={{width: 16, height: 16}} />
-                }
-              />
-            </XDSHStack>
-          </div>
-        </XDSVStack>
+        <XDSSideNavHeading
+          icon={
+            <XDSNavIcon icon={<HomeIcon style={{width: 16, height: 16}} />} />
+          }
+          heading="Analytics"
+          headingHref="/"
+        />
       }>
       <XDSSideNavSection title="Platform">
         <XDSSideNavItem
           label="Dashboard"
-          icon={Squares2X2Icon}
+          icon={HomeIcon}
           isSelected={active === 'dashboard'}
           onClick={() => setActive('dashboard')}
         />
         <XDSSideNavItem
-          label="Lifecycle"
-          icon={ClockIcon}
-          isSelected={active === 'lifecycle'}
-          onClick={() => setActive('lifecycle')}
+          label="Projects"
+          icon={FolderIcon}
+          isSelected={active === 'projects'}
+          onClick={() => setActive('projects')}
         />
         <XDSSideNavItem
           label="Analytics"
           icon={ChartBarIcon}
           isSelected={active === 'analytics'}
           onClick={() => setActive('analytics')}
-        />
-        <XDSSideNavItem
-          label="Projects"
-          icon={Square3Stack3DIcon}
-          isSelected={active === 'projects'}
-          onClick={() => setActive('projects')}
         />
         <XDSSideNavItem
           label="Team"
@@ -810,18 +736,6 @@ function DashboardSideNav() {
           isSelected={active === 'reports'}
           onClick={() => setActive('reports')}
         />
-        <XDSSideNavItem
-          label="Word Assistant"
-          icon={PencilSquareIcon}
-          isSelected={active === 'word'}
-          onClick={() => setActive('word')}
-        />
-        <XDSSideNavItem
-          label="More"
-          icon={EllipsisHorizontalIcon}
-          isSelected={active === 'more'}
-          onClick={() => setActive('more')}
-        />
       </XDSSideNavSection>
     </XDSSideNav>
   );
@@ -833,16 +747,6 @@ export default function DashboardTemplate() {
   return (
     <XDSAppShell
       sideNav={<DashboardSideNav />}
-      topNav={
-        <XDSTopNav
-          endContent={
-            <XDSLink label="GitHub" href="#">
-              GitHub
-            </XDSLink>
-          }>
-          <XDSTopNavHeading>Analytics</XDSTopNavHeading>
-        </XDSTopNav>
-      }
       variant="elevated"
       height="auto"
       contentPadding={6}>
