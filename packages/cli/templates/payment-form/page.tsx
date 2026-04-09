@@ -313,13 +313,45 @@ export default function PaymentFormPage() {
                   )}
                 </XDSVStack>
 
-              {/* Policy links */}
-              <XDSHStack gap={4} vAlign="center">
-                <XDSLink label="Refund policy" href="#" type="supporting">Refund policy</XDSLink>
-                <XDSLink label="Privacy policy" href="#" type="supporting">Privacy policy</XDSLink>
-                <XDSLink label="Terms of service" href="#" type="supporting">Terms of service</XDSLink>
-                <XDSLink label="Cancellations" href="#" type="supporting">Cancellations</XDSLink>
-              </XDSHStack>
+              {/* Trust bar + CTAs + policy links */}
+              <XDSVStack gap={4}>
+                <div {...stylex.props(styles.trustBar)}>
+                  <XDSHStack gap={1} vAlign="center">
+                    <svg viewBox="0 0 24 24" style={{width: 14, height: 14}} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    <XDSText type="supporting" color="secondary">Secure Payment</XDSText>
+                  </XDSHStack>
+                  <XDSHStack gap={1} vAlign="center">
+                    <svg viewBox="0 0 24 24" style={{width: 14, height: 14}} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                    <XDSText type="supporting" color="secondary">SSL Encrypted</XDSText>
+                  </XDSHStack>
+                  <XDSHStack gap={1} vAlign="center">
+                    <svg viewBox="0 0 24 24" style={{width: 14, height: 14}} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>
+                    <XDSText type="supporting" color="secondary">Free Returns</XDSText>
+                  </XDSHStack>
+                </div>
+                <XDSButton
+                  label="Place Order"
+                  variant="primary"
+                  size="lg"
+                  xstyle={styles.fullWidth}
+                  onClick={() => setSubmitted(true)}
+                  endContent={<svg viewBox="0 0 24 24" style={{width: 16, height: 16}} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>}
+                />
+                <XDSButton
+                  label="← Continue Shopping"
+                  variant="secondary"
+                  size="lg"
+                  xstyle={styles.fullWidth}
+                  onClick={() => {}}
+                />
+                <XDSDivider />
+                <XDSHStack gap={4} vAlign="center">
+                  <XDSLink label="Refund policy" href="#" type="supporting">Refund policy</XDSLink>
+                  <XDSLink label="Privacy policy" href="#" type="supporting">Privacy policy</XDSLink>
+                  <XDSLink label="Terms of service" href="#" type="supporting">Terms of service</XDSLink>
+                  <XDSLink label="Cancellations" href="#" type="supporting">Cancellations</XDSLink>
+                </XDSHStack>
+              </XDSVStack>
 
             </div>
 
@@ -394,35 +426,7 @@ export default function PaymentFormPage() {
                     </div>
                   </XDSVStack>
 
-                  <XDSDivider />
-                  <div {...stylex.props(styles.trustBar)}>
-                    <XDSHStack gap={1} vAlign="center">
-                      <svg viewBox="0 0 24 24" style={{width: 14, height: 14}} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                      <XDSText type="supporting" color="secondary">Secure Payment</XDSText>
-                    </XDSHStack>
-                    <XDSHStack gap={1} vAlign="center">
-                      <svg viewBox="0 0 24 24" style={{width: 14, height: 14}} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-                      <XDSText type="supporting" color="secondary">SSL Encrypted</XDSText>
-                    </XDSHStack>
-                    <XDSHStack gap={1} vAlign="center"><svg viewBox="0 0 24 24" style={{width: 14, height: 14}} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg><XDSText type="supporting" color="secondary">Free Returns</XDSText></XDSHStack>
-                  </div>
-                  <XDSVStack gap={2}>
-                    <XDSButton
-                      label="Place Order"
-                      variant="primary"
-                      size="lg"
-                      xstyle={styles.fullWidth}
-                      onClick={() => setSubmitted(true)}
-                      endContent={<svg viewBox="0 0 24 24" style={{width: 16, height: 16}} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>}
-                    />
-                    <XDSButton
-                      label="← Continue Shopping"
-                      variant="secondary"
-                      size="lg"
-                      xstyle={styles.fullWidth}
-                      onClick={() => {}}
-                    />
-                  </XDSVStack>
+
                   </XDSVStack>{/* end collapsible XDSVStack gap={4} */}
                   </div>{/* end pf-summary-content */}
                 </XDSVStack>{/* end outer card XDSVStack gap={4} */}
