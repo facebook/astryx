@@ -2,7 +2,7 @@
 
 import {useCallback, useMemo, useRef, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {spacingVars} from '../theme/tokens.stylex';
+import {spacingVars, durationVars, easeVars} from '../theme/tokens.stylex';
 import {XDSToast} from './XDSToast';
 import {XDSToastContext, type XDSToastContextValue} from './XDSToastContext';
 import type {
@@ -17,7 +17,6 @@ const styles = stylex.create({
     zIndex: 500,
     display: 'flex',
     flexDirection: 'column',
-    gap: spacingVars['--spacing-3'],
     padding: spacingVars['--spacing-4'],
     pointerEvents: 'none',
   },
@@ -35,7 +34,29 @@ const styles = stylex.create({
     alignItems: 'flex-start',
     flexDirection: 'column-reverse',
   },
-  toastWrapper: {pointerEvents: 'auto'},
+  toastWrapper: {
+    pointerEvents: 'auto',
+    display: 'grid',
+    gridTemplateRows: '1fr',
+    paddingBlockEnd: spacingVars['--spacing-3'],
+    transitionProperty: 'grid-template-rows, padding',
+    transitionDuration: {
+      default: durationVars['--duration-fast'],
+      '@media (prefers-reduced-motion: reduce)': '0.01ms',
+    },
+    transitionTimingFunction: easeVars['--ease-standard'],
+    '@starting-style': {
+      gridTemplateRows: '0fr',
+      paddingBlockEnd: 0,
+    },
+  },
+  toastWrapperExiting: {
+    gridTemplateRows: '0fr',
+    paddingBlockEnd: 0,
+  },
+  toastWrapperInner: {
+    overflow: 'hidden',
+  },
 });
 
 export interface XDSToastViewportProps {
@@ -52,6 +73,7 @@ export function XDSToastViewport({
   children,
 }: XDSToastViewportProps) {
   const [toasts, setToasts] = useState<XDSToastEntry[]>([]);
+  const [exitingIds, setExitingIds] = useState<Set<string>>(new Set());
   const toastsRef = useRef(toasts);
   toastsRef.current = toasts;
 
@@ -71,14 +93,25 @@ export function XDSToastViewport({
 
   const removeToast = useCallback(
     (id: string, reason: XDSToastDismissReason) => {
-      setToasts(prev => {
-        const entry = prev.find(t => t.id === id);
-        if (entry) entry.options.onHide?.(reason);
-        return prev.filter(t => t.id !== id);
+      const entry = toastsRef.current.find(t => t.id === id);
+      if (entry) entry.options.onHide?.(reason);
+      setExitingIds(prev => {
+        if (prev.has(id)) return prev;
+        return new Set(prev).add(id);
       });
     },
     [],
   );
+
+  const handleExited = useCallback((id: string) => {
+    setExitingIds(prev => {
+      if (!prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+    setToasts(prev => prev.filter(t => t.id !== id));
+  }, []);
 
   const findByUniqueID = useCallback((uid: string) => {
     return toastsRef.current.find(t => t.options.uniqueID === uid);
@@ -118,18 +151,35 @@ export function XDSToastViewport({
           const type = o.type ?? 'info';
           const isAutoHide = o.isAutoHide ?? (type === 'error' ? false : true);
           const dur = o.autoHideDuration ?? 5000;
+          const isExiting = exitingIds.has(entry.id);
           return (
-            <div key={entry.id} {...stylex.props(styles.toastWrapper)}>
-              <XDSToast
-                type={type}
-                title={o.title}
-                body={o.body}
-                icon={o.icon}
-                endContent={o.endContent}
-                isAutoHide={isAutoHide}
-                autoHideDuration={dur}
-                onDismiss={reason => removeToast(entry.id, reason)}
-              />
+            <div
+              key={entry.id}
+              {...stylex.props(
+                styles.toastWrapper,
+                isExiting && styles.toastWrapperExiting,
+              )}
+              onTransitionEnd={
+                isExiting
+                  ? (e: React.TransitionEvent) => {
+                      if (e.propertyName === 'grid-template-rows') {
+                        handleExited(entry.id);
+                      }
+                    }
+                  : undefined
+              }>
+              <div {...stylex.props(styles.toastWrapperInner)}>
+                <XDSToast
+                  type={type}
+                  body={o.body}
+
+                  endContent={o.endContent}
+                  isAutoHide={isAutoHide}
+                  autoHideDuration={dur}
+                  isExiting={isExiting}
+                  onDismiss={reason => removeToast(entry.id, reason)}
+                />
+              </div>
             </div>
           );
         })}

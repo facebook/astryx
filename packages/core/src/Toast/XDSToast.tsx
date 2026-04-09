@@ -4,7 +4,7 @@ import {useCallback, useEffect, useRef} from 'react';
 import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSButton} from '../Button';
-import {XDSIcon, type XDSIconName} from '../Icon';
+import {XDSIcon} from '../Icon';
 import {
   colorVars,
   spacingVars,
@@ -12,30 +12,26 @@ import {
   durationVars,
   easeVars,
   shadowVars,
-  fontWeightVars,
+  typographyVars,
+  typeScaleDefaults,
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
+import {useXDSTheme} from '../theme';
+import {XDSMediaTheme} from '../theme/XDSMediaTheme';
 import type {XDSToastType, XDSToastDismissReason} from './types';
-
-const TYPE_ICONS: Record<XDSToastType, XDSIconName> = {
-  info: 'info',
-  success: 'checkCircle',
-  warning: 'warning',
-  error: 'xCircle',
-};
 
 const styles = stylex.create({
   root: {
-    display: 'flex',
-    alignItems: 'flex-start',
-    gap: spacingVars['--spacing-3'],
-    paddingBlock: spacingVars['--spacing-3'],
+    paddingBlock: spacingVars['--spacing-4'],
     paddingInline: spacingVars['--spacing-4'],
-    borderRadius: radiusVars['--radius-element'],
+    borderRadius: radiusVars['--radius-container'],
     width: 400,
     maxWidth: 'calc(100vw - 32px)',
     boxShadow: shadowVars['--shadow-med'],
     opacity: 1,
+    fontFamily: typographyVars['--font-family-body'],
+    fontSize: typeScaleDefaults['--text-body-size'],
+    lineHeight: typeScaleDefaults['--text-body-leading'],
     transform: 'translateY(0)',
     transitionProperty: 'opacity, transform',
     transitionDuration: {
@@ -50,45 +46,41 @@ const styles = stylex.create({
   },
   variantDefault: {
     backgroundColor: colorVars['--color-surface-inverted'],
-    color: colorVars['--color-background-surface'],
+  },
+  inner: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: spacingVars['--spacing-3'],
+    width: '100%',
   },
   variantError: {
     backgroundColor: colorVars['--color-error-inverted'],
-    color: colorVars['--color-on-error'],
-  },
-  iconArea: {
-    flexShrink: 0,
-    display: 'flex',
-    alignItems: 'center',
-    paddingBlockStart: spacingVars['--spacing-0-5'],
   },
   content: {
     flex: 1,
     minWidth: 0,
   },
-  title: {
-    fontWeight: fontWeightVars['--font-weight-semibold'],
+  exiting: {
+    opacity: 0,
+    transform: 'translateY(-8px)',
   },
-  body: {
-    marginBlockStart: spacingVars['--spacing-1'],
-    opacity: 0.9,
-  },
-  endArea: {
+  endContent: {
     flexShrink: 0,
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
+    marginBlock: `calc(${spacingVars['--spacing-1']} * -1)`,
+    marginInlineEnd: `calc(${spacingVars['--spacing-1']} * -1)`,
   },
 });
 
 export interface XDSToastProps {
   type: XDSToastType;
-  title: ReactNode;
-  body?: ReactNode;
-  icon?: ReactNode;
+  body: ReactNode;
   endContent?: ReactNode;
   isAutoHide: boolean;
   autoHideDuration: number;
+  isExiting?: boolean;
   onDismiss: (reason: XDSToastDismissReason) => void;
 }
 
@@ -96,14 +88,15 @@ export interface XDSToastProps {
  * Individual toast notification.
  *
  * Renders with inverted surface colors for the default variant,
- * and error-inverted for the error variant. Pauses auto-dismiss
+ * and error-inverted for the error variant. Uses XDSMediaTheme
+ * to set the correct token context for children. Pauses auto-dismiss
  * on hover and focus.
  *
  * @example
  * ```
  * <XDSToast
- *   type="success"
- *   title="Saved successfully"
+ *   type="info"
+ *   body="Saved successfully"
  *   isAutoHide={true}
  *   autoHideDuration={5000}
  *   onDismiss={(reason) => removeToast(id, reason)}
@@ -112,12 +105,11 @@ export interface XDSToastProps {
  */
 export function XDSToast({
   type,
-  title,
   body,
-  icon,
   endContent,
   isAutoHide,
   autoHideDuration,
+  isExiting = false,
   onDismiss,
 }: XDSToastProps) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -164,7 +156,10 @@ export function XDSToast({
   }, [onDismiss]);
 
   const isError = type === 'error';
-  const iconName = TYPE_ICONS[type];
+  // Determine media mode: inverted surface is always dark in light mode,
+  // always light in dark mode. Error toast is always on a dark surface.
+  const {mode} = useXDSTheme();
+  const mediaMode = isError || mode === 'light' ? 'dark' : 'light';
 
   return (
     <div
@@ -180,27 +175,27 @@ export function XDSToast({
         stylex.props(
           styles.root,
           isError ? styles.variantError : styles.variantDefault,
+          isExiting && styles.exiting,
         ),
       )}>
-      <div {...stylex.props(styles.iconArea)}>
-        {icon ?? <XDSIcon icon={iconName} size="md" color="inherit" />}
-      </div>
+      <XDSMediaTheme mode={mediaMode}>
+        <div {...stylex.props(styles.inner)}>
+          <div {...stylex.props(styles.content)}>
+            {body}
+          </div>
 
-      <div {...stylex.props(styles.content)}>
-        <div {...stylex.props(styles.title)}>{title}</div>
-        {body != null && <div {...stylex.props(styles.body)}>{body}</div>}
-      </div>
-
-      <div {...stylex.props(styles.endArea)}>
-        {endContent}
-        <XDSButton
-          variant="ghost"
-          size="sm"
-          icon={<XDSIcon icon="close" size="sm" color="inherit" />}
-          label="Dismiss notification"
-          onClick={handleDismiss}
-        />
-      </div>
+          <div {...stylex.props(styles.endContent)}>
+            {endContent}
+            <XDSButton
+              variant="ghost"
+              size="sm"
+              icon={<XDSIcon icon="close" size="sm" color="inherit" />}
+              label="Dismiss notification"
+              onClick={handleDismiss}
+            />
+          </div>
+        </div>
+      </XDSMediaTheme>
     </div>
   );
 }

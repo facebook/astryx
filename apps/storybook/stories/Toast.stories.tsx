@@ -3,8 +3,10 @@ import {useState, useRef} from 'react';
 import {useXDSToast} from '@xds/core/Toast';
 import {XDSLayerProvider} from '@xds/core/Layer';
 import {XDSButton} from '@xds/core/Button';
+import {XDSLink} from '@xds/core/Link';
 import {XDSCard} from '@xds/core/Card';
 import {XDSStack} from '@xds/core/Stack';
+import {XDSToggleButton, XDSToggleButtonGroup} from '@xds/core/ToggleButton';
 import type {XDSToastPosition, XDSToastType} from '@xds/core/Toast';
 
 // =============================================================================
@@ -39,7 +41,7 @@ function DefaultDemo() {
   return (
     <XDSButton
       label="Show toast"
-      onClick={() => toast({title: 'This is an info toast'})}
+      onClick={() => toast({body: 'This is an info toast'})}
     />
   );
 }
@@ -54,7 +56,7 @@ export const Default: StoryObj = {
 
 function TypesDemo() {
   const toast = useXDSToast();
-  const types: XDSToastType[] = ['info', 'success', 'warning', 'error'];
+  const types: XDSToastType[] = ['info', 'error'];
   return (
     <XDSStack direction="row" gap={2}>
       {types.map(type => (
@@ -64,7 +66,6 @@ function TypesDemo() {
           variant={type === 'error' ? 'destructive' : 'secondary'}
           onClick={() =>
             toast({
-              title: `${type.charAt(0).toUpperCase() + type.slice(1)} toast`,
               body: `This is a ${type} notification.`,
               type,
             })
@@ -81,34 +82,10 @@ export const Types: StoryObj = {
     docs: {
       description: {
         story:
-          'Four toast types: info (default), success, warning, error. Error toasts persist until dismissed.',
+          'Two toast types: info (default) and error. Error toasts persist until dismissed.',
       },
     },
   },
-};
-
-// =============================================================================
-// With Body
-// =============================================================================
-
-function WithBodyDemo() {
-  const toast = useXDSToast();
-  return (
-    <XDSButton
-      label="Show toast with body"
-      onClick={() =>
-        toast({
-          title: 'Changes saved',
-          body: 'Your profile has been updated successfully. Changes may take a few minutes to propagate.',
-          type: 'success',
-        })
-      }
-    />
-  );
-}
-
-export const WithBody: StoryObj = {
-  render: () => <WithBodyDemo />,
 };
 
 // =============================================================================
@@ -118,24 +95,40 @@ export const WithBody: StoryObj = {
 function WithActionDemo() {
   const toast = useXDSToast();
   return (
-    <XDSButton
-      label="Delete item"
-      variant="destructive"
-      onClick={() =>
-        toast({
-          title: 'Item deleted',
-          type: 'info',
-          endContent: (
-            <XDSButton
-              label="Undo"
-              variant="ghost"
-              size="sm"
-              onClick={() => console.log('Undo!')}
-            />
-          ),
-        })
-      }
-    />
+    <XDSStack direction="row" gap={2}>
+      <XDSButton
+        label="With button"
+        onClick={() =>
+          toast({
+            body: 'Item deleted',
+            type: 'info',
+            isAutoHide: false,
+            endContent: (
+              <XDSButton
+                label="Undo"
+                variant="secondary"
+                size="sm"
+                onClick={() => console.log('Undo!')}
+              />
+            ),
+          })
+        }
+      />
+      <XDSButton
+        label="With link"
+        variant="secondary"
+        onClick={() =>
+          toast({
+            body: 'Your report is ready.',
+            type: 'info',
+            isAutoHide: false,
+            endContent: (
+              <XDSLink label="View report" href="#" hasUnderline>View report</XDSLink>
+            ),
+          })
+        }
+      />
+    </XDSStack>
   );
 }
 
@@ -163,7 +156,6 @@ function ErrorPersistsDemo() {
       variant="destructive"
       onClick={() =>
         toast({
-          title: 'Failed to save',
           body: 'Check your network connection and try again.',
           type: 'error',
         })
@@ -197,7 +189,7 @@ function ProgrammaticDismissDemo() {
         label="Show persistent toast"
         onClick={() => {
           dismissRef.current = toast({
-            title: 'Uploading...',
+            body: 'Uploading...',
             type: 'info',
             isAutoHide: false,
           });
@@ -239,8 +231,8 @@ function DeduplicationDemo() {
         label="Show offline toast (ignore)"
         onClick={() =>
           toast({
-            title: 'You are offline',
-            type: 'warning',
+            body: 'You are offline',
+            type: 'info',
             uniqueID: 'offline',
             collisionBehavior: 'ignore',
             isAutoHide: false,
@@ -252,7 +244,7 @@ function DeduplicationDemo() {
         variant="secondary"
         onClick={() =>
           toast({
-            title: `Uploading... ${Math.floor(Math.random() * 100)}%`,
+            body: `Uploading... ${Math.floor(Math.random() * 100)}%`,
             type: 'info',
             uniqueID: 'upload-progress',
             collisionBehavior: 'overwrite',
@@ -288,11 +280,10 @@ function StackingDemo() {
       label="Add toast"
       onClick={() => {
         countRef.current++;
-        const types: XDSToastType[] = ['info', 'success', 'warning', 'error'];
+        const types: XDSToastType[] = ['info', 'error'];
         const type = types[countRef.current % types.length];
         toast({
-          title: `Toast #${countRef.current}`,
-          body: `This is a ${type} toast.`,
+          body: `Toast #${countRef.current} — This is a ${type} toast.`,
           type,
         });
       }}
@@ -316,45 +307,49 @@ export const Stacking: StoryObj = {
 // Positions (with XDSLayerProvider)
 // =============================================================================
 
-function PositionDemoInner({position}: {position: XDSToastPosition}) {
+function PositionsDemoInner({
+  position,
+  onPositionChange,
+}: {
+  position: XDSToastPosition;
+  onPositionChange: (pos: XDSToastPosition) => void;
+}) {
   const toast = useXDSToast();
+
   return (
-    <XDSButton
-      label={position}
-      variant="secondary"
-      onClick={() =>
-        toast({
-          title: `Toast at ${position}`,
-          type: 'info',
-        })
-      }
-    />
+    <XDSStack gap={3}>
+      <XDSToggleButtonGroup
+        type="single"
+        value={position}
+        onChange={(value: string | null) => {
+          if (value != null) onPositionChange(value as XDSToastPosition);
+        }}
+        label="Toast position"
+      >
+        <XDSToggleButton value="topStart" label="Top Start" />
+        <XDSToggleButton value="topEnd" label="Top End" />
+        <XDSToggleButton value="bottomStart" label="Bottom Start" />
+        <XDSToggleButton value="bottomEnd" label="Bottom End" />
+      </XDSToggleButtonGroup>
+      <XDSButton
+        label="Toggle Toast"
+        onClick={() =>
+          toast({
+            body: `Toast at ${position}`,
+            type: 'info',
+          })
+        }
+      />
+    </XDSStack>
   );
 }
 
 function PositionsDemo() {
   const [position, setPosition] = useState<XDSToastPosition>('bottomEnd');
-  const positions: XDSToastPosition[] = [
-    'bottomEnd',
-    'bottomStart',
-    'topEnd',
-    'topStart',
-  ];
+
   return (
     <XDSLayerProvider toast={{position}}>
-      <XDSStack direction="row" gap={2}>
-        {positions.map(pos => (
-          <XDSButton
-            key={pos}
-            label={pos}
-            variant={pos === position ? 'primary' : 'secondary'}
-            onClick={() => setPosition(pos)}
-          />
-        ))}
-      </XDSStack>
-      <div style={{marginTop: 12}}>
-        <PositionDemoInner position={position} />
-      </div>
+      <PositionsDemoInner position={position} onPositionChange={setPosition} />
     </XDSLayerProvider>
   );
 }
@@ -388,9 +383,8 @@ function NoProviderDemo() {
           label="Show toast (no provider)"
           onClick={() =>
             toast({
-              title: 'Works without a provider!',
-              body: 'A fallback viewport was created on document.body.',
-              type: 'success',
+              body: 'Works without a provider! A fallback viewport was created on document.body.',
+              type: 'info',
             })
           }
         />

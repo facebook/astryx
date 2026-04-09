@@ -112,9 +112,9 @@ function generateToastId(): string {
  *   const handleSave = async () => {
  *     try {
  *       await saveData();
- *       toast({ title: 'Saved successfully', type: 'success' });
+ *       toast({ body: 'Saved successfully' });
  *     } catch {
- *       toast({ title: 'Failed to save', type: 'error' });
+ *       toast({ body: 'Failed to save', type: 'error' });
  *     }
  *   };
  *   return <XDSButton label="Save" onClick={handleSave} />;

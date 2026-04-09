@@ -1,7 +1,7 @@
 import type {ReactNode} from 'react';
 
-/** Toast status type. Controls icon and color scheme. */
-export type XDSToastType = 'info' | 'warning' | 'error' | 'success';
+/** Toast status type. Controls color scheme. */
+export type XDSToastType = 'info' | 'error';
 
 /** Position for the toast stack relative to the viewport. */
 export type XDSToastPosition =
@@ -18,18 +18,16 @@ export type XDSToastDismissReason = 'auto' | 'manual';
 
 /** Options for showing a toast. */
 export interface XDSToastOptions {
-  /** Primary message content. Keep it short — one line is ideal. */
-  title: ReactNode;
-  /** Optional secondary content area. */
-  body?: ReactNode;
+  /** Primary message content. */
+  body: ReactNode;
   /**
-   * Toast type controlling icon and color.
+   * Toast type controlling color.
    * @default 'info'
    */
   type?: XDSToastType;
   /**
    * Whether the toast auto-dismisses.
-   * Defaults to true for info/warning/success, false for error.
+   * Defaults to true for info, false for error.
    */
   isAutoHide?: boolean;
   /**
@@ -39,8 +37,7 @@ export interface XDSToastOptions {
   autoHideDuration?: number;
   /** Content rendered at the end of the toast (trailing slot). */
   endContent?: ReactNode;
-  /** Override the default icon for this toast type. */
-  icon?: ReactNode;
+
   /** Unique identifier for deduplication. */
   uniqueID?: string;
   /**
