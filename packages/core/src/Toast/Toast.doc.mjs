@@ -80,4 +80,18 @@ export const docs = {
       code: `toast({\n  body: "Item deleted",\n  isAutoHide: false,\n  endContent: <XDSButton label="Undo" variant="secondary" size="sm" onClick={undo} />,\n});`,
     },
   ],
+  usage: {
+    summary: 'Transient notification that appears briefly to confirm an action or surface non-critical information.',
+    content: `## When to use
+
+- Confirming a completed action (e.g., "Saved successfully").
+- Surfacing non-critical, time-sensitive information.
+- Providing undo opportunities for reversible actions.
+
+## When NOT to use
+
+- Critical information that requires user action (use Banner instead).
+- Persistent messages (use Banner instead).
+- Validation errors on form fields (use Field status instead).`,
+  },
 };

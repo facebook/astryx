@@ -197,6 +197,33 @@ export const docs = {
       ],
     },
   ],
+  usage: {
+    summary: 'Interactive cards providing additional information on hover.',
+    content: `## When to use
+
+- Non-critical supplementary information.
+- Progressive disclosure of details.
+- Non-interruptive education or onboarding.
+- Rich content with media (images, icons, text pairings).
+
+## When NOT to use
+
+- Plain text hints \u2014 use Tooltip instead.
+- Dropdown menus \u2014 use Popover instead.
+- Page content grouping \u2014 use Card instead.
+- Arbitrary or frequently changing content.
+
+## Best practices
+
+- Do: Use thoughtfully and situationally.
+- Don't: Use on arbitrary or frequently changing content.
+- Place hover card 4px from the context element.`,
+    anatomy: [
+      {name: 'Header', required: false, description: 'Eyebrow header with optional copy and close buttons.'},
+      {name: 'Body', required: true, description: 'Text pairings, icons, and media content.'},
+      {name: 'Call to Action', required: false, description: 'Button for follow-up actions.'},
+    ],
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */

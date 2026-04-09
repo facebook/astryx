@@ -124,6 +124,19 @@ export const docs = {
       ],
     },
   ],
+  usage: {
+    summary: 'A button that switches between two persistent states, typically active and inactive.',
+    content: `## When to use
+
+- When an action has two persistent states and can be undone.
+- Use a group of toggle buttons for multiple independent two-state actions.
+- Use a toggle button group for 3 or more mutually exclusive states.
+
+## Best practices
+
+- Do: Convey state through color change, bolded text, or a filled icon.
+- Do: Keep the label the same between states.`,
+  },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */

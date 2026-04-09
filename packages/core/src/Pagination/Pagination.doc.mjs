@@ -166,6 +166,14 @@ export const docs = {
     'Returns null when totalItems <= 0 or totalPages <= 0.',
     'Also exports generatePageRange utility for computing visible page numbers with ellipsis.',
   ],
+  usage: {
+    summary: 'Communicates the number of elements that can be loaded within a given context.',
+    content: `## When to use
+
+- Showing current position within a paginated set.
+- Accessing previous and next items.
+- Selecting a specific page from a range.`,
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */

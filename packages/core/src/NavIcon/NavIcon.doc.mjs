@@ -53,6 +53,9 @@ export const docs = {
       {className: 'xds-navicon'},
     ],
   },
+  usage: {
+    summary: 'Circular icon container with accent background for navigation headers.',
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */

@@ -110,6 +110,13 @@ export const docs = {
       },
     ],
   },
+  usage: {
+    summary: 'Container for creating visually distinct regions on a page.',
+    content: `## When to use
+
+- Chunking information into groups using whitespace, dividers, or type scale.
+- Prefer sections over cards as the default page structure; use cards only when stronger visual distinction is needed.`,
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */

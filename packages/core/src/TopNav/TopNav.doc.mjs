@@ -579,6 +579,27 @@ export const docs = {
       ],
     },
   ],
+  usage: {
+    summary: 'Horizontal navigation bar for product-level navigation.',
+    content: `## When to use
+
+- 5 or fewer nav items that should always be visible.
+- Items don't require icons.
+- Minimal navigation paired with controls or filters.
+- Can combine with side nav for ecosystem tools.
+
+## When NOT to use
+
+- Complex navigation hierarchies.
+- Products without clear ownership.
+- Don't use to filter content \u2014 use tabs or filter buttons instead.`,
+    anatomy: [
+      {name: 'Product icon and name', required: true, description: 'Identifies the product in the navigation bar.'},
+      {name: 'Navigation items', required: true, description: 'Primary links for product-level destinations.'},
+      {name: 'More menu', required: false, description: 'Overflow menu for additional navigation items.'},
+      {name: 'Flex area', required: false, description: 'Flexible region for search, primary action buttons, or other controls.'},
+    ],
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */

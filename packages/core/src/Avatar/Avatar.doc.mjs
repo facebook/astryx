@@ -150,6 +150,14 @@ export const docs = {
       ],
     },
   ],
+  usage: {
+    summary: 'Displays a user profile picture with automatic fallback to initials when no image is available.',
+    content: `## When to use
+
+- Representing a user or entity visually.
+- Showing a profile image alongside user information.
+- Displaying a fallback when no image is provided.`,
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */

@@ -280,6 +280,9 @@ const isMobile = useMediaQuery('(max-width: 768px)');
     'In "auto" height mode, TopNav gets position: sticky; top: 0 and SideNav gets position: sticky; top: <header-height>.',
     'In "fill" height mode, the shell fills 100dvh, TopNav is pinned at the top, and both the SideNav and content area have independent scroll containers.',
   ],
+  usage: {
+    summary: 'Application-level layout shell providing header, side navigation, and main content area.',
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */

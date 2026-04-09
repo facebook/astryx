@@ -416,6 +416,18 @@ export const docs = {
     'XDSBaseTypeahead renders only the <input> and dropdown popover — consumers provide their own wrapper.',
     'If item has an element property, XDSTypeaheadItem renders it directly instead of the standard layout.',
   ],
+  usage: {
+    summary: 'Searchable dropdown for single-item selection with keyboard navigation and async data support.',
+    content: `## When to use
+
+- Selecting a single item from a large or dynamic dataset.
+- Users benefit from search-as-you-type to find options.
+
+## When NOT to use
+
+- A small, fixed list of options (use Selector instead).
+- Multiple selections needed (use Tokenizer instead).`,
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */

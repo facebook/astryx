@@ -237,6 +237,33 @@ export const docs = {
       {name: '--popover-radius', description: 'Border radius of the popover', default: 'var(--radius-element)'},
     ],
   },
+  usage: {
+    summary: 'A floating card toggled open on click for secondary actions or supplementary information.',
+    content: `## When to use
+
+- Secondary menu options.
+- Customizable settings panels.
+- Filtering options.
+- Supplementary information that does not warrant a full dialog.
+
+## When NOT to use
+
+- Static content display (use Card instead).
+- Hover-triggered previews (use HoverCard instead).
+- Brief helper text (use Tooltip instead).
+- Complex flows requiring full focus (use Dialog instead).
+
+## Best practices
+
+- Do: Use a clear trigger element such as a button or link.
+- Don't: Confuse with Tooltip \u2014 Popovers are click-triggered and contain richer content.
+- Include a close button in the header for easy dismissal.`,
+    anatomy: [
+      {name: 'Header', required: true, description: 'Contains the title, optional subheader, and close button.'},
+      {name: 'Body', required: true, description: 'Main content area of the popover.'},
+      {name: 'Trigger Element', required: true, description: 'The button or link that toggles the popover open.'},
+    ],
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */

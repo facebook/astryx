@@ -115,6 +115,9 @@ export const docs = {
     "For collapseFrom='start', items are hidden from the beginning and the overflow indicator appears at the start.",
     'Use minVisibleItems to guarantee at least N items are always visible regardless of available space.',
   ],
+  usage: {
+    summary: 'Horizontal list that hides items exceeding the available width and shows an overflow indicator.',
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */

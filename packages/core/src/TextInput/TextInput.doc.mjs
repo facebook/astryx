@@ -218,6 +218,25 @@ export const docs = {
     'The component wraps XDSField for label, description, and optional/required rendering.',
     'The size prop supports "sm", "md", and "lg".',
   ],
+  usage: {
+    summary: 'Enables users to enter or edit text or numeric values.',
+    content: `## When to use
+
+- Short-form and long-form text entries.
+
+## Best practices
+
+- Do: Size the input to reflect the expected content length.
+- Do: Use validation messaging for required fields.
+- Validation states: error (blocking), warning (non-blocking), success (confirmation).`,
+    anatomy: [
+      {name: 'Label', required: true, description: 'Text that identifies the input field.'},
+      {name: 'Description', required: false, description: 'Helper text providing additional context.'},
+      {name: 'Icon', required: false, description: '16px icon displayed inside the input.'},
+      {name: 'Placeholder', required: false, description: 'Hint text shown when the input is empty.'},
+      {name: 'Spinner', required: false, description: 'Loading indicator for pending actions.'},
+    ],
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */

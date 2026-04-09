@@ -157,6 +157,13 @@ export const docs = {
     'For full control over trigger rendering or menu content, compose XDSButton + useXDSLayer + XDSDropdownMenuItem directly.',
     'Use XDSMoreMenu for icon-only overflow actions in tight spaces (table rows, card headers). Use XDSDropdownMenu for labeled trigger buttons with chevrons.',
   ],
+  usage: {
+    summary: 'Overflow menu with a three-dot icon trigger for secondary actions.',
+    content: `## When to use
+
+- Presenting secondary or overflow actions in a compact space.
+- Actions that don't warrant their own visible button.`,
+  },
 };
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {

@@ -456,6 +456,31 @@ export const docs = {
       ],
     },
   ],
+  usage: {
+    summary: 'Navigation system helping users find and browse information. Left nav is the default recommendation.',
+    content: `## When to use
+
+- 5 or more navigation items.
+- Customizable navigation structure.
+- Complex grouping of navigation items.
+- Secondary item actions needed.
+- Collapsible navigation sections.
+
+## When NOT to use
+
+- Filter-primary tools (use tabs or filter buttons instead).
+- Housing wide components that need more horizontal space.
+
+## Best practices
+
+- Do: Use descriptive names for navigation items.
+- Don't: Use navigation to filter content \u2014 use tabs or filter buttons instead.`,
+    anatomy: [
+      {name: 'Product icon and name', required: false, description: 'Branding area at the top of the nav.'},
+      {name: 'Navigation items', required: true, description: 'Sections and groups of navigable links.'},
+      {name: 'Collapse/expand toggle', required: false, description: 'Toggle to collapse or expand the side nav.'},
+    ],
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */
