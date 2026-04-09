@@ -2,7 +2,7 @@
 
 import {useState, useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {XDSHStack} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSCard} from '@xds/core/Card';
 import {XDSTabList, XDSTab} from '@xds/core/TabList';
@@ -389,7 +389,7 @@ function LibrarySection({
   items: LibraryItem[];
 }) {
   return (
-    <XDSVStack gap={0}>
+    <div>
       <div {...stylex.props(styles.sectionHeader)}>
         <XDSHeading level={3}>{category}</XDSHeading>
       </div>
@@ -398,7 +398,7 @@ function LibrarySection({
           <LibraryCard key={item.id} item={item} />
         ))}
       </div>
-    </XDSVStack>
+    </div>
   );
 }
 
@@ -461,7 +461,7 @@ export default function LibraryPage() {
 
   return (
     <div {...stylex.props(styles.page)}>
-      <XDSVStack gap={0}>
+      <div>
         {/* Tabs */}
         <div {...stylex.props(styles.tabsRow)}>
           <XDSTabList value={activeTab} onChange={setActiveTab}>
@@ -515,9 +515,9 @@ export default function LibraryPage() {
           </div>
         ) : groupedSections != null ? (
           // All tab — grouped sections with dividers
-          <XDSVStack gap={0}>
+          <div>
             {groupedSections.map((section, i) => (
-              <XDSVStack gap={0} key={section.category}>
+              <div key={section.category}>
                 {i > 0 && (
                   <div {...stylex.props(styles.dividerRow)}>
                     <XDSDivider />
@@ -527,9 +527,9 @@ export default function LibraryPage() {
                   category={section.category}
                   items={section.items}
                 />
-              </XDSVStack>
+              </div>
             ))}
-          </XDSVStack>
+          </div>
         ) : (
           // Single category tab — flat grid
           <div {...stylex.props(styles.grid)}>
@@ -538,7 +538,7 @@ export default function LibraryPage() {
             ))}
           </div>
         )}
-      </XDSVStack>
+      </div>
     </div>
   );
 }
