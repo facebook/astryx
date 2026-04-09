@@ -328,12 +328,7 @@ export const metaTheme = defineTheme({
     // =========================================================================
     // Section — 20px padding
     // =========================================================================
-    section: {
-      base: {
-        paddingInline: '20px !important',
-        paddingBlock: '24px !important',
-      },
-    },
+
 
     // =========================================================================
     // Text input — CDS: 16px radius, 16px horizontal padding
