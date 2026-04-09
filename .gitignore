@@ -53,3 +53,4 @@ apps/sandbox/next-env.d.ts
 apps/example-nextjs-tailwind/.next
 .parity-test-results.json
 .worktree-parity-test
+.npmrc
