@@ -23,97 +23,27 @@ import {XDSLink} from '@xds/core/Link';
 import {createStaticSource} from '@xds/core/Typeahead';
 
 // ---------------------------------------------------------------------------
-// Icons
+// Icons — Heroicons
 // ---------------------------------------------------------------------------
 
-const SearchIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    {...props}>
-    <circle cx="11" cy="11" r="8" />
-    <line x1="21" y1="21" x2="16.65" y2="16.65" />
-  </svg>
-);
-
-const ProfileIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <circle cx="12" cy="8" r="4" />
-    <path d="M20 21a8 8 0 10-16 0" />
-  </svg>
-);
-
-const MoreIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
-    <circle cx="12" cy="5" r="2" />
-    <circle cx="12" cy="12" r="2" />
-    <circle cx="12" cy="19" r="2" />
-  </svg>
-);
-
-const PlusIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    {...props}>
-    <line x1="12" y1="5" x2="12" y2="19" />
-    <line x1="5" y1="12" x2="19" y2="12" />
-  </svg>
-);
-
-const LinkIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    {...props}>
-    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-  </svg>
-);
-
-const HeartIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    {...props}>
-    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-  </svg>
-);
-
-const ThumbsUpIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    {...props}>
-    <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
-  </svg>
-);
-
-const SendIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    {...props}>
-    <path d="M5 12h14M12 5l7 7-7 7" />
-  </svg>
-);
+import {
+  MagnifyingGlassIcon as SearchIcon,
+  UserIcon as ProfileIcon,
+  EllipsisVerticalIcon as MoreIcon,
+  PlusIcon,
+  LinkIcon,
+  HeartIcon,
+  HandThumbUpIcon as ThumbsUpIcon,
+  PaperAirplaneIcon as SendIcon,
+  ArrowLeftIcon,
+  CursorArrowRaysIcon as CursorIcon,
+  SwatchIcon as PaletteIcon,
+  ComputerDesktopIcon as DesktopIcon,
+  DeviceTabletIcon as TabletIcon,
+  DevicePhoneMobileIcon as PhoneIcon,
+  CommandLineIcon as TerminalIcon,
+  MoonIcon,
+} from '@heroicons/react/24/outline';
 
 // ---------------------------------------------------------------------------
 // Boids ASCII Canvas — generating state animation
@@ -1026,92 +956,8 @@ function ChatPanel({
 }
 
 // ---------------------------------------------------------------------------
-// Toolbar Icons
+// Brand Icons (no Heroicon equivalent)
 // ---------------------------------------------------------------------------
-
-const ArrowLeftIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    {...props}>
-    <path d="M19 12H5M12 19l-7-7 7-7" />
-  </svg>
-);
-
-const CursorIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    {...props}>
-    <path d="M4 4l7.07 17 2.51-7.39L21 11.07z" />
-  </svg>
-);
-
-const PaletteIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    {...props}>
-    <circle cx="12" cy="12" r="10" />
-    <circle cx="8" cy="10" r="1.5" fill="currentColor" stroke="none" />
-    <circle cx="12" cy="7" r="1.5" fill="currentColor" stroke="none" />
-    <circle cx="16" cy="10" r="1.5" fill="currentColor" stroke="none" />
-  </svg>
-);
-
-const DesktopIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    {...props}>
-    <rect x="2" y="3" width="20" height="14" rx="2" />
-    <path d="M8 21h8M12 17v4" />
-  </svg>
-);
-
-const TabletIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    {...props}>
-    <rect x="4" y="2" width="16" height="20" rx="2" />
-    <line x1="12" y1="18" x2="12" y2="18" strokeLinecap="round" />
-  </svg>
-);
-
-const PhoneIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    {...props}>
-    <rect x="5" y="2" width="14" height="20" rx="2" />
-    <line x1="12" y1="18" x2="12" y2="18" strokeLinecap="round" />
-  </svg>
-);
-
-const TerminalIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    {...props}>
-    <polyline points="4 17 10 11 4 5" />
-    <line x1="12" y1="19" x2="20" y2="19" />
-  </svg>
-);
 
 const ClaudeIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 248 248" fill="none" {...props}>
@@ -1197,7 +1043,13 @@ const VIEWPORT_WIDTHS: Record<string, number | '100%'> = {
 const XDS_THEMES = [
   {label: 'Default', value: 'default'},
   {label: 'Neutral', value: 'neutral'},
+  {label: 'Brutalist', value: 'brutalist'},
+];
+
+const XDS_MODES = [
+  {label: 'Light', value: 'light'},
   {label: 'Dark', value: 'dark'},
+  {label: 'System', value: 'system'},
 ];
 
 function TemplatePreview({
@@ -1287,6 +1139,18 @@ function TemplatePreview({
                   hasChevron={false}
                   items={XDS_THEMES.map(t => ({
                     label: t.label,
+                    onClick: () => {},
+                  }))}
+                />
+                <XDSDropdownMenu
+                  button={{
+                    label: 'Mode',
+                    variant: 'ghost',
+                    icon: <MoonIcon />,
+                  }}
+                  hasChevron={false}
+                  items={XDS_MODES.map(m => ({
+                    label: m.label,
                     onClick: () => {},
                   }))}
                 />
