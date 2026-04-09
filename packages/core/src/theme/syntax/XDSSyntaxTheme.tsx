@@ -20,19 +20,19 @@
  */
 
 import React, {createContext, useContext, useMemo} from 'react';
-import {syntaxThemeStyle, type XDSSyntaxTheme} from './defineSyntaxTheme';
+import {syntaxThemeStyle, type SyntaxTheme} from './defineSyntaxTheme';
 
 // =============================================================================
 // Context
 // =============================================================================
 
-const SyntaxThemeContext = createContext<XDSSyntaxTheme | null>(null);
+const SyntaxThemeContext = createContext<SyntaxTheme | null>(null);
 
 /**
  * Read the current syntax theme from context.
  * Returns null if no XDSSyntaxTheme provider is present.
  */
-export function useSyntaxTheme(): XDSSyntaxTheme | null {
+export function useSyntaxTheme(): SyntaxTheme | null {
   return useContext(SyntaxThemeContext);
 }
 
@@ -41,7 +41,7 @@ export function useSyntaxTheme(): XDSSyntaxTheme | null {
 // =============================================================================
 
 interface XDSSyntaxThemeProps {
-  theme: XDSSyntaxTheme;
+  theme: SyntaxTheme;
   children: React.ReactNode;
 }
 

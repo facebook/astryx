@@ -3,7 +3,7 @@
 /**
  * @file defineSyntaxTheme.ts
  * @input syntaxTokenDefaults from tokens.ts
- * @output defineSyntaxTheme, XDSSyntaxTheme, syntaxThemeStyle
+ * @output defineSyntaxTheme, SyntaxTheme, syntaxThemeStyle
  * @position Syntax theme definition API; consumed by presets, XDSCodeTheme, defineTheme
  *
  * @see https://github.com/facebookexperimental/xds/issues/1148
@@ -41,7 +41,7 @@ export interface SyntaxThemeInput {
 }
 
 /** A defined syntax theme. */
-export interface XDSSyntaxTheme {
+export interface SyntaxTheme {
   name: string;
   tokens: SyntaxThemeTokenMap;
 }
@@ -72,7 +72,7 @@ const ALL_KEYS: SyntaxThemeTokenKey[] = Object.keys(syntaxTokenDefaults)
  *   tokens: { keyword: '#ff79c6', string: '#f1fa8c', ... },
  * });
  */
-export function defineSyntaxTheme(input: SyntaxThemeInput): XDSSyntaxTheme {
+export function defineSyntaxTheme(input: SyntaxThemeInput): SyntaxTheme {
   const missing = ALL_KEYS.filter(key => !(key in input.tokens));
   if (missing.length > 0) {
     console.warn(
@@ -89,7 +89,7 @@ export function defineSyntaxTheme(input: SyntaxThemeInput): XDSSyntaxTheme {
 
 /** Generate a CSS custom property style object for React's style prop. */
 export function syntaxThemeStyle(
-  theme: XDSSyntaxTheme,
+  theme: SyntaxTheme,
 ): Record<string, string> {
   const vars: Record<string, string> = {};
   for (const key of ALL_KEYS) {
@@ -99,7 +99,7 @@ export function syntaxThemeStyle(
 }
 
 /** Convert a syntax theme to CSS declarations (no selector wrapper). */
-export function syntaxThemeToCSS(theme: XDSSyntaxTheme): string {
+export function syntaxThemeToCSS(theme: SyntaxTheme): string {
   return ALL_KEYS
     .map(key => toCSSProperty(key) + ': ' + theme.tokens[key] + ';')
     .join('\n  ');

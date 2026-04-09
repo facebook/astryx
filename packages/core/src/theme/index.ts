@@ -46,7 +46,7 @@ export {
   syntaxThemeToCSS,
 } from './syntax';
 export type {
-  XDSSyntaxTheme,
+  SyntaxTheme,
   SyntaxThemeInput,
   SyntaxThemeTokenKey,
   SyntaxThemeTokenMap,

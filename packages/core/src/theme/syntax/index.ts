@@ -10,7 +10,7 @@ export type {SyntaxTokenName} from './tokens';
 
 export {defineSyntaxTheme, syntaxThemeStyle, syntaxThemeToCSS} from './defineSyntaxTheme';
 export type {
-  XDSSyntaxTheme,
+  SyntaxTheme,
   SyntaxThemeInput,
   SyntaxThemeTokenKey,
   SyntaxThemeTokenMap,

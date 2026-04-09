@@ -9,10 +9,10 @@
  * @see https://github.com/facebookexperimental/xds/issues/1148
  */
 
-import {defineSyntaxTheme, type XDSSyntaxTheme} from '@xds/core/theme/syntax';
+import {defineSyntaxTheme, type SyntaxTheme} from '@xds/core/theme/syntax';
 
 /** One Dark Pro (Binaryify) — MIT */
-export const oneDarkPro: XDSSyntaxTheme = defineSyntaxTheme({
+export const oneDarkPro: SyntaxTheme = defineSyntaxTheme({
   name: 'one-dark-pro',
   tokens: {
     keyword: '#c678dd',
@@ -33,7 +33,7 @@ export const oneDarkPro: XDSSyntaxTheme = defineSyntaxTheme({
 });
 
 /** Dracula (Zeno Rocha) — MIT */
-export const dracula: XDSSyntaxTheme = defineSyntaxTheme({
+export const dracula: SyntaxTheme = defineSyntaxTheme({
   name: 'dracula',
   tokens: {
     keyword: '#ff79c6',
@@ -54,7 +54,7 @@ export const dracula: XDSSyntaxTheme = defineSyntaxTheme({
 });
 
 /** Monokai (Wimer Hazenberg, VS Code built-in) — MIT */
-export const monokai: XDSSyntaxTheme = defineSyntaxTheme({
+export const monokai: SyntaxTheme = defineSyntaxTheme({
   name: 'monokai',
   tokens: {
     keyword: '#f92672',
@@ -75,7 +75,7 @@ export const monokai: XDSSyntaxTheme = defineSyntaxTheme({
 });
 
 /** Nord (Arctic Ice Studio / Sven Greb) — MIT */
-export const nord: XDSSyntaxTheme = defineSyntaxTheme({
+export const nord: SyntaxTheme = defineSyntaxTheme({
   name: 'nord',
   tokens: {
     keyword: '#81a1c1',
@@ -96,7 +96,7 @@ export const nord: XDSSyntaxTheme = defineSyntaxTheme({
 });
 
 /** Tokyo Night (enkia) — MIT */
-export const tokyoNight: XDSSyntaxTheme = defineSyntaxTheme({
+export const tokyoNight: SyntaxTheme = defineSyntaxTheme({
   name: 'tokyo-night',
   tokens: {
     keyword: '#9d7cd8',
@@ -117,7 +117,7 @@ export const tokyoNight: XDSSyntaxTheme = defineSyntaxTheme({
 });
 
 /** Catppuccin Mocha (Catppuccin contributors) — MIT */
-export const catppuccinMocha: XDSSyntaxTheme = defineSyntaxTheme({
+export const catppuccinMocha: SyntaxTheme = defineSyntaxTheme({
   name: 'catppuccin-mocha',
   tokens: {
     keyword: '#cba6f7',
@@ -138,7 +138,7 @@ export const catppuccinMocha: XDSSyntaxTheme = defineSyntaxTheme({
 });
 
 /** GitHub Light (GitHub Primer team) — MIT */
-export const githubLight: XDSSyntaxTheme = defineSyntaxTheme({
+export const githubLight: SyntaxTheme = defineSyntaxTheme({
   name: 'github-light',
   tokens: {
     keyword: '#cf222e',
@@ -159,7 +159,7 @@ export const githubLight: XDSSyntaxTheme = defineSyntaxTheme({
 });
 
 /** Solarized Light (Ethan Schoonover) — MIT */
-export const solarizedLight: XDSSyntaxTheme = defineSyntaxTheme({
+export const solarizedLight: SyntaxTheme = defineSyntaxTheme({
   name: 'solarized-light',
   tokens: {
     keyword: '#859900',
@@ -180,7 +180,7 @@ export const solarizedLight: XDSSyntaxTheme = defineSyntaxTheme({
 });
 
 /** One Light (GitHub / Atom team) — MIT */
-export const oneLight: XDSSyntaxTheme = defineSyntaxTheme({
+export const oneLight: SyntaxTheme = defineSyntaxTheme({
   name: 'one-light',
   tokens: {
     keyword: '#a626a4',
@@ -201,7 +201,7 @@ export const oneLight: XDSSyntaxTheme = defineSyntaxTheme({
 });
 
 /** Catppuccin Latte (Catppuccin contributors) — MIT */
-export const catppuccinLatte: XDSSyntaxTheme = defineSyntaxTheme({
+export const catppuccinLatte: SyntaxTheme = defineSyntaxTheme({
   name: 'catppuccin-latte',
   tokens: {
     keyword: '#8839ef',
@@ -222,7 +222,7 @@ export const catppuccinLatte: XDSSyntaxTheme = defineSyntaxTheme({
 });
 
 /** Tokyo Night Light (enkia) — MIT */
-export const tokyoNightLight: XDSSyntaxTheme = defineSyntaxTheme({
+export const tokyoNightLight: SyntaxTheme = defineSyntaxTheme({
   name: 'tokyo-night-light',
   tokens: {
     keyword: '#8c4351',
