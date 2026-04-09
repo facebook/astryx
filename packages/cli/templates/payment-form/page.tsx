@@ -194,6 +194,7 @@ export default function PaymentFormPage() {
                   </div>
                   <XDSSelector size="lg" label="State" placeholder="Select state" options={US_STATES} value={state} onChange={setState} status={errors.state ? {type: 'error', message: errors.state} : undefined} />
                   <XDSTextInput size="lg" label="Phone Number" placeholder="+1 (555) 123-4567" value={phone} onChange={setPhone} labelTooltip="We use your phone number to provide shipping updates and contact you about your delivery if needed." status={errors.phone ? {type: 'error', message: errors.phone} : undefined} />
+                  <XDSCheckboxInput label="Save my information for a faster checkout" value={saveInfo} onChange={setSaveInfo} />
                 </XDSVStack>
 
                 {/* Delivery */}
@@ -208,8 +209,6 @@ export default function PaymentFormPage() {
                     <XDSRadioListItem value="standard" label="Standard (3–7 business days)" endContent={<XDSText type="body" weight="medium">$4.95</XDSText>} />
                     <XDSRadioListItem value="expedited" label="Expedited (1–2 business days)" endContent={<XDSText type="body" weight="medium">$9.95</XDSText>} />
                   </XDSRadioList>
-                  <XDSDivider />
-                  <XDSCheckboxInput label="Save my information for a faster checkout" value={saveInfo} onChange={setSaveInfo} />
                 </XDSVStack>
 
                 {/* Payment Method */}
