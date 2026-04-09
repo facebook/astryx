@@ -1,9 +1,9 @@
 'use client';
 
 /**
- * @file useImageSurface.ts
+ * @file useImageMode.ts
  * @input Image source URL
- * @output Detected surface luminance: 'dark' | 'light' | null
+ * @output Detected mode luminance: 'dark' | 'light' | null
  * @position Hook; used alongside XDSMediaTheme for auto-detection
  *
  * Detects whether an image is predominantly dark or light by sampling
@@ -19,10 +19,10 @@
  * @example
  * ```tsx
  * function ImageCard({ src }: { src: string }) {
- *   const surface = useImageSurface(src);
+ *   const mode = useImageMode(src);
  *   return (
  *     <div style={{ backgroundImage: `url(${src})` }}>
- *       <XDSMediaTheme surface={surface ?? 'dark'}>
+ *       <XDSMediaTheme mode={mode ?? 'dark'}>
  *         <XDSText>Auto-detected text color</XDSText>
  *       </XDSMediaTheme>
  *     </div>
@@ -49,7 +49,7 @@ export interface ImageSampleRegion {
   height: number;
 }
 
-export interface UseImageSurfaceOptions {
+export interface UseImageModeOptions {
   /**
    * Region to sample. Defaults to the full image.
    * Use normalized coordinates (0-1).
@@ -69,16 +69,14 @@ export interface UseImageSurfaceOptions {
 }
 
 /**
- * Calculate relative luminance from sRGB values (0-255).
- * Uses the BT.709 coefficients per WCAG 2.x.
+ * Calculate perceptual brightness from sRGB values (0-255).
+ * Uses BT.709 luma coefficients on gamma-encoded values (not linearized).
+ * This gives a result that matches human perception better than
+ * true relative luminance for the purpose of "is this image dark or light."
+ * Returns 0-1 where 0 is black, 1 is white.
  */
-function relativeLuminance(r: number, g: number, b: number): number {
-  // Linearize sRGB
-  const linearize = (c: number): number => {
-    const s = c / 255;
-    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
-  };
-  return 0.2126 * linearize(r) + 0.7152 * linearize(g) + 0.0722 * linearize(b);
+function perceptualBrightness(r: number, g: number, b: number): number {
+  return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
 }
 
 /**
@@ -87,16 +85,16 @@ function relativeLuminance(r: number, g: number, b: number): number {
  * Uses OffscreenCanvas to sample the image without interrupting
  * the main render loop. Returns null while loading.
  */
-export function useImageSurface(
+export function useImageMode(
   src: string | null | undefined,
-  options: UseImageSurfaceOptions = {},
+  options: UseImageModeOptions = {},
 ): 'dark' | 'light' | null {
   const {region, threshold = 0.5, fallback = null} = options;
-  const [surface, setSurface] = useState<'dark' | 'light' | null>(fallback);
+  const [mode, setMode] = useState<'dark' | 'light' | null>(fallback);
 
   useEffect(() => {
     if (!src) {
-      setSurface(fallback);
+      setMode(fallback);
       return;
     }
 
@@ -121,21 +119,36 @@ export function useImageSurface(
           ? Math.round(region.height * bitmap.height)
           : bitmap.height;
 
-        // Downsample to 1×1 — browser resampling does the averaging
-        const canvas = new OffscreenCanvas(1, 1);
+        // Sample at a small size and average all pixels manually.
+        // OffscreenCanvas 1×1 drawImage can produce inaccurate results
+        // depending on the browser's resampling algorithm.
+        const sampleSize = 10;
+        const canvas = new OffscreenCanvas(sampleSize, sampleSize);
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
 
-        ctx.drawImage(bitmap, sx, sy, sw, sh, 0, 0, 1, 1);
-        const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+        ctx.drawImage(bitmap, sx, sy, sw, sh, 0, 0, sampleSize, sampleSize);
+        const imageData = ctx.getImageData(0, 0, sampleSize, sampleSize).data;
+
+        // Average all sampled pixels
+        let totalR = 0, totalG = 0, totalB = 0;
+        const pixelCount = sampleSize * sampleSize;
+        for (let i = 0; i < imageData.length; i += 4) {
+          totalR += imageData[i];
+          totalG += imageData[i + 1];
+          totalB += imageData[i + 2];
+        }
+        const r = totalR / pixelCount;
+        const g = totalG / pixelCount;
+        const b = totalB / pixelCount;
 
         if (cancelled) return;
 
-        const luminance = relativeLuminance(r, g, b);
-        setSurface(luminance > threshold ? 'light' : 'dark');
+        const brightness = perceptualBrightness(r, g, b);
+        setMode(brightness > threshold ? 'light' : 'dark');
       } catch {
         // CORS error, network error, etc. — keep fallback
-        if (!cancelled) setSurface(fallback);
+        if (!cancelled) setMode(fallback);
       }
     }
 
@@ -146,5 +159,5 @@ export function useImageSurface(
     };
   }, [src, region?.x, region?.y, region?.width, region?.height, threshold, fallback]);
 
-  return surface;
+  return mode;
 }

@@ -43,13 +43,13 @@ function OnDarkDemo() {
         borderRadius: 'var(--radius-container)',
         padding: 16,
       }}>
-      <XDSMediaTheme surface="dark">
+      <XDSMediaTheme mode="dark">
         <XDSStack gap={3}>
           <XDSText>
             Content on a dark surface — text, icons, and interactive elements
             automatically adapt.
           </XDSText>
-          <XDSStack direction="row" gap={2} align="center">
+          <XDSStack direction="row" gap={2} align="center" wrap="wrap">
             <XDSButton label="Primary" />
             <XDSButton label="Secondary" variant="secondary" />
             <XDSButton label="Ghost" variant="ghost" />
@@ -57,7 +57,7 @@ function OnDarkDemo() {
               A link
             </XDSLink>
           </XDSStack>
-          <XDSStack direction="row" gap={2} align="center">
+          <XDSStack direction="row" gap={2} align="center" wrap="wrap">
             <XDSBadge label="Badge" />
             <XDSIcon icon="info" size="md" />
             <XDSIcon icon="checkCircle" size="md" />
@@ -100,13 +100,13 @@ function OnLightDemo() {
             padding: 16,
             marginTop: 12,
           }}>
-          <XDSMediaTheme surface="light">
+          <XDSMediaTheme mode="light">
             <XDSStack gap={3}>
               <XDSText>
                 Content on a light surface in dark mode — text and icons become
                 dark.
               </XDSText>
-              <XDSStack direction="row" gap={2} align="center">
+              <XDSStack direction="row" gap={2} align="center" wrap="wrap">
                 <XDSButton label="Primary" />
                 <XDSButton label="Secondary" variant="secondary" />
                 <XDSButton label="Ghost" variant="ghost" />
@@ -148,10 +148,10 @@ function ToastDemo() {
           borderRadius: 'var(--radius-container)',
           padding: '12px 16px',
           boxShadow: 'var(--shadow-med)',
-          width: 400,
+          maxWidth: 400, width: '100%',
         }}>
-        <XDSMediaTheme surface="dark">
-          <XDSStack direction="row" gap={3} align="center">
+        <XDSMediaTheme mode="dark">
+          <XDSStack direction="row" gap={3} align="center" wrap="wrap">
             <XDSText style={{flex: 1}}>Changes saved successfully.</XDSText>
             <XDSButton label="Undo" variant="secondary" size="sm" />
             <XDSButton
@@ -171,10 +171,10 @@ function ToastDemo() {
           borderRadius: 'var(--radius-container)',
           padding: '12px 16px',
           boxShadow: 'var(--shadow-med)',
-          width: 400,
+          maxWidth: 400, width: '100%',
         }}>
-        <XDSMediaTheme surface="dark">
-          <XDSStack direction="row" gap={3} align="center">
+        <XDSMediaTheme mode="dark">
+          <XDSStack direction="row" gap={3} align="center" wrap="wrap">
             <XDSText style={{flex: 1}}>
               Failed to save. Check your connection.
             </XDSText>
@@ -229,7 +229,7 @@ function ComponentOverrideBoundaryDemo() {
             <XDSText type="supporting" weight="semibold">
               Normal surface (themed overrides)
             </XDSText>
-            <XDSStack direction="row" gap={2} align="center">
+            <XDSStack direction="row" gap={2} align="center" wrap="wrap">
               <XDSButton label="Primary" />
               <XDSButton label="Secondary" variant="secondary" />
               <XDSButton label="Ghost" variant="ghost" />
@@ -245,12 +245,12 @@ function ComponentOverrideBoundaryDemo() {
             borderRadius: 'var(--radius-element)',
             padding: 16,
           }}>
-          <XDSMediaTheme surface="dark">
+          <XDSMediaTheme mode="dark">
             <XDSStack gap={2}>
               <XDSText type="supporting" weight="semibold">
                 Dark surface (same overrides, inverted tokens)
               </XDSText>
-              <XDSStack direction="row" gap={2} align="center">
+              <XDSStack direction="row" gap={2} align="center" wrap="wrap">
                 <XDSButton label="Primary" />
                 <XDSButton label="Secondary" variant="secondary" />
                 <XDSButton label="Ghost" variant="ghost" />
@@ -316,7 +316,7 @@ function ThemedDemo() {
                   padding: 16,
                   flex: 1,
                 }}>
-                <XDSMediaTheme surface="dark">
+                <XDSMediaTheme mode="dark">
                   <XDSStack gap={2}>
                     <XDSText type="supporting">Dark surface</XDSText>
                     <XDSButton label="Button" variant="secondary" />
@@ -377,8 +377,8 @@ function CustomOverridesDemo() {
             borderRadius: 'var(--radius-container)',
             padding: 16,
           }}>
-          <XDSMediaTheme surface="dark">
-            <XDSStack direction="row" gap={2} align="center">
+          <XDSMediaTheme mode="dark">
+            <XDSStack direction="row" gap={2} align="center" wrap="wrap">
               <XDSButton label="Accent button" />
               <XDSButton label="Secondary" variant="secondary" />
               <XDSLink href="#" hasUnderline>
@@ -408,7 +408,7 @@ export const CustomOverrides: StoryObj = {
 // Auto-detected surface from image
 // =============================================================================
 
-import {useImageSurface} from '@xds/core/hooks';
+import {useImageMode} from '@xds/core/hooks';
 
 const DEMO_IMAGES = [
   {
@@ -416,8 +416,8 @@ const DEMO_IMAGES = [
     url: 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?w=600&h=400&fit=crop',
   },
   {
-    label: 'Light photo (white wall)',
-    url: 'https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=600&h=400&fit=crop',
+    label: 'Light photo (beach)',
+    url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&h=400&fit=crop',
   },
   {
     label: 'Mixed (sunset)',
@@ -434,7 +434,7 @@ const DEMO_IMAGES = [
 ];
 
 function ImageCard({url, label}: {url: string; label: string}) {
-  const surface = useImageSurface(url);
+  const surface = useImageMode(url);
 
   return (
     <div
@@ -442,7 +442,7 @@ function ImageCard({url, label}: {url: string; label: string}) {
         position: 'relative',
         borderRadius: 'var(--radius-container, 12px)',
         overflow: 'hidden',
-        width: 300,
+        maxWidth: 300, width: '100%',
         height: 200,
       }}>
       <img
@@ -467,7 +467,7 @@ function ImageCard({url, label}: {url: string; label: string}) {
               ? 'linear-gradient(transparent, rgba(255,255,255,0.8))'
               : 'linear-gradient(transparent, rgba(0,0,0,0.7))',
         }}>
-        <XDSMediaTheme surface={surface ?? 'dark'}>
+        <XDSMediaTheme mode={surface ?? 'dark'}>
           <XDSStack gap={1}>
             <XDSText weight="semibold">{label}</XDSText>
             <XDSText type="supporting">
@@ -485,7 +485,7 @@ function AutoDetectDemo() {
     <XDSStack gap={3}>
       <XDSText>
         Each card auto-detects whether the image is dark or light using{' '}
-        <code>useImageSurface</code>, then applies the correct{' '}
+        <code>useImageMode</code>, then applies the correct{' '}
         <code>XDSMediaTheme</code> surface. Text color adapts automatically.
       </XDSText>
       <XDSStack direction="row" gap={3} style={{flexWrap: 'wrap'}}>
@@ -503,7 +503,7 @@ export const AutoDetectFromImage: StoryObj = {
     docs: {
       description: {
         story:
-          'Auto-detects image luminance via `useImageSurface` hook and applies the correct `XDSMediaTheme` surface. Uses OffscreenCanvas to sample the image without interrupting the render loop.',
+          'Auto-detects image luminance via `useImageMode` hook and applies the correct `XDSMediaTheme` surface. Uses OffscreenCanvas to sample the image without interrupting the render loop.',
       },
     },
   },
@@ -517,10 +517,10 @@ function RegionalDetectDemo() {
   const url =
     'https://images.unsplash.com/photo-1495616811223-4d98c6e9c869?w=600&h=400&fit=crop';
   // Sample just the bottom strip where text overlays
-  const bottomSurface = useImageSurface(url, {
+  const bottomSurface = useImageMode(url, {
     region: {x: 0, y: 0.7, width: 1, height: 0.3},
   });
-  const fullSurface = useImageSurface(url);
+  const fullSurface = useImageMode(url);
 
   return (
     <XDSStack gap={3}>
@@ -535,7 +535,7 @@ function RegionalDetectDemo() {
           position: 'relative',
           borderRadius: 'var(--radius-container, 12px)',
           overflow: 'hidden',
-          width: 400,
+          maxWidth: 400, width: '100%',
           height: 260,
         }}>
         <img
@@ -569,7 +569,7 @@ function RegionalDetectDemo() {
             right: 0,
             padding: '12px 16px',
           }}>
-          <XDSMediaTheme surface={bottomSurface ?? 'dark'}>
+          <XDSMediaTheme mode={bottomSurface ?? 'dark'}>
             <XDSStack gap={1}>
               <XDSText weight="semibold">Regional sampling</XDSText>
               <XDSText type="supporting">

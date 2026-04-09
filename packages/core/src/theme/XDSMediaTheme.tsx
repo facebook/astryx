@@ -2,7 +2,7 @@
 
 /**
  * @file XDSMediaTheme.tsx
- * @input surface prop ("dark" | "light") + children
+ * @input mode prop ("dark" | "light") + children
  * @output Wrapper div that creates an inverted theming context
  * @position Theme system component; sibling to XDSTheme
  *
@@ -25,7 +25,7 @@
  * ```tsx
  * // Dark surface (e.g. toast on a light page)
  * <div style={{ backgroundColor: 'var(--color-surface-inverted)' }}>
- *   <XDSMediaTheme surface="dark">
+ *   <XDSMediaTheme mode="dark">
  *     <XDSButton label="Undo" variant="ghost" />
  *   </XDSMediaTheme>
  * </div>
@@ -34,10 +34,12 @@
 
 import * as React from 'react';
 import * as stylex from '@stylexjs/stylex';
+import {colorVars} from './tokens.stylex';
 
 const styles = stylex.create({
   root: {
     display: 'contents',
+    color: colorVars['--color-text-primary'],
   },
 });
 
@@ -47,7 +49,7 @@ export interface XDSMediaThemeProps {
    * - `"dark"` — children are on a dark background (get light text/icons)
    * - `"light"` — children are on a light background (get dark text/icons)
    */
-  surface: 'dark' | 'light';
+  mode: 'dark' | 'light';
   /** Content to render in the media context */
   children: React.ReactNode;
 }
@@ -60,11 +62,11 @@ export interface XDSMediaThemeProps {
  * through unchanged; only tokens change for the surface context.
  */
 export function XDSMediaTheme({
-  surface,
+  mode,
   children,
 }: XDSMediaThemeProps): React.ReactElement {
   return (
-    <div data-xds-media={surface} {...stylex.props(styles.root)}>
+    <div data-xds-media={mode} {...stylex.props(styles.root)}>
       {children}
     </div>
   );
