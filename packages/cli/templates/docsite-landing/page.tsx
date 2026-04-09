@@ -1348,9 +1348,7 @@ function TemplatePreview({
                 flexDirection: 'column' as const,
                 gap: 4,
               }}>
-              <XDSHeading level={1} variant="display">
-                {templateName}
-              </XDSHeading>
+              <XDSHeading level={1}>{templateName}</XDSHeading>
               <XDSText type="supporting" color="secondary">
                 XDS · 541 usages
               </XDSText>
