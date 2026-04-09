@@ -210,9 +210,8 @@ export const ToastExample: StoryObj = {
 /**
  * This is the key demo: themes with component overrides (brutalist has pill
  * buttons, uppercase text, thick borders on cards/ghost buttons). Inside
- * XDSMediaTheme, those component overrides DON'T apply — children get the
- * default component styles with inverted tokens. This is correct behavior:
- * the scope boundary isolates the inverted surface.
+ * XDSMediaTheme, those component overrides STILL apply — structural styling
+ * is preserved. Only the color tokens change for the inverted surface.
  */
 
 function ComponentOverrideBoundaryDemo() {
@@ -228,7 +227,7 @@ function ComponentOverrideBoundaryDemo() {
         <XDSCard>
           <XDSStack gap={2} style={{padding: 16}}>
             <XDSText type="supporting" weight="semibold">
-              NORMAL SURFACE (themed overrides active)
+              Normal surface (themed overrides)
             </XDSText>
             <XDSStack direction="row" gap={2} align="center">
               <XDSButton label="Primary" />
@@ -249,7 +248,7 @@ function ComponentOverrideBoundaryDemo() {
           <XDSMediaTheme surface="dark">
             <XDSStack gap={2}>
               <XDSText type="supporting" weight="semibold">
-                DARK SURFACE (default component styles, inverted tokens)
+                Dark surface (same overrides, inverted tokens)
               </XDSText>
               <XDSStack direction="row" gap={2} align="center">
                 <XDSButton label="Primary" />
@@ -271,7 +270,7 @@ export const ComponentOverrideBoundary: StoryObj = {
     docs: {
       description: {
         story:
-          'Shows the scope boundary in action. Brutalist theme applies bold component overrides (pill buttons, uppercase, thick borders). Inside XDSMediaTheme, those overrides stop — children render with default XDS component styles but with inverted tokens. This is the correct behavior for inverted surfaces.',
+          'Shows component overrides flowing through to the media context. Brutalist theme applies bold component overrides (pill buttons, uppercase, thick borders) — these are preserved inside XDSMediaTheme. Only the color tokens change for the inverted surface.',
       },
     },
   },
