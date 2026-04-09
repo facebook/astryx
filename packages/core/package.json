@@ -406,6 +406,12 @@
       "import": "./dist/Timestamp/index.mjs",
       "require": "./dist/Timestamp/index.js"
     },
+    "./Toast": {
+      "source": "./src/Toast/index.ts",
+      "types": "./dist/Toast/index.d.ts",
+      "import": "./dist/Toast/index.mjs",
+      "require": "./dist/Toast/index.js"
+    },
     "./ToggleButton": {
       "source": "./src/ToggleButton/index.ts",
       "types": "./dist/ToggleButton/index.d.ts",
