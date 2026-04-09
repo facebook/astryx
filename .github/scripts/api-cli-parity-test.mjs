@@ -125,10 +125,15 @@ for (const topic of allTopics) {
 add('docs nonexistent', ['docs', 'nonexistent_xyz'],
   () => apiCall(api.docs, 'nonexistent_xyz'));
 
-// Other commands — probe with safe read-only args
+// Template — uses API
+add('template --list', ['template', '--list'],
+  () => apiCall(api.template));
+add('template nonexistent', ['template', 'nonexistent99'],
+  () => apiCall(api.template, 'nonexistent99'));
+
+// Other commands — probe with safe read-only args (no API yet)
 const otherCommands = [
   ['swizzle', '--list'],
-  ['template', '--list'],
   ['gap-report', '--list-categories'],
   ['upgrade', '--list'],
 ];

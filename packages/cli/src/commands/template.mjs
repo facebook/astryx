@@ -13,55 +13,10 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {CLI_ROOT} from '../utils/paths.mjs';
 import {jsonOut, jsonError} from '../lib/json.mjs';
-
-// ── Template discovery ───────────────────────────────────────────────
-
-async function loadTemplateDoc(templateDir) {
-  const docPath = path.join(templateDir, 'template.doc.mjs');
-  if (!fs.existsSync(docPath)) return null;
-  const docModule = await import(`file://${docPath}`);
-  return docModule.doc;
-}
-
-export async function discoverTemplates() {
-  const templatesDir = path.join(CLI_ROOT, 'templates');
-  if (!fs.existsSync(templatesDir)) return [];
-
-  const dirs = fs
-    .readdirSync(templatesDir, {withFileTypes: true})
-    .filter(e => e.isDirectory())
-    .sort((a, b) => a.name.localeCompare(b.name));
-
-  const templates = [];
-  for (const dir of dirs) {
-    const doc = await loadTemplateDoc(path.join(templatesDir, dir.name));
-    templates.push({
-      dirName: dir.name,
-      name: doc?.name || dir.name,
-      description: doc?.description || '',
-      isReady: doc?.isReady ?? true,
-    });
-  }
-  return templates;
-}
-
-export function listTemplates() {
-  const templatesDir = path.join(CLI_ROOT, 'templates');
-  if (!fs.existsSync(templatesDir)) return [];
-  return fs
-    .readdirSync(templatesDir, {withFileTypes: true})
-    .filter(e => e.isDirectory())
-    .map(e => e.name)
-    .sort();
-}
+import {template as templateApi} from '../api/template.mjs';
 
 // ── Component extraction ─────────────────────────────────────────────
 
-/**
- * Extract distinguishing XDS component names from a template's page.tsx.
- * Filters out ubiquitous components (Text, Button, HStack, etc.) to show
- * only the structural components that define the template's composition.
- */
 function extractComponents(pagePath) {
   const src = fs.readFileSync(pagePath, 'utf-8');
   const UBIQUITOUS = new Set([
@@ -80,16 +35,6 @@ function extractComponents(pagePath) {
 
 // ── Skeleton extraction ──────────────────────────────────────────────
 
-/**
- * Extract a layout skeleton from template source code.
- * Shows the XDS component nesting tree with spatial props
- * (padding, gap, contentPadding, hasDivider, maxWidth, etc.).
- *
- * Structural components (Layout, AppShell, Card, Grid, Section, List, Table,
- * TabList, Toolbar) are always shown with full nesting. Leaf content
- * components (Text, Heading, Button, Badge, etc.) are collapsed to single
- * lines to keep the skeleton focused on spatial structure.
- */
 function extractSkeleton(source) {
   const lines = source.split('\n');
   const out = [];
@@ -124,13 +69,11 @@ function extractSkeleton(source) {
       continue;
     }
 
-    // XDS opening tag
     const openMatch = t.match(/^<(XDS\w+)/);
     if (openMatch && !t.startsWith('</')) {
       const comp = openMatch[1].replace(/^XDS/, '');
       const isStructural = STRUCTURAL.has(comp);
 
-      // Gather spatial props
       let tagText = '';
       for (let j = i; j < Math.min(i + 12, lines.length); j++) {
         tagText += ' ' + lines[j];
@@ -152,7 +95,6 @@ function extractSkeleton(source) {
       const isVStack = comp === 'VStack' || comp === 'HStack';
       const isSelfClosing = tagText.match(new RegExp('<' + openMatch[1] + '[^>]*/>', 's'));
 
-      // VStack/HStack: only show if they have gap props
       if (isVStack && !hasSpatialProps) continue;
 
       if (isSelfClosing) {
@@ -167,7 +109,6 @@ function extractSkeleton(source) {
       continue;
     }
 
-    // Closing tag
     const closeMatch = t.match(/^<\/(XDS\w+)>/);
     if (closeMatch) {
       const comp = closeMatch[1].replace(/^XDS/, '');
@@ -179,14 +120,12 @@ function extractSkeleton(source) {
       continue;
     }
 
-    // Slot props
     const slotMatch = t.match(/^(header|content|footer|start|end|sideNav|topNav)\s*=\s*\{/);
     if (slotMatch) {
       out.push('  '.repeat(depth) + `/* ${slotMatch[1]}: */`);
       continue;
     }
 
-    // Wrapper divs with spatial styles
     if (t.startsWith('<div') && (t.includes('padding') || t.includes('maxWidth') || t.includes('gap:'))) {
       const styleProps = [];
       const divText = lines.slice(i, Math.min(i + 5, lines.length)).join(' ');
@@ -211,6 +150,8 @@ function extractSkeleton(source) {
 
 // ── Command ──────────────────────────────────────────────────────────
 
+export {discoverTemplates, listTemplates} from '../api/template.mjs';
+
 export function registerTemplate(program) {
   program
     .command('template [name] [path]')
@@ -221,58 +162,20 @@ export function registerTemplate(program) {
       'Show layout skeleton with spatial annotations (padding, gap, nesting)',
     )
     .action(async (name, targetPath, options) => {
-      const templatesDir = path.join(CLI_ROOT, 'templates');
-      const templates = await discoverTemplates();
-      const templateNames = templates.map(t => t.dirName);
       const json = program.opts().json || false;
 
-      if (options.list || (!name && !options.skeleton)) {
-        if (json) {
-          return jsonOut('template.list', templates.map(t => ({
-            name: t.dirName,
-            description: t.description,
-            isReady: t.isReady,
-          })));
-        }
-        console.log('\nAvailable templates:\n');
-        for (const t of templates) {
-          const status = t.isReady ? '' : ' (WIP)';
-          const pagePath = path.join(templatesDir, t.dirName, 'page.tsx');
-          const comps = fs.existsSync(pagePath)
-            ? extractComponents(pagePath)
-            : [];
-          const compStr =
-            comps.length > 0 ? `  [${comps.join(', ')}]` : '';
-
-          console.log(`  ${t.dirName}${status}`);
-          if (t.description) console.log(`    ${t.description}`);
-          if (compStr) console.log(`   ${compStr}`);
-        }
-        console.log('\nUsage:');
-        console.log('  xds template <name> [target-path]   Scaffold page');
-        console.log(
-          '  xds template <name> --skeleton      Layout reference\n',
-        );
-        return;
-      }
-
-      if (name && !templateNames.includes(name)) {
-        if (json) return jsonError(`Unknown template "${name}"`, templateNames.map(n => ({name: n, reason: 'available template'})));
-        console.error(`Error: Unknown template "${name}".`);
-        console.error(`Available: ${templateNames.join(', ')}`);
-        process.exit(1);
-      }
-
-      // --skeleton: show layout skeleton for a specific template
+      // --skeleton is text-only, not part of the API
       if (options.skeleton) {
         if (!name) {
-          console.error(
-            'Error: Specify a template name. Usage: xds template <name> --skeleton',
-          );
-          console.error(`Available: ${templateNames.join(', ')}`);
+          const {template: templateApiFn} = await import('../api/template.mjs');
+          const list = await templateApiFn(undefined, {list: true});
+          const names = list.data.map(t => t.name);
+          console.error('Error: Specify a template name. Usage: xds template <name> --skeleton');
+          console.error(`Available: ${names.join(', ')}`);
           process.exit(1);
         }
 
+        const templatesDir = path.join(CLI_ROOT, 'templates');
         const pagePath = path.join(templatesDir, name, 'page.tsx');
         if (!fs.existsSync(pagePath)) {
           console.error(`Error: No page.tsx found for template "${name}".`);
@@ -283,8 +186,12 @@ export function registerTemplate(program) {
         const skeleton = extractSkeleton(src);
         const comps = extractComponents(pagePath);
 
-        const doc = await loadTemplateDoc(path.join(templatesDir, name));
-        const desc = doc?.description || '';
+        const docPath = path.join(templatesDir, name, 'template.doc.mjs');
+        let desc = '';
+        if (fs.existsSync(docPath)) {
+          const mod = await import(`file://${docPath}`);
+          desc = mod.doc?.description || '';
+        }
 
         console.log(`\n# ${name}${desc ? ' — ' + desc : ''}`);
         console.log(`# Components: ${comps.join(', ')}\n`);
@@ -293,29 +200,47 @@ export function registerTemplate(program) {
         return;
       }
 
-      // Default: scaffold the template
-      const outputDir = path.resolve(
-        process.cwd(),
-        targetPath || `./src/pages/${name}`,
-      );
-      const templateDir = path.join(templatesDir, name);
-
-      fs.mkdirSync(outputDir, {recursive: true});
-
-      const files = fs.readdirSync(templateDir);
-      let copied = 0;
-
-      for (const file of files) {
-        if (file === 'template.doc.mjs') continue;
-        const srcPath = path.join(templateDir, file);
-        const stat = fs.statSync(srcPath);
-        if (!stat.isFile()) continue;
-        fs.copyFileSync(srcPath, path.join(outputDir, file));
-        copied++;
+      let result;
+      try {
+        result = await templateApi(name, {
+          list: options.list,
+          targetPath,
+          cwd: process.cwd(),
+        });
+      } catch (e) {
+        if (json) return jsonError(e.message, e.suggestions);
+        console.error(`Error: ${e.message}`);
+        if (e.suggestions?.length) {
+          console.error(`Available: ${e.suggestions.map(s => s.name).join(', ')}`);
+        }
+        process.exit(1);
       }
 
-      const relOutput = path.relative(process.cwd(), outputDir);
-      if (json) return jsonOut('template.copy', {template: name, outputDir: relOutput, filesCopied: copied});
-      console.log(`\n✓ Copied ${copied} template files to ${relOutput}/\n`);
+      if (json) return jsonOut(result.type, result.data);
+
+      switch (result.type) {
+        case 'template.list': {
+          const templatesDir = path.join(CLI_ROOT, 'templates');
+          console.log('\nAvailable templates:\n');
+          for (const t of result.data) {
+            const status = t.isReady ? '' : ' (WIP)';
+            const pagePath = path.join(templatesDir, t.name, 'page.tsx');
+            const comps = fs.existsSync(pagePath) ? extractComponents(pagePath) : [];
+            const compStr = comps.length > 0 ? `  [${comps.join(', ')}]` : '';
+            console.log(`  ${t.name}${status}`);
+            if (t.description) console.log(`    ${t.description}`);
+            if (compStr) console.log(`   ${compStr}`);
+          }
+          console.log('\nUsage:');
+          console.log('  xds template <name> [target-path]   Scaffold page');
+          console.log('  xds template <name> --skeleton      Layout reference\n');
+          break;
+        }
+
+        case 'template.copy': {
+          console.log(`\n✓ Copied ${result.data.filesCopied} template files to ${result.data.outputDir}/\n`);
+          break;
+        }
+      }
     });
 }
