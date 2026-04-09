@@ -184,3 +184,37 @@ export const ManyCalls: Story = {
     />
   ),
 };
+
+/** Interactive calls — onClick opens detail (e.g. modal, panel) */
+export const Interactive: Story = {
+  render: () => (
+    <XDSChatToolCalls
+      calls={[
+        {
+          name: 'edit',
+          label: 'XDSButton.tsx',
+          status: 'complete',
+          duration: '85ms',
+          node: 'xds',
+          stats: {additions: 12, deletions: 3},
+          onClick: () => alert('Open diff for XDSButton.tsx'),
+        },
+        {
+          name: 'bash',
+          label: 'yarn test',
+          status: 'complete',
+          duration: '6.1s',
+          node: 'xds',
+          onClick: () => alert('Open test output'),
+        },
+        {
+          name: 'web_search',
+          label: 'CSS anchor positioning',
+          status: 'complete',
+          duration: '1.8s',
+          // no onClick — not interactive
+        },
+      ]}
+    />
+  ),
+};

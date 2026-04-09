@@ -72,6 +72,8 @@ export interface XDSChatToolCallItem {
   key?: string;
   /** Arbitrary data passed through to renderDetail. Store tool args, result, etc. */
   data?: unknown;
+  /** Click handler for the call row. When provided, the row is interactive (pointer cursor, hover state). */
+  onClick?: () => void;
 }
 
 export interface XDSChatToolCallsProps extends XDSBaseProps<HTMLDivElement> {
@@ -178,6 +180,15 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-1-5'],
     minHeight: '24px',
     paddingBlock: spacingVars['--spacing-0-5'],
+  },
+  callRowClickable: {
+    cursor: 'pointer',
+    borderRadius: radiusVars['--radius-element'],
+    paddingInline: spacingVars['--spacing-1'],
+    marginInline: `calc(-1 * ${spacingVars['--spacing-1']})`,
+    ':hover': {
+      backgroundColor: colorVars['--color-overlay-hover'],
+    },
   },
   statusIcon: {
     display: 'inline-flex',
@@ -389,10 +400,24 @@ function CallRow({
 }) {
   const status = call.status ?? 'complete';
   const Icon = STATUS_ICONS[status];
+  const isClickable = call.onClick != null;
 
   return (
     <div>
-      <div {...stylex.props(styles.callRow)}>
+      <div
+        role={isClickable ? 'button' : undefined}
+        tabIndex={isClickable ? 0 : undefined}
+        onClick={call.onClick}
+        onKeyDown={isClickable ? (e: React.KeyboardEvent) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            call.onClick?.();
+          }
+        } : undefined}
+        {...stylex.props(
+          styles.callRow,
+          isClickable && styles.callRowClickable,
+        )}>
         <span
           title={status === 'error' ? call.errorMessage : undefined}
           {...stylex.props(
