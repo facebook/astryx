@@ -2,5 +2,5 @@
 export const doc = {
   name: 'Payment Form',
   description: 'Secure checkout page with billing info, card details, and order summary.',
-  isReady: false,
+  isReady: true,
 };
