@@ -332,6 +332,9 @@ import * as stylex from '@stylexjs/stylex';
       ],
     },
   ],
+  usage: {
+    summary: 'Layout primitives for arranging items in horizontal or vertical sequences using flexbox.',
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */

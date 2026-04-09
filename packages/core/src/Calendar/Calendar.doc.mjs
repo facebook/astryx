@@ -140,6 +140,9 @@ export const docs = {
     'Outside days (adjacent month) are rendered with aria-disabled="true" and ignore clicks',
     'Day cell transitions are suppressed under @media (prefers-reduced-motion: reduce)',
   ],
+  usage: {
+    summary: 'A calendar component for date selection supporting single and range selection modes.',
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */

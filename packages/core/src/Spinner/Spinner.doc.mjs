@@ -79,6 +79,17 @@ export const docs = {
     'XDSSpinner is intentionally minimal — compose with layout and text components for full loading states.',
     'Size reference: sm = 10×10px / 3px border, md = 14×14px / 3px border, lg = 18×18px / 3px border.',
   ],
+  usage: {
+    summary: 'An animated loading indicator for indeterminate wait states.',
+    content: `## When to use
+
+- Indicating an ongoing process with unknown duration.
+- Inline loading states within buttons or other components.
+
+## When NOT to use
+
+- Content of known size is loading (use Skeleton instead).`,
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */

@@ -123,6 +123,27 @@ export const docs = {
       },
     ],
   },
+  usage: {
+    summary: 'Groups similar information inside containers for visual organization.',
+    content: `## When to use
+
+- When explicit grouping of related information is needed.
+- When browsing and scanning content is frequent.
+
+## Best practices
+
+- Do: Use whitespace, type scale, and dividers with cards.
+- Do: Prioritize sections as the default; use cards only for stronger visual distinction.
+- Don't: Exclusively use cards, as it diminishes visual hierarchy.
+- Don't: Use cards for primary content unless stronger visual separation is needed.
+- Start with sections; escalate to cards only when additional distinction is required.
+- Card elevation adapts automatically based on the background surface.`,
+    anatomy: [
+      {name: 'Card Header', required: false, description: 'Displays a title and optional end content.'},
+      {name: 'Card Body', required: true, description: 'Accepts any content.'},
+      {name: 'Card Footer', required: false, description: 'Contains actions.'},
+    ],
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */

@@ -54,6 +54,9 @@ export const docs = {
       {className: 'xds-aspect-ratio'},
     ],
   },
+  usage: {
+    summary: 'Maintains a specific aspect ratio for its children, useful for responsive media containers.',
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */

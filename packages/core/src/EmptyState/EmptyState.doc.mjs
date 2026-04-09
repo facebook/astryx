@@ -101,6 +101,26 @@ export const docs = {
     'Icon wrapper has aria-hidden="true" so decorative icons are ignored by assistive technology.',
     'Title renders as a heading element (h1-h6 via headingLevel prop, default h3), keeping it in the document heading outline.',
   ],
+  usage: {
+    summary: 'Provides guidance and context when there is no data to display.',
+    content: `## When to use
+
+- Null states when no content exists yet.
+- Failed loading states.
+- When search or filter results return nothing.
+
+## Best practices
+
+- Do: Be clear and direct with messaging.
+- Do: Use simple language and provide context.
+- Do: Offer a next step so users know how to proceed.`,
+    anatomy: [
+      {name: 'Illustration', required: false, description: 'Visual cue that reinforces the empty state context.'},
+      {name: 'Title', required: true, description: 'Primary message explaining the empty state.'},
+      {name: 'Subtitle', required: false, description: 'Additional context or explanation.'},
+      {name: 'Call to action', required: false, description: 'Buttons guiding the user to a next step.'},
+    ],
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */

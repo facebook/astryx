@@ -256,6 +256,18 @@ export const docs = {
       ],
     },
   ],
+  usage: {
+    summary: 'A checkbox group for multi-value selection from a list of options.',
+    content: `## When to use
+
+- Users need to select multiple options from a set.
+- All options should be visible at once.
+
+## When NOT to use
+
+- Only one option can be selected (use RadioList instead).
+- The option list is very long (consider MultiSelector instead).`,
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */

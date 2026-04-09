@@ -213,6 +213,29 @@ import {XDSLinkProvider} from '@xds/core/Link';
       ],
     },
   ],
+  usage: {
+    summary: 'Clickable element that leads to a new destination or performs an action.',
+    content: `## When to use
+
+- To embed actions inline on a page.
+- To provide a path to more information.
+
+## When NOT to use
+
+- Don't use to trigger dropdown menus.
+- Don't use icon-only links without a visible label.
+
+## Best practices
+
+- Do: Write descriptive link text and front-load key information.
+- Do: Keep link text concise.
+- Do: Include context about the destination for "Learn more" links.`,
+    anatomy: [
+      {name: 'Label', required: true, description: 'The visible text of the link.'},
+      {name: 'Right icon', required: false, description: 'Icon placed after the label to indicate an action affordance.'},
+      {name: 'Left icon', required: false, description: 'Icon placed before the label to represent meaning.'},
+    ],
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */

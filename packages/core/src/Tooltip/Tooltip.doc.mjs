@@ -198,6 +198,24 @@ export const docs = {
       {className: 'xds-tooltip'},
     ],
   },
+  usage: {
+    summary: 'Non-interactive hints that provide additional information in the context of a specific UI element.',
+    content: `## When to use
+
+- Progressive disclosure of non-interactive content.
+- Non-interruptive education.
+- Show full text for truncated labels.
+
+## When NOT to use
+
+- For interactive content, use HoverCard instead.
+
+## Best practices
+
+- Limit tooltip content to approximately 140 characters.
+- Place tooltip 8px from the context element.
+- Supported placements: above, below, left, right.`,
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */

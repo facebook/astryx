@@ -199,6 +199,13 @@ export const docs = {
     'Focus outline uses the standard XDS focus ring token.',
     'Interaction is blocked during busy state (loading or pending async action) to prevent double-toggling.',
   ],
+  usage: {
+    summary: 'A checkbox input for toggling boolean values.',
+    content: `## When to use
+
+- Toggling a single boolean setting.
+- Selecting multiple options from a set (use CheckboxList for groups).`,
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */

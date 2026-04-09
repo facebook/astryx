@@ -157,6 +157,28 @@ export const docs = {
       ],
     },
   ],
+  usage: {
+    summary: 'An editable list of key-value pairs providing a comprehensive overview of an object\'s attributes.',
+    content: `## When to use
+
+- Display and edit key-value pairs for object attributes.
+- Use edit mode for inline editing.
+- Use disclosure to collapse/expand sections.
+
+## When NOT to use
+
+- For extensive form input, use forms instead.
+
+## Best practices
+
+- Default to collapsed state showing the top 6 items.`,
+    anatomy: [
+      {name: 'Title', required: false, description: 'Optional title for the metadata list.'},
+      {name: 'Label', required: true, description: 'The key label for each metadata entry.'},
+      {name: 'Metadata', required: true, description: 'The value displayed in various formats.'},
+      {name: 'Disclosure', required: false, description: 'Collapse/expand control for the list.'},
+    ],
+  },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */

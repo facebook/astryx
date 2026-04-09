@@ -212,6 +212,16 @@ export const docs = {
     'Interaction is blocked during busy state (loading or pending async action) to prevent double-toggling',
     'Track and thumb transitions respect prefers-reduced-motion (0s duration when reduced motion preferred)',
   ],
+  usage: {
+    summary: 'Conveys a binary on/off state that takes effect immediately.',
+    content: `## When to use
+
+- Settings that take effect immediately upon toggling.
+
+## When NOT to use
+
+- When changes require a separate submit step \u2014 use a checkbox instead.`,
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */

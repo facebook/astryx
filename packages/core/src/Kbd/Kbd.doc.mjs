@@ -67,6 +67,12 @@ export const docs = {
     'Uses --color-background-body background and --color-text-secondary text color',
     'Key display symbols follow macOS conventions (⌘, ⌥, ⇧, ⌃)',
   ],
+  usage: {
+    summary: 'Displays a keyboard shortcut as styled key elements.',
+    content: `## When to use
+
+- Showing keyboard shortcuts in tooltips, menus, and documentation.`,
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */

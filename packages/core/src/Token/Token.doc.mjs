@@ -129,6 +129,25 @@ export const docs = {
   ],
   keyboard:
     'Tab focuses the token (or its inner button when onClick is used). Enter/Space activate a clickable token or the remove button. Remove button is reachable as a separate Tab stop.',
+  usage: {
+    summary: 'Displays entities inline for tags or names.',
+    content: `## When to use
+
+- Concise metadata display.
+- Icon with colored background indicator.
+- Combined icon, text, and number representation.
+
+## When NOT to use
+
+- Static indicators without interaction \u2014 use Badge instead (Badge is 20px, Token is 28px).`,
+    anatomy: [
+      {name: 'Color', required: false, description: 'Background color indicator.'},
+      {name: 'Label', required: true, description: 'Text label for the token.'},
+      {name: 'Icon', required: false, description: '16px icon displayed in the token.'},
+      {name: 'Remove button', required: false, description: 'Shown when onRemove is provided.'},
+      {name: 'Description', required: false, description: 'Additional descriptive text.'},
+    ],
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */

@@ -282,6 +282,9 @@ export const docs = {
       ],
     },
   ],
+  usage: {
+    summary: 'Typography components for body text, headings, and semantic text rendering.',
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */

@@ -244,6 +244,12 @@ export const docs = {
     '`minStepsBetweenThumbs` enforces a minimum gap between range thumbs.',
     'Vertical orientation inverts the Y axis so that bottom = min and top = max.',
   ],
+  usage: {
+    summary: 'Allows a user to select a single number within a fixed range.',
+    content: `## When to use
+
+- To help users explore and select a number within a constrained range.`,
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */

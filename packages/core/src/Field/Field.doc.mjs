@@ -311,6 +311,12 @@ const bioDescId = useId();
       ],
     },
   ],
+  usage: {
+    summary: 'A form field wrapper that provides label, description, and optional/required indicators around an input.',
+    content: `## When to use
+
+- Wrapping input components in forms to provide consistent labels, descriptions, and validation states.`,
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */

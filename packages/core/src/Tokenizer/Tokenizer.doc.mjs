@@ -253,6 +253,18 @@ export const docs = {
   ],
   keyboard:
     'Backspace on empty input removes last token; Arrow keys navigate dropdown; Enter selects highlighted item; Escape closes dropdown',
+  usage: {
+    summary: 'Converts text into tokens, enabling users to filter content and make selections.',
+    content: `## When to use
+
+- Convert plain text into tokens for metadata.
+- Predict entries from a data source.
+- Allow users to create custom entries.
+
+## Best practices
+
+- Don't: Apply colored backgrounds to tokens within a tokenizer.`,
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */
