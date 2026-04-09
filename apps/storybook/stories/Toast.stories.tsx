@@ -6,8 +6,7 @@ import {XDSButton} from '@xds/core/Button';
 import {XDSLink} from '@xds/core/Link';
 import {XDSCard} from '@xds/core/Card';
 import {XDSStack} from '@xds/core/Stack';
-import {XDSToggleButton, XDSToggleButtonGroup} from '@xds/core/ToggleButton';
-import type {XDSToastPosition, XDSToastType} from '@xds/core/Toast';
+import type {XDSToastType} from '@xds/core/Toast';
 
 // =============================================================================
 // Helper — wraps children with a provider for stories that need config
@@ -298,69 +297,6 @@ export const Stacking: StoryObj = {
       description: {
         story:
           'Multiple toasts stack vertically. Click rapidly to see them stack. Default max is 5 visible.',
-      },
-    },
-  },
-};
-
-// =============================================================================
-// Positions (with XDSLayerProvider)
-// =============================================================================
-
-function PositionsDemoInner({
-  position,
-  onPositionChange,
-}: {
-  position: XDSToastPosition;
-  onPositionChange: (pos: XDSToastPosition) => void;
-}) {
-  const toast = useXDSToast();
-
-  return (
-    <XDSStack gap={3}>
-      <XDSToggleButtonGroup
-        type="single"
-        value={position}
-        onChange={(value: string | null) => {
-          if (value != null) onPositionChange(value as XDSToastPosition);
-        }}
-        label="Toast position"
-      >
-        <XDSToggleButton value="topStart" label="Top Start" />
-        <XDSToggleButton value="topEnd" label="Top End" />
-        <XDSToggleButton value="bottomStart" label="Bottom Start" />
-        <XDSToggleButton value="bottomEnd" label="Bottom End" />
-      </XDSToggleButtonGroup>
-      <XDSButton
-        label="Toggle Toast"
-        onClick={() =>
-          toast({
-            body: `Toast at ${position}`,
-            type: 'info',
-          })
-        }
-      />
-    </XDSStack>
-  );
-}
-
-function PositionsDemo() {
-  const [position, setPosition] = useState<XDSToastPosition>('bottomEnd');
-
-  return (
-    <XDSLayerProvider toast={{position}}>
-      <PositionsDemoInner position={position} onPositionChange={setPosition} />
-    </XDSLayerProvider>
-  );
-}
-
-export const Positions: StoryObj = {
-  render: () => <PositionsDemo />,
-  parameters: {
-    docs: {
-      description: {
-        story:
-          'Use `XDSLayerProvider` to configure toast position. Supports 4 corners with logical directions (RTL-safe).',
       },
     },
   },
