@@ -20,6 +20,7 @@ import {XDSProgressBar} from '@xds/core/ProgressBar';
 import {XDSSpinner} from '@xds/core/Spinner';
 import {XDSSkeleton} from '@xds/core/Skeleton';
 import {XDSTabList, XDSTab} from '@xds/core/TabList';
+import {XDSIcon} from '@xds/core/Icon';
 import {XDSLink} from '@xds/core/Link';
 import {XDSStatusDot} from '@xds/core/StatusDot';
 import {XDSSelector} from '@xds/core/Selector';
@@ -238,7 +239,7 @@ export default function ExampleCardsPage() {
                 <XDSHeading level={3}>
                   Payout Threshold
                 </XDSHeading>
-                <XDSButton label="×" variant="ghost" size="sm" />
+                <XDSButton label="Close" icon={<XDSIcon icon="close" size="sm" />} isLabelHidden variant="ghost" size="sm" />
               </div>
               <XDSText type="supporting" color="secondary">
                 Set the minimum balance required before a payout is triggered.
@@ -423,7 +424,7 @@ export default function ExampleCardsPage() {
                 <XDSHeading level={3}>
                   Payout Preferences
                 </XDSHeading>
-                <XDSButton label="×" variant="ghost" size="sm" />
+                <XDSButton label="Close" icon={<XDSIcon icon="close" size="sm" />} isLabelHidden variant="ghost" size="sm" />
               </div>
               <XDSText type="supporting" color="secondary">
                 Receiving Method
@@ -787,7 +788,7 @@ export default function ExampleCardsPage() {
                 <XDSHeading level={3}>
                   Transfer Funds
                 </XDSHeading>
-                <XDSButton label="×" variant="ghost" size="sm" />
+                <XDSButton label="Close" icon={<XDSIcon icon="close" size="sm" />} isLabelHidden variant="ghost" size="sm" />
               </div>
               <XDSText type="supporting" color="secondary">
                 Move money between your connected accounts.
@@ -919,7 +920,7 @@ export default function ExampleCardsPage() {
                 <XDSHeading level={3}>
                   Preferences
                 </XDSHeading>
-                <XDSButton label="×" variant="ghost" size="sm" />
+                <XDSButton label="Close" icon={<XDSIcon icon="close" size="sm" />} isLabelHidden variant="ghost" size="sm" />
               </div>
               <XDSText type="supporting" color="secondary">
                 Manage your account settings and notifications.
@@ -1178,7 +1179,7 @@ export default function ExampleCardsPage() {
                 <XDSHeading level={3}>
                   Q2 Dividend Income
                 </XDSHeading>
-                <XDSButton label="×" variant="ghost" size="sm" />
+                <XDSButton label="Close" icon={<XDSIcon icon="close" size="sm" />} isLabelHidden variant="ghost" size="sm" />
               </div>
               <XDSText type="supporting" color="secondary">
                 Quarterly dividend payouts across your portfolio holdings.
