@@ -223,18 +223,8 @@ export default function PaymentFormPage() {
                   {/* Express checkout */}
                   <XDSVStack gap={3}>
                     <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, alignItems: 'start'}}>
-                      <button onClick={() => {}} style={{display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFC439', border: 'none', borderRadius: 8, cursor: 'pointer', padding: '0 16px', height: 36}}>
-                        <img src="https://www.paypalobjects.com/webstatic/mktg/Logo/pp-logo-100px.png" alt="PayPal" style={{height: 20, width: 'auto'}} />
-                      </button>
-                      <button onClick={() => {}} style={{display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#000', border: 'none', borderRadius: 8, cursor: 'pointer', padding: '0 16px', height: 36}}>
-                        <img src="https://pay.google.com/about/static_kcs/images/logos/google-pay-logo.svg" alt="Google Pay" style={{height: 22, width: 'auto', filter: 'brightness(0) invert(1)'}} />
-                      </button>
-                      <button onClick={() => {}} style={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: '#5433EB', border: 'none', borderRadius: 8, cursor: 'pointer', padding: '0 16px', height: 36}}>
-                        {/* Shop Pay wordmark — bag icon + text */}
-                        <svg viewBox="0 0 16 16" style={{height: 16, width: 16}} fill="white" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M13.5 4h-1.9C11.3 2.3 9.8 1 8 1S4.7 2.3 4.4 4H2.5C1.7 4 1 4.7 1 5.5v7C1 13.3 1.7 14 2.5 14h11c.8 0 1.5-.7 1.5-1.5v-7C15 4.7 14.3 4 13.5 4zM8 2.5c1 0 1.9.7 2.1 1.5H5.9C6.1 3.2 7 2.5 8 2.5zm5.5 10h-11V5.5h11v7z"/>
-                        </svg>
-                        <span style={{color: 'white', fontFamily: 'Arial, sans-serif', fontSize: 14, fontWeight: 700, letterSpacing: '0.2px'}}>Shop</span>
+                      <button onClick={() => {}} style={{display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#5433EB', border: 'none', borderRadius: 8, cursor: 'pointer', padding: '0 16px', height: 36}}>
+                        <span style={{color: 'white', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif', fontSize: 14, fontWeight: 700, letterSpacing: '0.1px'}}>Shop Pay</span>
                       </button>
                     </div>
                   </XDSVStack>
