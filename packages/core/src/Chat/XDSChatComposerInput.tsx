@@ -89,7 +89,6 @@ export type XDSChatComposerTrigger = {
    * @example
    * ```
    * import {createStaticSource} from '@xds/core/Typeahead';
-   *
    * const mentionTrigger = {
    *   character: '@',
    *   searchSource: createStaticSource(users),
@@ -196,13 +195,11 @@ const styles = stylex.create({
     opacity: 0.5,
     pointerEvents: 'none' as const,
   },
-
 });
 
 // =============================================================================
 // Helpers
 // =============================================================================
-
 
 /** Type guard: does this token use the custom render path? */
 function isCustomToken(

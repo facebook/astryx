@@ -180,22 +180,12 @@ export interface XDSToggleButtonProps {
  *
  * @example
  * ```
- * // Icon-only toggle (toolbar)
  * const [isBold, setIsBold] = useState(false);
  * <XDSToggleButton
  *   label="Bold"
  *   icon={<BoldIcon />}
  *   isPressed={isBold}
  *   onPressedChange={setIsBold}
- * />
- *
- * // Favorite with icon swap
- * <XDSToggleButton
- *   label="Favorite"
- *   icon={<StarIcon />}
- *   pressedIcon={<StarIconSolid />}
- *   isPressed={isFavorited}
- *   onPressedChange={setIsFavorited}
  * />
  * ```
  */
