@@ -115,9 +115,17 @@ Every response has a `type` string that uniquely identifies it:
 
 ## Adding a new command
 
+### Does it need an API function?
+
+**Yes** if the command returns data that consumers might want programmatically — component docs, template source, lists, search results. Put the logic in `src/api/`, export from `@xds/cli/api`, and make the CLI handler a thin wrapper.
+
+**No** if the command is purely interactive or only makes sense in a terminal — `init` (interactive prompts), `gap-report setup` (config wizard). These can live entirely in `src/commands/`.
+
+**Rule of thumb:** if it supports `--json`, it should have an API function. The parity test (`api-cli-parity-test.mjs`) will flag any `--json` type that doesn't have API coverage.
+
 ### 1. Write the API function
 
-Add a file in `src/api/` with the core logic. It returns `{ type, data }` on success and throws `XDSError` on failure:
+Add a file in `src/api/` with all the logic. It returns `{ type, data }` on success and throws `XDSError` on failure. The CLI handler should have zero logic — just arg parsing and text formatting:
 
 ```javascript
 // src/api/my-command.mjs
@@ -137,9 +145,15 @@ export async function myCommand(name, options = {}) {
 }
 ```
 
+Export it from `src/api/index.mjs`:
+
+```javascript
+export {myCommand} from './my-command.mjs';
+```
+
 ### 2. Create the CLI wrapper
 
-Add a thin wrapper in `src/commands/` that parses args, calls the API, and formats output:
+The CLI handler just parses args, calls the API function, and formats the result. No business logic here:
 
 ```javascript
 // src/commands/my-command.mjs
@@ -168,7 +182,7 @@ export function registerMyCommand(program) {
 }
 ```
 
-### 2. Define response types
+### 3. Define response types
 
 Create `src/types/my-command.d.ts`:
 
@@ -278,21 +292,22 @@ Both paths run identical code. The CLI handler just adds argument parsing and ou
 ```
 src/
   api/                         # Programmatic API (exported as @xds/cli/api)
-    index.mjs                  # barrel: component, docs, discover, XDSError
+    index.mjs                  # barrel: component, docs, discover, template, XDSError
     component.mjs              # component(name?, opts?) → { type, data }
     docs.mjs                   # docs(topic?, section?, opts?) → { type, data }
     discover.mjs               # discover(query?, opts?) → { type, data }
+    template.mjs               # template(name?, opts?) → { type, data }
     error.mjs                  # XDSError class (carries .suggestions)
   commands/                    # CLI wrappers (thin: parse args → call API → format output)
-    component/index.mjs        # registerComponent(program) — calls api/component.mjs
-    docs.mjs                   # registerDocs(program) — calls api/docs.mjs
-    discover.mjs               # registerDiscover(program) — calls api/discover.mjs
-    template.mjs               # side-effect command (copies files)
-    swizzle.mjs                # side-effect command (copies + rewrites)
-    build-theme.mjs            # side-effect command (compiles theme)
-    upgrade.mjs                # side-effect command (runs codemods)
-    gap-report.mjs             # side-effect command (files issues)
-    init.mjs                   # interactive only (no --json)
+    component/index.mjs        # calls api/component.mjs
+    docs.mjs                   # calls api/docs.mjs
+    discover.mjs               # calls api/discover.mjs
+    template.mjs               # calls api/template.mjs
+    swizzle.mjs                # CLI-only (side-effect: copies + rewrites imports)
+    build-theme.mjs            # CLI-only (side-effect: compiles theme to CSS)
+    upgrade.mjs                # CLI-only (side-effect: runs codemods)
+    gap-report.mjs             # CLI-only (side-effect: files GitHub issues)
+    init.mjs                   # CLI-only (interactive prompts)
   lib/
     json.mjs                   # jsonOut(type, data), jsonError(msg) — internal
     parse.mjs                  # parseResponse, isError, assertResponse — consumer
