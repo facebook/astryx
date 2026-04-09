@@ -421,7 +421,8 @@ function BoidsCanvas({
 // Template data — real images from /public/templates/
 // ---------------------------------------------------------------------------
 
-const DUMMY_IMAGE = '/templates/dummy-placeholder.png';
+const DUMMY_IMAGE =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1920' height='1200' fill='%23e8ecf0'%3E%3Crect width='1920' height='1200'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='system-ui,sans-serif' font-size='48' fill='%23a0aec0'%3EXDS Template%3C/text%3E%3C/svg%3E";
 
 const TEMPLATE_IMAGES = [DUMMY_IMAGE, DUMMY_IMAGE, DUMMY_IMAGE, DUMMY_IMAGE];
 
