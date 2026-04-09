@@ -162,7 +162,6 @@ export function XDSToastViewport({
         aria-label="Notifications"
         // popover="manual" promotes to the top layer (above dialogs)
         // without auto-light-dismiss. We control visibility ourselves.
-        // @ts-expect-error -- React types don't include popover yet
         popover="manual"
         {...stylex.props(styles.viewport, posStyle)}
         style={Object.keys(insetStyle).length > 0 ? insetStyle : undefined}>
