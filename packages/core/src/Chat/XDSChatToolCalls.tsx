@@ -25,10 +25,12 @@ import {
   typeScaleVars,
   typographyVars,
   fontWeightVars,
+  radiusVars,
   durationVars,
   easeVars,
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
+import {XDSBadge} from '../Badge';
 
 // =============================================================================
 // Types
@@ -40,6 +42,17 @@ export type XDSChatToolCallStatus =
   | 'complete'
   | 'error';
 
+export interface XDSChatToolCallStats {
+  /** Number of lines/characters added */
+  additions?: number;
+  /** Number of lines/characters removed */
+  deletions?: number;
+  /** Number of files affected */
+  files?: number;
+  /** Number of search matches */
+  matches?: number;
+}
+
 export interface XDSChatToolCallItem {
   /** Tool/function name. */
   name: string;
@@ -49,6 +62,12 @@ export interface XDSChatToolCallItem {
   label?: string;
   /** Duration string (e.g. "1.2s", "340ms"). Shown when complete. */
   duration?: string;
+  /** Sandbox/node name (e.g. "navi", "xds"). Shown as a pill badge. */
+  node?: string;
+  /** Stats like additions/deletions for edits, file/match counts. */
+  stats?: XDSChatToolCallStats;
+  /** Error message when status is 'error'. Shown in a tooltip on the status icon. */
+  errorMessage?: string;
   /** Unique key for React list rendering. Falls back to index. */
   key?: string;
   /** Arbitrary data passed through to renderDetail. Store tool args, result, etc. */
@@ -209,6 +228,46 @@ const styles = stylex.create({
     whiteSpace: 'nowrap',
     flexShrink: 0,
   },
+  nodePill: {
+    flexShrink: 0,
+  },
+  stats: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-1'],
+    fontSize: typeScaleVars['--text-supporting-size'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
+    fontFamily: typographyVars['--font-family-body'],
+    color: colorVars['--color-text-disabled'],
+    flexShrink: 0,
+  },
+  statsAdditions: {
+    color: colorVars['--color-success'],
+  },
+  statsDeletions: {
+    color: colorVars['--color-error'],
+  },
+  // Pile effect for grouped tool calls
+  pileWrapper: {
+    position: 'relative',
+  },
+  pileCard: {
+    position: 'absolute',
+    insetInline: 0,
+    top: 0,
+    height: '100%',
+    borderRadius: radiusVars['--radius-element'],
+    backgroundColor: colorVars['--color-background-muted'],
+    opacity: 0.5,
+  },
+  pileCard1: {
+    transform: 'translateY(-3px) scale(0.985)',
+    opacity: 0.3,
+  },
+  pileCard2: {
+    transform: 'translateY(-6px) scale(0.97)',
+    opacity: 0.15,
+  },
   detailContent: {
     paddingInlineStart: `calc(14px + ${spacingVars['--spacing-1-5']})`,
     paddingBlockEnd: spacingVars['--spacing-1'],
@@ -341,6 +400,7 @@ function CallRow({
     <div>
       <div {...stylex.props(styles.callRow)}>
         <span
+          title={status === 'error' ? call.errorMessage : undefined}
           {...stylex.props(
             styles.statusIcon,
             STATUS_STYLES[status],
@@ -350,8 +410,27 @@ function CallRow({
           <Icon />
         </span>
         <span {...stylex.props(styles.callName)}>{call.name}</span>
+        {call.node != null && (
+          <XDSBadge label={call.node} variant="neutral" xstyle={styles.nodePill} />
+        )}
         {call.label != null && (
           <span {...stylex.props(styles.callLabel)}>{call.label}</span>
+        )}
+        {call.stats != null && (
+          <span {...stylex.props(styles.stats)}>
+            {call.stats.files != null && (
+              <span>{call.stats.files} file{call.stats.files !== 1 ? 's' : ''}</span>
+            )}
+            {call.stats.matches != null && (
+              <span>{call.stats.matches} match{call.stats.matches !== 1 ? 'es' : ''}</span>
+            )}
+            {call.stats.additions != null && (
+              <span {...stylex.props(styles.statsAdditions)}>+{call.stats.additions}</span>
+            )}
+            {call.stats.deletions != null && (
+              <span {...stylex.props(styles.statsDeletions)}>-{call.stats.deletions}</span>
+            )}
+          </span>
         )}
         {call.duration != null && status === 'complete' && (
           <span {...stylex.props(styles.callDuration)}>{call.duration}</span>

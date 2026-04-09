@@ -64,4 +64,5 @@ export type {
   XDSChatToolCallsProps,
   XDSChatToolCallItem,
   XDSChatToolCallStatus,
+  XDSChatToolCallStats,
 } from './XDSChatToolCalls';
