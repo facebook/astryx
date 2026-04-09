@@ -114,6 +114,12 @@ export const categories: SandboxCategory[] = [
         href: '/pages/theme-editor/',
         description: 'Customize and preview XDS design tokens',
       },
+      {
+        name: 'Code Fiddle',
+        href: '/pages/code-fiddle/',
+        description:
+          'CodePen-style playground with code panels and live XDS preview',
+      },
     ],
   },
 ];
