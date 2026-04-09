@@ -393,7 +393,12 @@ function LibrarySection({
       <div {...stylex.props(styles.sectionHeader)}>
         <XDSHeading level={3}>{category}</XDSHeading>
       </div>
-      <div {...stylex.props(styles.grid)}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, 1fr)',
+          gap: 20,
+        }}>
         {items.map(item => (
           <LibraryCard key={item.id} item={item} />
         ))}
@@ -532,7 +537,12 @@ export default function LibraryPage() {
           </div>
         ) : (
           // Single category tab — flat grid
-          <div {...stylex.props(styles.grid)}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(4, 1fr)',
+              gap: 20,
+            }}>
             {filtered.map(item => (
               <LibraryCard key={item.id} item={item} />
             ))}
