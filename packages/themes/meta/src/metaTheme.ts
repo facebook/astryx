@@ -370,6 +370,7 @@ export const metaTheme = defineTheme({
         paddingInline: '12px !important',
         paddingBlock: '12px !important',
         minHeight: '44px',
+        '--color-accent-text': '#111112',
       },
     },
 
