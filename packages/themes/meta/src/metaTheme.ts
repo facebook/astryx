@@ -111,6 +111,7 @@ export const metaTheme = defineTheme({
     // =========================================================================
     '--color-skeleton': ['#E7EAED', '#28292C'],
     '--color-shadow': ['rgba(17, 17, 18, 0.12)', 'rgba(17, 17, 18, 0.12)'],
+    '--shadow-inset-hover': 'inset 0 0 0 1px light-dark(#5D6C7B, #8C939B)',
     '--color-tint-hover': ['black', 'white'],
 
     // =========================================================================
@@ -335,6 +336,7 @@ export const metaTheme = defineTheme({
         paddingInline: '12px !important',
         paddingBlock: '12px !important',
         minHeight: '44px',
+        borderColor: 'light-dark(#CCD3DB, #494D53)',
       },
       'variant:search': {
         backgroundColor: 'light-dark(#F3F4F5, #28292C)',
