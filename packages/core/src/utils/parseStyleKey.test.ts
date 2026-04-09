@@ -24,3 +24,27 @@ describe('parseStyleKey', () => {
     expect(parseStyleKey('variant:primary+level:2')).toBe('.primary.level-2');
   });
 });
+
+describe('parseStyleKey — bare state keys', () => {
+  it('converts bare state to .state', () => {
+    expect(parseStyleKey('checked')).toBe('.checked');
+  });
+
+  it('converts disabled state', () => {
+    expect(parseStyleKey('disabled')).toBe('.disabled');
+  });
+
+  it('converts selected state', () => {
+    expect(parseStyleKey('selected')).toBe('.selected');
+  });
+
+  it('handles compound bare states', () => {
+    expect(parseStyleKey('checked+disabled')).toBe('.checked.disabled');
+  });
+
+  it('handles mixed bare state + prop:value', () => {
+    expect(parseStyleKey('variant:destructive+disabled')).toBe(
+      '.destructive.disabled',
+    );
+  });
+});

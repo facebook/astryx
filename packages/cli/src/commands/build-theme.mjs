@@ -271,6 +271,10 @@ function parseStyleKey(key) {
     .split('+')
     .map(part => {
       const [prop, value] = part.split(':');
+      // Bare state name (no colon) — e.g. 'checked', 'disabled', 'selected'
+      if (value === undefined) {
+        return `.${prop}`;
+      }
       if (/^\d/.test(value)) {
         return `.${prop}-${value}`;
       }
