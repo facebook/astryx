@@ -1,7 +1,7 @@
 {
   "name": "@xds/cli",
   "version": "0.0.11",
-  "description": "XDS design system CLI \u2014 init, swizzle, theme, templates, and agent docs",
+  "description": "XDS design system CLI — init, swizzle, theme, templates, and agent docs",
   "type": "module",
   "bin": {
     "xds": "./bin/xds.mjs"
@@ -30,7 +30,8 @@
   },
   "dependencies": {
     "@clack/prompts": "^0.9.1",
-    "commander": "^12.1.0"
+    "commander": "^12.1.0",
+    "jiti": "^2.6.1"
   },
   "keywords": [
     "xds",

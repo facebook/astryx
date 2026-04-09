@@ -14,6 +14,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {createRequire} from 'node:module';
 import {pathToFileURL, fileURLToPath} from 'node:url';
+import {createJiti} from 'jiti';
 import {getRunPrefix} from '../utils/package-manager.mjs';
 import {jsonOut, jsonError} from '../lib/json.mjs';
 
@@ -485,17 +486,90 @@ function generateProseCSS(themeDef) {
 }
 
 /**
- * Extract the theme definition from a JS/TS file by evaluating it.
- * We look for the defineTheme() call and extract its argument.
+ * Import a theme module using jiti and find the defineTheme() result.
+ *
+ * jiti handles TypeScript transpilation at import time, so the theme
+ * file is executed as a real module — imports, variables, spread,
+ * function calls all work. This is the same approach Tailwind CSS
+ * uses to load tailwind.config.ts.
+ *
+ * Returns the resolved XDSDefinedTheme object (output of defineTheme).
+ */
+async function importThemeModule(filePath) {
+  const jiti = createJiti(import.meta.url, {
+    // Resolve from the theme file's directory so relative imports work
+    moduleCache: false,
+    // Theme files may import icon registries that contain JSX
+    jsx: true,
+  });
+
+  const mod = await jiti.import(filePath, {default: true});
+
+  // Find the theme object — look for the defineTheme() result.
+  // It could be the default export, a named export, or any export
+  // that has { name: string, tokens: object }.
+  if (isThemeObject(mod)) return mod;
+
+  // Check named exports
+  if (mod && typeof mod === 'object') {
+    for (const value of Object.values(mod)) {
+      if (isThemeObject(value)) return value;
+    }
+  }
+
+  throw new Error(
+    `Could not find a defineTheme() result in ${filePath}.\n` +
+    `Expected an export like: export const myTheme = defineTheme({ name: '...', tokens: {...} })`,
+  );
+}
+
+/** Check if a value looks like a defineTheme() output */
+function isThemeObject(value) {
+  return (
+    value &&
+    typeof value === 'object' &&
+    typeof value.name === 'string' &&
+    value.tokens &&
+    typeof value.tokens === 'object'
+  );
+}
+
+/**
+ * Extract the theme definition from a JS/TS file.
+ *
+ * Primary path: import the module using jiti (handles TS, imports, variables).
+ * Fallback: regex + eval for plain object literals (legacy, limited).
  */
 async function extractThemeDefinition(filePath) {
+  // Primary: import with jiti — handles full TS, imports, variables, etc.
+  try {
+    return await importThemeModule(filePath);
+  } catch (jitiError) {
+    // If jiti fails, try the legacy regex+eval fallback.
+    // This handles edge cases where jiti can't resolve the module
+    // (e.g., missing dependencies, complex build setups).
+    try {
+      return extractThemeDefinitionLegacy(filePath);
+    } catch {
+      // If both fail, surface the jiti error — it's more informative
+      throw new Error(
+        `Failed to load theme from ${filePath}: ${jitiError.message}\n` +
+        `Make sure all imports in the theme file are resolvable.`,
+      );
+    }
+  }
+}
+
+/**
+ * Legacy extraction: regex + eval on the defineTheme() argument.
+ * Only works for plain object literals — can't follow imports or variables.
+ * Kept as a fallback for environments where jiti can't resolve dependencies.
+ */
+function extractThemeDefinitionLegacy(filePath) {
   const content = fs.readFileSync(filePath, 'utf8');
 
-  // Strategy: parse the defineTheme({...}) argument as a JS object.
-  // We do a simple extraction — find defineTheme( and grab the object literal.
   const defineMatch = content.match(/defineTheme\s*\(\s*({[\s\S]*?})\s*\)/);
   if (!defineMatch) {
-    // Try: export default { name: ... } pattern (plain object export)
     const defaultMatch = content.match(/export\s+default\s+({[\s\S]*?});/);
     if (!defaultMatch) {
       throw new Error(
@@ -507,12 +581,8 @@ async function extractThemeDefinition(filePath) {
     return eval(`(${defaultMatch[1]})`);
   }
 
-  // Clean up TypeScript-isms that eval can't handle
   let objStr = defineMatch[1];
-  // Remove 'as const', type annotations
   objStr = objStr.replace(/\s+as\s+const/g, '');
-  // Remove import references (icons: oceanIcons -> icons: undefined)
-  // We only need tokens and components for CSS generation
   objStr = objStr.replace(/icons:\s*[a-zA-Z_][a-zA-Z0-9_]*/g, 'icons: undefined');
 
   try {
@@ -781,17 +851,23 @@ export function registerTheme(program) {
       let css;
       let resolvedTheme;
       if (_defineTheme && _generateThemeRules) {
-        // Shared path: run through defineTheme (expands typography.scale, merges
-        // components) then generateThemeRules with computedValues for
-        // self-contained CSS output.
-        resolvedTheme = _defineTheme({
-          name: themeDef.name,
-          typography: themeDef.typography,
-          motion: themeDef.motion,
-          radius: themeDef.radius,
-          tokens: themeDef.tokens,
-          components: themeDef.components,
-        });
+        // When jiti imports the module, themeDef is already the resolved
+        // XDSDefinedTheme (defineTheme() already ran in the module). When the
+        // legacy regex+eval path is used, themeDef is raw input that still needs
+        // processing. Detect by checking for input-only fields.
+        const isAlreadyResolved = !themeDef.typography && !themeDef.motion && !themeDef.radius;
+        if (isAlreadyResolved) {
+          resolvedTheme = themeDef;
+        } else {
+          resolvedTheme = _defineTheme({
+            name: themeDef.name,
+            typography: themeDef.typography,
+            motion: themeDef.motion,
+            radius: themeDef.radius,
+            tokens: themeDef.tokens,
+            components: themeDef.components,
+          });
+        }
         const scopeSelector = `[data-xds-theme="${themeDef.name}"]`;
         const scopeTo = `[data-xds-theme]`;
 
@@ -855,8 +931,9 @@ export function registerTheme(program) {
       fs.mkdirSync(path.dirname(outPath), {recursive: true});
       fs.writeFileSync(outPath, css);
 
-      const tokenCount = themeDef.tokens ? Object.keys(themeDef.tokens).length : 0;
-      const componentCount = themeDef.components ? Object.keys(themeDef.components).length : 0;
+      const displayTheme = resolvedTheme || themeDef;
+      const tokenCount = displayTheme.tokens ? Object.keys(displayTheme.tokens).length : 0;
+      const componentCount = displayTheme.components ? Object.keys(displayTheme.components).length : 0;
       const size = (Buffer.byteLength(css) / 1024).toFixed(1);
 
       if (!json) {
@@ -875,7 +952,7 @@ export function registerTheme(program) {
       const iconInfo = extractIconInfo(filePath);
       const iconImportPath = iconInfo ? iconInfo.importPath : null;
 
-      fs.writeFileSync(jsPath, generateBuiltModule(themeDef, iconImportPath));
+      fs.writeFileSync(jsPath, generateBuiltModule(resolvedTheme || themeDef, iconImportPath));
       fs.writeFileSync(dtsPath, generateBuiltTypes(themeDef));
 
       if (!json) {
