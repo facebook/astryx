@@ -320,6 +320,7 @@ export const metaTheme = defineTheme({
     card: {
       base: {
         '--card-radius': '32px',
+        '--xds-card-padding': '20px',
       },
     },
 
