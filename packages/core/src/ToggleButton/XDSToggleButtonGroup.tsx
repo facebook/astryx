@@ -161,23 +161,10 @@ export type XDSToggleButtonGroupProps =
  *
  * @example
  * ```
- * // Exclusive: view mode switcher
  * const [view, setView] = useState<string | null>('grid');
  * <XDSToggleButtonGroup value={view} onChange={setView} label="View mode">
  *   <XDSToggleButton value="list" label="List" icon={<ListIcon />} />
  *   <XDSToggleButton value="grid" label="Grid" icon={<GridIcon />} />
- * </XDSToggleButtonGroup>
- *
- * // Multi-select: text formatting
- * const [formats, setFormats] = useState<string[]>([]);
- * <XDSToggleButtonGroup
- *   type="multiple"
- *   value={formats}
- *   onChange={setFormats}
- *   label="Formatting"
- * >
- *   <XDSToggleButton value="bold" label="Bold" icon={<BoldIcon />} />
- *   <XDSToggleButton value="italic" label="Italic" icon={<ItalicIcon />} />
  * </XDSToggleButtonGroup>
  * ```
  */
