@@ -257,6 +257,32 @@ function Example() {
       ],
     },
   ],
+  usage: {
+    summary: 'A top-level dialog that communicates important information and pauses the user\'s workflow.',
+    content: `## When to use
+
+- Pause a user's workflow to communicate top-level information.
+- Guide users through multi-step workflows.
+- Surface information that requires acknowledgement.
+- Present confirmations before destructive actions.
+
+## Best practices
+
+- Do: Include a back arrow for two-view dialogs.
+- Do: Include a step count indicator for dialogs with 3 or more views.
+- Don't: Remove all dismissal behaviors.
+- Use sentence case for dialog content.
+- Match the call-to-action label to the dialog headline.
+- Number steps in multi-step dialogs.
+- Dismissal types: informational (all exit methods), form (disable click-outside), required (only footer buttons).`,
+    anatomy: [
+      {name: 'Body', required: true, description: 'The main content area of the dialog.'},
+      {name: 'Header', required: true, description: 'Contains the title, actions, and close button.'},
+      {name: 'Footer', required: true, description: 'Contains action buttons, links, and page count.'},
+      {name: 'Left Panel', required: false, description: 'Used for navigation or completion stages.'},
+      {name: 'Right Panel', required: false, description: 'Used for supplementary information.'},
+    ],
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */

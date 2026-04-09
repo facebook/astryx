@@ -194,6 +194,24 @@ export const docs = {
       ],
     },
   ],
+  usage: {
+    summary: 'Organizes information or interactive elements.',
+    content: `## When to use
+
+- To organize text, media, charts, or actions.
+- To create subgroups of parallel information.
+- When items need add, edit, delete, or expand operations.
+
+## Best practices
+
+- Do: Place lists within a container such as a card or dialog.`,
+    anatomy: [
+      {name: 'List title', required: true, description: 'Heading that labels the list.'},
+      {name: 'Description', required: false, description: 'Supplementary text below the title.'},
+      {name: 'List items', required: true, description: 'Individual entries, which may include icons or images.'},
+      {name: 'Item description', required: false, description: 'Additional detail for an individual list item.'},
+    ],
+  },
 };
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {

@@ -348,6 +348,12 @@ export interface TranslationDoc {
   keyboard?: string;
   /** Prop descriptions keyed by prop name. Only include props that have descriptions. */
   propDescriptions?: Record<string, string>;
+  /** Translated/compressed usage overlay. Only summary and content are translated;
+   *  anatomy element names are stable identifiers and stay as-is from the base doc. */
+  usage?: {
+    summary?: string;
+    content?: string;
+  };
   /** Sub-component translations. Must match docs.components length and order (if present). */
   components?: Array<{
     /** Exact name from docs.components[n].name */

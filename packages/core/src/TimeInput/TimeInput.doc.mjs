@@ -209,6 +209,12 @@ export const docs = {
       {className: 'xds-time-input', visualProps: ['size']},
     ],
   },
+  usage: {
+    summary: 'Field formatted for users to input a time.',
+    content: `## When to use
+
+- When the user needs to input a time, such as in scheduling or form fields.`,
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */

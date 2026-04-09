@@ -189,6 +189,42 @@ export const docs = {
     'type defaults to "button" (not "submit") to prevent accidental form submission.',
     'Disabled background gradient is cleared (backgroundImage: none) to prevent hover tint leaking through opacity.',
   ],
+  usage: {
+    summary: 'Buttons provide visual cues for actions and events, allowing users to commit actions and navigate a page flow.',
+    content: `## When to use
+
+- Submit a form.
+- Start a new task or action.
+- Trigger a new UI element to appear on the page.
+
+## Variants
+
+- **Secondary**: The standard button for most actions.
+- **Ghost**: Use when you need to limit the visual prominence of a button.
+- **Primary**: Use to draw emphasis to the primary action. A layout should only contain a single primary button.
+- **Destructive**: Use when the resulting action is the deletion of an object. Destructive buttons should trigger a confirmation dialog before the action is completed.
+
+## Best practices
+
+Do:
+- Convey clear action hierarchy: each surface should only have one primary button. Most buttons should use the secondary or ghost variant.
+- Use sentence case and no punctuation for labels.
+- Provide the logical next step in a task.
+- Use only one call-to-action per button.
+- Use an informative tone. Don't editorialize in a button.
+
+Don't:
+- Overuse primary buttons. Overusing colored buttons creates visual confusion and undermines page hierarchy.
+- Use all uppercase or all lowercase text.
+- Mix sizes in a single row.
+- Add custom gradients, drop shadows, or custom padding.`,
+    anatomy: [
+      {name: 'Icon', required: false, description: 'A leading icon that visually represents the meaning of the button label.'},
+      {name: 'Label', required: true, description: 'A text label describing the button action. Required for accessibility.'},
+      {name: 'End content', required: false, description: 'Trailing content that provides affordance to the type of action performed. Recommended when the expected action is non-obvious.'},
+      {name: 'Spinner', required: false, description: 'Indicates a loading state when the button action is not immediate.'},
+    ],
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */

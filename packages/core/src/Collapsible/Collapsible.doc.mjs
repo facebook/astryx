@@ -219,6 +219,13 @@ export const docs = {
       ],
     },
   ],
+  usage: {
+    summary: 'Contains information that may need additional space to display.',
+    content: `## When to use
+
+- Presenting additional information for items in a list.
+- Content that can be hidden to save space and revealed on demand.`,
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */

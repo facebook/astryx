@@ -776,6 +776,33 @@ const columnSettings = useXDSTableColumnSettings({
       ],
     },
   ],
+  usage: {
+    summary: 'Displays information with consistent data dimensionality in a grid format.',
+    content: `## When to use
+
+- Simple tables for read-only data display.
+- Data tables with column controls.
+- Complex tables with control toolbars and detail panes.
+
+## When NOT to use
+
+- Consider lists or card-lists for simpler or inconsistent data.
+
+## Best practices
+
+- Do: Use row activation to show details in a side panel.
+- Don't: Use row expansion for details (breaks column alignment).
+- Layout presets: space-optimized (40px rows), balanced (56px default), content-optimized (dynamic height).
+- Cell types: Content (main with media), Text, Value (right-aligned numbers), Status (dot + label).`,
+    anatomy: [
+      {name: 'Column Header', required: true, description: 'Displays titles, sorting controls, and bulk selection.'},
+      {name: 'Body Rows', required: true, description: 'Rows with consistent data structure.'},
+      {name: 'Footer', required: false, description: 'Displays summary or totals.'},
+      {name: 'Top Bar', required: false, description: 'Contains title, toolbar, and filters.'},
+      {name: 'Bottom Bar', required: false, description: 'Contains pagination controls.'},
+      {name: 'Support Panels', required: false, description: 'Displays row details in a side panel.'},
+    ],
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */

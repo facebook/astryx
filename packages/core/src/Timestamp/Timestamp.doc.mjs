@@ -119,6 +119,26 @@ export const docs = {
     'Sets aria-label with full absolute time when displaying relative format.',
     'Tooltip is keyboard accessible via focus.',
   ],
+  usage: {
+    summary: 'Displays the absolute or relative date and time of an event or its duration.',
+    content: `## When to use
+
+- Showing an exact date and time (absolute format).
+- Indicating freshness with an "ago" format (relative).
+- Displaying event duration.
+
+## Best practices
+
+- Do: Choose a format that fits the context (absolute for precision, relative for recency).
+- Do: Ensure consistent timestamp formatting within the same view.
+- Do: Use a single time unit for table column displays.
+- Do: Provide tooltips with additional detail such as timezone or full date.`,
+    anatomy: [
+      {name: 'Time or Duration Value', required: true, description: 'The displayed time, date, or duration text.'},
+      {name: 'Hover Indication', required: false, description: 'Visual cue indicating additional detail is available on hover.'},
+      {name: 'Hover Card', required: false, description: 'Floating card showing timezone, full date, or additional details on hover.'},
+    ],
+  },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */

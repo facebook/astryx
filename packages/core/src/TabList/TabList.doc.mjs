@@ -241,6 +241,22 @@ export const docs = {
       ],
     },
   ],
+  usage: {
+    summary: 'Organizes content into tabbed sections for quick access to categorized information.',
+    content: `## When to use
+
+- To organize large amounts of content into categories accessible above the fold.
+
+## Best practices
+
+- Two styles are available: underlined tabs and header tabs.
+- Tab items overflow into a "more" menu when horizontal space is limited.`,
+    anatomy: [
+      {name: 'Left Content', required: false, description: 'Most important area; hugs content width.'},
+      {name: 'Center-Fill Content', required: false, description: 'Stretches to fill available space.'},
+      {name: 'Right Content', required: false, description: 'Hugs content width.'},
+    ],
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */

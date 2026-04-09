@@ -333,6 +333,13 @@ export const docs = {
       ],
     },
   ],
+  usage: {
+    summary: 'Shows options for actions in a dropdown list.',
+    content: `## When to use
+
+- To present different action options as a next step in a process.
+- As sub-navigation to guide users to a next destination.`,
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */

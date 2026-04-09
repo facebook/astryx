@@ -252,6 +252,28 @@ export const docs = {
       ],
     },
   ],
+  usage: {
+    summary: 'Allows a user to make a single selection from a list of options.',
+    content: `## When to use
+
+- Presenting a limited set of options where only one can be selected.
+- Making the single-selection constraint visually clear to users.
+
+## When NOT to use
+
+- Multiple selections are needed (use CheckboxList instead).
+- The option list is very long (consider Selector instead).
+
+## Best practices
+
+- Do: Use a vertical list when labels are long or need detailed descriptions.
+- Do: Use a horizontal input group for compact side-by-side comparison of short options.`,
+    anatomy: [
+      {name: 'Header', required: false, description: 'Optional heading above the radio list.'},
+      {name: 'Children', required: true, description: 'The radio list items rendered as selectable options.'},
+      {name: 'Label/Value', required: true, description: 'The text label and associated value for each radio item.'},
+    ],
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */

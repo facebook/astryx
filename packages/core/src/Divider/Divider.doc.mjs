@@ -72,6 +72,26 @@ export const docs = {
       {className: 'xds-divider', visualProps: ['orientation', 'variant']},
     ],
   },
+  usage: {
+    summary: 'Separates different pieces of content.',
+    content: `## When to use
+
+- Standard level: subtle hairlines to demote sections or regions.
+- Emphasized level: critical visual lines for chart axes or input borders.
+- High contrast level: strong visual separation.
+
+## When NOT to use
+
+- Emphasized dividers for sectional distinction \u2014 use standard instead.
+- Standard dividers for critical content boundaries \u2014 use emphasized instead.
+
+## Best practices
+
+- Do: Use standard dividers for demoting sections and regions.
+- Do: Use emphasized dividers for interactive element boundaries.
+- Don't: Use emphasized dividers for sectional distinction.
+- Don't: Use standard dividers for critical content boundaries.`,
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */

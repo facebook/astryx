@@ -108,6 +108,26 @@ export function formatFull(docs, options = {}) {
   sections.push(`# ${docs.name}\n`);
   sections.push(docs.description + '\n');
 
+  if (docs.usage) {
+    sections.push('## Usage\n');
+    if (docs.usage.summary) {
+      sections.push(docs.usage.summary + '\n');
+    }
+    if (docs.usage.content) {
+      sections.push(docs.usage.content + '\n');
+    }
+    if (docs.usage.anatomy?.length) {
+      sections.push('### Anatomy\n');
+      sections.push('| Element | Required | Description |');
+      sections.push('|---------|----------|-------------|');
+      for (const el of docs.usage.anatomy) {
+        const req = el.required ? 'Yes' : 'No';
+        sections.push(`| ${el.name} | ${req} | ${el.description} |`);
+      }
+      sections.push('');
+    }
+  }
+
   if (docs.features?.length) {
     sections.push('## Features\n');
     sections.push(docs.features.map(f => `- ${f}`).join('\n') + '\n');
@@ -262,6 +282,16 @@ export function formatCompact(docs, componentName, importHint) {
 
   sections.push(`# ${docs.name}\n`);
   sections.push(docs.description + '\n');
+
+  if (docs.usage?.summary) {
+    sections.push(docs.usage.summary + '\n');
+  }
+  if (docs.usage?.anatomy?.length) {
+    sections.push('Anatomy: ' + docs.usage.anatomy.map(el => {
+      const req = el.required ? '' : ' (optional)';
+      return `${el.name}${req}`;
+    }).join(', ') + '\n');
+  }
 
   // Import statement
   if (importHint) {
