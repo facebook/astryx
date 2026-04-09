@@ -39,6 +39,22 @@ export type {SyntaxTokenName, DomainTokenName} from './domainTokens';
 
 export {syntaxTokenDefaults, domainTokenDefaults} from './domainTokens';
 
+// Syntax theme API
+export {
+  defineSyntaxTheme,
+  syntaxThemeStyle,
+  syntaxThemeToCSS,
+} from './syntax';
+export type {
+  XDSSyntaxTheme,
+  SyntaxThemeInput,
+  SyntaxThemeTokenKey,
+  SyntaxThemeTokenMap,
+} from './syntax';
+
+// XDSSyntaxTheme provider
+export {XDSSyntaxTheme, useSyntaxTheme} from './syntax';
+
 export {expandTypeScale, generateTypeScaleComponents} from './expandTypeScale';
 export type {XDSTypeScaleConfig, TypeScaleTokens} from './expandTypeScale';
 
