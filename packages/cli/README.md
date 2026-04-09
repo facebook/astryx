@@ -234,9 +234,63 @@ export type CLIAnyResponse =
   | MyCommandDetailResponse;
 ```
 
-### 4. That's it
+### 5. That's it
 
-If you skip steps 2-3, the command still works -- the global fallback hook returns a clean `CLIUnsupportedError` when someone passes `--json`. No crashes, no broken output.
+If you skip the type steps, the command still works — the global fallback hook returns a clean `CLIUnsupportedError` when someone passes `--json`. No crashes, no broken output.
+
+---
+
+## Playbook — common changes
+
+### Adding a prop to a component
+
+Nothing to do in the CLI. Props come from `.doc.mjs` files in `packages/core/src/`. The CLI reads them at runtime. If the `.doc.mjs` is updated, the CLI and API automatically reflect the change.
+
+### Adding a new component
+
+1. Create the component in `packages/core/src/{Name}/`
+2. Add a `{Name}.doc.mjs` in the same directory (or add to the parent's `.doc.mjs` if it's a sub-component)
+3. Done — the CLI auto-discovers it, the API auto-discovers it, the parity test auto-discovers it
+
+If the component has no `.doc.mjs`, `xds component {Name}` returns a clean error and CI's smoke test skips it.
+
+### Adding a new doc topic
+
+1. Add `{topic}.doc.mjs` in `packages/cli/docs/`
+2. Done — auto-discovered by `xds docs` and the `docs()` API function
+
+### Adding a new template
+
+1. Add a directory in `packages/cli/templates/{name}/` with a `page.tsx`
+2. Optionally add `template.doc.mjs` for metadata (name, description, isReady)
+3. Done — auto-discovered by `xds template --list` and the `template()` API function
+
+### Adding a new option to an existing API function
+
+1. Add the option to the API function in `src/api/{command}.mjs`
+2. Pass it through from the CLI handler in `src/commands/{command}.mjs`
+3. Update the types in `src/types/api.d.ts` (add to the options interface)
+4. If it produces a new response type, also update `src/types/{command}.d.ts` and `src/types/base.d.ts`
+
+### Adding a new response type (e.g. `component.detail.variants`)
+
+1. Add the logic in `src/api/{command}.mjs` — return `{type: 'component.detail.variants', data: ...}`
+2. Add a TypeScript interface in `src/types/{command}.d.ts`
+3. Add it to `CLIAnyResponse` in `src/types/base.d.ts`
+4. Add it to the result union in `src/types/api.d.ts`
+5. The parity test will auto-detect the new type and verify API=CLI
+
+### Renaming or removing a response type
+
+This is a breaking change for `@xds/cli/api` consumers. Bump the version.
+
+### What CI catches automatically
+
+- **New component without docs** → smoke test skips it with a message (not a failure)
+- **New CLI `--json` type without API coverage** → parity test flags it as a coverage gap
+- **API and CLI returning different data** → parity test fails with both payloads shown
+- **Invalid JSON envelope shape** → json smoke test fails
+- **Type mismatches** → `tsconfig.json-api.json` typecheck fails
 
 ---
 
