@@ -423,7 +423,9 @@ export default function PaymentFormPage() {
                       onClick={() => {}}
                     />
                   </XDSVStack>
-                </XDSVStack>
+                  </XDSVStack>{/* end collapsible XDSVStack gap={4} */}
+                  </div>{/* end pf-summary-content */}
+                </XDSVStack>{/* end outer card XDSVStack gap={4} */}
               </XDSCard>
 
             </div>
