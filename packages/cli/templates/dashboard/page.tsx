@@ -401,6 +401,14 @@ const topEventsData: EventRow[] = [
 
 // ============= CHART COMPONENTS =============
 
+// Workaround: XDS Table row dividers are not rendering due to a StyleX
+// compilation issue in the core package build. Apply row dividers via CSS.
+const tableDividerStyles = `
+  .dashboard-table tr:not(:last-child) td {
+    border-bottom: 1px solid var(--color-border, rgba(5, 54, 89, 0.1));
+  }
+`;
+
 // Chart line colors via XDS design tokens (CSS custom properties)
 const chartColors = {
   allUsers: 'var(--color-border-blue, #0171E3)',
@@ -412,14 +420,7 @@ function ChartLegendItem({color, label}: {color: string; label: string}) {
   return (
     <XDSHStack gap={2} vAlign="center">
       <svg width="16" height="3">
-        <line
-          x1="0"
-          y1="1.5"
-          x2="16"
-          y2="1.5"
-          stroke={color}
-          strokeWidth="2"
-        />
+        <line x1="0" y1="1.5" x2="16" y2="1.5" stroke={color} strokeWidth="2" />
       </svg>
       <XDSText type="supporting" color="secondary">
         {label}
@@ -548,7 +549,6 @@ function ActiveUsersChart() {
   );
 }
 
-
 function Sparkline({data}: {data: number[]}) {
   const chartData = data.map((v, i) => ({i, v}));
   return (
@@ -593,7 +593,11 @@ function MetricCard({
               width="12"
               height="12"
               viewBox="0 0 12 12"
-              fill={positive ? 'var(--color-success, #0D8626)' : 'var(--color-error, #E3193B)'}>
+              fill={
+                positive
+                  ? 'var(--color-success, #0D8626)'
+                  : 'var(--color-error, #E3193B)'
+              }>
               {positive ? (
                 <path d="M6 2L10 7H2L6 2Z" />
               ) : (
@@ -703,9 +707,7 @@ function TopPagesCard() {
     },
     {
       key: 'avgTime',
-      header: (
-        <div style={{textAlign: 'right', width: '100%'}}>Avg. Time</div>
-      ),
+      header: <div style={{textAlign: 'right', width: '100%'}}>Avg. Time</div>,
       width: proportional(1),
       renderCell: (item: PageRow) => (
         <div style={{textAlign: 'right'}}>{item.avgTime}</div>
@@ -728,14 +730,17 @@ function TopPagesCard() {
             All pages
           </XDSLink>
         </div>
-        <XDSTable<PageRow>
-          data={topPagesData}
-          columns={columns}
-          idKey="id"
-          density="compact"
-          dividers="rows"
-          hasHover
-        />
+        <div className="dashboard-table">
+          <style>{tableDividerStyles}</style>
+          <XDSTable<PageRow>
+            data={topPagesData}
+            columns={columns}
+            idKey="id"
+            density="compact"
+            dividers="rows"
+            hasHover
+          />
+        </div>
       </XDSVStack>
     </XDSCard>
   );
@@ -787,14 +792,17 @@ function TopEventsCard() {
             All events
           </XDSLink>
         </div>
-        <XDSTable<EventRow>
-          data={topEventsData}
-          columns={columns}
-          idKey="id"
-          density="compact"
-          dividers="rows"
-          hasHover
-        />
+        <div className="dashboard-table">
+          <style>{tableDividerStyles}</style>
+          <XDSTable<EventRow>
+            data={topEventsData}
+            columns={columns}
+            idKey="id"
+            density="compact"
+            dividers="rows"
+            hasHover
+          />
+        </div>
       </XDSVStack>
     </XDSCard>
   );
