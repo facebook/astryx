@@ -186,6 +186,14 @@ const styles = stylex.create({
   dividerWrap: {
     marginTop: spacingVars['--spacing-6'],
   },
+  paypalButton: {
+    backgroundColor: '#FFC439',
+    borderColor: '#FFC439',
+  },
+  gpayButton: {
+    backgroundColor: '#000',
+    borderColor: '#000',
+  },
   pageWrapper: {
     width: '100%',
     paddingBlock: spacingVars['--spacing-8'],
@@ -512,39 +520,25 @@ export default function PaymentFormPage() {
                       alignItems: 'start',
                     }}>
                     {/* PayPal */}
-                    <button
-                      onClick={() => {}}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        backgroundColor: '#FFC439',
-                        border: 'none',
-                        borderRadius: 8,
-                        cursor: 'pointer',
-                        padding: '0 16px',
-                        height: 36,
-                      }}>
+                    <XDSButton
+                      label="PayPal"
+                      variant="primary"
+                      size="sm"
+                      xstyle={styles.paypalButton}
+                      onClick={() => {}}>
                       <img
                         src="https://www.paypalobjects.com/webstatic/mktg/Logo/pp-logo-100px.png"
                         alt="PayPal"
                         style={{height: 20, width: 'auto'}}
                       />
-                    </button>
+                    </XDSButton>
                     {/* Google Pay */}
-                    <button
-                      onClick={() => {}}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        backgroundColor: '#000',
-                        border: 'none',
-                        borderRadius: 8,
-                        cursor: 'pointer',
-                        padding: '0 16px',
-                        height: 36,
-                      }}>
+                    <XDSButton
+                      label="Google Pay"
+                      variant="primary"
+                      size="sm"
+                      xstyle={styles.gpayButton}
+                      onClick={() => {}}>
                       <img
                         src="https://pay.google.com/about/static_kcs/images/logos/google-pay-logo.svg"
                         alt="Google Pay"
@@ -554,7 +548,7 @@ export default function PaymentFormPage() {
                           filter: 'brightness(0) invert(1)',
                         }}
                       />
-                    </button>
+                    </XDSButton>
                   </div>
                 </XDSVStack>
 
