@@ -307,11 +307,12 @@ export default function AIChatTemplate() {
                 icon={<GlobeIcon />}
               />
               <XDSDropdownMenu
-                trigger={
-                  <XDSButton label="GPT-4o" variant="ghost" size="md">
-                    GPT-4o
-                  </XDSButton>
-                }
+                button={{
+                  label: 'GPT-4o',
+                  variant: 'ghost',
+                  size: 'md',
+                  children: 'GPT-4o',
+                }}
                 items={[
                   {label: 'GPT-4o', onClick: () => {}},
                   {label: 'GPT-4o mini', onClick: () => {}},
