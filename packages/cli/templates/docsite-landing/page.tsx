@@ -762,7 +762,7 @@ function ShimmerText({isActive}: {isActive: boolean}) {
       <XDSSkeleton width="90%" height={14} radius={3} index={0} />
       <XDSSkeleton width="75%" height={14} radius={3} index={1} />
       <XDSSkeleton width="60%" height={14} radius={3} index={2} />
-      <XDSText size="small" color="secondary">
+      <XDSText size="sm" color="secondary">
         {isActive ? `Generating templates${dots}` : 'Done'}
       </XDSText>
     </div>
@@ -1351,7 +1351,7 @@ function TemplatePreview({
               <XDSHeading level={1} variant="display">
                 {templateName}
               </XDSHeading>
-              <XDSText size="small" color="secondary">
+              <XDSText size="sm" color="secondary">
                 XDS · 541 usages
               </XDSText>
             </div>
