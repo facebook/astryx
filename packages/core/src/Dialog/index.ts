@@ -20,3 +20,6 @@ export type {
 
 export {XDSDialogHeader} from './XDSDialogHeader';
 export type {XDSDialogHeaderProps} from './XDSDialogHeader';
+
+export {useXDSImperativeDialog} from './useXDSImperativeDialog';
+export type {XDSImperativeDialogReturn} from './useXDSImperativeDialog';
