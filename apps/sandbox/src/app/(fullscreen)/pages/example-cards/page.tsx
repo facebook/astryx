@@ -1577,7 +1577,7 @@ export default function ExampleCardsPage() {
 
         {/* Badges & Tokens */}
         <div
-          style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden', gridColumn: '1 / -1'}}>
+          style={{breakInside: 'avoid', marginBottom: 24, gridColumn: '1 / -1'}}>
           <XDSCard>
             <XDSVStack gap={4}>
               <XDSHeading level={3}>Badges & Tokens</XDSHeading>
@@ -1615,7 +1615,7 @@ export default function ExampleCardsPage() {
 
         {/* Input Components */}
         <div
-          style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden', gridColumn: '1 / -1'}}>
+          style={{breakInside: 'avoid', marginBottom: 24, gridColumn: '1 / -1'}}>
           <XDSCard>
             <XDSVStack gap={4}>
               <XDSHeading level={3}>Input Components</XDSHeading>
@@ -1681,7 +1681,7 @@ export default function ExampleCardsPage() {
 
         {/* Button Variants */}
         <div
-          style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden', gridColumn: '1 / -1'}}>
+          style={{breakInside: 'avoid', marginBottom: 24, gridColumn: '1 / -1'}}>
           <XDSCard>
             <XDSVStack gap={4}>
               <XDSHeading level={3}>Button Variants</XDSHeading>
@@ -1772,7 +1772,7 @@ export default function ExampleCardsPage() {
 
         {/* Typography Scale */}
         <div
-          style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden', gridColumn: '1 / -1'}}>
+          style={{breakInside: 'avoid', marginBottom: 24, gridColumn: '1 / -1'}}>
           <XDSCard>
             <XDSVStack gap={4}>
               <XDSHeading level={3}>Typography Scale</XDSHeading>
