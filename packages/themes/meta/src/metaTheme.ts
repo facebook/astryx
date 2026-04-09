@@ -263,11 +263,15 @@ export const metaTheme = defineTheme({
         backgroundColor: 'light-dark(#ECF5FF, #182849)',
         color: 'light-dark(#0457CB, #78BEFF)',
         fontWeight: '500',
+        ':hover': {opacity: '0.85'},
+        ':active': {opacity: '0.7'},
       },
       'variant:destructive-muted': {
         backgroundColor: 'light-dark(#FFF0F2, #471B1A)',
         color: 'light-dark(var(--color-error), #FE9DA6)',
         fontWeight: '500',
+        ':hover': {opacity: '0.85'},
+        ':active': {opacity: '0.7'},
       },
       'variant:primary-outline': {
         backgroundColor: 'transparent',
@@ -276,6 +280,8 @@ export const metaTheme = defineTheme({
         borderColor: 'light-dark(var(--color-accent), #4BA9FE)',
         color: 'light-dark(var(--color-accent), #4BA9FE)',
         fontWeight: '500',
+        ':hover': {backgroundColor: 'light-dark(rgba(0,100,224,0.06), rgba(75,169,254,0.1))'},
+        ':active': {opacity: '0.7'},
       },
       'variant:secondary-outline': {
         backgroundColor: 'transparent',
@@ -284,6 +290,8 @@ export const metaTheme = defineTheme({
         borderColor: 'light-dark(var(--color-border), #525456)',
         color: 'light-dark(var(--color-text-primary), #F3F4F5)',
         fontWeight: '500',
+        ':hover': {backgroundColor: 'light-dark(rgba(0,0,0,0.04), rgba(255,255,255,0.06))'},
+        ':active': {opacity: '0.7'},
       },
       'variant:destructive-outline': {
         backgroundColor: 'transparent',
@@ -292,6 +300,8 @@ export const metaTheme = defineTheme({
         borderColor: 'light-dark(var(--color-error), #FB7D87)',
         color: 'light-dark(var(--color-error), #FB7D87)',
         fontWeight: '500',
+        ':hover': {backgroundColor: 'light-dark(rgba(211,17,48,0.06), rgba(251,125,135,0.1))'},
+        ':active': {opacity: '0.7'},
       },
     },
 
