@@ -13,13 +13,14 @@ import {XDSButton} from '@xds/core/Button';
 import {XDSNavIcon} from '@xds/core/NavIcon';
 import {XDSProgressBar} from '@xds/core/ProgressBar';
 import {
+  BarChart,
+  Bar,
   LineChart,
   Line,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
 } from 'recharts';
 import {XDSStack, XDSStackItem} from '@xds/core/Stack';
@@ -290,19 +291,23 @@ const sparklines = [
 
 // Demographics
 const regionData = [
-  {label: 'NORAM', value: 38, color: '#3B82F6'},
-  {label: 'EMEA', value: 28, color: '#EF4444'},
-  {label: 'APAC', value: 22, color: '#8B5CF6'},
-  {label: 'LATAM', value: 8, color: '#EC4899'},
-  {label: 'Other', value: 4, color: '#334155'},
+  {label: 'NORAM', value: 38, color: 'var(--color-border-blue, #0171E3)'},
+  {label: 'EMEA', value: 28, color: 'var(--color-border-red, #E3193B)'},
+  {label: 'APAC', value: 22, color: 'var(--color-border-purple, #7952FF)'},
+  {label: 'LATAM', value: 8, color: 'var(--color-border-pink, #E91E63)'},
+  {label: 'Other', value: 4, color: 'var(--color-border-gray, #647685)'},
 ];
 
 const roleData = [
-  {label: 'Engineer', value: 45, color: '#3B82F6'},
-  {label: 'Manager', value: 20, color: '#F97316'},
-  {label: 'Designer', value: 15, color: '#14B8A6'},
-  {label: 'Data Scientist', value: 12, color: '#8B5CF6'},
-  {label: 'Other', value: 8, color: '#1E3A5F'},
+  {label: 'Engineer', value: 45, color: 'var(--color-border-blue, #0171E3)'},
+  {label: 'Manager', value: 20, color: 'var(--color-border-orange, #F27902)'},
+  {label: 'Designer', value: 15, color: 'var(--color-border-teal, #0DB7AF)'},
+  {
+    label: 'Data Scientist',
+    value: 12,
+    color: 'var(--color-border-purple, #7952FF)',
+  },
+  {label: 'Other', value: 8, color: 'var(--color-border-gray, #647685)'},
 ];
 
 // Engagement — Top pages
@@ -648,25 +653,41 @@ function StackedBarCard({
   data: Array<{label: string; value: number; color: string}>;
 }) {
   const total = data.reduce((sum, d) => sum + d.value, 0);
+  // Recharts needs a single data row with each segment as a separate key
+  const chartData = [
+    Object.fromEntries(data.map(d => [d.label, d.value])),
+  ];
+
   return (
     <XDSCard>
       <XDSVStack gap={4}>
         <XDSHeading level={4}>{title}</XDSHeading>
-        {/* Stacked horizontal bar */}
-        <div
-          style={{
-            display: 'flex',
-            height: 24,
-            borderRadius: 8,
-            overflow: 'hidden',
-          }}>
-          {data.map(d => (
-            <div
-              key={d.label}
-              style={{flex: d.value, backgroundColor: d.color}}
-            />
-          ))}
-        </div>
+        <ResponsiveContainer width="100%" height={24}>
+          <BarChart
+            data={chartData}
+            layout="vertical"
+            margin={{top: 0, right: 0, bottom: 0, left: 0}}
+            barCategoryGap={0}>
+            <XAxis type="number" hide />
+            <YAxis type="category" hide />
+            {data.map((d, i) => (
+              <Bar
+                key={d.label}
+                dataKey={d.label}
+                stackId="stack"
+                fill={d.color}
+                isAnimationActive={false}
+                radius={
+                  i === 0
+                    ? [4, 0, 0, 4]
+                    : i === data.length - 1
+                      ? [0, 4, 4, 0]
+                      : [0, 0, 0, 0]
+                }
+              />
+            ))}
+          </BarChart>
+        </ResponsiveContainer>
         {/* Legend */}
         <div style={{display: 'flex', flexWrap: 'wrap', gap: 16}}>
           {data.map(d => (
@@ -676,7 +697,7 @@ function StackedBarCard({
                   style={{
                     width: 10,
                     height: 10,
-                    borderRadius: '50%',
+                    borderRadius: 'var(--radius-full, 9999px)',
                     backgroundColor: d.color,
                     flexShrink: 0,
                   }}
