@@ -50,6 +50,12 @@ const STATIC_EXPORTS = {
     import: './dist/theme/tokens.stylex.mjs',
     require: './dist/theme/tokens.stylex.js',
   },
+  './theme/syntax': {
+    source: './src/theme/syntax/index.ts',
+    types: './dist/theme/syntax/index.d.ts',
+    import: './dist/theme/syntax/index.mjs',
+    require: './dist/theme/syntax/index.js',
+  },
   './xds.md': './xds.md',
 };
 

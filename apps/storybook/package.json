@@ -11,7 +11,8 @@
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "@xds/theme-default": "*",
-    "@xds/theme-neutral": "*"
+    "@xds/theme-neutral": "*",
+    "@xds/theme-syntax": "*"
   },
   "devDependencies": {
     "@storybook/addon-essentials": "^8.6.17",

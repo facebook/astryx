@@ -1,0 +1,26 @@
+{
+  "name": "@xds/theme-syntax",
+  "version": "0.0.11",
+  "description": "Syntax highlighting theme presets for XDS \u2014 11 community themes mapped to the XDS 14-token syntax architecture",
+  "license": "MIT",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsup"
+  },
+  "peerDependencies": {
+    "@xds/core": "*"
+  }
+}
