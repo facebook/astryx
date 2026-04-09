@@ -91,7 +91,7 @@ const styles = stylex.create({
   tabsRow: {
     borderBottomWidth: '1px',
     borderBottomStyle: 'solid',
-    borderBottomColor: colorVars['--color-divider'],
+    borderBottomColor: colorVars['--color-border'],
   },
   filterBar: {
     paddingTop: spacingVars['--spacing-4'],
