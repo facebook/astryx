@@ -186,14 +186,6 @@ const styles = stylex.create({
   dividerWrap: {
     marginTop: spacingVars['--spacing-6'],
   },
-  paypalButton: {
-    backgroundColor: '#FFC439',
-    borderColor: '#FFC439',
-  },
-  gpayButton: {
-    backgroundColor: '#000',
-    borderColor: '#000',
-  },
   pageWrapper: {
     width: '100%',
     paddingBlock: spacingVars['--spacing-8'],
@@ -524,8 +516,11 @@ export default function PaymentFormPage() {
                       label="PayPal"
                       variant="primary"
                       size="sm"
-                      xstyle={styles.paypalButton}
-                      onClick={() => {}}>
+                      onClick={() => {}}
+                      style={{
+                        backgroundColor: '#FFC439',
+                        borderColor: '#FFC439',
+                      }}>
                       <img
                         src="https://www.paypalobjects.com/webstatic/mktg/Logo/pp-logo-100px.png"
                         alt="PayPal"
@@ -537,8 +532,8 @@ export default function PaymentFormPage() {
                       label="Google Pay"
                       variant="primary"
                       size="sm"
-                      xstyle={styles.gpayButton}
-                      onClick={() => {}}>
+                      onClick={() => {}}
+                      style={{backgroundColor: '#000', borderColor: '#000'}}>
                       <img
                         src="https://pay.google.com/about/static_kcs/images/logos/google-pay-logo.svg"
                         alt="Google Pay"
