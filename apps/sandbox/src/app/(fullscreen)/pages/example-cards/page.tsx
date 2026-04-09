@@ -172,7 +172,7 @@ export default function ExampleCardsPage() {
         }}>
         {/* Contribution History */}
         <div
-          style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
+          style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={3}>
               <div {...stylex.props(styles.row)}>
@@ -232,7 +232,7 @@ export default function ExampleCardsPage() {
 
         {/* Payout Threshold */}
         <div
-          style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
+          style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={4}>
               <div {...stylex.props(styles.row)}>
@@ -278,7 +278,7 @@ export default function ExampleCardsPage() {
 
         {/* Savings Targets */}
         <div
-          style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
+          style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={4}>
               <div {...stylex.props(styles.row)}>
@@ -329,7 +329,7 @@ export default function ExampleCardsPage() {
 
         {/* Buy Investment */}
         <div
-          style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
+          style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={4}>
               <XDSHeading level={3}>
@@ -377,7 +377,7 @@ export default function ExampleCardsPage() {
 
         {/* Account Access */}
         <div
-          style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
+          style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={4}>
               <XDSHeading level={3}>
@@ -417,7 +417,7 @@ export default function ExampleCardsPage() {
 
         {/* Payout Preferences */}
         <div
-          style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
+          style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={4}>
               <div {...stylex.props(styles.row)}>
@@ -463,7 +463,7 @@ export default function ExampleCardsPage() {
 
         {/* Stock Performance */}
         <div
-          style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
+          style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={3}>
               <XDSHeading level={3}>
@@ -496,7 +496,7 @@ export default function ExampleCardsPage() {
 
         {/* Distribute Track */}
         <div
-          style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
+          style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={3}>
               <XDSHeading level={3}>
@@ -516,7 +516,7 @@ export default function ExampleCardsPage() {
 
         {/* Clearinghouse Balance */}
         <div
-          style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
+          style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={4}>
               <XDSText type="supporting" color="secondary">
@@ -560,7 +560,7 @@ export default function ExampleCardsPage() {
 
         {/* Recent Transactions */}
         <div
-          style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
+          style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={3}>
               <div {...stylex.props(styles.row)}>
@@ -645,7 +645,7 @@ export default function ExampleCardsPage() {
 
         {/* Card Balance */}
         <div
-          style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
+          style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={3}>
               <div {...stylex.props(styles.row)}>
@@ -713,7 +713,7 @@ export default function ExampleCardsPage() {
 
         {/* Power Usage */}
         <div
-          style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
+          style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={3}>
               <XDSHeading level={3}>
@@ -764,7 +764,7 @@ export default function ExampleCardsPage() {
 
         {/* Explore Catalog */}
         <div
-          style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
+          style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={3}>
               <XDSHeading level={3}>
@@ -781,7 +781,7 @@ export default function ExampleCardsPage() {
 
         {/* Transfer Funds */}
         <div
-          style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
+          style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={4}>
               <div {...stylex.props(styles.row)}>
@@ -858,7 +858,7 @@ export default function ExampleCardsPage() {
 
         {/* Set a New Milestone */}
         <div
-          style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
+          style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={4}>
               <XDSHeading level={3}>
@@ -896,7 +896,7 @@ export default function ExampleCardsPage() {
 
         {/* Connect Bank */}
         <div
-          style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
+          style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={3}>
               <XDSHeading level={3}>
@@ -913,7 +913,7 @@ export default function ExampleCardsPage() {
 
         {/* Preferences */}
         <div
-          style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
+          style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={4}>
               <div {...stylex.props(styles.row)}>
@@ -963,7 +963,7 @@ export default function ExampleCardsPage() {
 
         {/* Settings Navigation */}
         <div
-          style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
+          style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSHStack gap={6}>
               <XDSVStack gap={3} style={{flex: 1}}>
@@ -1010,7 +1010,7 @@ export default function ExampleCardsPage() {
 
         {/* Payments Navigation */}
         <div
-          style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
+          style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={4}>
               <XDSHStack gap={2} vAlign="center">
@@ -1061,7 +1061,7 @@ export default function ExampleCardsPage() {
 
         {/* FAQ / Settings Tabs */}
         <div
-          style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
+          style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={3}>
               <XDSTabList value={settingsTab} onChange={setSettingsTab}>
@@ -1100,7 +1100,7 @@ export default function ExampleCardsPage() {
 
         {/* Upcoming Payments */}
         <div
-          style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
+          style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={3}>
               <XDSHeading level={3}>
@@ -1140,7 +1140,7 @@ export default function ExampleCardsPage() {
 
         {/* QR Code / Mobile Connect */}
         <div
-          style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
+          style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={3}>
               <div {...stylex.props(styles.placeholder)}>
@@ -1166,7 +1166,7 @@ export default function ExampleCardsPage() {
 
         {/* Q2 Dividend Income */}
         <div
-          style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
+          style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={3}>
               <div {...stylex.props(styles.row)}>
@@ -1208,7 +1208,7 @@ export default function ExampleCardsPage() {
 
         {/* Savings Target Progress */}
         <div
-          style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
+          style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={3}>
               <XDSHeading level={2}>$24,000</XDSHeading>
@@ -1241,7 +1241,7 @@ export default function ExampleCardsPage() {
 
         {/* Dollar-Cost Averaging */}
         <div
-          style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
+          style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={3}>
               <XDSHeading level={3}>
@@ -1263,7 +1263,7 @@ export default function ExampleCardsPage() {
 
         {/* Cover Art / Upload */}
         <div
-          style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
+          style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={3}>
               <XDSText type="supporting" color="secondary">
@@ -1291,7 +1291,7 @@ export default function ExampleCardsPage() {
 
         {/* Front Door (Smart Home) */}
         <div
-          style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
+          style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={3}>
               <div {...stylex.props(styles.row)}>
@@ -1317,7 +1317,7 @@ export default function ExampleCardsPage() {
 
         {/* Stock Holdings */}
         <div
-          style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
+          style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={3}>
               <XDSTextInput
@@ -1394,7 +1394,7 @@ export default function ExampleCardsPage() {
 
         {/* Kitchen Island (Smart Home) */}
         <div
-          style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
+          style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={4}>
               <div {...stylex.props(styles.row)}>
@@ -1427,7 +1427,7 @@ export default function ExampleCardsPage() {
 
         {/* Living Room (Smart Home) */}
         <div
-          style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
+          style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={3}>
               <XDSHeading level={3}>
@@ -1452,7 +1452,7 @@ export default function ExampleCardsPage() {
 
         {/* Social Links */}
         <div
-          style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
+          style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={4}>
               <XDSHeading level={3}>
@@ -1488,7 +1488,7 @@ export default function ExampleCardsPage() {
 
         {/* Notifications */}
         <div
-          style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
+          style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={4}>
               <XDSHeading level={3}>
@@ -1546,7 +1546,7 @@ export default function ExampleCardsPage() {
 
         {/* Syncing Accounts */}
         <div
-          style={{breakInside: 'avoid', marginBottom: 24, overflow: 'hidden'}}>
+          style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={3}>
               <XDSHStack gap={3} vAlign="center">
