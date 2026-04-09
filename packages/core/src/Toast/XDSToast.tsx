@@ -45,7 +45,7 @@ const styles = stylex.create({
     },
   },
   variantDefault: {
-    backgroundColor: colorVars['--color-surface-inverted'],
+    backgroundColor: colorVars['--color-background-inverted'],
   },
   inner: {
     display: 'flex',
@@ -54,7 +54,7 @@ const styles = stylex.create({
     width: '100%',
   },
   variantError: {
-    backgroundColor: colorVars['--color-error-inverted'],
+    backgroundColor: colorVars['--color-background-error-inverted'],
   },
   content: {
     flex: 1,

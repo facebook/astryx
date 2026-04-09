@@ -24,7 +24,7 @@
  * @example
  * ```tsx
  * // Dark surface (e.g. toast on a light page)
- * <div style={{ backgroundColor: 'var(--color-surface-inverted)' }}>
+ * <div style={{ backgroundColor: 'var(--color-background-inverted)' }}>
  *   <XDSMediaTheme mode="dark">
  *     <XDSButton label="Undo" variant="ghost" />
  *   </XDSMediaTheme>
