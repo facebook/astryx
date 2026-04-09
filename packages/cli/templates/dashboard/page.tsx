@@ -46,8 +46,8 @@ import {
   EnvelopeIcon,
   EllipsisHorizontalIcon,
   ArrowPathIcon,
-  ArrowTrendingUpIcon,
-  ArrowTrendingDownIcon,
+  ArrowUpIcon,
+  ArrowDownIcon,
 } from '@heroicons/react/24/outline';
 
 // ============= DATA =============
@@ -452,7 +452,7 @@ function MetricCard({
           <XDSHeading level={2}>{value}</XDSHeading>
           <XDSHStack gap={1} vAlign="center">
             {positive ? (
-              <ArrowTrendingUpIcon
+              <ArrowUpIcon
                 style={{
                   width: 12,
                   height: 12,
@@ -460,7 +460,7 @@ function MetricCard({
                 }}
               />
             ) : (
-              <ArrowTrendingDownIcon
+              <ArrowDownIcon
                 style={{
                   width: 12,
                   height: 12,
