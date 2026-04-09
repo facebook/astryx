@@ -332,7 +332,8 @@ Time:        6.84s`;
           onOpenChange={setDialogOpen}
           variant="standard"
           style={{maxWidth: 720, width: '90vw'}}>
-          <XDSCodeBlock code={errorOutput} language="bash" />
+          <XDSCodeBlock code={errorOutput} language="bash" maxHeight="50vh" />
+          <div style={{height: 8}} />
           <XDSBanner status="error" title="Test failure">
             4 tests failed in XDSChatToolCalls.test.tsx
           </XDSBanner>
