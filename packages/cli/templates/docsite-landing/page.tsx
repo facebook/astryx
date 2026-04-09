@@ -533,7 +533,7 @@ function TemplateCard({
                   borderRadius: '50%',
                   border: '2px solid #fff',
                   backgroundColor: isSelected ? '#fff' : 'transparent',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                  boxShadow: 'var(--shadow-med)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
