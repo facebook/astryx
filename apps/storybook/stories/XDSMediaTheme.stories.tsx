@@ -39,7 +39,7 @@ function OnDarkDemo() {
   return (
     <div
       style={{
-        backgroundColor: 'light-dark(#0A1317, #FFFFFF)',
+        backgroundColor: 'var(--color-surface-inverted, light-dark(#0A1317, #FFFFFF))',
         borderRadius: 'var(--radius-container)',
         padding: 16,
       }}>
@@ -95,7 +95,7 @@ function OnLightDemo() {
         <XDSText>Dark mode page background</XDSText>
         <div
           style={{
-            backgroundColor: 'light-dark(#0A1317, #FFFFFF)',
+            backgroundColor: 'var(--color-surface-inverted, light-dark(#0A1317, #FFFFFF))',
             borderRadius: 'var(--radius-container)',
             padding: 16,
             marginTop: 12,
@@ -144,7 +144,7 @@ function ToastDemo() {
       {/* Info toast */}
       <div
         style={{
-          backgroundColor: 'light-dark(#0A1317, #FFFFFF)',
+          backgroundColor: 'var(--color-surface-inverted, light-dark(#0A1317, #FFFFFF))',
           borderRadius: 'var(--radius-container)',
           padding: '12px 16px',
           boxShadow: 'var(--shadow-med)',
@@ -167,7 +167,7 @@ function ToastDemo() {
       {/* Error toast */}
       <div
         style={{
-          backgroundColor: 'light-dark(#AA071E, #E3193B)',
+          backgroundColor: 'var(--color-error-inverted, light-dark(#AA071E, #E3193B))',
           borderRadius: 'var(--radius-container)',
           padding: '12px 16px',
           boxShadow: 'var(--shadow-med)',
@@ -241,7 +241,7 @@ function ComponentOverrideBoundaryDemo() {
         {/* Inverted surface — scope boundary blocks component overrides */}
         <div
           style={{
-            backgroundColor: 'light-dark(#0A1317, #FFFFFF)',
+            backgroundColor: 'var(--color-surface-inverted, light-dark(#0A1317, #FFFFFF))',
             borderRadius: 'var(--radius-element)',
             padding: 16,
           }}>
@@ -311,7 +311,7 @@ function ThemedDemo() {
               {/* Inverted surface */}
               <div
                 style={{
-                  backgroundColor: 'light-dark(#0A1317, #FFFFFF)',
+                  backgroundColor: 'var(--color-surface-inverted, light-dark(#0A1317, #FFFFFF))',
                   borderRadius: 'var(--radius-container)',
                   padding: 16,
                   flex: 1,
@@ -373,7 +373,7 @@ function CustomOverridesDemo() {
         </XDSText>
         <div
           style={{
-            backgroundColor: 'light-dark(#0A1317, #FFFFFF)',
+            backgroundColor: 'var(--color-surface-inverted, light-dark(#0A1317, #FFFFFF))',
             borderRadius: 'var(--radius-container)',
             padding: 16,
           }}>
