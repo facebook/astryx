@@ -98,14 +98,15 @@ export const docs = {
     },
   ],
   theming: {
+    container: true,
     targets: [
       {className: 'xds-section', visualProps: ['variant']},
     ],
     cssProperties: [
       {
-        name: '--xds-section-padding',
+        name: 'padding',
         description:
-          "Controls Section container padding. Set in theme component overrides via `section: { base: { '--xds-section-padding': 'var(--spacing-3)' } }`. Cascades to all internal layout padding variables. Do not use `--layout-padding-*` vars directly.",
+          "Controls Section container padding. Accepts standard CSS padding shorthand (e.g. '16px 20px'). Automatically mapped to container tokens for layout integration. Supports paddingBlock/paddingInline for axis-specific control.",
         default: 'var(--spacing-4)',
       },
     ],
@@ -217,14 +218,15 @@ export const docsZh = {
     },
   ],
   theming: {
+    container: true,
     targets: [
       {className: 'xds-section', visualProps: ['variant']},
     ],
     cssProperties: [
       {
-        name: '--xds-section-padding',
+        name: 'padding',
         description:
-          "Controls Section container padding. Set in theme component overrides via `section: { base: { '--xds-section-padding': 'var(--spacing-3)' } }`. Cascades to all internal layout padding variables. Do not use `--layout-padding-*` vars directly.",
+          "Controls Section container padding. Accepts standard CSS padding shorthand (e.g. '16px 20px'). Automatically mapped to container tokens for layout integration. Supports paddingBlock/paddingInline for axis-specific control.",
         default: 'var(--spacing-4)',
       },
     ],

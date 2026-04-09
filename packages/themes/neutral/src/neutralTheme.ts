@@ -319,7 +319,7 @@ export const neutralTheme = defineTheme({
     // =========================================================================
     card: {
       base: {
-        '--xds-card-padding': 'var(--spacing-3)',
+        padding: 'var(--spacing-3)',
       },
     },
 
@@ -328,7 +328,7 @@ export const neutralTheme = defineTheme({
     // =========================================================================
     section: {
       base: {
-        '--xds-section-padding': 'var(--spacing-3)',
+        padding: 'var(--spacing-3)',
       },
     },
 

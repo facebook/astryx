@@ -103,11 +103,20 @@ function Example() {
     },
   ],
   theming: {
+    container: true,
     targets: [
       {className: 'xds-dialog', visualProps: ['variant']},
     ],
     vars: [
       {name: '--dialog-radius', description: 'Border radius of the dialog', default: 'var(--radius-container)'},
+    ],
+    cssProperties: [
+      {
+        name: 'padding',
+        description:
+          "Controls Dialog container padding. Accepts standard CSS padding shorthand (e.g. '16px 20px'). Automatically mapped to container tokens for layout integration.",
+        default: 'var(--spacing-4)',
+      },
     ],
   },
   keyboard:
@@ -388,11 +397,20 @@ function Example() {
     },
   ],
   theming: {
+    container: true,
     targets: [
       {className: 'xds-dialog', visualProps: ['variant']},
     ],
     vars: [
       {name: '--dialog-radius', description: 'Border radius of the dialog', default: 'var(--radius-container)'},
+    ],
+    cssProperties: [
+      {
+        name: 'padding',
+        description:
+          "Controls Dialog container padding. Accepts standard CSS padding shorthand (e.g. '16px 20px'). Automatically mapped to container tokens for layout integration.",
+        default: 'var(--spacing-4)',
+      },
     ],
   },
   keyboard:

@@ -247,7 +247,7 @@ export function XDSCard({
   // Only enable scrolling when card has a fixed height (not null/undefined and not "auto")
   const hasFixedHeight = height != null && height !== 'auto';
 
-  // When no explicit padding prop, use theme default (--xds-card-padding)
+  // When no explicit padding prop, use theme default (set via container tokens)
   const useThemeDefault = padding == null;
   const effectivePadding = padding ?? 4;
   const paddingToken = spacingStepToToken[effectivePadding] as SpacingToken;

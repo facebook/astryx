@@ -584,6 +584,114 @@ export function defineTheme(input: XDSDefineThemeInput): XDSDefinedTheme {
  * Convert camelCase to kebab-case for CSS property names.
  * e.g. borderRadius → border-radius, backgroundColor → background-color
  */
+
+// =============================================================================
+// Container padding mapping
+// =============================================================================
+
+/**
+ * Components whose padding properties should be mapped to container tokens.
+ * When a theme sets `padding` on these components, the pipeline intercepts it
+ * and emits container token declarations instead.
+ */
+const CONTAINER_COMPONENTS = new Set(['card', 'section', 'dialog']);
+
+/** Padding properties that trigger container token mapping */
+const PADDING_PROPS = new Set([
+  'padding',
+  'paddingBlock',
+  'paddingInline',
+  'paddingBlockStart',
+  'paddingBlockEnd',
+  'paddingInlineStart',
+  'paddingInlineEnd',
+]);
+
+interface ParsedPadding {
+  blockStart?: string;
+  blockEnd?: string;
+  inline?: string;
+}
+
+/**
+ * Parse CSS padding shorthand/longhand into block/inline values.
+ * Supports 1-3 value shorthands and logical properties.
+ */
+function parsePadding(props: [string, string][]): ParsedPadding {
+  const result: ParsedPadding = {};
+
+  for (const [prop, value] of props) {
+    switch (prop) {
+      case 'padding': {
+        const parts = value.trim().split(/\s+/);
+        if (parts.length === 1) {
+          result.blockStart = parts[0];
+          result.blockEnd = parts[0];
+          result.inline = parts[0];
+        } else if (parts.length === 2) {
+          result.blockStart = parts[0];
+          result.blockEnd = parts[0];
+          result.inline = parts[1];
+        } else if (parts.length >= 3) {
+          result.blockStart = parts[0];
+          result.inline = parts[1];
+          result.blockEnd = parts[2];
+        }
+        break;
+      }
+      case 'paddingBlock':
+        result.blockStart = value;
+        result.blockEnd = value;
+        break;
+      case 'paddingInline':
+        result.inline = value;
+        break;
+      case 'paddingBlockStart':
+        result.blockStart = value;
+        break;
+      case 'paddingBlockEnd':
+        result.blockEnd = value;
+        break;
+      case 'paddingInlineStart':
+      case 'paddingInlineEnd':
+        // For now, inline is symmetric — use the last value set
+        result.inline = value;
+        break;
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Expand parsed padding into container token declarations.
+ * Returns [prop, value] pairs for all 7 downstream tokens.
+ */
+function expandContainerPadding(parsed: ParsedPadding): [string, string][] {
+  const tokens: [string, string][] = [];
+
+  if (parsed.inline != null) {
+    tokens.push(['--container-padding-inline', parsed.inline]);
+    tokens.push(['--layout-padding-outer-x', parsed.inline]);
+    tokens.push(['--layout-padding-inner-x', parsed.inline]);
+  }
+  if (parsed.blockStart != null) {
+    tokens.push(['--container-padding-block-start', parsed.blockStart]);
+    // Use blockStart for outer/inner y — these are typically symmetric
+    const blockY =
+      parsed.blockEnd != null && parsed.blockEnd !== parsed.blockStart
+        ? parsed.blockStart // asymmetric — use start for outer/inner
+        : parsed.blockStart;
+    tokens.push(['--layout-padding-outer-y', blockY]);
+    tokens.push(['--layout-padding-inner-y', blockY]);
+  }
+  if (parsed.blockEnd != null) {
+    tokens.push(['--container-padding-block-end', parsed.blockEnd]);
+  }
+
+  return tokens;
+}
+
 function toKebabCase(str: string): string {
   return str.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`);
 }
@@ -647,9 +755,24 @@ export function generateThemeRules(theme: XDSDefinedTheme): string[] {
             }
           }
 
+          // Container padding mapping: intercept padding on container
+          // components and emit container token declarations instead
+          let finalProps = props;
+          if (CONTAINER_COMPONENTS.has(component)) {
+            const paddingProps = props.filter(([p]) => PADDING_PROPS.has(p));
+            if (paddingProps.length > 0) {
+              const nonPaddingProps = props.filter(
+                ([p]) => !PADDING_PROPS.has(p),
+              );
+              const parsed = parsePadding(paddingProps);
+              const containerTokens = expandContainerPadding(parsed);
+              finalProps = [...nonPaddingProps, ...containerTokens];
+            }
+          }
+
           // Emit base rule
-          if (props.length > 0) {
-            const declarations = props
+          if (finalProps.length > 0) {
+            const declarations = finalProps
               .map(([prop, value]) => `    ${toKebabCase(prop)}: ${value};`)
               .join('\n');
             parts.push(`  ${baseSelector} {\n${declarations}\n  }`);
@@ -898,7 +1021,9 @@ export function generateOnMediaCSS(theme: XDSDefinedTheme): string {
                 const declarations = pseudoEntries
                   .map(([prop, value]) => `    ${toKebabCase(prop)}: ${value};`)
                   .join('\n');
-                parts.push(`  ${baseSelector}${pseudo} {\n${declarations}\n  }`);
+                parts.push(
+                  `  ${baseSelector}${pseudo} {\n${declarations}\n  }`,
+                );
               }
             }
           }
@@ -934,7 +1059,9 @@ export function generateThemeCSS(theme: XDSDefinedTheme): ThemeCSSOutput {
 
   const onMediaCss = generateOnMediaCSS(theme);
   if (onMediaCss) {
-    componentCss = componentCss ? `${componentCss}\n\n${onMediaCss}` : onMediaCss;
+    componentCss = componentCss
+      ? `${componentCss}\n\n${onMediaCss}`
+      : onMediaCss;
   }
 
   return {prose: proseCss, component: componentCss};

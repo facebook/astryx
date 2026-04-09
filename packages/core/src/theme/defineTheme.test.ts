@@ -863,3 +863,131 @@ describe('pseudo-class overrides in components', () => {
     expect(css).not.toContain('.xds-card:');
   });
 });
+
+describe('container padding mapping', () => {
+  it('maps padding shorthand to container tokens on card', () => {
+    const theme = defineTheme({
+      name: 'test',
+      components: {
+        card: {
+          base: {padding: '20px'},
+        },
+      },
+    });
+    const css = generateThemeCSSFlat(theme);
+    // Should NOT emit padding property
+    expect(css).not.toContain('padding: 20px');
+    // Should emit container tokens
+    expect(css).toContain('--container-padding-inline: 20px');
+    expect(css).toContain('--container-padding-block-start: 20px');
+    expect(css).toContain('--container-padding-block-end: 20px');
+    expect(css).toContain('--layout-padding-outer-x: 20px');
+    expect(css).toContain('--layout-padding-outer-y: 20px');
+    expect(css).toContain('--layout-padding-inner-x: 20px');
+    expect(css).toContain('--layout-padding-inner-y: 20px');
+  });
+
+  it('maps asymmetric padding to different block/inline tokens', () => {
+    const theme = defineTheme({
+      name: 'test',
+      components: {
+        card: {
+          base: {padding: '16px 20px'},
+        },
+      },
+    });
+    const css = generateThemeCSSFlat(theme);
+    expect(css).toContain('--container-padding-inline: 20px');
+    expect(css).toContain('--container-padding-block-start: 16px');
+    expect(css).toContain('--container-padding-block-end: 16px');
+    expect(css).toContain('--layout-padding-outer-x: 20px');
+    expect(css).toContain('--layout-padding-outer-y: 16px');
+  });
+
+  it('maps paddingBlock and paddingInline separately', () => {
+    const theme = defineTheme({
+      name: 'test',
+      components: {
+        card: {
+          base: {paddingBlock: '24px', paddingInline: '16px'},
+        },
+      },
+    });
+    const css = generateThemeCSSFlat(theme);
+    expect(css).toContain('--container-padding-inline: 16px');
+    expect(css).toContain('--container-padding-block-start: 24px');
+    expect(css).toContain('--container-padding-block-end: 24px');
+  });
+
+  it('works for section and dialog too', () => {
+    const theme = defineTheme({
+      name: 'test',
+      components: {
+        section: {
+          base: {padding: '12px'},
+        },
+        dialog: {
+          base: {padding: '24px 32px'},
+        },
+      },
+    });
+    const css = generateThemeCSSFlat(theme);
+    // Section
+    expect(css).toContain('--container-padding-inline: 12px');
+    // Dialog
+    expect(css).toContain('--container-padding-inline: 32px');
+    expect(css).toContain('--container-padding-block-start: 24px');
+  });
+
+  it('does NOT map padding on non-container components', () => {
+    const theme = defineTheme({
+      name: 'test',
+      components: {
+        button: {
+          base: {padding: '8px 16px'},
+        },
+      },
+    });
+    const css = generateThemeCSSFlat(theme);
+    // Button is not a container — padding passes through as-is
+    expect(css).toContain('padding: 8px 16px');
+    expect(css).not.toContain('--container-padding');
+  });
+
+  it('preserves non-padding properties alongside padding mapping', () => {
+    const theme = defineTheme({
+      name: 'test',
+      components: {
+        card: {
+          base: {
+            padding: '20px',
+            '--card-radius': '16px',
+            backgroundColor: 'white',
+          },
+        },
+      },
+    });
+    const css = generateThemeCSSFlat(theme);
+    // Non-padding props pass through
+    expect(css).toContain('--card-radius: 16px');
+    expect(css).toContain('background-color: white');
+    // Padding is mapped
+    expect(css).toContain('--container-padding-inline: 20px');
+    expect(css).not.toContain('padding: 20px');
+  });
+
+  it('maps 3-value padding shorthand', () => {
+    const theme = defineTheme({
+      name: 'test',
+      components: {
+        card: {
+          base: {padding: '16px 20px 12px'},
+        },
+      },
+    });
+    const css = generateThemeCSSFlat(theme);
+    expect(css).toContain('--container-padding-block-start: 16px');
+    expect(css).toContain('--container-padding-block-end: 12px');
+    expect(css).toContain('--container-padding-inline: 20px');
+  });
+});

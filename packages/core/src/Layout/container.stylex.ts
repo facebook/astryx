@@ -7,13 +7,13 @@
  * ## Public API for themes
  *
  * Themes can override container padding via component-specific CSS custom
- * properties following the `--xds-{component}-padding` naming convention:
+ * padding shorthand on the component override (e.g. `card: { base: { padding: '16px 20px' } }`):
  *
  * ```ts
  * components: {
- *   card: { base: { '--xds-card-padding': 'var(--spacing-3)' } },
- *   section: { base: { '--xds-section-padding': 'var(--spacing-3)' } },
- *   dialog: { base: { '--xds-dialog-padding': 'var(--spacing-3)' } },
+ *   card: { base: { padding: 'var(--spacing-3)' } },
+ *   section: { base: { padding: 'var(--spacing-3)' } },
+ *   dialog: { base: { padding: '16px 20px' } },  // asymmetric OK
  * }
  * ```
  *
@@ -57,95 +57,92 @@ const baseStyles = stylex.create({
 });
 
 /**
- * Card default padding styles that cascade from --xds-card-padding.
+ * Card default padding styles.
  *
- * When no explicit padding prop is set on Card, the internal
- * layout padding variables read from --xds-card-padding (set by theme)
- * with a fallback to --spacing-4 (the default).
+ * Theme pipeline maps `padding` on card overrides to container tokens directly.
+ * When no explicit padding prop is set, defaults to --spacing-4.
  */
 const cardDefaultPaddingStyles = stylex.create({
   containerPaddingInline: {
-    '--container-padding-inline': `var(--xds-card-padding, ${spacingVars['--spacing-4']})`,
+    '--container-padding-inline': spacingVars['--spacing-4'],
   },
   containerPaddingBlockStart: {
-    '--container-padding-block-start': `var(--xds-card-padding, ${spacingVars['--spacing-4']})`,
+    '--container-padding-block-start': spacingVars['--spacing-4'],
   },
   containerPaddingBlockEnd: {
-    '--container-padding-block-end': `var(--xds-card-padding, ${spacingVars['--spacing-4']})`,
+    '--container-padding-block-end': spacingVars['--spacing-4'],
   },
   layoutPaddingOuterX: {
-    '--layout-padding-outer-x': `var(--xds-card-padding, ${spacingVars['--spacing-4']})`,
+    '--layout-padding-outer-x': spacingVars['--spacing-4'],
   },
   layoutPaddingOuterY: {
-    '--layout-padding-outer-y': `var(--xds-card-padding, ${spacingVars['--spacing-4']})`,
+    '--layout-padding-outer-y': spacingVars['--spacing-4'],
   },
   layoutPaddingInnerX: {
-    '--layout-padding-inner-x': `var(--xds-card-padding, ${spacingVars['--spacing-4']})`,
+    '--layout-padding-inner-x': spacingVars['--spacing-4'],
   },
   layoutPaddingInnerY: {
-    '--layout-padding-inner-y': `var(--xds-card-padding, ${spacingVars['--spacing-4']})`,
+    '--layout-padding-inner-y': spacingVars['--spacing-4'],
   },
 });
 
 /**
- * Section default padding styles that cascade from --xds-section-padding.
+ * Section default padding styles.
  *
- * When no explicit padding prop is set on Section, the internal
- * layout padding variables read from --xds-section-padding (set by theme)
- * with a fallback to --spacing-4 (the default).
+ * Theme pipeline maps `padding` on section overrides to container tokens directly.
+ * When no explicit padding prop is set, defaults to --spacing-4.
  */
 const sectionDefaultPaddingStyles = stylex.create({
   containerPaddingInline: {
-    '--container-padding-inline': `var(--xds-section-padding, ${spacingVars['--spacing-4']})`,
+    '--container-padding-inline': spacingVars['--spacing-4'],
   },
   containerPaddingBlockStart: {
-    '--container-padding-block-start': `var(--xds-section-padding, ${spacingVars['--spacing-4']})`,
+    '--container-padding-block-start': spacingVars['--spacing-4'],
   },
   containerPaddingBlockEnd: {
-    '--container-padding-block-end': `var(--xds-section-padding, ${spacingVars['--spacing-4']})`,
+    '--container-padding-block-end': spacingVars['--spacing-4'],
   },
   layoutPaddingOuterX: {
-    '--layout-padding-outer-x': `var(--xds-section-padding, ${spacingVars['--spacing-4']})`,
+    '--layout-padding-outer-x': spacingVars['--spacing-4'],
   },
   layoutPaddingOuterY: {
-    '--layout-padding-outer-y': `var(--xds-section-padding, ${spacingVars['--spacing-4']})`,
+    '--layout-padding-outer-y': spacingVars['--spacing-4'],
   },
   layoutPaddingInnerX: {
-    '--layout-padding-inner-x': `var(--xds-section-padding, ${spacingVars['--spacing-4']})`,
+    '--layout-padding-inner-x': spacingVars['--spacing-4'],
   },
   layoutPaddingInnerY: {
-    '--layout-padding-inner-y': `var(--xds-section-padding, ${spacingVars['--spacing-4']})`,
+    '--layout-padding-inner-y': spacingVars['--spacing-4'],
   },
 });
 
 /**
- * Dialog default padding styles that cascade from --xds-dialog-padding.
+ * Dialog default padding styles.
  *
- * When no explicit padding prop is set on Dialog, the internal
- * layout padding variables read from --xds-dialog-padding (set by theme)
- * with a fallback to --spacing-4 (the default).
+ * Theme pipeline maps `padding` on dialog overrides to container tokens directly.
+ * When no explicit padding prop is set, defaults to --spacing-4.
  */
 const dialogDefaultPaddingStyles = stylex.create({
   containerPaddingInline: {
-    '--container-padding-inline': `var(--xds-dialog-padding, ${spacingVars['--spacing-4']})`,
+    '--container-padding-inline': spacingVars['--spacing-4'],
   },
   containerPaddingBlockStart: {
-    '--container-padding-block-start': `var(--xds-dialog-padding, ${spacingVars['--spacing-4']})`,
+    '--container-padding-block-start': spacingVars['--spacing-4'],
   },
   containerPaddingBlockEnd: {
-    '--container-padding-block-end': `var(--xds-dialog-padding, ${spacingVars['--spacing-4']})`,
+    '--container-padding-block-end': spacingVars['--spacing-4'],
   },
   layoutPaddingOuterX: {
-    '--layout-padding-outer-x': `var(--xds-dialog-padding, ${spacingVars['--spacing-4']})`,
+    '--layout-padding-outer-x': spacingVars['--spacing-4'],
   },
   layoutPaddingOuterY: {
-    '--layout-padding-outer-y': `var(--xds-dialog-padding, ${spacingVars['--spacing-4']})`,
+    '--layout-padding-outer-y': spacingVars['--spacing-4'],
   },
   layoutPaddingInnerX: {
-    '--layout-padding-inner-x': `var(--xds-dialog-padding, ${spacingVars['--spacing-4']})`,
+    '--layout-padding-inner-x': spacingVars['--spacing-4'],
   },
   layoutPaddingInnerY: {
-    '--layout-padding-inner-y': `var(--xds-dialog-padding, ${spacingVars['--spacing-4']})`,
+    '--layout-padding-inner-y': spacingVars['--spacing-4'],
   },
 });
 
@@ -343,7 +340,7 @@ export interface ContainerOptions {
   /**
    * When set to a component name ('card' | 'section'), internal layout
    * padding variables cascade from the component-specific public CSS
-   * custom property (e.g. --xds-card-padding, --xds-section-padding)
+   * container tokens (set by theme pipeline from `padding` shorthand)
    * instead of being set to explicit spacing token values.
    *
    * This allows themes to override container padding via component-specific
@@ -372,7 +369,7 @@ export interface ContainerOptions {
  * - `--layout-padding-outer-x`, `--layout-padding-outer-y` (internal)
  * - `--layout-padding-inner-x`, `--layout-padding-inner-y` (internal)
  *
- * Themes should use `--xds-card-padding` or `--xds-section-padding` in
+ * Themes should use `padding` (or `paddingBlock`/`paddingInline`) in
  * component overrides to adjust padding. Do not reference
  * `--layout-padding-*` variables directly.
  *
@@ -381,7 +378,7 @@ export interface ContainerOptions {
  * import { container } from '@xds/core/Layout';
  * import * as stylex from '@stylexjs/stylex';
  *
- * // Card container with default padding (theme-overridable via --xds-card-padding)
+ * // Card container with default padding (theme-overridable via padding shorthand)
  * <div {...stylex.props(...container({ useThemeDefault: 'card' }))}>
  *   <XDSLayout ... />
  * </div>
@@ -419,7 +416,7 @@ export function container({
     : null;
 
   // When useThemeDefault is a component name, cascade from the component's
-  // public CSS custom property (e.g. --xds-card-padding, --xds-section-padding)
+  // public CSS container tokens (set by theme pipeline from `padding` shorthand)
   // so themes can override each component's padding independently.
   if (useThemeDefault) {
     const defaults = themeDefaultStyles[useThemeDefault];

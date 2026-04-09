@@ -329,6 +329,7 @@ export const metaTheme = defineTheme({
     // =========================================================================
 
 
+
     // =========================================================================
     // Text input — CDS: 16px radius, 16px horizontal padding
     // =========================================================================
@@ -511,7 +512,7 @@ export const metaTheme = defineTheme({
       base: {
         backgroundColor: 'light-dark(var(--color-background-surface), #1F1F20)',
         '--dialog-radius': '32px',
-        '--xds-card-padding': '20px',
+        padding: '20px',
       },
     },
 

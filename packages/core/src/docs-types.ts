@@ -105,7 +105,7 @@ export interface ThemingTarget {
  *
  * @example
  * ```
- * {name: '--xds-card-padding', description: 'Controls Card container padding. Cascades to internal layout vars.', default: 'var(--spacing-4)'}
+ * {name: 'padding', description: 'Controls Card container padding. Mapped to container tokens automatically.', default: 'var(--spacing-4)'}
  * ```
  */
 export interface CSSPropertyDoc {
@@ -248,6 +248,12 @@ interface BaseDoc {
    *  rendered by this component that themes can target via `@scope`
    *  selectors in `defineTheme`. */
   theming?: {
+    /** Whether this component is a container whose `padding` properties
+     *  should be mapped to container tokens by the theme pipeline.
+     *  When true, `padding`, `paddingBlock`, `paddingInline` etc. in
+     *  component overrides are expanded to `--container-padding-*` and
+     *  `--layout-padding-*` tokens instead of emitting raw CSS. */
+    container?: boolean;
     /** CSS class targets rendered by this component.
      *  Each entry corresponds to an `xdsClassName()` call in the source. */
     targets: ThemingTarget[];

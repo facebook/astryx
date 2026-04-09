@@ -108,6 +108,7 @@ export const docs = {
     },
   ],
   theming: {
+    container: true,
     targets: [
       {className: 'xds-card'},
     ],
@@ -116,9 +117,9 @@ export const docs = {
     ],
     cssProperties: [
       {
-        name: '--xds-card-padding',
+        name: 'padding',
         description:
-          "Controls Card container padding. Set in theme component overrides via `card: { base: { '--xds-card-padding': 'var(--spacing-3)' } }`. Cascades to all internal layout padding variables. Do not use `--layout-padding-*` vars directly.",
+          "Controls Card container padding. Accepts standard CSS padding shorthand (e.g. '16px 20px'). Automatically mapped to container tokens for layout integration. Supports paddingBlock/paddingInline for axis-specific control.",
         default: 'var(--spacing-4)',
       },
     ],
@@ -234,6 +235,7 @@ export const docsZh = {
     },
   ],
   theming: {
+    container: true,
     targets: [
       {className: 'xds-card'},
     ],
@@ -242,9 +244,9 @@ export const docsZh = {
     ],
     cssProperties: [
       {
-        name: '--xds-card-padding',
+        name: 'padding',
         description:
-          "Controls Card container padding. Set in theme component overrides via `card: { base: { '--xds-card-padding': 'var(--spacing-3)' } }`. Cascades to all internal layout padding variables. Do not use `--layout-padding-*` vars directly.",
+          "Controls Card container padding. Accepts standard CSS padding shorthand (e.g. '16px 20px'). Automatically mapped to container tokens for layout integration. Supports paddingBlock/paddingInline for axis-specific control.",
         default: 'var(--spacing-4)',
       },
     ],
