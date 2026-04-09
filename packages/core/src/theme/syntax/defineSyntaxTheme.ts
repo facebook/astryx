@@ -4,7 +4,7 @@
  * @file defineSyntaxTheme.ts
  * @input syntaxTokenDefaults from tokens.ts
  * @output defineSyntaxTheme, SyntaxTheme, syntaxThemeStyle
- * @position Syntax theme definition API; consumed by presets, XDSCodeTheme, defineTheme
+ * @position Syntax theme definition API; consumed by presets, XDSSyntaxTheme, defineTheme
  *
  * @see https://github.com/facebookexperimental/xds/issues/1148
  */
@@ -32,18 +32,32 @@ export type SyntaxThemeTokenKey =
   | 'punctuation'
   | 'background';
 
-/** A complete mapping of token names to CSS color values. */
+/**
+ * Token value — either a single string or a [light, dark] tuple.
+ * Tuples are converted to CSS light-dark() at theme creation time.
+ */
+export type SyntaxTokenValue = string | [light: string, dark: string];
+
+/** Token map for defineSyntaxTheme input — values can be strings or tuples. */
+export type SyntaxThemeTokenInput = Record<SyntaxThemeTokenKey, SyntaxTokenValue>;
+
+/** Resolved token map — all values are CSS strings (tuples resolved to light-dark()). */
 export type SyntaxThemeTokenMap = Record<SyntaxThemeTokenKey, string>;
 
+/** Input to defineSyntaxTheme. */
 export interface SyntaxThemeInput {
   name: string;
-  tokens: SyntaxThemeTokenMap;
+  tokens: SyntaxThemeTokenInput;
 }
 
-/** A defined syntax theme. */
+/** A defined syntax theme — tokens are resolved to CSS strings. */
 export interface SyntaxTheme {
+  /** Theme name */
   name: string;
+  /** Resolved token values (light-dark() CSS strings) */
   tokens: SyntaxThemeTokenMap;
+  /** Original input tokens (preserves tuples for mode resolution) */
+  __inputTokens: SyntaxThemeTokenInput;
 }
 
 // =============================================================================
@@ -56,8 +70,41 @@ function toCSSProperty(key: SyntaxThemeTokenKey): SyntaxTokenName {
   return (CSS_PREFIX + key) as SyntaxTokenName;
 }
 
-const ALL_KEYS: SyntaxThemeTokenKey[] = Object.keys(syntaxTokenDefaults)
+/** All valid human-readable token keys, derived from the defaults. */
+export const ALL_SYNTAX_KEYS: SyntaxThemeTokenKey[] = Object.keys(syntaxTokenDefaults)
   .map(k => k.replace(CSS_PREFIX, '') as SyntaxThemeTokenKey);
+
+// =============================================================================
+// Helpers
+// =============================================================================
+
+/** Resolve a token value to a CSS string. Tuples become light-dark(). */
+function resolveTokenValue(value: SyntaxTokenValue): string {
+  if (Array.isArray(value)) {
+    return `light-dark(${value[0]}, ${value[1]})`;
+  }
+  return value;
+}
+
+/**
+ * Resolve a token value for a specific color mode.
+ * - [light, dark] tuple → picks the correct side
+ * - light-dark(a, b) string → parses and picks
+ * - plain string → pass through
+ */
+export function resolveSyntaxTokenForMode(
+  value: SyntaxTokenValue,
+  mode: 'light' | 'dark',
+): string {
+  if (Array.isArray(value)) {
+    return mode === 'dark' ? value[1] : value[0];
+  }
+  const match = value.match(/^light-dark\(\s*(.+?)\s*,\s*(.+?)\s*\)$/);
+  if (match) {
+    return mode === 'dark' ? match[2] : match[1];
+  }
+  return value;
+}
 
 // =============================================================================
 // defineSyntaxTheme
@@ -66,21 +113,41 @@ const ALL_KEYS: SyntaxThemeTokenKey[] = Object.keys(syntaxTokenDefaults)
 /**
  * Create a syntax theme from a complete token map.
  *
+ * Token values can be:
+ * - A string: used as-is (e.g. '#ff79c6' or 'light-dark(#0064E0, #2694FE)')
+ * - A [light, dark] tuple: converted to light-dark(light, dark)
+ *
  * @example
- * const dracula = defineSyntaxTheme({
- *   name: 'dracula',
- *   tokens: { keyword: '#ff79c6', string: '#f1fa8c', ... },
+ * const myTheme = defineSyntaxTheme({
+ *   name: 'my-theme',
+ *   tokens: {
+ *     keyword: ['#0064E0', '#2694FE'],     // [light, dark] tuple
+ *     string: '#98c379',                    // same in both modes
+ *     comment: 'light-dark(#666, #999)',    // CSS light-dark() string
+ *     // ... all 14 tokens
+ *   },
  * });
  */
 export function defineSyntaxTheme(input: SyntaxThemeInput): SyntaxTheme {
-  const missing = ALL_KEYS.filter(key => !(key in input.tokens));
+  const missing = ALL_SYNTAX_KEYS.filter(key => !(key in input.tokens));
   if (missing.length > 0) {
     console.warn(
       '[XDS] defineSyntaxTheme("' + input.name + '"): missing tokens: ' +
         missing.join(', ') + '. All 14 syntax tokens are required.',
     );
   }
-  return {name: input.name, tokens: {...input.tokens}};
+
+  // Resolve tuples to light-dark() CSS strings
+  const resolved: SyntaxThemeTokenMap = {} as SyntaxThemeTokenMap;
+  for (const key of ALL_SYNTAX_KEYS) {
+    resolved[key] = resolveTokenValue(input.tokens[key]);
+  }
+
+  return {
+    name: input.name,
+    tokens: resolved,
+    __inputTokens: {...input.tokens},
+  };
 }
 
 // =============================================================================
@@ -92,7 +159,7 @@ export function syntaxThemeStyle(
   theme: SyntaxTheme,
 ): Record<string, string> {
   const vars: Record<string, string> = {};
-  for (const key of ALL_KEYS) {
+  for (const key of ALL_SYNTAX_KEYS) {
     vars[toCSSProperty(key)] = theme.tokens[key];
   }
   return vars;
@@ -100,7 +167,7 @@ export function syntaxThemeStyle(
 
 /** Convert a syntax theme to CSS declarations (no selector wrapper). */
 export function syntaxThemeToCSS(theme: SyntaxTheme): string {
-  return ALL_KEYS
+  return ALL_SYNTAX_KEYS
     .map(key => toCSSProperty(key) + ': ' + theme.tokens[key] + ';')
     .join('\n  ');
 }

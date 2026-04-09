@@ -53,10 +53,13 @@ export type {
   SyntaxThemeInput,
   SyntaxThemeTokenKey,
   SyntaxThemeTokenMap,
+  SyntaxThemeTokenInput,
+  SyntaxTokenValue,
 } from './syntax';
 
 // XDSSyntaxTheme provider
-export {XDSSyntaxTheme, useSyntaxTheme} from './syntax';
+export {XDSSyntaxTheme, useXDSSyntaxTheme} from './syntax';
+export type {UseXDSSyntaxThemeReturn} from './syntax';
 
 export {expandTypeScale, generateTypeScaleComponents} from './expandTypeScale';
 export type {XDSTypeScaleConfig, TypeScaleTokens} from './expandTypeScale';
