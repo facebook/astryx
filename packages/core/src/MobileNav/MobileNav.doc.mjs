@@ -146,6 +146,12 @@ const navSections = (
       {className: 'xds-mobile-nav', visualProps: ['side']},
     ],
   },
+  usage: {
+    summary: 'Slide-out drawer overlay for mobile navigation, the mobile counterpart to SideNav.',
+    content: `## When to use
+
+- Providing navigation on mobile viewports where a persistent side nav is not practical.`,
+  },
 };
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {

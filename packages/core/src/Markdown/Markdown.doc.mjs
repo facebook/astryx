@@ -114,6 +114,9 @@ export const docs = {
     'Task list checkboxes are rendered via XDSCheckboxList with isReadOnly.',
     'Code blocks use XDSCodeBlock with appropriate ARIA attributes.',
   ],
+  usage: {
+    summary: 'Renders a markdown string as XDS-styled components.',
+  },
 };
 
 export const docsZh = {

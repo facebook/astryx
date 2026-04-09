@@ -170,6 +170,9 @@ export const docs = {
       ],
     },
   ],
+  usage: {
+    summary: 'Chat components for building AI chat interfaces, including message lists, message bubbles, and a composer.',
+  },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */

@@ -236,6 +236,17 @@ const [filters, setFilters] = useState([]);
   ],
   keyboard:
     'Type to search fields; Enter to select; Click token to edit; Backspace on empty input removes last filter; Escape closes popover',
+  usage: {
+    summary: 'Structured filter bar where each token represents a filter with field, operator, and value.',
+    content: `## When to use
+
+- Complex filtering across multiple dimensions.
+- Users need to build and combine filter criteria.
+
+## When NOT to use
+
+- Simple single-field search (use a text input instead).`,
+  },
 };
 
 // -------------------------------------------------------

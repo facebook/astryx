@@ -69,6 +69,9 @@ export const docs = {
       {className: 'xds-center', visualProps: ['axis']},
     ],
   },
+  usage: {
+    summary: 'Centers children horizontally and/or vertically using flexbox.',
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */

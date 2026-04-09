@@ -183,6 +183,18 @@ export const docs = {
       ],
     },
   ],
+  usage: {
+    summary: 'Segmented button group for single selection with radio group semantics.',
+    content: `## When to use
+
+- Switching between a small set of mutually exclusive views or modes.
+- When all options should be visible at once.
+
+## When NOT to use
+
+- For two-state toggles (use ToggleButton instead).
+- For navigation between pages (use Tabs instead).`,
+  },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */

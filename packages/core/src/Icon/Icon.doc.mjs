@@ -91,6 +91,9 @@ import {Home} from 'lucide-react';
     'Color token mappings — primary: --color-icon-primary (default); secondary: --color-icon-secondary (de-emphasized); tertiary: --color-icon-secondary (subtle/background); disabled: --color-icon-disabled (disabled state); accent: --color-accent (interactive/actionable); positive: --color-success (success/confirmation); negative: --color-error (error/destructive); warning: --color-warning (caution/attention); inherit: currentColor (inherits from parent text color).',
     'Size dimensions — xsm: 12x12px (dense UI, badges, indicators); sm: 16x16px (inline with text, compact UI); md: 20x20px (default, buttons, inputs); lg: 24x24px (emphasis, standalone icons).',
   ],
+  usage: {
+    summary: 'Renders icons with XDS design system colors and sizes.',
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */

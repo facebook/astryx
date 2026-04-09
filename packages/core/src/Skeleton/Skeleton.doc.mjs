@@ -73,6 +73,17 @@ export const docs = {
     'Numeric dimensions are converted to pixels; strings are passed through as-is.',
     'Animation timing constants: DELAY_TIME (1000ms) initial delay before animation starts, FADE_TIME (1000ms) duration of one opacity cycle, STAGGER_TIME (100ms) delay increment between sequential elements.',
   ],
+  usage: {
+    summary: 'A placeholder loading component that displays an animated pulsing effect while content is loading.',
+    content: `## When to use
+
+- Content of known size is loading.
+- Building skeleton screens that match the layout of the content being loaded.
+
+## When NOT to use
+
+- Content dimensions are unknown (use Spinner instead).`,
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */
