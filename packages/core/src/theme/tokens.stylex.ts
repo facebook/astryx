@@ -132,15 +132,6 @@ export const colorDefaults = {
   '--color-icon-yellow': 'light-dark(#FBC02D, #FFEE58)',
   '--color-text-yellow': 'light-dark(#753F07, #FBCE03)',
 
-  // Divider
-  '--color-divider-high-contrast': 'light-dark(#647685, #8C939B)',
-
-  // Focus
-  '--color-focus-outline': 'light-dark(#0064E0, #2694FE)',
-  '--color-focus-outline-error': 'light-dark(#E3193B, #F5394F)',
-  '--color-focus-outline-success': 'light-dark(#0D8626, #0D8626)',
-  '--color-focus-outline-warning': 'light-dark(#E9AF08, #F2C00B)',
-
   // Syntax highlighting
 } as const;
 
@@ -241,8 +232,6 @@ export const shadowDefaults = {
   '--shadow-inset-success': 'inset 0px 0px 0px 2px rgba(38, 167, 86, 0.3)',
   '--shadow-inset-warning': 'inset 0px 0px 0px 2px rgba(226, 164, 0, 0.3)',
   '--shadow-inset-error': 'inset 0px 0px 0px 2px rgba(227, 25, 59, 0.3)',
-  // Elevation — input hover state
-  '--elevation-input-hover': 'inset 0px 0px 0px 1px light-dark(#CCD3DB, #494D53)',
 } as const;
 
 /** @deprecated Use shadowDefaults */

@@ -34,6 +34,11 @@ export const metaTheme = defineTheme({
   motion: {fast: 175, medium: 410, ratio: 0.75},
 
   tokens: {
+    // Type workaround: these tokens exist in core but aren't in XDSTokenName yet
+    // @ts-expect-error — token exists in core vars but not in XDSTokenName type
+    '--color-divider-high-contrast': ['#5D6C7B', '#8C939B'],
+    '--color-focus-outline': ['#5D6C7B', '#8C939B'],
+    '--elevation-input-hover': 'none',
     // =========================================================================
     // Core Accent — Meta Blue (CDS: PRIMARY_BUTTON_BACKGROUND = BLUE_500)
     // =========================================================================
@@ -117,9 +122,6 @@ export const metaTheme = defineTheme({
     // =========================================================================
     // Divider / Focus / Elevation — CDS overrides
     // =========================================================================
-    '--color-divider-high-contrast': ['#5D6C7B', '#8C939B'],
-    '--color-focus-outline': ['#5D6C7B', '#8C939B'],
-    '--elevation-input-hover': 'none',
 
     // =========================================================================
     // Named palette — CDS XMDS 3.0 color ramps
