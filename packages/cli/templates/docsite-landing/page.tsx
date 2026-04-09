@@ -18,6 +18,8 @@ import {XDSSkeleton} from '@xds/core/Skeleton';
 import {XDSToken} from '@xds/core/Token';
 import {XDSToolbar} from '@xds/core/Toolbar';
 import {XDSTooltip} from '@xds/core/Tooltip';
+import {XDSKbd} from '@xds/core/Kbd';
+import {XDSLink} from '@xds/core/Link';
 import {createStaticSource} from '@xds/core/Typeahead';
 
 // ---------------------------------------------------------------------------
@@ -427,6 +429,28 @@ const DUMMY_IMAGE =
 const TEMPLATE_IMAGES = [DUMMY_IMAGE, DUMMY_IMAGE, DUMMY_IMAGE, DUMMY_IMAGE];
 
 // ---------------------------------------------------------------------------
+// ComponentNavCard data
+// ---------------------------------------------------------------------------
+
+const COMPONENT_NAV_ITEMS = [
+  {id: 'dropdown-menu', label: 'Dropdown Menu'},
+  {id: 'side-navigation', label: 'Side Navigation'},
+  {id: 'kbd', label: 'Kbd'},
+  {id: 'text-field', label: 'Text field'},
+  {id: 'table', label: 'Table'},
+  {id: 'data-charts', label: 'Data charts'},
+];
+
+const COMPONENT_PREVIEWS: Record<string, string> = {
+  'dropdown-menu': DUMMY_IMAGE,
+  'side-navigation': DUMMY_IMAGE,
+  kbd: DUMMY_IMAGE,
+  'text-field': DUMMY_IMAGE,
+  table: DUMMY_IMAGE,
+  'data-charts': DUMMY_IMAGE,
+};
+
+// ---------------------------------------------------------------------------
 // TemplateCard
 // ---------------------------------------------------------------------------
 
@@ -617,6 +641,111 @@ function TemplateCard({
             </div>
           </div>
         )}
+      </div>
+    </XDSCard>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// ComponentNavCard
+// ---------------------------------------------------------------------------
+
+function ComponentNavCard() {
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const activeId = hoveredId ?? COMPONENT_NAV_ITEMS[0].id;
+
+  return (
+    <XDSCard padding={0}>
+      <div
+        style={{
+          display: 'flex',
+          aspectRatio: '1920 / 1200',
+          overflow: 'hidden',
+        }}>
+        {/* Left side — component links */}
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column' as const,
+            justifyContent: 'space-between',
+            padding: 24,
+            overflow: 'hidden',
+          }}>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column' as const,
+              gap: 4,
+            }}>
+            <XDSText type="supporting" color="secondary">
+              UI Components
+            </XDSText>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column' as const,
+                marginTop: 12,
+              }}>
+              {COMPONENT_NAV_ITEMS.map(item => (
+                <div
+                  key={item.id}
+                  onMouseEnter={() => setHoveredId(item.id)}
+                  onMouseLeave={() => setHoveredId(null)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    cursor: 'pointer',
+                    paddingBlock: 2,
+                  }}>
+                  <span
+                    style={{
+                      fontSize: 24,
+                      fontWeight: activeId === item.id ? 600 : 400,
+                      color:
+                        activeId === item.id
+                          ? 'var(--color-text-link, #0066ff)'
+                          : 'var(--color-text-primary)',
+                      transition: 'color 150ms ease',
+                    }}>
+                    {item.label}
+                  </span>
+                  {item.id === 'kbd' && <XDSKbd keys="mod+k" />}
+                </div>
+              ))}
+            </div>
+          </div>
+          <XDSLink label="Browse all components" href="#" isStandalone>
+            Browse all components →
+          </XDSLink>
+        </div>
+
+        {/* Right side — preview area */}
+        <div
+          style={{
+            flex: 1,
+            backgroundColor: 'var(--color-background-muted)',
+            position: 'relative',
+            overflow: 'hidden',
+          }}>
+          {COMPONENT_NAV_ITEMS.map(item => (
+            <img
+              key={item.id}
+              src={COMPONENT_PREVIEWS[item.id]}
+              alt={`${item.label} preview`}
+              style={{
+                position: 'absolute',
+                inset: 0,
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                opacity: activeId === item.id ? 1 : 0,
+                transition: 'opacity 300ms ease',
+              }}
+            />
+          ))}
+        </div>
       </div>
     </XDSCard>
   );
@@ -1670,29 +1799,33 @@ export default function DocsiteLandingTemplate() {
               }}>
               <div style={{maxWidth: 2000, margin: '0 auto'}}>
                 <XDSGrid columns={isMobile ? 1 : 2} gap={2}>
-                  {REPEATED_IMAGES.map((src, i) => (
-                    <TemplateCard
-                      key={`${src}-${i}`}
-                      src={src}
-                      name={templateNames[i % templateNames.length]}
-                      isSelected={selected.has(i)}
-                      isGenerating={isGenerating && generatingSource !== i}
-                      onSelect={() =>
-                        setSelected(prev => {
-                          const next = new Set(prev);
-                          if (next.has(i)) {
-                            next.delete(i);
-                          } else {
-                            next.add(i);
-                          }
-                          return next;
-                        })
-                      }
-                      onMoreLikeThis={() => handleMoreLikeThis(i)}
-                      onUse={() => handleUse(i)}
-                      simulation={simRef.current!}
-                    />
-                  ))}
+                  {REPEATED_IMAGES.map((src, i) =>
+                    i === 3 ? (
+                      <ComponentNavCard key="component-nav-card" />
+                    ) : (
+                      <TemplateCard
+                        key={`${src}-${i}`}
+                        src={src}
+                        name={templateNames[i % templateNames.length]}
+                        isSelected={selected.has(i)}
+                        isGenerating={isGenerating && generatingSource !== i}
+                        onSelect={() =>
+                          setSelected(prev => {
+                            const next = new Set(prev);
+                            if (next.has(i)) {
+                              next.delete(i);
+                            } else {
+                              next.add(i);
+                            }
+                            return next;
+                          })
+                        }
+                        onMoreLikeThis={() => handleMoreLikeThis(i)}
+                        onUse={() => handleUse(i)}
+                        simulation={simRef.current!}
+                      />
+                    ),
+                  )}
                 </XDSGrid>
               </div>
             </div>
