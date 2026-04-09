@@ -97,13 +97,7 @@ const styles = stylex.create({
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
   },
-  headerArea: {
-    paddingBottom: spacingVars['--spacing-12'],
-    marginBottom: spacingVars['--spacing-12'],
-  },
-  dividerWrap: {
-    marginTop: spacingVars['--spacing-4'],
-  },
+
 });
 
 
@@ -165,12 +159,12 @@ export default function PaymentFormPage() {
         <div style={{maxWidth: 1100, width: '100%', padding: '32px 24px'}}>
 
           {/* Page header */}
-          <div {...stylex.props(styles.headerArea)}>
+          <div style={{marginBottom: 48}}>
             <div style={{fontSize: 56, fontWeight: 700, lineHeight: 1.05, letterSpacing: '-0.03em', margin: '0 0 8px'}}>Payment Request</div>
             <XDSText type="body" color="secondary">
               Review your order and complete your purchase. All transactions are secured with 256-bit SSL encryption.
             </XDSText>
-            <div {...stylex.props(styles.dividerWrap)}><XDSDivider /></div>
+            <div style={{marginTop: 24}}><XDSDivider /></div>
           </div>
 
           <div className="pf-body" style={{display: 'flex', gap: 32, alignItems: 'flex-start'}}>
