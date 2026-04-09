@@ -157,6 +157,15 @@ const styles = stylex.create({
     margin: 0,
     inset: 0,
   },
+  // Reset inherited container CSS custom properties so that dialogs
+  // rendered as DOM descendants of components like TopNav (which set
+  // --container-padding-inline) are not affected.  CSS custom properties
+  // inherit through the DOM tree even for top-layer elements.
+  isolateContainer: {
+    '--container-padding-inline': 'initial',
+    '--container-padding-block-start': 'initial',
+    '--container-padding-block-end': 'initial',
+  },
   inner: {
     display: 'flex',
     flexDirection: 'column',
@@ -424,6 +433,7 @@ export function XDSDialog({
         stylex.props(
           styles.dialog,
           styles.backdrop,
+          styles.isolateContainer,
           !isFullscreen && dynamicStyles.sizing(width, maxHeight),
           hasPosition &&
             dynamicStyles.position(
