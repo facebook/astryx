@@ -85,7 +85,6 @@ const ITEMS: LibraryItem[] = [
     category: 'Layout',
     type: 'Component',
   },
-
   // Forms
   {
     id: '7',
@@ -131,7 +130,6 @@ const ITEMS: LibraryItem[] = [
     category: 'Forms',
     type: 'Component',
   },
-
   // Navigation
   {
     id: '13',
@@ -179,7 +177,6 @@ const ITEMS: LibraryItem[] = [
     category: 'Navigation',
     type: 'Pattern',
   },
-
   // Feedback
   {
     id: '19',
@@ -227,7 +224,6 @@ const ITEMS: LibraryItem[] = [
     category: 'Feedback',
     type: 'Component',
   },
-
   // Data
   {
     id: '25',
@@ -286,13 +282,32 @@ const styles = stylex.create({
   page: {
     width: '100%',
   },
-  tabsRow: {
+  // Full-width header: use negative horizontal margins to break out of the
+  // AppShell's 16px content padding, then restore it with matching paddingInline.
+  pageHeader: {
+    marginInline: `calc(${spacingVars['--spacing-4']} * -1)`,
+    marginTop: `calc(${spacingVars['--spacing-4']} * -1)`,
+    paddingInline: spacingVars['--spacing-6'],
+    paddingTop: spacingVars['--spacing-6'],
+    paddingBottom: spacingVars['--spacing-6'],
     borderBottomWidth: '1px',
     borderBottomStyle: 'solid',
     borderBottomColor: colorVars['--color-border'],
   },
+  pageTitle: {
+    marginBottom: spacingVars['--spacing-4'],
+  },
+  // Tabs sit at the bottom of the header — negative margin pulls them onto the border
+  tabsRow: {
+    marginBottom: `calc(${spacingVars['--spacing-6']} * -1 - 1px)`,
+  },
+  // Content section with padding matching the header
+  pageContent: {
+    paddingInline: spacingVars['--spacing-6'],
+    paddingTop: spacingVars['--spacing-6'],
+    marginInline: `calc(${spacingVars['--spacing-4']} * -1)`,
+  },
   filterBar: {
-    paddingTop: spacingVars['--spacing-4'],
     paddingBottom: spacingVars['--spacing-4'],
   },
   filterSearch: {
@@ -313,17 +328,6 @@ const styles = stylex.create({
   },
   sectionHeader: {
     paddingBottom: spacingVars['--spacing-3'],
-  },
-  grid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(4, 1fr)',
-    gap: '20px',
-    '@media (max-width: 1100px)': {
-      gridTemplateColumns: 'repeat(2, 1fr)',
-    },
-    '@media (max-width: 580px)': {
-      gridTemplateColumns: '1fr',
-    },
   },
   cardInner: {
     padding: `${spacingVars['--spacing-4']} ${spacingVars['--spacing-5']} ${spacingVars['--spacing-5']}`,
@@ -458,16 +462,16 @@ export default function LibraryPage() {
     }
     return order
       .filter(cat => map.has(cat))
-      .map(cat => ({
-        category: cat,
-        items: map.get(cat)!,
-      }));
+      .map(cat => ({category: cat, items: map.get(cat)!}));
   }, [activeTab, filtered]);
 
   return (
     <div {...stylex.props(styles.page)}>
-      <div>
-        {/* Tabs */}
+      {/* ── Page header ─────────────────────────────────────────────────── */}
+      <header {...stylex.props(styles.pageHeader)}>
+        <div {...stylex.props(styles.pageTitle)}>
+          <XDSHeading level={1}>Library</XDSHeading>
+        </div>
         <div {...stylex.props(styles.tabsRow)}>
           <XDSTabList value={activeTab} onChange={setActiveTab}>
             {CATEGORIES.map(cat => (
@@ -475,7 +479,10 @@ export default function LibraryPage() {
             ))}
           </XDSTabList>
         </div>
+      </header>
 
+      {/* ── Page content ────────────────────────────────────────────────── */}
+      <section {...stylex.props(styles.pageContent)}>
         {/* Filter bar */}
         <div {...stylex.props(styles.filterBar)}>
           <XDSHStack gap={3} vAlign="center">
@@ -511,7 +518,7 @@ export default function LibraryPage() {
           </XDSHStack>
         </div>
 
-        {/* Content */}
+        {/* Grid content */}
         {filtered.length === 0 ? (
           <div {...stylex.props(styles.emptyState)}>
             <XDSText type="supporting" color="secondary">
@@ -519,7 +526,6 @@ export default function LibraryPage() {
             </XDSText>
           </div>
         ) : groupedSections != null ? (
-          // All tab — grouped sections with dividers
           <div>
             {groupedSections.map((section, i) => (
               <div key={section.category}>
@@ -536,7 +542,6 @@ export default function LibraryPage() {
             ))}
           </div>
         ) : (
-          // Single category tab — flat grid
           <div
             style={{
               display: 'grid',
@@ -548,7 +553,7 @@ export default function LibraryPage() {
             ))}
           </div>
         )}
-      </div>
+      </section>
     </div>
   );
 }
