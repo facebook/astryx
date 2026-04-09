@@ -99,9 +99,9 @@ export function resolveSyntaxTokenForMode(
   if (Array.isArray(value)) {
     return mode === 'dark' ? value[1] : value[0];
   }
-  const match = value.match(/^light-dark\(\s*(.+?)\s*,\s*(.+?)\s*\)$/);
+  const match = value.match(/^light-dark\(([^,]+),([^)]+)\)$/);
   if (match) {
-    return mode === 'dark' ? match[2] : match[1];
+    return mode === 'dark' ? match[2].trim() : match[1].trim();
   }
   return value;
 }
