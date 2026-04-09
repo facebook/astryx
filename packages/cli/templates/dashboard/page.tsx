@@ -178,6 +178,26 @@ const MoreIcon = (props: React.SVGProps<SVGSVGElement>) => (
 );
 
 // Content icons
+const ArrowUpIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.5}
+    {...props}>
+    <path d="M12 19V5M5 12l7-7 7 7" />
+  </svg>
+);
+const ArrowDownIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.5}
+    {...props}>
+    <path d="M12 5v14M19 12l-7 7-7-7" />
+  </svg>
+);
 const ReloadIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     viewBox="0 0 24 24"
@@ -589,21 +609,23 @@ function MetricCard({
         <XDSHStack gap={2} vAlign="center">
           <XDSHeading level={2}>{value}</XDSHeading>
           <XDSHStack gap={1} vAlign="center">
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 12 12"
-              fill={
-                positive
-                  ? 'var(--color-success, #0D8626)'
-                  : 'var(--color-error, #E3193B)'
-              }>
-              {positive ? (
-                <path d="M6 2L10 7H2L6 2Z" />
-              ) : (
-                <path d="M6 10L2 5H10L6 10Z" />
-              )}
-            </svg>
+            {positive ? (
+              <ArrowUpIcon
+                style={{
+                  width: 12,
+                  height: 12,
+                  color: 'var(--color-success, #0D8626)',
+                }}
+              />
+            ) : (
+              <ArrowDownIcon
+                style={{
+                  width: 12,
+                  height: 12,
+                  color: 'var(--color-error, #E3193B)',
+                }}
+              />
+            )}
             <XDSText type="body" color="secondary">
               {change}
             </XDSText>
