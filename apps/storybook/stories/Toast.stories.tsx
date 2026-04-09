@@ -404,3 +404,53 @@ export const NoProvider: StoryObj = {
     },
   },
 };
+
+// =============================================================================
+// Toast over Dialog
+// =============================================================================
+
+import {XDSDialog} from '@xds/core/Dialog';
+
+function ToastOverDialogDemo() {
+  const toast = useXDSToast();
+  const [isOpen, setIsOpen] = useState(false);
+  return (
+    <XDSStack gap={2}>
+      <XDSButton label="Open dialog" onClick={() => setIsOpen(true)} />
+      <XDSDialog
+        isOpen={isOpen}
+        onClose={() => setIsOpen(false)}
+        title="Save changes?"
+        footer={
+          <XDSStack direction="row" gap={2}>
+            <XDSButton
+              label="Cancel"
+              variant="secondary"
+              onClick={() => setIsOpen(false)}
+            />
+            <XDSButton
+              label="Save"
+              onClick={() => {
+                toast({body: 'Changes saved successfully.'});
+                setIsOpen(false);
+              }}
+            />
+          </XDSStack>
+        }>
+        <p>Your unsaved changes will be lost. Do you want to save them?</p>
+      </XDSDialog>
+    </XDSStack>
+  );
+}
+
+export const ToastOverDialog: StoryObj = {
+  render: () => <ToastOverDialogDemo />,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Toasts render in the top layer via popover="manual", so they appear above dialogs. Click Save to dismiss the dialog and show a toast — it should be visible on top.',
+      },
+    },
+  },
+};

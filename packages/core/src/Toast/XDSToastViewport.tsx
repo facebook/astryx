@@ -1,6 +1,6 @@
 'use client';
 
-import {useCallback, useMemo, useRef, useState} from 'react';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars, durationVars, easeVars} from '../theme/tokens.stylex';
 import {XDSToast} from './XDSToast';
@@ -19,6 +19,12 @@ const styles = stylex.create({
     flexDirection: 'column',
     padding: spacingVars['--spacing-4'],
     pointerEvents: 'none',
+    // Reset popover styles — the popover attribute puts us in the top
+    // layer (above dialogs), but we don't want its default styles.
+    inset: 'unset',
+    border: 'none',
+    background: 'none',
+    overflow: 'visible',
   },
   bottomEnd: {bottom: 0, insetInlineEnd: 0, alignItems: 'flex-end'},
   bottomStart: {bottom: 0, insetInlineStart: 0, alignItems: 'flex-start'},
@@ -129,6 +135,15 @@ export function XDSToastViewport({
   if (inset?.start) insetStyle.insetInlineStart = inset.start;
   if (inset?.end) insetStyle.insetInlineEnd = inset.end;
 
+  // Show the popover on mount so it enters the top layer
+  const viewportRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = viewportRef.current;
+    if (el && typeof el.showPopover === 'function') {
+      try { el.showPopover(); } catch { /* already showing */ }
+    }
+  }, []);
+
   const posStyle =
     position === 'topEnd'
       ? styles.topEnd
@@ -142,8 +157,13 @@ export function XDSToastViewport({
     <XDSToastContext.Provider value={contextValue}>
       {children}
       <div
+        ref={viewportRef}
         role="region"
         aria-label="Notifications"
+        // popover="manual" promotes to the top layer (above dialogs)
+        // without auto-light-dismiss. We control visibility ourselves.
+        // @ts-expect-error -- React types don't include popover yet
+        popover="manual"
         {...stylex.props(styles.viewport, posStyle)}
         style={Object.keys(insetStyle).length > 0 ? insetStyle : undefined}>
         {visibleToasts.map(entry => {
