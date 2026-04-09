@@ -1017,15 +1017,11 @@ export default function ExampleCardsPage() {
                 <XDSText type="supporting" color="secondary">
                   Home
                 </XDSText>
-                <XDSText type="supporting" color="secondary">
-                  ›
-                </XDSText>
+                <XDSIcon icon="chevronRight" size="xsm" color="secondary" />
                 <XDSText type="supporting" color="secondary">
                   ...
                 </XDSText>
-                <XDSText type="supporting" color="secondary">
-                  ›
-                </XDSText>
+                <XDSIcon icon="chevronRight" size="xsm" color="secondary" />
                 <XDSText type="label">Payments</XDSText>
               </XDSHStack>
               <XDSDivider />
@@ -1056,9 +1052,7 @@ export default function ExampleCardsPage() {
                       {item.desc}
                     </XDSText>
                   </XDSVStack>
-                  <XDSText type="body" color="secondary">
-                    ›
-                  </XDSText>
+                  <XDSIcon icon="chevronRight" size="sm" color="secondary" />
                 </div>
               ))}
             </XDSVStack>
