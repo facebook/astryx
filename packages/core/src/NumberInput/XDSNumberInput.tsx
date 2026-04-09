@@ -537,6 +537,7 @@ export function XDSNumberInput({
           placeholder={placeholder}
           disabled={isDisabled}
           autoFocus={hasAutoFocus}
+          data-autofocus={hasAutoFocus || undefined}
           min={min ?? undefined}
           max={max ?? undefined}
           step={step ?? undefined}

@@ -35,7 +35,7 @@ const styles = stylex.create({
   },
 });
 
-export interface XDSNavIconProps extends XDSBaseProps<HTMLDivElement> {
+export interface XDSNavIconProps extends XDSBaseProps<HTMLSpanElement> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLSpanElement>;
   /**
