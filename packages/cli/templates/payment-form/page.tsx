@@ -130,6 +130,7 @@ export default function PaymentFormPage() {
   const [promo, setPromo] = useState('');
   const [quantities, setQuantities] = useState<Record<string, number>>({'1': 1, '2': 1, '3': 1});
   const [submitted, setSubmitted] = useState(false);
+  const [orderSummaryOpen, setOrderSummaryOpen] = useState(true);
 
   const errors = submitted ? {
     firstName: !firstName.trim() ? 'Required' : undefined,
@@ -326,7 +327,20 @@ export default function PaymentFormPage() {
 
               <XDSCard padding={5}>
                 <XDSVStack gap={4}>
-                  <div {...stylex.props(styles.sectionTitle)}>Order Summary</div>
+                  {/* Accordion header — clickable on mobile only */}
+                  <button
+                    onClick={() => setOrderSummaryOpen(o => !o)}
+                    className="pf-summary-toggle"
+                    style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', background: 'none', border: 'none', cursor: 'pointer', padding: 0}}>
+                    <div {...stylex.props(styles.sectionTitle)}>Order Summary</div>
+                    <svg className="pf-summary-chevron" viewBox="0 0 24 24" style={{width: 20, height: 20, transition: 'transform 0.2s', transform: orderSummaryOpen ? 'rotate(180deg)' : 'rotate(0deg)'}} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M6 9l6 6 6-6"/>
+                    </svg>
+                  </button>
+
+                  {/* Collapsible content */}
+                  <div className={`pf-summary-content${orderSummaryOpen ? '' : ' pf-summary-closed'}`}>
+                  <XDSVStack gap={4}>
 
                   {/* Line items */}
                   {ORDER_ITEMS.map(item => (
