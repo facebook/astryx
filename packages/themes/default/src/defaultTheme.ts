@@ -11,8 +11,33 @@
  * Only non-typography component overrides need to be specified manually.
  */
 
-import {defineTheme} from '@xds/core/theme';
+import {defineTheme, defineSyntaxTheme} from '@xds/core/theme';
 import {defaultIconRegistry} from './icons';
+
+/**
+ * Default syntax theme — tuned to the XDS default palette.
+ * Uses the same hues as the named color ramp but with values
+ * optimized for code readability on the default surface.
+ */
+const defaultSyntax = defineSyntaxTheme({
+  name: 'xds-default',
+  tokens: {
+    keyword: 'light-dark(#0064E0, #2694FE)',
+    string: 'light-dark(#09441F, #A5F690)',
+    comment: 'light-dark(#4E606F, #6B7D8D)',
+    number: 'light-dark(#6B2203, #FDB876)',
+    function: 'light-dark(#042F97, #AFD7FF)',
+    type: 'light-dark(#3E0697, #B3B0FE)',
+    variable: 'light-dark(#0A1317, #DFE2E5)',
+    operator: 'light-dark(#006D75, #56C8D8)',
+    constant: 'light-dark(#6B2203, #FDB876)',
+    tag: 'light-dark(#7B0210, #FFB2B8)',
+    attribute: 'light-dark(#7A4F1A, #E8C580)',
+    property: 'light-dark(#006064, #B2EBF2)',
+    punctuation: 'light-dark(#65737E, #6F747C)',
+    background: 'light-dark(#F1F4F7, #111112)',
+  },
+});
 
 export const defaultTheme = defineTheme({
   name: 'default',
@@ -25,6 +50,9 @@ export const defaultTheme = defineTheme({
   // Generates: fast-min=130ms, fast=175ms, fast-max=235ms,
   //            medium-min=310ms, medium=410ms, medium-max=545ms.
   motion: {fast: 175, medium: 410, ratio: 0.75},
+
+  // Syntax highlighting — tuned to the default palette
+  syntax: defaultSyntax,
 
   // The default theme uses the built-in token defaults from tokens.stylex.ts.
   // No additional token overrides needed.
