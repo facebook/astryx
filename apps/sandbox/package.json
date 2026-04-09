@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
+    "build:deps": "yarn workspace @xds/core build && yarn workspace @xds/theme-default build && yarn workspace @xds/theme-neutral build && yarn workspace @xds/theme-brutalist build && yarn workspace @xds/theme-meta build && yarn workspace @xds/theme-whatsapp build && yarn workspace @xds/theme-daily build",
     "predev": "node ../../scripts/sync-templates.js",
     "dev": "next dev",
     "prebuild": "node ../../scripts/sync-templates.js",
