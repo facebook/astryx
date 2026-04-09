@@ -189,7 +189,7 @@ const styles = stylex.create({
   pageWrapper: {
     width: '100%',
     paddingBlock: spacingVars['--spacing-8'],
-    paddingInline: spacingVars['--spacing-10'],
+    paddingInline: spacingVars['--spacing-6'],
   },
 });
 
