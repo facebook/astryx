@@ -25,6 +25,7 @@ import {
   UserGroupIcon,
   DocumentTextIcon,
   CubeIcon,
+  Cog6ToothIcon,
 } from '@heroicons/react/24/outline';
 import {
   HomeIcon as HomeIconSolid,
@@ -282,24 +283,25 @@ export default function AIChatTemplate() {
               label="Context"
               density="compact"
               startContent={
-                <XDSButton
-                  label="@workspace"
-                  variant="ghost"
-                  size="sm"
-                  icon={<AtSignIcon />}>
-                  workspace
-                </XDSButton>
+                <>
+                  <XDSButton
+                    label="Mention"
+                    variant="ghost"
+                    size="sm"
+                    icon={<AtSignIcon />}
+                  />
+                  <XDSButton
+                    label="Attach"
+                    variant="ghost"
+                    size="sm"
+                    icon={<PaperclipIcon />}
+                  />
+                </>
               }
             />
           }
           footerActions={
             <>
-              <XDSButton
-                label="Attach"
-                variant="ghost"
-                size="md"
-                icon={<PaperclipIcon />}
-              />
               <XDSButton
                 label="Search"
                 variant="ghost"
@@ -308,16 +310,33 @@ export default function AIChatTemplate() {
               />
               <XDSDropdownMenu
                 button={{
-                  label: 'GPT-4o',
+                  label: 'Auto',
                   variant: 'ghost',
                   size: 'md',
-                  children: 'GPT-4o',
+                  children: 'Auto',
                 }}
                 items={[
-                  {label: 'GPT-4o', onClick: () => {}},
-                  {label: 'GPT-4o mini', onClick: () => {}},
-                  {label: 'o3', onClick: () => {}},
-                  {label: 'o4-mini', onClick: () => {}},
+                  {label: 'Auto', onClick: () => {}},
+                  {label: 'Writing', onClick: () => {}},
+                  {label: 'Coding', onClick: () => {}},
+                  {label: 'Research', onClick: () => {}},
+                  {label: 'Creative', onClick: () => {}},
+                  {label: 'Sensitive', onClick: () => {}},
+                  {label: 'Deep Mode', onClick: () => {}},
+                ]}
+              />
+              <XDSDropdownMenu
+                button={{
+                  label: 'Settings',
+                  variant: 'ghost',
+                  size: 'md',
+                  icon: <Cog6ToothIcon style={{width: 16, height: 16}} />,
+                  children: 'Settings',
+                }}
+                items={[
+                  {label: 'Preferences', onClick: () => {}},
+                  {label: 'Keyboard shortcuts', onClick: () => {}},
+                  {label: 'About', onClick: () => {}},
                 ]}
               />
             </>
