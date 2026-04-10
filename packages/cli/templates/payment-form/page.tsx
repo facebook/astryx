@@ -277,16 +277,9 @@ export default function PaymentFormPage() {
         <div style={{maxWidth: 1100}} {...stylex.props(styles.pageWrapper)}>
           {/* Page header */}
           <div {...stylex.props(styles.headerArea)}>
-            <div
-              style={{
-                fontSize: 56,
-                fontWeight: 700,
-                lineHeight: 1.05,
-                letterSpacing: '-0.03em',
-                margin: '0 0 8px',
-              }}>
+            <XDSText type="display-1" as="h1">
               Payment Request
-            </div>
+            </XDSText>
             <XDSText type="body" color="secondary">
               Review your order and complete your purchase. All transactions are
               secured with 256-bit SSL encryption.
