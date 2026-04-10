@@ -165,7 +165,7 @@ const styles = stylex.create({
     minHeight: 0,
     display: 'flex',
     flexWrap: 'wrap',
-    gap: spacingVars['--spacing-2'],
+    gap: spacingVars['--spacing-1'],
     alignItems: 'flex-start',
     transform: 'translateY(0)',
     transitionProperty: 'transform',

@@ -301,7 +301,9 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
   const emitChange = useCallback(() => {
     if (!editableRef.current) return;
     const text = serialize(editableRef.current);
-    setIsEmpty(text.length === 0);
+    // Browsers may leave a trailing <br> when all content is deleted,
+    // which serializes to "\n". Treat whitespace-only as empty.
+    setIsEmpty(text.trim().length === 0);
     onChange?.(text);
     // Clean up portals for tokens no longer in the DOM
     setTokenPortals(prev =>
