@@ -99,11 +99,11 @@ const styles = stylex.create({
     paddingInline: 0,
   },
   assistant: {
-    backgroundColor: colorVars['--color-background-muted'],
+    backgroundColor: colorVars['--color-neutral'],
     color: colorVars['--color-text-primary'],
   },
   user: {
-    backgroundColor: colorVars['--color-background-muted'],
+    backgroundColor: colorVars['--color-neutral'],
     color: colorVars['--color-text-primary'],
   },
   system: {
