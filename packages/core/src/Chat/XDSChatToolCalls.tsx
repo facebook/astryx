@@ -347,7 +347,15 @@ function ErrorIcon() {
 
 function WrenchIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round">
       <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
     </svg>
   );
@@ -388,11 +396,7 @@ const STATUS_STYLES: Record<
 // Internal: single call row
 // =============================================================================
 
-function CallRow({
-  call,
-}: {
-  call: XDSChatToolCallItem;
-}) {
+function CallRow({call}: {call: XDSChatToolCallItem}) {
   const status = call.status ?? 'complete';
   const Icon = STATUS_ICONS[status];
   const isClickable = call.onClick != null;
@@ -403,12 +407,16 @@ function CallRow({
         role={isClickable ? 'button' : undefined}
         tabIndex={isClickable ? 0 : undefined}
         onClick={call.onClick}
-        onKeyDown={isClickable ? (e: React.KeyboardEvent) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            call.onClick?.();
-          }
-        } : undefined}
+        onKeyDown={
+          isClickable
+            ? (e: React.KeyboardEvent) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  call.onClick?.();
+                }
+              }
+            : undefined
+        }
         {...stylex.props(
           styles.callRow,
           isClickable && styles.callRowClickable,
@@ -425,7 +433,11 @@ function CallRow({
         </span>
         <span {...stylex.props(styles.callName)}>{call.name}</span>
         {call.node != null && (
-          <XDSBadge label={call.node} variant="neutral" xstyle={styles.nodePill} />
+          <XDSBadge
+            label={call.node}
+            variant="neutral"
+            xstyle={styles.nodePill}
+          />
         )}
         {call.label != null && (
           <span {...stylex.props(styles.callLabel)}>{call.label}</span>
@@ -433,16 +445,24 @@ function CallRow({
         {call.stats != null && (
           <span {...stylex.props(styles.stats)}>
             {call.stats.files != null && (
-              <span>{call.stats.files} file{call.stats.files !== 1 ? 's' : ''}</span>
+              <span>
+                {call.stats.files} file{call.stats.files !== 1 ? 's' : ''}
+              </span>
             )}
             {call.stats.matches != null && (
-              <span>{call.stats.matches} match{call.stats.matches !== 1 ? 'es' : ''}</span>
+              <span>
+                {call.stats.matches} match{call.stats.matches !== 1 ? 'es' : ''}
+              </span>
             )}
             {call.stats.additions != null && (
-              <span {...stylex.props(styles.statsAdditions)}>+{call.stats.additions}</span>
+              <span {...stylex.props(styles.statsAdditions)}>
+                +{call.stats.additions}
+              </span>
             )}
             {call.stats.deletions != null && (
-              <span {...stylex.props(styles.statsDeletions)}>-{call.stats.deletions}</span>
+              <span {...stylex.props(styles.statsDeletions)}>
+                -{call.stats.deletions}
+              </span>
             )}
           </span>
         )}
@@ -467,7 +487,6 @@ function CallRow({
  *
  * @example
  * ```
- * // Basic — pass the array from your LLM response
  * <XDSChatToolCalls
  *   calls={message.toolCalls.map(tc => ({
  *     name: tc.toolName,
@@ -475,11 +494,6 @@ function CallRow({
  *     duration: tc.duration,
  *   }))}
  * />
- * ```
- *
- * @example
- * ```
- * // With detail rendering
  * <XDSChatToolCalls
  *   calls={toolCalls}
  *   renderDetail={(call) => (
@@ -536,9 +550,12 @@ export function XDSChatToolCalls(props: XDSChatToolCallsProps) {
   const label = customLabel ?? `${calls.length} tool calls`;
   const errorLabel = hasErrors ? (
     <>
-      {label} · <span {...stylex.props(styles.errorText)}>{errorCount} failed</span>
+      {label} ·{' '}
+      <span {...stylex.props(styles.errorText)}>{errorCount} failed</span>
     </>
-  ) : label;
+  ) : (
+    label
+  );
 
   return (
     <div
@@ -582,10 +599,7 @@ export function XDSChatToolCalls(props: XDSChatToolCallsProps) {
         <div {...stylex.props(styles.groupContentInner)}>
           <div {...stylex.props(styles.list, styles.listIndented)}>
             {calls.map((call, i) => (
-              <CallRow
-                key={call.key ?? i}
-                call={call}
-              />
+              <CallRow key={call.key ?? i} call={call} />
             ))}
           </div>
         </div>
