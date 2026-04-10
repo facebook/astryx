@@ -288,7 +288,7 @@ function PerfPanel({
         <XDSText type="label">{label}</XDSText>
         <XDSBadge label={mode} />
       </XDSHStack>
-      <XDSCard padding={3} variant="muted">
+      <XDSCard padding={3}>
         <MetricsBar metrics={metrics} onScrollTest={runScrollTest} />
       </XDSCard>
       <div ref={scrollRef}>

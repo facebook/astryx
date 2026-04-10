@@ -67,7 +67,7 @@ const ChevronDownIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-const ChevronRightIcon = (props: React.SVGProps<SVGSVGElement>) => (
+const _ChevronRightIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
