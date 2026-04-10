@@ -72,6 +72,19 @@ const styles = stylex.create({
       },
     },
   },
+  // Menu trigger: like interactive but no hover background.
+  // Only cursor:pointer signals interactivity; the popover provides context.
+  menuTrigger: {
+    cursor: 'pointer',
+    borderRadius: radiusVars['--radius-element'],
+    borderWidth: 0,
+    borderStyle: 'none',
+    backgroundColor: 'transparent',
+    fontFamily: 'inherit',
+    fontSize: 'inherit',
+    fontWeight: fontWeightVars['--font-weight-normal'],
+    textAlign: 'start',
+  },
   interactiveCollapsed: {
     backgroundColor: {
       default: 'transparent',
@@ -113,9 +126,8 @@ const styles = stylex.create({
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
   },
-  // When super/sub headings are present, scale down the app name
+  // When super/sub headings are present, keep same size but allow compact layout
   headingCompact: {
-    fontSize: typeScaleVars['--text-label-size'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
   },
   subheading: {
@@ -123,6 +135,18 @@ const styles = stylex.create({
     lineHeight: typeScaleVars['--text-supporting-leading'],
     color: colorVars['--color-text-secondary'],
     textDecoration: 'none',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+  headingRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-1'],
+  },
+  headingLink: {
+    textDecoration: 'none',
+    color: 'inherit',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
@@ -146,9 +170,40 @@ const styles = stylex.create({
     padding: spacingVars['--spacing-1'],
     overflow: 'hidden',
   },
+  // Static heading replica inside the popover — matches inline heading layout.
+  // Clickable to close the popover.
+  popoverHeading: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-2'],
+    padding: 0,
+    marginBlockStart: spacingVars['--spacing-1'],
+    marginBlockEnd: spacingVars['--spacing-2'],
+    marginInline: spacingVars['--spacing-1'],
+    cursor: 'pointer',
+  },
+  // Chevron inside the popover heading — same as chevron but rotated up
+  popoverChevron: {
+    flexShrink: 0,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: spacingVars['--spacing-7'],
+    minHeight: spacingVars['--spacing-7'],
+    color: colorVars['--color-icon-secondary'],
+    transform: 'rotate(180deg)',
+  },
   popover: {
     minWidth: 'anchor-size(width)',
     marginBlockStart: spacingVars['--spacing-1'],
+  },
+  // Overlap variant: popover covers the trigger so heading appears "in place".
+  // Add 4px padding inside, then widen and shift to compensate so the
+  // heading text inside the popover still aligns with the inline heading.
+  popoverOverlap: {
+    minWidth: 'calc(anchor-size(width) + 16px)',
+    marginBlockStart: 'calc(-1 * anchor-size(height) - 8px)',
+    marginInlineStart: '-8px',
   },
 });
 
@@ -288,10 +343,6 @@ export function XDSSideNavHeading({
     dialogLabel: 'Navigation menu',
   });
 
-  const handleToggle = useCallback(() => {
-    popover.toggle();
-  }, [popover]);
-
   const setRef = useCallback(
     (el: HTMLDivElement | null) => {
       (rootRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
@@ -349,7 +400,7 @@ export function XDSSideNavHeading({
           <button
             ref={collapsedSetRef as React.Ref<HTMLButtonElement>}
             type="button"
-            onClick={handleToggle}
+            popoverTarget={popover.id}
             aria-label={heading}
             data-testid={testId}
             {...popover.triggerProps}
@@ -358,8 +409,7 @@ export function XDSSideNavHeading({
               stylex.props(
                 navItemStyles.item,
                 styles.rootCollapsed,
-                styles.interactive,
-                styles.interactiveCollapsed,
+                styles.menuTrigger,
                 xstyle,
               ),
               className,
@@ -368,7 +418,40 @@ export function XDSSideNavHeading({
             {collapsedIcon}
           </button>
           {popover.render(
-            <div {...stylex.props(styles.popoverContent)}>{menu}</div>,
+            <div {...stylex.props(styles.popoverContent)}>
+              <div
+                {...stylex.props(styles.popoverHeading)}
+                onClick={() => popover.hide()}
+                role="button"
+                tabIndex={0}>
+                {icon && <span {...stylex.props(styles.icon)}>{icon}</span>}
+                <span {...stylex.props(styles.textContainer)}>
+                  {superheading && (
+                    <span {...stylex.props(styles.superheading)}>
+                      {superheading}
+                    </span>
+                  )}
+                  <span {...stylex.props(styles.headingRow)}>
+                    <span
+                      {...stylex.props(
+                        styles.heading,
+                        !!(superheading || subheading) && styles.headingCompact,
+                      )}>
+                      {heading}
+                    </span>
+                    <span {...stylex.props(styles.popoverChevron)}>
+                      {getIcon('chevronDown')}
+                    </span>
+                  </span>
+                  {subheading && (
+                    <span {...stylex.props(styles.subheading)}>
+                      {subheading}
+                    </span>
+                  )}
+                </span>
+              </div>
+              {menu}
+            </div>,
             {placement: 'below', alignment: 'start', xstyle: styles.popover},
           )}
         </>
@@ -411,8 +494,8 @@ export function XDSSideNavHeading({
   const isWholeHeadingLink =
     !!headingHref && !menu && !superheadingHref && !subheadingHref;
 
-  // Render text content
-  const renderTextContent = () => (
+  // Render text content with optional inline chevron
+  const renderTextContent = (inlineChevron?: ReactNode) => (
     <span {...stylex.props(styles.textContainer)}>
       {superheading &&
         (hasAnyHref && superheadingHref && menu ? (
@@ -426,23 +509,18 @@ export function XDSSideNavHeading({
         ) : (
           <span {...stylex.props(styles.superheading)}>{superheading}</span>
         ))}
-      {hasAnyHref && headingHref && menu ? (
-        <XDSLink
-          label={heading}
-          href={headingHref}
-          color="primary"
-          weight="semibold">
-          {heading}
-        </XDSLink>
-      ) : (
-        <span
-          {...stylex.props(
-            styles.heading,
-            hasCompactHeading && styles.headingCompact,
-          )}>
-          {heading}
-        </span>
-      )}
+      <span {...stylex.props(styles.headingRow)}>
+        {hasAnyHref && headingHref && menu ? (
+          <a
+            href={headingHref}
+            {...stylex.props(styles.heading, styles.headingLink)}>
+            {heading}
+          </a>
+        ) : (
+          <span {...stylex.props(styles.heading)}>{heading}</span>
+        )}
+        {inlineChevron}
+      </span>
       {subheading &&
         (hasAnyHref && subheadingHref && menu ? (
           <XDSLink
@@ -466,6 +544,23 @@ export function XDSSideNavHeading({
     <span {...stylex.props(styles.headerEndContent)}>{headerEndContent}</span>
   );
 
+  // Shared popover heading content — uses renderTextContent for consistent
+  // sizing, with flipped chevron inline after the title. Always static (no links).
+  const popoverHeadingContent = (
+    <div
+      {...stylex.props(styles.popoverHeading)}
+      onClick={() => popover.hide()}
+      role="button"
+      tabIndex={0}>
+      {icon && <span {...stylex.props(styles.icon)}>{icon}</span>}
+      {renderTextContent(
+        <span {...stylex.props(styles.popoverChevron)}>
+          {getIcon('chevronDown')}
+        </span>,
+      )}
+    </div>
+  );
+
   // Whole heading is a link (no menu, single headingHref)
   if (isWholeHeadingLink) {
     return (
@@ -475,7 +570,7 @@ export function XDSSideNavHeading({
         data-testid={testId}
         {...mergeProps(
           xdsClassName('side-nav-heading'),
-          stylex.props(styles.root, styles.interactive, xstyle),
+          stylex.props(styles.root, styles.menuTrigger, xstyle),
           className,
           style,
         )}
@@ -492,26 +587,38 @@ export function XDSSideNavHeading({
   if (isWholeHeadingTrigger) {
     return (
       <>
-        <button
-          ref={setRef as React.Ref<HTMLButtonElement>}
-          type="button"
-          onClick={handleToggle}
+        <div
+          ref={setRef}
           data-testid={testId}
-          {...popover.triggerProps}
           {...mergeProps(
             xdsClassName('side-nav-heading'),
-            stylex.props(styles.root, styles.interactive, xstyle),
+            stylex.props(styles.root, styles.menuTrigger, xstyle),
             className,
             style,
           )}>
           {icon && <span {...stylex.props(styles.icon)}>{icon}</span>}
-          {renderTextContent()}
+          {renderTextContent(
+            <button
+              type="button"
+              popoverTarget={popover.id}
+              aria-label="Open menu"
+              {...popover.triggerProps}
+              {...stylex.props(styles.chevron, styles.interactive)}>
+              {getIcon('chevronDown')}
+            </button>,
+          )}
           {headerEndContentElement}
-          {chevronElement}
-        </button>
+        </div>
         {popover.render(
-          <div {...stylex.props(styles.popoverContent)}>{menu}</div>,
-          {placement: 'below', alignment: 'start', xstyle: styles.popover},
+          <div {...stylex.props(styles.popoverContent)}>
+            {popoverHeadingContent}
+            {menu}
+          </div>,
+          {
+            placement: 'below',
+            alignment: 'start',
+            xstyle: styles.popoverOverlap,
+          },
         )}
       </>
     );
@@ -540,22 +647,30 @@ export function XDSSideNavHeading({
             ) : (
               <span {...stylex.props(styles.icon)}>{icon}</span>
             ))}
-          {renderTextContent()}
-          {headerEndContentElement}
-          {showChevron && (
-            <button
-              type="button"
-              onClick={handleToggle}
-              aria-label="Open menu"
-              {...popover.triggerProps}
-              {...stylex.props(styles.chevron, styles.interactive)}>
-              {getIcon('chevronDown')}
-            </button>
+          {renderTextContent(
+            showChevron ? (
+              <button
+                type="button"
+                popoverTarget={popover.id}
+                aria-label="Open menu"
+                {...popover.triggerProps}
+                {...stylex.props(styles.chevron, styles.interactive)}>
+                {getIcon('chevronDown')}
+              </button>
+            ) : undefined,
           )}
+          {headerEndContentElement}
         </div>
         {popover.render(
-          <div {...stylex.props(styles.popoverContent)}>{menu}</div>,
-          {placement: 'below', alignment: 'start', xstyle: styles.popover},
+          <div {...stylex.props(styles.popoverContent)}>
+            {popoverHeadingContent}
+            {menu}
+          </div>,
+          {
+            placement: 'below',
+            alignment: 'start',
+            xstyle: styles.popoverOverlap,
+          },
         )}
       </>
     );
