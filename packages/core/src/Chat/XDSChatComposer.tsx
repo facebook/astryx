@@ -161,7 +161,6 @@ const styles = stylex.create({
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
     marginInlineStart: 'auto',
-    minWidth: '80px',
     fontSize: typeScaleVars['--text-supporting-size'],
     lineHeight: typeScaleVars['--text-supporting-leading'],
     color: colorVars['--color-text-secondary'],

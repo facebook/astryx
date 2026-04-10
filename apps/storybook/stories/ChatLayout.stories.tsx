@@ -426,17 +426,15 @@ export const FullAIChat: StoryObj = {
         }
         headerContext={
           <>
-            <div
+            <XDSProgressBar
               ref={contextTooltip.ref}
               aria-describedby={contextTooltip.describedBy}
-              style={{paddingInlineEnd: 8}}>
-              <XDSProgressBar
-                label="Context"
-                value={12}
-                variant="neutral"
-                isLabelHidden
-              />
-            </div>
+              label="Context"
+              value={12}
+              variant="neutral"
+              isLabelHidden
+              style={{marginInlineEnd: 8}}
+            />
             {contextTooltip.renderTooltip('3k / 100k tokens used')}
           </>
         }
