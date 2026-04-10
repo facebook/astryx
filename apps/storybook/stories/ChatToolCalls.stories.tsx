@@ -1,10 +1,7 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSChatToolCalls, type XDSChatToolCallItem} from '@xds/core/Chat';
 import {useState, useCallback} from 'react';
-import {useXDSImperativeDialog} from '@xds/core/Dialog';
 import {XDSCodeBlock} from '@xds/core/CodeBlock';
-import {XDSBanner} from '@xds/core/Banner';
-import {XDSVStack} from '@xds/core/Stack';
 
 const meta: Meta<typeof XDSChatToolCalls> = {
   title: 'Chat/XDSChatToolCalls',
@@ -34,7 +31,12 @@ export const SingleCall: Story = {
   render: () => (
     <XDSChatToolCalls
       calls={[
-        {name: 'bash', label: 'git status', status: 'complete', duration: '1.2s'},
+        {
+          name: 'bash',
+          target: 'git status',
+          status: 'complete',
+          duration: '1.2s',
+        },
       ]}
     />
   ),
@@ -45,9 +47,26 @@ export const MultipleCalls: Story = {
   render: () => (
     <XDSChatToolCalls
       calls={[
-        {name: 'bash', label: 'git diff --stat', status: 'complete', duration: '340ms'},
-        {name: 'read', label: 'src/Button.tsx', status: 'complete', duration: '45ms'},
-        {name: 'edit', label: 'src/Button.tsx', status: 'complete', duration: '120ms', stats: {additions: 12, deletions: 3}},
+        {
+          name: 'bash',
+          target: 'git diff --stat',
+          status: 'complete',
+          duration: '340ms',
+        },
+        {
+          name: 'read',
+          target: 'src/Button.tsx',
+          status: 'complete',
+          duration: '45ms',
+        },
+        {
+          name: 'edit',
+          target: 'src/Button.tsx',
+          status: 'complete',
+          duration: '120ms',
+          additions: 12,
+          deletions: 3,
+        },
       ]}
     />
   ),
@@ -58,10 +77,33 @@ export const WithNodes: Story = {
   render: () => (
     <XDSChatToolCalls
       calls={[
-        {name: 'bash', label: 'yarn test', status: 'complete', duration: '4.2s', node: 'cli:devvm'},
-        {name: 'bash', label: 'yarn build', status: 'complete', duration: '12s', node: 'cli:devvm'},
-        {name: 'read', label: 'README.md', status: 'complete', duration: '30ms', node: 'workspace'},
-        {name: 'web_search', label: 'CSS anchor positioning', status: 'complete', duration: '1.8s'},
+        {
+          name: 'bash',
+          target: 'yarn test',
+          status: 'complete',
+          duration: '4.2s',
+          node: 'cli:devvm',
+        },
+        {
+          name: 'bash',
+          target: 'yarn build',
+          status: 'complete',
+          duration: '12s',
+          node: 'cli:devvm',
+        },
+        {
+          name: 'read',
+          target: 'README.md',
+          status: 'complete',
+          duration: '30ms',
+          node: 'workspace',
+        },
+        {
+          name: 'web_search',
+          target: 'CSS anchor positioning',
+          status: 'complete',
+          duration: '1.8s',
+        },
       ]}
     />
   ),
@@ -72,9 +114,31 @@ export const WithStats: Story = {
   render: () => (
     <XDSChatToolCalls
       calls={[
-        {name: 'edit', label: 'XDSButton.tsx', status: 'complete', duration: '85ms', node: 'cli:devvm', stats: {additions: 24, deletions: 8}},
-        {name: 'edit', label: 'XDSButton.test.tsx', status: 'complete', duration: '60ms', node: 'cli:devvm', stats: {additions: 45}},
-        {name: 'bash', label: 'grep -r "radius"', status: 'complete', duration: '200ms', node: 'cli:devvm', stats: {matches: 14, files: 6}},
+        {
+          name: 'edit',
+          target: 'XDSButton.tsx',
+          status: 'complete',
+          duration: '85ms',
+          node: 'cli:devvm',
+          additions: 24,
+          deletions: 8,
+        },
+        {
+          name: 'edit',
+          target: 'XDSButton.test.tsx',
+          status: 'complete',
+          duration: '60ms',
+          node: 'cli:devvm',
+          additions: 45,
+        },
+        {
+          name: 'bash',
+          target: 'grep -r "radius"',
+          status: 'complete',
+          duration: '200ms',
+          node: 'cli:devvm',
+          stats: '6 files · 14 matches',
+        },
       ]}
     />
   ),
@@ -85,9 +149,28 @@ export const WithErrors: Story = {
   render: () => (
     <XDSChatToolCalls
       calls={[
-        {name: 'bash', label: 'yarn build', status: 'complete', duration: '8s', node: 'cli:devvm'},
-        {name: 'bash', label: 'yarn test', status: 'error', duration: '2.1s', node: 'cli:devvm', errorMessage: 'Process exited with code 1: FAIL src/Button.test.tsx'},
-        {name: 'read', label: 'test-output.log', status: 'complete', duration: '15ms', node: 'cli:devvm'},
+        {
+          name: 'bash',
+          target: 'yarn build',
+          status: 'complete',
+          duration: '8s',
+          node: 'cli:devvm',
+        },
+        {
+          name: 'read',
+          target: 'test-output.log',
+          status: 'complete',
+          duration: '15ms',
+          node: 'cli:devvm',
+        },
+        {
+          name: 'bash',
+          target: 'yarn test',
+          status: 'error',
+          duration: '2.1s',
+          node: 'cli:devvm',
+          errorMessage: 'Process exited with code 1: FAIL src/Button.test.tsx',
+        },
       ]}
     />
   ),
@@ -98,8 +181,19 @@ export const Running: Story = {
   render: () => (
     <XDSChatToolCalls
       calls={[
-        {name: 'bash', label: 'yarn test --watch', status: 'running', node: 'cli:devvm'},
-        {name: 'read', label: 'vitest.config.ts', status: 'complete', duration: '20ms', node: 'cli:devvm'},
+        {
+          name: 'bash',
+          target: 'yarn test --watch',
+          status: 'running',
+          node: 'cli:devvm',
+        },
+        {
+          name: 'read',
+          target: 'vitest.config.ts',
+          status: 'complete',
+          duration: '20ms',
+          node: 'cli:devvm',
+        },
       ]}
     />
   ),
@@ -109,11 +203,47 @@ export const Running: Story = {
 export const Streaming: Story = {
   render: () => {
     const allCalls: XDSChatToolCallItem[] = [
-      {key: '1', name: 'web_search', label: 'CSS anchor positioning support', status: 'complete', duration: '1.8s'},
-      {key: '2', name: 'read', label: 'packages/core/src/Layer/useXDSLayer.tsx', status: 'complete', duration: '45ms', node: 'cli:devvm'},
-      {key: '3', name: 'bash', label: 'npx tsc --noEmit', status: 'complete', duration: '4.2s', node: 'cli:devvm'},
-      {key: '4', name: 'edit', label: 'XDSChatComposer.tsx', status: 'complete', duration: '120ms', node: 'cli:devvm', stats: {additions: 8, deletions: 2}},
-      {key: '5', name: 'bash', label: 'yarn test', status: 'complete', duration: '6.1s', node: 'cli:devvm'},
+      {
+        key: '1',
+        name: 'web_search',
+        target: 'CSS anchor positioning support',
+        status: 'complete',
+        duration: '1.8s',
+      },
+      {
+        key: '2',
+        name: 'read',
+        target: 'packages/core/src/Layer/useXDSLayer.tsx',
+        status: 'complete',
+        duration: '45ms',
+        node: 'cli:devvm',
+      },
+      {
+        key: '3',
+        name: 'bash',
+        target: 'npx tsc --noEmit',
+        status: 'complete',
+        duration: '4.2s',
+        node: 'cli:devvm',
+      },
+      {
+        key: '4',
+        name: 'edit',
+        target: 'XDSChatComposer.tsx',
+        status: 'complete',
+        duration: '120ms',
+        node: 'cli:devvm',
+        additions: 8,
+        deletions: 2,
+      },
+      {
+        key: '5',
+        name: 'bash',
+        target: 'yarn test',
+        status: 'complete',
+        duration: '6.1s',
+        node: 'cli:devvm',
+      },
     ];
 
     const [calls, setCalls] = useState<XDSChatToolCallItem[]>([]);
@@ -131,19 +261,23 @@ export const Streaming: Story = {
         }
         // Add as running
         const call = allCalls[i]!;
-        setCalls(prev => [...prev, {...call, status: 'running', duration: undefined}]);
+        setCalls(prev => [
+          ...prev,
+          {...call, status: 'running', duration: undefined},
+        ]);
 
         // Complete after a delay
         const idx = i;
-        setTimeout(() => {
-          setCalls(prev =>
-            prev.map((c, j) =>
-              j === idx ? {...allCalls[idx]!} : c,
-            ),
-          );
-          // Add next after completion
-          setTimeout(addNext, 200);
-        }, 800 + Math.random() * 1200);
+        setTimeout(
+          () => {
+            setCalls(prev =>
+              prev.map((c, j) => (j === idx ? {...allCalls[idx]!} : c)),
+            );
+            // Add next after completion
+            setTimeout(addNext, 200);
+          },
+          800 + Math.random() * 1200,
+        );
 
         i++;
       };
@@ -176,14 +310,56 @@ export const ManyCalls: Story = {
   render: () => (
     <XDSChatToolCalls
       calls={[
-        {name: 'bash', label: 'git fetch origin', status: 'complete', duration: '1.2s'},
-        {name: 'bash', label: 'git log --oneline -5', status: 'complete', duration: '80ms'},
-        {name: 'read', label: 'CHANGELOG.md', status: 'complete', duration: '30ms'},
-        {name: 'read', label: 'package.json', status: 'complete', duration: '15ms'},
-        {name: 'edit', label: 'package.json', status: 'complete', duration: '50ms', stats: {additions: 1, deletions: 1}},
-        {name: 'bash', label: 'yarn install', status: 'complete', duration: '8.5s'},
-        {name: 'bash', label: 'yarn build', status: 'complete', duration: '12s'},
-        {name: 'bash', label: 'yarn test', status: 'complete', duration: '6.2s'},
+        {
+          name: 'bash',
+          target: 'git fetch origin',
+          status: 'complete',
+          duration: '1.2s',
+        },
+        {
+          name: 'bash',
+          target: 'git log --oneline -5',
+          status: 'complete',
+          duration: '80ms',
+        },
+        {
+          name: 'read',
+          target: 'CHANGELOG.md',
+          status: 'complete',
+          duration: '30ms',
+        },
+        {
+          name: 'read',
+          target: 'package.json',
+          status: 'complete',
+          duration: '15ms',
+        },
+        {
+          name: 'edit',
+          target: 'package.json',
+          status: 'complete',
+          duration: '50ms',
+          additions: 1,
+          deletions: 1,
+        },
+        {
+          name: 'bash',
+          target: 'yarn install',
+          status: 'complete',
+          duration: '8.5s',
+        },
+        {
+          name: 'bash',
+          target: 'yarn build',
+          status: 'complete',
+          duration: '12s',
+        },
+        {
+          name: 'bash',
+          target: 'yarn test',
+          status: 'complete',
+          duration: '6.2s',
+        },
       ]}
     />
   ),
@@ -192,8 +368,6 @@ export const ManyCalls: Story = {
 /** Interactive calls — edit opens a diff modal, bash opens output */
 export const Interactive: Story = {
   render: () => {
-    const dialog = useXDSImperativeDialog({width: 720});
-
     const editDiff = `--- a/packages/core/src/Button/XDSButton.tsx
 +++ b/packages/core/src/Button/XDSButton.tsx
 @@ -55,7 +55,7 @@ const styles = stylex.create({
@@ -227,45 +401,53 @@ Tests:       67 passed, 67 total
 Time:        6.1s`;
 
     return (
-      <>
-        <XDSChatToolCalls
-          calls={[
-            {
-              name: 'edit',
-              label: 'XDSButton.tsx',
-              status: 'complete',
-              duration: '85ms',
-              node: 'cli:devvm',
-              stats: {additions: 12, deletions: 3},
-              onClick: () => dialog.show(<XDSCodeBlock code={editDiff} language="typescript" maxHeight="50vh" />),
-            },
-            {
-              name: 'bash',
-              label: 'yarn test',
-              status: 'complete',
-              duration: '6.1s',
-              node: 'cli:devvm',
-              onClick: () => dialog.show(<XDSCodeBlock code={testOutput} language="bash" maxHeight="50vh" />),
-            },
-            {
-              name: 'web_search',
-              label: 'CSS anchor positioning',
-              status: 'complete',
-              duration: '1.8s',
-            },
-          ]}
-        />
-        {dialog.element}
-      </>
+      <XDSChatToolCalls
+        calls={[
+          {
+            name: 'edit',
+            target: 'XDSButton.tsx',
+            status: 'complete',
+            duration: '85ms',
+            node: 'cli:devvm',
+            additions: 12,
+            deletions: 3,
+            resultDetail: (
+              <XDSCodeBlock
+                code={editDiff}
+                language="typescript"
+                maxHeight="50vh"
+              />
+            ),
+          },
+          {
+            name: 'bash',
+            target: 'yarn test',
+            status: 'complete',
+            duration: '6.1s',
+            node: 'cli:devvm',
+            resultDetail: (
+              <XDSCodeBlock
+                code={testOutput}
+                language="bash"
+                maxHeight="50vh"
+              />
+            ),
+          },
+          {
+            name: 'web_search',
+            target: 'CSS anchor positioning',
+            status: 'complete',
+            duration: '1.8s',
+          },
+        ]}
+      />
     );
   },
 };
 
 /** Error with modal — clicking a failed call shows error detail with banner */
-export const ErrorWithModal: Story = {
+export const ErrorWithDetail: Story = {
   render: () => {
-    const dialog = useXDSImperativeDialog({width: 720});
-
     const errorOutput = `$ yarn test
  PASS  packages/core/src/Chat/XDSChatReasoning.test.tsx (7 tests)
  FAIL  packages/core/src/Chat/XDSChatToolCalls.test.tsx
@@ -274,55 +456,73 @@ export const ErrorWithModal: Story = {
 
     ReferenceError: hasError is not defined
 
-      at XDSChatToolCalls (packages/core/src/Chat/XDSChatToolCalls.tsx:545:5)
-      at renderWithHooks (react-dom.development.js:14985:18)
-
-  ● XDSChatToolCalls > auto-collapses groups of more than 3
-
-    ReferenceError: hasError is not defined
-
 Test Suites: 1 failed, 6 passed, 7 total
 Tests:       4 failed, 63 passed, 67 total
 Time:        6.84s`;
 
     return (
-      <>
-        <XDSChatToolCalls
-          calls={[
-            {
-              name: 'bash',
-              label: 'yarn build',
-              status: 'complete',
-              duration: '8s',
-              node: 'cli:devvm',
-            },
-            {
-              name: 'bash',
-              label: 'yarn test',
-              status: 'error',
-              duration: '6.8s',
-              node: 'cli:devvm',
-              errorMessage: '4 tests failed',
-              onClick: () => dialog.show(
-                <XDSVStack gap={2}>
-                  <XDSCodeBlock code={errorOutput} language="bash" maxHeight="50vh" />
-                  <XDSBanner status="error" title="Test failure">
-                    4 tests failed in XDSChatToolCalls.test.tsx
-                  </XDSBanner>
-                </XDSVStack>,
-              ),
-            },
-            {
-              name: 'read',
-              label: 'XDSChatToolCalls.tsx',
-              status: 'complete',
-              duration: '15ms',
-              node: 'cli:devvm',
-            },
-          ]}
-        />
-        {dialog.element}
-      </>
+      <XDSChatToolCalls
+        calls={[
+          {
+            name: 'bash',
+            target: 'yarn build',
+            status: 'complete',
+            duration: '8s',
+            node: 'cli:devvm',
+          },
+          {
+            name: 'read',
+            target: 'XDSChatToolCalls.tsx',
+            status: 'complete',
+            duration: '15ms',
+            node: 'cli:devvm',
+          },
+          {
+            name: 'bash',
+            target: 'yarn test',
+            status: 'error',
+            duration: '6.8s',
+            node: 'cli:devvm',
+            errorMessage: '4 tests failed',
+            resultDetail: (
+              <XDSCodeBlock
+                code={errorOutput}
+                language="bash"
+                maxHeight="50vh"
+              />
+            ),
+          },
+        ]}
+      />
     );
   },
+};
+
+/** All statuses — shows every status icon treatment side by side */
+export const AllStatuses: Story = {
+  render: () => (
+    <XDSChatToolCalls
+      calls={[
+        {key: 'pending', name: 'bash', target: 'yarn build', status: 'pending'},
+        {key: 'running', name: 'bash', target: 'yarn test', status: 'running'},
+        {
+          key: 'complete',
+          name: 'edit',
+          target: 'XDSButton.tsx',
+          status: 'complete',
+          duration: '120ms',
+          additions: 8,
+          deletions: 2,
+        },
+        {
+          key: 'error',
+          name: 'bash',
+          target: 'yarn lint',
+          status: 'error',
+          duration: '0.8s',
+          errorMessage: '3 lint errors found',
+        },
+      ]}
+    />
+  ),
 };

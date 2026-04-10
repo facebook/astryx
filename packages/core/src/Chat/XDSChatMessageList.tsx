@@ -264,7 +264,7 @@ function ScrollToBottomButton({
         size="md"
         onClick={onClick}
         xstyle={styles.scrollButton}>
-        {label}
+        {hasNewMessages ? label : undefined}
       </XDSButton>
     </div>
   );

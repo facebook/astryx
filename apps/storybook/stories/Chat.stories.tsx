@@ -25,8 +25,8 @@ const meta: Meta<typeof XDSChatMessageList> = {
 };
 export default meta;
 
-export const Minimal: StoryObj = {
-  name: 'Minimal',
+export const Default: StoryObj = {
+  name: 'Default',
   render: () => (
     <div style={{height: 500, display: 'flex', flexDirection: 'column'}}>
       <XDSChatMessageList>
@@ -64,8 +64,8 @@ Both work great.`}</XDSMarkdown>
   ),
 };
 
-export const Standard: StoryObj = {
-  name: 'Standard',
+export const Detailed: StoryObj = {
+  name: 'Detailed',
   render: () => (
     <div style={{height: 500, display: 'flex', flexDirection: 'column'}}>
       <XDSChatMessageList>
@@ -112,9 +112,7 @@ export const Maximal: StoryObj = {
           sender="assistant"
           name="Navi"
           avatar={<XDSAvatar name="Navi" size="small" />}>
-          <XDSChatMessageBubble>
-            <XDSMarkdown density="compact">{`Good afternoon! I've been looking at the **NDS gap analysis** and have the priority list ready.`}</XDSMarkdown>
-          </XDSChatMessageBubble>
+          <XDSMarkdown density="compact">{`Good afternoon! I've been looking at the **NDS gap analysis** and have the priority list ready.`}</XDSMarkdown>
           <XDSChatMessageMetadata
             timestamp={
               <XDSTimestamp value="2026-03-15T14:30:00" format="time" />
@@ -137,13 +135,11 @@ export const Maximal: StoryObj = {
           sender="assistant"
           name="Navi"
           avatar={<XDSAvatar name="Navi" size="small" />}>
-          <XDSChatMessageBubble>
-            <XDSMarkdown density="compact">{`Chat components — **1,847 usages** across 42 apps.
+          <XDSMarkdown density="compact">{`Chat components — **1,847 usages** across 42 apps.
 
 1. \`ChatBubble\` — 1,847 usages
 2. \`ChatTypingIndicator\` — 463 usages
 3. \`TextShimmer\` — 706 usages`}</XDSMarkdown>
-          </XDSChatMessageBubble>
           <XDSChatMessageMetadata
             timestamp={
               <XDSTimestamp value="2026-03-15T14:31:30" format="time" />
@@ -255,15 +251,13 @@ export const DensityComparison: StoryObj = {
             <XDSChatMessage
               sender="assistant"
               avatar={<XDSAvatar name="Navi" size={avatarSize[density]} />}>
-              <XDSChatMessageBubble>
-                <XDSMarkdown density="compact">{`Density controls **spacing** at every level:
+              <XDSMarkdown density="compact">{`Density controls **spacing** at every level:
 
 - **Gap** between messages
 - **Padding** inside bubbles
 - **Gap** between child elements
 
 This is the **${density}** density. ${density === 'compact' ? 'Great for sidebars and panels where space is limited.' : density === 'spacious' ? 'Ideal for long-form reading where breathing room helps comprehension.' : 'The default — works well for most full-page chat interfaces.'}`}</XDSMarkdown>
-              </XDSChatMessageBubble>
             </XDSChatMessage>
             <XDSChatMessage sender="user">
               <XDSChatMessageBubble>Makes sense, thanks!</XDSChatMessageBubble>
@@ -294,7 +288,7 @@ export const SystemMessages: StoryObj = {
         <XDSChatMessage
           sender="assistant"
           avatar={<XDSAvatar name="Navi" size="small" />}>
-          <XDSChatMessageBubble>Good morning!</XDSChatMessageBubble>
+          <XDSMarkdown density="compact">Good morning!</XDSMarkdown>
         </XDSChatMessage>
         <XDSChatSystemMessage>Conversation started</XDSChatSystemMessage>
         <XDSChatMessage sender="user">
@@ -347,7 +341,7 @@ export const AutoScroll: StoryObj = {
               </XDSChatMessage>
             ) : (
               <XDSChatMessage key={msg.id} sender="assistant">
-                <XDSChatMessageBubble>{msg.text}</XDSChatMessageBubble>
+                <XDSMarkdown density="compact">{msg.text}</XDSMarkdown>
               </XDSChatMessage>
             ),
           )}
@@ -572,10 +566,10 @@ For server state, use a library like **TanStack Query** or **SWR**.`}</XDSMarkdo
           sender="assistant"
           name="Navi"
           avatar={<XDSAvatar name="Navi" size="small" />}>
-          <XDSChatMessageBubble>
+          <XDSMarkdown density="compact">
             Avoid global state managers unless you have a genuine need for
             cross-cutting state. Most apps are over-engineered in this area.
-          </XDSChatMessageBubble>
+          </XDSMarkdown>
           <XDSChatMessageMetadata
             timestamp={
               <XDSTimestamp value="2026-03-15T14:36:00" format="time" />

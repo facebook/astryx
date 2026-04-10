@@ -30,6 +30,7 @@ import {
   EyeSlashIcon,
   ViewColumnsIcon,
   ClipboardDocumentIcon,
+  WrenchIcon,
 } from '@heroicons/react/24/outline';
 
 import {
@@ -69,4 +70,5 @@ export const defaultIconRegistry: XDSIconRegistry = {
   viewColumns: <ViewColumnsIcon {...iconProps} />,
   copy: <ClipboardDocumentIcon {...iconProps} />,
   checkDouble: <CheckIcon {...iconProps} />,
+  wrench: <WrenchIcon {...iconProps} />,
 };

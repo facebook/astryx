@@ -100,6 +100,8 @@ const styles = stylex.create({
     color: colorVars['--color-text-primary'],
     lineHeight: typeScaleVars['--text-body-leading'],
     fontSize: typeScaleVars['--text-body-size'],
+    minWidth: 0,
+    overflowWrap: 'break-word',
   },
   // Headings
   headingBase: {
@@ -229,6 +231,7 @@ const styles = stylex.create({
   // Table
   tableWrapper: {
     overflowX: 'auto',
+    minWidth: 0,
   },
   table: {
     borderCollapse: 'collapse',

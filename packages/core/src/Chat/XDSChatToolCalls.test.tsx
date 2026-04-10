@@ -19,7 +19,7 @@ describe('XDSChatToolCalls', () => {
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
 
-  it('renders group header for multiple calls', () => {
+  it('renders latest call as surface for multiple calls', () => {
     render(
       <XDSChatToolCalls
         calls={[
@@ -29,7 +29,8 @@ describe('XDSChatToolCalls', () => {
         ]}
       />,
     );
-    expect(screen.getByText('3 tool calls')).toBeInTheDocument();
+    // Latest call (editFile) shown at surface + in expanded list
+    expect(screen.getAllByText('editFile').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByRole('button')).toBeInTheDocument();
   });
 
@@ -42,20 +43,7 @@ describe('XDSChatToolCalls', () => {
     expect(screen.queryByText('1.2s')).not.toBeInTheDocument();
   });
 
-  it('supports custom label', () => {
-    render(
-      <XDSChatToolCalls
-        label="Running tools"
-        calls={[
-          {name: 'a', status: 'complete'},
-          {name: 'b', status: 'complete'},
-        ]}
-      />,
-    );
-    expect(screen.getByText('Running tools')).toBeInTheDocument();
-  });
-
-  it('auto-expands groups of 3 or fewer', () => {
+  it('defaults to collapsed', () => {
     render(
       <XDSChatToolCalls
         calls={[
@@ -64,7 +52,10 @@ describe('XDSChatToolCalls', () => {
         ]}
       />,
     );
-    expect(screen.getByRole('button')).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('button')).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
   });
 
   it('auto-collapses groups of more than 3', () => {
@@ -95,10 +86,10 @@ describe('XDSChatToolCalls', () => {
     expect(btn).toHaveAttribute('aria-expanded', 'true');
   });
 
-  it('shows label when provided', () => {
+  it('shows target when provided', () => {
     render(
       <XDSChatToolCalls
-        calls={[{name: 'bash', label: 'git status', status: 'complete'}]}
+        calls={[{name: 'bash', target: 'git status', status: 'complete'}]}
       />,
     );
     expect(screen.getByText('git status')).toBeInTheDocument();

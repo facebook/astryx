@@ -94,7 +94,7 @@ export interface XDSChatComposerProps extends Omit<
   sendActions?: ReactNode;
   /** Custom send button — replaces the default */
   sendButton?: ReactNode;
-  /** Status message rendered below the footer */
+  /** Status message rendered below (or above) the composer body */
   status?: XDSChatComposerStatus;
   /** Where to render the status. @default 'bottom' */
   statusPosition?: 'top' | 'bottom';
@@ -161,6 +161,7 @@ const styles = stylex.create({
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
     marginInlineStart: 'auto',
+    minWidth: '80px',
     fontSize: typeScaleVars['--text-supporting-size'],
     lineHeight: typeScaleVars['--text-supporting-leading'],
     color: colorVars['--color-text-secondary'],

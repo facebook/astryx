@@ -44,6 +44,7 @@ export interface XDSProgressBarVariantMap {
   accent: true;
   positive: true;
   warning: true;
+  neutral: true;
   negative: true;
 }
 
@@ -219,6 +220,9 @@ const variantStyles = stylex.create({
   },
   negative: {
     backgroundColor: colorVars['--color-error'],
+  },
+  neutral: {
+    backgroundColor: colorVars['--color-text-disabled'],
   },
 });
 

@@ -44,7 +44,8 @@ export type XDSIconName =
   | 'eyeSlash'
   | 'viewColumns'
   | 'copy'
-  | 'checkDouble';
+  | 'checkDouble'
+  | 'wrench';
 
 /**
  * Icon registry mapping semantic names to React nodes.

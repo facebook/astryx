@@ -31,6 +31,8 @@ import {
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 import {XDSBadge} from '../Badge';
+import {XDSIcon, type XDSIconName} from '../Icon';
+import {XDSSpinner} from '../Spinner';
 
 // =============================================================================
 // Types
@@ -42,38 +44,31 @@ export type XDSChatToolCallStatus =
   | 'complete'
   | 'error';
 
-export interface XDSChatToolCallStats {
-  /** Number of lines/characters added */
-  additions?: number;
-  /** Number of lines/characters removed */
-  deletions?: number;
-  /** Number of files affected */
-  files?: number;
-  /** Number of search matches */
-  matches?: number;
-}
-
 export interface XDSChatToolCallItem {
   /** Tool/function name. */
   name: string;
   /** Current execution status. @default 'complete' */
   status?: XDSChatToolCallStatus;
-  /** Short summary label (e.g. "Edit Button.tsx", "git status"). Shown alongside name. */
-  label?: string;
+  /** The target of the action (e.g. "XDSButton.tsx", "yarn test", "CSS anchor positioning"). */
+  target?: string;
   /** Duration string (e.g. "1.2s", "340ms"). Shown when complete. */
   duration?: string;
   /** Sandbox/node name (e.g. "navi", "xds"). Shown as a pill badge. */
   node?: string;
-  /** Stats like additions/deletions for edits, file/match counts. */
-  stats?: XDSChatToolCallStats;
+  /** Lines/characters added. Rendered in green (e.g. "+12"). */
+  additions?: number;
+  /** Lines/characters removed. Rendered in red (e.g. "-3"). */
+  deletions?: number;
+  /** Additional info rendered after the label. Free-form ReactNode. */
+  stats?: ReactNode;
   /** Error message when status is 'error'. Shown in a tooltip on the status icon. */
   errorMessage?: string;
   /** Unique key for React list rendering. Falls back to index. */
   key?: string;
   /** Arbitrary data passed through to renderDetail. Store tool args, result, etc. */
   data?: unknown;
-  /** Click handler for the call row. When provided, the row is interactive (pointer cursor, hover state). */
-  onClick?: () => void;
+  /** Inline detail content shown when the row is expanded (e.g. code diff, command output). */
+  resultDetail?: ReactNode;
 }
 
 export interface XDSChatToolCallsProps extends XDSBaseProps<HTMLDivElement> {
@@ -90,19 +85,6 @@ export interface XDSChatToolCallsProps extends XDSBaseProps<HTMLDivElement> {
 }
 
 // =============================================================================
-// Animations
-// =============================================================================
-
-const spinKeyframes = stylex.keyframes({
-  '0%': {transform: 'rotate(0deg)'},
-  '100%': {transform: 'rotate(360deg)'},
-});
-
-const pulseKeyframes = stylex.keyframes({
-  '0%, 100%': {opacity: 1},
-  '50%': {opacity: 0.4},
-});
-
 // =============================================================================
 // Styles
 // =============================================================================
@@ -166,9 +148,11 @@ const styles = stylex.create({
   list: {
     display: 'flex',
     flexDirection: 'column',
+    paddingInline: spacingVars['--spacing-1'],
+    marginInline: `calc(-1 * ${spacingVars['--spacing-1']})`,
   },
   listIndented: {
-    paddingInlineStart: spacingVars['--spacing-2'],
+    paddingInlineStart: 0,
   },
 
   // Individual call row
@@ -188,25 +172,29 @@ const styles = stylex.create({
       backgroundColor: colorVars['--color-overlay-hover'],
     },
   },
+  callRowToggle: {
+    cursor: 'pointer',
+  },
   statusIcon: {
+    position: 'relative',
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
     width: '16px',
     height: '16px',
+    borderRadius: radiusVars['--radius-full'],
   },
-  spinning: {
-    animationName: spinKeyframes,
-    animationDuration: '1s',
-    animationTimingFunction: 'linear',
-    animationIterationCount: 'infinite',
+  statusIconCircle: {
+    position: 'absolute',
+    inset: 0,
+    borderRadius: 'inherit',
+    backgroundColor: 'currentColor',
+    opacity: 0.15,
   },
-  pulsing: {
-    animationName: pulseKeyframes,
-    animationDuration: '1.5s',
-    animationTimingFunction: 'ease-in-out',
-    animationIterationCount: 'infinite',
+  statusIconInner: {
+    position: 'relative',
+    display: 'inline-flex',
   },
   callName: {
     fontSize: typeScaleVars['--text-supporting-size'],
@@ -259,6 +247,34 @@ const styles = stylex.create({
   errorText: {
     color: colorVars['--color-error'],
   },
+
+  // Inline result detail
+  callDetailChevron: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    width: '14px',
+    height: '14px',
+    color: colorVars['--color-text-disabled'],
+    transition: `transform ${durationVars['--duration-fast']} ${easeVars['--ease-standard']}`,
+    marginInlineStart: 'auto',
+  },
+  callDetailContent: {
+    paddingInlineStart: `calc(16px + ${spacingVars['--spacing-1-5']})`,
+    paddingBlockEnd: spacingVars['--spacing-2'],
+  },
+  callCount: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-0-5'],
+    fontSize: typeScaleVars['--text-supporting-size'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
+    fontFamily: typographyVars['--font-family-body'],
+    color: colorVars['--color-text-disabled'],
+    flexShrink: 0,
+  },
+
   // Pile effect for grouped tool calls
   pileWrapper: {
     position: 'relative',
@@ -292,94 +308,11 @@ const styles = stylex.create({
 // Status Icons
 // =============================================================================
 
-function PendingIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-      <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.5" />
-    </svg>
-  );
-}
-
-function RunningIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-      <circle
-        cx="7"
-        cy="7"
-        r="5.5"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeDasharray="8 6"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-function CompleteIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-      <circle cx="7" cy="7" r="6" fill="currentColor" fillOpacity="0.15" />
-      <path
-        d="M4.5 7L6.5 9L10 5"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function ErrorIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-      <circle cx="7" cy="7" r="6" fill="currentColor" fillOpacity="0.15" />
-      <path
-        d="M5 5L9 9M9 5L5 9"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-function WrenchIcon() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round">
-      <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
-    </svg>
-  );
-}
-
-function ChevronDownIcon() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-      <path
-        d="M3 4.5L6 7.5L9 4.5"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-const STATUS_ICONS: Record<XDSChatToolCallStatus, React.FC> = {
-  pending: PendingIcon,
-  running: RunningIcon,
-  complete: CompleteIcon,
-  error: ErrorIcon,
+const STATUS_ICON_NAMES: Record<XDSChatToolCallStatus, XDSIconName | null> = {
+  pending: 'clock',
+  running: null,
+  complete: 'check',
+  error: 'close',
 };
 
 const STATUS_STYLES: Record<
@@ -398,78 +331,102 @@ const STATUS_STYLES: Record<
 
 function CallRow({call}: {call: XDSChatToolCallItem}) {
   const status = call.status ?? 'complete';
-  const Icon = STATUS_ICONS[status];
-  const isClickable = call.onClick != null;
+  const hasDetail = call.resultDetail != null;
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+
+  const toggleDetail = hasDetail
+    ? () => setIsDetailOpen(prev => !prev)
+    : undefined;
+
+  const row = (
+    <div
+      role={hasDetail ? 'button' : undefined}
+      tabIndex={hasDetail ? 0 : undefined}
+      onClick={toggleDetail}
+      onKeyDown={
+        hasDetail
+          ? (e: React.KeyboardEvent) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                toggleDetail?.();
+              }
+            }
+          : undefined
+      }
+      {...stylex.props(styles.callRow, hasDetail && styles.callRowClickable)}>
+      <span
+        title={status === 'error' ? call.errorMessage : undefined}
+        {...stylex.props(styles.statusIcon, STATUS_STYLES[status])}>
+        {status === 'running' ? (
+          <XDSSpinner size="sm" shade="subtle" />
+        ) : status === 'pending' ? (
+          <XDSSpinner size="sm" shade="subtle" />
+        ) : (
+          <>
+            <span {...stylex.props(styles.statusIconCircle)} />
+            <span {...stylex.props(styles.statusIconInner)}>
+              <XDSIcon
+                icon={STATUS_ICON_NAMES[status]!}
+                size="xsm"
+                color="inherit"
+              />
+            </span>
+          </>
+        )}
+      </span>
+      <span {...stylex.props(styles.callName)}>{call.name}</span>
+      {call.node != null && (
+        <XDSBadge
+          label={call.node}
+          variant="neutral"
+          xstyle={styles.nodePill}
+        />
+      )}
+      {call.target != null && (
+        <span {...stylex.props(styles.callLabel)}>{call.target}</span>
+      )}
+      {(call.additions != null ||
+        call.deletions != null ||
+        call.stats != null) && (
+        <span {...stylex.props(styles.stats)}>
+          {call.additions != null && (
+            <span {...stylex.props(styles.statsAdditions)}>
+              +{call.additions}
+            </span>
+          )}
+          {call.deletions != null && (
+            <span {...stylex.props(styles.statsDeletions)}>
+              -{call.deletions}
+            </span>
+          )}
+          {call.stats}
+        </span>
+      )}
+      {call.duration != null && status === 'complete' && (
+        <span {...stylex.props(styles.callDuration)}>{call.duration}</span>
+      )}
+      {hasDetail && (
+        <span
+          {...stylex.props(
+            styles.callDetailChevron,
+            isDetailOpen && styles.chevronExpanded,
+          )}>
+          <XDSIcon icon="chevronDown" size="xsm" color="inherit" />
+        </span>
+      )}
+    </div>
+  );
+
+  if (!hasDetail) return row;
 
   return (
     <div>
-      <div
-        role={isClickable ? 'button' : undefined}
-        tabIndex={isClickable ? 0 : undefined}
-        onClick={call.onClick}
-        onKeyDown={
-          isClickable
-            ? (e: React.KeyboardEvent) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  call.onClick?.();
-                }
-              }
-            : undefined
-        }
-        {...stylex.props(
-          styles.callRow,
-          isClickable && styles.callRowClickable,
-        )}>
-        <span
-          title={status === 'error' ? call.errorMessage : undefined}
-          {...stylex.props(
-            styles.statusIcon,
-            STATUS_STYLES[status],
-            status === 'running' && styles.spinning,
-            status === 'pending' && styles.pulsing,
-          )}>
-          <Icon />
-        </span>
-        <span {...stylex.props(styles.callName)}>{call.name}</span>
-        {call.node != null && (
-          <XDSBadge
-            label={call.node}
-            variant="neutral"
-            xstyle={styles.nodePill}
-          />
-        )}
-        {call.label != null && (
-          <span {...stylex.props(styles.callLabel)}>{call.label}</span>
-        )}
-        {call.stats != null && (
-          <span {...stylex.props(styles.stats)}>
-            {call.stats.files != null && (
-              <span>
-                {call.stats.files} file{call.stats.files !== 1 ? 's' : ''}
-              </span>
-            )}
-            {call.stats.matches != null && (
-              <span>
-                {call.stats.matches} match{call.stats.matches !== 1 ? 'es' : ''}
-              </span>
-            )}
-            {call.stats.additions != null && (
-              <span {...stylex.props(styles.statsAdditions)}>
-                +{call.stats.additions}
-              </span>
-            )}
-            {call.stats.deletions != null && (
-              <span {...stylex.props(styles.statsDeletions)}>
-                -{call.stats.deletions}
-              </span>
-            )}
-          </span>
-        )}
-        {call.duration != null && status === 'complete' && (
-          <span {...stylex.props(styles.callDuration)}>{call.duration}</span>
-        )}
-      </div>
+      {row}
+      {isDetailOpen && (
+        <div {...stylex.props(styles.callDetailContent)}>
+          {call.resultDetail}
+        </div>
+      )}
     </div>
   );
 }
@@ -487,6 +444,7 @@ function CallRow({call}: {call: XDSChatToolCallItem}) {
  *
  * @example
  * ```
+ * // Basic — pass the array from your LLM response
  * <XDSChatToolCalls
  *   calls={message.toolCalls.map(tc => ({
  *     name: tc.toolName,
@@ -494,6 +452,11 @@ function CallRow({call}: {call: XDSChatToolCallItem}) {
  *     duration: tc.duration,
  *   }))}
  * />
+ * ```
+ *
+ * @example
+ * ```
+ * // With detail rendering
  * <XDSChatToolCalls
  *   calls={toolCalls}
  *   renderDetail={(call) => (
@@ -517,7 +480,10 @@ export function XDSChatToolCalls(props: XDSChatToolCallsProps) {
 
   const hasErrors = calls.some(c => c.status === 'error');
   const errorCount = calls.filter(c => c.status === 'error').length;
-  const autoDefault = defaultIsExpanded ?? (hasErrors || calls.length <= 3);
+  const isStreaming = calls.some(
+    c => c.status === 'running' || c.status === 'pending',
+  );
+  const autoDefault = defaultIsExpanded ?? false;
   const [internalExpanded, setInternalExpanded] = useState(autoDefault);
   const isControlled = controlledExpanded !== undefined;
   const isExpanded = isControlled ? controlledExpanded : internalExpanded;
@@ -546,16 +512,9 @@ export function XDSChatToolCalls(props: XDSChatToolCallsProps) {
     );
   }
 
-  // Multiple calls: collapsible group
-  const label = customLabel ?? `${calls.length} tool calls`;
-  const errorLabel = hasErrors ? (
-    <>
-      {label} ·{' '}
-      <span {...stylex.props(styles.errorText)}>{errorCount} failed</span>
-    </>
-  ) : (
-    label
-  );
+  // Multiple calls: latest call at surface with chevron to expand all
+  const latestCall = calls[calls.length - 1];
+  const latestStatus = latestCall.status ?? 'complete';
 
   return (
     <div
@@ -566,6 +525,7 @@ export function XDSChatToolCalls(props: XDSChatToolCallsProps) {
         style,
       )}
       {...rest}>
+      {/* Header: collapsed shows latest call + count, expanded shows summary label */}
       <div
         role="button"
         tabIndex={0}
@@ -577,27 +537,70 @@ export function XDSChatToolCalls(props: XDSChatToolCallsProps) {
             toggle();
           }
         }}
-        {...stylex.props(styles.groupHeader)}>
-        <span {...stylex.props(styles.groupIcon)}>
-          <WrenchIcon />
+        {...stylex.props(styles.callRow, styles.callRowToggle)}>
+        {isExpanded ? (
+          <>
+            <span {...stylex.props(styles.groupIcon)}>
+              <XDSIcon icon="wrench" size="sm" color="inherit" />
+            </span>
+            <span {...stylex.props(styles.groupLabel)}>
+              {calls.length} tool calls
+            </span>
+          </>
+        ) : (
+          <>
+            <span
+              {...stylex.props(styles.statusIcon, STATUS_STYLES[latestStatus])}>
+              {latestStatus === 'running' ? (
+                <XDSSpinner size="sm" shade="subtle" />
+              ) : latestStatus === 'pending' ? (
+                <XDSSpinner size="sm" shade="subtle" />
+              ) : (
+                <>
+                  <span {...stylex.props(styles.statusIconCircle)} />
+                  <span {...stylex.props(styles.statusIconInner)}>
+                    <XDSIcon
+                      icon={STATUS_ICON_NAMES[latestStatus]!}
+                      size="xsm"
+                      color="inherit"
+                    />
+                  </span>
+                </>
+              )}
+            </span>
+            <span {...stylex.props(styles.callName)}>{latestCall.name}</span>
+            {latestCall.target != null && (
+              <span {...stylex.props(styles.callLabel)}>
+                {latestCall.target}
+              </span>
+            )}
+          </>
+        )}
+        <span {...stylex.props(styles.callCount)}>
+          {!isExpanded && (
+            <>
+              <XDSIcon icon="wrench" size="xsm" color="inherit" />
+              {calls.length}
+            </>
+          )}
         </span>
-        <span {...stylex.props(styles.groupLabel)}>{errorLabel}</span>
         <span
           {...stylex.props(
             styles.chevron,
             isExpanded && styles.chevronExpanded,
           )}>
-          <ChevronDownIcon />
+          <XDSIcon icon="chevronDown" size="xsm" color="inherit" />
         </span>
       </div>
 
+      {/* Expanded: all calls with full metadata */}
       <div
         {...stylex.props(
           styles.groupContent,
           isExpanded && styles.groupContentExpanded,
         )}>
         <div {...stylex.props(styles.groupContentInner)}>
-          <div {...stylex.props(styles.list, styles.listIndented)}>
+          <div {...stylex.props(styles.list)}>
             {calls.map((call, i) => (
               <CallRow key={call.key ?? i} call={call} />
             ))}

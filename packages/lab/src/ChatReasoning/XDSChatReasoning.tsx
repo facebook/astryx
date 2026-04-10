@@ -14,7 +14,7 @@
  */
 
 import {useState, useCallback, type ReactNode} from 'react';
-import type {XDSBaseProps} from '../XDSBaseProps';
+import type {XDSBaseProps} from '@xds/core/XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -25,8 +25,8 @@ import {
   fontWeightVars,
   durationVars,
   easeVars,
-} from '../theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '../utils';
+} from '@xds/core/theme/tokens.stylex';
+import {xdsClassName, mergeProps} from '@xds/core/utils';
 
 // =============================================================================
 // Types

@@ -22,10 +22,17 @@ export {
 } from './XDSChatComposerInput';
 export type {
   XDSChatComposerInputProps,
+  XDSChatComposerInputHandle,
   XDSChatComposerToken,
   XDSChatComposerTrigger,
   XDSChatComposerTriggerItem,
 } from './XDSChatComposerInput';
+
+export {XDSChatMessageTokenizedText} from './XDSChatMessageTokenizedText';
+export type {
+  XDSChatMessageTokenizedTextProps,
+  XDSChatMessageTokenConfig,
+} from './XDSChatMessageTokenizedText';
 
 export {XDSChatMessageList} from './XDSChatMessageList';
 export type {XDSChatMessageListProps} from './XDSChatMessageList';
@@ -56,13 +63,9 @@ export type {UseAutoScrollOptions, UseAutoScrollReturn} from './useAutoScroll';
 
 export type {XDSChatMessageSender, XDSChatDensity} from './XDSChatContext';
 
-export {XDSChatReasoning} from './XDSChatReasoning';
-export type {XDSChatReasoningProps} from './XDSChatReasoning';
-
 export {XDSChatToolCalls} from './XDSChatToolCalls';
 export type {
   XDSChatToolCallsProps,
   XDSChatToolCallItem,
   XDSChatToolCallStatus,
-  XDSChatToolCallStats,
 } from './XDSChatToolCalls';

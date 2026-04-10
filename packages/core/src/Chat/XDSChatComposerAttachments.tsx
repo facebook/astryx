@@ -167,12 +167,14 @@ const styles = stylex.create({
     flexWrap: 'wrap',
     gap: spacingVars['--spacing-1'],
     alignItems: 'flex-start',
+    opacity: 1,
     transform: 'translateY(0)',
-    transitionProperty: 'transform',
-    transitionDuration: durationVars['--duration-medium'],
+    transitionProperty: 'opacity, transform',
+    transitionDuration: `${durationVars['--duration-fast']}, ${durationVars['--duration-medium']}`,
     transitionTimingFunction: easeVars['--ease-standard'],
   },
   contentCollapsed: {
+    opacity: 0,
     transform: `translateY(calc(100% + ${spacingVars['--spacing-3']} + ${radiusVars['--radius-page']}))`,
   },
 });

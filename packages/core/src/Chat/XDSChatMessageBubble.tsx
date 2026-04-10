@@ -75,7 +75,7 @@ const styles = stylex.create({
     display: 'flex',
     flexDirection: 'column',
     maxWidth: '100%',
-    borderRadius: radiusVars['--radius-container'],
+    borderRadius: radiusVars['--radius-page'],
     fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-body-size'],
     lineHeight: typeScaleVars['--text-body-leading'],

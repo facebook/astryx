@@ -120,6 +120,7 @@ export const WithFooterActions: Story = {
           variant="ghost"
           size="md"
           icon={MicIcon}
+          isIconOnly
           iconOnly
           isIconOnly
         />
@@ -145,6 +146,7 @@ export const WithAttachments: Story = {
           variant="ghost"
           size="sm"
           icon={PaperclipIcon}
+          isIconOnly
           iconOnly
           isIconOnly
         />
@@ -182,6 +184,7 @@ export const FullFeatured: Story = {
               variant="ghost"
               size="sm"
               icon={AtSignIcon}
+              isIconOnly
               iconOnly
               isIconOnly
             />
@@ -190,6 +193,7 @@ export const FullFeatured: Story = {
               variant="ghost"
               size="sm"
               icon={PaperclipIcon}
+              isIconOnly
               iconOnly
               isIconOnly
             />
@@ -210,6 +214,7 @@ export const FullFeatured: Story = {
             variant="ghost"
             size="md"
             icon={MicIcon}
+            isIconOnly
             iconOnly
             isIconOnly
           />
@@ -262,22 +267,15 @@ export const WithError: Story = {
   ),
 };
 
-/** With attachments and status on top */
-export const WithAttachmentsAndStatusTop: Story = {
+/** With status on top */
+export const WithStatusTop: Story = {
   render: () => (
     <XDSChatComposer
       onSubmit={value => console.log('Submit:', value)}
       statusPosition="top"
-      attachments={
-        <XDSChatComposerAttachments count={3}>
-          <XDSToken label="report.pdf" onRemove={() => {}} />
-          <XDSToken label="data.csv" onRemove={() => {}} />
-          <XDSToken label="notes.docx" onRemove={() => {}} />
-        </XDSChatComposerAttachments>
-      }
       status={{
         type: 'warning',
-        message: 'Large files may take longer to process.',
+        message: 'Context window is 90% full.',
       }}
     />
   ),

@@ -30,7 +30,7 @@ const SPREAD = 0.75;
 const START_POINT = 1.5;
 
 const SIZES = {
-  sm: {diameter: 10, border: 3},
+  sm: {diameter: 10, border: 2},
   md: {diameter: 14, border: 3},
   lg: {diameter: 18, border: 3},
   xl: {diameter: 28, border: 4},
@@ -77,7 +77,7 @@ const styles = stylex.create({
 
 export type XDSSpinnerSize = keyof typeof SIZES;
 
-export type XDSSpinnerShade = 'default' | 'onMedia';
+export type XDSSpinnerShade = 'default' | 'onMedia' | 'subtle';
 
 export interface XDSSpinnerProps {
   /** Ref forwarded to the root element */
@@ -93,7 +93,9 @@ export interface XDSSpinnerProps {
   size?: XDSSpinnerSize;
   /**
    * Color shade.
-   * 'default' for light backgrounds, 'onMedia' for dark/accent backgrounds.
+   * - 'default': accent color on light backgrounds
+   * - 'onMedia': white on dark/accent backgrounds
+   * - 'subtle': secondary text color, less prominent — for inline use in lists
    * @default 'default'
    */
   shade?: XDSSpinnerShade;
@@ -182,17 +184,24 @@ export function XDSSpinner({
       shade === 'onMedia'
         ? computedStyle.getPropertyValue(colorVars['--color-on-dark']) ||
           '#FFFFFF'
-        : computedStyle.getPropertyValue(colorVars['--color-accent']) ||
-          '#0064E0';
+        : shade === 'subtle'
+          ? computedStyle.getPropertyValue(
+              colorVars['--color-text-secondary'],
+            ) || '#65676B'
+          : computedStyle.getPropertyValue(colorVars['--color-accent']) ||
+            '#0064E0';
     const backgroundColor =
-      shade === 'onMedia' ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.1)';
+      shade === 'onMedia' ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.08)';
 
     const radius = (diameter / 2) * pixelRatio;
     const lineWidth = border * pixelRatio;
-    const frameSize = (radius + lineWidth) * 2;
+    // Ensure even frame size so center is always on a whole pixel (prevents rotation jitter)
+    const rawFrameSize = Math.ceil((radius + lineWidth) * 2);
+    const frameSize = rawFrameSize + (rawFrameSize % 2);
+    const cssSize = frameSize / pixelRatio;
 
     canvas.height = canvas.width = frameSize;
-    canvas.style.width = canvas.style.height = frameSize / pixelRatio + 'px';
+    canvas.style.width = canvas.style.height = cssSize + 'px';
 
     context.lineCap = 'round';
     context.lineWidth = lineWidth;

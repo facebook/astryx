@@ -17,3 +17,9 @@ export {
   SYNC_TOKENIZE_THRESHOLD,
   type Token,
 } from '@xds/core/CodeBlock';
+
+// Chat — experimental reasoning display
+export {
+  XDSChatReasoning,
+  type XDSChatReasoningProps,
+} from './ChatReasoning/XDSChatReasoning';
