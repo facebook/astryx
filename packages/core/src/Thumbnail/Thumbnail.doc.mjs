@@ -3,11 +3,11 @@
 export const docs = {
   name: 'Thumbnail',
   description:
-    'A square preview card for image attachments. Shows a loading spinner while the image loads, the image on success, or a placeholder icon on failure.',
+    'A square preview card for image attachments. Shows a skeleton shimmer while the image loads, the image on success, or a placeholder icon on failure.',
   keywords: ["thumbnail","attachment","preview","image","upload","dismiss","remove","loading"],
   features: [
     'Square 1:1 aspect ratio via CSS aspect-ratio',
-    'Loading spinner while image is being fetched',
+    'Skeleton shimmer while image is being fetched',
     'Image preview with object-fit: cover on successful load',
     'Placeholder icon when no src or on load error',
     'Inset border overlay for visual containment (only on loaded images)',

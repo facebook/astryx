@@ -2,11 +2,11 @@
 
 /**
  * @file XDSThumbnail.tsx
- * @input Uses React, stylex, XDSSpinner, XDSIcon
+ * @input Uses React, stylex, XDSSkeleton, XDSIcon
  * @output Exports XDSThumbnail component, XDSThumbnailProps
  * @position Core implementation; consumed by index.ts
  *
- * Square preview card for image attachments. Shows a loading spinner while
+ * Square preview card for image attachments. Shows a skeleton shimmer while
  * the image loads, the image on success, or a placeholder on failure.
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -27,7 +27,7 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import {XDSIcon} from '../Icon';
-import {XDSSpinner} from '../Spinner';
+import {XDSSkeleton} from '../Skeleton';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {xdsClassName, mergeProps} from '../utils';
 
@@ -213,7 +213,7 @@ function ImagePlaceholder() {
 /**
  * A square thumbnail preview for image attachments.
  *
- * Shows a loading spinner while the image loads, the image on success, or
+ * Shows a skeleton shimmer while the image loads, the image on success, or
  * a placeholder icon on failure / when no src is provided. An overlaid
  * remove button appears when `onRemove` is set.
  *
@@ -261,9 +261,7 @@ export function XDSThumbnail({
         />
       )}
       {showSpinner && (
-        <div {...stylex.props(styles.placeholder)}>
-          <XDSSpinner size="sm" />
-        </div>
+        <XDSSkeleton radius={2} />
       )}
       {showPlaceholder && (
         <div {...stylex.props(styles.placeholder)}>

@@ -4,32 +4,35 @@ import userEvent from '@testing-library/user-event';
 import {XDSThumbnail} from './XDSThumbnail';
 
 describe('XDSThumbnail', () => {
-  it('shows spinner while image is loading', () => {
-    render(<XDSThumbnail src="/photo.jpg" alt="Test" data-testid="thumb" />);
+  it('shows skeleton while image is loading', () => {
+    const {container} = render(
+      <XDSThumbnail src="/photo.jpg" alt="Test" data-testid="thumb" />,
+    );
     // Image exists but is hidden until loaded
     const img = screen.getByAltText('Test');
     expect(img).toHaveStyle({display: 'none'});
-    // Spinner should be visible (role=status is typical for spinners)
-    expect(screen.getByRole('status')).toBeInTheDocument();
+    // Skeleton should be visible
+    expect(container.querySelector('.xds-skeleton')).toBeInTheDocument();
   });
 
   it('shows image after successful load', () => {
-    render(<XDSThumbnail src="/photo.jpg" alt="Test" />);
+    const {container} = render(
+      <XDSThumbnail src="/photo.jpg" alt="Test" />,
+    );
     const img = screen.getByAltText('Test');
     fireEvent.load(img);
     expect(img).not.toHaveStyle({display: 'none'});
-    // Spinner should be gone
-    expect(screen.queryByRole('status')).toBeNull();
+    // Skeleton should be gone
+    expect(container.querySelector('.xds-skeleton')).toBeNull();
   });
 
   it('shows placeholder on image error', () => {
     render(<XDSThumbnail src="/broken.jpg" alt="Broken" data-testid="thumb" />);
     const img = screen.getByAltText('Broken');
     fireEvent.error(img);
-    // Image should be gone, placeholder SVG should be present
+    // Placeholder SVG should be present
     const root = screen.getByTestId('thumb');
     expect(root.querySelector('svg')).toBeInTheDocument();
-    expect(screen.queryByRole('status')).toBeNull();
   });
 
   it('shows placeholder when no src is provided', () => {
@@ -75,7 +78,9 @@ describe('XDSThumbnail', () => {
 
   it('does not render onClick button when disabled', () => {
     const onClick = vi.fn();
-    render(<XDSThumbnail src="/img.jpg" alt="Test" onClick={onClick} isDisabled />);
+    render(
+      <XDSThumbnail src="/img.jpg" alt="Test" onClick={onClick} isDisabled />,
+    );
     expect(screen.queryByRole('button')).toBeNull();
   });
 
@@ -86,10 +91,7 @@ describe('XDSThumbnail', () => {
   });
 
   it('only shows inset border when image is loaded', () => {
-    const {container} = render(<XDSThumbnail data-testid="thumb" />);
-    // No inset border on placeholder-only state
-    const imageContainer = container.querySelector('[class*="imageContainer"]');
-    // The inset border div is conditionally rendered, so just verify no crash
+    render(<XDSThumbnail data-testid="thumb" />);
     expect(screen.getByTestId('thumb')).toBeInTheDocument();
   });
 });
