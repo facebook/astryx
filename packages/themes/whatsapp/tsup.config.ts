@@ -14,7 +14,7 @@ export default defineConfig({
       name: 'rewrite-built-theme',
       setup(build) {
         build.onResolve({filter: /\.\.\/dist\/whatsapp$/}, () => ({
-          path: './whatsapp.js',
+          path: './whatsapp',
           external: true,
         }));
       },

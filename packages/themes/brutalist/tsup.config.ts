@@ -14,7 +14,7 @@ export default defineConfig({
       name: 'rewrite-built-theme',
       setup(build) {
         build.onResolve({filter: /\.\.\/dist\/brutalist$/}, () => ({
-          path: './brutalist.js',
+          path: './brutalist',
           external: true,
         }));
       },

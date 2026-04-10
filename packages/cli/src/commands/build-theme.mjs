@@ -615,9 +615,8 @@ function extractIconInfo(filePath) {
  * All styling is in the CSS file.
  */
 function generateBuiltModule(themeDef, iconInfo) {
-  // CJS format so the built module works alongside tsup's CJS output
-  const iconRequire = iconInfo
-    ? `const { ${iconInfo.exportName}: icons } = require('${iconInfo.importPath}');\n`
+  const iconImport = iconInfo
+    ? `import { ${iconInfo.exportName} as icons } from '${iconInfo.importPath}';\n`
     : '';
   const iconsField = iconInfo ? '  icons,' : '';
 
@@ -634,25 +633,19 @@ function generateBuiltModule(themeDef, iconInfo) {
     .map((line, i) => (i === 0 ? line : '  ' + line))
     .join('\n');
 
-  const exportName = toIdentifier(themeDef.name) + 'Theme';
-
-  return `"use strict";
-${iconRequire}/**
+  return `${iconImport}/**
  * ${themeDef.name} theme — built by \`${getRunPrefix()} xds theme build\`
  * Import the CSS file alongside this module:
  *
- *   const { ${exportName} } = require('./${themeDef.name}');
- *   require('./${themeDef.name}.css');
+ *   import { ${toIdentifier(themeDef.name)}Theme } from './${themeDef.name}';
+ *   import './${themeDef.name}.css';
  */
-const ${exportName} = {
+export const ${toIdentifier(themeDef.name)}Theme = {
   name: '${themeDef.name}',
   __built: true,
   tokens: ${tokensStr},
 ${iconsField}
 };
-
-module.exports = { ${exportName} };
-Object.defineProperty(module.exports, '__esModule', { value: true });
 `;
 }
 
