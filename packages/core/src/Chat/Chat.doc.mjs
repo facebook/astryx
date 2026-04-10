@@ -4,7 +4,7 @@ export const docs = {
   name: 'Chat',
   description:
     'Chat components for AI chat interfaces. Layout (MessageList, Message, Bubble, SystemMessage) + Composer (Composer, ComposerInput with trigger menus, ComposerAttachments).',
-  keywords: ['chat', 'message', 'bubble', 'conversation', 'ai', 'assistant', 'thread', 'system-message', 'composer', 'mention', 'trigger', 'typeahead', 'token'],
+  keywords: ['chat', 'message', 'bubble', 'conversation', 'ai', 'assistant', 'thread', 'system-message', 'composer', 'mention', 'trigger', 'typeahead', 'token', 'imperative', 'tokenized-text'],
   features: [
     'Composition model — MessageList > Message > Bubble',
     'Sender-aware styling (user, assistant, system) via context',
@@ -18,6 +18,8 @@ export const docs = {
     'role="log" with aria-live="polite" for accessibility',
     'Composer layout shell with named semantic slots',
     'ContentEditable input with @ mention and / command trigger menus',
+    'Imperative handle on ComposerInput for programmatic token/text insertion',
+    'Tokenized text rendering in message bubbles via XDSChatMessageTokenizedText',
     'XDSSearchSource integration — reuses Typeahead search sources',
     'Concentric radius — inner elements follow outer shell curvature',
     'Themeable via --composer-radius and --composer-padding CSS vars',
@@ -127,7 +129,7 @@ export const docs = {
         {name: 'footerActions', type: 'ReactNode', description: 'Slot: left-aligned footer actions (model selector, etc).'},
         {name: 'sendActions', type: 'ReactNode', description: 'Slot: actions to the left of the send button.'},
         {name: 'sendButton', type: 'ReactNode', description: 'Slot: custom send button. Replaces the default send/stop button.'},
-        {name: 'status', type: "{ type: 'error' | 'warning'; message?: string }", description: 'Status message below (or above) the composer.'},
+        {name: 'status', type: "{ type: 'error' | 'warning'; message?: string }", description: 'Status message rendered below (or above) the composer.'},
         {name: 'statusPosition', type: "'top' | 'bottom'", description: 'Where to render the status.', default: "'bottom'"},
       ],
 
@@ -139,9 +141,9 @@ export const docs = {
     },
     {
       name: 'XDSChatComposerInput',
-      description: 'ContentEditable-based rich input with trigger menus (@ mentions, / commands), inline tokens, serialization, message history, and paste/drop file handling. Uses XDSSearchSource for search.',
+      description: 'ContentEditable-based rich input with trigger menus (@ mentions, / commands), inline tokens, serialization, message history, and paste/drop file handling. Uses XDSSearchSource for search. Exposes an imperative handle for programmatic control.',
       props: [
-        {name: 'ref', type: 'React.Ref<HTMLDivElement>', description: 'Ref to the root element.'},
+        {name: 'ref', type: 'React.Ref<XDSChatComposerInputHandle>', description: 'Imperative handle ref exposing insertToken, insertText, focus, and getValue.'},
         {name: 'value', type: 'string', description: 'Controlled value.'},
         {name: 'onChange', type: '(value: string) => void', description: 'Change handler.'},
         {name: 'placeholder', type: 'string', description: 'Placeholder text.', default: "'Type a message\u2026'"},
@@ -170,6 +172,17 @@ export const docs = {
         {label: 'With tokens', code: `<XDSChatComposerAttachments>\n  <XDSToken label="report.pdf" onDismiss={() => {}} />\n</XDSChatComposerAttachments>`},
       ],
     },
+    {
+      name: 'XDSChatMessageTokenizedText',
+      description: 'Renders text with token patterns replaced by inline XDSBadge components. Use inside XDSChatMessageBubble to display @mentions or other tokens as styled badges.',
+      props: [
+        {name: 'children', type: 'string', description: 'The message text containing token patterns.', required: true},
+        {name: 'tokens', type: 'XDSChatMessageTokenConfig[]', description: 'Token definitions. Each has pattern (string to match), label (display text), and optional variant.'},
+      ],
+      examples: [
+        {label: 'With mentions', code: `<XDSChatMessageBubble>\n  <XDSChatMessageTokenizedText\n    tokens={[{pattern: '@cindy', label: '@Cindy Zhang', variant: 'blue'}]}\n  >\n    Hey @cindy, can you review this?\n  </XDSChatMessageTokenizedText>\n</XDSChatMessageBubble>`},
+      ],
+    },
   ],
   usage: {
     summary: 'Chat components for building AI chat interfaces, including message lists, message bubbles, and a composer.',
@@ -193,6 +206,8 @@ export const docsZh = {
     'role="log" 配合 aria-live="polite" 实现无障碍访问',
     '编写器布局外壳，具有命名语义插槽',
     'ContentEditable 输入框，支持 @ 提及和 / 命令触发菜单',
+    'ComposerInput 命令式句柄，支持编程式插入标记/文本',
+    '通过 XDSChatMessageTokenizedText 在消息气泡中渲染标记文本',
     'XDSSearchSource 集成 — 复用 Typeahead 搜索源',
     '同心圆角 — 内部元素跟随外部外壳曲率',
     '通过 --composer-radius 和 --composer-padding CSS 变量实现主题化',
@@ -267,9 +282,9 @@ export const docsZh = {
     },
     {
       name: 'XDSChatComposerInput',
-      description: '基于 ContentEditable 的富文本输入，支持触发菜单（@ 提及、/ 命令）、内联标记、序列化、消息历史和粘贴/拖放文件处理。',
+      description: '基于 ContentEditable 的富文本输入，支持触发菜单（@ 提及、/ 命令）、内联标记、序列化、消息历史和粘贴/拖放文件处理。提供命令式句柄用于编程式控制。',
       propDescriptions: {
-        ref: '根元素的引用。',
+        ref: '命令式句柄引用，暴露 insertToken、insertText、focus 和 getValue。',
         value: '受控值。',
         onChange: '变更处理器。',
         placeholder: '占位文本。',
@@ -292,6 +307,14 @@ export const docsZh = {
         count: '附件总数。超过可见子元素时显示折叠/展开切换。',
       },
     },
+    {
+      name: 'XDSChatMessageTokenizedText',
+      description: '渲染带有标记模式的文本，将匹配的模式替换为内联 XDSBadge 组件。在 XDSChatMessageBubble 内使用，以徽章样式显示 @提及或其他标记。',
+      propDescriptions: {
+        children: '包含标记模式的消息文本。',
+        tokens: '标记定义。每个包含 pattern（匹配字符串）、label（显示文本）和可选 variant。',
+      },
+    },
   ],
 };
 
@@ -311,6 +334,8 @@ export const docsDense = {
     'role="log" + aria-live="polite" for a11y',
     'composer layout shell w/ named semantic slots',
     'ContentEditable input w/ @ mention + / command trigger menus',
+    'imperative handle on ComposerInput for programmatic token/text insert',
+    'tokenized text rendering in msg bubbles via XDSChatMessageTokenizedText',
     'XDSSearchSource integration; reuses Typeahead search sources',
     'concentric radius; inner elements follow outer shell curvature',
     'themeable via --composer-radius + --composer-padding CSS vars',
@@ -385,9 +410,9 @@ export const docsDense = {
     },
     {
       name: 'XDSChatComposerInput',
-      description: 'ContentEditable rich input w/ trigger menus (@/commands), inline tokens, serialization, msg history, paste/drop files',
+      description: 'ContentEditable rich input w/ trigger menus (@/commands), inline tokens, serialization, msg history, paste/drop files, imperative handle',
       propDescriptions: {
-        ref: 'root element ref',
+        ref: 'imperative handle ref (insertToken/insertText/focus/getValue)',
         value: 'controlled value',
         onChange: 'change handler',
         placeholder: 'placeholder text',
@@ -408,6 +433,14 @@ export const docsDense = {
       propDescriptions: {
         children: 'attachment items to render',
         count: 'total count; shows collapse/expand when exceeds visible',
+      },
+    },
+    {
+      name: 'XDSChatMessageTokenizedText',
+      description: 'renders text w/ token patterns replaced by inline badges; use in bubble for @mentions',
+      propDescriptions: {
+        children: 'msg text w/ token patterns',
+        tokens: 'token defs: pattern+label+variant',
       },
     },
   ],

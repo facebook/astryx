@@ -23,6 +23,7 @@ import {
   useState,
   useCallback,
   useEffect,
+  useImperativeHandle,
   type ReactNode,
   type KeyboardEvent,
   type ClipboardEvent,
@@ -46,6 +47,18 @@ import {useXDSChatComposerContext} from './XDSChatContext';
 // =============================================================================
 // Types
 // =============================================================================
+
+/** Imperative handle exposed by XDSChatComposerInput via ref */
+export interface XDSChatComposerInputHandle {
+  /** Insert a token (badge chip) at the current cursor position */
+  insertToken: (token: XDSChatComposerToken) => void;
+  /** Insert plain text at the current cursor position */
+  insertText: (text: string) => void;
+  /** Focus the input */
+  focus: () => void;
+  /** Get the current serialized value */
+  getValue: () => string;
+}
 
 /** Badge config for the common case \u2014 structured, simple, autocomplete-friendly */
 export type XDSChatComposerTokenBadge = {
@@ -122,8 +135,8 @@ export interface XDSChatComposerInputProps extends Omit<
   XDSBaseProps<HTMLDivElement>,
   'onChange' | 'onPaste' | 'onSubmit'
 > {
-  /** Ref to the root element */
-  ref?: React.Ref<HTMLDivElement>;
+  /** Imperative handle ref for programmatic control */
+  ref?: React.Ref<XDSChatComposerInputHandle>;
   /** Controlled value */
   value?: string;
   /** Change handler */
@@ -288,6 +301,20 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
   const historyIndexRef = useRef(-1);
   const currentDraftRef = useRef('');
 
+  // Stable refs for imperative handle callbacks (avoid re-creating handle on every render)
+  const insertTokenRef = useRef<(token: XDSChatComposerToken) => void>(
+    () => {},
+  );
+  const insertTextRef = useRef<(text: string) => void>(() => {});
+
+  useImperativeHandle(ref, () => ({
+    insertToken: (token: XDSChatComposerToken) => insertTokenRef.current(token),
+    insertText: (text: string) => insertTextRef.current(text),
+    focus: () => editableRef.current?.focus(),
+    getValue: () =>
+      serialize(editableRef.current ?? document.createElement('div')),
+  }));
+
   useEffect(() => {
     if (controlledValue !== undefined && editableRef.current) {
       const current = serialize(editableRef.current);
@@ -356,6 +383,10 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
   const insertText = useCallback((text: string) => {
     insertTextAtCursor(text);
   }, []);
+
+  // Keep stable refs in sync for imperative handle
+  insertTokenRef.current = insertToken;
+  insertTextRef.current = insertText;
 
   // --- Trigger menu ---
   const triggerMenu = useTriggerMenu({
@@ -460,7 +491,6 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
 
   return (
     <div
-      ref={ref}
       {...mergeProps(
         xdsClassName('chat-composer-input'),
         stylex.props(styles.root, isDisabled && styles.disabled, xstyle),

@@ -3,14 +3,14 @@ import {
   XDSChatMessageList,
   XDSChatMessage,
   XDSChatMessageBubble,
-  XDSChatReasoning,
 } from '@xds/core/Chat';
+import {XDSChatReasoning} from '@xds/lab';
 import {XDSAvatar} from '@xds/core/Avatar';
 import {XDSMarkdown} from '@xds/core/Markdown';
 import {useState, useEffect} from 'react';
 
 const meta: Meta = {
-  title: 'Chat/XDSChatReasoning',
+  title: 'Lab/XDSChatReasoning',
   component: XDSChatReasoning,
   tags: ['autodocs'],
   parameters: {
@@ -31,8 +31,8 @@ export const Collapsed: StoryObj = {
   render: () => (
     <XDSChatReasoning duration="12s">
       Let me work through the constraints systematically. The farmer has 3
-      fields and rotates wheat, corn, soy. No same crop in adjacent fields
-      and no same crop in the same field two years in a row...
+      fields and rotates wheat, corn, soy. No same crop in adjacent fields and
+      no same crop in the same field two years in a row...
     </XDSChatReasoning>
   ),
 };

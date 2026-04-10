@@ -1,7 +1,10 @@
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import {XDSChatComposerInput} from './XDSChatComposerInput';
-import type {XDSChatComposerTrigger} from './XDSChatComposerInput';
+import type {
+  XDSChatComposerTrigger,
+  XDSChatComposerInputHandle,
+} from './XDSChatComposerInput';
 import {createStaticSource} from '../Typeahead/createStaticSource';
 import type {XDSSearchableItem} from '../Typeahead/types';
 
@@ -135,9 +138,9 @@ describe('XDSChatComposerInput', () => {
       const file = new File(['content'], 'test.txt', {type: 'text/plain'});
       fireEvent.paste(textbox, {
         clipboardData: {
-        files: [file],
-        getData: () => '',
-      },
+          files: [file],
+          getData: () => '',
+        },
       });
       expect(onFiles).toHaveBeenCalledWith([file]);
     });
@@ -217,11 +220,30 @@ describe('XDSChatComposerInput', () => {
     });
   });
 
-  describe('ref', () => {
-    it('forwards ref to root element', () => {
+  describe('ref (imperative handle)', () => {
+    it('exposes imperative handle via ref', () => {
       const ref = vi.fn();
       render(<XDSChatComposerInput ref={ref} />);
-      expect(ref).toHaveBeenCalledWith(expect.any(HTMLDivElement));
+      expect(ref).toHaveBeenCalledWith(
+        expect.objectContaining({
+          insertToken: expect.any(Function),
+          insertText: expect.any(Function),
+          focus: expect.any(Function),
+          getValue: expect.any(Function),
+        }),
+      );
+    });
+
+    it('getValue returns empty string for empty input', () => {
+      let handle: XDSChatComposerInputHandle | null = null;
+      render(
+        <XDSChatComposerInput
+          ref={h => {
+            handle = h;
+          }}
+        />,
+      );
+      expect(handle!.getValue()).toBe('');
     });
   });
 
