@@ -1,6 +1,6 @@
 /**
  * @file presets.ts
- * @output 11 community syntax theme presets
+ * @output 12 community syntax theme presets
  *
  * Color values sourced from each theme's official VS Code extension.
  * All original themes are MIT licensed. Only color values are extracted.
@@ -158,6 +158,27 @@ export const githubLight: SyntaxTheme = defineSyntaxTheme({
   },
 });
 
+/** GitHub Dark (GitHub Primer team) — MIT */
+export const githubDark: SyntaxTheme = defineSyntaxTheme({
+  name: 'github-dark',
+  tokens: {
+    keyword: '#ff7b72',
+    string: '#a5d6ff',
+    comment: '#8b949e',
+    number: '#79c0ff',
+    function: '#d2a8ff',
+    type: '#ffa657',
+    variable: '#e6edf3',
+    operator: '#ff7b72',
+    constant: '#79c0ff',
+    tag: '#7ee787',
+    attribute: '#79c0ff',
+    property: '#79c0ff',
+    punctuation: '#c9d1d9',
+    background: '#0d1117',
+  },
+});
+
 /** Solarized Light (Ethan Schoonover) — MIT */
 export const solarizedLight: SyntaxTheme = defineSyntaxTheme({
   name: 'solarized-light',
@@ -243,10 +264,27 @@ export const tokyoNightLight: SyntaxTheme = defineSyntaxTheme({
 });
 
 /** All dark syntax theme presets */
-export const darkSyntaxPresets = [oneDarkPro, dracula, monokai, nord, tokyoNight, catppuccinMocha] as const;
+export const darkSyntaxPresets = [
+  oneDarkPro,
+  dracula,
+  monokai,
+  nord,
+  tokyoNight,
+  catppuccinMocha,
+  githubDark,
+] as const;
 
 /** All light syntax theme presets */
-export const lightSyntaxPresets = [githubLight, solarizedLight, oneLight, catppuccinLatte, tokyoNightLight] as const;
+export const lightSyntaxPresets = [
+  githubLight,
+  solarizedLight,
+  oneLight,
+  catppuccinLatte,
+  tokyoNightLight,
+] as const;
 
 /** All syntax theme presets */
-export const allSyntaxPresets = [...darkSyntaxPresets, ...lightSyntaxPresets] as const;
+export const allSyntaxPresets = [
+  ...darkSyntaxPresets,
+  ...lightSyntaxPresets,
+] as const;

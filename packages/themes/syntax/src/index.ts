@@ -1,7 +1,7 @@
 /**
  * @xds/theme-syntax — Community syntax theme presets for XDS
  *
- * 11 themes (6 dark, 5 light) mapped to the XDS 14-token syntax architecture.
+ * 12 themes (7 dark, 5 light) mapped to the XDS 14-token syntax architecture.
  * All original themes are MIT licensed. See THIRD_PARTY_LICENSES.md.
  *
  * @example
@@ -20,6 +20,7 @@ export {monokai} from './presets';
 export {nord} from './presets';
 export {tokyoNight} from './presets';
 export {catppuccinMocha} from './presets';
+export {githubDark} from './presets';
 
 // Light themes
 export {githubLight} from './presets';
@@ -29,4 +30,8 @@ export {catppuccinLatte} from './presets';
 export {tokyoNightLight} from './presets';
 
 // Collections
-export {darkSyntaxPresets, lightSyntaxPresets, allSyntaxPresets} from './presets';
+export {
+  darkSyntaxPresets,
+  lightSyntaxPresets,
+  allSyntaxPresets,
+} from './presets';

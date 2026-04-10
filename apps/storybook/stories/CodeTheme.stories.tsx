@@ -1,7 +1,10 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import React from 'react';
 import {XDSCodeBlock} from '@xds/core/CodeBlock';
-import {XDSSyntaxTheme as SyntaxThemeProvider, defineSyntaxTheme} from '@xds/core/theme/syntax';
+import {
+  XDSSyntaxTheme as SyntaxThemeProvider,
+  defineSyntaxTheme,
+} from '@xds/core/theme/syntax';
 import {defineTheme, XDSTheme} from '@xds/core/theme';
 import {
   oneDarkPro,
@@ -10,6 +13,7 @@ import {
   nord,
   tokyoNight,
   catppuccinMocha,
+  githubDark,
   githubLight,
   solarizedLight,
   oneLight,
@@ -168,6 +172,19 @@ export const GitHubLight: StoryObj = {
   ),
 };
 
+export const GitHubDark: StoryObj = {
+  render: () => (
+    <SyntaxThemeProvider theme={githubDark}>
+      <XDSCodeBlock
+        code={sampleCode}
+        language="typescript"
+        title="UserCard.tsx"
+        hasLineNumbers
+      />
+    </SyntaxThemeProvider>
+  ),
+};
+
 export const SolarizedLight: StoryObj = {
   render: () => (
     <SyntaxThemeProvider theme={solarizedLight}>
@@ -237,7 +254,7 @@ const shortCode = [
 export const AllThemesGallery: StoryObj = {
   render: () => (
     <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16}}>
-      {allSyntaxPresets.map((theme) => (
+      {allSyntaxPresets.map(theme => (
         <SyntaxThemeProvider key={theme.name} theme={theme}>
           <XDSCodeBlock
             code={shortCode}
