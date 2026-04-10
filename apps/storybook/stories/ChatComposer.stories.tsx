@@ -147,7 +147,9 @@ export const WithAttachments: Story = {
           iconOnly
         />
       }
-      headerContext="3%"
+      headerContext={
+        <XDSProgressBar label="Context window" value={3} isLabelHidden />
+      }
     />
   ),
 };
