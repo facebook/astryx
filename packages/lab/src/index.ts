@@ -23,3 +23,27 @@ export {
   XDSChatReasoning,
   type XDSChatReasoningProps,
 } from './ChatReasoning/XDSChatReasoning';
+
+// SVG Icon system — CSS-variable-driven multi-variation icons
+export {
+  XDSSVGIcon,
+  type XDSSVGIconProps,
+  type SVGIconVariation,
+  type SVGIconSize,
+  type SVGIconColor,
+  type SVGIconDef,
+  type IconShape,
+  iconVars,
+  variations,
+  opticalSize,
+  convertSVG,
+  iconDefToTSX,
+  iconDefToSVG,
+  xIcon,
+  checkIcon,
+  bellIcon,
+  homeIcon,
+  settingsIcon,
+  calendarIcon,
+  starterIcons,
+} from './SVGIcon';
