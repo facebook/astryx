@@ -131,6 +131,7 @@ const styles = stylex.create({
     flexDirection: 'column',
     gap: spacingVars['--spacing-1'],
     width: '100%',
+    minWidth: '48px',
   },
   header: {
     display: 'flex',
