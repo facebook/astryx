@@ -46,6 +46,8 @@ import {applyHighlightRangesChunked} from './highlightRanges';
 const styles = stylex.create({
   root: {
     position: 'relative',
+    display: 'flex',
+    flexDirection: 'column',
     margin: 0,
     borderRadius: radiusVars['--radius-element'],
     backgroundColor: 'var(--color-syntax-background)',
