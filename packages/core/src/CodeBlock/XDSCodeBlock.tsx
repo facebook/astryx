@@ -126,13 +126,13 @@ const styles = stylex.create({
     fontSize: textSizeVars['--font-size-sm'],
   },
   sizeMd: {
-    fontSize: textSizeVars['--font-size-base'],
+    fontSize: typeScaleVars['--text-code-size'],
   },
   gutterSm: {
     fontSize: textSizeVars['--font-size-sm'],
   },
   gutterMd: {
-    fontSize: textSizeVars['--font-size-base'],
+    fontSize: typeScaleVars['--text-code-size'],
   },
   copyButton: {
     display: 'inline-flex',
