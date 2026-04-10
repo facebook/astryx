@@ -64,8 +64,6 @@ export interface XDSChatComposerAttachmentsProps extends XDSBaseProps<HTMLDivEle
   'data-testid'?: string;
 }
 
-const TOGGLE_HEIGHT = '20px';
-
 const styles = stylex.create({
   root: {
     position: 'relative',
@@ -97,7 +95,7 @@ const styles = stylex.create({
     display: 'grid',
     gridTemplateColumns: '1fr',
     alignItems: 'center',
-    height: TOGGLE_HEIGHT,
+    height: spacingVars['--spacing-5'],
     paddingInline: spacingVars['--spacing-4'],
     marginInline: `calc(-1 * ${spacingVars['--spacing-4']})`,
     cursor: 'pointer',
@@ -110,7 +108,7 @@ const styles = stylex.create({
     justifySelf: 'start',
     display: 'inline-flex',
     alignItems: 'center',
-    height: TOGGLE_HEIGHT,
+    height: spacingVars['--spacing-5'],
     gap: spacingVars['--spacing-2'],
     borderRadius: radiusVars['--radius-full'],
     opacity: 1,
@@ -130,7 +128,7 @@ const styles = stylex.create({
       },
     },
     fontSize: typeScaleVars['--text-body-size'],
-    lineHeight: TOGGLE_HEIGHT,
+    lineHeight: spacingVars['--spacing-5'],
     transitionProperty: 'color',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
