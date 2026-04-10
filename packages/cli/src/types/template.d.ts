@@ -1,10 +1,14 @@
 /**
  * Template command JSON responses.
  *
+ * Each template is exactly two files: page.tsx (code) + template.doc.mjs (metadata).
+ *
  * Invocation                                 -> type discriminator
  * ------------------------------------------------------------------
  * xds --json template [--list]              -> template.list
- * xds --json template <name> [path]         -> template.copy
+ * xds --json template <name>               -> template.show
+ * xds --json template <name> --skeleton    -> template.skeleton
+ * xds --json template <name> [path]        -> template.copy
  * (unknown template)                        -> CLIError
  */
 
@@ -18,6 +22,28 @@ export interface TemplateListEntry {
   name: string;
   description: string;
   isReady: boolean;
+}
+
+/** xds --json template <name> */
+export interface TemplateShowResponse {
+  type: 'template.show';
+  data: {
+    template: string;
+    description: string;
+    components: string[];
+    source: string;
+  };
+}
+
+/** xds --json template <name> --skeleton */
+export interface TemplateSkeletonResponse {
+  type: 'template.skeleton';
+  data: {
+    template: string;
+    description: string;
+    components: string[];
+    skeleton: string;
+  };
 }
 
 /** xds --json template <name> [path] */
