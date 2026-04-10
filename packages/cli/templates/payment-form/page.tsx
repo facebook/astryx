@@ -21,6 +21,12 @@ import {XDSBadge} from '@xds/core/Badge';
 import {XDSNumberInput} from '@xds/core/NumberInput';
 import {XDSAppShell} from '@xds/core/AppShell';
 import {XDSCenter} from '@xds/core/Center';
+import {XDSIcon} from '@xds/core/Icon';
+import {ShieldCheckIcon} from '@heroicons/react/24/outline';
+import {LockClosedIcon} from '@heroicons/react/24/outline';
+import {CheckCircleIcon} from '@heroicons/react/24/outline';
+import {ArrowRightIcon} from '@heroicons/react/24/outline';
+import {TruckIcon} from '@heroicons/react/24/outline';
 import {
   colorVars,
   spacingVars,
@@ -598,53 +604,18 @@ export default function PaymentFormPage() {
                       }}
                     />
                   </div>
-                  <div style={{position: 'relative'}}>
-                    <XDSTextInput
-                      size="lg"
-                      label="Card Number"
-                      placeholder="1234 5678 9012 3456"
-                      value={cardNumber}
-                      onChange={setCardNumber}
-                      status={
-                        errors.cardNumber
-                          ? {type: 'error', message: errors.cardNumber}
-                          : undefined
-                      }
-                    />
-                    <div
-                      style={{
-                        position: 'absolute',
-                        right: 12,
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        pointerEvents: 'none',
-                        display: 'flex',
-                        alignItems: 'center',
-                      }}>
-                      <svg
-                        viewBox="0 0 24 24"
-                        style={{
-                          width: 16,
-                          height: 16,
-                          color: 'var(--color-icon-secondary)',
-                        }}
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round">
-                        <rect
-                          x="3"
-                          y="11"
-                          width="18"
-                          height="11"
-                          rx="2"
-                          ry="2"
-                        />
-                        <path d="M7 11V7a5 5 0 0110 0v4" />
-                      </svg>
-                    </div>
-                  </div>
+                  <XDSTextInput
+                    size="lg"
+                    label="Card Number"
+                    placeholder="1234 5678 9012 3456"
+                    value={cardNumber}
+                    onChange={setCardNumber}
+                    status={
+                      errors.cardNumber
+                        ? {type: 'error', message: errors.cardNumber}
+                        : undefined
+                    }
+                  />
                   <div
                     style={{
                       display: 'grid',
@@ -843,48 +814,31 @@ export default function PaymentFormPage() {
               <XDSVStack gap={4}>
                 <div {...stylex.props(styles.trustBar)}>
                   <XDSHStack gap={1} vAlign="center">
-                    <svg
-                      viewBox="0 0 24 24"
-                      style={{width: 14, height: 14}}
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round">
-                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                    </svg>
+                    <XDSIcon
+                      icon={ShieldCheckIcon}
+                      size="sm"
+                      color="secondary"
+                    />
                     <XDSText type="supporting" color="secondary">
                       Secure Payment
                     </XDSText>
                   </XDSHStack>
                   <XDSHStack gap={1} vAlign="center">
-                    <svg
-                      viewBox="0 0 24 24"
-                      style={{width: 14, height: 14}}
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round">
-                      <rect x="3" y="11" width="18" height="11" rx="2" />
-                      <path d="M7 11V7a5 5 0 0110 0v4" />
-                    </svg>
+                    <XDSIcon
+                      icon={LockClosedIcon}
+                      size="sm"
+                      color="secondary"
+                    />
                     <XDSText type="supporting" color="secondary">
                       SSL Encrypted
                     </XDSText>
                   </XDSHStack>
                   <XDSHStack gap={1} vAlign="center">
-                    <svg
-                      viewBox="0 0 24 24"
-                      style={{width: 14, height: 14}}
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round">
-                      <circle cx="12" cy="12" r="10" />
-                      <path d="M9 12l2 2 4-4" />
-                    </svg>
+                    <XDSIcon
+                      icon={CheckCircleIcon}
+                      size="sm"
+                      color="secondary"
+                    />
                     <XDSText type="supporting" color="secondary">
                       Free Returns
                     </XDSText>
@@ -898,16 +852,11 @@ export default function PaymentFormPage() {
                     xstyle={styles.fullWidth}
                     onClick={() => setSubmitted(true)}
                     endContent={
-                      <svg
-                        viewBox="0 0 24 24"
-                        style={{width: 16, height: 16}}
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round">
-                        <path d="M5 12h14M12 5l7 7-7 7" />
-                      </svg>
+                      <XDSIcon
+                        icon={ArrowRightIcon}
+                        size="sm"
+                        color="inherit"
+                      />
                     }
                   />
                   <XDSButton
@@ -1109,24 +1058,7 @@ export default function PaymentFormPage() {
                           </XDSText>
                         </div>
                         <div {...stylex.props(styles.freeBanner)}>
-                          <svg
-                            viewBox="0 0 24 24"
-                            style={{
-                              width: 16,
-                              height: 16,
-                              flexShrink: 0,
-                              color: 'var(--color-text-primary)',
-                            }}
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round">
-                            <rect x="1" y="3" width="15" height="13" rx="1" />
-                            <path d="M16 8h4l3 5v4h-7V8z" />
-                            <circle cx="5.5" cy="18.5" r="2.5" />
-                            <circle cx="18.5" cy="18.5" r="2.5" />
-                          </svg>
+                          <XDSIcon icon={TruckIcon} size="sm" color="primary" />
                           <XDSText type="supporting">
                             Free shipping on orders over $300
                           </XDSText>
