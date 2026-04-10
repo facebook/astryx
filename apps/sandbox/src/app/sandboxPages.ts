@@ -123,8 +123,13 @@ export const categories: SandboxCategory[] = [
       {
         name: 'CodeBlock Perf',
         href: '/pages/codeblock-perf/',
+        description: 'Compare highlight modes and scroll performance',
+      },
+      {
+        name: 'Docsite',
+        href: '/pages/docsite/',
         description:
-          'Compare highlight modes and scroll performance'
+          'Template gallery with AI composer and component documentation',
       },
     ],
   },
