@@ -29,10 +29,7 @@ export type {
 } from './XDSChatComposerInput';
 
 export {XDSChatMessageTokenizedText} from './XDSChatMessageTokenizedText';
-export type {
-  XDSChatMessageTokenizedTextProps,
-  XDSChatMessageTokenConfig,
-} from './XDSChatMessageTokenizedText';
+export type {XDSChatMessageTokenizedTextProps} from './XDSChatMessageTokenizedText';
 
 export {XDSChatMessageList} from './XDSChatMessageList';
 export type {XDSChatMessageListProps} from './XDSChatMessageList';

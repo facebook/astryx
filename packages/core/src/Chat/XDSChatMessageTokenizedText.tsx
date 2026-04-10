@@ -2,39 +2,67 @@
 
 /**
  * @file XDSChatMessageTokenizedText.tsx
- * @input Uses React, XDSBadge
+ * @input Uses React, XDSBadge, XDSChatComposerToken
  * @output Exports XDSChatMessageTokenizedText component
  * @position Utility component for rendering tokenized text in message bubbles
  *
- * Parses a plain text string and replaces token patterns (e.g. @cindy)
- * with inline XDSBadge components. Falls back to plain text when no
- * tokens match.
+ * Parses a plain text string and replaces token values with inline badges.
+ * Accepts the same XDSChatComposerToken type used by the input triggers,
+ * so the same token definitions work for both input and display.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Chat/index.ts
  */
 
 import type {ReactNode} from 'react';
-import {XDSBadge, type XDSBadgeVariant} from '../Badge';
+import {XDSBadge} from '../Badge';
+import type {XDSChatComposerToken} from './XDSChatComposerInput';
 
 // =============================================================================
 // Types
 // =============================================================================
 
-export interface XDSChatMessageTokenConfig {
-  /** Pattern to match in the text (e.g. '@cindy') */
-  pattern: string;
-  /** Display label for the badge (e.g. '@Cindy Zhang') */
-  label: string;
-  /** Badge variant */
-  variant?: XDSBadgeVariant;
+export interface XDSChatMessageTokenizedTextProps {
+  /** The message text containing serialized token values */
+  children: string;
+  /**
+   * Token definitions — same type returned by trigger onSelect.
+   * Each token's `value` is matched against the text and replaced
+   * with its badge representation (label, variant, icon).
+   *
+   * @example
+   * ```
+   * // Shared between input and display
+   * const mentionTokens = contacts.map(c => ({
+   *   value: `@${c.id}`,
+   *   label: `@${c.label}`,
+   *   variant: 'blue' as const,
+   * }));
+   *
+   * // Input trigger
+   * { character: '@', onSelect: (item) => mentionTokens.find(...) }
+   *
+   * // Display
+   * <XDSChatMessageTokenizedText tokens={mentionTokens}>
+   *   {message.text}
+   * </XDSChatMessageTokenizedText>
+   * ```
+   */
+  tokens?: XDSChatComposerToken[];
 }
 
-export interface XDSChatMessageTokenizedTextProps {
-  /** The message text containing token patterns */
-  children: string;
-  /** Token definitions to match and render as badges */
-  tokens?: XDSChatMessageTokenConfig[];
+// =============================================================================
+// Helpers
+// =============================================================================
+
+function isCustomToken(
+  token: XDSChatComposerToken,
+): token is {value: string; render: () => ReactNode} {
+  return 'render' in token && typeof token.render === 'function';
+}
+
+function escapeRegExp(str: string): string {
+  return str.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&');
 }
 
 // =============================================================================
@@ -42,16 +70,10 @@ export interface XDSChatMessageTokenizedTextProps {
 // =============================================================================
 
 /**
- * Renders text with token patterns replaced by inline badges.
+ * Renders text with token values replaced by inline badges.
  *
- * @example
- * ```
- * <XDSChatMessageTokenizedText
- *   tokens={[{pattern: '@cindy', label: '@Cindy Zhang', variant: 'blue'}]}
- * >
- *   Hey @cindy, can you review this?
- * </XDSChatMessageTokenizedText>
- * ```
+ * Accepts the same `XDSChatComposerToken` type used by input triggers,
+ * so you can share a single token definition between input and display.
  */
 export function XDSChatMessageTokenizedText({
   children,
@@ -68,26 +90,19 @@ export function XDSChatMessageTokenizedText({
 XDSChatMessageTokenizedText.displayName = 'XDSChatMessageTokenizedText';
 
 // =============================================================================
-// Helpers
+// Render
 // =============================================================================
 
-function escapeRegExp(str: string): string {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-/** Parse text and replace token patterns with Badge elements */
 function renderTokens(
   text: string,
-  tokens: XDSChatMessageTokenConfig[],
+  tokens: XDSChatComposerToken[],
 ): ReactNode[] {
-  // Build a combined regex matching any token pattern
-  const pattern = tokens.map(t => escapeRegExp(t.pattern)).join('|');
+  const pattern = tokens.map(t => escapeRegExp(t.value)).join('|');
   const regex = new RegExp(`(${pattern})`, 'g');
 
-  // Build a lookup map for O(1) access
-  const tokenMap = new Map<string, XDSChatMessageTokenConfig>();
+  const tokenMap = new Map<string, XDSChatComposerToken>();
   for (const t of tokens) {
-    tokenMap.set(t.pattern, t);
+    tokenMap.set(t.value, t);
   }
 
   const parts: ReactNode[] = [];
@@ -95,27 +110,30 @@ function renderTokens(
   let match: RegExpExecArray | null;
 
   while ((match = regex.exec(text)) !== null) {
-    // Add text before the match
     if (match.index > lastIndex) {
       parts.push(text.slice(lastIndex, match.index));
     }
 
     const matched = match[0];
-    const config = tokenMap.get(matched);
-    if (config) {
+    const token = tokenMap.get(matched);
+    if (token) {
       parts.push(
-        <XDSBadge
-          key={`${matched}-${match.index}`}
-          label={config.label}
-          variant={config.variant}
-        />,
+        isCustomToken(token) ? (
+          <span key={`${matched}-${match.index}`}>{token.render()}</span>
+        ) : (
+          <XDSBadge
+            key={`${matched}-${match.index}`}
+            label={token.label}
+            variant={token.variant}
+            icon={token.icon}
+          />
+        ),
       );
     }
 
     lastIndex = match.index + matched.length;
   }
 
-  // Add remaining text
   if (lastIndex < text.length) {
     parts.push(text.slice(lastIndex));
   }

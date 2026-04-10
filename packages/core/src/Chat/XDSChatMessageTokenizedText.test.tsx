@@ -22,7 +22,7 @@ describe('XDSChatMessageTokenizedText', () => {
   it('replaces a single token with a badge', () => {
     render(
       <XDSChatMessageTokenizedText
-        tokens={[{pattern: '@cindy', label: '@Cindy Zhang', variant: 'blue'}]}>
+        tokens={[{value: '@cindy', label: '@Cindy Zhang', variant: 'blue'}]}>
         Hey @cindy!
       </XDSChatMessageTokenizedText>,
     );
@@ -34,8 +34,8 @@ describe('XDSChatMessageTokenizedText', () => {
     render(
       <XDSChatMessageTokenizedText
         tokens={[
-          {pattern: '@cindy', label: '@Cindy Zhang', variant: 'blue'},
-          {pattern: '@navi', label: '@Navi', variant: 'blue'},
+          {value: '@cindy', label: '@Cindy Zhang', variant: 'blue'},
+          {value: '@navi', label: '@Navi', variant: 'blue'},
         ]}>
         Hey @cindy, can @navi help?
       </XDSChatMessageTokenizedText>,
@@ -47,7 +47,7 @@ describe('XDSChatMessageTokenizedText', () => {
   it('handles repeated occurrences of the same token', () => {
     render(
       <XDSChatMessageTokenizedText
-        tokens={[{pattern: '@cindy', label: '@Cindy Zhang'}]}>
+        tokens={[{value: '@cindy', label: '@Cindy Zhang'}]}>
         @cindy and @cindy again
       </XDSChatMessageTokenizedText>,
     );
@@ -57,7 +57,7 @@ describe('XDSChatMessageTokenizedText', () => {
   it('renders text with no matching tokens as plain text', () => {
     render(
       <XDSChatMessageTokenizedText
-        tokens={[{pattern: '@cindy', label: '@Cindy Zhang'}]}>
+        tokens={[{value: '@cindy', label: '@Cindy Zhang'}]}>
         Hello world
       </XDSChatMessageTokenizedText>,
     );
@@ -67,7 +67,7 @@ describe('XDSChatMessageTokenizedText', () => {
   it('handles tokens with special regex characters in pattern', () => {
     render(
       <XDSChatMessageTokenizedText
-        tokens={[{pattern: '/search', label: '/search'}]}>
+        tokens={[{value: '/search', label: '/search'}]}>
         Run /search now
       </XDSChatMessageTokenizedText>,
     );
@@ -78,7 +78,7 @@ describe('XDSChatMessageTokenizedText', () => {
   it('preserves surrounding text', () => {
     const {container} = render(
       <XDSChatMessageTokenizedText
-        tokens={[{pattern: '@cindy', label: '@Cindy Zhang'}]}>
+        tokens={[{value: '@cindy', label: '@Cindy Zhang'}]}>
         Before @cindy after
       </XDSChatMessageTokenizedText>,
     );

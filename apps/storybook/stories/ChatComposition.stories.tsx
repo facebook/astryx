@@ -10,6 +10,7 @@ import {
   XDSChatMessageTokenizedText,
   XDSChatToolCalls,
   type XDSChatComposerInputHandle,
+  type XDSChatComposerToken,
   type XDSChatComposerTrigger,
   type XDSChatToolCallItem,
 } from '@xds/core/Chat';
@@ -87,7 +88,13 @@ const COMMANDS = [
 ];
 
 type Message =
-  | {id: number; role: 'user'; text: string; files?: string[]}
+  | {
+      id: number;
+      role: 'user';
+      text: string;
+      files?: string[];
+      tokens?: XDSChatComposerToken[];
+    }
   | {
       id: number;
       role: 'assistant';
@@ -167,13 +174,6 @@ export const FullAIChat: StoryObj = {
     const streamRef = useRef<ReturnType<typeof setInterval>>(undefined);
     const inputRef = useRef<XDSChatComposerInputHandle>(null);
     const contextTooltip = useXDSTooltip({placement: 'above'});
-
-    // Token configs for rendering mentions in message bubbles
-    const mentionTokens = CONTACTS.map(c => ({
-      pattern: `@${c.id}`,
-      label: `@${c.label}`,
-      variant: 'blue' as const,
-    }));
 
     const triggers: XDSChatComposerTrigger[] = [
       {
@@ -302,6 +302,14 @@ export const FullAIChat: StoryObj = {
       [],
     );
 
+    // Simulate backend token resolution — extract @mentions from text
+    const resolveTokens = (text: string): XDSChatComposerToken[] =>
+      CONTACTS.filter(c => text.includes(`@${c.id}`)).map(c => ({
+        value: `@${c.id}`,
+        label: `@${c.label}`,
+        variant: 'blue' as const,
+      }));
+
     const handleSubmit = useCallback(
       (value: string) => {
         setMessages(prev => [
@@ -311,6 +319,7 @@ export const FullAIChat: StoryObj = {
             role: 'user',
             text: value,
             files: files.length ? [...files] : undefined,
+            tokens: resolveTokens(value),
           },
         ]);
         setFiles([]);
@@ -392,7 +401,7 @@ export const FullAIChat: StoryObj = {
                       </XDSChatComposerAttachments>
                     )}
                     <XDSChatMessageBubble>
-                      <XDSChatMessageTokenizedText tokens={mentionTokens}>
+                      <XDSChatMessageTokenizedText tokens={msg.tokens}>
                         {msg.text}
                       </XDSChatMessageTokenizedText>
                     </XDSChatMessageBubble>
