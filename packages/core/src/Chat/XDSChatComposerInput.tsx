@@ -41,6 +41,7 @@ import {
 import {xdsClassName, mergeProps} from '../utils';
 import {useTriggerMenu} from './useTriggerMenu';
 import {XDSBadge, type XDSBadgeProps} from '../Badge';
+import {useXDSChatComposerContext} from './XDSChatContext';
 
 // =============================================================================
 // Types
@@ -259,20 +260,22 @@ function insertTextAtCursor(text: string): void {
 // =============================================================================
 
 export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
+  const composerCtx = useXDSChatComposerContext();
+
   const {
     ref,
-    value: controlledValue,
-    onChange,
-    placeholder = 'Type a message\u2026',
+    value: controlledValue = composerCtx?.value,
+    onChange = composerCtx?.onChange,
+    placeholder = composerCtx?.placeholder ?? 'Type a message\u2026',
     maxRows = 8,
     triggers,
     debounceMs = 150,
     hasHistory = true,
     label = 'Message input',
-    isDisabled = false,
+    isDisabled = composerCtx?.isDisabled ?? false,
     onPaste: onPasteProp,
     onFiles,
-    onSubmit,
+    onSubmit = composerCtx?.onSubmit,
     xstyle,
     className,
     style,
