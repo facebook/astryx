@@ -6,7 +6,7 @@
  * @output Exports XDSChatComposer layout shell component
  * @position Core implementation; consumed by index.ts
  *
- * Layout shell for a chat composer. Arranges slots (attachments, toolbar,
+ * Layout shell for a chat composer. Arranges slots (attachments, header,
  * input, footer actions, send button, status) in a vertical stack with
  * page-radius container, hover/focus shadows, and concentric inner radius.
  *
@@ -21,7 +21,14 @@
  * - /apps/storybook/stories/ChatComposer.stories.tsx
  */
 
-import {useState, useCallback, useMemo, type ReactNode} from 'react';
+import {
+  useState,
+  useCallback,
+  useRef,
+  useMemo,
+  type ReactNode,
+  type MouseEvent,
+} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -75,8 +82,10 @@ export interface XDSChatComposerProps extends Omit<
 
   /** Attachment chips rendered above the input */
   attachments?: ReactNode;
-  /** Toolbar rendered between attachments and input (e.g. context chips) */
-  contextToolbar?: ReactNode;
+  /** Actions rendered on the left side of the header (e.g. attach, mention buttons). Use icon-only `size="sm"` buttons. */
+  headerActions?: ReactNode;
+  /** Contextual info rendered on the right side of the header (e.g. context window usage, XDSProgressBar). */
+  headerContext?: ReactNode;
   /** Custom input element — replaces the default textarea */
   input?: ReactNode;
   /** Actions rendered on the left side of the footer. Use `size="md"` buttons to match the send button height. */
@@ -125,6 +134,7 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-2'],
     borderRadius: 'var(--composer-radius)',
     backgroundColor: colorVars['--color-background-popover'],
+    cursor: 'text',
     boxShadow: {
       default: shadowVars['--shadow-low'],
       ':hover': {'@media (hover: hover)': shadowVars['--shadow-med']},
@@ -133,6 +143,27 @@ const styles = stylex.create({
     ':focus-within': {
       boxShadow: shadowVars['--shadow-med'],
     },
+  },
+  header: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacingVars['--spacing-2'],
+    minHeight: '28px',
+  },
+  headerLeft: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-1'],
+  },
+  headerRight: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-2'],
+    marginInlineStart: 'auto',
+    fontSize: typeScaleVars['--text-supporting-size'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
+    color: colorVars['--color-text-secondary'],
   },
   inputArea: {
     display: 'flex',
@@ -276,7 +307,8 @@ export function XDSChatComposer(props: XDSChatComposerProps) {
     isDisabled = false,
     density = 'balanced',
     attachments,
-    contextToolbar,
+    headerActions,
+    headerContext,
     input,
     footerActions,
     sendActions,
@@ -309,10 +341,28 @@ export function XDSChatComposer(props: XDSChatComposerProps) {
     if (!trimmed || isDisabled) return;
     onSubmit(trimmed);
     updateValue('');
-
   }, [currentValue, isDisabled, onSubmit, updateValue]);
 
   const canSend = currentValue.trim().length > 0 && !isDisabled;
+
+  const bodyRef = useRef<HTMLDivElement>(null);
+
+  const handleBodyClick = useCallback((e: MouseEvent<HTMLDivElement>) => {
+    // Focus the input when clicking empty space in the body.
+    // Skip if the click target is a button, link, or interactive element.
+    const target = e.target as HTMLElement;
+    if (
+      target.closest(
+        'button, a, [role="button"], [contenteditable="true"], [data-xds-token]',
+      )
+    ) {
+      return;
+    }
+    const editable = bodyRef.current?.querySelector<HTMLElement>(
+      '[contenteditable="true"], textarea',
+    );
+    editable?.focus();
+  }, []);
 
   const defaultSendButton = (
     <button
@@ -360,36 +410,46 @@ export function XDSChatComposer(props: XDSChatComposerProps) {
 
   return (
     <XDSChatComposerContext.Provider value={composerContext}>
-    <div
-      {...mergeProps(
-        xdsClassName('chat-composer', {density}),
-        stylex.props(styles.root, isDisabled && styles.rootDisabled, xstyle),
-        className,
-        style,
-      )}
-      {...rest}>
-      {statusPosition === 'top' && statusEl}
-      {attachments}
-
       <div
-        {...stylex.props(styles.body, density === 'compact' && styles.compact)}>
-        {contextToolbar}
+        {...mergeProps(
+          xdsClassName('chat-composer', {density}),
+          stylex.props(styles.root, isDisabled && styles.rootDisabled, xstyle),
+          className,
+          style,
+        )}
+        {...rest}>
+        {statusPosition === 'top' && statusEl}
+        {attachments}
 
-        <div {...stylex.props(styles.inputArea)}>
-          {input ?? <XDSChatComposerInput />}
-        </div>
+        <div
+          ref={bodyRef}
+          onClick={handleBodyClick}
+          {...stylex.props(
+            styles.body,
+            density === 'compact' && styles.compact,
+          )}>
+          {(headerActions || headerContext) && (
+            <div {...stylex.props(styles.header)}>
+              <div {...stylex.props(styles.headerLeft)}>{headerActions}</div>
+              <div {...stylex.props(styles.headerRight)}>{headerContext}</div>
+            </div>
+          )}
 
-        <div {...stylex.props(styles.footer)}>
-          <div {...stylex.props(styles.footerLeft)}>{footerActions}</div>
-          <div {...stylex.props(styles.footerRight)}>
-            {sendActions}
-            {sendButton ?? defaultSendButton}
+          <div {...stylex.props(styles.inputArea)}>
+            {input ?? <XDSChatComposerInput />}
+          </div>
+
+          <div {...stylex.props(styles.footer)}>
+            <div {...stylex.props(styles.footerLeft)}>{footerActions}</div>
+            <div {...stylex.props(styles.footerRight)}>
+              {sendActions}
+              {sendButton ?? defaultSendButton}
+            </div>
           </div>
         </div>
-      </div>
 
-      {statusPosition === 'bottom' && statusEl}
-    </div>
+        {statusPosition === 'bottom' && statusEl}
+      </div>
     </XDSChatComposerContext.Provider>
   );
 }

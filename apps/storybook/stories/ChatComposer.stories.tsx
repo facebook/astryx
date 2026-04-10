@@ -5,9 +5,53 @@ import {
   XDSChatComposerInput,
 } from '@xds/core/Chat';
 import {XDSToken} from '@xds/core/Token';
-import {XDSToolbar} from '@xds/core/Toolbar';
 import {XDSButton} from '@xds/core/Button';
+import {XDSProgressBar} from '@xds/core/ProgressBar';
 import {useState} from 'react';
+
+// Inline icons for story demos (not in the default icon registry)
+const AtSignIcon = (
+  <svg
+    width="1em"
+    height="1em"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round">
+    <circle cx="12" cy="12" r="4" />
+    <path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8" />
+  </svg>
+);
+const PaperclipIcon = (
+  <svg
+    width="1em"
+    height="1em"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round">
+    <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+  </svg>
+);
+const MicIcon = (
+  <svg
+    width="1em"
+    height="1em"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round">
+    <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+    <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+    <line x1="12" x2="12" y1="19" y2="22" />
+  </svg>
+);
 
 const meta: Meta<typeof XDSChatComposer> = {
   title: 'Chat/XDSChatComposer',
@@ -64,16 +108,20 @@ export const WithStreaming: Story = {
   },
 };
 
-/** With footer actions (model selector, mic button) */
+/** With footer actions (model selector) and mic button */
 export const WithFooterActions: Story = {
   render: () => (
     <XDSChatComposer
       onSubmit={value => console.log('Submit:', value)}
-      footerActions={
-        <>
-          <XDSButton label="GPT-4" variant="ghost" size="md" />
-          <XDSButton label="Mic" variant="ghost" size="md" />
-        </>
+      footerActions={<XDSButton label="GPT-4" variant="ghost" size="md" />}
+      sendActions={
+        <XDSButton
+          label="Microphone"
+          variant="ghost"
+          size="md"
+          icon={MicIcon}
+          iconOnly
+        />
       }
     />
   ),
@@ -86,14 +134,21 @@ export const WithAttachments: Story = {
       onSubmit={value => console.log('Submit:', value)}
       attachments={
         <XDSChatComposerAttachments>
-          <XDSToken label="report.pdf" onDismiss={() => {}} />
-          <XDSToken label="data.csv" onDismiss={() => {}} />
+          <XDSToken label="report.pdf" onRemove={() => {}} />
+          <XDSToken label="data.csv" onRemove={() => {}} />
         </XDSChatComposerAttachments>
       }
-      contextToolbar={
-        <XDSToolbar size="sm">
-          <XDSButton label="Add context" variant="ghost" size="sm" />
-        </XDSToolbar>
+      headerActions={
+        <XDSButton
+          label="Attach file"
+          variant="ghost"
+          size="sm"
+          icon={PaperclipIcon}
+          iconOnly
+        />
+      }
+      headerContext={
+        <XDSProgressBar label="Context window" value={3} isLabelHidden />
       }
     />
   ),
@@ -115,21 +170,45 @@ export const FullFeatured: Story = {
         placeholder="Ask me anything..."
         attachments={
           <XDSChatComposerAttachments>
-            <XDSToken label="design-spec.pdf" onDismiss={() => {}} />
+            <XDSToken label="design-spec.pdf" onRemove={() => {}} />
           </XDSChatComposerAttachments>
         }
-        contextToolbar={
-          <XDSToolbar size="sm">
-            <XDSButton label="@workspace" variant="ghost" size="sm" />
-          </XDSToolbar>
+        headerActions={
+          <>
+            <XDSButton
+              label="Mention"
+              variant="ghost"
+              size="sm"
+              icon={AtSignIcon}
+              iconOnly
+            />
+            <XDSButton
+              label="Attach file"
+              variant="ghost"
+              size="sm"
+              icon={PaperclipIcon}
+              iconOnly
+            />
+          </>
+        }
+        headerContext={
+          <XDSProgressBar label="Context window" value={3} isLabelHidden />
         }
         footerActions={
           <>
-            <XDSButton label="Attach" variant="ghost" size="md" />
-            <XDSButton label="GPT-4o" variant="ghost" size="md" />
+            <XDSButton label="Auto" variant="ghost" size="md" />
+            <XDSButton label="Settings" variant="ghost" size="md" />
           </>
         }
-        sendActions={<XDSButton label="Schedule" variant="ghost" size="md" />}
+        sendActions={
+          <XDSButton
+            label="Microphone"
+            variant="ghost"
+            size="md"
+            icon={MicIcon}
+            iconOnly
+          />
+        }
       />
     );
   },
@@ -153,12 +232,12 @@ export const WithManyAttachments: Story = {
       onSubmit={value => console.log('Submit:', value)}
       attachments={
         <XDSChatComposerAttachments count={6}>
-          <XDSToken label="new_feature_prd.docx" onDismiss={() => {}} />
-          <XDSToken label="2026_roadmap.docx" onDismiss={() => {}} />
-          <XDSToken label="user_flow.pdf" onDismiss={() => {}} />
-          <XDSToken label="launch_plan.docx" onDismiss={() => {}} />
-          <XDSToken label="user_feedback.csv" onDismiss={() => {}} />
-          <XDSToken label="kpis.csv" onDismiss={() => {}} />
+          <XDSToken label="new_feature_prd.docx" onRemove={() => {}} />
+          <XDSToken label="2026_roadmap.docx" onRemove={() => {}} />
+          <XDSToken label="user_flow.pdf" onRemove={() => {}} />
+          <XDSToken label="launch_plan.docx" onRemove={() => {}} />
+          <XDSToken label="user_feedback.csv" onRemove={() => {}} />
+          <XDSToken label="kpis.csv" onRemove={() => {}} />
         </XDSChatComposerAttachments>
       }
     />
@@ -186,9 +265,9 @@ export const WithAttachmentsAndStatusTop: Story = {
       statusPosition="top"
       attachments={
         <XDSChatComposerAttachments count={3}>
-          <XDSToken label="report.pdf" onDismiss={() => {}} />
-          <XDSToken label="data.csv" onDismiss={() => {}} />
-          <XDSToken label="notes.docx" onDismiss={() => {}} />
+          <XDSToken label="report.pdf" onRemove={() => {}} />
+          <XDSToken label="data.csv" onRemove={() => {}} />
+          <XDSToken label="notes.docx" onRemove={() => {}} />
         </XDSChatComposerAttachments>
       }
       status={{
