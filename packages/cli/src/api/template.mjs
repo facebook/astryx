@@ -190,6 +190,7 @@ export async function template(name, options = {}) {
         name: t.dirName,
         description: t.description,
         isReady: t.isReady,
+        path: `templates/${t.dirName}`,
       })),
     };
   }

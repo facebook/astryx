@@ -18,6 +18,8 @@ export interface TemplateListEntry {
   name: string;
   description: string;
   isReady: boolean;
+  /** Relative path to the template folder (e.g. "templates/dashboard"). */
+  path: string;
 }
 
 /** xds --json template <name> [path] */
