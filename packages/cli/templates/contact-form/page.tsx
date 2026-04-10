@@ -12,13 +12,16 @@ import {XDSLink} from '@xds/core/Link';
 import {XDSToken} from '@xds/core/Token';
 import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
 import {XDSTextArea} from '@xds/core/TextArea';
-import Image from 'next/image';
 import {XDSDivider} from '@xds/core/Divider';
-import bannerImg from './banner.png';
-import whyUs1 from './why-us-1.png';
-import whyUs2 from './why-us-2.png';
-import whyUs3 from './why-us-3.png';
 import {colorVars, typeScaleVars, fontWeightVars} from '@xds/core/theme/tokens.stylex';
+
+const BANNER_URL =
+  'https://images.unsplash.com/photo-1557683316-973673baf926?w=1600&q=80';
+const WHY_US_IMAGES = [
+  'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600&q=80',
+  'https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=600&q=80',
+  'https://images.unsplash.com/photo-1552664730-d307ca884978?w=600&q=80',
+];
 
 const CAMPAIGN_GOALS = [
   'Brand Awareness',
@@ -51,17 +54,17 @@ const BUDGET_OPTIONS = [
 
 const WHY_US = [
   {
-    image: whyUs1,
+    image: WHY_US_IMAGES[0],
     title: 'We move fast for you',
     description: 'We cut through the noise and get straight to the work.',
   },
   {
-    image: whyUs2,
+    image: WHY_US_IMAGES[1],
     title: 'We build around you',
     description: "We tailor everything to what you're trying to achieve.",
   },
   {
-    image: whyUs3,
+    image: WHY_US_IMAGES[2],
     title: 'We show up for you',
     description: 'A dedicated team that knows your brand and wants to win.',
   },
@@ -140,8 +143,8 @@ export default function FormSimplePage() {
       style={{minHeight: '100svh', display: 'flex', flexDirection: 'column'}}>
       {/* Full-bleed banner */}
       <div style={{width: '100%', maxHeight: '15vh', overflow: 'hidden'}}>
-        <Image
-          src={bannerImg}
+        <img
+          src={BANNER_URL}
           alt="Decorative banner"
           style={{width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center'}}
         />
@@ -173,7 +176,7 @@ export default function FormSimplePage() {
             <div style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16}}>
               {WHY_US.map(item => (
                 <XDSVStack key={item.title} gap={3}>
-                  <Image
+                  <img
                     src={item.image}
                     alt={item.title}
                     style={{width: '100%', height: 'auto', objectFit: 'cover', borderRadius: 8}}
