@@ -100,6 +100,8 @@ Every response has a `type` string that uniquely identifies it:
 | `xds --json docs <topic>`                 | `docs.detail`             | `DocsDetailResponse`            |
 | `xds --json docs <topic> <section>`       | `docs.detail.section`     | `DocsDetailSectionResponse`     |
 | `xds --json template [--list]`            | `template.list`           | `TemplateListResponse`          |
+| `xds --json template <name>`              | `template.show`           | `TemplateShowResponse`          |
+| `xds --json template <name> --skeleton`   | `template.skeleton`       | `TemplateSkeletonResponse`      |
 | `xds --json template <name> [path]`       | `template.copy`           | `TemplateCopyResponse`          |
 | `xds --json swizzle [--list]`             | `swizzle.list`            | `SwizzleListResponse`           |
 | `xds --json swizzle <component>`          | `swizzle.copy`            | `SwizzleCopyResponse`           |
@@ -261,9 +263,22 @@ If the component has no `.doc.mjs`, `xds component {Name}` returns a clean error
 
 ### Adding a new template
 
-1. Add a directory in `packages/cli/templates/{name}/` with a `page.tsx`
-2. Optionally add `template.doc.mjs` for metadata (name, description, isReady)
+Every template is exactly **two files** — no exceptions:
+
+```
+packages/cli/templates/{name}/
+├── page.tsx              ← the template code (single self-contained file)
+└── template.doc.mjs      ← metadata (name, description, isReady)
+```
+
+1. Create `packages/cli/templates/{name}/page.tsx` with a default-exported React component
+2. Create `packages/cli/templates/{name}/template.doc.mjs` with a `doc` export (`TemplateDoc`)
 3. Done — auto-discovered by `xds template --list` and the `template()` API function
+
+**Rules:**
+- No extra files — no CSS, no images, no other assets. Everything lives in `page.tsx`.
+- Images must use external URLs (e.g. Unsplash), not local imports.
+- All styles must use stylex or inline styles, not separate CSS files.
 
 ### Adding a new option to an existing API function
 
@@ -371,7 +386,7 @@ src/
     component.d.ts             # ComponentListResponse, ComponentDetailResponse, ...
     discover.d.ts              # DiscoverListResponse, ...
     docs.d.ts                  # DocsListResponse, ...
-    template.d.ts              # TemplateListResponse, TemplateCopyResponse
+    template.d.ts              # TemplateListResponse, TemplateShowResponse, TemplateSkeletonResponse, TemplateCopyResponse
     swizzle.d.ts               # SwizzleListResponse, SwizzleCopyResponse
     theme.d.ts                 # ThemeBuildResponse
     upgrade.d.ts               # UpgradeListResponse, UpgradeRunResponse
