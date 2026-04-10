@@ -549,23 +549,15 @@ export default function PaymentFormPage() {
 
                 {/* OR divider */}
                 <XDSHStack gap={3} vAlign="center">
-                  <div
-                    style={{
-                      flex: 1,
-                      height: 1,
-                      backgroundColor: 'var(--color-border)',
-                    }}
-                  />
+                  <div style={{flex: 1}}>
+                    <XDSDivider />
+                  </div>
                   <XDSText type="supporting" color="secondary">
                     OR
                   </XDSText>
-                  <div
-                    style={{
-                      flex: 1,
-                      height: 1,
-                      backgroundColor: 'var(--color-border)',
-                    }}
-                  />
+                  <div style={{flex: 1}}>
+                    <XDSDivider />
+                  </div>
                 </XDSHStack>
 
                 {/* Credit card fields */}
