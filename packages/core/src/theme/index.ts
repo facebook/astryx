@@ -18,6 +18,7 @@ export {XDSMediaTheme} from './XDSMediaTheme';
 export type {XDSMediaThemeProps} from './XDSMediaTheme';
 export {
   defineTheme,
+  markBuilt,
   generateThemeCSS,
   generateThemeCSSFlat,
   generateOnMediaCSS,
@@ -43,11 +44,7 @@ export type {SyntaxTokenName, DomainTokenName} from './domainTokens';
 export {syntaxTokenDefaults, domainTokenDefaults} from './domainTokens';
 
 // Syntax theme API
-export {
-  defineSyntaxTheme,
-  syntaxThemeStyle,
-  syntaxThemeToCSS,
-} from './syntax';
+export {defineSyntaxTheme, syntaxThemeStyle, syntaxThemeToCSS} from './syntax';
 export type {
   SyntaxTheme,
   SyntaxThemeInput,

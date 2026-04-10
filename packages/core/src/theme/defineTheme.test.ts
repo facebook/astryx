@@ -1,6 +1,7 @@
 import {describe, it, expect, vi} from 'vitest';
 import {
   defineTheme,
+  markBuilt,
   generateThemeCSS,
   generateThemeCSSFlat,
   isDefinedTheme,
@@ -861,5 +862,32 @@ describe('pseudo-class overrides in components', () => {
     expect(css).toContain('border-color: var(--color-accent)');
     // No pseudo rules
     expect(css).not.toContain('.xds-card:');
+  });
+});
+
+describe('markBuilt', () => {
+  it('sets __built on the returned theme', () => {
+    const theme = defineTheme({name: 'test', tokens: {}});
+    expect(theme.__built).toBeUndefined();
+    const built = markBuilt(theme);
+    expect(built.__built).toBe(true);
+  });
+
+  it('does not mutate the original theme', () => {
+    const theme = defineTheme({name: 'test', tokens: {}});
+    markBuilt(theme);
+    expect(theme.__built).toBeUndefined();
+  });
+
+  it('preserves all original properties', () => {
+    const theme = defineTheme({
+      name: 'preserve',
+      tokens: {'--color-accent': ['#000', '#fff']},
+      components: {button: {base: {fontWeight: '700'}}},
+    });
+    const built = markBuilt(theme);
+    expect(built.name).toBe('preserve');
+    expect(built.tokens).toEqual(theme.tokens);
+    expect(built.components).toEqual(theme.components);
   });
 });

@@ -898,7 +898,9 @@ export function generateOnMediaCSS(theme: XDSDefinedTheme): string {
                 const declarations = pseudoEntries
                   .map(([prop, value]) => `    ${toKebabCase(prop)}: ${value};`)
                   .join('\n');
-                parts.push(`  ${baseSelector}${pseudo} {\n${declarations}\n  }`);
+                parts.push(
+                  `  ${baseSelector}${pseudo} {\n${declarations}\n  }`,
+                );
               }
             }
           }
@@ -934,7 +936,9 @@ export function generateThemeCSS(theme: XDSDefinedTheme): ThemeCSSOutput {
 
   const onMediaCss = generateOnMediaCSS(theme);
   if (onMediaCss) {
-    componentCss = componentCss ? `${componentCss}\n\n${onMediaCss}` : onMediaCss;
+    componentCss = componentCss
+      ? `${componentCss}\n\n${onMediaCss}`
+      : onMediaCss;
   }
 
   return {prose: proseCss, component: componentCss};
@@ -956,6 +960,16 @@ export function generateThemeCSSFlat(theme: XDSDefinedTheme): string {
 // =============================================================================
 // Type guard
 // =============================================================================
+
+/**
+ * Mark a theme as pre-built.
+ *
+ * Theme packages call this on their export so XDSTheme skips runtime
+ * `<style>` injection — the CSS is in a separate file the consumer imports.
+ */
+export function markBuilt(theme: XDSDefinedTheme): XDSDefinedTheme {
+  return {...theme, __built: true};
+}
 
 /** Check if a theme object was created with defineTheme */
 export function isDefinedTheme(theme: unknown): theme is XDSDefinedTheme {
