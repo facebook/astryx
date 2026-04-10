@@ -1,15 +1,15 @@
 /**
  * @file convertSVG.ts
  * @input Raw SVG markup string
- * @output Parsed SVGIconDef with layers classified and attributes rewired
+ * @output Parsed SVGIconDef with layers classified, roles assigned, and attributes rewired
  * @position Utility for the SVG upload & convert story
  *
  * Parses arbitrary SVG markup, extracts shape elements, classifies them into
- * primary/secondary layers, strips hardcoded styling attributes, and produces
- * an SVGIconDef ready for the XDSSVGIcon system.
+ * primary/secondary layers, assigns fill/stroke roles based on shape type
+ * and geometry, strips hardcoded styling attributes, and produces an SVGIconDef.
  */
 
-import type {SVGIconDef, IconShape} from './XDSSVGIcon';
+import type {SVGIconDef, IconShape, IconShapeRole} from './XDSSVGIcon';
 
 const SHAPE_TAGS = [
   'path',
@@ -19,15 +19,6 @@ const SHAPE_TAGS = [
   'polyline',
   'polygon',
 ] as const;
-const _STRIP_ATTRS = [
-  'fill',
-  'stroke',
-  'stroke-width',
-  'stroke-linecap',
-  'stroke-linejoin',
-  'style',
-  'color',
-];
 
 /** Attributes to preserve per shape type */
 const KEEP_ATTRS: Record<string, string[]> = {
@@ -39,23 +30,33 @@ const KEEP_ATTRS: Record<string, string[]> = {
   polygon: ['points'],
 };
 
-/**
- * Estimate visual "weight" of a shape for layer classification.
- * Larger/more complex shapes → primary, smaller → secondary.
- */
+/** Infer role from element type and attributes */
+function inferRole(
+  type: string,
+  _attrs: Record<string, string>,
+): IconShapeRole {
+  // Lines and polylines are inherently stroke-only
+  if (type === 'line' || type === 'polyline') return 'stroke';
+  // Open paths (no Z/z close command) are stroke-role
+  if (type === 'path') {
+    const d = _attrs.d ?? '';
+    if (!d.match(/[zZ]\s*$/)) return 'stroke';
+  }
+  return 'fill';
+}
+
+/** Estimate visual "weight" for layer classification */
 function shapeWeight(shape: IconShape): number {
   const {type, attrs} = shape;
   switch (type) {
-    case 'path': {
-      // Approximate by path data length (more commands = bigger shape)
+    case 'path':
       return (attrs.d ?? '').length;
-    }
     case 'circle':
       return parseFloat(attrs.r ?? '0') * 2;
     case 'rect':
       return parseFloat(attrs.width ?? '0') * parseFloat(attrs.height ?? '0');
     case 'line':
-      return 10; // lines are typically detail
+      return 10;
     case 'polyline':
     case 'polygon':
       return (attrs.points ?? '').length;
@@ -65,10 +66,7 @@ function shapeWeight(shape: IconShape): number {
 }
 
 /**
- * Parse raw SVG markup into an SVGIconDef.
- *
- * Uses DOMParser to extract shapes, strips hardcoded styling,
- * and classifies shapes into primary (≥ median weight) and secondary layers.
+ * Parse raw SVG markup into an SVGIconDef with roles.
  */
 export function convertSVG(
   svgMarkup: string,
@@ -80,7 +78,6 @@ export function convertSVG(
 
   const viewBox = svg?.getAttribute('viewBox') ?? '0 0 24 24';
 
-  // Extract all shape elements
   const shapes: IconShape[] = [];
   for (const tag of SHAPE_TAGS) {
     const elements = doc.querySelectorAll(tag);
@@ -95,20 +92,18 @@ export function convertSVG(
         }
       }
 
-      // Only include shapes that have meaningful geometry
       if (Object.keys(attrs).length > 0) {
-        shapes.push({type: tag as IconShape['type'], attrs});
+        shapes.push({
+          type: tag as IconShape['type'],
+          attrs,
+          role: inferRole(tag, attrs),
+        });
       }
     });
   }
 
-  // Classify into layers: shapes above median weight → primary
   if (shapes.length <= 2) {
-    return {
-      name,
-      viewBox,
-      primary: shapes,
-    };
+    return {name, viewBox, primary: shapes};
   }
 
   const weights = shapes.map(s => ({shape: s, weight: shapeWeight(s)}));
@@ -134,9 +129,7 @@ export function convertSVG(
   };
 }
 
-/**
- * Generate a TSX component string from an SVGIconDef.
- */
+/** Generate a TSX component string from an SVGIconDef. */
 export function iconDefToTSX(def: SVGIconDef): string {
   const varName = def.name.replace(/[^a-zA-Z0-9]/g, '');
   const lines = [
@@ -147,40 +140,43 @@ export function iconDefToTSX(def: SVGIconDef): string {
   return lines.join('\n');
 }
 
-/**
- * Generate a raw SVG string with CSS variable references from an SVGIconDef.
- */
+/** Generate a raw SVG string with CSS variable references from an SVGIconDef. */
 export function iconDefToSVG(def: SVGIconDef): string {
   const viewBox = def.viewBox ?? '0 0 24 24';
 
-  function shapesToSVG(
-    shapes: IconShape[],
-    _layer: 'primary' | 'secondary',
-  ): string {
+  function shapesToSVG(shapes: IconShape[]): string {
     return shapes
       .map(shape => {
         const attrs = Object.entries(shape.attrs)
           .map(([k, v]) => `${k}="${v}"`)
           .join(' ');
-        const selfClosing = [
-          'path',
-          'circle',
-          'rect',
-          'line',
-          'polyline',
-          'polygon',
-        ].includes(shape.type);
-        return `    <${shape.type} ${attrs}${selfClosing ? ' /' : ''}>`;
+        return `    <${shape.type} ${attrs} />`;
       })
       .join('\n');
   }
 
-  const primaryGroup = `  <g fill="var(--icon-layer-primary-fill)" stroke="var(--icon-layer-primary-stroke)" opacity="var(--icon-layer-primary-opacity)" stroke-width="var(--icon-stroke-width)" stroke-linecap="var(--icon-stroke-linecap)" stroke-linejoin="var(--icon-stroke-linejoin)">\n${shapesToSVG(def.primary, 'primary')}\n  </g>`;
+  const primaryFill = def.primary.filter(s => s.role !== 'stroke');
+  const primaryStroke = def.primary.filter(s => s.role === 'stroke');
+  const secondaryFill = (def.secondary ?? []).filter(s => s.role !== 'stroke');
+  const secondaryStroke = (def.secondary ?? []).filter(
+    s => s.role === 'stroke',
+  );
 
-  const secondaryGroup =
-    def.secondary && def.secondary.length > 0
-      ? `\n  <g fill="var(--icon-layer-secondary-fill)" stroke="var(--icon-layer-secondary-stroke)" opacity="var(--icon-layer-secondary-opacity)" stroke-width="var(--icon-stroke-width)" stroke-linecap="var(--icon-stroke-linecap)" stroke-linejoin="var(--icon-stroke-linejoin)">\n${shapesToSVG(def.secondary, 'secondary')}\n  </g>`
-      : '';
+  let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}">\n`;
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}">\n${primaryGroup}${secondaryGroup}\n</svg>`;
+  if (primaryFill.length > 0) {
+    svg += `  <g fill="var(--icon-layer-primary-fill)" stroke="var(--icon-layer-primary-stroke)" opacity="var(--icon-layer-primary-opacity)" stroke-width="var(--icon-stroke-width)" stroke-linecap="var(--icon-stroke-linecap)" stroke-linejoin="var(--icon-stroke-linejoin)">\n${shapesToSVG(primaryFill)}\n  </g>\n`;
+  }
+  if (primaryStroke.length > 0) {
+    svg += `  <g fill="none" stroke="var(--icon-layer-primary-stroke-role-stroke)" opacity="var(--icon-layer-primary-stroke-role-opacity)" stroke-width="var(--icon-layer-primary-stroke-role-width)" stroke-linecap="var(--icon-stroke-linecap)" stroke-linejoin="var(--icon-stroke-linejoin)">\n${shapesToSVG(primaryStroke)}\n  </g>\n`;
+  }
+  if (secondaryFill.length > 0) {
+    svg += `  <g fill="var(--icon-layer-secondary-fill)" stroke="var(--icon-layer-secondary-stroke)" opacity="var(--icon-layer-secondary-opacity)" stroke-width="var(--icon-stroke-width)" stroke-linecap="var(--icon-stroke-linecap)" stroke-linejoin="var(--icon-stroke-linejoin)">\n${shapesToSVG(secondaryFill)}\n  </g>\n`;
+  }
+  if (secondaryStroke.length > 0) {
+    svg += `  <g fill="none" stroke="var(--icon-layer-secondary-stroke-role-stroke)" opacity="var(--icon-layer-secondary-stroke-role-opacity)" stroke-width="var(--icon-layer-secondary-stroke-role-width)" stroke-linecap="var(--icon-stroke-linecap)" stroke-linejoin="var(--icon-stroke-linejoin)">\n${shapesToSVG(secondaryStroke)}\n  </g>\n`;
+  }
+
+  svg += `</svg>`;
+  return svg;
 }

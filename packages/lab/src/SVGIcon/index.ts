@@ -15,6 +15,7 @@ export type {
   SVGIconColor,
   SVGIconDef,
   IconShape,
+  IconShapeRole,
 } from './XDSSVGIcon';
 
 export {variations, opticalSize} from './variations.stylex';
@@ -29,5 +30,6 @@ export {
   homeIcon,
   settingsIcon,
   calendarIcon,
+  menuIcon,
   starterIcons,
 } from './icons';

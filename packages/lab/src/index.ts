@@ -33,6 +33,7 @@ export {
   type SVGIconColor,
   type SVGIconDef,
   type IconShape,
+  type IconShapeRole,
   iconVars,
   variations,
   opticalSize,
@@ -45,5 +46,6 @@ export {
   homeIcon,
   settingsIcon,
   calendarIcon,
+  menuIcon,
   starterIcons,
 } from './SVGIcon';

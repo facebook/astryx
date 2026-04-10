@@ -9,6 +9,8 @@ import {
   starterIcons,
   bellIcon,
   settingsIcon,
+  homeIcon,
+  menuIcon,
   convertSVG,
   iconDefToTSX,
   iconDefToSVG,
@@ -67,7 +69,7 @@ export const Default: Story = {
 };
 
 // =============================================================================
-// All Icons × All Variations
+// All Icons x All Variations
 // =============================================================================
 
 const VARIATIONS: SVGIconVariation[] = [
@@ -83,8 +85,9 @@ export const VariationMatrix: Story = {
     <XDSStack gap="lg">
       <XDSText variant="heading-3">Variation Matrix</XDSText>
       <XDSText variant="body-sm" color="secondary">
-        Same SVG paths, different visual treatments — all via CSS custom
-        properties.
+        Same SVG paths, different visual treatments via CSS custom properties.
+        Note how stroke-role elements (menu lines, calendar pegs, bell clapper)
+        stay as strokes even in bold/bulk mode.
       </XDSText>
       <div
         style={{
@@ -121,6 +124,71 @@ export const VariationMatrix: Story = {
           </>
         ))}
       </div>
+    </XDSStack>
+  ),
+};
+
+// =============================================================================
+// Role Behavior Demo
+// =============================================================================
+
+export const RoleBehavior: Story = {
+  render: () => (
+    <XDSStack gap="lg">
+      <XDSText variant="heading-3">Path Roles: Fill vs Stroke</XDSText>
+      <XDSText variant="body-sm" color="secondary">
+        Stroke-role elements always stay as strokes. Fill-role elements switch
+        between stroke (linear) and fill (bold). Compare Menu (all stroke-role)
+        vs Home (fill-role body + fill-role door with mask knockout).
+      </XDSText>
+
+      <XDSStack gap="md">
+        <XDSText variant="label-sm" color="secondary">
+          Menu — all stroke-role (lines never become fills)
+        </XDSText>
+        <XDSStack direction="row" gap="lg">
+          {VARIATIONS.map(v => (
+            <XDSStack key={v} gap="xs" align="center">
+              <XDSSVGIcon icon={menuIcon} variation={v} size="lg" />
+              <XDSText variant="label-sm" color="secondary">
+                {v}
+              </XDSText>
+            </XDSStack>
+          ))}
+        </XDSStack>
+
+        <XDSDivider />
+
+        <XDSText variant="label-sm" color="secondary">
+          Home — fill-role body + door (mask gap in bold)
+        </XDSText>
+        <XDSStack direction="row" gap="lg">
+          {VARIATIONS.map(v => (
+            <XDSStack key={v} gap="xs" align="center">
+              <XDSSVGIcon icon={homeIcon} variation={v} size="lg" />
+              <XDSText variant="label-sm" color="secondary">
+                {v}
+              </XDSText>
+            </XDSStack>
+          ))}
+        </XDSStack>
+
+        <XDSDivider />
+
+        <XDSText variant="label-sm" color="secondary">
+          Settings — fill-role gear + circle (mask gap in bold)
+        </XDSText>
+        <XDSStack direction="row" gap="lg">
+          {VARIATIONS.map(v => (
+            <XDSStack key={v} gap="xs" align="center">
+              <XDSSVGIcon icon={settingsIcon} variation={v} size="lg" />
+              <XDSText variant="label-sm" color="secondary">
+                {v}
+              </XDSText>
+            </XDSStack>
+          ))}
+        </XDSStack>
+      </XDSStack>
     </XDSStack>
   ),
 };
@@ -249,11 +317,10 @@ function SVGConverterStory() {
       <XDSText variant="heading-3">SVG Upload & Convert</XDSText>
       <XDSText variant="body-sm" color="secondary">
         Drop any SVG icon and convert it to the XDS icon format. The converter
-        strips hardcoded styles, classifies layers, and outputs a ready-to-use
-        icon definition.
+        strips hardcoded styles, classifies layers and roles, and outputs a
+        ready-to-use icon definition.
       </XDSText>
 
-      {/* Input */}
       <XDSStack gap="sm">
         <XDSStack direction="row" gap="sm">
           <XDSButton
@@ -295,7 +362,6 @@ function SVGConverterStory() {
         </XDSText>
       )}
 
-      {/* Preview */}
       {iconDef && (
         <>
           <XDSDivider />
@@ -317,7 +383,6 @@ function SVGConverterStory() {
             ))}
           </div>
 
-          {/* Export */}
           <XDSDivider />
           <XDSText variant="heading-4">Export</XDSText>
           <XDSStack direction="row" gap="sm">
@@ -334,8 +399,6 @@ function SVGConverterStory() {
               onPress={handleCopySVG}
             />
           </XDSStack>
-
-          {/* TSX preview */}
           <pre
             style={{
               fontSize: 11,
