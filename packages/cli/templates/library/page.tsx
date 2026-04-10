@@ -298,7 +298,7 @@ const styles = stylex.create({
     paddingBottom: spacingVars['--spacing-3'],
   },
   thumbnail: {
-    backgroundColor: colorVars['--color-wash'],
+    backgroundColor: colorVars['--color-background-body'],
     width: '100%',
   },
   cardBody: {
