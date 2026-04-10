@@ -1,6 +1,6 @@
 'use client';
 
-import {useState} from 'react';
+import React, {useState} from 'react';
 
 import {XDSAppShell} from '@xds/core/AppShell';
 import {
@@ -13,7 +13,7 @@ import {XDSNavIcon} from '@xds/core/NavIcon';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSChatComposer} from '@xds/core/Chat';
+import {XDSChatComposer, XDSChatComposerInput} from '@xds/core/Chat';
 import {XDSToggleButton} from '@xds/core/ToggleButton';
 import {XDSButton} from '@xds/core/Button';
 
@@ -26,6 +26,13 @@ import {
   DocumentTextIcon,
   CubeIcon,
   Cog6ToothIcon,
+  SparklesIcon as HeroSparklesIcon,
+  PencilIcon,
+  CodeBracketIcon,
+  MagnifyingGlassIcon,
+  PaintBrushIcon,
+  ShieldCheckIcon,
+  CpuChipIcon,
 } from '@heroicons/react/24/outline';
 import {
   HomeIcon as HomeIconSolid,
@@ -136,7 +143,7 @@ function PaperclipIcon() {
   );
 }
 
-function GlobeIcon() {
+function AtomIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
       width="16"
@@ -146,13 +153,25 @@ function GlobeIcon() {
       stroke="currentColor"
       strokeWidth="2"
       strokeLinecap="round"
-      strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10" />
-      <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
-      <path d="M2 12h20" />
+      strokeLinejoin="round"
+      {...props}>
+      <circle cx="12" cy="12" r="1" />
+      <path d="M20.2 20.2c2.04-2.03.02-7.36-4.5-11.9-4.54-4.52-9.87-6.54-11.9-4.5-2.04 2.03-.02 7.36 4.5 11.9 4.54 4.52 9.87 6.54 11.9 4.5Z" />
+      <path d="M15.7 15.7c4.52-4.54 6.54-9.87 4.5-11.9-2.03-2.04-7.36-.02-11.9 4.5-4.52 4.54-6.54 9.87-4.5 11.9 2.03 2.04 7.36.02 11.9-4.5Z" />
     </svg>
   );
 }
+
+// Mode options for the dropdown
+const MODE_OPTIONS = [
+  {key: 'auto', label: 'Auto', icon: HeroSparklesIcon},
+  {key: 'writing', label: 'Writing', icon: PencilIcon},
+  {key: 'coding', label: 'Coding', icon: CodeBracketIcon},
+  {key: 'research', label: 'Research', icon: MagnifyingGlassIcon},
+  {key: 'creative', label: 'Creative', icon: PaintBrushIcon},
+  {key: 'sensitive', label: 'Sensitive', icon: ShieldCheckIcon},
+  {key: 'deep', label: 'Deep Mode', icon: CpuChipIcon},
+] as const;
 
 function MicIcon() {
   return (
@@ -249,6 +268,8 @@ function AIChatSideNav() {
 
 export default function AIChatTemplate() {
   const [selected, setSelected] = useState<string | null>(null);
+  const [mode, setMode] = useState('auto');
+  const activeMode = MODE_OPTIONS.find(m => m.key === mode) ?? MODE_OPTIONS[0];
 
   return (
     <XDSAppShell sideNav={<AIChatSideNav />} variant="elevated">
@@ -278,6 +299,7 @@ export default function AIChatTemplate() {
         <XDSChatComposer
           onSubmit={() => {}}
           placeholder="Ask anything"
+          input={<XDSChatComposerInput style={{minHeight: '44px'}} />}
           headerActions={
             <>
               <XDSButton
@@ -296,28 +318,19 @@ export default function AIChatTemplate() {
           }
           footerActions={
             <>
-              <XDSButton
-                label="Search"
-                variant="ghost"
-                size="md"
-                icon={<GlobeIcon />}
-              />
               <XDSDropdownMenu
                 button={{
-                  label: 'Auto',
+                  label: activeMode.label,
                   variant: 'ghost',
                   size: 'md',
-                  children: 'Auto',
+                  icon: <AtomIcon />,
+                  children: activeMode.label,
                 }}
-                items={[
-                  {label: 'Auto', onClick: () => {}},
-                  {label: 'Writing', onClick: () => {}},
-                  {label: 'Coding', onClick: () => {}},
-                  {label: 'Research', onClick: () => {}},
-                  {label: 'Creative', onClick: () => {}},
-                  {label: 'Sensitive', onClick: () => {}},
-                  {label: 'Deep Mode', onClick: () => {}},
-                ]}
+                items={MODE_OPTIONS.map(opt => ({
+                  label: opt.label,
+                  icon: opt.icon,
+                  onClick: () => setMode(opt.key),
+                }))}
               />
               <XDSDropdownMenu
                 button={{
