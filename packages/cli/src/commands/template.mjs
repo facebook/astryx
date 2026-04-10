@@ -61,15 +61,12 @@ export function registerTemplate(program) {
         }
 
         case 'template.show': {
-          for (const [filename, content] of Object.entries(result.data.files)) {
-            console.log(`// ${filename}`);
-            console.log(content);
-          }
+          console.log(result.data.source);
           break;
         }
 
         case 'template.copy': {
-          console.log(`\n✓ Copied ${result.data.filesCopied} template files to ${result.data.outputDir}/\n`);
+          console.log(`\n✓ Copied template to ${result.data.outputDir}/page.tsx\n`);
           break;
         }
       }
