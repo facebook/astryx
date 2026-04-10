@@ -1,5 +1,5 @@
 import type {Meta, StoryObj} from '@storybook/react';
-import {useState, useCallback, useRef} from 'react';
+import {Fragment, useState, useCallback, useRef} from 'react';
 import {
   XDSSVGIcon,
   type SVGIconVariation,
@@ -82,7 +82,7 @@ const VARIATIONS: SVGIconVariation[] = [
 
 export const VariationMatrix: Story = {
   render: () => (
-    <XDSStack gap="lg">
+    <XDSStack direction="vertical" gap={3}>
       <XDSText variant="heading-3">Variation Matrix</XDSText>
       <XDSText variant="body-sm" color="secondary">
         Same SVG paths, different visual treatments via CSS custom properties.
@@ -110,10 +110,8 @@ export const VariationMatrix: Story = {
 
         {/* Icon rows */}
         {starterIcons.map(icon => (
-          <>
-            <XDSText key={icon.name} variant="label-sm">
-              {icon.name}
-            </XDSText>
+          <Fragment key={icon.name}>
+            <XDSText variant="label-sm">{icon.name}</XDSText>
             {VARIATIONS.map(v => (
               <div
                 key={`${icon.name}-${v}`}
@@ -121,7 +119,7 @@ export const VariationMatrix: Story = {
                 <XDSSVGIcon icon={icon} variation={v} size="lg" />
               </div>
             ))}
-          </>
+          </Fragment>
         ))}
       </div>
     </XDSStack>
@@ -134,7 +132,7 @@ export const VariationMatrix: Story = {
 
 export const RoleBehavior: Story = {
   render: () => (
-    <XDSStack gap="lg">
+    <XDSStack direction="vertical" gap={3}>
       <XDSText variant="heading-3">Path Roles: Fill vs Stroke</XDSText>
       <XDSText variant="body-sm" color="secondary">
         Stroke-role elements always stay as strokes. Fill-role elements switch
@@ -142,13 +140,13 @@ export const RoleBehavior: Story = {
         vs Home (fill-role body + fill-role door with mask knockout).
       </XDSText>
 
-      <XDSStack gap="md">
+      <XDSStack direction="vertical" gap={2}>
         <XDSText variant="label-sm" color="secondary">
           Menu — all stroke-role (lines never become fills)
         </XDSText>
-        <XDSStack direction="row" gap="lg">
+        <XDSStack direction="row" gap={3}>
           {VARIATIONS.map(v => (
-            <XDSStack key={v} gap="xs" align="center">
+            <XDSStack direction="vertical" key={v} gap={0.5} hAlign="center">
               <XDSSVGIcon icon={menuIcon} variation={v} size="lg" />
               <XDSText variant="label-sm" color="secondary">
                 {v}
@@ -162,9 +160,9 @@ export const RoleBehavior: Story = {
         <XDSText variant="label-sm" color="secondary">
           Home — fill-role body + door (mask gap in bold)
         </XDSText>
-        <XDSStack direction="row" gap="lg">
+        <XDSStack direction="row" gap={3}>
           {VARIATIONS.map(v => (
-            <XDSStack key={v} gap="xs" align="center">
+            <XDSStack direction="vertical" key={v} gap={0.5} hAlign="center">
               <XDSSVGIcon icon={homeIcon} variation={v} size="lg" />
               <XDSText variant="label-sm" color="secondary">
                 {v}
@@ -178,9 +176,9 @@ export const RoleBehavior: Story = {
         <XDSText variant="label-sm" color="secondary">
           Settings — fill-role gear + circle (mask gap in bold)
         </XDSText>
-        <XDSStack direction="row" gap="lg">
+        <XDSStack direction="row" gap={3}>
           {VARIATIONS.map(v => (
-            <XDSStack key={v} gap="xs" align="center">
+            <XDSStack direction="vertical" key={v} gap={0.5} hAlign="center">
               <XDSSVGIcon icon={settingsIcon} variation={v} size="lg" />
               <XDSText variant="label-sm" color="secondary">
                 {v}
@@ -201,16 +199,16 @@ const SIZES: SVGIconSize[] = ['xsm', 'sm', 'md', 'lg'];
 
 export const SizeScale: Story = {
   render: () => (
-    <XDSStack gap="md">
+    <XDSStack direction="vertical" gap={2}>
       <XDSText variant="heading-3">
         Size Scale with Optical Compensation
       </XDSText>
       <XDSText variant="body-sm" color="secondary">
         Stroke width auto-adjusts at smaller sizes for legibility.
       </XDSText>
-      <XDSStack direction="row" gap="lg" align="end">
+      <XDSStack direction="row" gap={3} vAlign="end">
         {SIZES.map(size => (
-          <XDSStack key={size} gap="sm" align="center">
+          <XDSStack direction="vertical" key={size} gap={1} hAlign="center">
             <XDSSVGIcon icon={settingsIcon} variation="linear" size={size} />
             <XDSText variant="label-sm" color="secondary">
               {size}
@@ -238,11 +236,11 @@ const COLORS: SVGIconColor[] = [
 
 export const Colors: Story = {
   render: () => (
-    <XDSStack gap="md">
+    <XDSStack direction="vertical" gap={2}>
       <XDSText variant="heading-3">Semantic Colors</XDSText>
-      <XDSStack direction="row" gap="lg">
+      <XDSStack direction="row" gap={3}>
         {COLORS.map(c => (
-          <XDSStack key={c} gap="sm" align="center">
+          <XDSStack direction="vertical" key={c} gap={1} hAlign="center">
             <XDSSVGIcon
               icon={bellIcon}
               variation="linear"
@@ -313,7 +311,7 @@ function SVGConverterStory() {
   }, [iconDef]);
 
   return (
-    <XDSStack gap="lg">
+    <XDSStack direction="vertical" gap={3}>
       <XDSText variant="heading-3">SVG Upload & Convert</XDSText>
       <XDSText variant="body-sm" color="secondary">
         Drop any SVG icon and convert it to the XDS icon format. The converter
@@ -321,8 +319,8 @@ function SVGConverterStory() {
         ready-to-use icon definition.
       </XDSText>
 
-      <XDSStack gap="sm">
-        <XDSStack direction="row" gap="sm">
+      <XDSStack direction="vertical" gap={1}>
+        <XDSStack direction="row" gap={1}>
           <XDSButton
             size="sm"
             variant="neutral"
@@ -374,7 +372,7 @@ function SVGConverterStory() {
               alignItems: 'center',
             }}>
             {VARIATIONS.map(v => (
-              <XDSStack key={v} gap="sm" align="center">
+              <XDSStack direction="vertical" key={v} gap={1} hAlign="center">
                 <XDSSVGIcon icon={iconDef} variation={v} size="lg" />
                 <XDSText variant="label-sm" color="secondary">
                   {v}
@@ -385,7 +383,7 @@ function SVGConverterStory() {
 
           <XDSDivider />
           <XDSText variant="heading-4">Export</XDSText>
-          <XDSStack direction="row" gap="sm">
+          <XDSStack direction="row" gap={1}>
             <XDSButton
               size="sm"
               variant="neutral"
