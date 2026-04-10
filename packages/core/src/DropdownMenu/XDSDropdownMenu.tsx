@@ -243,8 +243,7 @@ function getSelectableItems(
  * Props for customizing the dropdown button.
  * Extends XDSButtonProps but omits onClick since it's managed internally.
  *
- * When `icon` is set without `children`, renders as an icon-only button
- * (square, with `label` as aria-label). Pass `children` to get icon + visible text.
+ * Set `isIconOnly` to render as an icon-only button (square, with `label` as aria-label).
  */
 export type XDSDropdownMenuButtonProps = Omit<XDSButtonProps, 'onClick'>;
 
@@ -287,8 +286,7 @@ export interface XDSDropdownMenuProps {
 
   /**
    * Whether to show a chevron indicator on the trigger button.
-   * Automatically hidden for icon-only buttons (when `button.icon` is set
-   * without `button.endContent`).
+   * Automatically hidden for icon-only buttons (when `button.isIconOnly` is true).
    * @default true
    */
   hasChevron?: boolean;
