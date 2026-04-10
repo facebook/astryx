@@ -39,6 +39,14 @@ export interface UseAutoScrollOptions {
    * @default 100
    */
   scrollUpThreshold?: number;
+
+  /**
+   * External scroll container ref. When provided, scroll logic targets
+   * this element instead of creating its own. Use when the message list
+   * is in page flow (e.g. inside XDSChatLayout) and the scrollable
+   * ancestor is a parent element or the viewport.
+   */
+  scrollContainerRef?: React.RefObject<HTMLElement | null>;
 }
 
 export interface UseAutoScrollReturn {
@@ -89,8 +97,11 @@ export function useAutoScroll({
   enabled = true,
   threshold = 12,
   scrollUpThreshold = 100,
+  scrollContainerRef,
 }: UseAutoScrollOptions = {}): UseAutoScrollReturn {
-  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const internalRef = useRef<HTMLDivElement | null>(null);
+  const scrollRef = (scrollContainerRef ??
+    internalRef) as React.RefObject<HTMLDivElement | null>;
   const [hasNewMessages, setHasNewMessages] = useState(false);
   const [isScrolledUp, setIsScrolledUp] = useState(false);
   const isNearBottomRef = useRef(true);

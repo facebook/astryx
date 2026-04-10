@@ -34,7 +34,11 @@ import {
   easeVars,
   shadowVars,
 } from '../theme/tokens.stylex';
-import {XDSChatListContext, type XDSChatDensity} from './XDSChatContext';
+import {
+  XDSChatListContext,
+  type XDSChatDensity,
+  useXDSChatLayoutContext,
+} from './XDSChatContext';
 import {xdsClassName, mergeProps} from '../utils';
 import {XDSSpinner} from '../Spinner';
 import {XDSIcon} from '../Icon';
@@ -126,11 +130,13 @@ const styles = stylex.create({
   root: {
     display: 'flex',
     flexDirection: 'column',
+    flex: 1,
+    minHeight: 0,
+  },
+  rootScrollable: {
     overflowY: 'auto',
     overflowX: 'hidden',
     overflowAnchor: 'auto',
-    flex: 1,
-    minHeight: 0,
   },
   inner: {
     display: 'flex',
@@ -310,6 +316,8 @@ export function XDSChatMessageList({
   'data-testid': testId,
   ref,
 }: XDSChatMessageListProps) {
+  const layoutContext = useXDSChatLayoutContext();
+
   const {
     scrollRef,
     isScrolledUp,
@@ -322,7 +330,12 @@ export function XDSChatMessageList({
     enabled: hasAutoScroll,
     threshold: scrollThreshold,
     scrollUpThreshold,
+    scrollContainerRef: layoutContext?.scrollContainerRef,
   });
+
+  // When inside XDSChatLayout, the scroll container is the layout's
+  // scroll area — attach the scroll listener there instead of on our root.
+  const isInsideLayout = layoutContext != null;
 
   const sentinelRef = useRef<HTMLDivElement>(null);
   const [isLoadingTop, startTransition] = useTransition();
@@ -337,6 +350,15 @@ export function XDSChatMessageList({
   useEffect(() => {
     onContentChange();
   }, [children, onContentChange]);
+
+  // When inside a layout, attach scroll listener to the external scroll container
+  useEffect(() => {
+    if (!isInsideLayout) return;
+    const el = scrollRef.current;
+    if (!el) return;
+    el.addEventListener('scroll', handleScroll, {passive: true});
+    return () => el.removeEventListener('scroll', handleScroll);
+  }, [isInsideLayout, scrollRef, handleScroll]);
 
   // IntersectionObserver for scroll-to-top infinite scroll
   useEffect(() => {
@@ -401,7 +423,11 @@ export function XDSChatMessageList({
           onScroll={handleScroll}
           {...mergeProps(
             xdsClassName('chat-message-list', {density}),
-            stylex.props(styles.root, xstyle),
+            stylex.props(
+              styles.root,
+              !isInsideLayout && styles.rootScrollable,
+              xstyle,
+            ),
             className,
             style,
           )}>

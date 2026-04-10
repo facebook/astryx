@@ -19,6 +19,7 @@ import {
   type ReactNode,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -26,6 +27,7 @@ import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
+import {XDSChatLayoutContext} from './XDSChatContext';
 
 // =============================================================================
 // Types
@@ -54,6 +56,26 @@ export interface XDSChatLayoutProps {
    */
   emptyState?: ReactNode;
 
+  /**
+   * External scroll container ref. When provided, auto-scroll and
+   * scroll-to-bottom target this element instead of the layout root.
+   *
+   * Use when the layout is embedded in a page where the scroll
+   * container is a parent element or the document body:
+   *
+   * @example
+   * ```
+   * // Scroll with the page body
+   * const scrollRef = useRef(document.documentElement);
+   * <XDSChatLayout scrollRef={scrollRef} composer={...}>...</XDSChatLayout>
+   * ```
+   *
+   * When omitted, the layout root itself is the scroll container
+   * (`overflow-y: auto`). This is the default for full-page and
+   * panel chat layouts.
+   */
+  scrollRef?: React.RefObject<HTMLElement | null>;
+
   /** StyleX overrides. */
   xstyle?: StyleXStyles;
   /** CSS class name(s) appended to the root element. */
@@ -73,6 +95,11 @@ const styles = stylex.create({
     position: 'relative',
     containerType: 'inline-size',
     minHeight: 0,
+    flex: 1,
+  },
+  rootScrollable: {
+    overflowY: 'auto',
+    overflowX: 'hidden',
   },
 
   // --- Message area ---
@@ -213,6 +240,7 @@ export function XDSChatLayout({
   children,
   composer,
   emptyState,
+  scrollRef: externalScrollRef,
   xstyle,
   className,
   style,
@@ -221,6 +249,15 @@ export function XDSChatLayout({
 }: XDSChatLayoutProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const dockRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef =
+    externalScrollRef ?? (rootRef as React.RefObject<HTMLElement | null>);
+  const isSelfScrolling = !externalScrollRef;
+  const layoutContextValue = useMemo(
+    () => ({
+      scrollContainerRef,
+    }),
+    [scrollContainerRef],
+  );
   const [density, setDensity] = useState<Density>('balanced');
   const [dockHeight, setDockHeight] = useState(0);
 
@@ -247,7 +284,9 @@ export function XDSChatLayout({
     const observer = new ResizeObserver(entries => {
       const entry = entries[0];
       if (entry) {
-        setDockHeight(entry.borderBoxSize?.[0]?.blockSize ?? entry.contentRect.height);
+        setDockHeight(
+          entry.borderBoxSize?.[0]?.blockSize ?? entry.contentRect.height,
+        );
       }
     });
     observer.observe(el);
@@ -298,37 +337,43 @@ export function XDSChatLayout({
         : styles.dockInnerBalanced;
 
   return (
-    <div
-      ref={setRootRef}
-      data-testid={testId}
-      data-density={density}
-      {...mergeProps(
-        xdsClassName('chat-layout', {density}),
-        stylex.props(styles.root, xstyle),
-        className,
-        style,
-      )}>
-      {/* Message area — normal page flow */}
+    <XDSChatLayoutContext.Provider value={layoutContextValue}>
       <div
-        {...stylex.props(styles.messageArea, messageAreaStyle)}
-        style={{paddingBlockEnd: dockHeight + 24}}>
-        {showEmpty && emptyState ? (
-          <div {...stylex.props(styles.emptyState)}>{emptyState}</div>
-        ) : (
-          children
-        )}
-      </div>
+        ref={setRootRef}
+        data-testid={testId}
+        data-density={density}
+        {...mergeProps(
+          xdsClassName('chat-layout', {density}),
+          stylex.props(
+            styles.root,
+            isSelfScrolling && styles.rootScrollable,
+            xstyle,
+          ),
+          className,
+          style,
+        )}>
+        {/* Message area — normal page flow */}
+        <div
+          {...stylex.props(styles.messageArea, messageAreaStyle)}
+          style={{paddingBlockEnd: dockHeight + 24}}>
+          {showEmpty && emptyState ? (
+            <div {...stylex.props(styles.emptyState)}>{emptyState}</div>
+          ) : (
+            children
+          )}
+        </div>
 
-      {/* Frosted glass layer — behind composer, not interactive */}
-      <div {...stylex.props(styles.blurLayer, blurLayerStyle)} />
+        {/* Frosted glass layer — behind composer, not interactive */}
+        <div {...stylex.props(styles.blurLayer, blurLayerStyle)} />
 
-      {/* Composer dock — interactive, no blur/mask */}
-      <div ref={dockRef} {...stylex.props(styles.dock, dockStyle)}>
-        <div {...stylex.props(styles.dockInner, dockInnerStyle)}>
-          {composer}
+        {/* Composer dock — interactive, no blur/mask */}
+        <div ref={dockRef} {...stylex.props(styles.dock, dockStyle)}>
+          <div {...stylex.props(styles.dockInner, dockInnerStyle)}>
+            {composer}
+          </div>
         </div>
       </div>
-    </div>
+    </XDSChatLayoutContext.Provider>
   );
 }
 

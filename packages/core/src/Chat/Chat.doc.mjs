@@ -199,14 +199,16 @@ export const docs = {
 // Append XDSChatLayout to all doc variants
 const chatLayoutComponent = {
   name: 'XDSChatLayout',
-  description: 'Layout shell for full chat interfaces. Messages flow in normal page flow, composer is fixed to the bottom with a frosted glass dock. Adapts spacing via container width observation.',
+  description: 'Layout shell for full chat interfaces. Messages flow in normal page flow, composer is fixed to the bottom with a frosted glass dock. Adapts spacing via container width observation. By default the layout root is the scroll container; pass scrollRef to delegate scrolling to a parent element or the document body.',
   props: [
     {name: 'children', type: 'ReactNode', description: 'Message content — flows naturally in the page, scrolls with the page.', required: true},
     {name: 'composer', type: 'ReactNode', description: 'Composer element fixed to the bottom with frosted glass dock.', required: true},
     {name: 'emptyState', type: 'ReactNode', description: 'Content shown when children is empty.'},
+    {name: 'scrollRef', type: 'React.RefObject<HTMLElement | null>', description: 'External scroll container ref. When provided, auto-scroll and scroll-to-bottom target this element instead of the layout root. Use when the chat is embedded in a page where a parent element or the document body scrolls.'},
   ],
   examples: [
-    {label: 'Basic', code: `<XDSChatLayout composer={<XDSChatComposer onSubmit={handleSubmit} />}>\n  {messages.map(msg => <XDSChatMessage key={msg.id} {...msg} />)}\n</XDSChatLayout>`},
+    {label: 'Basic (self-scrolling)', code: `<XDSChatLayout composer={<XDSChatComposer onSubmit={handleSubmit} />}>\n  {messages.map(msg => <XDSChatMessage key={msg.id} {...msg} />)}\n</XDSChatLayout>`},
+    {label: 'Page body scrolling', code: `const scrollRef = useRef(document.documentElement);\n<XDSChatLayout scrollRef={scrollRef} composer={<XDSChatComposer onSubmit={handleSubmit} />}>\n  {messages.map(msg => <XDSChatMessage key={msg.id} {...msg} />)}\n</XDSChatLayout>`},
   ],
 };
 docs.components.push(chatLayoutComponent);
@@ -339,11 +341,12 @@ name: 'XDSChatMessageTokenizedText',
     },
     {
       name: 'XDSChatLayout',
-      description: '完整聊天界面的布局外壳。消息在页面中自然流动，编写器固定在底部，带有毛玻璃效果。',
+      description: '完整聊天界面的布局外壳。消息在页面中自然流动，编写器固定在底部，带有毛玻璃效果。默认布局根元素为滚动容器；传入 scrollRef 可将滚动委托给父元素或文档主体。',
       propDescriptions: {
         children: '消息内容，在页面中自然流动，随页面滚动。',
         composer: '固定在底部的编写器元素，带有毛玻璃底座。',
         emptyState: '子元素为空时显示的内容。',
+        scrollRef: '外部滚动容器引用。提供时，自动滚动和滚动到底部将目标指向此元素。',
       },
     },
   ],
@@ -476,11 +479,12 @@ name: 'XDSChatMessageTokenizedText',
     },
     {
       name: 'XDSChatLayout',
-      description: 'layout shell for full chat; msgs in page flow, composer fixed bottom w/ frosted glass dock',
+      description: 'layout shell for full chat; msgs in page flow, composer fixed bottom w/ frosted glass dock; scrollRef delegates scrolling to parent/body',
       propDescriptions: {
         children: 'msg content; flows in page, scrolls w/ page',
         composer: 'composer element; fixed bottom w/ frosted glass',
         emptyState: 'content when children empty',
+        scrollRef: 'external scroll container ref; targets parent/body instead of layout root',
       },
     },
   ],
