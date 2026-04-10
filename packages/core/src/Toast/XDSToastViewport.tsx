@@ -78,6 +78,18 @@ export interface XDSToastViewportProps {
   children?: React.ReactNode;
 }
 
+/**
+ * Container that renders and manages toast notifications. Place at the root
+ * of your app to enable useXDSToast(). Toasts stack with enter/exit
+ * animations and auto-promote to the CSS top layer.
+ *
+ * @example
+ * ```
+ * <XDSToastViewport position="bottomEnd" maxVisible={3}>
+ *   <App />
+ * </XDSToastViewport>
+ * ```
+ */
 export function XDSToastViewport({
   position = 'bottomEnd',
   maxVisible = 5,
@@ -148,7 +160,11 @@ export function XDSToastViewport({
     if (!isTopLayer) return;
     const el = viewportRef.current;
     if (el && typeof el.showPopover === 'function') {
-      try { el.showPopover(); } catch { /* already showing */ }
+      try {
+        el.showPopover();
+      } catch {
+        /* already showing */
+      }
     }
   }, [isTopLayer]);
 
@@ -199,7 +215,6 @@ export function XDSToastViewport({
                 <XDSToast
                   type={type}
                   body={o.body}
-
                   endContent={o.endContent}
                   isAutoHide={isAutoHide}
                   autoHideDuration={dur}

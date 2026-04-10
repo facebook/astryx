@@ -22,8 +22,7 @@
  *    naturally through CSS custom property inheritance
  *
  * @example
- * ```tsx
- * // Dark surface (e.g. toast on a light page)
+ * ```
  * <div style={{ backgroundColor: 'var(--color-background-inverted)' }}>
  *   <XDSMediaTheme mode="dark">
  *     <XDSButton label="Undo" variant="ghost" />
