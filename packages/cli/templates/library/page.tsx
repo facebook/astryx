@@ -5,6 +5,7 @@ import * as stylex from '@stylexjs/stylex';
 import {XDSLayout, XDSLayoutHeader, XDSLayoutContent} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSCard} from '@xds/core/Card';
+import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import {XDSToggleButton, XDSToggleButtonGroup} from '@xds/core/ToggleButton';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSDivider} from '@xds/core/Divider';
@@ -296,33 +297,34 @@ const styles = stylex.create({
   sectionHeader: {
     paddingBottom: spacingVars['--spacing-3'],
   },
-  cardInner: {
-    padding: `${spacingVars['--spacing-4']} ${spacingVars['--spacing-5']} ${spacingVars['--spacing-5']}`,
+  thumbnail: {
+    backgroundColor: colorVars['--color-wash'],
+    width: '100%',
+  },
+  cardBody: {
+    padding: spacingVars['--spacing-4'],
     display: 'flex',
     flexDirection: 'column',
-    gap: spacingVars['--spacing-1-5'],
-    minHeight: 100,
   },
-  typePill: {
-    display: 'inline-block',
+  cardCategory: {
     fontSize: textSizeVars['--font-size-xs'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
     letterSpacing: '0.05em',
     textTransform: 'uppercase',
     color: colorVars['--color-text-secondary'],
-    marginBottom: spacingVars['--spacing-0-5'],
+    marginBottom: spacingVars['--spacing-1'],
   },
   itemName: {
     fontSize: textSizeVars['--font-size-base'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
     color: colorVars['--color-text-primary'],
     lineHeight: 1.375,
+    marginBottom: spacingVars['--spacing-2'],
   },
   itemDescription: {
     fontSize: textSizeVars['--font-size-sm'],
     color: colorVars['--color-text-secondary'],
     lineHeight: 1.5,
-    marginTop: spacingVars['--spacing-0-5'],
   },
   emptyState: {
     padding: spacingVars['--spacing-12'],
@@ -381,9 +383,10 @@ function LibraryNav() {
 
 function LibraryCard({item}: {item: LibraryItem}) {
   return (
-    <XDSCard>
-      <div {...stylex.props(styles.cardInner)}>
-        <span {...stylex.props(styles.typePill)}>{item.type}</span>
+    <XDSCard padding={0}>
+      <XDSAspectRatio ratio={16 / 9} xstyle={styles.thumbnail}><div /></XDSAspectRatio>
+      <div {...stylex.props(styles.cardBody)}>
+        <span {...stylex.props(styles.cardCategory)}>{item.category}</span>
         <span {...stylex.props(styles.itemName)}>{item.name}</span>
         <span {...stylex.props(styles.itemDescription)}>
           {item.description}
