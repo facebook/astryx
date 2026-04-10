@@ -80,6 +80,12 @@ export const docs = {
       code: `toast({\n  body: "Item deleted",\n  isAutoHide: false,\n  endContent: <XDSButton label="Undo" variant="secondary" size="sm" onClick={undo} />,\n});`,
     },
   ],
+  theming: {
+    targets: [
+      {className: 'xds-toast', visualProps: ['type']},
+    ],
+  },
+
   usage: {
     summary: 'Transient notification that appears briefly to confirm an action or surface non-critical information.',
     content: `## When to use
@@ -93,5 +99,95 @@ export const docs = {
 - Critical information that requires user action (use Banner instead).
 - Persistent messages (use Banner instead).
 - Validation errors on form fields (use Field status instead).`,
+  },
+};
+
+// -------------------------------------------------------
+// Auto-generated translations below. Do not edit manually.
+// Regenerate with the dense compression protocol.
+// See .context/decisions/dense-compression-protocol.md
+// -------------------------------------------------------
+
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsZh = {
+  description:
+    'Toast 通知系统，支持自动关闭、堆叠、去重和平滑动画。使用 XDSMediaTheme 进行反转表面主题。',
+  features: [
+    "类型：'info'（默认）、'error'",
+    '自动关闭：info toast 5秒后关闭，error toast 持续显示',
+    '悬停/聚焦暂停：交互时计时器暂停',
+    '堆叠：多个 toast 以平滑进出动画堆叠',
+    '去重：uniqueID 支持 ignore 或 overwrite 碰撞行为',
+    '程序化关闭：show() 返回关闭函数',
+    '尾部内容插槽：尾随操作（按钮、链接）',
+    '回退视口：无需 provider，通过 document.body 回退',
+    '反转表面：使用 XDSMediaTheme 在深色/浅色背景上显示正确颜色',
+    '无障碍：role=status/alert，aria-live=polite/assertive',
+  ],
+  propDescriptions: {
+    body: '主要消息内容。',
+    type: 'Toast 类型，控制背景颜色。error toast 持续显示直到关闭。',
+    isAutoHide: '是否自动关闭。info 默认为 true，error 默认为 false。',
+    autoHideDuration: '自动关闭前的持续时间（毫秒）。',
+    endContent: '尾部渲染的内容（如撤销按钮、链接）。',
+    uniqueID: '用于去重的唯一标识符。',
+    collisionBehavior: '当已存在相同 uniqueID 的 toast 时的行为。',
+    onHide: '当 toast 被移除时触发的回调。',
+  },
+  usage: {
+    summary: '短暂通知，出现片刻以确认操作或显示非关键信息。',
+    content: `## 何时使用
+
+- 确认已完成的操作（如"保存成功"）。
+- 显示非关键的时效性信息。
+- 为可逆操作提供撤销机会。
+
+## 何时不使用
+
+- 需要用户操作的关键信息（使用 Banner）。
+- 持久性消息（使用 Banner）。
+- 表单字段验证错误（使用 Field 状态）。`,
+  },
+};
+
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description:
+    'toast notification w/ auto-dismiss, stacking, dedup, smooth animations; XDSMediaTheme inverted surface',
+  features: [
+    "types: info (default), error",
+    'auto-dismiss: info 5s, error persists',
+    'pause on hover/focus',
+    'stacking w/ smooth enter/exit animations',
+    'dedup: uniqueID w/ ignore|overwrite collision',
+    'programmatic dismiss: show() returns dismiss fn',
+    'end content slot: trailing actions',
+    'fallback viewport: works w/o provider via document.body',
+    'inverted surface: XDSMediaTheme for dark/light bg colors',
+    'a11y: role=status/alert, aria-live=polite/assertive',
+  ],
+  propDescriptions: {
+    body: 'primary message content',
+    type: 'toast type; controls bg color; error persists until dismissed',
+    isAutoHide: 'auto-dismiss; true for info, false for error',
+    autoHideDuration: 'ms before auto-dismiss',
+    endContent: 'trailing end content (undo btn, link)',
+    uniqueID: 'unique id for dedup',
+    collisionBehavior: 'behavior when matching uniqueID exists',
+    onHide: 'callback when toast removed',
+  },
+  usage: {
+    summary: 'transient notification confirming action or surfacing non-critical info',
+    content: `## When to use
+
+- confirm completed action
+- non-critical time-sensitive info
+- undo opportunities for reversible actions
+
+## When NOT to use
+
+- critical info requiring action (use Banner)
+- persistent messages (use Banner)
+- form field validation errors (use Field status)`,
   },
 };
