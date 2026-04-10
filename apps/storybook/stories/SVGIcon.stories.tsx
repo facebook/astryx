@@ -1,21 +1,17 @@
 import type {Meta, StoryObj} from '@storybook/react';
-import {Fragment, useState, useCallback, useRef} from 'react';
+import {Fragment} from 'react';
 import {
   XDSSVGIcon,
   type SVGIconVariation,
   type SVGIconSize,
   type SVGIconColor,
-  type SVGIconDef,
   starterIcons,
   bellIcon,
   settingsIcon,
   homeIcon,
   menuIcon,
-  convertSVG,
-  iconDefToTSX,
-  iconDefToSVG,
 } from '@xds/lab';
-import {XDSStack, XDSText, XDSButton, XDSDivider} from '@xds/core';
+import {XDSStack, XDSText, XDSDivider} from '@xds/core';
 
 const meta: Meta<typeof XDSSVGIcon> = {
   title: 'Lab/XDSSVGIcon',
@@ -255,166 +251,4 @@ export const Colors: Story = {
       </XDSStack>
     </XDSStack>
   ),
-};
-
-// =============================================================================
-// SVG Upload & Convert
-// =============================================================================
-
-const DEFAULT_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-  <path d="M2 17l10 5 10-5"/>
-  <path d="M2 12l10 5 10-5"/>
-</svg>`;
-
-function SVGConverterStory() {
-  const [svgInput, setSvgInput] = useState(DEFAULT_SVG);
-  const [iconDef, setIconDef] = useState<SVGIconDef | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleConvert = useCallback(() => {
-    try {
-      const result = convertSVG(svgInput, 'Uploaded');
-      setIconDef(result);
-      setError(null);
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : String(e));
-      setIconDef(null);
-    }
-  }, [svgInput]);
-
-  const handleFileUpload = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = ev => {
-        const text = ev.target?.result as string;
-        setSvgInput(text);
-      };
-      reader.readAsText(file);
-    },
-    [],
-  );
-
-  const handleCopyTSX = useCallback(() => {
-    if (iconDef) {
-      navigator.clipboard.writeText(iconDefToTSX(iconDef));
-    }
-  }, [iconDef]);
-
-  const handleCopySVG = useCallback(() => {
-    if (iconDef) {
-      navigator.clipboard.writeText(iconDefToSVG(iconDef));
-    }
-  }, [iconDef]);
-
-  return (
-    <XDSStack direction="vertical" gap={3}>
-      <XDSText variant="heading-3">SVG Upload & Convert</XDSText>
-      <XDSText variant="body-sm" color="secondary">
-        Drop any SVG icon and convert it to the XDS icon format. The converter
-        strips hardcoded styles, classifies layers and roles, and outputs a
-        ready-to-use icon definition.
-      </XDSText>
-
-      <XDSStack direction="vertical" gap={1}>
-        <XDSStack direction="row" gap={1}>
-          <XDSButton
-            size="sm"
-            variant="neutral"
-            label="Upload SVG"
-            onPress={() => fileInputRef.current?.click()}
-          />
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".svg"
-            style={{display: 'none'}}
-            onChange={handleFileUpload}
-          />
-          <XDSButton size="sm" label="Convert" onPress={handleConvert} />
-        </XDSStack>
-        <textarea
-          value={svgInput}
-          onChange={e => setSvgInput(e.target.value)}
-          style={{
-            width: '100%',
-            height: 150,
-            fontFamily: 'monospace',
-            fontSize: 12,
-            padding: 8,
-            borderRadius: 8,
-            border: '1px solid var(--color-neutral)',
-            background: 'var(--color-background-body)',
-            color: 'var(--color-text-primary)',
-            resize: 'vertical',
-          }}
-        />
-      </XDSStack>
-
-      {error && (
-        <XDSText variant="body-sm" color="negative">
-          Error: {error}
-        </XDSText>
-      )}
-
-      {iconDef && (
-        <>
-          <XDSDivider />
-          <XDSText variant="heading-4">Preview</XDSText>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: `repeat(${VARIATIONS.length}, 1fr)`,
-              gap: 16,
-              alignItems: 'center',
-            }}>
-            {VARIATIONS.map(v => (
-              <XDSStack direction="vertical" key={v} gap={1} hAlign="center">
-                <XDSSVGIcon icon={iconDef} variation={v} size="lg" />
-                <XDSText variant="label-sm" color="secondary">
-                  {v}
-                </XDSText>
-              </XDSStack>
-            ))}
-          </div>
-
-          <XDSDivider />
-          <XDSText variant="heading-4">Export</XDSText>
-          <XDSStack direction="row" gap={1}>
-            <XDSButton
-              size="sm"
-              variant="neutral"
-              label="Copy TSX"
-              onPress={handleCopyTSX}
-            />
-            <XDSButton
-              size="sm"
-              variant="neutral"
-              label="Copy SVG"
-              onPress={handleCopySVG}
-            />
-          </XDSStack>
-          <pre
-            style={{
-              fontSize: 11,
-              fontFamily: 'monospace',
-              padding: 12,
-              borderRadius: 8,
-              background: 'var(--color-background-body)',
-              overflow: 'auto',
-              maxHeight: 200,
-            }}>
-            {iconDefToTSX(iconDef)}
-          </pre>
-        </>
-      )}
-    </XDSStack>
-  );
-}
-
-export const SVGConverter: Story = {
-  render: () => <SVGConverterStory />,
 };

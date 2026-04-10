@@ -21,8 +21,6 @@ export type {
 export {variations, opticalSize} from './variations.stylex';
 export {iconVars} from './tokens.stylex';
 
-export {convertSVG, iconDefToTSX, iconDefToSVG} from './convertSVG';
-
 export {
   xIcon,
   checkIcon,
