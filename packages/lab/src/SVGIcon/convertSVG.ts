@@ -73,7 +73,7 @@ export function convertSVG(
   name: string = 'Converted',
 ): SVGIconDef {
   const parser = new DOMParser();
-  const doc = parser.parseFromString(svgMarkup, 'image/svg+xml');
+  const doc = parser.parseFromString(svgMarkup, 'application/xml');
   const svg = doc.querySelector('svg');
 
   const viewBox = svg?.getAttribute('viewBox') ?? '0 0 24 24';
