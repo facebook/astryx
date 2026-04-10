@@ -2,7 +2,7 @@
   "name": "@xds/theme-meta",
   "version": "0.0.11",
   "private": true,
-  "description": "Meta theme for XDS components — Meta's brand identity with blue accent and clean aesthetics",
+  "description": "Meta theme for XDS components \u2014 Meta's brand identity with blue accent and clean aesthetics",
   "license": "MIT",
   "sideEffects": false,
   "main": "./dist/index.js",
@@ -20,7 +20,7 @@
     "src"
   ],
   "scripts": {
-    "build": "xds theme build src/metaTheme.ts -o dist/theme.css && node scripts/gen-compat-css.mjs && tsup && rm -f dist/meta.js dist/meta.d.ts"
+    "build": "xds theme build src/metaTheme.ts -o dist/theme.css && node scripts/gen-compat-css.mjs && tsup"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0"

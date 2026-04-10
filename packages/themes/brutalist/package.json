@@ -21,7 +21,7 @@
     "src"
   ],
   "scripts": {
-    "build": "xds theme build src/index.ts -o dist/theme.css && tsup && rm -f dist/brutalist.js dist/brutalist.d.ts"
+    "build": "xds theme build src/brutalistTheme.ts -o dist/theme.css && tsup"
   },
   "peerDependencies": {
     "@xds/core": "*"

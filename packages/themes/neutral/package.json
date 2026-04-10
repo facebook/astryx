@@ -20,7 +20,7 @@
     "src"
   ],
   "scripts": {
-    "build": "xds theme build src/neutralTheme.ts -o dist/theme.css && tsup && rm -f dist/neutral.js dist/neutral.d.ts"
+    "build": "xds theme build src/neutralTheme.ts -o dist/theme.css && tsup"
   },
   "dependencies": {
     "lucide-react": "^0.575.0"

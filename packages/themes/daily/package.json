@@ -2,7 +2,7 @@
   "name": "@xds/theme-daily",
   "version": "0.0.1",
   "private": false,
-  "description": "Daily theme for XDS components — warm, productivity-focused (Lucide icons)",
+  "description": "Daily theme for XDS components \u2014 warm, productivity-focused (Lucide icons)",
   "license": "MIT",
   "sideEffects": false,
   "main": "./dist/index.js",
@@ -20,7 +20,7 @@
     "src"
   ],
   "scripts": {
-    "build": "xds theme build src/dailyTheme.ts -o dist/theme.css && tsup && rm -f dist/daily.js dist/daily.d.ts"
+    "build": "xds theme build src/dailyTheme.ts -o dist/theme.css && tsup"
   },
   "dependencies": {
     "lucide-react": "^0.575.0"

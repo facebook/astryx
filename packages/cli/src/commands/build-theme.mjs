@@ -614,11 +614,12 @@ function extractIconInfo(filePath) {
  * Includes the theme name, marker, and re-exports the icon registry.
  * All styling is in the CSS file.
  */
-function generateBuiltModule(themeDef, iconImportPath) {
-  const iconImport = iconImportPath
-    ? `import { icons } from '${iconImportPath}';\n`
+function generateBuiltModule(themeDef, iconInfo) {
+  // CJS format so the built module works alongside tsup's CJS output
+  const iconRequire = iconInfo
+    ? `const { ${iconInfo.exportName}: icons } = require('${iconInfo.importPath}');\n`
     : '';
-  const iconsField = iconImportPath ? '  icons,' : '';
+  const iconsField = iconInfo ? '  icons,' : '';
 
   // Resolve token values — tuples become light-dark() strings
   const resolvedTokens = {};
@@ -633,19 +634,25 @@ function generateBuiltModule(themeDef, iconImportPath) {
     .map((line, i) => (i === 0 ? line : '  ' + line))
     .join('\n');
 
-  return `${iconImport}/**
+  const exportName = toIdentifier(themeDef.name) + 'Theme';
+
+  return `"use strict";
+${iconRequire}/**
  * ${themeDef.name} theme — built by \`${getRunPrefix()} xds theme build\`
  * Import the CSS file alongside this module:
  *
- *   import { ${toIdentifier(themeDef.name)}Theme } from './${themeDef.name}';
- *   import './${themeDef.name}.css';
+ *   const { ${exportName} } = require('./${themeDef.name}');
+ *   require('./${themeDef.name}.css');
  */
-export const ${toIdentifier(themeDef.name)}Theme = {
+const ${exportName} = {
   name: '${themeDef.name}',
   __built: true,
   tokens: ${tokensStr},
 ${iconsField}
 };
+
+module.exports = { ${exportName} };
+Object.defineProperty(module.exports, '__esModule', { value: true });
 `;
 }
 
@@ -930,9 +937,8 @@ export function registerTheme(program) {
       const dtsPath = path.join(outDir, `${baseName}.d.ts`);
 
       const iconInfo = extractIconInfo(filePath);
-      const iconImportPath = iconInfo ? iconInfo.importPath : null;
 
-      fs.writeFileSync(jsPath, generateBuiltModule(resolvedTheme || themeDef, iconImportPath));
+      fs.writeFileSync(jsPath, generateBuiltModule(resolvedTheme || themeDef, iconInfo));
       fs.writeFileSync(dtsPath, generateBuiltTypes(themeDef));
 
       if (!json) {

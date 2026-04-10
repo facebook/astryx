@@ -2,7 +2,7 @@
   "name": "@xds/theme-whatsapp",
   "version": "0.0.11",
   "private": true,
-  "description": "WhatsApp theme for XDS — green accent, warm grays, Roboto, rounded surfaces",
+  "description": "WhatsApp theme for XDS \u2014 green accent, warm grays, Roboto, rounded surfaces",
   "license": "MIT",
   "sideEffects": false,
   "main": "./dist/index.js",
@@ -21,7 +21,7 @@
     "src"
   ],
   "scripts": {
-    "build": "xds theme build src/whatsappTheme.ts -o dist/theme.css && tsup && rm -f dist/whatsapp.js dist/whatsapp.d.ts"
+    "build": "xds theme build src/whatsappTheme.ts -o dist/theme.css && tsup"
   },
   "peerDependencies": {
     "@xds/core": "*",

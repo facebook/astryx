@@ -20,7 +20,7 @@
     "src"
   ],
   "scripts": {
-    "build": "xds theme build src/defaultTheme.ts -o dist/theme.css && tsup && rm -f dist/default.js dist/default.d.ts"
+    "build": "xds theme build src/defaultTheme.ts -o dist/theme.css && tsup"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0"
