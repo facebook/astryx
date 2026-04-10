@@ -2721,6 +2721,8 @@ function ExploreView({
             <XDSTextInput
               label="Search"
               isLabelHidden
+              value=""
+              onChange={() => {}}
               startIcon={SearchIcon}
               size="lg"
               placeholder="Search..."
@@ -3403,7 +3405,7 @@ function ProfileView({
                       }}
                     />
                     <div style={{padding: 12}}>
-                      <XDSText>{item.name}</XDSText>
+                      <XDSText type="body">{item.name}</XDSText>
                       <XDSText type="supporting" color="secondary">
                         {item.lastUsed}
                       </XDSText>
@@ -3435,7 +3437,7 @@ function ProfileView({
                       }}
                     />
                     <div style={{padding: 12}}>
-                      <XDSText>{item.name}</XDSText>
+                      <XDSText type="body">{item.name}</XDSText>
                       <XDSText type="supporting" color="secondary">
                         {item.lastUsed}
                       </XDSText>
@@ -3475,7 +3477,7 @@ function ProfileView({
                           marginBottom: 8,
                         }}>
                         <FolderIcon width={20} height={20} />
-                        <XDSText>{collection.name}</XDSText>
+                        <XDSText type="body">{collection.name}</XDSText>
                       </div>
                       <XDSText type="supporting" color="secondary">
                         {collection.count} items
