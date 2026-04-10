@@ -15,7 +15,7 @@
 
 import {useId} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
+
 import {
   colorVars,
   spacingVars,
@@ -26,6 +26,7 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
+import type {XDSBaseProps} from '../XDSBaseProps';
 
 /**
  * Extensible variant map for XDSProgressBar.
@@ -54,7 +55,7 @@ export interface XDSProgressBarVariantMap {
  */
 export type XDSProgressBarVariant = keyof XDSProgressBarVariantMap;
 
-export interface XDSProgressBarProps {
+export interface XDSProgressBarProps extends XDSBaseProps<HTMLDivElement> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLDivElement>;
   /**
@@ -101,27 +102,6 @@ export interface XDSProgressBarProps {
    * @default false
    */
   isIndeterminate?: boolean;
-  /**
-   * StyleX styles created via `stylex.create()`. Merged with the component's
-   * base styles inside a single `stylex.props()` call for optimal deduplication.
-   *
-   * @example
-   * ```
-   * const overrides = stylex.create({ root: { marginBottom: 8 } });
-   * <Component xstyle={overrides.root} />
-   * ```
-   */
-  xstyle?: StyleXStyles;
-  /**
-   * CSS class name(s) appended to the root element.
-   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
-   */
-  className?: string;
-  /**
-   * Inline styles to apply to the root element. Spread after StyleX
-   * inline styles, so these values take priority.
-   */
-  style?: React.CSSProperties;
   /**
    * Test ID for testing utilities.
    */
