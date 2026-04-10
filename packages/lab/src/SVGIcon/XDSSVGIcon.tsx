@@ -167,7 +167,9 @@ export function XDSSVGIcon({
   const overrideStyle: CSSProperties = {
     ...(style as CSSProperties),
     ...(strokeWidth != null
-      ? {[iconVars['--icon-stroke-width'] as string]: String(strokeWidth)}
+      ? ({
+          [iconVars['--icon-stroke-width'] as string]: String(strokeWidth),
+        } as Record<string, string>)
       : undefined),
   };
 
@@ -187,16 +189,19 @@ export function XDSSVGIcon({
       )}
       style={overrideStyle}
       {...props}>
-      {/* Primary layer */}
+      {/* Primary layer — defineVars values are already var(--xhash) */}
       <g
         style={{
-          fill: `var(${iconVars['--icon-layer-primary-fill']})`,
-          stroke: `var(${iconVars['--icon-layer-primary-stroke']})`,
-          opacity: `var(${iconVars['--icon-layer-primary-opacity']})`,
-          strokeWidth: `var(${iconVars['--icon-stroke-width']})`,
-          strokeLinecap: `var(${iconVars['--icon-stroke-linecap']})` as 'round',
-          strokeLinejoin:
-            `var(${iconVars['--icon-stroke-linejoin']})` as 'round',
+          fill: iconVars['--icon-layer-primary-fill'] as string,
+          stroke: iconVars['--icon-layer-primary-stroke'] as string,
+          opacity: iconVars['--icon-layer-primary-opacity'] as string,
+          strokeWidth: iconVars['--icon-stroke-width'] as string,
+          strokeLinecap: iconVars[
+            '--icon-stroke-linecap'
+          ] as unknown as 'round',
+          strokeLinejoin: iconVars[
+            '--icon-stroke-linejoin'
+          ] as unknown as 'round',
         }}>
         {icon.primary.map(renderShape)}
       </g>
@@ -205,14 +210,16 @@ export function XDSSVGIcon({
       {hasSecondary && (
         <g
           style={{
-            fill: `var(${iconVars['--icon-layer-secondary-fill']})`,
-            stroke: `var(${iconVars['--icon-layer-secondary-stroke']})`,
-            opacity: `var(${iconVars['--icon-layer-secondary-opacity']})`,
-            strokeWidth: `var(${iconVars['--icon-stroke-width']})`,
-            strokeLinecap:
-              `var(${iconVars['--icon-stroke-linecap']})` as 'round',
-            strokeLinejoin:
-              `var(${iconVars['--icon-stroke-linejoin']})` as 'round',
+            fill: iconVars['--icon-layer-secondary-fill'] as string,
+            stroke: iconVars['--icon-layer-secondary-stroke'] as string,
+            opacity: iconVars['--icon-layer-secondary-opacity'] as string,
+            strokeWidth: iconVars['--icon-stroke-width'] as string,
+            strokeLinecap: iconVars[
+              '--icon-stroke-linecap'
+            ] as unknown as 'round',
+            strokeLinejoin: iconVars[
+              '--icon-stroke-linejoin'
+            ] as unknown as 'round',
           }}>
           {icon.secondary!.map(renderShape)}
         </g>
