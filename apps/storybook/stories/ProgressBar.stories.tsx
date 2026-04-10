@@ -98,6 +98,12 @@ export const Variants: Story = {
         variant="negative"
         hasValueLabel
       />
+      <XDSProgressBar
+        value={35}
+        label="Neutral"
+        variant="neutral"
+        hasValueLabel
+      />
     </div>
   ),
 };
@@ -186,6 +192,7 @@ export const IndeterminateVariants: Story = {
       <XDSProgressBar isIndeterminate label="Positive" variant="positive" />
       <XDSProgressBar isIndeterminate label="Warning" variant="warning" />
       <XDSProgressBar isIndeterminate label="Negative" variant="negative" />
+      <XDSProgressBar isIndeterminate label="Neutral" variant="neutral" />
     </div>
   ),
 };
