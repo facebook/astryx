@@ -1617,25 +1617,26 @@ function ThemeEditorComponent() {
               tooltip="Search"
               variant="ghost"
               icon={<MagnifyingGlassIcon style={{width: 16, height: 16}} />}
+              isIconOnly
             />
             <XDSButton
               label="Notifications"
               tooltip="Notifications"
               variant="ghost"
               icon={<BellIcon style={{width: 16, height: 16}} />}
+              isIconOnly
             />
             <XDSButton
               label="Profile"
               tooltip="Profile"
               variant="ghost"
               icon={<UserCircleIcon style={{width: 16, height: 16}} />}
+              isIconOnly
             />
           </>
         }
       />
-
       <XDSDivider />
-
       {/* ── Toolbar ─────────────────────────────────────── */}
       <div {...stylex.props(toolbarStyles.toolbar)}>
         <div {...stylex.props(toolbarStyles.toolbarGroup)}>
@@ -1667,6 +1668,7 @@ function ThemeEditorComponent() {
             size="sm"
             icon={<SunIcon style={{width: 14, height: 14}} />}
             onClick={() => setMode('light')}
+            isIconOnly
           />
           <XDSButton
             label="Dark mode"
@@ -1675,6 +1677,7 @@ function ThemeEditorComponent() {
             size="sm"
             icon={<MoonIcon style={{width: 14, height: 14}} />}
             onClick={() => setMode('dark')}
+            isIconOnly
           />
 
           <div {...stylex.props(toolbarStyles.toolbarDivider)} />
@@ -1685,6 +1688,7 @@ function ThemeEditorComponent() {
             variant="ghost"
             size="sm"
             icon={<ArrowUturnLeftIcon style={{width: 14, height: 14}} />}
+            isIconOnly
           />
           <XDSButton
             label="Redo"
@@ -1692,6 +1696,7 @@ function ThemeEditorComponent() {
             variant="ghost"
             size="sm"
             icon={<ArrowUturnRightIcon style={{width: 14, height: 14}} />}
+            isIconOnly
           />
           <XDSButton
             label="Reset"
@@ -1709,6 +1714,7 @@ function ThemeEditorComponent() {
             variant="ghost"
             size="sm"
             icon={<ShareIcon style={{width: 14, height: 14}} />}
+            isIconOnly
           />
           <XDSButton
             label="Save"
@@ -1716,6 +1722,7 @@ function ThemeEditorComponent() {
             variant="ghost"
             size="sm"
             icon={<BookmarkIcon style={{width: 14, height: 14}} />}
+            isIconOnly
           />
 
           <div {...stylex.props(toolbarStyles.toolbarDivider)} />
@@ -1733,12 +1740,10 @@ function ThemeEditorComponent() {
             label="Export to Figma"
             variant="secondary"
             size="sm"
-            icon={<ArrowDownTrayIcon style={{width: 14, height: 14}} />}>
-            Export to Figma
-          </XDSButton>
+            icon={<ArrowDownTrayIcon style={{width: 14, height: 14}} />}
+          />
         </div>
       </div>
-
       {/* ── Main Content ────────────────────────────────── */}
       <div
         style={{

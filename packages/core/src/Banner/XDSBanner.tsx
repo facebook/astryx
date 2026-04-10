@@ -478,6 +478,7 @@ export function XDSBanner({
                 }
                 onClick={handleToggleExpand}
                 aria-expanded={isExpanded}
+                isIconOnly
               />
             )}
             {isDismissable && (
@@ -488,6 +489,7 @@ export function XDSBanner({
                 tooltip="Dismiss"
                 icon={<XDSIcon icon="close" size="sm" color="inherit" />}
                 onClick={handleDismiss}
+                isIconOnly
               />
             )}
           </div>

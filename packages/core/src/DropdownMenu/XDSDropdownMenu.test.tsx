@@ -359,6 +359,7 @@ describe('XDSDropdownMenu icon-only mode', () => {
           label: 'More options',
           icon: <span data-testid="icon">⋯</span>,
           variant: 'ghost',
+          isIconOnly: true,
         }}
         items={[{label: 'Edit'}, {label: 'Delete'}]}
       />,

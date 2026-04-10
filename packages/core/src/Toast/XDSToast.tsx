@@ -180,9 +180,7 @@ export function XDSToast({
       )}>
       <XDSMediaTheme mode={mediaMode}>
         <div {...stylex.props(styles.inner)}>
-          <div {...stylex.props(styles.content)}>
-            {body}
-          </div>
+          <div {...stylex.props(styles.content)}>{body}</div>
 
           <div {...stylex.props(styles.endContent)}>
             {endContent}
@@ -192,6 +190,7 @@ export function XDSToast({
               icon={<XDSIcon icon="close" size="sm" color="inherit" />}
               label="Dismiss notification"
               onClick={handleDismiss}
+              isIconOnly
             />
           </div>
         </div>

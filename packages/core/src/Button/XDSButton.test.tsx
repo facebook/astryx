@@ -41,7 +41,11 @@ describe('XDSButton', () => {
 
   it('renders icon-only button with aria-label', () => {
     render(
-      <XDSButton label="Settings" icon={<span data-testid="icon">⚙</span>} />,
+      <XDSButton
+        label="Settings"
+        icon={<span data-testid="icon">⚙</span>}
+        isIconOnly
+      />,
     );
     const button = screen.getByRole('button', {name: 'Settings'});
     expect(button).toHaveAttribute('aria-label', 'Settings');
@@ -50,9 +54,7 @@ describe('XDSButton', () => {
 
   it('renders icon with text when both icon and children provided', () => {
     render(
-      <XDSButton label="Settings" icon={<span data-testid="icon">⚙</span>}>
-        Settings
-      </XDSButton>,
+      <XDSButton label="Settings" icon={<span data-testid="icon">⚙</span>} />,
     );
     const button = screen.getByRole('button');
     expect(button).not.toHaveAttribute('aria-label');
@@ -132,9 +134,8 @@ describe('XDSButton', () => {
       <XDSButton
         label="Settings"
         icon={<span data-testid="icon">⚙</span>}
-        endContent={<XDSBadge data-testid="end" label="New" />}>
-        Settings
-      </XDSButton>,
+        endContent={<XDSBadge data-testid="end" label="New" />}
+      />,
     );
     const button = screen.getByRole('button');
     expect(screen.getByTestId('icon')).toBeInTheDocument();
@@ -148,6 +149,7 @@ describe('XDSButton', () => {
         label="Settings"
         icon={<span data-testid="icon">⚙</span>}
         endContent={<XDSBadge data-testid="end" label={3} />}
+        isIconOnly
       />,
     );
     expect(screen.getByTestId('icon')).toBeInTheDocument();

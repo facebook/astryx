@@ -528,6 +528,7 @@ function SampleSideNav({
                 </svg>
               }
               variant="ghost"
+              isIconOnly
             />
             <XDSButton
               label="Settings"
@@ -545,6 +546,7 @@ function SampleSideNav({
                 </svg>
               }
               variant="ghost"
+              isIconOnly
             />
           </>
         ) : undefined
@@ -718,6 +720,7 @@ function SampleTopNav({
                 </svg>
               }
               onClick={onToggleCollapse}
+              isIconOnly
             />
           )}
         </>

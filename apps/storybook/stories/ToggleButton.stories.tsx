@@ -57,6 +57,7 @@ export const Standalone: Story = {
         icon={<BoldIcon style={iconSize} />}
         isPressed={isPressed}
         onPressedChange={setIsPressed}
+        isIconOnly
       />
     );
   },
@@ -75,6 +76,7 @@ export const IconSwap: Story = {
           pressedIcon={<StarIconSolid style={iconSize} />}
           isPressed={isFavorited}
           onPressedChange={setIsFavorited}
+          isIconOnly
         />
         <XDSToggleButton
           label="Bookmark"
@@ -82,6 +84,7 @@ export const IconSwap: Story = {
           pressedIcon={<BookmarkIconSolid style={iconSize} />}
           isPressed={isBookmarked}
           onPressedChange={setIsBookmarked}
+          isIconOnly
         />
       </div>
     );
@@ -137,6 +140,7 @@ export const Sizes: Story = {
           icon={<BoldIcon style={iconSize} />}
           isPressed={!!pressed.sm}
           onPressedChange={() => toggle('sm')}
+          isIconOnly
         />
         <XDSToggleButton
           label="Medium"
@@ -144,6 +148,7 @@ export const Sizes: Story = {
           icon={<BoldIcon style={iconSize} />}
           isPressed={!!pressed.md}
           onPressedChange={() => toggle('md')}
+          isIconOnly
         />
         <XDSToggleButton
           label="Large"
@@ -151,6 +156,7 @@ export const Sizes: Story = {
           icon={<BoldIcon style={{width: 20, height: 20}} />}
           isPressed={!!pressed.lg}
           onPressedChange={() => toggle('lg')}
+          isIconOnly
         />
       </div>
     );
@@ -171,11 +177,13 @@ export const GroupSingle: Story = {
           value="list"
           label="List view"
           icon={<ListBulletIcon style={iconSize} />}
+          isIconOnly
         />
         <XDSToggleButton
           value="grid"
           label="Grid view"
           icon={<Squares2X2Icon style={iconSize} />}
+          isIconOnly
         />
       </XDSToggleButtonGroup>
     );
@@ -196,16 +204,19 @@ export const GroupMultiple: Story = {
           value="bold"
           label="Bold"
           icon={<BoldIcon style={iconSize} />}
+          isIconOnly
         />
         <XDSToggleButton
           value="italic"
           label="Italic"
           icon={<ItalicIcon style={iconSize} />}
+          isIconOnly
         />
         <XDSToggleButton
           value="underline"
           label="Underline"
           icon={<UnderlineIcon style={iconSize} />}
+          isIconOnly
         />
       </XDSToggleButtonGroup>
     );
@@ -223,6 +234,7 @@ export const NotificationToggle: Story = {
         pressedIcon={<BellSlashIcon style={iconSize} />}
         isPressed={isMuted}
         onPressedChange={setIsMuted}
+        isIconOnly
       />
     );
   },
@@ -256,6 +268,7 @@ export const ColoredIconToolbar: Story = {
           }
           isPressed={pressed.bold}
           onPressedChange={() => toggle('bold')}
+          isIconOnly
         />
         <XDSToggleButton
           label="Italic"
@@ -265,6 +278,7 @@ export const ColoredIconToolbar: Story = {
           }
           isPressed={pressed.italic}
           onPressedChange={() => toggle('italic')}
+          isIconOnly
         />
         <XDSToggleButton
           label="Underline"
@@ -274,6 +288,7 @@ export const ColoredIconToolbar: Story = {
           }
           isPressed={pressed.underline}
           onPressedChange={() => toggle('underline')}
+          isIconOnly
         />
         <XDSToggleButton
           label="Strikethrough"
@@ -285,6 +300,7 @@ export const ColoredIconToolbar: Story = {
           }
           isPressed={pressed.strikethrough}
           onPressedChange={() => toggle('strikethrough')}
+          isIconOnly
         />
         <XDSToggleButton
           label="Link"
@@ -292,6 +308,7 @@ export const ColoredIconToolbar: Story = {
           pressedIcon={<XDSIcon icon={LinkIcon} size="sm" color="positive" />}
           isPressed={pressed.link}
           onPressedChange={() => toggle('link')}
+          isIconOnly
         />
       </div>
     );
@@ -321,6 +338,7 @@ export const ColoredIconReactions: Story = {
           }
           isPressed={pressed.star}
           onPressedChange={() => toggle('star')}
+          isIconOnly
         />
         <XDSToggleButton
           label="Like"
@@ -328,6 +346,7 @@ export const ColoredIconReactions: Story = {
           pressedIcon={<XDSIcon icon={HeartIconSolid} size="sm" color="red" />}
           isPressed={pressed.heart}
           onPressedChange={() => toggle('heart')}
+          isIconOnly
         />
         <XDSToggleButton
           label="Save"
@@ -337,6 +356,7 @@ export const ColoredIconReactions: Story = {
           }
           isPressed={pressed.bookmark}
           onPressedChange={() => toggle('bookmark')}
+          isIconOnly
         />
         <XDSToggleButton
           label="Follow"
@@ -344,6 +364,7 @@ export const ColoredIconReactions: Story = {
           pressedIcon={<XDSIcon icon={BellIcon} size="sm" color="accent" />}
           isPressed={pressed.bell}
           onPressedChange={() => toggle('bell')}
+          isIconOnly
         />
       </div>
     );

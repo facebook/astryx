@@ -759,9 +759,8 @@ export default function DashboardTemplate() {
               label="Reload"
               variant="secondary"
               size="md"
-              icon={<ArrowPathIcon style={{width: 16, height: 16}} />}>
-              Reload
-            </XDSButton>
+              icon={<ArrowPathIcon style={{width: 16, height: 16}} />}
+            />
           </XDSHStack>
           <ActiveUsersChart />
         </XDSVStack>

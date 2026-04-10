@@ -122,11 +122,16 @@ export interface XDSToggleButtonProps {
   isLoading?: boolean;
 
   /**
-   * Icon element to render in the button.
-   * When provided without children, button becomes icon-only (square)
-   * with an automatic tooltip from the label.
+   * Icon element rendered before the label text.
    */
   icon?: ReactNode;
+
+  /**
+   * When true, renders as a square icon-only button with `label` as aria-label
+   * and an automatic tooltip from the label.
+   * @default false
+   */
+  isIconOnly?: boolean;
 
   /**
    * Icon element to render when the button is pressed.
@@ -142,8 +147,8 @@ export interface XDSToggleButtonProps {
   pressedIcon?: ReactNode;
 
   /**
-   * Optional visible content. If omitted and icon is provided,
-   * button becomes icon-only with label used as aria-label.
+   * Optional visible content. When provided, rendered instead of `label`
+   * as the visible text.
    */
   children?: ReactNode;
 
@@ -198,6 +203,7 @@ export function XDSToggleButton({
   isDisabled: isDisabledProp = false,
   isLoading = false,
   icon,
+  isIconOnly = false,
   pressedIcon,
   children,
   tooltip,
@@ -242,7 +248,7 @@ export function XDSToggleButton({
   ]);
 
   // Label with font weight shift and width reservation
-  const isIconOnly = icon != null && children == null;
+  // isIconOnly prop is the source of truth for icon-only rendering.
   const labelContent =
     children != null ? (
       <span {...stylex.props(labelStyles.wrapper)}>
@@ -273,6 +279,7 @@ export function XDSToggleButton({
       size={size}
       isDisabled={isDisabled}
       isLoading={isLoading}
+      isIconOnly={isIconOnly}
       aria-pressed={isPressed}
       icon={resolvedIcon}
       tooltip={tooltip}

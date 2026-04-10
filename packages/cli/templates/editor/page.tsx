@@ -700,6 +700,7 @@ export default function EditorPage() {
                       e.stopPropagation();
                       moveBlock(block.id, -1);
                     }}
+                    isIconOnly
                   />
                   <XDSButton
                     label="Move down"
@@ -710,6 +711,7 @@ export default function EditorPage() {
                       e.stopPropagation();
                       moveBlock(block.id, 1);
                     }}
+                    isIconOnly
                   />
                   <XDSButton
                     label="Delete"
@@ -720,6 +722,7 @@ export default function EditorPage() {
                       e.stopPropagation();
                       deleteBlock(block.id);
                     }}
+                    isIconOnly
                   />
                 </XDSHStack>
               }
@@ -1577,6 +1580,7 @@ export default function EditorPage() {
                 size="sm"
                 style={{marginRight: -8, marginTop: -8}}
                 onClick={() => setIsPanelCollapsed(v => !v)}
+                isIconOnly
               />
             </div>
 
@@ -1611,7 +1615,12 @@ export default function EditorPage() {
                 />
               </XDSSegmentedControl>
               <XDSHStack gap={2}>
-                <XDSButton label="Preview" icon={<EyeIcon />} variant="ghost" />
+                <XDSButton
+                  label="Preview"
+                  icon={<EyeIcon />}
+                  variant="ghost"
+                  isIconOnly
+                />
                 <XDSButton label="Publish" variant="primary" />
               </XDSHStack>
             </div>

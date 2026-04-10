@@ -502,6 +502,7 @@ export function XDSMoreMenu({
             : undefined
         }
         data-testid={testId}
+        isIconOnly
       />
       {popover.render(
         <div

@@ -107,6 +107,7 @@ function AppTopNav({endContent}: {endContent?: React.ReactNode}) {
             label="Profile"
             variant="ghost"
             icon={<UserCircleIcon style={{width: 16, height: 16}} />}
+            isIconOnly
           />
         )
       }
@@ -382,16 +383,19 @@ export const FullFeatured: Story = {
                 icon={
                   <QuestionMarkCircleIcon style={{width: 16, height: 16}} />
                 }
+                isIconOnly
               />
               <XDSButton
                 label="Notifications"
                 variant="ghost"
                 icon={<BellIcon style={{width: 16, height: 16}} />}
+                isIconOnly
               />
               <XDSButton
                 label="Profile"
                 variant="ghost"
                 icon={<UserCircleIcon style={{width: 16, height: 16}} />}
+                isIconOnly
               />
             </>
           }>
@@ -505,6 +509,7 @@ export const ControlledCollapse: Story = {
                 variant="ghost"
                 icon={<Bars3Icon style={{width: 16, height: 16}} />}
                 onClick={() => setCollapsed(!collapsed)}
+                isIconOnly
               />
             }
           />
@@ -639,6 +644,7 @@ export const WithMobileNav: Story = {
                   variant="ghost"
                   icon={<XDSIcon icon="menu" color="inherit" />}
                   onClick={() => setMobileNavOpen(true)}
+                  isIconOnly
                 />
               ) : (
                 <>
@@ -654,11 +660,13 @@ export const WithMobileNav: Story = {
                   label="Notifications"
                   variant="ghost"
                   icon={<BellIcon style={{width: 16, height: 16}} />}
+                  isIconOnly
                 />
                 <XDSButton
                   label="Profile"
                   variant="ghost"
                   icon={<UserCircleIcon style={{width: 16, height: 16}} />}
+                  isIconOnly
                 />
               </>
             }

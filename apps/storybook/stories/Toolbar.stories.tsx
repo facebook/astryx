@@ -63,6 +63,7 @@ export const Default: Story = {
         label="Settings"
         variant="ghost"
         icon={<Cog6ToothIcon style={{width: 16, height: 16}} />}
+        isIconOnly
       />
     ),
   },
@@ -78,6 +79,7 @@ export const ThreeSlot: Story = {
           label="Back"
           variant="ghost"
           icon={<ArrowLeftIcon style={{width: 16, height: 16}} />}
+          isIconOnly
         />
       }
       centerContent={<XDSHeading level={4}>Q1 Planning Document</XDSHeading>}
@@ -133,6 +135,7 @@ export const Compact: Story = {
         variant="ghost"
         size="sm"
         icon={<Cog6ToothIcon style={{width: 14, height: 14}} />}
+        isIconOnly
       />
     ),
   },
@@ -173,11 +176,13 @@ export const InsideCard: Story = {
               variant="ghost"
               size="sm"
               icon={<FunnelIcon style={{width: 16, height: 16}} />}
+              isIconOnly
             />
             <XDSButton
               label="Add user"
               size="sm"
               icon={<PlusIcon style={{width: 16, height: 16}} />}
+              isIconOnly
             />
           </>
         }
@@ -243,6 +248,7 @@ export const PageHeader: Story = {
             label="Back to projects"
             variant="ghost"
             icon={<ArrowLeftIcon style={{width: 16, height: 16}} />}
+            isIconOnly
           />
         }
         centerContent={<XDSHeading level={3}>Project Settings</XDSHeading>}
@@ -275,12 +281,14 @@ export const BulkActions: Story = {
             variant="ghost"
             size="sm"
             icon={<TrashIcon style={{width: 16, height: 16}} />}
+            isIconOnly
           />
           <XDSButton
             label="Archive"
             variant="ghost"
             size="sm"
             icon={<ArchiveBoxIcon style={{width: 16, height: 16}} />}
+            isIconOnly
           />
         </>
       }
@@ -306,12 +314,14 @@ export const StackedToolbars: Story = {
               variant="ghost"
               size="sm"
               icon={<ArrowPathIcon style={{width: 16, height: 16}} />}
+              isIconOnly
             />
             <XDSButton
               label="Export"
               variant="ghost"
               size="sm"
               icon={<ArrowDownTrayIcon style={{width: 16, height: 16}} />}
+              isIconOnly
             />
             <XDSButton label="New order" size="sm" />
           </>

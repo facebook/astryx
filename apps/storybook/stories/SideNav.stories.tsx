@@ -310,12 +310,14 @@ export const WithFooter: Story = {
             icon={<XDSIcon icon={QuestionMarkCircleIcon} size="md" />}
             variant="ghost"
             size="sm"
+            isIconOnly
           />
           <XDSButton
             label="Notifications"
             icon={<XDSIcon icon={BellIcon} size="md" />}
             variant="ghost"
             size="sm"
+            isIconOnly
           />
         </>
       }>
@@ -465,6 +467,7 @@ export const EndContent: Story = {
               }
               variant="ghost"
               size="sm"
+              isIconOnly
             />
           }
         />

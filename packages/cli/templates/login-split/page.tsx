@@ -252,16 +252,14 @@ export default function LoginTwoColumn() {
                   label="Apple"
                   variant="secondary"
                   icon={<AppleIcon />}
-                  xstyle={styles.socialButton}>
-                  Apple
-                </XDSButton>
+                  xstyle={styles.socialButton}
+                />
                 <XDSButton
                   label="Google"
                   variant="secondary"
                   icon={<GoogleIcon />}
-                  xstyle={styles.socialButton}>
-                  Google
-                </XDSButton>
+                  xstyle={styles.socialButton}
+                />
               </div>
 
               <XDSVStack hAlign="center" xstyle={styles.centered}>
@@ -297,7 +295,6 @@ export default function LoginTwoColumn() {
           </div>
         </XDSHStack>
       </XDSCard>
-
       {/* Terms — outside card */}
       <XDSVStack hAlign="center" xstyle={styles.centered}>
         <XDSText type="supporting" color="secondary">

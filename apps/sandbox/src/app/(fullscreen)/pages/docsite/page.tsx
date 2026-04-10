@@ -698,6 +698,7 @@ function TemplateCard({
                   size: 'sm',
                   icon: <MoreIcon />,
                   style: {color: '#fff'},
+                  isIconOnly: true,
                 }}
                 hasChevron={false}
                 items={[
@@ -856,6 +857,7 @@ function AIComposer() {
                 variant="ghost"
                 size="sm"
                 icon={<PlusIcon />}
+                isIconOnly
               />
               <XDSButton
                 label="Send"
@@ -863,6 +865,7 @@ function AIComposer() {
                 size="sm"
                 icon={<SendIcon />}
                 style={{borderRadius: 9999}}
+                isIconOnly
               />
             </div>
           </div>
@@ -961,6 +964,7 @@ function ChatPanel({
               variant: 'ghost',
               size: 'sm',
               icon: <HamburgerIcon />,
+              isIconOnly: true,
             }}
             hasChevron={false}
             items={[
@@ -1008,9 +1012,9 @@ function ChatPanel({
           variant="ghost"
           size="sm"
           icon={<SidebarIcon />}
+          isIconOnly
         />
       </div>
-
       {/* Chat thread */}
       <div style={{flex: 1, padding: 16, overflow: 'auto'}}>
         {/* User message */}
@@ -1044,7 +1048,6 @@ function ChatPanel({
           <ShimmerText isActive={isGenerating} />
         </div>
       </div>
-
       {/* Composer pinned to bottom */}
       <div style={{padding: 12}}>
         <div
@@ -1100,6 +1103,7 @@ function ChatPanel({
               variant="ghost"
               size="sm"
               icon={<PlusIcon />}
+              isIconOnly
             />
             <XDSButton
               label="Send"
@@ -1108,6 +1112,7 @@ function ChatPanel({
               icon={<SendIcon />}
               style={{borderRadius: 9999}}
               onClick={onSend}
+              isIconOnly
             />
           </div>
         </div>
@@ -1362,12 +1367,14 @@ function TemplatePreview({
                   icon={<ArrowLeftIcon />}
                   onClick={onBack}
                   style={{marginLeft: -8}}
+                  isIconOnly
                 />
                 <XDSTooltip content="Point" placement="below">
                   <XDSButton
                     label="Point"
                     variant="ghost"
                     icon={<CursorIcon />}
+                    isIconOnly
                   />
                 </XDSTooltip>
                 <XDSDropdownMenu
@@ -1375,6 +1382,7 @@ function TemplatePreview({
                     label: 'Theme',
                     variant: 'ghost',
                     icon: <PaletteIcon />,
+                    isIconOnly: true,
                   }}
                   hasChevron={false}
                   items={XDS_THEMES.map(t => ({
@@ -1883,6 +1891,7 @@ function AppTopNav({
             variant="ghost"
             size="sm"
             icon={<FilterIcon />}
+            isIconOnly
           />
           <XDSButton
             label="Search"
@@ -1890,6 +1899,7 @@ function AppTopNav({
             size="sm"
             icon={<SearchIcon />}
             onClick={() => setIsSearchOpen(true)}
+            isIconOnly
           />
           <XDSButton
             label="Profile"
@@ -1897,6 +1907,7 @@ function AppTopNav({
             size="sm"
             icon={<ProfileIcon />}
             onClick={() => setActiveView('profile')}
+            isIconOnly
           />
         </div>
       </nav>
@@ -2154,6 +2165,7 @@ function DocsView({
             variant="ghost"
             size="sm"
             icon={<SidebarCollapseIcon />}
+            isIconOnly
           />
         </div>
 
@@ -2234,7 +2246,6 @@ function DocsView({
           )}
         </nav>
       </aside>
-
       {/* MAIN CONTENT */}
       <main
         style={{
@@ -2299,6 +2310,7 @@ function DocsView({
                   variant="ghost"
                   size="sm"
                   icon={<ExternalLinkIcon />}
+                  isIconOnly
                 />
                 <XDSDropdownMenu
                   button={{
@@ -2331,12 +2343,14 @@ function DocsView({
                   size="sm"
                   icon={<CodeIcon />}
                   onClick={() => setShowCode(!showCode)}
+                  isIconOnly
                 />
                 <XDSButton
                   label="Fullscreen"
                   variant="ghost"
                   size="sm"
                   icon={<FullscreenIcon />}
+                  isIconOnly
                 />
               </div>
             </div>
@@ -2361,9 +2375,8 @@ function DocsView({
                   label="Button"
                   variant="primary"
                   icon={<PlusIcon />}
-                  endContent={<XDSBadge label="New" variant="info" />}>
-                  Button
-                </XDSButton>
+                  endContent={<XDSBadge label="New" variant="info" />}
+                />
               </div>
 
               {/* Code Panel */}
@@ -2463,7 +2476,6 @@ function DocsView({
           </ul>
         </div>
       </main>
-
       {/* RIGHT SIDEBAR */}
       <aside
         style={{
@@ -2679,24 +2691,24 @@ function ExploreView({
             variant="ghost"
             size="sm"
             icon={<SearchIcon />}
+            isIconOnly
           />
           <XDSButton
             label="Create new"
             variant="secondary"
             size="sm"
-            icon={<PlusIcon />}>
-            Create new
-          </XDSButton>
+            icon={<PlusIcon />}
+          />
           <XDSButton
             label="Profile"
             variant="ghost"
             size="sm"
             icon={<ProfileIcon />}
             onClick={() => setActiveView('profile')}
+            isIconOnly
           />
         </div>
       </nav>
-
       {/* Scrollable content */}
       <div
         style={{
@@ -3332,16 +3344,17 @@ function ProfileView({
             variant="ghost"
             size="sm"
             icon={<SearchIcon />}
+            isIconOnly
           />
           <XDSButton
             label="Profile"
             variant="ghost"
             size="sm"
             icon={<ProfileIcon />}
+            isIconOnly
           />
         </div>
       </nav>
-
       {/* Scrollable content */}
       <div
         style={{
@@ -3456,9 +3469,8 @@ function ProfileView({
                 <XDSButton
                   label="New collection"
                   variant="secondary"
-                  icon={<PlusIcon />}>
-                  New collection
-                </XDSButton>
+                  icon={<PlusIcon />}
+                />
               </div>
               <div
                 style={{
@@ -3563,9 +3575,8 @@ function ProfileView({
                   label="Create new"
                   variant="secondary"
                   size="sm"
-                  icon={<PlusIcon />}>
-                  Create new
-                </XDSButton>
+                  icon={<PlusIcon />}
+                />
               </div>
               <div
                 style={{
