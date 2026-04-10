@@ -14,24 +14,29 @@
 import {defineTheme, defineSyntaxTheme} from '@xds/core/theme';
 import {defaultIconRegistry} from './icons';
 
-/** Default syntax palette — tuned to the XDS blue color ramp. */
+/**
+ * Default syntax palette — GitHub Light (light) + GitHub Dark (dark).
+ *
+ * Color values sourced from the GitHub VS Code theme by the Primer team.
+ * Original theme: https://github.com/primer/github-vscode-theme (MIT license).
+ */
 const defaultSyntax = defineSyntaxTheme({
   name: 'xds-default',
   tokens: {
-    keyword: ['#0064E0', '#2694FE'],
-    string: ['#09441F', '#A5F690'],
-    comment: ['#4E606F', '#6B7D8D'],
-    number: ['#6B2203', '#FDB876'],
-    function: ['#042F97', '#AFD7FF'],
-    type: ['#3E0697', '#B3B0FE'],
-    variable: ['#0A1317', '#DFE2E5'],
-    operator: ['#006D75', '#56C8D8'],
-    constant: ['#6B2203', '#FDB876'],
-    tag: ['#7B0210', '#FFB2B8'],
-    attribute: ['#7A4F1A', '#E8C580'],
-    property: ['#006064', '#B2EBF2'],
-    punctuation: ['#65737E', '#6F747C'],
-    background: ['#F1F4F7', '#111112'],
+    keyword: ['#cf222e', '#ff7b72'],
+    string: ['#0a3069', '#a5d6ff'],
+    comment: ['#6e7781', '#8b949e'],
+    number: ['#0550ae', '#79c0ff'],
+    function: ['#8250df', '#d2a8ff'],
+    type: ['#953800', '#ffa657'],
+    variable: ['#24292f', '#e6edf3'],
+    operator: ['#cf222e', '#ff7b72'],
+    constant: ['#0550ae', '#79c0ff'],
+    tag: ['#116329', '#7ee787'],
+    attribute: ['#0550ae', '#79c0ff'],
+    property: ['#0550ae', '#79c0ff'],
+    punctuation: ['#24292f', '#c9d1d9'],
+    background: ['#ffffff', '#0d1117'],
   },
 });
 
