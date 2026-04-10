@@ -616,9 +616,12 @@ function extractIconInfo(filePath) {
  */
 function generateBuiltModule(themeDef, iconInfo) {
   const iconImport = iconInfo
-    ? `import { ${iconInfo.exportName} as icons } from '${iconInfo.importPath}';\n`
+    ? `import { ${iconInfo.exportName} } from '${iconInfo.importPath}';\n`
     : '';
-  const iconsField = iconInfo ? '  icons,' : '';
+  const iconsField = iconInfo ? `  icons: ${iconInfo.exportName},` : '';
+  const iconReExport = iconInfo
+    ? `\nexport { ${iconInfo.exportName} };\n`
+    : '';
 
   // Resolve token values — tuples become light-dark() strings
   const resolvedTokens = {};
@@ -646,15 +649,20 @@ export const ${toIdentifier(themeDef.name)}Theme = {
   tokens: ${tokensStr},
 ${iconsField}
 };
-`;
+${iconReExport}`;
 }
 
 /**
  * Generate TypeScript declarations for a built theme module.
  */
-function generateBuiltTypes(themeDef) {
+function generateBuiltTypes(themeDef, iconInfo) {
+  const iconType = iconInfo
+    ? `import type { XDSIconRegistry } from '@xds/core/Icon';
+export declare const ${iconInfo.exportName}: XDSIconRegistry;
+`
+    : '';
   return `import type { XDSDefinedTheme } from '@xds/core/theme';
-export declare const ${toIdentifier(themeDef.name)}Theme: XDSDefinedTheme;
+${iconType}export declare const ${toIdentifier(themeDef.name)}Theme: XDSDefinedTheme;
 `;
 }
 
@@ -932,7 +940,7 @@ export function registerTheme(program) {
       const iconInfo = extractIconInfo(filePath);
 
       fs.writeFileSync(jsPath, generateBuiltModule(resolvedTheme || themeDef, iconInfo));
-      fs.writeFileSync(dtsPath, generateBuiltTypes(themeDef));
+      fs.writeFileSync(dtsPath, generateBuiltTypes(themeDef, iconInfo));
 
       if (!json) {
         console.log(`✓ ${path.relative(process.cwd(), jsPath)}`);

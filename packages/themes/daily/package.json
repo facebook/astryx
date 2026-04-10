@@ -5,20 +5,20 @@
   "description": "Daily theme for XDS components \u2014 warm, productivity-focused (Lucide icons)",
   "license": "MIT",
   "sideEffects": false,
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/daily.js",
+  "types": "./dist/daily.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.js"
+      "types": "./dist/daily.d.ts",
+      "import": "./dist/daily.js",
+      "require": "./dist/daily.js"
     },
-    "./theme.css": "./dist/theme.css",
     "./source": {
       "types": "./dist/source.d.ts",
       "import": "./dist/source.mjs",
       "require": "./dist/source.js"
-    }
+    },
+    "./theme.css": "./dist/theme.css"
   },
   "files": [
     "dist",
@@ -37,5 +37,5 @@
   "devDependencies": {
     "@xds/cli": "*"
   },
-  "module": "./dist/index.mjs"
+  "module": "./dist/daily.js"
 }
