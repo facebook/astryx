@@ -298,7 +298,6 @@ function PerfPanel({
           title={`${lineCount.toLocaleString()} lines`}
           hasLineNumbers
           maxHeight={maxHeight}
-          highlightMode={mode}
         />
       </div>
     </XDSVStack>

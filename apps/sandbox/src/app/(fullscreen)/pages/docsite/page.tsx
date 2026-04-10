@@ -194,19 +194,6 @@ const ChevronDownIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-const ChevronRightIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    {...props}>
-    <polyline points="9 6 15 12 9 18" />
-  </svg>
-);
-
 const ExternalLinkIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     viewBox="0 0 24 24"
@@ -574,20 +561,20 @@ const TEMPLATE_IMAGES = [DUMMY_IMAGE, DUMMY_IMAGE, DUMMY_IMAGE, DUMMY_IMAGE];
 function TemplateCard({
   src,
   name,
-  _isSelected,
-  _onSelect,
+  isSelected: _isSelected,
+  onSelect: _onSelect,
   isGenerating,
-  _onMoreLikeThis,
+  onMoreLikeThis: _onMoreLikeThis,
   onUse,
   simulation,
-  _cardSize = 'medium',
+  cardSize: _cardSize = 'medium',
 }: {
   src: string;
   name: string;
-  _isSelected?: boolean;
-  _onSelect?: () => void;
+  isSelected?: boolean;
+  onSelect?: () => void;
   isGenerating: boolean;
-  _onMoreLikeThis?: () => void;
+  onMoreLikeThis?: () => void;
   onUse: () => void;
   simulation: BoidsSimulation;
   cardSize?: 'xlarge' | 'large' | 'medium' | 'small';
@@ -2485,10 +2472,9 @@ export default function DocsiteLandingTemplate() {
     );
     setIsMobile(mobileMql.matches);
     setIsTablet(tabletMql.matches);
-    if (mobileMql.matches) setSidebarOpen(false);
+
     const mobileHandler = (e: MediaQueryListEvent) => {
       setIsMobile(e.matches);
-      if (e.matches) setSidebarOpen(false);
     };
     const tabletHandler = (e: MediaQueryListEvent) => setIsTablet(e.matches);
     mobileMql.addEventListener('change', mobileHandler);
