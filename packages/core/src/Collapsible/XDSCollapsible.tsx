@@ -77,7 +77,7 @@ const styles = stylex.create({
   },
 });
 
-export interface XDSCollapsibleProps extends Omit<XDSBaseProps, 'children'> {
+export interface XDSCollapsibleProps extends XDSBaseProps {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLDivElement>;
   /**

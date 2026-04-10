@@ -275,7 +275,7 @@ export interface XDSSelectorStatus {
 
 interface XDSSelectorPropsBase<
   T extends XDSSelectorOptionType = XDSSelectorOptionType,
-> extends Omit<XDSBaseProps, 'onChange' | 'defaultValue' | 'children'> {
+> extends Omit<XDSBaseProps, 'onChange' | 'defaultValue'> {
   /**
    * Label text for the selector (always rendered for accessibility).
    */

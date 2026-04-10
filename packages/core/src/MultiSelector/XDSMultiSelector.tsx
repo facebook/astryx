@@ -353,7 +353,7 @@ export type {XDSMultiSelectorStatus};
 
 export interface XDSMultiSelectorProps<
   T extends XDSMultiSelectorOptionType = XDSMultiSelectorOptionType,
-> extends Omit<XDSBaseProps, 'onChange' | 'defaultValue' | 'children'> {
+> extends Omit<XDSBaseProps, 'onChange' | 'defaultValue'> {
   /**
    * Label text for the multi-selector (always rendered for accessibility).
    */
