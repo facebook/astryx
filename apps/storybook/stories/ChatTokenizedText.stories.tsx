@@ -20,9 +20,9 @@ export default meta;
 type Story = StoryObj<typeof XDSChatMessageTokenizedText>;
 
 const mentionTokens = [
-  {pattern: '@cindy', label: '@Cindy Zhang', variant: 'blue' as const},
-  {pattern: '@navi', label: '@Navi', variant: 'blue' as const},
-  {pattern: '@alex', label: '@Alex Rivera', variant: 'blue' as const},
+  {value: '@cindy', label: '@Cindy Zhang', variant: 'blue' as const},
+  {value: '@navi', label: '@Navi', variant: 'blue' as const},
+  {value: '@alex', label: '@Alex Rivera', variant: 'blue' as const},
 ];
 
 /** Single mention token */
@@ -71,9 +71,9 @@ export const MixedVariants: Story = {
       <XDSChatMessageBubble>
         <XDSChatMessageTokenizedText
           tokens={[
-            {pattern: '@cindy', label: '@Cindy', variant: 'blue'},
-            {pattern: '#bug', label: '#bug', variant: 'red'},
-            {pattern: '#feat', label: '#feature', variant: 'green'},
+            {value: '@cindy', label: '@Cindy', variant: 'blue'},
+            {value: '#bug', label: '#bug', variant: 'red'},
+            {value: '#feat', label: '#feature', variant: 'green'},
           ]}>
           @cindy filed #bug and #feat for the sprint
         </XDSChatMessageTokenizedText>
