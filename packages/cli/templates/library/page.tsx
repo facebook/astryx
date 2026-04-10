@@ -281,7 +281,7 @@ const styles = stylex.create({
     display: 'flex',
     flexDirection: 'column',
     gap: spacingVars['--spacing-3'],
-    paddingBottom: spacingVars['--spacing-6'],
+    paddingBottom: spacingVars['--spacing-8'],
   },
   toggleRow: {
     display: 'flex',
@@ -292,7 +292,7 @@ const styles = stylex.create({
   },
   dividerRow: {
     paddingTop: spacingVars['--spacing-6'],
-    paddingBottom: spacingVars['--spacing-6'],
+    paddingBottom: spacingVars['--spacing-8'],
   },
   sectionHeader: {
     paddingBottom: spacingVars['--spacing-3'],
@@ -305,14 +305,6 @@ const styles = stylex.create({
     padding: spacingVars['--spacing-4'],
     display: 'flex',
     flexDirection: 'column',
-  },
-  cardCategory: {
-    fontSize: textSizeVars['--font-size-xs'],
-    fontWeight: fontWeightVars['--font-weight-semibold'],
-    letterSpacing: '0.05em',
-    textTransform: 'uppercase',
-    color: colorVars['--color-text-secondary'],
-    marginBottom: spacingVars['--spacing-1'],
   },
   itemName: {
     fontSize: textSizeVars['--font-size-base'],
@@ -386,7 +378,6 @@ function LibraryCard({item}: {item: LibraryItem}) {
     <XDSCard padding={0}>
       <XDSAspectRatio ratio={16 / 9} xstyle={styles.thumbnail}><div /></XDSAspectRatio>
       <div {...stylex.props(styles.cardBody)}>
-        <span {...stylex.props(styles.cardCategory)}>{item.category}</span>
         <span {...stylex.props(styles.itemName)}>{item.name}</span>
         <span {...stylex.props(styles.itemDescription)}>
           {item.description}
