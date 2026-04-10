@@ -21,6 +21,7 @@ import {XDSBadge} from '@xds/core/Badge';
 import {XDSNumberInput} from '@xds/core/NumberInput';
 import {XDSAppShell} from '@xds/core/AppShell';
 import {XDSCenter} from '@xds/core/Center';
+import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import {XDSIcon} from '@xds/core/Icon';
 import {ShieldCheckIcon} from '@heroicons/react/24/outline';
 import {LockClosedIcon} from '@heroicons/react/24/outline';
@@ -166,6 +167,7 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-element'],
     backgroundColor: colorVars['--color-neutral'],
     flexShrink: 0,
+    overflow: 'hidden',
   },
   summaryRow: {
     display: 'flex',
@@ -945,21 +947,20 @@ export default function PaymentFormPage() {
                         <XDSVStack key={item.id} gap={3}>
                           <XDSHStack gap={3} vAlign="start">
                             {/* Placeholder thumbnail */}
-                            <div
-                              {...stylex.props(styles.orderThumb)}
-                              style={{overflow: 'hidden'}}>
-                              <img
-                                src={
-                                  (ITEM_IMAGES[item.id] as {src: string}).src
-                                }
-                                alt={item.name}
-                                style={{
-                                  width: 64,
-                                  height: 64,
-                                  objectFit: 'cover',
-                                  borderRadius: 8,
-                                }}
-                              />
+                            <div {...stylex.props(styles.orderThumb)}>
+                              <XDSAspectRatio ratio={1}>
+                                <img
+                                  src={
+                                    (ITEM_IMAGES[item.id] as {src: string}).src
+                                  }
+                                  alt={item.name}
+                                  style={{
+                                    width: '100%',
+                                    height: '100%',
+                                    objectFit: 'cover',
+                                  }}
+                                />
+                              </XDSAspectRatio>
                             </div>
                             <XDSVStack gap={1} style={{flex: 1}}>
                               <XDSHStack
