@@ -1,4 +1,6 @@
-// Re-export the built theme (produced by `xds theme build`, has __built: true).
-// tsup externalizes this — it resolves to the sibling dist/meta.js at runtime.
-export {metaTheme} from '../dist/meta';
+import {metaTheme as _theme} from './metaTheme';
+import type {XDSDefinedTheme} from '@xds/core/theme';
+
+/** Built theme — pair with `import '@xds/theme-meta/theme.css'` */
+export const metaTheme: XDSDefinedTheme = {..._theme, __built: true};
 export {metaIconRegistry} from './icons';

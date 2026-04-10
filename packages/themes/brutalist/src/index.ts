@@ -1,3 +1,5 @@
-// Re-export the built theme (produced by `xds theme build`, has __built: true).
-// tsup externalizes this — it resolves to the sibling dist/brutalist.js at runtime.
-export {brutalistTheme} from '../dist/brutalist';
+import {brutalistTheme as _theme} from './brutalistTheme';
+import type {XDSDefinedTheme} from '@xds/core/theme';
+
+/** Built theme — pair with `import '@xds/theme-brutalist/theme.css'` */
+export const brutalistTheme: XDSDefinedTheme = {..._theme, __built: true};

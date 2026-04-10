@@ -14,7 +14,12 @@
       "import": "./dist/index.mjs",
       "require": "./dist/index.js"
     },
-    "./theme.css": "./dist/theme.css"
+    "./theme.css": "./dist/theme.css",
+    "./source": {
+      "types": "./dist/source.d.ts",
+      "import": "./dist/source.mjs",
+      "require": "./dist/source.js"
+    }
   },
   "files": [
     "dist",

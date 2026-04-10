@@ -1,4 +1,6 @@
-// Re-export the built theme (produced by `xds theme build`, has __built: true).
-// tsup externalizes this — it resolves to the sibling dist/daily.js at runtime.
-export {dailyTheme} from '../dist/daily';
+import {dailyTheme as _theme} from './dailyTheme';
+import type {XDSDefinedTheme} from '@xds/core/theme';
+
+/** Built theme — pair with `import '@xds/theme-daily/theme.css'` */
+export const dailyTheme: XDSDefinedTheme = {..._theme, __built: true};
 export {dailyIconRegistry} from './icons';
