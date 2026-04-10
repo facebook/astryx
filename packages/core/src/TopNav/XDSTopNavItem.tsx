@@ -130,6 +130,7 @@ export interface XDSTopNavItemProps extends XDSBaseProps<HTMLAnchorElement> {
   isDisabled?: boolean;
   /**
    * Optional icon to display before the label.
+   * // TODO: Add isIconOnly prop for consistency with XDSButton (#1257)
    * If provided without children, item becomes icon-only.
    */
   icon?: ReactNode;
