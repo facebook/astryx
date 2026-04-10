@@ -194,12 +194,12 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
   const [viewport, setViewport] = useState<ViewportSize>('desktop');
   const [copied, setCopied] = useState(false);
   const {themeName, setThemeName, mode, setMode} = useThemeControls();
-  const [toolbarHidden, setToolbarHidden] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('sandbox-toolbar-hidden') === 'true';
-    }
-    return false;
-  });
+  const [toolbarHidden, setToolbarHidden] = useState(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('sandbox-toolbar-hidden');
+    if (saved === 'true') setToolbarHidden(true);
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('sandbox-toolbar-hidden', String(toolbarHidden));
