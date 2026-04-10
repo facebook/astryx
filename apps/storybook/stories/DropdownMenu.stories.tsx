@@ -311,6 +311,7 @@ export const IconOnly: Story = {
           label: 'More options',
           icon: <EllipsisHorizontalIcon />,
           variant: 'ghost',
+          isIconOnly: true,
         }}
         items={[
           {label: 'Edit', icon: PencilIcon, onClick: () => console.log('Edit')},
@@ -326,6 +327,7 @@ export const IconOnly: Story = {
           label: 'Settings',
           icon: <Cog6ToothIcon />,
           variant: 'secondary',
+          isIconOnly: true,
         }}
         items={[
           {label: 'Preferences', onClick: () => console.log('Preferences')},

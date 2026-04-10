@@ -224,21 +224,25 @@ function StoreTopNav() {
             label="Search"
             variant="ghost"
             icon={<SearchIcon style={{width: 16, height: 16}} />}
+            isIconOnly
           />
           <XDSButton
             label="Wishlist"
             variant="ghost"
             icon={<HeartIcon style={{width: 16, height: 16}} />}
+            isIconOnly
           />
           <XDSButton
             label="Account"
             variant="ghost"
             icon={<UserIcon style={{width: 16, height: 16}} />}
+            isIconOnly
           />
           <XDSButton
             label="Cart"
             variant="ghost"
             icon={<BagIcon style={{width: 16, height: 16}} />}
+            isIconOnly
           />
         </>
       }
@@ -344,7 +348,6 @@ function ProductInfo() {
           <XDSBadge variant="error" label="Sale" />
         </XDSHStack>
       </XDSVStack>
-
       {/* Color Selector */}
       <XDSVStack gap={2}>
         <XDSText type="label">Color</XDSText>
@@ -360,7 +363,6 @@ function ProductInfo() {
           </XDSSegmentedControl>
         </div>
       </XDSVStack>
-
       {/* Shade Finish Selector */}
       <XDSVStack gap={2}>
         <XDSText type="label">Shade Finish</XDSText>
@@ -379,7 +381,6 @@ function ProductInfo() {
           </XDSSegmentedControl>
         </div>
       </XDSVStack>
-
       {/* Quantity */}
       <XDSHStack gap={1} vAlign="center">
         <XDSButton
@@ -388,6 +389,7 @@ function ProductInfo() {
           icon={<MinusIcon style={{width: 16, height: 16}} />}
           onClickAction={decrement}
           isDisabled={(quantity ?? 1) <= 1}
+          isIconOnly
         />
         <div style={{width: 100}}>
           <XDSNumberInput
@@ -406,9 +408,9 @@ function ProductInfo() {
           icon={<PlusIcon style={{width: 16, height: 16}} />}
           onClickAction={increment}
           isDisabled={(quantity ?? 1) >= 10}
+          isIconOnly
         />
       </XDSHStack>
-
       {/* Add to Cart + Buy it now (8px gap between them) */}
       <XDSVStack gap={2}>
         <XDSButton
@@ -433,13 +435,12 @@ function ProductInfo() {
             variant="ghost"
             size="lg"
             icon={<HeartIcon style={{width: 16, height: 16}} />}
+            isIconOnly
           />
         </XDSHStack>
       </XDSVStack>
-
       {/* Description */}
       <XDSText type="body">{PRODUCT.description}</XDSText>
-
       {/* Collapsible Sections */}
       <XDSCollapsibleGroup type="multiple" defaultValue={['composition']}>
         <XDSDivider />

@@ -890,6 +890,7 @@ function ChartCard({
                 size="xs"
                 icon={<InformationCircleIcon style={{width: 14, height: 14}} />}
                 onClick={() => setIsInfoOpen(true)}
+                isIconOnly
               />
               <XDSMoreMenu
                 label="Refresh"
@@ -911,7 +912,6 @@ function ChartCard({
           <div {...stylex.props(styles.chartInner)}>{children}</div>
         </XDSVStack>
       </XDSCard>
-
       <XDSDialog
         isOpen={isInfoOpen}
         onOpenChange={setIsInfoOpen}
@@ -960,6 +960,7 @@ function ChartCard({
                           style={{width: 14, height: 14}}
                         />
                       }
+                      isIconOnly
                     />
                     <XDSButton
                       label="Download image"
@@ -969,6 +970,7 @@ function ChartCard({
                       icon={
                         <ArrowDownTrayIcon style={{width: 14, height: 14}} />
                       }
+                      isIconOnly
                     />
                   </XDSHStack>
                 </XDSHStack>
@@ -1099,7 +1101,6 @@ function OverviewContent() {
         <XDSTab value="usage" label="Overview" />
         <XDSTab value="ds-details" label="Design System Details" />
       </XDSTabList>
-
       {ovTab === 'usage' && (
         <XDSVStack gap={6}>
           <XDSVStack gap={3}>
@@ -1143,7 +1144,6 @@ function OverviewContent() {
           </XDSVStack>
         </XDSVStack>
       )}
-
       {ovTab === 'ds-details' && (
         <XDSVStack gap={6}>
           <div {...stylex.props(styles.chartsGrid)}>
@@ -1285,6 +1285,7 @@ function OverviewContent() {
                   icon={
                     <InformationCircleIcon style={{width: 14, height: 14}} />
                   }
+                  isIconOnly
                 />
                 <XDSMoreMenu
                   label="Refresh"
@@ -1356,6 +1357,7 @@ function AnalyticsDashboard() {
               onClick={() =>
                 window.open('https://fburl.com/unidash/1tc4odil', '_blank')
               }
+              isIconOnly
             />
             <XDSButton
               label="Nest"
@@ -1364,11 +1366,11 @@ function AnalyticsDashboard() {
               onClick={() =>
                 window.open('https://fburl.com/unidash/3lwsz2m9', '_blank')
               }
+              isIconOnly
             />
           </>
         }
       />
-
       <div {...stylex.props(styles.page)}>
         <XDSVStack gap={6}>
           <OverviewContent />

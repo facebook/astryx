@@ -408,6 +408,7 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
             )
           }
           onClick={() => setMode(mode === 'light' ? 'dark' : 'light')}
+          isIconOnly
         />
         <XDSButton
           variant="ghost"
@@ -421,9 +422,9 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
             )
           }
           onClick={handleCopy}
+          isIconOnly
         />
       </div>
-
       {/* Content */}
       {view === 'preview' ? (
         <div

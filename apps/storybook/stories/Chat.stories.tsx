@@ -555,12 +555,14 @@ For server state, use a library like **TanStack Query** or **SWR**.`}</XDSMarkdo
                   icon={<HandThumbUpIcon style={{width: 14, height: 14}} />}
                   variant="ghost"
                   size="sm"
+                  isIconOnly
                 />
                 <XDSButton
                   label="Thumbs down"
                   icon={<HandThumbDownIcon style={{width: 14, height: 14}} />}
                   variant="ghost"
                   size="sm"
+                  isIconOnly
                 />
               </>
             }
@@ -587,12 +589,14 @@ For server state, use a library like **TanStack Query** or **SWR**.`}</XDSMarkdo
                   icon={<HandThumbUpIcon style={{width: 14, height: 14}} />}
                   variant="ghost"
                   size="sm"
+                  isIconOnly
                 />
                 <XDSButton
                   label="Thumbs down"
                   icon={<HandThumbDownIcon style={{width: 14, height: 14}} />}
                   variant="ghost"
                   size="sm"
+                  isIconOnly
                 />
                 <XDSButton
                   label="Copy"
@@ -601,6 +605,7 @@ For server state, use a library like **TanStack Query** or **SWR**.`}</XDSMarkdo
                   }
                   variant="ghost"
                   size="sm"
+                  isIconOnly
                 />
               </>
             }

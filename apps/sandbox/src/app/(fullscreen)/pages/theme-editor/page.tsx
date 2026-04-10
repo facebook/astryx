@@ -1937,6 +1937,7 @@ function MotionPreview() {
                   variant="ghost"
                   size="sm"
                   onClick={() => setOverlayOpen(false)}
+                  isIconOnly
                 />
               </div>
             </div>
@@ -1973,6 +1974,7 @@ function MotionPreview() {
                   variant="ghost"
                   size="sm"
                   onClick={() => setPushOpen(false)}
+                  isIconOnly
                 />
               </div>
               {selectedUser && (
@@ -3205,7 +3207,6 @@ function ThemeEditorComponent() {
           />
         </div>
       </div>
-
       {/* Right Panel - Preview */}
       <div
         style={{
@@ -3349,6 +3350,7 @@ function ThemeEditorComponent() {
                     variant="ghost"
                     size="sm"
                     onClick={() => setOverlayPanelOpen(false)}
+                    isIconOnly
                   />
                 </div>
                 <div style={{padding: 'var(--spacing-3)'}}>
@@ -3390,6 +3392,7 @@ function ThemeEditorComponent() {
                     variant="ghost"
                     size="sm"
                     onClick={() => setPushPanelOpen(false)}
+                    isIconOnly
                   />
                 </div>
                 <div

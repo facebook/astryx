@@ -48,6 +48,7 @@ describe('XDSToggleButton', () => {
         isPressed={false}
         onPressedChange={() => {}}
         icon={<span data-testid="icon">B</span>}
+        isIconOnly
       />,
     );
     const button = screen.getByRole('button', {name: 'Bold'});
@@ -115,6 +116,7 @@ describe('XDSToggleButton', () => {
         onPressedChange={() => {}}
         icon={<span data-testid="outline-icon">♡</span>}
         pressedIcon={<span data-testid="filled-icon">♥</span>}
+        isIconOnly
       />,
     );
     expect(screen.getByTestId('filled-icon')).toBeInTheDocument();
@@ -129,6 +131,7 @@ describe('XDSToggleButton', () => {
         onPressedChange={() => {}}
         icon={<span data-testid="outline-icon">♡</span>}
         pressedIcon={<span data-testid="filled-icon">♥</span>}
+        isIconOnly
       />,
     );
     expect(screen.getByTestId('outline-icon')).toBeInTheDocument();
@@ -172,6 +175,7 @@ describe('XDSToggleButton', () => {
         isPressed={false}
         onPressedChange={() => {}}
         icon={<span>B</span>}
+        isIconOnly
       />,
     );
     const button = screen.getByRole('button');
@@ -201,9 +205,24 @@ describe('XDSToggleButtonGroup (single)', () => {
     const [value, setValue] = useState<string | null>('list');
     return (
       <XDSToggleButtonGroup value={value} onChange={setValue} label="View mode">
-        <XDSToggleButton value="list" label="List" icon={<span>≡</span>} />
-        <XDSToggleButton value="grid" label="Grid" icon={<span>⊞</span>} />
-        <XDSToggleButton value="card" label="Card" icon={<span>□</span>} />
+        <XDSToggleButton
+          value="list"
+          label="List"
+          icon={<span>≡</span>}
+          isIconOnly
+        />
+        <XDSToggleButton
+          value="grid"
+          label="Grid"
+          icon={<span>⊞</span>}
+          isIconOnly
+        />
+        <XDSToggleButton
+          value="card"
+          label="Card"
+          icon={<span>□</span>}
+          isIconOnly
+        />
       </XDSToggleButtonGroup>
     );
   }
@@ -271,12 +290,23 @@ describe('XDSToggleButtonGroup (multiple)', () => {
         value={value}
         onChange={setValue}
         label="Formatting">
-        <XDSToggleButton value="bold" label="Bold" icon={<span>B</span>} />
-        <XDSToggleButton value="italic" label="Italic" icon={<span>I</span>} />
+        <XDSToggleButton
+          value="bold"
+          label="Bold"
+          icon={<span>B</span>}
+          isIconOnly
+        />
+        <XDSToggleButton
+          value="italic"
+          label="Italic"
+          icon={<span>I</span>}
+          isIconOnly
+        />
         <XDSToggleButton
           value="underline"
           label="Underline"
           icon={<span>U</span>}
+          isIconOnly
         />
       </XDSToggleButtonGroup>
     );

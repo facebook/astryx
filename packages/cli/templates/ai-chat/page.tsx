@@ -307,12 +307,14 @@ export default function AIChatTemplate() {
                 variant="ghost"
                 size="sm"
                 icon={<AtSignIcon />}
+                isIconOnly
               />
               <XDSButton
                 label="Attach"
                 variant="ghost"
                 size="sm"
                 icon={<PaperclipIcon />}
+                isIconOnly
               />
             </>
           }
@@ -354,6 +356,7 @@ export default function AIChatTemplate() {
               variant="ghost"
               size="md"
               icon={<MicIcon />}
+              isIconOnly
             />
           }
         />
@@ -366,36 +369,32 @@ export default function AIChatTemplate() {
             isPressed={selected === 'writing'}
             onPressedChange={() =>
               setSelected(prev => (prev === 'writing' ? null : 'writing'))
-            }>
-            Writing
-          </XDSToggleButton>
+            }
+          />
           <XDSToggleButton
             label="Coding"
             icon={<CodingIcon />}
             isPressed={selected === 'coding'}
             onPressedChange={() =>
               setSelected(prev => (prev === 'coding' ? null : 'coding'))
-            }>
-            Coding
-          </XDSToggleButton>
+            }
+          />
           <XDSToggleButton
             label="Research"
             icon={<ResearchIcon />}
             isPressed={selected === 'research'}
             onPressedChange={() =>
               setSelected(prev => (prev === 'research' ? null : 'research'))
-            }>
-            Research
-          </XDSToggleButton>
+            }
+          />
           <XDSToggleButton
             label="Creative"
             icon={<CreativeIcon />}
             isPressed={selected === 'creative'}
             onPressedChange={() =>
               setSelected(prev => (prev === 'creative' ? null : 'creative'))
-            }>
-            Creative
-          </XDSToggleButton>
+            }
+          />
         </XDSHStack>
       </XDSVStack>
     </XDSAppShell>

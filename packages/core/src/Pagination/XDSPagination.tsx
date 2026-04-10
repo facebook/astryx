@@ -541,7 +541,6 @@ export function XDSPagination({
           </div>
         </div>
       )}
-
       <div {...stylex.props(styles.controls)}>
         <XDSButton
           label="Go to previous page"
@@ -550,6 +549,7 @@ export function XDSPagination({
           icon={<XDSIcon icon="chevronLeft" size={isSm ? 'sm' : 'md'} />}
           onClick={handlePrevious}
           isDisabled={isDisabled || !hasPrevious}
+          isIconOnly
         />
 
         {renderIndicator()}
@@ -561,6 +561,7 @@ export function XDSPagination({
           icon={<XDSIcon icon="chevronRight" size={isSm ? 'sm' : 'md'} />}
           onClick={handleNext}
           isDisabled={isDisabled || !hasNext}
+          isIconOnly
         />
       </div>
     </nav>

@@ -109,8 +109,15 @@ async function main() {
   }
 
   // Determine the version range for codemods
-  // Run ALL codemods up to the latest modified version to be thorough
+  // Only run the new versions added in this PR — the base branch already
+  // has earlier codemod changes applied to consumer files.
+  const earliestVersion = codemodVersions[0];
   const latestVersion = codemodVersions[codemodVersions.length - 1];
+
+  // Find the version just before the earliest modified one
+  const {versions: allVersions} = await import('../../packages/cli/src/codemods/registry.mjs');
+  const earliestIdx = allVersions.indexOf(earliestVersion);
+  const fromVersion = earliestIdx > 0 ? allVersions[earliestIdx - 1] : '0.0.0';
 
   // Run codemods on each affected consumer directory
   const affectedDirs = [
@@ -120,8 +127,8 @@ async function main() {
   ];
 
   for (const dir of affectedDirs) {
-    console.log(`Running codemods (0.0.0 → ${latestVersion}) on ${dir}/...`);
-    const manifests = await getTransformsBetween('0.0.0', latestVersion);
+    console.log(`Running codemods (${fromVersion} → ${latestVersion}) on ${dir}/...`);
+    const manifests = await getTransformsBetween(fromVersion, latestVersion);
     if (manifests.length === 0) {
       console.log('  No applicable codemods found.');
       continue;

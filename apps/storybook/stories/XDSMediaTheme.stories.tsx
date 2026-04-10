@@ -39,7 +39,8 @@ function OnDarkDemo() {
   return (
     <div
       style={{
-        backgroundColor: 'var(--color-surface-inverted, light-dark(#0A1317, #FFFFFF))',
+        backgroundColor:
+          'var(--color-surface-inverted, light-dark(#0A1317, #FFFFFF))',
         borderRadius: 'var(--radius-container)',
         padding: 16,
       }}>
@@ -95,7 +96,8 @@ function OnLightDemo() {
         <XDSText>Dark mode page background</XDSText>
         <div
           style={{
-            backgroundColor: 'var(--color-surface-inverted, light-dark(#0A1317, #FFFFFF))',
+            backgroundColor:
+              'var(--color-surface-inverted, light-dark(#0A1317, #FFFFFF))',
             borderRadius: 'var(--radius-container)',
             padding: 16,
             marginTop: 12,
@@ -144,11 +146,13 @@ function ToastDemo() {
       {/* Info toast */}
       <div
         style={{
-          backgroundColor: 'var(--color-surface-inverted, light-dark(#0A1317, #FFFFFF))',
+          backgroundColor:
+            'var(--color-surface-inverted, light-dark(#0A1317, #FFFFFF))',
           borderRadius: 'var(--radius-container)',
           padding: '12px 16px',
           boxShadow: 'var(--shadow-med)',
-          maxWidth: 400, width: '100%',
+          maxWidth: 400,
+          width: '100%',
         }}>
         <XDSMediaTheme mode="dark">
           <XDSStack direction="row" gap={3} align="center" wrap="wrap">
@@ -159,19 +163,21 @@ function ToastDemo() {
               variant="ghost"
               size="sm"
               icon={<XDSIcon icon="close" size="sm" />}
+              isIconOnly
             />
           </XDSStack>
         </XDSMediaTheme>
       </div>
-
       {/* Error toast */}
       <div
         style={{
-          backgroundColor: 'var(--color-error-inverted, light-dark(#AA071E, #E3193B))',
+          backgroundColor:
+            'var(--color-error-inverted, light-dark(#AA071E, #E3193B))',
           borderRadius: 'var(--radius-container)',
           padding: '12px 16px',
           boxShadow: 'var(--shadow-med)',
-          maxWidth: 400, width: '100%',
+          maxWidth: 400,
+          width: '100%',
         }}>
         <XDSMediaTheme mode="dark">
           <XDSStack direction="row" gap={3} align="center" wrap="wrap">
@@ -183,6 +189,7 @@ function ToastDemo() {
               variant="ghost"
               size="sm"
               icon={<XDSIcon icon="close" size="sm" />}
+              isIconOnly
             />
           </XDSStack>
         </XDSMediaTheme>
@@ -241,7 +248,8 @@ function ComponentOverrideBoundaryDemo() {
         {/* Inverted surface — scope boundary blocks component overrides */}
         <div
           style={{
-            backgroundColor: 'var(--color-surface-inverted, light-dark(#0A1317, #FFFFFF))',
+            backgroundColor:
+              'var(--color-surface-inverted, light-dark(#0A1317, #FFFFFF))',
             borderRadius: 'var(--radius-element)',
             padding: 16,
           }}>
@@ -311,7 +319,8 @@ function ThemedDemo() {
               {/* Inverted surface */}
               <div
                 style={{
-                  backgroundColor: 'var(--color-surface-inverted, light-dark(#0A1317, #FFFFFF))',
+                  backgroundColor:
+                    'var(--color-surface-inverted, light-dark(#0A1317, #FFFFFF))',
                   borderRadius: 'var(--radius-container)',
                   padding: 16,
                   flex: 1,
@@ -373,7 +382,8 @@ function CustomOverridesDemo() {
         </XDSText>
         <div
           style={{
-            backgroundColor: 'var(--color-surface-inverted, light-dark(#0A1317, #FFFFFF))',
+            backgroundColor:
+              'var(--color-surface-inverted, light-dark(#0A1317, #FFFFFF))',
             borderRadius: 'var(--radius-container)',
             padding: 16,
           }}>
@@ -442,7 +452,8 @@ function ImageCard({url, label}: {url: string; label: string}) {
         position: 'relative',
         borderRadius: 'var(--radius-container, 12px)',
         overflow: 'hidden',
-        maxWidth: 300, width: '100%',
+        maxWidth: 300,
+        width: '100%',
         height: 200,
       }}>
       <img
@@ -535,7 +546,8 @@ function RegionalDetectDemo() {
           position: 'relative',
           borderRadius: 'var(--radius-container, 12px)',
           overflow: 'hidden',
-          maxWidth: 400, width: '100%',
+          maxWidth: 400,
+          width: '100%',
           height: 260,
         }}>
         <img
