@@ -47,10 +47,7 @@ export interface XDSDividerVariantMap {
  */
 export type XDSDividerVariant = keyof XDSDividerVariantMap;
 
-export interface XDSDividerProps extends Omit<
-  XDSBaseProps<HTMLDivElement>,
-  'children'
-> {
+export interface XDSDividerProps extends XDSBaseProps<HTMLDivElement> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLElement>;
   /**
