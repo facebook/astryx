@@ -192,9 +192,24 @@ export const docs = {
     },
   ],
   usage: {
-    summary: 'Chat components for building AI chat interfaces, including message lists, message bubbles, and a composer.',
+    summary: 'Chat components for building AI chat interfaces, including message lists, message bubbles, a composer, and a layout shell.',
   },
 };
+
+// Append XDSChatLayout to all doc variants
+const chatLayoutComponent = {
+  name: 'XDSChatLayout',
+  description: 'Layout shell for full chat interfaces. Messages flow in normal page flow, composer is fixed to the bottom with a frosted glass dock. Adapts spacing via container width observation.',
+  props: [
+    {name: 'children', type: 'ReactNode', description: 'Message content — flows naturally in the page, scrolls with the page.', required: true},
+    {name: 'composer', type: 'ReactNode', description: 'Composer element fixed to the bottom with frosted glass dock.', required: true},
+    {name: 'emptyState', type: 'ReactNode', description: 'Content shown when children is empty.'},
+  ],
+  examples: [
+    {label: 'Basic', code: `<XDSChatLayout composer={<XDSChatComposer onSubmit={handleSubmit} />}>\n  {messages.map(msg => <XDSChatMessage key={msg.id} {...msg} />)}\n</XDSChatLayout>`},
+  ],
+};
+docs.components.push(chatLayoutComponent);
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsZh = {
@@ -315,11 +330,20 @@ export const docsZh = {
       },
     },
     {
-      name: 'XDSChatMessageTokenizedText',
+name: 'XDSChatMessageTokenizedText',
       description: '渲染带有标记模式的文本，将匹配的模式替换为内联 XDSBadge 组件。在 XDSChatMessageBubble 内使用，以徽章样式显示 @提及或其他标记。',
       propDescriptions: {
         children: '包含标记模式的消息文本。',
         tokens: '标记定义。每个包含 pattern（匹配字符串）、label（显示文本）和可选 variant。',
+      },
+    },
+    {
+      name: 'XDSChatLayout',
+      description: '完整聊天界面的布局外壳。消息在页面中自然流动，编写器固定在底部，带有毛玻璃效果。',
+      propDescriptions: {
+        children: '消息内容，在页面中自然流动，随页面滚动。',
+        composer: '固定在底部的编写器元素，带有毛玻璃底座。',
+        emptyState: '子元素为空时显示的内容。',
       },
     },
   ],
@@ -443,11 +467,20 @@ export const docsDense = {
       },
     },
     {
-      name: 'XDSChatMessageTokenizedText',
+name: 'XDSChatMessageTokenizedText',
       description: 'renders text w/ token patterns replaced by inline badges; use in bubble for @mentions',
       propDescriptions: {
         children: 'msg text w/ token patterns',
         tokens: 'token defs: pattern+label+variant',
+      },
+    },
+    {
+      name: 'XDSChatLayout',
+      description: 'layout shell for full chat; msgs in page flow, composer fixed bottom w/ frosted glass dock',
+      propDescriptions: {
+        children: 'msg content; flows in page, scrolls w/ page',
+        composer: 'composer element; fixed bottom w/ frosted glass',
+        emptyState: 'content when children empty',
       },
     },
   ],

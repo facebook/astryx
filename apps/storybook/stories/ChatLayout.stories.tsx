@@ -1,5 +1,6 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {
+  XDSChatLayout,
   XDSChatMessageList,
   XDSChatMessage,
   XDSChatMessageBubble,
@@ -19,18 +20,24 @@ import {XDSToken} from '@xds/core/Token';
 import {XDSButton} from '@xds/core/Button';
 import {XDSCodeBlock} from '@xds/core/CodeBlock';
 import {XDSProgressBar} from '@xds/core/ProgressBar';
+import {XDSAvatar} from '@xds/core/Avatar';
+import {XDSText} from '@xds/core/Text';
 import {useXDSTooltip} from '@xds/core/Tooltip';
 import {createStaticSource} from '@xds/core/Typeahead';
 import {useState, useCallback, useRef} from 'react';
 
-const meta: Meta = {
-  title: 'Chat/Compositions',
+const meta: Meta<typeof XDSChatLayout> = {
+  title: 'Chat/XDSChatLayout',
+  component: XDSChatLayout,
   tags: ['autodocs'],
   parameters: {layout: 'fullscreen'},
 };
 export default meta;
 
+// =============================================================================
 // Icons
+// =============================================================================
+
 const PaperclipIcon = (
   <svg
     width="1em"
@@ -74,7 +81,10 @@ const MicIcon = (
   </svg>
 );
 
+// =============================================================================
 // Data
+// =============================================================================
+
 const CONTACTS = [
   {id: 'cindy', label: 'Cindy Zhang'},
   {id: 'alex', label: 'Alex Rivera'},
@@ -164,7 +174,11 @@ const SEED_MESSAGES: Message[] = [
   {id: 5, role: 'user', text: 'Nice, can you also check the Card component?'},
 ];
 
-/** Full AI chat — message list + composer with streaming, tool calls, triggers, attachments, and interactive modals */
+// =============================================================================
+// Stories
+// =============================================================================
+
+/** Full AI chat with streaming, tool calls, triggers, attachments, and frosted glass composer dock */
 export const FullAIChat: StoryObj = {
   name: 'Full AI Chat',
   render: () => {
@@ -174,6 +188,12 @@ export const FullAIChat: StoryObj = {
     const streamRef = useRef<ReturnType<typeof setInterval>>(undefined);
     const inputRef = useRef<XDSChatComposerInputHandle>(null);
     const contextTooltip = useXDSTooltip({placement: 'above'});
+
+    const mentionTokens = CONTACTS.map(c => ({
+      pattern: `@${c.id}`,
+      label: `@${c.label}`,
+      variant: 'blue' as const,
+    }));
 
     const triggers: XDSChatComposerTrigger[] = [
       {
@@ -192,7 +212,6 @@ export const FullAIChat: StoryObj = {
       },
     ];
 
-    // Simulates: stream intro text → run tool calls → stream result text
     const streamResponse = useCallback(
       (
         introText: string,
@@ -202,18 +221,11 @@ export const FullAIChat: StoryObj = {
         const msgId = Date.now();
         setIsStreaming(true);
 
-        // Start with empty message
         setMessages(prev => [
           ...prev,
-          {
-            id: msgId,
-            role: 'assistant',
-            text: '',
-            isStreaming: true,
-          },
+          {id: msgId, role: 'assistant', text: '', isStreaming: true},
         ]);
 
-        // Phase 1: stream intro text
         let i = 0;
         streamRef.current = setInterval(() => {
           i += 2 + Math.floor(Math.random() * 4);
@@ -223,7 +235,6 @@ export const FullAIChat: StoryObj = {
               prev.map(m => (m.id === msgId ? {...m, text: introText} : m)),
             );
 
-            // Phase 2: tool calls appear as running
             if (toolCalls) {
               setTimeout(() => {
                 setMessages(prev =>
@@ -241,7 +252,6 @@ export const FullAIChat: StoryObj = {
                   ),
                 );
 
-                // Phase 2b: tool calls complete
                 setTimeout(() => {
                   setMessages(prev =>
                     prev.map(m =>
@@ -251,7 +261,6 @@ export const FullAIChat: StoryObj = {
                     ),
                   );
 
-                  // Phase 3: stream result text
                   setTimeout(() => {
                     let j = 0;
                     const fullText = introText + '\n\n' + resultText;
@@ -282,7 +291,6 @@ export const FullAIChat: StoryObj = {
                 }, 1800);
               }, 400);
             } else {
-              // No tool calls — just finish
               setMessages(prev =>
                 prev.map(m =>
                   m.id === msgId ? {...m, isStreaming: false} : m,
@@ -373,14 +381,90 @@ export const FullAIChat: StoryObj = {
       );
     }, []);
 
+    const composerEl = (
+      <XDSChatComposer
+        onSubmit={handleSubmit}
+        onStop={handleStop}
+        isStreaming={isStreaming}
+        attachments={
+          files.length > 0 ? (
+            <XDSChatComposerAttachments>
+              {files.map(f => (
+                <XDSToken
+                  key={f}
+                  label={f}
+                  onRemove={() => setFiles(prev => prev.filter(x => x !== f))}
+                />
+              ))}
+            </XDSChatComposerAttachments>
+          ) : undefined
+        }
+        headerActions={
+          <>
+            <XDSButton
+              label="Mention"
+              variant="ghost"
+              size="sm"
+              icon={AtSignIcon}
+              isIconOnly
+              onClick={() => {
+                inputRef.current?.focus();
+                inputRef.current?.insertText('@');
+              }}
+            />
+            <XDSButton
+              label="Attach"
+              variant="ghost"
+              size="sm"
+              icon={PaperclipIcon}
+              isIconOnly
+              onClick={() =>
+                setFiles(prev => [...prev, `file-${prev.length + 1}.tsx`])
+              }
+            />
+          </>
+        }
+        headerContext={
+          <>
+            <div
+              ref={contextTooltip.ref}
+              aria-describedby={contextTooltip.describedBy}
+              style={{paddingInlineEnd: 8}}>
+              <XDSProgressBar
+                label="Context"
+                value={12}
+                variant="neutral"
+                isLabelHidden
+              />
+            </div>
+            {contextTooltip.renderTooltip('3k / 100k tokens used')}
+          </>
+        }
+        input={
+          <XDSChatComposerInput
+            ref={inputRef}
+            triggers={triggers}
+            placeholder="Ask about the codebase..."
+          />
+        }
+        footerActions={
+          <XDSButton label="Claude Opus" variant="ghost" size="md" />
+        }
+        sendActions={
+          <XDSButton
+            label="Microphone"
+            variant="ghost"
+            size="md"
+            icon={MicIcon}
+            isIconOnly
+          />
+        }
+      />
+    );
+
     return (
-      <>
-        <div
-          style={{
-            maxWidth: 800,
-            margin: '0 auto',
-            paddingBottom: 120,
-          }}>
+      <div style={{height: '100vh', display: 'flex', flexDirection: 'column'}}>
+        <XDSChatLayout composer={composerEl}>
           <XDSChatMessageList>
             {messages.map(msg => {
               if (msg.role === 'system') {
@@ -420,117 +504,82 @@ export const FullAIChat: StoryObj = {
               );
             })}
           </XDSChatMessageList>
-        </div>
-
-        {/* Frosted glass layer — sits behind the composer */}
-        <div
-          style={{
-            position: 'fixed',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: 120,
-            pointerEvents: 'none',
-            backdropFilter: 'blur(12px)',
-            WebkitBackdropFilter: 'blur(12px)',
-            maskImage: 'linear-gradient(to bottom, transparent, black 48px)',
-            WebkitMaskImage:
-              'linear-gradient(to bottom, transparent, black 48px)',
-          }}
-        />
-        {/* Composer dock */}
-        <div
-          style={{
-            position: 'fixed',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            padding: '0 16px 12px',
-          }}>
-          <div style={{maxWidth: 800, margin: '0 auto'}}>
-            <XDSChatComposer
-              onSubmit={handleSubmit}
-              onStop={handleStop}
-              isStreaming={isStreaming}
-              attachments={
-                files.length > 0 ? (
-                  <XDSChatComposerAttachments>
-                    {files.map(f => (
-                      <XDSToken
-                        key={f}
-                        label={f}
-                        onRemove={() =>
-                          setFiles(prev => prev.filter(x => x !== f))
-                        }
-                      />
-                    ))}
-                  </XDSChatComposerAttachments>
-                ) : undefined
-              }
-              headerActions={
-                <>
-                  <XDSButton
-                    label="Mention"
-                    variant="ghost"
-                    size="sm"
-                    icon={AtSignIcon}
-                    isIconOnly
-                    onClick={() => {
-                      inputRef.current?.focus();
-                      inputRef.current?.insertText('@');
-                    }}
-                  />
-                  <XDSButton
-                    label="Attach"
-                    variant="ghost"
-                    size="sm"
-                    icon={PaperclipIcon}
-                    isIconOnly
-                    onClick={() =>
-                      setFiles(prev => [...prev, `file-${prev.length + 1}.tsx`])
-                    }
-                  />
-                </>
-              }
-              headerContext={
-                <>
-                  <div
-                    ref={contextTooltip.ref}
-                    aria-describedby={contextTooltip.describedBy}
-                    style={{paddingInlineEnd: 8}}>
-                    <XDSProgressBar
-                      label="Context"
-                      value={12}
-                      variant="neutral"
-                      isLabelHidden
-                    />
-                  </div>
-                  {contextTooltip.renderTooltip('3k / 100k tokens used')}
-                </>
-              }
-              input={
-                <XDSChatComposerInput
-                  ref={inputRef}
-                  triggers={triggers}
-                  placeholder="Ask about the codebase..."
-                />
-              }
-              footerActions={
-                <XDSButton label="Claude Opus" variant="ghost" size="md" />
-              }
-              sendActions={
-                <XDSButton
-                  label="Microphone"
-                  variant="ghost"
-                  size="md"
-                  icon={MicIcon}
-                  isIconOnly
-                />
-              }
-            />
-          </div>
-        </div>
-      </>
+        </XDSChatLayout>
+      </div>
     );
   },
+};
+
+/** Panel view — narrow container simulating a sidebar chat */
+export const PanelView: StoryObj = {
+  name: 'Panel View',
+  render: () => (
+    <div
+      style={{
+        width: 400,
+        height: 600,
+        border: '1px solid #ccc',
+        borderRadius: 8,
+        overflow: 'hidden',
+        position: 'relative',
+      }}>
+      <XDSChatLayout
+        composer={
+          <XDSChatComposer onSubmit={() => {}} placeholder="Type a message…" />
+        }>
+        <XDSChatMessageList>
+          <XDSChatMessage
+            sender="assistant"
+            name="Navi"
+            avatar={<XDSAvatar name="Navi" size="sm" />}>
+            <XDSChatMessageBubble>
+              Hello! How can I help you today?
+            </XDSChatMessageBubble>
+          </XDSChatMessage>
+          <XDSChatMessage sender="user" name="Cindy">
+            <XDSChatMessageBubble>
+              Can you explain how the chat layout works?
+            </XDSChatMessageBubble>
+          </XDSChatMessage>
+          <XDSChatMessage
+            sender="assistant"
+            name="Navi"
+            avatar={<XDSAvatar name="Navi" size="sm" />}>
+            <XDSChatMessageBubble>
+              The chat layout adapts its spacing based on container width. In a
+              narrow panel like this, it uses compact density automatically.
+            </XDSChatMessageBubble>
+          </XDSChatMessage>
+        </XDSChatMessageList>
+      </XDSChatLayout>
+    </div>
+  ),
+};
+
+/** Empty state */
+export const WithEmptyState: StoryObj = {
+  name: 'Empty State',
+  render: () => (
+    <div style={{height: '100vh', display: 'flex', flexDirection: 'column'}}>
+      <XDSChatLayout
+        composer={
+          <XDSChatComposer
+            onSubmit={() => {}}
+            placeholder="Start a conversation…"
+          />
+        }
+        emptyState={
+          <div style={{textAlign: 'center'}}>
+            <XDSText variant="subtitle" color="secondary">
+              No messages yet
+            </XDSText>
+            <XDSText variant="body" color="tertiary">
+              Start a conversation by typing below
+            </XDSText>
+          </div>
+        }>
+        {[]}
+      </XDSChatLayout>
+    </div>
+  ),
 };

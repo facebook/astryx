@@ -66,3 +66,6 @@ export type {
   XDSChatToolCallItem,
   XDSChatToolCallStatus,
 } from './XDSChatToolCalls';
+
+export {XDSChatLayout} from './XDSChatLayout';
+export type {XDSChatLayoutProps} from './XDSChatLayout';
