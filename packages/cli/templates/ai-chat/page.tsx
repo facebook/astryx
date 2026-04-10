@@ -16,7 +16,7 @@ import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSChatComposer} from '@xds/core/Chat';
 import {XDSToggleButton} from '@xds/core/ToggleButton';
 import {XDSButton} from '@xds/core/Button';
-import {XDSToolbar} from '@xds/core/Toolbar';
+
 import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
 import {
   HomeIcon,
@@ -278,27 +278,21 @@ export default function AIChatTemplate() {
         <XDSChatComposer
           onSubmit={() => {}}
           placeholder="Ask anything"
-          contextToolbar={
-            <XDSToolbar
-              label="Context"
-              density="compact"
-              startContent={
-                <>
-                  <XDSButton
-                    label="Mention"
-                    variant="ghost"
-                    size="sm"
-                    icon={<AtSignIcon />}
-                  />
-                  <XDSButton
-                    label="Attach"
-                    variant="ghost"
-                    size="sm"
-                    icon={<PaperclipIcon />}
-                  />
-                </>
-              }
-            />
+          headerActions={
+            <>
+              <XDSButton
+                label="Mention"
+                variant="ghost"
+                size="sm"
+                icon={<AtSignIcon />}
+              />
+              <XDSButton
+                label="Attach"
+                variant="ghost"
+                size="sm"
+                icon={<PaperclipIcon />}
+              />
+            </>
           }
           footerActions={
             <>
