@@ -162,8 +162,6 @@ const styles = stylex.create({
   },
   fullWidth: {width: '100%'},
   orderThumb: {
-    width: 64,
-    height: 64,
     borderRadius: radiusVars['--radius-element'],
     backgroundColor: colorVars['--color-neutral'],
     flexShrink: 0,
@@ -947,8 +945,8 @@ export default function PaymentFormPage() {
                         <XDSVStack key={item.id} gap={3}>
                           <XDSHStack gap={3} vAlign="start">
                             {/* Placeholder thumbnail */}
-                            <div {...stylex.props(styles.orderThumb)}>
-                              <XDSAspectRatio ratio={1} style={{borderRadius: 'inherit', overflow: 'hidden'}}>
+                            <div {...stylex.props(styles.orderThumb)} style={{width: 64, height: 64}}>
+                              <XDSAspectRatio ratio={1}>
                                 <img
                                   src={
                                     (ITEM_IMAGES[item.id] as {src: string}).src
