@@ -394,6 +394,12 @@
       "import": "./dist/TextInput/index.mjs",
       "require": "./dist/TextInput/index.js"
     },
+    "./Thumbnail": {
+      "source": "./src/Thumbnail/index.ts",
+      "types": "./dist/Thumbnail/index.d.ts",
+      "import": "./dist/Thumbnail/index.mjs",
+      "require": "./dist/Thumbnail/index.js"
+    },
     "./TimeInput": {
       "source": "./src/TimeInput/index.ts",
       "types": "./dist/TimeInput/index.d.ts",
