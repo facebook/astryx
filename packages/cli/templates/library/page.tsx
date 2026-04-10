@@ -470,6 +470,7 @@ export default function LibraryPage() {
               />
               <div {...stylex.props(styles.toggleRow)}>
                 <XDSToggleButtonGroup
+                  label="Filter by category"
                   value={activeTab}
                   onChange={v => setActiveTab(v ?? 'All')}>
                   {CATEGORIES.map(cat => (
