@@ -162,6 +162,8 @@ const styles = stylex.create({
   },
   fullWidth: {width: '100%'},
   orderThumb: {
+    width: spacingVars['--spacing-12'],
+    height: spacingVars['--spacing-12'],
     borderRadius: radiusVars['--radius-element'],
     backgroundColor: colorVars['--color-neutral'],
     flexShrink: 0,
@@ -276,7 +278,7 @@ export default function PaymentFormPage() {
       <XDSCenter axis="horizontal">
         <div style={{maxWidth: 1100}} {...stylex.props(styles.pageWrapper)}>
           {/* Page header */}
-          <div {...stylex.props(styles.headerArea)}>
+          <XDSVStack gap={2} {...stylex.props(styles.headerArea)}>
             <XDSText type="display-1" as="h1">
               Payment Request
             </XDSText>
@@ -287,7 +289,7 @@ export default function PaymentFormPage() {
             <div {...stylex.props(styles.dividerWrap)}>
               <XDSDivider />
             </div>
-          </div>
+          </XDSVStack>
 
           <div
             className="pf-body"
@@ -938,7 +940,7 @@ export default function PaymentFormPage() {
                         <XDSVStack key={item.id} gap={3}>
                           <XDSHStack gap={3} vAlign="start">
                             {/* Placeholder thumbnail */}
-                            <div {...stylex.props(styles.orderThumb)} style={{width: 64, height: 64}}>
+                            <div {...stylex.props(styles.orderThumb)}>
                               <XDSAspectRatio ratio={1}>
                                 <img
                                   src={
