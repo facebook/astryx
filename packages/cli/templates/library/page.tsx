@@ -281,7 +281,7 @@ const styles = stylex.create({
     display: 'flex',
     flexDirection: 'column',
     gap: spacingVars['--spacing-3'],
-    paddingBottom: spacingVars['--spacing-4'],
+    paddingBottom: spacingVars['--spacing-6'],
   },
   toggleRow: {
     display: 'flex',
