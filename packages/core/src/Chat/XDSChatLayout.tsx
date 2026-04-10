@@ -138,7 +138,6 @@ const styles = stylex.create({
 
   // --- Blur layer — purely visual, behind composer ---
   blurLayer: {
-    position: 'fixed',
     bottom: 0,
     left: 0,
     right: 0,
@@ -146,6 +145,13 @@ const styles = stylex.create({
     pointerEvents: 'none',
     backdropFilter: 'blur(12px)',
     WebkitBackdropFilter: 'blur(12px)',
+  },
+  blurLayerFixed: {
+    position: 'fixed',
+  },
+  blurLayerAbsolute: {
+    position: 'sticky',
+    marginBlockStart: 'auto',
   },
   blurLayerCompact: {
     height: 80,
@@ -165,11 +171,16 @@ const styles = stylex.create({
 
   // --- Composer dock — interactive, no blur/mask ---
   dock: {
-    position: 'fixed',
     bottom: 0,
     left: 0,
     right: 0,
     zIndex: 2,
+  },
+  dockFixed: {
+    position: 'fixed',
+  },
+  dockSticky: {
+    position: 'sticky',
   },
   dockCompact: {
     paddingInline: spacingVars['--spacing-2'],
@@ -364,10 +375,22 @@ export function XDSChatLayout({
         </div>
 
         {/* Frosted glass layer — behind composer, not interactive */}
-        <div {...stylex.props(styles.blurLayer, blurLayerStyle)} />
+        <div
+          {...stylex.props(
+            styles.blurLayer,
+            isSelfScrolling ? styles.blurLayerAbsolute : styles.blurLayerFixed,
+            blurLayerStyle,
+          )}
+        />
 
         {/* Composer dock — interactive, no blur/mask */}
-        <div ref={dockRef} {...stylex.props(styles.dock, dockStyle)}>
+        <div
+          ref={dockRef}
+          {...stylex.props(
+            styles.dock,
+            isSelfScrolling ? styles.dockSticky : styles.dockFixed,
+            dockStyle,
+          )}>
           <div {...stylex.props(styles.dockInner, dockInnerStyle)}>
             {composer}
           </div>
