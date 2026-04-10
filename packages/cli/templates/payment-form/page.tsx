@@ -948,19 +948,17 @@ export default function PaymentFormPage() {
                           <XDSHStack gap={3} vAlign="start">
                             {/* Placeholder thumbnail */}
                             <div {...stylex.props(styles.orderThumb)}>
-                              <XDSAspectRatio ratio={1}>
-                                <img
-                                  src={
-                                    (ITEM_IMAGES[item.id] as {src: string}).src
-                                  }
-                                  alt={item.name}
-                                  style={{
-                                    width: '100%',
-                                    height: '100%',
-                                    objectFit: 'cover',
-                                  }}
-                                />
-                              </XDSAspectRatio>
+                              <img
+                                src={
+                                  (ITEM_IMAGES[item.id] as {src: string}).src
+                                }
+                                alt={item.name}
+                                style={{
+                                  width: '100%',
+                                  height: '100%',
+                                  objectFit: 'cover',
+                                }}
+                              />
                             </div>
                             <XDSVStack gap={1} style={{flex: 1}}>
                               <XDSHStack
