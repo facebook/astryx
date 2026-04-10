@@ -101,11 +101,13 @@ export const IconOnly: Story = {
         label="Settings"
         variant="ghost"
         icon={<Cog6ToothIcon style={{width: 16, height: 16}} />}
+        isIconOnly
       />
       <XDSButton
         label="Delete"
         variant="destructive"
         icon={<TrashIcon style={{width: 16, height: 16}} />}
+        isIconOnly
       />
     </div>
   ),
@@ -117,15 +119,13 @@ export const IconWithText: Story = {
       <XDSButton
         label="Settings"
         variant="secondary"
-        icon={<Cog6ToothIcon style={{width: 16, height: 16}} />}>
-        Settings
-      </XDSButton>
+        icon={<Cog6ToothIcon style={{width: 16, height: 16}} />}
+      />
       <XDSButton
         label="Delete"
         variant="destructive"
-        icon={<TrashIcon style={{width: 16, height: 16}} />}>
-        Delete
-      </XDSButton>
+        icon={<TrashIcon style={{width: 16, height: 16}} />}
+      />
     </div>
   ),
 };
@@ -154,16 +154,14 @@ export const IconAndEndSlot: Story = {
         label="Settings"
         variant="secondary"
         icon={<Cog6ToothIcon style={{width: 16, height: 16}} />}
-        endContent={<XDSBadge variant="info" label="New" />}>
-        Settings
-      </XDSButton>
+        endContent={<XDSBadge variant="info" label="New" />}
+      />
       <XDSButton
         label="Delete"
         variant="destructive"
         icon={<TrashIcon style={{width: 16, height: 16}} />}
-        endContent={<XDSBadge variant="error" label={5} />}>
-        Delete
-      </XDSButton>
+        endContent={<XDSBadge variant="error" label={5} />}
+      />
     </div>
   ),
 };
@@ -200,17 +198,18 @@ export const AllVariants: Story = {
           label="Settings"
           variant="ghost"
           icon={<Cog6ToothIcon style={{width: 16, height: 16}} />}
+          isIconOnly
         />
         <XDSButton
           label="Settings"
           variant="secondary"
-          icon={<Cog6ToothIcon style={{width: 16, height: 16}} />}>
-          Settings
-        </XDSButton>
+          icon={<Cog6ToothIcon style={{width: 16, height: 16}} />}
+        />
         <XDSButton
           label="Delete"
           variant="destructive"
           icon={<TrashIcon style={{width: 16, height: 16}} />}
+          isIconOnly
         />
       </div>
       <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
@@ -287,14 +286,14 @@ export const LinkButton: Story = {
           label="Settings"
           href="https://example.com"
           variant="secondary"
-          icon={<Cog6ToothIcon style={{width: 16, height: 16}} />}>
-          Settings
-        </XDSButton>
+          icon={<Cog6ToothIcon style={{width: 16, height: 16}} />}
+        />
         <XDSButton
           label="Icon-only link"
           href="https://example.com"
           variant="ghost"
           icon={<Cog6ToothIcon style={{width: 16, height: 16}} />}
+          isIconOnly
         />
       </div>
     </div>
@@ -318,6 +317,7 @@ export const Truncation: Story = {
             label="A very long button label that overflows"
             variant="primary"
             icon={<Cog6ToothIcon style={{width: 16, height: 16}} />}
+            isIconOnly
           />
         </div>
       </div>
@@ -344,6 +344,7 @@ export const Truncation: Story = {
           label="A very long button label that shows fully"
           variant="primary"
           icon={<Cog6ToothIcon style={{width: 16, height: 16}} />}
+          isIconOnly
         />
       </div>
     </div>

@@ -90,7 +90,12 @@ describe('Edge Compensation', () => {
 
     it('applies edge compensation class to ghost icon-only button', () => {
       render(
-        <XDSButton label="Settings" variant="ghost" icon={<span>gear</span>} />,
+        <XDSButton
+          label="Settings"
+          variant="ghost"
+          icon={<span>gear</span>}
+          isIconOnly
+        />,
       );
       const button = screen.getByRole('button', {name: 'Settings'});
       expect(button).toBeInTheDocument();
@@ -141,6 +146,7 @@ describe('Edge Compensation', () => {
               label="Search"
               variant="ghost"
               icon={<span>search</span>}
+              isIconOnly
             />
           }
         />,
@@ -171,11 +177,13 @@ describe('Edge Compensation', () => {
                 label="Search"
                 variant="ghost"
                 icon={<span>search</span>}
+                isIconOnly
               />
               <XDSButton
                 label="Settings"
                 variant="ghost"
                 icon={<span>gear</span>}
+                isIconOnly
               />
             </>
           }

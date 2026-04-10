@@ -12,7 +12,7 @@
  * - /packages/core/src/Button/index.ts (exports if types change)
  * - /apps/storybook/stories/Button.stories.tsx (storybook stories)
  *
- * Last synced props: label, variant, size, isDisabled, isLoading, onClickAction, icon, children, tooltip, endContent, href, as, target, rel
+ * Last synced props: label, variant, size, isDisabled, isLoading, onClickAction, icon, isIconOnly, children, tooltip, endContent, href, as, target, rel
  */
 
 import {useRef, useTransition, type ReactNode} from 'react';
@@ -286,7 +286,8 @@ export interface XDSButtonProps extends XDSBaseProps<HTMLButtonElement> {
   form?: string;
   /**
    * Accessible label for the button (required for accessibility).
-   * Used as visible text, or as aria-label for icon-only buttons.
+   * Rendered as visible text by default. When `isIconOnly` is true,
+   * used as aria-label instead.
    */
   label: string;
   /**
@@ -321,18 +322,23 @@ export interface XDSButtonProps extends XDSBaseProps<HTMLButtonElement> {
     e: React.MouseEvent<HTMLButtonElement>,
   ) => void | Promise<void>;
   /**
-   * Icon element to render in the button.
-   * If provided without children, button becomes icon-only (square).
+   * Icon element rendered before the label text.
    */
   icon?: ReactNode;
   /**
-   * Optional visible content. If omitted and icon is provided,
-   * button becomes icon-only with label used as aria-label.
+   * When true, renders as a square icon-only button with `label` as aria-label.
+   * Requires `icon` to be provided.
+   * @default false
+   */
+  isIconOnly?: boolean;
+  /**
+   * Optional visible content. When provided, rendered instead of `label` as the
+   * visible text (label still serves as the accessible name via aria-label).
    */
   children?: ReactNode;
   /**
    * Content rendered after the label text (badge, icon, chevron, etc.).
-   * Ignored for icon-only buttons to preserve square aspect ratio.
+   * Ignored when `isIconOnly` is true to preserve square aspect ratio.
    *
    * Wrapped in a container that inherits the button's text color,
    * so child elements match the button variant's color automatically.
@@ -412,11 +418,11 @@ const edgeCompStyles = stylex.create({
  * <XDSButton label="Click me" />
  * <XDSButton label="Primary action" variant="primary" />
  * <XDSButton label="Delete" variant="destructive" />
- * <XDSButton label="Settings" icon={<GearIcon />} variant="ghost" />
- * <XDSButton label="Pick emoji" icon={<span>🚀</span>} variant="ghost" size="sm" />
- * <XDSButton label="Edit" icon={<PencilIcon />}>Edit</XDSButton>
+ * <XDSButton label="Settings" icon={<GearIcon />} variant="ghost" isIconOnly />
+ * <XDSButton label="Pick emoji" icon={<span>🚀</span>} variant="ghost" size="sm" isIconOnly />
+ * <XDSButton label="Edit" icon={<PencilIcon />} />
  * <XDSButton label="Messages" endContent={<XDSBadge label={3} />} />
- * <XDSButton label="Edit" icon={<PencilIcon />} endContent={<XDSBadge label="New" />}>Edit</XDSButton>
+ * <XDSButton label="Edit" icon={<PencilIcon />} endContent={<XDSBadge label="New" />} />
  * <XDSButton label="Visit site" href="https://example.com" variant="primary" />
  * <XDSButton label="Open in new tab" href="https://example.com" target="_blank" rel="noopener noreferrer" />
  * ```
@@ -430,6 +436,7 @@ export function XDSButton({
   isLoading = false,
   onClickAction,
   icon,
+  isIconOnly = false,
   children,
   endContent,
   tooltip,
@@ -448,7 +455,9 @@ export function XDSButton({
   const isLoadingState = isLoading || isPending;
   const buttonDisabled = isDisabled || isLoadingState;
   const useLightSpinner = variant === 'primary' || variant === 'destructive';
-  const isIconOnly = icon != null && children == null;
+  // isIconOnly prop is the source of truth for icon-only rendering.
+  // When false (default), label is always rendered as visible text.
+
   const LinkComponent = useXDSLinkComponent(as);
 
   // Render as link when href is provided and button is not disabled.
@@ -560,10 +569,15 @@ export function XDSButton({
     </>
   );
 
-  const ariaLabelProp =
-    (isIconOnly && label !== '') || (isLoadingState && !isIconOnly)
-      ? {'aria-label': label}
-      : null;
+  // aria-label is set when:
+  // 1. Icon-only mode (label is the only accessible name)
+  // 2. Loading state on non-icon-only (announce the button's purpose)
+  // 3. Children differ from label (children are visible, label is accessible name)
+  const needsAriaLabel =
+    (isIconOnly && label !== '') ||
+    (isLoadingState && !isIconOnly) ||
+    (children != null && children !== label);
+  const ariaLabelProp = needsAriaLabel ? {'aria-label': label} : null;
 
   let element: ReactNode;
 

@@ -184,14 +184,14 @@ export const WithActions: Story = {
                 variant="ghost"
                 size="md"
                 icon={<FunnelIcon />}
+                isIconOnly
               />
               <XDSButton
                 label="New item"
                 variant="primary"
                 size="md"
-                icon={<PlusIcon />}>
-                New item
-              </XDSButton>
+                icon={<PlusIcon />}
+              />
             </XDSHStack>
           </XDSStackItem>
         </XDSHStack>

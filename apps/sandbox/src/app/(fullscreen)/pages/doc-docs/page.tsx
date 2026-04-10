@@ -343,6 +343,7 @@ export default function DocDocsPage() {
               variant="ghost"
               size="sm"
               icon={<HamburgerIcon />}
+              isIconOnly
             />
             <span
               style={{
@@ -375,6 +376,7 @@ export default function DocDocsPage() {
             variant="ghost"
             size="sm"
             icon={<SidebarCollapseIcon />}
+            isIconOnly
           />
         </div>
 
@@ -455,7 +457,6 @@ export default function DocDocsPage() {
           )}
         </nav>
       </aside>
-
       {/* ================================================================= */}
       {/* MAIN CONTENT */}
       {/* ================================================================= */}
@@ -524,6 +525,7 @@ export default function DocDocsPage() {
                   variant="ghost"
                   size="sm"
                   icon={<ExternalLinkIcon />}
+                  isIconOnly
                 />
                 <XDSDropdownMenu
                   button={{
@@ -556,12 +558,14 @@ export default function DocDocsPage() {
                   size="sm"
                   icon={<CodeIcon />}
                   onClick={() => setShowCode(!showCode)}
+                  isIconOnly
                 />
                 <XDSButton
                   label="Fullscreen"
                   variant="ghost"
                   size="sm"
                   icon={<FullscreenIcon />}
+                  isIconOnly
                 />
               </div>
             </div>
@@ -586,9 +590,8 @@ export default function DocDocsPage() {
                   label="Button"
                   variant="primary"
                   icon={<PlusIcon />}
-                  endContent={<XDSBadge label="New" variant="info" />}>
-                  Button
-                </XDSButton>
+                  endContent={<XDSBadge label="New" variant="info" />}
+                />
               </div>
 
               {/* Code Panel */}
@@ -690,7 +693,6 @@ export default function DocDocsPage() {
           </ul>
         </div>
       </main>
-
       {/* ================================================================= */}
       {/* RIGHT SIDEBAR */}
       {/* ================================================================= */}

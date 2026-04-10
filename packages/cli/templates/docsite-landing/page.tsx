@@ -561,6 +561,7 @@ function TemplateCard({
                   size: 'sm',
                   icon: <MoreIcon />,
                   style: {color: '#fff'},
+                  isIconOnly: true,
                 }}
                 hasChevron={false}
                 items={[
@@ -719,6 +720,7 @@ function AIComposer() {
                 variant="ghost"
                 size="sm"
                 icon={<PlusIcon />}
+                isIconOnly
               />
               <XDSButton
                 label="Send"
@@ -726,6 +728,7 @@ function AIComposer() {
                 size="sm"
                 icon={<SendIcon />}
                 style={{borderRadius: 9999}}
+                isIconOnly
               />
             </div>
           </div>
@@ -823,7 +826,6 @@ function ChatPanel({
           <ShimmerText isActive={isGenerating} />
         </div>
       </div>
-
       {/* Composer pinned to bottom */}
       <div style={{padding: 12}}>
         <div
@@ -879,6 +881,7 @@ function ChatPanel({
               variant="ghost"
               size="sm"
               icon={<PlusIcon />}
+              isIconOnly
             />
             <XDSButton
               label="Send"
@@ -887,6 +890,7 @@ function ChatPanel({
               icon={<SendIcon />}
               style={{borderRadius: 9999}}
               onClick={onSend}
+              isIconOnly
             />
           </div>
         </div>
@@ -1124,6 +1128,7 @@ function TemplatePreview({
             variant="ghost"
             icon={<ArrowLeftIcon />}
             onClick={onBack}
+            isIconOnly
           />
         </div>
 
@@ -1146,6 +1151,7 @@ function TemplatePreview({
                     label="Point"
                     variant="ghost"
                     icon={<CursorIcon />}
+                    isIconOnly
                   />
                 </XDSTooltip>
                 <XDSDropdownMenu
@@ -1153,6 +1159,7 @@ function TemplatePreview({
                     label: 'Theme',
                     variant: 'ghost',
                     icon: <PaletteIcon />,
+                    isIconOnly: true,
                   }}
                   hasChevron={false}
                   items={XDS_THEMES.map(t => ({
@@ -1504,12 +1511,14 @@ function AppTopNav() {
               size="sm"
               icon={<SearchIcon />}
               onClick={() => setIsSearchOpen(true)}
+              isIconOnly
             />
             <XDSButton
               label="Profile"
               variant="ghost"
               size="sm"
               icon={<ProfileIcon />}
+              isIconOnly
             />
           </>
         }

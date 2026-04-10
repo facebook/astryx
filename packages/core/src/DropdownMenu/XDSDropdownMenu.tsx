@@ -602,9 +602,8 @@ export function XDSDropdownMenu({
     return elements;
   }, [items, renderItem]);
 
-  // Icon-only: when button has an icon and no children,
-  // XDSButton handles icon-only rendering natively.
-  const isIconOnly = button.icon != null && button.children == null;
+  // Icon-only: check the explicit isIconOnly prop on the button config.
+  const isIconOnly = button.isIconOnly === true;
 
   // Build endContent: use consumer's endContent if provided,
   // otherwise inject chevron (unless icon-only or hasChevron=false)

@@ -209,8 +209,6 @@ const ArrowLeftIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 // ─── Styles ─────────────────────────────────────────────────────────────────
 const pageStyles = stylex.create({
-
-
   bulletSeparator: {
     fontSize: 12,
     lineHeight: '16px',
@@ -669,6 +667,7 @@ function TimelineSection() {
             label="Filters"
             variant="ghost"
             icon={<FilterIcon style={{width: 14, height: 14}} />}
+            isIconOnly
           />
         </XDSHStack>
 

@@ -14,7 +14,6 @@
  * - /packages/core/src/SideNav/index.ts
  */
 
-
 import {useCallback, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {durationVars, easeVars} from '../theme/tokens.stylex';
@@ -127,6 +126,7 @@ export function XDSSideNavCollapseButton({
           </span>
         )
       }
+      isIconOnly
     />
   );
 }

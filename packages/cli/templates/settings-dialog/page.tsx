@@ -262,7 +262,6 @@ export default function SettingsDialogTemplate() {
         variant="primary"
         onClick={() => setIsOpen(true)}
       />
-
       <XDSDialog
         isOpen={isOpen}
         onOpenChange={open => setIsOpen(open)}
@@ -285,6 +284,7 @@ export default function SettingsDialogTemplate() {
               icon={<XMarkIcon width={20} height={20} />}
               variant="ghost"
               onClick={() => setIsOpen(false)}
+              isIconOnly
             />
           </div>
 
