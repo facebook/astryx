@@ -563,6 +563,7 @@ function BoidsCanvas({
 // ---------------------------------------------------------------------------
 
 const DUMMY_IMAGE = '/templates/dummy-placeholder.png';
+const FIRST_CARD_IMAGE = '/templates/first-card.png';
 const CONTACT_FORM_IMAGE = '/templates/contact-form-preview.png';
 const SHOPPING_DETAILS_IMAGE = '/templates/shopping-details.png';
 const SCREENSHOT_3_IMAGE = '/templates/screenshot-3.png';
@@ -1773,7 +1774,7 @@ const TEMPLATES: Array<{
   src: string;
   size: 'xlarge' | 'large' | 'medium' | 'small';
 }> = [
-  {name: 'Contact Form', src: CONTACT_FORM_IMAGE, size: 'large'},
+  {name: 'Contact Form', src: FIRST_CARD_IMAGE, size: 'large'},
   {name: 'Shopping Details', src: SHOPPING_DETAILS_IMAGE, size: 'small'},
   {name: 'Button Component', src: SCREENSHOT_3_IMAGE, size: 'small'},
   {name: 'Settings Page', src: DUMMY_IMAGE, size: 'small'},
