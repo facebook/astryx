@@ -586,8 +586,11 @@ export default function DocDocsPage() {
                   label="Button"
                   variant="primary"
                   icon={<PlusIcon />}
-                  badge={<XDSBadge label="New" variant="info" size="sm" />}
-                />
+                  endContent={
+                    <XDSBadge label="New" variant="info" size="sm" />
+                  }>
+                  Button
+                </XDSButton>
               </div>
 
               {/* Code Panel */}
