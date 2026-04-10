@@ -2,12 +2,11 @@
 
 import {useState, useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSHStack, XDSLayout, XDSLayoutHeader, XDSLayoutContent} from '@xds/core/Layout';
+import {XDSLayout, XDSLayoutHeader, XDSLayoutContent} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSCard} from '@xds/core/Card';
-import {XDSTabList, XDSTab} from '@xds/core/TabList';
+import {XDSToggleButton, XDSToggleButtonGroup} from '@xds/core/ToggleButton';
 import {XDSTextInput} from '@xds/core/TextInput';
-import {XDSSelector} from '@xds/core/Selector';
 import {XDSDivider} from '@xds/core/Divider';
 import {
   colorVars,
@@ -43,8 +42,6 @@ interface LibraryItem {
 }
 
 const CATEGORIES = ['All', 'Layout', 'Forms', 'Navigation', 'Feedback', 'Data'];
-const SORT_OPTIONS = ['Name (A\u2013Z)', 'Name (Z\u2013A)', 'Category'];
-const TYPE_OPTIONS = ['All types', 'Component', 'Pattern', 'Utility'];
 
 const ITEMS: LibraryItem[] = [
   {
@@ -279,24 +276,18 @@ const ITEMS: LibraryItem[] = [
 
 
 const styles = stylex.create({
-  // -1px margin so active tab underline sits on XDSLayoutHeader's hasDivider border.
-  tabsRow: {
-    marginBottom: '-1px',
-  },
   filterBar: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacingVars['--spacing-3'],
     paddingBottom: spacingVars['--spacing-4'],
+  },
+  toggleRow: {
+    display: 'flex',
   },
   filterSearch: {
     flex: 1,
     minWidth: 0,
-  },
-  filterSelectors: {
-    display: 'flex',
-    gap: spacingVars['--spacing-2'],
-    flexShrink: 0,
-  },
-  selectorWrapper: {
-    width: 160,
   },
   dividerRow: {
     paddingTop: spacingVars['--spacing-6'],
@@ -431,14 +422,10 @@ function LibrarySection({
 export default function LibraryPage() {
   const [activeTab, setActiveTab] = useState('All');
   const [search, setSearch] = useState('');
-  const [sortBy, setSortBy] = useState('Name (A\u2013Z)');
-  const [typeFilter, setTypeFilter] = useState('All types');
 
   const filtered = useMemo(() => {
     let items =
       activeTab === 'All' ? ITEMS : ITEMS.filter(i => i.category === activeTab);
-    if (typeFilter !== 'All types')
-      items = items.filter(i => i.type === typeFilter);
     if (search.trim()) {
       const q = search.toLowerCase();
       items = items.filter(
@@ -447,14 +434,8 @@ export default function LibraryPage() {
           i.description.toLowerCase().includes(q),
       );
     }
-    if (sortBy === 'Name (A\u2013Z)')
-      items = [...items].sort((a, b) => a.name.localeCompare(b.name));
-    else if (sortBy === 'Name (Z\u2013A)')
-      items = [...items].sort((a, b) => b.name.localeCompare(a.name));
-    else if (sortBy === 'Category')
-      items = [...items].sort((a, b) => a.category.localeCompare(b.category));
     return items;
-  }, [activeTab, search, sortBy, typeFilter]);
+  }, [activeTab, search]);
 
   const groupedSections = useMemo(() => {
     if (activeTab !== 'All') return null;
@@ -475,49 +456,27 @@ export default function LibraryPage() {
         header={
           <XDSLayoutHeader hasDivider padding={6}>
             <XDSHeading level={1}>Library</XDSHeading>
-            <div {...stylex.props(styles.tabsRow)}>
-              <XDSTabList value={activeTab} onChange={setActiveTab}>
-                {CATEGORIES.map(cat => (
-                  <XDSTab key={cat} value={cat} label={cat} />
-                ))}
-              </XDSTabList>
-            </div>
           </XDSLayoutHeader>
         }
         content={
           <XDSLayoutContent padding={6}>
             <div {...stylex.props(styles.filterBar)}>
-              <XDSHStack gap={3} vAlign="center">
-                <div {...stylex.props(styles.filterSearch)}>
-                  <XDSTextInput
-                    label="Search"
-                    isLabelHidden
-                    placeholder="Search..."
-                    value={search}
-                    onChange={setSearch}
-                  />
-                </div>
-                <div {...stylex.props(styles.filterSelectors)}>
-                  <div {...stylex.props(styles.selectorWrapper)}>
-                    <XDSSelector
-                      label="Type"
-                      isLabelHidden
-                      options={TYPE_OPTIONS}
-                      value={typeFilter}
-                      onChange={v => setTypeFilter(v as string)}
-                    />
-                  </div>
-                  <div {...stylex.props(styles.selectorWrapper)}>
-                    <XDSSelector
-                      label="Sort by"
-                      isLabelHidden
-                      options={SORT_OPTIONS}
-                      value={sortBy}
-                      onChange={v => setSortBy(v as string)}
-                    />
-                  </div>
-                </div>
-              </XDSHStack>
+              <XDSTextInput
+                label="Search"
+                isLabelHidden
+                placeholder="Search..."
+                value={search}
+                onChange={setSearch}
+              />
+              <div {...stylex.props(styles.toggleRow)}>
+                <XDSToggleButtonGroup
+                  value={activeTab}
+                  onChange={v => setActiveTab(v ?? 'All')}>
+                  {CATEGORIES.map(cat => (
+                    <XDSToggleButton key={cat} label={cat} value={cat} />
+                  ))}
+                </XDSToggleButtonGroup>
+              </div>
             </div>
 
             {filtered.length === 0 ? (
