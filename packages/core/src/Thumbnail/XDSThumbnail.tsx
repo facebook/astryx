@@ -2,18 +2,18 @@
 
 /**
  * @file XDSThumbnail.tsx
- * @input Uses React, stylex, XDSAspectRatio, XDSIcon
+ * @input Uses React, stylex, XDSSpinner, XDSIcon
  * @output Exports XDSThumbnail component, XDSThumbnailProps
  * @position Core implementation; consumed by index.ts
  *
- * Square preview card for file attachments. Shows an image thumbnail or
- * fallback icon with an overlaid remove button and optional caption.
+ * Square preview card for image attachments. Shows a loading spinner while
+ * the image loads, the image on success, or a placeholder on failure.
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Thumbnail/Thumbnail.doc.mjs (props table, features, implementation notes)
- * - /packages/core/src/Thumbnail/XDSThumbnail.test.tsx (tests for new/changed behavior)
- * - /packages/core/src/Thumbnail/index.ts (exports if types change)
- * - /apps/storybook/stories/Thumbnail.stories.tsx (storybook stories)
+ * - /packages/core/src/Thumbnail/Thumbnail.doc.mjs
+ * - /packages/core/src/Thumbnail/XDSThumbnail.test.tsx
+ * - /packages/core/src/Thumbnail/index.ts
+ * - /apps/storybook/stories/Thumbnail.stories.tsx
  */
 
 import {useState, type ReactNode} from 'react';
@@ -27,7 +27,7 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import {XDSIcon} from '../Icon';
-import type {XDSIconName} from '../Icon/globalIconRegistry';
+import {XDSSpinner} from '../Spinner';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {xdsClassName, mergeProps} from '../utils';
 
@@ -36,7 +36,7 @@ export interface XDSThumbnailProps extends XDSBaseProps<HTMLDivElement> {
   ref?: React.Ref<HTMLDivElement>;
   /**
    * Image source for the thumbnail preview.
-   * When not provided or on error, falls back to `fallbackIcon`.
+   * Shows a spinner while loading, the image on success, or a placeholder on error.
    */
   src?: string;
   /**
@@ -57,11 +57,6 @@ export interface XDSThumbnailProps extends XDSBaseProps<HTMLDivElement> {
    * When provided, the thumbnail renders as interactive.
    */
   onClick?: (e: React.MouseEvent) => void;
-  /**
-   * Icon displayed when no `src` is provided or the image fails to load.
-   * @default 'info'
-   */
-  fallbackIcon?: XDSIconName;
   /**
    * Content rendered below the thumbnail image area.
    * Use for metadata like file size, duration, or status.
@@ -111,7 +106,7 @@ const styles = stylex.create({
     boxShadow: `inset 0 0 0 1px ${colorVars['--color-border']}`,
     pointerEvents: 'none',
   },
-  fallback: {
+  placeholder: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -195,21 +190,37 @@ const styles = stylex.create({
 });
 
 // =============================================================================
+// Placeholder icon — a simple image silhouette
+// =============================================================================
+
+function ImagePlaceholder() {
+  return (
+    <svg
+      width={24}
+      height={24}
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden="true">
+      <path d="M21 19V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2M8.5 13.5l2.5 3 3.5-4.5 4.5 6H5l3.5-5.5z" />
+    </svg>
+  );
+}
+
+// =============================================================================
 // Component
 // =============================================================================
 
 /**
- * A square thumbnail preview for file attachments.
+ * A square thumbnail preview for image attachments.
  *
- * Displays an image preview when `src` is provided, falling back to an icon
- * for non-image files. An overlaid remove button appears when `onRemove` is
- * set. Clicking the thumbnail (when `onClick` is set) typically opens a
- * lightbox or detail view.
+ * Shows a loading spinner while the image loads, the image on success, or
+ * a placeholder icon on failure / when no src is provided. An overlaid
+ * remove button appears when `onRemove` is set.
  *
  * @example
  * ```
  * <XDSThumbnail src="/photo.jpg" alt="Vacation photo" onRemove={() => {}} />
- * <XDSThumbnail fallbackIcon="document" label="report.pdf" />
+ * <XDSThumbnail label="report.pdf" />
  * <XDSThumbnail src="/preview.png" alt="Preview" onClick={() => {}} caption="2.4 MB" />
  * ```
  */
@@ -219,7 +230,6 @@ export function XDSThumbnail({
   label,
   onRemove,
   onClick,
-  fallbackIcon = 'info',
   caption,
   isDisabled = false,
   xstyle,
@@ -229,21 +239,38 @@ export function XDSThumbnail({
   ref,
   ...props
 }: XDSThumbnailProps) {
-  const [imageError, setImageError] = useState(false);
-  const showImage = src != null && !imageError;
+  const [loaded, setLoaded] = useState(false);
+  const [errored, setErrored] = useState(false);
+
+  const hasSrc = src != null;
+  const showSpinner = hasSrc && !loaded && !errored;
+  const showImage = hasSrc && loaded && !errored;
+  const showPlaceholder = !hasSrc || errored;
   const isInteractive = onClick != null && !isDisabled;
 
-  const imageContent = showImage ? (
-    <img
-      src={src}
-      alt={alt ?? ''}
-      onError={() => setImageError(true)}
-      {...stylex.props(styles.image)}
-    />
-  ) : (
-    <div {...stylex.props(styles.fallback)}>
-      <XDSIcon icon={fallbackIcon} size="lg" color="inherit" />
-    </div>
+  const imageContent = (
+    <>
+      {hasSrc && (
+        <img
+          src={src}
+          alt={alt ?? ''}
+          onLoad={() => setLoaded(true)}
+          onError={() => setErrored(true)}
+          {...stylex.props(styles.image)}
+          style={showImage ? undefined : {display: 'none'}}
+        />
+      )}
+      {showSpinner && (
+        <div {...stylex.props(styles.placeholder)}>
+          <XDSSpinner size="sm" />
+        </div>
+      )}
+      {showPlaceholder && (
+        <div {...stylex.props(styles.placeholder)}>
+          <ImagePlaceholder />
+        </div>
+      )}
+    </>
   );
 
   return (
@@ -277,8 +304,7 @@ export function XDSThumbnail({
         ) : (
           imageContent
         )}
-        {/* Inset border sits on top of image for visual containment */}
-        <div {...stylex.props(styles.insetBorder)} />
+        {showImage && <div {...stylex.props(styles.insetBorder)} />}
         {onRemove != null && !isDisabled && (
           <button
             type="button"

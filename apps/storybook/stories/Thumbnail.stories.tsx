@@ -18,10 +18,6 @@ const meta: Meta<typeof XDSThumbnail> = {
       control: 'text',
       description: 'Label below the thumbnail',
     },
-    fallbackIcon: {
-      control: 'text',
-      description: 'Icon name for fallback state',
-    },
     isDisabled: {
       control: 'boolean',
       description: 'Whether the thumbnail is disabled',
@@ -76,9 +72,9 @@ export const Clickable: Story = {
   },
 };
 
-export const FallbackIcon: Story = {
+export const Placeholder: Story = {
+  name: 'No Image (Placeholder)',
   args: {
-    fallbackIcon: 'info',
     label: 'report.pdf',
     caption: '1.2 MB',
     onRemove: () => {},
@@ -111,7 +107,6 @@ export const Gallery: Story = {
         onRemove={() => {}}
       />
       <XDSThumbnail
-        fallbackIcon="info"
         label="notes.pdf"
         caption="340 KB"
         onRemove={() => {}}

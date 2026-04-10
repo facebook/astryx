@@ -3,13 +3,14 @@
 export const docs = {
   name: 'Thumbnail',
   description:
-    'A square preview card for file attachments. Shows an image thumbnail or fallback icon with an overlaid remove button and optional caption.',
-  keywords: ["thumbnail","attachment","preview","image","file","upload","dismiss","remove","media"],
+    'A square preview card for image attachments. Shows a loading spinner while the image loads, the image on success, or a placeholder icon on failure.',
+  keywords: ["thumbnail","attachment","preview","image","upload","dismiss","remove","loading"],
   features: [
     'Square 1:1 aspect ratio via CSS aspect-ratio',
-    'Image preview with object-fit: cover',
-    'Inset border overlay for visual containment on light images',
-    'Fallback icon when no image source or on load error',
+    'Loading spinner while image is being fetched',
+    'Image preview with object-fit: cover on successful load',
+    'Placeholder icon when no src or on load error',
+    'Inset border overlay for visual containment (only on loaded images)',
     'Overlaid remove button with expanded hit area',
     'Interactive mode with button semantics when onClick is set',
     'Label and caption slots for file name and metadata',
@@ -19,7 +20,7 @@ export const docs = {
     {
       name: 'src',
       type: 'string',
-      description: 'Image source URL for the thumbnail preview.',
+      description: 'Image source URL. Shows spinner while loading.',
     },
     {
       name: 'alt',
@@ -42,12 +43,6 @@ export const docs = {
       description: 'Click handler for the thumbnail area. When set, renders as interactive with button semantics.',
     },
     {
-      name: 'fallbackIcon',
-      type: 'string',
-      description: 'Icon name for the fallback state when no image is available.',
-      default: "'info'",
-    },
-    {
       name: 'caption',
       type: 'ReactNode',
       description: 'Content rendered below the thumbnail (e.g. file size, duration).',
@@ -65,8 +60,8 @@ export const docs = {
       code: '<XDSThumbnail src="/photo.jpg" alt="Vacation" onRemove={() => {}} />',
     },
     {
-      title: 'File attachment with label',
-      code: '<XDSThumbnail label="report.pdf" caption="2.4 MB" />',
+      title: 'With label and caption',
+      code: '<XDSThumbnail src="/photo.jpg" alt="Photo" label="vacation.jpg" caption="2.4 MB" />',
     },
     {
       title: 'Clickable thumbnail',
