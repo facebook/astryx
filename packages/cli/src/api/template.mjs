@@ -186,12 +186,15 @@ export async function template(name, options = {}) {
   if (list || (!name && !skeleton)) {
     return {
       type: 'template.list',
-      data: templates.map(t => ({
-        name: t.dirName,
-        description: t.description,
-        isReady: t.isReady,
-        path: `templates/${t.dirName}`,
-      })),
+      data: {
+        basePath: TEMPLATES_DIR,
+        templates: templates.map(t => ({
+          name: t.dirName,
+          description: t.description,
+          isReady: t.isReady,
+          path: `templates/${t.dirName}`,
+        })),
+      },
     };
   }
 

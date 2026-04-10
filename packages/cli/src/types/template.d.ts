@@ -11,7 +11,11 @@
 /** xds --json template [--list] */
 export interface TemplateListResponse {
   type: 'template.list';
-  data: TemplateListEntry[];
+  data: {
+    /** Absolute path to the templates directory. Consumers can join this with entry paths. */
+    basePath: string;
+    templates: TemplateListEntry[];
+  };
 }
 
 export interface TemplateListEntry {

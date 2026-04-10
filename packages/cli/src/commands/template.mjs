@@ -40,7 +40,7 @@ export function registerTemplate(program) {
       switch (result.type) {
         case 'template.list': {
           console.log('\nAvailable templates:\n');
-          for (const t of result.data) {
+          for (const t of result.data.templates) {
             const status = t.isReady ? '' : ' (WIP)';
             console.log(`  ${t.name}${status}`);
             if (t.description) console.log(`    ${t.description}`);
