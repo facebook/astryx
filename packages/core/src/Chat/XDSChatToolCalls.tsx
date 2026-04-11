@@ -444,21 +444,12 @@ function CallRow({call}: {call: XDSChatToolCallItem}) {
  *
  * @example
  * ```
- * // Basic — pass the array from your LLM response
  * <XDSChatToolCalls
  *   calls={message.toolCalls.map(tc => ({
  *     name: tc.toolName,
  *     status: tc.state,
  *     duration: tc.duration,
  *   }))}
- * />
- * ```
- *
- * @example
- * ```
- * // With detail rendering
- * <XDSChatToolCalls
- *   calls={toolCalls}
  *   renderDetail={(call) => (
  *     <XDSCodeBlock code={call.args} language="json" />
  *   )}

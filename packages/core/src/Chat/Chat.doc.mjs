@@ -28,6 +28,13 @@ export const docs = {
     targets: [
       {className: 'xds-chat-composer', visualProps: ['density']},
       {className: 'xds-chat-composer-input'},
+      {className: 'xds-chat-composer-attachments', visualProps: ['collapsed']},
+      {className: 'xds-chat-message', visualProps: ['sender']},
+      {className: 'xds-chat-message-bubble', visualProps: ['sender', 'variant']},
+      {className: 'xds-chat-message-list', visualProps: ['density']},
+      {className: 'xds-chat-system-message', visualProps: ['variant']},
+      {className: 'xds-chat-tool-calls'},
+      {className: 'xds-trigger-menu'},
     ],
     vars: [
       {name: '--composer-radius', description: 'Border radius of the composer body. Inner elements derive their radius concentrically.', default: 'var(--radius-page)'},
