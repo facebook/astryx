@@ -190,13 +190,6 @@ const styles = stylex.create({
   dividerWrap: {
     marginTop: spacingVars['--spacing-6'],
   },
-  cardIcon: {
-    height: spacingVars['--spacing-7'],
-    width: 'auto',
-    borderRadius: radiusVars['--radius-element'],
-    border: `1px solid ${colorVars['--color-border']}`,
-    backgroundColor: colorVars['--color-background-surface'],
-  },
 });
 
 export default function PaymentFormPage() {
@@ -549,17 +542,35 @@ export default function PaymentFormPage() {
                       <img
                         src="https://raw.githubusercontent.com/aaronfagan/svg-credit-card-payment-icons/main/flat/visa.svg"
                         alt="Visa"
-                        {...stylex.props(styles.cardIcon)}
+                        style={{
+                          height: 'var(--spacing-7)',
+                          width: 'auto',
+                          borderRadius: 'var(--radius-element)',
+                          border: '1px solid var(--color-border)',
+                          backgroundColor: 'var(--color-background-surface)',
+                        }}
                       />
                       <img
                         src="https://raw.githubusercontent.com/aaronfagan/svg-credit-card-payment-icons/main/flat/mastercard.svg"
                         alt="Mastercard"
-                        {...stylex.props(styles.cardIcon)}
+                        style={{
+                          height: 'var(--spacing-7)',
+                          width: 'auto',
+                          borderRadius: 'var(--radius-element)',
+                          border: '1px solid var(--color-border)',
+                          backgroundColor: 'var(--color-background-surface)',
+                        }}
                       />
                       <img
                         src="https://raw.githubusercontent.com/aaronfagan/svg-credit-card-payment-icons/main/flat/amex.svg"
                         alt="Amex"
-                        {...stylex.props(styles.cardIcon)}
+                        style={{
+                          height: 'var(--spacing-7)',
+                          width: 'auto',
+                          borderRadius: 'var(--radius-element)',
+                          border: '1px solid var(--color-border)',
+                          backgroundColor: 'var(--color-background-surface)',
+                        }}
                       />
                     </XDSHStack>
                     <XDSTextInput
