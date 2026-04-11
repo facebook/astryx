@@ -11,9 +11,8 @@
  * - **Unlocked**: user scrolled up, auto-scroll stops
  * - **Re-locked**: user scrolls back to bottom
  *
- * Distinguishes user-initiated scrolls (wheel, touch, keyboard) from
- * programmatic scrolls (our scrollToBottom calls) using a flag that's
- * set before programmatic scrolls and cleared on the next frame.
+ * scrollToBottom re-locks automatically by scrolling to the bottom,
+ * which triggers handleScroll → distance is 0 → re-lock.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Chat/index.ts (exports)
@@ -98,13 +97,10 @@ export function useAutoScroll({
 
   // Scroll lock: true = auto-scroll follows content
   const lockedRef = useRef(true);
-  // Flag to distinguish programmatic scrolls from user scrolls
-  const isProgrammaticRef = useRef(false);
 
   const scrollToBottom = useCallback((smooth = true) => {
     const el = scrollRef.current;
     if (!el) return;
-    isProgrammaticRef.current = true;
     if (typeof el.scrollTo === 'function') {
       el.scrollTo({
         top: el.scrollHeight,
@@ -113,10 +109,6 @@ export function useAutoScroll({
     } else {
       el.scrollTop = el.scrollHeight;
     }
-    // Clear programmatic flag after the scroll event fires
-    requestAnimationFrame(() => {
-      isProgrammaticRef.current = false;
-    });
   }, []);
 
   const handleScroll = useCallback(() => {
@@ -128,9 +120,6 @@ export function useAutoScroll({
 
     // Update button visibility
     setIsScrolledUp(distanceFromBottom > scrollUpThreshold);
-
-    // Only user-initiated scrolls affect the lock
-    if (isProgrammaticRef.current) return;
 
     if (distanceFromBottom <= bottomThreshold) {
       // User scrolled to bottom — re-lock
