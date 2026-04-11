@@ -276,7 +276,7 @@ export default function PaymentFormPage() {
         contentWidth={1100}
         padding={6}
         content={
-          <XDSLayoutContent>
+          <XDSLayoutContent isScrollable={false}>
             <XDSVStack gap={5}>
               {/* Page header */}
               <XDSVStack gap={2} {...stylex.props(styles.headerArea)}>
