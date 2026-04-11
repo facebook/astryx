@@ -47,19 +47,6 @@ const ProfileIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <path d="M20 21a8 8 0 10-16 0" />
   </svg>
 );
-const HamburgerIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    {...props}>
-    <line x1="3" y1="6" x2="21" y2="6" />
-    <line x1="3" y1="12" x2="21" y2="12" />
-    <line x1="3" y1="18" x2="21" y2="18" />
-  </svg>
-);
-
 const FilterIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     viewBox="0 0 24 24"
@@ -148,17 +135,6 @@ const SendIcon = (props: React.SVGProps<SVGSVGElement>) => (
     strokeWidth={2}
     {...props}>
     <path d="M5 12h14M12 5l7 7-7 7" />
-  </svg>
-);
-
-const CheckIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    {...props}>
-    <polyline points="20 6 9 17 4 12" />
   </svg>
 );
 
