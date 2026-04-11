@@ -190,6 +190,13 @@ const styles = stylex.create({
   dividerWrap: {
     marginTop: spacingVars['--spacing-6'],
   },
+  cardIcon: {
+    height: spacingVars['--spacing-7'],
+    width: 'auto',
+    borderRadius: radiusVars['--radius-element'],
+    border: `1px solid ${colorVars['--color-border']}`,
+    backgroundColor: colorVars['--color-background-surface'],
+  },
 });
 
 export default function PaymentFormPage() {
@@ -542,35 +549,17 @@ export default function PaymentFormPage() {
                       <img
                         src="https://raw.githubusercontent.com/aaronfagan/svg-credit-card-payment-icons/main/flat/visa.svg"
                         alt="Visa"
-                        style={{
-                          height: 28,
-                          width: 'auto',
-                          borderRadius: 4,
-                          border: '1px solid var(--color-border)',
-                          backgroundColor: '#fff',
-                        }}
+                        {...stylex.props(styles.cardIcon)}
                       />
                       <img
                         src="https://raw.githubusercontent.com/aaronfagan/svg-credit-card-payment-icons/main/flat/mastercard.svg"
                         alt="Mastercard"
-                        style={{
-                          height: 28,
-                          width: 'auto',
-                          borderRadius: 4,
-                          border: '1px solid var(--color-border)',
-                          backgroundColor: '#fff',
-                        }}
+                        {...stylex.props(styles.cardIcon)}
                       />
                       <img
                         src="https://raw.githubusercontent.com/aaronfagan/svg-credit-card-payment-icons/main/flat/amex.svg"
                         alt="Amex"
-                        style={{
-                          height: 28,
-                          width: 'auto',
-                          borderRadius: 4,
-                          border: '1px solid var(--color-border)',
-                          backgroundColor: '#fff',
-                        }}
+                        {...stylex.props(styles.cardIcon)}
                       />
                     </XDSHStack>
                     <XDSTextInput
