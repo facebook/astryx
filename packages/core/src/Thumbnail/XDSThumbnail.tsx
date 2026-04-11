@@ -2,12 +2,14 @@
 
 /**
  * @file XDSThumbnail.tsx
- * @input Uses React, stylex, XDSSkeleton, XDSIcon
+ * @input Uses React, stylex, XDSSkeleton, XDSIcon, XDSMediaTheme, useImageMode
  * @output Exports XDSThumbnail component, XDSThumbnailProps
  * @position Core implementation; consumed by index.ts
  *
  * Square preview card for image attachments. Shows a skeleton shimmer while
  * the image loads, the image on success, or a placeholder on failure.
+ * Uses useImageMode to detect image luminance so the overlaid remove button
+ * always has sufficient contrast.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Thumbnail/Thumbnail.doc.mjs
@@ -29,15 +31,20 @@ import {
 } from '../theme/tokens.stylex';
 import {XDSIcon} from '../Icon';
 import {XDSSkeleton} from '../Skeleton';
+import {XDSMediaTheme} from '../theme/XDSMediaTheme';
+import {useImageMode} from '../hooks/useImageMode';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {xdsClassName, mergeProps} from '../utils';
+
+/** Sample the top-right corner where the remove button sits. */
+const BUTTON_REGION = {x: 0.6, y: 0, width: 0.4, height: 0.4};
 
 export interface XDSThumbnailProps extends XDSBaseProps<HTMLDivElement> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLDivElement>;
   /**
    * Image source for the thumbnail preview.
-   * Shows a spinner while loading, the image on success, or a placeholder on error.
+   * Shows a skeleton while loading, the image on success, or a placeholder on error.
    */
   src?: string;
   /**
@@ -219,6 +226,9 @@ function ImagePlaceholder() {
  * a placeholder icon on failure / when no src is provided. An overlaid
  * remove button appears when `onRemove` is set.
  *
+ * Uses `useImageMode` to detect image luminance and `XDSMediaTheme` to
+ * ensure the remove button always has sufficient contrast against the image.
+ *
  * @example
  * ```
  * <XDSThumbnail src="/photo.jpg" alt="Vacation photo" onRemove={() => {}} />
@@ -243,9 +253,10 @@ export function XDSThumbnail({
 }: XDSThumbnailProps) {
   const [loaded, setLoaded] = useState(false);
   const [errored, setErrored] = useState(false);
+  const imageMode = useImageMode(src, {region: BUTTON_REGION, fallback: null});
 
   const hasSrc = src != null;
-  const showSpinner = hasSrc && !loaded && !errored;
+  const showSkeleton = hasSrc && !loaded && !errored;
   const showImage = hasSrc && loaded && !errored;
   const showPlaceholder = !hasSrc || errored;
   const isInteractive = onClick != null && !isDisabled;
@@ -262,7 +273,7 @@ export function XDSThumbnail({
           style={showImage ? undefined : {display: 'none'}}
         />
       )}
-      {showSpinner && (
+      {showSkeleton && (
         <XDSSkeleton radius={2} />
       )}
       {showPlaceholder && (
@@ -272,6 +283,20 @@ export function XDSThumbnail({
       )}
     </>
   );
+
+  const removeButtonEl =
+    onRemove != null && !isDisabled ? (
+      <button
+        type="button"
+        aria-label={`Remove ${label ?? alt ?? 'thumbnail'}`}
+        onClick={e => {
+          e.stopPropagation();
+          onRemove(e);
+        }}
+        {...stylex.props(styles.removeButton)}>
+        <XDSIcon icon="close" size="xsm" color="inherit" />
+      </button>
+    ) : null;
 
   return (
     <div
@@ -305,17 +330,12 @@ export function XDSThumbnail({
           imageContent
         )}
         {showImage && <div {...stylex.props(styles.insetBorder)} />}
-        {onRemove != null && !isDisabled && (
-          <button
-            type="button"
-            aria-label={`Remove ${label ?? alt ?? 'thumbnail'}`}
-            onClick={e => {
-              e.stopPropagation();
-              onRemove(e);
-            }}
-            {...stylex.props(styles.removeButton)}>
-            <XDSIcon icon="close" size="xsm" color="inherit" />
-          </button>
+        {removeButtonEl != null && imageMode != null ? (
+          <XDSMediaTheme mode={imageMode}>
+            {removeButtonEl}
+          </XDSMediaTheme>
+        ) : (
+          removeButtonEl
         )}
       </div>
       {label != null && <div {...stylex.props(styles.label)}>{label}</div>}

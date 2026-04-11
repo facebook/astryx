@@ -56,15 +56,15 @@ export const docs = {
   ],
   examples: [
     {
-      title: 'Image thumbnail with remove',
+      label: 'Image thumbnail with remove',
       code: '<XDSThumbnail src="/photo.jpg" alt="Vacation" onRemove={() => {}} />',
     },
     {
-      title: 'With label and caption',
+      label: 'With label and caption',
       code: '<XDSThumbnail src="/photo.jpg" alt="Photo" label="vacation.jpg" caption="2.4 MB" />',
     },
     {
-      title: 'Clickable thumbnail',
+      label: 'Clickable thumbnail',
       code: '<XDSThumbnail src="/preview.png" alt="Preview" onClick={openLightbox} />',
     },
   ],
