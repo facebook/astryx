@@ -369,7 +369,7 @@ export function XDSChatLayout({
 }: XDSChatLayoutProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const dockRef = useRef<HTMLDivElement>(null);
-  const [contentEl, setContentEl] = useState<HTMLElement | null>(null);
+  const contentElRef = useRef<HTMLElement | null>(null);
 
   const scrollContainerRef =
     externalScrollRef ?? (rootRef as React.RefObject<HTMLElement | null>);
@@ -405,27 +405,37 @@ export function XDSChatLayout({
   // Upward loads (older messages) and content resizes (tool call expand,
   // drawer collapse) don't change the last element.
   const lastMessageRef = useRef<Element | null>(null);
+  const observerRef = useRef<ResizeObserver | null>(null);
 
-  useEffect(() => {
-    if (!contentEl) return;
-
-    const observer = new ResizeObserver(() => {
-      const messages = contentEl.getElementsByClassName('xds-chat-message');
-      const last = messages.length > 0 ? messages[messages.length - 1] : null;
-      if (last && last !== lastMessageRef.current) {
-        lastMessageRef.current = last;
-        onContentChange();
+  // Callback ref — connects/disconnects the ResizeObserver when the
+  // message list registers its content element. Fires synchronously
+  // during render, no effect timing issues.
+  const contentRef = useCallback(
+    (el: HTMLElement | null) => {
+      // Disconnect previous observer
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+        observerRef.current = null;
       }
-    });
-    observer.observe(contentEl);
-    return () => observer.disconnect();
-  }, [contentEl, onContentChange]);
 
-  // Content ref callback — message list registers its inner element.
-  // Uses state (not ref) so the ResizeObserver effect re-runs when set.
-  const contentRef = useCallback((el: HTMLElement | null) => {
-    setContentEl(el);
-  }, []);
+      contentElRef.current = el;
+
+      if (el) {
+        const observer = new ResizeObserver(() => {
+          const messages = el.getElementsByClassName('xds-chat-message');
+          const last =
+            messages.length > 0 ? messages[messages.length - 1] : null;
+          if (last && last !== lastMessageRef.current) {
+            lastMessageRef.current = last;
+            onContentChange();
+          }
+        });
+        observer.observe(el);
+        observerRef.current = observer;
+      }
+    },
+    [onContentChange],
+  );
 
   // --- Layout context ---
   const layoutContextValue = useMemo(
