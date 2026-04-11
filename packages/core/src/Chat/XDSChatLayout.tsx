@@ -178,10 +178,8 @@ const styles = stylex.create({
 
   // --- Composer dock ---
   dock: {
-    bottom: 0,
-    left: 0,
-    right: 0,
-    zIndex: 2,
+    position: 'relative',
+    zIndex: 1,
   },
   // Shared position modes for dock + blur layer
   positionFixed: {
@@ -551,25 +549,23 @@ export function XDSChatLayout({
           dockHeight={dockHeight}
         />
 
-        {/* Frosted glass layer */}
-        <div
-          {...stylex.props(
-            styles.blurLayer,
-            isSelfScrolling ? styles.positionSticky : styles.positionFixed,
-            blurLayerStyle,
-          )}
-        />
-
-        {/* Composer dock */}
+        {/* Dock container — sticky/fixed, holds blur + composer */}
         <div
           ref={dockRef}
           {...stylex.props(
-            styles.dock,
-            isSelfScrolling ? styles.positionSticky : styles.positionFixed,
-            dockStyle,
+            styles.dockContainer,
+            isSelfScrolling
+              ? styles.dockContainerSticky
+              : styles.dockContainerFixed,
           )}>
-          <div {...stylex.props(styles.dockInner, dockInnerStyle)}>
-            {composer}
+          {/* Frosted glass layer — behind composer */}
+          <div {...stylex.props(styles.blurLayer, blurLayerStyle)} />
+
+          {/* Composer */}
+          <div {...stylex.props(styles.dock, dockStyle)}>
+            <div {...stylex.props(styles.dockInner, dockInnerStyle)}>
+              {composer}
+            </div>
           </div>
         </div>
       </div>
