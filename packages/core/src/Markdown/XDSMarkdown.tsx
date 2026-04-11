@@ -95,6 +95,14 @@ export interface XDSMarkdownProps {
    * ```
    */
   contentWidth?: number | string;
+  /**
+   * Alignment of prose content within the container when `contentWidth`
+   * is narrower than the available space.
+   * - 'start': left-aligned (default)
+   * - 'center': centered
+   * @default 'start'
+   */
+  contentAlign?: 'start' | 'center';
   xstyle?: StyleXStyles;
   className?: string;
   style?: React.CSSProperties;
@@ -105,12 +113,28 @@ export interface XDSMarkdownProps {
 // Styles
 // ---------------------------------------------------------------------------
 
+const ALIGN_MARGIN: Record<string, string> = {
+  start: '0',
+  center: 'auto',
+};
+
+const BLOCK_ALIGN_MARGIN: Record<string, string | null> = {
+  start: null,
+  center: 'auto',
+};
+
 const dynamicStyles = stylex.create({
   proseWidth: (maxWidth: string) => ({
     maxWidth,
   }),
+  proseAlign: (marginInline: string) => ({
+    marginInline,
+  }),
   tableMinWidth: (minWidth: string) => ({
     minWidth,
+  }),
+  blockAlign: (marginInline: string) => ({
+    marginInline,
   }),
 });
 
@@ -242,7 +266,7 @@ const styles = stylex.create({
   blockquote: {
     borderInlineStartWidth: spacingVars['--spacing-0-5'],
     borderInlineStartStyle: 'solid',
-    borderInlineStartColor: colorVars['--color-accent'],
+    borderInlineStartColor: colorVars['--color-border-emphasized'],
     paddingInlineStart: spacingVars['--spacing-4'],
     color: colorVars['--color-text-secondary'],
     marginInlineStart: 0,
@@ -252,6 +276,9 @@ const styles = stylex.create({
   tableWrapper: {
     overflowX: 'auto',
     minWidth: 0,
+  },
+  blockIndent: {
+    marginInline: `calc(-1 * ${spacingVars['--spacing-2']})`,
   },
   table: {
     borderCollapse: 'collapse',
@@ -802,6 +829,7 @@ function renderBlock(
   cursor: StreamingCursor,
   citationCtx: CitationContext | null,
   contentWidthValue: string | null,
+  contentAlign: 'start' | 'center',
 ): React.ReactNode {
   const spacing = getElementSpacing(node, density);
   const isFirst = index === 0;
@@ -827,6 +855,9 @@ function renderBlock(
             contentWidthValue != null
               ? dynamicStyles.proseWidth(contentWidthValue)
               : null,
+            contentAlign !== 'start'
+              ? dynamicStyles.proseAlign(ALIGN_MARGIN[contentAlign])
+              : null,
             isFirst && styles.noMarginBlockStart,
             isLast && styles.noMarginBlockEnd,
           )}>
@@ -844,6 +875,9 @@ function renderBlock(
             spacing,
             contentWidthValue != null
               ? dynamicStyles.proseWidth(contentWidthValue)
+              : null,
+            contentAlign !== 'start'
+              ? dynamicStyles.proseAlign(ALIGN_MARGIN[contentAlign])
               : null,
             isFirst && styles.noMarginBlockStart,
             isLast && styles.noMarginBlockEnd,
@@ -882,6 +916,9 @@ function renderBlock(
             contentWidthValue != null
               ? dynamicStyles.proseWidth(contentWidthValue)
               : null,
+            contentAlign !== 'start'
+              ? dynamicStyles.proseAlign(ALIGN_MARGIN[contentAlign])
+              : null,
             isFirst && styles.noMarginBlockStart,
             isLast && styles.noMarginBlockEnd,
           )}>
@@ -896,6 +933,7 @@ function renderBlock(
               cursor,
               citationCtx,
               contentWidthValue,
+              contentAlign,
             ),
           )}
         </blockquote>
@@ -924,6 +962,7 @@ function renderBlock(
               label="Task list"
               isLabelHidden
               value={checkedValues}
+              xstyle={styles.blockIndent}
               isReadOnly
               density="compact">
               {node.items.map((item, i) => {
@@ -954,6 +993,7 @@ function renderBlock(
                         cursor,
                         citationCtx,
                         contentWidthValue,
+                        contentAlign,
                       ),
                     )}
                   </>
@@ -992,12 +1032,16 @@ function renderBlock(
             contentWidthValue != null
               ? dynamicStyles.proseWidth(contentWidthValue)
               : null,
+            contentAlign !== 'start'
+              ? dynamicStyles.proseAlign(ALIGN_MARGIN[contentAlign])
+              : null,
             isFirst && styles.noMarginBlockStart,
             isLast && styles.noMarginBlockEnd,
           )}>
           <XDSList
             listStyle={node.ordered ? 'decimal' : 'disc'}
-            density="compact">
+            density="compact"
+            xstyle={styles.blockIndent}>
             {node.items.map((item, i) => {
               const firstChild = item.children[0];
               const isInline =
@@ -1028,6 +1072,7 @@ function renderBlock(
                       cursor,
                       citationCtx,
                       contentWidthValue,
+                      contentAlign,
                     ),
                   )}
                 </>
@@ -1068,8 +1113,12 @@ function renderBlock(
           <table
             {...stylex.props(
               styles.table,
+              styles.blockIndent,
               contentWidthValue != null
                 ? dynamicStyles.tableMinWidth(contentWidthValue)
+                : null,
+              BLOCK_ALIGN_MARGIN[contentAlign] != null
+                ? dynamicStyles.blockAlign(BLOCK_ALIGN_MARGIN[contentAlign]!)
                 : null,
             )}>
             <thead>
@@ -1184,6 +1233,7 @@ export function XDSMarkdown({
   sources,
   citationStyle = 'label',
   contentWidth = 680,
+  contentAlign = 'start',
   xstyle,
   className,
   style,
@@ -1261,6 +1311,7 @@ export function XDSMarkdown({
               ? `${contentWidth}px`
               : contentWidth
             : null,
+          contentAlign,
         ),
       )}
     </div>
