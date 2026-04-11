@@ -139,7 +139,7 @@ const styles = stylex.create({
     boxShadow: {
       default: 'none',
       ':hover': {
-        '@media (hover: hover)': shadowVars['--shadow-low'],
+        '@media (hover: hover)': shadowVars['--shadow-med'],
       },
     },
     opacity: {
