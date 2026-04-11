@@ -254,3 +254,77 @@ export const Streaming: Story = {
     );
   },
 };
+
+export const WithImages: Story = {
+  name: 'With Images',
+  render: () => (
+    <div style={{maxWidth: 800}}>
+      <XDSMarkdown>{`
+Here is some text before the image.
+
+![A landscape photo](https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=680&h=400&fit=crop&auto=format)
+
+Text between two images.
+
+![A tall portrait photo](https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=400&h=600&fit=crop&auto=format)
+
+And here's a really wide one:
+
+![Wide panoramic shot](https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=1200&h=300&fit=crop&auto=format)
+
+Final paragraph after all images.
+`}</XDSMarkdown>
+    </div>
+  ),
+};
+
+const CONTENT_ALIGN_TEXT = `
+# Content Alignment
+
+This paragraph is constrained by \`contentWidth\`. Notice how it's narrower than the code block and table below. The alignment prop controls where this narrow prose sits within the wider container.
+
+Here's a bullet list that also respects prose width:
+- First item with some explanation text
+- Second item that wraps to show the width constraint
+- Third item for good measure
+
+\`\`\`typescript
+// Code blocks break out to full container width regardless of contentAlign
+export function calculateLayout(items: Item[], containerWidth: number): Layout {
+  const columns = Math.floor(containerWidth / COLUMN_MIN_WIDTH);
+  return { columns, gap: GRID_GAP, items: distributeItems(items, columns) };
+}
+\`\`\`
+
+Back to prose — this paragraph is aligned according to the \`contentAlign\` prop while the code block above spans the full width.
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| Button | Stable | Full API |
+| CodeBlock | Stable | With collapsible |
+| Markdown | In progress | Adding alignment |
+
+Final paragraph after the table.
+`;
+
+export const ContentAlignStart: Story = {
+  name: 'Content Align: Start',
+  render: () => (
+    <div style={{maxWidth: 900, border: '1px dashed #ccc', padding: 16}}>
+      <XDSMarkdown contentWidth={580} contentAlign="start">
+        {CONTENT_ALIGN_TEXT}
+      </XDSMarkdown>
+    </div>
+  ),
+};
+
+export const ContentAlignCenter: Story = {
+  name: 'Content Align: Center',
+  render: () => (
+    <div style={{maxWidth: 900, border: '1px dashed #ccc', padding: 16}}>
+      <XDSMarkdown contentWidth={580} contentAlign="center">
+        {CONTENT_ALIGN_TEXT}
+      </XDSMarkdown>
+    </div>
+  ),
+};
