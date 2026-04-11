@@ -32,17 +32,11 @@ export interface XDSChatMessageTokenizedTextProps {
    *
    * @example
    * ```
-   * // Shared between input and display
    * const mentionTokens = contacts.map(c => ({
    *   value: `@${c.id}`,
    *   label: `@${c.label}`,
    *   variant: 'blue' as const,
    * }));
-   *
-   * // Input trigger
-   * { character: '@', onSelect: (item) => mentionTokens.find(...) }
-   *
-   * // Display
    * <XDSChatMessageTokenizedText tokens={mentionTokens}>
    *   {message.text}
    * </XDSChatMessageTokenizedText>
