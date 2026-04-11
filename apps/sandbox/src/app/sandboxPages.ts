@@ -102,11 +102,13 @@ export const categories: SandboxCategory[] = [
         href: '/templates/library/',
         description: 'Browsable grid of XDS components organized by category',
       },
-      ...autoDiscoveredTemplates.map(t => ({
-        name: t.isReady ? t.name : t.name + ' (WIP)',
-        href: t.href,
-        description: t.description,
-      })),
+      ...autoDiscoveredTemplates
+        .filter(t => t.slug !== 'docsite-landing')
+        .map(t => ({
+          name: t.isReady ? t.name : t.name + ' (WIP)',
+          href: t.href,
+          description: t.description,
+        })),
     ],
   },
   {
@@ -135,6 +137,12 @@ export const categories: SandboxCategory[] = [
         href: '/pages/docsite/',
         description:
           'Template gallery with AI composer and component documentation',
+      },
+      {
+        name: 'Docsite Landing',
+        href: '/templates/docsite-landing/',
+        description:
+          'Template gallery with SideNav layout, AI chat, and resizable preview panel',
       },
     ],
   },
