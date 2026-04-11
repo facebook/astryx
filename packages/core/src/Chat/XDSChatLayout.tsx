@@ -149,12 +149,27 @@ const styles = stylex.create({
     minHeight: 200,
   },
 
-  // --- Blur layer ---
-  blurLayer: {
+  // --- Dock container — holds blur layer + composer as siblings ---
+  dockContainer: {
     bottom: 0,
     left: 0,
     right: 0,
-    zIndex: 1,
+    zIndex: 0,
+    isolation: 'isolate',
+  },
+  dockContainerFixed: {
+    position: 'fixed',
+  },
+  dockContainerSticky: {
+    position: 'sticky',
+  },
+
+  // --- Blur layer (absolute within dock container) ---
+  blurLayer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     pointerEvents: 'none',
     backdropFilter: 'blur(12px)',
     WebkitBackdropFilter: 'blur(12px)',
@@ -181,13 +196,7 @@ const styles = stylex.create({
     position: 'relative',
     zIndex: 1,
   },
-  // Shared position modes for dock + blur layer
-  positionFixed: {
-    position: 'fixed',
-  },
-  positionSticky: {
-    position: 'sticky',
-  },
+
   dockCompact: {
     paddingInline: spacingVars['--spacing-2'],
     paddingBlockEnd: spacingVars['--spacing-2'],
