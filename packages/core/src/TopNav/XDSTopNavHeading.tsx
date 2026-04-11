@@ -352,11 +352,11 @@ export function XDSTopNavHeading({
         ))}
       <span {...stylex.props(styles.headingRow)}>
         {hasAnyHref && headingHref && menu ? (
-          <a
+          <LinkComponent
             href={headingHref}
             {...stylex.props(styles.heading, styles.headingLink)}>
             {heading}
-          </a>
+          </LinkComponent>
         ) : (
           <span {...stylex.props(styles.heading)}>{heading}</span>
         )}

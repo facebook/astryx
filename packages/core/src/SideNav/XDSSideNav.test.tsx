@@ -157,6 +157,28 @@ describe('XDSSideNavHeading', () => {
     expect(link).toHaveTextContent('My App');
   });
 
+  it('uses custom link component from as prop', () => {
+    render(
+      <XDSSideNavHeading
+        heading="My App"
+        headingHref="/home"
+        as={CustomLink}
+      />,
+    );
+    const link = screen.getByRole('link');
+    expect(link).toHaveAttribute('data-custom-link');
+  });
+
+  it('uses custom link component from XDSLinkProvider', () => {
+    render(
+      <XDSLinkProvider component={CustomLink}>
+        <XDSSideNavHeading heading="My App" headingHref="/home" />
+      </XDSLinkProvider>,
+    );
+    const link = screen.getByRole('link');
+    expect(link).toHaveAttribute('data-custom-link');
+  });
+
   it('renders independent links when headingHref and superheadingHref are provided', () => {
     render(
       <XDSSideNavHeading
