@@ -30,16 +30,19 @@ describe('XDSThumbnail', () => {
     render(
       <XDSThumbnail src="/local.jpg" alt="Uploading" isLoading data-testid="thumb" />,
     );
-    // Image is visible (local preview)
     const img = screen.getByRole('img');
     expect(img).toHaveAttribute('src', '/local.jpg');
-    // Spinner overlay is present
     expect(screen.getByRole('status')).toBeInTheDocument();
   });
 
-  it('renders the label', () => {
-    render(<XDSThumbnail label="report.pdf" />);
-    expect(screen.getByText('report.pdf')).toBeInTheDocument();
+  it('uses label as accessible name on root', () => {
+    render(<XDSThumbnail label="photo.png" data-testid="thumb" />);
+    expect(screen.getByTestId('thumb')).toHaveAttribute('aria-label', 'photo.png');
+  });
+
+  it('label is not rendered as visible text', () => {
+    render(<XDSThumbnail label="photo.png" data-testid="thumb" />);
+    expect(screen.queryByText('photo.png')).toBeNull();
   });
 
   it('renders the caption', () => {
@@ -60,7 +63,7 @@ describe('XDSThumbnail', () => {
     const user = userEvent.setup();
     const onClick = vi.fn();
     render(<XDSThumbnail src="/img.jpg" alt="Clickable" onClick={onClick} />);
-    const btn = screen.getByRole('button', {name: 'Clickable'});
+    const btn = screen.getByRole('button', {name: 'Open Clickable'});
     await user.click(btn);
     expect(onClick).toHaveBeenCalledOnce();
   });
@@ -84,7 +87,6 @@ describe('XDSThumbnail', () => {
     render(
       <XDSThumbnail src="/img.jpg" alt="Test" onClick={onClick} isLoading />,
     );
-    // No interactive button — just the spinner overlay
     expect(screen.queryByRole('button')).toBeNull();
   });
 

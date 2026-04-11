@@ -8,8 +8,8 @@
  *
  * Square preview card for image attachments. Shows a skeleton shimmer while
  * the image loads, the image on success, or a placeholder on failure.
- * Uses useImageMode to detect image luminance so the overlaid remove button
- * always has sufficient contrast.
+ * Uses useImageMode (APCA) to detect image luminance so the overlaid
+ * remove button always has sufficient contrast.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Thumbnail/Thumbnail.doc.mjs
@@ -27,7 +27,6 @@ import {
   shadowVars,
   durationVars,
   easeVars,
-  typeScaleVars,
 } from '../theme/tokens.stylex';
 import {XDSButton} from '../Button';
 import {XDSIcon} from '../Icon';
@@ -38,7 +37,7 @@ import {useImageMode} from '../hooks/useImageMode';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {xdsClassName, mergeProps} from '../utils';
 
-/** Sample the region behind the remove button (28px button, 4px inset, in 64px container). */
+/** Sample the region behind the remove button (20px button, 4px inset, in 64px container). */
 const BUTTON_REGION = {x: 0.5, y: 0.06, width: 0.44, height: 0.44};
 
 export interface XDSThumbnailProps extends XDSBaseProps<HTMLDivElement> {
@@ -54,7 +53,9 @@ export interface XDSThumbnailProps extends XDSBaseProps<HTMLDivElement> {
    */
   alt?: string;
   /**
-   * Text label displayed below the image (e.g. file name).
+   * Accessible label for the thumbnail (e.g. file name).
+   * Not rendered visually — shown in a tooltip on hover and used
+   * as accessible name for the remove button.
    */
   label?: string;
   /**
@@ -109,7 +110,15 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-element'],
     overflow: 'hidden',
     backgroundColor: colorVars['--color-neutral'],
-    boxShadow: shadowVars['--shadow-low'],
+    boxShadow: {
+      default: 'none',
+      ':hover': {
+        '@media (hover: hover)': shadowVars['--shadow-low'],
+      },
+    },
+    transitionProperty: 'box-shadow',
+    transitionDuration: durationVars['--duration-fast'],
+    transitionTimingFunction: easeVars['--ease-standard'],
   },
   image: {
     width: '100%',
@@ -134,7 +143,7 @@ const styles = stylex.create({
   },
   interactive: {
     cursor: 'pointer',
-    transitionProperty: 'opacity',
+    transitionProperty: 'opacity, box-shadow',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
     opacity: {
@@ -167,27 +176,13 @@ const styles = stylex.create({
     top: spacingVars['--spacing-1'],
     right: spacingVars['--spacing-1'],
     zIndex: 1,
+    display: 'flex',
   },
-  /** Concentric radius: container is --radius-element (8px), inset by --spacing-1 (4px), so inner = 4px */
   removeButtonOverrides: {
-    '--button-radius': radiusVars['--radius-inner'],
+    '--button-radius': `calc(${radiusVars['--radius-element']} - ${spacingVars['--spacing-1']})`,
     height: 20,
     minWidth: 20,
   } as Record<string, string | number>,
-  label: {
-    marginTop: spacingVars['--spacing-1'],
-    fontSize: typeScaleVars['--text-supporting-size'],
-    lineHeight: typeScaleVars['--text-supporting-leading'],
-    color: colorVars['--color-text-secondary'],
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
-  },
-  caption: {
-    fontSize: typeScaleVars['--text-supporting-size'],
-    lineHeight: typeScaleVars['--text-supporting-leading'],
-    color: colorVars['--color-text-disabled'],
-  },
   disabled: {
     opacity: 0.5,
     pointerEvents: 'none' as const,
@@ -233,14 +228,13 @@ function ImagePlaceholder() {
  * a placeholder icon on failure / when no src is provided. An overlaid
  * remove button appears when `onRemove` is set.
  *
- * Uses `useImageMode` to detect image luminance and `XDSMediaTheme` to
- * ensure the remove button always has sufficient contrast against the image.
+ * Uses `useImageMode` (APCA) to detect image luminance and `XDSMediaTheme`
+ * to ensure the remove button always has sufficient contrast against the image.
  *
  * @example
  * ```
  * <XDSThumbnail src="/photo.jpg" alt="Vacation photo" onRemove={() => {}} />
- * <XDSThumbnail label="report.pdf" />
- * <XDSThumbnail src="/preview.png" alt="Preview" onClick={() => {}} caption="2.4 MB" />
+ * <XDSThumbnail src="/preview.png" alt="Preview" onClick={() => {}} label="preview.png" />
  * ```
  */
 export function XDSThumbnail({
@@ -267,6 +261,7 @@ export function XDSThumbnail({
   const showUploadOverlay = isLoading && hasSrc;
   const showPlaceholder = !isLoading && !hasSrc;
   const isInteractive = onClick != null && !isDisabled && !isLoading;
+  const accessibleName = label ?? alt ?? 'thumbnail';
 
   const imageContent = (
     <>
@@ -293,7 +288,8 @@ export function XDSThumbnail({
       <div {...stylex.props(styles.removeButtonPosition)}>
         <XDSButton
           icon={<XDSIcon icon="close" size="xsm" />}
-          label={`Remove ${label ?? alt ?? 'thumbnail'}`}
+          label={`Remove ${accessibleName}`}
+          tooltip={accessibleName}
           variant="secondary"
           size="sm"
           isIconOnly
@@ -310,6 +306,7 @@ export function XDSThumbnail({
     <div
       ref={ref}
       data-testid={testId}
+      aria-label={accessibleName}
       {...mergeProps(
         xdsClassName('thumbnail'),
         stylex.props(
@@ -330,7 +327,7 @@ export function XDSThumbnail({
           <button
             type="button"
             onClick={onClick}
-            aria-label={alt ?? label ?? 'Open thumbnail'}
+            aria-label={`Open ${accessibleName}`}
             {...stylex.props(styles.interactiveButton)}>
             {imageContent}
           </button>
@@ -351,8 +348,7 @@ export function XDSThumbnail({
           removeButtonEl
         )}
       </div>
-      {label != null && <div {...stylex.props(styles.label)}>{label}</div>}
-      {caption != null && <div {...stylex.props(styles.caption)}>{caption}</div>}
+      {caption != null && <div>{caption}</div>}
     </div>
   );
 }
