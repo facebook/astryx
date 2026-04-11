@@ -247,6 +247,104 @@ describe('XDSChatComposerInput', () => {
     });
   });
 
+  describe('token backspace handling', () => {
+    it('removes token and trailing NBSP on backspace', () => {
+      let handle: XDSChatComposerInputHandle | null = null;
+      const onChange = vi.fn();
+      render(
+        <XDSChatComposerInput
+          ref={h => {
+            handle = h;
+          }}
+          onChange={onChange}
+        />,
+      );
+      const textbox = screen.getByRole('textbox');
+
+      // Focus and set a collapsed selection so insertToken has a valid range
+      textbox.focus();
+      const sel = window.getSelection()!;
+      const range = document.createRange();
+      range.selectNodeContents(textbox);
+      range.collapse(false);
+      sel.removeAllRanges();
+      sel.addRange(range);
+
+      // Insert a token programmatically
+      handle!.insertToken({
+        value: '@sam',
+        label: '@Sam Rivera',
+        variant: 'blue' as const,
+      });
+      fireEvent.input(textbox);
+
+      // The DOM should have a token span + trailing NBSP
+      const tokenSpan = textbox.querySelector('[data-xds-token]');
+      expect(tokenSpan).toBeInTheDocument();
+
+      const nbsp = tokenSpan!.nextSibling;
+      expect(nbsp).toBeTruthy();
+      expect(nbsp!.textContent).toBe('\u00A0');
+
+      // Position cursor at end of NBSP text node
+      const r2 = document.createRange();
+      r2.setStart(nbsp!, 1);
+      r2.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(r2);
+
+      // Fire backspace
+      fireEvent.keyDown(textbox, {key: 'Backspace'});
+
+      // Both the NBSP and the token should be removed
+      expect(textbox.querySelector('[data-xds-token]')).toBeNull();
+    });
+
+    it('serializes to empty after token backspace', () => {
+      let handle: XDSChatComposerInputHandle | null = null;
+      const onChange = vi.fn();
+      render(
+        <XDSChatComposerInput
+          ref={h => {
+            handle = h;
+          }}
+          onChange={onChange}
+        />,
+      );
+      const textbox = screen.getByRole('textbox');
+
+      // Focus and set selection
+      textbox.focus();
+      const sel = window.getSelection()!;
+      const range = document.createRange();
+      range.selectNodeContents(textbox);
+      range.collapse(false);
+      sel.removeAllRanges();
+      sel.addRange(range);
+
+      handle!.insertToken({
+        value: '@sam',
+        label: '@Sam Rivera',
+        variant: 'blue' as const,
+      });
+      fireEvent.input(textbox);
+
+      const tokenSpan = textbox.querySelector('[data-xds-token]')!;
+      const nbsp = tokenSpan.nextSibling!;
+
+      // Position cursor in the NBSP
+      const r2 = document.createRange();
+      r2.setStart(nbsp, 1);
+      r2.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(r2);
+
+      // Backspace should remove token + NBSP and fire onChange
+      fireEvent.keyDown(textbox, {key: 'Backspace'});
+      expect(onChange).toHaveBeenLastCalledWith('');
+    });
+  });
+
   describe('xds class names', () => {
     it('has xds-chat-composer-input class', () => {
       const {container} = render(<XDSChatComposerInput />);
