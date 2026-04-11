@@ -271,807 +271,780 @@ export default function PaymentFormPage() {
 
   return (
     <XDSAppShell height="auto" contentPadding={0} variant="surface">
-      <XDSLayout
-        height="auto"
-        contentWidth={1100}
-        padding={6}
-        content={
-          <XDSLayoutContent isScrollable={false}>
-            <XDSVStack gap={5}>
-              {/* Page header */}
-              <XDSVStack gap={2} {...stylex.props(styles.headerArea)}>
-                <XDSText type="display-1" as="h1">
-                  Payment Request
-                </XDSText>
-                <XDSText type="body" color="secondary">
-                  Review your order and complete your purchase. All transactions
-                  are secured with 256-bit SSL encryption.
-                </XDSText>
-                <div {...stylex.props(styles.dividerWrap)}>
-                  <XDSDivider />
-                </div>
-              </XDSVStack>
+      <div
+        style={{
+          maxWidth: 1100,
+          width: '100%',
+          margin: '0 auto',
+          padding: '24px',
+        }}>
+        <XDSVStack gap={5}>
+          {/* Page header */}
+          <XDSVStack gap={2} {...stylex.props(styles.headerArea)}>
+            <XDSText type="display-1" as="h1">
+              Payment Request
+            </XDSText>
+            <XDSText type="body" color="secondary">
+              Review your order and complete your purchase. All transactions are
+              secured with 256-bit SSL encryption.
+            </XDSText>
+            <div {...stylex.props(styles.dividerWrap)}>
+              <XDSDivider />
+            </div>
+          </XDSVStack>
 
-              <XDSHStack gap={8} className="pf-body" vAlign="start">
-                <XDSStackItem size="fill">
-                  <XDSVStack gap={8}>
-                    {/* Sign in */}
-                    <XDSVStack gap={1}>
-                      <XDSHStack gap={2} hAlign="between" vAlign="center">
-                        <div {...stylex.props(styles.sectionTitle)}>
-                          Sign in to check out
-                        </div>
-                        <XDSButton
-                          label="Sign In"
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => {}}
-                        />
-                      </XDSHStack>
-                      <XDSText type="supporting" color="secondary">
-                        Sign in to track your order and save your information
-                        for faster checkout.
-                      </XDSText>
-                    </XDSVStack>
+          <XDSHStack gap={8} className="pf-body" vAlign="start">
+            <XDSStackItem size="fill">
+              <XDSVStack gap={8}>
+                {/* Sign in */}
+                <XDSVStack gap={1}>
+                  <XDSHStack gap={2} hAlign="between" vAlign="center">
+                    <div {...stylex.props(styles.sectionTitle)}>
+                      Sign in to check out
+                    </div>
+                    <XDSButton
+                      label="Sign In"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => {}}
+                    />
+                  </XDSHStack>
+                  <XDSText type="supporting" color="secondary">
+                    Sign in to track your order and save your information for
+                    faster checkout.
+                  </XDSText>
+                </XDSVStack>
 
-                    {/* Contact Information */}
-                    <XDSVStack gap={3}>
-                      <div {...stylex.props(styles.sectionTitle)}>
-                        Contact Information
-                      </div>
-                      <XDSTextInput
-                        size="lg"
-                        label="Email"
-                        placeholder="you@example.com"
-                        value={email}
-                        onChange={setEmail}
-                        status={
-                          errors.email
-                            ? {type: 'error', message: errors.email}
-                            : undefined
-                        }
-                      />
-                      <XDSCheckboxInput
-                        label="Email me with news and offers"
-                        value={emailOffers}
-                        onChange={setEmailOffers}
-                      />
-                    </XDSVStack>
+                {/* Contact Information */}
+                <XDSVStack gap={3}>
+                  <div {...stylex.props(styles.sectionTitle)}>
+                    Contact Information
+                  </div>
+                  <XDSTextInput
+                    size="lg"
+                    label="Email"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={setEmail}
+                    status={
+                      errors.email
+                        ? {type: 'error', message: errors.email}
+                        : undefined
+                    }
+                  />
+                  <XDSCheckboxInput
+                    label="Email me with news and offers"
+                    value={emailOffers}
+                    onChange={setEmailOffers}
+                  />
+                </XDSVStack>
 
-                    {/* Shipping Information */}
-                    <XDSVStack gap={3}>
-                      <div {...stylex.props(styles.sectionTitle)}>
-                        Shipping Information
-                      </div>
-                      <XDSGrid columns={2} gap={3}>
-                        <XDSTextInput
-                          size="lg"
-                          label="First Name"
-                          placeholder="John"
-                          value={firstName}
-                          onChange={setFirstName}
-                          status={
-                            errors.firstName
-                              ? {type: 'error', message: errors.firstName}
-                              : undefined
-                          }
+                {/* Shipping Information */}
+                <XDSVStack gap={3}>
+                  <div {...stylex.props(styles.sectionTitle)}>
+                    Shipping Information
+                  </div>
+                  <XDSGrid columns={2} gap={3}>
+                    <XDSTextInput
+                      size="lg"
+                      label="First Name"
+                      placeholder="John"
+                      value={firstName}
+                      onChange={setFirstName}
+                      status={
+                        errors.firstName
+                          ? {type: 'error', message: errors.firstName}
+                          : undefined
+                      }
+                    />
+                    <XDSTextInput
+                      size="lg"
+                      label="Last Name"
+                      placeholder="Doe"
+                      value={lastName}
+                      onChange={setLastName}
+                      status={
+                        errors.lastName
+                          ? {type: 'error', message: errors.lastName}
+                          : undefined
+                      }
+                    />
+                  </XDSGrid>
+                  <XDSTextInput
+                    size="lg"
+                    label="Address"
+                    placeholder="123 Main Street"
+                    value={address}
+                    onChange={setAddress}
+                    status={
+                      errors.address
+                        ? {type: 'error', message: errors.address}
+                        : undefined
+                    }
+                  />
+                  <XDSGrid columns={2} gap={3}>
+                    <XDSTextInput
+                      size="lg"
+                      label="City"
+                      placeholder="New York"
+                      value={city}
+                      onChange={setCity}
+                      status={
+                        errors.city
+                          ? {type: 'error', message: errors.city}
+                          : undefined
+                      }
+                    />
+                    <XDSTextInput
+                      size="lg"
+                      label="ZIP Code"
+                      placeholder="10001"
+                      value={zip}
+                      onChange={setZip}
+                      status={
+                        errors.zip
+                          ? {type: 'error', message: errors.zip}
+                          : undefined
+                      }
+                    />
+                  </XDSGrid>
+                  <XDSSelector
+                    size="lg"
+                    label="State"
+                    placeholder="Select state"
+                    options={US_STATES}
+                    value={state}
+                    onChange={setState}
+                    status={
+                      errors.state
+                        ? {type: 'error', message: errors.state}
+                        : undefined
+                    }
+                  />
+                  <XDSTextInput
+                    size="lg"
+                    label="Phone Number"
+                    placeholder="+1 (555) 123-4567"
+                    value={phone}
+                    onChange={setPhone}
+                    labelTooltip="We use your phone number to provide shipping updates and contact you about your delivery if needed."
+                    status={
+                      errors.phone
+                        ? {type: 'error', message: errors.phone}
+                        : undefined
+                    }
+                  />
+                  <XDSCheckboxInput
+                    label="Save my information for a faster checkout"
+                    value={saveInfo}
+                    onChange={setSaveInfo}
+                  />
+                </XDSVStack>
+
+                {/* Delivery */}
+                <XDSVStack gap={3}>
+                  <XDSVStack gap={1}>
+                    <div {...stylex.props(styles.sectionTitle)}>Delivery</div>
+                    <XDSText type="supporting" color="secondary">
+                      Please allow 1–3 business days processing time before your
+                      order ships.
+                    </XDSText>
+                  </XDSVStack>
+                  <XDSRadioList
+                    label="Delivery method"
+                    value={deliveryMethod}
+                    onChange={setDeliveryMethod}>
+                    <XDSRadioListItem
+                      value="standard"
+                      label="Standard (3–7 business days)"
+                      endContent={
+                        <XDSText type="body" weight="medium">
+                          $4.95
+                        </XDSText>
+                      }
+                    />
+                    <XDSRadioListItem
+                      value="expedited"
+                      label="Expedited (1–2 business days)"
+                      endContent={
+                        <XDSText type="body" weight="medium">
+                          $9.95
+                        </XDSText>
+                      }
+                    />
+                  </XDSRadioList>
+                </XDSVStack>
+
+                {/* Payment Method */}
+                <XDSVStack gap={3}>
+                  <XDSVStack gap={1}>
+                    <div {...stylex.props(styles.sectionTitle)}>
+                      Payment Method
+                    </div>
+                    <XDSText type="supporting" color="secondary">
+                      All transactions are secure and encrypted.
+                    </XDSText>
+                  </XDSVStack>
+
+                  {/* Express checkout */}
+                  <XDSVStack gap={3}>
+                    <XDSGrid columns={2} gap={3}>
+                      {/* PayPal */}
+                      <XDSButton
+                        label="PayPal"
+                        variant="primary"
+                        size="sm"
+                        onClick={() => {}}
+                        style={{
+                          backgroundColor: '#FFC439',
+                          borderColor: '#FFC439',
+                        }}>
+                        <img
+                          src="https://www.paypalobjects.com/webstatic/mktg/Logo/pp-logo-100px.png"
+                          alt="PayPal"
+                          style={{height: 20, width: 'auto'}}
                         />
-                        <XDSTextInput
-                          size="lg"
-                          label="Last Name"
-                          placeholder="Doe"
-                          value={lastName}
-                          onChange={setLastName}
-                          status={
-                            errors.lastName
-                              ? {type: 'error', message: errors.lastName}
-                              : undefined
-                          }
+                      </XDSButton>
+                      {/* Google Pay */}
+                      <XDSButton
+                        label="Google Pay"
+                        variant="primary"
+                        size="sm"
+                        onClick={() => {}}
+                        style={{
+                          backgroundColor: '#000',
+                          borderColor: '#000',
+                        }}>
+                        <img
+                          src="https://pay.google.com/about/static_kcs/images/logos/google-pay-logo.svg"
+                          alt="Google Pay"
+                          style={{
+                            height: 22,
+                            width: 'auto',
+                            filter: 'brightness(0) invert(1)',
+                          }}
                         />
-                      </XDSGrid>
-                      <XDSTextInput
-                        size="lg"
-                        label="Address"
-                        placeholder="123 Main Street"
-                        value={address}
-                        onChange={setAddress}
-                        status={
-                          errors.address
-                            ? {type: 'error', message: errors.address}
-                            : undefined
-                        }
+                      </XDSButton>
+                    </XDSGrid>
+                  </XDSVStack>
+
+                  {/* OR divider */}
+                  <XDSHStack gap={3} vAlign="center">
+                    <XDSStackItem size="fill">
+                      <XDSDivider />
+                    </XDSStackItem>
+                    <XDSText type="supporting" color="secondary">
+                      OR
+                    </XDSText>
+                    <XDSStackItem size="fill">
+                      <XDSDivider />
+                    </XDSStackItem>
+                  </XDSHStack>
+
+                  {/* Credit card fields */}
+                  <XDSVStack gap={3}>
+                    {/* Card type icons */}
+                    <XDSHStack gap={1.5} vAlign="center">
+                      <img
+                        src="https://raw.githubusercontent.com/aaronfagan/svg-credit-card-payment-icons/main/flat/visa.svg"
+                        alt="Visa"
+                        style={{
+                          height: 28,
+                          width: 'auto',
+                          borderRadius: 4,
+                          border: '1px solid var(--color-border)',
+                          backgroundColor: '#fff',
+                        }}
                       />
-                      <XDSGrid columns={2} gap={3}>
-                        <XDSTextInput
-                          size="lg"
-                          label="City"
-                          placeholder="New York"
-                          value={city}
-                          onChange={setCity}
-                          status={
-                            errors.city
-                              ? {type: 'error', message: errors.city}
-                              : undefined
-                          }
-                        />
-                        <XDSTextInput
-                          size="lg"
-                          label="ZIP Code"
-                          placeholder="10001"
-                          value={zip}
-                          onChange={setZip}
-                          status={
-                            errors.zip
-                              ? {type: 'error', message: errors.zip}
-                              : undefined
-                          }
-                        />
-                      </XDSGrid>
+                      <img
+                        src="https://raw.githubusercontent.com/aaronfagan/svg-credit-card-payment-icons/main/flat/mastercard.svg"
+                        alt="Mastercard"
+                        style={{
+                          height: 28,
+                          width: 'auto',
+                          borderRadius: 4,
+                          border: '1px solid var(--color-border)',
+                          backgroundColor: '#fff',
+                        }}
+                      />
+                      <img
+                        src="https://raw.githubusercontent.com/aaronfagan/svg-credit-card-payment-icons/main/flat/amex.svg"
+                        alt="Amex"
+                        style={{
+                          height: 28,
+                          width: 'auto',
+                          borderRadius: 4,
+                          border: '1px solid var(--color-border)',
+                          backgroundColor: '#fff',
+                        }}
+                      />
+                    </XDSHStack>
+                    <XDSTextInput
+                      size="lg"
+                      label="Card Number"
+                      placeholder="1234 5678 9012 3456"
+                      value={cardNumber}
+                      onChange={setCardNumber}
+                      status={
+                        errors.cardNumber
+                          ? {type: 'error', message: errors.cardNumber}
+                          : undefined
+                      }
+                    />
+                    <XDSGrid columns={3} gap={3}>
                       <XDSSelector
                         size="lg"
-                        label="State"
-                        placeholder="Select state"
-                        options={US_STATES}
-                        value={state}
-                        onChange={setState}
+                        label="Expiry Month"
+                        placeholder="MM"
+                        options={MONTHS}
+                        value={expiry}
+                        onChange={setExpiry}
                         status={
-                          errors.state
-                            ? {type: 'error', message: errors.state}
+                          errors.expiry
+                            ? {type: 'error', message: errors.expiry}
+                            : undefined
+                        }
+                      />
+                      <XDSSelector
+                        size="lg"
+                        label="Expiry Year"
+                        placeholder="YY"
+                        options={YEARS}
+                        value={expYear}
+                        onChange={setExpYear}
+                        status={
+                          errors.expYear
+                            ? {type: 'error', message: errors.expYear}
                             : undefined
                         }
                       />
                       <XDSTextInput
                         size="lg"
-                        label="Phone Number"
-                        placeholder="+1 (555) 123-4567"
-                        value={phone}
-                        onChange={setPhone}
-                        labelTooltip="We use your phone number to provide shipping updates and contact you about your delivery if needed."
+                        label="CVC"
+                        placeholder="123"
+                        value={cvc}
+                        onChange={setCvc}
+                        labelTooltip="3-digit security code usually found on the back of your card. American Express cards have a 4-digit code located on the front."
                         status={
-                          errors.phone
-                            ? {type: 'error', message: errors.phone}
+                          errors.cvc
+                            ? {type: 'error', message: errors.cvc}
                             : undefined
                         }
                       />
-                      <XDSCheckboxInput
-                        label="Save my information for a faster checkout"
-                        value={saveInfo}
-                        onChange={setSaveInfo}
-                      />
-                    </XDSVStack>
-
-                    {/* Delivery */}
-                    <XDSVStack gap={3}>
-                      <XDSVStack gap={1}>
-                        <div {...stylex.props(styles.sectionTitle)}>
-                          Delivery
-                        </div>
-                        <XDSText type="supporting" color="secondary">
-                          Please allow 1–3 business days processing time before
-                          your order ships.
-                        </XDSText>
-                      </XDSVStack>
-                      <XDSRadioList
-                        label="Delivery method"
-                        value={deliveryMethod}
-                        onChange={setDeliveryMethod}>
-                        <XDSRadioListItem
-                          value="standard"
-                          label="Standard (3–7 business days)"
-                          endContent={
-                            <XDSText type="body" weight="medium">
-                              $4.95
-                            </XDSText>
-                          }
-                        />
-                        <XDSRadioListItem
-                          value="expedited"
-                          label="Expedited (1–2 business days)"
-                          endContent={
-                            <XDSText type="body" weight="medium">
-                              $9.95
-                            </XDSText>
-                          }
-                        />
-                      </XDSRadioList>
-                    </XDSVStack>
-
-                    {/* Payment Method */}
-                    <XDSVStack gap={3}>
-                      <XDSVStack gap={1}>
-                        <div {...stylex.props(styles.sectionTitle)}>
-                          Payment Method
-                        </div>
-                        <XDSText type="supporting" color="secondary">
-                          All transactions are secure and encrypted.
-                        </XDSText>
-                      </XDSVStack>
-
-                      {/* Express checkout */}
+                    </XDSGrid>
+                    <XDSTextInput
+                      size="lg"
+                      label="Name on Card"
+                      placeholder="John Doe"
+                      value={cardName}
+                      onChange={setCardName}
+                      status={
+                        errors.cardName
+                          ? {type: 'error', message: errors.cardName}
+                          : undefined
+                      }
+                    />
+                    <XDSCheckboxInput
+                      label="Use shipping address as billing address"
+                      value={billingMatchesShipping}
+                      onChange={setBillingMatchesShipping}
+                    />
+                    {!billingMatchesShipping && (
                       <XDSVStack gap={3}>
-                        <XDSGrid columns={2} gap={3}>
-                          {/* PayPal */}
-                          <XDSButton
-                            label="PayPal"
-                            variant="primary"
-                            size="sm"
-                            onClick={() => {}}
-                            style={{
-                              backgroundColor: '#FFC439',
-                              borderColor: '#FFC439',
-                            }}>
-                            <img
-                              src="https://www.paypalobjects.com/webstatic/mktg/Logo/pp-logo-100px.png"
-                              alt="PayPal"
-                              style={{height: 20, width: 'auto'}}
-                            />
-                          </XDSButton>
-                          {/* Google Pay */}
-                          <XDSButton
-                            label="Google Pay"
-                            variant="primary"
-                            size="sm"
-                            onClick={() => {}}
-                            style={{
-                              backgroundColor: '#000',
-                              borderColor: '#000',
-                            }}>
-                            <img
-                              src="https://pay.google.com/about/static_kcs/images/logos/google-pay-logo.svg"
-                              alt="Google Pay"
-                              style={{
-                                height: 22,
-                                width: 'auto',
-                                filter: 'brightness(0) invert(1)',
-                              }}
-                            />
-                          </XDSButton>
-                        </XDSGrid>
-                      </XDSVStack>
-
-                      {/* OR divider */}
-                      <XDSHStack gap={3} vAlign="center">
-                        <XDSStackItem size="fill">
-                          <XDSDivider />
-                        </XDSStackItem>
-                        <XDSText type="supporting" color="secondary">
-                          OR
-                        </XDSText>
-                        <XDSStackItem size="fill">
-                          <XDSDivider />
-                        </XDSStackItem>
-                      </XDSHStack>
-
-                      {/* Credit card fields */}
-                      <XDSVStack gap={3}>
-                        {/* Card type icons */}
-                        <XDSHStack gap={1.5} vAlign="center">
-                          <img
-                            src="https://raw.githubusercontent.com/aaronfagan/svg-credit-card-payment-icons/main/flat/visa.svg"
-                            alt="Visa"
-                            style={{
-                              height: 28,
-                              width: 'auto',
-                              borderRadius: 4,
-                              border: '1px solid var(--color-border)',
-                              backgroundColor: '#fff',
-                            }}
-                          />
-                          <img
-                            src="https://raw.githubusercontent.com/aaronfagan/svg-credit-card-payment-icons/main/flat/mastercard.svg"
-                            alt="Mastercard"
-                            style={{
-                              height: 28,
-                              width: 'auto',
-                              borderRadius: 4,
-                              border: '1px solid var(--color-border)',
-                              backgroundColor: '#fff',
-                            }}
-                          />
-                          <img
-                            src="https://raw.githubusercontent.com/aaronfagan/svg-credit-card-payment-icons/main/flat/amex.svg"
-                            alt="Amex"
-                            style={{
-                              height: 28,
-                              width: 'auto',
-                              borderRadius: 4,
-                              border: '1px solid var(--color-border)',
-                              backgroundColor: '#fff',
-                            }}
-                          />
-                        </XDSHStack>
                         <XDSTextInput
                           size="lg"
-                          label="Card Number"
-                          placeholder="1234 5678 9012 3456"
-                          value={cardNumber}
-                          onChange={setCardNumber}
+                          label="Address"
+                          placeholder="123 Main Street"
+                          value={billingAddress}
+                          onChange={setBillingAddress}
                           status={
-                            errors.cardNumber
-                              ? {type: 'error', message: errors.cardNumber}
+                            errors.billingAddress
+                              ? {
+                                  type: 'error',
+                                  message: errors.billingAddress,
+                                }
                               : undefined
                           }
                         />
-                        <XDSGrid columns={3} gap={3}>
-                          <XDSSelector
+                        <XDSGrid columns={2} gap={3}>
+                          <XDSTextInput
                             size="lg"
-                            label="Expiry Month"
-                            placeholder="MM"
-                            options={MONTHS}
-                            value={expiry}
-                            onChange={setExpiry}
+                            label="City"
+                            placeholder="New York"
+                            value={billingCity}
+                            onChange={setBillingCity}
                             status={
-                              errors.expiry
-                                ? {type: 'error', message: errors.expiry}
-                                : undefined
-                            }
-                          />
-                          <XDSSelector
-                            size="lg"
-                            label="Expiry Year"
-                            placeholder="YY"
-                            options={YEARS}
-                            value={expYear}
-                            onChange={setExpYear}
-                            status={
-                              errors.expYear
-                                ? {type: 'error', message: errors.expYear}
+                              errors.billingCity
+                                ? {
+                                    type: 'error',
+                                    message: errors.billingCity,
+                                  }
                                 : undefined
                             }
                           />
                           <XDSTextInput
                             size="lg"
-                            label="CVC"
-                            placeholder="123"
-                            value={cvc}
-                            onChange={setCvc}
-                            labelTooltip="3-digit security code usually found on the back of your card. American Express cards have a 4-digit code located on the front."
+                            label="ZIP Code"
+                            placeholder="10001"
+                            value={billingZip}
+                            onChange={setBillingZip}
                             status={
-                              errors.cvc
-                                ? {type: 'error', message: errors.cvc}
+                              errors.billingZip
+                                ? {
+                                    type: 'error',
+                                    message: errors.billingZip,
+                                  }
                                 : undefined
                             }
                           />
                         </XDSGrid>
-                        <XDSTextInput
+                        <XDSSelector
                           size="lg"
-                          label="Name on Card"
-                          placeholder="John Doe"
-                          value={cardName}
-                          onChange={setCardName}
+                          label="State"
+                          placeholder="Select state"
+                          options={US_STATES}
+                          value={billingState}
+                          onChange={setBillingState}
                           status={
-                            errors.cardName
-                              ? {type: 'error', message: errors.cardName}
+                            errors.billingState
+                              ? {
+                                  type: 'error',
+                                  message: errors.billingState,
+                                }
                               : undefined
                           }
                         />
-                        <XDSCheckboxInput
-                          label="Use shipping address as billing address"
-                          value={billingMatchesShipping}
-                          onChange={setBillingMatchesShipping}
-                        />
-                        {!billingMatchesShipping && (
-                          <XDSVStack gap={3}>
-                            <XDSTextInput
-                              size="lg"
-                              label="Address"
-                              placeholder="123 Main Street"
-                              value={billingAddress}
-                              onChange={setBillingAddress}
-                              status={
-                                errors.billingAddress
-                                  ? {
-                                      type: 'error',
-                                      message: errors.billingAddress,
-                                    }
-                                  : undefined
-                              }
-                            />
-                            <XDSGrid columns={2} gap={3}>
-                              <XDSTextInput
-                                size="lg"
-                                label="City"
-                                placeholder="New York"
-                                value={billingCity}
-                                onChange={setBillingCity}
-                                status={
-                                  errors.billingCity
-                                    ? {
-                                        type: 'error',
-                                        message: errors.billingCity,
-                                      }
-                                    : undefined
-                                }
-                              />
-                              <XDSTextInput
-                                size="lg"
-                                label="ZIP Code"
-                                placeholder="10001"
-                                value={billingZip}
-                                onChange={setBillingZip}
-                                status={
-                                  errors.billingZip
-                                    ? {
-                                        type: 'error',
-                                        message: errors.billingZip,
-                                      }
-                                    : undefined
-                                }
-                              />
-                            </XDSGrid>
-                            <XDSSelector
-                              size="lg"
-                              label="State"
-                              placeholder="Select state"
-                              options={US_STATES}
-                              value={billingState}
-                              onChange={setBillingState}
-                              status={
-                                errors.billingState
-                                  ? {
-                                      type: 'error',
-                                      message: errors.billingState,
-                                    }
-                                  : undefined
-                              }
-                            />
-                          </XDSVStack>
-                        )}
                       </XDSVStack>
-                    </XDSVStack>
+                    )}
+                  </XDSVStack>
+                </XDSVStack>
 
-                    {/* Promo Code */}
+                {/* Promo Code */}
+                <XDSVStack gap={3}>
+                  <div {...stylex.props(styles.sectionTitle)}>Promo Code</div>
+                  <XDSHStack gap={2} vAlign="center">
+                    <XDSTextInput
+                      size="lg"
+                      label="Promo code"
+                      isLabelHidden
+                      placeholder="Enter promo code"
+                      value={promo}
+                      onChange={setPromo}
+                      xstyle={styles.fullWidth}
+                    />
+                    <XDSButton
+                      label="Apply"
+                      variant="secondary"
+                      size="lg"
+                      onClick={() => {}}
+                    />
+                  </XDSHStack>
+                </XDSVStack>
+
+                {/* Gift Options */}
+                <XDSVStack gap={3}>
+                  <div {...stylex.props(styles.sectionTitle)}>Gift Options</div>
+                  <XDSCheckboxInput
+                    label="Add a gift message"
+                    value={addGiftMessage}
+                    onChange={setAddGiftMessage}
+                  />
+                  {addGiftMessage && (
                     <XDSVStack gap={3}>
-                      <div {...stylex.props(styles.sectionTitle)}>
-                        Promo Code
-                      </div>
-                      <XDSHStack gap={2} vAlign="center">
+                      <XDSGrid columns={2} gap={3}>
                         <XDSTextInput
                           size="lg"
-                          label="Promo code"
+                          label="To"
                           isLabelHidden
-                          placeholder="Enter promo code"
-                          value={promo}
-                          onChange={setPromo}
-                          xstyle={styles.fullWidth}
+                          placeholder="To"
+                          value={giftTo}
+                          onChange={setGiftTo}
                         />
-                        <XDSButton
-                          label="Apply"
-                          variant="secondary"
+                        <XDSTextInput
                           size="lg"
-                          onClick={() => {}}
+                          label="From"
+                          isLabelHidden
+                          placeholder="From"
+                          value={giftFrom}
+                          onChange={setGiftFrom}
                         />
-                      </XDSHStack>
-                    </XDSVStack>
-
-                    {/* Gift Options */}
-                    <XDSVStack gap={3}>
-                      <div {...stylex.props(styles.sectionTitle)}>
-                        Gift Options
-                      </div>
-                      <XDSCheckboxInput
-                        label="Add a gift message"
-                        value={addGiftMessage}
-                        onChange={setAddGiftMessage}
+                      </XDSGrid>
+                      <XDSTextArea
+                        label="Gift message"
+                        isLabelHidden
+                        placeholder="Write something here"
+                        value={giftMessage}
+                        onChange={setGiftMessage}
                       />
-                      {addGiftMessage && (
-                        <XDSVStack gap={3}>
-                          <XDSGrid columns={2} gap={3}>
-                            <XDSTextInput
-                              size="lg"
-                              label="To"
-                              isLabelHidden
-                              placeholder="To"
-                              value={giftTo}
-                              onChange={setGiftTo}
-                            />
-                            <XDSTextInput
-                              size="lg"
-                              label="From"
-                              isLabelHidden
-                              placeholder="From"
-                              value={giftFrom}
-                              onChange={setGiftFrom}
-                            />
-                          </XDSGrid>
-                          <XDSTextArea
-                            label="Gift message"
-                            isLabelHidden
-                            placeholder="Write something here"
-                            value={giftMessage}
-                            onChange={setGiftMessage}
-                          />
-                        </XDSVStack>
-                      )}
                     </XDSVStack>
+                  )}
+                </XDSVStack>
 
-                    {/* Trust bar + CTAs + policy links */}
-                    <XDSVStack gap={4}>
-                      <div {...stylex.props(styles.trustBar)}>
-                        <XDSHStack gap={1} vAlign="center">
-                          <XDSIcon
-                            icon={ShieldCheckIcon}
-                            size="sm"
-                            color="secondary"
-                          />
-                          <XDSText type="supporting" color="secondary">
-                            Secure Payment
-                          </XDSText>
-                        </XDSHStack>
-                        <XDSHStack gap={1} vAlign="center">
-                          <XDSIcon
-                            icon={LockClosedIcon}
-                            size="sm"
-                            color="secondary"
-                          />
-                          <XDSText type="supporting" color="secondary">
-                            SSL Encrypted
-                          </XDSText>
-                        </XDSHStack>
-                        <XDSHStack gap={1} vAlign="center">
-                          <XDSIcon
-                            icon={CheckCircleIcon}
-                            size="sm"
-                            color="secondary"
-                          />
-                          <XDSText type="supporting" color="secondary">
-                            Free Returns
-                          </XDSText>
-                        </XDSHStack>
-                      </div>
-                      <XDSVStack gap={2}>
-                        <XDSButton
-                          label="Place Order"
-                          variant="primary"
-                          size="lg"
-                          xstyle={styles.fullWidth}
-                          onClick={() => setSubmitted(true)}
-                          endContent={
-                            <XDSIcon
-                              icon={ArrowRightIcon}
-                              size="sm"
-                              color="inherit"
-                            />
-                          }
+                {/* Trust bar + CTAs + policy links */}
+                <XDSVStack gap={4}>
+                  <div {...stylex.props(styles.trustBar)}>
+                    <XDSHStack gap={1} vAlign="center">
+                      <XDSIcon
+                        icon={ShieldCheckIcon}
+                        size="sm"
+                        color="secondary"
+                      />
+                      <XDSText type="supporting" color="secondary">
+                        Secure Payment
+                      </XDSText>
+                    </XDSHStack>
+                    <XDSHStack gap={1} vAlign="center">
+                      <XDSIcon
+                        icon={LockClosedIcon}
+                        size="sm"
+                        color="secondary"
+                      />
+                      <XDSText type="supporting" color="secondary">
+                        SSL Encrypted
+                      </XDSText>
+                    </XDSHStack>
+                    <XDSHStack gap={1} vAlign="center">
+                      <XDSIcon
+                        icon={CheckCircleIcon}
+                        size="sm"
+                        color="secondary"
+                      />
+                      <XDSText type="supporting" color="secondary">
+                        Free Returns
+                      </XDSText>
+                    </XDSHStack>
+                  </div>
+                  <XDSVStack gap={2}>
+                    <XDSButton
+                      label="Place Order"
+                      variant="primary"
+                      size="lg"
+                      xstyle={styles.fullWidth}
+                      onClick={() => setSubmitted(true)}
+                      endContent={
+                        <XDSIcon
+                          icon={ArrowRightIcon}
+                          size="sm"
+                          color="inherit"
                         />
-                        <XDSButton
-                          label="← Continue Shopping"
-                          variant="secondary"
-                          size="lg"
-                          xstyle={styles.fullWidth}
-                          onClick={() => {}}
-                        />
-                      </XDSVStack>
-                      <XDSDivider />
-                      <XDSHStack gap={4} vAlign="center">
-                        <XDSLink
-                          label="Refund policy"
-                          href="#"
-                          type="supporting">
-                          Refund policy
-                        </XDSLink>
-                        <XDSLink
-                          label="Privacy policy"
-                          href="#"
-                          type="supporting">
-                          Privacy policy
-                        </XDSLink>
-                        <XDSLink
-                          label="Terms of service"
-                          href="#"
-                          type="supporting">
-                          Terms of service
-                        </XDSLink>
-                        <XDSLink
-                          label="Cancellations"
-                          href="#"
-                          type="supporting">
-                          Cancellations
-                        </XDSLink>
-                      </XDSHStack>
-                    </XDSVStack>
+                      }
+                    />
+                    <XDSButton
+                      label="← Continue Shopping"
+                      variant="secondary"
+                      size="lg"
+                      xstyle={styles.fullWidth}
+                      onClick={() => {}}
+                    />
                   </XDSVStack>
-                </XDSStackItem>
+                  <XDSDivider />
+                  <XDSHStack gap={4} vAlign="center">
+                    <XDSLink label="Refund policy" href="#" type="supporting">
+                      Refund policy
+                    </XDSLink>
+                    <XDSLink label="Privacy policy" href="#" type="supporting">
+                      Privacy policy
+                    </XDSLink>
+                    <XDSLink
+                      label="Terms of service"
+                      href="#"
+                      type="supporting">
+                      Terms of service
+                    </XDSLink>
+                    <XDSLink label="Cancellations" href="#" type="supporting">
+                      Cancellations
+                    </XDSLink>
+                  </XDSHStack>
+                </XDSVStack>
+              </XDSVStack>
+            </XDSStackItem>
 
-                <XDSStackItem
-                  size="fill"
-                  className="pf-right"
-                  style={{
-                    position: 'sticky',
-                    top: 16,
-                    alignSelf: 'flex-start',
-                  }}>
-                  <XDSCard padding={5}>
+            <XDSStackItem
+              size="fill"
+              className="pf-right"
+              style={{
+                position: 'sticky',
+                top: 16,
+                alignSelf: 'flex-start',
+              }}>
+              <XDSCard padding={5}>
+                <XDSVStack gap={4}>
+                  {/* Accordion header — clickable on mobile only */}
+                  <button
+                    onClick={() => setOrderSummaryOpen(o => !o)}
+                    className="pf-summary-toggle"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      width: '100%',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      padding: 0,
+                    }}>
+                    <div {...stylex.props(styles.sectionTitle)}>
+                      Order Summary
+                    </div>
+                    <svg
+                      className="pf-summary-chevron"
+                      viewBox="0 0 24 24"
+                      style={{
+                        width: 20,
+                        height: 20,
+                        transition: 'transform 0.2s',
+                        transform: orderSummaryOpen
+                          ? 'rotate(180deg)'
+                          : 'rotate(0deg)',
+                      }}
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round">
+                      <path d="M6 9l6 6 6-6" />
+                    </svg>
+                  </button>
+
+                  {/* Collapsible content */}
+                  <div
+                    className={`pf-summary-content${orderSummaryOpen ? '' : ' pf-summary-closed'}`}>
                     <XDSVStack gap={4}>
-                      {/* Accordion header — clickable on mobile only */}
-                      <button
-                        onClick={() => setOrderSummaryOpen(o => !o)}
-                        className="pf-summary-toggle"
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          width: '100%',
-                          background: 'none',
-                          border: 'none',
-                          cursor: 'pointer',
-                          padding: 0,
-                        }}>
-                        <div {...stylex.props(styles.sectionTitle)}>
-                          Order Summary
-                        </div>
-                        <svg
-                          className="pf-summary-chevron"
-                          viewBox="0 0 24 24"
-                          style={{
-                            width: 20,
-                            height: 20,
-                            transition: 'transform 0.2s',
-                            transform: orderSummaryOpen
-                              ? 'rotate(180deg)'
-                              : 'rotate(0deg)',
-                          }}
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round">
-                          <path d="M6 9l6 6 6-6" />
-                        </svg>
-                      </button>
-
-                      {/* Collapsible content */}
-                      <div
-                        className={`pf-summary-content${orderSummaryOpen ? '' : ' pf-summary-closed'}`}>
-                        <XDSVStack gap={4}>
-                          {/* Line items */}
-                          {ORDER_ITEMS.map(item => (
-                            <XDSVStack key={item.id} gap={3}>
-                              <XDSHStack gap={3} vAlign="start">
-                                {/* Placeholder thumbnail */}
-                                <div {...stylex.props(styles.orderThumb)}>
-                                  <XDSAspectRatio ratio={1}>
-                                    <img
-                                      src={
-                                        (ITEM_IMAGES[item.id] as {src: string})
-                                          .src
-                                      }
-                                      alt={item.name}
-                                      style={{objectFit: 'cover'}}
-                                    />
-                                  </XDSAspectRatio>
-                                </div>
-                                <XDSStackItem size="fill">
-                                  <XDSVStack gap={1}>
-                                    <XDSHStack
-                                      gap={2}
-                                      hAlign="between"
-                                      vAlign="start">
-                                      <XDSHStack gap={2} vAlign="center">
-                                        <XDSText type="body" weight="medium">
-                                          {item.name}
-                                        </XDSText>
-                                        {item.limited && (
-                                          <XDSBadge
-                                            variant="green"
-                                            label="LIMITED EDITION"
-                                          />
-                                        )}
-                                      </XDSHStack>
-                                      <XDSText type="body" weight="bold">
-                                        {fmt(item.price)}
-                                      </XDSText>
-                                    </XDSHStack>
-                                    <XDSText
-                                      type="supporting"
-                                      color="secondary">
-                                      {item.variant}
+                      {/* Line items */}
+                      {ORDER_ITEMS.map(item => (
+                        <XDSVStack key={item.id} gap={3}>
+                          <XDSHStack gap={3} vAlign="start">
+                            {/* Placeholder thumbnail */}
+                            <div {...stylex.props(styles.orderThumb)}>
+                              <XDSAspectRatio ratio={1}>
+                                <img
+                                  src={
+                                    (ITEM_IMAGES[item.id] as {src: string}).src
+                                  }
+                                  alt={item.name}
+                                  style={{objectFit: 'cover'}}
+                                />
+                              </XDSAspectRatio>
+                            </div>
+                            <XDSStackItem size="fill">
+                              <XDSVStack gap={1}>
+                                <XDSHStack
+                                  gap={2}
+                                  hAlign="between"
+                                  vAlign="start">
+                                  <XDSHStack gap={2} vAlign="center">
+                                    <XDSText type="body" weight="medium">
+                                      {item.name}
                                     </XDSText>
-                                    <XDSHStack gap={2} vAlign="center">
-                                      <XDSNumberInput
-                                        label="Qty"
-                                        isLabelHidden
-                                        value={quantities[item.id] ?? item.qty}
-                                        onChange={v =>
-                                          setQuantities(q => ({
-                                            ...q,
-                                            [item.id]: v,
-                                          }))
-                                        }
-                                        min={1}
-                                        max={10}
-                                        isIntegerOnly
+                                    {item.limited && (
+                                      <XDSBadge
+                                        variant="green"
+                                        label="LIMITED EDITION"
                                       />
-                                      <XDSLink
-                                        label="Remove"
-                                        href="#"
-                                        type="supporting">
-                                        Remove
-                                      </XDSLink>
-                                      <XDSLink
-                                        label="Save"
-                                        href="#"
-                                        type="supporting">
-                                        Save
-                                      </XDSLink>
-                                    </XDSHStack>
-                                  </XDSVStack>
-                                </XDSStackItem>
-                              </XDSHStack>
-                              <XDSDivider />
-                            </XDSVStack>
-                          ))}
-
-                          {/* Order total subsection */}
-                          <XDSVStack gap={3}>
-                            <div {...stylex.props(styles.sectionTitle)}>
-                              Order Total
-                            </div>
-                            <XDSVStack gap={2}>
-                              <div {...stylex.props(styles.summaryRow)}>
-                                <XDSText type="body" color="secondary">
-                                  Subtotal
+                                    )}
+                                  </XDSHStack>
+                                  <XDSText type="body" weight="bold">
+                                    {fmt(item.price)}
+                                  </XDSText>
+                                </XDSHStack>
+                                <XDSText type="supporting" color="secondary">
+                                  {item.variant}
                                 </XDSText>
-                                <XDSText type="body">{fmt(SUBTOTAL)}</XDSText>
-                              </div>
-                              <div {...stylex.props(styles.summaryRow)}>
-                                <XDSText type="body" color="secondary">
-                                  Shipping
-                                </XDSText>
-                                <XDSText type="body">
-                                  {fmt(
-                                    deliveryMethod === 'expedited'
-                                      ? 9.95
-                                      : 4.95,
-                                  )}
-                                </XDSText>
-                              </div>
-                              <div {...stylex.props(styles.summaryRow)}>
-                                <XDSText type="body" color="secondary">
-                                  Tax
-                                </XDSText>
-                                <XDSText type="body">{fmt(TAX)}</XDSText>
-                              </div>
-                            </XDSVStack>
-                            <XDSDivider />
-                            <div {...stylex.props(styles.summaryRow)}>
-                              <XDSText type="large" weight="bold">
-                                Total
-                              </XDSText>
-                              <XDSText type="large" weight="bold">
-                                {fmt(
-                                  SUBTOTAL +
-                                    (deliveryMethod === 'expedited'
-                                      ? 9.95
-                                      : 4.95) +
-                                    TAX,
-                                )}
-                              </XDSText>
-                            </div>
-                            <div {...stylex.props(styles.freeBanner)}>
-                              <XDSIcon
-                                icon={TruckIcon}
-                                size="sm"
-                                color="primary"
-                              />
-                              <XDSText type="supporting">
-                                Free shipping on orders over $300
-                              </XDSText>
-                            </div>
-                          </XDSVStack>
+                                <XDSHStack gap={2} vAlign="center">
+                                  <XDSNumberInput
+                                    label="Qty"
+                                    isLabelHidden
+                                    value={quantities[item.id] ?? item.qty}
+                                    onChange={v =>
+                                      setQuantities(q => ({
+                                        ...q,
+                                        [item.id]: v,
+                                      }))
+                                    }
+                                    min={1}
+                                    max={10}
+                                    isIntegerOnly
+                                  />
+                                  <XDSLink
+                                    label="Remove"
+                                    href="#"
+                                    type="supporting">
+                                    Remove
+                                  </XDSLink>
+                                  <XDSLink
+                                    label="Save"
+                                    href="#"
+                                    type="supporting">
+                                    Save
+                                  </XDSLink>
+                                </XDSHStack>
+                              </XDSVStack>
+                            </XDSStackItem>
+                          </XDSHStack>
+                          <XDSDivider />
                         </XDSVStack>
-                        {/* end collapsible XDSVStack gap={4} */}
-                      </div>
-                      {/* end pf-summary-content */}
+                      ))}
+
+                      {/* Order total subsection */}
+                      <XDSVStack gap={3}>
+                        <div {...stylex.props(styles.sectionTitle)}>
+                          Order Total
+                        </div>
+                        <XDSVStack gap={2}>
+                          <div {...stylex.props(styles.summaryRow)}>
+                            <XDSText type="body" color="secondary">
+                              Subtotal
+                            </XDSText>
+                            <XDSText type="body">{fmt(SUBTOTAL)}</XDSText>
+                          </div>
+                          <div {...stylex.props(styles.summaryRow)}>
+                            <XDSText type="body" color="secondary">
+                              Shipping
+                            </XDSText>
+                            <XDSText type="body">
+                              {fmt(
+                                deliveryMethod === 'expedited' ? 9.95 : 4.95,
+                              )}
+                            </XDSText>
+                          </div>
+                          <div {...stylex.props(styles.summaryRow)}>
+                            <XDSText type="body" color="secondary">
+                              Tax
+                            </XDSText>
+                            <XDSText type="body">{fmt(TAX)}</XDSText>
+                          </div>
+                        </XDSVStack>
+                        <XDSDivider />
+                        <div {...stylex.props(styles.summaryRow)}>
+                          <XDSText type="large" weight="bold">
+                            Total
+                          </XDSText>
+                          <XDSText type="large" weight="bold">
+                            {fmt(
+                              SUBTOTAL +
+                                (deliveryMethod === 'expedited' ? 9.95 : 4.95) +
+                                TAX,
+                            )}
+                          </XDSText>
+                        </div>
+                        <div {...stylex.props(styles.freeBanner)}>
+                          <XDSIcon icon={TruckIcon} size="sm" color="primary" />
+                          <XDSText type="supporting">
+                            Free shipping on orders over $300
+                          </XDSText>
+                        </div>
+                      </XDSVStack>
                     </XDSVStack>
-                    {/* end outer card XDSVStack gap={4} */}
-                  </XDSCard>
-                </XDSStackItem>
-              </XDSHStack>
-            </XDSVStack>
-          </XDSLayoutContent>
-        }
-      />
+                    {/* end collapsible XDSVStack gap={4} */}
+                  </div>
+                  {/* end pf-summary-content */}
+                </XDSVStack>
+                {/* end outer card XDSVStack gap={4} */}
+              </XDSCard>
+            </XDSStackItem>
+          </XDSHStack>
+        </XDSVStack>
+      </div>
     </XDSAppShell>
   );
 }
