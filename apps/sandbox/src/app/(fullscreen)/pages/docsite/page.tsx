@@ -565,6 +565,7 @@ function TemplateCard({
   isGenerating,
   onMoreLikeThis: _onMoreLikeThis,
   onUse,
+  onPreview,
   simulation,
   cardSize: _cardSize = 'medium',
 }: {
@@ -575,6 +576,7 @@ function TemplateCard({
   isGenerating: boolean;
   onMoreLikeThis?: () => void;
   onUse: () => void;
+  onPreview: () => void;
   simulation: BoidsSimulation;
   cardSize?: 'xlarge' | 'large' | 'medium' | 'small';
 }) {
@@ -610,7 +612,7 @@ function TemplateCard({
         }}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
-        onClick={onUse}>
+        onClick={onPreview}>
         {/* Image layer — always present */}
         <img
           src={src}
@@ -1211,7 +1213,6 @@ export default function DetailPage() {
 
 const VIEWPORT_WIDTHS: Record<string, number | '100%'> = {
   desktop: 1600,
-  tablet: 768,
   phone: 375,
 };
 
@@ -1305,12 +1306,6 @@ function TemplatePreview({
                   label="Desktop"
                   isLabelHidden
                   icon={<DesktopIcon />}
-                />
-                <XDSSegmentedControlItem
-                  value="tablet"
-                  label="Tablet"
-                  isLabelHidden
-                  icon={<TabletIcon />}
                 />
                 <XDSSegmentedControlItem
                   value="phone"
@@ -1535,7 +1530,9 @@ function TemplatePreview({
                   flex: 1,
                   aspectRatio: '1920 / 1200',
                   border: '1px solid var(--color-divider, rgba(0,0,0,0.1))',
+                  backgroundColor: '#fff',
                   borderRadius: 12,
+                  boxShadow: '0 8px 40px rgba(0,0,0,0.12)',
                   overflow: 'hidden',
                 }}>
                 <img
@@ -1836,7 +1833,7 @@ function AppTopNav({
         }}>
         <div style={{textAlign: 'center'}}>
           <div style={{paddingBottom: 4}}>
-            <XDSText type="display-3" color="secondary">
+            <XDSText type="display-3" color="primary">
               Explore the possibilities.
             </XDSText>
           </div>
@@ -2161,6 +2158,162 @@ function DocsView({
   const [inputsExpanded, setInputsExpanded] = useState(true);
   const [showCode, setShowCode] = useState(true);
   const [activeRightNav, setActiveRightNav] = useState('usage');
+  const [selectedComponent, setSelectedComponent] = useState<string | null>(
+    null,
+  );
+
+  const COMPONENT_CATEGORIES = [
+    {
+      label: 'Inputs',
+      items: [
+        {key: 'button', name: 'Button', desc: 'Triggers actions and events'},
+        {
+          key: 'checkbox',
+          name: 'Checkbox',
+          desc: 'Select multiple options',
+        },
+        {
+          key: 'radio',
+          name: 'Radio',
+          desc: 'Select one option from a group',
+        },
+        {
+          key: 'select',
+          name: 'Select',
+          desc: 'Choose from a dropdown list',
+        },
+        {
+          key: 'switch',
+          name: 'Switch',
+          desc: 'Toggle a setting on or off',
+        },
+        {
+          key: 'text-input',
+          name: 'TextInput',
+          desc: 'Single-line text entry',
+        },
+        {
+          key: 'slider',
+          name: 'Slider',
+          desc: 'Select a value from a range',
+        },
+      ],
+    },
+    {
+      label: 'Layout',
+      items: [
+        {
+          key: 'card',
+          name: 'Card',
+          desc: 'Container for grouped content',
+        },
+        {
+          key: 'divider',
+          name: 'Divider',
+          desc: 'Separate content sections',
+        },
+        {
+          key: 'stack',
+          name: 'Stack',
+          desc: 'Arrange items in a row or column',
+        },
+        {
+          key: 'container',
+          name: 'Container',
+          desc: 'Constrain content width',
+        },
+      ],
+    },
+    {
+      label: 'Navigation',
+      items: [
+        {
+          key: 'tab',
+          name: 'Tab',
+          desc: 'Switch between content views',
+        },
+        {
+          key: 'breadcrumb',
+          name: 'Breadcrumb',
+          desc: 'Show navigation hierarchy',
+        },
+        {
+          key: 'pagination',
+          name: 'Pagination',
+          desc: 'Navigate between pages',
+        },
+        {
+          key: 'top-nav-menu',
+          name: 'TopNavMenu',
+          desc: 'App-level navigation bar',
+        },
+      ],
+    },
+    {
+      label: 'Data Display',
+      items: [
+        {
+          key: 'table',
+          name: 'Table',
+          desc: 'Display structured data in rows',
+        },
+        {key: 'badge', name: 'Badge', desc: 'Show counts or status'},
+        {key: 'token', name: 'Token', desc: 'Display compact metadata'},
+        {
+          key: 'avatar',
+          name: 'Avatar',
+          desc: 'Represent a person or entity',
+        },
+        {
+          key: 'progress-bar',
+          name: 'ProgressBar',
+          desc: 'Show task completion',
+        },
+      ],
+    },
+    {
+      label: 'Feedback',
+      items: [
+        {
+          key: 'banner',
+          name: 'Banner',
+          desc: 'Show important messages',
+        },
+        {key: 'dialog', name: 'Dialog', desc: 'Require user action'},
+        {
+          key: 'toast',
+          name: 'Toast',
+          desc: 'Temporary notifications',
+        },
+        {
+          key: 'tooltip',
+          name: 'Tooltip',
+          desc: 'Show contextual hints',
+        },
+      ],
+    },
+    {
+      label: 'Content',
+      items: [
+        {key: 'text', name: 'Text', desc: 'Display body text'},
+        {
+          key: 'heading',
+          name: 'Heading',
+          desc: 'Section and page titles',
+        },
+        {
+          key: 'code-block',
+          name: 'CodeBlock',
+          desc: 'Display formatted code',
+        },
+        {
+          key: 'accordion',
+          name: 'Accordion',
+          desc: 'Expandable content sections',
+        },
+      ],
+    },
+  ];
 
   return (
     <div
@@ -2176,7 +2329,6 @@ function DocsView({
           width: 240,
           minWidth: 240,
           height: '100vh',
-          borderRight: '1px solid var(--color-divider, rgba(0,0,0,0.1))',
           display: 'flex',
           flexDirection: 'column' as const,
           backgroundColor: 'var(--color-background-surface, #ffffff)',
@@ -2210,6 +2362,11 @@ function DocsView({
 
         {/* Nav */}
         <nav style={{flex: 1, overflowY: 'auto' as const, paddingBottom: 16}}>
+          <NavItem
+            label="Overview"
+            isActive={selectedComponent === null}
+            onClick={() => setSelectedComponent(null)}
+          />
           <NavItem
             label="Getting started"
             isActive={activeNav === 'getting-started'}
@@ -2293,226 +2450,292 @@ function DocsView({
           overflowY: 'auto' as const,
           padding: '32px 40px',
         }}>
-        <div style={{maxWidth: 840}}>
-          {/* Title */}
-          <h1
-            style={{
-              fontSize: 48,
-              fontWeight: 700,
-              margin: 0,
-              letterSpacing: '-0.02em',
-              color: 'var(--color-text-primary, #0a1317)',
-              lineHeight: 1.1,
-            }}>
-            Button
-          </h1>
-
-          {/* Date line */}
-          <p
-            style={{
-              fontSize: 14,
-              color: 'var(--color-text-secondary, #6b7785)',
-              margin: '8px 0 32px',
-            }}>
-            March 30, 2026 · Updated 5:40 p.m. PST
-          </p>
-
-          {/* Live Preview Panel */}
-          <div
-            style={{
-              border: '1px solid var(--color-divider, rgba(0,0,0,0.1))',
-              borderRadius: 12,
-              overflow: 'hidden',
-              marginBottom: 40,
-            }}>
-            {/* Preview Header Bar */}
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '8px 12px',
-                borderBottom:
-                  '1px solid var(--color-divider, rgba(0,0,0,0.08))',
-                backgroundColor: 'var(--color-background-surface, #ffffff)',
-              }}>
-              <span
-                style={{
-                  fontSize: 13,
-                  fontWeight: 600,
-                  color: 'var(--color-text-secondary, #6b7785)',
-                }}>
-                Live preview
-              </span>
-              <div style={{display: 'flex', alignItems: 'center', gap: 4}}>
-                <XDSButton
-                  label="Open in Craft"
-                  variant="ghost"
-                  size="sm"
-                  icon={<ExternalLinkIcon />}
-                />
-                <XDSDropdownMenu
-                  button={{
-                    label: 'Variant',
-                    variant: 'ghost',
-                    size: 'sm',
-                  }}
-                  hasChevron
-                  items={[
-                    {label: 'Primary', onClick: () => {}},
-                    {label: 'Secondary', onClick: () => {}},
-                    {label: 'Ghost', onClick: () => {}},
-                  ]}
-                />
-                <XDSDropdownMenu
-                  button={{
-                    label: 'Light',
-                    variant: 'ghost',
-                    size: 'sm',
-                  }}
-                  hasChevron
-                  items={[
-                    {label: 'Light', onClick: () => {}},
-                    {label: 'Dark', onClick: () => {}},
-                  ]}
-                />
-                <XDSButton
-                  label="Toggle code"
-                  variant={showCode ? 'secondary' : 'ghost'}
-                  size="sm"
-                  icon={<CodeIcon />}
-                  onClick={() => setShowCode(!showCode)}
-                />
-                <XDSButton
-                  label="Fullscreen"
-                  variant="ghost"
-                  size="sm"
-                  icon={<FullscreenIcon />}
-                />
+        {selectedComponent === null ? (
+          <div style={{maxWidth: 1200, margin: '0 auto'}}>
+            {/* Page header */}
+            <div style={{marginBottom: 40}}>
+              <XDSHeading level={1}>Components</XDSHeading>
+              <div style={{marginTop: 8}}>
+                <XDSText type="body" color="secondary">
+                  Build consistent, accessible UIs with XDS components.
+                </XDSText>
               </div>
             </div>
 
-            {/* Preview + Code Split */}
-            <div
-              style={{
-                display: 'flex',
-                minHeight: 280,
-              }}>
-              {/* Preview Area */}
-              <div
-                style={{
-                  flex: 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backgroundColor: 'var(--color-background-body, #f5f6f7)',
-                  padding: 32,
-                }}>
-                <XDSButton
-                  label="Button"
-                  variant="primary"
-                  icon={<PlusIcon />}
-                  endContent={<XDSBadge label="New" variant="info" />}>
-                  Button
-                </XDSButton>
-              </div>
-
-              {/* Code Panel */}
-              {showCode && (
+            {/* Category sections */}
+            {COMPONENT_CATEGORIES.map(category => (
+              <div key={category.label} style={{marginBottom: 40}}>
+                <div style={{marginBottom: 16}}>
+                  <XDSHeading level={2}>{category.label}</XDSHeading>
+                </div>
                 <div
                   style={{
-                    width: 360,
-                    backgroundColor: '#282c34',
-                    padding: '20px 0',
-                    overflowX: 'auto' as const,
-                    borderLeft:
-                      '1px solid var(--color-divider, rgba(0,0,0,0.1))',
+                    display: 'grid',
+                    gridTemplateColumns:
+                      'repeat(auto-fill, minmax(260px, 1fr))',
+                    gap: 16,
                   }}>
-                  <pre
-                    style={{
-                      margin: 0,
-                      fontFamily:
-                        '"SF Mono", "Roboto Mono", "Fira Code", monospace',
-                      fontSize: 13,
-                      lineHeight: '22px',
-                    }}>
-                    {BUTTON_CODE_LINES.map((line, i) => (
-                      <div
-                        key={i}
-                        style={{
-                          display: 'flex',
-                          paddingLeft: 20,
-                          paddingRight: 20,
-                        }}>
-                        <span
-                          style={{
-                            width: 32,
-                            textAlign: 'right' as const,
-                            color: '#636d83',
-                            marginRight: 16,
-                            userSelect: 'none' as const,
-                            flexShrink: 0,
-                          }}>
-                          {i + 1}
-                        </span>
-                        <span>
-                          {line.spans.map((s, j) => (
-                            <span key={j} style={{color: s.color}}>
-                              {s.text}
-                            </span>
-                          ))}
-                        </span>
+                  {category.items.map(item => (
+                    <XDSCard
+                      key={item.key}
+                      onClick={() => {
+                        setSelectedComponent(item.key);
+                        setActiveNav(item.key);
+                      }}>
+                      {/* Card body */}
+                      <div style={{padding: '12px 16px 16px'}}>
+                        <XDSHeading level={4}>{item.name}</XDSHeading>
+                        <div style={{marginTop: 4}}>
+                          <XDSText
+                            type="supporting"
+                            color="secondary"
+                            maxLines={2}>
+                            {item.desc}
+                          </XDSText>
+                        </div>
                       </div>
-                    ))}
-                  </pre>
+                    </XDSCard>
+                  ))}
                 </div>
-              )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <>
+            <div style={{marginBottom: 16}}>
+              <XDSButton
+                label="Back to library"
+                variant="ghost"
+                size="sm"
+                icon={<ArrowLeftIcon />}
+                onClick={() => setSelectedComponent(null)}
+              />
             </div>
-          </div>
+            <div style={{maxWidth: 840}}>
+              {/* Title */}
+              <h1
+                style={{
+                  fontSize: 48,
+                  fontWeight: 700,
+                  margin: 0,
+                  letterSpacing: '-0.02em',
+                  color: 'var(--color-text-primary, #0a1317)',
+                  lineHeight: 1.1,
+                }}>
+                Button
+              </h1>
 
-          {/* Documentation Content */}
-          <div style={{marginBottom: 32}}>
-            <XDSHeading level={2}>
-              A button initiates an instantaneous action.
-            </XDSHeading>
-          </div>
+              {/* Date line */}
+              <p
+                style={{
+                  fontSize: 14,
+                  color: 'var(--color-text-secondary, #6b7785)',
+                  margin: '8px 0 32px',
+                }}>
+                March 30, 2026 · Updated 5:40 p.m. PST
+              </p>
 
-          <div style={{marginBottom: 32}}>
-            <XDSText type="body">
-              Buttons are clickable elements used to trigger actions. They
-              communicate calls to action to the user and allow users to
-              interact with pages in a variety of ways. Button labels express
-              what action will occur when the user interacts with it. Buttons
-              can contain a combination of a clear label and an icon, while
-              standalone icon buttons are reserved for recurring, universally
-              understood actions.
-            </XDSText>
-          </div>
+              {/* Live Preview Panel */}
+              <div
+                style={{
+                  border: '1px solid var(--color-divider, rgba(0,0,0,0.1))',
+                  backgroundColor: '#fff',
+                  borderRadius: 12,
+                  boxShadow: '0 8px 40px rgba(0,0,0,0.12)',
+                  overflow: 'hidden',
+                  marginBottom: 40,
+                }}>
+                {/* Preview Header Bar */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '8px 12px',
+                    borderBottom:
+                      '1px solid var(--color-divider, rgba(0,0,0,0.08))',
+                    backgroundColor: 'var(--color-background-surface, #ffffff)',
+                  }}>
+                  <span
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 600,
+                      color: 'var(--color-text-secondary, #6b7785)',
+                    }}>
+                    Live preview
+                  </span>
+                  <div style={{display: 'flex', alignItems: 'center', gap: 4}}>
+                    <XDSButton
+                      label="Open in Craft"
+                      variant="ghost"
+                      size="sm"
+                      icon={<ExternalLinkIcon />}
+                    />
+                    <XDSDropdownMenu
+                      button={{
+                        label: 'Variant',
+                        variant: 'ghost',
+                        size: 'sm',
+                      }}
+                      hasChevron
+                      items={[
+                        {label: 'Primary', onClick: () => {}},
+                        {label: 'Secondary', onClick: () => {}},
+                        {label: 'Ghost', onClick: () => {}},
+                      ]}
+                    />
+                    <XDSDropdownMenu
+                      button={{
+                        label: 'Light',
+                        variant: 'ghost',
+                        size: 'sm',
+                      }}
+                      hasChevron
+                      items={[
+                        {label: 'Light', onClick: () => {}},
+                        {label: 'Dark', onClick: () => {}},
+                      ]}
+                    />
+                    <XDSButton
+                      label="Toggle code"
+                      variant={showCode ? 'secondary' : 'ghost'}
+                      size="sm"
+                      icon={<CodeIcon />}
+                      onClick={() => setShowCode(!showCode)}
+                    />
+                    <XDSButton
+                      label="Fullscreen"
+                      variant="ghost"
+                      size="sm"
+                      icon={<FullscreenIcon />}
+                    />
+                  </div>
+                </div>
 
-          <div style={{marginBottom: 16}}>
-            <XDSHeading level={3}>When to use</XDSHeading>
-          </div>
+                {/* Preview + Code Split */}
+                <div
+                  style={{
+                    display: 'flex',
+                    minHeight: 280,
+                  }}>
+                  {/* Preview Area */}
+                  <div
+                    style={{
+                      flex: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: 'var(--color-background-body, #f5f6f7)',
+                      padding: 32,
+                    }}>
+                    <XDSButton
+                      label="Button"
+                      variant="primary"
+                      icon={<PlusIcon />}
+                      endContent={<XDSBadge label="New" variant="info" />}>
+                      Button
+                    </XDSButton>
+                  </div>
 
-          <ul
-            style={{
-              margin: 0,
-              padding: '0 0 0 20px',
-              color: 'var(--color-text-primary, #0a1317)',
-              fontSize: 15,
-              lineHeight: 1.7,
-            }}>
-            <li>Triggering form submissions or confirming a dialog</li>
-            <li>Navigating to a new page or view within the application</li>
-            <li>
-              Starting a new process or workflow (e.g., &quot;Create new&quot;)
-            </li>
-            <li>Toggling a UI element or performing an inline action</li>
-            <li>
-              Performing destructive actions such as deleting items — use the
-              danger variant for these
-            </li>
-          </ul>
-        </div>
+                  {/* Code Panel */}
+                  {showCode && (
+                    <div
+                      style={{
+                        width: 360,
+                        backgroundColor: '#282c34',
+                        padding: '20px 0',
+                        overflowX: 'auto' as const,
+                        borderLeft:
+                          '1px solid var(--color-divider, rgba(0,0,0,0.1))',
+                      }}>
+                      <pre
+                        style={{
+                          margin: 0,
+                          fontFamily:
+                            '"SF Mono", "Roboto Mono", "Fira Code", monospace',
+                          fontSize: 13,
+                          lineHeight: '22px',
+                        }}>
+                        {BUTTON_CODE_LINES.map((line, i) => (
+                          <div
+                            key={i}
+                            style={{
+                              display: 'flex',
+                              paddingLeft: 20,
+                              paddingRight: 20,
+                            }}>
+                            <span
+                              style={{
+                                width: 32,
+                                textAlign: 'right' as const,
+                                color: '#636d83',
+                                marginRight: 16,
+                                userSelect: 'none' as const,
+                                flexShrink: 0,
+                              }}>
+                              {i + 1}
+                            </span>
+                            <span>
+                              {line.spans.map((s, j) => (
+                                <span key={j} style={{color: s.color}}>
+                                  {s.text}
+                                </span>
+                              ))}
+                            </span>
+                          </div>
+                        ))}
+                      </pre>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Documentation Content */}
+              <div style={{marginBottom: 32}}>
+                <XDSHeading level={2}>
+                  A button initiates an instantaneous action.
+                </XDSHeading>
+              </div>
+
+              <div style={{marginBottom: 32}}>
+                <XDSText type="body">
+                  Buttons are clickable elements used to trigger actions. They
+                  communicate calls to action to the user and allow users to
+                  interact with pages in a variety of ways. Button labels
+                  express what action will occur when the user interacts with
+                  it. Buttons can contain a combination of a clear label and an
+                  icon, while standalone icon buttons are reserved for
+                  recurring, universally understood actions.
+                </XDSText>
+              </div>
+
+              <div style={{marginBottom: 16}}>
+                <XDSHeading level={3}>When to use</XDSHeading>
+              </div>
+
+              <ul
+                style={{
+                  margin: 0,
+                  padding: '0 0 0 20px',
+                  color: 'var(--color-text-primary, #0a1317)',
+                  fontSize: 15,
+                  lineHeight: 1.7,
+                }}>
+                <li>Triggering form submissions or confirming a dialog</li>
+                <li>Navigating to a new page or view within the application</li>
+                <li>
+                  Starting a new process or workflow (e.g., &quot;Create
+                  new&quot;)
+                </li>
+                <li>Toggling a UI element or performing an inline action</li>
+                <li>
+                  Performing destructive actions such as deleting items — use
+                  the danger variant for these
+                </li>
+              </ul>
+            </div>
+          </>
+        )}
       </main>
 
       {/* RIGHT SIDEBAR */}
@@ -2986,6 +3209,711 @@ function ProfileView({
 }
 
 // ---------------------------------------------------------------------------
+// TemplateFullPreview — full-page preview (like Squarespace template demos)
+// ---------------------------------------------------------------------------
+
+const PREVIEW_COLOR_PALETTES = [
+  {name: 'Warm', colors: ['#2D2926', '#D4A574', '#F5E6D3', '#FFFFFF']},
+  {name: 'Cool', colors: ['#1B2838', '#4A90D9', '#B8D4E3', '#F0F4F8']},
+  {name: 'Earth', colors: ['#3D2B1F', '#8B6914', '#C4A35A', '#F5F0E1']},
+  {name: 'Mono', colors: ['#111111', '#555555', '#AAAAAA', '#F5F5F5']},
+];
+
+const PREVIEW_FONT_PACKS = [
+  {heading: 'Georgia', paragraph: 'Helvetica Neue'},
+  {heading: 'Playfair Display', paragraph: 'Source Sans Pro'},
+  {heading: 'Montserrat', paragraph: 'Merriweather'},
+  {heading: 'Futura', paragraph: 'Garamond'},
+];
+
+function TemplateFullPreview({
+  templateName,
+  imageSrc,
+  onBack,
+  onUse,
+}: {
+  templateName: string;
+  imageSrc: string;
+  onBack: () => void;
+  onUse: () => void;
+}) {
+  const [viewMode, setViewMode] = useState<'desktop' | 'mobile'>('desktop');
+  const [selectedPalette, setSelectedPalette] = useState<string | null>(
+    PREVIEW_COLOR_PALETTES[0].name,
+  );
+  const [selectedFontPack, setSelectedFontPack] = useState<string | null>(
+    PREVIEW_FONT_PACKS[0].heading,
+  );
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => setIsVisible(true));
+    });
+  }, []);
+
+  return (
+    <div style={{display: 'flex', height: '100vh', overflow: 'hidden'}}>
+      {/* LEFT PANEL — preview area */}
+      <div
+        style={{
+          flex: 1,
+          minWidth: 0,
+          backgroundColor: '#f5f5f5',
+          display: 'flex',
+          flexDirection: 'column' as const,
+          opacity: isVisible ? 1 : 0,
+          transform: isVisible ? 'translateX(0)' : 'translateX(40px)',
+          transition:
+            'opacity 500ms cubic-bezier(0.16, 1, 0.3, 1), transform 500ms cubic-bezier(0.16, 1, 0.3, 1)',
+        }}>
+        {/* Top bar */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr auto 1fr',
+            alignItems: 'center',
+            padding: '12px 24px',
+          }}>
+          <div style={{justifySelf: 'start'}}>
+            <XDSButton
+              label="Templates"
+              variant="ghost"
+              size="sm"
+              icon={<ArrowLeftIcon />}
+              onClick={onBack}
+            />
+          </div>
+          <XDSSegmentedControl
+            value={viewMode}
+            onChange={(v: string) => setViewMode(v as 'desktop' | 'mobile')}
+            label="Viewport size"
+            size="sm">
+            <XDSSegmentedControlItem
+              value="desktop"
+              label="Desktop"
+              isLabelHidden
+              icon={<DesktopIcon />}
+            />
+            <XDSSegmentedControlItem
+              value="mobile"
+              label="Mobile"
+              isLabelHidden
+              icon={<PhoneIcon />}
+            />
+          </XDSSegmentedControl>
+          <div />
+        </div>
+
+        {/* Browser frame with template image */}
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column' as const,
+            alignItems: 'center',
+            padding: '24px 24px 24px',
+            overflow: 'auto',
+            position: 'relative',
+          }}>
+          <div
+            style={{
+              width: viewMode === 'mobile' ? 375 : '100%',
+              maxWidth: viewMode === 'mobile' ? 375 : 1200,
+              aspectRatio: viewMode === 'mobile' ? '9 / 19.5' : '16 / 10',
+              backgroundColor: '#fff',
+              borderRadius: viewMode === 'mobile' ? 36 : 12,
+              border: viewMode === 'mobile' ? '10px solid #fff' : 'none',
+              boxShadow:
+                viewMode === 'mobile'
+                  ? '0 8px 40px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.06)'
+                  : '0 8px 40px rgba(0,0,0,0.12)',
+              overflow: 'hidden',
+              transition:
+                'width 0.3s ease, aspect-ratio 0.3s ease, border-radius 0.3s ease',
+            }}>
+            {/* Device chrome */}
+            {viewMode === 'desktop' ? (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '10px 14px',
+                  backgroundColor: '#fff',
+                  borderBottom: '1px solid #f0f0f0',
+                }}>
+                <div style={{display: 'flex', gap: 6, alignItems: 'center'}}>
+                  <div
+                    style={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: '50%',
+                      backgroundColor: '#e0e0e0',
+                    }}
+                  />
+                  <div
+                    style={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: '50%',
+                      backgroundColor: '#e0e0e0',
+                    }}
+                  />
+                  <div
+                    style={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: '50%',
+                      backgroundColor: '#e0e0e0',
+                    }}
+                  />
+                </div>
+              </div>
+            ) : null}
+            <img
+              src={imageSrc}
+              alt={templateName}
+              style={{
+                width: '100%',
+                display: 'block',
+              }}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* RIGHT PANEL — details sidebar */}
+      <div
+        style={{
+          width: '30%',
+          maxWidth: 380,
+          minWidth: 300,
+          backgroundColor: '#fff',
+          borderLeft: '1px solid #e0e0e0',
+          padding: 40,
+          overflowY: 'auto' as const,
+          display: 'flex',
+          flexDirection: 'column' as const,
+          gap: 32,
+          opacity: isVisible ? 1 : 0,
+          transform: isVisible ? 'translateX(0)' : 'translateX(60px)',
+          transition:
+            'opacity 500ms cubic-bezier(0.16, 1, 0.3, 1) 100ms, transform 500ms cubic-bezier(0.16, 1, 0.3, 1) 100ms',
+        }}>
+        {/* Template name & description */}
+        <div>
+          <XDSHeading level={1}>{templateName}</XDSHeading>
+          <div style={{marginTop: 4}}>
+            <XDSText type="body" color="secondary">
+              Continue to customize styles, add features, and more when you
+              start a trial.
+            </XDSText>
+          </div>
+        </div>
+
+        {/* CTA button */}
+        <XDSButton
+          variant="primary"
+          label="Start with this design"
+          onClick={onUse}
+          size="lg"
+          style={{width: '100%'}}
+        />
+
+        {/* Color palettes */}
+        <div>
+          <XDSHeading level={4}>Color palettes</XDSHeading>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: 10,
+              marginTop: 4,
+            }}>
+            {PREVIEW_COLOR_PALETTES.map(palette => (
+              <div
+                key={palette.name}
+                onClick={() => setSelectedPalette(palette.name)}
+                style={{
+                  cursor: 'pointer',
+                  border: `2px solid ${selectedPalette === palette.name ? 'var(--color-accent, #0066FF)' : 'transparent'}`,
+                  borderRadius: 14,
+                  overflow: 'hidden',
+                  transition: 'border-color 0.15s ease',
+                }}>
+                <XDSCard padding={0}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      overflow: 'hidden',
+                      height: 48,
+                    }}>
+                    {palette.colors.map((color, i) => (
+                      <div
+                        key={i}
+                        style={{
+                          flex: 1,
+                          backgroundColor: color,
+                        }}
+                      />
+                    ))}
+                  </div>
+                </XDSCard>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Font packs */}
+        <div>
+          <XDSHeading level={4}>Font packs</XDSHeading>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: 10,
+              marginTop: 4,
+            }}>
+            {PREVIEW_FONT_PACKS.map(pack => (
+              <div
+                key={pack.heading}
+                onClick={() => setSelectedFontPack(pack.heading)}
+                style={{
+                  cursor: 'pointer',
+                  border: `2px solid ${selectedFontPack === pack.heading ? 'var(--color-accent, #0066FF)' : 'transparent'}`,
+                  borderRadius: 14,
+                  overflow: 'hidden',
+                  transition: 'border-color 0.15s ease',
+                }}>
+                <XDSCard padding={2}>
+                  <div
+                    style={{
+                      fontFamily: pack.heading,
+                      marginBottom: 4,
+                    }}>
+                    <XDSText type="body" weight="bold">
+                      Heading
+                    </XDSText>
+                  </div>
+                  <div style={{fontFamily: pack.paragraph}}>
+                    <XDSText type="supporting" color="secondary">
+                      Paragraph text
+                    </XDSText>
+                  </div>
+                </XDSCard>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// TemplateCombinedView — preview + customization + chat in one view
+// ---------------------------------------------------------------------------
+
+function TemplateCombinedView({
+  templateName,
+  imageSrc,
+  onBack,
+  isGenerating: _isGenerating,
+  simulation: _simulation,
+}: {
+  templateName: string;
+  imageSrc: string;
+  onBack: () => void;
+  isGenerating: boolean;
+  simulation: BoidsSimulation;
+}) {
+  const [viewMode, setViewMode] = useState<'desktop' | 'mobile'>('desktop');
+  const [selectedPalette, setSelectedPalette] = useState<string | null>(
+    PREVIEW_COLOR_PALETTES[0].name,
+  );
+  const [selectedFontPack, setSelectedFontPack] = useState<string | null>(
+    PREVIEW_FONT_PACKS[0].heading,
+  );
+  const [isVisible, setIsVisible] = useState(false);
+  const [chatPrompt, setChatPrompt] = useState('');
+  const [rightPanelTab, setRightPanelTab] = useState('properties');
+
+  useEffect(() => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => setIsVisible(true));
+    });
+  }, []);
+
+  return (
+    <div style={{display: 'flex', height: '100vh', overflow: 'hidden'}}>
+      {/* LEFT PANEL — preview area (~70%) */}
+      <div
+        style={{
+          flex: 7,
+          minWidth: 0,
+          backgroundColor: '#f5f5f5',
+          display: 'flex',
+          flexDirection: 'column' as const,
+          opacity: isVisible ? 1 : 0,
+          transform: isVisible ? 'translateX(0)' : 'translateX(40px)',
+          transition:
+            'opacity 500ms cubic-bezier(0.16, 1, 0.3, 1), transform 500ms cubic-bezier(0.16, 1, 0.3, 1)',
+        }}>
+        {/* Top bar */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr auto 1fr',
+            alignItems: 'center',
+            padding: '12px 24px',
+          }}>
+          <div style={{justifySelf: 'start'}}>
+            <XDSButton
+              label="Templates"
+              variant="ghost"
+              size="sm"
+              icon={<ArrowLeftIcon />}
+              onClick={onBack}
+            />
+          </div>
+          <XDSSegmentedControl
+            value={viewMode}
+            onChange={(v: string) => setViewMode(v as 'desktop' | 'mobile')}
+            label="Viewport size"
+            size="sm">
+            <XDSSegmentedControlItem
+              value="desktop"
+              label="Desktop"
+              isLabelHidden
+              icon={<DesktopIcon />}
+            />
+            <XDSSegmentedControlItem
+              value="mobile"
+              label="Mobile"
+              isLabelHidden
+              icon={<PhoneIcon />}
+            />
+          </XDSSegmentedControl>
+          <div style={{justifySelf: 'end'}}>
+            <XDSDropdownMenu
+              button={{label: 'Share', variant: 'ghost', size: 'sm'}}
+              hasChevron={false}
+              menuWidth={220}
+              items={[
+                {
+                  label: 'Copy CLI Command...',
+                  icon: TerminalIcon,
+                  onClick: () => {},
+                },
+                {type: 'divider' as const},
+                {label: 'Claude Code', icon: ClaudeIcon, onClick: () => {}},
+                {label: 'VSCode', icon: VSCodeIcon, onClick: () => {}},
+                {label: 'Cursor', icon: CursorAIIcon, onClick: () => {}},
+              ]}
+            />
+          </div>
+        </div>
+
+        {/* Browser frame with template image */}
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column' as const,
+            alignItems: 'center',
+            padding: '24px 24px 24px',
+            overflow: 'auto',
+            position: 'relative',
+          }}>
+          <div
+            style={{
+              width: viewMode === 'mobile' ? 375 : '100%',
+              maxWidth: viewMode === 'mobile' ? 375 : 1200,
+              aspectRatio: viewMode === 'mobile' ? '9 / 19.5' : '16 / 10',
+              backgroundColor: '#fff',
+              borderRadius: viewMode === 'mobile' ? 36 : 12,
+              border: viewMode === 'mobile' ? '10px solid #fff' : 'none',
+              boxShadow:
+                viewMode === 'mobile'
+                  ? '0 8px 40px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.06)'
+                  : '0 8px 40px rgba(0,0,0,0.12)',
+              overflow: 'hidden',
+              transition:
+                'width 0.3s ease, aspect-ratio 0.3s ease, border-radius 0.3s ease',
+            }}>
+            {/* Device chrome */}
+            {viewMode === 'desktop' ? (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '10px 14px',
+                  backgroundColor: '#fff',
+                  borderBottom: '1px solid #f0f0f0',
+                }}>
+                <div style={{display: 'flex', gap: 6, alignItems: 'center'}}>
+                  <div
+                    style={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: '50%',
+                      backgroundColor: '#e0e0e0',
+                    }}
+                  />
+                  <div
+                    style={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: '50%',
+                      backgroundColor: '#e0e0e0',
+                    }}
+                  />
+                  <div
+                    style={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: '50%',
+                      backgroundColor: '#e0e0e0',
+                    }}
+                  />
+                </div>
+              </div>
+            ) : null}
+            <img
+              src={imageSrc}
+              alt={templateName}
+              style={{
+                width: '100%',
+                display: 'block',
+              }}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* RIGHT SIDEBAR (~30%, max 380px) */}
+      <div
+        style={{
+          flex: 3,
+          maxWidth: 380,
+          minWidth: 300,
+          backgroundColor: '#fff',
+          borderLeft: '1px solid #e0e0e0',
+          display: 'flex',
+          flexDirection: 'column' as const,
+          opacity: isVisible ? 1 : 0,
+          transform: isVisible ? 'translateX(0)' : 'translateX(60px)',
+          transition:
+            'opacity 500ms cubic-bezier(0.16, 1, 0.3, 1) 100ms, transform 500ms cubic-bezier(0.16, 1, 0.3, 1) 100ms',
+        }}>
+        {/* Tab navigation */}
+        <div style={{padding: '0 24px', flexShrink: 0}}>
+          <XDSTabList
+            value={rightPanelTab}
+            onChange={setRightPanelTab}
+            size="sm"
+            hasDivider>
+            <XDSTab value="properties" label="Properties" />
+            <XDSTab value="chat" label="Chat" />
+          </XDSTabList>
+        </div>
+
+        {/* Scrollable content area */}
+        <div
+          style={{
+            flex: 1,
+            overflowY: 'auto' as const,
+            padding: '24px 24px 16px',
+            display: 'flex',
+            flexDirection: 'column' as const,
+            gap: 24,
+          }}>
+          {rightPanelTab === 'properties' ? (
+            <>
+              {/* Section 1 — Template info */}
+              <div>
+                <XDSHeading level={2}>{templateName}</XDSHeading>
+                <div style={{marginTop: 4}}>
+                  <XDSText type="body" color="secondary">
+                    Continue to customize styles, add features, and more when
+                    you start a trial.
+                  </XDSText>
+                </div>
+              </div>
+
+              {/* Section 2 — Color palettes */}
+              <div>
+                <XDSHeading level={4}>Color palettes</XDSHeading>
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gap: 10,
+                    marginTop: 4,
+                  }}>
+                  {PREVIEW_COLOR_PALETTES.map(palette => (
+                    <div
+                      key={palette.name}
+                      onClick={() => setSelectedPalette(palette.name)}
+                      style={{
+                        cursor: 'pointer',
+                        border: `2px solid ${selectedPalette === palette.name ? 'var(--color-accent, #0066FF)' : 'transparent'}`,
+                        borderRadius: 14,
+                        overflow: 'hidden',
+                        transition: 'border-color 0.15s ease',
+                      }}>
+                      <XDSCard padding={0}>
+                        <div
+                          style={{
+                            display: 'flex',
+                            overflow: 'hidden',
+                            height: 48,
+                          }}>
+                          {palette.colors.map((color, i) => (
+                            <div
+                              key={i}
+                              style={{
+                                flex: 1,
+                                backgroundColor: color,
+                              }}
+                            />
+                          ))}
+                        </div>
+                      </XDSCard>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Section 3 — Font packs */}
+              <div>
+                <XDSHeading level={4}>Font packs</XDSHeading>
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gap: 10,
+                    marginTop: 4,
+                  }}>
+                  {PREVIEW_FONT_PACKS.map(pack => (
+                    <div
+                      key={pack.heading}
+                      onClick={() => setSelectedFontPack(pack.heading)}
+                      style={{
+                        cursor: 'pointer',
+                        border: `2px solid ${selectedFontPack === pack.heading ? 'var(--color-accent, #0066FF)' : 'transparent'}`,
+                        borderRadius: 14,
+                        overflow: 'hidden',
+                        transition: 'border-color 0.15s ease',
+                      }}>
+                      <XDSCard padding={2}>
+                        <div
+                          style={{
+                            fontFamily: pack.heading,
+                            marginBottom: 4,
+                          }}>
+                          <XDSText type="body" weight="bold">
+                            Heading
+                          </XDSText>
+                        </div>
+                        <div style={{fontFamily: pack.paragraph}}>
+                          <XDSText type="supporting" color="secondary">
+                            Paragraph text
+                          </XDSText>
+                        </div>
+                      </XDSCard>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Chat welcome message */}
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column' as const,
+                  gap: 12,
+                  flex: 1,
+                }}>
+                <div
+                  style={{
+                    backgroundColor: '#f5f5f5',
+                    borderRadius: 16,
+                    padding: '12px 16px',
+                    maxWidth: '85%',
+                  }}>
+                  <XDSText type="body">
+                    Hi! I can help you customize this template. Try asking me to
+                    change colors, layout, or content.
+                  </XDSText>
+                </div>
+              </div>
+
+              {/* AI chat composer */}
+              <div style={{marginTop: 'auto'}}>
+                <div
+                  style={{
+                    borderRadius: 16,
+                    backgroundColor: 'var(--color-background-card, white)',
+                    border: '1px solid var(--color-divider, #e0e0e0)',
+                    boxShadow:
+                      'var(--shadow-medium, 0 2px 8px rgba(0,0,0,0.08))',
+                    padding: 8,
+                    display: 'flex',
+                    flexDirection: 'column' as const,
+                    gap: 4,
+                  }}>
+                  <div
+                    style={{display: 'flex', alignItems: 'center', padding: 8}}>
+                    <input
+                      style={{
+                        flex: 1,
+                        border: 'none',
+                        outline: 'none',
+                        backgroundColor: 'transparent',
+                        fontFamily: 'inherit',
+                        fontSize: 14,
+                      }}
+                      placeholder="Describe your changes..."
+                      value={chatPrompt}
+                      onChange={e => setChatPrompt(e.target.value)}
+                    />
+                  </div>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      width: '100%',
+                      paddingInlineStart: 4,
+                    }}>
+                    <XDSButton
+                      label="Attach"
+                      variant="ghost"
+                      size="sm"
+                      icon={<PlusIcon />}
+                    />
+                    <XDSButton
+                      label="Send"
+                      variant="primary"
+                      size="sm"
+                      icon={<SendIcon />}
+                      style={{borderRadius: 9999}}
+                    />
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
 
@@ -2999,6 +3927,7 @@ export default function DocsiteLandingTemplate() {
   const [generatingSource, setGeneratingSource] = useState<number | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
   const [useTarget, setUseTarget] = useState<number | null>(null);
+  const [previewTarget, setPreviewTarget] = useState<number | null>(null);
   const [previewGenerating, setPreviewGenerating] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const previewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -3058,13 +3987,19 @@ export default function DocsiteLandingTemplate() {
   );
 
   const handleUse = useCallback((index: number) => {
+    setPreviewTarget(null);
     setUseTarget(index);
     setChatOpen(true);
   }, []);
 
   const handleBackFromUse = useCallback(() => {
     setUseTarget(null);
+    setPreviewTarget(null);
     setChatOpen(false);
+  }, []);
+
+  const handlePreview = useCallback((index: number) => {
+    setPreviewTarget(index);
   }, []);
 
   const handlePreviewSend = useCallback(() => {
@@ -3084,6 +4019,65 @@ export default function DocsiteLandingTemplate() {
   }, []);
 
   const isGenerating = generatingSource !== null;
+
+  // Combined view: only for the 2nd card (index 1, Shopping Details)
+  if ((previewTarget === 1 || useTarget === 1) && activeView === 'craft') {
+    const t = TEMPLATES[1];
+    return (
+      <TemplateCombinedView
+        templateName={t.name}
+        imageSrc={t.src}
+        onBack={handleBackFromUse}
+        isGenerating={previewGenerating}
+        simulation={simRef.current!}
+      />
+    );
+  }
+
+  // Preview flow for all other cards
+  if (previewTarget !== null && useTarget === null && activeView === 'craft') {
+    const t = TEMPLATES[previewTarget % TEMPLATES.length];
+    return (
+      <TemplateFullPreview
+        templateName={t.name}
+        imageSrc={t.src}
+        onBack={() => {
+          setPreviewTarget(null);
+        }}
+        onUse={() => {
+          setUseTarget(previewTarget);
+          setPreviewTarget(null);
+        }}
+      />
+    );
+  }
+
+  // Editor flow for cards that went through preview → customize
+  if (useTarget !== null && useTarget !== 1 && activeView === 'craft') {
+    const t = TEMPLATES[useTarget % TEMPLATES.length];
+    return (
+      <div style={{display: 'flex', height: '100vh', overflow: 'hidden'}}>
+        <div style={{width: 380, minWidth: 380}}>
+          <ChatPanel
+            isGenerating={previewGenerating}
+            onSend={handlePreviewSend}
+            activeView={activeView}
+            setActiveView={setActiveView}
+          />
+        </div>
+        <div
+          style={{flex: 1, display: 'flex', flexDirection: 'column' as const}}>
+          <TemplatePreview
+            templateName={t.name}
+            imageSrc={t.src}
+            onBack={handleBackFromUse}
+            isGenerating={previewGenerating}
+            simulation={simRef.current!}
+          />
+        </div>
+      </div>
+    );
+  }
 
   if (activeView === 'library') {
     return <DocsView activeView={activeView} setActiveView={setActiveView} />;
@@ -3246,6 +4240,7 @@ export default function DocsiteLandingTemplate() {
                         }
                         onMoreLikeThis={() => handleMoreLikeThis(i)}
                         onUse={() => handleUse(i)}
+                        onPreview={() => handlePreview(i)}
                         simulation={simRef.current!}
                       />
                     </div>
