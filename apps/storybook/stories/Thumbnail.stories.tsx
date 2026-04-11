@@ -29,16 +29,22 @@ const meta: Meta<typeof XDSThumbnail> = {
 export default meta;
 type Story = StoryObj<typeof XDSThumbnail>;
 
+// Deterministic test images — no random seeds
+const DARK_IMAGE = 'https://images.unsplash.com/photo-1507400492013-162706c8c05e?w=200&h=200&fit=crop'; // dark night sky
+const LIGHT_IMAGE = 'https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=200&h=200&fit=crop'; // light clouds
+const MIXED_IMAGE = 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=200&h=200&fit=crop'; // landscape, light sky / dark ground
+const WARM_IMAGE = 'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=200&h=200&fit=crop'; // warm sunset
+
 export const Default: Story = {
   args: {
-    src: 'https://picsum.photos/200',
+    src: LIGHT_IMAGE,
     alt: 'Sample image',
   },
 };
 
 export const WithLabel: Story = {
   args: {
-    src: 'https://picsum.photos/200',
+    src: WARM_IMAGE,
     alt: 'Vacation photo',
     label: 'vacation.jpg',
   },
@@ -50,7 +56,7 @@ export const WithRemove: Story = {
     if (!visible) return <p style={{color: '#888', fontSize: 12}}>Removed. <button onClick={() => setVisible(true)}>Undo</button></p>;
     return (
       <XDSThumbnail
-        src="https://picsum.photos/200"
+        src={LIGHT_IMAGE}
         alt="Removable thumbnail"
         label="photo.png"
         onRemove={() => setVisible(false)}
@@ -65,7 +71,7 @@ export const WithCaption: Story = {
     if (!visible) return <p style={{color: '#888', fontSize: 12}}>Removed. <button onClick={() => setVisible(true)}>Undo</button></p>;
     return (
       <XDSThumbnail
-        src="https://picsum.photos/200"
+        src={WARM_IMAGE}
         alt="Photo with metadata"
         label="screenshot.png"
         caption="2.4 MB"
@@ -77,7 +83,7 @@ export const WithCaption: Story = {
 
 export const Clickable: Story = {
   args: {
-    src: 'https://picsum.photos/200',
+    src: MIXED_IMAGE,
     alt: 'Clickable thumbnail',
     onClick: () => alert('Clicked!'),
     label: 'preview.jpg',
@@ -95,7 +101,7 @@ export const Loading: Story = {
 export const Uploading: Story = {
   name: 'Uploading (with preview)',
   args: {
-    src: 'https://picsum.photos/200',
+    src: WARM_IMAGE,
     alt: 'Uploading preview',
     isLoading: true,
     label: 'vacation.jpg',
@@ -119,7 +125,7 @@ export const Placeholder: Story = {
 
 export const Disabled: Story = {
   args: {
-    src: 'https://picsum.photos/200',
+    src: LIGHT_IMAGE,
     alt: 'Disabled thumbnail',
     label: 'locked.jpg',
     onRemove: () => {},
@@ -127,13 +133,49 @@ export const Disabled: Story = {
   },
 };
 
+export const MediaModeTest: Story = {
+  name: 'Media Mode (dark vs light images)',
+  render: function MediaModeStory() {
+    const images = [
+      {src: DARK_IMAGE, label: 'dark-sky.jpg', alt: 'Dark night sky'},
+      {src: LIGHT_IMAGE, label: 'clouds.jpg', alt: 'Light clouds'},
+      {src: MIXED_IMAGE, label: 'landscape.jpg', alt: 'Mixed landscape'},
+      {src: WARM_IMAGE, label: 'sunset.jpg', alt: 'Warm sunset'},
+    ];
+    const [items, setItems] = useState(images);
+    return (
+      <div>
+        <p style={{fontSize: 12, color: '#888', marginBottom: 8}}>
+          Remove buttons should adapt: light icon on dark images, dark icon on light images.
+        </p>
+        <div style={{display: 'flex', gap: 8, alignItems: 'flex-start'}}>
+          {items.map(item => (
+            <XDSThumbnail
+              key={item.label}
+              src={item.src}
+              alt={item.alt}
+              label={item.label}
+              onRemove={() => setItems(prev => prev.filter(i => i.label !== item.label))}
+            />
+          ))}
+          {items.length === 0 && (
+            <p style={{color: '#888', fontSize: 12}}>
+              All removed. <button onClick={() => setItems(images)}>Reset</button>
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  },
+};
+
 export const Gallery: Story = {
   render: function GalleryStory() {
     const initial = [
-      {id: 1, src: 'https://picsum.photos/200?random=1', label: 'img_001.jpg'},
-      {id: 2, src: 'https://picsum.photos/200?random=2', label: 'img_002.jpg'},
+      {id: 1, src: DARK_IMAGE, label: 'night.jpg'},
+      {id: 2, src: LIGHT_IMAGE, label: 'clouds.jpg'},
       {id: 3, src: undefined as string | undefined, label: 'notes.pdf', caption: '340 KB'},
-      {id: 4, src: 'https://picsum.photos/200?random=3', label: 'img_003.jpg'},
+      {id: 4, src: WARM_IMAGE, label: 'sunset.jpg'},
     ];
     const [items, setItems] = useState(initial);
     return (
