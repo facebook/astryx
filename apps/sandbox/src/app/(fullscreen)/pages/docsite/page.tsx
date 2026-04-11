@@ -19,6 +19,7 @@ import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSToken} from '@xds/core/Token';
 import {XDSToolbar} from '@xds/core/Toolbar';
 import {XDSTooltip} from '@xds/core/Tooltip';
+import {XDSList, XDSListItem} from '@xds/core/List';
 import {createStaticSource} from '@xds/core/Typeahead';
 
 // ---------------------------------------------------------------------------
@@ -583,11 +584,10 @@ function BoidsCanvas({
 // Template data — real images from /public/templates/
 // ---------------------------------------------------------------------------
 
-const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
-const DUMMY_IMAGE = `${basePath}/templates/dummy-placeholder.png`;
-const FIRST_CARD_IMAGE = `${basePath}/templates/first-card.png`;
-const SHOPPING_DETAILS_IMAGE = `${basePath}/templates/shopping-details.png`;
-const SCREENSHOT_3_IMAGE = `${basePath}/templates/screenshot-3.png`;
+const DUMMY_IMAGE = '/templates/dummy-placeholder.png';
+const FIRST_CARD_IMAGE = '/templates/first-card.png';
+const SHOPPING_DETAILS_IMAGE = '/templates/shopping-details.png';
+const SCREENSHOT_3_IMAGE = '/templates/screenshot-3.png';
 
 const TEMPLATE_IMAGES = [DUMMY_IMAGE, DUMMY_IMAGE, DUMMY_IMAGE, DUMMY_IMAGE];
 
@@ -698,7 +698,6 @@ function TemplateCard({
                   size: 'sm',
                   icon: <MoreIcon />,
                   style: {color: '#fff'},
-                  isIconOnly: true,
                 }}
                 hasChevron={false}
                 items={[
@@ -857,7 +856,6 @@ function AIComposer() {
                 variant="ghost"
                 size="sm"
                 icon={<PlusIcon />}
-                isIconOnly
               />
               <XDSButton
                 label="Send"
@@ -865,7 +863,6 @@ function AIComposer() {
                 size="sm"
                 icon={<SendIcon />}
                 style={{borderRadius: 9999}}
-                isIconOnly
               />
             </div>
           </div>
@@ -935,8 +932,8 @@ function ChatPanel({
 }: {
   isGenerating: boolean;
   onSend?: () => void;
-  activeView: 'craft' | 'docs' | 'explore' | 'profile';
-  setActiveView: (view: 'craft' | 'docs' | 'explore' | 'profile') => void;
+  activeView: 'craft' | 'library' | 'learn' | 'profile';
+  setActiveView: (view: 'craft' | 'library' | 'learn' | 'profile') => void;
 }) {
   const [prompt, setPrompt] = useState('');
 
@@ -964,7 +961,6 @@ function ChatPanel({
               variant: 'ghost',
               size: 'sm',
               icon: <HamburgerIcon />,
-              isIconOnly: true,
             }}
             hasChevron={false}
             items={[
@@ -974,14 +970,14 @@ function ChatPanel({
                 onClick: () => setActiveView('craft'),
               },
               {
-                label: 'Explore',
-                icon: activeView === 'explore' ? CheckIcon : undefined,
-                onClick: () => setActiveView('explore'),
+                label: 'Library',
+                icon: activeView === 'library' ? CheckIcon : undefined,
+                onClick: () => setActiveView('library'),
               },
               {
-                label: 'Docs',
-                icon: activeView === 'docs' ? CheckIcon : undefined,
-                onClick: () => setActiveView('docs'),
+                label: 'Learn',
+                icon: activeView === 'learn' ? CheckIcon : undefined,
+                onClick: () => setActiveView('learn'),
               },
             ]}
           />
@@ -1012,9 +1008,9 @@ function ChatPanel({
           variant="ghost"
           size="sm"
           icon={<SidebarIcon />}
-          isIconOnly
         />
       </div>
+
       {/* Chat thread */}
       <div style={{flex: 1, padding: 16, overflow: 'auto'}}>
         {/* User message */}
@@ -1048,6 +1044,7 @@ function ChatPanel({
           <ShimmerText isActive={isGenerating} />
         </div>
       </div>
+
       {/* Composer pinned to bottom */}
       <div style={{padding: 12}}>
         <div
@@ -1103,7 +1100,6 @@ function ChatPanel({
               variant="ghost"
               size="sm"
               icon={<PlusIcon />}
-              isIconOnly
             />
             <XDSButton
               label="Send"
@@ -1112,7 +1108,6 @@ function ChatPanel({
               icon={<SendIcon />}
               style={{borderRadius: 9999}}
               onClick={onSend}
-              isIconOnly
             />
           </div>
         </div>
@@ -1161,6 +1156,20 @@ const PaletteIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <circle cx="10.5" cy="7.5" r="1.5" fill="currentColor" stroke="none" />
     <circle cx="14.5" cy="7.5" r="1.5" fill="currentColor" stroke="none" />
     <circle cx="17.5" cy="11.5" r="1.5" fill="currentColor" stroke="none" />
+  </svg>
+);
+
+const ContrastIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}>
+    <circle cx="12" cy="12" r="10" />
+    <path d="M12 2a10 10 0 0 1 0 20z" fill="currentColor" />
   </svg>
 );
 
@@ -1362,27 +1371,53 @@ function TemplatePreview({
               <>
                 <XDSButton
                   label="Back"
-                  variant="secondary"
+                  variant="ghost"
                   size="sm"
                   icon={<ArrowLeftIcon />}
                   onClick={onBack}
                   style={{marginLeft: -8}}
-                  isIconOnly
                 />
-                <XDSTooltip content="Point" placement="below">
-                  <XDSButton
-                    label="Point"
-                    variant="ghost"
-                    icon={<CursorIcon />}
-                    isIconOnly
-                  />
-                </XDSTooltip>
+                <XDSText>{templateName}</XDSText>
+              </>
+            }
+            centerContent={
+              <XDSSegmentedControl
+                value={viewportSize}
+                onChange={setViewportSize}
+                label="Viewport size"
+                size="sm">
+                <XDSSegmentedControlItem
+                  value="desktop"
+                  label="Desktop"
+                  isLabelHidden
+                  icon={<DesktopIcon />}
+                />
+                <XDSSegmentedControlItem
+                  value="tablet"
+                  label="Tablet"
+                  isLabelHidden
+                  icon={<TabletIcon />}
+                />
+                <XDSSegmentedControlItem
+                  value="phone"
+                  label="Phone"
+                  isLabelHidden
+                  icon={<PhoneIcon />}
+                />
+              </XDSSegmentedControl>
+            }
+            endContent={
+              <>
+                <XDSButton
+                  label="Point"
+                  variant="ghost"
+                  icon={<CursorIcon />}
+                />
                 <XDSDropdownMenu
                   button={{
                     label: 'Theme',
                     variant: 'ghost',
                     icon: <PaletteIcon />,
-                    isIconOnly: true,
                   }}
                   hasChevron={false}
                   items={XDS_THEMES.map(t => ({
@@ -1390,50 +1425,28 @@ function TemplatePreview({
                     onClick: () => {},
                   }))}
                 />
-                <XDSSegmentedControl
-                  value={viewportSize}
-                  onChange={setViewportSize}
-                  label="Viewport size"
-                  size="sm">
-                  <XDSSegmentedControlItem
-                    value="desktop"
-                    label="Desktop"
-                    isLabelHidden
-                    icon={<DesktopIcon />}
-                  />
-                  <XDSSegmentedControlItem
-                    value="tablet"
-                    label="Tablet"
-                    isLabelHidden
-                    icon={<TabletIcon />}
-                  />
-                  <XDSSegmentedControlItem
-                    value="phone"
-                    label="Phone"
-                    isLabelHidden
-                    icon={<PhoneIcon />}
-                  />
-                </XDSSegmentedControl>
+                <XDSButton
+                  label="Toggle theme"
+                  variant="ghost"
+                  icon={<ContrastIcon />}
+                />
+                <XDSDropdownMenu
+                  button={{label: 'Share', variant: 'ghost'}}
+                  hasChevron={false}
+                  menuWidth={220}
+                  items={[
+                    {
+                      label: 'Copy CLI Command...',
+                      icon: TerminalIcon,
+                      onClick: () => {},
+                    },
+                    {type: 'divider' as const},
+                    {label: 'Claude Code', icon: ClaudeIcon, onClick: () => {}},
+                    {label: 'VSCode', icon: VSCodeIcon, onClick: () => {}},
+                    {label: 'Cursor', icon: CursorAIIcon, onClick: () => {}},
+                  ]}
+                />
               </>
-            }
-            centerContent={<XDSButton label={templateName} variant="ghost" />}
-            endContent={
-              <XDSDropdownMenu
-                button={{label: 'Use in...', variant: 'ghost'}}
-                hasChevron={false}
-                menuWidth={220}
-                items={[
-                  {
-                    label: 'Copy CLI Command...',
-                    icon: TerminalIcon,
-                    onClick: () => {},
-                  },
-                  {type: 'divider' as const},
-                  {label: 'Claude Code', icon: ClaudeIcon, onClick: () => {}},
-                  {label: 'VSCode', icon: VSCodeIcon, onClick: () => {}},
-                  {label: 'Cursor', icon: CursorAIIcon, onClick: () => {}},
-                ]}
-              />
             }
           />
 
@@ -1764,10 +1777,10 @@ const XDS_LOGO_PLAIN = (
   </svg>
 );
 
-const NAV_ITEMS: Array<{key: 'craft' | 'explore' | 'docs'; label: string}> = [
+const NAV_ITEMS: Array<{key: 'craft' | 'library' | 'learn'; label: string}> = [
   {key: 'craft', label: 'Craft'},
-  {key: 'explore', label: 'Explore'},
-  {key: 'docs', label: 'Docs'},
+  {key: 'library', label: 'Library'},
+  {key: 'learn', label: 'Learn'},
 ];
 
 function LogoNav({
@@ -1775,8 +1788,8 @@ function LogoNav({
   setActiveView,
   logo,
 }: {
-  activeView: 'craft' | 'docs' | 'explore' | 'profile';
-  setActiveView: (view: 'craft' | 'docs' | 'explore' | 'profile') => void;
+  activeView: 'craft' | 'library' | 'learn' | 'profile';
+  setActiveView: (view: 'craft' | 'library' | 'learn' | 'profile') => void;
   logo?: React.ReactNode;
 }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -1790,7 +1803,7 @@ function LogoNav({
         setIsOpen(false);
         setHoveredItem(null);
       }}>
-      <div style={{cursor: 'pointer'}}>{logo || XDS_LOGO_SVG}</div>
+      <div style={{cursor: 'pointer'}}>{logo || XDS_LOGO_PLAIN}</div>
       {isOpen && (
         <div
           style={{
@@ -1805,7 +1818,7 @@ function LogoNav({
             zIndex: 100,
           }}>
           <div style={{marginBottom: 12, paddingLeft: 8, paddingRight: 8}}>
-            {logo || XDS_LOGO_SVG}
+            {logo || XDS_LOGO_PLAIN}
           </div>
           <div
             style={{display: 'flex', flexDirection: 'column' as const, gap: 2}}>
@@ -1846,14 +1859,16 @@ function AppTopNav({
   activeView,
   setActiveView,
 }: {
-  activeView: 'craft' | 'docs' | 'explore' | 'profile';
-  setActiveView: (view: 'craft' | 'docs' | 'explore' | 'profile') => void;
+  activeView: 'craft' | 'library' | 'learn' | 'profile';
+  setActiveView: (view: 'craft' | 'library' | 'learn' | 'profile') => void;
 }) {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('newest');
+  const [activeTab, setActiveTab] = useState('all');
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   return (
     <>
+      {/* Top nav bar */}
       <nav
         style={{
           display: 'flex',
@@ -1862,22 +1877,16 @@ function AppTopNav({
           height: 48,
           padding: '0 16px',
           backgroundColor: 'var(--color-background-surface, white)',
+          position: 'sticky',
+          top: 0,
+          zIndex: 11,
         }}>
         {/* Left: logo nav */}
         <div style={{display: 'flex', alignItems: 'center', gap: 8, flex: 1}}>
           <LogoNav activeView={activeView} setActiveView={setActiveView} />
         </div>
 
-        {/* Center: tabs */}
-        <div style={{display: 'flex', alignItems: 'center', gap: 0}}>
-          <XDSTabList value={activeTab} onChange={setActiveTab} size="sm">
-            <XDSTab value="newest" label="Newest" />
-            <XDSTab value="templates" label="Templates" />
-            <XDSTab value="theme" label="Theme" />
-          </XDSTabList>
-        </div>
-
-        {/* Right: filter + search */}
+        {/* Right: search + profile */}
         <div
           style={{
             display: 'flex',
@@ -1887,19 +1896,11 @@ function AppTopNav({
             justifyContent: 'flex-end',
           }}>
           <XDSButton
-            label="Filter"
-            variant="ghost"
-            size="sm"
-            icon={<FilterIcon />}
-            isIconOnly
-          />
-          <XDSButton
             label="Search"
             variant="ghost"
             size="sm"
             icon={<SearchIcon />}
             onClick={() => setIsSearchOpen(true)}
-            isIconOnly
           />
           <XDSButton
             label="Profile"
@@ -1907,10 +1908,135 @@ function AppTopNav({
             size="sm"
             icon={<ProfileIcon />}
             onClick={() => setActiveView('profile')}
-            isIconOnly
           />
         </div>
       </nav>
+
+      {/* Hero section */}
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          padding: '16px 16px 32px',
+        }}>
+        <div style={{textAlign: 'center'}}>
+          <div style={{paddingBottom: 4}}>
+            <XDSText type="display-3" color="secondary">
+              Explore the possibilities.
+            </XDSText>
+          </div>
+          <XDSText type="display-2">Craft what you imagine.</XDSText>
+        </div>
+      </div>
+
+      {/* Tabs row with filter icon on the right */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr auto 1fr',
+          alignItems: 'center',
+          padding: '0 16px 8px',
+          position: 'sticky',
+          top: 48,
+          zIndex: 10,
+          backgroundColor: 'var(--color-background-card, white)',
+        }}>
+        <div />
+        <XDSTabList value={activeTab} onChange={setActiveTab} size="sm">
+          <XDSTab value="all" label="All" />
+          <XDSTab value="templates" label="Templates" />
+          <XDSTab value="theme" label="Theme" />
+          <XDSTab value="components" label="Components" />
+        </XDSTabList>
+        <div style={{justifySelf: 'end'}}>
+          <XDSButton
+            label="Filter"
+            variant="ghost"
+            size="sm"
+            icon={<FilterIcon />}
+            onClick={() => setIsFilterOpen(!isFilterOpen)}
+          />
+        </div>
+      </div>
+
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: isFilterOpen
+            ? '1fr 1fr 1fr 1fr'
+            : '1fr 1fr 1fr 1fr',
+          gap: isFilterOpen ? 24 : 0,
+          padding: isFilterOpen ? '24px 40px' : '0 40px',
+          maxHeight: isFilterOpen ? 400 : 0,
+          overflow: 'hidden',
+          opacity: isFilterOpen ? 1 : 0,
+          transition:
+            'max-height var(--duration-medium, 410ms) var(--ease-standard, cubic-bezier(0.24, 1, 0.4, 1)), opacity var(--duration-fast, 175ms) var(--ease-standard, cubic-bezier(0.24, 1, 0.4, 1)), padding var(--duration-medium, 410ms) var(--ease-standard, cubic-bezier(0.24, 1, 0.4, 1)), gap var(--duration-medium, 410ms) var(--ease-standard, cubic-bezier(0.24, 1, 0.4, 1))',
+        }}>
+        {[
+          {
+            heading: 'Categories',
+            items: [
+              'AI',
+              'Health & Fitness',
+              'Productivity',
+              'Shopping',
+              'Education',
+            ],
+          },
+          {
+            heading: 'Screens',
+            items: [
+              'My Account & Profile',
+              'Charts',
+              'Login',
+              'Filter & Sort',
+              'Signup',
+            ],
+          },
+          {
+            heading: 'UI Elements',
+            items: [
+              'Dropdown Menu',
+              'Side Navigation',
+              'Stepper',
+              'Text Field',
+              'Navigation Menu',
+            ],
+          },
+          {
+            heading: 'Flows',
+            items: [
+              'Reporting',
+              'Resetting Password',
+              'Onboarding',
+              'Setting Up',
+              'Filtering & Sorting',
+            ],
+          },
+        ].map(col => (
+          <div key={col.heading}>
+            <XDSText
+              type="supporting"
+              color="secondary"
+              style={{
+                marginBottom: 12,
+                display: 'block',
+              }}>
+              {col.heading}
+            </XDSText>
+            <div style={{marginLeft: -8, marginRight: -8}}>
+              <XDSList density="compact">
+                {col.items.map(item => (
+                  <XDSListItem key={item} label={item} onClick={() => {}} />
+                ))}
+              </XDSList>
+            </div>
+          </div>
+        ))}
+      </div>
+
       <XDSCommandPalette
         isOpen={isSearchOpen}
         onOpenChange={setIsSearchOpen}
@@ -2114,8 +2240,8 @@ function DocsView({
   activeView,
   setActiveView,
 }: {
-  activeView: 'craft' | 'docs' | 'explore' | 'profile';
-  setActiveView: (v: 'craft' | 'docs' | 'explore' | 'profile') => void;
+  activeView: 'craft' | 'library' | 'learn' | 'profile';
+  setActiveView: (v: 'craft' | 'library' | 'learn' | 'profile') => void;
 }) {
   const [activeNav, setActiveNav] = useState('button');
   const [inputsExpanded, setInputsExpanded] = useState(true);
@@ -2165,7 +2291,6 @@ function DocsView({
             variant="ghost"
             size="sm"
             icon={<SidebarCollapseIcon />}
-            isIconOnly
           />
         </div>
 
@@ -2246,6 +2371,7 @@ function DocsView({
           )}
         </nav>
       </aside>
+
       {/* MAIN CONTENT */}
       <main
         style={{
@@ -2310,7 +2436,6 @@ function DocsView({
                   variant="ghost"
                   size="sm"
                   icon={<ExternalLinkIcon />}
-                  isIconOnly
                 />
                 <XDSDropdownMenu
                   button={{
@@ -2343,14 +2468,12 @@ function DocsView({
                   size="sm"
                   icon={<CodeIcon />}
                   onClick={() => setShowCode(!showCode)}
-                  isIconOnly
                 />
                 <XDSButton
                   label="Fullscreen"
                   variant="ghost"
                   size="sm"
                   icon={<FullscreenIcon />}
-                  isIconOnly
                 />
               </div>
             </div>
@@ -2375,8 +2498,9 @@ function DocsView({
                   label="Button"
                   variant="primary"
                   icon={<PlusIcon />}
-                  endContent={<XDSBadge label="New" variant="info" />}
-                />
+                  endContent={<XDSBadge label="New" variant="info" />}>
+                  Button
+                </XDSButton>
               </div>
 
               {/* Code Panel */}
@@ -2476,6 +2600,7 @@ function DocsView({
           </ul>
         </div>
       </main>
+
       {/* RIGHT SIDEBAR */}
       <aside
         style={{
@@ -2531,97 +2656,6 @@ function DocsView({
   );
 }
 
-// ---------------------------------------------------------------------------
-// Explore Icons
-// ---------------------------------------------------------------------------
-
-const CompassIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    {...props}>
-    <circle cx="12" cy="12" r="10" />
-    <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
-  </svg>
-);
-
-const LayoutIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    {...props}>
-    <rect x="3" y="3" width="18" height="18" rx="2" />
-    <line x1="3" y1="9" x2="21" y2="9" />
-    <line x1="9" y1="21" x2="9" y2="9" />
-  </svg>
-);
-
-const PackageIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    {...props}>
-    <path d="M16.5 9.4l-9-5.19M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" />
-    <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-    <line x1="12" y1="22.08" x2="12" y2="12" />
-  </svg>
-);
-
-const ZapIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    {...props}>
-    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-  </svg>
-);
-
-const GridIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    {...props}>
-    <rect x="3" y="3" width="7" height="7" />
-    <rect x="14" y="3" width="7" height="7" />
-    <rect x="3" y="14" width="7" height="7" />
-    <rect x="14" y="14" width="7" height="7" />
-  </svg>
-);
-
-const VerifiedIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    {...props}>
-    <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
-    <polyline points="22 4 12 14.01 9 11.01" />
-  </svg>
-);
-
 const DownloadIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     viewBox="0 0 24 24"
@@ -2636,647 +2670,6 @@ const DownloadIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <line x1="12" y1="15" x2="12" y2="3" />
   </svg>
 );
-
-const StarIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    {...props}>
-    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-  </svg>
-);
-
-// ---------------------------------------------------------------------------
-// ExploreView
-// ---------------------------------------------------------------------------
-
-function ExploreView({
-  activeView,
-  setActiveView,
-}: {
-  activeView: 'craft' | 'docs' | 'explore' | 'profile';
-  setActiveView: (v: 'craft' | 'docs' | 'explore' | 'profile') => void;
-}) {
-  const [featuredTab, setFeaturedTab] = useState('trending');
-
-  return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column' as const,
-        height: '100vh',
-        backgroundColor: 'var(--color-background-surface, #ffffff)',
-        fontFamily: 'system-ui, -apple-system, sans-serif',
-      }}>
-      {/* Top Nav Bar */}
-      <nav
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          height: 48,
-          padding: '0 16px',
-          flexShrink: 0,
-        }}>
-        <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
-          <LogoNav activeView={activeView} setActiveView={setActiveView} />
-        </div>
-        <div style={{display: 'flex', alignItems: 'center', gap: 4}}>
-          <XDSButton
-            label="Search"
-            variant="ghost"
-            size="sm"
-            icon={<SearchIcon />}
-            isIconOnly
-          />
-          <XDSButton
-            label="Create new"
-            variant="secondary"
-            size="sm"
-            icon={<PlusIcon />}
-          />
-          <XDSButton
-            label="Profile"
-            variant="ghost"
-            size="sm"
-            icon={<ProfileIcon />}
-            onClick={() => setActiveView('profile')}
-            isIconOnly
-          />
-        </div>
-      </nav>
-      {/* Scrollable content */}
-      <div
-        style={{
-          flex: 1,
-          overflowY: 'auto' as const,
-          padding: '40px 48px 64px',
-        }}>
-        <div style={{maxWidth: 1200, margin: '0 auto'}}>
-          {/* a. Hero */}
-          <div style={{marginBottom: 48}}>
-            <XDSHeading
-              level={1}
-              style={{fontSize: 40, letterSpacing: '-0.02em', marginBottom: 8}}>
-              Discover templates, themes &amp; components
-            </XDSHeading>
-            <XDSText
-              type="body"
-              color="secondary"
-              style={{marginBottom: 24, maxWidth: 600}}>
-              Browse curated resources to kickstart your next project. Find
-              templates, themes, and components built by XDS and the community.
-            </XDSText>
-            <XDSTextInput
-              label="Search"
-              isLabelHidden
-              value=""
-              onChange={() => {}}
-              startIcon={SearchIcon}
-              size="lg"
-              placeholder="Search..."
-              style={{marginBottom: 16, maxWidth: 600}}
-            />
-            <div style={{display: 'flex', flexWrap: 'wrap' as const, gap: 6}}>
-              <XDSToken label="Dashboard" size="sm" />
-              <XDSToken label="Admin Panel" size="sm" />
-              <XDSToken label="E-commerce" size="sm" />
-              <XDSToken label="Landing Page" size="sm" />
-              <XDSToken label="Settings" size="sm" />
-              <XDSToken label="Auth" size="sm" />
-              <XDSToken label="Data Table" size="sm" />
-            </div>
-          </div>
-
-          {/* b. Featured */}
-          <div style={{marginBottom: 48}}>
-            <XDSHeading level={2} style={{marginBottom: 16}}>
-              Featured
-            </XDSHeading>
-            <XDSSegmentedControl
-              value={featuredTab}
-              onChange={setFeaturedTab}
-              label="Featured filter"
-              size="sm"
-              style={{marginBottom: 16}}>
-              <XDSSegmentedControlItem value="trending" label="Trending" />
-              <XDSSegmentedControlItem value="popular" label="Most popular" />
-              <XDSSegmentedControlItem value="newest" label="Newest" />
-            </XDSSegmentedControl>
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(3, 1fr)',
-                gap: 16,
-              }}>
-              {[
-                {
-                  title: 'Product detail',
-                  desc: 'Description',
-                  users: '1.5K',
-                  hearts: 5,
-                  img: FIRST_CARD_IMAGE,
-                },
-                {
-                  title: 'Meta Theme',
-                  desc: 'Description',
-                  users: '1.5K',
-                  hearts: 5,
-                  img: SHOPPING_DETAILS_IMAGE,
-                },
-                {
-                  title: 'Daiily',
-                  desc: 'Description',
-                  users: '1.5K',
-                  hearts: 5,
-                  img: SCREENSHOT_3_IMAGE,
-                },
-              ].map((item, i) => (
-                <XDSCard key={i} padding={0}>
-                  <div style={{position: 'relative'}}>
-                    <img
-                      src={item.img}
-                      alt={item.title}
-                      style={{
-                        display: 'block',
-                        width: '100%',
-                        height: 180,
-                        objectFit: 'cover',
-                      }}
-                    />
-                  </div>
-                  <div style={{padding: '12px 16px'}}>
-                    <XDSHeading level={2}>{item.title}</XDSHeading>
-                    <XDSText type="supporting" color="secondary">
-                      {item.desc}
-                    </XDSText>
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 12,
-                        marginTop: 8,
-                      }}>
-                      <svg
-                        width="14"
-                        height="14"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        style={{flexShrink: 0}}>
-                        <path
-                          d="M9 12l2 2 4-4"
-                          stroke="#0866ff"
-                          strokeWidth={2.5}
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                        <circle
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="#0866ff"
-                          strokeWidth={2}
-                        />
-                      </svg>
-                      <XDSText type="supporting" color="secondary">
-                        {item.users}
-                      </XDSText>
-                      <XDSText type="supporting" color="secondary">
-                        ♡ {item.hearts}
-                      </XDSText>
-                    </div>
-                  </div>
-                </XDSCard>
-              ))}
-            </div>
-          </div>
-
-          {/* c. Designed by XDS */}
-          <div style={{marginBottom: 48}}>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                marginBottom: 16,
-              }}>
-              <XDSHeading level={2}>Designed by XDS</XDSHeading>
-              <VerifiedIcon width={20} height={20} style={{color: '#0066FF'}} />
-            </div>
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(3, 1fr)',
-                gap: 16,
-              }}>
-              {[
-                {name: 'Admin Console', desc: 'Full-featured admin panel'},
-                {name: 'Data Explorer', desc: 'Interactive data visualization'},
-                {name: 'Onboarding Flow', desc: 'Multi-step onboarding wizard'},
-              ].map((item, i) => (
-                <XDSCard key={i}>
-                  <div
-                    style={{
-                      height: 140,
-                      backgroundColor: 'var(--color-background-body, #f5f6f7)',
-                      borderRadius: 8,
-                      marginBottom: 12,
-                    }}
-                  />
-                  <div
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'column' as const,
-                      gap: 4,
-                    }}>
-                    <XDSText type="body" weight="bold">
-                      {item.name}
-                    </XDSText>
-                    <XDSText type="supporting" color="secondary">
-                      {item.desc}
-                    </XDSText>
-                  </div>
-                </XDSCard>
-              ))}
-            </div>
-          </div>
-
-          {/* d. From the community */}
-          <div style={{marginBottom: 48}}>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                marginBottom: 16,
-              }}>
-              <XDSHeading level={2}>From the community</XDSHeading>
-              <XDSButton label="View all" variant="ghost" size="sm" />
-            </div>
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(4, 1fr)',
-                gap: 16,
-              }}>
-              {[
-                {name: 'CRM Dashboard', author: 'Alex Chen'},
-                {name: 'Social Feed', author: 'Maria Lopez'},
-                {name: 'Task Board', author: 'James Wilson'},
-                {name: 'Chat Interface', author: 'Sarah Kim'},
-              ].map((item, i) => (
-                <XDSCard key={i}>
-                  <div
-                    style={{
-                      height: 120,
-                      backgroundColor: 'var(--color-background-body, #f5f6f7)',
-                      borderRadius: 8,
-                      marginBottom: 12,
-                    }}
-                  />
-                  <XDSText type="body" weight="bold">
-                    {item.name}
-                  </XDSText>
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      marginTop: 8,
-                    }}>
-                    <XDSAvatar name={item.author} size="xsmall" />
-                    <XDSText type="supporting" color="secondary">
-                      {item.author}
-                    </XDSText>
-                  </div>
-                </XDSCard>
-              ))}
-            </div>
-          </div>
-
-          {/* e. Starter kits */}
-          <div style={{marginBottom: 48}}>
-            <XDSHeading level={2} style={{marginBottom: 16}}>
-              Starter kits
-            </XDSHeading>
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(3, 1fr)',
-                gap: 16,
-              }}>
-              {[
-                {
-                  name: 'SaaS Starter',
-                  gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                },
-                {
-                  name: 'Internal Tool Kit',
-                  gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-                },
-                {
-                  name: 'Data Platform',
-                  gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-                },
-              ].map((item, i) => (
-                <XDSCard key={i} padding={0}>
-                  <div
-                    style={{
-                      height: 160,
-                      background: item.gradient,
-                      borderRadius: '8px 8px 0 0',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}>
-                    <PackageIcon
-                      width={40}
-                      height={40}
-                      style={{color: '#fff'}}
-                    />
-                  </div>
-                  <div style={{padding: 16}}>
-                    <XDSText type="body" weight="bold">
-                      {item.name}
-                    </XDSText>
-                    <XDSText type="supporting" color="secondary">
-                      Complete starter template
-                    </XDSText>
-                  </div>
-                </XDSCard>
-              ))}
-            </div>
-          </div>
-
-          {/* f. Popular themes */}
-          <div style={{marginBottom: 48}}>
-            <XDSHeading level={2} style={{marginBottom: 16}}>
-              Popular themes
-            </XDSHeading>
-            <div
-              style={{
-                display: 'flex',
-                gap: 16,
-                overflowX: 'auto' as const,
-                paddingBottom: 8,
-              }}>
-              {[
-                {name: 'Ocean', colors: ['#0066FF', '#00BFFF', '#E0F4FF']},
-                {name: 'Forest', colors: ['#228B22', '#90EE90', '#F0FFF0']},
-                {name: 'Sunset', colors: ['#FF6347', '#FFA07A', '#FFF5EE']},
-                {name: 'Midnight', colors: ['#191970', '#4169E1', '#E8EAF6']},
-                {name: 'Rose', colors: ['#E91E63', '#F48FB1', '#FCE4EC']},
-                {name: 'Amber', colors: ['#FF8F00', '#FFB74D', '#FFF8E1']},
-              ].map((theme, i) => (
-                <XDSCard key={i} style={{minWidth: 180, flexShrink: 0}}>
-                  <div style={{display: 'flex', gap: 6, marginBottom: 12}}>
-                    {theme.colors.map((color, j) => (
-                      <div
-                        key={j}
-                        style={{
-                          width: 24,
-                          height: 24,
-                          borderRadius: '50%',
-                          backgroundColor: color,
-                          border:
-                            '1px solid var(--color-divider, rgba(0,0,0,0.1))',
-                        }}
-                      />
-                    ))}
-                  </div>
-                  <XDSText type="body" weight="bold">
-                    {theme.name}
-                  </XDSText>
-                </XDSCard>
-              ))}
-            </div>
-          </div>
-
-          {/* g. Browse by use case */}
-          <div style={{marginBottom: 48}}>
-            <XDSHeading level={2} style={{marginBottom: 16}}>
-              Browse by use case
-            </XDSHeading>
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(4, 1fr)',
-                gap: 12,
-              }}>
-              {[
-                {label: 'Dashboards', icon: LayoutIcon},
-                {label: 'Forms', icon: AaIcon},
-                {label: 'Data Tables', icon: GridIcon},
-                {label: 'Navigation', icon: CompassIcon},
-                {label: 'Authentication', icon: FilterIcon},
-                {label: 'Settings', icon: PackageIcon},
-                {label: 'Onboarding', icon: ZapIcon},
-                {label: 'E-commerce', icon: StarIcon},
-              ].map((item, i) => (
-                <div
-                  key={i}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 12,
-                    padding: '16px 20px',
-                    borderRadius: 12,
-                    border: '1px solid var(--color-divider, rgba(0,0,0,0.1))',
-                    cursor: 'pointer',
-                    backgroundColor: 'var(--color-background-surface, #fff)',
-                  }}>
-                  <item.icon
-                    width={20}
-                    height={20}
-                    style={{flexShrink: 0, opacity: 0.7}}
-                  />
-                  <XDSText type="body" weight="bold">
-                    {item.label}
-                  </XDSText>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* h. All templates and themes */}
-          <div style={{marginBottom: 48}}>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                marginBottom: 16,
-              }}>
-              <XDSHeading level={2}>All templates and themes</XDSHeading>
-              <div style={{display: 'flex', gap: 8}}>
-                <XDSDropdownMenu
-                  button={{label: 'Category', variant: 'secondary', size: 'sm'}}
-                  hasChevron
-                  items={[
-                    {label: 'All', onClick: () => {}},
-                    {label: 'Templates', onClick: () => {}},
-                    {label: 'Themes', onClick: () => {}},
-                    {label: 'Components', onClick: () => {}},
-                  ]}
-                />
-                <XDSDropdownMenu
-                  button={{label: 'Sort by', variant: 'secondary', size: 'sm'}}
-                  hasChevron
-                  items={[
-                    {label: 'Most popular', onClick: () => {}},
-                    {label: 'Newest', onClick: () => {}},
-                    {label: 'Most downloads', onClick: () => {}},
-                  ]}
-                />
-              </div>
-            </div>
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(4, 1fr)',
-                gap: 16,
-              }}>
-              {[
-                {
-                  name: 'Admin Dashboard Pro',
-                  category: 'Template',
-                  downloads: '2.4k',
-                  stars: 186,
-                  isOfficial: true,
-                  img: FIRST_CARD_IMAGE,
-                },
-                {
-                  name: 'Dark Mode Theme',
-                  category: 'Theme',
-                  downloads: '5.1k',
-                  stars: 342,
-                  isOfficial: true,
-                  img: DUMMY_IMAGE,
-                },
-                {
-                  name: 'Login Page Bundle',
-                  category: 'Template',
-                  downloads: '3.2k',
-                  stars: 210,
-                  isOfficial: false,
-                  img: SHOPPING_DETAILS_IMAGE,
-                },
-                {
-                  name: 'Brutalist Theme',
-                  category: 'Theme',
-                  downloads: '1.8k',
-                  stars: 95,
-                  isOfficial: true,
-                  img: DUMMY_IMAGE,
-                },
-                {
-                  name: 'E-commerce Kit',
-                  category: 'Template',
-                  downloads: '4.7k',
-                  stars: 289,
-                  isOfficial: false,
-                  img: SCREENSHOT_3_IMAGE,
-                },
-                {
-                  name: 'Neutral Theme',
-                  category: 'Theme',
-                  downloads: '2.1k',
-                  stars: 134,
-                  isOfficial: true,
-                  img: DUMMY_IMAGE,
-                },
-                {
-                  name: 'Settings Panel',
-                  category: 'Template',
-                  downloads: '1.9k',
-                  stars: 112,
-                  isOfficial: true,
-                  img: DUMMY_IMAGE,
-                },
-                {
-                  name: 'WhatsApp Theme',
-                  category: 'Theme',
-                  downloads: '1.4k',
-                  stars: 78,
-                  isOfficial: true,
-                  img: DUMMY_IMAGE,
-                },
-              ].map((item, i) => (
-                <XDSCard key={i} padding={0}>
-                  <div style={{position: 'relative'}}>
-                    <img
-                      src={item.img}
-                      alt={item.name}
-                      style={{
-                        display: 'block',
-                        width: '100%',
-                        height: 160,
-                        objectFit: 'cover',
-                      }}
-                    />
-                  </div>
-                  <div style={{padding: '12px 16px'}}>
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 8,
-                        marginBottom: 4,
-                      }}>
-                      <XDSText type="body" weight="bold">
-                        {item.name}
-                      </XDSText>
-                      {item.isOfficial && (
-                        <XDSBadge label="Official" variant="info" />
-                      )}
-                    </div>
-                    <XDSText type="supporting" color="secondary">
-                      {item.category}
-                    </XDSText>
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 12,
-                        marginTop: 8,
-                      }}>
-                      <div
-                        style={{display: 'flex', alignItems: 'center', gap: 4}}>
-                        <DownloadIcon
-                          width={14}
-                          height={14}
-                          style={{opacity: 0.4}}
-                        />
-                        <XDSText type="supporting" color="secondary">
-                          {item.downloads}
-                        </XDSText>
-                      </div>
-                      <div
-                        style={{display: 'flex', alignItems: 'center', gap: 4}}>
-                        <StarIcon
-                          width={14}
-                          height={14}
-                          style={{opacity: 0.4}}
-                        />
-                        <XDSText type="supporting" color="secondary">
-                          {item.stars}
-                        </XDSText>
-                      </div>
-                    </div>
-                  </div>
-                </XDSCard>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // ---------------------------------------------------------------------------
 // ProfileView
@@ -3308,8 +2701,8 @@ function ProfileView({
   activeView,
   setActiveView,
 }: {
-  activeView: 'craft' | 'docs' | 'explore' | 'profile';
-  setActiveView: (v: 'craft' | 'docs' | 'explore' | 'profile') => void;
+  activeView: 'craft' | 'library' | 'learn' | 'profile';
+  setActiveView: (v: 'craft' | 'library' | 'learn' | 'profile') => void;
 }) {
   const [profileTab, setProfileTab] = useState('used');
   const [expandedCollection, setExpandedCollection] = useState<string | null>(
@@ -3344,17 +2737,16 @@ function ProfileView({
             variant="ghost"
             size="sm"
             icon={<SearchIcon />}
-            isIconOnly
           />
           <XDSButton
             label="Profile"
             variant="ghost"
             size="sm"
             icon={<ProfileIcon />}
-            isIconOnly
           />
         </div>
       </nav>
+
       {/* Scrollable content */}
       <div
         style={{
@@ -3469,8 +2861,9 @@ function ProfileView({
                 <XDSButton
                   label="New collection"
                   variant="secondary"
-                  icon={<PlusIcon />}
-                />
+                  icon={<PlusIcon />}>
+                  New collection
+                </XDSButton>
               </div>
               <div
                 style={{
@@ -3575,8 +2968,9 @@ function ProfileView({
                   label="Create new"
                   variant="secondary"
                   size="sm"
-                  icon={<PlusIcon />}
-                />
+                  icon={<PlusIcon />}>
+                  Create new
+                </XDSButton>
               </div>
               <div
                 style={{
@@ -3683,7 +3077,7 @@ function ProfileView({
 
 export default function DocsiteLandingTemplate() {
   const [activeView, setActiveView] = useState<
-    'craft' | 'docs' | 'explore' | 'profile'
+    'craft' | 'library' | 'learn' | 'profile'
   >('craft');
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [isMobile, setIsMobile] = useState(false);
@@ -3777,13 +3171,52 @@ export default function DocsiteLandingTemplate() {
 
   const isGenerating = generatingSource !== null;
 
-  if (activeView === 'docs') {
+  if (activeView === 'library') {
     return <DocsView activeView={activeView} setActiveView={setActiveView} />;
   }
 
-  if (activeView === 'explore') {
+  if (activeView === 'learn') {
     return (
-      <ExploreView activeView={activeView} setActiveView={setActiveView} />
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100vh',
+          backgroundColor: 'var(--color-background-card, white)',
+        }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '12px 24px',
+            borderBottom: '1px solid var(--color-border-default, #e0e0e0)',
+            backgroundColor: 'var(--color-background-card, white)',
+          }}>
+          <LogoNav activeView={activeView} setActiveView={setActiveView} />
+        </div>
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+          <div style={{textAlign: 'center', opacity: 0.5}}>
+            <div style={{fontSize: 48, marginBottom: 16}}>📚</div>
+            <div style={{fontSize: 20, fontWeight: 600, marginBottom: 8}}>
+              Learn
+            </div>
+            <div
+              style={{
+                fontSize: 14,
+                color: 'var(--color-text-secondary, #666)',
+              }}>
+              Tutorials, guides, and resources — coming soon
+            </div>
+          </div>
+        </div>
+      </div>
     );
   }
 
