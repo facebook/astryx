@@ -30,10 +30,7 @@ export type {
 
 export {XDSChatTokenizedText} from './XDSChatTokenizedText';
 export type {XDSChatTokenizedTextProps} from './XDSChatTokenizedText';
-/** @deprecated Use XDSChatTokenizedText instead */
-export {XDSChatTokenizedText as XDSChatMessageTokenizedText} from './XDSChatTokenizedText';
-/** @deprecated Use XDSChatTokenizedTextProps instead */
-export type {XDSChatTokenizedTextProps as XDSChatMessageTokenizedTextProps} from './XDSChatTokenizedText';
+
 
 export {XDSChatMessageList} from './XDSChatMessageList';
 export type {XDSChatMessageListProps} from './XDSChatMessageList';
