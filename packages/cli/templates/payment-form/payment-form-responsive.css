@@ -1,5 +1,10 @@
 /* Payment Form — responsive layout */
 
+/* Prevent layout shift when scrollbar appears/disappears (e.g. accordion toggle) */
+html {
+  scrollbar-gutter: stable;
+}
+
 /* Mobile only: single column, order summary on top */
 @media (max-width: 767px) {
   .pf-body {
