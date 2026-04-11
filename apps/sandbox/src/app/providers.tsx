@@ -2,12 +2,12 @@
 
 import {useState, createContext, useContext, useEffect} from 'react';
 import {XDSTheme} from '@xds/core/theme';
-import {defaultTheme} from '@xds/theme-default';
-import {neutralTheme} from '@xds/theme-neutral';
-import {brutalistTheme} from '@xds/theme-brutalist';
-import {metaTheme} from '@xds/theme-meta';
-import {whatsappTheme} from '@xds/theme-whatsapp';
-import {dailyTheme} from '@xds/theme-daily';
+import {defaultTheme} from '@xds/theme-default/built';
+import {neutralTheme} from '@xds/theme-neutral/built';
+import {brutalistTheme} from '@xds/theme-brutalist/built';
+import {metaTheme} from '@xds/theme-meta/built';
+import {whatsappTheme} from '@xds/theme-whatsapp/built';
+import {dailyTheme} from '@xds/theme-daily/built';
 import type {XDSDefinedTheme, ThemeMode} from '@xds/core/theme';
 
 const themes: Record<string, XDSDefinedTheme> = {

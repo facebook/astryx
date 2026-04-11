@@ -1,7 +1,7 @@
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSTheme} from '@xds/core/theme';
-import {defaultTheme} from '@xds/theme-default';
+import {defaultTheme} from '@xds/theme-default/built';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSButton} from '@xds/core/Button';
 import {XDSText, XDSHeading} from '@xds/core/Text';
@@ -65,10 +65,10 @@ export default function App() {
             <XDSVStack gap={3}>
               <XDSHeading level={2}>Badges</XDSHeading>
               <XDSHStack gap={3} vAlign="center">
-                <XDSBadge variant="info" label='Info' />
-                <XDSBadge variant="success" label='Success' />
-                <XDSBadge variant="warning" label='Warning' />
-                <XDSBadge variant="error" label='Error' />
+                <XDSBadge variant="info" label="Info" />
+                <XDSBadge variant="success" label="Success" />
+                <XDSBadge variant="warning" label="Warning" />
+                <XDSBadge variant="error" label="Error" />
               </XDSHStack>
             </XDSVStack>
 

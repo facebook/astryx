@@ -5,13 +5,18 @@
   "description": "Meta theme for XDS components — Meta's brand identity with blue accent and clean aesthetics",
   "license": "MIT",
   "sideEffects": false,
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/source.js",
+  "types": "./dist/source.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.js"
+      "types": "./dist/source.d.ts",
+      "import": "./dist/source.mjs",
+      "require": "./dist/source.js"
+    },
+    "./built": {
+      "types": "./dist/meta.d.ts",
+      "import": "./dist/meta.js",
+      "require": "./dist/meta.js"
     },
     "./theme.css": "./dist/theme.css"
   },
@@ -20,7 +25,7 @@
     "src"
   ],
   "scripts": {
-    "build": "xds theme build src/metaTheme.ts -o dist/theme.css && node scripts/gen-compat-css.mjs && tsup && rm -f dist/meta.js dist/meta.d.ts"
+    "build": "xds theme build src/metaTheme.ts -o dist/theme.css && node scripts/gen-compat-css.mjs && tsup"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0"
@@ -32,5 +37,5 @@
   "devDependencies": {
     "@xds/cli": "*"
   },
-  "module": "./dist/index.mjs"
+  "module": "./dist/source.mjs"
 }

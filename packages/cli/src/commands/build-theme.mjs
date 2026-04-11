@@ -614,11 +614,14 @@ function extractIconInfo(filePath) {
  * Includes the theme name, marker, and re-exports the icon registry.
  * All styling is in the CSS file.
  */
-function generateBuiltModule(themeDef, iconImportPath) {
-  const iconImport = iconImportPath
-    ? `import { icons } from '${iconImportPath}';\n`
+function generateBuiltModule(themeDef, iconInfo) {
+  const iconImport = iconInfo
+    ? `import { ${iconInfo.exportName} } from '${iconInfo.importPath}';\n`
     : '';
-  const iconsField = iconImportPath ? '  icons,' : '';
+  const iconsField = iconInfo ? `  icons: ${iconInfo.exportName},` : '';
+  const iconReExport = iconInfo
+    ? `\nexport { ${iconInfo.exportName} };\n`
+    : '';
 
   // Resolve token values — tuples become light-dark() strings
   const resolvedTokens = {};
@@ -646,15 +649,20 @@ export const ${toIdentifier(themeDef.name)}Theme = {
   tokens: ${tokensStr},
 ${iconsField}
 };
-`;
+${iconReExport}`;
 }
 
 /**
  * Generate TypeScript declarations for a built theme module.
  */
-function generateBuiltTypes(themeDef) {
+function generateBuiltTypes(themeDef, iconInfo) {
+  const iconType = iconInfo
+    ? `import type { XDSIconRegistry } from '@xds/core/Icon';
+export declare const ${iconInfo.exportName}: XDSIconRegistry;
+`
+    : '';
   return `import type { XDSDefinedTheme } from '@xds/core/theme';
-export declare const ${toIdentifier(themeDef.name)}Theme: XDSDefinedTheme;
+${iconType}export declare const ${toIdentifier(themeDef.name)}Theme: XDSDefinedTheme;
 `;
 }
 
@@ -930,10 +938,9 @@ export function registerTheme(program) {
       const dtsPath = path.join(outDir, `${baseName}.d.ts`);
 
       const iconInfo = extractIconInfo(filePath);
-      const iconImportPath = iconInfo ? iconInfo.importPath : null;
 
-      fs.writeFileSync(jsPath, generateBuiltModule(resolvedTheme || themeDef, iconImportPath));
-      fs.writeFileSync(dtsPath, generateBuiltTypes(themeDef));
+      fs.writeFileSync(jsPath, generateBuiltModule(resolvedTheme || themeDef, iconInfo));
+      fs.writeFileSync(dtsPath, generateBuiltTypes(themeDef, iconInfo));
 
       if (!json) {
         console.log(`✓ ${path.relative(process.cwd(), jsPath)}`);

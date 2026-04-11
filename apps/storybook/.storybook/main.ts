@@ -6,15 +6,15 @@ const rootDir = path.resolve(__dirname, '../../..');
 const coreRoot = path.resolve(__dirname, '../../../packages/core/src');
 const themeDefaultRoot = path.resolve(
   __dirname,
-  '../../../packages/themes/default/src',
+  '../../../packages/themes/default/src/source.ts',
 );
 const themeNeutralRoot = path.resolve(
   __dirname,
-  '../../../packages/themes/neutral/src',
+  '../../../packages/themes/neutral/src/source.ts',
 );
 const themeBrutalistRoot = path.resolve(
   __dirname,
-  '../../../packages/themes/brutalist/src',
+  '../../../packages/themes/brutalist/src/source.ts',
 );
 
 /**
