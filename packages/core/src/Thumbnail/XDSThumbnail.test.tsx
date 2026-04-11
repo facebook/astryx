@@ -84,6 +84,26 @@ describe('XDSThumbnail', () => {
     expect(screen.queryByRole('button')).toBeNull();
   });
 
+  it('shows skeleton when isLoading is true even with src', () => {
+    const {container} = render(
+      <XDSThumbnail src="/photo.jpg" alt="Test" isLoading data-testid="thumb" />,
+    );
+    expect(container.querySelector('.xds-skeleton')).toBeInTheDocument();
+    // Image should be hidden
+    const img = screen.getByAltText('Test');
+    expect(img).toHaveStyle({display: 'none'});
+  });
+
+  it('shows skeleton when isLoading with no src', () => {
+    const {container} = render(
+      <XDSThumbnail isLoading data-testid="thumb" />,
+    );
+    expect(container.querySelector('.xds-skeleton')).toBeInTheDocument();
+    // No placeholder icon
+    const root = screen.getByTestId('thumb');
+    expect(root.querySelector('svg')).toBeNull();
+  });
+
   it('forwards ref to root element', () => {
     const ref = vi.fn();
     render(<XDSThumbnail ref={ref} data-testid="thumb" />);

@@ -71,6 +71,13 @@ export interface XDSThumbnailProps extends XDSBaseProps<HTMLDivElement> {
    */
   caption?: ReactNode;
   /**
+   * Whether the thumbnail is in a loading state.
+   * Shows a skeleton shimmer regardless of `src`. Use while uploading
+   * or processing before an image URL is available.
+   * @default false
+   */
+  isLoading?: boolean;
+  /**
    * Whether the thumbnail is in a disabled state.
    * @default false
    */
@@ -168,6 +175,9 @@ const styles = stylex.create({
     color: colorVars['--color-text-primary'],
     cursor: 'pointer',
     zIndex: 1,
+    transitionProperty: 'color, background-color',
+    transitionDuration: durationVars['--duration-fast'],
+    transitionTimingFunction: easeVars['--ease-standard'],
     outline: {
       default: null,
       ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
@@ -243,6 +253,7 @@ export function XDSThumbnail({
   onRemove,
   onClick,
   caption,
+  isLoading = false,
   isDisabled = false,
   xstyle,
   className,
@@ -256,10 +267,10 @@ export function XDSThumbnail({
   const imageMode = useImageMode(src, {region: BUTTON_REGION, fallback: null});
 
   const hasSrc = src != null;
-  const showSkeleton = hasSrc && !loaded && !errored;
-  const showImage = hasSrc && loaded && !errored;
-  const showPlaceholder = !hasSrc || errored;
-  const isInteractive = onClick != null && !isDisabled;
+  const showSkeleton = isLoading || (hasSrc && !loaded && !errored);
+  const showImage = !isLoading && hasSrc && loaded && !errored;
+  const showPlaceholder = !isLoading && (!hasSrc || errored);
+  const isInteractive = onClick != null && !isDisabled && !isLoading;
 
   const imageContent = (
     <>

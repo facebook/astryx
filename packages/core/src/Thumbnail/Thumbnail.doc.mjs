@@ -48,6 +48,12 @@ export const docs = {
       description: 'Content rendered below the thumbnail (e.g. file size, duration).',
     },
     {
+      name: 'isLoading',
+      type: 'boolean',
+      description: 'Shows a skeleton shimmer regardless of src. Use while uploading or processing.',
+      default: 'false',
+    },
+    {
       name: 'isDisabled',
       type: 'boolean',
       description: 'Whether the thumbnail is disabled.',

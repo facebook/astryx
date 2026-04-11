@@ -72,6 +72,13 @@ export const Clickable: Story = {
   },
 };
 
+export const Loading: Story = {
+  args: {
+    isLoading: true,
+    label: 'uploading.jpg',
+  },
+};
+
 export const Placeholder: Story = {
   name: 'No Image (Placeholder)',
   args: {
