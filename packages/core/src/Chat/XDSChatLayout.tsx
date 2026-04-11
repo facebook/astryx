@@ -445,7 +445,8 @@ export function XDSChatLayout({
           scrollEl.addEventListener('scroll', handleScroll, {passive: true});
           scrollListenerRef.current = () =>
             scrollEl.removeEventListener('scroll', handleScroll);
-          scrollToBottom(false);
+          // Defer to next frame so content has laid out
+          requestAnimationFrame(() => scrollToBottom(false));
         }
       }
 
