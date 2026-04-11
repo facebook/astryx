@@ -370,6 +370,8 @@ export function XDSChatLayout({
   const rootRef = useRef<HTMLDivElement>(null);
   const dockRef = useRef<HTMLDivElement>(null);
   const scrollListenerRef = useRef<(() => void) | null>(null);
+  const contentElRef = useRef<HTMLElement | null>(null);
+  const contentObserverRef = useRef<ResizeObserver | null>(null);
 
   const scrollContainerRef =
     externalScrollRef ?? (rootRef as React.RefObject<HTMLElement | null>);
@@ -397,32 +399,49 @@ export function XDSChatLayout({
   // changes (new messages). Checks entry.target to dispatch.
   const lastMessageRef = useRef<Element | null>(null);
 
-  // Single ResizeObserver on root — handles density + new message detection.
+  // Density observer — watches root width for breakpoints.
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
-
     const observer = new ResizeObserver(() => {
       setDensity(getDensity(root.clientWidth));
-
-      const messages = root.getElementsByClassName('xds-chat-message');
-      const last =
-        messages.length > 0 ? messages[messages.length - 1] : null;
-      if (last && last !== lastMessageRef.current) {
-        lastMessageRef.current = last;
-        onContentChange();
-      }
     });
     observer.observe(root);
     return () => observer.disconnect();
-  }, [onContentChange]);
+  }, []);
+
+  // Content ref callback — observe the message list for height changes.
+  const contentRef = useCallback(
+    (el: HTMLElement | null) => {
+      if (contentObserverRef.current) {
+        contentObserverRef.current.disconnect();
+        contentObserverRef.current = null;
+      }
+      contentElRef.current = el;
+      if (el) {
+        const observer = new ResizeObserver(() => {
+          const messages = el.getElementsByClassName('xds-chat-message');
+          const last =
+            messages.length > 0 ? messages[messages.length - 1] : null;
+          if (last && last !== lastMessageRef.current) {
+            lastMessageRef.current = last;
+            onContentChange();
+          }
+        });
+        observer.observe(el);
+        contentObserverRef.current = observer;
+      }
+    },
+    [onContentChange],
+  );
 
   // --- Layout context ---
   const layoutContextValue = useMemo(
     () => ({
       scrollContainerRef,
+      contentRef,
     }),
-    [scrollContainerRef],
+    [scrollContainerRef, contentRef],
   );
 
 

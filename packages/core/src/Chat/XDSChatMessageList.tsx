@@ -161,7 +161,16 @@ export function XDSChatMessageList({
 }: XDSChatMessageListProps) {
   const layoutContext = useXDSChatLayoutContext();
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
   const [isLoadingTop, startTransition] = useTransition();
+
+  // Register inner content element with the layout for height observation
+  useEffect(() => {
+    if (layoutContext?.contentRef && innerRef.current) {
+      layoutContext.contentRef(innerRef.current);
+      return () => layoutContext.contentRef(null);
+    }
+  }, [layoutContext]);
 
   const hasChildren =
     children != null &&
@@ -211,7 +220,7 @@ export function XDSChatMessageList({
           className,
           style,
         )}>
-        <div {...stylex.props(styles.inner, gapStyle)}>
+        <div ref={innerRef} {...stylex.props(styles.inner, gapStyle)}>
           {/* Sentinel for infinite scroll */}
           {onScrollToTopAction && <div ref={sentinelRef} aria-hidden />}
 
