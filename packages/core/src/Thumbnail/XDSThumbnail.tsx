@@ -30,6 +30,7 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import {XDSButton} from '../Button';
+import {XDSIcon} from '../Icon';
 import {XDSSkeleton} from '../Skeleton';
 import {XDSSpinner} from '../Spinner';
 import {XDSMediaTheme} from '../theme/XDSMediaTheme';
@@ -289,7 +290,7 @@ export function XDSThumbnail({
     onRemove != null && !isDisabled ? (
       <div {...stylex.props(styles.removeButtonPosition)}>
         <XDSButton
-          icon="close"
+          icon={<XDSIcon icon="close" size="xsm" />}
           label={`Remove ${label ?? alt ?? 'thumbnail'}`}
           variant="secondary"
           size="sm"
