@@ -1,7 +1,7 @@
 {
   "name": "@xds/theme-syntax",
   "version": "0.0.11",
-  "description": "Syntax highlighting theme presets for XDS \u2014 11 community themes mapped to the XDS 14-token syntax architecture",
+  "description": "Syntax highlighting theme presets for XDS — 11 community themes mapped to the XDS 14-token syntax architecture",
   "license": "MIT",
   "sideEffects": false,
   "main": "./dist/index.js",
