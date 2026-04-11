@@ -10,6 +10,11 @@ import {
   settingsIcon,
   homeIcon,
   menuIcon,
+  eyeIcon,
+  searchIcon,
+  mailIcon,
+  lockIcon,
+  iconVars,
 } from '@xds/lab';
 import {XDSStack, XDSText, XDSDivider} from '@xds/core';
 
@@ -249,6 +254,181 @@ export const Colors: Story = {
           </XDSStack>
         ))}
       </XDSStack>
+    </XDSStack>
+  ),
+};
+
+// =============================================================================
+// Mask Gaps on Different Backgrounds
+// =============================================================================
+
+const MASK_GAP_ICONS = [
+  homeIcon,
+  settingsIcon,
+  eyeIcon,
+  searchIcon,
+  mailIcon,
+  lockIcon,
+];
+
+export const MaskGaps: Story = {
+  render: () => (
+    <XDSStack direction="vertical" gap={3}>
+      <XDSText variant="heading-3">Mask Gaps on Different Backgrounds</XDSText>
+      <XDSText variant="body-sm" color="secondary">
+        Bold mode uses mask-based knockout gaps. Because the gap is transparent
+        (not white), it works on any background — solid colors, surfaces, and
+        gradients alike.
+      </XDSText>
+
+      {[
+        {label: 'White', bg: '#ffffff'},
+        {label: 'Surface', bg: '#f5f5f5'},
+        {label: 'Accent', bg: '#0066ff'},
+        {
+          label: 'Gradient',
+          bg: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        },
+      ].map(({label, bg}) => (
+        <XDSStack direction="vertical" key={label} gap={1}>
+          <XDSText variant="label-sm" color="secondary">
+            {label}
+          </XDSText>
+          <div
+            style={{
+              background: bg,
+              padding: 16,
+              borderRadius: 8,
+              display: 'flex',
+              gap: 16,
+            }}>
+            {MASK_GAP_ICONS.map(icon => (
+              <XDSSVGIcon
+                key={icon.name}
+                icon={icon}
+                variation="bold"
+                size="lg"
+                color={
+                  label === 'White' || label === 'Surface'
+                    ? 'primary'
+                    : 'inherit'
+                }
+                style={
+                  label === 'Accent' || label === 'Gradient'
+                    ? {color: '#ffffff'}
+                    : undefined
+                }
+              />
+            ))}
+          </div>
+        </XDSStack>
+      ))}
+    </XDSStack>
+  ),
+};
+
+// =============================================================================
+// Stroke Width Range
+// =============================================================================
+
+const STROKE_WIDTHS = [1, 1.5, 2, 2.5, 3];
+
+export const StrokeWidthRange: Story = {
+  render: () => (
+    <XDSStack direction="vertical" gap={3}>
+      <XDSText variant="heading-3">Stroke Width Range</XDSText>
+      <XDSText variant="body-sm" color="secondary">
+        Linear mode at stroke widths from 1 to 3. Thinner strokes feel lighter
+        and more refined; thicker strokes add visual weight.
+      </XDSText>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: `80px repeat(${STROKE_WIDTHS.length}, 1fr)`,
+          gap: 12,
+          alignItems: 'center',
+        }}>
+        {/* Header row */}
+        <div />
+        {STROKE_WIDTHS.map(w => (
+          <XDSText
+            key={w}
+            variant="label-sm"
+            color="secondary"
+            style={{textAlign: 'center'}}>
+            {w}
+          </XDSText>
+        ))}
+
+        {/* Icon rows — first 8 starterIcons */}
+        {starterIcons.slice(0, 8).map(icon => (
+          <Fragment key={icon.name}>
+            <XDSText variant="label-sm">{icon.name}</XDSText>
+            {STROKE_WIDTHS.map(w => (
+              <div
+                key={`${icon.name}-${w}`}
+                style={{display: 'flex', justifyContent: 'center'}}>
+                <XDSSVGIcon
+                  icon={icon}
+                  variation="linear"
+                  size="lg"
+                  strokeWidth={w}
+                />
+              </div>
+            ))}
+          </Fragment>
+        ))}
+      </div>
+    </XDSStack>
+  ),
+};
+
+// =============================================================================
+// Structural Diversity
+// =============================================================================
+
+export const StructuralDiversity: Story = {
+  render: () => (
+    <XDSStack direction="vertical" gap={3}>
+      <XDSText variant="heading-3">Structural Diversity</XDSText>
+      <XDSText variant="body-sm" color="secondary">
+        New icons with diverse structures — organic curves, complex single
+        paths, nested overlapping fills, and mixed fill+stroke roles — across
+        all five variations.
+      </XDSText>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: `120px repeat(${VARIATIONS.length}, 1fr)`,
+          gap: 12,
+          alignItems: 'center',
+        }}>
+        {/* Header row */}
+        <div />
+        {VARIATIONS.map(v => (
+          <XDSText
+            key={v}
+            variant="label-sm"
+            color="secondary"
+            style={{textAlign: 'center'}}>
+            {v}
+          </XDSText>
+        ))}
+
+        {/* Icon rows — new icons only */}
+        {starterIcons.slice(7).map(icon => (
+          <Fragment key={icon.name}>
+            <XDSText variant="label-sm">{icon.name}</XDSText>
+            {VARIATIONS.map(v => (
+              <div
+                key={`${icon.name}-${v}`}
+                style={{display: 'flex', justifyContent: 'center'}}>
+                <XDSSVGIcon icon={icon} variation={v} size="lg" />
+              </div>
+            ))}
+          </Fragment>
+        ))}
+      </div>
     </XDSStack>
   ),
 };
