@@ -18,22 +18,23 @@ describe('XDSThumbnail', () => {
     expect(screen.queryByRole('img')).toBeNull();
   });
 
-  it('shows skeleton when isLoading', () => {
+  it('shows skeleton when isLoading with no src', () => {
     const {container} = render(
       <XDSThumbnail isLoading data-testid="thumb" />,
     );
     expect(container.querySelector('.xds-skeleton')).toBeInTheDocument();
-    // No image or placeholder
     expect(screen.queryByRole('img')).toBeNull();
-    expect(screen.getByTestId('thumb').querySelector('svg')).toBeNull();
   });
 
-  it('shows skeleton when isLoading even with src', () => {
-    const {container} = render(
-      <XDSThumbnail src="/photo.jpg" alt="Test" isLoading />,
+  it('shows image with upload overlay when isLoading with src', () => {
+    render(
+      <XDSThumbnail src="/local.jpg" alt="Uploading" isLoading data-testid="thumb" />,
     );
-    expect(container.querySelector('.xds-skeleton')).toBeInTheDocument();
-    expect(screen.queryByRole('img')).toBeNull();
+    // Image is visible (local preview)
+    const img = screen.getByRole('img');
+    expect(img).toHaveAttribute('src', '/local.jpg');
+    // Spinner overlay is present
+    expect(screen.getByRole('status')).toBeInTheDocument();
   });
 
   it('renders the label', () => {
@@ -83,6 +84,7 @@ describe('XDSThumbnail', () => {
     render(
       <XDSThumbnail src="/img.jpg" alt="Test" onClick={onClick} isLoading />,
     );
+    // No interactive button — just the spinner overlay
     expect(screen.queryByRole('button')).toBeNull();
   });
 

@@ -2,7 +2,7 @@
 
 /**
  * @file XDSThumbnail.tsx
- * @input Uses React, stylex, XDSSkeleton, XDSIcon, XDSMediaTheme, useImageMode
+ * @input Uses React, stylex, XDSSkeleton, XDSSpinner, XDSIcon, XDSMediaTheme, useImageMode
  * @output Exports XDSThumbnail component, XDSThumbnailProps
  * @position Core implementation; consumed by index.ts
  *
@@ -31,6 +31,7 @@ import {
 } from '../theme/tokens.stylex';
 import {XDSIcon} from '../Icon';
 import {XDSSkeleton} from '../Skeleton';
+import {XDSSpinner} from '../Spinner';
 import {XDSMediaTheme} from '../theme/XDSMediaTheme';
 import {useImageMode} from '../hooks/useImageMode';
 import type {XDSBaseProps} from '../XDSBaseProps';
@@ -206,6 +207,16 @@ const styles = stylex.create({
     opacity: 0.5,
     pointerEvents: 'none' as const,
   },
+  uploadOverlay: {
+    position: 'absolute',
+    inset: 0,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colorVars['--color-overlay'],
+    borderRadius: 'inherit',
+    zIndex: 1,
+  },
 });
 
 // =============================================================================
@@ -265,8 +276,9 @@ export function XDSThumbnail({
   const imageMode = useImageMode(src, {region: BUTTON_REGION, fallback: null});
 
   const hasSrc = src != null;
-  const showSkeleton = isLoading;
-  const showImage = !isLoading && hasSrc;
+  const showSkeleton = isLoading && !hasSrc;
+  const showImage = hasSrc && !showSkeleton;
+  const showUploadOverlay = isLoading && hasSrc;
   const showPlaceholder = !isLoading && !hasSrc;
   const isInteractive = onClick != null && !isDisabled && !isLoading;
 
@@ -336,6 +348,11 @@ export function XDSThumbnail({
           imageContent
         )}
         {showImage && <div {...stylex.props(styles.insetBorder)} />}
+        {showUploadOverlay && (
+          <div {...stylex.props(styles.uploadOverlay)}>
+            <XDSSpinner size="sm" shade="onMedia" />
+          </div>
+        )}
         {removeButtonEl != null && imageMode != null ? (
           <XDSMediaTheme mode={imageMode}>
             {removeButtonEl}

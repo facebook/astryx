@@ -73,9 +73,20 @@ export const Clickable: Story = {
 };
 
 export const Loading: Story = {
+  name: 'Loading (no preview)',
   args: {
     isLoading: true,
     label: 'uploading.jpg',
+  },
+};
+
+export const Uploading: Story = {
+  name: 'Uploading (with preview)',
+  args: {
+    src: 'https://picsum.photos/200',
+    alt: 'Uploading preview',
+    isLoading: true,
+    label: 'vacation.jpg',
   },
 };
 
