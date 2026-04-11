@@ -369,7 +369,7 @@ export function XDSChatLayout({
 }: XDSChatLayoutProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const dockRef = useRef<HTMLDivElement>(null);
-  const contentElRef = useRef<HTMLElement | null>(null);
+  const [contentEl, setContentEl] = useState<HTMLElement | null>(null);
 
   const scrollContainerRef =
     externalScrollRef ?? (rootRef as React.RefObject<HTMLElement | null>);
@@ -407,24 +407,24 @@ export function XDSChatLayout({
   const lastMessageRef = useRef<Element | null>(null);
 
   useEffect(() => {
-    const el = contentElRef.current;
-    if (!el) return;
+    if (!contentEl) return;
 
     const observer = new ResizeObserver(() => {
-      const messages = el.getElementsByClassName('xds-chat-message');
+      const messages = contentEl.getElementsByClassName('xds-chat-message');
       const last = messages.length > 0 ? messages[messages.length - 1] : null;
       if (last && last !== lastMessageRef.current) {
         lastMessageRef.current = last;
         onContentChange();
       }
     });
-    observer.observe(el);
+    observer.observe(contentEl);
     return () => observer.disconnect();
-  }, [onContentChange]);
+  }, [contentEl, onContentChange]);
 
-  // Content ref callback — message list registers its inner element
+  // Content ref callback — message list registers its inner element.
+  // Uses state (not ref) so the ResizeObserver effect re-runs when set.
   const contentRef = useCallback((el: HTMLElement | null) => {
-    contentElRef.current = el;
+    setContentEl(el);
   }, []);
 
   // --- Layout context ---
