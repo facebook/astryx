@@ -32,6 +32,7 @@ import {XDSButton} from '../Button';
 import {XDSIcon} from '../Icon';
 import {XDSSkeleton} from '../Skeleton';
 import {XDSSpinner} from '../Spinner';
+import {XDSTooltip} from '../Tooltip/XDSTooltip';
 import {XDSMediaTheme} from '../theme/XDSMediaTheme';
 import {useImageMode} from '../hooks/useImageMode';
 import type {XDSBaseProps} from '../XDSBaseProps';
@@ -284,7 +285,6 @@ export function XDSThumbnail({
         <XDSButton
           icon={<XDSIcon icon="close" size="xsm" />}
           label={`Remove ${accessibleName}`}
-          tooltip={accessibleName}
           variant="secondary"
           size="sm"
           isIconOnly
@@ -297,7 +297,7 @@ export function XDSThumbnail({
       </div>
     ) : null;
 
-  return (
+  const thumbnail = (
     <div
       ref={ref}
       data-testid={testId}
@@ -345,6 +345,12 @@ export function XDSThumbnail({
       </div>
     </div>
   );
+
+  if (label != null) {
+    return <XDSTooltip content={label}>{thumbnail}</XDSTooltip>;
+  }
+
+  return thumbnail;
 }
 
 XDSThumbnail.displayName = 'XDSThumbnail';

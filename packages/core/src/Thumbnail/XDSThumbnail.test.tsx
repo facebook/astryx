@@ -40,9 +40,11 @@ describe('XDSThumbnail', () => {
     expect(screen.getByTestId('thumb')).toHaveAttribute('aria-label', 'photo.png');
   });
 
-  it('label is not rendered as visible text', () => {
+  it('label is shown via tooltip, not as inline text', () => {
     render(<XDSThumbnail label="photo.png" data-testid="thumb" />);
-    expect(screen.queryByText('photo.png')).toBeNull();
+    // Label should exist in DOM (tooltip) but not as a direct child text node
+    const thumb = screen.getByTestId('thumb');
+    expect(thumb.textContent).not.toContain('photo.png');
   });
 
   it('calls onRemove when remove button is clicked', async () => {
