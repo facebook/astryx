@@ -396,19 +396,22 @@ export function XDSChatLayout({
     return () => el.removeEventListener('scroll', handleScroll);
   }, [scrollRef, handleScroll]);
 
-  // Observe message content area — only trigger auto-scroll when the
-  // message count actually grows (not when existing content resizes,
-  // e.g. expanding tool calls or collapsing drawers).
-  const messageCountRef = useRef(0);
+  // Observe message content area — only trigger auto-scroll when new
+  // messages appear at the bottom. Tracks the last .xds-chat-message
+  // element by reference. A new last element means content was appended.
+  // Upward loads (older messages) and content resizes (tool call expand,
+  // drawer collapse) don't change the last element.
+  const lastMessageRef = useRef<Element | null>(null);
 
   useEffect(() => {
     const el = contentElRef.current;
     if (!el) return;
 
     const observer = new ResizeObserver(() => {
-      const count = el.querySelectorAll('.xds-chat-message').length;
-      if (count > messageCountRef.current) {
-        messageCountRef.current = count;
+      const messages = el.getElementsByClassName('xds-chat-message');
+      const last = messages.length > 0 ? messages[messages.length - 1] : null;
+      if (last && last !== lastMessageRef.current) {
+        lastMessageRef.current = last;
         onContentChange();
       }
     });
