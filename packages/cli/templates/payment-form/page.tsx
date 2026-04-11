@@ -2,7 +2,7 @@
 
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSVStack, XDSHStack, XDSStackItem} from '@xds/core/Layout';
+import {XDSVStack, XDSHStack, XDSStack, XDSStackItem} from '@xds/core/Layout';
 import {XDSGrid} from '@xds/core/Grid';
 import {XDSButton} from '@xds/core/Button';
 import {XDSText} from '@xds/core/Text';
@@ -14,13 +14,13 @@ import {XDSLink} from '@xds/core/Link';
 import pinkTeddyImg from './pink-teddy.png';
 import redHeartImg from './red-heart.png';
 import beagleImg from './beagle.png';
-import './payment-form-responsive.css';
 import {XDSTextArea} from '@xds/core/TextArea';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSCard} from '@xds/core/Card';
 import {XDSCollapsible} from '@xds/core/Collapsible';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSNumberInput} from '@xds/core/NumberInput';
+import {useMediaQuery} from '@xds/core/hooks';
 import {XDSAppShell} from '@xds/core/AppShell';
 import {XDSSection} from '@xds/core/Section';
 import {XDSCenter} from '@xds/core/Center';
@@ -176,6 +176,7 @@ const styles = stylex.create({
 });
 
 export default function PaymentFormPage() {
+  const isMobile = useMediaQuery('(max-width: 767px)');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [address, setAddress] = useState('');
@@ -269,8 +270,13 @@ export default function PaymentFormPage() {
               </div>
             </XDSVStack>
 
-            <XDSHStack gap={8} className="pf-body" vAlign="start">
-              <XDSStackItem size="fill" style={{flexBasis: 0}}>
+            <XDSStack
+              direction={isMobile ? 'vertical' : 'horizontal'}
+              gap={8}
+              vAlign="start">
+              <XDSStackItem
+                size="fill"
+                style={{flexBasis: isMobile ? undefined : 0}}>
                 <XDSVStack gap={8}>
                   {/* Sign in */}
                   <XDSVStack gap={1}>
@@ -849,13 +855,16 @@ export default function PaymentFormPage() {
 
               <XDSStackItem
                 size="fill"
-                className="pf-right"
-                style={{
-                  flexBasis: 0,
-                  position: 'sticky',
-                  top: 16,
-                  alignSelf: 'flex-start',
-                }}>
+                style={
+                  isMobile
+                    ? {order: -1}
+                    : {
+                        flexBasis: 0,
+                        position: 'sticky',
+                        top: 16,
+                        alignSelf: 'flex-start',
+                      }
+                }>
                 <XDSCard padding={5}>
                   <XDSVStack gap={4}>
                     {/* Accordion header — clickable on mobile only */}
@@ -1000,7 +1009,7 @@ export default function PaymentFormPage() {
                   {/* end outer card XDSVStack gap={4} */}
                 </XDSCard>
               </XDSStackItem>
-            </XDSHStack>
+            </XDSStack>
           </XDSVStack>
         </XDSSection>
       </XDSCenter>
