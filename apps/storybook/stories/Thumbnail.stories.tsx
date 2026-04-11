@@ -214,10 +214,13 @@ export const Gallery: Story = {
  */
 
 // =============================================================================
-// Solid-color diagnostic: compare luminance algorithms
+// Algorithm comparison — renders buttons with manually computed modes
 // =============================================================================
 
-// 1×1 solid-color PNGs for deterministic testing
+import {XDSButton} from '@xds/core/Button';
+import {XDSIcon} from '@xds/core/Icon';
+import {XDSMediaTheme} from '@xds/core/theme';
+
 const SOLID_COLORS: Array<{name: string; rgb: [number, number, number]; src: string}> = [
   {name: 'black', rgb: [0, 0, 0], src: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGNgYGAAAAAEAAH2FzhVAAAAAElFTkSuQmCC'},
   {name: 'white', rgb: [255, 255, 255], src: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4//8/AAX+Av4N70a4AAAAAElFTkSuQmCC'},
@@ -237,7 +240,7 @@ const SOLID_COLORS: Array<{name: string; rgb: [number, number, number]; src: str
   {name: 'teal', rgb: [0, 128, 128], src: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGNgaGgAAAGEAQFWjyAjAAAAAElFTkSuQmCC'},
 ];
 
-/** Current: BT.709 luma on gamma-encoded sRGB (what useImageMode uses) */
+/** BT.709 luma on gamma-encoded sRGB (what useImageMode currently uses) */
 function gammaLuma(r: number, g: number, b: number): number {
   return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
 }
@@ -252,30 +255,68 @@ function wcagLuminance(r: number, g: number, b: number): number {
 }
 
 /**
- * APCA perceptual lightness (Y to Lc).
- * Simplified from apca-w3: linearize sRGB, compute Y, then apply
- * perceptual lightness curve. Returns 0–1 where 0.5 ≈ perceptual mid.
- *
- * Uses APCA's unique sRGB-to-Y coefficients (different from BT.709)
- * and a soft-clamp power curve for perceived lightness.
+ * APCA perceptual lightness.
+ * Linearize sRGB, compute Y with APCA coefficients, apply perceptual curve.
  */
 function apcaLightness(r: number, g: number, b: number): number {
-  // APCA uses a piecewise sRGB linearization with exponent 2.4
   const lin = (c: number) => Math.pow(c / 255, 2.4);
-  // APCA coefficients for sRGB → Y (slightly different from BT.709)
   const y = 0.2126729 * lin(r) + 0.7151522 * lin(g) + 0.0721750 * lin(b);
-  // Soft-clamp perceptual lightness: power curve ~0.56
-  // This maps linear Y to a perceptual scale where 0.5 ≈ mid-gray
-  const Lc = Math.pow(y, 0.56);
-  return Lc;
+  return Math.pow(y, 0.56);
 }
 
 type AlgoId = 'gamma' | 'wcag' | 'apca';
 
-const ALGORITHMS: Array<{id: AlgoId; label: string; fn: (r: number, g: number, b: number) => number; threshold: number}> = [
-  {id: 'gamma', label: 'BT.709 Gamma (current)', fn: gammaLuma, threshold: 0.5},
-  {id: 'wcag', label: 'WCAG 2 Luminance', fn: wcagLuminance, threshold: 0.18},
-  {id: 'apca', label: 'APCA Lightness', fn: apcaLightness, threshold: 0.5},
+const ALGORITHMS: Array<{id: AlgoId; label: string; fn: (r: number, g: number, b: number) => number; threshold: number; description: string}> = [
+  {id: 'gamma', label: 'BT.709 Gamma', fn: gammaLuma, threshold: 0.5, description: 'Current useImageMode. Luma on gamma-encoded sRGB.'},
+  {id: 'wcag', label: 'WCAG 2', fn: wcagLuminance, threshold: 0.18, description: 'Linearize sRGB first, then BT.709 coefficients. Threshold 0.18 ≈ perceptual mid.'},
+  {id: 'apca', label: 'APCA', fn: apcaLightness, threshold: 0.5, description: 'Linearize + perceptual power curve (Y^0.56). Best mid-tone discrimination.'},
+];
+
+/** A single swatch: solid color background with a button rendered via XDSMediaTheme */
+function Swatch({color, mode, value}: {color: typeof SOLID_COLORS[0]; mode: 'dark' | 'light'; value: number}) {
+  return (
+    <div style={{textAlign: 'center', width: 72}}>
+      <div style={{
+        position: 'relative',
+        width: 64,
+        height: 64,
+        borderRadius: 8,
+        overflow: 'hidden',
+        backgroundColor: `rgb(${color.rgb.join(',')})`,
+        boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+      }}>
+        <div style={{position: 'absolute', top: 4, right: 4}}>
+          <XDSMediaTheme mode={mode}>
+            <XDSButton
+              icon={<XDSIcon icon="close" size="xsm" />}
+              label="Remove"
+              variant="secondary"
+              size="sm"
+              isIconOnly
+              xstyle={{height: 20, minWidth: 20, '--button-radius': '4px'} as any}
+              onClick={() => {}}
+            />
+          </XDSMediaTheme>
+        </div>
+      </div>
+      <div style={{fontSize: 10, color: '#666', marginTop: 4, fontWeight: 600}}>{color.name}</div>
+      <div style={{fontSize: 9, color: mode === 'dark' ? '#c44' : '#48a'}}>
+        {value.toFixed(3)} → {mode}
+      </div>
+    </div>
+  );
+}
+
+// Picsum images with known characteristics (deterministic by ID)
+const IMAGE_SWATCHES = [
+  {id: 10, label: 'forest', src: 'https://picsum.photos/id/10/200/200'},
+  {id: 15, label: 'laptop', src: 'https://picsum.photos/id/15/200/200'},
+  {id: 28, label: 'clouds', src: 'https://picsum.photos/id/28/200/200'},
+  {id: 36, label: 'water', src: 'https://picsum.photos/id/36/200/200'},
+  {id: 96, label: 'door', src: 'https://picsum.photos/id/96/200/200'},
+  {id: 106, label: 'bones', src: 'https://picsum.photos/id/106/200/200'},
+  {id: 136, label: 'road', src: 'https://picsum.photos/id/136/200/200'},
+  {id: 237, label: 'puppy', src: 'https://picsum.photos/id/237/200/200'},
 ];
 
 export const AlgorithmComparison: Story = {
@@ -287,10 +328,9 @@ export const AlgorithmComparison: Story = {
       <div>
         <div style={{marginBottom: 16}}>
           <p style={{fontSize: 13, color: '#555', margin: '0 0 8px'}}>
-            Compare how different luminance algorithms classify each color.
-            The button adapts based on the selected algorithm's threshold.
+            Solid colors — manually rendered with XDSMediaTheme so the button adapts per algorithm.
           </p>
-          <div style={{display: 'flex', gap: 8}}>
+          <div style={{display: 'flex', gap: 8, marginBottom: 8}}>
             {ALGORITHMS.map(a => (
               <button
                 key={a.id}
@@ -308,36 +348,43 @@ export const AlgorithmComparison: Story = {
               </button>
             ))}
           </div>
+          <p style={{fontSize: 11, color: '#888', margin: 0}}>{current.description}</p>
         </div>
-        <div style={{display: 'flex', flexWrap: 'wrap', gap: 12}}>
+
+        <div style={{display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 24}}>
           {SOLID_COLORS.map(c => {
             const value = current.fn(...c.rgb);
             const mode = value > current.threshold ? 'light' : 'dark';
-            return (
-              <div key={c.name} style={{textAlign: 'center', width: 72}}>
-                <XDSThumbnail
-                  src={c.src}
-                  alt={c.name}
-                  onRemove={() => {}}
-                />
-                <div style={{fontSize: 10, color: '#666', marginTop: 4, fontWeight: 600}}>{c.name}</div>
-                <div style={{fontSize: 9, color: '#999'}}>
-                  {value.toFixed(3)} → {mode}
-                </div>
-              </div>
-            );
+            return <Swatch key={c.name} color={c} mode={mode} value={value} />;
           })}
         </div>
+
+        <div style={{marginBottom: 16}}>
+          <p style={{fontSize: 13, color: '#555', margin: '0 0 8px'}}>
+            Real images — using XDSThumbnail (useImageMode detects mode automatically).
+            Compare how well the button adapts for each photo.
+          </p>
+        </div>
+        <div style={{display: 'flex', flexWrap: 'wrap', gap: 12}}>
+          {IMAGE_SWATCHES.map(img => (
+            <div key={img.id} style={{textAlign: 'center', width: 72}}>
+              <XDSThumbnail
+                src={img.src}
+                alt={img.label}
+                onRemove={() => {}}
+              />
+              <div style={{fontSize: 10, color: '#666', marginTop: 4}}>{img.label}</div>
+            </div>
+          ))}
+        </div>
+
         <div style={{marginTop: 16, fontSize: 11, color: '#888', maxWidth: 600}}>
-          <strong>Thresholds:</strong> BT.709 Gamma = 0.5 | WCAG 2 = 0.18 (relative luminance mid-point for 4.5:1 ratio) | APCA = 0.5
+          <strong>Note:</strong> Solid swatches use the selected algorithm directly.
+          Image swatches always use the current useImageMode (BT.709 Gamma) — switch
+          algorithms to see how solid colors would change, then compare with how the
+          real images behave.
           <br /><br />
-          <strong>Key differences:</strong>
-          <ul style={{margin: '4px 0', paddingLeft: 16}}>
-            <li>BT.709 Gamma overestimates brightness of saturated colors (uses gamma-encoded values)</li>
-            <li>WCAG 2 linearizes first — saturated colors correctly read darker</li>
-            <li>APCA applies a perceptual lightness curve on top of linearization — better mid-tone discrimination</li>
-          </ul>
-          <strong>Watch for:</strong> red, blue, teal, forest — these differ most between algorithms.
+          <strong>Watch for:</strong> red, blue, teal, forest, maroon — these diverge most between algorithms.
         </div>
       </div>
     );
