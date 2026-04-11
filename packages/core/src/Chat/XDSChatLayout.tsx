@@ -295,20 +295,17 @@ function ScrollToBottomButton({
   hasNewMessages,
   label,
   onClick,
-  dockHeight,
 }: {
   isScrolledUp: boolean;
   hasNewMessages: boolean;
   label: string;
   onClick: () => void;
-  dockHeight: number;
 }) {
   const isVisible = isScrolledUp || hasNewMessages;
 
   return (
     <div
-      {...stylex.props(styles.scrollButtonWrapper)}
-      style={{bottom: dockHeight + 12}}>
+      {...stylex.props(styles.scrollButtonWrapper)}>
       <div
         {...stylex.props(
           styles.scrollButtonContainer,
@@ -381,7 +378,6 @@ export function XDSChatLayout({
   const isSelfScrolling = !externalScrollRef;
 
   const [density, setDensity] = useState<Density>('balanced');
-  const [dockHeight, setDockHeight] = useState(0);
 
   // --- Auto-scroll ---
   const {
@@ -437,10 +433,9 @@ export function XDSChatLayout({
   const layoutContextValue = useMemo(
     () => ({
       scrollContainerRef,
-      dockHeight,
       contentRef,
     }),
-    [scrollContainerRef, dockHeight, contentRef],
+    [scrollContainerRef, contentRef],
   );
 
   // --- Density observation ---
@@ -452,23 +447,6 @@ export function XDSChatLayout({
       const entry = entries[0];
       if (entry) {
         setDensity(getDensity(entry.contentRect.width));
-      }
-    });
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
-  // --- Dock height observation ---
-  useEffect(() => {
-    const el = dockRef.current;
-    if (!el) return;
-
-    const observer = new ResizeObserver(entries => {
-      const entry = entries[0];
-      if (entry) {
-        setDockHeight(
-          entry.borderBoxSize?.[0]?.blockSize ?? entry.contentRect.height,
-        );
       }
     });
     observer.observe(el);
@@ -561,7 +539,6 @@ export function XDSChatLayout({
           hasNewMessages={hasNewMessages}
           label={newMessagesLabel}
           onClick={handleButtonClick}
-          dockHeight={dockHeight}
         />
 
         {/* Dock container — sticky/fixed, holds blur + composer */}

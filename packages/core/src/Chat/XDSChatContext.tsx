@@ -62,8 +62,6 @@ export function useXDSChatComposerContext(): XDSChatComposerContextValue | null 
 export interface XDSChatLayoutContextValue {
   /** Ref to the scrollable container element that wraps the message area. */
   scrollContainerRef: React.RefObject<HTMLElement | null>;
-  /** Height of the composer dock in px. Used to offset the scroll-to-bottom button. */
-  dockHeight: number;
   /** Ref callback for the message list content area — layout observes it for height changes. */
   contentRef: (el: HTMLElement | null) => void;
 }
