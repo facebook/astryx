@@ -12,7 +12,10 @@
     "@xds/theme-neutral": "*",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
-    "unplugin": "^2.3.11"
+    "unplugin": "^2.3.11",
+    "@xds/vega": "*",
+    "vega": "^6.2.0",
+    "vega-lite": "^6.4.2"
   },
   "devDependencies": {
     "@storybook/addon-essentials": "^8.6.17",
