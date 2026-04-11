@@ -3,52 +3,50 @@
 export const docs = {
   name: 'Thumbnail',
   description:
-    'A square preview card for image attachments. Shows a skeleton shimmer while the image loads, the image on success, or a placeholder icon on failure.',
+    'A square preview card for image attachments. Shows a skeleton shimmer while uploading, the image on success, or a placeholder icon when no source is provided.',
   keywords: ["thumbnail","attachment","preview","image","upload","dismiss","remove","loading"],
   features: [
     'Square 1:1 aspect ratio via CSS aspect-ratio',
-    'Skeleton shimmer while image is being fetched',
-    'Image preview with object-fit: cover on successful load',
-    'Placeholder icon when no src or on load error',
-    'Inset border overlay for visual containment (only on loaded images)',
-    'Overlaid remove button with expanded hit area',
-    'Interactive mode with button semantics when onClick is set',
+    'Skeleton shimmer during upload (isLoading)',
+    'Upload overlay with spinner when isLoading + src',
+    'Image preview with object-fit: cover',
+    'APCA-based luminance detection for adaptive remove button contrast',
+    'Concentric radius: button radius derived from container radius minus inset',
+    'Hover shadow on interactive thumbnails (onClick)',
+    'Label shown as tooltip on hover, used as aria-label',
+    'Placeholder icon when no src',
     'Disabled state blocks all interactions and reduces opacity',
   ],
   props: [
     {
       name: 'src',
       type: 'string',
-      description: 'Image source URL. Shows spinner while loading.',
+      description: 'Image source URL.',
     },
     {
       name: 'alt',
       type: 'string',
-      description: 'Alt text for the image. Required for accessibility when src is provided.',
+      description: 'Alt text for the image.',
     },
     {
       name: 'label',
       type: 'string',
-      description: 'Text label displayed below the image (e.g. file name).',
+      description: 'Accessible label (e.g. file name). Shown as tooltip on hover.',
     },
     {
       name: 'onRemove',
       type: '(e: React.MouseEvent) => void',
-      description: 'Callback fired when the overlaid remove button is clicked.',
+      description: 'Callback for the overlaid remove button.',
     },
     {
       name: 'onClick',
       type: '(e: React.MouseEvent) => void',
-      description: 'Click handler for the thumbnail area. When set, renders as interactive with button semantics.',
-    },
-    {
-      type: 'ReactNode',
-      description: 'Content rendered below the thumbnail (e.g. file size, duration).',
+      description: 'Click handler. Adds button semantics and hover shadow.',
     },
     {
       name: 'isLoading',
       type: 'boolean',
-      description: 'Shows a skeleton shimmer regardless of src. Use while uploading or processing.',
+      description: 'Shows skeleton (no src) or upload overlay (with src).',
       default: 'false',
     },
     {
@@ -60,13 +58,11 @@ export const docs = {
   ],
   examples: [
     {
-      label: 'Image thumbnail with remove',
-      code: '<XDSThumbnail src="/photo.jpg" alt="Vacation" onRemove={() => {}} />',
+      label: 'Image with remove',
+      code: '<XDSThumbnail src="/photo.jpg" alt="Vacation" label="vacation.jpg" onRemove={() => {}} />',
     },
     {
-    },
-    {
-      label: 'Clickable thumbnail',
+      label: 'Clickable',
       code: '<XDSThumbnail src="/preview.png" alt="Preview" onClick={openLightbox} />',
     },
   ],
