@@ -225,25 +225,27 @@ const styles = stylex.create({
   },
 
   // --- Scroll-to-bottom button ---
-  scrollButtonContainer: {
+  // Wrapper centers the button horizontally without affecting layout flow.
+  scrollButtonWrapper: {
     position: 'sticky',
     bottom: spacingVars['--spacing-3'],
-    left: '50%',
+    zIndex: 3,
+    display: 'flex',
+    justifyContent: 'center',
+    pointerEvents: 'none',
+    height: 0,
+  },
+  scrollButtonContainer: {
+    pointerEvents: 'auto',
     contain: 'layout style',
     overflow: 'hidden',
     borderRadius: radiusVars['--radius-full'],
     backgroundColor: colorVars['--color-background-popover'],
     boxShadow: shadowVars['--shadow-med'],
     height: '32px',
-    zIndex: 3,
     transitionProperty: 'opacity, transform, max-width',
     transitionTimingFunction: easeVars['--ease-standard'],
     transitionDuration: durationVars['--duration-fast-max'],
-    // Pull out of flow so it doesn't affect message area height
-    float: 'right',
-    clear: 'both',
-    transform: 'translateX(-50%)',
-    marginBlockStart: '-44px',
   },
   scrollButtonContainerHidden: {
     opacity: 0,
@@ -304,26 +306,29 @@ function ScrollToBottomButton({
 
   return (
     <div
-      {...stylex.props(
-        styles.scrollButtonContainer,
-        isVisible
-          ? styles.scrollButtonContainerVisible
-          : styles.scrollButtonContainerHidden,
-        hasNewMessages
-          ? styles.scrollButtonExpanded
-          : styles.scrollButtonCollapsed,
-      )}
+      {...stylex.props(styles.scrollButtonWrapper)}
       style={{bottom: dockHeight + 12}}>
-      <XDSButton
-        label={hasNewMessages ? label : 'Scroll to bottom'}
-        aria-label={hasNewMessages ? label : 'Scroll to bottom'}
-        icon={<XDSIcon icon="chevronDown" size="md" />}
-        variant="ghost"
-        size="md"
-        onClick={onClick}
-        xstyle={styles.scrollButton}>
-        {hasNewMessages ? label : undefined}
-      </XDSButton>
+      <div
+        {...stylex.props(
+          styles.scrollButtonContainer,
+          isVisible
+            ? styles.scrollButtonContainerVisible
+            : styles.scrollButtonContainerHidden,
+          hasNewMessages
+            ? styles.scrollButtonExpanded
+            : styles.scrollButtonCollapsed,
+        )}>
+        <XDSButton
+          label={hasNewMessages ? label : 'Scroll to bottom'}
+          aria-label={hasNewMessages ? label : 'Scroll to bottom'}
+          icon={<XDSIcon icon="chevronDown" size="md" />}
+          variant="ghost"
+          size="md"
+          onClick={onClick}
+          xstyle={styles.scrollButton}>
+          {hasNewMessages ? label : undefined}
+        </XDSButton>
+      </div>
     </div>
   );
 }
@@ -541,7 +546,7 @@ export function XDSChatLayout({
         {/* Message area */}
         <div
           {...stylex.props(styles.messageArea, messageAreaStyle)}
-          style={{paddingBlockEnd: dockHeight + 24}}>
+>
           {showEmpty && emptyState ? (
             <div {...stylex.props(styles.emptyState)}>{emptyState}</div>
           ) : (
