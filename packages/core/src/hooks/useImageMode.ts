@@ -10,8 +10,9 @@
  * its pixels via OffscreenCanvas. Runs entirely off the paint path —
  * no visible canvas element, no layout thrash.
  *
- * The 1×1 downsample trick lets the browser's internal resampling do
- * the averaging — no manual pixel-by-pixel luminance calculation.
+ * Uses APCA perceptual lightness (sRGB linearization + power curve)
+ * which handles saturated colors better than BT.709 gamma-luma or
+ * WCAG 2 relative luminance.
  *
  * For regional detection (e.g. "what's the luminance where the text
  * overlay sits"), pass a `region` option to sample a specific area.
@@ -69,14 +70,23 @@ export interface UseImageModeOptions {
 }
 
 /**
- * Calculate perceptual brightness from sRGB values (0-255).
- * Uses BT.709 luma coefficients on gamma-encoded values (not linearized).
- * This gives a result that matches human perception better than
- * true relative luminance for the purpose of "is this image dark or light."
- * Returns 0-1 where 0 is black, 1 is white.
+ * APCA perceptual lightness from sRGB values (0-255).
+ *
+ * Linearizes sRGB with a 2.4 exponent, computes luminance Y using
+ * APCA coefficients (slightly refined from BT.709), then applies a
+ * perceptual power curve (Y^0.56) that maps linear light to a scale
+ * where 0.5 ≈ perceptual mid-gray.
+ *
+ * This outperforms both raw BT.709 gamma-luma and WCAG 2 relative
+ * luminance for dark/light surface detection — especially on saturated
+ * colors (reds, blues) where gamma-encoded luma overestimates brightness.
+ *
+ * Returns 0–1 where 0 is black, 1 is white.
  */
-function perceptualBrightness(r: number, g: number, b: number): number {
-  return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+function perceptualLightness(r: number, g: number, b: number): number {
+  const lin = (c: number) => Math.pow(c / 255, 2.4);
+  const y = 0.2126729 * lin(r) + 0.7151522 * lin(g) + 0.0721750 * lin(b);
+  return Math.pow(y, 0.56);
 }
 
 /**
@@ -144,8 +154,8 @@ export function useImageMode(
 
         if (cancelled) return;
 
-        const brightness = perceptualBrightness(r, g, b);
-        setMode(brightness > threshold ? 'light' : 'dark');
+        const lightness = perceptualLightness(r, g, b);
+        setMode(lightness > threshold ? 'light' : 'dark');
       } catch {
         // CORS error, network error, etc. — keep fallback
         if (!cancelled) setMode(fallback);

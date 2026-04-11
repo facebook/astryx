@@ -60,6 +60,7 @@ export * from './ToggleButton';
 export * from './Token';
 export * from './Typeahead';
 export * from './Tokenizer';
+export * from './Thumbnail';
 export * from './PowerSearch';
 export * from './TreeList';
 
