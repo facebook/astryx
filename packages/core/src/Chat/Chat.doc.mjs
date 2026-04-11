@@ -19,7 +19,7 @@ export const docs = {
     'Composer layout shell with named semantic slots',
     'ContentEditable input with @ mention and / command trigger menus',
     'Imperative handle on ComposerInput for programmatic token/text insertion',
-    'Tokenized text rendering in message bubbles via XDSChatMessageTokenizedText',
+    'Tokenized text rendering in message bubbles via XDSChatTokenizedText',
     'XDSSearchSource integration — reuses Typeahead search sources',
     'Concentric radius — inner elements follow outer shell curvature',
     'Themeable via --composer-radius and --composer-padding CSS vars',
@@ -62,11 +62,9 @@ export const docs = {
   components: [
     {
       name: 'XDSChatMessageList',
-      description: 'Scrollable message container with auto-scroll and infinite scroll support.',
+      description: 'Presentational message container with density context and infinite scroll support. Auto-scroll is owned by XDSChatLayout.',
       props: [
         {name: 'children', type: 'ReactNode', description: 'Message elements — typically XDSChatMessage or XDSChatSystemMessage.', required: true},
-        {name: 'hasAutoScroll', type: 'boolean', description: 'Enables auto-scroll to bottom on new content when near the bottom.', default: 'true'},
-        {name: 'scrollThreshold', type: 'number', description: 'Distance from bottom (px) within which new content triggers auto-scroll.', default: '50'},
         {name: 'emptyState', type: 'ReactNode', description: 'Content shown when the list has no messages.'},
         {name: 'onScrollToTopAction', type: '() => Promise<void>', description: 'Async action fired when user scrolls to top. Use for loading older messages.'},
         {name: 'density', type: "'compact' | 'balanced' | 'spacious'", description: 'Visual density — flows to child messages via context.', default: "'balanced'"},
@@ -180,21 +178,40 @@ export const docs = {
       ],
     },
     {
-      name: 'XDSChatMessageTokenizedText',
+      name: 'XDSChatTokenizedText',
       description: 'Renders text with token patterns replaced by inline XDSBadge components. Use inside XDSChatMessageBubble to display @mentions or other tokens as styled badges.',
       props: [
         {name: 'children', type: 'string', description: 'The message text containing token patterns.', required: true},
         {name: 'tokens', type: 'XDSChatMessageTokenConfig[]', description: 'Token definitions. Each has pattern (string to match), label (display text), and optional variant.'},
       ],
       examples: [
-        {label: 'With mentions', code: `<XDSChatMessageBubble>\n  <XDSChatMessageTokenizedText\n    tokens={[{pattern: '@cindy', label: '@Cindy Zhang', variant: 'blue'}]}\n  >\n    Hey @cindy, can you review this?\n  </XDSChatMessageTokenizedText>\n</XDSChatMessageBubble>`},
+        {label: 'With mentions', code: `<XDSChatMessageBubble>\n  <XDSChatTokenizedText\n    tokens={[{pattern: '@cindy', label: '@Cindy Zhang', variant: 'blue'}]}\n  >\n    Hey @cindy, can you review this?\n  </XDSChatTokenizedText>\n</XDSChatMessageBubble>`},
       ],
     },
   ],
   usage: {
-    summary: 'Chat components for building AI chat interfaces, including message lists, message bubbles, and a composer.',
+    summary: 'Chat components for building AI chat interfaces, including message lists, message bubbles, a composer, and a layout shell.',
   },
 };
+
+// Append XDSChatLayout to all doc variants
+const chatLayoutComponent = {
+  name: 'XDSChatLayout',
+  description: 'Layout shell for full chat interfaces. Messages flow in normal page flow, composer is fixed to the bottom with a frosted glass dock. Adapts spacing via container width observation. By default the layout root is the scroll container; pass scrollRef to delegate scrolling to a parent element or the document body.',
+  props: [
+    {name: 'children', type: 'ReactNode', description: 'Message content — flows naturally in the page, scrolls with the page.', required: true},
+    {name: 'composer', type: 'ReactNode', description: 'Composer element fixed to the bottom with frosted glass dock.', required: true},
+    {name: 'emptyState', type: 'ReactNode', description: 'Content shown when children is empty.'},
+    {name: 'scrollRef', type: 'React.RefObject<HTMLElement | null>', description: 'External scroll container ref. When provided, auto-scroll and scroll-to-bottom target this element instead of the layout root. Use when the chat is embedded in a page where a parent element or the document body scrolls.'},
+    {name: 'hasAutoScroll', type: 'boolean', description: 'Whether auto-scroll behavior is enabled.', default: 'true'},
+    {name: 'newMessagesLabel', type: 'string', description: 'Label shown in the scroll-to-bottom button when new messages arrive.', default: "'New messages'"},
+  ],
+  examples: [
+    {label: 'Basic (self-scrolling)', code: `<XDSChatLayout composer={<XDSChatComposer onSubmit={handleSubmit} />}>\n  {messages.map(msg => <XDSChatMessage key={msg.id} {...msg} />)}\n</XDSChatLayout>`},
+    {label: 'Page body scrolling', code: `const scrollRef = useRef(document.documentElement);\n<XDSChatLayout scrollRef={scrollRef} composer={<XDSChatComposer onSubmit={handleSubmit} />}>\n  {messages.map(msg => <XDSChatMessage key={msg.id} {...msg} />)}\n</XDSChatLayout>`},
+  ],
+};
+docs.components.push(chatLayoutComponent);
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsZh = {
@@ -214,7 +231,7 @@ export const docsZh = {
     '编写器布局外壳，具有命名语义插槽',
     'ContentEditable 输入框，支持 @ 提及和 / 命令触发菜单',
     'ComposerInput 命令式句柄，支持编程式插入标记/文本',
-    '通过 XDSChatMessageTokenizedText 在消息气泡中渲染标记文本',
+    '通过 XDSChatTokenizedText 在消息气泡中渲染标记文本',
     'XDSSearchSource 集成 — 复用 Typeahead 搜索源',
     '同心圆角 — 内部元素跟随外部外壳曲率',
     '通过 --composer-radius 和 --composer-padding CSS 变量实现主题化',
@@ -222,11 +239,9 @@ export const docsZh = {
   components: [
     {
       name: 'XDSChatMessageList',
-      description: '可滚动的消息容器，支持自动滚动和无限滚动。',
+      description: '消息展示容器，支持密度上下文和无限滚动。自动滚动由 XDSChatLayout 管理。',
       propDescriptions: {
         children: '消息元素，通常是 XDSChatMessage 或 XDSChatSystemMessage。',
-        hasAutoScroll: '在接近底部时，新内容触发自动滚动到底部。',
-        scrollThreshold: '距底部的距离（像素），在此范围内新内容触发自动滚动。',
         emptyState: '列表无消息时显示的内容。',
         onScrollToTopAction: '用户滚动到顶部时触发的异步操作。用于加载更早的消息。',
         density: '视觉密度，通过上下文传递给子消息。',
@@ -315,11 +330,21 @@ export const docsZh = {
       },
     },
     {
-      name: 'XDSChatMessageTokenizedText',
+name: 'XDSChatTokenizedText',
       description: '渲染带有标记模式的文本，将匹配的模式替换为内联 XDSBadge 组件。在 XDSChatMessageBubble 内使用，以徽章样式显示 @提及或其他标记。',
       propDescriptions: {
         children: '包含标记模式的消息文本。',
         tokens: '标记定义。每个包含 pattern（匹配字符串）、label（显示文本）和可选 variant。',
+      },
+    },
+    {
+      name: 'XDSChatLayout',
+      description: '完整聊天界面的布局外壳。消息在页面中自然流动，编写器固定在底部，带有毛玻璃效果。默认布局根元素为滚动容器；传入 scrollRef 可将滚动委托给父元素或文档主体。',
+      propDescriptions: {
+        children: '消息内容，在页面中自然流动，随页面滚动。',
+        composer: '固定在底部的编写器元素，带有毛玻璃底座。',
+        emptyState: '子元素为空时显示的内容。',
+        scrollRef: '外部滚动容器引用。提供时，自动滚动和滚动到底部将目标指向此元素。',
       },
     },
   ],
@@ -342,7 +367,7 @@ export const docsDense = {
     'composer layout shell w/ named semantic slots',
     'ContentEditable input w/ @ mention + / command trigger menus',
     'imperative handle on ComposerInput for programmatic token/text insert',
-    'tokenized text rendering in msg bubbles via XDSChatMessageTokenizedText',
+    'tokenized text rendering in msg bubbles via XDSChatTokenizedText',
     'XDSSearchSource integration; reuses Typeahead search sources',
     'concentric radius; inner elements follow outer shell curvature',
     'themeable via --composer-radius + --composer-padding CSS vars',
@@ -350,11 +375,9 @@ export const docsDense = {
   components: [
     {
       name: 'XDSChatMessageList',
-      description: 'scrollable msg container w/ auto-scroll + infinite scroll',
+      description: 'presentational msg container w/ density context + infinite scroll; auto-scroll owned by XDSChatLayout',
       propDescriptions: {
         children: 'msg elements (XDSChatMessage or XDSChatSystemMessage)',
-        hasAutoScroll: 'auto-scroll to bottom on new content near bottom',
-        scrollThreshold: 'px from bottom to trigger auto-scroll',
         emptyState: 'content when no msgs',
         onScrollToTopAction: 'async action at scroll top; load older msgs',
         density: 'visual density; flows to children via context',
@@ -443,11 +466,21 @@ export const docsDense = {
       },
     },
     {
-      name: 'XDSChatMessageTokenizedText',
+name: 'XDSChatTokenizedText',
       description: 'renders text w/ token patterns replaced by inline badges; use in bubble for @mentions',
       propDescriptions: {
         children: 'msg text w/ token patterns',
         tokens: 'token defs: pattern+label+variant',
+      },
+    },
+    {
+      name: 'XDSChatLayout',
+      description: 'layout shell for full chat; msgs in page flow, composer fixed bottom w/ frosted glass dock; scrollRef delegates scrolling to parent/body',
+      propDescriptions: {
+        children: 'msg content; flows in page, scrolls w/ page',
+        composer: 'composer element; fixed bottom w/ frosted glass',
+        emptyState: 'content when children empty',
+        scrollRef: 'external scroll container ref; targets parent/body instead of layout root',
       },
     },
   ],

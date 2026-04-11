@@ -54,3 +54,21 @@ export const XDSChatComposerContext =
 export function useXDSChatComposerContext(): XDSChatComposerContextValue | null {
   return useContext(XDSChatComposerContext);
 }
+
+// =============================================================================
+// Layout context — shared between XDSChatLayout and XDSChatMessageList
+// =============================================================================
+
+export interface XDSChatLayoutContextValue {
+  /** Ref to the scrollable container element that wraps the message area. */
+  scrollContainerRef: React.RefObject<HTMLElement | null>;
+  /** Callback ref for the message list content element — layout observes it for size changes. */
+  contentRef: (el: HTMLElement | null) => void;
+}
+
+export const XDSChatLayoutContext =
+  createContext<XDSChatLayoutContextValue | null>(null);
+
+export function useXDSChatLayoutContext(): XDSChatLayoutContextValue | null {
+  return useContext(XDSChatLayoutContext);
+}

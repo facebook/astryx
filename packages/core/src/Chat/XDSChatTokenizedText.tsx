@@ -1,9 +1,9 @@
 'use client';
 
 /**
- * @file XDSChatMessageTokenizedText.tsx
+ * @file XDSChatTokenizedText.tsx
  * @input Uses React, XDSBadge, XDSChatComposerToken
- * @output Exports XDSChatMessageTokenizedText component
+ * @output Exports XDSChatTokenizedText component
  * @position Utility component for rendering tokenized text in message bubbles
  *
  * Parses a plain text string and replaces token values with inline badges.
@@ -22,7 +22,7 @@ import type {XDSChatComposerToken} from './XDSChatComposerInput';
 // Types
 // =============================================================================
 
-export interface XDSChatMessageTokenizedTextProps {
+export interface XDSChatTokenizedTextProps {
   /** The message text containing serialized token values */
   children: string;
   /**
@@ -37,9 +37,14 @@ export interface XDSChatMessageTokenizedTextProps {
    *   label: `@${c.label}`,
    *   variant: 'blue' as const,
    * }));
-   * <XDSChatMessageTokenizedText tokens={mentionTokens}>
+   *
+   * // Input trigger
+   * { character: '@', onSelect: (item) => mentionTokens.find(...) }
+   *
+   * // Display
+   * <XDSChatTokenizedText tokens={mentionTokens}>
    *   {message.text}
-   * </XDSChatMessageTokenizedText>
+   * </XDSChatTokenizedText>
    * ```
    */
   tokens?: XDSChatComposerToken[];
@@ -69,19 +74,19 @@ function escapeRegExp(str: string): string {
  * Accepts the same `XDSChatComposerToken` type used by input triggers,
  * so you can share a single token definition between input and display.
  */
-export function XDSChatMessageTokenizedText({
+export function XDSChatTokenizedText({
   children,
   tokens,
-}: XDSChatMessageTokenizedTextProps) {
-  if (!tokens || tokens.length === 0) {
-    return <span style={{display: 'inline'}}>{children}</span>;
+}: XDSChatTokenizedTextProps) {
+  if (!children || !tokens || tokens.length === 0) {
+    return <span style={{display: 'inline'}}>{children ?? ''}</span>;
   }
 
   const parts = renderTokens(children, tokens);
   return <span style={{display: 'inline'}}>{parts}</span>;
 }
 
-XDSChatMessageTokenizedText.displayName = 'XDSChatMessageTokenizedText';
+XDSChatTokenizedText.displayName = 'XDSChatTokenizedText';
 
 // =============================================================================
 // Render

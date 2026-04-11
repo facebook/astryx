@@ -13,6 +13,7 @@ import {XDSHStack} from '@xds/core/Stack';
 import {XDSCodeBlock} from '@xds/core/CodeBlock';
 import {XDSButton} from '@xds/core/Button';
 import {XDSIcon} from '@xds/core/Icon';
+import {XDSEmptyState} from '@xds/core/EmptyState';
 import {XDSTimestamp} from '@xds/core/Timestamp';
 import {HandThumbUpIcon, HandThumbDownIcon} from '@heroicons/react/24/outline';
 import {ClipboardDocumentIcon} from '@heroicons/react/24/outline';
@@ -357,10 +358,10 @@ export const EmptyState: StoryObj = {
     <div style={{height: 400, display: 'flex', flexDirection: 'column'}}>
       <XDSChatMessageList
         emptyState={
-          <div style={{textAlign: 'center', opacity: 0.5}}>
-            <div style={{fontSize: 32, marginBottom: 8}}>💬</div>
-            <div>No messages yet. Start a conversation!</div>
-          </div>
+          <XDSEmptyState
+            title="No messages yet"
+            description="Start a conversation!"
+          />
         }>
         {[]}
       </XDSChatMessageList>

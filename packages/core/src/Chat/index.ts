@@ -28,8 +28,9 @@ export type {
   XDSChatComposerTriggerItem,
 } from './XDSChatComposerInput';
 
-export {XDSChatMessageTokenizedText} from './XDSChatMessageTokenizedText';
-export type {XDSChatMessageTokenizedTextProps} from './XDSChatMessageTokenizedText';
+export {XDSChatTokenizedText} from './XDSChatTokenizedText';
+export type {XDSChatTokenizedTextProps} from './XDSChatTokenizedText';
+
 
 export {XDSChatMessageList} from './XDSChatMessageList';
 export type {XDSChatMessageListProps} from './XDSChatMessageList';
@@ -66,3 +67,6 @@ export type {
   XDSChatToolCallItem,
   XDSChatToolCallStatus,
 } from './XDSChatToolCalls';
+
+export {XDSChatLayout} from './XDSChatLayout';
+export type {XDSChatLayoutProps} from './XDSChatLayout';

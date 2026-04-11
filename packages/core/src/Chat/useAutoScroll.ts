@@ -4,18 +4,20 @@
  * @file useAutoScroll.ts
  * @input Uses React refs, state, and effects
  * @output Exports useAutoScroll hook for scroll-pinning behavior
- * @position Utility hook — used by XDSChatMessageList, also usable standalone
+ * @position Utility hook — used by XDSChatLayout, also usable standalone
  *
- * Exposes two scroll states:
- * - `isScrolledUp` — true when the user has scrolled away from the bottom
- *   (beyond `scrollUpThreshold`), regardless of whether new content arrived.
- *   Drives a scroll-to-bottom affordance.
- * - `hasNewMessages` — true when new content arrived while scrolled up.
- *   Layers on top of isScrolledUp to add a "new messages" notification.
+ * Scroll-lock model:
+ * - **Locked** (default): content changes auto-scroll to bottom
+ * - **Unlocked**: user manually scrolled, auto-scroll stops
+ * - **Re-locked**: user clicks scroll-to-bottom button
+ *
+ * Uses `scrollend` to distinguish user scrolls from programmatic ones.
+ * Programmatic scrolls (scrollToBottom) set a flag before scrolling;
+ * when `scrollend` fires without that flag, it was a user scroll → unlock.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Chat/index.ts (exports)
- * - /packages/core/src/Chat/XDSChatMessageList.tsx (consumer)
+ * - /packages/core/src/Chat/XDSChatLayout.tsx (consumer)
  */
 
 import {useCallback, useEffect, useRef, useState} from 'react';
@@ -28,76 +30,79 @@ export interface UseAutoScrollOptions {
   enabled?: boolean;
 
   /**
-   * Distance from bottom (in px) within which new content triggers auto-scroll.
-   * @default 12
-   */
-  threshold?: number;
-
-  /**
-   * Distance from bottom (in px) beyond which `isScrolledUp` becomes true.
-   * Controls when the scroll-to-bottom button appears.
+   * Distance from bottom (in px) beyond which the scroll-to-bottom
+   * button becomes visible.
    * @default 100
    */
   scrollUpThreshold?: number;
+
+  /**
+   * External scroll container ref. When provided, scroll logic targets
+   * this element instead of creating its own.
+   */
+  scrollContainerRef?: React.RefObject<HTMLElement | null>;
 }
 
 export interface UseAutoScrollReturn {
   /** Ref to attach to the scrollable container element. */
   scrollRef: React.RefObject<HTMLDivElement | null>;
 
-  /** Whether the user has scrolled up beyond `scrollUpThreshold`. */
+  /** Whether the user has scrolled up (shows scroll-to-bottom button). */
   isScrolledUp: boolean;
 
-  /** Whether new content arrived while the user is scrolled up. */
+  /** Whether new content arrived while unlocked. */
   hasNewMessages: boolean;
 
-  /** Scroll handler — attach to onScroll on the scrollable element. */
+  /** Scroll handler — attach to onScroll. */
   handleScroll: () => void;
+
+  /** Scrollend handler — attach to scrollend. */
+  handleScrollEnd: () => void;
+
+  /** User input handler — attach to wheel/touchstart to interrupt programmatic scrolls. */
+  handleUserScroll: () => void;
 
   /** Scroll to the bottom of the container. */
   scrollToBottom: (smooth?: boolean) => void;
 
-  /** Dismiss the new messages indicator and scroll to bottom. */
+  /** Dismiss the new messages indicator, re-lock, and scroll to bottom. */
   dismissNewMessages: () => void;
 
-  /** Notify the hook that content changed (triggers auto-scroll check). */
+  /** New message appended — flag "new messages" if unlocked. */
   onContentChange: () => void;
+
+  /** Content grew — auto-scroll if locked, no flag. */
+  scrollToBottomIfLocked: () => void;
 }
 
 /**
- * Hook that manages auto-scroll behavior for scrollable containers.
+ * Hook that manages scroll-lock auto-scroll behavior.
  *
- * Pins to the bottom when the user is near the end. Tracks two
- * orthogonal states: whether the user has scrolled up (for a
- * scroll-to-bottom affordance) and whether new content arrived
- * while scrolled up (for a "new messages" notification).
- *
- * @example
- * ```
- * const {scrollRef, isScrolledUp, hasNewMessages, handleScroll, scrollToBottom, dismissNewMessages} = useAutoScroll();
- *
- * return (
- *   <div ref={scrollRef} onScroll={handleScroll}>
- *     {messages}
- *     {isScrolledUp && <button onClick={scrollToBottom}>↓</button>}
- *     {hasNewMessages && <button onClick={dismissNewMessages}>New messages</button>}
- *   </div>
- * );
- * ```
+ * Starts locked (pinned to bottom). User scrolling unlocks (detected
+ * via `scrollend` without the programmatic flag). Clicking the
+ * scroll-to-bottom button re-locks.
  */
 export function useAutoScroll({
   enabled = true,
-  threshold = 12,
   scrollUpThreshold = 100,
+  scrollContainerRef,
 }: UseAutoScrollOptions = {}): UseAutoScrollReturn {
-  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const internalRef = useRef<HTMLDivElement | null>(null);
+  const scrollRef = (scrollContainerRef ??
+    internalRef) as React.RefObject<HTMLDivElement | null>;
+
   const [hasNewMessages, setHasNewMessages] = useState(false);
   const [isScrolledUp, setIsScrolledUp] = useState(false);
-  const isNearBottomRef = useRef(true);
+
+  // Scroll lock: true = auto-scroll follows content
+  const lockedRef = useRef(true);
+  // Flag set before programmatic scrolls, cleared on scrollend
+  const isProgrammaticRef = useRef(false);
 
   const scrollToBottom = useCallback((smooth = true) => {
     const el = scrollRef.current;
     if (!el) return;
+    isProgrammaticRef.current = true;
     if (typeof el.scrollTo === 'function') {
       el.scrollTo({
         top: el.scrollHeight,
@@ -108,33 +113,58 @@ export function useAutoScroll({
     }
   }, []);
 
+  // User input (wheel/touch) interrupts any in-progress programmatic scroll
+  const handleUserScroll = useCallback(() => {
+    isProgrammaticRef.current = false;
+  }, []);
+
+  // On scroll: unlock if user scrolled past threshold
   const handleScroll = useCallback(() => {
     const el = scrollRef.current;
     if (!el) return;
-    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-    const nearBottom = distanceFromBottom <= threshold;
-    isNearBottomRef.current = nearBottom;
-
-    // Track whether user is scrolled up beyond the visible threshold
+    const distanceFromBottom =
+      el.scrollHeight - el.scrollTop - el.clientHeight;
     setIsScrolledUp(distanceFromBottom > scrollUpThreshold);
 
-    if (nearBottom) {
+    if (!isProgrammaticRef.current && distanceFromBottom > scrollUpThreshold) {
+      lockedRef.current = false;
+    }
+  }, [scrollUpThreshold]);
+
+  // On scroll end: lock if at bottom, clear programmatic flag
+  const handleScrollEnd = useCallback(() => {
+    isProgrammaticRef.current = false;
+
+    const el = scrollRef.current;
+    if (!el) return;
+    const distanceFromBottom =
+      el.scrollHeight - el.scrollTop - el.clientHeight;
+    if (distanceFromBottom <= scrollUpThreshold) {
+      lockedRef.current = true;
       setHasNewMessages(false);
     }
-  }, [threshold, scrollUpThreshold]);
+  }, [scrollUpThreshold]);
 
   const onContentChange = useCallback(() => {
     if (!enabled) return;
-    if (isNearBottomRef.current) {
-      scrollToBottom(true);
-    } else {
+    if (!lockedRef.current) {
       setHasNewMessages(true);
+    }
+  }, [enabled]);
+
+  const scrollToBottomIfLocked = useCallback(() => {
+    if (!enabled) return;
+    if (lockedRef.current) {
+      scrollToBottom(true);
     }
   }, [enabled, scrollToBottom]);
 
   const dismissNewMessages = useCallback(() => {
-    scrollToBottom();
+    lockedRef.current = true;
+    isProgrammaticRef.current = true;
+    setIsScrolledUp(false);
     setHasNewMessages(false);
+    scrollToBottom();
   }, [scrollToBottom]);
 
   // Scroll to bottom on mount
@@ -147,8 +177,11 @@ export function useAutoScroll({
     isScrolledUp,
     hasNewMessages,
     handleScroll,
+    handleScrollEnd,
+    handleUserScroll,
     scrollToBottom,
     dismissNewMessages,
     onContentChange,
+    scrollToBottomIfLocked,
   };
 }
