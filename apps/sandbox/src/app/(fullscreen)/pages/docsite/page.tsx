@@ -1375,7 +1375,7 @@ function TemplatePreview({
                   onClick={onBack}
                   style={{marginLeft: -8}}
                 />
-                <XDSText>{templateName}</XDSText>
+                <XDSText type="body">{templateName}</XDSText>
               </>
             }
             centerContent={
