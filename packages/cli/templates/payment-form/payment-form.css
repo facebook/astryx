@@ -1,3 +1,8 @@
+/* Prevent layout shift when scrollbar appears/disappears (e.g. accordion toggle) */
+html {
+  scrollbar-gutter: stable;
+}
+
 .pf-page {
   min-height: 100svh;
   background-color: var(--color-background-surface);
