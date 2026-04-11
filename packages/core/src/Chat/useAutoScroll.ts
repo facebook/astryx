@@ -62,6 +62,9 @@ export interface UseAutoScrollReturn {
   /** Scroll handler — attach to onScroll on the scrollable element. */
   handleScroll: () => void;
 
+  /** User scroll handler — attach to wheel/touchmove to unlock auto-scroll. */
+  handleUserScroll: () => void;
+
   /** Scroll to the bottom of the container. */
   scrollToBottom: (smooth?: boolean) => void;
 
@@ -111,6 +114,21 @@ export function useAutoScroll({
     }
   }, []);
 
+  // Wheel/touch up = user intent to scroll away — unlock.
+  // Only unlocks on upward scroll to avoid false unlocks when
+  // the user scrolls down at the bottom (no-op visually).
+  const handleUserScroll = useCallback((e: Event) => {
+    if (e instanceof WheelEvent && e.deltaY < 0) {
+      lockedRef.current = false;
+    } else if (e.type === 'touchmove') {
+      // Touch direction is tracked via touchstart/touchmove delta
+      // For simplicity, any touchmove unlocks — re-lock happens
+      // automatically when the user reaches the bottom.
+      lockedRef.current = false;
+    }
+  }, []);
+
+  // Scroll position check — only used to re-lock + update button
   const handleScroll = useCallback(() => {
     const el = scrollRef.current;
     if (!el) return;
@@ -118,16 +136,11 @@ export function useAutoScroll({
     const distanceFromBottom =
       el.scrollHeight - el.scrollTop - el.clientHeight;
 
-    // Update button visibility
     setIsScrolledUp(distanceFromBottom > scrollUpThreshold);
 
     if (distanceFromBottom <= bottomThreshold) {
-      // User scrolled to bottom — re-lock
       lockedRef.current = true;
       setHasNewMessages(false);
-    } else {
-      // User scrolled up — unlock
-      lockedRef.current = false;
     }
   }, [bottomThreshold, scrollUpThreshold]);
 
@@ -163,6 +176,7 @@ export function useAutoScroll({
     isScrolledUp,
     hasNewMessages,
     handleScroll,
+    handleUserScroll,
     scrollToBottom,
     dismissNewMessages,
     onContentChange,
