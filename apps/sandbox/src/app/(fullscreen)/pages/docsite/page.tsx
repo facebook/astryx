@@ -650,21 +650,6 @@ function TemplateCard({
               transition:
                 'opacity var(--duration-fast, 175ms) var(--ease-standard, cubic-bezier(0.24, 1, 0.4, 1))',
             }}>
-            <div
-              style={{position: 'absolute', top: 2, right: 2}}
-              onClick={e => e.stopPropagation()}>
-              <XDSDropdownMenu
-                button={{
-                  label: 'More',
-                  variant: 'ghost',
-                  size: 'sm',
-                  icon: <MoreIcon />,
-                  style: {color: '#fff'},
-                }}
-                hasChevron={false}
-                items={[]}
-              />
-            </div>
             {/* Bottom-left action buttons */}
             <div
               onClick={e => e.stopPropagation()}
