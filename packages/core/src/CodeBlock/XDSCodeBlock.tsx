@@ -19,6 +19,7 @@ import {
   useState,
   useCallback,
   useMemo,
+  type CSSProperties,
 } from 'react';
 import * as React from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
@@ -32,8 +33,11 @@ import {
   fontWeightVars,
   typeScaleVars,
   borderVars,
+  durationVars,
+  easeVars,
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
+import {XDSIcon} from '../Icon';
 import {tokenize, tokenizeAsync, SYNC_TOKENIZE_THRESHOLD} from './tokenizer';
 import type {Token} from './tokenizer';
 import {ensureHighlightStyles} from './highlightStyles';
@@ -46,6 +50,7 @@ import {applyHighlightRangesChunked} from './highlightRanges';
 const styles = stylex.create({
   root: {
     position: 'relative',
+    isolation: 'isolate',
     display: 'flex',
     flexDirection: 'column',
     margin: 0,
@@ -58,12 +63,23 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingBlock: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-4'],
-    borderBottom: `${borderVars['--border-width']} solid ${colorVars['--color-border']}`,
     backgroundColor: 'var(--color-syntax-background)',
+    position: 'sticky',
+    top: 0,
+    zIndex: 1,
+  },
+  headerWithDivider: {
+    paddingBlock: spacingVars['--spacing-2'],
+    borderBottom: `${borderVars['--border-width']} solid ${colorVars['--color-border']}`,
+  },
+  headerCompact: {
+    paddingBlock: spacingVars['--spacing-2'],
   },
   headerTitle: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-1'],
     fontSize: textSizeVars['--font-size-sm'],
     fontFamily: typographyVars['--font-family-code'],
     fontWeight: fontWeightVars['--font-weight-medium'],
@@ -75,9 +91,47 @@ const styles = stylex.create({
     overflowX: 'auto',
     overflowY: 'auto',
   },
+
   codeWrapper: {
     display: 'flex',
     minWidth: 'fit-content',
+  },
+  codeWrapperCompact: {
+    marginBlockStart: `calc(-1 * ${spacingVars['--spacing-2']})`,
+  },
+  // Collapse animation via grid-template-rows
+  collapseGrid: {
+    display: 'grid',
+    gridTemplateRows: '1fr',
+    transitionProperty: 'grid-template-rows',
+    transitionDuration: durationVars['--duration-medium'],
+    transitionTimingFunction: easeVars['--ease-standard'],
+  },
+  collapseGridCollapsed: {
+    gridTemplateRows: '0fr',
+  },
+  collapseInner: {
+    overflow: 'hidden',
+    minHeight: 0,
+  },
+  collapseChevron: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    width: '14px',
+    height: '14px',
+    color: 'var(--color-syntax-comment)',
+    transitionProperty: 'transform',
+    transitionDuration: durationVars['--duration-fast'],
+    transitionTimingFunction: easeVars['--ease-standard'],
+  },
+  collapseChevronCollapsed: {
+    transform: 'rotate(180deg)',
+  },
+  headerCollapsible: {
+    cursor: 'pointer',
+    userSelect: 'none',
   },
   gutter: {
     flexShrink: 0,
@@ -139,6 +193,7 @@ const styles = stylex.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: spacingVars['--spacing-1'],
+    marginInlineEnd: `calc(-1 * ${spacingVars['--spacing-2']})`,
     border: 'none',
     borderRadius: radiusVars['--radius-inner'],
     backgroundColor: {
@@ -239,6 +294,20 @@ export interface XDSCodeBlockProps extends XDSBaseProps<HTMLPreElement> {
   onCopy?: () => void;
   isWrapped?: boolean;
   maxHeight?: number | string;
+  /**
+   * Allow collapsing the code body into just the header bar.
+   * Starts expanded; the header becomes clickable to toggle.
+   * Only shows the toggle when the code exceeds `collapsibleThreshold` lines.
+   * @default false
+   */
+  isCollapsible?: boolean;
+  /**
+   * Minimum number of lines before the collapse toggle appears.
+   * Below this threshold the code block renders normally even when
+   * `isCollapsible` is true.
+   * @default 10
+   */
+  collapsibleThreshold?: number;
   size?: 'sm' | 'md';
   tokenizer?: (
     code: string,
@@ -523,6 +592,8 @@ export function XDSCodeBlock({
   onCopy,
   isWrapped = false,
   maxHeight,
+  isCollapsible = false,
+  collapsibleThreshold = 10,
   size = 'md',
   tokenizer: customTokenizer,
   highlightMode = 'auto',
@@ -571,7 +642,12 @@ export function XDSCodeBlock({
     hasLanguageLabel && language !== 'plaintext' ? language : null;
   const showHeader = title != null || languageLabel != null;
 
-  const scrollStyle: React.CSSProperties | undefined = maxHeight
+  // Collapse state — starts expanded, user can collapse long blocks
+  const canCollapse = isCollapsible && lines.length >= collapsibleThreshold;
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const scrollStyle: CSSProperties | undefined = maxHeight
     ? {maxHeight: typeof maxHeight === 'number' ? `${maxHeight}px` : maxHeight}
     : undefined;
 
@@ -615,6 +691,94 @@ export function XDSCodeBlock({
     </button>
   ) : null;
 
+  // Header element — clickable when collapsible
+  const headerEl = showHeader ? (
+    <div
+      role={canCollapse ? 'button' : undefined}
+      tabIndex={canCollapse ? 0 : undefined}
+      aria-expanded={canCollapse ? !isCollapsed : undefined}
+      onClick={canCollapse ? () => setIsCollapsed(prev => !prev) : undefined}
+      onKeyDown={
+        canCollapse
+          ? (e: React.KeyboardEvent) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                setIsCollapsed(prev => !prev);
+              }
+            }
+          : undefined
+      }
+      {...stylex.props(
+        styles.header,
+        hasLineNumbers ? styles.headerWithDivider : styles.headerCompact,
+        canCollapse && styles.headerCollapsible,
+      )}>
+      <span {...stylex.props(styles.headerTitle)}>
+        {title}
+        {title && languageLabel ? ' — ' : ''}
+        {languageLabel}
+        {canCollapse && (
+          <span
+            {...stylex.props(
+              styles.collapseChevron,
+              isCollapsed && styles.collapseChevronCollapsed,
+            )}>
+            <XDSIcon icon="chevronDown" size="xsm" color="inherit" />
+          </span>
+        )}
+      </span>
+      {copyButtonEl}
+    </div>
+  ) : null;
+
+  // Code body
+  const codeBody = (
+    <div
+      ref={scrollContainerRef}
+      {...stylex.props(styles.scrollContainer)}
+      style={scrollStyle}>
+      <div
+        {...stylex.props(
+          styles.codeWrapper,
+          showHeader && !hasLineNumbers && styles.codeWrapperCompact,
+        )}>
+        {hasLineNumbers && (
+          <div
+            {...stylex.props(styles.gutter, gutterSizeStyle)}
+            aria-hidden="true">
+            {lines.map((_, i) => (
+              <div key={i} {...stylex.props(styles.gutterLine)}>
+                {i + 1}
+              </div>
+            ))}
+          </div>
+        )}
+        {useSpans ? (
+          <SpanCodeContent
+            code={code}
+            language={language}
+            lines={lines}
+            lineOffsets={lineOffsets}
+            highlightSet={highlightSet}
+            isWrapped={isWrapped}
+            sizeStyle={sizeStyle}
+            customTokenizer={customTokenizer}
+          />
+        ) : (
+          <RangeCodeContent
+            code={code}
+            language={language}
+            lines={lines}
+            highlightSet={highlightSet}
+            isWrapped={isWrapped}
+            sizeStyle={sizeStyle}
+            customTokenizer={customTokenizer}
+          />
+        )}
+      </div>
+    </div>
+  );
+
   return (
     <pre
       ref={ref}
@@ -625,53 +789,18 @@ export function XDSCodeBlock({
         style,
       )}
       {...props}>
-      {showHeader && (
-        <div {...stylex.props(styles.header)}>
-          <span {...stylex.props(styles.headerTitle)}>
-            {languageLabel}
-            {languageLabel && title ? ' — ' : ''}
-            {title}
-          </span>
-          {copyButtonEl}
+      {headerEl}
+      {canCollapse ? (
+        <div
+          {...stylex.props(
+            styles.collapseGrid,
+            isCollapsed && styles.collapseGridCollapsed,
+          )}>
+          <div {...stylex.props(styles.collapseInner)}>{codeBody}</div>
         </div>
+      ) : (
+        codeBody
       )}
-      <div {...stylex.props(styles.scrollContainer)} style={scrollStyle}>
-        <div {...stylex.props(styles.codeWrapper)}>
-          {hasLineNumbers && (
-            <div
-              {...stylex.props(styles.gutter, gutterSizeStyle)}
-              aria-hidden="true">
-              {lines.map((_, i) => (
-                <div key={i} {...stylex.props(styles.gutterLine)}>
-                  {i + 1}
-                </div>
-              ))}
-            </div>
-          )}
-          {useSpans ? (
-            <SpanCodeContent
-              code={code}
-              language={language}
-              lines={lines}
-              lineOffsets={lineOffsets}
-              highlightSet={highlightSet}
-              isWrapped={isWrapped}
-              sizeStyle={sizeStyle}
-              customTokenizer={customTokenizer}
-            />
-          ) : (
-            <RangeCodeContent
-              code={code}
-              language={language}
-              lines={lines}
-              highlightSet={highlightSet}
-              isWrapped={isWrapped}
-              sizeStyle={sizeStyle}
-              customTokenizer={customTokenizer}
-            />
-          )}
-        </div>
-      </div>
       {!showHeader && copyButtonEl}
     </pre>
   );
