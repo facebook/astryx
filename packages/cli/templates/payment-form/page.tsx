@@ -34,8 +34,6 @@ import {
   colorVars,
   spacingVars,
   radiusVars,
-  typeScaleVars,
-  fontWeightVars,
 } from '@xds/core/theme/tokens.stylex';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -151,12 +149,6 @@ const fmt = (n: number) => `$${n.toFixed(2)}`;
 // ── Styles ────────────────────────────────────────────────────────────────────
 
 const styles = stylex.create({
-  sectionTitle: {
-    fontSize: typeScaleVars['--text-large-size'],
-    fontWeight: fontWeightVars['--font-weight-bold'],
-    lineHeight: typeScaleVars['--text-large-leading'],
-    margin: 0,
-  },
   fullWidth: {width: '100%'},
   orderThumb: {
     width: spacingVars['--spacing-12'],
@@ -165,17 +157,6 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-neutral'],
     flexShrink: 0,
     overflow: 'hidden',
-  },
-  summaryRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  trustBar: {
-    display: 'flex',
-    justifyContent: 'center',
-    gap: spacingVars['--spacing-5'],
-    flexWrap: 'wrap',
   },
   freeBanner: {
     backgroundColor: colorVars['--color-background-blue'],
@@ -293,9 +274,9 @@ export default function PaymentFormPage() {
                 {/* Sign in */}
                 <XDSVStack gap={1}>
                   <XDSHStack gap={2} hAlign="between" vAlign="center">
-                    <div {...stylex.props(styles.sectionTitle)}>
+                    <XDSText type="large" weight="bold">
                       Sign in to check out
-                    </div>
+                    </XDSText>
                     <XDSButton
                       label="Sign In"
                       variant="secondary"
@@ -311,9 +292,9 @@ export default function PaymentFormPage() {
 
                 {/* Contact Information */}
                 <XDSVStack gap={3}>
-                  <div {...stylex.props(styles.sectionTitle)}>
+                  <XDSText type="large" weight="bold">
                     Contact Information
-                  </div>
+                  </XDSText>
                   <XDSTextInput
                     size="lg"
                     label="Email"
@@ -335,9 +316,9 @@ export default function PaymentFormPage() {
 
                 {/* Shipping Information */}
                 <XDSVStack gap={3}>
-                  <div {...stylex.props(styles.sectionTitle)}>
+                  <XDSText type="large" weight="bold">
                     Shipping Information
-                  </div>
+                  </XDSText>
                   <XDSGrid columns={2} gap={3}>
                     <XDSTextInput
                       size="lg"
@@ -438,7 +419,9 @@ export default function PaymentFormPage() {
                 {/* Delivery */}
                 <XDSVStack gap={3}>
                   <XDSVStack gap={1}>
-                    <div {...stylex.props(styles.sectionTitle)}>Delivery</div>
+                    <XDSText type="large" weight="bold">
+                      Delivery
+                    </XDSText>
                     <XDSText type="supporting" color="secondary">
                       Please allow 1–3 business days processing time before your
                       order ships.
@@ -472,9 +455,9 @@ export default function PaymentFormPage() {
                 {/* Payment Method */}
                 <XDSVStack gap={3}>
                   <XDSVStack gap={1}>
-                    <div {...stylex.props(styles.sectionTitle)}>
+                    <XDSText type="large" weight="bold">
                       Payment Method
-                    </div>
+                    </XDSText>
                     <XDSText type="supporting" color="secondary">
                       All transactions are secure and encrypted.
                     </XDSText>
@@ -718,7 +701,9 @@ export default function PaymentFormPage() {
 
                 {/* Promo Code */}
                 <XDSVStack gap={3}>
-                  <div {...stylex.props(styles.sectionTitle)}>Promo Code</div>
+                  <XDSText type="large" weight="bold">
+                    Promo Code
+                  </XDSText>
                   <XDSHStack gap={2} vAlign="center">
                     <XDSTextInput
                       size="lg"
@@ -740,7 +725,9 @@ export default function PaymentFormPage() {
 
                 {/* Gift Options */}
                 <XDSVStack gap={3}>
-                  <div {...stylex.props(styles.sectionTitle)}>Gift Options</div>
+                  <XDSText type="large" weight="bold">
+                    Gift Options
+                  </XDSText>
                   <XDSCheckboxInput
                     label="Add a gift message"
                     value={addGiftMessage}
@@ -779,7 +766,7 @@ export default function PaymentFormPage() {
 
                 {/* Trust bar + CTAs + policy links */}
                 <XDSVStack gap={4}>
-                  <div {...stylex.props(styles.trustBar)}>
+                  <XDSHStack gap={5} hAlign="center" wrap="wrap">
                     <XDSHStack gap={1} vAlign="center">
                       <XDSIcon
                         icon={ShieldCheckIcon}
@@ -810,7 +797,7 @@ export default function PaymentFormPage() {
                         Free Returns
                       </XDSText>
                     </XDSHStack>
-                  </div>
+                  </XDSHStack>
                   <XDSVStack gap={2}>
                     <XDSButton
                       label="Place Order"
@@ -947,17 +934,17 @@ export default function PaymentFormPage() {
 
                       {/* Order total subsection */}
                       <XDSVStack gap={3}>
-                        <div {...stylex.props(styles.sectionTitle)}>
+                        <XDSText type="large" weight="bold">
                           Order Total
-                        </div>
+                        </XDSText>
                         <XDSVStack gap={2}>
-                          <div {...stylex.props(styles.summaryRow)}>
+                          <XDSHStack hAlign="between" vAlign="center">
                             <XDSText type="body" color="secondary">
                               Subtotal
                             </XDSText>
                             <XDSText type="body">{fmt(SUBTOTAL)}</XDSText>
-                          </div>
-                          <div {...stylex.props(styles.summaryRow)}>
+                          </XDSHStack>
+                          <XDSHStack hAlign="between" vAlign="center">
                             <XDSText type="body" color="secondary">
                               Shipping
                             </XDSText>
@@ -966,16 +953,16 @@ export default function PaymentFormPage() {
                                 deliveryMethod === 'expedited' ? 9.95 : 4.95,
                               )}
                             </XDSText>
-                          </div>
-                          <div {...stylex.props(styles.summaryRow)}>
+                          </XDSHStack>
+                          <XDSHStack hAlign="between" vAlign="center">
                             <XDSText type="body" color="secondary">
                               Tax
                             </XDSText>
                             <XDSText type="body">{fmt(TAX)}</XDSText>
-                          </div>
+                          </XDSHStack>
                         </XDSVStack>
                         <XDSDivider />
-                        <div {...stylex.props(styles.summaryRow)}>
+                        <XDSHStack hAlign="between" vAlign="center">
                           <XDSText type="large" weight="bold">
                             Total
                           </XDSText>
@@ -986,7 +973,7 @@ export default function PaymentFormPage() {
                                 TAX,
                             )}
                           </XDSText>
-                        </div>
+                        </XDSHStack>
                         <div {...stylex.props(styles.freeBanner)}>
                           <XDSIcon icon={TruckIcon} size="sm" color="primary" />
                           <XDSText type="supporting">
