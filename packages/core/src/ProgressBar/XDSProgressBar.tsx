@@ -247,6 +247,7 @@ export function XDSProgressBar({
   style,
   'data-testid': dataTestId,
   ref,
+  ...rest
 }: XDSProgressBarProps) {
   const labelId = useId();
   const clampedValue = Math.min(Math.max(0, value), max);
@@ -265,7 +266,8 @@ export function XDSProgressBar({
         className,
         style,
       )}
-      data-testid={dataTestId}>
+      data-testid={dataTestId}
+      {...rest}>
       {/* Label row */}
       {!isLabelHidden || showValueLabel ? (
         <div {...stylex.props(styles.header)}>
