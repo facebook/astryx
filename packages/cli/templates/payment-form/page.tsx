@@ -292,17 +292,8 @@ export default function PaymentFormPage() {
                 </div>
               </XDSVStack>
 
-              <div
-                className="pf-body"
-                style={{display: 'flex', gap: 32, alignItems: 'flex-start'}}>
-                <div
-                  style={{
-                    flex: '1 1 55%',
-                    minWidth: 0,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 32,
-                  }}>
+              <XDSHStack gap={8} className="pf-body" vAlign="start">
+                <XDSVStack gap={8} style={{flex: '1 1 55%', minWidth: 0}}>
                   {/* Sign in */}
                   <XDSVStack gap={1}>
                     <XDSHStack gap={2} hAlign="between" vAlign="center">
@@ -859,7 +850,7 @@ export default function PaymentFormPage() {
                       </XDSLink>
                     </XDSHStack>
                   </XDSVStack>
-                </div>
+                </XDSVStack>
 
                 <div
                   className="pf-right"
@@ -1059,7 +1050,7 @@ export default function PaymentFormPage() {
                     {/* end outer card XDSVStack gap={4} */}
                   </XDSCard>
                 </div>
-              </div>
+              </XDSHStack>
             </XDSVStack>
           </XDSLayoutContent>
         }
