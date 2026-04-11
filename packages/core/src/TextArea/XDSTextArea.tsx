@@ -283,6 +283,7 @@ export function XDSTextArea({
   className,
   style,
   ref,
+  ...rest
 }: XDSTextAreaProps) {
   const id = useId();
   const descriptionID = useId();
@@ -367,6 +368,7 @@ export function XDSTextArea({
         )}>
         {startIcon && <XDSIcon icon={startIcon} size="sm" color="primary" />}
         <textarea
+          {...rest}
           ref={ref}
           id={id}
           name={htmlName}
