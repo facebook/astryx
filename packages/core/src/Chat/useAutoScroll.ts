@@ -29,13 +29,6 @@ export interface UseAutoScrollOptions {
   enabled?: boolean;
 
   /**
-   * Distance from bottom (in px) within which the user is considered
-   * "at the bottom" for re-locking auto-scroll.
-   * @default 20
-   */
-  bottomThreshold?: number;
-
-  /**
    * Distance from bottom (in px) beyond which the scroll-to-bottom
    * button becomes visible.
    * @default 100
@@ -87,7 +80,6 @@ export interface UseAutoScrollReturn {
  */
 export function useAutoScroll({
   enabled = true,
-  bottomThreshold = 20,
   scrollUpThreshold = 100,
   scrollContainerRef,
 }: UseAutoScrollOptions = {}): UseAutoScrollReturn {
@@ -114,21 +106,18 @@ export function useAutoScroll({
     }
   }, []);
 
-  // Wheel/touch up = user intent to scroll away — unlock.
-  // Only unlocks on upward scroll to avoid false unlocks when
-  // the user scrolls down at the bottom (no-op visually).
+  // Track user intent to scroll — wheel up or touch sets a flag,
+  // then handleScroll checks if they've actually moved away from bottom.
+  const userScrollingRef = useRef(false);
+
   const handleUserScroll = useCallback((e: Event) => {
     if (e instanceof WheelEvent && e.deltaY < 0) {
-      lockedRef.current = false;
+      userScrollingRef.current = true;
     } else if (e.type === 'touchmove') {
-      // Touch direction is tracked via touchstart/touchmove delta
-      // For simplicity, any touchmove unlocks — re-lock happens
-      // automatically when the user reaches the bottom.
-      lockedRef.current = false;
+      userScrollingRef.current = true;
     }
   }, []);
 
-  // Scroll position check — only used to re-lock + update button
   const handleScroll = useCallback(() => {
     const el = scrollRef.current;
     if (!el) return;
@@ -138,11 +127,12 @@ export function useAutoScroll({
 
     setIsScrolledUp(distanceFromBottom > scrollUpThreshold);
 
-    if (distanceFromBottom <= bottomThreshold) {
-      lockedRef.current = true;
-      setHasNewMessages(false);
+    // Only unlock when the user has actively scrolled away from bottom
+    if (userScrollingRef.current && distanceFromBottom > scrollUpThreshold) {
+      lockedRef.current = false;
     }
-  }, [bottomThreshold, scrollUpThreshold]);
+    userScrollingRef.current = false;
+  }, [scrollUpThreshold]);
 
   const onContentChange = useCallback(() => {
     if (!enabled) return;
@@ -162,8 +152,9 @@ export function useAutoScroll({
 
   const dismissNewMessages = useCallback(() => {
     lockedRef.current = true;
-    scrollToBottom();
+    setIsScrolledUp(false);
     setHasNewMessages(false);
+    scrollToBottom();
   }, [scrollToBottom]);
 
   // Scroll to bottom on mount
