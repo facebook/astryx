@@ -168,14 +168,11 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-element'],
     overflow: 'hidden',
   },
-  removeButtonPosition: {
+  removeButtonOverrides: {
     position: 'absolute',
     top: spacingVars['--spacing-1'],
     right: spacingVars['--spacing-1'],
     zIndex: 1,
-    display: 'flex',
-  },
-  removeButtonOverrides: {
     '--button-radius': `calc(${radiusVars['--radius-element']} - ${spacingVars['--spacing-1']})`,
     height: 20,
     minWidth: 20,
@@ -257,7 +254,8 @@ export function XDSThumbnail({
   const showUploadOverlay = isLoading && hasSrc;
   const showPlaceholder = !isLoading && !hasSrc;
   const isInteractive = onClick != null && !isDisabled && !isLoading;
-  const accessibleName = label ?? alt ?? 'thumbnail';
+  const accessibleName =
+    label && alt ? `${label} — ${alt}` : label ?? alt ?? 'thumbnail';
 
   const imageContent = (
     <>
@@ -281,20 +279,18 @@ export function XDSThumbnail({
 
   const removeButtonEl =
     onRemove != null && !isDisabled ? (
-      <div {...stylex.props(styles.removeButtonPosition)}>
-        <XDSButton
-          icon={<XDSIcon icon="close" size="xsm" />}
-          label={`Remove ${accessibleName}`}
-          variant="secondary"
-          size="sm"
-          isIconOnly
-          onClick={e => {
-            e.stopPropagation();
-            onRemove(e);
-          }}
-          xstyle={styles.removeButtonOverrides}
-        />
-      </div>
+      <XDSButton
+        icon={<XDSIcon icon="close" size="xsm" />}
+        label={`Remove ${accessibleName}`}
+        variant="secondary"
+        size="sm"
+        isIconOnly
+        onClick={e => {
+          e.stopPropagation();
+          onRemove(e);
+        }}
+        xstyle={styles.removeButtonOverrides}
+      />
     ) : null;
 
   const thumbnail = (
