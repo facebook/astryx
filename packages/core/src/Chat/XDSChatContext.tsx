@@ -62,8 +62,6 @@ export function useXDSChatComposerContext(): XDSChatComposerContextValue | null 
 export interface XDSChatLayoutContextValue {
   /** Ref to the scrollable container element that wraps the message area. */
   scrollContainerRef: React.RefObject<HTMLElement | null>;
-  /** Ref callback for the message list content area — layout observes it for height changes. */
-  contentRef: (el: HTMLElement | null) => void;
 }
 
 export const XDSChatLayoutContext =

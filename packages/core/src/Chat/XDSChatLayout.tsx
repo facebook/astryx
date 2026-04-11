@@ -369,7 +369,6 @@ export function XDSChatLayout({
 }: XDSChatLayoutProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const dockRef = useRef<HTMLDivElement>(null);
-  const contentElRef = useRef<HTMLElement | null>(null);
 
   const scrollContainerRef =
     externalScrollRef ?? (rootRef as React.RefObject<HTMLElement | null>);
@@ -402,62 +401,33 @@ export function XDSChatLayout({
   // Single ResizeObserver for both density (root width) and content
   // changes (new messages). Checks entry.target to dispatch.
   const lastMessageRef = useRef<Element | null>(null);
-  const observerRef = useRef<ResizeObserver | null>(null);
 
-  const getObserver = useCallback(() => {
-    if (!observerRef.current) {
-      observerRef.current = new ResizeObserver(() => {
-        const root = rootRef.current;
-        if (root) {
-          setDensity(getDensity(root.clientWidth));
-        }
-
-        const content = contentElRef.current;
-        if (content) {
-          const messages = content.getElementsByClassName('xds-chat-message');
-          const last =
-            messages.length > 0 ? messages[messages.length - 1] : null;
-          if (last && last !== lastMessageRef.current) {
-            lastMessageRef.current = last;
-            onContentChange();
-          }
-        }
-      });
-    }
-    return observerRef.current;
-  }, [onContentChange]);
-
-  // Observe root for density
+  // Single ResizeObserver on root — handles density + new message detection.
   useEffect(() => {
-    const el = rootRef.current;
-    if (!el) return;
-    const observer = getObserver();
-    observer.observe(el);
-    return () => observer.unobserve(el);
-  }, [getObserver]);
+    const root = rootRef.current;
+    if (!root) return;
 
-  // Callback ref — observe/unobserve content element for new messages
-  const contentRef = useCallback(
-    (el: HTMLElement | null) => {
-      const observer = getObserver();
-      if (contentElRef.current) {
-        observer.unobserve(contentElRef.current);
+    const observer = new ResizeObserver(() => {
+      setDensity(getDensity(root.clientWidth));
+
+      const messages = root.getElementsByClassName('xds-chat-message');
+      const last =
+        messages.length > 0 ? messages[messages.length - 1] : null;
+      if (last && last !== lastMessageRef.current) {
+        lastMessageRef.current = last;
+        onContentChange();
       }
-      contentElRef.current = el;
-      if (el) {
-        observer.observe(el);
-      }
-    },
-    [getObserver],
-  );
+    });
+    observer.observe(root);
+    return () => observer.disconnect();
+  }, [onContentChange]);
 
   // --- Layout context ---
   const layoutContextValue = useMemo(
     () => ({
       scrollContainerRef,
-      contentRef,
     }),
-    [scrollContainerRef, contentRef],
+    [scrollContainerRef],
   );
 
 
