@@ -396,13 +396,21 @@ export function XDSChatLayout({
     return () => el.removeEventListener('scroll', handleScroll);
   }, [scrollRef, handleScroll]);
 
-  // Observe message content area for height changes (new messages, streaming)
+  // Observe message content area — only trigger auto-scroll when the
+  // message count actually grows (not when existing content resizes,
+  // e.g. expanding tool calls or collapsing drawers).
+  const messageCountRef = useRef(0);
+
   useEffect(() => {
     const el = contentElRef.current;
     if (!el) return;
 
     const observer = new ResizeObserver(() => {
-      onContentChange();
+      const count = el.querySelectorAll('.xds-chat-message').length;
+      if (count > messageCountRef.current) {
+        messageCountRef.current = count;
+        onContentChange();
+      }
     });
     observer.observe(el);
     return () => observer.disconnect();
