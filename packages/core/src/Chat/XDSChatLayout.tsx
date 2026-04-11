@@ -2,13 +2,14 @@
 
 /**
  * @file XDSChatLayout.tsx
- * @input Uses React, StyleX, theme tokens, XDSChatMessageList
+ * @input Uses React, StyleX, theme tokens, useAutoScroll
  * @output Exports XDSChatLayout component and XDSChatLayoutProps
  * @position Layout shell for full chat interfaces — messages in page flow, composer fixed to bottom
  *
  * Arranges a chat page: messages flow naturally in the page, composer is
- * fixed to the bottom with a frosted glass backdrop. Uses a ResizeObserver
- * to adapt spacing for narrow (panel/mobile) vs wide (desktop) containers.
+ * fixed to the bottom with a frosted glass backdrop. Owns auto-scroll
+ * behavior and the scroll-to-bottom button. Uses ResizeObserver on the
+ * message content area to detect new content.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Chat/index.ts (exports)
@@ -25,9 +26,19 @@ import {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
-import {colorVars, spacingVars} from '../theme/tokens.stylex';
+import {
+  colorVars,
+  spacingVars,
+  radiusVars,
+  shadowVars,
+  durationVars,
+  easeVars,
+} from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 import {XDSChatLayoutContext} from './XDSChatContext';
+import {useAutoScroll} from './useAutoScroll';
+import {XDSIcon} from '../Icon';
+import {XDSButton} from '../Button';
 
 // =============================================================================
 // Types
@@ -41,7 +52,7 @@ export interface XDSChatLayoutProps {
 
   /**
    * Message content — flows naturally in the page, scrolls with the page.
-   * Typically XDSChatMessage components.
+   * Typically XDSChatMessageList with XDSChatMessage children.
    */
   children: ReactNode;
 
@@ -60,9 +71,6 @@ export interface XDSChatLayoutProps {
    * External scroll container ref. When provided, auto-scroll and
    * scroll-to-bottom target this element instead of the layout root.
    *
-   * Use when the layout is embedded in a page where the scroll
-   * container is a parent element or the document body:
-   *
    * @example
    * ```
    * // Scroll with the page body
@@ -75,6 +83,18 @@ export interface XDSChatLayoutProps {
    * panel chat layouts.
    */
   scrollRef?: React.RefObject<HTMLElement | null>;
+
+  /**
+   * Whether auto-scroll behavior is enabled.
+   * @default true
+   */
+  hasAutoScroll?: boolean;
+
+  /**
+   * Label shown in the scroll-to-bottom button when new messages arrive.
+   * @default 'New messages'
+   */
+  newMessagesLabel?: string;
 
   /** StyleX overrides. */
   xstyle?: StyleXStyles;
@@ -104,13 +124,10 @@ const styles = stylex.create({
 
   // --- Message area ---
   messageArea: {
-    // Normal page flow, not in a scroll container
     display: 'flex',
     flexDirection: 'column',
     marginInline: 'auto',
   },
-
-  // Message area max-width per density
   messageAreaCompact: {
     maxWidth: '100%',
   },
@@ -122,11 +139,6 @@ const styles = stylex.create({
     paddingInline: spacingVars['--spacing-4'],
   },
 
-  // Message area bottom padding to clear the fixed dock
-  messageAreaPadding: {
-    // Will be set dynamically via inline style
-  },
-
   // --- Empty state ---
   emptyState: {
     display: 'flex',
@@ -136,7 +148,7 @@ const styles = stylex.create({
     minHeight: 200,
   },
 
-  // --- Blur layer — purely visual, behind composer ---
+  // --- Blur layer ---
   blurLayer: {
     bottom: 0,
     left: 0,
@@ -169,7 +181,7 @@ const styles = stylex.create({
     WebkitMaskImage: 'linear-gradient(to bottom, transparent, black 48px)',
   },
 
-  // --- Composer dock — interactive, no blur/mask ---
+  // --- Composer dock ---
   dock: {
     bottom: 0,
     left: 0,
@@ -195,7 +207,7 @@ const styles = stylex.create({
     paddingBlockEnd: spacingVars['--spacing-3'],
   },
 
-  // --- Dock inner wrapper (max-width centered) ---
+  // --- Dock inner wrapper ---
   dockInner: {
     marginInline: 'auto',
   },
@@ -207,6 +219,48 @@ const styles = stylex.create({
   },
   dockInnerSpacious: {
     maxWidth: 800,
+  },
+
+  // --- Scroll-to-bottom button ---
+  scrollButtonContainer: {
+    position: 'sticky',
+    bottom: spacingVars['--spacing-3'],
+    left: '50%',
+    contain: 'layout style',
+    overflow: 'hidden',
+    borderRadius: radiusVars['--radius-full'],
+    backgroundColor: colorVars['--color-background-popover'],
+    boxShadow: shadowVars['--shadow-med'],
+    height: '32px',
+    zIndex: 3,
+    transitionProperty: 'opacity, transform, max-width',
+    transitionTimingFunction: easeVars['--ease-standard'],
+    transitionDuration: durationVars['--duration-fast-max'],
+    // Pull out of flow so it doesn't affect message area height
+    float: 'right',
+    clear: 'both',
+    transform: 'translateX(-50%)',
+    marginBlockStart: '-44px',
+  },
+  scrollButtonContainerHidden: {
+    opacity: 0,
+    pointerEvents: 'none',
+    maxWidth: '32px',
+  },
+  scrollButtonContainerVisible: {
+    opacity: 1,
+    pointerEvents: 'auto',
+  },
+  scrollButtonCollapsed: {
+    maxWidth: '32px',
+  },
+  scrollButtonExpanded: {
+    maxWidth: '200px',
+  },
+  scrollButton: {
+    [radiusVars['--radius-element'] as string]: radiusVars['--radius-full'],
+    whiteSpace: 'nowrap',
+    paddingInline: spacingVars['--spacing-2'],
   },
 });
 
@@ -220,10 +274,55 @@ function getDensity(width: number): Density {
   return 'spacious';
 }
 
-function hasContent(children: ReactNode): boolean {
+function hasVisibleContent(children: ReactNode): boolean {
   if (children == null || children === false) return false;
   if (Array.isArray(children) && children.length === 0) return false;
   return true;
+}
+
+// =============================================================================
+// Sub-components
+// =============================================================================
+
+function ScrollToBottomButton({
+  isScrolledUp,
+  hasNewMessages,
+  label,
+  onClick,
+  dockHeight,
+}: {
+  isScrolledUp: boolean;
+  hasNewMessages: boolean;
+  label: string;
+  onClick: () => void;
+  dockHeight: number;
+}) {
+  const isVisible = isScrolledUp || hasNewMessages;
+
+  return (
+    <div
+      {...stylex.props(
+        styles.scrollButtonContainer,
+        isVisible
+          ? styles.scrollButtonContainerVisible
+          : styles.scrollButtonContainerHidden,
+        hasNewMessages
+          ? styles.scrollButtonExpanded
+          : styles.scrollButtonCollapsed,
+      )}
+      style={{bottom: dockHeight + 12}}>
+      <XDSButton
+        label={hasNewMessages ? label : 'Scroll to bottom'}
+        aria-label={hasNewMessages ? label : 'Scroll to bottom'}
+        icon={<XDSIcon icon="chevronDown" size="md" />}
+        variant="ghost"
+        size="md"
+        onClick={onClick}
+        xstyle={styles.scrollButton}>
+        {hasNewMessages ? label : undefined}
+      </XDSButton>
+    </div>
+  );
 }
 
 // =============================================================================
@@ -233,9 +332,11 @@ function hasContent(children: ReactNode): boolean {
 /**
  * Layout shell for full chat interfaces.
  *
- * Messages flow naturally in the page (no fixed scroll container).
- * The composer is fixed to the bottom with a frosted glass dock
- * that adapts padding via container width observation.
+ * Messages flow naturally in the page. The composer is fixed to
+ * the bottom with a frosted glass dock. The layout owns auto-scroll
+ * behavior — it observes the message content area via ResizeObserver
+ * and scrolls to bottom when new content arrives (if the user is
+ * near the bottom). Shows a scroll-to-bottom button when scrolled up.
  *
  * @example
  * ```
@@ -243,7 +344,9 @@ function hasContent(children: ReactNode): boolean {
  *   composer={<XDSChatComposer onSubmit={handleSubmit} />}
  *   emptyState={<EmptyState />}
  * >
- *   {messages.map(msg => <XDSChatMessage key={msg.id} {...msg} />)}
+ *   <XDSChatMessageList>
+ *     {messages.map(msg => <XDSChatMessage key={msg.id} {...msg} />)}
+ *   </XDSChatMessageList>
  * </XDSChatLayout>
  * ```
  */
@@ -252,6 +355,8 @@ export function XDSChatLayout({
   composer,
   emptyState,
   scrollRef: externalScrollRef,
+  hasAutoScroll = true,
+  newMessagesLabel = 'New messages',
   xstyle,
   className,
   style,
@@ -260,20 +365,65 @@ export function XDSChatLayout({
 }: XDSChatLayoutProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const dockRef = useRef<HTMLDivElement>(null);
+  const contentElRef = useRef<HTMLElement | null>(null);
+
   const scrollContainerRef =
     externalScrollRef ?? (rootRef as React.RefObject<HTMLElement | null>);
   const isSelfScrolling = !externalScrollRef;
+
+  const [density, setDensity] = useState<Density>('balanced');
+  const [dockHeight, setDockHeight] = useState(0);
+
+  // --- Auto-scroll ---
+  const {
+    scrollRef,
+    isScrolledUp,
+    hasNewMessages,
+    handleScroll,
+    scrollToBottom,
+    dismissNewMessages,
+    onContentChange,
+  } = useAutoScroll({
+    enabled: hasAutoScroll,
+    scrollContainerRef,
+  });
+
+  // Attach scroll listener to the scroll container
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.addEventListener('scroll', handleScroll, {passive: true});
+    return () => el.removeEventListener('scroll', handleScroll);
+  }, [scrollRef, handleScroll]);
+
+  // Observe message content area for height changes (new messages, streaming)
+  useEffect(() => {
+    const el = contentElRef.current;
+    if (!el) return;
+
+    const observer = new ResizeObserver(() => {
+      onContentChange();
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [onContentChange]);
+
+  // Content ref callback — message list registers its inner element
+  const contentRef = useCallback((el: HTMLElement | null) => {
+    contentElRef.current = el;
+  }, []);
+
+  // --- Layout context ---
   const layoutContextValue = useMemo(
     () => ({
       scrollContainerRef,
       dockHeight,
+      contentRef,
     }),
-    [scrollContainerRef, dockHeight],
+    [scrollContainerRef, dockHeight, contentRef],
   );
-  const [density, setDensity] = useState<Density>('balanced');
-  const [dockHeight, setDockHeight] = useState(0);
 
-  // Observe root width for density breakpoints
+  // --- Density observation ---
   useEffect(() => {
     const el = rootRef.current;
     if (!el) return;
@@ -288,7 +438,7 @@ export function XDSChatLayout({
     return () => observer.disconnect();
   }, []);
 
-  // Observe dock height to set message area bottom padding
+  // --- Dock height observation ---
   useEffect(() => {
     const el = dockRef.current;
     if (!el) return;
@@ -305,7 +455,7 @@ export function XDSChatLayout({
     return () => observer.disconnect();
   }, []);
 
-  // Merge refs
+  // --- Merge refs ---
   const setRootRef = useCallback(
     (el: HTMLDivElement | null) => {
       (rootRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
@@ -318,7 +468,17 @@ export function XDSChatLayout({
     [ref],
   );
 
-  const showEmpty = !hasContent(children);
+  // --- Scroll button handler ---
+  const handleButtonClick = useCallback(() => {
+    if (hasNewMessages) {
+      dismissNewMessages();
+    } else {
+      scrollToBottom();
+    }
+  }, [hasNewMessages, dismissNewMessages, scrollToBottom]);
+
+  // --- Derived styles ---
+  const showEmpty = !hasVisibleContent(children);
 
   const messageAreaStyle =
     density === 'compact'
@@ -364,7 +524,7 @@ export function XDSChatLayout({
           className,
           style,
         )}>
-        {/* Message area — normal page flow */}
+        {/* Message area */}
         <div
           {...stylex.props(styles.messageArea, messageAreaStyle)}
           style={{paddingBlockEnd: dockHeight + 24}}>
@@ -375,7 +535,16 @@ export function XDSChatLayout({
           )}
         </div>
 
-        {/* Frosted glass layer — behind composer, not interactive */}
+        {/* Scroll-to-bottom button */}
+        <ScrollToBottomButton
+          isScrolledUp={isScrolledUp}
+          hasNewMessages={hasNewMessages}
+          label={newMessagesLabel}
+          onClick={handleButtonClick}
+          dockHeight={dockHeight}
+        />
+
+        {/* Frosted glass layer */}
         <div
           {...stylex.props(
             styles.blurLayer,
@@ -384,7 +553,7 @@ export function XDSChatLayout({
           )}
         />
 
-        {/* Composer dock — interactive, no blur/mask */}
+        {/* Composer dock */}
         <div
           ref={dockRef}
           {...stylex.props(
