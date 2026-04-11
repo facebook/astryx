@@ -74,7 +74,6 @@ export const WithCaption: Story = {
         src={WARM_IMAGE}
         alt="Photo with metadata"
         label="screenshot.png"
-        caption="2.4 MB"
         onRemove={() => setVisible(false)}
       />
     );
@@ -116,7 +115,6 @@ export const Placeholder: Story = {
     return (
       <XDSThumbnail
         label="report.pdf"
-        caption="1.2 MB"
         onRemove={() => setVisible(false)}
       />
     );
@@ -174,7 +172,6 @@ export const Gallery: Story = {
     const initial = [
       {id: 1, src: DARK_IMAGE, label: 'dark.jpg'},
       {id: 2, src: LIGHT_IMAGE, label: 'light.jpg'},
-      {id: 3, src: undefined as string | undefined, label: 'notes.pdf', caption: '340 KB'},
       {id: 4, src: WARM_IMAGE, label: 'warm.jpg'},
     ];
     const [items, setItems] = useState(initial);
@@ -186,7 +183,6 @@ export const Gallery: Story = {
             src={item.src}
             alt={item.label}
             label={item.label}
-            caption={item.caption}
             onRemove={() => setItems(prev => prev.filter(i => i.id !== item.id))}
           />
         ))}

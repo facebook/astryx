@@ -13,7 +13,6 @@ export const docs = {
     'Inset border overlay for visual containment (only on loaded images)',
     'Overlaid remove button with expanded hit area',
     'Interactive mode with button semantics when onClick is set',
-    'Label and caption slots for file name and metadata',
     'Disabled state blocks all interactions and reduces opacity',
   ],
   props: [
@@ -43,7 +42,6 @@ export const docs = {
       description: 'Click handler for the thumbnail area. When set, renders as interactive with button semantics.',
     },
     {
-      name: 'caption',
       type: 'ReactNode',
       description: 'Content rendered below the thumbnail (e.g. file size, duration).',
     },
@@ -66,8 +64,6 @@ export const docs = {
       code: '<XDSThumbnail src="/photo.jpg" alt="Vacation" onRemove={() => {}} />',
     },
     {
-      label: 'With label and caption',
-      code: '<XDSThumbnail src="/photo.jpg" alt="Photo" label="vacation.jpg" caption="2.4 MB" />',
     },
     {
       label: 'Clickable thumbnail',

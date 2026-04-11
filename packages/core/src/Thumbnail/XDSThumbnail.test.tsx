@@ -45,11 +45,6 @@ describe('XDSThumbnail', () => {
     expect(screen.queryByText('photo.png')).toBeNull();
   });
 
-  it('renders the caption', () => {
-    render(<XDSThumbnail caption="2.4 MB" />);
-    expect(screen.getByText('2.4 MB')).toBeInTheDocument();
-  });
-
   it('calls onRemove when remove button is clicked', async () => {
     const user = userEvent.setup();
     const onRemove = vi.fn();

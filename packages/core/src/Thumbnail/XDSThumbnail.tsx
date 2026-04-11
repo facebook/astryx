@@ -72,7 +72,6 @@ export interface XDSThumbnailProps extends XDSBaseProps<HTMLDivElement> {
    * Content rendered below the thumbnail image area.
    * Use for metadata like file size, duration, or status.
    */
-  caption?: ReactNode;
   /**
    * Whether the thumbnail is in a loading state.
    * Shows a skeleton shimmer regardless of `src`. Use while uploading
@@ -110,15 +109,6 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-element'],
     overflow: 'hidden',
     backgroundColor: colorVars['--color-neutral'],
-    boxShadow: {
-      default: 'none',
-      ':hover': {
-        '@media (hover: hover)': shadowVars['--shadow-low'],
-      },
-    },
-    transitionProperty: 'box-shadow',
-    transitionDuration: durationVars['--duration-fast'],
-    transitionTimingFunction: easeVars['--ease-standard'],
   },
   image: {
     width: '100%',
@@ -146,6 +136,12 @@ const styles = stylex.create({
     transitionProperty: 'opacity, box-shadow',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
+    boxShadow: {
+      default: 'none',
+      ':hover': {
+        '@media (hover: hover)': shadowVars['--shadow-low'],
+      },
+    },
     opacity: {
       default: 1,
       ':hover': {
@@ -243,7 +239,6 @@ export function XDSThumbnail({
   label,
   onRemove,
   onClick,
-  caption,
   isLoading = false,
   isDisabled = false,
   xstyle,
@@ -348,7 +343,6 @@ export function XDSThumbnail({
           removeButtonEl
         )}
       </div>
-      {caption != null && <div>{caption}</div>}
     </div>
   );
 }
