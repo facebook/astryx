@@ -5,19 +5,19 @@
   "description": "Brutalist theme for XDS — zero radius, monospace, heavy borders",
   "license": "MIT",
   "sideEffects": false,
-  "main": "./dist/brutalist.js",
-  "module": "./dist/brutalist.js",
-  "types": "./dist/brutalist.d.ts",
+  "main": "./dist/source.js",
+  "module": "./dist/source.mjs",
+  "types": "./dist/source.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/brutalist.d.ts",
-      "import": "./dist/brutalist.js",
-      "require": "./dist/brutalist.js"
-    },
-    "./source": {
       "types": "./dist/source.d.ts",
       "import": "./dist/source.mjs",
       "require": "./dist/source.js"
+    },
+    "./built": {
+      "types": "./dist/brutalist.d.ts",
+      "import": "./dist/brutalist.js",
+      "require": "./dist/brutalist.js"
     },
     "./theme.css": "./dist/theme.css"
   },

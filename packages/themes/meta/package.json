@@ -5,18 +5,18 @@
   "description": "Meta theme for XDS components — Meta's brand identity with blue accent and clean aesthetics",
   "license": "MIT",
   "sideEffects": false,
-  "main": "./dist/meta.js",
-  "types": "./dist/meta.d.ts",
+  "main": "./dist/source.js",
+  "types": "./dist/source.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/meta.d.ts",
-      "import": "./dist/meta.js",
-      "require": "./dist/meta.js"
-    },
-    "./source": {
       "types": "./dist/source.d.ts",
       "import": "./dist/source.mjs",
       "require": "./dist/source.js"
+    },
+    "./built": {
+      "types": "./dist/meta.d.ts",
+      "import": "./dist/meta.js",
+      "require": "./dist/meta.js"
     },
     "./theme.css": "./dist/theme.css"
   },
@@ -37,5 +37,5 @@
   "devDependencies": {
     "@xds/cli": "*"
   },
-  "module": "./dist/meta.js"
+  "module": "./dist/source.mjs"
 }

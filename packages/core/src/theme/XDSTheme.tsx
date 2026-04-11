@@ -94,6 +94,9 @@ const XDSThemeNestingContext = React.createContext(false);
 /** Track which themes have already been injected */
 const injectedThemes = new Set<string>();
 
+/** Track which themes have already logged the perf warning */
+const warnedThemes = new Set<string>();
+
 /**
  * Hook to inject theme CSS into the document.
  * Built themes (from `xds theme build`) skip injection — their CSS
@@ -108,6 +111,19 @@ function useThemeStyleInjection(theme: XDSDefinedTheme): void {
 
     const themeKey = `xds-theme-${theme.name}`;
     if (injectedThemes.has(themeKey)) return;
+
+    // One-time perf hint per theme
+    if (!warnedThemes.has(theme.name)) {
+      warnedThemes.add(theme.name);
+      console.warn(
+        `[XDS] Theme "${theme.name}" is using runtime style injection. ` +
+          `For better performance, use the pre-built theme:\n\n` +
+          `  import {${theme.name}Theme} from '@xds/theme-${theme.name}/built';\n` +
+          `  import '@xds/theme-${theme.name}/theme.css';\n\n` +
+          `For custom themes, run \`npx xds theme build <file>\` to generate ` +
+          `the built artifacts.`,
+      );
+    }
 
     const {prose, component} = generateThemeCSS(theme);
     if (!prose && !component) return;

@@ -5,19 +5,19 @@
   "description": "WhatsApp theme for XDS — green accent, warm grays, Roboto, rounded surfaces",
   "license": "MIT",
   "sideEffects": false,
-  "main": "./dist/whatsapp.js",
-  "module": "./dist/whatsapp.js",
-  "types": "./dist/whatsapp.d.ts",
+  "main": "./dist/source.js",
+  "module": "./dist/source.mjs",
+  "types": "./dist/source.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/whatsapp.d.ts",
-      "import": "./dist/whatsapp.js",
-      "require": "./dist/whatsapp.js"
-    },
-    "./source": {
       "types": "./dist/source.d.ts",
       "import": "./dist/source.mjs",
       "require": "./dist/source.js"
+    },
+    "./built": {
+      "types": "./dist/whatsapp.d.ts",
+      "import": "./dist/whatsapp.js",
+      "require": "./dist/whatsapp.js"
     },
     "./theme.css": "./dist/theme.css"
   },

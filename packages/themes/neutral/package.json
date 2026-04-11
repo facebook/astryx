@@ -5,18 +5,18 @@
   "description": "Neutral theme for XDS components (Lucide icons)",
   "license": "MIT",
   "sideEffects": false,
-  "main": "./dist/neutral.js",
-  "types": "./dist/neutral.d.ts",
+  "main": "./dist/source.js",
+  "types": "./dist/source.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/neutral.d.ts",
-      "import": "./dist/neutral.js",
-      "require": "./dist/neutral.js"
-    },
-    "./source": {
       "types": "./dist/source.d.ts",
       "import": "./dist/source.mjs",
       "require": "./dist/source.js"
+    },
+    "./built": {
+      "types": "./dist/neutral.d.ts",
+      "import": "./dist/neutral.js",
+      "require": "./dist/neutral.js"
     },
     "./theme.css": "./dist/theme.css"
   },
@@ -37,5 +37,5 @@
   "devDependencies": {
     "@xds/cli": "*"
   },
-  "module": "./dist/neutral.js"
+  "module": "./dist/source.mjs"
 }
