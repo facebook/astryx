@@ -546,7 +546,8 @@ export default function PaymentFormPage() {
                           height: 'var(--spacing-7)',
                           width: 'auto',
                           borderRadius: 'var(--radius-element)',
-                          border: '1px solid var(--color-border)',
+                          border:
+                            'var(--border-width) solid var(--color-border)',
                           backgroundColor: 'var(--color-background-surface)',
                         }}
                       />
@@ -557,7 +558,8 @@ export default function PaymentFormPage() {
                           height: 'var(--spacing-7)',
                           width: 'auto',
                           borderRadius: 'var(--radius-element)',
-                          border: '1px solid var(--color-border)',
+                          border:
+                            'var(--border-width) solid var(--color-border)',
                           backgroundColor: 'var(--color-background-surface)',
                         }}
                       />
@@ -568,7 +570,8 @@ export default function PaymentFormPage() {
                           height: 'var(--spacing-7)',
                           width: 'auto',
                           borderRadius: 'var(--radius-element)',
-                          border: '1px solid var(--color-border)',
+                          border:
+                            'var(--border-width) solid var(--color-border)',
                           backgroundColor: 'var(--color-background-surface)',
                         }}
                       />
