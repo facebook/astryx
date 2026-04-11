@@ -158,13 +158,7 @@ const styles = stylex.create({
     backdropFilter: 'blur(12px)',
     WebkitBackdropFilter: 'blur(12px)',
   },
-  blurLayerFixed: {
-    position: 'fixed',
-  },
-  blurLayerAbsolute: {
-    position: 'sticky',
-    marginBlockStart: 'auto',
-  },
+
   blurLayerCompact: {
     height: 80,
     maskImage: 'linear-gradient(to bottom, transparent, black 24px)',
@@ -188,10 +182,11 @@ const styles = stylex.create({
     right: 0,
     zIndex: 2,
   },
-  dockFixed: {
+  // Shared position modes for dock + blur layer
+  positionFixed: {
     position: 'fixed',
   },
-  dockSticky: {
+  positionSticky: {
     position: 'sticky',
   },
   dockCompact: {
@@ -559,7 +554,7 @@ export function XDSChatLayout({
         <div
           {...stylex.props(
             styles.blurLayer,
-            isSelfScrolling ? styles.blurLayerAbsolute : styles.blurLayerFixed,
+            isSelfScrolling ? styles.positionSticky : styles.positionFixed,
             blurLayerStyle,
           )}
         />
@@ -569,7 +564,7 @@ export function XDSChatLayout({
           ref={dockRef}
           {...stylex.props(
             styles.dock,
-            isSelfScrolling ? styles.dockSticky : styles.dockFixed,
+            isSelfScrolling ? styles.positionSticky : styles.positionFixed,
             dockStyle,
           )}>
           <div {...stylex.props(styles.dockInner, dockInnerStyle)}>

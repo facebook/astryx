@@ -483,7 +483,7 @@ export const FullAIChat: StoryObj = {
                       </XDSChatComposerAttachments>
                     )}
                     <XDSChatMessageBubble>
-                      <XDSChatMessageTokenizedText tokens={msg.tokens}>
+                      <XDSChatMessageTokenizedText tokens={mentionTokens}>
                         {msg.text}
                       </XDSChatMessageTokenizedText>
                     </XDSChatMessageBubble>
