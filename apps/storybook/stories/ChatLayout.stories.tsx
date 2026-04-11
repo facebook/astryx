@@ -14,6 +14,7 @@ import {
   type XDSChatComposerToken,
   type XDSChatComposerTrigger,
   type XDSChatToolCallItem,
+
 } from '@xds/core/Chat';
 import {XDSMarkdown} from '@xds/core/Markdown';
 import {XDSToken} from '@xds/core/Token';
@@ -331,6 +332,7 @@ export const FullAIChat: StoryObj = {
           },
         ]);
         setFiles([]);
+
         setTimeout(() => {
           streamResponse(
             "I'll check the Card component for the same issue.",
@@ -587,6 +589,7 @@ export const PanelView: StoryObj = {
           },
         ]);
         setFiles([]);
+
         setTimeout(() => {
           streamResponse(
             'Checking the component now.',

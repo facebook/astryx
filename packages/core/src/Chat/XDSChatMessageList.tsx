@@ -12,7 +12,7 @@
  *
  * Auto-scroll and the scroll-to-bottom button are owned by
  * XDSChatLayout. When used standalone (without a layout), the list
- * is purely presentational — compose useAutoScroll yourself if needed.
+ * is purely presentational — compose useXDSChatStreamScroll yourself if needed.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Chat/index.ts (exports)
@@ -137,7 +137,7 @@ const styles = stylex.create({
  * Supports loading older messages via `onScrollToTopAction`.
  *
  * Auto-scroll and the scroll-to-bottom button are owned by
- * XDSChatLayout. Use useAutoScroll for standalone scroll control.
+ * XDSChatLayout. Use useXDSChatStreamScroll for standalone scroll control.
  *
  * @example
  * ```
