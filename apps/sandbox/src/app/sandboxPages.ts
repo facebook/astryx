@@ -144,6 +144,12 @@ export const categories: SandboxCategory[] = [
         description:
           'Template gallery with SideNav layout, AI chat, and resizable preview panel',
       },
+      {
+        name: 'Media Mode',
+        href: '/pages/media-mode/',
+        description:
+          'Compare luminance algorithms (BT.709 / WCAG 2 / APCA) for dark/light surface detection',
+      },
     ],
   },
 ];
