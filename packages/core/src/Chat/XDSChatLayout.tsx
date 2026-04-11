@@ -186,8 +186,8 @@ const styles = stylex.create({
   positionFixed: {
     position: 'fixed',
   },
-  positionSticky: {
-    position: 'sticky',
+  positionAbsolute: {
+    position: 'absolute',
   },
   dockCompact: {
     paddingInline: spacingVars['--spacing-2'],
@@ -554,7 +554,7 @@ export function XDSChatLayout({
         <div
           {...stylex.props(
             styles.blurLayer,
-            isSelfScrolling ? styles.positionSticky : styles.positionFixed,
+            isSelfScrolling ? styles.positionAbsolute : styles.positionFixed,
             blurLayerStyle,
           )}
         />
@@ -564,7 +564,7 @@ export function XDSChatLayout({
           ref={dockRef}
           {...stylex.props(
             styles.dock,
-            isSelfScrolling ? styles.positionSticky : styles.positionFixed,
+            isSelfScrolling ? styles.positionAbsolute : styles.positionFixed,
             dockStyle,
           )}>
           <div {...stylex.props(styles.dockInner, dockInnerStyle)}>
