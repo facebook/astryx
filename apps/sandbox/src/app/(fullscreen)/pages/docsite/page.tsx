@@ -15,10 +15,8 @@ import {
 import {XDSSkeleton} from '@xds/core/Skeleton';
 import {XDSAvatar} from '@xds/core/Avatar';
 import {XDSBadge} from '@xds/core/Badge';
-import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSToken} from '@xds/core/Token';
 import {XDSToolbar} from '@xds/core/Toolbar';
-import {XDSTooltip} from '@xds/core/Tooltip';
 import {XDSList, XDSListItem} from '@xds/core/List';
 import {createStaticSource} from '@xds/core/Typeahead';
 

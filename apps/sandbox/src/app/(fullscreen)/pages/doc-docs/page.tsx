@@ -343,7 +343,6 @@ export default function DocDocsPage() {
               variant="ghost"
               size="sm"
               icon={<HamburgerIcon />}
-              isIconOnly
             />
             <span
               style={{
@@ -376,7 +375,6 @@ export default function DocDocsPage() {
             variant="ghost"
             size="sm"
             icon={<SidebarCollapseIcon />}
-            isIconOnly
           />
         </div>
 
@@ -525,7 +523,6 @@ export default function DocDocsPage() {
                   variant="ghost"
                   size="sm"
                   icon={<ExternalLinkIcon />}
-                  isIconOnly
                 />
                 <XDSDropdownMenu
                   button={{
@@ -558,14 +555,12 @@ export default function DocDocsPage() {
                   size="sm"
                   icon={<CodeIcon />}
                   onClick={() => setShowCode(!showCode)}
-                  isIconOnly
                 />
                 <XDSButton
                   label="Fullscreen"
                   variant="ghost"
                   size="sm"
                   icon={<FullscreenIcon />}
-                  isIconOnly
                 />
               </div>
             </div>
