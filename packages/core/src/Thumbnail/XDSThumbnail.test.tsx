@@ -1,44 +1,38 @@
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {XDSThumbnail} from './XDSThumbnail';
 
 describe('XDSThumbnail', () => {
-  it('shows skeleton while image is loading', () => {
-    const {container} = render(
-      <XDSThumbnail src="/photo.jpg" alt="Test" data-testid="thumb" />,
-    );
-    // Image exists but is hidden until loaded
-    const img = screen.getByAltText('Test');
-    expect(img).toHaveStyle({display: 'none'});
-    // Skeleton should be visible
-    expect(container.querySelector('.xds-skeleton')).toBeInTheDocument();
+  it('renders an image when src is provided', () => {
+    render(<XDSThumbnail src="/photo.jpg" alt="Test photo" />);
+    const img = screen.getByRole('img');
+    expect(img).toHaveAttribute('src', '/photo.jpg');
+    expect(img).toHaveAttribute('alt', 'Test photo');
   });
 
-  it('shows image after successful load', () => {
-    const {container} = render(
-      <XDSThumbnail src="/photo.jpg" alt="Test" />,
-    );
-    const img = screen.getByAltText('Test');
-    fireEvent.load(img);
-    expect(img).not.toHaveStyle({display: 'none'});
-    // Skeleton should be gone
-    expect(container.querySelector('.xds-skeleton')).toBeNull();
-  });
-
-  it('shows placeholder on image error', () => {
-    render(<XDSThumbnail src="/broken.jpg" alt="Broken" data-testid="thumb" />);
-    const img = screen.getByAltText('Broken');
-    fireEvent.error(img);
-    // Placeholder SVG should be present
-    const root = screen.getByTestId('thumb');
-    expect(root.querySelector('svg')).toBeInTheDocument();
-  });
-
-  it('shows placeholder when no src is provided', () => {
+  it('renders placeholder when no src is provided', () => {
     render(<XDSThumbnail data-testid="thumb" />);
     const root = screen.getByTestId('thumb');
     expect(root.querySelector('svg')).toBeInTheDocument();
+    expect(screen.queryByRole('img')).toBeNull();
+  });
+
+  it('shows skeleton when isLoading', () => {
+    const {container} = render(
+      <XDSThumbnail isLoading data-testid="thumb" />,
+    );
+    expect(container.querySelector('.xds-skeleton')).toBeInTheDocument();
+    // No image or placeholder
+    expect(screen.queryByRole('img')).toBeNull();
+    expect(screen.getByTestId('thumb').querySelector('svg')).toBeNull();
+  });
+
+  it('shows skeleton when isLoading even with src', () => {
+    const {container} = render(
+      <XDSThumbnail src="/photo.jpg" alt="Test" isLoading />,
+    );
+    expect(container.querySelector('.xds-skeleton')).toBeInTheDocument();
     expect(screen.queryByRole('img')).toBeNull();
   });
 
@@ -84,34 +78,17 @@ describe('XDSThumbnail', () => {
     expect(screen.queryByRole('button')).toBeNull();
   });
 
-  it('shows skeleton when isLoading is true even with src', () => {
-    const {container} = render(
-      <XDSThumbnail src="/photo.jpg" alt="Test" isLoading data-testid="thumb" />,
+  it('is not interactive when isLoading', () => {
+    const onClick = vi.fn();
+    render(
+      <XDSThumbnail src="/img.jpg" alt="Test" onClick={onClick} isLoading />,
     );
-    expect(container.querySelector('.xds-skeleton')).toBeInTheDocument();
-    // Image should be hidden
-    const img = screen.getByAltText('Test');
-    expect(img).toHaveStyle({display: 'none'});
-  });
-
-  it('shows skeleton when isLoading with no src', () => {
-    const {container} = render(
-      <XDSThumbnail isLoading data-testid="thumb" />,
-    );
-    expect(container.querySelector('.xds-skeleton')).toBeInTheDocument();
-    // No placeholder icon
-    const root = screen.getByTestId('thumb');
-    expect(root.querySelector('svg')).toBeNull();
+    expect(screen.queryByRole('button')).toBeNull();
   });
 
   it('forwards ref to root element', () => {
     const ref = vi.fn();
     render(<XDSThumbnail ref={ref} data-testid="thumb" />);
     expect(ref).toHaveBeenCalled();
-  });
-
-  it('only shows inset border when image is loaded', () => {
-    render(<XDSThumbnail data-testid="thumb" />);
-    expect(screen.getByTestId('thumb')).toBeInTheDocument();
   });
 });

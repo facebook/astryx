@@ -18,7 +18,7 @@
  * - /apps/storybook/stories/Thumbnail.stories.tsx
  */
 
-import {useState, type ReactNode} from 'react';
+import {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -171,7 +171,7 @@ const styles = stylex.create({
     width: 20,
     height: 20,
     borderRadius: radiusVars['--radius-full'],
-    backgroundColor: colorVars['--color-overlay'],
+    backgroundColor: colorVars['--color-overlay-hover'],
     color: colorVars['--color-text-primary'],
     cursor: 'pointer',
     zIndex: 1,
@@ -262,26 +262,21 @@ export function XDSThumbnail({
   ref,
   ...props
 }: XDSThumbnailProps) {
-  const [loaded, setLoaded] = useState(false);
-  const [errored, setErrored] = useState(false);
   const imageMode = useImageMode(src, {region: BUTTON_REGION, fallback: null});
 
   const hasSrc = src != null;
-  const showSkeleton = isLoading || (hasSrc && !loaded && !errored);
-  const showImage = !isLoading && hasSrc && loaded && !errored;
-  const showPlaceholder = !isLoading && (!hasSrc || errored);
+  const showSkeleton = isLoading;
+  const showImage = !isLoading && hasSrc;
+  const showPlaceholder = !isLoading && !hasSrc;
   const isInteractive = onClick != null && !isDisabled && !isLoading;
 
   const imageContent = (
     <>
-      {hasSrc && (
+      {showImage && (
         <img
           src={src}
           alt={alt ?? ''}
-          onLoad={() => setLoaded(true)}
-          onError={() => setErrored(true)}
           {...stylex.props(styles.image)}
-          style={showImage ? undefined : {display: 'none'}}
         />
       )}
       {showSkeleton && (
