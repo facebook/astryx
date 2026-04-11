@@ -124,10 +124,21 @@ export function useAutoScroll({
     }
   }, [scrollUpThreshold]);
 
-  // Fires once when scrolling settles — clear programmatic flag
+  // Fires once when scrolling settles — clear programmatic flag,
+  // and re-lock if the user scrolled back to the bottom.
   const handleScrollEnd = useCallback(() => {
     isProgrammaticRef.current = false;
-  }, []);
+
+    const el = scrollRef.current;
+    if (!el) return;
+    const distanceFromBottom =
+      el.scrollHeight - el.scrollTop - el.clientHeight;
+    if (distanceFromBottom <= scrollUpThreshold) {
+      lockedRef.current = true;
+      setHasNewMessages(false);
+      setIsScrolledUp(false);
+    }
+  }, [scrollUpThreshold]);
 
   const onContentChange = useCallback(() => {
     if (!enabled) return;
