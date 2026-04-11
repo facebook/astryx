@@ -157,6 +157,7 @@ const styles = stylex.create({
     right: 0,
     zIndex: 0,
     isolation: 'isolate',
+    pointerEvents: 'none',
   },
   dockContainerFixed: {
     position: 'fixed',
@@ -196,6 +197,7 @@ const styles = stylex.create({
   dock: {
     position: 'relative',
     zIndex: 1,
+    pointerEvents: 'auto',
   },
 
   dockCompact: {
@@ -226,15 +228,11 @@ const styles = stylex.create({
   },
 
   // --- Scroll-to-bottom button ---
-  // Wrapper centers the button horizontally without affecting layout flow.
+  // Wrapper centers the button above the composer inside the dock container.
   scrollButtonWrapper: {
-    position: 'sticky',
-    bottom: spacingVars['--spacing-3'],
-    zIndex: 3,
     display: 'flex',
     justifyContent: 'center',
-    pointerEvents: 'none',
-    height: 0,
+    paddingBlockEnd: spacingVars['--spacing-3'],
   },
   scrollButtonContainer: {
     pointerEvents: 'auto',
@@ -533,15 +531,7 @@ export function XDSChatLayout({
           )}
         </div>
 
-        {/* Scroll-to-bottom button */}
-        <ScrollToBottomButton
-          isScrolledUp={isScrolledUp}
-          hasNewMessages={hasNewMessages}
-          label={newMessagesLabel}
-          onClick={handleButtonClick}
-        />
-
-        {/* Dock container — sticky/fixed, holds blur + composer */}
+        {/* Dock container — sticky/fixed, holds blur + scroll button + composer */}
         <div
           ref={dockRef}
           {...stylex.props(
@@ -552,6 +542,14 @@ export function XDSChatLayout({
           )}>
           {/* Frosted glass layer — behind composer */}
           <div {...stylex.props(styles.blurLayer, blurLayerStyle)} />
+
+          {/* Scroll-to-bottom button */}
+          <ScrollToBottomButton
+            isScrolledUp={isScrolledUp}
+            hasNewMessages={hasNewMessages}
+            label={newMessagesLabel}
+            onClick={handleButtonClick}
+          />
 
           {/* Composer */}
           <div {...stylex.props(styles.dock, dockStyle)}>
