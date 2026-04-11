@@ -37,8 +37,8 @@ import {useImageMode} from '../hooks/useImageMode';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {xdsClassName, mergeProps} from '../utils';
 
-/** Sample the top-right corner where the remove button sits. */
-const BUTTON_REGION = {x: 0.6, y: 0, width: 0.4, height: 0.4};
+/** Sample the region behind the remove button (28px button, 4px inset, in 64px container). */
+const BUTTON_REGION = {x: 0.5, y: 0.06, width: 0.44, height: 0.44};
 
 export interface XDSThumbnailProps extends XDSBaseProps<HTMLDivElement> {
   /** Ref forwarded to the root element */
