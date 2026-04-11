@@ -19,7 +19,7 @@ export const docs = {
     'Composer layout shell with named semantic slots',
     'ContentEditable input with @ mention and / command trigger menus',
     'Imperative handle on ComposerInput for programmatic token/text insertion',
-    'Tokenized text rendering in message bubbles via XDSChatMessageTokenizedText',
+    'Tokenized text rendering in message bubbles via XDSChatTokenizedText',
     'XDSSearchSource integration — reuses Typeahead search sources',
     'Concentric radius — inner elements follow outer shell curvature',
     'Themeable via --composer-radius and --composer-padding CSS vars',
@@ -180,14 +180,14 @@ export const docs = {
       ],
     },
     {
-      name: 'XDSChatMessageTokenizedText',
+      name: 'XDSChatTokenizedText',
       description: 'Renders text with token patterns replaced by inline XDSBadge components. Use inside XDSChatMessageBubble to display @mentions or other tokens as styled badges.',
       props: [
         {name: 'children', type: 'string', description: 'The message text containing token patterns.', required: true},
         {name: 'tokens', type: 'XDSChatMessageTokenConfig[]', description: 'Token definitions. Each has pattern (string to match), label (display text), and optional variant.'},
       ],
       examples: [
-        {label: 'With mentions', code: `<XDSChatMessageBubble>\n  <XDSChatMessageTokenizedText\n    tokens={[{pattern: '@cindy', label: '@Cindy Zhang', variant: 'blue'}]}\n  >\n    Hey @cindy, can you review this?\n  </XDSChatMessageTokenizedText>\n</XDSChatMessageBubble>`},
+        {label: 'With mentions', code: `<XDSChatMessageBubble>\n  <XDSChatTokenizedText\n    tokens={[{pattern: '@cindy', label: '@Cindy Zhang', variant: 'blue'}]}\n  >\n    Hey @cindy, can you review this?\n  </XDSChatTokenizedText>\n</XDSChatMessageBubble>`},
       ],
     },
   ],
@@ -231,7 +231,7 @@ export const docsZh = {
     '编写器布局外壳，具有命名语义插槽',
     'ContentEditable 输入框，支持 @ 提及和 / 命令触发菜单',
     'ComposerInput 命令式句柄，支持编程式插入标记/文本',
-    '通过 XDSChatMessageTokenizedText 在消息气泡中渲染标记文本',
+    '通过 XDSChatTokenizedText 在消息气泡中渲染标记文本',
     'XDSSearchSource 集成 — 复用 Typeahead 搜索源',
     '同心圆角 — 内部元素跟随外部外壳曲率',
     '通过 --composer-radius 和 --composer-padding CSS 变量实现主题化',
@@ -332,7 +332,7 @@ export const docsZh = {
       },
     },
     {
-name: 'XDSChatMessageTokenizedText',
+name: 'XDSChatTokenizedText',
       description: '渲染带有标记模式的文本，将匹配的模式替换为内联 XDSBadge 组件。在 XDSChatMessageBubble 内使用，以徽章样式显示 @提及或其他标记。',
       propDescriptions: {
         children: '包含标记模式的消息文本。',
@@ -369,7 +369,7 @@ export const docsDense = {
     'composer layout shell w/ named semantic slots',
     'ContentEditable input w/ @ mention + / command trigger menus',
     'imperative handle on ComposerInput for programmatic token/text insert',
-    'tokenized text rendering in msg bubbles via XDSChatMessageTokenizedText',
+    'tokenized text rendering in msg bubbles via XDSChatTokenizedText',
     'XDSSearchSource integration; reuses Typeahead search sources',
     'concentric radius; inner elements follow outer shell curvature',
     'themeable via --composer-radius + --composer-padding CSS vars',
@@ -470,7 +470,7 @@ export const docsDense = {
       },
     },
     {
-name: 'XDSChatMessageTokenizedText',
+name: 'XDSChatTokenizedText',
       description: 'renders text w/ token patterns replaced by inline badges; use in bubble for @mentions',
       propDescriptions: {
         children: 'msg text w/ token patterns',

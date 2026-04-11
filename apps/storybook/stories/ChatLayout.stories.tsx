@@ -8,7 +8,7 @@ import {
   XDSChatComposer,
   XDSChatComposerAttachments,
   XDSChatComposerInput,
-  XDSChatMessageTokenizedText,
+  XDSChatTokenizedText,
   XDSChatToolCalls,
   type XDSChatComposerInputHandle,
   type XDSChatComposerToken,
@@ -483,9 +483,9 @@ export const FullAIChat: StoryObj = {
                       </XDSChatComposerAttachments>
                     )}
                     <XDSChatMessageBubble>
-                      <XDSChatMessageTokenizedText tokens={mentionTokens}>
+                      <XDSChatTokenizedText tokens={mentionTokens}>
                         {msg.text}
-                      </XDSChatMessageTokenizedText>
+                      </XDSChatTokenizedText>
                     </XDSChatMessageBubble>
                   </XDSChatMessage>
                 );
@@ -692,9 +692,9 @@ export const PanelView: StoryObj = {
                       </XDSChatComposerAttachments>
                     )}
                     <XDSChatMessageBubble>
-                      <XDSChatMessageTokenizedText tokens={mentionTokens}>
+                      <XDSChatTokenizedText tokens={mentionTokens}>
                         {msg.text}
-                      </XDSChatMessageTokenizedText>
+                      </XDSChatTokenizedText>
                     </XDSChatMessageBubble>
                   </XDSChatMessage>
                 );
