@@ -243,11 +243,13 @@ function ScrollToBottomButton({
   hasNewMessages,
   label,
   onClick,
+  bottomOffset = 0,
 }: {
   isScrolledUp: boolean;
   hasNewMessages: boolean;
   label: string;
   onClick: () => void;
+  bottomOffset?: number;
 }) {
   const isVisible = isScrolledUp || hasNewMessages;
 
@@ -261,7 +263,8 @@ function ScrollToBottomButton({
         hasNewMessages
           ? styles.scrollButtonExpanded
           : styles.scrollButtonCollapsed,
-      )}>
+      )}
+      style={bottomOffset ? {bottom: bottomOffset + 12} : undefined}>
       <XDSButton
         label={hasNewMessages ? label : 'Scroll to bottom'}
         aria-label={hasNewMessages ? label : 'Scroll to bottom'}
@@ -460,6 +463,7 @@ export function XDSChatMessageList({
           hasNewMessages={hasNewMessages}
           label={newMessagesLabel}
           onClick={handleButtonClick}
+          bottomOffset={isInsideLayout ? layoutContext.dockHeight : 0}
         />
       </div>
     </XDSChatListContext.Provider>

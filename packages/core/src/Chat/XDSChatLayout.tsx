@@ -266,8 +266,9 @@ export function XDSChatLayout({
   const layoutContextValue = useMemo(
     () => ({
       scrollContainerRef,
+      dockHeight,
     }),
-    [scrollContainerRef],
+    [scrollContainerRef, dockHeight],
   );
   const [density, setDensity] = useState<Density>('balanced');
   const [dockHeight, setDockHeight] = useState(0);
