@@ -876,7 +876,12 @@ export default function PaymentFormPage() {
                 <XDSGridSpan
                   columns={2}
                   className="pf-right"
-                  style={{position: 'sticky', top: 16}}>
+                  style={{
+                    position: 'sticky',
+                    top: 16,
+                    height: 'auto',
+                    alignSelf: 'start',
+                  }}>
                   <XDSCard padding={5}>
                     <XDSVStack gap={4}>
                       {/* Accordion header — clickable on mobile only */}
