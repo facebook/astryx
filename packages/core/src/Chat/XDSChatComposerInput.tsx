@@ -41,6 +41,9 @@ import {
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 import {useTriggerMenu} from './useTriggerMenu';
+import {useXDSChatComposerTokens, isCustomToken} from './useXDSChatComposerTokens';
+import {XDSChatPastedTextToken} from './XDSChatPastedTextToken';
+import {useXDSChatPasteAsToken, type UseXDSChatPasteAsTokenReturn} from './useXDSChatPasteAsToken';
 import {XDSBadge, type XDSBadgeProps} from '../Badge';
 import {useXDSChatComposerContext} from './XDSChatContext';
 
@@ -159,8 +162,14 @@ export interface XDSChatComposerInputProps extends Omit<
   label?: string;
   /** Disabled state. @default false */
   isDisabled?: boolean;
-  /** Paste handler */
-  onPaste?: (event: ClipboardEvent<HTMLDivElement>, text: string) => void;
+  /** Paste handler. Called with the plain text before insertion. Return true to handle the paste yourself (e.g. insert a token instead). */
+  onPaste?: (event: ClipboardEvent<HTMLDivElement>, text: string) => boolean | void;
+  /**
+   * Paste-as-token behavior. Defaults to converting pastes over 200 chars
+   * into token chips. Pass a custom useXDSChatPasteAsToken result to override,
+   * or false to disable.
+   */
+  pasteAsToken?: UseXDSChatPasteAsTokenReturn | false;
   /** File drop/paste handler */
   onFiles?: (files: File[]) => void;
   /** Submit handler (Enter without Shift) */
@@ -214,13 +223,6 @@ const styles = stylex.create({
 // =============================================================================
 // Helpers
 // =============================================================================
-
-/** Type guard: does this token use the custom render path? */
-function isCustomToken(
-  token: XDSChatComposerToken,
-): token is XDSChatComposerTokenCustom {
-  return 'render' in token && typeof token.render === 'function';
-}
 
 /** Select all text in a contentEditable element. */
 function selectAll(el: HTMLElement): void {
@@ -287,6 +289,7 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
     label = 'Message input',
     isDisabled = composerCtx?.isDisabled ?? false,
     onPaste: onPasteProp,
+    pasteAsToken: pasteAsTokenProp,
     onFiles,
     onSubmit = composerCtx?.onSubmit,
     xstyle,
@@ -296,6 +299,7 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
   } = props;
 
   const editableRef = useRef<HTMLDivElement>(null);
+  const selfRef = useRef<XDSChatComposerInputHandle>(null);
   const [isEmpty, setIsEmpty] = useState(true);
   const historyRef = useRef<string[]>([]);
   const historyIndexRef = useRef(-1);
@@ -307,13 +311,17 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
   );
   const insertTextRef = useRef<(text: string) => void>(() => {});
 
-  useImperativeHandle(ref, () => ({
-    insertToken: (token: XDSChatComposerToken) => insertTokenRef.current(token),
-    insertText: (text: string) => insertTextRef.current(text),
-    focus: () => editableRef.current?.focus(),
-    getValue: () =>
-      serialize(editableRef.current ?? document.createElement('div')),
-  }));
+  useImperativeHandle(ref, () => {
+    const h: XDSChatComposerInputHandle = {
+      insertToken: (token: XDSChatComposerToken) => insertTokenRef.current(token),
+      insertText: (text: string) => insertTextRef.current(text),
+      focus: () => editableRef.current?.focus(),
+      getValue: () =>
+        serialize(editableRef.current ?? document.createElement('div')),
+    };
+    selfRef.current = h;
+    return h;
+  });
 
   useEffect(() => {
     if (controlledValue !== undefined && editableRef.current) {
@@ -332,67 +340,31 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
     // which serializes to "\n". Treat whitespace-only as empty.
     setIsEmpty(text.trim().length === 0);
     onChange?.(text);
-    // Clean up portals for tokens no longer in the DOM
-    setTokenPortals(prev =>
-      prev.filter(p => editableRef.current?.contains(p.span)),
-    );
+    tokens.cleanupPortals();
   }, [onChange]);
 
-  // --- Token insertion ---
-  // Track inserted token spans for portal rendering
-  const [tokenPortals, setTokenPortals] = useState<
-    Array<{id: string; span: HTMLSpanElement; token: XDSChatComposerToken}>
-  >([]);
+  // --- Token management (via hook) ---
+  const tokens = useXDSChatComposerTokens({editableRef, onEmitChange: emitChange});
 
-  const insertToken = useCallback((token: XDSChatComposerToken) => {
-    const editable = editableRef.current;
-    if (!editable) return;
-
-    const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0) return;
-
-    const range = selection.getRangeAt(0);
-
-    // Create a non-editable container — React will portal the Badge into it
-    const span = document.createElement('span');
-    const id = `token-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-    span.setAttribute('data-xds-token', '');
-    span.setAttribute('data-xds-token-value', token.value);
-    span.setAttribute('data-xds-token-id', id);
-    span.contentEditable = 'false';
-    span.style.display = 'inline-flex';
-    span.style.verticalAlign = 'baseline';
-
-    range.deleteContents();
-    range.insertNode(span);
-
-    // Add a non-breaking space after the token and move cursor there
-    const space = document.createTextNode('\u00A0');
-    span.after(space);
-
-    const newRange = document.createRange();
-    newRange.setStartAfter(space);
-    newRange.collapse(true);
-    selection.removeAllRanges();
-    selection.addRange(newRange);
-
-    // Register for portal rendering
-    setTokenPortals(prev => [...prev, {id, span, token}]);
-  }, []);
+  // --- Paste-as-token (internal default) ---
+  const defaultPasteAsToken = useXDSChatPasteAsToken({inputRef: selfRef});
+  const pasteAsToken: UseXDSChatPasteAsTokenReturn | null = pasteAsTokenProp === false
+    ? null
+    : (pasteAsTokenProp ?? defaultPasteAsToken);
 
   const insertText = useCallback((text: string) => {
     insertTextAtCursor(text);
   }, []);
 
   // Keep stable refs in sync for imperative handle
-  insertTokenRef.current = insertToken;
+  insertTokenRef.current = tokens.insertToken;
   insertTextRef.current = insertText;
 
   // --- Trigger menu ---
   const triggerMenu = useTriggerMenu({
     triggers,
     editableRef,
-    onInsertToken: insertToken,
+    onInsertToken: tokens.insertToken,
     onInsertText: insertText,
     onEmitChange: emitChange,
     debounceMs,
@@ -511,6 +483,11 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
 
   const handlePaste = useCallback(
     (e: ClipboardEvent<HTMLDivElement>) => {
+      // Handle paste near/into tokens first
+      if (tokens.handlePaste(e)) {
+        return;
+      }
+
       const files = Array.from(e.clipboardData.files);
       if (files.length > 0) {
         e.preventDefault();
@@ -520,12 +497,24 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
 
       e.preventDefault();
       const text = e.clipboardData.getData('text/plain');
-      insertTextAtCursor(text);
 
-      onPasteProp?.(e, text);
+      // Paste-as-token: convert long pastes to token chips
+      if (pasteAsToken?.onPaste(e, text)) {
+        emitChange();
+        return;
+      }
+
+      // Consumer onPaste — return true to prevent default text insert
+      const handled = onPasteProp?.(e, text);
+      if (handled) {
+        emitChange();
+        return;
+      }
+
+      insertTextAtCursor(text);
       emitChange();
     },
-    [onFiles, onPasteProp, emitChange],
+    [onFiles, onPasteProp, emitChange, tokens, pasteAsToken],
   );
 
   const maxHeight = maxRows * LINE_HEIGHT_PX;
@@ -559,10 +548,16 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
         style={{maxHeight: `${maxHeight}px`}}
       />
       {triggerMenu.renderMenu()}
-      {tokenPortals.map(({id, span, token}) =>
+      {tokens.tokenPortals.map(({id, span, token}) =>
         createPortal(
           isCustomToken(token) ? (
             <span key={id}>{token.render()}</span>
+          ) : token.value.length > (pasteAsToken === null ? Infinity : 200) ? (
+            <XDSChatPastedTextToken
+              key={id}
+              text={token.value}
+              onExpand={() => tokens.expandToken(id)}
+            />
           ) : (
             <XDSBadge
               key={id}

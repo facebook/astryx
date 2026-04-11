@@ -61,6 +61,10 @@ export type {UseXDSChatStreamScrollOptions, UseXDSChatStreamScrollReturn} from '
 export {useXDSChatNewMessages} from './useXDSChatNewMessages';
 export type {UseXDSChatNewMessagesOptions, UseXDSChatNewMessagesReturn} from './useXDSChatNewMessages';
 
+export {useXDSChatPasteAsToken} from './useXDSChatPasteAsToken';
+export type {UseXDSChatPasteAsTokenOptions, UseXDSChatPasteAsTokenReturn} from './useXDSChatPasteAsToken';
+export {useXDSChatComposerTokens} from './useXDSChatComposerTokens';
+export type {UseXDSChatComposerTokensOptions, UseXDSChatComposerTokensReturn, TokenPortal} from './useXDSChatComposerTokens';
 export type {XDSChatMessageSender, XDSChatDensity} from './XDSChatContext';
 export {useXDSChatLayoutContext} from './XDSChatContext';
 
