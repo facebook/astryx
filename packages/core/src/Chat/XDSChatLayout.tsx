@@ -388,6 +388,7 @@ export function XDSChatLayout({
     scrollToBottom,
     dismissNewMessages,
     onContentChange,
+    scrollToBottomIfNearBottom,
   } = useAutoScroll({
     enabled: hasAutoScroll,
     scrollContainerRef,
@@ -411,6 +412,11 @@ export function XDSChatLayout({
   }, []);
 
   // Content ref callback — observe the message list for height changes.
+  // Two behaviors:
+  // - New message appended (last element changed) → onContentChange
+  //   (auto-scrolls if near bottom, shows "new messages" if scrolled up)
+  // - Existing message growing (streaming) → just auto-scroll if near
+  //   bottom, but don't flag "new messages"
   const contentRef = useCallback(
     (el: HTMLElement | null) => {
       if (contentObserverRef.current) {
@@ -424,15 +430,20 @@ export function XDSChatLayout({
           const last =
             messages.length > 0 ? messages[messages.length - 1] : null;
           if (last && last !== lastMessageRef.current) {
+            // New message — auto-scroll or show "new messages"
             lastMessageRef.current = last;
             onContentChange();
+          } else {
+            // Existing content growing (streaming) — auto-scroll only,
+            // don't flag "new messages"
+            scrollToBottomIfNearBottom();
           }
         });
         observer.observe(el);
         contentObserverRef.current = observer;
       }
     },
-    [onContentChange],
+    [onContentChange, scrollToBottomIfNearBottom],
   );
 
   // --- Layout context ---

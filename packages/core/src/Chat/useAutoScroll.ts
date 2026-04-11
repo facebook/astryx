@@ -70,6 +70,9 @@ export interface UseAutoScrollReturn {
 
   /** Notify the hook that content changed (triggers auto-scroll check). */
   onContentChange: () => void;
+
+  /** Scroll to bottom only if the user is near the bottom. Does not flag new messages. */
+  scrollToBottomIfNearBottom: () => void;
 }
 
 /**
@@ -143,6 +146,13 @@ export function useAutoScroll({
     }
   }, [enabled, scrollToBottom]);
 
+  const scrollToBottomIfNearBottom = useCallback(() => {
+    if (!enabled) return;
+    if (isNearBottomRef.current) {
+      scrollToBottom(true);
+    }
+  }, [enabled, scrollToBottom]);
+
   const dismissNewMessages = useCallback(() => {
     scrollToBottom();
     setHasNewMessages(false);
@@ -161,5 +171,6 @@ export function useAutoScroll({
     scrollToBottom,
     dismissNewMessages,
     onContentChange,
+    scrollToBottomIfNearBottom,
   };
 }
