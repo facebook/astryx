@@ -89,9 +89,11 @@ describe('XDSChatLayout', () => {
     expect(screen.getByTestId('my-layout')).toBeTruthy();
   });
 
-  it('renders scroll-to-bottom button', () => {
+  it('renders scrollButton slot', () => {
     render(
-      <XDSChatLayout composer={<div>composer</div>}>
+      <XDSChatLayout
+        composer={<div>composer</div>}
+        scrollButton={<button>Scroll to bottom</button>}>
         <div>msg</div>
       </XDSChatLayout>,
     );
