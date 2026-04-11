@@ -2,7 +2,7 @@
 
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {XDSVStack, XDSHStack, XDSStackItem} from '@xds/core/Layout';
 import {XDSGrid} from '@xds/core/Grid';
 import {XDSButton} from '@xds/core/Button';
 import {XDSText} from '@xds/core/Text';
@@ -529,15 +529,15 @@ export default function PaymentFormPage() {
 
                 {/* OR divider */}
                 <XDSHStack gap={3} vAlign="center">
-                  <div style={{flex: 1}}>
+                  <XDSStackItem size="fill">
                     <XDSDivider />
-                  </div>
+                  </XDSStackItem>
                   <XDSText type="supporting" color="secondary">
                     OR
                   </XDSText>
-                  <div style={{flex: 1}}>
+                  <XDSStackItem size="fill">
                     <XDSDivider />
-                  </div>
+                  </XDSStackItem>
                 </XDSHStack>
 
                 {/* Credit card fields */}
@@ -913,55 +913,57 @@ export default function PaymentFormPage() {
                                 />
                               </XDSAspectRatio>
                             </div>
-                            <XDSVStack gap={1} style={{flex: 1}}>
-                              <XDSHStack
-                                gap={2}
-                                hAlign="between"
-                                vAlign="start">
-                                <XDSHStack gap={2} vAlign="center">
-                                  <XDSText type="body" weight="medium">
-                                    {item.name}
+                            <XDSStackItem size="fill">
+                              <XDSVStack gap={1}>
+                                <XDSHStack
+                                  gap={2}
+                                  hAlign="between"
+                                  vAlign="start">
+                                  <XDSHStack gap={2} vAlign="center">
+                                    <XDSText type="body" weight="medium">
+                                      {item.name}
+                                    </XDSText>
+                                    {item.limited && (
+                                      <XDSBadge
+                                        variant="green"
+                                        label="LIMITED EDITION"
+                                      />
+                                    )}
+                                  </XDSHStack>
+                                  <XDSText type="body" weight="bold">
+                                    {fmt(item.price)}
                                   </XDSText>
-                                  {item.limited && (
-                                    <XDSBadge
-                                      variant="green"
-                                      label="LIMITED EDITION"
-                                    />
-                                  )}
                                 </XDSHStack>
-                                <XDSText type="body" weight="bold">
-                                  {fmt(item.price)}
+                                <XDSText type="supporting" color="secondary">
+                                  {item.variant}
                                 </XDSText>
-                              </XDSHStack>
-                              <XDSText type="supporting" color="secondary">
-                                {item.variant}
-                              </XDSText>
-                              <XDSHStack gap={2} vAlign="center">
-                                <XDSNumberInput
-                                  label="Qty"
-                                  isLabelHidden
-                                  value={quantities[item.id] ?? item.qty}
-                                  onChange={v =>
-                                    setQuantities(q => ({...q, [item.id]: v}))
-                                  }
-                                  min={1}
-                                  max={10}
-                                  isIntegerOnly
-                                />
-                                <XDSLink
-                                  label="Remove"
-                                  href="#"
-                                  type="supporting">
-                                  Remove
-                                </XDSLink>
-                                <XDSLink
-                                  label="Save"
-                                  href="#"
-                                  type="supporting">
-                                  Save
-                                </XDSLink>
-                              </XDSHStack>
-                            </XDSVStack>
+                                <XDSHStack gap={2} vAlign="center">
+                                  <XDSNumberInput
+                                    label="Qty"
+                                    isLabelHidden
+                                    value={quantities[item.id] ?? item.qty}
+                                    onChange={v =>
+                                      setQuantities(q => ({...q, [item.id]: v}))
+                                    }
+                                    min={1}
+                                    max={10}
+                                    isIntegerOnly
+                                  />
+                                  <XDSLink
+                                    label="Remove"
+                                    href="#"
+                                    type="supporting">
+                                    Remove
+                                  </XDSLink>
+                                  <XDSLink
+                                    label="Save"
+                                    href="#"
+                                    type="supporting">
+                                    Save
+                                  </XDSLink>
+                                </XDSHStack>
+                              </XDSVStack>
+                            </XDSStackItem>
                           </XDSHStack>
                           <XDSDivider />
                         </XDSVStack>
