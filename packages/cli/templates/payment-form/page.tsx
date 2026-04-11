@@ -873,13 +873,12 @@ export default function PaymentFormPage() {
                   </XDSVStack>
                 </XDSGridSpan>
 
-                <XDSGridSpan
-                  columns={2}
+                <div
                   className="pf-right"
                   style={{
+                    gridColumn: 'span 2',
                     position: 'sticky',
                     top: 16,
-                    height: 'auto',
                     alignSelf: 'start',
                   }}>
                   <XDSCard padding={5}>
@@ -1067,7 +1066,7 @@ export default function PaymentFormPage() {
                     </XDSVStack>
                     {/* end outer card XDSVStack gap={4} */}
                   </XDSCard>
-                </XDSGridSpan>
+                </div>
               </XDSGrid>
             </XDSVStack>
           </XDSLayoutContent>
