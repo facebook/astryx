@@ -110,8 +110,8 @@ const swatchStyle: React.CSSProperties = {
 // Swatch components
 // =============================================================================
 
-function RemoveButton({mode}: {mode: 'dark' | 'light' | null}) {
-  const button = (
+function RemoveButton() {
+  return (
     <XDSButton
       icon={<XDSIcon icon="close" size="xsm" />}
       label="Remove"
@@ -122,18 +122,18 @@ function RemoveButton({mode}: {mode: 'dark' | 'light' | null}) {
       onClick={() => {}}
     />
   );
-  if (mode == null) return button;
-  return <XDSMediaTheme mode={mode}>{button}</XDSMediaTheme>;
 }
 
 function Swatch({color, mode, value}: {color: typeof SOLID_COLORS[0]; mode: 'dark' | 'light'; value: number}) {
   return (
     <div style={swatchStyle}>
-      <div style={{...swatchBoxStyle, backgroundColor: `rgb(${color.rgb.join(',')})`}}>
-        <div style={buttonPosStyle}>
-          <RemoveButton mode={mode} />
+      <XDSMediaTheme mode={mode}>
+        <div style={{...swatchBoxStyle, backgroundColor: `rgb(${color.rgb.join(',')})`}}>
+          <div style={buttonPosStyle}>
+            <RemoveButton />
+          </div>
         </div>
-      </div>
+      </XDSMediaTheme>
       <div style={{fontSize: 10, color: '#666', marginTop: 4, fontWeight: 600}}>{color.name}</div>
       <div style={{fontSize: 9, color: mode === 'dark' ? '#c44' : '#48a'}}>
         {value.toFixed(3)} → {mode}
@@ -146,16 +146,31 @@ function ImageSwatch({src, label, algorithm}: {src: string; label: string; algor
   const {mode, value} = useImageModeTest(src, {region: BUTTON_REGION, algorithm});
   return (
     <div style={swatchStyle}>
-      <div style={swatchBoxStyle}>
-        <img
-          src={src}
-          alt={label}
-          style={{width: '100%', height: '100%', objectFit: 'cover', display: 'block'}}
-        />
-        <div style={buttonPosStyle}>
-          <RemoveButton mode={mode} />
+      {mode != null ? (
+        <XDSMediaTheme mode={mode}>
+          <div style={swatchBoxStyle}>
+            <img
+              src={src}
+              alt={label}
+              style={{width: '100%', height: '100%', objectFit: 'cover', display: 'block'}}
+            />
+            <div style={buttonPosStyle}>
+              <RemoveButton />
+            </div>
+          </div>
+        </XDSMediaTheme>
+      ) : (
+        <div style={swatchBoxStyle}>
+          <img
+            src={src}
+            alt={label}
+            style={{width: '100%', height: '100%', objectFit: 'cover', display: 'block'}}
+          />
+          <div style={buttonPosStyle}>
+            <RemoveButton />
+          </div>
         </div>
-      </div>
+      )}
       <div style={{fontSize: 10, color: '#666', marginTop: 4}}>{label}</div>
       <div style={{fontSize: 9, color: mode === 'dark' ? '#c44' : mode === 'light' ? '#48a' : '#999'}}>
         {value != null ? `${value.toFixed(3)} → ${mode}` : 'detecting…'}
