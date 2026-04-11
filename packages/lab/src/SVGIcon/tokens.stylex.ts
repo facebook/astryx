@@ -42,6 +42,9 @@ export const iconVars = stylex.defineVars({
   '--icon-inline-offset': '0px',
   '--icon-block-offset': '0px',
 
+  // Bold mode adjustments
+  '--icon-bold-stroke-boost': '0.5',
+
   // Bold mode mask gaps
   '--icon-gap': '1.5',
   '--icon-gap-linejoin': 'round',

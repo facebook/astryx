@@ -143,6 +143,120 @@ export const menuIcon: SVGIconDef = {
   ],
 };
 
+/** Single curved path: Heart */
+export const heartIcon: SVGIconDef = {
+  name: 'Heart',
+  primary: [
+    {
+      type: 'path',
+      attrs: {
+        d: 'M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5',
+      },
+      role: 'fill',
+    },
+  ],
+};
+
+/** Nested shapes: Eye — outer shape (fill) + pupil (fill, secondary) */
+export const eyeIcon: SVGIconDef = {
+  name: 'Eye',
+  primary: [
+    {
+      type: 'path',
+      attrs: {
+        d: 'M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0',
+      },
+      role: 'fill',
+    },
+  ],
+  secondary: [
+    {type: 'circle', attrs: {cx: '12', cy: '12', r: '3'}, role: 'fill'},
+  ],
+};
+
+/** Complex single path: Star */
+export const starIcon: SVGIconDef = {
+  name: 'Star',
+  primary: [
+    {
+      type: 'path',
+      attrs: {
+        d: 'M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z',
+      },
+      role: 'fill',
+    },
+  ],
+};
+
+/** Single panel: Folder */
+export const folderIcon: SVGIconDef = {
+  name: 'Folder',
+  primary: [
+    {
+      type: 'path',
+      attrs: {
+        d: 'M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z',
+      },
+      role: 'fill',
+    },
+  ],
+};
+
+/** Single path: Shield */
+export const shieldIcon: SVGIconDef = {
+  name: 'Shield',
+  primary: [
+    {
+      type: 'path',
+      attrs: {
+        d: 'M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z',
+      },
+      role: 'fill',
+    },
+  ],
+};
+
+/** Mixed: Search — glass (fill) + handle (stroke, secondary) */
+export const searchIcon: SVGIconDef = {
+  name: 'Search',
+  primary: [
+    {type: 'circle', attrs: {cx: '11', cy: '11', r: '8'}, role: 'fill'},
+  ],
+  secondary: [{type: 'path', attrs: {d: 'm21 21-4.34-4.34'}, role: 'stroke'}],
+};
+
+/** Mixed: Mail — body (fill) + flap line (stroke, secondary) */
+export const mailIcon: SVGIconDef = {
+  name: 'Mail',
+  primary: [
+    {
+      type: 'rect',
+      attrs: {x: '2', y: '4', width: '20', height: '16', rx: '2'},
+      role: 'fill',
+    },
+  ],
+  secondary: [
+    {
+      type: 'path',
+      attrs: {d: 'm22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7'},
+      role: 'stroke',
+    },
+  ],
+};
+
+/** Mixed: Lock — body (fill) + shackle (stroke) */
+export const lockIcon: SVGIconDef = {
+  name: 'Lock',
+  primary: [
+    {
+      type: 'rect',
+      attrs: {width: '18', height: '11', x: '3', y: '11', rx: '2'},
+      role: 'fill',
+    },
+    {type: 'path', attrs: {d: 'M7 11V7a5 5 0 0 1 10 0v4'}, role: 'stroke'},
+  ],
+};
+
 /** All starter icons for convenience */
 export const starterIcons: SVGIconDef[] = [
   xIcon,
@@ -152,4 +266,12 @@ export const starterIcons: SVGIconDef[] = [
   settingsIcon,
   calendarIcon,
   menuIcon,
+  heartIcon,
+  eyeIcon,
+  starIcon,
+  folderIcon,
+  shieldIcon,
+  searchIcon,
+  mailIcon,
+  lockIcon,
 ];
