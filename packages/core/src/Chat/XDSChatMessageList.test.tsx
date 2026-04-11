@@ -54,13 +54,4 @@ describe('XDSChatMessageList', () => {
     expect(screen.getByTestId('chat-list')).toBeTruthy();
   });
 
-  it('does not render scroll-to-bottom button (owned by XDSChatLayout)', () => {
-    render(
-      <XDSChatMessageList>
-        <div>msg</div>
-      </XDSChatMessageList>,
-    );
-    const button = screen.queryByRole('button', {name: /Scroll to bottom/});
-    expect(button).toBeNull();
-  });
 });

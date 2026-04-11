@@ -88,4 +88,14 @@ describe('XDSChatLayout', () => {
     );
     expect(screen.getByTestId('my-layout')).toBeTruthy();
   });
+
+  it('renders scroll-to-bottom button', () => {
+    render(
+      <XDSChatLayout composer={<div>composer</div>}>
+        <div>msg</div>
+      </XDSChatLayout>,
+    );
+    const button = screen.getByRole('button', {name: /Scroll to bottom/});
+    expect(button).toBeTruthy();
+  });
 });
