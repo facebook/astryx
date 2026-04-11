@@ -128,6 +128,7 @@ const styles = stylex.create({
     flexDirection: 'column',
     marginInline: 'auto',
     minHeight: '100%',
+    paddingBlockEnd: spacingVars['--spacing-6'],
   },
   messageAreaCompact: {
     maxWidth: '100%',
