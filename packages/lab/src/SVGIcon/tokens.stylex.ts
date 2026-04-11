@@ -46,6 +46,6 @@ export const iconVars = stylex.defineVars({
   '--icon-bold-stroke-boost': '0.5',
 
   // Bold mode mask gaps
-  '--icon-gap': '1.5',
+  '--icon-gap': '0.75',
   '--icon-gap-linejoin': 'round',
 });

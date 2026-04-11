@@ -220,9 +220,13 @@ export const shieldIcon: SVGIconDef = {
 export const searchIcon: SVGIconDef = {
   name: 'Search',
   primary: [
-    {type: 'circle', attrs: {cx: '11', cy: '11', r: '8'}, role: 'fill'},
+    {type: 'circle', attrs: {cx: '11', cy: '11', r: '8'}, role: 'stroke'},
+    {
+      type: 'path',
+      attrs: {d: 'm21 21-4.34-4.34'},
+      role: 'stroke',
+    },
   ],
-  secondary: [{type: 'path', attrs: {d: 'm21 21-4.34-4.34'}, role: 'stroke'}],
 };
 
 /** Mixed: Mail — body (fill) + flap line (stroke, secondary) */
