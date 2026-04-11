@@ -84,6 +84,17 @@ export interface XDSMarkdownProps {
    * @default 'label'
    */
   citationStyle?: 'label' | 'number';
+  /**
+   * Max width for prose content (paragraphs, headings, lists, blockquotes).
+   * Tables and code blocks are unconstrained and can expand to the full
+   * container width. Use for readable line lengths in wide layouts.
+   *
+   * @example
+   * ```
+   * <XDSMarkdown contentWidth={640}>{text}</XDSMarkdown>
+   * ```
+   */
+  contentWidth?: number | string;
   xstyle?: StyleXStyles;
   className?: string;
   style?: React.CSSProperties;
@@ -93,6 +104,15 @@ export interface XDSMarkdownProps {
 // ---------------------------------------------------------------------------
 // Styles
 // ---------------------------------------------------------------------------
+
+const dynamicStyles = stylex.create({
+  proseWidth: (maxWidth: string) => ({
+    maxWidth,
+  }),
+  tableMinWidth: (minWidth: string) => ({
+    minWidth,
+  }),
+});
 
 const styles = stylex.create({
   root: {
@@ -235,7 +255,8 @@ const styles = stylex.create({
   },
   table: {
     borderCollapse: 'collapse',
-    width: '100%',
+    width: 'auto',
+    maxWidth: '100%',
   },
   th: {
     fontWeight: fontWeightVars['--font-weight-semibold'],
@@ -780,6 +801,7 @@ function renderBlock(
   onLinkClick: XDSMarkdownProps['onLinkClick'] | undefined,
   cursor: StreamingCursor,
   citationCtx: CitationContext | null,
+  contentWidthValue: string | null,
 ): React.ReactNode {
   const spacing = getElementSpacing(node, density);
   const isFirst = index === 0;
@@ -802,6 +824,9 @@ function renderBlock(
             styles.headingBase,
             headingStyles[level],
             spacing,
+            contentWidthValue != null
+              ? dynamicStyles.proseWidth(contentWidthValue)
+              : null,
             isFirst && styles.noMarginBlockStart,
             isLast && styles.noMarginBlockEnd,
           )}>
@@ -817,6 +842,9 @@ function renderBlock(
           key={index}
           {...stylex.props(
             spacing,
+            contentWidthValue != null
+              ? dynamicStyles.proseWidth(contentWidthValue)
+              : null,
             isFirst && styles.noMarginBlockStart,
             isLast && styles.noMarginBlockEnd,
           )}>
@@ -836,7 +864,11 @@ function renderBlock(
             isFirst && styles.noMarginBlockStart,
             isLast && styles.noMarginBlockEnd,
           )}>
-          <XDSCodeBlock code={node.content} language={node.language} />
+          <XDSCodeBlock
+            code={node.content}
+            language={node.language}
+            isCollapsible
+          />
         </div>
       );
     }
@@ -847,6 +879,9 @@ function renderBlock(
           {...stylex.props(
             styles.blockquote,
             spacing,
+            contentWidthValue != null
+              ? dynamicStyles.proseWidth(contentWidthValue)
+              : null,
             isFirst && styles.noMarginBlockStart,
             isLast && styles.noMarginBlockEnd,
           )}>
@@ -860,6 +895,7 @@ function renderBlock(
               onLinkClick,
               cursor,
               citationCtx,
+              contentWidthValue,
             ),
           )}
         </blockquote>
@@ -917,6 +953,7 @@ function renderBlock(
                         onLinkClick,
                         cursor,
                         citationCtx,
+                        contentWidthValue,
                       ),
                     )}
                   </>
@@ -952,6 +989,9 @@ function renderBlock(
           key={index}
           {...stylex.props(
             spacing,
+            contentWidthValue != null
+              ? dynamicStyles.proseWidth(contentWidthValue)
+              : null,
             isFirst && styles.noMarginBlockStart,
             isLast && styles.noMarginBlockEnd,
           )}>
@@ -987,6 +1027,7 @@ function renderBlock(
                       onLinkClick,
                       cursor,
                       citationCtx,
+                      contentWidthValue,
                     ),
                   )}
                 </>
@@ -1024,7 +1065,13 @@ function renderBlock(
             isFirst && styles.noMarginBlockStart,
             isLast && styles.noMarginBlockEnd,
           )}>
-          <table {...stylex.props(styles.table)}>
+          <table
+            {...stylex.props(
+              styles.table,
+              contentWidthValue != null
+                ? dynamicStyles.tableMinWidth(contentWidthValue)
+                : null,
+            )}>
             <thead>
               <tr>
                 {node.headers.map((h, i) => (
@@ -1136,6 +1183,7 @@ export function XDSMarkdown({
   onLinkClick,
   sources,
   citationStyle = 'label',
+  contentWidth = 680,
   xstyle,
   className,
   style,
@@ -1208,6 +1256,11 @@ export function XDSMarkdown({
           onLinkClick,
           cursor,
           citationCtx,
+          contentWidth
+            ? typeof contentWidth === 'number'
+              ? `${contentWidth}px`
+              : contentWidth
+            : null,
         ),
       )}
     </div>
