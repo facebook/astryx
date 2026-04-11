@@ -185,7 +185,11 @@ export function XDSSegmentedControlItem({
       tabIndex={isSelected ? 0 : -1}
       onClick={handleClick}
       {...mergeProps(
-        xdsClassName('segmented-control-item'),
+        xdsClassName('segmented-control-item', {
+          size,
+          selected: isSelected ? 'selected' : null,
+          disabled: isItemDisabled ? 'disabled' : null,
+        }),
         stylex.props(
           styles.base,
           sizeStyles[size],
