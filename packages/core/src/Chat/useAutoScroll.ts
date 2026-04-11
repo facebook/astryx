@@ -110,7 +110,7 @@ export function useAutoScroll({
     }
   }, []);
 
-  // Fires on every scroll frame — unlock immediately on user scroll
+  // On scroll: unlock if user scrolled past threshold
   const handleScroll = useCallback(() => {
     const el = scrollRef.current;
     if (!el) return;
@@ -118,14 +118,12 @@ export function useAutoScroll({
       el.scrollHeight - el.scrollTop - el.clientHeight;
     setIsScrolledUp(distanceFromBottom > scrollUpThreshold);
 
-    // User scroll — unlock immediately
-    if (!isProgrammaticRef.current) {
+    if (!isProgrammaticRef.current && distanceFromBottom > scrollUpThreshold) {
       lockedRef.current = false;
     }
   }, [scrollUpThreshold]);
 
-  // Fires once when scrolling settles — clear programmatic flag,
-  // and re-lock if the user scrolled back to the bottom.
+  // On scroll end: lock if at bottom, clear programmatic flag
   const handleScrollEnd = useCallback(() => {
     isProgrammaticRef.current = false;
 
@@ -136,7 +134,6 @@ export function useAutoScroll({
     if (distanceFromBottom <= scrollUpThreshold) {
       lockedRef.current = true;
       setHasNewMessages(false);
-      setIsScrolledUp(false);
     }
   }, [scrollUpThreshold]);
 
