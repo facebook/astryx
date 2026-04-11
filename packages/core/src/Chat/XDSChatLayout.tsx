@@ -369,6 +369,7 @@ export function XDSChatLayout({
 }: XDSChatLayoutProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const dockRef = useRef<HTMLDivElement>(null);
+  const [rootMounted, setRootMounted] = useState(false);
 
   const scrollContainerRef =
     externalScrollRef ?? (rootRef as React.RefObject<HTMLElement | null>);
@@ -390,13 +391,15 @@ export function XDSChatLayout({
     scrollContainerRef,
   });
 
-  // Attach scroll listener to the scroll container
+  // Attach scroll listener to the scroll container.
+  // rootMounted triggers re-run after the ref is populated.
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
     el.addEventListener('scroll', handleScroll, {passive: true});
+    scrollToBottom(false);
     return () => el.removeEventListener('scroll', handleScroll);
-  }, [scrollRef, handleScroll]);
+  }, [scrollRef, handleScroll, rootMounted, scrollToBottom]);
 
   // Single ResizeObserver for both density (root width) and content
   // changes (new messages). Checks entry.target to dispatch.
@@ -436,6 +439,7 @@ export function XDSChatLayout({
   const setRootRef = useCallback(
     (el: HTMLDivElement | null) => {
       (rootRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
+      setRootMounted(el != null);
       if (typeof ref === 'function') {
         ref(el);
       } else if (ref) {
