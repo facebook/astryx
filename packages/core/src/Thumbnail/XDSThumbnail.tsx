@@ -169,9 +169,11 @@ const styles = stylex.create({
     zIndex: 1,
   },
   /** Concentric radius: container is --radius-element (8px), inset by --spacing-1 (4px), so inner = 4px */
-  removeButtonRadius: {
+  removeButtonOverrides: {
     '--button-radius': radiusVars['--radius-inner'],
-  } as Record<string, string>,
+    height: 20,
+    minWidth: 20,
+  } as Record<string, string | number>,
   label: {
     marginTop: spacingVars['--spacing-1'],
     fontSize: typeScaleVars['--text-supporting-size'],
@@ -299,7 +301,7 @@ export function XDSThumbnail({
             e.stopPropagation();
             onRemove(e);
           }}
-          xstyle={styles.removeButtonRadius}
+          xstyle={styles.removeButtonOverrides}
         />
       </div>
     ) : null;
