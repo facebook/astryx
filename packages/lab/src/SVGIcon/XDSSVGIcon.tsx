@@ -166,7 +166,7 @@ function needsMask(
   fillShapes: IconShape[],
   secondaryFillShapes: IconShape[],
 ): boolean {
-  if (variation !== 'bold' && variation !== 'bulk') return false;
+  if (variation !== 'bold') return false;
   return fillShapes.length > 0 && secondaryFillShapes.length > 0;
 }
 
@@ -181,8 +181,8 @@ function renderMaskKnockouts(shapes: IconShape[]) {
         ...shape.attrs,
         fill: 'black',
         stroke: 'black',
-        strokeWidth: `var(${iconVars['--icon-gap']})`,
-        strokeLinejoin: `var(${iconVars['--icon-gap-linejoin']})`,
+        strokeWidth: iconVars['--icon-gap'] as string,
+        strokeLinejoin: iconVars['--icon-gap-linejoin'] as string,
       },
       shape.type,
       `knockout-${i}`,
@@ -370,7 +370,8 @@ export function XDSSVGIcon({
       {/* Secondary layer */}
       {hasSecondary && (
         <>
-          {renderFillRoleShapes(secondarySplit.fill, 'secondary')}
+          {/* In bold with mask, fill-role secondaries are knockouts only — don't render them visibly */}
+          {!useMask && renderFillRoleShapes(secondarySplit.fill, 'secondary')}
           {renderStrokeRoleShapes(secondarySplit.stroke, 'secondary')}
         </>
       )}

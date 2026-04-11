@@ -46,7 +46,7 @@ export const variations = stylex.create({
     [iconVars['--icon-layer-secondary-stroke-role-fill']]: 'none',
     [iconVars['--icon-layer-secondary-stroke-role-stroke']]: 'currentColor',
     [iconVars['--icon-layer-secondary-stroke-role-opacity']]: '1',
-    [iconVars['--icon-layer-secondary-stroke-role-width']]: '2',
+    [iconVars['--icon-layer-secondary-stroke-role-width']]: '2.5',
   },
   twotone: {
     // Fill-role: stroked, full opacity
