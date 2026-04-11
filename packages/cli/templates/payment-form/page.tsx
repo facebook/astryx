@@ -3,6 +3,7 @@
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {XDSGrid} from '@xds/core/Grid';
 import {XDSButton} from '@xds/core/Button';
 import {XDSText} from '@xds/core/Text';
 import {XDSTextInput} from '@xds/core/TextInput';
@@ -154,11 +155,6 @@ const styles = stylex.create({
     fontWeight: fontWeightVars['--font-weight-bold'],
     lineHeight: typeScaleVars['--text-large-leading'],
     margin: 0,
-  },
-  inlineGrid: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: spacingVars['--spacing-3'],
   },
   fullWidth: {width: '100%'},
   orderThumb: {
@@ -350,13 +346,7 @@ export default function PaymentFormPage() {
                 <div {...stylex.props(styles.sectionTitle)}>
                   Shipping Information
                 </div>
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: '1fr 1fr',
-                    gap: 12,
-                    alignItems: 'start',
-                  }}>
+                <XDSGrid columns={2} gap={3}>
                   <XDSTextInput
                     size="lg"
                     label="First Name"
@@ -381,7 +371,7 @@ export default function PaymentFormPage() {
                         : undefined
                     }
                   />
-                </div>
+                </XDSGrid>
                 <XDSTextInput
                   size="lg"
                   label="Address"
@@ -394,12 +384,7 @@ export default function PaymentFormPage() {
                       : undefined
                   }
                 />
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: '1fr 1fr',
-                    gap: 12,
-                  }}>
+                <XDSGrid columns={2} gap={3}>
                   <XDSTextInput
                     size="lg"
                     label="City"
@@ -424,7 +409,7 @@ export default function PaymentFormPage() {
                         : undefined
                     }
                   />
-                </div>
+                </XDSGrid>
                 <XDSSelector
                   size="lg"
                   label="State"
@@ -505,13 +490,7 @@ export default function PaymentFormPage() {
 
                 {/* Express checkout */}
                 <XDSVStack gap={3}>
-                  <div
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: '1fr 1fr',
-                      gap: 12,
-                      alignItems: 'start',
-                    }}>
+                  <XDSGrid columns={2} gap={3}>
                     {/* PayPal */}
                     <XDSButton
                       label="PayPal"
@@ -545,7 +524,7 @@ export default function PaymentFormPage() {
                         }}
                       />
                     </XDSButton>
-                  </div>
+                  </XDSGrid>
                 </XDSVStack>
 
                 {/* OR divider */}
@@ -564,7 +543,7 @@ export default function PaymentFormPage() {
                 {/* Credit card fields */}
                 <XDSVStack gap={3}>
                   {/* Card type icons */}
-                  <div style={{display: 'flex', gap: 6, alignItems: 'center'}}>
+                  <XDSHStack gap={1.5} vAlign="center">
                     <img
                       src="https://raw.githubusercontent.com/aaronfagan/svg-credit-card-payment-icons/main/flat/visa.svg"
                       alt="Visa"
@@ -598,7 +577,7 @@ export default function PaymentFormPage() {
                         backgroundColor: '#fff',
                       }}
                     />
-                  </div>
+                  </XDSHStack>
                   <XDSTextInput
                     size="lg"
                     label="Card Number"
@@ -611,13 +590,7 @@ export default function PaymentFormPage() {
                         : undefined
                     }
                   />
-                  <div
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: '1fr 1fr 1fr',
-                      gap: 12,
-                      alignItems: 'start',
-                    }}>
+                  <XDSGrid columns={3} gap={3}>
                     <XDSSelector
                       size="lg"
                       label="Expiry Month"
@@ -657,7 +630,7 @@ export default function PaymentFormPage() {
                           : undefined
                       }
                     />
-                  </div>
+                  </XDSGrid>
                   <XDSTextInput
                     size="lg"
                     label="Name on Card"
@@ -689,12 +662,7 @@ export default function PaymentFormPage() {
                             : undefined
                         }
                       />
-                      <div
-                        style={{
-                          display: 'grid',
-                          gridTemplateColumns: '1fr 1fr',
-                          gap: 12,
-                        }}>
+                      <XDSGrid columns={2} gap={3}>
                         <XDSTextInput
                           size="lg"
                           label="City"
@@ -719,7 +687,7 @@ export default function PaymentFormPage() {
                               : undefined
                           }
                         />
-                      </div>
+                      </XDSGrid>
                       <XDSSelector
                         size="lg"
                         label="State"
@@ -770,13 +738,7 @@ export default function PaymentFormPage() {
                 />
                 {addGiftMessage && (
                   <XDSVStack gap={3}>
-                    <div
-                      style={{
-                        display: 'grid',
-                        gridTemplateColumns: '1fr 1fr',
-                        gap: 12,
-                        alignItems: 'start',
-                      }}>
+                    <XDSGrid columns={2} gap={3}>
                       <XDSTextInput
                         size="lg"
                         label="To"
@@ -793,7 +755,7 @@ export default function PaymentFormPage() {
                         value={giftFrom}
                         onChange={setGiftFrom}
                       />
-                    </div>
+                    </XDSGrid>
                     <XDSTextArea
                       label="Gift message"
                       isLabelHidden
