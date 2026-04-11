@@ -127,6 +127,7 @@ const styles = stylex.create({
     display: 'flex',
     flexDirection: 'column',
     marginInline: 'auto',
+    minHeight: '100%',
   },
   messageAreaCompact: {
     maxWidth: '100%',
@@ -186,8 +187,8 @@ const styles = stylex.create({
   positionFixed: {
     position: 'fixed',
   },
-  positionAbsolute: {
-    position: 'absolute',
+  positionSticky: {
+    position: 'sticky',
   },
   dockCompact: {
     paddingInline: spacingVars['--spacing-2'],
@@ -554,7 +555,7 @@ export function XDSChatLayout({
         <div
           {...stylex.props(
             styles.blurLayer,
-            isSelfScrolling ? styles.positionAbsolute : styles.positionFixed,
+            isSelfScrolling ? styles.positionSticky : styles.positionFixed,
             blurLayerStyle,
           )}
         />
@@ -564,7 +565,7 @@ export function XDSChatLayout({
           ref={dockRef}
           {...stylex.props(
             styles.dock,
-            isSelfScrolling ? styles.positionAbsolute : styles.positionFixed,
+            isSelfScrolling ? styles.positionSticky : styles.positionFixed,
             dockStyle,
           )}>
           <div {...stylex.props(styles.dockInner, dockInnerStyle)}>
