@@ -388,7 +388,7 @@ export function XDSChatLayout({
     scrollToBottom,
     dismissNewMessages,
     onContentChange,
-    scrollToBottomIfNearBottom,
+    scrollToBottomIfLocked,
   } = useAutoScroll({
     enabled: hasAutoScroll,
     scrollContainerRef,
@@ -436,14 +436,14 @@ export function XDSChatLayout({
           } else {
             // Existing content growing (streaming) — auto-scroll only,
             // don't flag "new messages"
-            scrollToBottomIfNearBottom();
+            scrollToBottomIfLocked();
           }
         });
         observer.observe(el);
         contentObserverRef.current = observer;
       }
     },
-    [onContentChange, scrollToBottomIfNearBottom],
+    [onContentChange, scrollToBottomIfLocked],
   );
 
   // --- Layout context ---
