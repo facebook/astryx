@@ -2,14 +2,13 @@
 
 /**
  * @file XDSChatLayout.tsx
- * @input Uses React, StyleX, theme tokens, useAutoScroll
+ * @input Uses React, StyleX, theme tokens, useXDSChatStreamScroll, useXDSChatNewMessages
  * @output Exports XDSChatLayout component and XDSChatLayoutProps
  * @position Layout shell for full chat interfaces — messages in page flow, composer fixed to bottom
  *
- * Arranges a chat page: messages flow naturally in the page, composer is
- * fixed to the bottom with a frosted glass backdrop. Owns auto-scroll
- * behavior and the scroll-to-bottom button. Uses ResizeObserver on the
- * message content area to detect new content.
+ * Structural layout only — scroll behavior is delegated to hooks.
+ * Provides the scroll container ref and content ref, renders the
+ * scroll-to-bottom button, frosted glass dock, and message area.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Chat/index.ts (exports)
@@ -26,25 +25,29 @@ import {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
-import {
-  colorVars,
-  spacingVars,
-  radiusVars,
-  shadowVars,
-  durationVars,
-  easeVars,
-} from '../theme/tokens.stylex';
+import {spacingVars} from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
+import {useXDSChatStreamScroll} from './useXDSChatStreamScroll';
+import {useXDSChatNewMessages} from './useXDSChatNewMessages';
+import {XDSChatLayoutScrollButton} from './XDSChatLayoutScrollButton';
 import {XDSChatLayoutContext} from './XDSChatContext';
-import {useAutoScroll} from './useAutoScroll';
-import {XDSIcon} from '../Icon';
-import {XDSButton} from '../Button';
 
 // =============================================================================
 // Types
 // =============================================================================
 
 type Density = 'compact' | 'balanced' | 'spacious';
+
+/** Imperative handle for XDSChatLayout scroll controls. */
+export interface XDSChatLayoutHandle {
+  /** Scroll a message to the top and unlock for stream-in. */
+  /** Scroll to bottom and re-lock. */
+  scrollToBottom: () => void;
+  /** Navigate to a message, no lock change. */
+  scrollToMessage: (el: HTMLElement) => void;
+  /** Scroll to the last message. */
+  scrollToLastMessage: () => void;
+}
 
 export interface XDSChatLayoutProps {
   /** Ref forwarded to the root element. */
@@ -68,33 +71,27 @@ export interface XDSChatLayoutProps {
   emptyState?: ReactNode;
 
   /**
+   * Scroll-to-bottom button rendered above the composer in the dock.
+   * Defaults to XDSChatLayoutScrollButton with useXDSChatStreamScroll.
+   * Pass a custom ReactNode to override, or `null` to hide.
+   */
+  scrollButton?: ReactNode | null;
+
+  /**
    * External scroll container ref. When provided, auto-scroll and
    * scroll-to-bottom target this element instead of the layout root.
    *
    * @example
    * ```
-   * // Scroll with the page body
    * const scrollRef = useRef(document.documentElement);
    * <XDSChatLayout scrollRef={scrollRef} composer={...}>...</XDSChatLayout>
    * ```
    *
-   * When omitted, the layout root itself is the scroll container
-   * (`overflow-y: auto`). This is the default for full-page and
-   * panel chat layouts.
+   * When omitted, the layout root itself is the scroll container.
    */
   scrollRef?: React.RefObject<HTMLElement | null>;
 
-  /**
-   * Whether auto-scroll behavior is enabled.
-   * @default true
-   */
-  hasAutoScroll?: boolean;
 
-  /**
-   * Label shown in the scroll-to-bottom button when new messages arrive.
-   * @default 'New messages'
-   */
-  newMessagesLabel?: string;
 
   /** StyleX overrides. */
   xstyle?: StyleXStyles;
@@ -120,9 +117,14 @@ const styles = stylex.create({
   rootScrollable: {
     overflowY: 'auto',
     overflowX: 'hidden',
+    // Hide scrollbar during programmatic scroll animation
+    // to prevent flash. Restored when animation settles.
+    scrollbarWidth: {
+      default: null,
+      ':is([data-xds-scrolling])': 'none',
+    },
   },
 
-  // --- Message area ---
   messageArea: {
     display: 'flex',
     flexDirection: 'column',
@@ -141,7 +143,6 @@ const styles = stylex.create({
     paddingInline: spacingVars['--spacing-4'],
   },
 
-  // --- Empty state ---
   emptyState: {
     display: 'flex',
     alignItems: 'center',
@@ -150,7 +151,7 @@ const styles = stylex.create({
     minHeight: 200,
   },
 
-  // --- Dock container — holds blur layer + composer as siblings ---
+  // --- Dock container ---
   dockContainer: {
     bottom: 0,
     left: 0,
@@ -166,7 +167,6 @@ const styles = stylex.create({
     position: 'sticky',
   },
 
-  // --- Blur layer (absolute within dock container) ---
   blurLayer: {
     position: 'absolute',
     bottom: 0,
@@ -176,7 +176,6 @@ const styles = stylex.create({
     backdropFilter: 'blur(12px)',
     WebkitBackdropFilter: 'blur(12px)',
   },
-
   blurLayerCompact: {
     height: 80,
     maskImage: 'linear-gradient(to bottom, transparent, black 24px)',
@@ -193,13 +192,11 @@ const styles = stylex.create({
     WebkitMaskImage: 'linear-gradient(to bottom, transparent, black 48px)',
   },
 
-  // --- Composer dock ---
   dock: {
     position: 'relative',
     zIndex: 1,
     pointerEvents: 'auto',
   },
-
   dockCompact: {
     paddingInline: spacingVars['--spacing-2'],
     paddingBlockEnd: spacingVars['--spacing-2'],
@@ -213,7 +210,6 @@ const styles = stylex.create({
     paddingBlockEnd: spacingVars['--spacing-3'],
   },
 
-  // --- Dock inner wrapper ---
   dockInner: {
     marginInline: 'auto',
   },
@@ -227,45 +223,6 @@ const styles = stylex.create({
     maxWidth: 800,
   },
 
-  // --- Scroll-to-bottom button ---
-  // Wrapper centers the button above the composer inside the dock container.
-  scrollButtonWrapper: {
-    display: 'flex',
-    justifyContent: 'center',
-    paddingBlockEnd: spacingVars['--spacing-3'],
-  },
-  scrollButtonContainer: {
-    pointerEvents: 'auto',
-    contain: 'layout style',
-    overflow: 'hidden',
-    borderRadius: radiusVars['--radius-full'],
-    backgroundColor: colorVars['--color-background-popover'],
-    boxShadow: shadowVars['--shadow-med'],
-    height: '32px',
-    transitionProperty: 'opacity, transform, max-width',
-    transitionTimingFunction: easeVars['--ease-standard'],
-    transitionDuration: durationVars['--duration-fast-max'],
-  },
-  scrollButtonContainerHidden: {
-    opacity: 0,
-    pointerEvents: 'none',
-    maxWidth: '32px',
-  },
-  scrollButtonContainerVisible: {
-    opacity: 1,
-    pointerEvents: 'auto',
-  },
-  scrollButtonCollapsed: {
-    maxWidth: '32px',
-  },
-  scrollButtonExpanded: {
-    maxWidth: '200px',
-  },
-  scrollButton: {
-    [radiusVars['--radius-element'] as string]: radiusVars['--radius-full'],
-    whiteSpace: 'nowrap',
-    paddingInline: spacingVars['--spacing-2'],
-  },
 });
 
 // =============================================================================
@@ -288,79 +245,17 @@ function hasVisibleContent(children: ReactNode): boolean {
 // Sub-components
 // =============================================================================
 
-function ScrollToBottomButton({
-  isScrolledUp,
-  hasNewMessages,
-  label,
-  onClick,
-}: {
-  isScrolledUp: boolean;
-  hasNewMessages: boolean;
-  label: string;
-  onClick: () => void;
-}) {
-  const isVisible = isScrolledUp || hasNewMessages;
-
-  return (
-    <div
-      {...stylex.props(styles.scrollButtonWrapper)}>
-      <div
-        {...stylex.props(
-          styles.scrollButtonContainer,
-          isVisible
-            ? styles.scrollButtonContainerVisible
-            : styles.scrollButtonContainerHidden,
-          hasNewMessages
-            ? styles.scrollButtonExpanded
-            : styles.scrollButtonCollapsed,
-        )}>
-        <XDSButton
-          label={hasNewMessages ? label : 'Scroll to bottom'}
-          aria-label={hasNewMessages ? label : 'Scroll to bottom'}
-          icon={<XDSIcon icon="chevronDown" size="md" />}
-          variant="ghost"
-          size="md"
-          onClick={onClick}
-          xstyle={styles.scrollButton}>
-          {hasNewMessages ? label : undefined}
-        </XDSButton>
-      </div>
-    </div>
-  );
-}
 
 // =============================================================================
 // Component
 // =============================================================================
 
-/**
- * Layout shell for full chat interfaces.
- *
- * Messages flow naturally in the page. The composer is fixed to
- * the bottom with a frosted glass dock. The layout owns auto-scroll
- * behavior — it observes the message content area via ResizeObserver
- * and scrolls to bottom when new content arrives (if the user is
- * near the bottom). Shows a scroll-to-bottom button when scrolled up.
- *
- * @example
- * ```
- * <XDSChatLayout
- *   composer={<XDSChatComposer onSubmit={handleSubmit} />}
- *   emptyState={<EmptyState />}
- * >
- *   <XDSChatMessageList>
- *     {messages.map(msg => <XDSChatMessage key={msg.id} {...msg} />)}
- *   </XDSChatMessageList>
- * </XDSChatLayout>
- * ```
- */
 export function XDSChatLayout({
   children,
   composer,
   emptyState,
+  scrollButton,
   scrollRef: externalScrollRef,
-  hasAutoScroll = true,
-  newMessagesLabel = 'New messages',
   xstyle,
   className,
   style,
@@ -368,10 +263,8 @@ export function XDSChatLayout({
   ref,
 }: XDSChatLayoutProps) {
   const rootRef = useRef<HTMLDivElement>(null);
-  const dockRef = useRef<HTMLDivElement>(null);
-  const scrollListenerRef = useRef<(() => void) | null>(null);
-  const contentElRef = useRef<HTMLElement | null>(null);
-  const contentObserverRef = useRef<ResizeObserver | null>(null);
+
+  const contentRef = useRef<HTMLElement>(null);
 
   const scrollContainerRef =
     externalScrollRef ?? (rootRef as React.RefObject<HTMLElement | null>);
@@ -379,30 +272,39 @@ export function XDSChatLayout({
 
   const [density, setDensity] = useState<Density>('balanced');
 
-  // --- Auto-scroll ---
-  const {
-    scrollRef,
-    isScrolledUp,
-    hasNewMessages,
-    handleScroll,
-    handleScrollEnd,
-    handleUserScroll,
-    scrollToBottom,
-    dismissNewMessages,
-    onContentChange,
-    scrollToBottomIfLocked,
-  } = useAutoScroll({
-    enabled: hasAutoScroll,
-    scrollContainerRef,
+  // --- Default scroll behavior ---
+  const scroll = useXDSChatStreamScroll({scrollRef: scrollContainerRef});
+  const newMsgs = useXDSChatNewMessages({
+    contentRef,
+    isLocked: scroll.isLocked,
+    onResize: scroll.scrollIfLocked,
   });
 
+  const defaultScrollButton = (
+    <XDSChatLayoutScrollButton
+      isVisible={scroll.isScrolledUp || newMsgs.hasNewMessages}
+      label={newMsgs.hasNewMessages ? 'New messages' : undefined}
+      onClick={() => {
+        newMsgs.dismiss();
+        scroll.scrollToBottom();
+      }}
+    />
+  );
 
 
-  // Single ResizeObserver for both density (root width) and content
-  // changes (new messages). Checks entry.target to dispatch.
-  const lastMessageRef = useRef<Element | null>(null);
 
-  // Density observer — watches root width for breakpoints.
+  // --- Content ref callback for message list ---
+  const setContentRef = useCallback((el: HTMLElement | null) => {
+    (contentRef as React.MutableRefObject<HTMLElement | null>).current = el;
+  }, []);
+
+  // --- Layout context ---
+  const layoutContext = useMemo(
+    () => ({scrollContainerRef, contentRef: setContentRef}),
+    [scrollContainerRef, setContentRef],
+  );
+
+  // --- Density observer ---
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
@@ -413,99 +315,18 @@ export function XDSChatLayout({
     return () => observer.disconnect();
   }, []);
 
-  // Content ref callback — observe the message list for height changes.
-  // Two behaviors:
-  // - New message appended (last element changed) → onContentChange
-  //   (auto-scrolls if near bottom, shows "new messages" if scrolled up)
-  // - Existing message growing (streaming) → just auto-scroll if near
-  //   bottom, but don't flag "new messages"
-  const contentRef = useCallback(
-    (el: HTMLElement | null) => {
-      if (contentObserverRef.current) {
-        contentObserverRef.current.disconnect();
-        contentObserverRef.current = null;
-      }
-      contentElRef.current = el;
-      if (el) {
-        const observer = new ResizeObserver(() => {
-          const messages = el.getElementsByClassName('xds-chat-message');
-          const last =
-            messages.length > 0 ? messages[messages.length - 1] : null;
-          if (last && last !== lastMessageRef.current) {
-            // New message — auto-scroll or show "new messages"
-            lastMessageRef.current = last;
-            onContentChange();
-          } else {
-            // Existing content growing (streaming) — auto-scroll only,
-            // don't flag "new messages"
-            scrollToBottomIfLocked();
-          }
-        });
-        observer.observe(el);
-        contentObserverRef.current = observer;
-      }
-    },
-    [onContentChange, scrollToBottomIfLocked],
-  );
-
-  // --- Layout context ---
-  const layoutContextValue = useMemo(
-    () => ({
-      scrollContainerRef,
-      contentRef,
-    }),
-    [scrollContainerRef, contentRef],
-  );
-
-
-
   // --- Merge refs ---
-  // Callback ref attaches scroll listener and triggers initial scroll.
   const setRootRef = useCallback(
     (el: HTMLDivElement | null) => {
-      // Detach previous listener
-      if (scrollListenerRef.current) {
-        scrollListenerRef.current();
-        scrollListenerRef.current = null;
-      }
-
       (rootRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
-
-      if (el) {
-        const scrollEl = scrollRef.current;
-        if (scrollEl) {
-          scrollEl.addEventListener('scroll', handleScroll, {passive: true});
-          scrollEl.addEventListener('scrollend', handleScrollEnd);
-          scrollEl.addEventListener('wheel', handleUserScroll, {passive: true});
-          scrollEl.addEventListener('touchstart', handleUserScroll, {passive: true});
-          scrollListenerRef.current = () => {
-            scrollEl.removeEventListener('scroll', handleScroll);
-            scrollEl.removeEventListener('scrollend', handleScrollEnd);
-            scrollEl.removeEventListener('wheel', handleUserScroll);
-            scrollEl.removeEventListener('touchstart', handleUserScroll);
-          };
-          // Defer to next frame so content has laid out
-          requestAnimationFrame(() => scrollToBottom(false));
-        }
-      }
-
       if (typeof ref === 'function') {
         ref(el);
       } else if (ref) {
         (ref as React.MutableRefObject<HTMLDivElement | null>).current = el;
       }
     },
-    [ref, scrollRef, handleScroll, handleScrollEnd, handleUserScroll, scrollToBottom],
+    [ref],
   );
-
-  // --- Scroll button handler ---
-  const handleButtonClick = useCallback(() => {
-    if (hasNewMessages) {
-      dismissNewMessages();
-    } else {
-      scrollToBottom();
-    }
-  }, [hasNewMessages, dismissNewMessages, scrollToBottom]);
 
   // --- Derived styles ---
   const showEmpty = !hasVisibleContent(children);
@@ -539,7 +360,7 @@ export function XDSChatLayout({
         : styles.dockInnerBalanced;
 
   return (
-    <XDSChatLayoutContext.Provider value={layoutContextValue}>
+    <XDSChatLayoutContext.Provider value={layoutContext}>
       <div
         ref={setRootRef}
         data-testid={testId}
@@ -555,9 +376,7 @@ export function XDSChatLayout({
           style,
         )}>
         {/* Message area */}
-        <div
-          {...stylex.props(styles.messageArea, messageAreaStyle)}
->
+        <div {...stylex.props(styles.messageArea, messageAreaStyle)}>
           {showEmpty && emptyState ? (
             <div {...stylex.props(styles.emptyState)}>{emptyState}</div>
           ) : (
@@ -567,23 +386,17 @@ export function XDSChatLayout({
 
         {/* Dock container — sticky/fixed, holds blur + scroll button + composer */}
         <div
-          ref={dockRef}
           {...stylex.props(
             styles.dockContainer,
             isSelfScrolling
               ? styles.dockContainerSticky
               : styles.dockContainerFixed,
           )}>
-          {/* Frosted glass layer — behind composer */}
-          <div {...stylex.props(styles.blurLayer, blurLayerStyle)} />
-
           {/* Scroll-to-bottom button */}
-          <ScrollToBottomButton
-            isScrolledUp={isScrolledUp}
-            hasNewMessages={hasNewMessages}
-            label={newMessagesLabel}
-            onClick={handleButtonClick}
-          />
+          {scrollButton === undefined ? defaultScrollButton : scrollButton}
+
+          {/* Frosted glass layer */}
+          <div {...stylex.props(styles.blurLayer, blurLayerStyle)} />
 
           {/* Composer */}
           <div {...stylex.props(styles.dock, dockStyle)}>

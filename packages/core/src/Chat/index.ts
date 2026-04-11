@@ -56,10 +56,13 @@ export type {
   XDSChatSystemMessageVariant,
 } from './XDSChatSystemMessage';
 
-export {useAutoScroll} from './useAutoScroll';
-export type {UseAutoScrollOptions, UseAutoScrollReturn} from './useAutoScroll';
+export {useXDSChatStreamScroll} from './useXDSChatStreamScroll';
+export type {UseXDSChatStreamScrollOptions, UseXDSChatStreamScrollReturn} from './useXDSChatStreamScroll';
+export {useXDSChatNewMessages} from './useXDSChatNewMessages';
+export type {UseXDSChatNewMessagesOptions, UseXDSChatNewMessagesReturn} from './useXDSChatNewMessages';
 
 export type {XDSChatMessageSender, XDSChatDensity} from './XDSChatContext';
+export {useXDSChatLayoutContext} from './XDSChatContext';
 
 export {XDSChatToolCalls} from './XDSChatToolCalls';
 export type {
@@ -69,4 +72,6 @@ export type {
 } from './XDSChatToolCalls';
 
 export {XDSChatLayout} from './XDSChatLayout';
+export {XDSChatLayoutScrollButton} from './XDSChatLayoutScrollButton';
+export type {XDSChatLayoutScrollButtonProps} from './XDSChatLayoutScrollButton';
 export type {XDSChatLayoutProps} from './XDSChatLayout';
