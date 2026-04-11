@@ -6,13 +6,14 @@
  * @output Exports useAutoScroll hook for scroll-pinning behavior
  * @position Utility hook — used by XDSChatLayout, also usable standalone
  *
- * Uses a scroll-lock model instead of distance thresholds:
- * - **Locked** (default): new content auto-scrolls to bottom
- * - **Unlocked**: user scrolled up, auto-scroll stops
- * - **Re-locked**: user scrolls back to bottom
+ * Scroll-lock model:
+ * - **Locked** (default): content changes auto-scroll to bottom
+ * - **Unlocked**: user manually scrolled, auto-scroll stops
+ * - **Re-locked**: user clicks scroll-to-bottom button
  *
- * scrollToBottom re-locks automatically by scrolling to the bottom,
- * which triggers handleScroll → distance is 0 → re-lock.
+ * Uses `scrollend` to distinguish user scrolls from programmatic ones.
+ * Programmatic scrolls (scrollToBottom) set a flag before scrolling;
+ * when `scrollend` fires without that flag, it was a user scroll → unlock.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Chat/index.ts (exports)
@@ -52,31 +53,31 @@ export interface UseAutoScrollReturn {
   /** Whether new content arrived while unlocked. */
   hasNewMessages: boolean;
 
-  /** Scroll handler — attach to onScroll on the scrollable element. */
+  /** Scroll handler — attach to onScroll. */
   handleScroll: () => void;
 
-  /** User scroll handler — attach to wheel/touchmove to unlock auto-scroll. */
-  handleUserScroll: () => void;
+  /** Scrollend handler — attach to scrollend. */
+  handleScrollEnd: () => void;
 
   /** Scroll to the bottom of the container. */
   scrollToBottom: (smooth?: boolean) => void;
 
-  /** Dismiss the new messages indicator and scroll to bottom. */
+  /** Dismiss the new messages indicator, re-lock, and scroll to bottom. */
   dismissNewMessages: () => void;
 
-  /** New message appended — auto-scroll if locked, flag if unlocked. */
+  /** New message appended — flag "new messages" if unlocked. */
   onContentChange: () => void;
 
-  /** Content grew (streaming) — auto-scroll if locked, no flag. */
+  /** Content grew — auto-scroll if locked, no flag. */
   scrollToBottomIfLocked: () => void;
 }
 
 /**
  * Hook that manages scroll-lock auto-scroll behavior.
  *
- * Starts locked (pinned to bottom). User scrolling up unlocks.
- * User scrolling back to bottom re-locks. Programmatic scrolls
- * (from this hook) don't affect the lock state.
+ * Starts locked (pinned to bottom). User scrolling unlocks (detected
+ * via `scrollend` without the programmatic flag). Clicking the
+ * scroll-to-bottom button re-locks.
  */
 export function useAutoScroll({
   enabled = true,
@@ -92,10 +93,13 @@ export function useAutoScroll({
 
   // Scroll lock: true = auto-scroll follows content
   const lockedRef = useRef(true);
+  // Flag set before programmatic scrolls, cleared on scrollend
+  const isProgrammaticRef = useRef(false);
 
   const scrollToBottom = useCallback((smooth = true) => {
     const el = scrollRef.current;
     if (!el) return;
+    isProgrammaticRef.current = true;
     if (typeof el.scrollTo === 'function') {
       el.scrollTo({
         top: el.scrollHeight,
@@ -106,42 +110,32 @@ export function useAutoScroll({
     }
   }, []);
 
-  // Track user intent to scroll — wheel up or touch sets a flag,
-  // then handleScroll checks if they've actually moved away from bottom.
-  const userScrollingRef = useRef(false);
-
-  const handleUserScroll = useCallback((e: Event) => {
-    if (e instanceof WheelEvent && e.deltaY < 0) {
-      userScrollingRef.current = true;
-    } else if (e.type === 'touchmove') {
-      userScrollingRef.current = true;
-    }
-  }, []);
-
+  // Fires on every scroll frame — just updates button visibility
   const handleScroll = useCallback(() => {
     const el = scrollRef.current;
     if (!el) return;
-
     const distanceFromBottom =
       el.scrollHeight - el.scrollTop - el.clientHeight;
-
     setIsScrolledUp(distanceFromBottom > scrollUpThreshold);
-
-    // Only unlock when the user has actively scrolled away from bottom
-    if (userScrollingRef.current && distanceFromBottom > scrollUpThreshold) {
-      lockedRef.current = false;
-    }
-    userScrollingRef.current = false;
   }, [scrollUpThreshold]);
+
+  // Fires once when scrolling settles
+  const handleScrollEnd = useCallback(() => {
+    if (isProgrammaticRef.current) {
+      // Our scroll — stay locked
+      isProgrammaticRef.current = false;
+      return;
+    }
+    // User scroll — unlock
+    lockedRef.current = false;
+  }, []);
 
   const onContentChange = useCallback(() => {
     if (!enabled) return;
-    if (lockedRef.current) {
-      scrollToBottom(true);
-    } else {
+    if (!lockedRef.current) {
       setHasNewMessages(true);
     }
-  }, [enabled, scrollToBottom]);
+  }, [enabled]);
 
   const scrollToBottomIfLocked = useCallback(() => {
     if (!enabled) return;
@@ -152,6 +146,7 @@ export function useAutoScroll({
 
   const dismissNewMessages = useCallback(() => {
     lockedRef.current = true;
+    isProgrammaticRef.current = true;
     setIsScrolledUp(false);
     setHasNewMessages(false);
     scrollToBottom();
@@ -167,7 +162,7 @@ export function useAutoScroll({
     isScrolledUp,
     hasNewMessages,
     handleScroll,
-    handleUserScroll,
+    handleScrollEnd,
     scrollToBottom,
     dismissNewMessages,
     onContentChange,
