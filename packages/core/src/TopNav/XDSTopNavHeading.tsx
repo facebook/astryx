@@ -2,9 +2,13 @@
 
 /**
  * @file XDSTopNavHeading.tsx
- * @input Uses React, HTMLAttributes, ReactNode
+ * @input Uses React, useRef, useCallback, ReactNode, StyleX, useXDSPopover
  * @output Exports XDSTopNavHeading component and XDSTopNavHeadingProps
  * @position Companion component for XDSTopNav heading slot
+ *
+ * Product/suite/account heading with smart interaction boundary logic.
+ * Mirrors XDSSideNavHeading features: superheading, subheading, menu popover,
+ * chevron indicator, and independent link boundaries.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/TopNav/TopNav.doc.mjs
@@ -13,121 +17,609 @@
  * - /apps/storybook/stories/TopNav.stories.tsx
  */
 
-import {type ReactNode} from 'react';
-import type {XDSBaseProps} from '../XDSBaseProps';
+import {useCallback, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
+import type {StyleXStyles} from '@stylexjs/stylex';
 import {
   colorVars,
   spacingVars,
   fontWeightVars,
+  radiusVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
+import {useXDSPopover} from '../Popover/useXDSPopover';
+import {XDSLink} from '../Link';
+import {getIcon} from '../Icon/globalIconRegistry';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import type {XDSLinkComponentType} from '../Link/types';
 import {xdsClassName, mergeProps} from '../utils';
 
-/**
- * Heading styles
- */
+// =============================================================================
+// Styles
+// =============================================================================
+
 const styles = stylex.create({
-  base: {
+  root: {
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
+    padding: 0,
+    boxSizing: 'border-box',
     textDecoration: 'none',
     color: colorVars['--color-text-primary'],
+    cursor: 'default',
   },
-  headingText: {
-    fontSize: typeScaleVars['--text-large-size'],
-    fontWeight: fontWeightVars['--font-weight-semibold'],
-    lineHeight: typeScaleVars['--text-large-leading'],
-    whiteSpace: 'nowrap',
+  interactive: {
+    cursor: 'pointer',
+    borderRadius: radiusVars['--radius-element'],
+    borderWidth: 0,
+    borderStyle: 'none',
+    backgroundColor: 'transparent',
+    fontFamily: 'inherit',
+    fontSize: 'inherit',
+    fontWeight: fontWeightVars['--font-weight-normal'],
+    textAlign: 'start',
+    ':hover': {
+      '@media (hover: hover)': {
+        backgroundColor: colorVars['--color-overlay-hover'],
+      },
+    },
+  },
+  menuTrigger: {
+    cursor: 'pointer',
+    borderRadius: radiusVars['--radius-element'],
+    borderWidth: 0,
+    borderStyle: 'none',
+    backgroundColor: 'transparent',
+    fontFamily: 'inherit',
+    fontSize: 'inherit',
+    fontWeight: fontWeightVars['--font-weight-normal'],
+    textAlign: 'start',
   },
   logo: {
+    flexShrink: 0,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    flexShrink: 0,
   },
-  clickable: {
+  textContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    minWidth: 0,
+  },
+  superheading: {
+    fontSize: typeScaleVars['--text-supporting-size'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
+    color: colorVars['--color-text-secondary'],
+    textDecoration: 'none',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+  heading: {
+    fontSize: typeScaleVars['--text-large-size'],
+    fontWeight: fontWeightVars['--font-weight-semibold'],
+    lineHeight: typeScaleVars['--text-large-leading'],
+    color: colorVars['--color-text-primary'],
+    textDecoration: 'none',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+  subheading: {
+    fontSize: typeScaleVars['--text-supporting-size'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
+    color: colorVars['--color-text-secondary'],
+    textDecoration: 'none',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+  headingRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-1'],
+  },
+  headingLink: {
+    textDecoration: 'none',
+    color: 'inherit',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+  chevron: {
+    flexShrink: 0,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: spacingVars['--spacing-7'],
+    minHeight: spacingVars['--spacing-7'],
+    color: colorVars['--color-icon-secondary'],
+  },
+  headerEndContent: {
+    flexShrink: 0,
+    display: 'flex',
+    alignItems: 'center',
+    marginInlineStart: 'auto',
+  },
+  popoverContent: {
+    padding: spacingVars['--spacing-1'],
+    overflow: 'hidden',
+  },
+  popoverHeading: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-2'],
+    padding: 0,
+    marginBlockStart: spacingVars['--spacing-1'],
+    marginBlockEnd: spacingVars['--spacing-2'],
+    marginInline: spacingVars['--spacing-1'],
     cursor: 'pointer',
+  },
+  popoverChevron: {
+    flexShrink: 0,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: spacingVars['--spacing-7'],
+    minHeight: spacingVars['--spacing-7'],
+    color: colorVars['--color-icon-secondary'],
+    transform: 'rotate(180deg)',
+  },
+  popover: {
+    minWidth: 'anchor-size(width)',
+    marginBlockStart: spacingVars['--spacing-1'],
+  },
+  popoverOverlap: {
+    minWidth: 'calc(anchor-size(width) + 16px)',
+    marginBlockStart: 'calc(-1 * anchor-size(height) - 8px)',
+    marginInlineStart: '-8px',
   },
 });
 
-export interface XDSTopNavHeadingProps extends XDSBaseProps<HTMLElement> {
+// =============================================================================
+// Types
+// =============================================================================
+
+export interface XDSTopNavHeadingProps {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLElement>;
-  /**
-   * The heading text to display.
-   */
-  heading?: string;
   /**
    * Logo element to display before the heading.
    * Can be an image, XDSNavIcon, or any ReactNode.
    */
   logo?: ReactNode;
   /**
+   * Product/app name.
+   */
+  heading?: string;
+  /**
+   * Link for the heading (e.g., product home).
+   * Alias: `href` (for backward compatibility).
+   */
+  headingHref?: string;
+  /**
+   * @deprecated Use `headingHref` instead.
    * URL to navigate to when the heading is clicked.
-   * If provided, renders as a link element.
    */
   href?: string;
+  /**
+   * Text above the heading (e.g., suite name).
+   */
+  superheading?: string;
+  /**
+   * Link for the superheading (e.g., suite home).
+   */
+  superheadingHref?: string;
+  /**
+   * Text below the heading (e.g., account context).
+   */
+  subheading?: string;
+  /**
+   * Link for the subheading.
+   */
+  subheadingHref?: string;
+  /**
+   * Content rendered at the trailing edge of the heading row.
+   */
+  headerEndContent?: ReactNode;
+  /**
+   * Menu content shown in a popover. When provided, the header composes
+   * useXDSPopover internally and shows a dropdown chevron. The trigger
+   * boundary is determined automatically:
+   * - No hrefs → whole header is the trigger
+   * - With hrefs → links are independent, chevron/remaining area is the trigger
+   */
+  menu?: ReactNode;
   /**
    * Custom component to render instead of `<a>`.
    * Overrides the provider-level default set by XDSLinkProvider.
    * Must accept href, className, style, and children props.
    */
   as?: XDSLinkComponentType;
+  /**
+   * StyleX styles created via `stylex.create()`.
+   */
+  xstyle?: StyleXStyles;
+  /**
+   * CSS class name(s) appended to the root element.
+   */
+  className?: string;
+  /**
+   * Inline styles to apply to the root element.
+   */
+  style?: React.CSSProperties;
+  /**
+   * Test ID for the root element.
+   */
+  'data-testid'?: string;
 }
 
+// =============================================================================
+// Component
+// =============================================================================
+
 /**
- * Heading component for XDSTopNav.
+ * Product/suite/account heading for XDSTopNav.
  *
- * Displays a logo and/or heading text, optionally as a clickable link.
- * Use with XDSNavIcon to create a circular icon background.
+ * Supports smart interaction boundary logic:
+ * - No hrefs + menu → whole heading is the popover trigger
+ * - headingHref only, no menu → whole heading is one link
+ * - headingHref + superheadingHref, no menu → each is an independent link
+ * - menu + hrefs → links are independent, chevron/remaining area is the trigger
+ *
+ * The chevron indicator is automatically shown when `menu` is provided.
  *
  * @example
  * ```
+ * <XDSTopNavHeading logo={<XDSNavIcon icon={<HomeIcon />} />} heading="My App" headingHref="/" />
  * <XDSTopNavHeading
- *   heading="My App"
- *   logo={<img src="/logo.svg" alt="" width={24} height={24} />}
- *   href="/"
+ *   logo={<XDSNavIcon icon={<SuiteIcon />} />}
+ *   superheading="Suite Name"
+ *   superheadingHref="/suite"
+ *   heading="Product Name"
+ *   headingHref="/product"
+ *   menu={<ProductSwitcher />}
  * />
- * <XDSTopNavHeading
- *   heading="Dashboard"
- *   logo={<XDSNavIcon icon={<HomeIcon />} />}
- * />
- * <XDSTopNavHeading logo={<BrandLogo />} href="/" />
  * ```
  */
 export function XDSTopNavHeading({
   as,
-  heading,
   logo,
+  heading,
+  headingHref: headingHrefProp,
   href,
+  superheading,
+  superheadingHref,
+  subheading,
+  subheadingHref,
+  headerEndContent,
+  menu,
   xstyle,
   className,
   style,
+  'data-testid': testId,
   ref,
   ...props
 }: XDSTopNavHeadingProps) {
   const LinkComponent = useXDSLinkComponent(as);
-  const isLink = href != null;
-  const Element = isLink ? LinkComponent : 'div';
+  // Support both headingHref and legacy href
+  const headingHref = headingHrefProp ?? href;
 
+  const rootRef = useRef<HTMLElement>(null);
+
+  const popover = useXDSPopover({
+    dialogLabel: 'Navigation menu',
+  });
+
+  const setRef = useCallback(
+    (el: HTMLElement | null) => {
+      (rootRef as React.MutableRefObject<HTMLElement | null>).current = el;
+      if (typeof ref === 'function') {
+        ref(el);
+      } else if (ref) {
+        (ref as React.MutableRefObject<HTMLElement | null>).current = el;
+      }
+      if (menu) {
+        popover.triggerRef(el);
+      }
+    },
+    [ref, popover, menu],
+  );
+
+  const showChevron = !!menu;
+  const hasAnyHref = !!(headingHref || superheadingHref || subheadingHref);
+
+  // Determine interaction mode
+  const isWholeHeadingTrigger = !!menu && !hasAnyHref;
+  const isWholeHeadingLink =
+    !!headingHref && !menu && !superheadingHref && !subheadingHref;
+
+  // Render text content with optional inline chevron
+  const renderTextContent = (inlineChevron?: ReactNode) => (
+    <span {...stylex.props(styles.textContainer)}>
+      {superheading &&
+        (hasAnyHref && superheadingHref && menu ? (
+          <XDSLink
+            label={superheading}
+            href={superheadingHref}
+            color="secondary"
+            size="xsm">
+            {superheading}
+          </XDSLink>
+        ) : (
+          <span {...stylex.props(styles.superheading)}>{superheading}</span>
+        ))}
+      <span {...stylex.props(styles.headingRow)}>
+        {hasAnyHref && headingHref && menu ? (
+          <LinkComponent
+            href={headingHref}
+            {...stylex.props(styles.heading, styles.headingLink)}>
+            {heading}
+          </LinkComponent>
+        ) : (
+          <span {...stylex.props(styles.heading)}>{heading}</span>
+        )}
+        {inlineChevron}
+      </span>
+      {subheading &&
+        (hasAnyHref && subheadingHref && menu ? (
+          <XDSLink
+            label={subheading}
+            href={subheadingHref}
+            color="secondary"
+            size="xsm">
+            {subheading}
+          </XDSLink>
+        ) : (
+          <span {...stylex.props(styles.subheading)}>{subheading}</span>
+        ))}
+    </span>
+  );
+
+  const chevronElement = showChevron && (
+    <span {...stylex.props(styles.chevron)}>{getIcon('chevronDown')}</span>
+  );
+
+  const headerEndContentElement = headerEndContent && (
+    <span {...stylex.props(styles.headerEndContent)}>{headerEndContent}</span>
+  );
+
+  // Shared popover heading content — uses renderTextContent for consistent
+  // sizing, with flipped chevron inline after the title. Always static (no links).
+  const popoverHeadingContent = (
+    <div
+      {...stylex.props(styles.popoverHeading)}
+      onClick={() => popover.hide()}
+      role="button"
+      tabIndex={0}>
+      {logo && <span {...stylex.props(styles.logo)}>{logo}</span>}
+      {renderTextContent(
+        <span {...stylex.props(styles.popoverChevron)}>
+          {getIcon('chevronDown')}
+        </span>,
+      )}
+    </div>
+  );
+
+  // Simple: no heading text, just logo (backward compat for logo-only usage)
+  if (!heading && !menu) {
+    const Element = headingHref ? LinkComponent : 'div';
+    return (
+      <Element
+        ref={ref as React.Ref<HTMLAnchorElement & HTMLDivElement>}
+        href={headingHref}
+        data-testid={testId}
+        {...mergeProps(
+          xdsClassName('top-nav-heading'),
+          stylex.props(
+            styles.root,
+            !!headingHref && styles.menuTrigger,
+            xstyle,
+          ),
+          className,
+          style,
+        )}
+        {...props}>
+        {logo && <span {...stylex.props(styles.logo)}>{logo}</span>}
+      </Element>
+    );
+  }
+
+  // Whole heading is a link (no menu, single headingHref)
+  if (isWholeHeadingLink) {
+    return (
+      <LinkComponent
+        ref={ref as React.Ref<HTMLAnchorElement>}
+        href={headingHref!}
+        data-testid={testId}
+        {...mergeProps(
+          xdsClassName('top-nav-heading'),
+          stylex.props(styles.root, styles.menuTrigger, xstyle),
+          className,
+          style,
+        )}
+        {...(props as React.AnchorHTMLAttributes<HTMLAnchorElement>)}>
+        {logo && <span {...stylex.props(styles.logo)}>{logo}</span>}
+        {renderTextContent()}
+        {headerEndContentElement}
+        {chevronElement}
+      </LinkComponent>
+    );
+  }
+
+  // Whole header is the popover trigger (menu, no hrefs)
+  if (isWholeHeadingTrigger) {
+    return (
+      <>
+        <div
+          ref={setRef}
+          data-testid={testId}
+          {...mergeProps(
+            xdsClassName('top-nav-heading'),
+            stylex.props(styles.root, styles.menuTrigger, xstyle),
+            className,
+            style,
+          )}>
+          {logo && <span {...stylex.props(styles.logo)}>{logo}</span>}
+          {renderTextContent(
+            <button
+              type="button"
+              popoverTarget={popover.id}
+              aria-label="Open menu"
+              {...popover.triggerProps}
+              {...stylex.props(styles.chevron, styles.interactive)}>
+              {getIcon('chevronDown')}
+            </button>,
+          )}
+          {headerEndContentElement}
+        </div>
+        {popover.render(
+          <div {...stylex.props(styles.popoverContent)}>
+            {popoverHeadingContent}
+            {menu}
+          </div>,
+          {
+            placement: 'below',
+            alignment: 'start',
+            xstyle: styles.popoverOverlap,
+          },
+        )}
+      </>
+    );
+  }
+
+  // Mixed mode: independent links + chevron trigger for menu
+  if (menu && hasAnyHref) {
+    return (
+      <>
+        <div
+          ref={setRef}
+          data-testid={testId}
+          {...mergeProps(
+            xdsClassName('top-nav-heading'),
+            stylex.props(styles.root, xstyle),
+            className,
+            style,
+          )}>
+          {logo &&
+            (headingHref ? (
+              <LinkComponent href={headingHref} {...stylex.props(styles.logo)}>
+                {logo}
+              </LinkComponent>
+            ) : (
+              <span {...stylex.props(styles.logo)}>{logo}</span>
+            ))}
+          {renderTextContent(
+            showChevron ? (
+              <button
+                type="button"
+                popoverTarget={popover.id}
+                aria-label="Open menu"
+                {...popover.triggerProps}
+                {...stylex.props(styles.chevron, styles.interactive)}>
+                {getIcon('chevronDown')}
+              </button>
+            ) : undefined,
+          )}
+          {headerEndContentElement}
+        </div>
+        {popover.render(
+          <div {...stylex.props(styles.popoverContent)}>
+            {popoverHeadingContent}
+            {menu}
+          </div>,
+          {
+            placement: 'below',
+            alignment: 'start',
+            xstyle: styles.popoverOverlap,
+          },
+        )}
+      </>
+    );
+  }
+
+  // Static heading with independent links (no menu)
+  if (hasAnyHref && !isWholeHeadingLink) {
+    return (
+      <div
+        ref={ref as React.Ref<HTMLDivElement>}
+        data-testid={testId}
+        {...mergeProps(
+          xdsClassName('top-nav-heading'),
+          stylex.props(styles.root, xstyle),
+          className,
+          style,
+        )}
+        {...props}>
+        {logo &&
+          (headingHref ? (
+            <LinkComponent href={headingHref} {...stylex.props(styles.logo)}>
+              {logo}
+            </LinkComponent>
+          ) : (
+            <span {...stylex.props(styles.logo)}>{logo}</span>
+          ))}
+        <span {...stylex.props(styles.textContainer)}>
+          {superheading &&
+            (superheadingHref ? (
+              <XDSLink
+                label={superheading}
+                href={superheadingHref}
+                color="secondary"
+                size="xsm">
+                {superheading}
+              </XDSLink>
+            ) : (
+              <span {...stylex.props(styles.superheading)}>{superheading}</span>
+            ))}
+          {headingHref ? (
+            <XDSLink
+              label={heading ?? ''}
+              href={headingHref}
+              color="primary"
+              weight="semibold">
+              {heading}
+            </XDSLink>
+          ) : (
+            <span {...stylex.props(styles.heading)}>{heading}</span>
+          )}
+          {subheading &&
+            (subheadingHref ? (
+              <XDSLink
+                label={subheading}
+                href={subheadingHref}
+                color="secondary"
+                size="xsm">
+                {subheading}
+              </XDSLink>
+            ) : (
+              <span {...stylex.props(styles.subheading)}>{subheading}</span>
+            ))}
+        </span>
+        {headerEndContentElement}
+        {chevronElement}
+      </div>
+    );
+  }
+
+  // Default: static heading, no links, no menu
   return (
-    <Element
-      ref={ref as React.Ref<HTMLAnchorElement & HTMLDivElement>}
-      href={href}
+    <div
+      ref={ref as React.Ref<HTMLDivElement>}
+      data-testid={testId}
       {...mergeProps(
         xdsClassName('top-nav-heading'),
-        stylex.props(styles.base, isLink && styles.clickable, xstyle),
+        stylex.props(styles.root, xstyle),
         className,
         style,
       )}
       {...props}>
       {logo && <span {...stylex.props(styles.logo)}>{logo}</span>}
-      {heading && <span {...stylex.props(styles.headingText)}>{heading}</span>}
-    </Element>
+      {renderTextContent()}
+      {headerEndContentElement}
+      {chevronElement}
+    </div>
   );
 }
 

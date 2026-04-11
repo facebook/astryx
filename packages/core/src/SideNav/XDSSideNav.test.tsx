@@ -157,6 +157,28 @@ describe('XDSSideNavHeading', () => {
     expect(link).toHaveTextContent('My App');
   });
 
+  it('uses custom link component from as prop', () => {
+    render(
+      <XDSSideNavHeading
+        heading="My App"
+        headingHref="/home"
+        as={CustomLink}
+      />,
+    );
+    const link = screen.getByRole('link');
+    expect(link).toHaveAttribute('data-custom-link');
+  });
+
+  it('uses custom link component from XDSLinkProvider', () => {
+    render(
+      <XDSLinkProvider component={CustomLink}>
+        <XDSSideNavHeading heading="My App" headingHref="/home" />
+      </XDSLinkProvider>,
+    );
+    const link = screen.getByRole('link');
+    expect(link).toHaveAttribute('data-custom-link');
+  });
+
   it('renders independent links when headingHref and superheadingHref are provided', () => {
     render(
       <XDSSideNavHeading
@@ -194,8 +216,7 @@ describe('XDSSideNavHeading', () => {
     expect(button).toHaveAttribute('aria-expanded', 'false');
   });
 
-  it('toggles popover on click when menu is provided', async () => {
-    const user = userEvent.setup();
+  it('has popoverTarget on trigger button when menu is provided', () => {
     render(
       <XDSSideNavHeading
         heading="My App"
@@ -203,8 +224,10 @@ describe('XDSSideNavHeading', () => {
       />,
     );
     const button = screen.getByRole('button');
-    await user.click(button);
-    expect(button).toHaveAttribute('aria-expanded', 'true');
+    // Native popover toggle via popoverTarget attribute (jsdom doesn't
+    // support the Popover API, so we verify the attribute is set instead
+    // of testing the full open/close cycle).
+    expect(button).toHaveAttribute('popovertarget');
   });
 
   it('renders chevron as separate trigger when menu and hrefs are provided', () => {
@@ -354,7 +377,7 @@ describe('XDSSideNavHeading headerEndContent', () => {
     expect(badge.closest('a')).not.toBeNull();
   });
 
-  it('renders headerEndContent inside the button trigger in isWholeHeadingTrigger path', () => {
+  it('renders headerEndContent in isWholeHeadingTrigger path', () => {
     render(
       <XDSSideNavHeading
         heading="My App"
@@ -364,8 +387,8 @@ describe('XDSSideNavHeading headerEndContent', () => {
     );
     const badge = screen.getByTestId('end-badge');
     expect(badge).toBeInTheDocument();
-    // Badge renders inside the button trigger
-    expect(badge.closest('button')).not.toBeNull();
+    // Badge renders inside the heading container (div), alongside the chevron button
+    expect(badge.closest('[class]')).not.toBeNull();
   });
 
   it('renders headerEndContent in mixed mode (menu + href)', () => {

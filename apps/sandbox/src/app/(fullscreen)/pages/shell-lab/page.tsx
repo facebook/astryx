@@ -32,6 +32,7 @@ import {XDSBadge} from '@xds/core/Badge';
 import {XDSButton} from '@xds/core/Button';
 import {XDSNavIcon} from '@xds/core/NavIcon';
 import {XDSBanner} from '@xds/core/Banner';
+import {XDSList, XDSListItem} from '@xds/core/List';
 
 // =============================================================================
 // Configuration types
@@ -123,6 +124,9 @@ interface ShellConfig {
   topNavAlignment: 'start' | 'center' | 'end';
   topNavStyle: 'items' | 'menus' | 'mega';
   showTopNavHeading: boolean;
+  topNavHeadingStyle: 'none' | 'simple' | 'link' | 'menu' | 'full';
+  showTopNavSuperheading: boolean;
+  showTopNavSubheading: boolean;
 }
 
 const DEFAULT_CONFIG: ShellConfig = {
@@ -147,6 +151,9 @@ const DEFAULT_CONFIG: ShellConfig = {
   topNavAlignment: 'start',
   topNavStyle: 'items',
   showTopNavHeading: true,
+  topNavHeadingStyle: 'link',
+  showTopNavSuperheading: false,
+  showTopNavSubheading: false,
 };
 
 // =============================================================================
@@ -297,6 +304,36 @@ function ConfigPanel({
             value={config.showTopNavHeading}
             onChange={v => onChange({showTopNavHeading: v})}
           />
+          {config.showTopNavHeading && (
+            <>
+              <SelectorRow
+                label="Heading Style"
+                value={config.topNavHeadingStyle}
+                onChange={v =>
+                  onChange({
+                    topNavHeadingStyle: v as ShellConfig['topNavHeadingStyle'],
+                  })
+                }
+                options={[
+                  {value: 'none', label: 'None'},
+                  {value: 'simple', label: 'Simple'},
+                  {value: 'link', label: 'Link'},
+                  {value: 'menu', label: 'Menu'},
+                  {value: 'full', label: 'Full'},
+                ]}
+              />
+              <ToggleRow
+                label="Superheading"
+                value={config.showTopNavSuperheading}
+                onChange={v => onChange({showTopNavSuperheading: v})}
+              />
+              <ToggleRow
+                label="Subheading"
+                value={config.showTopNavSubheading}
+                onChange={v => onChange({showTopNavSubheading: v})}
+              />
+            </>
+          )}
           <SelectorRow
             label="Alignment"
             value={config.topNavAlignment}
@@ -450,11 +487,11 @@ function SampleSideNav({
   );
 
   const headingMenu = (
-    <XDSVStack gap={1}>
-      <XDSSideNavItem label="Switch to Project A" />
-      <XDSSideNavItem label="Switch to Project B" />
-      <XDSSideNavItem label="Switch to Project C" />
-    </XDSVStack>
+    <XDSList density="spacious">
+      <XDSListItem label="Sibling Product 1" href="#" />
+      <XDSListItem label="Sibling Product 2" href="#" />
+      <XDSListItem label="Sibling Product 3" href="#" />
+    </XDSList>
   );
 
   const heading =
@@ -674,30 +711,60 @@ function SampleTopNav({
         ? menuItems
         : plainItems;
 
+  const topNavLogo = (
+    <XDSNavIcon
+      icon={
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          width="16"
+          height="16">
+          <path d="M21 16.5c0 .38-.21.71-.53.88l-7.9 4.44c-.36.2-.8.2-1.14 0l-7.9-4.44A.991.991 0 013 16.5v-9c0-.38.21-.71.53-.88l7.9-4.44c.36-.2.8-.2 1.14 0l7.9 4.44c.32.17.53.5.53.88v9z" />
+        </svg>
+      }
+    />
+  );
+
+  const topNavHeadingMenu = (
+    <XDSList density="spacious">
+      <XDSListItem label="Sibling Product 1" href="#" />
+      <XDSListItem label="Sibling Product 2" href="#" />
+      <XDSListItem label="Sibling Product 3" href="#" />
+    </XDSList>
+  );
+
+  const topNavHeading =
+    config.showTopNavHeading && config.topNavHeadingStyle !== 'none' ? (
+      <XDSTopNavHeading
+        logo={topNavLogo}
+        heading="Shell Lab"
+        headingHref={
+          config.topNavHeadingStyle === 'link' ||
+          config.topNavHeadingStyle === 'full'
+            ? '#'
+            : undefined
+        }
+        superheading={config.showTopNavSuperheading ? 'Acme Suite' : undefined}
+        superheadingHref={config.showTopNavSuperheading ? '#' : undefined}
+        subheading={
+          config.showTopNavSubheading ? 'Business Account' : undefined
+        }
+        menu={
+          config.topNavHeadingStyle === 'menu' ||
+          config.topNavHeadingStyle === 'full'
+            ? topNavHeadingMenu
+            : undefined
+        }
+      />
+    ) : config.showTopNavHeading ? (
+      <XDSTopNavHeading logo={topNavLogo} />
+    ) : undefined;
+
   return (
     <XDSTopNav
       label="Shell Lab Navigation"
-      heading={
-        config.showTopNavHeading ? (
-          <XDSTopNavHeading
-            heading="Shell Lab"
-            logo={
-              <XDSNavIcon
-                icon={
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                    width="16"
-                    height="16">
-                    <path d="M21 16.5c0 .38-.21.71-.53.88l-7.9 4.44c-.36.2-.8.2-1.14 0l-7.9-4.44A.991.991 0 013 16.5v-9c0-.38.21-.71.53-.88l7.9-4.44c.36-.2.8-.2 1.14 0l7.9 4.44c.32.17.53.5.53.88v9z" />
-                  </svg>
-                }
-              />
-            }
-          />
-        ) : undefined
-      }
+      heading={topNavHeading}
       startContent={config.topNavAlignment === 'start' ? navItems : undefined}
       centerContent={config.topNavAlignment === 'center' ? navItems : undefined}
       endContent={
