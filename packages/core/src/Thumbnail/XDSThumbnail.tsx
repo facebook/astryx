@@ -2,7 +2,7 @@
 
 /**
  * @file XDSThumbnail.tsx
- * @input Uses React, stylex, XDSSkeleton, XDSSpinner, XDSIcon, XDSMediaTheme, useImageMode
+ * @input Uses React, stylex, XDSButton, XDSSkeleton, XDSSpinner, XDSMediaTheme, useImageMode
  * @output Exports XDSThumbnail component, XDSThumbnailProps
  * @position Core implementation; consumed by index.ts
  *
@@ -29,7 +29,7 @@ import {
   easeVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
-import {XDSIcon} from '../Icon';
+import {XDSButton} from '../Button';
 import {XDSSkeleton} from '../Skeleton';
 import {XDSSpinner} from '../Spinner';
 import {XDSMediaTheme} from '../theme/XDSMediaTheme';
@@ -105,7 +105,7 @@ const styles = stylex.create({
     position: 'relative',
     width: '100%',
     aspectRatio: '1',
-    borderRadius: radiusVars['--radius-container'],
+    borderRadius: radiusVars['--radius-element'],
     overflow: 'hidden',
     backgroundColor: colorVars['--color-neutral'],
     boxShadow: shadowVars['--shadow-low'],
@@ -158,37 +158,19 @@ const styles = stylex.create({
       default: '0',
       ':focus-visible': '2px',
     },
-    borderRadius: radiusVars['--radius-container'],
+    borderRadius: radiusVars['--radius-element'],
     overflow: 'hidden',
   },
-  removeButton: {
-    all: 'unset',
+  removeButtonPosition: {
     position: 'absolute',
     top: spacingVars['--spacing-1'],
     right: spacingVars['--spacing-1'],
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 20,
-    height: 20,
-    borderRadius: radiusVars['--radius-full'],
-    backgroundColor: colorVars['--color-overlay-hover'],
-    color: colorVars['--color-text-primary'],
-    cursor: 'pointer',
     zIndex: 1,
-    transitionProperty: 'color, background-color',
-    transitionDuration: durationVars['--duration-fast'],
-    transitionTimingFunction: easeVars['--ease-standard'],
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    '::after': {
-      content: '""',
-      position: 'absolute',
-      inset: '-6px',
-    },
   },
+  /** Concentric radius: container is --radius-element (8px), inset by --spacing-1 (4px), so inner = 4px */
+  removeButtonRadius: {
+    '--button-radius': radiusVars['--radius-inner'],
+  } as Record<string, string>,
   label: {
     marginTop: spacingVars['--spacing-1'],
     fontSize: typeScaleVars['--text-supporting-size'],
@@ -304,16 +286,20 @@ export function XDSThumbnail({
 
   const removeButtonEl =
     onRemove != null && !isDisabled ? (
-      <button
-        type="button"
-        aria-label={`Remove ${label ?? alt ?? 'thumbnail'}`}
-        onClick={e => {
-          e.stopPropagation();
-          onRemove(e);
-        }}
-        {...stylex.props(styles.removeButton)}>
-        <XDSIcon icon="close" size="xsm" color="inherit" />
-      </button>
+      <div {...stylex.props(styles.removeButtonPosition)}>
+        <XDSButton
+          icon="close"
+          label={`Remove ${label ?? alt ?? 'thumbnail'}`}
+          variant="secondary"
+          size="sm"
+          isIconOnly
+          onClick={e => {
+            e.stopPropagation();
+            onRemove(e);
+          }}
+          xstyle={styles.removeButtonRadius}
+        />
+      </div>
     ) : null;
 
   return (

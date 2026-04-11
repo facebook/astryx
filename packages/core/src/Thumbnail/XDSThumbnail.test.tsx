@@ -51,7 +51,7 @@ describe('XDSThumbnail', () => {
     const user = userEvent.setup();
     const onRemove = vi.fn();
     render(<XDSThumbnail label="file.png" onRemove={onRemove} />);
-    const removeBtn = screen.getByLabelText('Remove file.png');
+    const removeBtn = screen.getByRole('button', {name: 'Remove file.png'});
     await user.click(removeBtn);
     expect(onRemove).toHaveBeenCalledOnce();
   });
@@ -68,7 +68,7 @@ describe('XDSThumbnail', () => {
   it('does not render remove button when disabled', () => {
     const onRemove = vi.fn();
     render(<XDSThumbnail label="file.png" onRemove={onRemove} isDisabled />);
-    expect(screen.queryByLabelText('Remove file.png')).toBeNull();
+    expect(screen.queryByRole('button', {name: /Remove/})).toBeNull();
   });
 
   it('does not render onClick button when disabled', () => {
