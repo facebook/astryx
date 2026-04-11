@@ -103,6 +103,7 @@ export function useAutoScroll({
     const el = scrollRef.current;
     if (!el) return;
     isProgrammaticRef.current = true;
+    console.debug('[auto-scroll] scrollToBottom', {smooth, scrollHeight: el.scrollHeight});
     if (typeof el.scrollTo === 'function') {
       el.scrollTo({
         top: el.scrollHeight,
@@ -115,6 +116,7 @@ export function useAutoScroll({
 
   // User input (wheel/touch) interrupts any in-progress programmatic scroll
   const handleUserScroll = useCallback(() => {
+    if (isProgrammaticRef.current) console.debug('[auto-scroll] user interrupt');
     isProgrammaticRef.current = false;
   }, []);
 
@@ -127,18 +129,21 @@ export function useAutoScroll({
     setIsScrolledUp(distanceFromBottom > scrollUpThreshold);
 
     if (!isProgrammaticRef.current && distanceFromBottom > scrollUpThreshold) {
+      console.debug('[auto-scroll] UNLOCK', {distanceFromBottom});
       lockedRef.current = false;
     }
   }, [scrollUpThreshold]);
 
   // On scroll end: lock if at bottom, clear programmatic flag
   const handleScrollEnd = useCallback(() => {
+    const wasProgrammatic = isProgrammaticRef.current;
     isProgrammaticRef.current = false;
 
     const el = scrollRef.current;
     if (!el) return;
     const distanceFromBottom =
       el.scrollHeight - el.scrollTop - el.clientHeight;
+    console.debug('[auto-scroll] scrollend', {wasProgrammatic, distanceFromBottom, locked: lockedRef.current});
     if (distanceFromBottom <= scrollUpThreshold) {
       lockedRef.current = true;
       setHasNewMessages(false);
@@ -148,6 +153,7 @@ export function useAutoScroll({
   const onContentChange = useCallback(() => {
     if (!enabled) return;
     if (!lockedRef.current) {
+      console.debug('[auto-scroll] new msg while unlocked');
       setHasNewMessages(true);
     }
   }, [enabled]);
@@ -155,7 +161,10 @@ export function useAutoScroll({
   const scrollToBottomIfLocked = useCallback(() => {
     if (!enabled) return;
     if (lockedRef.current) {
+      console.debug('[auto-scroll] content grew — scrolling (locked)');
       scrollToBottom(true);
+    } else {
+      console.debug('[auto-scroll] content grew — skipped (unlocked)');
     }
   }, [enabled, scrollToBottom]);
 
