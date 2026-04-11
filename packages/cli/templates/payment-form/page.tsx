@@ -288,7 +288,7 @@ export default function PaymentFormPage() {
           </XDSVStack>
 
           <XDSHStack gap={8} className="pf-body" vAlign="start">
-            <XDSStackItem size="fill">
+            <XDSStackItem size="fill" style={{flexBasis: 0}}>
               <XDSVStack gap={8}>
                 {/* Sign in */}
                 <XDSVStack gap={1}>
@@ -860,6 +860,7 @@ export default function PaymentFormPage() {
               size="fill"
               className="pf-right"
               style={{
+                flexBasis: 0,
                 position: 'sticky',
                 top: 16,
                 alignSelf: 'flex-start',
