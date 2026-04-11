@@ -2,13 +2,7 @@
 
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {
-  XDSVStack,
-  XDSHStack,
-  XDSStackItem,
-  XDSLayout,
-  XDSLayoutContent,
-} from '@xds/core/Layout';
+import {XDSVStack, XDSHStack, XDSStackItem} from '@xds/core/Layout';
 import {XDSGrid} from '@xds/core/Grid';
 import {XDSButton} from '@xds/core/Button';
 import {XDSText} from '@xds/core/Text';
@@ -27,6 +21,7 @@ import {XDSCard} from '@xds/core/Card';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSNumberInput} from '@xds/core/NumberInput';
 import {XDSAppShell} from '@xds/core/AppShell';
+import {XDSSection} from '@xds/core/Section';
 import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import {XDSIcon} from '@xds/core/Icon';
 import {ShieldCheckIcon} from '@heroicons/react/24/outline';
@@ -271,13 +266,12 @@ export default function PaymentFormPage() {
 
   return (
     <XDSAppShell height="auto" contentPadding={0} variant="surface">
-      <div
-        style={{
-          maxWidth: 1100,
-          width: '100%',
-          margin: '0 auto',
-          padding: '24px',
-        }}>
+      <XDSSection
+        variant="transparent"
+        maxWidth={1100}
+        width="100%"
+        padding={6}
+        style={{margin: '0 auto'}}>
         <XDSVStack gap={5}>
           {/* Page header */}
           <XDSVStack gap={2} {...stylex.props(styles.headerArea)}>
@@ -1044,7 +1038,7 @@ export default function PaymentFormPage() {
             </XDSStackItem>
           </XDSHStack>
         </XDSVStack>
-      </div>
+      </XDSSection>
     </XDSAppShell>
   );
 }
