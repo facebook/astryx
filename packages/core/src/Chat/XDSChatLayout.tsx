@@ -386,6 +386,7 @@ export function XDSChatLayout({
     hasNewMessages,
     handleScroll,
     handleScrollEnd,
+    handleUserScroll,
     scrollToBottom,
     dismissNewMessages,
     onContentChange,
@@ -475,9 +476,13 @@ export function XDSChatLayout({
         if (scrollEl) {
           scrollEl.addEventListener('scroll', handleScroll, {passive: true});
           scrollEl.addEventListener('scrollend', handleScrollEnd);
+          scrollEl.addEventListener('wheel', handleUserScroll, {passive: true});
+          scrollEl.addEventListener('touchstart', handleUserScroll, {passive: true});
           scrollListenerRef.current = () => {
             scrollEl.removeEventListener('scroll', handleScroll);
             scrollEl.removeEventListener('scrollend', handleScrollEnd);
+            scrollEl.removeEventListener('wheel', handleUserScroll);
+            scrollEl.removeEventListener('touchstart', handleUserScroll);
           };
           // Defer to next frame so content has laid out
           requestAnimationFrame(() => scrollToBottom(false));
@@ -490,7 +495,7 @@ export function XDSChatLayout({
         (ref as React.MutableRefObject<HTMLDivElement | null>).current = el;
       }
     },
-    [ref, scrollRef, handleScroll, handleScrollEnd, scrollToBottom],
+    [ref, scrollRef, handleScroll, handleScrollEnd, handleUserScroll, scrollToBottom],
   );
 
   // --- Scroll button handler ---

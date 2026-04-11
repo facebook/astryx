@@ -59,6 +59,9 @@ export interface UseAutoScrollReturn {
   /** Scrollend handler — attach to scrollend. */
   handleScrollEnd: () => void;
 
+  /** User input handler — attach to wheel/touchstart to interrupt programmatic scrolls. */
+  handleUserScroll: () => void;
+
   /** Scroll to the bottom of the container. */
   scrollToBottom: (smooth?: boolean) => void;
 
@@ -108,6 +111,11 @@ export function useAutoScroll({
     } else {
       el.scrollTop = el.scrollHeight;
     }
+  }, []);
+
+  // User input (wheel/touch) interrupts any in-progress programmatic scroll
+  const handleUserScroll = useCallback(() => {
+    isProgrammaticRef.current = false;
   }, []);
 
   // On scroll: unlock if user scrolled past threshold
@@ -170,6 +178,7 @@ export function useAutoScroll({
     hasNewMessages,
     handleScroll,
     handleScrollEnd,
+    handleUserScroll,
     scrollToBottom,
     dismissNewMessages,
     onContentChange,
