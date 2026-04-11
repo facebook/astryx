@@ -23,12 +23,8 @@
   margin: 0;
 }
 
-/* Two-column body */
+/* Two-column body — layout handled by XDSHStack, this class is for responsive targeting only */
 .pf-body {
-  display: grid;
-  grid-template-columns: 3fr 2fr;
-  gap: 64px;
-  align-items: start;
 }
 
 /* Left column */
