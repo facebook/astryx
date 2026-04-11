@@ -44,5 +44,13 @@ export {
   settingsIcon,
   calendarIcon,
   menuIcon,
+  heartIcon,
+  eyeIcon,
+  starIcon,
+  folderIcon,
+  shieldIcon,
+  searchIcon,
+  mailIcon,
+  lockIcon,
   starterIcons,
 } from './SVGIcon';

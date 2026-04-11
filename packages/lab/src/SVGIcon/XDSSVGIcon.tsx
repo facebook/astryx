@@ -163,31 +163,40 @@ function renderShapeElement(
 /** Check whether bold mode needs a mask for this layer */
 function needsMask(
   variation: SVGIconVariation,
-  fillShapes: IconShape[],
-  secondaryFillShapes: IconShape[],
+  primaryFillShapes: IconShape[],
+  secondaryShapes: IconShape[],
 ): boolean {
-  if (variation !== 'bold' && variation !== 'bulk') return false;
-  return fillShapes.length > 0 && secondaryFillShapes.length > 0;
+  if (variation !== 'bold') return false;
+  return primaryFillShapes.length > 0 && secondaryShapes.length > 0;
 }
 
 /**
- * Render mask knockout shapes — secondary fill-role elements become holes
+ * Render mask knockout shapes — secondary elements become holes
  * in the primary layer, with gap and corner rounding from CSS vars.
  */
 function renderMaskKnockouts(shapes: IconShape[]) {
-  return shapes.map((shape, i) =>
-    renderShapeElement(
+  return shapes.map((shape, i) => {
+    const role = shape.role ?? 'fill';
+    // Stroke-role knockouts need wider stroke to fully cover the visible stroke + gap
+    // Fill-role knockouts just need the gap width for the border around the hole
+    const knockoutWidth =
+      role === 'stroke'
+        ? `calc(${iconVars['--icon-stroke-width'] as string} + ${iconVars['--icon-gap'] as string} * 2)`
+        : (iconVars['--icon-gap'] as string);
+
+    return renderShapeElement(
       {
         ...shape.attrs,
-        fill: 'black',
+        fill: role === 'fill' ? 'black' : 'none',
         stroke: 'black',
-        strokeWidth: `var(${iconVars['--icon-gap']})`,
-        strokeLinejoin: `var(${iconVars['--icon-gap-linejoin']})`,
+        strokeWidth: knockoutWidth,
+        strokeLinecap: 'round',
+        strokeLinejoin: iconVars['--icon-gap-linejoin'] as string,
       },
       shape.type,
       `knockout-${i}`,
-    ),
-  );
+    );
+  });
 }
 
 // =============================================================================
@@ -325,14 +334,21 @@ export function XDSSVGIcon({
     ? splitByRole(icon.secondary!)
     : {fill: [], stroke: []};
 
-  const useMask = needsMask(variation, primarySplit.fill, secondarySplit.fill);
+  const allSecondary = [...secondarySplit.fill, ...secondarySplit.stroke];
+  const useMask = needsMask(variation, primarySplit.fill, allSecondary);
   const maskId = useMask ? `${uid}-mask` : undefined;
+
+  // Extract raw CSS property name from StyleX var reference: "var(--xABC)" -> "--xABC"
+  const strokeWidthProp = (iconVars['--icon-stroke-width'] as string).replace(
+    /^var\((.+)\)$/,
+    '$1',
+  );
 
   const overrideStyle: CSSProperties = {
     ...(style as CSSProperties),
     ...(strokeWidth != null
       ? ({
-          [iconVars['--icon-stroke-width'] as string]: String(strokeWidth),
+          [strokeWidthProp]: String(strokeWidth),
         } as Record<string, string>)
       : undefined),
   };
@@ -358,7 +374,10 @@ export function XDSSVGIcon({
         <defs>
           <mask id={maskId}>
             <rect width="24" height="24" fill="white" />
-            {renderMaskKnockouts(secondarySplit.fill)}
+            {renderMaskKnockouts([
+              ...secondarySplit.fill,
+              ...secondarySplit.stroke,
+            ])}
           </mask>
         </defs>
       )}
@@ -367,8 +386,8 @@ export function XDSSVGIcon({
       {renderFillRoleShapes(primarySplit.fill, 'primary', maskId)}
       {renderStrokeRoleShapes(primarySplit.stroke, 'primary')}
 
-      {/* Secondary layer */}
-      {hasSecondary && (
+      {/* Secondary layer — hidden entirely in bold+mask (all secondaries are knockouts) */}
+      {hasSecondary && !useMask && (
         <>
           {renderFillRoleShapes(secondarySplit.fill, 'secondary')}
           {renderStrokeRoleShapes(secondarySplit.stroke, 'secondary')}
