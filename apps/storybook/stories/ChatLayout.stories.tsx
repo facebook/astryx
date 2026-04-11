@@ -190,7 +190,7 @@ export const FullAIChat: StoryObj = {
     const contextTooltip = useXDSTooltip({placement: 'above'});
 
     const mentionTokens = CONTACTS.map(c => ({
-      pattern: `@${c.id}`,
+      value: `@${c.id}`,
       label: `@${c.label}`,
       variant: 'blue' as const,
     }));
@@ -519,7 +519,7 @@ export const PanelView: StoryObj = {
     const inputRef = useRef<XDSChatComposerInputHandle>(null);
 
     const mentionTokens = CONTACTS.map(c => ({
-      pattern: `@${c.id}`,
+      value: `@${c.id}`,
       label: `@${c.label}`,
       variant: 'blue' as const,
     }));
