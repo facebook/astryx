@@ -110,24 +110,23 @@ export function useAutoScroll({
     }
   }, []);
 
-  // Fires on every scroll frame — just updates button visibility
+  // Fires on every scroll frame — unlock immediately on user scroll
   const handleScroll = useCallback(() => {
     const el = scrollRef.current;
     if (!el) return;
     const distanceFromBottom =
       el.scrollHeight - el.scrollTop - el.clientHeight;
     setIsScrolledUp(distanceFromBottom > scrollUpThreshold);
+
+    // User scroll — unlock immediately
+    if (!isProgrammaticRef.current) {
+      lockedRef.current = false;
+    }
   }, [scrollUpThreshold]);
 
-  // Fires once when scrolling settles
+  // Fires once when scrolling settles — clear programmatic flag
   const handleScrollEnd = useCallback(() => {
-    if (isProgrammaticRef.current) {
-      // Our scroll — stay locked
-      isProgrammaticRef.current = false;
-      return;
-    }
-    // User scroll — unlock
-    lockedRef.current = false;
+    isProgrammaticRef.current = false;
   }, []);
 
   const onContentChange = useCallback(() => {
