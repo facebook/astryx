@@ -369,7 +369,7 @@ export function XDSChatLayout({
 }: XDSChatLayoutProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const dockRef = useRef<HTMLDivElement>(null);
-  const [rootMounted, setRootMounted] = useState(false);
+  const scrollListenerRef = useRef<(() => void) | null>(null);
 
   const scrollContainerRef =
     externalScrollRef ?? (rootRef as React.RefObject<HTMLElement | null>);
@@ -391,15 +391,7 @@ export function XDSChatLayout({
     scrollContainerRef,
   });
 
-  // Attach scroll listener to the scroll container.
-  // rootMounted triggers re-run after the ref is populated.
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    el.addEventListener('scroll', handleScroll, {passive: true});
-    scrollToBottom(false);
-    return () => el.removeEventListener('scroll', handleScroll);
-  }, [scrollRef, handleScroll, rootMounted, scrollToBottom]);
+
 
   // Single ResizeObserver for both density (root width) and content
   // changes (new messages). Checks entry.target to dispatch.
@@ -436,17 +428,34 @@ export function XDSChatLayout({
 
 
   // --- Merge refs ---
+  // Callback ref attaches scroll listener and triggers initial scroll.
   const setRootRef = useCallback(
     (el: HTMLDivElement | null) => {
+      // Detach previous listener
+      if (scrollListenerRef.current) {
+        scrollListenerRef.current();
+        scrollListenerRef.current = null;
+      }
+
       (rootRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
-      setRootMounted(el != null);
+
+      if (el) {
+        const scrollEl = scrollRef.current;
+        if (scrollEl) {
+          scrollEl.addEventListener('scroll', handleScroll, {passive: true});
+          scrollListenerRef.current = () =>
+            scrollEl.removeEventListener('scroll', handleScroll);
+          scrollToBottom(false);
+        }
+      }
+
       if (typeof ref === 'function') {
         ref(el);
       } else if (ref) {
         (ref as React.MutableRefObject<HTMLDivElement | null>).current = el;
       }
     },
-    [ref],
+    [ref, scrollRef, handleScroll, scrollToBottom],
   );
 
   // --- Scroll button handler ---
