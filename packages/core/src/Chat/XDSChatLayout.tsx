@@ -406,19 +406,20 @@ export function XDSChatLayout({
 
   const getObserver = useCallback(() => {
     if (!observerRef.current) {
-      observerRef.current = new ResizeObserver(entries => {
-        for (const entry of entries) {
-          if (entry.target === rootRef.current) {
-            setDensity(getDensity(entry.contentRect.width));
-          } else if (entry.target === contentElRef.current) {
-            const messages =
-              entry.target.getElementsByClassName('xds-chat-message');
-            const last =
-              messages.length > 0 ? messages[messages.length - 1] : null;
-            if (last && last !== lastMessageRef.current) {
-              lastMessageRef.current = last;
-              onContentChange();
-            }
+      observerRef.current = new ResizeObserver(() => {
+        const root = rootRef.current;
+        if (root) {
+          setDensity(getDensity(root.clientWidth));
+        }
+
+        const content = contentElRef.current;
+        if (content) {
+          const messages = content.getElementsByClassName('xds-chat-message');
+          const last =
+            messages.length > 0 ? messages[messages.length - 1] : null;
+          if (last && last !== lastMessageRef.current) {
+            lastMessageRef.current = last;
+            onContentChange();
           }
         }
       });
