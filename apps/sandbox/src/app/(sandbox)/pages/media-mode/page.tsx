@@ -112,10 +112,10 @@ function Swatch({color, mode, value}: {color: typeof SOLID_COLORS[0]; mode: 'dar
           </XDSMediaTheme>
         </div>
       </div>
-      <XDSText xstyle={s.label} color="secondary"><strong>{color.name}</strong></XDSText>
-      <XDSText xstyle={s.meta} color={mode === 'dark' ? 'negative' : 'accent'}>
+      <div {...stylex.props(s.label)}><strong>{color.name}</strong></div>
+      <div {...stylex.props(s.meta)} style={{color: mode === 'dark' ? '#c44' : '#48a'}}>
         {value.toFixed(3)} → {mode}
-      </XDSText>
+      </div>
     </div>
   );
 }
@@ -153,10 +153,10 @@ function ImageSwatch({src, label, algorithm}: {src: string; label: string; algor
           )}
         </div>
       </div>
-      <XDSText xstyle={s.label} color="secondary">{label}</XDSText>
-      <XDSText xstyle={s.meta} color={mode === 'dark' ? 'negative' : mode === 'light' ? 'accent' : 'secondary'}>
+      <div {...stylex.props(s.label)}>{label}</div>
+      <div {...stylex.props(s.meta)} style={{color: mode === 'dark' ? '#c44' : mode === 'light' ? '#48a' : '#999'}}>
         {value != null ? `${value.toFixed(3)} → ${mode}` : 'detecting…'}
-      </XDSText>
+      </div>
     </div>
   );
 }
@@ -196,7 +196,7 @@ export default function MediaModePage() {
     <XDSVStack gap={6} xstyle={s.page}>
       <div>
         <XDSHeading level={2}>Media Mode Comparison</XDSHeading>
-        <XDSText color="secondary">
+        <XDSText type="body" color="secondary">
           Compare luminance algorithms for detecting dark vs light surfaces.
           Used by useImageMode + XDSMediaTheme to adapt overlaid controls.
         </XDSText>
@@ -214,7 +214,7 @@ export default function MediaModePage() {
         ))}
       </XDSHStack>
 
-      <XDSText color="secondary" xstyle={s.meta}>{info.description}</XDSText>
+      <div {...stylex.props(s.meta)}>{info.description}</div>
 
       <XDSDivider />
 
@@ -231,10 +231,10 @@ export default function MediaModePage() {
       <XDSDivider />
 
       <XDSHeading level={4}>Real Images</XDSHeading>
-      <XDSText color="secondary" xstyle={s.meta}>
+      <div {...stylex.props(s.meta)}>
         Samples the upper-right corner where a remove button would sit.
         Switch algorithms above — images re-detect with the selected algorithm.
-      </XDSText>
+      </div>
 
       <div {...stylex.props(s.grid)}>
         {IMAGE_SWATCHES.map(img => (
