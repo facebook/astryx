@@ -35,6 +35,8 @@ import {getIcon} from '../Icon/globalIconRegistry';
 import {XDSTooltip} from '../Tooltip';
 import {navItemStyles} from '../NavItem/navItemStyles.stylex';
 import {useXDSSideNavCollapse} from './XDSSideNavCollapseContext';
+import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
+import type {XDSLinkComponentType} from '../Link/types';
 import {xdsClassName, mergeProps} from '../utils';
 
 // =============================================================================
@@ -219,6 +221,12 @@ export interface XDSSideNavHeadingProps {
    */
   icon?: ReactNode;
   /**
+   * Custom component to render instead of `<a>`.
+   * Overrides the provider-level default set by XDSLinkProvider.
+   * Must accept href, className, style, and children props.
+   */
+  as?: XDSLinkComponentType;
+  /**
    * Product/app name.
    */
   heading: string;
@@ -319,6 +327,7 @@ export interface XDSSideNavHeadingProps {
  * ```
  */
 export function XDSSideNavHeading({
+  as,
   icon,
   heading,
   headingHref,
@@ -335,6 +344,7 @@ export function XDSSideNavHeading({
   ref,
   ...props
 }: XDSSideNavHeadingProps) {
+  const LinkComponent = useXDSLinkComponent(as);
   const {isCollapsed} = useXDSSideNavCollapse();
   const rootRef = useRef<HTMLDivElement>(null);
   const collapsedItemRef = useRef<HTMLElement>(null);
@@ -380,7 +390,7 @@ export function XDSSideNavHeading({
 
     if (headingHref) {
       collapsedElement = (
-        <a
+        <LinkComponent
           ref={collapsedSetRef as React.Ref<HTMLAnchorElement>}
           href={headingHref}
           aria-label={heading}
@@ -392,7 +402,7 @@ export function XDSSideNavHeading({
             style,
           )}>
           {collapsedIcon}
-        </a>
+        </LinkComponent>
       );
     } else if (menu) {
       collapsedElement = (
@@ -511,11 +521,11 @@ export function XDSSideNavHeading({
         ))}
       <span {...stylex.props(styles.headingRow)}>
         {hasAnyHref && headingHref && menu ? (
-          <a
+          <LinkComponent
             href={headingHref}
             {...stylex.props(styles.heading, styles.headingLink)}>
             {heading}
-          </a>
+          </LinkComponent>
         ) : (
           <span {...stylex.props(styles.heading)}>{heading}</span>
         )}
@@ -564,9 +574,9 @@ export function XDSSideNavHeading({
   // Whole heading is a link (no menu, single headingHref)
   if (isWholeHeadingLink) {
     return (
-      <a
+      <LinkComponent
         ref={ref as React.Ref<HTMLAnchorElement>}
-        href={headingHref}
+        href={headingHref!}
         data-testid={testId}
         {...mergeProps(
           xdsClassName('side-nav-heading'),
@@ -579,7 +589,7 @@ export function XDSSideNavHeading({
         {renderTextContent()}
         {headerEndContentElement}
         {chevronElement}
-      </a>
+      </LinkComponent>
     );
   }
 
@@ -641,9 +651,9 @@ export function XDSSideNavHeading({
           )}>
           {icon &&
             (headingHref ? (
-              <a href={headingHref} {...stylex.props(styles.icon)}>
+              <LinkComponent href={headingHref} {...stylex.props(styles.icon)}>
                 {icon}
-              </a>
+              </LinkComponent>
             ) : (
               <span {...stylex.props(styles.icon)}>{icon}</span>
             ))}
@@ -691,9 +701,9 @@ export function XDSSideNavHeading({
         {...props}>
         {icon &&
           (headingHref ? (
-            <a href={headingHref} {...stylex.props(styles.icon)}>
+            <LinkComponent href={headingHref} {...stylex.props(styles.icon)}>
               {icon}
-            </a>
+            </LinkComponent>
           ) : (
             <span {...stylex.props(styles.icon)}>{icon}</span>
           ))}
