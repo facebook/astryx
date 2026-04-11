@@ -3,6 +3,7 @@
 import {useState, useEffect, useRef, useCallback} from 'react';
 import {XDSAppShell} from '@xds/core/AppShell';
 import {XDSTopNav, XDSTopNavHeading, XDSTopNavItem} from '@xds/core/TopNav';
+import {XDSSideNav, XDSSideNavHeading, XDSSideNavItem} from '@xds/core/SideNav';
 import {XDSVStack} from '@xds/core/Layout';
 import {XDSHeading, XDSText} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
@@ -900,6 +901,83 @@ function ChatPanel({
 }
 
 // ---------------------------------------------------------------------------
+// SideNavComposer (chat composer for side nav footer)
+// ---------------------------------------------------------------------------
+
+function SideNavComposer({onSend}: {onSend?: () => void}) {
+  const [prompt, setPrompt] = useState('');
+
+  return (
+    <div
+      style={{
+        borderRadius: 12,
+        backgroundColor: 'var(--color-background-card, white)',
+        border: '1px solid var(--color-divider)',
+        boxShadow: 'var(--shadow-high)',
+        padding: 8,
+        display: 'flex',
+        flexDirection: 'column' as const,
+        gap: 8,
+      }}>
+      <div
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          alignSelf: 'flex-start',
+          paddingInline: 8,
+          paddingBlock: 2,
+          borderRadius: 9999,
+          backgroundColor: 'var(--color-background-body, #f1f4f7)',
+          fontSize: 12,
+        }}>
+        Template 01
+      </div>
+      <div style={{display: 'flex', alignItems: 'center', padding: 8}}>
+        <input
+          style={{
+            flex: 1,
+            border: 'none',
+            outline: 'none',
+            backgroundColor: 'transparent',
+            fontFamily: 'inherit',
+            fontSize: 14,
+          }}
+          placeholder="What would you like to customize?"
+          value={prompt}
+          onChange={e => setPrompt(e.target.value)}
+        />
+      </div>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          width: '100%',
+          paddingInlineStart: 4,
+          paddingTop: 4,
+        }}>
+        <XDSButton
+          label="Attach"
+          variant="ghost"
+          size="sm"
+          icon={<PlusIcon />}
+          isIconOnly
+        />
+        <XDSButton
+          label="Send"
+          variant="primary"
+          size="sm"
+          icon={<SendIcon />}
+          style={{borderRadius: 9999}}
+          onClick={onSend}
+          isIconOnly
+        />
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Toolbar Icons
 // ---------------------------------------------------------------------------
 
@@ -972,6 +1050,17 @@ const PhoneIcon = (props: React.SVGProps<SVGSVGElement>) => (
     {...props}>
     <rect x="5" y="2" width="14" height="20" rx="2" />
     <line x1="12" y1="18" x2="12" y2="18" strokeLinecap="round" />
+  </svg>
+);
+
+const MoonIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    {...props}>
+    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
   </svg>
 );
 
@@ -1121,222 +1210,219 @@ function TemplatePreview({
           overflow: 'auto',
           padding: '0 16px 16px',
         }}>
-        {/* Back button */}
-        <div style={{padding: '8px 0'}}>
-          <XDSButton
-            label="Back"
-            variant="ghost"
-            icon={<ArrowLeftIcon />}
-            onClick={onBack}
-            isIconOnly
-          />
-        </div>
+        {/* Toolbar */}
+        <XDSToolbar
+          label="Template actions"
+          style={{paddingInline: 0}}
+          startContent={
+            <>
+              <XDSTooltip content="Back" placement="below">
+                <XDSButton
+                  label="Back"
+                  variant="ghost"
+                  icon={<ArrowLeftIcon />}
+                  onClick={onBack}
+                  isIconOnly
+                />
+              </XDSTooltip>
+              <XDSButton label={templateName} variant="ghost" />
+            </>
+          }
+          centerContent={
+            <>
+              <XDSTooltip content="Point" placement="below">
+                <XDSButton
+                  label="Point"
+                  variant="ghost"
+                  icon={<CursorIcon />}
+                  isIconOnly
+                />
+              </XDSTooltip>
+              <XDSDropdownMenu
+                button={{
+                  label: 'Theme',
+                  variant: 'ghost',
+                  icon: <PaletteIcon />,
+                  isIconOnly: true,
+                }}
+                hasChevron={false}
+                items={XDS_THEMES.map(t => ({
+                  label: t.label,
+                  onClick: () => {},
+                }))}
+              />
+              <XDSTooltip content="Toggle dark mode" placement="below">
+                <XDSButton
+                  label="Dark mode"
+                  variant="ghost"
+                  icon={<MoonIcon />}
+                  isIconOnly
+                />
+              </XDSTooltip>
+              <XDSSegmentedControl
+                value={viewportSize}
+                onChange={setViewportSize}
+                label="Viewport size"
+                size="sm">
+                <XDSSegmentedControlItem
+                  value="desktop"
+                  label="Desktop"
+                  isLabelHidden
+                  icon={<DesktopIcon />}
+                />
+                <XDSSegmentedControlItem
+                  value="tablet"
+                  label="Tablet"
+                  isLabelHidden
+                  icon={<TabletIcon />}
+                />
+                <XDSSegmentedControlItem
+                  value="phone"
+                  label="Phone"
+                  isLabelHidden
+                  icon={<PhoneIcon />}
+                />
+              </XDSSegmentedControl>
+            </>
+          }
+          endContent={
+            <XDSDropdownMenu
+              button={{label: 'Use in...', variant: 'ghost'}}
+              hasChevron={false}
+              menuWidth={220}
+              items={[
+                {
+                  label: 'Copy CLI Command...',
+                  icon: TerminalIcon,
+                  onClick: () => {},
+                },
+                {type: 'divider' as const},
+                {label: 'Claude Code', icon: ClaudeIcon, onClick: () => {}},
+                {label: 'VSCode', icon: VSCodeIcon, onClick: () => {}},
+                {label: 'Cursor', icon: CursorAIIcon, onClick: () => {}},
+              ]}
+            />
+          }
+        />
 
-        {/* Bordered container: toolbar + preview + code */}
+        {/* Preview image in muted container with grid dots */}
         <div
           style={{
-            border: '1px solid var(--color-divider, rgba(0,0,0,0.1))',
-            borderRadius: 12,
-            paddingBottom: 8,
+            backgroundColor: 'var(--color-background-muted, rgba(0,0,0,0.03))',
+            backgroundImage:
+              'radial-gradient(circle, var(--color-divider, rgba(0,0,0,0.1)) 1px, transparent 1px)',
+            backgroundSize: '16px 16px',
+            borderRadius: 8,
+            padding: 22,
             display: 'flex',
-            flexDirection: 'column' as const,
+            justifyContent: 'center',
           }}>
-          {/* Toolbar */}
-          <XDSToolbar
-            label="Template actions"
-            startContent={
-              <>
-                <XDSTooltip content="Point" placement="below">
-                  <XDSButton
-                    label="Point"
-                    variant="ghost"
-                    icon={<CursorIcon />}
-                    isIconOnly
-                  />
-                </XDSTooltip>
-                <XDSDropdownMenu
-                  button={{
-                    label: 'Theme',
-                    variant: 'ghost',
-                    icon: <PaletteIcon />,
-                    isIconOnly: true,
-                  }}
-                  hasChevron={false}
-                  items={XDS_THEMES.map(t => ({
-                    label: t.label,
-                    onClick: () => {},
-                  }))}
-                />
-                <XDSSegmentedControl
-                  value={viewportSize}
-                  onChange={setViewportSize}
-                  label="Viewport size"
-                  size="sm">
-                  <XDSSegmentedControlItem
-                    value="desktop"
-                    label="Desktop"
-                    isLabelHidden
-                    icon={<DesktopIcon />}
-                  />
-                  <XDSSegmentedControlItem
-                    value="tablet"
-                    label="Tablet"
-                    isLabelHidden
-                    icon={<TabletIcon />}
-                  />
-                  <XDSSegmentedControlItem
-                    value="phone"
-                    label="Phone"
-                    isLabelHidden
-                    icon={<PhoneIcon />}
-                  />
-                </XDSSegmentedControl>
-              </>
-            }
-            centerContent={<XDSButton label={templateName} variant="ghost" />}
-            endContent={
-              <XDSDropdownMenu
-                button={{label: 'Use in...', variant: 'ghost'}}
-                hasChevron={false}
-                menuWidth={220}
-                items={[
-                  {
-                    label: 'Copy CLI Command...',
-                    icon: TerminalIcon,
-                    onClick: () => {},
-                  },
-                  {type: 'divider' as const},
-                  {label: 'Claude Code', icon: ClaudeIcon, onClick: () => {}},
-                  {label: 'VSCode', icon: VSCodeIcon, onClick: () => {}},
-                  {label: 'Cursor', icon: CursorAIIcon, onClick: () => {}},
-                ]}
-              />
-            }
-          />
-
-          {/* Preview image in muted container with grid dots */}
           <div
+            ref={previewRef}
             style={{
-              backgroundColor:
-                'var(--color-background-muted, rgba(0,0,0,0.03))',
-              backgroundImage:
-                'radial-gradient(circle, var(--color-divider, rgba(0,0,0,0.1)) 1px, transparent 1px)',
-              backgroundSize: '16px 16px',
-              borderRadius: 8,
-              padding: 22,
-              margin: '0 8px',
-              display: 'flex',
-              justifyContent: 'center',
-            }}>
-            <div
-              ref={previewRef}
-              style={{
-                position: 'relative',
-                width:
-                  VIEWPORT_WIDTHS[viewportSize] === '100%'
-                    ? '100%'
-                    : VIEWPORT_WIDTHS[viewportSize],
-                maxWidth: '100%',
-                border: '1px solid var(--color-divider, rgba(0,0,0,0.1))',
-                borderRadius: 8,
-                overflow: 'hidden',
-                transition:
-                  'width var(--duration-medium, 410ms) var(--ease-standard, cubic-bezier(0.24, 1, 0.4, 1))',
-              }}>
-              <img
-                src={imageSrc}
-                alt="Template preview"
-                style={{
-                  display: 'block',
-                  width: '100%',
-                  aspectRatio: '1920 / 1200',
-                  objectFit: 'cover',
-                  opacity: isGenerating ? 0 : 1,
-                  transition: 'opacity 600ms ease',
-                }}
-              />
-              {showCanvas && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    inset: 0,
-                    opacity: isGenerating ? 1 : 0,
-                    transition: 'opacity 600ms ease',
-                  }}>
-                  <BoidsCanvas
-                    width={previewSize.w}
-                    height={previewSize.h}
-                    simulation={simulation}
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Code block */}
-          <div
-            style={{
-              margin: '8px 8px 0',
+              position: 'relative',
+              width:
+                VIEWPORT_WIDTHS[viewportSize] === '100%'
+                  ? '100%'
+                  : VIEWPORT_WIDTHS[viewportSize],
+              maxWidth: '100%',
               border: '1px solid var(--color-divider, rgba(0,0,0,0.1))',
               borderRadius: 8,
-              backgroundColor:
-                'var(--color-background-muted, rgba(0,0,0,0.03))',
               overflow: 'hidden',
+              transition:
+                'width var(--duration-medium, 410ms) var(--ease-standard, cubic-bezier(0.24, 1, 0.4, 1))',
             }}>
-            {/* Header */}
-            <div
+            <img
+              src={imageSrc}
+              alt="Template preview"
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '8px 12px 8px 16px',
-                borderBottom: '1px solid var(--color-divider, rgba(0,0,0,0.1))',
-              }}>
-              <span
-                style={{
-                  fontFamily: '"Roboto Mono", monospace',
-                  fontSize: 12,
-                  fontWeight: 500,
-                  color: 'var(--color-text-secondary, #4e606f)',
-                }}>
-                typescript — useUser.ts
-              </span>
-            </div>
-            {/* Code */}
-            <div style={{display: 'flex'}}>
-              {/* Line numbers */}
+                display: 'block',
+                width: '100%',
+                aspectRatio: '1920 / 1200',
+                objectFit: 'cover',
+                opacity: isGenerating ? 0 : 1,
+                transition: 'opacity 600ms ease',
+              }}
+            />
+            {showCanvas && (
               <div
                 style={{
-                  padding: '12px 12px 12px 16px',
-                  borderRight:
-                    '1px solid var(--color-divider, rgba(0,0,0,0.1))',
-                  fontFamily: '"Roboto Mono", monospace',
-                  fontSize: 14,
-                  lineHeight: '20px',
-                  color: 'var(--color-text-disabled, #a4b0bc)',
-                  textAlign: 'right',
-                  userSelect: 'none',
-                  minWidth: 45,
+                  position: 'absolute',
+                  inset: 0,
+                  opacity: isGenerating ? 1 : 0,
+                  transition: 'opacity 600ms ease',
                 }}>
-                {MOCK_CODE.split('\n').map((_, i) => (
-                  <div key={i}>{i + 1}</div>
-                ))}
+                <BoidsCanvas
+                  width={previewSize.w}
+                  height={previewSize.h}
+                  simulation={simulation}
+                />
               </div>
-              {/* Code content */}
-              <pre
-                style={{
-                  flex: 1,
-                  padding: '12px 16px',
-                  fontFamily: '"Roboto Mono", monospace',
-                  fontSize: 14,
-                  lineHeight: '20px',
-                  margin: 0,
-                  overflow: 'auto',
-                  color: 'var(--color-text-primary, #0a1317)',
-                }}>
-                {MOCK_CODE}
-              </pre>
+            )}
+          </div>
+        </div>
+
+        {/* Code block */}
+        <div
+          style={{
+            marginTop: 8,
+            border: '1px solid var(--color-divider, rgba(0,0,0,0.1))',
+            borderRadius: 8,
+            backgroundColor: 'var(--color-background-muted, rgba(0,0,0,0.03))',
+            overflow: 'hidden',
+          }}>
+          {/* Header */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '8px 12px 8px 16px',
+              borderBottom: '1px solid var(--color-divider, rgba(0,0,0,0.1))',
+            }}>
+            <span
+              style={{
+                fontFamily: '"Roboto Mono", monospace',
+                fontSize: 12,
+                fontWeight: 500,
+                color: 'var(--color-text-secondary, #4e606f)',
+              }}>
+              typescript — useUser.ts
+            </span>
+          </div>
+          {/* Code */}
+          <div style={{display: 'flex'}}>
+            {/* Line numbers */}
+            <div
+              style={{
+                padding: '12px 12px 12px 16px',
+                borderRight: '1px solid var(--color-divider, rgba(0,0,0,0.1))',
+                fontFamily: '"Roboto Mono", monospace',
+                fontSize: 14,
+                lineHeight: '20px',
+                color: 'var(--color-text-disabled, #a4b0bc)',
+                textAlign: 'right',
+                userSelect: 'none',
+                minWidth: 45,
+              }}>
+              {MOCK_CODE.split('\n').map((_, i) => (
+                <div key={i}>{i + 1}</div>
+              ))}
             </div>
+            {/* Code content */}
+            <pre
+              style={{
+                flex: 1,
+                padding: '12px 16px',
+                fontFamily: '"Roboto Mono", monospace',
+                fontSize: 14,
+                lineHeight: '20px',
+                margin: 0,
+                overflow: 'auto',
+                color: 'var(--color-text-primary, #0a1317)',
+              }}>
+              {MOCK_CODE}
+            </pre>
           </div>
         </div>
 
@@ -1482,7 +1568,18 @@ function AppTopNav() {
     <>
       <XDSTopNav
         label="XDS navigation"
-        heading={<XDSTopNavHeading heading="XDS" />}
+        heading={
+          <XDSTopNavHeading
+            heading=""
+            logo={
+              <img
+                src="/templates/xds-logo.svg"
+                alt="XDS"
+                style={{height: 36, width: 48}}
+              />
+            }
+          />
+        }
         centerContent={
           <>
             <XDSTopNavItem
@@ -1557,6 +1654,9 @@ export default function DocsiteLandingTemplate() {
   const previewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const simRef = useRef<BoidsSimulation | null>(null);
   const simAnimRef = useRef<number>(0);
+  const [sideNavWidth, setSideNavWidth] = useState(480);
+  const isResizingRef = useRef(false);
+  const [previewReady, setPreviewReady] = useState(false);
 
   if (!simRef.current) {
     simRef.current = createSimulation();
@@ -1584,6 +1684,47 @@ export default function DocsiteLandingTemplate() {
     mql.addEventListener('change', handler);
     return () => mql.removeEventListener('change', handler);
   }, []);
+
+  const handleResizeStart = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      isResizingRef.current = true;
+      const startX = e.clientX;
+      const startWidth = sideNavWidth;
+
+      const onMouseMove = (ev: MouseEvent) => {
+        if (!isResizingRef.current) return;
+        const newWidth = Math.min(
+          Math.max(startWidth + (ev.clientX - startX), 320),
+          640,
+        );
+        setSideNavWidth(newWidth);
+      };
+
+      const onMouseUp = () => {
+        isResizingRef.current = false;
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+      };
+
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    },
+    [sideNavWidth],
+  );
+
+  // Trigger enter animation one frame after preview mounts
+  useEffect(() => {
+    if (useTarget !== null) {
+      const id = requestAnimationFrame(() => setPreviewReady(true));
+      return () => cancelAnimationFrame(id);
+    }
+    setPreviewReady(false);
+  }, [useTarget]);
 
   const handleMoreLikeThis = useCallback(
     (index: number) => {
@@ -1627,41 +1768,125 @@ export default function DocsiteLandingTemplate() {
   const isGenerating = generatingSource !== null;
 
   return (
-    <XDSAppShell variant="surface" topNav={<AppTopNav />} contentPadding={0}>
-      <div
-        style={{
-          display: 'flex',
-          height: '100%',
-          overflow: 'hidden',
-        }}>
-        {/* Chat panel */}
+    <XDSAppShell
+      variant="surface"
+      topNav={useTarget === null ? <AppTopNav /> : undefined}
+      contentPadding={0}>
+      {useTarget !== null ? (
         <div
           style={{
-            width: chatOpen ? 400 : 0,
-            minWidth: chatOpen ? 400 : 0,
-            overflow: 'hidden',
-            transition:
-              'width var(--duration-medium, 410ms) var(--ease-standard, cubic-bezier(0.24, 1, 0.4, 1)), min-width var(--duration-medium, 410ms) var(--ease-standard, cubic-bezier(0.24, 1, 0.4, 1))',
-            borderRight: 'none',
-            backgroundColor: 'var(--color-background-surface, white)',
-          }}>
-          {chatOpen && (
-            <ChatPanel
-              isGenerating={isGenerating || previewGenerating}
-              onSend={useTarget !== null ? handlePreviewSend : undefined}
-            />
-          )}
-        </div>
-
-        {/* Main content area */}
-        <div
-          style={{
-            flex: 1,
-            overflow: 'hidden',
             display: 'flex',
-            flexDirection: 'column' as const,
+            height: '100%',
+            overflow: 'hidden',
           }}>
-          {useTarget !== null ? (
+          {/* Resizable side nav panel */}
+          <div
+            style={{
+              width: previewReady ? sideNavWidth : 0,
+              minWidth: previewReady ? 320 : 0,
+              maxWidth: 640,
+              position: 'relative',
+              display: 'flex',
+              flexDirection: 'column' as const,
+              borderRight: previewReady
+                ? '1px solid var(--color-divider, rgba(0,0,0,0.1))'
+                : 'none',
+              overflow: 'hidden',
+              transition:
+                'width 350ms cubic-bezier(0.24, 1, 0.4, 1), min-width 350ms cubic-bezier(0.24, 1, 0.4, 1)',
+            }}>
+            <XDSSideNav
+              style={{width: '100%'}}
+              header={
+                <XDSSideNavHeading
+                  icon={
+                    <img
+                      src="/templates/xds-logo.svg"
+                      alt="XDS"
+                      style={{
+                        width: 48,
+                        height: 36,
+                        marginLeft: 16,
+                        marginTop: 4,
+                        maxWidth: 'none',
+                        cursor: 'pointer',
+                      }}
+                      onClick={handleBackFromUse}
+                    />
+                  }
+                  heading=""
+                  menu={
+                    <>
+                      <XDSSideNavItem
+                        label="Craft"
+                        isSelected
+                        href="#"
+                        size="lg"
+                      />
+                      <XDSSideNavItem label="Explore" href="#" size="lg" />
+                      <XDSSideNavItem label="Doc" href="#" size="lg" />
+                    </>
+                  }
+                />
+              }
+              footer={
+                <>
+                  <div
+                    style={{
+                      backgroundColor: 'var(--color-background-body, #f1f4f7)',
+                      borderRadius: 12,
+                      padding: 12,
+                      marginBottom: 8,
+                      marginLeft: 100,
+                    }}>
+                    <div
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        paddingInline: 8,
+                        paddingBlock: 2,
+                        borderRadius: 9999,
+                        backgroundColor:
+                          'var(--color-overlay-hover, rgba(0,0,0,0.05))',
+                        fontSize: 12,
+                        marginBottom: 8,
+                      }}>
+                      Template 01
+                    </div>
+                    <XDSText type="body">
+                      Can you customize this template by adding a divider line
+                      under the header and use a card for the lists
+                    </XDSText>
+                  </div>
+                  <SideNavComposer onSend={handlePreviewSend} />
+                </>
+              }>
+              {null}
+            </XDSSideNav>
+            {/* Resize handle */}
+            <div
+              onMouseDown={handleResizeStart}
+              style={{
+                position: 'absolute',
+                top: 0,
+                right: -2,
+                bottom: 0,
+                width: 5,
+                cursor: 'col-resize',
+                zIndex: 10,
+              }}
+            />
+          </div>
+          {/* Main content */}
+          <div
+            style={{
+              flex: 1,
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column' as const,
+              opacity: previewReady ? 1 : 0,
+              transition: 'opacity 300ms ease 100ms',
+            }}>
             <TemplatePreview
               templateName={templateNames[useTarget % templateNames.length]}
               imageSrc={REPEATED_IMAGES[useTarget]}
@@ -1669,7 +1894,42 @@ export default function DocsiteLandingTemplate() {
               isGenerating={previewGenerating}
               simulation={simRef.current!}
             />
-          ) : (
+          </div>
+        </div>
+      ) : (
+        <div
+          style={{
+            display: 'flex',
+            height: '100%',
+            overflow: 'hidden',
+          }}>
+          {/* Chat panel */}
+          <div
+            style={{
+              width: chatOpen ? 400 : 0,
+              minWidth: chatOpen ? 400 : 0,
+              overflow: 'hidden',
+              transition:
+                'width var(--duration-medium, 410ms) var(--ease-standard, cubic-bezier(0.24, 1, 0.4, 1)), min-width var(--duration-medium, 410ms) var(--ease-standard, cubic-bezier(0.24, 1, 0.4, 1))',
+              borderRight: 'none',
+              backgroundColor: 'var(--color-background-surface, white)',
+            }}>
+            {chatOpen && (
+              <ChatPanel
+                isGenerating={isGenerating || previewGenerating}
+                onSend={undefined}
+              />
+            )}
+          </div>
+
+          {/* Main content area */}
+          <div
+            style={{
+              flex: 1,
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column' as const,
+            }}>
             <div
               style={{
                 flex: 1,
@@ -1704,11 +1964,11 @@ export default function DocsiteLandingTemplate() {
                 </XDSGrid>
               </div>
             </div>
-          )}
+          </div>
         </div>
-      </div>
+      )}
 
-      {!chatOpen && <AIComposer />}
+      {useTarget === null && !chatOpen && <AIComposer />}
     </XDSAppShell>
   );
 }
