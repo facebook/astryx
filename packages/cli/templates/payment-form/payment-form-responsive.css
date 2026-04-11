@@ -3,10 +3,12 @@
 /* Mobile only: single column, order summary on top */
 @media (max-width: 767px) {
   .pf-body {
-    grid-template-columns: 1fr !important;
+    flex-direction: column !important;
   }
   .pf-body > * {
-    grid-column: 1 / -1 !important;
+    flex: 1 1 100% !important;
+    width: 100% !important;
+    min-width: 0 !important;
     position: static !important;
   }
   .pf-right {
