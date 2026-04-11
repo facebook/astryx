@@ -1860,7 +1860,9 @@ export default function DocsiteLandingTemplate() {
                   </div>
                   <SideNavComposer onSend={handlePreviewSend} />
                 </>
-              }></XDSSideNav>
+              }>
+              {null}
+            </XDSSideNav>
             {/* Resize handle */}
             <div
               onMouseDown={handleResizeStart}
