@@ -1,6 +1,7 @@
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSThumbnail} from '@xds/core/Thumbnail';
+import {useImageMode} from '@xds/core/hooks';
 
 const meta: Meta<typeof XDSThumbnail> = {
   title: 'Core/XDSThumbnail',
@@ -273,6 +274,8 @@ const ALGORITHMS: Array<{id: AlgoId; label: string; fn: (r: number, g: number, b
 ];
 
 /** A single swatch: solid color background with a button rendered via XDSMediaTheme */
+
+/** Solid-color swatch: manually rendered with XDSMediaTheme */
 function Swatch({color, mode, value}: {color: typeof SOLID_COLORS[0]; mode: 'dark' | 'light'; value: number}) {
   return (
     <div style={{textAlign: 'center', width: 72}}>
@@ -307,16 +310,63 @@ function Swatch({color, mode, value}: {color: typeof SOLID_COLORS[0]; mode: 'dar
   );
 }
 
-// Picsum images with known characteristics (deterministic by ID)
+/** Image swatch: uses useImageMode to detect, renders with XDSMediaTheme */
+function ImageSwatch({src, label}: {src: string; label: string}) {
+  const mode = useImageMode(src, {fallback: null});
+  return (
+    <div style={{textAlign: 'center', width: 72}}>
+      <div style={{
+        position: 'relative',
+        width: 64,
+        height: 64,
+        borderRadius: 8,
+        overflow: 'hidden',
+        boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+      }}>
+        <img src={src} alt={label} style={{width: '100%', height: '100%', objectFit: 'cover', display: 'block'}} />
+        <div style={{position: 'absolute', top: 4, right: 4}}>
+          {mode != null ? (
+            <XDSMediaTheme mode={mode}>
+              <XDSButton
+                icon={<XDSIcon icon="close" size="xsm" />}
+                label="Remove"
+                variant="secondary"
+                size="sm"
+                isIconOnly
+                xstyle={{height: 20, minWidth: 20, '--button-radius': '4px'} as any}
+                onClick={() => {}}
+              />
+            </XDSMediaTheme>
+          ) : (
+            <XDSButton
+              icon={<XDSIcon icon="close" size="xsm" />}
+              label="Remove"
+              variant="secondary"
+              size="sm"
+              isIconOnly
+              xstyle={{height: 20, minWidth: 20, '--button-radius': '4px'} as any}
+              onClick={() => {}}
+            />
+          )}
+        </div>
+      </div>
+      <div style={{fontSize: 10, color: '#666', marginTop: 4}}>{label}</div>
+      <div style={{fontSize: 9, color: mode === 'dark' ? '#c44' : mode === 'light' ? '#48a' : '#999'}}>
+        {mode ?? 'detecting…'}
+      </div>
+    </div>
+  );
+}
+
 const IMAGE_SWATCHES = [
-  {id: 10, label: 'forest', src: 'https://picsum.photos/id/10/200/200'},
-  {id: 15, label: 'laptop', src: 'https://picsum.photos/id/15/200/200'},
-  {id: 28, label: 'clouds', src: 'https://picsum.photos/id/28/200/200'},
-  {id: 36, label: 'water', src: 'https://picsum.photos/id/36/200/200'},
-  {id: 96, label: 'door', src: 'https://picsum.photos/id/96/200/200'},
-  {id: 106, label: 'bones', src: 'https://picsum.photos/id/106/200/200'},
-  {id: 136, label: 'road', src: 'https://picsum.photos/id/136/200/200'},
-  {id: 237, label: 'puppy', src: 'https://picsum.photos/id/237/200/200'},
+  {label: 'forest', src: 'https://picsum.photos/id/10/200/200'},
+  {label: 'laptop', src: 'https://picsum.photos/id/15/200/200'},
+  {label: 'clouds', src: 'https://picsum.photos/id/28/200/200'},
+  {label: 'water', src: 'https://picsum.photos/id/36/200/200'},
+  {label: 'door', src: 'https://picsum.photos/id/96/200/200'},
+  {label: 'bones', src: 'https://picsum.photos/id/106/200/200'},
+  {label: 'road', src: 'https://picsum.photos/id/136/200/200'},
+  {label: 'puppy', src: 'https://picsum.photos/id/237/200/200'},
 ];
 
 export const AlgorithmComparison: Story = {
@@ -328,7 +378,7 @@ export const AlgorithmComparison: Story = {
       <div>
         <div style={{marginBottom: 16}}>
           <p style={{fontSize: 13, color: '#555', margin: '0 0 8px'}}>
-            Solid colors — manually rendered with XDSMediaTheme so the button adapts per algorithm.
+            <strong>Solid colors</strong> — button mode computed per algorithm. Switch to see differences.
           </p>
           <div style={{display: 'flex', gap: 8, marginBottom: 8}}>
             {ALGORITHMS.map(a => (
@@ -351,7 +401,7 @@ export const AlgorithmComparison: Story = {
           <p style={{fontSize: 11, color: '#888', margin: 0}}>{current.description}</p>
         </div>
 
-        <div style={{display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 24}}>
+        <div style={{display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 32}}>
           {SOLID_COLORS.map(c => {
             const value = current.fn(...c.rgb);
             const mode = value > current.threshold ? 'light' : 'dark';
@@ -361,30 +411,20 @@ export const AlgorithmComparison: Story = {
 
         <div style={{marginBottom: 16}}>
           <p style={{fontSize: 13, color: '#555', margin: '0 0 8px'}}>
-            Real images — using XDSThumbnail (useImageMode detects mode automatically).
-            Compare how well the button adapts for each photo.
+            <strong>Real images</strong> — useImageMode detects mode live (BT.709 Gamma, threshold 0.5).
           </p>
         </div>
-        <div style={{display: 'flex', flexWrap: 'wrap', gap: 12}}>
+        <div style={{display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 16}}>
           {IMAGE_SWATCHES.map(img => (
-            <div key={img.id} style={{textAlign: 'center', width: 72}}>
-              <XDSThumbnail
-                src={img.src}
-                alt={img.label}
-                onRemove={() => {}}
-              />
-              <div style={{fontSize: 10, color: '#666', marginTop: 4}}>{img.label}</div>
-            </div>
+            <ImageSwatch key={img.label} src={img.src} label={img.label} />
           ))}
         </div>
 
         <div style={{marginTop: 16, fontSize: 11, color: '#888', maxWidth: 600}}>
-          <strong>Note:</strong> Solid swatches use the selected algorithm directly.
-          Image swatches always use the current useImageMode (BT.709 Gamma) — switch
-          algorithms to see how solid colors would change, then compare with how the
-          real images behave.
-          <br /><br />
           <strong>Watch for:</strong> red, blue, teal, forest, maroon — these diverge most between algorithms.
+          <br />
+          <span style={{color: '#c44'}}>● dark</span>{' '}
+          <span style={{color: '#48a'}}>● light</span>
         </div>
       </div>
     );
