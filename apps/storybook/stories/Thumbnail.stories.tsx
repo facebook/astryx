@@ -1,3 +1,4 @@
+import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSThumbnail} from '@xds/core/Thumbnail';
 
@@ -44,21 +45,33 @@ export const WithLabel: Story = {
 };
 
 export const WithRemove: Story = {
-  args: {
-    src: 'https://picsum.photos/200',
-    alt: 'Removable thumbnail',
-    label: 'photo.png',
-    onRemove: () => {},
+  render: () => {
+    const [visible, setVisible] = useState(true);
+    if (!visible) return <p style={{color: '#888', fontSize: 12}}>Removed. <button onClick={() => setVisible(true)}>Undo</button></p>;
+    return (
+      <XDSThumbnail
+        src="https://picsum.photos/200"
+        alt="Removable thumbnail"
+        label="photo.png"
+        onRemove={() => setVisible(false)}
+      />
+    );
   },
 };
 
 export const WithCaption: Story = {
-  args: {
-    src: 'https://picsum.photos/200',
-    alt: 'Photo with metadata',
-    label: 'screenshot.png',
-    caption: '2.4 MB',
-    onRemove: () => {},
+  render: () => {
+    const [visible, setVisible] = useState(true);
+    if (!visible) return <p style={{color: '#888', fontSize: 12}}>Removed. <button onClick={() => setVisible(true)}>Undo</button></p>;
+    return (
+      <XDSThumbnail
+        src="https://picsum.photos/200"
+        alt="Photo with metadata"
+        label="screenshot.png"
+        caption="2.4 MB"
+        onRemove={() => setVisible(false)}
+      />
+    );
   },
 };
 
@@ -67,7 +80,6 @@ export const Clickable: Story = {
     src: 'https://picsum.photos/200',
     alt: 'Clickable thumbnail',
     onClick: () => alert('Clicked!'),
-    onRemove: () => {},
     label: 'preview.jpg',
   },
 };
@@ -92,10 +104,16 @@ export const Uploading: Story = {
 
 export const Placeholder: Story = {
   name: 'No Image (Placeholder)',
-  args: {
-    label: 'report.pdf',
-    caption: '1.2 MB',
-    onRemove: () => {},
+  render: () => {
+    const [visible, setVisible] = useState(true);
+    if (!visible) return <p style={{color: '#888', fontSize: 12}}>Removed. <button onClick={() => setVisible(true)}>Undo</button></p>;
+    return (
+      <XDSThumbnail
+        label="report.pdf"
+        caption="1.2 MB"
+        onRemove={() => setVisible(false)}
+      />
+    );
   },
 };
 
@@ -110,31 +128,32 @@ export const Disabled: Story = {
 };
 
 export const Gallery: Story = {
-  render: () => (
-    <div style={{display: 'flex', gap: 8}}>
-      <XDSThumbnail
-        src="https://picsum.photos/200?random=1"
-        alt="Photo 1"
-        label="img_001.jpg"
-        onRemove={() => {}}
-      />
-      <XDSThumbnail
-        src="https://picsum.photos/200?random=2"
-        alt="Photo 2"
-        label="img_002.jpg"
-        onRemove={() => {}}
-      />
-      <XDSThumbnail
-        label="notes.pdf"
-        caption="340 KB"
-        onRemove={() => {}}
-      />
-      <XDSThumbnail
-        src="https://picsum.photos/200?random=3"
-        alt="Photo 3"
-        label="img_003.jpg"
-        onRemove={() => {}}
-      />
-    </div>
-  ),
+  render: function GalleryStory() {
+    const initial = [
+      {id: 1, src: 'https://picsum.photos/200?random=1', label: 'img_001.jpg'},
+      {id: 2, src: 'https://picsum.photos/200?random=2', label: 'img_002.jpg'},
+      {id: 3, src: undefined as string | undefined, label: 'notes.pdf', caption: '340 KB'},
+      {id: 4, src: 'https://picsum.photos/200?random=3', label: 'img_003.jpg'},
+    ];
+    const [items, setItems] = useState(initial);
+    return (
+      <div style={{display: 'flex', gap: 8, alignItems: 'flex-start'}}>
+        {items.map(item => (
+          <XDSThumbnail
+            key={item.id}
+            src={item.src}
+            alt={item.label}
+            label={item.label}
+            caption={item.caption}
+            onRemove={() => setItems(prev => prev.filter(i => i.id !== item.id))}
+          />
+        ))}
+        {items.length === 0 && (
+          <p style={{color: '#888', fontSize: 12}}>
+            All removed. <button onClick={() => setItems(initial)}>Reset</button>
+          </p>
+        )}
+      </div>
+    );
+  },
 };

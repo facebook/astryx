@@ -198,6 +198,7 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-overlay'],
     borderRadius: 'inherit',
     zIndex: 1,
+    lineHeight: 0,
   },
 });
 
