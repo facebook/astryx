@@ -62,11 +62,9 @@ export const docs = {
   components: [
     {
       name: 'XDSChatMessageList',
-      description: 'Scrollable message container with auto-scroll and infinite scroll support.',
+      description: 'Presentational message container with density context and infinite scroll support. Auto-scroll is owned by XDSChatLayout.',
       props: [
         {name: 'children', type: 'ReactNode', description: 'Message elements — typically XDSChatMessage or XDSChatSystemMessage.', required: true},
-        {name: 'hasAutoScroll', type: 'boolean', description: 'Enables auto-scroll to bottom on new content when near the bottom.', default: 'true'},
-        {name: 'scrollThreshold', type: 'number', description: 'Distance from bottom (px) within which new content triggers auto-scroll.', default: '50'},
         {name: 'emptyState', type: 'ReactNode', description: 'Content shown when the list has no messages.'},
         {name: 'onScrollToTopAction', type: '() => Promise<void>', description: 'Async action fired when user scrolls to top. Use for loading older messages.'},
         {name: 'density', type: "'compact' | 'balanced' | 'spacious'", description: 'Visual density — flows to child messages via context.', default: "'balanced'"},
@@ -205,6 +203,8 @@ const chatLayoutComponent = {
     {name: 'composer', type: 'ReactNode', description: 'Composer element fixed to the bottom with frosted glass dock.', required: true},
     {name: 'emptyState', type: 'ReactNode', description: 'Content shown when children is empty.'},
     {name: 'scrollRef', type: 'React.RefObject<HTMLElement | null>', description: 'External scroll container ref. When provided, auto-scroll and scroll-to-bottom target this element instead of the layout root. Use when the chat is embedded in a page where a parent element or the document body scrolls.'},
+    {name: 'hasAutoScroll', type: 'boolean', description: 'Whether auto-scroll behavior is enabled.', default: 'true'},
+    {name: 'newMessagesLabel', type: 'string', description: 'Label shown in the scroll-to-bottom button when new messages arrive.', default: "'New messages'"},
   ],
   examples: [
     {label: 'Basic (self-scrolling)', code: `<XDSChatLayout composer={<XDSChatComposer onSubmit={handleSubmit} />}>\n  {messages.map(msg => <XDSChatMessage key={msg.id} {...msg} />)}\n</XDSChatLayout>`},
@@ -239,11 +239,9 @@ export const docsZh = {
   components: [
     {
       name: 'XDSChatMessageList',
-      description: '可滚动的消息容器，支持自动滚动和无限滚动。',
+      description: '消息展示容器，支持密度上下文和无限滚动。自动滚动由 XDSChatLayout 管理。',
       propDescriptions: {
         children: '消息元素，通常是 XDSChatMessage 或 XDSChatSystemMessage。',
-        hasAutoScroll: '在接近底部时，新内容触发自动滚动到底部。',
-        scrollThreshold: '距底部的距离（像素），在此范围内新内容触发自动滚动。',
         emptyState: '列表无消息时显示的内容。',
         onScrollToTopAction: '用户滚动到顶部时触发的异步操作。用于加载更早的消息。',
         density: '视觉密度，通过上下文传递给子消息。',
@@ -377,11 +375,9 @@ export const docsDense = {
   components: [
     {
       name: 'XDSChatMessageList',
-      description: 'scrollable msg container w/ auto-scroll + infinite scroll',
+      description: 'presentational msg container w/ density context + infinite scroll; auto-scroll owned by XDSChatLayout',
       propDescriptions: {
         children: 'msg elements (XDSChatMessage or XDSChatSystemMessage)',
-        hasAutoScroll: 'auto-scroll to bottom on new content near bottom',
-        scrollThreshold: 'px from bottom to trigger auto-scroll',
         emptyState: 'content when no msgs',
         onScrollToTopAction: 'async action at scroll top; load older msgs',
         density: 'visual density; flows to children via context',
