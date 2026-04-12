@@ -3305,12 +3305,14 @@ function TemplateFullPreview({
   onBack,
   onUse,
   onSelectTemplate,
+  showChat = false,
 }: {
   templateName: string;
   imageSrc: string;
   onBack: () => void;
   onUse: () => void;
   onSelectTemplate?: (index: number) => void;
+  showChat?: boolean;
 }) {
   const [viewMode, setViewMode] = useState<'desktop' | 'mobile'>('desktop');
   const [editorView, setEditorView] = useState<'preview' | 'code'>('preview');
@@ -3321,6 +3323,8 @@ function TemplateFullPreview({
   const [selectedFontPack, setSelectedFontPack] = useState<string | null>(
     PREVIEW_FONT_PACKS[0].heading,
   );
+  const [panelTab, setPanelTab] = useState<'properties' | 'chat'>('properties');
+  const [chatInput, setChatInput] = useState('');
 
   useEffect(() => {
     requestAnimationFrame(() => {
@@ -3370,234 +3374,326 @@ function TemplateFullPreview({
             onClick={onBack}
             style={{alignSelf: 'flex-start', marginLeft: -8, marginBottom: 8}}
           />
-          {/* Template name */}
-          <XDSText type="display-2">{templateName}</XDSText>
 
-          {/* Description */}
-          <div style={{marginTop: 8}}>
-            <XDSText type="body" color="secondary">
-              Buttons are clickable elements that are used to trigger actions.
-              They communicate calls to action to the user and allow users to
-              interact with pages in a variety of ways. Button labels express
-              what action will occur when the user interacts with it.
-            </XDSText>
-          </div>
-
-          {/* Stats buttons */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginTop: 16,
-              marginLeft: -8,
-              marginRight: -8,
-            }}>
-            <div style={{display: 'flex', alignItems: 'center', gap: 4}}>
-              <XDSButton
-                label="Link"
-                variant="ghost"
-                size="sm"
-                isIconOnly
-                icon={<LinkIcon />}
-              />
-              <XDSDropdownMenu
-                button={{
-                  label: 'Share',
-                  variant: 'ghost',
-                  size: 'sm',
-                  isIconOnly: true,
-                  icon: <PaperPlaneIcon />,
-                }}
-                hasChevron={false}
-                menuWidth={220}
-                items={[
-                  {
-                    label: 'Copy CLI Command...',
-                    icon: TerminalIcon,
-                    onClick: () => {},
-                  },
-                  {type: 'divider' as const},
-                  {label: 'Claude Code', icon: ClaudeIcon, onClick: () => {}},
-                  {label: 'VSCode', icon: VSCodeIcon, onClick: () => {}},
-                  {label: 'Cursor', icon: CursorAIIcon, onClick: () => {}},
-                ]}
-              />
+          {/* Tab bar (only when showChat is true) */}
+          {showChat && (
+            <div style={{marginBottom: 16}}>
+              <XDSTabList
+                value={panelTab}
+                onChange={(v: string) =>
+                  setPanelTab(v as 'properties' | 'chat')
+                }
+                size="sm">
+                <XDSTab value="properties" label="Properties" />
+                <XDSTab value="chat" label="Chat" />
+              </XDSTabList>
             </div>
-            <div style={{display: 'flex', alignItems: 'center', gap: 4}}>
-              <XDSButton
-                label="1,645"
-                variant="ghost"
-                size="sm"
-                icon={<HeartIcon />}
-              />
-              <XDSButton
-                label="892"
-                variant="ghost"
-                size="sm"
-                icon={<BookmarkIcon />}
-              />
-            </div>
-          </div>
+          )}
 
-          {/* CTA button */}
-          <div style={{marginTop: 16}}>
-            <XDSButton
-              variant="primary"
-              label="Start crafting"
-              onClick={onUse}
-              size="lg"
-              style={{width: '100%'}}
-            />
-          </div>
-
-          {/* Color palettes */}
-          <div style={{marginTop: 32}}>
-            <XDSHeading level={4}>Color palettes</XDSHeading>
+          {/* Chat tab content */}
+          {showChat && panelTab === 'chat' ? (
             <div
               style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
-                gap: 10,
-                marginTop: 8,
+                display: 'flex',
+                flexDirection: 'column' as const,
+                flex: 1,
+                minHeight: 0,
               }}>
-              {PREVIEW_COLOR_PALETTES.map(palette => (
+              {/* Chat messages area */}
+              <div style={{flex: 1, overflowY: 'auto' as const}}>
+                {/* Welcome message bubble */}
                 <div
-                  key={palette.name}
-                  onClick={() => setSelectedPalette(palette.name)}
                   style={{
-                    cursor: 'pointer',
-                    border: `2px solid ${selectedPalette === palette.name ? 'var(--color-accent, #0066FF)' : 'transparent'}`,
-                    borderRadius: 14,
-                    overflow: 'hidden',
-                    transition: 'border-color 0.15s ease',
+                    backgroundColor: 'var(--color-background-body, #f1f4f7)',
+                    borderRadius: 12,
+                    padding: 12,
                   }}>
-                  <XDSCard padding={0}>
+                  <XDSText type="body">
+                    Hi! I can help you customize this template. Try asking me to
+                    change colors, layout, or content.
+                  </XDSText>
+                </div>
+              </div>
+
+              {/* Composer pinned to bottom */}
+              <div
+                style={{
+                  borderTop: '1px solid var(--color-divider, #e0e0e0)',
+                  padding: 8,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  margin: '0 -32px -32px -32px',
+                  paddingInline: 32,
+                  paddingBottom: 32,
+                }}>
+                <XDSButton
+                  label="Attach"
+                  variant="ghost"
+                  size="sm"
+                  isIconOnly
+                  icon={<PlusIcon />}
+                />
+                <input
+                  value={chatInput}
+                  onChange={e => setChatInput(e.target.value)}
+                  placeholder="What should we build?"
+                  style={{
+                    flex: 1,
+                    border: 'none',
+                    outline: 'none',
+                    backgroundColor: 'transparent',
+                    fontSize: 14,
+                    color: 'inherit',
+                  }}
+                />
+                <XDSButton
+                  label="Send"
+                  variant="primary"
+                  size="sm"
+                  isIconOnly
+                  icon={<SendIcon />}
+                  style={{borderRadius: 9999}}
+                />
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Template name */}
+              <XDSText type="display-2">{templateName}</XDSText>
+
+              {/* Description */}
+              <div style={{marginTop: 8}}>
+                <XDSText type="body" color="secondary">
+                  Buttons are clickable elements that are used to trigger
+                  actions. They communicate calls to action to the user and
+                  allow users to interact with pages in a variety of ways.
+                  Button labels express what action will occur when the user
+                  interacts with it.
+                </XDSText>
+              </div>
+
+              {/* Stats buttons */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginTop: 16,
+                  marginLeft: -8,
+                  marginRight: -8,
+                }}>
+                <div style={{display: 'flex', alignItems: 'center', gap: 4}}>
+                  <XDSButton
+                    label="Link"
+                    variant="ghost"
+                    size="sm"
+                    isIconOnly
+                    icon={<LinkIcon />}
+                  />
+                  <XDSDropdownMenu
+                    button={{
+                      label: 'Share',
+                      variant: 'ghost',
+                      size: 'sm',
+                      isIconOnly: true,
+                      icon: <PaperPlaneIcon />,
+                    }}
+                    hasChevron={false}
+                    menuWidth={220}
+                    items={[
+                      {
+                        label: 'Copy CLI Command...',
+                        icon: TerminalIcon,
+                        onClick: () => {},
+                      },
+                      {type: 'divider' as const},
+                      {
+                        label: 'Claude Code',
+                        icon: ClaudeIcon,
+                        onClick: () => {},
+                      },
+                      {label: 'VSCode', icon: VSCodeIcon, onClick: () => {}},
+                      {label: 'Cursor', icon: CursorAIIcon, onClick: () => {}},
+                    ]}
+                  />
+                </div>
+                <div style={{display: 'flex', alignItems: 'center', gap: 4}}>
+                  <XDSButton
+                    label="1,645"
+                    variant="ghost"
+                    size="sm"
+                    icon={<HeartIcon />}
+                  />
+                  <XDSButton
+                    label="892"
+                    variant="ghost"
+                    size="sm"
+                    icon={<BookmarkIcon />}
+                  />
+                </div>
+              </div>
+
+              {/* CTA button */}
+              <div style={{marginTop: 16}}>
+                <XDSButton
+                  variant="primary"
+                  label="Start crafting"
+                  onClick={onUse}
+                  size="lg"
+                  style={{width: '100%'}}
+                />
+              </div>
+
+              {/* Color palettes */}
+              <div style={{marginTop: 32}}>
+                <XDSHeading level={4}>Color palettes</XDSHeading>
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gap: 10,
+                    marginTop: 8,
+                  }}>
+                  {PREVIEW_COLOR_PALETTES.map(palette => (
                     <div
+                      key={palette.name}
+                      onClick={() => setSelectedPalette(palette.name)}
                       style={{
-                        display: 'flex',
+                        cursor: 'pointer',
+                        border: `2px solid ${selectedPalette === palette.name ? 'var(--color-accent, #0066FF)' : 'transparent'}`,
+                        borderRadius: 14,
                         overflow: 'hidden',
-                        height: 48,
+                        transition: 'border-color 0.15s ease',
                       }}>
-                      {palette.colors.map((color, i) => (
+                      <XDSCard padding={0}>
                         <div
-                          key={i}
                           style={{
-                            flex: 1,
-                            backgroundColor: color,
-                          }}
-                        />
-                      ))}
+                            display: 'flex',
+                            overflow: 'hidden',
+                            height: 48,
+                          }}>
+                          {palette.colors.map((color, i) => (
+                            <div
+                              key={i}
+                              style={{
+                                flex: 1,
+                                backgroundColor: color,
+                              }}
+                            />
+                          ))}
+                        </div>
+                      </XDSCard>
                     </div>
-                  </XDSCard>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
+              </div>
 
-          {/* Font packs */}
-          <div style={{marginTop: 32}}>
-            <XDSHeading level={4}>Font packs</XDSHeading>
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
-                gap: 10,
-                marginTop: 8,
-              }}>
-              {PREVIEW_FONT_PACKS.map(pack => (
+              {/* Font packs */}
+              <div style={{marginTop: 32}}>
+                <XDSHeading level={4}>Font packs</XDSHeading>
                 <div
-                  key={pack.heading}
-                  onClick={() => setSelectedFontPack(pack.heading)}
                   style={{
-                    cursor: 'pointer',
-                    border: `2px solid ${selectedFontPack === pack.heading ? 'var(--color-accent, #0066FF)' : 'transparent'}`,
-                    borderRadius: 14,
-                    overflow: 'hidden',
-                    transition: 'border-color 0.15s ease',
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gap: 10,
+                    marginTop: 8,
                   }}>
-                  <XDSCard padding={2}>
-                    <div style={{fontFamily: pack.heading}}>
-                      <XDSText
-                        type="body"
-                        style={{fontWeight: 600, fontSize: 16}}>
-                        Heading
-                      </XDSText>
+                  {PREVIEW_FONT_PACKS.map(pack => (
+                    <div
+                      key={pack.heading}
+                      onClick={() => setSelectedFontPack(pack.heading)}
+                      style={{
+                        cursor: 'pointer',
+                        border: `2px solid ${selectedFontPack === pack.heading ? 'var(--color-accent, #0066FF)' : 'transparent'}`,
+                        borderRadius: 14,
+                        overflow: 'hidden',
+                        transition: 'border-color 0.15s ease',
+                      }}>
+                      <XDSCard padding={2}>
+                        <div style={{fontFamily: pack.heading}}>
+                          <XDSText
+                            type="body"
+                            style={{fontWeight: 600, fontSize: 16}}>
+                            Heading
+                          </XDSText>
+                        </div>
+                        <div style={{fontFamily: pack.paragraph}}>
+                          <XDSText type="supporting" color="secondary">
+                            Paragraph text
+                          </XDSText>
+                        </div>
+                      </XDSCard>
                     </div>
-                    <div style={{fontFamily: pack.paragraph}}>
-                      <XDSText type="supporting" color="secondary">
-                        Paragraph text
-                      </XDSText>
-                    </div>
-                  </XDSCard>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
+              </div>
 
-          {/* Component used */}
-          <div style={{marginTop: 32}}>
-            <XDSHeading level={3}>Component used</XDSHeading>
-            <div
-              style={{
-                display: 'flex',
-                flexWrap: 'wrap' as const,
-                gap: 8,
-                marginTop: 8,
-              }}>
-              <XDSToken label="XDSAppShell" />
-              <XDSToken label="XDSTopNav" />
-              <XDSToken label="XDSVStack" />
-              <XDSToken label="XDSHStack" />
-              <XDSToken label="XDSHeading" />
-              <XDSToken label="XDSText" />
-              <XDSToken label="XDSButton" />
-              <XDSToken label="XDSCard" />
-              <XDSToken label="XDSBadge" />
-              <XDSToken label="XDSAvatar" />
-            </div>
-          </div>
+              {/* Component used */}
+              <div style={{marginTop: 32}}>
+                <XDSHeading level={3}>Component used</XDSHeading>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexWrap: 'wrap' as const,
+                    gap: 8,
+                    marginTop: 8,
+                  }}>
+                  <XDSToken label="XDSAppShell" />
+                  <XDSToken label="XDSTopNav" />
+                  <XDSToken label="XDSVStack" />
+                  <XDSToken label="XDSHStack" />
+                  <XDSToken label="XDSHeading" />
+                  <XDSToken label="XDSText" />
+                  <XDSToken label="XDSButton" />
+                  <XDSToken label="XDSCard" />
+                  <XDSToken label="XDSBadge" />
+                  <XDSToken label="XDSAvatar" />
+                </div>
+              </div>
 
-          {/* Keywords */}
-          <div style={{marginTop: 32}}>
-            <XDSHeading level={3}>Keywords</XDSHeading>
-            <div
-              style={{
-                display: 'flex',
-                flexWrap: 'wrap' as const,
-                gap: 4,
-                marginTop: 8,
-              }}>
-              <XDSToken label="Dashboard" size="sm" />
-              <XDSToken label="Admin" size="sm" />
-              <XDSToken label="Layout" size="sm" />
-              <XDSToken label="Navigation" size="sm" />
-              <XDSToken label="Settings" size="sm" />
-            </div>
-          </div>
+              {/* Keywords */}
+              <div style={{marginTop: 32}}>
+                <XDSHeading level={3}>Keywords</XDSHeading>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexWrap: 'wrap' as const,
+                    gap: 4,
+                    marginTop: 8,
+                  }}>
+                  <XDSToken label="Dashboard" size="sm" />
+                  <XDSToken label="Admin" size="sm" />
+                  <XDSToken label="Layout" size="sm" />
+                  <XDSToken label="Navigation" size="sm" />
+                  <XDSToken label="Settings" size="sm" />
+                </div>
+              </div>
 
-          {/* Author section */}
-          <div
-            style={{
-              marginTop: 'auto',
-              display: 'flex',
-              flexDirection: 'row' as const,
-              alignItems: 'center',
-              gap: 12,
-            }}>
-            <XDSAvatar
-              size={36}
-              src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&h=80&fit=crop&crop=face"
-            />
-            <div style={{display: 'flex', flexDirection: 'column', gap: 2}}>
-              <XDSText type="supporting" color="secondary">
-                Designed by
-              </XDSText>
-              <XDSText type="body" style={{fontWeight: 600, fontSize: 16}}>
-                Andrea Anderson
-              </XDSText>
-            </div>
-          </div>
+              {/* Author section */}
+              <div
+                style={{
+                  marginTop: 'auto',
+                  display: 'flex',
+                  flexDirection: 'row' as const,
+                  alignItems: 'center',
+                  gap: 12,
+                }}>
+                <XDSAvatar
+                  size={36}
+                  src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&h=80&fit=crop&crop=face"
+                />
+                <div style={{display: 'flex', flexDirection: 'column', gap: 2}}>
+                  <XDSText type="supporting" color="secondary">
+                    Designed by
+                  </XDSText>
+                  <XDSText type="body" style={{fontWeight: 600, fontSize: 16}}>
+                    Andrea Anderson
+                  </XDSText>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -4520,6 +4616,7 @@ export default function DocsiteLandingTemplate() {
         onSelectTemplate={index => {
           setPreviewTarget(index);
         }}
+        showChat
       />
     );
   }
