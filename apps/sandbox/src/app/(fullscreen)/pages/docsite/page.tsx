@@ -3306,6 +3306,7 @@ function TemplateFullPreview({
   onUse,
   onSelectTemplate,
   showChat = false,
+  showEditor = false,
 }: {
   templateName: string;
   imageSrc: string;
@@ -3313,6 +3314,7 @@ function TemplateFullPreview({
   onUse: () => void;
   onSelectTemplate?: (index: number) => void;
   showChat?: boolean;
+  showEditor?: boolean;
 }) {
   const [viewMode, setViewMode] = useState<'desktop' | 'mobile'>('desktop');
   const [editorView, setEditorView] = useState<'preview' | 'code'>('preview');
@@ -3712,10 +3714,113 @@ function TemplateFullPreview({
         }}>
         {/* Editor toolbar */}
         <div style={{backgroundColor: 'var(--color-background-body, #f5f5f5)'}}>
-          <XDSToolbar
-            label="Template actions"
-            startContent={<></>}
-            centerContent={
+          {showEditor ? (
+            <XDSToolbar
+              label="Template actions"
+              startContent={<></>}
+              centerContent={
+                <XDSSegmentedControl
+                  value={viewMode}
+                  onChange={(v: string) =>
+                    setViewMode(v as 'desktop' | 'mobile')
+                  }
+                  label="Viewport size"
+                  size="sm">
+                  <XDSSegmentedControlItem
+                    value="desktop"
+                    label="Desktop"
+                    isLabelHidden
+                    icon={<DesktopIcon />}
+                  />
+                  <XDSSegmentedControlItem
+                    value="mobile"
+                    label="Mobile"
+                    isLabelHidden
+                    icon={<PhoneIcon />}
+                  />
+                </XDSSegmentedControl>
+              }
+              endContent={
+                <>
+                  <XDSButton
+                    label="Point"
+                    variant="ghost"
+                    isIconOnly
+                    icon={<CursorIcon />}
+                  />
+                  <XDSDropdownMenu
+                    button={{
+                      label: 'Theme',
+                      variant: 'ghost',
+                      isIconOnly: true,
+                      icon: <PaletteIcon />,
+                    }}
+                    hasChevron={false}
+                    items={XDS_THEMES.map(t => ({
+                      label: t.label,
+                      onClick: () => {},
+                    }))}
+                  />
+                  <XDSButton
+                    label="Toggle theme"
+                    variant="ghost"
+                    isIconOnly
+                    icon={<ContrastIcon />}
+                  />
+                  <XDSButton
+                    label="Toggle code"
+                    variant={editorView === 'code' ? 'secondary' : 'ghost'}
+                    isIconOnly
+                    icon={<CodeIcon />}
+                    onClick={() =>
+                      setEditorView(
+                        editorView === 'preview' ? 'code' : 'preview',
+                      )
+                    }
+                  />
+                  <XDSButton
+                    label="Save"
+                    variant="ghost"
+                    icon={<SaveIcon />}
+                    isIconOnly
+                    onClick={() => {}}
+                  />
+                  <XDSDropdownMenu
+                    button={{
+                      label: 'Share',
+                      variant: 'ghost',
+                      isIconOnly: true,
+                      icon: <PaperPlaneIcon />,
+                    }}
+                    hasChevron={false}
+                    menuWidth={220}
+                    items={[
+                      {
+                        label: 'Copy CLI Command...',
+                        icon: TerminalIcon,
+                        onClick: () => {},
+                      },
+                      {type: 'divider' as const},
+                      {
+                        label: 'Claude Code',
+                        icon: ClaudeIcon,
+                        onClick: () => {},
+                      },
+                      {label: 'VSCode', icon: VSCodeIcon, onClick: () => {}},
+                      {label: 'Cursor', icon: CursorAIIcon, onClick: () => {}},
+                    ]}
+                  />
+                </>
+              }
+            />
+          ) : (
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                padding: '12px 24px',
+              }}>
               <XDSSegmentedControl
                 value={viewMode}
                 onChange={(v: string) => setViewMode(v as 'desktop' | 'mobile')}
@@ -3734,74 +3839,8 @@ function TemplateFullPreview({
                   icon={<PhoneIcon />}
                 />
               </XDSSegmentedControl>
-            }
-            endContent={
-              <>
-                <XDSButton
-                  label="Point"
-                  variant="ghost"
-                  isIconOnly
-                  icon={<CursorIcon />}
-                />
-                <XDSDropdownMenu
-                  button={{
-                    label: 'Theme',
-                    variant: 'ghost',
-                    isIconOnly: true,
-                    icon: <PaletteIcon />,
-                  }}
-                  hasChevron={false}
-                  items={XDS_THEMES.map(t => ({
-                    label: t.label,
-                    onClick: () => {},
-                  }))}
-                />
-                <XDSButton
-                  label="Toggle theme"
-                  variant="ghost"
-                  isIconOnly
-                  icon={<ContrastIcon />}
-                />
-                <XDSButton
-                  label="Toggle code"
-                  variant={editorView === 'code' ? 'secondary' : 'ghost'}
-                  isIconOnly
-                  icon={<CodeIcon />}
-                  onClick={() =>
-                    setEditorView(editorView === 'preview' ? 'code' : 'preview')
-                  }
-                />
-                <XDSButton
-                  label="Save"
-                  variant="ghost"
-                  icon={<SaveIcon />}
-                  isIconOnly
-                  onClick={() => {}}
-                />
-                <XDSDropdownMenu
-                  button={{
-                    label: 'Share',
-                    variant: 'ghost',
-                    isIconOnly: true,
-                    icon: <PaperPlaneIcon />,
-                  }}
-                  hasChevron={false}
-                  menuWidth={220}
-                  items={[
-                    {
-                      label: 'Copy CLI Command...',
-                      icon: TerminalIcon,
-                      onClick: () => {},
-                    },
-                    {type: 'divider' as const},
-                    {label: 'Claude Code', icon: ClaudeIcon, onClick: () => {}},
-                    {label: 'VSCode', icon: VSCodeIcon, onClick: () => {}},
-                    {label: 'Cursor', icon: CursorAIIcon, onClick: () => {}},
-                  ]}
-                />
-              </>
-            }
-          />
+            </div>
+          )}
         </div>
 
         {/* Preview — browser frame + image */}
@@ -3809,7 +3848,7 @@ function TemplateFullPreview({
           style={{
             backgroundColor: 'var(--color-background-body, #f5f5f5)',
             padding: '22px 22px 22px',
-            display: editorView === 'preview' ? 'flex' : 'none',
+            display: !showEditor || editorView === 'preview' ? 'flex' : 'none',
             justifyContent: 'center',
             alignItems: 'flex-start',
             flex: 1,
@@ -3889,7 +3928,7 @@ function TemplateFullPreview({
             backgroundColor: 'var(--color-background-muted, rgba(0,0,0,0.03))',
             overflow: 'auto',
             flex: 1,
-            display: editorView === 'code' ? 'block' : 'none',
+            display: showEditor && editorView === 'code' ? 'block' : 'none',
           }}>
           <div
             style={{
@@ -3942,7 +3981,7 @@ function TemplateFullPreview({
         </div>
 
         {/* Similar templates — only visible in preview mode */}
-        {editorView === 'preview' && (
+        {(!showEditor || editorView === 'preview') && (
           <div
             style={{
               width: '100%',
@@ -4617,6 +4656,7 @@ export default function DocsiteLandingTemplate() {
           setPreviewTarget(index);
         }}
         showChat
+        showEditor
       />
     );
   }
