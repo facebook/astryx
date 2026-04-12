@@ -26,6 +26,7 @@ export const docs = {
   ],
   theming: {
     targets: [
+      {className: 'xds-chat-layout', visualProps: ['density']},
       {className: 'xds-chat-composer', visualProps: ['density']},
       {className: 'xds-chat-composer-input'},
       {className: 'xds-chat-composer-attachments', visualProps: ['collapsed']},

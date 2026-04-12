@@ -37,11 +37,6 @@ export interface XDSChatTokenizedTextProps {
    *   label: `@${c.label}`,
    *   variant: 'blue' as const,
    * }));
-   *
-   * // Input trigger
-   * { character: '@', onSelect: (item) => mentionTokens.find(...) }
-   *
-   * // Display
    * <XDSChatTokenizedText tokens={mentionTokens}>
    *   {message.text}
    * </XDSChatTokenizedText>
