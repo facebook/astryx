@@ -20,6 +20,7 @@ import {XDSToken} from '@xds/core/Token';
 import {XDSToolbar} from '@xds/core/Toolbar';
 import {XDSTooltip} from '@xds/core/Tooltip';
 import {createStaticSource} from '@xds/core/Typeahead';
+import {XDSChatComposer} from '@xds/core/Chat';
 
 // ---------------------------------------------------------------------------
 // Icons
@@ -900,82 +901,7 @@ function ChatPanel({
   );
 }
 
-// ---------------------------------------------------------------------------
-// SideNavComposer (chat composer for side nav footer)
-// ---------------------------------------------------------------------------
-
-function SideNavComposer({onSend}: {onSend?: () => void}) {
-  const [prompt, setPrompt] = useState('');
-
-  return (
-    <div
-      style={{
-        borderRadius: 12,
-        backgroundColor: 'var(--color-background-card, white)',
-        border: '1px solid var(--color-divider)',
-        boxShadow: 'var(--shadow-high)',
-        padding: 8,
-        display: 'flex',
-        flexDirection: 'column' as const,
-        gap: 8,
-      }}>
-      <div
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          alignSelf: 'flex-start',
-          paddingInline: 8,
-          paddingBlock: 2,
-          borderRadius: 9999,
-          backgroundColor: 'var(--color-background-body, #f1f4f7)',
-          fontSize: 12,
-        }}>
-        Template 01
-      </div>
-      <div style={{display: 'flex', alignItems: 'center', padding: 8}}>
-        <input
-          style={{
-            flex: 1,
-            border: 'none',
-            outline: 'none',
-            backgroundColor: 'transparent',
-            fontFamily: 'inherit',
-            fontSize: 14,
-          }}
-          placeholder="What would you like to customize?"
-          value={prompt}
-          onChange={e => setPrompt(e.target.value)}
-        />
-      </div>
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          width: '100%',
-          paddingInlineStart: 4,
-          paddingTop: 4,
-        }}>
-        <XDSButton
-          label="Attach"
-          variant="ghost"
-          size="sm"
-          icon={<PlusIcon />}
-          isIconOnly
-        />
-        <XDSButton
-          label="Send"
-          variant="primary"
-          size="sm"
-          icon={<SendIcon />}
-          style={{borderRadius: 9999}}
-          onClick={onSend}
-          isIconOnly
-        />
-      </div>
-    </div>
-  );
-}
+// SideNavComposer removed — replaced by XDSChatComposer from @xds/core/Chat
 
 // ---------------------------------------------------------------------------
 // Toolbar Icons
@@ -1749,14 +1675,17 @@ export default function DocsiteLandingTemplate() {
     setChatOpen(false);
   }, []);
 
-  const handlePreviewSend = useCallback(() => {
-    if (previewGenerating) return;
-    setPreviewGenerating(true);
-    previewTimerRef.current = setTimeout(() => {
-      setPreviewGenerating(false);
-      previewTimerRef.current = null;
-    }, 5000);
-  }, [previewGenerating]);
+  const handlePreviewSend = useCallback(
+    (_value: string) => {
+      if (previewGenerating) return;
+      setPreviewGenerating(true);
+      previewTimerRef.current = setTimeout(() => {
+        setPreviewGenerating(false);
+        previewTimerRef.current = null;
+      }, 5000);
+    },
+    [previewGenerating],
+  );
 
   useEffect(() => {
     return () => {
@@ -1858,7 +1787,20 @@ export default function DocsiteLandingTemplate() {
                       under the header and use a card for the lists
                     </XDSText>
                   </div>
-                  <SideNavComposer onSend={handlePreviewSend} />
+                  <XDSChatComposer
+                    placeholder="What would you like to customize?"
+                    density="compact"
+                    onSubmit={handlePreviewSend}
+                    footerActions={
+                      <XDSButton
+                        label="Attach"
+                        variant="ghost"
+                        size="md"
+                        icon={<PlusIcon />}
+                        isIconOnly
+                      />
+                    }
+                  />
                 </>
               }>
               {null}
