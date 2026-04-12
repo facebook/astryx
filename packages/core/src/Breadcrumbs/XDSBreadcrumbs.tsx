@@ -2,7 +2,7 @@
 
 /**
  * @file XDSBreadcrumbs.tsx
- * @input Uses React, Children, createContext, stylex, theme tokens
+ * @input Uses React, createContext, stylex, theme tokens
  * @output Exports XDSBreadcrumbs component, XDSBreadcrumbsProps, BreadcrumbCtx
  * @position Core container component; consumed by index.ts
  *
@@ -13,11 +13,10 @@
  * - /apps/storybook/stories/Breadcrumbs.stories.tsx
  */
 
-import {Children, isValidElement, createContext, type ReactNode} from 'react';
+import {createContext, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
-import {colorVars, spacingVars, typeScaleVars} from '../theme/tokens.stylex';
-import type {XDSBreadcrumbItemProps} from './XDSBreadcrumbItem';
+import {spacingVars} from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 
 // =============================================================================
@@ -55,15 +54,15 @@ export type XDSBreadcrumbsVariant = keyof XDSBreadcrumbsVariantMap;
 // Context shared with XDSBreadcrumbItem
 // =============================================================================
 
-/** @internal Context for passing state from XDSBreadcrumbs to XDSBreadcrumbItem. */
+/** @internal Context for passing variant and separator from XDSBreadcrumbs to XDSBreadcrumbItem. */
 export interface BreadcrumbContextValue {
-  isAutoLast: boolean;
   variant: XDSBreadcrumbsVariant;
+  separator: ReactNode;
 }
 
 export const BreadcrumbCtx = createContext<BreadcrumbContextValue>({
-  isAutoLast: false,
   variant: 'default',
+  separator: '/',
 });
 
 // =============================================================================
@@ -143,24 +142,6 @@ const listStyles = stylex.create({
   },
 });
 
-const separatorStyles = stylex.create({
-  root: {
-    display: 'flex',
-    alignItems: 'center',
-    color: colorVars['--color-text-secondary'],
-    paddingBlock: spacingVars['--spacing-1'],
-    userSelect: 'none',
-  },
-  defaultSize: {
-    fontSize: typeScaleVars['--text-body-size'],
-    lineHeight: typeScaleVars['--text-body-leading'],
-  },
-  supportingSize: {
-    fontSize: typeScaleVars['--text-supporting-size'],
-    lineHeight: typeScaleVars['--text-supporting-leading'],
-  },
-});
-
 // =============================================================================
 // Component
 // =============================================================================
@@ -170,7 +151,8 @@ const separatorStyles = stylex.create({
  * semantic `<nav>` + `<ol>` markup with separators between items.
  *
  * Auto-detects the last child as the current page if no item has
- * `isCurrent` explicitly set.
+ * `isCurrent` explicitly set — handled by each item via DOM inspection,
+ * no React child introspection needed.
  *
  * @example
  * ```
@@ -192,64 +174,23 @@ export function XDSBreadcrumbs({
   'data-testid': testId,
   ref,
 }: XDSBreadcrumbsProps) {
-  const items = Children.toArray(children);
-  const isSupporting = variant === 'supporting';
-
-  // Check if any child has isCurrent explicitly set
-  const hasExplicitCurrent = items.some(
-    child =>
-      isValidElement<XDSBreadcrumbItemProps>(child) &&
-      child.props.isCurrent === true,
-  );
-
-  const rendered: ReactNode[] = [];
-
-  items.forEach((child, index) => {
-    const isLast = index === items.length - 1;
-
-    const ctxValue: BreadcrumbContextValue = {
-      isAutoLast: !hasExplicitCurrent && isLast,
-      variant,
-    };
-
-    rendered.push(
-      <BreadcrumbCtx.Provider key={`item-${index}`} value={ctxValue}>
-        {child}
-      </BreadcrumbCtx.Provider>,
-    );
-
-    // Add separator between items (not after the last one)
-    if (!isLast) {
-      rendered.push(
-        <li
-          key={`sep-${index}`}
-          role="presentation"
-          aria-hidden="true"
-          {...stylex.props(
-            separatorStyles.root,
-            isSupporting
-              ? separatorStyles.supportingSize
-              : separatorStyles.defaultSize,
-          )}>
-          {separator}
-        </li>,
-      );
-    }
-  });
+  const ctxValue: BreadcrumbContextValue = {variant, separator};
 
   return (
-    <nav
-      ref={ref}
-      aria-label={label}
-      data-testid={testId}
-      {...mergeProps(
-        xdsClassName('breadcrumbs', {variant}),
-        stylex.props(navStyles.root, xstyle),
-        className,
-        style,
-      )}>
-      <ol {...stylex.props(listStyles.root)}>{rendered}</ol>
-    </nav>
+    <BreadcrumbCtx.Provider value={ctxValue}>
+      <nav
+        ref={ref}
+        aria-label={label}
+        data-testid={testId}
+        {...mergeProps(
+          xdsClassName('breadcrumbs', {variant}),
+          stylex.props(navStyles.root, xstyle),
+          className,
+          style,
+        )}>
+        <ol {...stylex.props(listStyles.root)}>{children}</ol>
+      </nav>
+    </BreadcrumbCtx.Provider>
   );
 }
 
