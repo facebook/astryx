@@ -2234,7 +2234,8 @@ function AppTopNav({
           zIndex: 11,
           transition:
             'box-shadow 300ms var(--ease-standard, cubic-bezier(0.24, 1, 0.4, 1))',
-          boxShadow: isScrolled ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+          boxShadow:
+            isScrolled && !isFilterOpen ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
         }}>
         {/* Left: logo nav */}
         <div style={{display: 'flex', alignItems: 'center', gap: 8, flex: 1}}>
@@ -2367,6 +2368,8 @@ function AppTopNav({
             ? '1fr 1fr 1fr 1fr'
             : '1fr 1fr 1fr 1fr',
           gap: isFilterOpen ? 24 : 0,
+          boxShadow:
+            isFilterOpen && isScrolled ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
           padding: isFilterOpen ? '24px 40px' : '0 40px',
           maxHeight: isFilterOpen ? 400 : 0,
           overflow: 'hidden',
@@ -3839,7 +3842,7 @@ function TemplateFullPreview({
                       transition: 'border-color 150ms ease',
                     }}>
                     <XDSText
-                      type="body-2"
+                      type="body"
                       color={panelTab === tab ? 'primary' : 'secondary'}>
                       {tab === 'properties' ? 'Details' : 'Chat'}
                     </XDSText>
