@@ -36,6 +36,7 @@ import {
   Copy,
   CheckCheck,
   Wrench,
+  Square,
 } from 'lucide-react';
 
 const iconProps = {
@@ -68,4 +69,5 @@ export const neutralIconRegistry: XDSIconRegistry = {
   copy: <Copy {...iconProps} />,
   checkDouble: <CheckCheck {...iconProps} />,
   wrench: <Wrench {...iconProps} />,
+  stop: <Square {...iconProps} />,
 };

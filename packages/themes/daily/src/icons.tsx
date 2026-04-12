@@ -26,6 +26,7 @@ import {
   Copy,
   CheckCheck,
   Wrench,
+  Square,
 } from 'lucide-react';
 
 const iconProps = {
@@ -58,4 +59,5 @@ export const dailyIconRegistry: XDSIconRegistry = {
   copy: <Copy {...iconProps} />,
   checkDouble: <CheckCheck {...iconProps} />,
   wrench: <Wrench {...iconProps} />,
+  stop: <Square {...iconProps} />,
 };

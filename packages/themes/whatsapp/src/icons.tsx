@@ -36,6 +36,7 @@ import {
   XCircleIcon,
   ExclamationTriangleIcon,
   ArrowTopRightOnSquareIcon,
+  StopIcon,
 } from '@heroicons/react/24/solid';
 
 const iconProps = {
@@ -69,4 +70,5 @@ export const whatsappIconRegistry: XDSIconRegistry = {
   copy: <ClipboardDocumentIcon {...iconProps} />,
   checkDouble: <CheckIcon {...iconProps} />,
   wrench: <WrenchScrewdriverIcon {...iconProps} />,
+  stop: <StopIcon {...iconProps} />,
 };

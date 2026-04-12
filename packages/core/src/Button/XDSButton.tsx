@@ -60,7 +60,8 @@ const styles = stylex.create({
     fontWeight: fontWeightVars['--font-weight-medium'],
     whiteSpace: 'nowrap',
     cursor: 'pointer',
-    transitionProperty: 'background-image, transform',
+    transitionProperty:
+      'background-image, background-color, color, opacity, transform',
     transitionDuration: {
       default: durationVars['--duration-fast'],
       '@media (prefers-reduced-motion: reduce)': '0s',
