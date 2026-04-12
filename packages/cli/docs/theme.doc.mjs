@@ -359,6 +359,10 @@ function MyComponent() {
           type: 'prose',
           text: 'This is read-only. To change the theme/mode, manage state at the app level and pass it to <XDSTheme>.',
         },
+        {
+          type: 'prose',
+          text: 'See `npx xds docs styling` for component-level customization (xstyle, className, rest props). See `npx xds docs tokens` for the full token reference.',
+        },
       ],
     },
   ],
