@@ -3560,15 +3560,17 @@ function DocsView({
                     onClick={() => setActiveView('craft')}
                   />
                   <XDSDropdownMenu
-                    trigger={
-                      <XDSButton label="Variant" variant="ghost" size="sm" />
-                    }
+                    button={{
+                      label: 'Variants',
+                      variant: 'ghost',
+                      size: 'sm',
+                    }}
+                    hasChevron={false}
                     items={[
-                      {id: 'primary', label: 'Primary'},
-                      {id: 'secondary', label: 'Secondary'},
-                      {id: 'ghost', label: 'Ghost'},
+                      {label: 'Primary', onClick: () => {}},
+                      {label: 'Secondary', onClick: () => {}},
+                      {label: 'Ghost', onClick: () => {}},
                     ]}
-                    onAction={() => {}}
                   />
                   <XDSButton
                     label="Toggle theme"
