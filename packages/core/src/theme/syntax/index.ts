@@ -20,3 +20,22 @@ export type {
 
 export {XDSSyntaxTheme, useXDSSyntaxTheme} from './XDSSyntaxTheme';
 export type {UseXDSSyntaxThemeReturn} from './XDSSyntaxTheme';
+
+// Community syntax theme presets (formerly @xds/theme-syntax)
+export {
+  oneDarkPro,
+  dracula,
+  monokai,
+  nord,
+  tokyoNight,
+  catppuccinMocha,
+  githubDark,
+  githubLight,
+  solarizedLight,
+  oneLight,
+  catppuccinLatte,
+  tokyoNightLight,
+  darkSyntaxPresets,
+  lightSyntaxPresets,
+  allSyntaxPresets,
+} from './presets';

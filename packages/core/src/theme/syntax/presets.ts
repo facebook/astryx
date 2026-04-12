@@ -1,5 +1,5 @@
 /**
- * @file presets.ts
+ * @file theme/syntax/presets.ts
  * @output 12 community syntax theme presets
  *
  * Color values sourced from each theme's official VS Code extension.
@@ -9,7 +9,7 @@
  * @see https://github.com/facebookexperimental/xds/issues/1148
  */
 
-import {defineSyntaxTheme, type SyntaxTheme} from '@xds/core/theme/syntax';
+import {defineSyntaxTheme, type SyntaxTheme} from './defineSyntaxTheme';
 
 /** One Dark Pro (Binaryify) — MIT */
 export const oneDarkPro: SyntaxTheme = defineSyntaxTheme({

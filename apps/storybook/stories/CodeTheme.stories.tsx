@@ -20,7 +20,7 @@ import {
   catppuccinLatte,
   tokyoNightLight,
   allSyntaxPresets,
-} from '@xds/theme-syntax';
+} from '@xds/core/theme/syntax';
 
 const sampleCode = [
   "import {useState, useEffect} from 'react';",
@@ -69,7 +69,7 @@ const meta: Meta = {
       description: {
         component:
           'Syntax theme provider for code components. Wraps XDSCodeBlock and XDSCodeEditor ' +
-          'to apply community syntax color themes. 11 presets ship in @xds/theme-syntax.',
+          'to apply community syntax color themes. 12 presets ship in @xds/core/theme/syntax.',
       },
     },
   },
