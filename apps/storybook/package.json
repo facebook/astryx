@@ -8,11 +8,12 @@
   },
   "dependencies": {
     "@xds/core": "*",
-    "react": "^19.2.4",
-    "react-dom": "^19.2.4",
     "@xds/theme-default": "*",
     "@xds/theme-neutral": "*",
-    "@xds/theme-syntax": "*"
+    "@xds/theme-syntax": "*",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "unplugin": "^2.3.11"
   },
   "devDependencies": {
     "@storybook/addon-essentials": "^8.6.17",
@@ -22,7 +23,7 @@
     "@storybook/react": "^8.6.17",
     "@storybook/react-vite": "^8.6.17",
     "@storybook/test": "^8.6.17",
-    "@stylexjs/unplugin": "^0.17.4",
+    "@stylexjs/unplugin": "^0.18.2",
     "storybook": "^8.6.17"
   }
 }
