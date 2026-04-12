@@ -251,7 +251,7 @@ export interface XDSDefineThemeInput {
    *
    * @example
    * ```tsx
-   * import {dracula} from '@xds/theme-syntax';
+   * import {dracula} from '@xds/core/theme/syntax';
    * defineTheme({ name: 'my-theme', syntax: dracula, ... })
    * ```
    */
