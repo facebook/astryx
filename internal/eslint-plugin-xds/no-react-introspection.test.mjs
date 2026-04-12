@@ -22,8 +22,6 @@ tester.run('no-react-introspection', noReactIntrospectionRule, {
     // isValidElement is allowed — it's a type guard, not introspection
     {code: `import { isValidElement } from 'react'; if (isValidElement(x)) {}`},
     {code: `if (React.isValidElement(x)) {}`},
-    // Children.toArray is allowed — counting/slicing, not identity inspection
-    {code: `import { Children } from 'react'; const items = Children.toArray(children);`},
     // allowFiles escape hatch
     {
       code: `import { Children } from 'react'; Children.map(children, c => c);`,
@@ -32,6 +30,11 @@ tester.run('no-react-introspection', noReactIntrospectionRule, {
     },
   ],
   invalid: [
+    // Children.toArray
+    {
+      code: `import { Children } from 'react'; const items = Children.toArray(children);`,
+      errors: [{messageId: 'childrenMethod'}],
+    },
     // Children.map
     {
       code: `import { Children } from 'react'; Children.map(children, c => c);`,

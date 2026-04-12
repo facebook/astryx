@@ -280,10 +280,8 @@ export function XDSCarousel({
           hasSnap && styles.snap,
           fadeStyle,
         )}>
-        {Children.toArray(children).map((child, i) => (
-          <div key={i} {...stylex.props(styles.item)}>
-            {child}
-          </div>
+        {Children.map(children, child => (
+          <div {...stylex.props(styles.item)}>{child}</div>
         ))}
       </div>
 

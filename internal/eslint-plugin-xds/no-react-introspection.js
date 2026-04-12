@@ -21,10 +21,10 @@
  */
 
 // React.Children methods that introspect the children tree
-// toArray is excluded — it's used for counting/slicing, not identity inspection
 const CHILDREN_METHODS = new Set([
   'map',
   'forEach',
+  'toArray',
   'count',
   'only',
 ]);
