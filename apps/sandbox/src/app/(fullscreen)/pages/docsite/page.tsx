@@ -1021,16 +1021,20 @@ function ChatPanel({
       {/* Composer pinned to bottom */}
       <div
         style={{
-          padding: 0,
-          borderTop: '1px solid var(--color-divider, #e0e0e0)',
+          padding: templateName ? 0 : 12,
+          borderTop: templateName
+            ? '1px solid var(--color-divider, #e0e0e0)'
+            : 'none',
         }}>
         <div
           style={{
-            borderRadius: 0,
+            borderRadius: templateName ? 0 : 20,
             backgroundColor: 'var(--color-background-card, white)',
-            border: 'none',
-            borderTop: '1px solid var(--color-divider)',
-            boxShadow: 'none',
+            border: templateName ? 'none' : '1px solid var(--color-divider)',
+            borderTop: templateName
+              ? '1px solid var(--color-divider)'
+              : undefined,
+            boxShadow: templateName ? 'none' : 'var(--shadow-high)',
             padding: 8,
             display: 'flex',
             flexDirection: 'column' as const,
@@ -1733,10 +1737,11 @@ function ClassicTemplatePreview({
                   variant="ghost"
                   size="sm"
                   icon={<ArrowLeftIcon />}
+                  isIconOnly
                   onClick={onBack}
                   style={{marginLeft: -8}}
                 />
-                <XDSText type="body">{templateName}</XDSText>
+                <XDSHeading level={3}>{templateName}</XDSHeading>
               </>
             }
             centerContent={
@@ -1762,8 +1767,15 @@ function ClassicTemplatePreview({
             endContent={
               <>
                 <XDSButton
+                  label="Code"
+                  variant="ghost"
+                  isIconOnly
+                  icon={<CodeIcon />}
+                />
+                <XDSButton
                   label="Point"
                   variant="ghost"
+                  isIconOnly
                   icon={<CursorIcon />}
                 />
                 <XDSDropdownMenu
@@ -1771,6 +1783,7 @@ function ClassicTemplatePreview({
                     label: 'Theme',
                     variant: 'ghost',
                     icon: <PaletteIcon />,
+                    isIconOnly: true,
                   }}
                   hasChevron={false}
                   items={XDS_THEMES.map(t => ({
@@ -1781,10 +1794,22 @@ function ClassicTemplatePreview({
                 <XDSButton
                   label="Toggle theme"
                   variant="ghost"
+                  isIconOnly
                   icon={<ContrastIcon />}
                 />
+                <XDSButton
+                  label="Save"
+                  variant="ghost"
+                  isIconOnly
+                  icon={<SaveIcon />}
+                />
                 <XDSDropdownMenu
-                  button={{label: 'Share', variant: 'ghost'}}
+                  button={{
+                    label: 'Share',
+                    variant: 'ghost',
+                    icon: <PaperPlaneIcon />,
+                    isIconOnly: true,
+                  }}
                   hasChevron={false}
                   menuWidth={220}
                   items={[
