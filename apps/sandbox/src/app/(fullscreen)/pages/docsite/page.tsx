@@ -4665,14 +4665,45 @@ export default function DocsiteLandingTemplate() {
   if (useTarget !== null && useTarget !== 1 && activeView === 'craft') {
     const t = TEMPLATES[useTarget % TEMPLATES.length];
     return (
-      <div style={{display: 'flex', height: '100vh', overflow: 'hidden'}}>
-        <div style={{width: 380, minWidth: 380}}>
-          <ChatPanel
-            isGenerating={previewGenerating}
-            onSend={handlePreviewSend}
-            activeView={activeView}
-            setActiveView={setActiveView}
-          />
+      <div
+        style={{
+          display: 'flex',
+          height: '100vh',
+          overflow: 'hidden',
+          backgroundColor: 'var(--color-background-body, #f5f5f5)',
+        }}>
+        <div
+          style={{
+            width: 380,
+            minWidth: 380,
+            padding: 16,
+            display: 'flex',
+            animation: 'slideInLeft 500ms cubic-bezier(0.16, 1, 0.3, 1)',
+          }}>
+          <style>
+            {
+              '@keyframes slideInLeft { from { opacity: 0; transform: translateX(-40px); } to { opacity: 1; transform: translateX(0); } }'
+            }
+          </style>
+          <div
+            style={{
+              flex: 1,
+              backgroundColor: 'var(--color-background-card, #fff)',
+              borderRadius: 16,
+              boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column' as const,
+            }}>
+            <ChatPanel
+              isGenerating={previewGenerating}
+              onSend={handlePreviewSend}
+              activeView={activeView}
+              setActiveView={setActiveView}
+              templateName={t.name}
+              onBack={handleBackFromUse}
+            />
+          </div>
         </div>
         <div
           style={{flex: 1, display: 'flex', flexDirection: 'column' as const}}>
