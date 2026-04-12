@@ -136,6 +136,9 @@ const styles = stylex.create({
   headerReducedGap: {
     marginBlockEnd: `calc(-1 * ${spacingVars['--spacing-1']})`,
   },
+  alignEnd: {
+    textAlign: 'end',
+  },
   assistant: {
     backgroundColor: colorVars['--color-neutral'],
     color: colorVars['--color-text-primary'],
@@ -263,6 +266,7 @@ export function XDSChatMessageBubble({
           {...stylex.props(
             metadataPaddingStyle,
             variant !== 'transparent' && styles.headerReducedGap,
+            isUser && styles.alignEnd,
           )}>
           {header}
         </div>
@@ -291,6 +295,7 @@ export function XDSChatMessageBubble({
           {...stylex.props(
             metadataPaddingStyle,
             variant !== 'transparent' && styles.metadataReducedGap,
+            isUser && styles.alignEnd,
           )}>
           {metadata}
         </div>

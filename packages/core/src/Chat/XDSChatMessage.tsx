@@ -102,7 +102,6 @@ const styles = stylex.create({
   childrenWrap: {
     display: 'flex',
     flexDirection: 'column',
-    minWidth: 0,
     width: '100%',
   },
   childrenAssistant: {
