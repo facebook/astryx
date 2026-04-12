@@ -10,7 +10,12 @@ import type {
   UniversalDimension,
   CostMetrics,
 } from './types';
-import {ALL_DIMENSIONS, DIMENSION_LABELS, formatScore} from './utils';
+import {
+  ALL_DIMENSIONS,
+  CODE_DIMENSIONS,
+  DIMENSION_LABELS,
+  formatScore,
+} from './utils';
 import './report.css';
 
 type WinnerType = 'xds' | 'baseline' | 'html' | 'tie';
@@ -343,20 +348,20 @@ export function CompareView({comparison}: CompareViewProps) {
     const htmlCat =
       html?.byCategory[cat] ?? ({} as Record<UniversalDimension, number>);
     const xdsAvg =
-      ALL_DIMENSIONS.reduce(
+      CODE_DIMENSIONS.reduce(
         (s, d) => s + ((xdsCat[d as UniversalDimension] as number) ?? 0),
         0,
-      ) / ALL_DIMENSIONS.length;
+      ) / CODE_DIMENSIONS.length;
     const baseAvg =
-      ALL_DIMENSIONS.reduce(
+      CODE_DIMENSIONS.reduce(
         (s, d) => s + ((baseCat[d as UniversalDimension] as number) ?? 0),
         0,
-      ) / ALL_DIMENSIONS.length;
+      ) / CODE_DIMENSIONS.length;
     const htmlAvg = isThreeWay
-      ? ALL_DIMENSIONS.reduce(
+      ? CODE_DIMENSIONS.reduce(
           (s, d) => s + ((htmlCat[d as UniversalDimension] as number) ?? 0),
           0,
-        ) / ALL_DIMENSIONS.length
+        ) / CODE_DIMENSIONS.length
       : undefined;
     return {
       id: cat,
