@@ -12,11 +12,9 @@ import {XDSToken} from '@xds/core/Token';
 import {XDSHStack} from '@xds/core/Stack';
 import {XDSCodeBlock} from '@xds/core/CodeBlock';
 import {XDSButton} from '@xds/core/Button';
-import {XDSEmptyState} from '@xds/core/EmptyState';
 import {XDSTimestamp} from '@xds/core/Timestamp';
 import {HandThumbUpIcon, HandThumbDownIcon} from '@heroicons/react/24/outline';
 import {ClipboardDocumentIcon} from '@heroicons/react/24/outline';
-import {useState, useEffect, useCallback} from 'react';
 
 const meta: Meta<typeof XDSChatMessageList> = {
   title: 'Chat/XDSChatMessageList',
@@ -158,8 +156,7 @@ export const MixedContent: StoryObj = {
           </XDSChatMessageBubble>
         </XDSChatMessage>
 
-        <XDSChatMessage
-          sender="assistant"
+        <XDSChatMessage sender="assistant">
           <XDSChatMessageBubble>
             Sure! Here's an overview of the component architecture.
           </XDSChatMessageBubble>
@@ -196,8 +193,7 @@ export const MixedContent: StoryObj = {
 
         <XDSChatSystemMessage>Navi opened Button.tsx</XDSChatSystemMessage>
 
-        <XDSChatMessage
-          avatar={<XDSAvatar name="Navi" size="small" />}>
+        <XDSChatMessage sender="assistant">
           <XDSChatMessageBubble variant="ghost">
             <XDSCodeBlock
               code={`import * as stylex from '@stylexjs/stylex';
@@ -236,7 +232,7 @@ export const ChatConversation: StoryObj = {
             sender="assistant"
             avatar={<XDSAvatar name="Navi" size="small" />}>
             <XDSChatMessageBubble
-              header={<span style={nameStyle}>Navi</span>}
+              name={<span style={nameStyle}>Navi</span>}
               metadata={
                 <XDSChatMessageMetadata
                   timestamp={<XDSTimestamp value="2026-03-15T14:30:00" format="time" />}
@@ -252,7 +248,7 @@ export const ChatConversation: StoryObj = {
             avatar={<XDSAvatar name="Cindy" size="small" />}>
             <XDSChatMessageBubble
               group="first"
-              header={<span style={nameStyle}>Cindy</span>}>
+              name={<span style={nameStyle}>Cindy</span>}>
               Thanks! I'll take a look.
             </XDSChatMessageBubble>
             <XDSChatMessageBubble
@@ -271,7 +267,7 @@ export const ChatConversation: StoryObj = {
             sender="assistant"
             avatar={<XDSAvatar name="Navi" size="small" />}>
             <XDSChatMessageBubble
-              header={<span style={nameStyle}>Navi</span>}
+              name={<span style={nameStyle}>Navi</span>}
               metadata={
                 <XDSChatMessageMetadata
                   timestamp={<XDSTimestamp value="2026-03-15T14:32:00" format="time" />}
@@ -286,7 +282,7 @@ export const ChatConversation: StoryObj = {
             sender="user"
             avatar={<XDSAvatar name="Cindy" size="small" />}>
             <XDSChatMessageBubble
-              header={<span style={nameStyle}>Cindy</span>}
+              name={<span style={nameStyle}>Cindy</span>}
               metadata={
                 <XDSChatMessageMetadata
                   timestamp={<XDSTimestamp value="2026-03-15T14:33:00" format="time" />}
@@ -393,71 +389,6 @@ export const SystemMessages: StoryObj = {
         </XDSChatMessage>
         <XDSChatSystemMessage variant="divider">Today</XDSChatSystemMessage>
         <XDSChatSystemMessage>Cindy shared a file</XDSChatSystemMessage>
-      </XDSChatMessageList>
-    </div>
-  ),
-};
-export const AutoScroll: StoryObj = {
-  name: 'Auto Scroll',
-  render: () => {
-    const [messages, setMessages] = useState([
-      {id: 1, sender: 'user' as const, text: 'Tell me a story'},
-      {id: 2, sender: 'assistant' as const, text: 'Once upon a time...'},
-    ]);
-
-    const addMessage = useCallback(() => {
-      setMessages(prev => {
-        const isUser = prev[prev.length - 1]?.sender === 'assistant';
-        const id = prev.length + 1;
-        return [
-          ...prev,
-          {
-            id,
-            sender: isUser ? ('user' as const) : ('assistant' as const),
-            text: isUser
-              ? `Message #${id} from user`
-              : `This is a response to message #${id - 1}. The auto-scroll keeps the view pinned to the bottom as new messages arrive.`,
-          },
-        ];
-      });
-    }, []);
-
-    useEffect(() => {
-      const interval = setInterval(addMessage, 2000);
-      return () => clearInterval(interval);
-    }, [addMessage]);
-
-    return (
-      <div style={{height: 400, display: 'flex', flexDirection: 'column'}}>
-        <XDSChatMessageList>
-          {messages.map(msg =>
-            msg.sender === 'user' ? (
-              <XDSChatMessage key={msg.id} sender="user">
-                <XDSChatMessageBubble>{msg.text}</XDSChatMessageBubble>
-              </XDSChatMessage>
-            ) : (
-              <XDSChatMessage key={msg.id} sender="assistant">
-                <XDSMarkdown density="compact">{msg.text}</XDSMarkdown>
-              </XDSChatMessage>
-            ),
-          )}
-        </XDSChatMessageList>
-      </div>
-    );
-  },
-};
-export const EmptyState: StoryObj = {
-  name: 'Empty State',
-  render: () => (
-    <div style={{height: 400, display: 'flex', flexDirection: 'column'}}>
-      <XDSChatMessageList
-        emptyState={
-          <XDSEmptyState
-            title="No messages yet"
-            description="Start a conversation!"
-          />
-        }>
-        {[]}
       </XDSChatMessageList>
     </div>
   ),
