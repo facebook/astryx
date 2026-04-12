@@ -95,8 +95,8 @@ const styles = stylex.create({
   contentColumn: {
     display: 'flex',
     flexDirection: 'column',
+    flex: 1,
     minWidth: 0,
-    maxWidth: '80%',
   },
   contentColumnSystem: {
     maxWidth: '90%',
@@ -118,6 +118,7 @@ const styles = stylex.create({
   childrenWrap: {
     display: 'flex',
     flexDirection: 'column',
+    minWidth: 0,
     width: '100%',
   },
   childrenAssistant: {
