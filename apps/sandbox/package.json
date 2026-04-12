@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
-    "@stylexjs/stylex": "^0.17.4",
+    "@stylexjs/stylex": "^0.18.2",
     "@xds/cli": "*",
     "@xds/core": "*",
     "@xds/lab": "*",
@@ -31,8 +31,8 @@
   "devDependencies": {
     "@babel/preset-react": "^7.25.0",
     "@babel/preset-typescript": "^7.25.0",
-    "@stylexjs/babel-plugin": "^0.17.4",
-    "@stylexjs/postcss-plugin": "^0.17.4",
+    "@stylexjs/babel-plugin": "^0.18.2",
+    "@stylexjs/postcss-plugin": "^0.18.2",
     "@types/node": "^22.0.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
