@@ -116,6 +116,11 @@ export interface XDSSpinnerProps {
    */
   className?: string;
   /**
+   * Inline styles to apply to the root element. Spread after StyleX
+   * inline styles, so these values take priority.
+   */
+  style?: React.CSSProperties;
+  /**
    * Visible content displayed below the spinner.
    * Accepts a string or ReactNode for rich content.
    *
@@ -162,6 +167,7 @@ export function XDSSpinner({
   label,
   xstyle,
   className,
+  style,
   'aria-label': ariaLabel,
   'data-testid': testId,
   ref,
@@ -245,8 +251,8 @@ export function XDSSpinner({
         hasLabel ? '' : xdsClassName('spinner', {size, shade}),
         stylex.props(styles.spinner, !hasLabel && xstyle),
         hasLabel ? undefined : className,
-      )}
-      style={{width: frameSize, height: frameSize}}>
+        {...(hasLabel ? {} : style), width: frameSize, height: frameSize},
+      )}>
       <canvas ref={canvasRef} {...stylex.props(styles.canvas)} />
     </span>
   );
@@ -263,6 +269,7 @@ export function XDSSpinner({
         xdsClassName('spinner', {size, shade}),
         stylex.props(styles.wrapper, xstyle),
         className,
+        style,
       )}>
       {spinner}
       {typeof label === 'string' ? (
