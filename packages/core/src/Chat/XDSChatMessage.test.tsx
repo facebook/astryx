@@ -63,14 +63,16 @@ describe('XDSChatMessage', () => {
     expect(el.className).toContain('user');
   });
 
-  it('sets accessible aria-label with name', () => {
+  it('sets accessible aria-labelledby with name', () => {
     render(
       <XDSChatMessage sender="assistant" name="Navi" data-testid="msg">
         <XDSChatMessageBubble>Hi</XDSChatMessageBubble>
       </XDSChatMessage>,
     );
     const el = screen.getByTestId('msg');
-    expect(el.getAttribute('aria-label')).toBe('Message from Navi');
+    const labelId = el.getAttribute('aria-labelledby');
+    expect(labelId).toBeTruthy();
+    expect(el.querySelector(`#${CSS.escape(labelId!)}`)?.textContent).toBe('Navi');
   });
 
   it('sets accessible aria-label without name', () => {

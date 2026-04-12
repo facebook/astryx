@@ -16,7 +16,7 @@
  * - /apps/storybook/stories/Chat.stories.tsx
  */
 
-import {type ReactNode, useMemo} from 'react';
+import {type ReactNode, useMemo, useId} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {
@@ -38,7 +38,20 @@ export interface XDSChatMessageProps {
   sender: XDSChatMessageSender;
   children: ReactNode;
   avatar?: ReactNode;
-  name?: string;
+  /**
+   * Sender name rendered above the message body.
+   * Use when the first child is raw content (not a bubble).
+   * If the first child is a XDSChatMessageBubble, put the name on the
+   * bubble's `name` prop instead — it aligns with the bubble's padding.
+   */
+  name?: ReactNode;
+  /**
+   * Metadata rendered below the message body.
+   * Use when the last child is raw content (not a bubble).
+   * If the last child is a XDSChatMessageBubble, put metadata on the
+   * bubble's `metadata` prop instead — it aligns with the bubble's padding.
+   */
+  metadata?: ReactNode;
   density?: XDSChatDensity;
   xstyle?: StyleXStyles;
   className?: string;
@@ -53,10 +66,10 @@ const styles = stylex.create({
     maxWidth: '100%',
   },
   rootGapCompact: {
-    gap: spacingVars['--spacing-2'],
+    gap: spacingVars['--spacing-1-5'],
   },
   rootGapBalanced: {
-    gap: spacingVars['--spacing-3'],
+    gap: spacingVars['--spacing-2'],
   },
   rootGapSpacious: {
     gap: spacingVars['--spacing-3'],
@@ -75,6 +88,9 @@ const styles = stylex.create({
   },
   avatarWrap: {
     flexShrink: 0,
+    ':has(~ * [data-chat-name])': {
+      marginBlockStart: spacingVars['--spacing-5'],
+    },
   },
   contentColumn: {
     display: 'flex',
@@ -102,7 +118,6 @@ const styles = stylex.create({
   childrenWrap: {
     display: 'flex',
     flexDirection: 'column',
-    minWidth: 0,
     width: '100%',
   },
   childrenAssistant: {
@@ -144,6 +159,7 @@ export function XDSChatMessage({
   children,
   avatar,
   name,
+  metadata,
   density: densityProp,
   xstyle,
   className,
@@ -193,13 +209,16 @@ export function XDSChatMessage({
 
   const isSystem = sender === 'system';
   const hasAvatar = avatar != null && !isSystem;
+  const hasName = name != null && !isSystem;
+  const nameId = useId();
 
   return (
     <XDSChatMessageContext.Provider value={contextValue}>
       <article
         ref={ref}
         data-testid={testId}
-        aria-label={name ? `Message from ${name}` : `Message from ${sender}`}
+        aria-label={!hasName ? `Message from ${sender}` : undefined}
+        aria-labelledby={hasName ? nameId : undefined}
         {...mergeProps(
           xdsClassName('chat-message', {sender}),
           stylex.props(
@@ -214,8 +233,8 @@ export function XDSChatMessage({
         {hasAvatar && <div {...stylex.props(styles.avatarWrap)}>{avatar}</div>}
 
         <div {...stylex.props(styles.contentColumn, columnAlignment)}>
-          {name != null && !isSystem && (
-            <span {...stylex.props(styles.name)}>{name}</span>
+          {hasName && (
+            <div id={nameId} {...stylex.props(styles.name)}>{name}</div>
           )}
 
           <div
@@ -226,6 +245,10 @@ export function XDSChatMessage({
             )}>
             {children}
           </div>
+
+          {metadata != null && !isSystem && (
+            <div>{metadata}</div>
+          )}
         </div>
       </article>
     </XDSChatMessageContext.Provider>

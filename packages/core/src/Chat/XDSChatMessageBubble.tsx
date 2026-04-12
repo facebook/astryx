@@ -9,6 +9,14 @@
  * Reads sender from parent XDSChatMessage context to auto-style background.
  * Optional — not all message content needs bubble treatment.
  *
+ * Usage guidance:
+ * - If you use bubbles on one side (e.g. assistant), use them consistently
+ *   for all messages on that side. Use `ghost` variant for content that
+ *   needs alignment without a visual boundary.
+ * - Put `name` on the first bubble in a message, `metadata` on the last.
+ * - For unbubbled messages, use XDSChatMessage's `name` and `metadata`
+ *   props instead.
+ *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Chat/index.ts (exports)
  * - /apps/storybook/stories/Chat.stories.tsx
@@ -27,7 +35,7 @@ import {
 import {useXDSChatMessageContext} from './XDSChatContext';
 import {xdsClassName, mergeProps} from '../utils';
 
-export type XDSChatMessageBubbleVariant = 'filled' | 'transparent';
+export type XDSChatMessageBubbleVariant = 'filled' | 'ghost';
 
 export interface XDSChatMessageBubbleProps {
   /** Ref forwarded to the root element */
@@ -41,10 +49,26 @@ export interface XDSChatMessageBubbleProps {
   /**
    * Visual variant.
    * - 'filled': background color based on sender (default)
-   * - 'transparent': no background, no padding — just the content
+   * - 'ghost': no background, but keeps padding for consistent alignment
    * @default 'filled'
    */
   variant?: XDSChatMessageBubbleVariant;
+
+  /**
+   * Sender name rendered above the bubble, aligned with bubble text padding.
+   * Use when the first content in a message is a bubble.
+   * If the first content is raw (no bubble), use XDSChatMessage's `name`
+   * prop instead.
+   */
+  name?: ReactNode;
+
+  /**
+   * Metadata content rendered below the bubble, aligned with bubble text padding.
+   * Use when the last content in a message is a bubble.
+   * If the last content is raw (no bubble), use XDSChatMessage's `metadata`
+   * prop instead.
+   */
+  metadata?: ReactNode;
 
   /**
    * Position within a multi-bubble group.
@@ -71,7 +95,7 @@ export interface XDSChatMessageBubbleProps {
 // =============================================================================
 
 const styles = stylex.create({
-  root: {
+  content: {
     display: 'flex',
     flexDirection: 'column',
     maxWidth: '100%',
@@ -81,6 +105,9 @@ const styles = stylex.create({
     lineHeight: typeScaleVars['--text-body-leading'],
     overflowWrap: 'break-word',
     wordBreak: 'break-word',
+  },
+  radiusCompact: {
+    borderRadius: radiusVars['--radius-container'],
   },
   paddingCompact: {
     paddingBlock: spacingVars['--spacing-2'],
@@ -94,10 +121,35 @@ const styles = stylex.create({
     paddingBlock: spacingVars['--spacing-4'],
     paddingInline: spacingVars['--spacing-5'],
   },
-  paddingNone: {
+  paddingBlockNone: {
     paddingBlock: 0,
-    paddingInline: 0,
   },
+  // Slot padding — matches bubble's paddingInline per density
+  metadataPaddingCompact: {
+    paddingInline: spacingVars['--spacing-3'],
+  },
+  metadataPaddingBalanced: {
+    paddingInline: spacingVars['--spacing-4'],
+  },
+  metadataPaddingSpacious: {
+    paddingInline: spacingVars['--spacing-5'],
+  },
+  metadataReducedGap: {
+    marginBlockStart: `calc(-1 * ${spacingVars['--spacing-1']})`,
+  },
+  headerReducedGap: {
+    marginBlockEnd: `calc(-1 * ${spacingVars['--spacing-1']})`,
+  },
+  nameRow: {
+    height: spacingVars['--spacing-5'],
+    display: 'flex',
+    alignItems: 'center',
+  },
+  alignEnd: {
+    textAlign: 'end',
+  },
+  // Sender backgrounds — same default, but separate styles for theme overrides.
+  // Themes can target .xds-chat-message-bubble.user vs .assistant via @scope.
   assistant: {
     backgroundColor: colorVars['--color-neutral'],
     color: colorVars['--color-text-primary'],
@@ -106,11 +158,7 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-neutral'],
     color: colorVars['--color-text-primary'],
   },
-  system: {
-    backgroundColor: 'transparent',
-    color: colorVars['--color-text-secondary'],
-  },
-  transparent: {
+  ghost: {
     backgroundColor: 'transparent',
     color: colorVars['--color-text-primary'],
   },
@@ -151,15 +199,19 @@ const styles = stylex.create({
  * @example
  * ```
  * <XDSChatMessage sender="user">
- *   <XDSChatMessageBubble group="first">Hey</XDSChatMessageBubble>
- *   <XDSChatMessageBubble group="last">What's up?</XDSChatMessageBubble>
- *   <XDSChatMessageMetadata timestamp="2:30 PM" status="read" />
+ *   <XDSChatMessageBubble
+ *     name="Cindy"
+ *     metadata={<XDSChatMessageMetadata timestamp="2:30 PM" status="read" />}>
+ *     Hey, how's it going?
+ *   </XDSChatMessageBubble>
  * </XDSChatMessage>
  * ```
  */
 export function XDSChatMessageBubble({
   children,
   variant = 'filled',
+  name,
+  metadata,
   group,
   xstyle,
   className,
@@ -172,20 +224,21 @@ export function XDSChatMessageBubble({
   const density = msgContext?.density ?? 'balanced';
 
   const paddingStyle =
-    variant === 'transparent'
-      ? styles.paddingNone
-      : density === 'compact'
-        ? styles.paddingCompact
-        : density === 'spacious'
-          ? styles.paddingSpacious
-          : styles.paddingBalanced;
-
-  const senderStyle =
-    variant === 'transparent'
-      ? styles.transparent
-      : (styles[sender] ?? styles.assistant);
+    density === 'compact'
+      ? styles.paddingCompact
+      : density === 'spacious'
+        ? styles.paddingSpacious
+        : styles.paddingBalanced;
 
   const isUser = sender === 'user';
+
+  const senderStyle =
+    variant === 'ghost'
+      ? styles.ghost
+      : isUser
+        ? styles.user
+        : styles.assistant;
+
   const groupStyle =
     group === 'first'
       ? isUser
@@ -201,24 +254,57 @@ export function XDSChatMessageBubble({
             : styles.groupLastAssistant
           : null;
 
+  const metadataPaddingStyle =
+    density === 'compact'
+      ? styles.metadataPaddingCompact
+      : density === 'spacious'
+        ? styles.metadataPaddingSpacious
+        : styles.metadataPaddingBalanced;
+
   return (
-    <div
-      ref={ref}
-      data-testid={testId}
-      {...mergeProps(
-        xdsClassName('chat-message-bubble', {sender, variant}),
-        stylex.props(
-          styles.root,
-          senderStyle,
-          paddingStyle,
-          groupStyle,
-          xstyle,
-        ),
-        className,
-        styleProp,
-      )}>
-      {children}
-    </div>
+    <>
+      {name && (
+        <div
+          data-chat-name
+          {...stylex.props(
+            metadataPaddingStyle,
+            styles.nameRow,
+            styles.headerReducedGap,
+            isUser && styles.alignEnd,
+          )}>
+          {name}
+        </div>
+      )}
+      <div
+        ref={ref}
+        data-testid={testId}
+        {...mergeProps(
+          xdsClassName('chat-message-bubble', {sender, variant}),
+          stylex.props(
+            styles.content,
+            density === 'compact' && styles.radiusCompact,
+            senderStyle,
+            paddingStyle,
+            variant === 'ghost' && styles.paddingBlockNone,
+            groupStyle,
+            xstyle,
+          ),
+          className,
+          styleProp,
+        )}>
+        {children}
+      </div>
+      {metadata && (
+        <div
+          {...stylex.props(
+            metadataPaddingStyle,
+            styles.metadataReducedGap,
+            isUser && styles.alignEnd,
+          )}>
+          {metadata}
+        </div>
+      )}
+    </>
   );
 }
 
