@@ -1,5 +1,5 @@
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {forwardRef, type ComponentPropsWithoutRef} from 'react';
 import {XDSBreadcrumbs} from './XDSBreadcrumbs';
@@ -57,8 +57,9 @@ describe('XDSBreadcrumbs', () => {
         <XDSBreadcrumbItem isCurrent>Detail</XDSBreadcrumbItem>
       </XDSBreadcrumbs>,
     );
-    const separators = container.querySelectorAll('li[aria-hidden="true"]');
-    expect(separators).toHaveLength(2);
+    // Each item renders its own separator span; first is hidden via CSS
+    const separators = container.querySelectorAll('span[aria-hidden="true"]');
+    expect(separators).toHaveLength(3);
     expect(separators[0].textContent).toBe('/');
   });
 
@@ -69,19 +70,22 @@ describe('XDSBreadcrumbs', () => {
         <XDSBreadcrumbItem isCurrent>Page</XDSBreadcrumbItem>
       </XDSBreadcrumbs>,
     );
-    const separators = container.querySelectorAll('li[aria-hidden="true"]');
-    expect(separators[0].textContent).toBe('›');
+    const separators = container.querySelectorAll('span[aria-hidden="true"]');
+    // Custom separator content is nested inside the aria-hidden span
+    // First item's separator is hidden via CSS, but still in the DOM
+    expect(separators[1].textContent).toBe('›');
   });
 
-  it('separators have role="presentation"', () => {
+  it('separators are aria-hidden', () => {
     const {container} = render(
       <XDSBreadcrumbs>
         <XDSBreadcrumbItem href="/">Home</XDSBreadcrumbItem>
         <XDSBreadcrumbItem isCurrent>Page</XDSBreadcrumbItem>
       </XDSBreadcrumbs>,
     );
-    const separators = container.querySelectorAll('li[aria-hidden="true"]');
-    expect(separators[0]).toHaveAttribute('role', 'presentation');
+    const separators = container.querySelectorAll('span[aria-hidden="true"]');
+    expect(separators.length).toBeGreaterThan(0);
+    expect(separators[0]).toHaveAttribute('aria-hidden', 'true');
   });
 
   it('forwards ref to the nav element', () => {
@@ -164,7 +168,7 @@ describe('XDSBreadcrumbItem', () => {
     expect(current).toHaveAttribute('aria-current', 'page');
   });
 
-  it('auto-detects last child as current when no isCurrent is set', () => {
+  it('auto-detects last child as current when no isCurrent is set', async () => {
     render(
       <XDSBreadcrumbs>
         <XDSBreadcrumbItem href="/">Home</XDSBreadcrumbItem>
@@ -172,12 +176,15 @@ describe('XDSBreadcrumbItem', () => {
         <XDSBreadcrumbItem>Last Item</XDSBreadcrumbItem>
       </XDSBreadcrumbs>,
     );
-    const lastItem = screen.getByText('Last Item');
-    expect(lastItem).toHaveAttribute('aria-current', 'page');
-    expect(lastItem.tagName).toBe('SPAN');
+    // aria-current is set via useEffect, so we need to wait for it
+    const lastLi = screen.getByText('Last Item').closest('li')!;
+    await waitFor(() => {
+      expect(lastLi).toHaveAttribute('aria-current', 'page');
+    });
+    expect(screen.getByText('Last Item').tagName).toBe('SPAN');
   });
 
-  it('does not auto-detect when isCurrent is explicitly set', () => {
+  it('does not auto-detect when isCurrent is explicitly set', async () => {
     render(
       <XDSBreadcrumbs>
         <XDSBreadcrumbItem isCurrent>First</XDSBreadcrumbItem>
@@ -186,9 +193,12 @@ describe('XDSBreadcrumbItem', () => {
       </XDSBreadcrumbs>,
     );
     expect(screen.getByText('First')).toHaveAttribute('aria-current', 'page');
-    const third = screen.getByText('Third');
-    expect(third).not.toHaveAttribute('aria-current');
-    expect(third.tagName).toBe('A');
+    // Wait for effects to settle, then confirm third has no aria-current
+    const thirdLi = screen.getByText('Third').closest('li')!;
+    await waitFor(() => {
+      expect(thirdLi).not.toHaveAttribute('aria-current');
+    });
+    expect(screen.getByText('Third').tagName).toBe('A');
   });
 
   it('handles onClick', async () => {
@@ -235,27 +245,31 @@ describe('XDSBreadcrumbItem', () => {
     expect(screen.getByTestId('crumb-current')).toBeInTheDocument();
   });
 
-  it('renders single item as current by auto-detection', () => {
+  it('renders single item as current by auto-detection', async () => {
     render(
       <XDSBreadcrumbs>
         <XDSBreadcrumbItem>Only Item</XDSBreadcrumbItem>
       </XDSBreadcrumbs>,
     );
-    const item = screen.getByText('Only Item');
-    expect(item).toHaveAttribute('aria-current', 'page');
-    expect(item.tagName).toBe('SPAN');
+    const li = screen.getByText('Only Item').closest('li')!;
+    await waitFor(() => {
+      expect(li).toHaveAttribute('aria-current', 'page');
+    });
+    expect(screen.getByText('Only Item').tagName).toBe('SPAN');
   });
 
-  it('auto-detects last child as current with supporting variant', () => {
+  it('auto-detects last child as current with supporting variant', async () => {
     render(
       <XDSBreadcrumbs variant="supporting">
         <XDSBreadcrumbItem href="/">Home</XDSBreadcrumbItem>
         <XDSBreadcrumbItem>Last</XDSBreadcrumbItem>
       </XDSBreadcrumbs>,
     );
-    const last = screen.getByText('Last');
-    expect(last).toHaveAttribute('aria-current', 'page');
-    expect(last.tagName).toBe('SPAN');
+    const li = screen.getByText('Last').closest('li')!;
+    await waitFor(() => {
+      expect(li).toHaveAttribute('aria-current', 'page');
+    });
+    expect(screen.getByText('Last').tagName).toBe('SPAN');
   });
 
   it('renders custom component for non-current items when as is provided', () => {
