@@ -3362,35 +3362,62 @@ function TemplateFullPreview({
             backgroundColor: 'var(--color-background-card, #fff)',
             borderRadius: 16,
             boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
-            padding: 32,
+            padding: '16px 32px 32px',
             overflowY: 'auto' as const,
             display: 'flex',
             flexDirection: 'column' as const,
           }}>
-          {/* Back button */}
-          <XDSButton
-            label="Craft"
-            variant="ghost"
-            size="sm"
-            icon={<ArrowLeftIcon />}
-            onClick={onBack}
-            style={{alignSelf: 'flex-start', marginLeft: -8, marginBottom: 8}}
-          />
-
-          {/* Tab bar (only when showChat is true) */}
-          {showChat && (
-            <div style={{marginBottom: 16}}>
-              <XDSTabList
-                value={panelTab}
-                onChange={(v: string) =>
-                  setPanelTab(v as 'properties' | 'chat')
-                }
-                size="sm">
-                <XDSTab value="properties" label="Properties" />
-                <XDSTab value="chat" label="Chat" />
-              </XDSTabList>
-            </div>
-          )}
+          {/* Back button + tabs on same row */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              marginBottom: showChat ? 32 : 0,
+              paddingBottom: 0,
+              borderBottom: showChat
+                ? '1px solid var(--color-divider, #e0e0e0)'
+                : 'none',
+            }}>
+            <XDSButton
+              label="Back"
+              variant="ghost"
+              size="sm"
+              icon={<ArrowLeftIcon />}
+              isIconOnly
+              onClick={onBack}
+              style={{marginLeft: -8, flexShrink: 0}}
+            />
+            {showChat && (
+              <div style={{display: 'flex', flex: 1}}>
+                {(['properties', 'chat'] as const).map(tab => (
+                  <button
+                    key={tab}
+                    onClick={() => setPanelTab(tab)}
+                    style={{
+                      flex: 1,
+                      padding: '8px 0',
+                      background: 'none',
+                      border: 'none',
+                      borderBottom:
+                        panelTab === tab
+                          ? '2px solid var(--color-text-primary, #111)'
+                          : '2px solid transparent',
+                      marginBottom: -1,
+                      cursor: 'pointer',
+                      textAlign: 'center' as const,
+                      transition: 'border-color 150ms ease',
+                    }}>
+                    <XDSText
+                      type="body-2"
+                      color={panelTab === tab ? 'primary' : 'secondary'}>
+                      {tab === 'properties' ? 'Details' : 'Chat'}
+                    </XDSText>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
           {/* Chat tab content */}
           {showChat && panelTab === 'chat' ? (
@@ -3475,6 +3502,29 @@ function TemplateFullPreview({
                 </XDSText>
               </div>
 
+              {/* Author section */}
+              <div
+                style={{
+                  marginTop: 16,
+                  display: 'flex',
+                  flexDirection: 'row' as const,
+                  alignItems: 'center',
+                  gap: 12,
+                }}>
+                <XDSAvatar
+                  size={36}
+                  src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&h=80&fit=crop&crop=face"
+                />
+                <div style={{display: 'flex', flexDirection: 'column', gap: 2}}>
+                  <XDSText type="supporting" color="secondary">
+                    Designed by
+                  </XDSText>
+                  <XDSText type="body" style={{fontWeight: 600, fontSize: 16}}>
+                    Andrea Anderson
+                  </XDSText>
+                </div>
+              </div>
+
               {/* Stats buttons */}
               <div
                 style={{
@@ -3537,19 +3587,21 @@ function TemplateFullPreview({
               </div>
 
               {/* CTA button */}
-              <div style={{marginTop: 16}}>
-                <XDSButton
-                  variant="primary"
-                  label="Start crafting"
-                  onClick={onUse}
-                  size="lg"
-                  style={{width: '100%'}}
-                />
-              </div>
+              {!showEditor && (
+                <div style={{marginTop: 16}}>
+                  <XDSButton
+                    variant="primary"
+                    label="Start crafting"
+                    onClick={onUse}
+                    size="lg"
+                    style={{width: '100%'}}
+                  />
+                </div>
+              )}
 
-              {/* Color palettes */}
+              {/* Themes */}
               <div style={{marginTop: 32}}>
-                <XDSHeading level={4}>Color palettes</XDSHeading>
+                <XDSHeading level={4}>Themes</XDSHeading>
                 <div
                   style={{
                     display: 'grid',
@@ -3591,8 +3643,8 @@ function TemplateFullPreview({
                 </div>
               </div>
 
-              {/* Font packs */}
-              <div style={{marginTop: 32}}>
+              {/* Font packs — removed */}
+              <div style={{marginTop: 32, display: 'none'}}>
                 <XDSHeading level={4}>Font packs</XDSHeading>
                 <div
                   style={{
@@ -3669,29 +3721,6 @@ function TemplateFullPreview({
                   <XDSToken label="Layout" size="sm" />
                   <XDSToken label="Navigation" size="sm" />
                   <XDSToken label="Settings" size="sm" />
-                </div>
-              </div>
-
-              {/* Author section */}
-              <div
-                style={{
-                  marginTop: 'auto',
-                  display: 'flex',
-                  flexDirection: 'row' as const,
-                  alignItems: 'center',
-                  gap: 12,
-                }}>
-                <XDSAvatar
-                  size={36}
-                  src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&h=80&fit=crop&crop=face"
-                />
-                <div style={{display: 'flex', flexDirection: 'column', gap: 2}}>
-                  <XDSText type="supporting" color="secondary">
-                    Designed by
-                  </XDSText>
-                  <XDSText type="body" style={{fontWeight: 600, fontSize: 16}}>
-                    Andrea Anderson
-                  </XDSText>
                 </div>
               </div>
             </>
@@ -4340,9 +4369,9 @@ function TemplateCombinedView({
                 </div>
               </div>
 
-              {/* Section 2 — Color palettes */}
+              {/* Section 2 — Themes */}
               <div style={{marginTop: 32}}>
-                <XDSHeading level={4}>Color palettes</XDSHeading>
+                <XDSHeading level={4}>Themes</XDSHeading>
                 <div
                   style={{
                     display: 'grid',
@@ -4384,8 +4413,8 @@ function TemplateCombinedView({
                 </div>
               </div>
 
-              {/* Section 3 — Font packs */}
-              <div style={{marginTop: 32}}>
+              {/* Section 3 — Font packs — removed */}
+              <div style={{marginTop: 32, display: 'none'}}>
                 <XDSHeading level={4}>Font packs</XDSHeading>
                 <div
                   style={{
