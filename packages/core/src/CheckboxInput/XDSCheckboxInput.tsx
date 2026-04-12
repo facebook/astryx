@@ -40,6 +40,7 @@ import type {XDSIconType} from '../Icon';
 import type {XDSInputStatus} from '../Field/types';
 import {XDSSpinner} from '../Spinner';
 import {xdsClassName, mergeProps} from '../utils';
+import {checkboxScope} from './checkbox.markers.stylex';
 
 const styles = stylex.create({
   container: {
@@ -85,25 +86,25 @@ const styles = stylex.create({
   checkboxFocus: {
     outline: {
       default: 'none',
-      [stylex.when.ancestor(':focus-within')]:
+      [stylex.when.ancestor(':focus-within', checkboxScope)]:
         `2px solid ${colorVars['--color-accent']}`,
     },
     outlineOffset: {
       default: null,
-      [stylex.when.ancestor(':focus-within')]: '2px',
+      [stylex.when.ancestor(':focus-within', checkboxScope)]: '2px',
     },
   },
   // State-dependent colors with ancestor hover behavior
   checkboxUnchecked: {
     borderColor: {
       default: colorVars['--color-border-emphasized'],
-      [stylex.when.ancestor(':hover')]: {
+      [stylex.when.ancestor(':hover', checkboxScope)]: {
         '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-border-emphasized']}, ${colorVars['--color-tint-hover']} 20%)`,
       },
     },
     backgroundColor: {
       default: colorVars['--color-background-surface'],
-      [stylex.when.ancestor(':hover')]: {
+      [stylex.when.ancestor(':hover', checkboxScope)]: {
         '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-background-surface']}, ${colorVars['--color-tint-hover']} 5%)`,
       },
     },
@@ -111,13 +112,13 @@ const styles = stylex.create({
   checkboxChecked: {
     borderColor: {
       default: colorVars['--color-accent'],
-      [stylex.when.ancestor(':hover')]: {
+      [stylex.when.ancestor(':hover', checkboxScope)]: {
         '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-tint-hover']} 15%)`,
       },
     },
     backgroundColor: {
       default: colorVars['--color-accent'],
-      [stylex.when.ancestor(':hover')]: {
+      [stylex.when.ancestor(':hover', checkboxScope)]: {
         '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-tint-hover']} 15%)`,
       },
     },
@@ -126,7 +127,7 @@ const styles = stylex.create({
     opacity: 0.5,
     borderColor: {
       default: colorVars['--color-border'],
-      [stylex.when.ancestor(':hover')]: {
+      [stylex.when.ancestor(':hover', checkboxScope)]: {
         '@media (hover: hover)': colorVars['--color-border'],
       },
     },
@@ -134,7 +135,7 @@ const styles = stylex.create({
   checkboxDisabledUnchecked: {
     backgroundColor: {
       default: colorVars['--color-background-muted'],
-      [stylex.when.ancestor(':hover')]: {
+      [stylex.when.ancestor(':hover', checkboxScope)]: {
         '@media (hover: hover)': colorVars['--color-background-muted'],
       },
     },
@@ -380,7 +381,7 @@ export function XDSCheckboxInput({
         {...stylex.props(
           styles.container,
           isLabelHidden && styles.containerLabelHidden,
-          !isDisabled && stylex.defaultMarker(),
+          !isDisabled && checkboxScope,
         )}>
         <div {...stylex.props(styles.checkboxWrapper, wrapperSizeStyles[size])}>
           <input

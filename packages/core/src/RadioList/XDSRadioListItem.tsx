@@ -27,6 +27,7 @@ import {
 } from '../theme/tokens.stylex';
 import {XDSRadioListContext} from './XDSRadioList';
 import {xdsClassName, mergeProps} from '../utils';
+import {radioScope} from './radio.markers.stylex';
 
 const styles = stylex.create({
   container: {
@@ -67,13 +68,13 @@ const styles = stylex.create({
   radioUnchecked: {
     borderColor: {
       default: colorVars['--color-border-emphasized'],
-      [stylex.when.ancestor(':hover')]: {
+      [stylex.when.ancestor(':hover', radioScope)]: {
         '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-border-emphasized']}, ${colorVars['--color-tint-hover']} 20%)`,
       },
     },
     backgroundColor: {
       default: colorVars['--color-background-surface'],
-      [stylex.when.ancestor(':hover')]: {
+      [stylex.when.ancestor(':hover', radioScope)]: {
         '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-background-surface']}, ${colorVars['--color-tint-hover']} 5%)`,
       },
     },
@@ -81,13 +82,13 @@ const styles = stylex.create({
   radioChecked: {
     borderColor: {
       default: colorVars['--color-accent'],
-      [stylex.when.ancestor(':hover')]: {
+      [stylex.when.ancestor(':hover', radioScope)]: {
         '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-tint-hover']} 15%)`,
       },
     },
     backgroundColor: {
       default: colorVars['--color-accent'],
-      [stylex.when.ancestor(':hover')]: {
+      [stylex.when.ancestor(':hover', radioScope)]: {
         '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-tint-hover']} 15%)`,
       },
     },
@@ -252,7 +253,7 @@ export function XDSRadioListItem({
       data-testid={dataTestId}
       {...mergeProps(
         xdsClassName('radio-list-item'),
-        stylex.props(styles.container, !isDisabled && stylex.defaultMarker()),
+        stylex.props(styles.container, !isDisabled && radioScope),
       )}>
       <div
         {...stylex.props(
