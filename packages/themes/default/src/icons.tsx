@@ -38,6 +38,7 @@ import {
   XCircleIcon,
   ExclamationTriangleIcon,
   ArrowTopRightOnSquareIcon,
+  StopIcon,
 } from '@heroicons/react/24/solid';
 
 const iconProps = {
@@ -71,4 +72,5 @@ export const defaultIconRegistry: XDSIconRegistry = {
   copy: <ClipboardDocumentIcon {...iconProps} />,
   checkDouble: <CheckIcon {...iconProps} />,
   wrench: <WrenchIcon {...iconProps} />,
+  stop: <StopIcon {...iconProps} />,
 };

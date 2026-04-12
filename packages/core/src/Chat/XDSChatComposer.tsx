@@ -45,6 +45,7 @@ import {xdsClassName, mergeProps} from '../utils';
 import {XDSIcon} from '../Icon';
 import {XDSChatComposerInput} from './XDSChatComposerInput';
 import {XDSChatComposerContext} from './XDSChatContext';
+import {XDSChatSendButton} from './XDSChatSendButton';
 
 // =============================================================================
 // Types
@@ -203,30 +204,6 @@ const styles = stylex.create({
     alignItems: 'center',
     gap: spacingVars['--spacing-1'],
   },
-  sendButton: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '32px',
-    height: '32px',
-    borderRadius: 'var(--button-radius, var(--radius-full))',
-    border: 'none',
-    cursor: 'pointer',
-    transition: `opacity ${durationVars['--duration-fast']} ${easeVars['--ease-standard']}`,
-    flexShrink: 0,
-  },
-  sendButtonSend: {
-    backgroundColor: colorVars['--color-accent'],
-    color: 'white',
-  },
-  sendButtonStop: {
-    backgroundColor: colorVars['--color-background-muted'],
-    color: colorVars['--color-text-primary'],
-  },
-  sendButtonDisabled: {
-    opacity: 0.4,
-    cursor: 'default',
-  },
   statusBar: {
     position: 'relative',
     zIndex: 0,
@@ -265,32 +242,6 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-1'],
   },
 });
-
-// =============================================================================
-// Icons
-// =============================================================================
-
-function SendIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-      <path
-        d="M8 3L8 13M8 3L4 7M8 3L12 7"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function StopIcon() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-      <rect width="12" height="12" rx="2" fill="currentColor" />
-    </svg>
-  );
-}
 
 // =============================================================================
 // Component
@@ -364,21 +315,6 @@ export function XDSChatComposer(props: XDSChatComposerProps) {
     editable?.focus();
   }, []);
 
-  const defaultSendButton = (
-    <button
-      type="button"
-      aria-label={isStreaming ? 'Stop' : 'Send'}
-      onClick={isStreaming ? onStop : handleSubmit}
-      disabled={!isStreaming && !canSend}
-      {...stylex.props(
-        styles.sendButton,
-        isStreaming ? styles.sendButtonStop : styles.sendButtonSend,
-        !isStreaming && !canSend && styles.sendButtonDisabled,
-      )}>
-      {isStreaming ? <StopIcon /> : <SendIcon />}
-    </button>
-  );
-
   const statusEl = status ? (
     <div
       role={status.type === 'error' ? 'alert' : 'status'}
@@ -404,8 +340,20 @@ export function XDSChatComposer(props: XDSChatComposerProps) {
       onSubmit: handleSubmit,
       placeholder,
       isDisabled,
+      isStreaming,
+      canSend,
+      onStop,
     }),
-    [currentValue, updateValue, handleSubmit, placeholder, isDisabled],
+    [
+      currentValue,
+      updateValue,
+      handleSubmit,
+      placeholder,
+      isDisabled,
+      isStreaming,
+      canSend,
+      onStop,
+    ],
   );
 
   return (
@@ -443,7 +391,7 @@ export function XDSChatComposer(props: XDSChatComposerProps) {
             <div {...stylex.props(styles.footerLeft)}>{footerActions}</div>
             <div {...stylex.props(styles.footerRight)}>
               {sendActions}
-              {sendButton ?? defaultSendButton}
+              {sendButton ?? <XDSChatSendButton />}
             </div>
           </div>
         </div>

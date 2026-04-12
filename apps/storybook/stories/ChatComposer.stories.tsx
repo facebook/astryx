@@ -3,6 +3,7 @@ import {
   XDSChatComposer,
   XDSChatComposerAttachments,
   XDSChatComposerInput,
+  XDSChatSendButton,
 } from '@xds/core/Chat';
 import {XDSToken} from '@xds/core/Token';
 import {XDSButton} from '@xds/core/Button';
@@ -292,4 +293,51 @@ export const WithStatusBottom: Story = {
       }}
     />
   ),
+};
+
+/** Default send button — reads from composer context automatically */
+export const DefaultSendButton: Story = {
+  render: () => (
+    <XDSChatComposer
+      onSubmit={value => {
+        console.log('Submit:', value);
+        alert(`Sent: ${value}`);
+      }}
+      placeholder="Type to enable the send button..."
+    />
+  ),
+};
+
+/** Custom send button via sendButton slot */
+export const CustomSendButton: Story = {
+  render: () => (
+    <XDSChatComposer
+      onSubmit={value => console.log('Submit:', value)}
+      sendButton={
+        <XDSChatSendButton size="sm" onSend={() => alert('Custom send!')} />
+      }
+    />
+  ),
+};
+
+/** Send/stop toggle — type text and submit to start streaming, click stop to end */
+export const SendStopToggle: Story = {
+  render: () => {
+    const [isStreaming, setIsStreaming] = useState(false);
+    return (
+      <XDSChatComposer
+        onSubmit={value => {
+          console.log('Submit:', value);
+          setIsStreaming(true);
+          setTimeout(() => setIsStreaming(false), 5000);
+        }}
+        isStreaming={isStreaming}
+        onStop={() => {
+          console.log('Stopped');
+          setIsStreaming(false);
+        }}
+        placeholder="Send a message to start streaming..."
+      />
+    );
+  },
 };
