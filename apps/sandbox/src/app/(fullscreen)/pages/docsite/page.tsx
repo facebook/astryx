@@ -1666,6 +1666,372 @@ function TemplatePreview({
   );
 }
 
+function ClassicTemplatePreview({
+  templateName,
+  imageSrc,
+  onBack,
+  isGenerating,
+  simulation,
+}: {
+  templateName: string;
+  imageSrc: string;
+  onBack: () => void;
+  isGenerating: boolean;
+  simulation: BoidsSimulation;
+}) {
+  const [viewportSize, setViewportSize] = useState('desktop');
+  const previewRef = useRef<HTMLDivElement>(null);
+  const [previewSize, setPreviewSize] = useState({w: 0, h: 0});
+  const [showCanvas, setShowCanvas] = useState(false);
+
+  useEffect(() => {
+    if (isGenerating && previewRef.current) {
+      const rect = previewRef.current.getBoundingClientRect();
+      setPreviewSize({w: rect.width, h: rect.height});
+      setShowCanvas(true);
+    }
+  }, [isGenerating]);
+
+  useEffect(() => {
+    if (!isGenerating && showCanvas) {
+      const id = setTimeout(() => setShowCanvas(false), 800);
+      return () => clearTimeout(id);
+    }
+  }, [isGenerating, showCanvas]);
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column' as const,
+        height: '100%',
+        overflow: 'hidden',
+        paddingTop: 16,
+      }}>
+      <div
+        style={{
+          flex: 1,
+          overflow: 'auto',
+          padding: '0 16px 16px 0',
+        }}>
+        {/* Bordered container: toolbar + preview + code */}
+        <div
+          style={{
+            border: '1px solid var(--color-divider, rgba(0,0,0,0.1))',
+            borderRadius: 12,
+            paddingBottom: 8,
+            display: 'flex',
+            flexDirection: 'column' as const,
+          }}>
+          {/* Toolbar */}
+          <XDSToolbar
+            label="Template actions"
+            startContent={
+              <>
+                <XDSButton
+                  label="Back"
+                  variant="ghost"
+                  size="sm"
+                  icon={<ArrowLeftIcon />}
+                  onClick={onBack}
+                  style={{marginLeft: -8}}
+                />
+                <XDSText type="body">{templateName}</XDSText>
+              </>
+            }
+            centerContent={
+              <XDSSegmentedControl
+                value={viewportSize}
+                onChange={setViewportSize}
+                label="Viewport size"
+                size="sm">
+                <XDSSegmentedControlItem
+                  value="desktop"
+                  label="Desktop"
+                  isLabelHidden
+                  icon={<DesktopIcon />}
+                />
+                <XDSSegmentedControlItem
+                  value="phone"
+                  label="Phone"
+                  isLabelHidden
+                  icon={<PhoneIcon />}
+                />
+              </XDSSegmentedControl>
+            }
+            endContent={
+              <>
+                <XDSButton
+                  label="Point"
+                  variant="ghost"
+                  icon={<CursorIcon />}
+                />
+                <XDSDropdownMenu
+                  button={{
+                    label: 'Theme',
+                    variant: 'ghost',
+                    icon: <PaletteIcon />,
+                  }}
+                  hasChevron={false}
+                  items={XDS_THEMES.map(t => ({
+                    label: t.label,
+                    onClick: () => {},
+                  }))}
+                />
+                <XDSButton
+                  label="Toggle theme"
+                  variant="ghost"
+                  icon={<ContrastIcon />}
+                />
+                <XDSDropdownMenu
+                  button={{label: 'Share', variant: 'ghost'}}
+                  hasChevron={false}
+                  menuWidth={220}
+                  items={[
+                    {
+                      label: 'Copy CLI Command...',
+                      icon: TerminalIcon,
+                      onClick: () => {},
+                    },
+                    {type: 'divider' as const},
+                    {label: 'Claude Code', icon: ClaudeIcon, onClick: () => {}},
+                    {label: 'VSCode', icon: VSCodeIcon, onClick: () => {}},
+                    {label: 'Cursor', icon: CursorAIIcon, onClick: () => {}},
+                  ]}
+                />
+              </>
+            }
+          />
+
+          {/* Preview image in muted container with grid dots */}
+          <div
+            style={{
+              backgroundColor:
+                'var(--color-background-muted, rgba(0,0,0,0.03))',
+              backgroundImage:
+                'radial-gradient(circle, var(--color-divider, rgba(0,0,0,0.1)) 1px, transparent 1px)',
+              backgroundSize: '16px 16px',
+              borderRadius: 8,
+              padding: 22,
+              margin: '0 8px',
+              display: 'flex',
+              justifyContent: 'center',
+            }}>
+            <div
+              ref={previewRef}
+              style={{
+                position: 'relative',
+                width:
+                  VIEWPORT_WIDTHS[viewportSize] === '100%'
+                    ? '100%'
+                    : VIEWPORT_WIDTHS[viewportSize],
+                maxWidth: '100%',
+                border: '1px solid var(--color-divider, rgba(0,0,0,0.1))',
+                borderRadius: 8,
+                overflow: 'hidden',
+                transition:
+                  'width var(--duration-medium, 410ms) var(--ease-standard, cubic-bezier(0.24, 1, 0.4, 1))',
+              }}>
+              <img
+                src={imageSrc}
+                alt="Template preview"
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  aspectRatio: '1920 / 1200',
+                  objectFit: 'cover',
+                  opacity: isGenerating ? 0 : 1,
+                  transition: 'opacity 600ms ease',
+                }}
+              />
+              {showCanvas && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    opacity: isGenerating ? 1 : 0,
+                    transition: 'opacity 600ms ease',
+                  }}>
+                  <BoidsCanvas
+                    width={previewSize.w}
+                    height={previewSize.h}
+                    simulation={simulation}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Code block */}
+          <div
+            style={{
+              margin: '8px 8px 0',
+              border: '1px solid var(--color-divider, rgba(0,0,0,0.1))',
+              borderRadius: 8,
+              backgroundColor:
+                'var(--color-background-muted, rgba(0,0,0,0.03))',
+              overflow: 'hidden',
+            }}>
+            {/* Header */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '8px 12px 8px 16px',
+              }}>
+              <span
+                style={{
+                  fontFamily: '"Roboto Mono", monospace',
+                  fontSize: 12,
+                  fontWeight: 500,
+                  color: 'var(--color-text-secondary, #4e606f)',
+                }}>
+                typescript — useUser.ts
+              </span>
+            </div>
+            {/* Code */}
+            <div style={{display: 'flex'}}>
+              {/* Line numbers */}
+              <div
+                style={{
+                  padding: '12px 12px 12px 16px',
+                  borderRight:
+                    '1px solid var(--color-divider, rgba(0,0,0,0.1))',
+                  fontFamily: '"Roboto Mono", monospace',
+                  fontSize: 14,
+                  lineHeight: '20px',
+                  color: 'var(--color-text-disabled, #a4b0bc)',
+                  textAlign: 'right',
+                  userSelect: 'none',
+                  minWidth: 45,
+                }}>
+                {MOCK_CODE.split('\n').map((_, i) => (
+                  <div key={i}>{i + 1}</div>
+                ))}
+              </div>
+              {/* Code content */}
+              <pre
+                style={{
+                  flex: 1,
+                  padding: '12px 16px',
+                  fontFamily: '"Roboto Mono", monospace',
+                  fontSize: 14,
+                  lineHeight: '20px',
+                  margin: 0,
+                  overflow: 'auto',
+                  color: 'var(--color-text-primary, #0a1317)',
+                }}>
+                {MOCK_CODE}
+              </pre>
+            </div>
+          </div>
+        </div>
+
+        {/* Title & metadata */}
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column' as const,
+            gap: 16,
+            marginTop: 16,
+          }}>
+          <div style={{maxWidth: 540}}>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column' as const,
+                gap: 4,
+              }}>
+              <XDSHeading level={1}>{templateName}</XDSHeading>
+              <XDSText type="supporting" color="secondary">
+                XDS · 541 usages
+              </XDSText>
+            </div>
+            <XDSText type="body" style={{marginTop: 16}}>
+              Buttons are clickable elements that are used to trigger actions.
+              They communicate calls to action to the user and allow users to
+              interact with pages in a variety of ways. Button labels express
+              what action will occur when the user interacts with it.
+            </XDSText>
+          </div>
+        </div>
+
+        {/* Similar templates */}
+        <div
+          style={{
+            marginTop: 16,
+            display: 'flex',
+            flexDirection: 'column' as const,
+            gap: 16,
+          }}>
+          <XDSHeading level={2}>Similar templates</XDSHeading>
+          <div style={{display: 'flex', gap: 16}}>
+            {TEMPLATE_IMAGES.slice(0, 3).map((src, i) => (
+              <div
+                key={i}
+                style={{
+                  flex: 1,
+                  aspectRatio: '1920 / 1200',
+                  border: '1px solid var(--color-divider, rgba(0,0,0,0.1))',
+                  backgroundColor: '#fff',
+                  borderRadius: 12,
+                  boxShadow: '0 8px 40px rgba(0,0,0,0.12)',
+                  overflow: 'hidden',
+                }}>
+                <img
+                  src={src}
+                  alt={`Similar template ${i + 1}`}
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Component used */}
+        <div
+          style={{
+            marginTop: 16,
+            display: 'flex',
+            flexDirection: 'column' as const,
+            gap: 16,
+          }}>
+          <XDSHeading level={2}>Component used</XDSHeading>
+          <XDSText type="body">
+            XDSAppShell, XDSTopNav, XDSVStack, XDSHStack, XDSHeading, XDSText,
+            XDSButton, XDSCard, XDSBadge, XDSAvatar
+          </XDSText>
+        </div>
+
+        {/* Keywords */}
+        <div
+          style={{
+            marginTop: 16,
+            display: 'flex',
+            flexDirection: 'column' as const,
+            gap: 16,
+            paddingBottom: 24,
+          }}>
+          <XDSHeading level={2}>Keywords</XDSHeading>
+          <div style={{display: 'flex', flexWrap: 'wrap' as const, gap: 4}}>
+            <XDSToken label="Dashboard" size="sm" />
+            <XDSToken label="Admin" size="sm" />
+            <XDSToken label="Layout" size="sm" />
+            <XDSToken label="Navigation" size="sm" />
+            <XDSToken label="Settings" size="sm" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Top Nav
 // ---------------------------------------------------------------------------
@@ -4713,7 +5079,7 @@ export default function DocsiteLandingTemplate() {
         </div>
         <div
           style={{flex: 1, display: 'flex', flexDirection: 'column' as const}}>
-          <TemplatePreview
+          <ClassicTemplatePreview
             templateName={t.name}
             imageSrc={t.src}
             onBack={() => {
