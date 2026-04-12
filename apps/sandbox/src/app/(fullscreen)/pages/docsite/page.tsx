@@ -2232,7 +2232,8 @@ function AppTopNav({
           position: 'sticky',
           top: 0,
           zIndex: 11,
-          transition: 'box-shadow 200ms ease',
+          transition:
+            'box-shadow 300ms var(--ease-standard, cubic-bezier(0.24, 1, 0.4, 1))',
           boxShadow: isScrolled ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
         }}>
         {/* Left: logo nav */}
@@ -2240,22 +2241,25 @@ function AppTopNav({
           <LogoNav activeView={activeView} setActiveView={setActiveView} />
         </div>
 
-        {/* Center: tabs (only when scrolled) */}
-        {isScrolled && (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}>
-            <XDSTabList value={activeTab} onChange={setActiveTab} size="sm">
-              <XDSTab value="all" label="All" />
-              <XDSTab value="templates" label="Templates" />
-              <XDSTab value="theme" label="Theme" />
-              <XDSTab value="components" label="Components" />
-            </XDSTabList>
-          </div>
-        )}
+        {/* Center: tabs (slide in when scrolled) */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            opacity: isScrolled ? 1 : 0,
+            transform: isScrolled ? 'translateY(0)' : 'translateY(-8px)',
+            transition:
+              'opacity 300ms var(--ease-standard, cubic-bezier(0.24, 1, 0.4, 1)), transform 300ms var(--ease-standard, cubic-bezier(0.24, 1, 0.4, 1))',
+            pointerEvents: isScrolled ? ('auto' as const) : ('none' as const),
+          }}>
+          <XDSTabList value={activeTab} onChange={setActiveTab} size="sm">
+            <XDSTab value="all" label="All" />
+            <XDSTab value="templates" label="Templates" />
+            <XDSTab value="theme" label="Theme" />
+            <XDSTab value="components" label="Components" />
+          </XDSTabList>
+        </div>
 
         {/* Right: search + profile */}
         <div
@@ -2266,6 +2270,16 @@ function AppTopNav({
             flex: 1,
             justifyContent: 'flex-end',
           }}>
+          {isScrolled && (
+            <XDSButton
+              label="Filter"
+              variant="ghost"
+              size="sm"
+              isIconOnly
+              icon={<FilterIcon />}
+              onClick={() => setIsFilterOpen(!isFilterOpen)}
+            />
+          )}
           <XDSButton
             label="Search"
             variant="ghost"
