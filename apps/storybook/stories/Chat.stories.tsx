@@ -26,7 +26,7 @@ export default meta;
 export const Default: StoryObj = {
   name: 'Default',
   render: () => (
-    <div style={{height: 600, display: 'flex', flexDirection: 'column'}}>
+    <div style={{display: 'flex', flexDirection: 'column'}}>
       <XDSChatMessageList>
         <XDSChatMessage sender="user">
           <XDSChatMessageBubble
@@ -108,7 +108,15 @@ Avoid global state managers unless you have a genuine need for cross-cutting sta
 const [state, dispatch] = useReducer(reducer, initialState);`}
             language="tsx"
           />
-          <XDSMarkdown density="compact">{`This keeps all your form logic in one place. The reducer is pure and easy to test — just pass in state and action, assert on the output.`}</XDSMarkdown>
+          <XDSMarkdown density="compact">{`This keeps all your form logic in one place. The reducer is pure and easy to test — just pass in state and action, assert on the output.
+
+| Hook | Use case | Re-renders | Complexity | Best for |
+|------|----------|------------|------------|----------|
+| \`useState\` | Simple values | On every set | Low | Toggles, inputs, counters |
+| \`useReducer\` | Complex state logic | On dispatch | Medium | Forms, multi-field state |
+| \`useContext\` | Shared subtree state | All consumers | Low | Theme, auth, locale |
+| \`useSyncExternalStore\` | External stores | On snapshot change | High | Redux, Zustand, signals |
+| \`useRef\` | Mutable values | Never | Low | DOM refs, timers, previous values |`}</XDSMarkdown>
           <XDSChatMessageMetadata
             timestamp={<XDSTimestamp value="2026-03-15T14:31:30" format="time" />}
             footer={

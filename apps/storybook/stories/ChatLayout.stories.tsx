@@ -4,6 +4,7 @@ import {
   XDSChatMessageList,
   XDSChatMessage,
   XDSChatMessageBubble,
+  XDSChatMessageMetadata,
   XDSChatSystemMessage,
   XDSChatComposer,
   XDSChatComposerAttachments,
@@ -19,6 +20,9 @@ import {
 import {XDSMarkdown} from '@xds/core/Markdown';
 import {XDSToken} from '@xds/core/Token';
 import {XDSButton} from '@xds/core/Button';
+import {XDSTimestamp} from '@xds/core/Timestamp';
+import {HandThumbUpIcon, HandThumbDownIcon} from '@heroicons/react/24/outline';
+import {ClipboardDocumentIcon} from '@heroicons/react/24/outline';
 import {XDSCodeBlock} from '@xds/core/CodeBlock';
 import {XDSProgressBar} from '@xds/core/ProgressBar';
 import {XDSAvatar} from '@xds/core/Avatar';
@@ -105,11 +109,14 @@ type Message =
       text: string;
       files?: string[];
       tokens?: XDSChatComposerToken[];
+      isSending?: boolean;
+      sentAt?: Date;
     }
   | {
       id: number;
       role: 'assistant';
       text: string;
+      introText?: string;
       toolCalls?: XDSChatToolCallItem[];
       isStreaming?: boolean;
     }
@@ -121,11 +128,13 @@ const SEED_MESSAGES: Message[] = [
     id: 2,
     role: 'user',
     text: 'Can you review the Button component and fix the focus ring?',
+    sentAt: new Date('2026-03-15T14:30:00'),
   },
   {
     id: 3,
     role: 'assistant',
-    text: "I'll read the Button component and check the focus styles.",
+    introText: "I'll read the Button component and check the focus styles.",
+    text: "I'll read the Button component and check the focus styles.\n\nAdded a `:focus-visible` style with a 2px solid outline and 2px offset. All 24 Button tests pass.\n\n```css\n:focus-visible {\n  outline: 2px solid var(--color-ring-focus);\n  outline-offset: 2px;\n}\n```\n\nHere's the test breakdown:\n\n| Suite | Tests | Duration | Status |\n|-------|-------|----------|--------|\n| XDSButton.test.tsx | 18 | 1.2s | ✓ Pass |\n| XDSButton.a11y.test.tsx | 4 | 0.8s | ✓ Pass |\n| XDSButton.snapshot.test.tsx | 2 | 0.3s | ✓ Pass |\n\nThe focus ring meets **WCAG 2.4.7** requirements and uses the theme's focus color token.",
     toolCalls: [
       {
         key: '1',
@@ -167,12 +176,7 @@ const SEED_MESSAGES: Message[] = [
       },
     ],
   },
-  {
-    id: 4,
-    role: 'assistant',
-    text: "Added a `:focus-visible` style with a 2px solid outline and 2px offset. All 24 Button tests pass.\n\n```css\n:focus-visible {\n  outline: 2px solid var(--color-ring-focus);\n  outline-offset: 2px;\n}\n```\n\nHere's the test breakdown:\n\n| Suite | Tests | Duration | Status |\n|-------|-------|----------|--------|\n| XDSButton.test.tsx | 18 | 1.2s | ✓ Pass |\n| XDSButton.a11y.test.tsx | 4 | 0.8s | ✓ Pass |\n| XDSButton.snapshot.test.tsx | 2 | 0.3s | ✓ Pass |\n\nThe focus ring meets **WCAG 2.4.7** requirements and uses the theme's focus color token.",
-  },
-  {id: 5, role: 'user', text: 'Nice, can you also check the Card component?'},
+  {id: 4, role: 'user', text: 'Nice, can you also check the Card component?', sentAt: new Date('2026-03-15T14:35:00')},
 ];
 
 // =============================================================================
@@ -224,7 +228,7 @@ export const FullAIChat: StoryObj = {
 
         setMessages(prev => [
           ...prev,
-          {id: msgId, role: 'assistant', text: '', isStreaming: true},
+          {id: msgId, role: 'assistant', text: '', introText, isStreaming: true},
         ]);
 
         let i = 0;
@@ -321,19 +325,29 @@ export const FullAIChat: StoryObj = {
 
     const handleSubmit = useCallback(
       (value: string) => {
+        const userMsgId = Date.now();
         setMessages(prev => [
           ...prev,
           {
-            id: Date.now(),
+            id: userMsgId,
             role: 'user',
             text: value,
             files: files.length ? [...files] : undefined,
             tokens: resolveTokens(value),
+            isSending: true,
           },
         ]);
         setFiles([]);
 
+        // After 2s, mark as sent and start streaming
         setTimeout(() => {
+          setMessages(prev =>
+            prev.map(m =>
+              m.id === userMsgId && m.role === 'user'
+                ? {...m, isSending: false, sentAt: new Date()}
+                : m,
+            ),
+          );
           streamResponse(
             "I'll check the Card component for the same issue.",
             'The border radius was hardcoded. I replaced it with the theme token:\n\n```css\n/* before */\nborder-radius: 12px;\n\n/* after */\nborder-radius: var(--radius-element);\n```\n\nCards now adapt across themes. All tests pass.',
@@ -366,7 +380,7 @@ export const FullAIChat: StoryObj = {
               },
             ],
           );
-        }, 800);
+        }, 2000);
       },
       [files, streamResponse],
     );
@@ -484,7 +498,15 @@ export const FullAIChat: StoryObj = {
                         ))}
                       </XDSChatComposerAttachments>
                     )}
-                    <XDSChatMessageBubble>
+                    <XDSChatMessageBubble
+                      metadata={
+                        <XDSChatMessageMetadata
+                          timestamp={
+                            <XDSTimestamp value={msg.sentAt ?? new Date(msg.id)} format="time" />
+                          }
+                          status={msg.isSending ? 'sending' : undefined}
+                        />
+                      }>
                       <XDSChatTokenizedText tokens={mentionTokens}>
                         {msg.text}
                       </XDSChatTokenizedText>
@@ -492,13 +514,55 @@ export const FullAIChat: StoryObj = {
                   </XDSChatMessage>
                 );
               }
+              {/* Assistant: intro text → tool calls → rest of text */}
+              const introEnd = msg.introText?.length ?? 0;
+              const hasToolCalls = msg.toolCalls && msg.toolCalls.length > 0;
+              const introContent = introEnd > 0 ? msg.text.slice(0, introEnd) : null;
+              const restContent = introEnd > 0 && msg.text.length > introEnd
+                ? msg.text.slice(introEnd).replace(/^\n+/, '')
+                : !introEnd ? msg.text : null;
               return (
                 <XDSChatMessage key={msg.id} sender="assistant">
-                  {msg.text && (
-                    <XDSMarkdown density="compact">{msg.text}</XDSMarkdown>
+                  {introContent && (
+                    <XDSMarkdown density="compact">{introContent}</XDSMarkdown>
                   )}
-                  {msg.toolCalls && msg.toolCalls.length > 0 && (
+                  {hasToolCalls && (
                     <XDSChatToolCalls calls={msg.toolCalls ?? []} />
+                  )}
+                  {restContent && (
+                    <XDSMarkdown density="compact">{restContent}</XDSMarkdown>
+                  )}
+                  {!msg.isStreaming && msg.text && (
+                    <XDSChatMessageMetadata
+                      timestamp={<XDSTimestamp value={new Date(msg.id)} format="time" />}
+                      footer={
+                        <>
+                          <span>Claude Opus 4.6</span>
+                          <span>·</span>
+                          <XDSButton
+                            label="Thumbs up"
+                            icon={<HandThumbUpIcon style={{width: 14, height: 14}} />}
+                            variant="ghost"
+                            size="sm"
+                            isIconOnly
+                          />
+                          <XDSButton
+                            label="Thumbs down"
+                            icon={<HandThumbDownIcon style={{width: 14, height: 14}} />}
+                            variant="ghost"
+                            size="sm"
+                            isIconOnly
+                          />
+                          <XDSButton
+                            label="Copy"
+                            icon={<ClipboardDocumentIcon style={{width: 14, height: 14}} />}
+                            variant="ghost"
+                            size="sm"
+                            isIconOnly
+                          />
+                        </>
+                      }
+                    />
                   )}
                 </XDSChatMessage>
               );
