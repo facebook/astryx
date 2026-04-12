@@ -4128,6 +4128,7 @@ function TemplateFullPreview({
   onSelectTemplate,
   showChat = false,
   showEditor = false,
+  defaultTab = 'properties',
 }: {
   templateName: string;
   imageSrc: string;
@@ -4136,6 +4137,7 @@ function TemplateFullPreview({
   onSelectTemplate?: (index: number) => void;
   showChat?: boolean;
   showEditor?: boolean;
+  defaultTab?: 'properties' | 'chat';
 }) {
   const [viewMode, setViewMode] = useState<'desktop' | 'mobile'>('desktop');
   const [editorView, setEditorView] = useState<'preview' | 'code'>('preview');
@@ -4146,7 +4148,7 @@ function TemplateFullPreview({
   const [selectedFontPack, setSelectedFontPack] = useState<string | null>(
     PREVIEW_FONT_PACKS[0].heading,
   );
-  const [panelTab, setPanelTab] = useState<'properties' | 'chat'>('properties');
+  const [panelTab, setPanelTab] = useState<'properties' | 'chat'>(defaultTab);
   const [chatInput, setChatInput] = useState('');
 
   useEffect(() => {
@@ -5555,6 +5557,28 @@ export default function DocsiteLandingTemplate() {
         }}
         showChat
         showEditor
+      />
+    );
+  }
+
+  // Customize flow for 2nd card (index 1) — opens with chat tab
+  if (useTarget === 1 && activeView === 'craft') {
+    const t = TEMPLATES[1];
+    return (
+      <TemplateFullPreview
+        templateName={t.name}
+        imageSrc={t.src}
+        onBack={() => {
+          setUseTarget(null);
+          setChatOpen(false);
+        }}
+        onUse={() => {}}
+        onSelectTemplate={index => {
+          setPreviewTarget(index);
+        }}
+        showChat
+        showEditor
+        defaultTab="chat"
       />
     );
   }
