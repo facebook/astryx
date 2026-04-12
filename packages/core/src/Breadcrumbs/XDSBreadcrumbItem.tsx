@@ -76,6 +76,10 @@ const itemStyles = stylex.create({
     alignItems: 'center',
     gap: spacingVars['--spacing-1'],
     margin: 0,
+    '--separator-display': {
+      default: 'flex',
+      ':first-child': 'none',
+    },
   },
   defaultSize: {
     fontSize: typeScaleVars['--text-body-size'],
@@ -124,10 +128,7 @@ const itemStyles = stylex.create({
     flexShrink: 0,
   },
   separator: {
-    display: {
-      default: 'flex',
-      [stylex.when.ancestor(':first-child')]: 'none',
-    },
+    display: 'var(--separator-display)',
     alignItems: 'center',
     color: colorVars['--color-text-secondary'],
     paddingBlock: spacingVars['--spacing-1'],

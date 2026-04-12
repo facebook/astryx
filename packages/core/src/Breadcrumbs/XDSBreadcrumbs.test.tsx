@@ -57,7 +57,7 @@ describe('XDSBreadcrumbs', () => {
         <XDSBreadcrumbItem isCurrent>Detail</XDSBreadcrumbItem>
       </XDSBreadcrumbs>,
     );
-    // Each item renders its own separator span; first is hidden via CSS :first-child
+    // Each item renders its own separator span; first is hidden via CSS
     const separators = container.querySelectorAll('span[aria-hidden="true"]');
     expect(separators).toHaveLength(3);
     expect(separators[0].textContent).toBe('/');
@@ -72,6 +72,7 @@ describe('XDSBreadcrumbs', () => {
     );
     const separators = container.querySelectorAll('span[aria-hidden="true"]');
     // Custom separator content is nested inside the aria-hidden span
+    // First item's separator is hidden via CSS, but still in the DOM
     expect(separators[1].textContent).toBe('›');
   });
 
