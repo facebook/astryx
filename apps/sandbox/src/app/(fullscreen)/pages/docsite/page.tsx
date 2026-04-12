@@ -3519,7 +3519,7 @@ function DocsView({
             ))}
           </div>
         ) : (
-          <div style={{maxWidth: 840}}>
+          <div style={{maxWidth: 840, margin: '0 auto'}}>
             {/* Header */}
             <div style={{marginBottom: 8}}>
               <XDSText type="display-1">{getComponentName(activeNav)}</XDSText>
