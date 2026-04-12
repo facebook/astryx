@@ -1,11 +1,18 @@
 import type {UniversalDimension, UniversalScore} from './types';
 
-export const ALL_DIMENSIONS: UniversalDimension[] = [
+/** The 5 code-analysis dimensions (always present). */
+export const CODE_DIMENSIONS: UniversalDimension[] = [
   'correctness',
   'accessibility',
   'codeQuality',
   'efficiency',
   'maintainability',
+];
+
+/** All 6 dimensions including design (design is optional — from screenshot evaluation). */
+export const ALL_DIMENSIONS: UniversalDimension[] = [
+  ...CODE_DIMENSIONS,
+  'design',
 ];
 
 export const DIMENSION_LABELS: Record<UniversalDimension, string> = {
@@ -14,6 +21,7 @@ export const DIMENSION_LABELS: Record<UniversalDimension, string> = {
   codeQuality: 'Code Quality',
   efficiency: 'Efficiency',
   maintainability: 'Maintainability',
+  design: 'Design',
 };
 
 export function scoreToStatusVariant(
@@ -34,9 +42,12 @@ export function scoreToProgressVariant(
   return 'negative';
 }
 
+/** Compute overall score. Null-safe for optional design dimension. */
 export function computeOverall(score: UniversalScore): number {
-  const total = ALL_DIMENSIONS.reduce((sum, d) => sum + score[d].score, 0);
-  return Math.round(total / ALL_DIMENSIONS.length);
+  const available = ALL_DIMENSIONS.filter(d => score[d] != null);
+  if (available.length === 0) return 0;
+  const total = available.reduce((sum, d) => sum + (score[d]?.score ?? 0), 0);
+  return Math.round(total / available.length);
 }
 
 export function formatScore(n: number): string {
