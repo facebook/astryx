@@ -667,3 +667,129 @@ export const ScrollToBottom: StoryObj = {
     );
   },
 };
+
+export const BubbleVariants: StoryObj = {
+  name: 'Bubble Variants',
+  render: () => {
+    const nameStyle = {
+      fontSize: 12,
+      fontWeight: 600,
+      color: '#666',
+      lineHeight: '16px',
+      marginBottom: 2,
+    };
+    return (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 24,
+          maxWidth: 600,
+        }}>
+        <h3 style={{margin: 0, fontSize: 13, color: '#666'}}>
+          Filled — with names
+        </h3>
+        <XDSChatMessage
+          sender="user"
+          avatar={<XDSAvatar name="Cindy" size="small" />}>
+          <XDSChatMessageBubble
+            header={<span style={nameStyle}>Cindy</span>}
+            metadata={
+              <XDSChatMessageMetadata timestamp="2:30 PM" status="read" />
+            }>
+            This is a filled user bubble with name and metadata.
+          </XDSChatMessageBubble>
+        </XDSChatMessage>
+
+        <XDSChatMessage
+          sender="assistant"
+          avatar={<XDSAvatar name="Navi" size="small" />}>
+          <XDSChatMessageBubble
+            header={<span style={nameStyle}>Navi</span>}
+            metadata={<XDSChatMessageMetadata timestamp="2:31 PM" />}>
+            This is a filled assistant bubble with name and metadata.
+          </XDSChatMessageBubble>
+        </XDSChatMessage>
+
+        <h3 style={{margin: 0, fontSize: 13, color: '#666'}}>
+          Filled — without names
+        </h3>
+        <XDSChatMessage
+          sender="user"
+          avatar={<XDSAvatar name="Cindy" size="small" />}>
+          <XDSChatMessageBubble
+            metadata={
+              <XDSChatMessageMetadata timestamp="2:32 PM" status="delivered" />
+            }>
+            Filled bubble, no name — just content and metadata.
+          </XDSChatMessageBubble>
+        </XDSChatMessage>
+
+        <XDSChatMessage
+          sender="assistant"
+          avatar={<XDSAvatar name="Navi" size="small" />}>
+          <XDSChatMessageBubble
+            metadata={<XDSChatMessageMetadata timestamp="2:33 PM" />}>
+            Filled assistant bubble without a name.
+          </XDSChatMessageBubble>
+        </XDSChatMessage>
+
+        <h3 style={{margin: 0, fontSize: 13, color: '#666'}}>
+          Ghost — with names
+        </h3>
+        <XDSChatMessage
+          sender="assistant"
+          avatar={<XDSAvatar name="Navi" size="small" />}>
+          <XDSChatMessageBubble
+            variant="ghost"
+            header={<span style={nameStyle}>Navi</span>}
+            metadata={<XDSChatMessageMetadata timestamp="2:34 PM" />}>
+            Ghost bubble with name — same inline padding, no background, no
+            block padding.
+          </XDSChatMessageBubble>
+        </XDSChatMessage>
+
+        <h3 style={{margin: 0, fontSize: 13, color: '#666'}}>
+          Ghost — without names
+        </h3>
+        <XDSChatMessage
+          sender="assistant"
+          avatar={<XDSAvatar name="Navi" size="small" />}>
+          <XDSChatMessageBubble
+            variant="ghost"
+            metadata={<XDSChatMessageMetadata timestamp="2:35 PM" />}>
+            Ghost bubble, no name — content and metadata flush.
+          </XDSChatMessageBubble>
+        </XDSChatMessage>
+
+        <h3 style={{margin: 0, fontSize: 13, color: '#666'}}>
+          Compact — filled and ghost
+        </h3>
+        <XDSChatMessage
+          sender="user"
+          density="compact"
+          avatar={<XDSAvatar name="Cindy" size="small" />}>
+          <XDSChatMessageBubble
+            header={<span style={nameStyle}>Cindy</span>}
+            metadata={
+              <XDSChatMessageMetadata timestamp="2:36 PM" status="sent" />
+            }>
+            Compact filled with smaller radius.
+          </XDSChatMessageBubble>
+        </XDSChatMessage>
+
+        <XDSChatMessage
+          sender="assistant"
+          density="compact"
+          avatar={<XDSAvatar name="Navi" size="small" />}>
+          <XDSChatMessageBubble
+            variant="ghost"
+            header={<span style={nameStyle}>Navi</span>}
+            metadata={<XDSChatMessageMetadata timestamp="2:37 PM" />}>
+            Compact ghost — same alignment.
+          </XDSChatMessageBubble>
+        </XDSChatMessage>
+      </div>
+    );
+  },
+};
