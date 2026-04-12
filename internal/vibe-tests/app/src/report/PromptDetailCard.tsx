@@ -36,11 +36,11 @@ function ScoreSummary({label, score}: {label: string; score: UniversalScore}) {
       <XDSVStack gap={2}>
         <XDSText type="label">{label}</XDSText>
         <div className="report-promptDetail-scoreGrid">
-          {ALL_DIMENSIONS.map(dim => (
+          {ALL_DIMENSIONS.filter(dim => score[dim] != null).map(dim => (
             <ScoreItem
               key={dim}
               label={DIMENSION_LABELS[dim]}
-              score={score[dim].score}
+              score={score[dim]!.score}
             />
           ))}
           <ScoreItem label="Overall" score={computeOverall(score)} />
@@ -51,11 +51,12 @@ function ScoreSummary({label, score}: {label: string; score: UniversalScore}) {
 }
 
 function Findings({score}: {score: UniversalScore}) {
-  const allFindings = ALL_DIMENSIONS.flatMap(dim =>
-    (score[dim].findings ?? []).map(f => ({
-      dimension: DIMENSION_LABELS[dim],
-      ...f,
-    })),
+  const allFindings = ALL_DIMENSIONS.filter(dim => score[dim] != null).flatMap(
+    dim =>
+      (score[dim]!.findings ?? []).map(f => ({
+        dimension: DIMENSION_LABELS[dim],
+        ...f,
+      })),
   );
 
   if (allFindings.length === 0) {

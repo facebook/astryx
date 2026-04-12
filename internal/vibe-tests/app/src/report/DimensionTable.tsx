@@ -24,6 +24,7 @@ interface RowData extends Record<string, unknown> {
   codeQuality: number;
   efficiency: number;
   maintainability: number;
+  design: number;
   overall: number;
 }
 
@@ -49,6 +50,7 @@ export function DimensionTable({byPrompt}: DimensionTableProps) {
     codeQuality: score.codeQuality.score,
     efficiency: score.efficiency.score,
     maintainability: score.maintainability.score,
+    design: score.design?.score ?? 0,
     overall: computeOverall(score),
   }));
 

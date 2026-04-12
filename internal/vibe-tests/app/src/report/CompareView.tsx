@@ -268,13 +268,15 @@ export function CompareView({comparison}: CompareViewProps) {
     else ties++;
   }
 
-  const dimData: DimRow[] = ALL_DIMENSIONS.map(dim => ({
+  const dimData: DimRow[] = ALL_DIMENSIONS.filter(
+    dim => xds.averages[dim] != null || baseline.averages[dim] != null,
+  ).map(dim => ({
     id: dim,
     dimension: DIMENSION_LABELS[dim],
-    xdsScore: xds.averages[dim],
-    baselineScore: baseline.averages[dim],
-    ...(isThreeWay ? {htmlScore: html!.averages[dim]} : {}),
-    delta: xds.averages[dim] - baseline.averages[dim],
+    xdsScore: xds.averages[dim] ?? 0,
+    baselineScore: baseline.averages[dim] ?? 0,
+    ...(isThreeWay ? {htmlScore: html!.averages[dim] ?? 0} : {}),
+    delta: (xds.averages[dim] ?? 0) - (baseline.averages[dim] ?? 0),
     winner: winners[dim],
   }));
 
