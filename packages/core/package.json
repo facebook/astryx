@@ -88,6 +88,12 @@
       "import": "./dist/Card/index.mjs",
       "require": "./dist/Card/index.js"
     },
+    "./Carousel": {
+      "source": "./src/Carousel/index.ts",
+      "types": "./dist/Carousel/index.d.ts",
+      "import": "./dist/Carousel/index.mjs",
+      "require": "./dist/Carousel/index.js"
+    },
     "./Center": {
       "source": "./src/Center/index.ts",
       "types": "./dist/Center/index.d.ts",
