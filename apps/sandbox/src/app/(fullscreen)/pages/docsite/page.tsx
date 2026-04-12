@@ -3438,6 +3438,48 @@ function TemplateFullPreview({
               }}
             />
           </div>
+
+          {/* Similar templates */}
+          <div
+            style={{
+              width: '100%',
+              padding: '24px 32px 32px',
+              boxSizing: 'border-box' as const,
+            }}>
+            <XDSHeading level={3}>Similar templates</XDSHeading>
+            <div
+              style={{
+                display: 'flex',
+                gap: 12,
+                marginTop: 12,
+                overflowX: 'auto' as const,
+              }}>
+              {[0, 1, 2, 3].map(i => (
+                <div
+                  key={i}
+                  style={{
+                    flex: '0 0 280px',
+                    aspectRatio: '1920 / 1200',
+                    border: '1px solid var(--color-divider, rgba(0,0,0,0.1))',
+                    backgroundColor: 'var(--color-background-card, #fff)',
+                    borderRadius: 8,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                    overflow: 'hidden',
+                  }}>
+                  <img
+                    src={DUMMY_IMAGE}
+                    alt={`Similar template ${i + 1}`}
+                    style={{
+                      display: 'block',
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -3618,43 +3660,6 @@ function TemplateFullPreview({
                     </XDSText>
                   </div>
                 </XDSCard>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Similar templates */}
-        <div style={{marginTop: 32}}>
-          <XDSHeading level={3}>Similar templates</XDSHeading>
-          <div
-            style={{
-              display: 'flex',
-              gap: 12,
-              marginTop: 12,
-              overflowX: 'auto' as const,
-            }}>
-            {[0, 1, 2, 3].map(i => (
-              <div
-                key={i}
-                style={{
-                  flex: '0 0 120px',
-                  aspectRatio: '1920 / 1200',
-                  border: '1px solid var(--color-divider, rgba(0,0,0,0.1))',
-                  backgroundColor: 'var(--color-background-card, #fff)',
-                  borderRadius: 8,
-                  boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-                  overflow: 'hidden',
-                }}>
-                <img
-                  src={DUMMY_IMAGE}
-                  alt={`Similar template ${i + 1}`}
-                  style={{
-                    display: 'block',
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                  }}
-                />
               </div>
             ))}
           </div>
