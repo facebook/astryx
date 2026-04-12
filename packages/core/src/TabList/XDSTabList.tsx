@@ -17,9 +17,15 @@ import * as stylex from '@stylexjs/stylex';
 import {borderVars, colorVars, spacingVars} from '../theme/tokens.stylex';
 import {XDSTabListContext} from './XDSTabListContext';
 import type {XDSTabListSize} from './XDSTabListContext';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import {xdsClassName, mergeProps} from '../utils';
 
-export interface XDSTabListProps {
+export interface XDSTabListProps extends Omit<
+  XDSBaseProps<HTMLElement>,
+  'onChange'
+> {
+  /** Ref forwarded to the root nav element. */
+  ref?: React.Ref<HTMLElement>;
   /**
    * The currently selected tab value.
    */
@@ -79,6 +85,11 @@ export function XDSTabList({
   size = 'md',
   hasDivider = false,
   children,
+  xstyle,
+  className,
+  style,
+  ref,
+  ...props
 }: XDSTabListProps) {
   const contextValue = useMemo(
     () => ({value, onChange, size}),
@@ -88,11 +99,15 @@ export function XDSTabList({
   return (
     <XDSTabListContext.Provider value={contextValue}>
       <nav
+        ref={ref}
         aria-label="Tabs"
         {...mergeProps(
           xdsClassName('tab-list', {size}),
-          stylex.props(styles.nav, hasDivider && styles.divider),
-        )}>
+          stylex.props(styles.nav, hasDivider && styles.divider, xstyle),
+          className,
+          style,
+        )}
+        {...props}>
         {children}
       </nav>
     </XDSTabListContext.Provider>

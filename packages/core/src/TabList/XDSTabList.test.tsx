@@ -10,7 +10,8 @@
 import {describe, it, expect, vi, beforeAll, afterAll} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {forwardRef, type ComponentPropsWithoutRef} from 'react';
+import {createRef, forwardRef, type ComponentPropsWithoutRef} from 'react';
+import * as stylex from '@stylexjs/stylex';
 import {XDSTabList} from './XDSTabList';
 import {XDSTab} from './XDSTab';
 import {XDSTabMenu} from './XDSTabMenu';
@@ -360,5 +361,56 @@ describe('XDSTabMenu', () => {
       hidden: true,
     });
     expect(reportsItem).not.toHaveAttribute('aria-current');
+  });
+});
+
+describe('XDSBaseProps support', () => {
+  const xstyles = stylex.create({
+    custom: {marginBottom: 8},
+  });
+
+  it('XDSTabList forwards xstyle, className, style, ref, and rest props', () => {
+    const ref = createRef<HTMLElement>();
+    render(
+      <XDSTabList
+        value="home"
+        onChange={() => {}}
+        xstyle={xstyles.custom}
+        className="my-tabs"
+        style={{color: 'red'}}
+        ref={ref}
+        data-testid="tab-list-nav">
+        <XDSTab value="home" label="Home" />
+      </XDSTabList>,
+    );
+
+    const nav = screen.getByTestId('tab-list-nav');
+    expect(nav.tagName).toBe('NAV');
+    expect(nav.classList.contains('my-tabs')).toBe(true);
+    expect(nav.style.color).toBe('red');
+    expect(ref.current).toBe(nav);
+  });
+
+  it('XDSTab forwards xstyle, className, style, ref, and rest props', () => {
+    const ref = createRef<HTMLButtonElement>();
+    render(
+      <XDSTabList value="home" onChange={() => {}}>
+        <XDSTab
+          value="home"
+          label="Home"
+          xstyle={xstyles.custom}
+          className="my-tab"
+          style={{color: 'blue'}}
+          ref={ref}
+          data-testid="home-tab"
+        />
+      </XDSTabList>,
+    );
+
+    const tab = screen.getByTestId('home-tab');
+    expect(tab.tagName).toBe('BUTTON');
+    expect(tab.classList.contains('my-tab')).toBe(true);
+    expect(tab.style.color).toBe('blue');
+    expect(ref.current).toBe(tab);
   });
 });

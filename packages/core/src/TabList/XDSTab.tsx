@@ -28,9 +28,12 @@ import {useXDSTabListContext} from './XDSTabListContext';
 import type {XDSTabListSize} from './XDSTabListContext';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import type {XDSLinkComponentType} from '../Link/types';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import {xdsClassName, mergeProps} from '../utils';
 
-export interface XDSTabProps {
+export interface XDSTabProps extends XDSBaseProps<HTMLElement> {
+  /** Ref forwarded to the root button or anchor element. */
+  ref?: React.Ref<HTMLButtonElement | HTMLAnchorElement>;
   /**
    * Custom component to render instead of `<a>` for link tabs.
    * Overrides the provider-level default set by XDSLinkProvider.
@@ -176,6 +179,11 @@ export function XDSTab({
   href,
   icon,
   selectedIcon,
+  xstyle,
+  className,
+  style,
+  ref,
+  ...props
 }: XDSTabProps) {
   const tabListCtx = useXDSTabListContext();
   const LinkComponent = useXDSLinkComponent(as);
@@ -205,7 +213,10 @@ export function XDSTab({
         sizeStyles[size],
         isSelected && styles.selected,
         !isSelected && stylex.defaultMarker(),
+        xstyle,
       ),
+      className,
+      style,
     ),
   };
 
@@ -232,9 +243,16 @@ export function XDSTab({
     </span>
   );
 
+  // Rest props are typed as HTMLAttributes<HTMLElement> since Tab renders as
+  // either button or anchor depending on href. Cast to satisfy each element type.
   if (href != null) {
     return (
-      <LinkComponent href={href} onClick={handleSelect} {...sharedProps}>
+      <LinkComponent
+        ref={ref as React.Ref<HTMLAnchorElement>}
+        href={href}
+        onClick={handleSelect}
+        {...sharedProps}
+        {...props}>
         {iconElement}
         {labelElement}
         {indicatorElement}
@@ -243,7 +261,12 @@ export function XDSTab({
   }
 
   return (
-    <button type="button" onClick={handleSelect} {...sharedProps}>
+    <button
+      ref={ref as React.Ref<HTMLButtonElement>}
+      type="button"
+      onClick={handleSelect}
+      {...sharedProps}
+      {...props}>
       {iconElement}
       {labelElement}
       {indicatorElement}

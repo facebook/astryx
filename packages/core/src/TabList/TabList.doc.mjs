@@ -95,7 +95,7 @@ export const docs = {
     {
       name: 'XDSTabList',
       description:
-        'Nav wrapper that provides XDSTabListContext (value, onChange, size) to XDSTab and XDSTabMenu children.',
+        'Nav wrapper that provides XDSTabListContext (value, onChange, size) to XDSTab and XDSTabMenu children. Extends XDSBaseProps for xstyle/className/style/ref forwarding.',
       props: [
         {
           name: 'value',
@@ -128,6 +128,17 @@ export const docs = {
           description: 'XDSTab and XDSTabMenu items to render inside the nav.',
           required: true,
         },
+        {
+          name: 'xstyle',
+          type: 'StyleXStyles',
+          description:
+            'StyleX overrides merged with the nav element\'s base styles.',
+        },
+        {
+          name: 'ref',
+          type: 'Ref<HTMLElement>',
+          description: 'Ref forwarded to the root nav element.',
+        },
       ],
       examples: [
         {
@@ -144,12 +155,20 @@ export const docs = {
   <XDSTab value="settings" label="Settings" />
 </XDSTabList>`,
         },
+        {
+          label: 'With xstyle override',
+          code: `const styles = stylex.create({ tabs: { borderBottom: '2px solid #e5e7eb' } });
+<XDSTabList value={activeTab} onChange={setActiveTab} xstyle={styles.tabs}>
+  <XDSTab value="home" label="Home" />
+  <XDSTab value="settings" label="Settings" />
+</XDSTabList>`,
+        },
       ],
     },
     {
       name: 'XDSTab',
       description:
-        'Individual tab item that renders as a button or an anchor link, with selected-state styling and optional icons.',
+        'Individual tab item that renders as a button or an anchor link, with selected-state styling and optional icons. Extends XDSBaseProps for xstyle/className/style/ref forwarding.',
       props: [
         {
           name: 'value',
@@ -187,6 +206,17 @@ export const docs = {
           description:
             'Icon element shown when the tab is selected; falls back to icon if not provided.',
         },
+        {
+          name: 'xstyle',
+          type: 'StyleXStyles',
+          description:
+            'StyleX overrides merged with the tab element\'s base styles.',
+        },
+        {
+          name: 'ref',
+          type: 'Ref<HTMLButtonElement | HTMLAnchorElement>',
+          description: 'Ref forwarded to the root button or anchor element.',
+        },
       ],
       examples: [
         {
@@ -196,6 +226,11 @@ export const docs = {
         {
           label: 'Link tab with icons',
           code: '<XDSTab value="home" label="Home" href="/home" icon={<HomeIcon />} selectedIcon={<HomeFilledIcon />} />',
+        },
+        {
+          label: 'With xstyle override',
+          code: `const styles = stylex.create({ tab: { paddingInline: 24 } });
+<XDSTab value="home" label="Home" xstyle={styles.tab} />`,
         },
       ],
     },
@@ -541,18 +576,20 @@ export const docsDense = {
   components: [
     {
       name: 'XDSTabList',
-      description: 'Nav wrapper providing XDSTabListContext (value, onChange, size) to children.',
+      description: 'Nav wrapper providing XDSTabListContext (value, onChange, size) to children. Extends XDSBaseProps.',
       propDescriptions: {
         value: 'Currently selected tab value.',
         onChange: 'Fired when tab is selected.',
         size: 'Size variant applied to all child tabs.',
         hasDivider: 'Show bottom border divider under tab list.',
         children: 'XDSTab + XDSTabMenu items inside nav.',
+        xstyle: 'StyleX overrides merged with nav base styles.',
+        ref: 'Ref forwarded to root nav element.',
       },
     },
     {
       name: 'XDSTab',
-      description: 'Individual tab; renders as button or anchor w/ selected-state styling + optional icons.',
+      description: 'Individual tab; renders as button or anchor w/ selected-state styling + optional icons. Extends XDSBaseProps.',
       propDescriptions: {
         value: 'Unique value matched against XDSTabListContext.value.',
         label: 'Visible label text.',
@@ -560,6 +597,8 @@ export const docsDense = {
         as: 'Custom link component overriding XDSLinkProvider; only w/ href.',
         icon: 'Icon shown when not selected.',
         selectedIcon: 'Icon shown when selected; falls back to icon.',
+        xstyle: 'StyleX overrides merged with tab base styles.',
+        ref: 'Ref forwarded to root button or anchor element.',
       },
     },
     {
