@@ -16,6 +16,7 @@ import booleanPropNamingRule from './boolean-prop-naming.js';
 import presentationalComponentRule from './presentational-component.js';
 import docblockExampleFormatRule from './docblock-example-format.js';
 import noStylexNullOverrideRule from './no-stylex-null-override.js';
+import noReactIntrospectionRule from './no-react-introspection.js';
 
 // =============================================================================
 // Rule: no-hardcoded-styles
@@ -220,6 +221,7 @@ const plugin = {
     'presentational-component': presentationalComponentRule,
     'docblock-example-format': docblockExampleFormatRule,
     'no-stylex-null-override': noStylexNullOverrideRule,
+    'no-react-introspection': noReactIntrospectionRule,
   },
   configs: {},
 };
@@ -235,6 +237,7 @@ plugin.configs.strict = {
     '@xds/presentational-component': 'error',
     '@xds/docblock-example-format': 'error',
     '@xds/no-stylex-null-override': 'error',
+    '@xds/no-react-introspection': 'error',
   },
 };
 
@@ -249,6 +252,7 @@ plugin.configs.recommended = {
     '@xds/presentational-component': 'error',
     '@xds/docblock-example-format': 'warn',
     '@xds/no-stylex-null-override': 'warn',
+    '@xds/no-react-introspection': 'error',
   },
 };
 
