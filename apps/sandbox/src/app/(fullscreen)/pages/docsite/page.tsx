@@ -1126,6 +1126,21 @@ const ContrastIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
+const SaveIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}>
+    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+    <polyline points="17 21 17 13 7 13 7 21" />
+    <polyline points="7 3 7 8 15 8" />
+  </svg>
+);
+
 const BookmarkIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     viewBox="0 0 24 24"
@@ -1252,7 +1267,7 @@ export default function DetailPage() {
         <XDSCard>
           <XDSVStack gap={4}>
             <XDSHStack gap={2} vAlign="center">
-              <XDSAvatar name="Jane Doe" size="md" />
+              <XDSAvatar name="Jane Doe" size="medium" />
               <XDSText type="body" weight="bold">Jane Doe</XDSText>
               <XDSBadge label="Active" variant="success" />
             </XDSHStack>
@@ -1327,23 +1342,23 @@ function TemplatePreview({
         flexDirection: 'column' as const,
         height: '100%',
         overflow: 'hidden',
-        paddingTop: 16,
+        paddingTop: 0,
       }}>
       <div
         style={{
           flex: 1,
-          overflow: 'auto',
-          padding: '0 16px 16px 0',
+          overflow: 'hidden',
+          padding: 0,
+          display: 'flex',
+          flexDirection: 'column' as const,
         }}>
         {/* Bordered container: toolbar + preview + code */}
         <div
           style={{
-            border: '1px solid var(--color-divider, rgba(0,0,0,0.1))',
-            borderRadius: 12,
-            paddingBottom: 8,
             display: 'flex',
             flexDirection: 'column' as const,
-            minHeight: 800,
+            flex: 1,
+            overflow: 'hidden',
           }}>
           {/* Toolbar */}
           <XDSToolbar
@@ -1420,7 +1435,7 @@ function TemplatePreview({
                 <XDSButton
                   label="Save"
                   variant="ghost"
-                  icon={<BookmarkIcon />}
+                  icon={<SaveIcon />}
                   isIconOnly
                   onClick={() => {}}
                 />
@@ -1450,273 +1465,170 @@ function TemplatePreview({
           />
 
           {/* Preview — browser frame + image */}
-          {editorView === 'preview' && (
+          <div
+            style={{
+              backgroundColor: 'var(--color-background-body, #f5f5f5)',
+              borderRadius: 0,
+              padding: 0,
+              margin: 0,
+              display: editorView === 'preview' ? 'flex' : 'none',
+              justifyContent: 'center',
+              alignItems: 'flex-start',
+              flex: 1,
+              overflow: 'hidden',
+            }}>
             <div
+              ref={previewRef}
               style={{
-                backgroundColor: '#f5f5f5',
-                borderRadius: 8,
-                padding: 22,
-                margin: '0 8px',
-                display: 'flex',
-                justifyContent: 'center',
-                minHeight: 700,
-              }}>
-              <div
-                ref={previewRef}
-                style={{
-                  position: 'relative',
-                  width:
-                    VIEWPORT_WIDTHS[viewportSize] === '100%'
-                      ? '100%'
-                      : VIEWPORT_WIDTHS[viewportSize],
-                  maxWidth: '100%',
-                  backgroundColor: '#fff',
-                  borderRadius: viewportSize === 'phone' ? 36 : 12,
-                  border: viewportSize === 'phone' ? '10px solid #fff' : 'none',
-                  boxShadow:
-                    viewportSize === 'phone'
-                      ? '0 8px 40px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.06)'
-                      : '0 8px 40px rgba(0,0,0,0.12)',
-                  overflow: 'hidden',
-                  transition:
-                    'width var(--duration-medium, 410ms) var(--ease-standard, cubic-bezier(0.24, 1, 0.4, 1))',
-                }}>
-                {/* Browser chrome dots for desktop */}
-                {viewportSize === 'desktop' && (
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      padding: '10px 14px',
-                      backgroundColor: '#fff',
-                      borderBottom: '1px solid #f0f0f0',
-                    }}>
-                    <div
-                      style={{display: 'flex', gap: 6, alignItems: 'center'}}>
-                      <div
-                        style={{
-                          width: 10,
-                          height: 10,
-                          borderRadius: '50%',
-                          backgroundColor: '#e0e0e0',
-                        }}
-                      />
-                      <div
-                        style={{
-                          width: 10,
-                          height: 10,
-                          borderRadius: '50%',
-                          backgroundColor: '#e0e0e0',
-                        }}
-                      />
-                      <div
-                        style={{
-                          width: 10,
-                          height: 10,
-                          borderRadius: '50%',
-                          backgroundColor: '#e0e0e0',
-                        }}
-                      />
-                    </div>
-                  </div>
-                )}
-                <img
-                  src={imageSrc}
-                  alt="Template preview"
-                  style={{
-                    display: 'block',
-                    width: '100%',
-                    aspectRatio:
-                      viewportSize === 'phone' ? '9 / 19.5' : '1920 / 1200',
-                    objectFit: 'cover',
-                    opacity: isGenerating ? 0 : 1,
-                    transition: 'opacity 600ms ease',
-                  }}
-                />
-                {showCanvas && (
-                  <div
-                    style={{
-                      position: 'absolute',
-                      inset: 0,
-                      opacity: isGenerating ? 1 : 0,
-                      transition: 'opacity 600ms ease',
-                    }}>
-                    <BoidsCanvas
-                      width={previewSize.w}
-                      height={previewSize.h}
-                      simulation={simulation}
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Code block */}
-          {editorView === 'code' && (
-            <div
-              style={{
-                margin: '8px 8px 0',
-                border: '1px solid var(--color-divider, rgba(0,0,0,0.1))',
-                borderRadius: 8,
-                backgroundColor:
-                  'var(--color-background-muted, rgba(0,0,0,0.03))',
+                position: 'relative',
+                width:
+                  VIEWPORT_WIDTHS[viewportSize] === '100%'
+                    ? '100%'
+                    : VIEWPORT_WIDTHS[viewportSize],
+                maxWidth: '100%',
+                backgroundColor: '#fff',
+                borderRadius: viewportSize === 'phone' ? 36 : 12,
+                border: viewportSize === 'phone' ? '10px solid #fff' : 'none',
+                boxShadow:
+                  viewportSize === 'phone'
+                    ? '0 8px 40px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.06)'
+                    : '0 8px 40px rgba(0,0,0,0.12)',
                 overflow: 'hidden',
               }}>
-              {/* Header */}
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '8px 12px 8px 16px',
-                }}>
-                <span
-                  style={{
-                    fontFamily: '"Roboto Mono", monospace',
-                    fontSize: 12,
-                    fontWeight: 500,
-                    color: 'var(--color-text-secondary, #4e606f)',
-                  }}>
-                  typescript — useUser.ts
-                </span>
-              </div>
-              {/* Code */}
-              <div style={{display: 'flex'}}>
-                {/* Line numbers */}
+              {/* Browser chrome dots for desktop */}
+              {viewportSize === 'desktop' && (
                 <div
                   style={{
-                    padding: '12px 12px 12px 16px',
-                    borderRight:
-                      '1px solid var(--color-divider, rgba(0,0,0,0.1))',
-                    fontFamily: '"Roboto Mono", monospace',
-                    fontSize: 14,
-                    lineHeight: '20px',
-                    color: 'var(--color-text-disabled, #a4b0bc)',
-                    textAlign: 'right',
-                    userSelect: 'none',
-                    minWidth: 45,
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: '10px 14px',
+                    backgroundColor: '#fff',
+                    borderBottom: '1px solid #f0f0f0',
                   }}>
-                  {MOCK_CODE.split('\n').map((_, i) => (
-                    <div key={i}>{i + 1}</div>
-                  ))}
+                  <div style={{display: 'flex', gap: 6, alignItems: 'center'}}>
+                    <div
+                      style={{
+                        width: 10,
+                        height: 10,
+                        borderRadius: '50%',
+                        backgroundColor: '#e0e0e0',
+                      }}
+                    />
+                    <div
+                      style={{
+                        width: 10,
+                        height: 10,
+                        borderRadius: '50%',
+                        backgroundColor: '#e0e0e0',
+                      }}
+                    />
+                    <div
+                      style={{
+                        width: 10,
+                        height: 10,
+                        borderRadius: '50%',
+                        backgroundColor: '#e0e0e0',
+                      }}
+                    />
+                  </div>
                 </div>
-                {/* Code content */}
-                <pre
+              )}
+              <img
+                src={imageSrc}
+                alt="Template preview"
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  aspectRatio:
+                    viewportSize === 'phone' ? '9 / 19.5' : '1920 / 1200',
+                  objectFit: 'cover',
+                  opacity: isGenerating ? 0 : 1,
+                  transition: 'opacity 600ms ease',
+                }}
+              />
+              {showCanvas && (
+                <div
                   style={{
-                    flex: 1,
-                    padding: '12px 16px',
-                    fontFamily: '"Roboto Mono", monospace',
-                    fontSize: 14,
-                    lineHeight: '20px',
-                    margin: 0,
-                    overflow: 'auto',
-                    color: 'var(--color-text-primary, #0a1317)',
+                    position: 'absolute',
+                    inset: 0,
+                    opacity: isGenerating ? 1 : 0,
+                    transition: 'opacity 600ms ease',
                   }}>
-                  {MOCK_CODE}
-                </pre>
-              </div>
+                  <BoidsCanvas
+                    width={previewSize.w}
+                    height={previewSize.h}
+                    simulation={simulation}
+                  />
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          </div>
 
-        {/* Title & metadata */}
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column' as const,
-            gap: 16,
-            marginTop: 16,
-          }}>
-          <div style={{maxWidth: 540}}>
+          {/* Code block */}
+          <div
+            style={{
+              margin: '0 8px',
+              border: '1px solid var(--color-divider, rgba(0,0,0,0.1))',
+              borderRadius: 8,
+              backgroundColor:
+                'var(--color-background-muted, rgba(0,0,0,0.03))',
+              overflow: 'auto',
+              flex: 1,
+              display: editorView === 'code' ? 'block' : 'none',
+            }}>
+            {/* Header */}
             <div
               style={{
                 display: 'flex',
-                flexDirection: 'column' as const,
-                gap: 4,
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '8px 12px 8px 16px',
               }}>
-              <XDSHeading level={1}>{templateName}</XDSHeading>
-              <XDSText type="supporting" color="secondary">
-                XDS · 541 usages
-              </XDSText>
+              <span
+                style={{
+                  fontFamily: '"Roboto Mono", monospace',
+                  fontSize: 12,
+                  fontWeight: 500,
+                  color: 'var(--color-text-secondary, #4e606f)',
+                }}>
+                typescript — useUser.ts
+              </span>
             </div>
-            <XDSText type="body" style={{marginTop: 16}}>
-              Buttons are clickable elements that are used to trigger actions.
-              They communicate calls to action to the user and allow users to
-              interact with pages in a variety of ways. Button labels express
-              what action will occur when the user interacts with it.
-            </XDSText>
-          </div>
-        </div>
-
-        {/* Similar templates */}
-        <div
-          style={{
-            marginTop: 16,
-            display: 'flex',
-            flexDirection: 'column' as const,
-            gap: 16,
-          }}>
-          <XDSHeading level={2}>Similar templates</XDSHeading>
-          <div style={{display: 'flex', gap: 16}}>
-            {TEMPLATE_IMAGES.slice(0, 3).map((src, i) => (
+            {/* Code */}
+            <div style={{display: 'flex'}}>
+              {/* Line numbers */}
               <div
-                key={i}
+                style={{
+                  padding: '12px 12px 12px 16px',
+                  borderRight:
+                    '1px solid var(--color-divider, rgba(0,0,0,0.1))',
+                  fontFamily: '"Roboto Mono", monospace',
+                  fontSize: 14,
+                  lineHeight: '20px',
+                  color: 'var(--color-text-disabled, #a4b0bc)',
+                  textAlign: 'right',
+                  userSelect: 'none',
+                  minWidth: 45,
+                }}>
+                {MOCK_CODE.split('\n').map((_, i) => (
+                  <div key={i}>{i + 1}</div>
+                ))}
+              </div>
+              {/* Code content */}
+              <pre
                 style={{
                   flex: 1,
-                  aspectRatio: '1920 / 1200',
-                  border: '1px solid var(--color-divider, rgba(0,0,0,0.1))',
-                  backgroundColor: '#fff',
-                  borderRadius: 12,
-                  boxShadow: '0 8px 40px rgba(0,0,0,0.12)',
-                  overflow: 'hidden',
+                  padding: '12px 16px',
+                  fontFamily: '"Roboto Mono", monospace',
+                  fontSize: 14,
+                  lineHeight: '20px',
+                  margin: 0,
+                  overflow: 'auto',
+                  color: 'var(--color-text-primary, #0a1317)',
                 }}>
-                <img
-                  src={src}
-                  alt={`Similar template ${i + 1}`}
-                  style={{
-                    display: 'block',
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                  }}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Component used */}
-        <div
-          style={{
-            marginTop: 16,
-            display: 'flex',
-            flexDirection: 'column' as const,
-            gap: 16,
-          }}>
-          <XDSHeading level={2}>Component used</XDSHeading>
-          <XDSText type="body">
-            XDSAppShell, XDSTopNav, XDSVStack, XDSHStack, XDSHeading, XDSText,
-            XDSButton, XDSCard, XDSBadge, XDSAvatar
-          </XDSText>
-        </div>
-
-        {/* Keywords */}
-        <div
-          style={{
-            marginTop: 16,
-            display: 'flex',
-            flexDirection: 'column' as const,
-            gap: 16,
-            paddingBottom: 24,
-          }}>
-          <XDSHeading level={2}>Keywords</XDSHeading>
-          <div style={{display: 'flex', flexWrap: 'wrap' as const, gap: 4}}>
-            <XDSToken label="Dashboard" size="sm" />
-            <XDSToken label="Admin" size="sm" />
-            <XDSToken label="Layout" size="sm" />
-            <XDSToken label="Navigation" size="sm" />
-            <XDSToken label="Settings" size="sm" />
+                {MOCK_CODE}
+              </pre>
+            </div>
           </div>
         </div>
       </div>
@@ -2675,7 +2587,7 @@ function DocsView({
               <div
                 style={{
                   border: '1px solid var(--color-divider, rgba(0,0,0,0.1))',
-                  backgroundColor: '#fff',
+                  backgroundColor: 'var(--color-background-card, #fff)',
                   borderRadius: 12,
                   boxShadow: '0 8px 40px rgba(0,0,0,0.12)',
                   overflow: 'hidden',
@@ -3379,12 +3291,6 @@ function TemplateFullPreview({
   onUse: () => void;
 }) {
   const [viewMode, setViewMode] = useState<'desktop' | 'mobile'>('desktop');
-  const [selectedPalette, setSelectedPalette] = useState<string | null>(
-    PREVIEW_COLOR_PALETTES[0].name,
-  );
-  const [selectedFontPack, setSelectedFontPack] = useState<string | null>(
-    PREVIEW_FONT_PACKS[0].heading,
-  );
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -3400,7 +3306,7 @@ function TemplateFullPreview({
         style={{
           flex: 1,
           minWidth: 0,
-          backgroundColor: '#f5f5f5',
+          backgroundColor: 'var(--color-background-body, #f5f5f5)',
           display: 'flex',
           flexDirection: 'column' as const,
           opacity: isVisible ? 1 : 0,
@@ -3529,8 +3435,8 @@ function TemplateFullPreview({
           width: '30%',
           maxWidth: 380,
           minWidth: 300,
-          backgroundColor: '#fff',
-          borderLeft: '1px solid #e0e0e0',
+          backgroundColor: 'var(--color-background-card, #fff)',
+          borderLeft: '1px solid var(--color-border-default, #e0e0e0)',
           padding: 32,
           overflowY: 'auto' as const,
           display: 'flex',
@@ -3540,26 +3446,24 @@ function TemplateFullPreview({
           transition:
             'opacity 500ms cubic-bezier(0.16, 1, 0.3, 1) 100ms, transform 500ms cubic-bezier(0.16, 1, 0.3, 1) 100ms',
         }}>
-        {/* Template name & description */}
-        <div>
-          <XDSHeading level={1}>{templateName}</XDSHeading>
-          <div style={{marginTop: 4}}>
-            <XDSText type="body" color="secondary">
-              Continue to customize styles, add features, and more when you
-              start a trial.
-            </XDSText>
-          </div>
+        {/* Template name */}
+        <XDSHeading level={2}>{templateName}</XDSHeading>
+
+        {/* Subtitle */}
+        <div style={{marginTop: 4}}>
+          <XDSText type="supporting" color="secondary">
+            XDS · 541 usages
+          </XDSText>
         </div>
 
-        {/* CTA button */}
-        <div style={{marginTop: 16}}>
-          <XDSButton
-            variant="primary"
-            label="Start crafting"
-            onClick={onUse}
-            size="lg"
-            style={{width: '100%'}}
-          />
+        {/* Description */}
+        <div style={{marginTop: 12}}>
+          <XDSText type="body" color="secondary">
+            Buttons are clickable elements that are used to trigger actions.
+            They communicate calls to action to the user and allow users to
+            interact with pages in a variety of ways. Button labels express what
+            action will occur when the user interacts with it.
+          </XDSText>
         </div>
 
         {/* Stats buttons */}
@@ -3612,87 +3516,80 @@ function TemplateFullPreview({
           </div>
         </div>
 
-        {/* Color palettes */}
+        {/* CTA button */}
+        <div style={{marginTop: 16}}>
+          <XDSButton
+            variant="primary"
+            label="Start crafting"
+            onClick={onUse}
+            size="lg"
+            style={{width: '100%'}}
+          />
+        </div>
+
+        {/* Similar templates */}
         <div style={{marginTop: 32}}>
-          <XDSHeading level={4}>Color palettes</XDSHeading>
+          <XDSHeading level={3}>Similar templates</XDSHeading>
           <div
             style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: 10,
-              marginTop: 8,
+              display: 'flex',
+              gap: 12,
+              marginTop: 12,
+              overflowX: 'auto' as const,
             }}>
-            {PREVIEW_COLOR_PALETTES.map(palette => (
+            {[0, 1, 2, 3].map(i => (
               <div
-                key={palette.name}
-                onClick={() => setSelectedPalette(palette.name)}
+                key={i}
                 style={{
-                  cursor: 'pointer',
-                  border: `2px solid ${selectedPalette === palette.name ? 'var(--color-accent, #0066FF)' : 'transparent'}`,
-                  borderRadius: 14,
+                  flex: '0 0 120px',
+                  aspectRatio: '1920 / 1200',
+                  border: '1px solid var(--color-divider, rgba(0,0,0,0.1))',
+                  backgroundColor: 'var(--color-background-card, #fff)',
+                  borderRadius: 8,
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
                   overflow: 'hidden',
-                  transition: 'border-color 0.15s ease',
                 }}>
-                <XDSCard padding={0}>
-                  <div
-                    style={{
-                      display: 'flex',
-                      overflow: 'hidden',
-                      height: 48,
-                    }}>
-                    {palette.colors.map((color, i) => (
-                      <div
-                        key={i}
-                        style={{
-                          flex: 1,
-                          backgroundColor: color,
-                        }}
-                      />
-                    ))}
-                  </div>
-                </XDSCard>
+                <img
+                  src={DUMMY_IMAGE}
+                  alt={`Similar template ${i + 1}`}
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                  }}
+                />
               </div>
             ))}
           </div>
         </div>
 
-        {/* Font packs */}
+        {/* Component used */}
         <div style={{marginTop: 32}}>
-          <XDSHeading level={4}>Font packs</XDSHeading>
+          <XDSHeading level={3}>Component used</XDSHeading>
+          <div style={{marginTop: 8}}>
+            <XDSText type="body">
+              XDSAppShell, XDSTopNav, XDSVStack, XDSHStack, XDSHeading, XDSText,
+              XDSButton, XDSCard, XDSBadge, XDSAvatar
+            </XDSText>
+          </div>
+        </div>
+
+        {/* Keywords */}
+        <div style={{marginTop: 32}}>
+          <XDSHeading level={3}>Keywords</XDSHeading>
           <div
             style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: 10,
+              display: 'flex',
+              flexWrap: 'wrap' as const,
+              gap: 4,
               marginTop: 8,
             }}>
-            {PREVIEW_FONT_PACKS.map(pack => (
-              <div
-                key={pack.heading}
-                onClick={() => setSelectedFontPack(pack.heading)}
-                style={{
-                  cursor: 'pointer',
-                  border: `2px solid ${selectedFontPack === pack.heading ? 'var(--color-accent, #0066FF)' : 'transparent'}`,
-                  borderRadius: 14,
-                  overflow: 'hidden',
-                  transition: 'border-color 0.15s ease',
-                }}>
-                <XDSCard padding={2}>
-                  <div style={{fontFamily: pack.heading}}>
-                    <XDSText
-                      type="body"
-                      style={{fontWeight: 600, fontSize: 16}}>
-                      Heading
-                    </XDSText>
-                  </div>
-                  <div style={{fontFamily: pack.paragraph}}>
-                    <XDSText type="supporting" color="secondary">
-                      Paragraph text
-                    </XDSText>
-                  </div>
-                </XDSCard>
-              </div>
-            ))}
+            <XDSToken label="Dashboard" size="sm" />
+            <XDSToken label="Admin" size="sm" />
+            <XDSToken label="Layout" size="sm" />
+            <XDSToken label="Navigation" size="sm" />
+            <XDSToken label="Settings" size="sm" />
           </div>
         </div>
 
@@ -3706,8 +3603,7 @@ function TemplateFullPreview({
             gap: 12,
           }}>
           <XDSAvatar
-            size="sm"
-            style={{width: 36, height: 36}}
+            size={36}
             src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&h=80&fit=crop&crop=face"
           />
           <div>
@@ -3765,7 +3661,7 @@ function TemplateCombinedView({
         style={{
           flex: 7,
           minWidth: 0,
-          backgroundColor: '#f5f5f5',
+          backgroundColor: 'var(--color-background-body, #f5f5f5)',
           display: 'flex',
           flexDirection: 'column' as const,
           opacity: isVisible ? 1 : 0,
@@ -3917,8 +3813,8 @@ function TemplateCombinedView({
           flex: 3,
           maxWidth: 380,
           minWidth: 300,
-          backgroundColor: '#fff',
-          borderLeft: '1px solid #e0e0e0',
+          backgroundColor: 'var(--color-background-card, #fff)',
+          borderLeft: '1px solid var(--color-border-default, #e0e0e0)',
           display: 'flex',
           flexDirection: 'column' as const,
           opacity: isVisible ? 1 : 0,
@@ -4114,8 +4010,7 @@ function TemplateCombinedView({
                   gap: 12,
                 }}>
                 <XDSAvatar
-                  size="sm"
-                  style={{width: 36, height: 36}}
+                  size={36}
                   src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&h=80&fit=crop&crop=face"
                 />
                 <div>
@@ -4140,7 +4035,7 @@ function TemplateCombinedView({
                 }}>
                 <div
                   style={{
-                    backgroundColor: '#f5f5f5',
+                    backgroundColor: 'var(--color-background-body, #f5f5f5)',
                     borderRadius: 16,
                     padding: '12px 16px',
                     maxWidth: '85%',
@@ -4348,7 +4243,6 @@ export default function DocsiteLandingTemplate() {
         }}
         onUse={() => {
           setUseTarget(previewTarget);
-          setPreviewTarget(null);
         }}
       />
     );
