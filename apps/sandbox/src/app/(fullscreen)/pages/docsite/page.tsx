@@ -939,7 +939,26 @@ function ChatPanel({
         height: '100%',
         width: '100%',
       }}>
-      {/* Header with back + title */}
+      {/* Header: logo or back+title */}
+      {!templateName && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '12px 16px',
+            flexShrink: 0,
+          }}>
+          <LogoNav activeView={activeView} setActiveView={setActiveView} />
+          <XDSButton
+            label="Toggle sidebar"
+            variant="ghost"
+            size="sm"
+            isIconOnly
+            icon={<SidebarIcon />}
+          />
+        </div>
+      )}
       {templateName && (
         <div
           style={{
@@ -957,7 +976,7 @@ function ChatPanel({
               icon={<ArrowLeftIcon />}
               isIconOnly
               onClick={onBack}
-              style={{marginLeft: -8, flexShrink: 0}}
+              style={{flexShrink: 0}}
             />
           )}
           <XDSHeading level={1} style={{lineHeight: 1}}>
@@ -3362,7 +3381,7 @@ function TemplateFullPreview({
             backgroundColor: 'var(--color-background-card, #fff)',
             borderRadius: 16,
             boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
-            padding: '16px 32px 32px',
+            padding: showChat ? '16px 32px 32px' : '24px 32px 32px',
             overflowY: 'auto' as const,
             display: 'flex',
             flexDirection: 'column' as const,
@@ -3373,18 +3392,18 @@ function TemplateFullPreview({
               display: 'flex',
               alignItems: 'center',
               gap: 8,
-              marginBottom: showChat ? 32 : 0,
+              marginBottom: showChat ? 32 : 8,
               paddingBottom: 0,
               borderBottom: showChat
                 ? '1px solid var(--color-divider, #e0e0e0)'
                 : 'none',
             }}>
             <XDSButton
-              label="Back"
+              label="Craft"
               variant="ghost"
               size="sm"
               icon={<ArrowLeftIcon />}
-              isIconOnly
+              isIconOnly={!!showChat}
               onClick={onBack}
               style={{marginLeft: -8, flexShrink: 0}}
             />
@@ -3515,9 +3534,9 @@ function TemplateFullPreview({
                   size={36}
                   src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&h=80&fit=crop&crop=face"
                 />
-                <div style={{display: 'flex', flexDirection: 'column', gap: 2}}>
+                <div style={{display: 'flex', flexDirection: 'column', gap: 0}}>
                   <XDSText type="supporting" color="secondary">
-                    Designed by
+                    Crafted by
                   </XDSText>
                   <XDSText type="body" style={{fontWeight: 600, fontSize: 16}}>
                     Andrea Anderson
@@ -4466,9 +4485,9 @@ function TemplateCombinedView({
                   size={36}
                   src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&h=80&fit=crop&crop=face"
                 />
-                <div style={{display: 'flex', flexDirection: 'column', gap: 2}}>
+                <div style={{display: 'flex', flexDirection: 'column', gap: 0}}>
                   <XDSText type="supporting" color="secondary">
-                    Designed by
+                    Crafted by
                   </XDSText>
                   <XDSText type="body" style={{fontWeight: 600, fontSize: 16}}>
                     Andrea Anderson
@@ -4682,9 +4701,8 @@ export default function DocsiteLandingTemplate() {
         }}>
         <div
           style={{
-            width: 280,
-            minWidth: 280,
-            borderRight: '1px solid var(--color-divider)',
+            width: 380,
+            minWidth: 380,
           }}>
           <ChatPanel
             isGenerating={previewGenerating}
