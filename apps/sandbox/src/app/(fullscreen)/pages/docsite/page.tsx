@@ -4990,6 +4990,13 @@ export default function DocsiteLandingTemplate() {
   const [previewTarget, setPreviewTarget] = useState<number | null>(null);
   const [useTarget, setUseTarget] = useState<number | null>(null);
   const [previewGenerating, setPreviewGenerating] = useState(false);
+
+  // Reset preview/editor state when switching views
+  useEffect(() => {
+    setPreviewTarget(null);
+    setUseTarget(null);
+    setChatOpen(false);
+  }, [activeView]);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const previewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const simRef = useRef<BoidsSimulation | null>(null);
