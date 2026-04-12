@@ -1469,7 +1469,7 @@ function TemplatePreview({
             style={{
               backgroundColor: 'var(--color-background-body, #f5f5f5)',
               borderRadius: 0,
-              padding: 0,
+              padding: '22px 22px 22px',
               margin: 0,
               display: editorView === 'preview' ? 'flex' : 'none',
               justifyContent: 'center',
@@ -3292,6 +3292,12 @@ function TemplateFullPreview({
 }) {
   const [viewMode, setViewMode] = useState<'desktop' | 'mobile'>('desktop');
   const [isVisible, setIsVisible] = useState(false);
+  const [selectedPalette, setSelectedPalette] = useState<string | null>(
+    PREVIEW_COLOR_PALETTES[0].name,
+  );
+  const [selectedFontPack, setSelectedFontPack] = useState<string | null>(
+    PREVIEW_FONT_PACKS[0].heading,
+  );
 
   useEffect(() => {
     requestAnimationFrame(() => {
@@ -3525,6 +3531,90 @@ function TemplateFullPreview({
             size="lg"
             style={{width: '100%'}}
           />
+        </div>
+
+        {/* Color palettes */}
+        <div style={{marginTop: 32}}>
+          <XDSHeading level={4}>Color palettes</XDSHeading>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: 10,
+              marginTop: 8,
+            }}>
+            {PREVIEW_COLOR_PALETTES.map(palette => (
+              <div
+                key={palette.name}
+                onClick={() => setSelectedPalette(palette.name)}
+                style={{
+                  cursor: 'pointer',
+                  border: `2px solid ${selectedPalette === palette.name ? 'var(--color-accent, #0066FF)' : 'transparent'}`,
+                  borderRadius: 14,
+                  overflow: 'hidden',
+                  transition: 'border-color 0.15s ease',
+                }}>
+                <XDSCard padding={0}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      overflow: 'hidden',
+                      height: 48,
+                    }}>
+                    {palette.colors.map((color, i) => (
+                      <div
+                        key={i}
+                        style={{
+                          flex: 1,
+                          backgroundColor: color,
+                        }}
+                      />
+                    ))}
+                  </div>
+                </XDSCard>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Font packs */}
+        <div style={{marginTop: 32}}>
+          <XDSHeading level={4}>Font packs</XDSHeading>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: 10,
+              marginTop: 8,
+            }}>
+            {PREVIEW_FONT_PACKS.map(pack => (
+              <div
+                key={pack.heading}
+                onClick={() => setSelectedFontPack(pack.heading)}
+                style={{
+                  cursor: 'pointer',
+                  border: `2px solid ${selectedFontPack === pack.heading ? 'var(--color-accent, #0066FF)' : 'transparent'}`,
+                  borderRadius: 14,
+                  overflow: 'hidden',
+                  transition: 'border-color 0.15s ease',
+                }}>
+                <XDSCard padding={2}>
+                  <div style={{fontFamily: pack.heading}}>
+                    <XDSText
+                      type="body"
+                      style={{fontWeight: 600, fontSize: 16}}>
+                      Heading
+                    </XDSText>
+                  </div>
+                  <div style={{fontFamily: pack.paragraph}}>
+                    <XDSText type="supporting" color="secondary">
+                      Paragraph text
+                    </XDSText>
+                  </div>
+                </XDSCard>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Similar templates */}
