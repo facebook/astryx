@@ -126,7 +126,7 @@ const itemStyles = stylex.create({
   separator: {
     display: {
       default: 'flex',
-      ':first-child': 'none',
+      [stylex.when.ancestor(':first-child')]: 'none',
     },
     alignItems: 'center',
     color: colorVars['--color-text-secondary'],
