@@ -2,7 +2,7 @@
 
 /**
  * @file XDSTopNavItem.tsx
- * @input Uses React, AnchorHTMLAttributes, ReactNode
+ * @input Uses React, ReactNode, XDSBaseProps, XDSLinkComponentType
  * @output Exports XDSTopNavItem component and XDSTopNavItemProps
  * @position Navigation item component for XDSTopNav startContent
  *
@@ -115,7 +115,8 @@ export interface XDSTopNavItemProps extends XDSBaseProps<HTMLAnchorElement> {
   as?: XDSLinkComponentType;
   /**
    * The accessible label for the nav item.
-   * Used as visible text, or as aria-label for icon-only items.
+   * Rendered as visible text by default. When `isIconOnly` is true,
+   * used as aria-label instead.
    */
   label: string;
   /**
@@ -129,14 +130,18 @@ export interface XDSTopNavItemProps extends XDSBaseProps<HTMLAnchorElement> {
    */
   isDisabled?: boolean;
   /**
+   * Renders the item as a square icon-only element.
+   * When true, `label` becomes the aria-label and visible text is hidden.
+   * Requires `icon` to be set.
+   * @default false
+   */
+  isIconOnly?: boolean;
+  /**
    * Optional icon to display before the label.
-   * // TODO: Add isIconOnly prop for consistency with XDSButton (#1257)
-   * If provided without children, item becomes icon-only.
    */
   icon?: ReactNode;
   /**
    * Optional content to render instead of the label.
-   * If omitted and icon is provided, item becomes icon-only.
    */
   children?: ReactNode;
   /**
@@ -160,7 +165,7 @@ export interface XDSTopNavItemProps extends XDSBaseProps<HTMLAnchorElement> {
  *     <>
  *       <XDSTopNavItem label="Home" href="/" isSelected />
  *       <XDSTopNavItem label="Products" href="/products" />
- *       <XDSTopNavItem label="Settings" href="/settings" icon={<GearIcon />} />
+ *       <XDSTopNavItem label="Settings" href="/settings" icon={<GearIcon />} isIconOnly />
  *     </>
  *   }
  * />
@@ -171,6 +176,7 @@ export function XDSTopNavItem({
   label,
   isSelected = false,
   isDisabled = false,
+  isIconOnly = false,
   icon,
   children,
   size = 'md',
@@ -182,8 +188,6 @@ export function XDSTopNavItem({
 }: XDSTopNavItemProps) {
   const LinkComponent = useXDSLinkComponent(as);
   const renderMode = useXDSTopNavRenderMode();
-  const isIconOnly = icon != null && children == null && !label;
-  const showLabel = !isIconOnly;
 
   // =========================================================================
   // Drawer mode — render as a SideNavItem-style vertical list element
@@ -192,6 +196,7 @@ export function XDSTopNavItem({
     return (
       <LinkComponent
         ref={ref}
+        aria-label={isIconOnly ? label : undefined}
         aria-current={isSelected ? 'page' : undefined}
         aria-disabled={isDisabled || undefined}
         tabIndex={isDisabled ? -1 : undefined}
@@ -210,7 +215,7 @@ export function XDSTopNavItem({
         )}
         {...props}>
         {icon}
-        {children ?? label}
+        {!isIconOnly && (children ?? label)}
       </LinkComponent>
     );
   }
@@ -240,7 +245,7 @@ export function XDSTopNavItem({
       )}
       {...props}>
       {icon}
-      {showLabel && (children ?? label)}
+      {!isIconOnly && (children ?? label)}
     </LinkComponent>
   );
 }

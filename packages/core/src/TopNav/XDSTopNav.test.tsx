@@ -254,6 +254,20 @@ describe('XDSTopNavItem', () => {
     expect(screen.getByText('Settings')).toBeInTheDocument();
   });
 
+  it('hides label and sets aria-label when isIconOnly', () => {
+    render(
+      <XDSTopNavItem
+        label="Settings"
+        href="#"
+        icon={<span data-testid="icon">⚙️</span>}
+        isIconOnly
+      />,
+    );
+    expect(screen.getByTestId('icon')).toBeInTheDocument();
+    expect(screen.queryByText('Settings')).not.toBeInTheDocument();
+    expect(screen.getByRole('link')).toHaveAttribute('aria-label', 'Settings');
+  });
+
   it('handles click events', async () => {
     const user = userEvent.setup();
     const handleClick = vi.fn();
