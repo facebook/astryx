@@ -1578,14 +1578,14 @@ function TemplatePreview({
           {/* Code block */}
           <div
             style={{
-              margin: 0,
-              border: 'none',
-              borderRadius: 0,
-              backgroundColor:
-                'var(--color-background-muted, rgba(0,0,0,0.03))',
+              margin: '0 22px 22px',
+              backgroundColor: 'var(--color-background-card, #fff)',
+              borderRadius: 16,
+              boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
               overflow: 'auto',
               flex: 1,
-              display: editorView === 'code' ? 'block' : 'none',
+              display: editorView === 'code' ? 'flex' : 'none',
+              flexDirection: 'column' as const,
             }}>
             {/* Header */}
             <div
@@ -4640,6 +4640,47 @@ export default function DocsiteLandingTemplate() {
   }, []);
 
   const isGenerating = generatingSource !== null;
+
+  // Classic flat editor layout for 3rd card (index 2) — no floating cards
+  if ((previewTarget === 2 || useTarget === 2) && activeView === 'craft') {
+    const t = TEMPLATES[2 % TEMPLATES.length];
+    return (
+      <div
+        style={{
+          display: 'flex',
+          height: '100vh',
+          overflow: 'hidden',
+        }}>
+        <div
+          style={{
+            width: 280,
+            minWidth: 280,
+            borderRight: '1px solid var(--color-divider)',
+          }}>
+          <ChatPanel
+            isGenerating={previewGenerating}
+            onSend={handlePreviewSend}
+            activeView={activeView}
+            setActiveView={setActiveView}
+          />
+        </div>
+        <div
+          style={{flex: 1, display: 'flex', flexDirection: 'column' as const}}>
+          <TemplatePreview
+            templateName={t.name}
+            imageSrc={t.src}
+            onBack={() => {
+              setPreviewTarget(null);
+              setUseTarget(null);
+              setChatOpen(false);
+            }}
+            isGenerating={previewGenerating}
+            simulation={simRef.current!}
+          />
+        </div>
+      </div>
+    );
+  }
 
   // Combined preview + editor view for 2nd card (index 1)
   if (previewTarget === 1 && activeView === 'craft') {
