@@ -36,6 +36,7 @@ import type {XDSIconType} from '../Icon';
 import type {XDSInputStatus} from '../Field/types';
 import {XDSSpinner} from '../Spinner';
 import {xdsClassName, mergeProps} from '../utils';
+import {switchScope} from './switch.markers.stylex';
 import {XDSBaseProps} from '../XDSBaseProps';
 
 // Fixed dimensions: 40px width, 24px height, 16px thumb (off), 20px thumb (on)
@@ -105,19 +106,19 @@ const styles = stylex.create({
   trackFocus: {
     outline: {
       default: 'none',
-      [stylex.when.ancestor(':focus-within')]:
+      [stylex.when.ancestor(':focus-within', switchScope)]:
         `2px solid ${colorVars['--color-accent']}`,
     },
     outlineOffset: {
       default: null,
-      [stylex.when.ancestor(':focus-within')]: '2px',
+      [stylex.when.ancestor(':focus-within', switchScope)]: '2px',
     },
   },
   // State-dependent colors with ancestor hover behavior
   trackOff: {
     backgroundColor: {
       default: colorVars['--color-background-gray'],
-      [stylex.when.ancestor(':hover')]: {
+      [stylex.when.ancestor(':hover', switchScope)]: {
         '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-background-gray']}, ${colorVars['--color-tint-hover']} 5%)`,
       },
     },
@@ -125,7 +126,7 @@ const styles = stylex.create({
   trackOn: {
     backgroundColor: {
       default: colorVars['--color-accent'],
-      [stylex.when.ancestor(':hover')]: {
+      [stylex.when.ancestor(':hover', switchScope)]: {
         '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-tint-hover']} 15%)`,
       },
     },
@@ -433,8 +434,9 @@ export function XDSSwitch({
         {...stylex.props(
           styles.container,
           labelSpacing === 'spread' && styles.containerSpread,
-          !isDisabled && stylex.defaultMarker(),
+          !isDisabled && switchScope,
         )}>
+        {' '}
         {labelPosition === 'start' ? (
           <>
             {labelElement}
