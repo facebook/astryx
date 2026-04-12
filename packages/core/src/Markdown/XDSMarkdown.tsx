@@ -9,6 +9,7 @@
 
 import {useMemo, useRef} from 'react';
 import type React from 'react';
+import {Fragment} from 'react';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -130,8 +131,8 @@ const dynamicStyles = stylex.create({
   proseAlign: (marginInline: string) => ({
     marginInline,
   }),
-  tableMinWidth: (minWidth: string) => ({
-    minWidth,
+  blockWidth: (minWidth: string) => ({
+    minWidth: `min(${minWidth}, 100%)`,
   }),
   blockAlign: (marginInline: string) => ({
     marginInline,
@@ -144,6 +145,8 @@ const styles = stylex.create({
     color: colorVars['--color-text-primary'],
     lineHeight: typeScaleVars['--text-body-leading'],
     fontSize: typeScaleVars['--text-body-size'],
+    width: '100%',
+    maxWidth: '100%',
     minWidth: 0,
     overflowWrap: 'break-word',
   },
@@ -273,16 +276,19 @@ const styles = stylex.create({
     marginInlineEnd: 0,
   },
   // Table
+  codeBlockWrapper: {
+    maxWidth: '100%',
+  },
   tableWrapper: {
     overflowX: 'auto',
-    minWidth: 0,
+    maxWidth: '100%',
   },
   blockIndent: {
     marginInline: `calc(-1 * ${spacingVars['--spacing-2']})`,
   },
   table: {
     borderCollapse: 'collapse',
-    width: 'auto',
+    width: 'fit-content',
     maxWidth: '100%',
   },
   th: {
@@ -569,14 +575,13 @@ function wrapTextWithFade(
   // Split: some old, some new
   const splitAt = cursor.boundary - startOffset;
   return (
-    <>
+    <Fragment key={`fade-${key}-split`}>
       {content.slice(0, splitAt)}
       <span
-        key={`fade-${key}-${cursor.boundary}`}
         {...stylex.props(streamingStyles.fadeIn)}>
         {content.slice(splitAt)}
       </span>
-    </>
+    </Fragment>
   );
 }
 
@@ -895,6 +900,7 @@ function renderBlock(
           key={index}
           {...stylex.props(
             spacing,
+            styles.codeBlockWrapper,
             isFirst && styles.noMarginBlockStart,
             isLast && styles.noMarginBlockEnd,
           )}>
@@ -902,6 +908,14 @@ function renderBlock(
             code={node.content}
             language={node.language}
             isCollapsible
+            xstyle={[
+              contentWidthValue != null
+                ? dynamicStyles.blockWidth(contentWidthValue)
+                : undefined,
+              BLOCK_ALIGN_MARGIN[contentAlign] != null
+                ? dynamicStyles.blockAlign(BLOCK_ALIGN_MARGIN[contentAlign]!)
+                : undefined,
+            ]}
           />
         </div>
       );
@@ -1115,7 +1129,7 @@ function renderBlock(
               styles.table,
               styles.blockIndent,
               contentWidthValue != null
-                ? dynamicStyles.tableMinWidth(contentWidthValue)
+                ? dynamicStyles.blockWidth(contentWidthValue)
                 : null,
               BLOCK_ALIGN_MARGIN[contentAlign] != null
                 ? dynamicStyles.blockAlign(BLOCK_ALIGN_MARGIN[contentAlign]!)

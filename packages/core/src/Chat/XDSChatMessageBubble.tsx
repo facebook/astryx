@@ -98,7 +98,7 @@ const styles = stylex.create({
   content: {
     display: 'flex',
     flexDirection: 'column',
-    maxWidth: '100%',
+    maxWidth: 'max(80%, 280px)',
     borderRadius: radiusVars['--radius-page'],
     fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-body-size'],
@@ -135,10 +135,10 @@ const styles = stylex.create({
     paddingInline: spacingVars['--spacing-5'],
   },
   metadataReducedGap: {
-    marginBlockStart: `calc(-1 * ${spacingVars['--spacing-1']})`,
+    marginBlockStart: `calc(-1 * ${spacingVars['--spacing-1-5']})`,
   },
   headerReducedGap: {
-    marginBlockEnd: `calc(-1 * ${spacingVars['--spacing-1']})`,
+    marginBlockEnd: `calc(-1 * ${spacingVars['--spacing-1-5']})`,
   },
   nameRow: {
     height: spacingVars['--spacing-5'],
