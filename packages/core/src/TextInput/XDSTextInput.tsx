@@ -253,6 +253,7 @@ export function XDSTextInput({
   className,
   style,
   ref,
+  ...rest
 }: XDSTextInputProps) {
   const id = useId();
   const descriptionID = useId();
@@ -354,6 +355,7 @@ export function XDSTextInput({
         )}>
         {startIcon && <XDSIcon icon={startIcon} size="sm" color="primary" />}
         <input
+          {...rest}
           ref={setRefs}
           id={id}
           name={htmlName}
