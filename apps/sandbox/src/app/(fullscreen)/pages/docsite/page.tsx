@@ -800,9 +800,8 @@ function AIComposer() {
               paddingBlock: 6,
               borderRadius: 9999,
               backgroundColor: 'var(--color-background-body)',
-              fontSize: 13,
             }}>
-            Template 01
+            <XDSText type="supporting">Template 01</XDSText>
           </div>
           <div
             style={{
@@ -973,10 +972,9 @@ function ChatPanel({
               paddingBlock: 2,
               borderRadius: 9999,
               backgroundColor: 'var(--color-overlay-hover, rgba(0,0,0,0.05))',
-              fontSize: 12,
               marginBottom: 8,
             }}>
-            Template 01
+            <XDSText type="supporting">Template 01</XDSText>
           </div>
           <XDSText type="body">
             Can you customize this template by adding a divider line under the
@@ -1011,9 +1009,8 @@ function ChatPanel({
               paddingBlock: 2,
               borderRadius: 9999,
               backgroundColor: 'var(--color-background-body, #f1f4f7)',
-              fontSize: 12,
             }}>
-            Template 01
+            <XDSText type="supporting">Template 01</XDSText>
           </div>
           <div style={{display: 'flex', alignItems: 'center', padding: 8}}>
             <input
@@ -1750,16 +1747,17 @@ function LogoNav({
                     padding: '8px 12px',
                     borderRadius: 8,
                     cursor: 'pointer',
-                    fontWeight: isActive ? 600 : 400,
-                    fontSize: 14,
-                    color: 'var(--color-text-primary, #1a1a1a)',
                     backgroundColor:
                       isActive || isHovered
                         ? 'var(--color-background-body, #f1f4f7)'
                         : 'transparent',
                     transition: 'background-color 150ms ease',
                   }}>
-                  {item.label}
+                  <XDSText
+                    type="body"
+                    weight={isActive ? 'semibold' : 'normal'}>
+                    {item.label}
+                  </XDSText>
                 </div>
               );
             })}
@@ -2076,8 +2074,6 @@ function NavItem({
             ? 'rgba(0, 0, 0, 0.04)'
             : 'transparent',
         color: isActive ? '#0066FF' : 'var(--color-text-primary, #1a1a1a)',
-        fontSize: 14,
-        fontWeight: isActive ? 600 : 400,
         transition: 'background-color 150ms ease',
         userSelect: 'none' as const,
       }}>
@@ -2092,7 +2088,14 @@ function NavItem({
           }}
         />
       )}
-      <span style={{flex: 1}}>{label}</span>
+      <div style={{flex: 1}}>
+        <XDSText
+          type="body"
+          weight={isActive ? 'semibold' : 'normal'}
+          color="inherit">
+          {label}
+        </XDSText>
+      </div>
       {hasChevron && (
         <span
           style={{
@@ -2111,16 +2114,15 @@ function SectionLabel({label, indent = 0}: {label: string; indent?: number}) {
   return (
     <div
       style={{
-        fontSize: 11,
-        fontWeight: 600,
-        color: 'var(--color-text-secondary, #6b7785)',
         textTransform: 'uppercase' as const,
         letterSpacing: '0.05em',
         padding: '12px 12px 4px',
         paddingLeft: 12 + indent * 16,
         margin: '0 8px',
       }}>
-      {label}
+      <XDSText type="supporting" weight="semibold" color="secondary">
+        {label}
+      </XDSText>
     </div>
   );
 }
@@ -2561,27 +2563,17 @@ function DocsView({
             </div>
             <div style={{maxWidth: 840}}>
               {/* Title */}
-              <h1
-                style={{
-                  fontSize: 48,
-                  fontWeight: 700,
-                  margin: 0,
-                  letterSpacing: '-0.02em',
-                  color: 'var(--color-text-primary, #0a1317)',
-                  lineHeight: 1.1,
-                }}>
-                Button
-              </h1>
+              <div
+                style={{margin: 0, letterSpacing: '-0.02em', lineHeight: 1.1}}>
+                <XDSHeading level={1}>Button</XDSHeading>
+              </div>
 
               {/* Date line */}
-              <p
-                style={{
-                  fontSize: 14,
-                  color: 'var(--color-text-secondary, #6b7785)',
-                  margin: '8px 0 32px',
-                }}>
-                March 30, 2026 · Updated 5:40 p.m. PST
-              </p>
+              <div style={{margin: '8px 0 32px'}}>
+                <XDSText type="body" color="secondary">
+                  March 30, 2026 · Updated 5:40 p.m. PST
+                </XDSText>
+              </div>
 
               {/* Live Preview Panel */}
               <div
@@ -2604,14 +2596,12 @@ function DocsView({
                       '1px solid var(--color-divider, rgba(0,0,0,0.08))',
                     backgroundColor: 'var(--color-background-surface, #ffffff)',
                   }}>
-                  <span
-                    style={{
-                      fontSize: 13,
-                      fontWeight: 600,
-                      color: 'var(--color-text-secondary, #6b7785)',
-                    }}>
+                  <XDSText
+                    type="supporting"
+                    weight="semibold"
+                    color="secondary">
                     Live preview
-                  </span>
+                  </XDSText>
                   <div style={{display: 'flex', alignItems: 'center', gap: 4}}>
                     <XDSButton
                       label="Open in Craft"
@@ -2768,20 +2758,34 @@ function DocsView({
                 style={{
                   margin: 0,
                   padding: '0 0 0 20px',
-                  color: 'var(--color-text-primary, #0a1317)',
-                  fontSize: 15,
                   lineHeight: 1.7,
                 }}>
-                <li>Triggering form submissions or confirming a dialog</li>
-                <li>Navigating to a new page or view within the application</li>
                 <li>
-                  Starting a new process or workflow (e.g., &quot;Create
-                  new&quot;)
+                  <XDSText type="body">
+                    Triggering form submissions or confirming a dialog
+                  </XDSText>
                 </li>
-                <li>Toggling a UI element or performing an inline action</li>
                 <li>
-                  Performing destructive actions such as deleting items — use
-                  the danger variant for these
+                  <XDSText type="body">
+                    Navigating to a new page or view within the application
+                  </XDSText>
+                </li>
+                <li>
+                  <XDSText type="body">
+                    Starting a new process or workflow (e.g., &quot;Create
+                    new&quot;)
+                  </XDSText>
+                </li>
+                <li>
+                  <XDSText type="body">
+                    Toggling a UI element or performing an inline action
+                  </XDSText>
+                </li>
+                <li>
+                  <XDSText type="body">
+                    Performing destructive actions such as deleting items — use
+                    the danger variant for these
+                  </XDSText>
                 </li>
               </ul>
             </div>
@@ -2802,14 +2806,13 @@ function DocsView({
         }}>
         <div
           style={{
-            fontSize: 11,
-            fontWeight: 700,
-            color: 'var(--color-text-secondary, #6b7785)',
             textTransform: 'uppercase' as const,
             letterSpacing: '0.08em',
             marginBottom: 12,
           }}>
-          On this page
+          <XDSText type="supporting" weight="bold" color="secondary">
+            On this page
+          </XDSText>
         </div>
         {[
           {id: 'usage', label: 'Usage'},
@@ -2821,14 +2824,12 @@ function DocsView({
             key={item.id}
             onClick={() => setActiveRightNav(item.id)}
             style={{
-              fontSize: 13,
               padding: '6px 0',
               cursor: 'pointer',
               color:
                 activeRightNav === item.id
                   ? '#0066FF'
                   : 'var(--color-text-secondary, #6b7785)',
-              fontWeight: activeRightNav === item.id ? 600 : 400,
               borderLeft:
                 activeRightNav === item.id
                   ? '2px solid #0066FF'
@@ -2836,7 +2837,12 @@ function DocsView({
               paddingLeft: 12,
               transition: 'color 150ms ease',
             }}>
-            {item.label}
+            <XDSText
+              type="supporting"
+              weight={activeRightNav === item.id ? 'semibold' : 'normal'}
+              color="inherit">
+              {item.label}
+            </XDSText>
           </div>
         ))}
       </aside>
@@ -3453,14 +3459,7 @@ function TemplateFullPreview({
             'opacity 500ms cubic-bezier(0.16, 1, 0.3, 1) 100ms, transform 500ms cubic-bezier(0.16, 1, 0.3, 1) 100ms',
         }}>
         {/* Template name */}
-        <XDSHeading level={2}>{templateName}</XDSHeading>
-
-        {/* Subtitle */}
-        <div style={{marginTop: 4}}>
-          <XDSText type="supporting" color="secondary">
-            XDS · 541 usages
-          </XDSText>
-        </div>
+        <XDSHeading level={1}>{templateName}</XDSHeading>
 
         {/* Description */}
         <div style={{marginTop: 12}}>
@@ -3501,8 +3500,15 @@ function TemplateFullPreview({
               hasChevron={false}
               menuWidth={220}
               items={[
-                {label: 'Copy link', onClick: () => {}},
-                {label: 'Share via email', onClick: () => {}},
+                {
+                  label: 'Copy CLI Command...',
+                  icon: TerminalIcon,
+                  onClick: () => {},
+                },
+                {type: 'divider' as const},
+                {label: 'Claude Code', icon: ClaudeIcon, onClick: () => {}},
+                {label: 'VSCode', icon: VSCodeIcon, onClick: () => {}},
+                {label: 'Cursor', icon: CursorAIIcon, onClick: () => {}},
               ]}
             />
           </div>
@@ -3657,11 +3663,23 @@ function TemplateFullPreview({
         {/* Component used */}
         <div style={{marginTop: 32}}>
           <XDSHeading level={3}>Component used</XDSHeading>
-          <div style={{marginTop: 8}}>
-            <XDSText type="body">
-              XDSAppShell, XDSTopNav, XDSVStack, XDSHStack, XDSHeading, XDSText,
-              XDSButton, XDSCard, XDSBadge, XDSAvatar
-            </XDSText>
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap' as const,
+              gap: 8,
+              marginTop: 8,
+            }}>
+            <XDSToken label="XDSAppShell" />
+            <XDSToken label="XDSTopNav" />
+            <XDSToken label="XDSVStack" />
+            <XDSToken label="XDSHStack" />
+            <XDSToken label="XDSHeading" />
+            <XDSToken label="XDSText" />
+            <XDSToken label="XDSButton" />
+            <XDSToken label="XDSCard" />
+            <XDSToken label="XDSBadge" />
+            <XDSToken label="XDSAvatar" />
           </div>
         </div>
 
@@ -3696,7 +3714,7 @@ function TemplateFullPreview({
             size={36}
             src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&h=80&fit=crop&crop=face"
           />
-          <div>
+          <div style={{display: 'flex', flexDirection: 'column', gap: 2}}>
             <XDSText type="supporting" color="secondary">
               Designed by
             </XDSText>
@@ -3985,8 +4003,19 @@ function TemplateCombinedView({
                     hasChevron={false}
                     menuWidth={220}
                     items={[
-                      {label: 'Copy link', onClick: () => {}},
-                      {label: 'Share via email', onClick: () => {}},
+                      {
+                        label: 'Copy CLI Command...',
+                        icon: TerminalIcon,
+                        onClick: () => {},
+                      },
+                      {type: 'divider' as const},
+                      {
+                        label: 'Claude Code',
+                        icon: ClaudeIcon,
+                        onClick: () => {},
+                      },
+                      {label: 'VSCode', icon: VSCodeIcon, onClick: () => {}},
+                      {label: 'Cursor', icon: CursorAIIcon, onClick: () => {}},
                     ]}
                   />
                 </div>
@@ -4103,7 +4132,7 @@ function TemplateCombinedView({
                   size={36}
                   src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&h=80&fit=crop&crop=face"
                 />
-                <div>
+                <div style={{display: 'flex', flexDirection: 'column', gap: 2}}>
                   <XDSText type="supporting" color="secondary">
                     Designed by
                   </XDSText>
@@ -4398,16 +4427,12 @@ export default function DocsiteLandingTemplate() {
           }}>
           <div style={{textAlign: 'center', opacity: 0.5}}>
             <div style={{fontSize: 48, marginBottom: 16}}>📚</div>
-            <div style={{fontSize: 20, fontWeight: 600, marginBottom: 8}}>
-              Learn
+            <div style={{marginBottom: 8}}>
+              <XDSHeading level={3}>Learn</XDSHeading>
             </div>
-            <div
-              style={{
-                fontSize: 14,
-                color: 'var(--color-text-secondary, #666)',
-              }}>
+            <XDSText type="body" color="secondary">
               Tutorials, guides, and resources — coming soon
-            </div>
+            </XDSText>
           </div>
         </div>
       </div>
