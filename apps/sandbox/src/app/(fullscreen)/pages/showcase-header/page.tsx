@@ -1,0 +1,81 @@
+'use client';
+
+import * as stylex from '@stylexjs/stylex';
+import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {XDSHeading, XDSText} from '@xds/core/Text';
+import {XDSBadge} from '@xds/core/Badge';
+import {XDSStatusDot} from '@xds/core/StatusDot';
+
+const styles = stylex.create({
+  container: {
+    width: '100%',
+    height: '100vh',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'var(--color-background-body, #0a0a0a)',
+    padding: 64,
+  },
+  content: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 32,
+  },
+  titleRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 24,
+  },
+  connector: {
+    width: 80,
+    height: 2,
+    backgroundColor: 'var(--color-accent, #0066ff)',
+    opacity: 0.5,
+  },
+  badgeRow: {
+    display: 'flex',
+    gap: 12,
+  },
+  subtitle: {
+    maxWidth: 500,
+    textAlign: 'center' as const,
+  },
+  availableRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+  },
+});
+
+export default function ShowcaseHeaderPage() {
+  return (
+    <div {...stylex.props(styles.container)}>
+      <div {...stylex.props(styles.content)}>
+        <div {...stylex.props(styles.badgeRow)}>
+          <XDSBadge label="Open Source" variant="info" />
+          <XDSBadge label="Nest" variant="success" />
+        </div>
+
+        <div {...stylex.props(styles.titleRow)}>
+          <XDSHeading level={1}>XDS</XDSHeading>
+          <div {...stylex.props(styles.connector)} />
+          <XDSHeading level={1}>Nest</XDSHeading>
+        </div>
+
+        <div {...stylex.props(styles.subtitle)}>
+          <XDSText type="large" color="secondary">
+            A ground-up rebuild for modern React, AI tools, and beyond
+          </XDSText>
+        </div>
+
+        <div {...stylex.props(styles.availableRow)}>
+          <XDSStatusDot variant="positive" label="Available" isPulsing />
+          <XDSText type="body" color="secondary">
+            Available now
+          </XDSText>
+        </div>
+      </div>
+    </div>
+  );
+}
