@@ -117,7 +117,7 @@ const styles = stylex.create({
   paddingBlockNone: {
     paddingBlock: 0,
   },
-  // Footer padding — matches bubble's paddingInline per density
+  // Slot padding — matches bubble's paddingInline per density
   metadataPaddingCompact: {
     paddingInline: spacingVars['--spacing-3'],
   },

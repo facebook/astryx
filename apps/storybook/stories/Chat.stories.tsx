@@ -31,13 +31,15 @@ export const Default: StoryObj = {
     <div style={{height: 600, display: 'flex', flexDirection: 'column'}}>
       <XDSChatMessageList>
         <XDSChatMessage sender="user">
-          <XDSChatMessageBubble>
+          <XDSChatMessageBubble
+            metadata={
+              <XDSChatMessageMetadata
+                timestamp={<XDSTimestamp value="2026-03-15T14:30:00" format="time" />}
+                status="read"
+              />
+            }>
             How should I handle state management in a React app?
           </XDSChatMessageBubble>
-          <XDSChatMessageMetadata
-            timestamp={<XDSTimestamp value="2026-03-15T14:30:00" format="time" />}
-            status="read"
-          />
         </XDSChatMessage>
         <XDSChatMessage sender="assistant">
           <XDSMarkdown density="compact">{`For most cases, **React's built-in state** is sufficient:
@@ -81,13 +83,15 @@ Avoid global state managers unless you have a genuine need for cross-cutting sta
           />
         </XDSChatMessage>
         <XDSChatMessage sender="user">
-          <XDSChatMessageBubble>
+          <XDSChatMessageBubble
+            metadata={
+              <XDSChatMessageMetadata
+                timestamp={<XDSTimestamp value="2026-03-15T14:31:00" format="time" />}
+                status="read"
+              />
+            }>
             Can you show me a useReducer example?
           </XDSChatMessageBubble>
-          <XDSChatMessageMetadata
-            timestamp={<XDSTimestamp value="2026-03-15T14:31:00" format="time" />}
-            status="read"
-          />
         </XDSChatMessage>
         <XDSChatMessage sender="assistant">
           <XDSMarkdown density="compact">Here's a common pattern for form state:</XDSMarkdown>
@@ -156,7 +160,6 @@ export const MixedContent: StoryObj = {
 
         <XDSChatMessage
           sender="assistant"
-          avatar={<XDSAvatar name="Navi" size="small" />}>
           <XDSChatMessageBubble>
             Sure! Here's an overview of the component architecture.
           </XDSChatMessageBubble>
@@ -194,7 +197,6 @@ export const MixedContent: StoryObj = {
         <XDSChatSystemMessage>Navi opened Button.tsx</XDSChatSystemMessage>
 
         <XDSChatMessage
-          sender="assistant"
           avatar={<XDSAvatar name="Navi" size="small" />}>
           <XDSChatMessageBubble variant="ghost">
             <XDSCodeBlock
@@ -219,69 +221,87 @@ export function XDSButton({ label, variant = 'primary' }) {
 
 export const ChatConversation: StoryObj = {
   name: 'Chat Conversation',
-  render: () => (
-    <div style={{height: 500, display: 'flex', flexDirection: 'column'}}>
-      <XDSChatMessageList>
-        <XDSChatSystemMessage variant="divider">Today</XDSChatSystemMessage>
-        <XDSChatMessage
-          sender="assistant"
-          name="Navi"
-          avatar={<XDSAvatar name="Navi" size="small" />}>
-          <XDSChatMessageBubble>
-            Hey! I looked at the PR and left a few comments on the density
-            styles.
-          </XDSChatMessageBubble>
-          <XDSChatMessageMetadata
-            timestamp={<XDSTimestamp value="2026-03-15T14:30:00" format="time" />}
-          />
-        </XDSChatMessage>
+  render: () => {
+    const nameStyle = {
+      fontSize: 12,
+      fontWeight: 600,
+      color: '#666',
+      lineHeight: '16px',
+    };
+    return (
+      <div style={{height: 500, display: 'flex', flexDirection: 'column'}}>
+        <XDSChatMessageList>
+          <XDSChatSystemMessage variant="divider">Today</XDSChatSystemMessage>
+          <XDSChatMessage
+            sender="assistant"
+            avatar={<XDSAvatar name="Navi" size="small" />}>
+            <XDSChatMessageBubble
+              header={<span style={nameStyle}>Navi</span>}
+              metadata={
+                <XDSChatMessageMetadata
+                  timestamp={<XDSTimestamp value="2026-03-15T14:30:00" format="time" />}
+                />
+              }>
+              Hey! I looked at the PR and left a few comments on the density
+              styles.
+            </XDSChatMessageBubble>
+          </XDSChatMessage>
 
-        <XDSChatMessage
-          sender="user"
-          name="Cindy"
-          avatar={<XDSAvatar name="Cindy" size="small" />}>
-          <XDSChatMessageBubble group="first">
-            Thanks! I'll take a look.
-          </XDSChatMessageBubble>
-          <XDSChatMessageBubble group="last">
-            Should be quick to fix.
-          </XDSChatMessageBubble>
-          <XDSChatMessageMetadata
-            timestamp={<XDSTimestamp value="2026-03-15T14:31:00" format="time" />}
-            status="read"
-          />
-        </XDSChatMessage>
+          <XDSChatMessage
+            sender="user"
+            avatar={<XDSAvatar name="Cindy" size="small" />}>
+            <XDSChatMessageBubble
+              group="first"
+              header={<span style={nameStyle}>Cindy</span>}>
+              Thanks! I'll take a look.
+            </XDSChatMessageBubble>
+            <XDSChatMessageBubble
+              group="last"
+              metadata={
+                <XDSChatMessageMetadata
+                  timestamp={<XDSTimestamp value="2026-03-15T14:31:00" format="time" />}
+                  status="read"
+                />
+              }>
+              Should be quick to fix.
+            </XDSChatMessageBubble>
+          </XDSChatMessage>
 
-        <XDSChatMessage
-          sender="assistant"
-          name="Navi"
-          avatar={<XDSAvatar name="Navi" size="small" />}>
-          <XDSChatMessageBubble>
-            Sounds good. The main thing is the compact radius — it should use
-            the container token, not the page token.
-          </XDSChatMessageBubble>
-          <XDSChatMessageMetadata
-            timestamp={<XDSTimestamp value="2026-03-15T14:32:00" format="time" />}
-          />
-        </XDSChatMessage>
+          <XDSChatMessage
+            sender="assistant"
+            avatar={<XDSAvatar name="Navi" size="small" />}>
+            <XDSChatMessageBubble
+              header={<span style={nameStyle}>Navi</span>}
+              metadata={
+                <XDSChatMessageMetadata
+                  timestamp={<XDSTimestamp value="2026-03-15T14:32:00" format="time" />}
+                />
+              }>
+              Sounds good. The main thing is the compact radius — it should use
+              the container token, not the page token.
+            </XDSChatMessageBubble>
+          </XDSChatMessage>
 
-        <XDSChatMessage
-          sender="user"
-          name="Cindy"
-          avatar={<XDSAvatar name="Cindy" size="small" />}>
-          <XDSChatMessageBubble>
-            Good catch, fixed and pushed.
-          </XDSChatMessageBubble>
-          <XDSChatMessageMetadata
-            timestamp={<XDSTimestamp value="2026-03-15T14:33:00" format="time" />}
-            status="delivered"
-          />
-        </XDSChatMessage>
+          <XDSChatMessage
+            sender="user"
+            avatar={<XDSAvatar name="Cindy" size="small" />}>
+            <XDSChatMessageBubble
+              header={<span style={nameStyle}>Cindy</span>}
+              metadata={
+                <XDSChatMessageMetadata
+                  timestamp={<XDSTimestamp value="2026-03-15T14:33:00" format="time" />}
+                  status="delivered"
+                />
+              }>
+              Good catch, fixed and pushed.
+            </XDSChatMessageBubble>
+          </XDSChatMessage>
 
-        <XDSChatSystemMessage>Cindy liked a message</XDSChatSystemMessage>
-      </XDSChatMessageList>
-    </div>
-  ),
+          <XDSChatSystemMessage>Cindy liked a message</XDSChatSystemMessage>
+        </XDSChatMessageList>
+      </div>
+    );
+  },
 };
 
 export const DensityComparison: StoryObj = {
@@ -448,24 +468,34 @@ export const MessageStatus: StoryObj = {
     <div style={{height: 400, display: 'flex', flexDirection: 'column'}}>
       <XDSChatMessageList>
         <XDSChatMessage sender="user">
-          <XDSChatMessageBubble>Sending...</XDSChatMessageBubble>
-          <XDSChatMessageMetadata status="sending" />
+          <XDSChatMessageBubble
+            metadata={<XDSChatMessageMetadata status="sending" />}>
+            Sending...
+          </XDSChatMessageBubble>
         </XDSChatMessage>
         <XDSChatMessage sender="user">
-          <XDSChatMessageBubble>Sent</XDSChatMessageBubble>
-          <XDSChatMessageMetadata status="sent" />
+          <XDSChatMessageBubble
+            metadata={<XDSChatMessageMetadata status="sent" />}>
+            Sent
+          </XDSChatMessageBubble>
         </XDSChatMessage>
         <XDSChatMessage sender="user">
-          <XDSChatMessageBubble>Delivered</XDSChatMessageBubble>
-          <XDSChatMessageMetadata status="delivered" />
+          <XDSChatMessageBubble
+            metadata={<XDSChatMessageMetadata status="delivered" />}>
+            Delivered
+          </XDSChatMessageBubble>
         </XDSChatMessage>
         <XDSChatMessage sender="user">
-          <XDSChatMessageBubble>Read</XDSChatMessageBubble>
-          <XDSChatMessageMetadata status="read" />
+          <XDSChatMessageBubble
+            metadata={<XDSChatMessageMetadata status="read" />}>
+            Read
+          </XDSChatMessageBubble>
         </XDSChatMessage>
         <XDSChatMessage sender="user">
-          <XDSChatMessageBubble>Failed to send</XDSChatMessageBubble>
-          <XDSChatMessageMetadata status="error" />
+          <XDSChatMessageBubble
+            metadata={<XDSChatMessageMetadata status="error" />}>
+            Failed to send
+          </XDSChatMessageBubble>
         </XDSChatMessage>
       </XDSChatMessageList>
     </div>
@@ -483,15 +513,18 @@ export const MultiBubble: StoryObj = {
           <XDSChatMessageBubble group="middle">
             It's the one for the chat components
           </XDSChatMessageBubble>
-          <XDSChatMessageBubble group="last">
+          <XDSChatMessageBubble
+            group="last"
+            metadata={
+              <XDSChatMessageMetadata
+                timestamp={
+                  <XDSTimestamp value="2026-03-15T14:31:00" format="time" />
+                }
+                status="delivered"
+              />
+            }>
             Link: github.com/xds/pull/1180
           </XDSChatMessageBubble>
-          <XDSChatMessageMetadata
-            timestamp={
-              <XDSTimestamp value="2026-03-15T14:31:00" format="time" />
-            }
-            status="delivered"
-          />
         </XDSChatMessage>
         <XDSChatMessage
           sender="assistant"
@@ -503,83 +536,32 @@ export const MultiBubble: StoryObj = {
             The compound pattern looks solid. A few minor comments on the
             density styles.
           </XDSChatMessageBubble>
-          <XDSChatMessageBubble group="last">
+          <XDSChatMessageBubble
+            group="last"
+            metadata={
+              <XDSChatMessageMetadata
+                timestamp={
+                  <XDSTimestamp value="2026-03-15T14:33:00" format="time" />
+                }
+              />
+            }>
             I'll leave them as review comments.
           </XDSChatMessageBubble>
-          <XDSChatMessageMetadata
-            timestamp={
-              <XDSTimestamp value="2026-03-15T14:33:00" format="time" />
-            }
-          />
         </XDSChatMessage>
         <XDSChatMessage sender="user">
-          <XDSChatMessageBubble>
+          <XDSChatMessageBubble
+            metadata={
+              <XDSChatMessageMetadata
+                timestamp={
+                  <XDSTimestamp value="2026-03-15T14:34:00" format="time" />
+                }
+                status="sending"
+              />
+            }>
             Thanks, will address those
           </XDSChatMessageBubble>
-          <XDSChatMessageMetadata
-            timestamp={
-              <XDSTimestamp value="2026-03-15T14:34:00" format="time" />
-            }
-            status="sending"
-          />
         </XDSChatMessage>
       </XDSChatMessageList>
     </div>
   ),
-};
-export const ScrollToBottom: StoryObj = {
-  name: 'Scroll to Bottom',
-  render: () => {
-    const [messages, setMessages] = useState(
-      Array.from({length: 30}, (_, i) => ({
-        id: i + 1,
-        sender: i % 2 === 0 ? ('user' as const) : ('assistant' as const),
-        text:
-          i % 2 === 0
-            ? `User message #${i + 1}`
-            : `This is assistant response #${i + 1}. It has enough content to require scrolling through the message list.`,
-      })),
-    );
-
-    const addNewMessage = useCallback(() => {
-      setMessages(prev => [
-        ...prev,
-        {
-          id: prev.length + 1,
-          sender: 'assistant' as const,
-          text: `New message arrived at ${new Date().toLocaleTimeString()}. Scroll up to see the button expand with a "New messages" label.`,
-        },
-      ]);
-    }, []);
-
-    return (
-      <div style={{height: 400, display: 'flex', flexDirection: 'column'}}>
-        <div
-          style={{
-            padding: '8px 16px',
-            borderBottom: '1px solid var(--color-border)',
-            display: 'flex',
-            gap: 8,
-            alignItems: 'center',
-          }}>
-          <XDSButton
-            label="Add message"
-            variant="secondary"
-            size="sm"
-            onClick={addNewMessage}
-          />
-          <span style={{fontSize: 12, color: 'var(--color-text-secondary)'}}>
-            Scroll up, then click "Add message" to see the button expand
-          </span>
-        </div>
-        <XDSChatMessageList>
-          {messages.map(msg => (
-            <XDSChatMessage key={msg.id} sender={msg.sender}>
-              <XDSChatMessageBubble>{msg.text}</XDSChatMessageBubble>
-            </XDSChatMessage>
-          ))}
-        </XDSChatMessageList>
-      </div>
-    );
-  },
 };
