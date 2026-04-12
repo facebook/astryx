@@ -2195,9 +2195,11 @@ function LogoNav({
 function AppTopNav({
   activeView,
   setActiveView,
+  scrollContainerRef,
 }: {
   activeView: 'craft' | 'library' | 'learn' | 'profile';
   setActiveView: (view: 'craft' | 'library' | 'learn' | 'profile') => void;
+  scrollContainerRef?: React.RefObject<HTMLDivElement | null>;
 }) {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
@@ -2206,11 +2208,15 @@ function AppTopNav({
 
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 120);
+      const scrollTop = scrollContainerRef?.current
+        ? scrollContainerRef.current.scrollTop
+        : window.scrollY;
+      setIsScrolled(scrollTop > 120);
     };
-    window.addEventListener('scroll', handleScroll, {passive: true});
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+    const target = scrollContainerRef?.current ?? window;
+    target.addEventListener('scroll', handleScroll, {passive: true});
+    return () => target.removeEventListener('scroll', handleScroll);
+  }, [scrollContainerRef]);
 
   return (
     <>
@@ -4990,6 +4996,7 @@ export default function DocsiteLandingTemplate() {
   const [previewTarget, setPreviewTarget] = useState<number | null>(null);
   const [useTarget, setUseTarget] = useState<number | null>(null);
   const [previewGenerating, setPreviewGenerating] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // Reset preview/editor state when switching views
   useEffect(() => {
@@ -5286,7 +5293,11 @@ export default function DocsiteLandingTemplate() {
         height: '100vh',
         backgroundColor: 'var(--color-background-surface, white)',
       }}>
-      <AppTopNav activeView={activeView} setActiveView={setActiveView} />
+      <AppTopNav
+        activeView={activeView}
+        setActiveView={setActiveView}
+        scrollContainerRef={scrollContainerRef}
+      />
       <div
         style={{
           display: 'flex',
@@ -5325,6 +5336,7 @@ export default function DocsiteLandingTemplate() {
           <div style={{display: 'flex', flex: 1, overflow: 'hidden'}}>
             {/* Masonry Grid */}
             <div
+              ref={scrollContainerRef}
               style={{
                 flex: 1,
                 overflow: 'auto',
