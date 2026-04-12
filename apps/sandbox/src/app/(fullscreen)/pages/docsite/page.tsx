@@ -919,11 +919,15 @@ function ChatPanel({
   onSend,
   activeView,
   setActiveView,
+  templateName,
+  onBack,
 }: {
   isGenerating: boolean;
   onSend?: () => void;
   activeView: 'craft' | 'library' | 'learn' | 'profile';
   setActiveView: (view: 'craft' | 'library' | 'learn' | 'profile') => void;
+  templateName?: string;
+  onBack?: () => void;
 }) {
   const [prompt, setPrompt] = useState('');
 
@@ -935,24 +939,32 @@ function ChatPanel({
         height: '100%',
         width: '100%',
       }}>
-      {/* Header: hamburger + XDS | Craft */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '12px 16px',
-          flexShrink: 0,
-        }}>
-        <LogoNav activeView={activeView} setActiveView={setActiveView} />
-        <XDSButton
-          label="Toggle sidebar"
-          variant="ghost"
-          size="sm"
-          isIconOnly
-          icon={<SidebarIcon />}
-        />
-      </div>
+      {/* Header with back + title */}
+      {templateName && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 4,
+            padding: '16px 16px 0',
+            flexShrink: 0,
+          }}>
+          {onBack && (
+            <XDSButton
+              label="Back"
+              variant="ghost"
+              size="sm"
+              icon={<ArrowLeftIcon />}
+              isIconOnly
+              onClick={onBack}
+              style={{marginLeft: -8, flexShrink: 0}}
+            />
+          )}
+          <XDSHeading level={1} style={{lineHeight: 1}}>
+            {templateName}
+          </XDSHeading>
+        </div>
+      )}
 
       {/* Chat thread */}
       <div style={{flex: 1, padding: 16, overflow: 'auto'}}>
@@ -988,13 +1000,18 @@ function ChatPanel({
       </div>
 
       {/* Composer pinned to bottom */}
-      <div style={{padding: 12}}>
+      <div
+        style={{
+          padding: 0,
+          borderTop: '1px solid var(--color-divider, #e0e0e0)',
+        }}>
         <div
           style={{
-            borderRadius: 20,
+            borderRadius: 0,
             backgroundColor: 'var(--color-background-card, white)',
-            border: '1px solid var(--color-divider)',
-            boxShadow: 'var(--shadow-high)',
+            border: 'none',
+            borderTop: '1px solid var(--color-divider)',
+            boxShadow: 'none',
             padding: 8,
             display: 'flex',
             flexDirection: 'column' as const,
@@ -1358,108 +1375,105 @@ function TemplatePreview({
             overflow: 'hidden',
           }}>
           {/* Toolbar */}
-          <XDSToolbar
-            label="Template actions"
-            startContent={
-              <>
-                <XDSButton
-                  label="Back"
-                  variant="ghost"
-                  size="sm"
-                  isIconOnly
-                  icon={<ArrowLeftIcon />}
-                  onClick={onBack}
-                />
-                <XDSHeading level={3}>{templateName}</XDSHeading>
-              </>
-            }
-            centerContent={
-              <XDSSegmentedControl
-                value={viewportSize}
-                onChange={setViewportSize}
-                label="Viewport size"
-                size="sm">
-                <XDSSegmentedControlItem
-                  value="desktop"
-                  label="Desktop"
-                  isLabelHidden
-                  icon={<DesktopIcon />}
-                />
-                <XDSSegmentedControlItem
-                  value="phone"
-                  label="Phone"
-                  isLabelHidden
-                  icon={<PhoneIcon />}
-                />
-              </XDSSegmentedControl>
-            }
-            endContent={
-              <>
-                <XDSButton
-                  label="Point"
-                  variant="ghost"
-                  isIconOnly
-                  icon={<CursorIcon />}
-                />
-                <XDSDropdownMenu
-                  button={{
-                    label: 'Theme',
-                    variant: 'ghost',
-                    isIconOnly: true,
-                    icon: <PaletteIcon />,
-                  }}
-                  hasChevron={false}
-                  items={XDS_THEMES.map(t => ({
-                    label: t.label,
-                    onClick: () => {},
-                  }))}
-                />
-                <XDSButton
-                  label="Toggle theme"
-                  variant="ghost"
-                  isIconOnly
-                  icon={<ContrastIcon />}
-                />
-                <XDSButton
-                  label="Toggle code"
-                  variant={editorView === 'code' ? 'secondary' : 'ghost'}
-                  isIconOnly
-                  icon={<CodeIcon />}
-                  onClick={() =>
-                    setEditorView(editorView === 'preview' ? 'code' : 'preview')
-                  }
-                />
-                <XDSButton
-                  label="Save"
-                  variant="ghost"
-                  icon={<SaveIcon />}
-                  isIconOnly
-                  onClick={() => {}}
-                />
-                <XDSDropdownMenu
-                  button={{
-                    label: 'Share',
-                    variant: 'ghost',
-                    isIconOnly: true,
-                    icon: <PaperPlaneIcon />,
-                  }}
-                  hasChevron={false}
-                  menuWidth={220}
-                  items={[
-                    {
-                      label: 'Copy CLI Command...',
-                      icon: TerminalIcon,
+          <div
+            style={{backgroundColor: 'var(--color-background-body, #f5f5f5)'}}>
+            <XDSToolbar
+              label="Template actions"
+              startContent={<></>}
+              centerContent={
+                <XDSSegmentedControl
+                  value={viewportSize}
+                  onChange={setViewportSize}
+                  label="Viewport size"
+                  size="sm">
+                  <XDSSegmentedControlItem
+                    value="desktop"
+                    label="Desktop"
+                    isLabelHidden
+                    icon={<DesktopIcon />}
+                  />
+                  <XDSSegmentedControlItem
+                    value="phone"
+                    label="Phone"
+                    isLabelHidden
+                    icon={<PhoneIcon />}
+                  />
+                </XDSSegmentedControl>
+              }
+              endContent={
+                <>
+                  <XDSButton
+                    label="Point"
+                    variant="ghost"
+                    isIconOnly
+                    icon={<CursorIcon />}
+                  />
+                  <XDSDropdownMenu
+                    button={{
+                      label: 'Theme',
+                      variant: 'ghost',
+                      isIconOnly: true,
+                      icon: <PaletteIcon />,
+                    }}
+                    hasChevron={false}
+                    items={XDS_THEMES.map(t => ({
+                      label: t.label,
                       onClick: () => {},
-                    },
-                    {type: 'divider' as const},
-                    {label: 'Claude Code', icon: ClaudeIcon, onClick: () => {}},
-                    {label: 'VSCode', icon: VSCodeIcon, onClick: () => {}},
-                    {label: 'Cursor', icon: CursorAIIcon, onClick: () => {}},
-                  ]}
-                />
-              </>
-            }
-          />
+                    }))}
+                  />
+                  <XDSButton
+                    label="Toggle theme"
+                    variant="ghost"
+                    isIconOnly
+                    icon={<ContrastIcon />}
+                  />
+                  <XDSButton
+                    label="Toggle code"
+                    variant={editorView === 'code' ? 'secondary' : 'ghost'}
+                    isIconOnly
+                    icon={<CodeIcon />}
+                    onClick={() =>
+                      setEditorView(
+                        editorView === 'preview' ? 'code' : 'preview',
+                      )
+                    }
+                  />
+                  <XDSButton
+                    label="Save"
+                    variant="ghost"
+                    icon={<SaveIcon />}
+                    isIconOnly
+                    onClick={() => {}}
+                  />
+                  <XDSDropdownMenu
+                    button={{
+                      label: 'Share',
+                      variant: 'ghost',
+                      isIconOnly: true,
+                      icon: <PaperPlaneIcon />,
+                    }}
+                    hasChevron={false}
+                    menuWidth={220}
+                    items={[
+                      {
+                        label: 'Copy CLI Command...',
+                        icon: TerminalIcon,
+                        onClick: () => {},
+                      },
+                      {type: 'divider' as const},
+                      {
+                        label: 'Claude Code',
+                        icon: ClaudeIcon,
+                        onClick: () => {},
+                      },
+                      {label: 'VSCode', icon: VSCodeIcon, onClick: () => {}},
+                      {label: 'Cursor', icon: CursorAIIcon, onClick: () => {}},
+                    ]}
+                  />
+                </>
+              }
+            />
+          </div>
 
           {/* Preview — browser frame + image */}
           <div
@@ -1564,9 +1578,9 @@ function TemplatePreview({
           {/* Code block */}
           <div
             style={{
-              margin: '0 8px',
-              border: '1px solid var(--color-divider, rgba(0,0,0,0.1))',
-              borderRadius: 8,
+              margin: 0,
+              border: 'none',
+              borderRadius: 0,
               backgroundColor:
                 'var(--color-background-muted, rgba(0,0,0,0.03))',
               overflow: 'auto',
@@ -3290,13 +3304,16 @@ function TemplateFullPreview({
   imageSrc,
   onBack,
   onUse,
+  onSelectTemplate,
 }: {
   templateName: string;
   imageSrc: string;
   onBack: () => void;
   onUse: () => void;
+  onSelectTemplate?: (index: number) => void;
 }) {
   const [viewMode, setViewMode] = useState<'desktop' | 'mobile'>('desktop');
+  const [editorView, setEditorView] = useState<'preview' | 'code'>('preview');
   const [isVisible, setIsVisible] = useState(false);
   const [selectedPalette, setSelectedPalette] = useState<string | null>(
     PREVIEW_COLOR_PALETTES[0].name,
@@ -3312,8 +3329,279 @@ function TemplateFullPreview({
   }, []);
 
   return (
-    <div style={{display: 'flex', height: '100vh', overflow: 'hidden'}}>
-      {/* LEFT PANEL — preview area */}
+    <div
+      style={{
+        display: 'flex',
+        height: '100vh',
+        overflow: 'hidden',
+        backgroundColor: 'var(--color-background-body, #f5f5f5)',
+      }}>
+      {/* LEFT PANEL — details sidebar */}
+      <div
+        style={{
+          width: '30%',
+          maxWidth: 380,
+          minWidth: 300,
+          padding: '16px 0 16px 16px',
+          display: 'flex',
+          backgroundColor: 'transparent',
+          opacity: isVisible ? 1 : 0,
+          transform: isVisible ? 'translateX(0)' : 'translateX(-60px)',
+          transition:
+            'opacity 500ms cubic-bezier(0.16, 1, 0.3, 1) 100ms, transform 500ms cubic-bezier(0.16, 1, 0.3, 1) 100ms',
+        }}>
+        <div
+          style={{
+            flex: 1,
+            backgroundColor: 'var(--color-background-card, #fff)',
+            borderRadius: 16,
+            boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
+            padding: 32,
+            overflowY: 'auto' as const,
+            display: 'flex',
+            flexDirection: 'column' as const,
+          }}>
+          {/* Back button */}
+          <XDSButton
+            label="Craft"
+            variant="ghost"
+            size="sm"
+            icon={<ArrowLeftIcon />}
+            onClick={onBack}
+            style={{alignSelf: 'flex-start', marginLeft: -8, marginBottom: 8}}
+          />
+          {/* Template name */}
+          <XDSText type="display-2">{templateName}</XDSText>
+
+          {/* Description */}
+          <div style={{marginTop: 8}}>
+            <XDSText type="body" color="secondary">
+              Buttons are clickable elements that are used to trigger actions.
+              They communicate calls to action to the user and allow users to
+              interact with pages in a variety of ways. Button labels express
+              what action will occur when the user interacts with it.
+            </XDSText>
+          </div>
+
+          {/* Stats buttons */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginTop: 16,
+              marginLeft: -8,
+              marginRight: -8,
+            }}>
+            <div style={{display: 'flex', alignItems: 'center', gap: 4}}>
+              <XDSButton
+                label="Link"
+                variant="ghost"
+                size="sm"
+                isIconOnly
+                icon={<LinkIcon />}
+              />
+              <XDSDropdownMenu
+                button={{
+                  label: 'Share',
+                  variant: 'ghost',
+                  size: 'sm',
+                  isIconOnly: true,
+                  icon: <PaperPlaneIcon />,
+                }}
+                hasChevron={false}
+                menuWidth={220}
+                items={[
+                  {
+                    label: 'Copy CLI Command...',
+                    icon: TerminalIcon,
+                    onClick: () => {},
+                  },
+                  {type: 'divider' as const},
+                  {label: 'Claude Code', icon: ClaudeIcon, onClick: () => {}},
+                  {label: 'VSCode', icon: VSCodeIcon, onClick: () => {}},
+                  {label: 'Cursor', icon: CursorAIIcon, onClick: () => {}},
+                ]}
+              />
+            </div>
+            <div style={{display: 'flex', alignItems: 'center', gap: 4}}>
+              <XDSButton
+                label="1,645"
+                variant="ghost"
+                size="sm"
+                icon={<HeartIcon />}
+              />
+              <XDSButton
+                label="892"
+                variant="ghost"
+                size="sm"
+                icon={<BookmarkIcon />}
+              />
+            </div>
+          </div>
+
+          {/* CTA button */}
+          <div style={{marginTop: 16}}>
+            <XDSButton
+              variant="primary"
+              label="Start crafting"
+              onClick={onUse}
+              size="lg"
+              style={{width: '100%'}}
+            />
+          </div>
+
+          {/* Color palettes */}
+          <div style={{marginTop: 32}}>
+            <XDSHeading level={4}>Color palettes</XDSHeading>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: 10,
+                marginTop: 8,
+              }}>
+              {PREVIEW_COLOR_PALETTES.map(palette => (
+                <div
+                  key={palette.name}
+                  onClick={() => setSelectedPalette(palette.name)}
+                  style={{
+                    cursor: 'pointer',
+                    border: `2px solid ${selectedPalette === palette.name ? 'var(--color-accent, #0066FF)' : 'transparent'}`,
+                    borderRadius: 14,
+                    overflow: 'hidden',
+                    transition: 'border-color 0.15s ease',
+                  }}>
+                  <XDSCard padding={0}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        overflow: 'hidden',
+                        height: 48,
+                      }}>
+                      {palette.colors.map((color, i) => (
+                        <div
+                          key={i}
+                          style={{
+                            flex: 1,
+                            backgroundColor: color,
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </XDSCard>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Font packs */}
+          <div style={{marginTop: 32}}>
+            <XDSHeading level={4}>Font packs</XDSHeading>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: 10,
+                marginTop: 8,
+              }}>
+              {PREVIEW_FONT_PACKS.map(pack => (
+                <div
+                  key={pack.heading}
+                  onClick={() => setSelectedFontPack(pack.heading)}
+                  style={{
+                    cursor: 'pointer',
+                    border: `2px solid ${selectedFontPack === pack.heading ? 'var(--color-accent, #0066FF)' : 'transparent'}`,
+                    borderRadius: 14,
+                    overflow: 'hidden',
+                    transition: 'border-color 0.15s ease',
+                  }}>
+                  <XDSCard padding={2}>
+                    <div style={{fontFamily: pack.heading}}>
+                      <XDSText
+                        type="body"
+                        style={{fontWeight: 600, fontSize: 16}}>
+                        Heading
+                      </XDSText>
+                    </div>
+                    <div style={{fontFamily: pack.paragraph}}>
+                      <XDSText type="supporting" color="secondary">
+                        Paragraph text
+                      </XDSText>
+                    </div>
+                  </XDSCard>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Component used */}
+          <div style={{marginTop: 32}}>
+            <XDSHeading level={3}>Component used</XDSHeading>
+            <div
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap' as const,
+                gap: 8,
+                marginTop: 8,
+              }}>
+              <XDSToken label="XDSAppShell" />
+              <XDSToken label="XDSTopNav" />
+              <XDSToken label="XDSVStack" />
+              <XDSToken label="XDSHStack" />
+              <XDSToken label="XDSHeading" />
+              <XDSToken label="XDSText" />
+              <XDSToken label="XDSButton" />
+              <XDSToken label="XDSCard" />
+              <XDSToken label="XDSBadge" />
+              <XDSToken label="XDSAvatar" />
+            </div>
+          </div>
+
+          {/* Keywords */}
+          <div style={{marginTop: 32}}>
+            <XDSHeading level={3}>Keywords</XDSHeading>
+            <div
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap' as const,
+                gap: 4,
+                marginTop: 8,
+              }}>
+              <XDSToken label="Dashboard" size="sm" />
+              <XDSToken label="Admin" size="sm" />
+              <XDSToken label="Layout" size="sm" />
+              <XDSToken label="Navigation" size="sm" />
+              <XDSToken label="Settings" size="sm" />
+            </div>
+          </div>
+
+          {/* Author section */}
+          <div
+            style={{
+              marginTop: 'auto',
+              display: 'flex',
+              flexDirection: 'row' as const,
+              alignItems: 'center',
+              gap: 12,
+            }}>
+            <XDSAvatar
+              size={36}
+              src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&h=80&fit=crop&crop=face"
+            />
+            <div style={{display: 'flex', flexDirection: 'column', gap: 2}}>
+              <XDSText type="supporting" color="secondary">
+                Designed by
+              </XDSText>
+              <XDSText type="body" style={{fontWeight: 600, fontSize: 16}}>
+                Andrea Anderson
+              </XDSText>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* RIGHT PANEL — preview area */}
       <div
         style={{
           flex: 1,
@@ -3326,54 +3614,110 @@ function TemplateFullPreview({
           transition:
             'opacity 500ms cubic-bezier(0.16, 1, 0.3, 1), transform 500ms cubic-bezier(0.16, 1, 0.3, 1)',
         }}>
-        {/* Top bar */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr auto 1fr',
-            alignItems: 'center',
-            padding: '12px 24px',
-          }}>
-          <div style={{justifySelf: 'start'}}>
-            <XDSButton
-              label="Templates"
-              variant="ghost"
-              size="sm"
-              icon={<ArrowLeftIcon />}
-              onClick={onBack}
-            />
-          </div>
-          <XDSSegmentedControl
-            value={viewMode}
-            onChange={(v: string) => setViewMode(v as 'desktop' | 'mobile')}
-            label="Viewport size"
-            size="sm">
-            <XDSSegmentedControlItem
-              value="desktop"
-              label="Desktop"
-              isLabelHidden
-              icon={<DesktopIcon />}
-            />
-            <XDSSegmentedControlItem
-              value="mobile"
-              label="Mobile"
-              isLabelHidden
-              icon={<PhoneIcon />}
-            />
-          </XDSSegmentedControl>
-          <div />
+        {/* Editor toolbar */}
+        <div style={{backgroundColor: 'var(--color-background-body, #f5f5f5)'}}>
+          <XDSToolbar
+            label="Template actions"
+            startContent={<></>}
+            centerContent={
+              <XDSSegmentedControl
+                value={viewMode}
+                onChange={(v: string) => setViewMode(v as 'desktop' | 'mobile')}
+                label="Viewport size"
+                size="sm">
+                <XDSSegmentedControlItem
+                  value="desktop"
+                  label="Desktop"
+                  isLabelHidden
+                  icon={<DesktopIcon />}
+                />
+                <XDSSegmentedControlItem
+                  value="mobile"
+                  label="Mobile"
+                  isLabelHidden
+                  icon={<PhoneIcon />}
+                />
+              </XDSSegmentedControl>
+            }
+            endContent={
+              <>
+                <XDSButton
+                  label="Point"
+                  variant="ghost"
+                  isIconOnly
+                  icon={<CursorIcon />}
+                />
+                <XDSDropdownMenu
+                  button={{
+                    label: 'Theme',
+                    variant: 'ghost',
+                    isIconOnly: true,
+                    icon: <PaletteIcon />,
+                  }}
+                  hasChevron={false}
+                  items={XDS_THEMES.map(t => ({
+                    label: t.label,
+                    onClick: () => {},
+                  }))}
+                />
+                <XDSButton
+                  label="Toggle theme"
+                  variant="ghost"
+                  isIconOnly
+                  icon={<ContrastIcon />}
+                />
+                <XDSButton
+                  label="Toggle code"
+                  variant={editorView === 'code' ? 'secondary' : 'ghost'}
+                  isIconOnly
+                  icon={<CodeIcon />}
+                  onClick={() =>
+                    setEditorView(editorView === 'preview' ? 'code' : 'preview')
+                  }
+                />
+                <XDSButton
+                  label="Save"
+                  variant="ghost"
+                  icon={<SaveIcon />}
+                  isIconOnly
+                  onClick={() => {}}
+                />
+                <XDSDropdownMenu
+                  button={{
+                    label: 'Share',
+                    variant: 'ghost',
+                    isIconOnly: true,
+                    icon: <PaperPlaneIcon />,
+                  }}
+                  hasChevron={false}
+                  menuWidth={220}
+                  items={[
+                    {
+                      label: 'Copy CLI Command...',
+                      icon: TerminalIcon,
+                      onClick: () => {},
+                    },
+                    {type: 'divider' as const},
+                    {label: 'Claude Code', icon: ClaudeIcon, onClick: () => {}},
+                    {label: 'VSCode', icon: VSCodeIcon, onClick: () => {}},
+                    {label: 'Cursor', icon: CursorAIIcon, onClick: () => {}},
+                  ]}
+                />
+              </>
+            }
+          />
         </div>
 
-        {/* Browser frame with template image */}
+        {/* Preview — browser frame + image */}
         <div
           style={{
+            backgroundColor: 'var(--color-background-body, #f5f5f5)',
+            padding: '22px 22px 22px',
+            display: editorView === 'preview' ? 'flex' : 'none',
+            justifyContent: 'center',
+            alignItems: 'flex-start',
             flex: 1,
-            display: 'flex',
-            flexDirection: 'column' as const,
-            alignItems: 'center',
-            padding: '24px 24px 24px',
             overflow: 'auto',
-            position: 'relative',
           }}>
           <div
             style={{
@@ -3438,13 +3782,78 @@ function TemplateFullPreview({
               }}
             />
           </div>
+        </div>
 
-          {/* Similar templates */}
+        {/* Code block */}
+        <div
+          style={{
+            margin: 0,
+            border: 'none',
+            borderRadius: 0,
+            backgroundColor: 'var(--color-background-muted, rgba(0,0,0,0.03))',
+            overflow: 'auto',
+            flex: 1,
+            display: editorView === 'code' ? 'block' : 'none',
+          }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '8px 12px 8px 16px',
+            }}>
+            <span
+              style={{
+                fontFamily: '"Roboto Mono", monospace',
+                fontSize: 12,
+                fontWeight: 500,
+                color: 'var(--color-text-secondary, #4e606f)',
+              }}>
+              typescript — useUser.ts
+            </span>
+          </div>
+          <div style={{display: 'flex'}}>
+            <div
+              style={{
+                padding: '12px 12px 12px 16px',
+                borderRight: '1px solid var(--color-divider, rgba(0,0,0,0.1))',
+                fontFamily: '"Roboto Mono", monospace',
+                fontSize: 14,
+                lineHeight: '20px',
+                color: 'var(--color-text-disabled, #a4b0bc)',
+                textAlign: 'right',
+                userSelect: 'none',
+                minWidth: 45,
+              }}>
+              {MOCK_CODE.split('\n').map((_, i) => (
+                <div key={i}>{i + 1}</div>
+              ))}
+            </div>
+            <pre
+              style={{
+                flex: 1,
+                padding: '12px 16px',
+                fontFamily: '"Roboto Mono", monospace',
+                fontSize: 14,
+                lineHeight: '20px',
+                margin: 0,
+                overflow: 'auto',
+                color: 'var(--color-text-primary, #0a1317)',
+              }}>
+              {MOCK_CODE}
+            </pre>
+          </div>
+        </div>
+
+        {/* Similar templates — only visible in preview mode */}
+        {editorView === 'preview' && (
           <div
             style={{
               width: '100%',
               padding: '24px 32px 32px',
               boxSizing: 'border-box' as const,
+              marginTop: 'auto',
+              textAlign: 'center' as const,
             }}>
             <XDSHeading level={3}>Similar templates</XDSHeading>
             <div
@@ -3453,10 +3862,12 @@ function TemplateFullPreview({
                 gap: 12,
                 marginTop: 12,
                 overflowX: 'auto' as const,
+                justifyContent: 'center',
               }}>
-              {[0, 1, 2, 3].map(i => (
+              {TEMPLATES.slice(0, 4).map((t, i) => (
                 <div
                   key={i}
+                  onClick={() => onSelectTemplate?.(i)}
                   style={{
                     flex: '0 0 280px',
                     aspectRatio: '1920 / 1200',
@@ -3465,10 +3876,11 @@ function TemplateFullPreview({
                     borderRadius: 8,
                     boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
                     overflow: 'hidden',
+                    cursor: 'pointer',
                   }}>
                   <img
-                    src={DUMMY_IMAGE}
-                    alt={`Similar template ${i + 1}`}
+                    src={t.src}
+                    alt={t.name}
                     style={{
                       display: 'block',
                       width: '100%',
@@ -3480,254 +3892,7 @@ function TemplateFullPreview({
               ))}
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* RIGHT PANEL — details sidebar */}
-      <div
-        style={{
-          width: '30%',
-          maxWidth: 380,
-          minWidth: 300,
-          backgroundColor: 'var(--color-background-card, #fff)',
-          borderLeft: '1px solid var(--color-border-default, #e0e0e0)',
-          padding: 32,
-          overflowY: 'auto' as const,
-          display: 'flex',
-          flexDirection: 'column' as const,
-          opacity: isVisible ? 1 : 0,
-          transform: isVisible ? 'translateX(0)' : 'translateX(60px)',
-          transition:
-            'opacity 500ms cubic-bezier(0.16, 1, 0.3, 1) 100ms, transform 500ms cubic-bezier(0.16, 1, 0.3, 1) 100ms',
-        }}>
-        {/* Template name */}
-        <XDSHeading level={1}>{templateName}</XDSHeading>
-
-        {/* Description */}
-        <div style={{marginTop: 12}}>
-          <XDSText type="body" color="secondary">
-            Buttons are clickable elements that are used to trigger actions.
-            They communicate calls to action to the user and allow users to
-            interact with pages in a variety of ways. Button labels express what
-            action will occur when the user interacts with it.
-          </XDSText>
-        </div>
-
-        {/* Stats buttons */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginTop: 16,
-            marginLeft: -8,
-            marginRight: -8,
-          }}>
-          <div style={{display: 'flex', alignItems: 'center', gap: 4}}>
-            <XDSButton
-              label="Link"
-              variant="ghost"
-              size="sm"
-              isIconOnly
-              icon={<LinkIcon />}
-            />
-            <XDSDropdownMenu
-              button={{
-                label: 'Share',
-                variant: 'ghost',
-                size: 'sm',
-                isIconOnly: true,
-                icon: <PaperPlaneIcon />,
-              }}
-              hasChevron={false}
-              menuWidth={220}
-              items={[
-                {
-                  label: 'Copy CLI Command...',
-                  icon: TerminalIcon,
-                  onClick: () => {},
-                },
-                {type: 'divider' as const},
-                {label: 'Claude Code', icon: ClaudeIcon, onClick: () => {}},
-                {label: 'VSCode', icon: VSCodeIcon, onClick: () => {}},
-                {label: 'Cursor', icon: CursorAIIcon, onClick: () => {}},
-              ]}
-            />
-          </div>
-          <div style={{display: 'flex', alignItems: 'center', gap: 4}}>
-            <XDSButton
-              label="1,645"
-              variant="ghost"
-              size="sm"
-              icon={<HeartIcon />}
-            />
-            <XDSButton
-              label="892"
-              variant="ghost"
-              size="sm"
-              icon={<BookmarkIcon />}
-            />
-          </div>
-        </div>
-
-        {/* CTA button */}
-        <div style={{marginTop: 16}}>
-          <XDSButton
-            variant="primary"
-            label="Start crafting"
-            onClick={onUse}
-            size="lg"
-            style={{width: '100%'}}
-          />
-        </div>
-
-        {/* Color palettes */}
-        <div style={{marginTop: 32}}>
-          <XDSHeading level={4}>Color palettes</XDSHeading>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: 10,
-              marginTop: 8,
-            }}>
-            {PREVIEW_COLOR_PALETTES.map(palette => (
-              <div
-                key={palette.name}
-                onClick={() => setSelectedPalette(palette.name)}
-                style={{
-                  cursor: 'pointer',
-                  border: `2px solid ${selectedPalette === palette.name ? 'var(--color-accent, #0066FF)' : 'transparent'}`,
-                  borderRadius: 14,
-                  overflow: 'hidden',
-                  transition: 'border-color 0.15s ease',
-                }}>
-                <XDSCard padding={0}>
-                  <div
-                    style={{
-                      display: 'flex',
-                      overflow: 'hidden',
-                      height: 48,
-                    }}>
-                    {palette.colors.map((color, i) => (
-                      <div
-                        key={i}
-                        style={{
-                          flex: 1,
-                          backgroundColor: color,
-                        }}
-                      />
-                    ))}
-                  </div>
-                </XDSCard>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Font packs */}
-        <div style={{marginTop: 32}}>
-          <XDSHeading level={4}>Font packs</XDSHeading>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: 10,
-              marginTop: 8,
-            }}>
-            {PREVIEW_FONT_PACKS.map(pack => (
-              <div
-                key={pack.heading}
-                onClick={() => setSelectedFontPack(pack.heading)}
-                style={{
-                  cursor: 'pointer',
-                  border: `2px solid ${selectedFontPack === pack.heading ? 'var(--color-accent, #0066FF)' : 'transparent'}`,
-                  borderRadius: 14,
-                  overflow: 'hidden',
-                  transition: 'border-color 0.15s ease',
-                }}>
-                <XDSCard padding={2}>
-                  <div style={{fontFamily: pack.heading}}>
-                    <XDSText
-                      type="body"
-                      style={{fontWeight: 600, fontSize: 16}}>
-                      Heading
-                    </XDSText>
-                  </div>
-                  <div style={{fontFamily: pack.paragraph}}>
-                    <XDSText type="supporting" color="secondary">
-                      Paragraph text
-                    </XDSText>
-                  </div>
-                </XDSCard>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Component used */}
-        <div style={{marginTop: 32}}>
-          <XDSHeading level={3}>Component used</XDSHeading>
-          <div
-            style={{
-              display: 'flex',
-              flexWrap: 'wrap' as const,
-              gap: 8,
-              marginTop: 8,
-            }}>
-            <XDSToken label="XDSAppShell" />
-            <XDSToken label="XDSTopNav" />
-            <XDSToken label="XDSVStack" />
-            <XDSToken label="XDSHStack" />
-            <XDSToken label="XDSHeading" />
-            <XDSToken label="XDSText" />
-            <XDSToken label="XDSButton" />
-            <XDSToken label="XDSCard" />
-            <XDSToken label="XDSBadge" />
-            <XDSToken label="XDSAvatar" />
-          </div>
-        </div>
-
-        {/* Keywords */}
-        <div style={{marginTop: 32}}>
-          <XDSHeading level={3}>Keywords</XDSHeading>
-          <div
-            style={{
-              display: 'flex',
-              flexWrap: 'wrap' as const,
-              gap: 4,
-              marginTop: 8,
-            }}>
-            <XDSToken label="Dashboard" size="sm" />
-            <XDSToken label="Admin" size="sm" />
-            <XDSToken label="Layout" size="sm" />
-            <XDSToken label="Navigation" size="sm" />
-            <XDSToken label="Settings" size="sm" />
-          </div>
-        </div>
-
-        {/* Author section */}
-        <div
-          style={{
-            marginTop: 'auto',
-            display: 'flex',
-            flexDirection: 'row' as const,
-            alignItems: 'center',
-            gap: 12,
-          }}>
-          <XDSAvatar
-            size={36}
-            src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&h=80&fit=crop&crop=face"
-          />
-          <div style={{display: 'flex', flexDirection: 'column', gap: 2}}>
-            <XDSText type="supporting" color="secondary">
-              Designed by
-            </XDSText>
-            <XDSText type="body" style={{fontWeight: 600, fontSize: 16}}>
-              Andrea Anderson
-            </XDSText>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );
@@ -4248,8 +4413,8 @@ export default function DocsiteLandingTemplate() {
   const [isTablet, setIsTablet] = useState(false);
   const [generatingSource, setGeneratingSource] = useState<number | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
-  const [useTarget, setUseTarget] = useState<number | null>(null);
   const [previewTarget, setPreviewTarget] = useState<number | null>(null);
+  const [useTarget, setUseTarget] = useState<number | null>(null);
   const [previewGenerating, setPreviewGenerating] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const previewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -4341,23 +4506,9 @@ export default function DocsiteLandingTemplate() {
 
   const isGenerating = generatingSource !== null;
 
-  // Combined view: only for the 2nd card (index 1, Shopping Details)
-  if ((previewTarget === 1 || useTarget === 1) && activeView === 'craft') {
+  // Combined preview + editor view for 2nd card (index 1)
+  if (previewTarget === 1 && activeView === 'craft') {
     const t = TEMPLATES[1];
-    return (
-      <TemplateCombinedView
-        templateName={t.name}
-        imageSrc={t.src}
-        onBack={handleBackFromUse}
-        isGenerating={previewGenerating}
-        simulation={simRef.current!}
-      />
-    );
-  }
-
-  // Preview flow for all other cards
-  if (previewTarget !== null && useTarget === null && activeView === 'craft') {
-    const t = TEMPLATES[previewTarget % TEMPLATES.length];
     return (
       <TemplateFullPreview
         templateName={t.name}
@@ -4365,14 +4516,15 @@ export default function DocsiteLandingTemplate() {
         onBack={() => {
           setPreviewTarget(null);
         }}
-        onUse={() => {
-          setUseTarget(previewTarget);
+        onUse={() => {}}
+        onSelectTemplate={index => {
+          setPreviewTarget(index);
         }}
       />
     );
   }
 
-  // Editor flow for cards that went through preview → customize
+  // Editor flow for non-2nd cards that went through preview → use
   if (useTarget !== null && useTarget !== 1 && activeView === 'craft') {
     const t = TEMPLATES[useTarget % TEMPLATES.length];
     return (
@@ -4396,6 +4548,28 @@ export default function DocsiteLandingTemplate() {
           />
         </div>
       </div>
+    );
+  }
+
+  // Preview page for all other cards (two-step: preview → editor)
+  if (previewTarget !== null && useTarget === null && activeView === 'craft') {
+    const t = TEMPLATES[previewTarget % TEMPLATES.length];
+    return (
+      <TemplateFullPreview
+        templateName={t.name}
+        imageSrc={t.src}
+        onBack={() => {
+          setPreviewTarget(null);
+        }}
+        onUse={() => {
+          setUseTarget(previewTarget);
+          setPreviewTarget(null);
+          setChatOpen(true);
+        }}
+        onSelectTemplate={index => {
+          setPreviewTarget(index);
+        }}
+      />
     );
   }
 
@@ -4458,9 +4632,7 @@ export default function DocsiteLandingTemplate() {
         height: '100vh',
         backgroundColor: 'var(--color-background-surface, white)',
       }}>
-      {useTarget === null && (
-        <AppTopNav activeView={activeView} setActiveView={setActiveView} />
-      )}
+      <AppTopNav activeView={activeView} setActiveView={setActiveView} />
       <div
         style={{
           display: 'flex',
@@ -4481,7 +4653,7 @@ export default function DocsiteLandingTemplate() {
           {chatOpen && (
             <ChatPanel
               isGenerating={isGenerating || previewGenerating}
-              onSend={useTarget !== null ? handlePreviewSend : undefined}
+              onSend={undefined}
               activeView={activeView}
               setActiveView={setActiveView}
             />
@@ -4496,66 +4668,56 @@ export default function DocsiteLandingTemplate() {
             display: 'flex',
             flexDirection: 'column' as const,
           }}>
-          {useTarget !== null ? (
-            <TemplatePreview
-              templateName={TEMPLATES[useTarget % TEMPLATES.length].name}
-              imageSrc={TEMPLATES[useTarget % TEMPLATES.length].src}
-              onBack={handleBackFromUse}
-              isGenerating={previewGenerating}
-              simulation={simRef.current!}
-            />
-          ) : (
-            <div style={{display: 'flex', flex: 1, overflow: 'hidden'}}>
-              {/* Masonry Grid */}
+          <div style={{display: 'flex', flex: 1, overflow: 'hidden'}}>
+            {/* Masonry Grid */}
+            <div
+              style={{
+                flex: 1,
+                overflow: 'auto',
+                padding: 16,
+              }}>
               <div
                 style={{
-                  flex: 1,
-                  overflow: 'auto',
-                  padding: 16,
+                  maxWidth: 2000,
+                  margin: '0 auto',
+                  display: 'grid',
+                  gridTemplateColumns: isMobile
+                    ? '1fr'
+                    : isTablet
+                      ? 'repeat(2, 1fr)'
+                      : 'repeat(4, 1fr)',
+                  gap: 16,
+                  gridAutoRows: '1fr',
                 }}>
-                <div
-                  style={{
-                    maxWidth: 2000,
-                    margin: '0 auto',
-                    display: 'grid',
-                    gridTemplateColumns: isMobile
-                      ? '1fr'
-                      : isTablet
-                        ? 'repeat(2, 1fr)'
-                        : 'repeat(4, 1fr)',
-                    gap: 16,
-                    gridAutoRows: '1fr',
-                  }}>
-                  {TEMPLATES.map((template, i) => (
-                    <div key={`${template.name}-${i}`}>
-                      <TemplateCard
-                        src={template.src}
-                        name={template.name}
-                        isSelected={selected.has(i)}
-                        isGenerating={isGenerating && generatingSource !== i}
-                        cardSize={template.size}
-                        onSelect={() =>
-                          setSelected(prev => {
-                            const next = new Set(prev);
-                            if (next.has(i)) {
-                              next.delete(i);
-                            } else {
-                              next.add(i);
-                            }
-                            return next;
-                          })
-                        }
-                        onMoreLikeThis={() => handleMoreLikeThis(i)}
-                        onUse={() => handleUse(i)}
-                        onPreview={() => handlePreview(i)}
-                        simulation={simRef.current!}
-                      />
-                    </div>
-                  ))}
-                </div>
+                {TEMPLATES.map((template, i) => (
+                  <div key={`${template.name}-${i}`}>
+                    <TemplateCard
+                      src={template.src}
+                      name={template.name}
+                      isSelected={selected.has(i)}
+                      isGenerating={isGenerating && generatingSource !== i}
+                      cardSize={template.size}
+                      onSelect={() =>
+                        setSelected(prev => {
+                          const next = new Set(prev);
+                          if (next.has(i)) {
+                            next.delete(i);
+                          } else {
+                            next.add(i);
+                          }
+                          return next;
+                        })
+                      }
+                      onMoreLikeThis={() => handleMoreLikeThis(i)}
+                      onUse={() => handleUse(i)}
+                      onPreview={() => handlePreview(i)}
+                      simulation={simRef.current!}
+                    />
+                  </div>
+                ))}
               </div>
             </div>
-          )}
+          </div>
         </div>
       </div>
 
