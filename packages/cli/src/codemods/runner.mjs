@@ -19,6 +19,27 @@ const CORRUPTION_PATTERNS = [
 ];
 
 /**
+ * Fix jscodeshift directive corruption.
+ *
+ * jscodeshift has a known bug where toSource() double-prints the semicolon
+ * on directive prologues ('use client';, 'use server';, 'use strict';)
+ * when the AST has been modified with new nodes nearby. The parser treats
+ * the directive as an ExpressionStatement with a StringLiteral, and the
+ * printer emits both the original semicolon and a new one for the statement.
+ *
+ * This is applied in the runner so every codemod gets the fix automatically.
+ *
+ * @param {string} code
+ * @returns {string}
+ */
+export function fixDirectiveCorruption(code) {
+  return code.replace(
+    /^(['"]use (client|server|strict)['"]);\s*;/gm,
+    '$1;',
+  );
+}
+
+/**
  * Recursively find all source files in a directory.
  * @param {string} dir
  * @returns {string[]}
@@ -190,9 +211,12 @@ export async function runCodemods(versionManifests, {apply, path: srcPath, codem
           };
           const file = {source, path: filePath};
 
-          const result = transform(file, api);
+          let result = transform(file, api);
 
           if (result != null && result !== source) {
+            // Fix known jscodeshift output corruption before validation
+            result = fixDirectiveCorruption(result);
+
             // Validate output before writing
             const validation = validateOutput(result, source, j);
             if (!validation.valid) {

@@ -55,6 +55,24 @@ export default function transformer(file, api) {
   let needsIconButtonImport = false;
   let hasRemainingXDSButton = false;
 
+  // Insert a new node after a target node in the program body.
+  // Uses direct body manipulation instead of jscodeshift's insertAfter(),
+  // which has a known bug that corrupts 'use client' directives into
+  // double semicolons ('use client';;).
+  function insertAfterInBody(targetPath, newNode) {
+    const body = root.get().node.program.body;
+    const targetIndex = body.indexOf(targetPath.node);
+    if (targetIndex !== -1) {
+      body.splice(targetIndex + 1, 0, newNode);
+    } else {
+      // Fallback: insert after all imports
+      const lastImportIdx = body.findLastIndex(
+        (n) => n.type === 'ImportDeclaration',
+      );
+      body.splice(lastImportIdx + 1, 0, newNode);
+    }
+  }
+
   // ---- 1. JSX elements: convert icon-only XDSButton to XDSIconButton ----
   root.find(j.JSXOpeningElement).forEach((path) => {
     const name = path.node.name;
@@ -248,7 +266,7 @@ export default function transformer(file, api) {
               [j.importSpecifier(j.identifier('XDSIconButton'))],
               j.stringLiteral('@xds/core/IconButton'),
             );
-            path.insertAfter(newImport);
+            insertAfterInBody(path, newImport);
           }
           alreadyImported = true;
         });
@@ -279,11 +297,11 @@ export default function transformer(file, api) {
           .filter((p) => p.node.source.value.startsWith('@xds/'));
 
         if (xdsImports.length > 0) {
-          xdsImports.at(-1).insertAfter(newImport);
+          insertAfterInBody(xdsImports.at(-1), newImport);
         } else {
           const allImports = root.find(j.ImportDeclaration);
           if (allImports.length > 0) {
-            allImports.at(-1).insertAfter(newImport);
+            insertAfterInBody(allImports.at(-1), newImport);
           } else {
             root.get().node.program.body.unshift(newImport);
           }
