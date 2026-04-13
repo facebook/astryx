@@ -23,7 +23,6 @@ Follow the full component lifecycle documented on the XDS wiki:
   - `XDS{ComponentName}.test.tsx` — unit tests
   - `{ComponentName}.doc.mjs` — typed docs (ComponentDoc)
   - `index.ts` — public exports
-  - `README.md` — directory README (see Tokenizer/README.md for the format)
 - Create `apps/storybook/stories/{ComponentName}.stories.tsx`
 - Wire up: add to `packages/core/src/index.ts`
 - Run `node scripts/sync-exports.js` to update package.json exports
