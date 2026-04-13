@@ -59,7 +59,7 @@ export const neutralTheme = defineTheme({
   // Motion: snappier than default to match shadcn/Tailwind conventions.
   // Produces: fast-min=95ms, fast=125ms, fast-max=165ms,
   //           medium-min=225ms, medium=300ms, medium-max=400ms.
-  motion: {fast: 125, medium: 300, ratio: 0.75},
+  motion: {fast: 125, medium: 300, slow: 700, ratio: 0.75},
 
   // Syntax highlighting — desaturated to match grayscale palette
   syntax: neutralSyntax,

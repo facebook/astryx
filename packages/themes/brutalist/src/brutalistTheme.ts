@@ -23,7 +23,7 @@ export const brutalistTheme = defineTheme({
   // Produces: fast-min=50ms, fast=65ms, fast-max=85ms,
   //           medium-min=115ms, medium=150ms, medium-max=200ms.
   // Linear easing — no curves, no polish, just movement.
-  motion: {fast: 65, medium: 150, ratio: 0.75, easing: 'linear'},
+  motion: {fast: 65, medium: 150, slow: 350, ratio: 0.75, easing: 'linear'},
 
   tokens: {
     // Colors — high contrast, no subtlety
