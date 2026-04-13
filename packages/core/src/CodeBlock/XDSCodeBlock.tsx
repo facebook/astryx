@@ -316,15 +316,13 @@ export interface XDSCodeBlockProps extends XDSBaseProps<HTMLPreElement> {
     code: string,
     language: string,
   ) => Array<{type: string; start: number; end: number}>;
-}
-
-/**
- * Internal-only props for testing and performance tuning.
- * Not part of the public API — used by the sandbox perf page.
- * @internal
- */
-interface XDSCodeBlockInternalProps extends XDSCodeBlockProps {
-  /** @internal Force a specific highlighting strategy. */
+  /**
+   * Highlighting strategy.
+   * - `'auto'` — uses CSS Custom Highlight API when available, falls back to spans
+   * - `'ranges'` — force CSS Custom Highlight API (no-op if unsupported)
+   * - `'spans'` — force span-based rendering
+   * @default 'auto'
+   */
   highlightMode?: 'auto' | 'ranges' | 'spans';
 }
 
@@ -605,7 +603,7 @@ export function XDSCodeBlock({
   style,
   ref,
   ...props
-}: XDSCodeBlockInternalProps) {
+}: XDSCodeBlockProps) {
   const [copied, setCopied] = useState(false);
 
   const useSpans =
