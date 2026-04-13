@@ -1,3 +1,5 @@
+/* eslint-env node */
+/* eslint-disable no-undef, @typescript-eslint/no-require-imports */
 /**
  * Generates apps/sandbox/src/generated/versionRegistry.ts from git tags.
  * Finds all tags matching 'docsite-*' and writes them as a typed array.
