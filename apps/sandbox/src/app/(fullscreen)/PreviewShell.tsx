@@ -15,6 +15,7 @@ import {
 import {categories} from '../sandboxPages';
 import {useThemeControls} from '../providers';
 import {sourceRegistry} from '../../generated/sourceRegistry';
+import {gitVersions} from '../../generated/versionRegistry';
 
 function EyeIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -184,6 +185,9 @@ type Version = {
   id: string;
   name: string;
   timestamp: number;
+  source?: 'local' | 'git';
+  tag?: string;
+  message?: string;
 };
 
 function formatRelativeTime(ts: number): string {
@@ -202,8 +206,81 @@ function getStorageKey(pathname: string) {
   return `sandbox-versions-${pathname.replace(/\/$/, '')}`;
 }
 
+function VersionRow({
+  version,
+  isActive,
+  onClick,
+  detail,
+  subtitle,
+}: {
+  version: Version;
+  isActive: boolean;
+  onClick: () => void;
+  detail: string;
+  subtitle?: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        width: '100%',
+        padding: '8px 12px',
+        border: 'none',
+        background: isActive ? 'rgba(10,124,255,0.06)' : 'none',
+        cursor: 'pointer',
+        textAlign: 'left',
+        fontSize: 13,
+      }}>
+      <span
+        style={{
+          width: 6,
+          height: 6,
+          borderRadius: '50%',
+          backgroundColor: isActive ? '#0A7CFF' : 'transparent',
+          border: isActive ? 'none' : '1px solid #ccc',
+          flexShrink: 0,
+        }}
+      />
+      <span
+        style={{
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+          minWidth: 0,
+        }}>
+        <span style={{fontWeight: isActive ? 600 : 400}}>{version.name}</span>
+        {subtitle && (
+          <span
+            style={{
+              display: 'block',
+              fontSize: 10,
+              color: '#999',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}>
+            {subtitle}
+          </span>
+        )}
+      </span>
+      <span
+        style={{
+          fontSize: 11,
+          color: '#999',
+          marginLeft: 'auto',
+          flexShrink: 0,
+        }}>
+        {detail}
+      </span>
+    </button>
+  );
+}
+
 function VersionDropdown({pathname}: {pathname: string}) {
-  const [versions, setVersions] = useState<Version[]>([]);
+  const [localVersions, setLocalVersions] = useState<Version[]>([]);
   const [activeVersionId, setActiveVersionId] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -212,20 +289,33 @@ function VersionDropdown({pathname}: {pathname: string}) {
     null,
   );
 
-  // Load versions from localStorage
+  // Load local versions from localStorage
   useEffect(() => {
     try {
       const stored = localStorage.getItem(getStorageKey(pathname));
-      if (stored) setVersions(JSON.parse(stored));
+      if (stored) setLocalVersions(JSON.parse(stored));
     } catch {
       // ignore
     }
   }, [pathname]);
 
-  // Persist versions
+  // Persist local versions
   useEffect(() => {
-    localStorage.setItem(getStorageKey(pathname), JSON.stringify(versions));
-  }, [versions, pathname]);
+    localStorage.setItem(
+      getStorageKey(pathname),
+      JSON.stringify(localVersions),
+    );
+  }, [localVersions, pathname]);
+
+  // Merge local versions (first) + git versions
+  const versions: Version[] = useMemo(() => {
+    const local = localVersions.map(v => ({...v, source: 'local' as const}));
+    const git = gitVersions.map(v => ({
+      ...v,
+      source: 'git' as const,
+    }));
+    return [...local, ...git];
+  }, [localVersions]);
 
   // Calculate panel position when opening
   useEffect(() => {
@@ -251,15 +341,16 @@ function VersionDropdown({pathname}: {pathname: string}) {
   }, [isOpen]);
 
   const handleSave = () => {
-    const nextNum = versions.length + 1;
+    const nextNum = localVersions.length + 1;
     const name = prompt('Version name:', `Version ${nextNum}`);
     if (!name) return;
     const newVersion: Version = {
       id: crypto.randomUUID(),
       name,
       timestamp: Date.now(),
+      source: 'local',
     };
-    setVersions(prev => [newVersion, ...prev]);
+    setLocalVersions(prev => [newVersion, ...prev]);
     setActiveVersionId(newVersion.id);
   };
 
@@ -379,58 +470,67 @@ function VersionDropdown({pathname}: {pathname: string}) {
               live
             </span>
           </button>
-          {/* Saved versions */}
-          {versions.map(v => (
-            <button
-              key={v.id}
-              onClick={() => {
-                setActiveVersionId(v.id);
-                setIsOpen(false);
-              }}
+          {/* Local versions */}
+          {versions.filter(v => v.source === 'local').length > 0 && (
+            <div
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                width: '100%',
-                padding: '8px 12px',
-                border: 'none',
-                background:
-                  activeVersionId === v.id ? 'rgba(10,124,255,0.06)' : 'none',
-                cursor: 'pointer',
-                textAlign: 'left',
-                fontSize: 13,
+                padding: '6px 12px 2px',
+                fontSize: 10,
+                fontWeight: 600,
+                color: '#999',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
               }}>
-              <span
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: '50%',
-                  backgroundColor:
-                    activeVersionId === v.id ? '#0A7CFF' : 'transparent',
-                  border: activeVersionId === v.id ? 'none' : '1px solid #ccc',
-                  flexShrink: 0,
+              Local
+            </div>
+          )}
+          {versions
+            .filter(v => v.source === 'local')
+            .map(v => (
+              <VersionRow
+                key={v.id}
+                version={v}
+                isActive={activeVersionId === v.id}
+                onClick={() => {
+                  setActiveVersionId(v.id);
+                  setIsOpen(false);
                 }}
+                detail={formatRelativeTime(v.timestamp)}
               />
-              <span
-                style={{
-                  fontWeight: activeVersionId === v.id ? 600 : 400,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}>
-                {v.name}
-              </span>
-              <span
-                style={{
-                  fontSize: 11,
-                  color: '#999',
-                  marginLeft: 'auto',
-                  flexShrink: 0,
-                }}>
-                {formatRelativeTime(v.timestamp)}
-              </span>
-            </button>
-          ))}
+            ))}
+          {/* Git tag versions */}
+          {versions.filter(v => v.source === 'git').length > 0 && (
+            <div
+              style={{
+                padding: '6px 12px 2px',
+                fontSize: 10,
+                fontWeight: 600,
+                color: '#999',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                borderTop:
+                  versions.filter(v => v.source === 'local').length > 0
+                    ? '1px solid rgba(0,0,0,0.08)'
+                    : 'none',
+              }}>
+              Tagged
+            </div>
+          )}
+          {versions
+            .filter(v => v.source === 'git')
+            .map(v => (
+              <VersionRow
+                key={v.id}
+                version={v}
+                isActive={activeVersionId === v.id}
+                onClick={() => {
+                  setActiveVersionId(v.id);
+                  setIsOpen(false);
+                }}
+                detail={formatRelativeTime(v.timestamp)}
+                subtitle={v.tag}
+              />
+            ))}
         </div>
       )}
     </div>
