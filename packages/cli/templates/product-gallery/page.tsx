@@ -1,62 +1,27 @@
 'use client';
 
-import {XDSAppShell} from '@xds/core/AppShell';
-import {XDSTopNav, XDSTopNavHeading, XDSTopNavItem} from '@xds/core/TopNav';
-import {XDSNavIcon} from '@xds/core/NavIcon';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSCenter} from '@xds/core/Center';
-import {XDSText, XDSHeading} from '@xds/core/Text';
+import {XDSText} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
 import {XDSCard} from '@xds/core/Card';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSGrid} from '@xds/core/Grid';
 import {XDSAspectRatio} from '@xds/core/AspectRatio';
+import {XDSIcon} from '@xds/core/Icon';
 
-// ─── Inline SVG Icons ───────────────────────────────────────────────────────
+// ─── Icons ──────────────────────────────────────────────────────────────────
 
-const BagIcon = (props: React.SVGProps<SVGSVGElement>) => (
+const ArrowRightIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth={1.5}
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
     {...props}>
-    <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18M16 10a4 4 0 01-8 0" />
-  </svg>
-);
-
-const SearchIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <circle cx="11" cy="11" r="8" />
-    <path d="M21 21l-4.35-4.35" />
-  </svg>
-);
-
-const UserIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
-    <circle cx="12" cy="7" r="4" />
-  </svg>
-);
-
-const FilterIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <path d="M4 6h16M6 12h12M8 18h8" strokeLinecap="round" />
+    <path d="M5 12h14M12 5l7 7-7 7" />
   </svg>
 );
 
@@ -135,98 +100,15 @@ const PRODUCTS: Product[] = [
       'https://images.unsplash.com/photo-1524484485831-a92ffc0de03f?w=600&q=80',
     category: 'Lighting',
   },
-  {
-    id: 7,
-    name: 'Cotton Rug — 5×8',
-    description: 'Flatweave cotton area rug with a geometric pattern.',
-    price: 195.0,
-    originalPrice: 260.0,
-    image:
-      'https://images.unsplash.com/photo-1600166898405-da9535204843?w=600&q=80',
-    badge: 'Sale',
-    category: 'Textiles',
-  },
-  {
-    id: 8,
-    name: 'Brass Desk Organizer',
-    description:
-      'Brushed brass organizer with three compartments for pens and cards.',
-    price: 48.0,
-    image:
-      'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=600&q=80',
-    category: 'Decor',
-  },
-  {
-    id: 9,
-    name: 'Oak Bookshelf',
-    description:
-      'Open-frame white oak bookshelf with five shelves and steel joints.',
-    price: 599.0,
-    image:
-      'https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?w=600&q=80',
-    badge: 'New',
-    category: 'Furniture',
-  },
 ];
 
 const fmt = (n: number) => `$${n.toFixed(2)}`;
-
-// ─── TopNav ─────────────────────────────────────────────────────────────────
-
-function StoreTopNav() {
-  return (
-    <XDSTopNav
-      label="Store navigation"
-      heading={
-        <XDSTopNavHeading
-          heading="Haus Studio"
-          logo={
-            <XDSNavIcon icon={<BagIcon style={{width: 16, height: 16}} />} />
-          }
-          href="#"
-        />
-      }
-      centerContent={
-        <>
-          <XDSTopNavItem label="New Arrivals" href="#" />
-          <XDSTopNavItem label="Lighting" href="#" />
-          <XDSTopNavItem label="Furniture" href="#" />
-          <XDSTopNavItem label="Decor" href="#" />
-          <XDSTopNavItem label="Sale" href="#" />
-        </>
-      }
-      endContent={
-        <>
-          <XDSButton
-            label="Search"
-            variant="ghost"
-            icon={<SearchIcon style={{width: 16, height: 16}} />}
-            isIconOnly
-          />
-          <XDSButton
-            label="Account"
-            variant="ghost"
-            icon={<UserIcon style={{width: 16, height: 16}} />}
-            isIconOnly
-          />
-          <XDSButton
-            label="Cart"
-            variant="ghost"
-            icon={<BagIcon style={{width: 16, height: 16}} />}
-            isIconOnly
-          />
-        </>
-      }
-    />
-  );
-}
 
 // ─── Product Card ───────────────────────────────────────────────────────────
 
 function ProductCard({product}: {product: Product}) {
   return (
     <XDSCard padding={0}>
-      {/* Image area with optional badge overlay */}
       <div style={{position: 'relative'}}>
         <XDSAspectRatio ratio={4 / 3}>
           <img
@@ -250,7 +132,6 @@ function ProductCard({product}: {product: Product}) {
         )}
       </div>
 
-      {/* Product info */}
       <div style={{padding: 12}}>
         <XDSVStack gap={0.5}>
           <XDSText type="supporting" color="secondary">
@@ -282,45 +163,44 @@ function ProductCard({product}: {product: Product}) {
 
 export default function ProductGalleryTemplate() {
   return (
-    <XDSAppShell
-      topNav={<StoreTopNav />}
-      height="auto"
-      contentPadding={0}
-      variant="surface">
-      <XDSCenter axis="horizontal">
-        <div style={{maxWidth: 1200, width: '100%', padding: '32px 24px 64px'}}>
-          <XDSVStack gap={6}>
-            {/* Page Header */}
-            <XDSHStack gap={3} vAlign="center">
-              <XDSVStack gap={1}>
-                <XDSHeading level={1}>Shop All</XDSHeading>
-                <XDSText type="body" color="secondary">
-                  {PRODUCTS.length} products
+    <XDSCenter axis="horizontal">
+      <div style={{maxWidth: 1200, width: '100%', padding: '32px 24px 64px'}}>
+        <XDSVStack gap={6}>
+          {/* Header — title left, description + CTA right */}
+          <XDSHStack gap={4} vAlign="center">
+            <div style={{flex: '1 1 0%', minWidth: 0}}>
+              <XDSText type="large" size="3xl" weight="bold" as="p">
+                Make every day a little more delightful, one detail at a time.
+              </XDSText>
+            </div>
+            <div style={{flex: '1 1 0%', minWidth: 0}}>
+              <XDSVStack gap={3}>
+                <XDSText type="body">
+                  Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed
+                  do eiusmod tempor incididunt ut labore et dolore magna aliqua
+                  ut enim ad minim exercitation.
                 </XDSText>
+                <div>
+                  <XDSButton
+                    label="Get started"
+                    variant="primary"
+                    endContent={
+                      <XDSIcon icon={ArrowRightIcon} color="inherit" />
+                    }
+                  />
+                </div>
               </XDSVStack>
-              <div style={{marginLeft: 'auto'}}>
-                <XDSButton
-                  label="Filter"
-                  variant="secondary"
-                  icon={<FilterIcon style={{width: 16, height: 16}} />}
-                />
-              </div>
-            </XDSHStack>
+            </div>
+          </XDSHStack>
 
-            {/* Product Grid */}
-            <XDSGrid columns={3} gap={4}>
-              {PRODUCTS.map(product => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </XDSGrid>
-
-            {/* Load More */}
-            <XDSCenter axis="horizontal">
-              <XDSButton label="Load more" variant="secondary" />
-            </XDSCenter>
-          </XDSVStack>
-        </div>
-      </XDSCenter>
-    </XDSAppShell>
+          {/* Product Grid */}
+          <XDSGrid columns={3} gap={4}>
+            {PRODUCTS.map(product => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </XDSGrid>
+        </XDSVStack>
+      </div>
+    </XDSCenter>
   );
 }
