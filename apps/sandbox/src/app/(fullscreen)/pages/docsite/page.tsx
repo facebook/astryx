@@ -81,14 +81,6 @@ const FilterIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-const MoreIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
-    <circle cx="12" cy="5" r="2" />
-    <circle cx="12" cy="12" r="2" />
-    <circle cx="12" cy="19" r="2" />
-  </svg>
-);
-
 const PlusIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     viewBox="0 0 24 24"
@@ -137,17 +129,6 @@ const HeartIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-const ThumbsUpIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    {...props}>
-    <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
-  </svg>
-);
-
 const SendIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     viewBox="0 0 24 24"
@@ -156,37 +137,6 @@ const SendIcon = (props: React.SVGProps<SVGSVGElement>) => (
     strokeWidth={2}
     {...props}>
     <path d="M5 12h14M12 5l7 7-7 7" />
-  </svg>
-);
-
-const SidebarCollapseIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    {...props}>
-    <rect x="3" y="3" width="18" height="18" rx="2" />
-    <line x1="9" y1="3" x2="9" y2="21" />
-    <polyline points="14 9 11 12 14 15" />
-  </svg>
-);
-
-const AaIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.8}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    {...props}>
-    <path d="M3 18L8 6h1l5 12" />
-    <line x1="5" y1="14" x2="12" y2="14" />
-    <path d="M15 18c0-2.5 1.5-4 3.5-4s3.5 1.5 3.5 4" />
-    <line x1="22" y1="18" x2="22" y2="13" />
   </svg>
 );
 
@@ -1254,18 +1204,6 @@ const DesktopIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-const TabletIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    {...props}>
-    <rect x="4" y="2" width="16" height="20" rx="2" />
-    <line x1="12" y1="18" x2="12" y2="18" strokeLinecap="round" />
-  </svg>
-);
-
 const PhoneIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     viewBox="0 0 24 24"
@@ -1319,20 +1257,6 @@ const CursorAIIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-const CloseIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    {...props}>
-    <line x1="18" y1="6" x2="6" y2="18" />
-    <line x1="6" y1="6" x2="18" y2="18" />
-  </svg>
-);
-
 const CopyIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     viewBox="0 0 24 24"
@@ -1344,22 +1268,6 @@ const CopyIcon = (props: React.SVGProps<SVGSVGElement>) => (
     {...props}>
     <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-  </svg>
-);
-
-const RocketIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    {...props}>
-    <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" />
-    <path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" />
-    <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" />
-    <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" />
   </svg>
 );
 
@@ -1420,9 +1328,9 @@ const XDS_THEMES = [
 ];
 
 function TemplatePreview({
-  templateName,
+  templateName: _templateName,
   imageSrc,
-  onBack,
+  onBack: _onBack,
   isGenerating,
   simulation,
 }: {
@@ -2761,71 +2669,6 @@ function SectionLabel({label}: {label: string}) {
 }
 
 // ---------------------------------------------------------------------------
-// Code Preview with syntax highlighting (for DocsView)
-// ---------------------------------------------------------------------------
-
-const BUTTON_CODE_LINES: Array<{spans: Array<{text: string; color: string}>}> =
-  [
-    {
-      spans: [
-        {text: 'import ', color: '#c678dd'},
-        {text: '{', color: '#abb2bf'},
-        {text: 'XDSButton', color: '#e5c07b'},
-        {text: '}', color: '#abb2bf'},
-        {text: ' from ', color: '#c678dd'},
-        {text: "'@xds/core/Button'", color: '#98c379'},
-        {text: ';', color: '#abb2bf'},
-      ],
-    },
-    {spans: [{text: '', color: '#abb2bf'}]},
-    {
-      spans: [
-        {text: 'export default ', color: '#c678dd'},
-        {text: 'function ', color: '#c678dd'},
-        {text: 'Example', color: '#61afef'},
-        {text: '() {', color: '#abb2bf'},
-      ],
-    },
-    {
-      spans: [
-        {text: '  return ', color: '#c678dd'},
-        {text: '(', color: '#abb2bf'},
-      ],
-    },
-    {
-      spans: [
-        {text: '    <', color: '#abb2bf'},
-        {text: 'XDSButton', color: '#e5c07b'},
-      ],
-    },
-    {
-      spans: [
-        {text: '      label', color: '#d19a66'},
-        {text: '=', color: '#abb2bf'},
-        {text: '"Button"', color: '#98c379'},
-      ],
-    },
-    {
-      spans: [
-        {text: '      variant', color: '#d19a66'},
-        {text: '=', color: '#abb2bf'},
-        {text: '"primary"', color: '#98c379'},
-      ],
-    },
-    {
-      spans: [
-        {text: '      icon', color: '#d19a66'},
-        {text: '={<', color: '#abb2bf'},
-        {text: 'PlusIcon', color: '#e5c07b'},
-        {text: ' />}', color: '#abb2bf'},
-      ],
-    },
-    {spans: [{text: '    />', color: '#abb2bf'}]},
-    {spans: [{text: '  );', color: '#abb2bf'}]},
-    {spans: [{text: '}', color: '#abb2bf'}]},
-  ];
-
-// ---------------------------------------------------------------------------
 // DialogPreview — stateful dialog preview for component previews
 // ---------------------------------------------------------------------------
 
@@ -2866,8 +2709,8 @@ function DocsView({
   setActiveView: (v: 'craft' | 'library' | 'profile') => void;
 }) {
   const [activeNav, setActiveNav] = useState('button');
-  const [showCode, setShowCode] = useState(true);
-  const [activeRightNav, setActiveRightNav] = useState('usage');
+  const [_showCode, _setShowCode] = useState(true);
+  const [_activeRightNav, _setActiveRightNav] = useState('usage');
   const [selectedComponent, setSelectedComponent] = useState<string | null>(
     null,
   );
@@ -4369,7 +4212,7 @@ const PUBLISH_TAGS = [
 
 function InlinePublishPanel({
   templateName,
-  isVisible,
+  isVisible: _isVisible,
   onBack,
 }: {
   templateName: string;
@@ -5650,7 +5493,7 @@ function TemplateFullPreview({
 // TemplateCombinedView — preview + customization + chat in one view
 // ---------------------------------------------------------------------------
 
-function TemplateCombinedView({
+function _TemplateCombinedView({
   templateName,
   imageSrc,
   onBack,
