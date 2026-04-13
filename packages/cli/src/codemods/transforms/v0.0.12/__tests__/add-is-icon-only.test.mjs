@@ -9,24 +9,28 @@ async function applyTransform(source, filePath = 'test.tsx') {
 }
 
 describe('add-is-icon-only', () => {
-  it('adds isIconOnly to icon-only button', async () => {
-    const input = '<XDSButton label="Settings" icon={<GearIcon />} variant="ghost" />';
-    expect(await applyTransform(input)).toContain('isIconOnly');
+  it('converts icon-only button to XDSIconButton', async () => {
+    const input = `import {XDSButton} from '@xds/core/Button';
+<XDSButton label="Settings" icon={<GearIcon />} variant="ghost" />`;
+    const output = await applyTransform(input);
+    expect(output).toContain('XDSIconButton');
+    expect(output).not.toContain('XDSButton');
+    expect(output).toContain('@xds/core/IconButton');
   });
 
   it('skips button with JSX children', async () => {
     const input = '<XDSButton label="Save" icon={<SaveIcon />}>Save</XDSButton>';
-    expect(await applyTransform(input)).not.toContain('isIconOnly');
+    expect(await applyTransform(input)).not.toContain('XDSIconButton');
   });
 
   it('skips button with children prop', async () => {
     const input = '<XDSButton label="Save" icon={<SaveIcon />} children="Save" />';
-    expect(await applyTransform(input)).not.toContain('isIconOnly');
+    expect(await applyTransform(input)).not.toContain('XDSIconButton');
   });
 
   it('skips button without icon', async () => {
     const input = '<XDSButton label="Submit" variant="primary" />';
-    expect(await applyTransform(input)).not.toContain('isIconOnly');
+    expect(await applyTransform(input)).not.toContain('XDSIconButton');
   });
 
   it('skips button that already has isIconOnly', async () => {
@@ -34,14 +38,22 @@ describe('add-is-icon-only', () => {
     expect(await applyTransform(input)).toBe(input);
   });
 
-  it('handles multiple buttons', async () => {
-    const input = '<>\n  <XDSButton label="A" icon={<I />} />\n  <XDSButton label="B" />\n  <XDSButton label="C" icon={<I />} />\n</>';
-    expect((await applyTransform(input)).match(/isIconOnly/g)).toHaveLength(2);
+  it('handles multiple buttons — converts only icon-only ones', async () => {
+    const input = `import {XDSButton} from '@xds/core/Button';
+<>
+  <XDSButton label="A" icon={<I />} />
+  <XDSButton label="B" />
+  <XDSButton label="C" icon={<I />} />
+</>`;
+    const output = await applyTransform(input);
+    expect((output.match(/XDSIconButton/g) || []).length).toBeGreaterThanOrEqual(2);
+    // XDSButton should remain for the non-icon-only one
+    expect(output).toContain('XDSButton');
   });
 
-  it('adds isIconOnly to XDSToggleButton', async () => {
+  it('does NOT convert XDSToggleButton', async () => {
     const input = '<XDSToggleButton label="Bold" icon={<B />} value="bold" />';
-    expect(await applyTransform(input)).toContain('isIconOnly');
+    expect(await applyTransform(input)).not.toContain('XDSIconButton');
   });
 
   it('removes redundant children matching label', async () => {
@@ -68,7 +80,7 @@ describe('add-is-icon-only', () => {
 
   it('skips unrelated components', async () => {
     const input = '<XDSAvatar icon={<P />} name="U" />';
-    expect(await applyTransform(input)).not.toContain('isIconOnly');
+    expect(await applyTransform(input)).not.toContain('XDSIconButton');
   });
 
   it('returns undefined when no changes needed', async () => {
@@ -77,5 +89,44 @@ describe('add-is-icon-only', () => {
     const j = jscodeshift.withParser('tsx');
     const result = transform({source: '<XDSButton label="X" />', path: 'test.tsx'}, {jscodeshift: j, stats: () => {}, report: () => {}});
     expect(result).toBeUndefined();
+  });
+
+  it('removes endContent when converting to XDSIconButton', async () => {
+    const input = `import {XDSButton} from '@xds/core/Button';
+<XDSButton label="X" icon={<I />} endContent={<Badge />} />`;
+    const output = await applyTransform(input);
+    expect(output).toContain('XDSIconButton');
+    expect(output).not.toContain('endContent');
+  });
+
+  it('replaces Button import when no XDSButton usage remains', async () => {
+    const input = `import {XDSButton} from '@xds/core/Button';
+<XDSButton label="X" icon={<I />} />`;
+    const output = await applyTransform(input);
+    expect(output).toContain('@xds/core/IconButton');
+    expect(output).not.toContain('@xds/core/Button');
+  });
+
+  it('keeps Button import when XDSButton still used', async () => {
+    const input = `import {XDSButton} from '@xds/core/Button';
+<><XDSButton label="A" icon={<I />} /><XDSButton label="B" variant="primary" /></>`;
+    const output = await applyTransform(input);
+    expect(output).toContain('@xds/core/Button');
+    expect(output).toContain('@xds/core/IconButton');
+  });
+
+  it('adds XDSIconButton to barrel import', async () => {
+    const input = `import {XDSButton, XDSBadge} from '@xds/core';
+<XDSButton label="X" icon={<I />} />`;
+    const output = await applyTransform(input);
+    expect(output).toContain('XDSIconButton');
+    expect(output).toContain("from '@xds/core'");
+  });
+
+  it('updates closing tag for non-self-closing elements', async () => {
+    const input = `import {XDSButton} from '@xds/core/Button';
+<XDSButton label="X" icon={<I />}></XDSButton>`;
+    const output = await applyTransform(input);
+    expect(output).toContain('</XDSIconButton>');
   });
 });

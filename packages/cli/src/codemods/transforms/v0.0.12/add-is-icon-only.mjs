@@ -1,52 +1,61 @@
 /**
- * @file Codemod: Add isIconOnly prop to icon-only XDSButton and XDSToggleButton
- * @see https://github.com/facebookexperimental/xds/issues/1257
+ * @file Codemod: Migrate pre-v0.0.12 icon-only XDSButton to XDSIconButton
+ * @see https://github.com/facebookexperimental/xds/issues/1321
  *
- * XDSButton and XDSToggleButton now use an explicit `isIconOnly` prop instead
- * of inferring icon-only mode from `icon` present + `children` absent.
+ * Migration codemod for code written against v0.0.11 or earlier.
  *
- * With the new API, `label` is always rendered as visible text unless
- * `isIconOnly={true}` is set. This codemod adds `isIconOnly` to all existing
- * icon-only usages so behavior is preserved after the change.
+ * Prior to v0.0.12, XDSButton inferred icon-only mode when `icon` was
+ * present and no `children` were provided — the label was used as
+ * aria-label only and the button rendered as a square icon button.
  *
- * Detection: a JSX element is icon-only when it has:
+ * In v0.0.12, that implicit inference is removed. `label` is always
+ * rendered as visible text. Without this codemod, existing icon-only
+ * buttons will start showing their label text alongside the icon.
+ *
+ * This codemod converts those implicit icon-only usages to the new
+ * explicit `<XDSIconButton>` component, which is always icon-only by
+ * design — no boolean prop to forget, visible in JSX, greppable.
+ *
+ * Detection: a JSX element was implicitly icon-only when it has:
  *   1. An `icon` prop (any value)
  *   2. No `children` prop AND no JSX children (self-closing or empty)
- *   3. No existing `isIconOnly` prop
+ *   3. No existing `isIconOnly` prop (already migrated)
  *
- * This codemod also handles:
- * - Object literals passed to components that forward button props
- *   (e.g., XDSDropdownMenu `button={{ icon: ..., label: ... }}`)
+ * Also handles:
+ * - Object literals in forwarding components (XDSDropdownMenu, XDSMoreMenu)
+ *   — these get `isIconOnly: true` since they pass props internally
  * - Removing redundant `children` that duplicate `label` on icon+text buttons
- *   (e.g., `<XDSButton label="Save" icon={...}>Save</XDSButton>` → `<XDSButton label="Save" icon={...} />`)
+ *
+ * Run on demand: `xds upgrade --from 0.0.11 --to 0.0.12 --codemod add-is-icon-only`
  */
 
 const TARGET_COMPONENTS = new Set([
   'XDSButton',
-  'XDSToggleButton',
 ]);
 
-/** Components whose button-like object props should also be migrated. */
+/** Components whose button-like object props get isIconOnly: true added. */
 const FORWARDING_COMPONENTS = new Set([
   'XDSDropdownMenu',
   'XDSMoreMenu',
 ]);
 
 export const meta = {
-  title: 'Add isIconOnly to icon-only buttons',
+  title: 'Migrate pre-v0.0.12 icon-only buttons to XDSIconButton',
   description:
-    'XDSButton and XDSToggleButton now require explicit `isIconOnly` for icon-only mode. ' +
-    'Adds `isIconOnly` to all existing icon-only usages. Also removes redundant children ' +
-    'that duplicate the label prop on icon+text buttons.',
-  pr: '#1257',
+    'Converts implicit icon-only <XDSButton icon={...} label="..." /> (v0.0.11 pattern) ' +
+    'to the explicit <XDSIconButton> component introduced in v0.0.12. ' +
+    'Also adds isIconOnly to forwarding component object configs.',
+  pr: '#1321',
 };
 
 export default function transformer(file, api) {
   const j = api.jscodeshift;
   const root = j(file.source);
   let hasChanges = false;
+  let needsIconButtonImport = false;
+  let hasRemainingXDSButton = false;
 
-  // ---- 1. JSX elements: add isIconOnly to icon-only buttons ----
+  // ---- 1. JSX elements: convert icon-only XDSButton to XDSIconButton ----
   root.find(j.JSXOpeningElement).forEach((path) => {
     const name = path.node.name;
     const componentName =
@@ -79,8 +88,22 @@ export default function transformer(file, api) {
 
     if (hasJSXChildren) return;
 
-    // This is an icon-only button — add isIconOnly
-    attrs.push(j.jsxAttribute(j.jsxIdentifier('isIconOnly')));
+    // This is an icon-only button — convert to XDSIconButton
+    name.name = 'XDSIconButton';
+
+    // Remove endContent prop (XDSIconButton doesn't accept it)
+    for (let i = attrs.length - 1; i >= 0; i--) {
+      if (attrs[i].type === 'JSXAttribute' && attrs[i].name?.name === 'endContent') {
+        attrs.splice(i, 1);
+      }
+    }
+
+    // Update closing element if present
+    if (parent.type === 'JSXElement' && parent.closingElement) {
+      parent.closingElement.name.name = 'XDSIconButton';
+    }
+
+    needsIconButtonImport = true;
     hasChanges = true;
   });
 
@@ -116,13 +139,11 @@ export default function transformer(file, api) {
 
     const child = children[0];
     if (child.type === 'JSXText' && child.value.trim() === labelValue) {
-      // Remove children, make self-closing
       path.node.children = [];
       path.node.closingElement = null;
       opening.selfClosing = true;
       hasChanges = true;
     }
-    // Also handle JSXExpressionContainer with a string literal
     if (
       child.type === 'JSXExpressionContainer' &&
       (child.expression.type === 'StringLiteral' || child.expression.type === 'Literal') &&
@@ -173,5 +194,81 @@ export default function transformer(file, api) {
     }
   });
 
-  return hasChanges ? root.toSource() : undefined;
+  if (!hasChanges) return undefined;
+
+  // ---- 4. Update imports ----
+  // Check if any XDSButton JSX usage remains
+  root.find(j.JSXIdentifier, {name: 'XDSButton'}).forEach(() => {
+    hasRemainingXDSButton = true;
+  });
+
+  if (needsIconButtonImport) {
+    // Check if XDSIconButton is already imported
+    let alreadyImported = false;
+    root.find(j.ImportDeclaration).forEach((path) => {
+      if (path.node.specifiers.some(
+        (s) => s.type === 'ImportSpecifier' && s.imported.name === 'XDSIconButton',
+      )) {
+        alreadyImported = true;
+      }
+    });
+
+    if (!alreadyImported) {
+      // If no XDSButton usage remains, replace the Button import
+      if (!hasRemainingXDSButton) {
+        root.find(j.ImportDeclaration).forEach((path) => {
+          const source = path.node.source.value;
+          if (source !== '@xds/core/Button') return;
+          const specs = path.node.specifiers;
+          const btnIdx = specs.findIndex(
+            (s) => s.type === 'ImportSpecifier' && s.imported.name === 'XDSButton',
+          );
+          if (btnIdx === -1) return;
+
+          // Replace XDSButton specifier with XDSIconButton
+          specs[btnIdx] = j.importSpecifier(j.identifier('XDSIconButton'));
+          path.node.source = j.literal('@xds/core/IconButton');
+          alreadyImported = true;
+        });
+      }
+
+      // For barrel imports, add the specifier
+      if (!alreadyImported) {
+        root.find(j.ImportDeclaration).forEach((path) => {
+          if (alreadyImported) return;
+          if (path.node.source.value === '@xds/core') {
+            path.node.specifiers.push(
+              j.importSpecifier(j.identifier('XDSIconButton')),
+            );
+            alreadyImported = true;
+          }
+        });
+      }
+
+      // Otherwise add a new import
+      if (!alreadyImported) {
+        const newImport = j.importDeclaration(
+          [j.importSpecifier(j.identifier('XDSIconButton'))],
+          j.literal('@xds/core/IconButton'),
+        );
+
+        const xdsImports = root
+          .find(j.ImportDeclaration)
+          .filter((p) => p.node.source.value.startsWith('@xds/'));
+
+        if (xdsImports.length > 0) {
+          xdsImports.at(-1).insertAfter(newImport);
+        } else {
+          const allImports = root.find(j.ImportDeclaration);
+          if (allImports.length > 0) {
+            allImports.at(-1).insertAfter(newImport);
+          } else {
+            root.get().node.program.body.unshift(newImport);
+          }
+        }
+      }
+    }
+  }
+
+  return root.toSource();
 }
