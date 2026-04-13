@@ -98,10 +98,4 @@ export const RadialPlot: Story = {
   },
 };
 
-export const CanvasRenderer: Story = {
-  name: 'Radial Plot (Canvas)',
-  args: {
-    spec: radialPlotSpec,
-    renderer: 'canvas',
-  },
-};
+
