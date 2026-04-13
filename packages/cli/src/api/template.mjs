@@ -6,6 +6,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {CLI_ROOT} from '../utils/paths.mjs';
 import {XDSError} from './error.mjs';
+import {loadConfig} from '../lib/config.mjs';
 
 const TEMPLATES_DIR = path.join(CLI_ROOT, 'templates');
 
@@ -166,6 +167,59 @@ function extractSkeleton(source) {
   }
 
   return out.filter(l => l.trim()).join('\n');
+}
+
+/**
+ * Fetch a template by ID using the `template.get` hook in xds.config.mjs.
+ * @param {string} id
+ * @param {object} [options]
+ * @param {string} [options.cwd]
+ * @returns {Promise<{type: 'template.get', data: {id: string, source: string}}>}
+ */
+export async function getTemplateById(id, options = {}) {
+  const {cwd = process.cwd()} = options;
+  const config = await loadConfig(cwd);
+
+  const getter = config.template?.get;
+  if (typeof getter !== 'function') {
+    throw new XDSError(
+      'Template fetching by ID is not configured.\n' +
+        'Add a template.get function to xds.config.mjs:\n\n' +
+        '  export default {\n' +
+        '    template: {\n' +
+        "      get: async (id) => { /* return template source string */ },\n" +
+        '    },\n' +
+        '  };',
+    );
+  }
+
+  let source;
+  try {
+    source = await getter(id);
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    throw new XDSError(`template.get("${id}") threw an error: ${detail}`);
+  }
+
+  if (source == null) {
+    throw new XDSError(
+      `template.get("${id}") returned ${source} — no template found for that ID`,
+    );
+  }
+
+  if (typeof source !== 'string') {
+    throw new XDSError(
+      `template.get("${id}") must return a string, got ${typeof source}`,
+    );
+  }
+
+  if (source.trim() === '') {
+    throw new XDSError(
+      `template.get("${id}") returned an empty string`,
+    );
+  }
+
+  return {type: 'template.get', data: {id, source}};
 }
 
 /**
