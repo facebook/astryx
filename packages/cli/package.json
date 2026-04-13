@@ -30,7 +30,7 @@
   },
   "dependencies": {
     "@clack/prompts": "^1.2.0",
-    "commander": "^12.1.0",
+    "commander": "^14.0.3",
     "jiti": "^2.6.1"
   },
   "keywords": [

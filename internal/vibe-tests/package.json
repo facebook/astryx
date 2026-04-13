@@ -33,7 +33,7 @@
   },
   "dependencies": {
     "@xds/cli": "*",
-    "commander": "^12.1.0"
+    "commander": "^14.0.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.2.2",
