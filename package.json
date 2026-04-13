@@ -34,9 +34,9 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.11.1",
-    "@changesets/cli": "^2.27.0",
+    "@changesets/cli": "^2.30.0",
     "@eslint/js": "^9.39.2",
-    "@playwright/test": "^1.48.0",
+    "@playwright/test": "^1.59.1",
     "@testing-library/user-event": "^14.5.0",
     "@types/node": "^22.0.0",
     "@types/react": "^19.2.14",
@@ -47,17 +47,17 @@
     "husky": "^9.1.7",
     "jscodeshift": "^17.3.0",
     "jsdom": "^27.4.0",
-    "prettier": "^3.4.0",
+    "prettier": "^3.8.2",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "tsup": "^8.3.0",
     "typescript": "^5.7.0",
-    "typescript-eslint": "^8.53.1",
-    "vite-plugin-singlefile": "^2.3.0",
+    "typescript-eslint": "^8.58.2",
+    "vite-plugin-singlefile": "^2.3.2",
     "vitest": "^2.1.0"
   },
   "resolutions": {
-    "prettier": "^3.4.0"
+    "prettier": "^3.8.2"
   },
   "packageManager": "yarn@1.22.22",
   "lint-staged": {
