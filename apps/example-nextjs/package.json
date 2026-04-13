@@ -12,8 +12,8 @@
     "@xds/core": "*",
     "@xds/theme-default": "*",
     "next": "^15.5.15",
-    "react": "^19.2.4",
-    "react-dom": "^19.2.4"
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5"
   },
   "devDependencies": {
     "@babel/preset-react": "^7.25.0",
