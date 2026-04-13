@@ -153,6 +153,7 @@ export async function runCodemods(versionManifests, {apply, path: srcPath, codem
   let totalValidationBlocked = 0;
   const errors = [];
   const writtenFiles = [];
+  const skippedOptional = [];
 
   for (const {version, transforms} of versionManifests) {
     p.log.step(`Applying v${version} codemods...`);
@@ -161,7 +162,14 @@ export async function runCodemods(versionManifests, {apply, path: srcPath, codem
       // Filter by codemod name if specified
       if (codemod && transformEntry.name !== codemod) continue;
 
-      const {name, transform, meta} = transformEntry;
+      const {name, transform, meta, optional} = transformEntry;
+
+      // Skip optional codemods unless explicitly requested via --codemod
+      if (optional && !codemod) {
+        skippedOptional.push({name, meta, version});
+        continue;
+      }
+
       p.log.info(`  ${meta.title}`);
 
       let filesChanged = 0;
@@ -263,5 +271,20 @@ export async function runCodemods(versionManifests, {apply, path: srcPath, codem
     p.log.info('Run with --apply to write changes to disk.');
   }
 
-  return {totalFilesChanged, totalTransformsApplied, totalValidationBlocked, errors};
+  // Report skipped optional codemods so the user knows they exist
+  if (skippedOptional.length > 0) {
+    console.log('');
+    p.log.message(
+      `${skippedOptional.length} optional codemod${skippedOptional.length === 1 ? '' : 's'} available:`,
+    );
+    for (const {name, meta} of skippedOptional) {
+      p.log.info(`  ${name} — ${meta.title}`);
+      if (meta.description) {
+        p.log.info(`    ${meta.description}`);
+      }
+      p.log.info(`    Run: xds upgrade --codemod ${name} --path <dir> --apply`);
+    }
+  }
+
+  return {totalFilesChanged, totalTransformsApplied, totalValidationBlocked, errors, skippedOptional};
 }
