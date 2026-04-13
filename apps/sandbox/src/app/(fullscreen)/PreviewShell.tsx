@@ -1,6 +1,6 @@
 'use client';
 
-import {useState, useCallback, useEffect, useMemo} from 'react';
+import {useState, useCallback, useEffect, useMemo, useRef} from 'react';
 import {usePathname, useRouter} from 'next/navigation';
 import {XDSText} from '@xds/core/Text';
 import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
@@ -180,6 +180,263 @@ function ChevronDownIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
+type Version = {
+  id: string;
+  name: string;
+  timestamp: number;
+};
+
+function formatRelativeTime(ts: number): string {
+  const diff = Date.now() - ts;
+  const seconds = Math.floor(diff / 1000);
+  if (seconds < 60) return 'just now';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+
+function getStorageKey(pathname: string) {
+  return `sandbox-versions-${pathname.replace(/\/$/, '')}`;
+}
+
+function VersionDropdown({pathname}: {pathname: string}) {
+  const [versions, setVersions] = useState<Version[]>([]);
+  const [activeVersionId, setActiveVersionId] = useState<string | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [panelPos, setPanelPos] = useState<{top: number; left: number} | null>(
+    null,
+  );
+
+  // Load versions from localStorage
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(getStorageKey(pathname));
+      if (stored) setVersions(JSON.parse(stored));
+    } catch {
+      // ignore
+    }
+  }, [pathname]);
+
+  // Persist versions
+  useEffect(() => {
+    localStorage.setItem(getStorageKey(pathname), JSON.stringify(versions));
+  }, [versions, pathname]);
+
+  // Calculate panel position when opening
+  useEffect(() => {
+    if (isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setPanelPos({top: rect.bottom + 4, left: rect.left});
+    }
+  }, [isOpen]);
+
+  // Click outside to close
+  useEffect(() => {
+    if (!isOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [isOpen]);
+
+  const handleSave = () => {
+    const nextNum = versions.length + 1;
+    const name = prompt('Version name:', `Version ${nextNum}`);
+    if (!name) return;
+    const newVersion: Version = {
+      id: crypto.randomUUID(),
+      name,
+      timestamp: Date.now(),
+    };
+    setVersions(prev => [newVersion, ...prev]);
+    setActiveVersionId(newVersion.id);
+  };
+
+  const activeName =
+    activeVersionId == null
+      ? 'Current'
+      : (versions.find(v => v.id === activeVersionId)?.name ?? 'Current');
+
+  return (
+    <div ref={dropdownRef} style={{position: 'relative'}}>
+      <button
+        ref={buttonRef}
+        onClick={() => setIsOpen(prev => !prev)}
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 4,
+          padding: '4px 8px',
+          border: 'none',
+          background: 'none',
+          cursor: 'pointer',
+          borderRadius: 6,
+          fontSize: 13,
+          fontWeight: 600,
+          color: 'inherit',
+        }}>
+        {activeName}
+        {versions.length > 0 && (
+          <span
+            style={{
+              width: 6,
+              height: 6,
+              borderRadius: '50%',
+              backgroundColor: '#0A7CFF',
+              flexShrink: 0,
+            }}
+          />
+        )}
+        <ChevronDownIcon width={14} height={14} style={{opacity: 0.5}} />
+      </button>
+      {isOpen && panelPos && (
+        <div
+          style={{
+            position: 'fixed',
+            top: panelPos.top,
+            left: panelPos.left,
+            width: 240,
+            backgroundColor: '#fff',
+            border: 'none',
+            borderRadius: 8,
+            boxShadow:
+              '0 4px 16px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06)',
+            zIndex: 9999,
+            overflow: 'hidden',
+          }}>
+          {/* Header */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '8px 12px',
+              borderBottom: '1px solid rgba(0,0,0,0.08)',
+            }}>
+            <span style={{fontSize: 12, fontWeight: 600, color: '#666'}}>
+              Versions
+            </span>
+            <button
+              onClick={handleSave}
+              style={{
+                fontSize: 12,
+                padding: '2px 8px',
+                border: 'none',
+                background: 'none',
+                cursor: 'pointer',
+                color: '#0A7CFF',
+                fontWeight: 500,
+                borderRadius: 4,
+              }}>
+              Save version
+            </button>
+          </div>
+          {/* Current (live) */}
+          <button
+            onClick={() => {
+              setActiveVersionId(null);
+              setIsOpen(false);
+            }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              width: '100%',
+              padding: '8px 12px',
+              border: 'none',
+              background:
+                activeVersionId == null ? 'rgba(10,124,255,0.06)' : 'none',
+              cursor: 'pointer',
+              textAlign: 'left',
+              fontSize: 13,
+            }}>
+            <span
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: '50%',
+                backgroundColor:
+                  activeVersionId == null ? '#0A7CFF' : 'transparent',
+                border: activeVersionId == null ? 'none' : '1px solid #ccc',
+                flexShrink: 0,
+              }}
+            />
+            <span style={{fontWeight: activeVersionId == null ? 600 : 400}}>
+              Current
+            </span>
+            <span style={{fontSize: 11, color: '#999', marginLeft: 'auto'}}>
+              live
+            </span>
+          </button>
+          {/* Saved versions */}
+          {versions.map(v => (
+            <button
+              key={v.id}
+              onClick={() => {
+                setActiveVersionId(v.id);
+                setIsOpen(false);
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                width: '100%',
+                padding: '8px 12px',
+                border: 'none',
+                background:
+                  activeVersionId === v.id ? 'rgba(10,124,255,0.06)' : 'none',
+                cursor: 'pointer',
+                textAlign: 'left',
+                fontSize: 13,
+              }}>
+              <span
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: '50%',
+                  backgroundColor:
+                    activeVersionId === v.id ? '#0A7CFF' : 'transparent',
+                  border: activeVersionId === v.id ? 'none' : '1px solid #ccc',
+                  flexShrink: 0,
+                }}
+              />
+              <span
+                style={{
+                  fontWeight: activeVersionId === v.id ? 600 : 400,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}>
+                {v.name}
+              </span>
+              <span
+                style={{
+                  fontSize: 11,
+                  color: '#999',
+                  marginLeft: 'auto',
+                  flexShrink: 0,
+                }}>
+                {formatRelativeTime(v.timestamp)}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 type ViewportSize = 'desktop' | 'tablet' | 'mobile';
 const viewportWidths: Record<ViewportSize, string> = {
   desktop: '100%',
@@ -304,6 +561,8 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
             <ChevronDownIcon width={14} height={14} style={{opacity: 0.5}} />
           </button>
         </div>
+
+        <VersionDropdown pathname={pathname} />
 
         <XDSCommandPalette
           isOpen={paletteOpen}
