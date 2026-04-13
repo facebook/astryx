@@ -196,6 +196,12 @@
       "import": "./dist/Icon/index.mjs",
       "require": "./dist/Icon/index.js"
     },
+    "./IconButton": {
+      "source": "./src/IconButton/index.ts",
+      "types": "./dist/IconButton/index.d.ts",
+      "import": "./dist/IconButton/index.mjs",
+      "require": "./dist/IconButton/index.js"
+    },
     "./Kbd": {
       "source": "./src/Kbd/index.ts",
       "types": "./dist/Kbd/index.d.ts",
