@@ -36,8 +36,11 @@ export interface CompileOptions {
    * vega-lite to produce axis/legend/header titles from field definitions.
    *
    * Signature: `(fieldDef: FieldDefBase<string>, config: Config) => string`
+   *
+   * Typed loosely to avoid coupling to vega-lite's unexported internal types.
    */
-  fieldTitle?: (fieldDef: Record<string, unknown>, config: VegaLiteConfig) => string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  fieldTitle?: (...args: any[]) => string;
 }
 
 /**
