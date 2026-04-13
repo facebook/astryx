@@ -112,7 +112,7 @@ const presentationalComponentRule = {
     schema: [],
   },
   create(context) {
-    const filename = context.getFilename();
+    const filename = context.filename ?? context.getFilename();
 
     if (!isPresentationalFile(filename)) {
       return {};

@@ -73,7 +73,7 @@ const noReactIntrospectionRule = {
     const allowFiles = options.allowFiles || [];
 
     // Check if this file is explicitly allowed
-    const filename = context.getFilename();
+    const filename = context.filename ?? context.getFilename();
     if (allowFiles.some(pattern => filename.includes(pattern))) {
       return {};
     }
