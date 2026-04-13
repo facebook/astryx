@@ -381,6 +381,7 @@ export function XDSTextArea({
           disabled={effectivelyDisabled}
           spellCheck={hasSpellCheck}
           autoFocus={hasAutoFocus}
+          data-autofocus={hasAutoFocus || undefined}
           aria-describedby={ariaDescribedBy}
           aria-required={isRequired && !isOptional ? 'true' : undefined}
           aria-invalid={

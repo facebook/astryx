@@ -25,6 +25,7 @@ import {
   type FocusEvent,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
+import type {StyleXStyles} from '@stylexjs/stylex';
 import type {XDSIconName} from '../Icon';
 import {
   colorVars,
@@ -249,6 +250,28 @@ export interface XDSTimeInputProps {
    * Tooltip text to display in an info icon at the end of the label.
    */
   labelTooltip?: string;
+
+  /**
+   * StyleX styles created via `stylex.create()`. Merged with the component's
+   * base styles inside a single `stylex.props()` call for optimal deduplication.
+   *
+   * @example
+   * ```
+   * const overrides = stylex.create({ root: { marginBottom: 8 } });
+   * <Component xstyle={overrides.root} />
+   * ```
+   */
+  xstyle?: StyleXStyles;
+  /**
+   * CSS class name(s) appended to the root element.
+   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
+   */
+  className?: string;
+  /**
+   * Inline styles to apply to the root element. Spread after StyleX
+   * inline styles, so these values take priority.
+   */
+  style?: React.CSSProperties;
 }
 
 /**
@@ -286,6 +309,9 @@ export function XDSTimeInput({
   size = 'md',
   status,
   labelTooltip,
+  xstyle,
+  className,
+  style,
   ref,
 }: XDSTimeInputProps) {
   const id = useId();
@@ -507,7 +533,10 @@ export function XDSTimeInput({
             status && inputStatusBorderStyles[status.type],
             status && inputStatusHoverShadowStyles[status.type],
             status && inputStatusFocusWithinStyles[status.type],
+            xstyle,
           ),
+          className,
+          style,
         )}>
         <div {...stylex.props(styles.icon)}>
           <XDSIcon icon="clock" size="sm" color="secondary" />
