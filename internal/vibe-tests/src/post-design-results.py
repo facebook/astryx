@@ -2,10 +2,21 @@
 """
 Post Night Watch design judge results as a GitHub issue comment.
 
+Images are served from GitHub Pages (gh-pages branch) under
+reports/{iteration}/screenshots/. No GitHub releases needed.
+
 Usage:
     python3 post-design-results.py \
         --scores /tmp/design-scores-gemini.json \
-        --release-tag untagged-927529363adeb232eb8b \
+        --iteration fd6afde6 \
+        --issue 1041 \
+        --repo facebookexperimental/xds \
+        --token $GITHUB_TOKEN
+
+    # Legacy flag still accepted for backward compat:
+    python3 post-design-results.py \
+        --scores /tmp/design-scores-gemini.json \
+        --release-tag design-judge-fd6afde6 \
         --issue 1041 \
         --repo facebookexperimental/xds \
         --token $GITHUB_TOKEN
@@ -53,8 +64,18 @@ PROMPT_LABELS = {
 }
 
 
-def img_url(release_tag, filename):
-    return f"https://github.com/facebookexperimental/xds/releases/download/{release_tag}/{filename}"
+# GitHub Pages base URL for the XDS repo
+GH_PAGES_BASE = "https://studious-broccoli-o7e61n3.pages.github.io"
+
+
+def img_url(iteration_id, filename):
+    """Build image URL from gh-pages screenshots directory."""
+    return f"{GH_PAGES_BASE}/reports/{iteration_id}/screenshots/{filename}"
+
+
+def ideal_url(filename):
+    """Build image URL for ideal reference images on gh-pages."""
+    return f"{GH_PAGES_BASE}/reports/ideals/{filename}"
 
 
 def score_emoji(score):
@@ -67,10 +88,10 @@ def score_emoji(score):
     return f"🔴 **{score}**"
 
 
-def build_comment(data, release_tag):
+def build_comment(data, iteration_id_override=None):
     results = data["results"]
     averages = data.get("averages", {})
-    iteration_id = data["iterationId"]
+    iteration_id = iteration_id_override or data["iterationId"]
     model = data["model"]
     targets = ["xds", "baseline", "html"]
 
@@ -136,18 +157,18 @@ def build_comment(data, release_tag):
             lines.append("**Ideal** | **XDS** | **Baseline** | **HTML**")
             lines.append(":--: | :--: | :--: | :--:")
             lines.append(
-                f'<img src="{img_url(release_tag, f"{pid}.png")}" width="220"> | '
-                f'<img src="{img_url(release_tag, f"{pid}-xds-desktop-light.png")}" width="220"> | '
-                f'<img src="{img_url(release_tag, f"{pid}-baseline-desktop-light.png")}" width="220"> | '
-                f'<img src="{img_url(release_tag, f"{pid}-html-desktop-light.png")}" width="220">'
+                f'<img src="{ideal_url(f"{pid}.png")}" width="220"> | '
+                f'<img src="{img_url(iteration_id, f"{pid}-xds-desktop-light.png")}" width="220"> | '
+                f'<img src="{img_url(iteration_id, f"{pid}-baseline-desktop-light.png")}" width="220"> | '
+                f'<img src="{img_url(iteration_id, f"{pid}-html-desktop-light.png")}" width="220">'
             )
         else:
             lines.append("**Ideal** | **XDS** | **HTML**")
             lines.append(":--: | :--: | :--:")
             lines.append(
-                f'<img src="{img_url(release_tag, f"{pid}.png")}" width="220"> | '
-                f'<img src="{img_url(release_tag, f"{pid}-xds-desktop-light.png")}" width="220"> | '
-                f'<img src="{img_url(release_tag, f"{pid}-html-desktop-light.png")}" width="220">'
+                f'<img src="{ideal_url(f"{pid}.png")}" width="220"> | '
+                f'<img src="{img_url(iteration_id, f"{pid}-xds-desktop-light.png")}" width="220"> | '
+                f'<img src="{img_url(iteration_id, f"{pid}-html-desktop-light.png")}" width="220">'
             )
         lines.append("")
         lines.append("---")
@@ -183,7 +204,8 @@ def post_comment(body, repo, issue_number, token):
 def main():
     p = argparse.ArgumentParser(description="Post design judge results to GitHub issue")
     p.add_argument("--scores", required=True, help="Path to design-scores-gemini.json")
-    p.add_argument("--release-tag", required=True, help="GitHub release tag for image hosting")
+    p.add_argument("--iteration", help="Iteration ID (images served from gh-pages)")
+    p.add_argument("--release-tag", help="(deprecated) GitHub release tag — ignored, kept for backward compat")
     p.add_argument("--issue", required=True, type=int, help="GitHub issue number")
     p.add_argument("--repo", default="facebookexperimental/xds", help="GitHub repo")
     p.add_argument("--token", required=True, help="GitHub token")
@@ -193,7 +215,18 @@ def main():
     with open(args.scores) as f:
         data = json.load(f)
 
-    body = build_comment(data, args.release_tag)
+    # Resolve iteration ID: explicit flag > extract from release-tag > scores file
+    iteration_id = args.iteration
+    if not iteration_id and args.release_tag:
+        # Extract from legacy release tag: "design-judge-fd6afde6" -> "fd6afde6"
+        iteration_id = args.release_tag.replace("design-judge-", "")
+    if not iteration_id:
+        iteration_id = data.get("iterationId")
+    if not iteration_id:
+        print("Error: --iteration is required (or iterationId must be in scores file)", file=sys.stderr)
+        sys.exit(1)
+
+    body = build_comment(data, iteration_id)
 
     if args.dry_run:
         print(body)
