@@ -31,7 +31,7 @@ jobs:
       has_components: ${{ steps.check.outputs.has_components }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -45,9 +45,9 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 20
           cache: 'yarn'
@@ -81,12 +81,12 @@ jobs:
       pr_number: ${{ steps.urls.outputs.pr_number }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 20
           cache: 'yarn'
@@ -126,7 +126,7 @@ jobs:
 
       - name: Upload Storybook artifact
         if: github.event_name == 'pull_request'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: storybook-${{ steps.urls.outputs.short_hash }}
           path: apps/storybook/dist/
@@ -134,7 +134,7 @@ jobs:
 
       - name: Upload Sandbox artifact
         if: github.event_name == 'pull_request'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: sandbox-${{ steps.urls.outputs.short_hash }}
           path: apps/sandbox/out/
@@ -150,7 +150,7 @@ jobs:
 
       - name: Upload analysis artifact
         if: github.event_name == 'pull_request'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: pr-analysis
           path: analysis.json
@@ -169,13 +169,13 @@ jobs:
       cancel-in-progress: true
     steps:
       - name: Download Storybook artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: storybook-${{ needs.build.outputs.short_hash }}
           path: storybook-dist
 
       - name: Download Sandbox artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: sandbox-${{ needs.build.outputs.short_hash }}
           path: sandbox-dist
@@ -231,15 +231,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 22
 
       - name: Download analysis artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: pr-analysis
 
@@ -261,7 +261,7 @@ jobs:
           echo "$COMMENT_BODY" > pr-comment.md
 
       - name: Comment on PR
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const fs = require('fs');
@@ -303,21 +303,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: 'yarn'
 
       - name: Download analysis artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: pr-analysis
 
       - name: Download Storybook artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: storybook-${{ needs.build.outputs.short_hash }}
           path: apps/storybook/dist
@@ -334,7 +334,7 @@ jobs:
             --components "$COMPONENTS"
 
       - name: Upload a11y artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: a11y-report
           path: a11y-report.json
@@ -347,21 +347,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 22
 
       - name: Download analysis artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: pr-analysis
 
       - name: Download a11y artifact
         if: needs.pr-a11y.result == 'success'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: a11y-report
 
@@ -384,7 +384,7 @@ jobs:
           echo "$COMMENT_BODY" > pr-comment.md
 
       - name: Update PR comment
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const fs = require('fs');

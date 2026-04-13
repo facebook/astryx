@@ -36,10 +36,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '22'
           cache: 'yarn'
@@ -62,7 +62,7 @@ jobs:
             $PROMPT_ARG
 
       - name: Upload preview HTML
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: preview-html
           path: internal/vibe-tests/results/*/previews/
@@ -74,10 +74,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '22'
           cache: 'yarn'
@@ -89,7 +89,7 @@ jobs:
         run: npx playwright install chromium --with-deps
 
       - name: Download preview HTML
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: preview-html
           path: internal/vibe-tests/results/
@@ -101,14 +101,14 @@ jobs:
             --iterations "${{ github.event.inputs.iterations }}"
 
       - name: Upload screenshots
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: vibe-test-screenshots
           path: internal/vibe-tests/results/*/screenshots/
           retention-days: 90
 
       - name: Upload screenshot manifest
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: screenshot-manifest
           path: internal/vibe-tests/results/*/screenshots/manifest.json
@@ -121,7 +121,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout gh-pages
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: gh-pages
           fetch-depth: 1
@@ -138,13 +138,13 @@ jobs:
           echo "Report iteration: $REPORT_ID"
 
       - name: Download screenshots
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: vibe-test-screenshots
           path: /tmp/screenshots
 
       - name: Download screenshot manifest
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: screenshot-manifest
           path: /tmp/manifests
