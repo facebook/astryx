@@ -60,6 +60,17 @@ const styles = stylex.create({
 // Component
 // =============================================================================
 
+/**
+ * Circular send/stop toggle button for the chat composer.
+ *
+ * Reads state from XDSChatComposerContext by default. Override any value
+ * via props for standalone usage.
+ *
+ * @example
+ * ```
+ * <XDSChatComposer onSubmit={handleSubmit} sendButton={<XDSChatSendButton />} />
+ * ```
+ */
 export function XDSChatSendButton(props: XDSChatSendButtonProps): ReactNode {
   const context = useXDSChatComposerContext();
 
