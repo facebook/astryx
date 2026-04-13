@@ -10,7 +10,6 @@ import {XDSBadge} from '@xds/core/Badge';
 import {XDSToken} from '@xds/core/Token';
 import {XDSList, XDSListItem} from '@xds/core/List';
 import {XDSBanner} from '@xds/core/Banner';
-import {XDSCodeBlock} from '@xds/core/CodeBlock';
 import {XDSDialog, XDSDialogHeader} from '@xds/core/Dialog';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSTooltip} from '@xds/core/Tooltip';
@@ -69,50 +68,6 @@ const MaximizeIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <path d="M21 8V5a2 2 0 0 0-2-2h-3" />
     <path d="M3 16v3a2 2 0 0 0 2 2h3" />
     <path d="M16 21h3a2 2 0 0 0 2-2v-3" />
-  </svg>
-);
-
-const SparklesIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    {...props}>
-    <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
-    <path d="M5 3v4" />
-    <path d="M19 17v4" />
-    <path d="M3 5h4" />
-    <path d="M17 19h4" />
-  </svg>
-);
-
-const CopyIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    {...props}>
-    <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
-    <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
-  </svg>
-);
-
-const ChevronDownIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    {...props}>
-    <path d="m6 9 6 6 6-6" />
   </svg>
 );
 
@@ -884,744 +839,346 @@ export default function DocumentationPage() {
   };
 
   return (
-    <>
-      <style>{`.code-block-full-width > pre { width: 100% !important; }`}</style>
-      <div
+    <div
+      style={{
+        display: 'flex',
+        height: '100vh',
+        backgroundColor: 'var(--color-background-surface, #ffffff)',
+        fontFamily: 'system-ui, -apple-system, sans-serif',
+      }}>
+      {/* LEFT SIDEBAR */}
+      <aside
         style={{
-          display: 'flex',
+          width: 240,
+          minWidth: 240,
           height: '100vh',
+          display: 'flex',
+          flexDirection: 'column' as const,
           backgroundColor: 'var(--color-background-surface, #ffffff)',
-          fontFamily: 'system-ui, -apple-system, sans-serif',
+          overflow: 'hidden',
         }}>
-        {/* LEFT SIDEBAR */}
-        <aside
+        {/* Header */}
+        <div
           style={{
-            width: 240,
-            minWidth: 240,
-            height: '100vh',
             display: 'flex',
-            flexDirection: 'column' as const,
-            backgroundColor: 'var(--color-background-surface, #ffffff)',
-            overflow: 'hidden',
+            alignItems: 'center',
+            padding: '16px 24px 8px',
+            flexShrink: 0,
           }}>
-          {/* Header */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              padding: '16px 24px 8px',
-              flexShrink: 0,
-            }}>
-            <XDSHeading level={1}>Product Name</XDSHeading>
-          </div>
+          <XDSHeading level={1}>Product Name</XDSHeading>
+        </div>
 
-          {/* Nav */}
-          <nav
-            style={{
-              flex: 1,
-              overflowY: 'auto' as const,
-              padding: '0 16px 16px 16px',
-            }}>
-            <XDSList density="balanced">
-              <XDSListItem
-                label="Overview"
-                isSelected={selectedComponent === null}
-                onClick={() => {
-                  setSelectedComponent(null);
-                }}
-              />
-              <XDSListItem
-                label="Getting started"
-                isSelected={
-                  activeNav === 'getting-started' && selectedComponent !== null
-                }
-                onClick={() => {
-                  setSelectedComponent('getting-started');
-                  setActiveNav('getting-started');
-                }}
-              />
-            </XDSList>
+        {/* Nav */}
+        <nav
+          style={{
+            flex: 1,
+            overflowY: 'auto' as const,
+            padding: '0 16px 16px 16px',
+          }}>
+          <XDSList density="balanced">
+            <XDSListItem
+              label="Overview"
+              isSelected={selectedComponent === null}
+              onClick={() => {
+                setSelectedComponent(null);
+              }}
+            />
+            <XDSListItem label="Getting started" onClick={() => {}} />
+          </XDSList>
 
+          {COMPONENT_CATEGORIES.map(category => (
+            <div key={category.label}>
+              <SectionLabel label={category.label.toUpperCase()} />
+              <XDSList density="balanced">
+                {category.items.map(item => (
+                  <XDSListItem
+                    key={item.key}
+                    label={item.name}
+                    isSelected={
+                      selectedComponent !== null && activeNav === item.key
+                    }
+                    onClick={() => {
+                      setSelectedComponent(item.key);
+                      setActiveNav(item.key);
+                    }}
+                  />
+                ))}
+              </XDSList>
+            </div>
+          ))}
+        </nav>
+      </aside>
+
+      {/* MAIN CONTENT */}
+      <main
+        style={{
+          flex: 1,
+          overflowY: 'auto' as const,
+          padding: '32px 40px',
+        }}>
+        {selectedComponent === null ? (
+          /* ============ OVERVIEW ============ */
+          <div style={{maxWidth: 1200, margin: '0 auto'}}>
+            {/* Hero banner */}
+            <div
+              style={{
+                marginBottom: 48,
+                backgroundColor:
+                  'var(--color-background-accent-muted, #e3f2fd)',
+                borderRadius: 24,
+                padding: 60,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 48,
+                overflow: 'hidden',
+                minHeight: 320,
+              }}>
+              <div style={{flex: 1, minWidth: 0}}>
+                <XDSText type="supporting" color="secondary">
+                  Product Name Design System
+                </XDSText>
+                <div style={{marginTop: 8}}>
+                  <XDSText type="display-1">Web overview</XDSText>
+                </div>
+                <div style={{marginTop: 16}}>
+                  <XDSText type="large" color="secondary">
+                    An open-source UI library to help developers quickly build
+                    beautiful, accessible products.
+                  </XDSText>
+                </div>
+                <div style={{marginTop: 24}}>
+                  <XDSButton
+                    label="Get started"
+                    variant="primary"
+                    size="lg"
+                    onClick={() => {
+                      setSelectedComponent('button');
+                      setActiveNav('button');
+                    }}
+                  />
+                </div>
+              </div>
+              <div style={{flex: 1}} />
+            </div>
+
+            {/* Category sections */}
             {COMPONENT_CATEGORIES.map(category => (
-              <div key={category.label}>
-                <SectionLabel label={category.label.toUpperCase()} />
-                <XDSList density="balanced">
+              <div key={category.label} style={{marginBottom: 64}}>
+                <div style={{marginBottom: 16}}>
+                  <XDSText type="display-2">{category.label}</XDSText>
+                </div>
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns:
+                      'repeat(auto-fill, minmax(260px, 1fr))',
+                    gap: 32,
+                  }}>
                   {category.items.map(item => (
-                    <XDSListItem
+                    <div
                       key={item.key}
-                      label={item.name}
-                      isSelected={
-                        selectedComponent !== null && activeNav === item.key
-                      }
                       onClick={() => {
                         setSelectedComponent(item.key);
                         setActiveNav(item.key);
                       }}
-                    />
+                      style={{cursor: 'pointer'}}>
+                      <XDSCard
+                        padding={0}
+                        style={{
+                          border: 'none',
+                          boxShadow: 'none',
+                          outline: 'none',
+                        }}>
+                        {/* Preview area */}
+                        <div
+                          style={{
+                            height: 160,
+                            backgroundColor:
+                              'var(--color-background-muted, #c4cdd5)',
+                            borderRadius: 12,
+                          }}
+                        />
+                        {/* Card body */}
+                        <div style={{padding: '12px 0 0'}}>
+                          <XDSText type="body" style={{fontWeight: 700}}>
+                            {item.name}
+                          </XDSText>
+                          <div style={{marginTop: 0}}>
+                            <XDSText type="body" color="secondary">
+                              {item.desc}
+                            </XDSText>
+                          </div>
+                        </div>
+                      </XDSCard>
+                    </div>
                   ))}
-                </XDSList>
+                </div>
               </div>
             ))}
-          </nav>
-        </aside>
-
-        {/* MAIN CONTENT */}
-        <main
-          style={{
-            flex: 1,
-            overflowY: 'auto' as const,
-            padding: '32px 40px',
-          }}>
-          {selectedComponent === null ? (
-            /* ============ OVERVIEW ============ */
-            <div style={{maxWidth: 1200, margin: '0 auto'}}>
-              {/* Hero banner */}
-              <div
-                style={{
-                  marginBottom: 48,
-                  backgroundColor:
-                    'var(--color-background-accent-muted, #e3f2fd)',
-                  borderRadius: 24,
-                  padding: 60,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 48,
-                  overflow: 'hidden',
-                  minHeight: 320,
-                }}>
-                <div style={{flex: 1, minWidth: 0}}>
-                  <XDSText type="supporting" color="secondary">
-                    Product Name Design System
-                  </XDSText>
-                  <div style={{marginTop: 8}}>
-                    <XDSText type="display-1">Web overview</XDSText>
-                  </div>
-                  <div style={{marginTop: 16}}>
-                    <XDSText type="large" color="secondary">
-                      An open-source UI library to help developers quickly build
-                      beautiful, accessible products.
-                    </XDSText>
-                  </div>
-                  <div style={{marginTop: 24}}>
-                    <XDSButton
-                      label="Get started"
-                      variant="primary"
-                      size="lg"
-                      onClick={() => {
-                        setSelectedComponent('button');
-                        setActiveNav('button');
-                      }}
-                    />
-                  </div>
-                </div>
-                <div style={{flex: 1}} />
-              </div>
-
-              {/* Category sections */}
-              {COMPONENT_CATEGORIES.map(category => (
-                <div key={category.label} style={{marginBottom: 64}}>
-                  <div style={{marginBottom: 16}}>
-                    <XDSText type="display-2">{category.label}</XDSText>
-                  </div>
-                  <div
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns:
-                        'repeat(auto-fill, minmax(260px, 1fr))',
-                      gap: 32,
-                    }}>
-                    {category.items.map(item => (
-                      <div
-                        key={item.key}
-                        onClick={() => {
-                          setSelectedComponent(item.key);
-                          setActiveNav(item.key);
-                        }}
-                        style={{cursor: 'pointer'}}>
-                        <XDSCard
-                          padding={0}
-                          style={{
-                            border: 'none',
-                            boxShadow: 'none',
-                            outline: 'none',
-                          }}>
-                          {/* Preview area */}
-                          <div
-                            style={{
-                              height: 160,
-                              backgroundColor:
-                                'var(--color-background-muted, #c4cdd5)',
-                              borderRadius: 12,
-                            }}
-                          />
-                          {/* Card body */}
-                          <div style={{padding: '12px 0 0'}}>
-                            <XDSText type="body" style={{fontWeight: 700}}>
-                              {item.name}
-                            </XDSText>
-                            <div style={{marginTop: 0}}>
-                              <XDSText type="body" color="secondary">
-                                {item.desc}
-                              </XDSText>
-                            </div>
-                          </div>
-                        </XDSCard>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
+          </div>
+        ) : (
+          /* ============ COMPONENT DETAIL ============ */
+          <div style={{maxWidth: 840, margin: '0 auto'}}>
+            {/* Header */}
+            <div style={{marginBottom: 8}}>
+              <XDSText type="display-1">{getComponentName(activeNav)}</XDSText>
             </div>
-          ) : activeNav === 'getting-started' ? (
-            /* ============ GETTING STARTED ============ */
+            <div style={{marginBottom: 32}}>
+              <XDSText type="supporting" color="secondary">
+                March 30, 2026 · Updated 5:40 p.m. PST
+              </XDSText>
+            </div>
+
+            {/* Live Preview Card */}
             <div
               style={{
-                display: 'flex',
-                gap: 48,
-                maxWidth: 740,
-                margin: '0 auto',
+                border: '1px solid var(--color-divider, rgba(0,0,0,0.1))',
+                borderRadius: 12,
+                overflow: 'hidden',
+                marginBottom: 48,
               }}>
-              {/* Article content */}
-              <div style={{flex: 1, minWidth: 0}}>
-                {/* Header */}
-                <div style={{marginBottom: 8}}>
-                  <XDSText type="display-1">
-                    Getting started with Product Name
-                  </XDSText>
-                </div>
-                <div style={{marginBottom: 16}}>
-                  <XDSText type="supporting" color="secondary">
-                    Last updated March 30, 2026
-                  </XDSText>
-                </div>
-                <div style={{marginBottom: 32}}>
-                  <XDSText type="body">
-                    Install the package, configure your theme, and build your
-                    first component in three steps.
-                  </XDSText>
-                </div>
-
-                {/* AI Assistance prompt card */}
-                <div style={{marginBottom: 48}}>
-                  <XDSCard>
-                    <div>
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          marginBottom: 12,
-                        }}>
-                        <div
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 8,
-                          }}>
-                          <SparklesIcon
-                            width={16}
-                            height={16}
-                            style={{
-                              color: 'var(--color-text-secondary, #666)',
-                            }}
-                          />
-                          <XDSText type="body" weight="semibold">
-                            AI Assistance
-                          </XDSText>
-                        </div>
-                        <div
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 4,
-                          }}>
-                          <XDSButton
-                            label="Copy prompt"
-                            variant="ghost"
-                            size="sm"
-                            icon={<CopyIcon />}
-                            onClick={() => {
-                              void navigator.clipboard.writeText(
-                                'Help me get set up with Product Name. Based on my project, do the following: 1. Install @xds/core and the StyleX compiler. 2. Wrap my app in XDSThemeProvider. 3. Replace one existing component with an XDS equivalent. After setup, suggest relevant next steps based on my project.',
-                              );
-                            }}
-                          />
-                          <XDSDropdownMenu
-                            button={{
-                              label: '',
-                              variant: 'ghost',
-                              size: 'sm',
-                              isIconOnly: true,
-                              icon: <ChevronDownIcon />,
-                            }}
-                            items={[
-                              {label: 'Open in v0', onClick: () => {}},
-                              {label: 'Open in Claude', onClick: () => {}},
-                              {label: 'Open in ChatGPT', onClick: () => {}},
-                              {label: 'Open in Cursor', onClick: () => {}},
-                            ]}
-                          />
-                        </div>
-                      </div>
-                      <div
-                        style={{
-                          overflow: 'hidden',
-                          maxHeight: '2.8em',
-                          lineHeight: '1.4em',
-                        }}>
-                        <XDSText type="body" color="secondary">
-                          Help me get set up with Product Name. Based on my
-                          project, do the following: 1. Install @xds/core and
-                          the StyleX compiler. 2. Wrap my app in
-                          XDSThemeProvider. 3. Replace one existing component
-                          with an XDS equivalent. After setup, suggest relevant
-                          next steps based on my project.
-                        </XDSText>
-                      </div>
-                    </div>
-                  </XDSCard>
-                </div>
-
-                {/* Prerequisites */}
-                <div id="prerequisites" style={{marginBottom: 48}}>
-                  <XDSHeading level={2}>Prerequisites</XDSHeading>
-                  <div style={{marginTop: 16}}>
-                    <XDSList density="compact" listStyle="disc">
-                      <XDSListItem label="Node.js 18+" />
-                      <XDSListItem label="React 18 or 19" />
-                      <XDSListItem label="A package manager (npm, yarn, or pnpm)" />
-                    </XDSList>
-                  </div>
-                </div>
-
-                <XDSDivider />
-
-                {/* Install the package */}
-                <div
-                  id="install-the-package"
-                  style={{marginBottom: 48, marginTop: 48}}>
-                  <XDSHeading level={2}>Install the package</XDSHeading>
-                  <div style={{marginTop: 12}}>
-                    <XDSText type="body">
-                      Every project starts with installing the core package.
-                      This gives you access to all components, tokens, and
-                      utilities.
-                    </XDSText>
-                  </div>
-
-                  {/* Step 1 */}
-                  <div style={{marginTop: 32, display: 'flex', gap: 16}}>
-                    <div
-                      style={{
-                        width: 24,
-                        height: 24,
-                        borderRadius: '50%',
-                        border:
-                          '1.5px solid var(--color-divider, rgba(0,0,0,0.2))',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: 12,
-                        fontWeight: 600,
-                        flexShrink: 0,
-                        marginTop: 2,
-                      }}>
-                      1
-                    </div>
-                    <div style={{flex: 1, minWidth: 0}}>
-                      <XDSText type="body" weight="bold">
-                        Install the core package
-                      </XDSText>
-                      <XDSCard
-                        padding={0}
-                        style={{marginTop: 12, overflow: 'hidden'}}>
-                        <div style={{width: '100%'}}>
-                          <XDSCodeBlock
-                            code="npm install @xds/core"
-                            language="bash"
-                          />
-                        </div>
-                      </XDSCard>
-                    </div>
-                  </div>
-
-                  {/* Step 2 */}
-                  <div style={{marginTop: 28, display: 'flex', gap: 16}}>
-                    <div
-                      style={{
-                        width: 24,
-                        height: 24,
-                        borderRadius: '50%',
-                        border:
-                          '1.5px solid var(--color-divider, rgba(0,0,0,0.2))',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: 12,
-                        fontWeight: 600,
-                        flexShrink: 0,
-                        marginTop: 2,
-                      }}>
-                      2
-                    </div>
-                    <div style={{flex: 1, minWidth: 0}}>
-                      <XDSText type="body" weight="bold">
-                        Add the StyleX compiler
-                      </XDSText>
-                      <div style={{marginTop: 8}}>
-                        <XDSText type="body" color="secondary">
-                          XDS uses StyleX for styling. Add the compiler plugin
-                          to your build configuration.
-                        </XDSText>
-                      </div>
-                      <XDSCard
-                        padding={0}
-                        style={{marginTop: 12, overflow: 'hidden'}}>
-                        <div style={{width: '100%'}}>
-                          <XDSCodeBlock
-                            code="npm install @stylexjs/babel-plugin"
-                            language="bash"
-                          />
-                        </div>
-                      </XDSCard>
-                    </div>
-                  </div>
-
-                  {/* Step 3 */}
-                  <div style={{marginTop: 28, display: 'flex', gap: 16}}>
-                    <div
-                      style={{
-                        width: 24,
-                        height: 24,
-                        borderRadius: '50%',
-                        border:
-                          '1.5px solid var(--color-divider, rgba(0,0,0,0.2))',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: 12,
-                        fontWeight: 600,
-                        flexShrink: 0,
-                        marginTop: 2,
-                      }}>
-                      3
-                    </div>
-                    <div style={{flex: 1, minWidth: 0}}>
-                      <XDSText type="body" weight="bold">
-                        Import your first component
-                      </XDSText>
-                      <XDSCard
-                        padding={0}
-                        style={{marginTop: 12, overflow: 'hidden'}}>
-                        <div style={{width: '100%'}}>
-                          <XDSCodeBlock
-                            code={`import { XDSButton } from '@xds/core/Button';
-
-export default function App() {
-  return <XDSButton label="Hello XDS" variant="primary" />;
-}`}
-                            language="tsx"
-                          />
-                        </div>
-                      </XDSCard>
-                    </div>
-                  </div>
-                </div>
-
-                <XDSDivider />
-
-                {/* Configure theming */}
-                <div
-                  id="configure-theming"
-                  style={{marginBottom: 48, marginTop: 48}}>
-                  <XDSHeading level={2}>Configure theming</XDSHeading>
-                  <div style={{marginTop: 12}}>
-                    <XDSText type="body">
-                      XDS ships with a default theme that works out of the box.
-                      To customize colors, typography, and spacing, wrap your
-                      app in a theme provider.
-                    </XDSText>
-                  </div>
-                  <XDSCard
-                    padding={0}
-                    style={{marginTop: 16, overflow: 'hidden'}}>
-                    <div style={{width: '100%'}}>
-                      <XDSCodeBlock
-                        code={`import { XDSThemeProvider } from '@xds/core/Theme';
-
-export default function App({ children }) {
-  return (
-    <XDSThemeProvider theme="default">
-      {children}
-    </XDSThemeProvider>
-  );
-}`}
-                        language="tsx"
-                      />
-                    </div>
-                  </XDSCard>
-                  <div style={{marginTop: 16}}>
-                    <XDSText type="body" color="secondary">
-                      See the theming guide for the full list of customizable
-                      tokens.
-                    </XDSText>
-                  </div>
-                </div>
-
-                <XDSDivider />
-
-                {/* Next steps */}
-                <div id="next-steps" style={{marginBottom: 48}}>
-                  <XDSHeading level={2}>Next steps</XDSHeading>
-                  <div style={{marginTop: 16}}>
-                    <XDSList density="compact" listStyle="disc">
-                      <XDSListItem
-                        label={
-                          <span>
-                            <span
-                              style={{
-                                color: 'var(--color-text-link, #0070f3)',
-                                fontWeight: 600,
-                              }}>
-                              Fundamental concepts
-                            </span>
-                            {' — How theming, layout, and composition work'}
-                          </span>
-                        }
-                      />
-                      <XDSListItem
-                        label={
-                          <span>
-                            <span
-                              style={{
-                                color: 'var(--color-text-link, #0070f3)',
-                                fontWeight: 600,
-                              }}>
-                              Component API reference
-                            </span>
-                            {
-                              ' — Props, variants, and examples for every component'
-                            }
-                          </span>
-                        }
-                      />
-                      <XDSListItem
-                        label={
-                          <span>
-                            <span
-                              style={{
-                                color: 'var(--color-text-link, #0070f3)',
-                                fontWeight: 600,
-                              }}>
-                              Accessibility
-                            </span>
-                            {' — Built-in a11y features and ARIA patterns'}
-                          </span>
-                        }
-                      />
-                      <XDSListItem
-                        label={
-                          <span>
-                            <span
-                              style={{
-                                color: 'var(--color-text-link, #0070f3)',
-                                fontWeight: 600,
-                              }}>
-                              CLI tools
-                            </span>
-                            {' — Scaffold projects and manage templates'}
-                          </span>
-                        }
-                      />
-                      <XDSListItem
-                        label={
-                          <span>
-                            <span
-                              style={{
-                                color: 'var(--color-text-link, #0070f3)',
-                                fontWeight: 600,
-                              }}>
-                              Design tokens
-                            </span>
-                            {' — Colors, spacing, typography, and sizing'}
-                          </span>
-                        }
-                      />
-                    </XDSList>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : (
-            /* ============ COMPONENT DETAIL ============ */
-            <div style={{maxWidth: 840, margin: '0 auto'}}>
-              {/* Header */}
-              <div style={{marginBottom: 8}}>
-                <XDSText type="display-1">
-                  {getComponentName(activeNav)}
-                </XDSText>
-              </div>
-              <div style={{marginBottom: 32}}>
-                <XDSText type="supporting" color="secondary">
-                  March 30, 2026 · Updated 5:40 p.m. PST
-                </XDSText>
-              </div>
-
-              {/* Live Preview Card */}
               <div
                 style={{
-                  border: '1px solid var(--color-divider, rgba(0,0,0,0.1))',
-                  borderRadius: 12,
-                  overflow: 'hidden',
-                  marginBottom: 48,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '8px 12px',
+                  borderBottom:
+                    '1px solid var(--color-divider, rgba(0,0,0,0.08))',
+                  backgroundColor: 'var(--color-background-surface, #ffffff)',
                 }}>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '8px 12px',
-                    borderBottom:
-                      '1px solid var(--color-divider, rgba(0,0,0,0.08))',
-                    backgroundColor: 'var(--color-background-surface, #ffffff)',
-                  }}>
-                  <XDSText
-                    type="supporting"
-                    weight="semibold"
-                    color="secondary">
-                    Live preview
-                  </XDSText>
-                  <div style={{display: 'flex', alignItems: 'center', gap: 4}}>
-                    <XDSButton
-                      label="Open in Craft"
-                      variant="ghost"
-                      size="sm"
-                      icon={<ExternalLinkIcon />}
-                    />
-                    <XDSDropdownMenu
-                      button={{
-                        label: 'Variants',
-                        variant: 'ghost',
-                        size: 'sm',
-                      }}
-                      hasChevron={false}
-                      items={[
-                        {label: 'Primary', onClick: () => {}},
-                        {label: 'Secondary', onClick: () => {}},
-                        {label: 'Ghost', onClick: () => {}},
-                      ]}
-                    />
-                    <XDSButton
-                      label="Toggle theme"
-                      variant="ghost"
-                      size="sm"
-                      isIconOnly
-                      icon={<SunIcon />}
-                    />
-                    <XDSButton
-                      label="Fullscreen"
-                      variant="ghost"
-                      size="sm"
-                      isIconOnly
-                      icon={<MaximizeIcon />}
-                    />
-                  </div>
-                </div>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    height: 280,
-                    backgroundColor: 'var(--color-background-muted, #f5f5f5)',
-                  }}>
-                  {COMPONENT_PREVIEWS[activeNav] ?? (
-                    <XDSText type="supporting" color="secondary">
-                      Preview coming soon
-                    </XDSText>
-                  )}
+                <XDSText type="supporting" weight="semibold" color="secondary">
+                  Live preview
+                </XDSText>
+                <div style={{display: 'flex', alignItems: 'center', gap: 4}}>
+                  <XDSButton
+                    label="Open in Craft"
+                    variant="ghost"
+                    size="sm"
+                    icon={<ExternalLinkIcon />}
+                  />
+                  <XDSDropdownMenu
+                    button={{
+                      label: 'Variants',
+                      variant: 'ghost',
+                      size: 'sm',
+                    }}
+                    hasChevron={false}
+                    items={[
+                      {label: 'Primary', onClick: () => {}},
+                      {label: 'Secondary', onClick: () => {}},
+                      {label: 'Ghost', onClick: () => {}},
+                    ]}
+                  />
+                  <XDSButton
+                    label="Toggle theme"
+                    variant="ghost"
+                    size="sm"
+                    isIconOnly
+                    icon={<SunIcon />}
+                  />
+                  <XDSButton
+                    label="Fullscreen"
+                    variant="ghost"
+                    size="sm"
+                    isIconOnly
+                    icon={<MaximizeIcon />}
+                  />
                 </div>
               </div>
-
-              {/* Description */}
-              {(() => {
-                const docs = getComponentDocs(activeNav);
-                return (
-                  <div style={{marginBottom: 48}}>
-                    <XDSHeading level={3}>{docs.tagline}</XDSHeading>
-                    <div style={{marginTop: 12}}>
-                      <XDSText type="body">{docs.description}</XDSText>
-                    </div>
-                    <div style={{marginTop: 24}}>
-                      <XDSHeading level={4}>When to use</XDSHeading>
-                      <div style={{marginTop: 8}}>
-                        <XDSList density="compact" listStyle="disc">
-                          {docs.whenToUse.map((item, i) => (
-                            <XDSListItem key={i} label={item} />
-                          ))}
-                        </XDSList>
-                      </div>
-                    </div>
-                    <div style={{marginTop: 24}}>
-                      <XDSHeading level={4}>When NOT to use</XDSHeading>
-                      <div style={{marginTop: 8}}>
-                        <XDSList density="compact" listStyle="disc">
-                          {docs.whenNotToUse.map((item, i) => (
-                            <XDSListItem key={i} label={item} />
-                          ))}
-                        </XDSList>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {/* Anatomy */}
-              {(() => {
-                const docs = getComponentDocs(activeNav);
-                return (
-                  <div style={{marginBottom: 48}}>
-                    <XDSHeading level={2}>Anatomy</XDSHeading>
-                    <div
-                      style={{
-                        marginTop: 16,
-                        height: 320,
-                        backgroundColor:
-                          'var(--color-background-muted, #f5f5f5)',
-                        borderRadius: 12,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}>
-                      <XDSText type="supporting" color="secondary">
-                        Anatomy diagram
-                      </XDSText>
-                    </div>
-                    <div style={{marginTop: 16}}>
-                      <XDSText type="body">
-                        The {getComponentName(activeNav)} is composed of the
-                        following elements. Required elements must always be
-                        present, while optional elements can be included as
-                        needed.
-                      </XDSText>
-                    </div>
-                    <div style={{marginTop: 16}}>
-                      <XDSTable
-                        data={docs.anatomy as Record<string, unknown>[]}
-                        columns={[
-                          {key: 'element', header: 'Element'},
-                          {key: 'required', header: 'Required'},
-                          {key: 'description', header: 'Description'},
-                        ]}
-                      />
-                    </div>
-                  </div>
-                );
-              })()}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  height: 280,
+                  backgroundColor: 'var(--color-background-muted, #f5f5f5)',
+                }}>
+                {COMPONENT_PREVIEWS[activeNav] ?? (
+                  <XDSText type="supporting" color="secondary">
+                    Preview coming soon
+                  </XDSText>
+                )}
+              </div>
             </div>
-          )}
-        </main>
-      </div>
-    </>
+
+            {/* Description */}
+            {(() => {
+              const docs = getComponentDocs(activeNav);
+              return (
+                <div style={{marginBottom: 48}}>
+                  <XDSHeading level={3}>{docs.tagline}</XDSHeading>
+                  <div style={{marginTop: 12}}>
+                    <XDSText type="body">{docs.description}</XDSText>
+                  </div>
+                  <div style={{marginTop: 24}}>
+                    <XDSHeading level={4}>When to use</XDSHeading>
+                    <div style={{marginTop: 8}}>
+                      <XDSList density="compact" listStyle="disc">
+                        {docs.whenToUse.map((item, i) => (
+                          <XDSListItem key={i} label={item} />
+                        ))}
+                      </XDSList>
+                    </div>
+                  </div>
+                  <div style={{marginTop: 24}}>
+                    <XDSHeading level={4}>When NOT to use</XDSHeading>
+                    <div style={{marginTop: 8}}>
+                      <XDSList density="compact" listStyle="disc">
+                        {docs.whenNotToUse.map((item, i) => (
+                          <XDSListItem key={i} label={item} />
+                        ))}
+                      </XDSList>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Anatomy */}
+            {(() => {
+              const docs = getComponentDocs(activeNav);
+              return (
+                <div style={{marginBottom: 48}}>
+                  <XDSHeading level={2}>Anatomy</XDSHeading>
+                  <div
+                    style={{
+                      marginTop: 16,
+                      height: 320,
+                      backgroundColor: 'var(--color-background-muted, #f5f5f5)',
+                      borderRadius: 12,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}>
+                    <XDSText type="supporting" color="secondary">
+                      Anatomy diagram
+                    </XDSText>
+                  </div>
+                  <div style={{marginTop: 16}}>
+                    <XDSText type="body">
+                      The {getComponentName(activeNav)} is composed of the
+                      following elements. Required elements must always be
+                      present, while optional elements can be included as
+                      needed.
+                    </XDSText>
+                  </div>
+                  <div style={{marginTop: 16}}>
+                    <XDSTable
+                      data={docs.anatomy as Record<string, unknown>[]}
+                      columns={[
+                        {key: 'element', header: 'Element'},
+                        {key: 'required', header: 'Required'},
+                        {key: 'description', header: 'Description'},
+                      ]}
+                    />
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        )}
+      </main>
+    </div>
   );
 }
