@@ -61,19 +61,12 @@ For component-specific documentation, see the `{Name}.doc.mjs` file in each comp
 
 ## Documentation Standard
 
-This project uses **Fractal Documentation** — a self-referential pattern where documentation exists at three levels:
+Documentation lives in two places:
 
-1. **Project Root** (`README.md`) — Project-wide architecture and directory overview
-2. **Directory READMEs** — Each directory contains a `README.md` with file manifests
-3. **File Headers** — Each source file has a structured JSDoc header with `@input`, `@output`, `@position`
+1. **File Headers** — Each source file has a structured JSDoc header with `@input`, `@output`, `@position`
+2. **Component Docs** — `{Name}.doc.mjs` files in each component directory (props, features, examples)
 
-**Update Protocol**: When modifying code, update:
-
-1. The file's header comment
-2. The directory's README.md
-3. Parent documentation if architecture changes
-
-Look for `<!-- SYNC: ... -->` comments and `SYNC:` in file headers as reminders.
+**Update Protocol**: When modifying code, update the file's header comment. Look for `SYNC:` comments as reminders.
 
 ## Quick Reference
 
