@@ -150,6 +150,12 @@ export const categories: SandboxCategory[] = [
         description:
           'Compare luminance algorithms (BT.709 / WCAG 2 / APCA) for dark/light surface detection',
       },
+      {
+        name: 'Dictation Lab',
+        href: '/pages/dictation-lab/',
+        description:
+          'Test voice dictation, tune sound effects, and explore animation',
+      },
     ],
   },
 ];
