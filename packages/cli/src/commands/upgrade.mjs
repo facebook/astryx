@@ -153,15 +153,15 @@ export function registerUpgrade(program) {
         for (const version of versions) {
           const manifests = await getTransformsBetween('0.0.0', version);
           for (const {transforms} of manifests) {
-            for (const {name, meta} of transforms) {
-              codemods.push({name, title: meta.title, version, pr: meta.pr});
+            for (const {name, meta, optional} of transforms) {
+              codemods.push({name, title: meta.title, version, pr: meta.pr, optional: !!optional});
             }
           }
         }
-        if (json) return jsonOut('upgrade.list', codemods.map(({name, title, version}) => ({name, title, version})));
+        if (json) return jsonOut('upgrade.list', codemods.map(({name, title, version, optional}) => ({name, title, version, optional})));
         p.log.step('Available codemods:');
-        for (const {name, title, pr} of codemods) {
-          p.log.info(`  ${name} — ${title} (${pr})`);
+        for (const {name, title, pr, optional} of codemods) {
+          p.log.info(`  ${name} — ${title}${optional ? ' (optional)' : ''} (${pr})`);
         }
         p.outro('Done');
         return;
@@ -219,17 +219,21 @@ export function registerUpgrade(program) {
         return;
       }
 
-      // Count transforms
+      // Count transforms (optional codemods only count when explicitly requested)
       let totalTransforms = 0;
+      let totalOptional = 0;
       for (const {transforms} of versionManifests) {
         for (const t of transforms) {
-          if (!options.codemod || t.name === options.codemod) {
+          if (options.codemod && t.name !== options.codemod) continue;
+          if (t.optional && !options.codemod) {
+            totalOptional++;
+          } else {
             totalTransforms++;
           }
         }
       }
 
-      if (totalTransforms === 0) {
+      if (totalTransforms === 0 && totalOptional === 0) {
         const msg = `Codemod "${options.codemod}" not found. Use --list to see available codemods.`;
         if (json) return jsonError(msg);
         p.log.error(msg);
@@ -239,9 +243,13 @@ export function registerUpgrade(program) {
       }
 
       if (!json) {
-        p.log.step(
-          `${totalTransforms} codemod${totalTransforms === 1 ? '' : 's'} to run${options.apply ? '' : ' (dry run)'}`,
-        );
+        if (totalTransforms > 0) {
+          p.log.step(
+            `${totalTransforms} codemod${totalTransforms === 1 ? '' : 's'} to run${options.apply ? '' : ' (dry run)'}`,
+          );
+        } else {
+          p.log.step('No automatic codemods to run for this version range.');
+        }
       }
 
       const receipt = {from: currentVersion, to: targetVersion, codemods: totalTransforms, depsUpdated: [], agentDocsRefreshed: false};
