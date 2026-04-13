@@ -124,18 +124,21 @@ import {VegaChart} from '@xds/vega';
 
 ### Data loading
 
-`data` maps dataset names to tuple arrays and is applied via `view.data(name, tuples)` after the View is created. Changing `data` reloads the datasets and re-runs the view *without* a full re-embed — the View is preserved. This makes it efficient for streaming or live-updating scenarios.
+`data` maps dataset names to tuple arrays and is applied via `view.data(name, tuples)` during View initialization, before the first render. It is *not reactive* — changes after mount are ignored.
+
+To update data dynamically after render, use `onReady` to get the live View and drive it yourself:
 
 ```tsx
 <VegaChart
   spec={spec}
-  data={{
-    table: [{category: 'A', value: 28}, {category: 'B', value: 55}],
+  data={{table: [{category: 'A', value: 28}, {category: 'B', value: 55}]}}
+  onReady={view => {
+    // Later, update data dynamically:
+    view.data('table', newRows);
+    view.runAsync();
   }}
 />
 ```
-
-Each key must match a dataset name defined in the spec's `data` array.
 
 ### `parseSchema(schema)` (exported utility)
 

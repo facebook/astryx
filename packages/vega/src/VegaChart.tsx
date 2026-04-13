@@ -27,8 +27,11 @@ import type {VegaChartProps, VegaSpec, VegaLiteSpec, ViewData} from './types';
  *   vega.parse(spec, parseConfig, parseOptions)
  *   new vega.View(runtime, { ...viewOptions, container })
  *
- * Initial dataset values can be provided via `data` and updated independently
- * without triggering a full re-embed -- only the data is reloaded.
+ * Initial dataset values can be provided via `data` and are loaded once
+ * during View initialization, before the first render. `data` is not
+ * reactive — changes after mount are ignored. Use `onReady` to get the
+ * live `View` and call `view.data(name, tuples)` + `view.runAsync()`
+ * yourself if you need to update data after render.
  *
  * It owns the full `View` lifecycle: creates the view on mount, re-creates
  * it when `spec`, `parseConfig`, `parseOptions`, or `viewOptions` changes,
@@ -78,7 +81,6 @@ export function VegaChart({
   onError,
 }: VegaChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const viewRef = useRef<View | null>(null);
 
   // Keep callbacks in refs so they don't need to be in the dep array.
   const onReadyRef = useRef(onReady);
@@ -92,6 +94,7 @@ export function VegaChart({
     if (!container) return;
 
     let cancelled = false;
+    let view: View | null = null;
 
     const fail = (err: unknown) => {
       if (!cancelled) {
@@ -117,23 +120,27 @@ export function VegaChart({
       const runtime = parse(vegaSpec, parseConfig, parseOptions);
 
       // new View(runtime, viewOptions) -- container is always injected by us.
-      const view = new View(runtime, {
+      view = new View(runtime, {
         hover: true,
         ...viewOptions,
         container,
       });
 
-      viewRef.current = view;
+      // Load initial data into named datasets before the first render.
+      if (data) {
+        for (const [name, tuples] of Object.entries(data)) {
+          view.data(name, tuples);
+        }
+      }
 
       view
         .runAsync()
         .then(() => {
           if (cancelled) {
-            view.finalize();
-            viewRef.current = null;
+            view?.finalize();
             return;
           }
-          onReadyRef.current?.(view);
+          onReadyRef.current?.(view!);
         })
         .catch(fail);
     } catch (err) {
@@ -142,25 +149,9 @@ export function VegaChart({
 
     return () => {
       cancelled = true;
-      viewRef.current?.finalize();
-      viewRef.current = null;
+      view?.finalize();
     };
-  }, [spec, compileOptions, parseConfig, parseOptions, viewOptions]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Effect 2: load data into named datasets when `data` changes, without
-  // re-creating the View. Runs after the View effect so viewRef is populated.
-  useEffect(() => {
-    if (!data || !viewRef.current) return;
-    const view = viewRef.current;
-
-    for (const [name, tuples] of Object.entries(data)) {
-      view.data(name, tuples);
-    }
-
-    view.runAsync().catch((err: unknown) => {
-      onErrorRef.current?.(err instanceof Error ? err : new Error(String(err)));
-    });
-  }, [data]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [spec, data, compileOptions, parseConfig, parseOptions, viewOptions]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return <div ref={containerRef} className={className} style={style} />;
 }

@@ -106,8 +106,10 @@ export interface VegaChartProps {
    * Initial data for named Vega datasets, applied via `view.data(name, tuples)`
    * after the View is created and before the first render.
    *
-   * Changing this prop re-loads the data and re-runs the view without
-   * re-creating it (no full re-embed).
+   * This prop is *not reactive* — it is only read during View initialization.
+   * Changes after mount are ignored. To update data dynamically, use `onReady`
+   * to access the live View and call `view.data(name, tuples)` + `view.runAsync()`
+   * directly.
    *
    * Each key must match a dataset name defined in the spec's `data` array.
    *
