@@ -34,3 +34,5 @@ export {parseStyleKey} from './parseStyleKey';
 export {xdsClassName} from './xdsClassName';
 
 export {mergeProps} from './mergeProps';
+export {groupItems, getItemGroup} from './groupItems';
+export type {ItemGroup} from './groupItems';

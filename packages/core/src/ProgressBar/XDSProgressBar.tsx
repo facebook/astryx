@@ -15,7 +15,7 @@
 
 import {useId} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
+
 import {
   colorVars,
   spacingVars,
@@ -26,6 +26,7 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
+import type {XDSBaseProps} from '../XDSBaseProps';
 
 /**
  * Extensible variant map for XDSProgressBar.
@@ -44,6 +45,7 @@ export interface XDSProgressBarVariantMap {
   accent: true;
   positive: true;
   warning: true;
+  neutral: true;
   negative: true;
 }
 
@@ -53,7 +55,7 @@ export interface XDSProgressBarVariantMap {
  */
 export type XDSProgressBarVariant = keyof XDSProgressBarVariantMap;
 
-export interface XDSProgressBarProps {
+export interface XDSProgressBarProps extends XDSBaseProps<HTMLDivElement> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLDivElement>;
   /**
@@ -101,27 +103,6 @@ export interface XDSProgressBarProps {
    */
   isIndeterminate?: boolean;
   /**
-   * StyleX styles created via `stylex.create()`. Merged with the component's
-   * base styles inside a single `stylex.props()` call for optimal deduplication.
-   *
-   * @example
-   * ```
-   * const overrides = stylex.create({ root: { marginBottom: 8 } });
-   * <Component xstyle={overrides.root} />
-   * ```
-   */
-  xstyle?: StyleXStyles;
-  /**
-   * CSS class name(s) appended to the root element.
-   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
-   */
-  className?: string;
-  /**
-   * Inline styles to apply to the root element. Spread after StyleX
-   * inline styles, so these values take priority.
-   */
-  style?: React.CSSProperties;
-  /**
    * Test ID for testing utilities.
    */
   'data-testid'?: string;
@@ -150,6 +131,7 @@ const styles = stylex.create({
     flexDirection: 'column',
     gap: spacingVars['--spacing-1'],
     width: '100%',
+    minWidth: '48px',
   },
   header: {
     display: 'flex',
@@ -220,6 +202,9 @@ const variantStyles = stylex.create({
   negative: {
     backgroundColor: colorVars['--color-error'],
   },
+  neutral: {
+    backgroundColor: colorVars['--color-text-disabled'],
+  },
 });
 
 function defaultFormatValueLabel(value: number, max: number): string {
@@ -262,6 +247,7 @@ export function XDSProgressBar({
   style,
   'data-testid': dataTestId,
   ref,
+  ...rest
 }: XDSProgressBarProps) {
   const labelId = useId();
   const clampedValue = Math.min(Math.max(0, value), max);
@@ -280,7 +266,8 @@ export function XDSProgressBar({
         className,
         style,
       )}
-      data-testid={dataTestId}>
+      data-testid={dataTestId}
+      {...rest}>
       {/* Label row */}
       {!isLabelHidden || showValueLabel ? (
         <div {...stylex.props(styles.header)}>

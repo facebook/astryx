@@ -4,7 +4,6 @@
 
 import {discoverComponents, findComponentReadme, resolveImportPath} from './component-discovery.mjs';
 import {loadDocs} from './component-loader.mjs';
-import {extractBrief} from './component-legacy.mjs';
 import * as fs from 'node:fs';
 
 /** Derive the theme component key from a theming target (strips 'xds-' prefix). */
@@ -108,6 +107,26 @@ export function formatFull(docs, options = {}) {
 
   sections.push(`# ${docs.name}\n`);
   sections.push(docs.description + '\n');
+
+  if (docs.usage) {
+    sections.push('## Usage\n');
+    if (docs.usage.summary) {
+      sections.push(docs.usage.summary + '\n');
+    }
+    if (docs.usage.content) {
+      sections.push(docs.usage.content + '\n');
+    }
+    if (docs.usage.anatomy?.length) {
+      sections.push('### Anatomy\n');
+      sections.push('| Element | Required | Description |');
+      sections.push('|---------|----------|-------------|');
+      for (const el of docs.usage.anatomy) {
+        const req = el.required ? 'Yes' : 'No';
+        sections.push(`| ${el.name} | ${req} | ${el.description} |`);
+      }
+      sections.push('');
+    }
+  }
 
   if (docs.features?.length) {
     sections.push('## Features\n');
@@ -263,6 +282,16 @@ export function formatCompact(docs, componentName, importHint) {
 
   sections.push(`# ${docs.name}\n`);
   sections.push(docs.description + '\n');
+
+  if (docs.usage?.summary) {
+    sections.push(docs.usage.summary + '\n');
+  }
+  if (docs.usage?.anatomy?.length) {
+    sections.push('Anatomy: ' + docs.usage.anatomy.map(el => {
+      const req = el.required ? '' : ' (optional)';
+      return `${el.name}${req}`;
+    }).join(', ') + '\n');
+  }
 
   // Import statement
   if (importHint) {
@@ -478,11 +507,6 @@ export async function formatBriefAll(coreDir, {zh = false, lang, themeData = nul
         const docs = await loadDocs(readmePath, {zh, lang});
         const importPath = resolveImportPath(coreDir, comp);
         output.push(formatBrief(docs, comp, importPath, { themeData }));
-      } else if (readmePath) {
-        // Legacy README.md path
-        const content = fs.readFileSync(readmePath, 'utf-8');
-        const importPath = resolveImportPath(coreDir, comp);
-        output.push(extractBrief(content, comp, importPath));
       } else {
         output.push(`XDS${comp}\n  (no docs)\n`);
       }

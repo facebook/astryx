@@ -6,13 +6,29 @@
  * @output Exports XDSChatComposer layout shell component
  * @position Core implementation; consumed by index.ts
  *
- * Layout shell for a chat composer. Arranges slots (attachments, toolbar,
+ * Layout shell for a chat composer. Arranges slots (attachments, header,
  * input, footer actions, send button, status) in a vertical stack with
- * page-radius container, hover/focus shadows, and scoped pill-radius
- * override for child elements.
+ * page-radius container, hover/focus shadows, and concentric inner radius.
+ *
+ * Component CSS vars (themeable via defineTheme):
+ * - `--composer-radius` (default: --radius-page) — outer border radius
+ * - `--composer-padding` (default: --spacing-3) — body padding
+ * - Inner element radius = calc(--composer-radius - --composer-padding)
+ *
+ * SYNC: When modified, update:
+ * - /packages/core/src/Chat/Chat.doc.mjs
+ * - /packages/core/src/Chat/README.md
+ * - /apps/storybook/stories/ChatComposer.stories.tsx
  */
 
-import {useState, useRef, useCallback, type ReactNode} from 'react';
+import {
+  useState,
+  useCallback,
+  useRef,
+  useMemo,
+  type ReactNode,
+  type MouseEvent,
+} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -27,6 +43,9 @@ import {
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 import {XDSIcon} from '../Icon';
+import {XDSChatComposerInput} from './XDSChatComposerInput';
+import {XDSChatComposerContext} from './XDSChatContext';
+import {XDSChatSendButton} from './XDSChatSendButton';
 
 // =============================================================================
 // Types
@@ -64,8 +83,10 @@ export interface XDSChatComposerProps extends Omit<
 
   /** Attachment chips rendered above the input */
   attachments?: ReactNode;
-  /** Toolbar rendered between attachments and input (e.g. context chips) */
-  contextToolbar?: ReactNode;
+  /** Actions rendered on the left side of the header (e.g. attach, mention buttons). Use icon-only `size="sm"` buttons. */
+  headerActions?: ReactNode;
+  /** Contextual info rendered on the right side of the header (e.g. context window usage, XDSProgressBar). */
+  headerContext?: ReactNode;
   /** Custom input element — replaces the default textarea */
   input?: ReactNode;
   /** Actions rendered on the left side of the footer. Use `size="md"` buttons to match the send button height. */
@@ -74,7 +95,7 @@ export interface XDSChatComposerProps extends Omit<
   sendActions?: ReactNode;
   /** Custom send button — replaces the default */
   sendButton?: ReactNode;
-  /** Status message rendered below the footer */
+  /** Status message rendered below (or above) the composer body */
   status?: XDSChatComposerStatus;
   /** Where to render the status. @default 'bottom' */
   statusPosition?: 'top' | 'bottom';
@@ -91,9 +112,14 @@ const styles = stylex.create({
     isolation: 'isolate',
     display: 'flex',
     flexDirection: 'column',
-    // Scoped radius override: child buttons/tokens get pill shape
-    [radiusVars['--radius-element'] as string]: radiusVars['--radius-full'],
-    [radiusVars['--radius-container'] as string]: radiusVars['--radius-full'],
+    // Component CSS vars — themeable via defineTheme({ components: { 'chat-composer': { base: {...} } } })
+    '--composer-radius': radiusVars['--radius-page'],
+    '--composer-padding': spacingVars['--spacing-3'],
+    // Concentric radius: buttons follow the outer shell's curvature.
+    // Sets --button-radius (not --radius-element) so only buttons are
+    // affected — other components in slots keep their own radius.
+    // Default: 28px - 12px = 16px (fully rounds a 32px button).
+    '--button-radius': `max(${radiusVars['--radius-element']}, calc(var(--composer-radius) - var(--composer-padding)))`,
   },
 
   rootDisabled: {
@@ -105,10 +131,11 @@ const styles = stylex.create({
     zIndex: 2,
     display: 'flex',
     flexDirection: 'column',
-    padding: spacingVars['--spacing-3'],
+    padding: 'var(--composer-padding)',
     gap: spacingVars['--spacing-2'],
-    borderRadius: radiusVars['--radius-page'],
+    borderRadius: 'var(--composer-radius)',
     backgroundColor: colorVars['--color-background-popover'],
+    cursor: 'text',
     boxShadow: {
       default: shadowVars['--shadow-low'],
       ':hover': {'@media (hover: hover)': shadowVars['--shadow-med']},
@@ -118,10 +145,30 @@ const styles = stylex.create({
       boxShadow: shadowVars['--shadow-med'],
     },
   },
+  header: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacingVars['--spacing-2'],
+    minHeight: '28px',
+  },
+  headerLeft: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-1'],
+  },
+  headerRight: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-2'],
+    marginInlineStart: 'auto',
+    fontSize: typeScaleVars['--text-supporting-size'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
+    color: colorVars['--color-text-secondary'],
+  },
   inputArea: {
     display: 'flex',
     flexDirection: 'column',
-    minHeight: '40px',
   },
   textarea: {
     all: 'unset',
@@ -157,30 +204,6 @@ const styles = stylex.create({
     alignItems: 'center',
     gap: spacingVars['--spacing-1'],
   },
-  sendButton: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '32px',
-    height: '32px',
-    borderRadius: radiusVars['--radius-full'],
-    border: 'none',
-    cursor: 'pointer',
-    transition: `opacity ${durationVars['--duration-fast']} ${easeVars['--ease-standard']}`,
-    flexShrink: 0,
-  },
-  sendButtonSend: {
-    backgroundColor: colorVars['--color-accent'],
-    color: 'white',
-  },
-  sendButtonStop: {
-    backgroundColor: colorVars['--color-background-muted'],
-    color: colorVars['--color-text-primary'],
-  },
-  sendButtonDisabled: {
-    opacity: 0.4,
-    cursor: 'default',
-  },
   statusBar: {
     position: 'relative',
     zIndex: 0,
@@ -193,18 +216,18 @@ const styles = stylex.create({
     fontFamily: typographyVars['--font-family-body'],
   },
   statusTop: {
-    paddingBlockStart: spacingVars['--spacing-3'],
-    paddingBlockEnd: `calc(${spacingVars['--spacing-3']} + ${radiusVars['--radius-page']})`,
-    marginBlockEnd: `calc(-1 * ${radiusVars['--radius-page']})`,
-    borderTopLeftRadius: radiusVars['--radius-page'],
-    borderTopRightRadius: radiusVars['--radius-page'],
+    paddingBlockStart: 'var(--composer-padding)',
+    paddingBlockEnd: 'calc(var(--composer-padding) + var(--composer-radius))',
+    marginBlockEnd: 'calc(-1 * var(--composer-radius))',
+    borderTopLeftRadius: 'var(--composer-radius)',
+    borderTopRightRadius: 'var(--composer-radius)',
   },
   statusBottom: {
-    paddingBlockStart: `calc(${spacingVars['--spacing-3']} + ${radiusVars['--radius-page']})`,
-    paddingBlockEnd: spacingVars['--spacing-3'],
-    marginBlockStart: `calc(-1 * ${radiusVars['--radius-page']})`,
-    borderBottomLeftRadius: radiusVars['--radius-page'],
-    borderBottomRightRadius: radiusVars['--radius-page'],
+    paddingBlockStart: 'calc(var(--composer-padding) + var(--composer-radius))',
+    paddingBlockEnd: 'var(--composer-padding)',
+    marginBlockStart: 'calc(-1 * var(--composer-radius))',
+    borderBottomLeftRadius: 'var(--composer-radius)',
+    borderBottomRightRadius: 'var(--composer-radius)',
   },
   statusError: {
     backgroundColor: colorVars['--color-error-muted'],
@@ -221,32 +244,6 @@ const styles = stylex.create({
 });
 
 // =============================================================================
-// Icons
-// =============================================================================
-
-function SendIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-      <path
-        d="M8 3L8 13M8 3L4 7M8 3L12 7"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function StopIcon() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-      <rect width="12" height="12" rx="2" fill="currentColor" />
-    </svg>
-  );
-}
-
-// =============================================================================
 // Component
 // =============================================================================
 
@@ -261,7 +258,8 @@ export function XDSChatComposer(props: XDSChatComposerProps) {
     isDisabled = false,
     density = 'balanced',
     attachments,
-    contextToolbar,
+    headerActions,
+    headerContext,
     input,
     footerActions,
     sendActions,
@@ -275,7 +273,6 @@ export function XDSChatComposer(props: XDSChatComposerProps) {
   } = props;
 
   const [internalValue, setInternalValue] = useState('');
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const isControlled = controlledValue !== undefined;
   const currentValue = isControlled ? controlledValue : internalValue;
@@ -295,47 +292,28 @@ export function XDSChatComposer(props: XDSChatComposerProps) {
     if (!trimmed || isDisabled) return;
     onSubmit(trimmed);
     updateValue('');
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-    }
   }, [currentValue, isDisabled, onSubmit, updateValue]);
-
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        handleSubmit();
-      }
-    },
-    [handleSubmit],
-  );
-
-  const handleInput = useCallback(
-    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      const el = e.target;
-      updateValue(el.value);
-      el.style.height = 'auto';
-      el.style.height = `${el.scrollHeight}px`;
-    },
-    [updateValue],
-  );
 
   const canSend = currentValue.trim().length > 0 && !isDisabled;
 
-  const defaultSendButton = (
-    <button
-      type="button"
-      aria-label={isStreaming ? 'Stop' : 'Send'}
-      onClick={isStreaming ? onStop : handleSubmit}
-      disabled={!isStreaming && !canSend}
-      {...stylex.props(
-        styles.sendButton,
-        isStreaming ? styles.sendButtonStop : styles.sendButtonSend,
-        !isStreaming && !canSend && styles.sendButtonDisabled,
-      )}>
-      {isStreaming ? <StopIcon /> : <SendIcon />}
-    </button>
-  );
+  const bodyRef = useRef<HTMLDivElement>(null);
+
+  const handleBodyClick = useCallback((e: MouseEvent<HTMLDivElement>) => {
+    // Focus the input when clicking empty space in the body.
+    // Skip if the click target is a button, link, or interactive element.
+    const target = e.target as HTMLElement;
+    if (
+      target.closest(
+        'button, a, [role="button"], [contenteditable="true"], [data-xds-token]',
+      )
+    ) {
+      return;
+    }
+    const editable = bodyRef.current?.querySelector<HTMLElement>(
+      '[contenteditable="true"], textarea',
+    );
+    editable?.focus();
+  }, []);
 
   const statusEl = status ? (
     <div
@@ -355,48 +333,72 @@ export function XDSChatComposer(props: XDSChatComposerProps) {
     </div>
   ) : null;
 
+  const composerContext = useMemo(
+    () => ({
+      value: currentValue,
+      onChange: updateValue,
+      onSubmit: handleSubmit,
+      placeholder,
+      isDisabled,
+      isStreaming,
+      canSend,
+      onStop,
+    }),
+    [
+      currentValue,
+      updateValue,
+      handleSubmit,
+      placeholder,
+      isDisabled,
+      isStreaming,
+      canSend,
+      onStop,
+    ],
+  );
+
   return (
-    <div
-      {...mergeProps(
-        xdsClassName('chat-composer', {density}),
-        stylex.props(styles.root, isDisabled && styles.rootDisabled, xstyle),
-        className,
-        style,
-      )}
-      {...rest}>
-      {statusPosition === 'top' && statusEl}
-      {attachments}
-
+    <XDSChatComposerContext.Provider value={composerContext}>
       <div
-        {...stylex.props(styles.body, density === 'compact' && styles.compact)}>
-        {contextToolbar}
+        {...mergeProps(
+          xdsClassName('chat-composer', {density}),
+          stylex.props(styles.root, isDisabled && styles.rootDisabled, xstyle),
+          className,
+          style,
+        )}
+        {...rest}>
+        {statusPosition === 'top' && statusEl}
+        {attachments}
 
-        <div {...stylex.props(styles.inputArea)}>
-          {input ?? (
-            <textarea
-              ref={textareaRef}
-              rows={1}
-              value={currentValue}
-              placeholder={placeholder}
-              disabled={isDisabled}
-              onKeyDown={handleKeyDown}
-              onChange={handleInput}
-              {...stylex.props(styles.textarea)}
-            />
+        <div
+          ref={bodyRef}
+          onClick={handleBodyClick}
+          {...stylex.props(
+            styles.body,
+            density === 'compact' && styles.compact,
+          )}>
+          {(headerActions || headerContext) && (
+            <div {...stylex.props(styles.header)}>
+              <div {...stylex.props(styles.headerLeft)}>{headerActions}</div>
+              <div {...stylex.props(styles.headerRight)}>{headerContext}</div>
+            </div>
           )}
-        </div>
 
-        <div {...stylex.props(styles.footer)}>
-          <div {...stylex.props(styles.footerLeft)}>{footerActions}</div>
-          <div {...stylex.props(styles.footerRight)}>
-            {sendActions}
-            {sendButton ?? defaultSendButton}
+          <div {...stylex.props(styles.inputArea)}>
+            {input ?? <XDSChatComposerInput />}
+          </div>
+
+          <div {...stylex.props(styles.footer)}>
+            <div {...stylex.props(styles.footerLeft)}>{footerActions}</div>
+            <div {...stylex.props(styles.footerRight)}>
+              {sendActions}
+              {sendButton ?? <XDSChatSendButton />}
+            </div>
           </div>
         </div>
-      </div>
 
-      {statusPosition === 'bottom' && statusEl}
-    </div>
+        {statusPosition === 'bottom' && statusEl}
+      </div>
+    </XDSChatComposerContext.Provider>
   );
 }
 

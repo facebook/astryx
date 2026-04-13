@@ -105,7 +105,7 @@ export interface ThemingTarget {
  *
  * @example
  * ```
- * {name: '--xds-card-padding', description: 'Controls Card container padding. Cascades to internal layout vars.', default: 'var(--spacing-4)'}
+ * {name: 'padding', description: 'Controls Card container padding. Mapped to container tokens automatically.', default: 'var(--spacing-4)'}
  * ```
  */
 export interface CSSPropertyDoc {
@@ -164,6 +164,58 @@ export interface ComponentEntry {
 }
 
 /**
+ * Documents one element in a component's anatomy breakdown.
+ * Anatomy describes the visual/structural parts that make up a component
+ * (e.g. a Button has: left icon, label, end content, container).
+ *
+ * @example
+ * ```
+ * {name: 'Label', required: true, description: 'Accessible text for the button. Set isLabelHidden to visually hide it.'}
+ * {name: 'Left icon', required: false, description: 'Visually represents the meaning of the button label. Icon size is typically 16px.'}
+ * ```
+ */
+export interface AnatomyElement {
+  /** Human-readable element name. e.g. `"Label"`, `"Left icon"`, `"Container"` */
+  name: string;
+  /** Whether this element is required for the component to function. */
+  required: boolean;
+  /** What this element is and how it contributes to the component. 1-2 sentences. */
+  description: string;
+}
+
+/**
+ * Usage guidance for a component — when to use it, when not to,
+ * and the visual anatomy of its parts.
+ *
+ * `summary` is a design-oriented overview (vs. the developer-focused `description`).
+ * `content` is freeform markdown for usage guidance — authors can structure it
+ * however they like (when to use, when not to, do/don't, migration notes, etc.).
+ * `anatomy` is a structured breakdown of the component's visual elements.
+ */
+export interface UsageDoc {
+  /** Design-oriented summary of the component's purpose and role in the UI.
+   *  More conceptual than `description` — explains *what problem* the component
+   *  solves rather than *what API* it exposes.
+   *  e.g. `"Buttons communicate calls to action and allow users to interact
+   *  with pages in a variety of ways."` */
+  summary?: string;
+  /** Freeform markdown covering usage guidance. Use markdown headers and lists
+   *  to organize content. Common sections include "When to use", "When NOT to use",
+   *  but authors are free to structure this however makes sense.
+   *
+   *  @example
+   *  ```
+   *  `## When to use\n- To trigger an action\n- To navigate when the action is primary\n\n## When NOT to use\n- For navigation — use Link instead`
+   *  ```
+   */
+  content?: string;
+  /** Structural/visual anatomy of the component. Each entry describes one
+   *  element that makes up the component (icon slot, label, container, etc.).
+   *  Order entries in the visual reading order (leading → trailing, top → bottom). */
+  anatomy?: AnatomyElement[];
+}
+
+/**
  * Shared fields between single-component and multi-component docs.
  * Do not use this interface directly — use `ComponentDoc` (the union type).
  */
@@ -196,6 +248,12 @@ interface BaseDoc {
    *  rendered by this component that themes can target via `@scope`
    *  selectors in `defineTheme`. */
   theming?: {
+    /** Whether this component is a container whose `padding` properties
+     *  should be mapped to container tokens by the theme pipeline.
+     *  When true, `padding`, `paddingBlock`, `paddingInline` etc. in
+     *  component overrides are expanded to `--container-padding-*` and
+     *  `--layout-padding-*` tokens instead of emitting raw CSS. */
+    container?: boolean;
     /** CSS class targets rendered by this component.
      *  Each entry corresponds to an `xdsClassName()` call in the source. */
     targets: ThemingTarget[];
@@ -221,6 +279,10 @@ interface BaseDoc {
    *  self-contained note. Do not duplicate information from `features`,
    *  `accessibility`, or `keyboard`. */
   notes?: string[];
+  /** Design-oriented usage guidance: when to use this component, when not to,
+   *  and the visual anatomy of its parts. Complements the developer-focused
+   *  fields (`description`, `features`, `props`). */
+  usage?: UsageDoc;
 }
 
 /**
@@ -292,6 +354,12 @@ export interface TranslationDoc {
   keyboard?: string;
   /** Prop descriptions keyed by prop name. Only include props that have descriptions. */
   propDescriptions?: Record<string, string>;
+  /** Translated/compressed usage overlay. Only summary and content are translated;
+   *  anatomy element names are stable identifiers and stay as-is from the base doc. */
+  usage?: {
+    summary?: string;
+    content?: string;
+  };
   /** Sub-component translations. Must match docs.components length and order (if present). */
   components?: Array<{
     /** Exact name from docs.components[n].name */

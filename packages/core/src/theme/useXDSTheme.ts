@@ -94,9 +94,9 @@ function resolveValue(value: XDSTokenValue, mode: 'light' | 'dark'): string {
     return mode === 'dark' ? value[1] : value[0];
   }
   // For string values, try to parse light-dark(a, b) from defaults
-  const match = value.match(/^light-dark\(\s*(.+?)\s*,\s*(.+?)\s*\)$/);
+  const match = value.match(/^light-dark\(([^,]+),([^)]+)\)$/);
   if (match) {
-    return mode === 'dark' ? match[2] : match[1];
+    return mode === 'dark' ? match[2].trim() : match[1].trim();
   }
   return value;
 }

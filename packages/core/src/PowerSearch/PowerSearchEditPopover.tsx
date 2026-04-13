@@ -486,6 +486,7 @@ function NestedEditor({
               variant="ghost"
               size="sm"
               onClick={() => handleRemove(itemPath)}
+              isIconOnly
             />
           ) : undefined,
         };
@@ -509,6 +510,7 @@ function NestedEditor({
             variant="ghost"
             size="sm"
             onClick={() => handleRemove(itemPath)}
+            isIconOnly
           />
         ) : undefined,
       };

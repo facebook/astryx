@@ -174,6 +174,14 @@ export const docs = {
       ],
     },
   ],
+  usage: {
+    summary: 'A secondary form of navigation that orients the user within a hierarchy.',
+    content: `## When to use
+
+- To show the user's position relative to the product architecture.
+- To enable quick back-and-forth navigation.
+- To organize content hierarchy of 2 or more levels.`,
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */

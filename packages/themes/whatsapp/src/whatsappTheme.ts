@@ -58,7 +58,7 @@ export const whatsappTheme = defineTheme({
 
   // Motion: WhatsApp feels snappy but not jarring.
   // Slightly faster than XDS default, with ease-out for natural deceleration.
-  motion: {fast: 150, medium: 350, ratio: 0.75},
+  motion: {fast: 150, medium: 350, slow: 825, ratio: 0.75},
 
   tokens: {
     // =========================================================================

@@ -10,6 +10,7 @@ export const docs = {
     'Sets CSS variables for child layout components',
     'Supports `padding={0}` for edge-to-edge content',
     'Composable with XDSLayout, XDSCollapsible, and XDSCollapsibleGroup',
+    'Background color variants: default, muted, and 10 non-semantic palette colors',
   ],
   props: [
     {
@@ -43,6 +44,13 @@ export const docs = {
       description: 'Internal padding using the spacing scale.',
       default: '4',
     },
+    {
+      name: 'variant',
+      type: "'default' | 'muted' | 'blue' | 'cyan' | 'gray' | 'green' | 'orange' | 'pink' | 'purple' | 'red' | 'teal' | 'yellow'",
+      description:
+        'Background color variant. `default` uses the standard card background. `muted` uses the wash background for de-emphasised cards. The non-semantic variants use the corresponding `--color-<name>-background` token.',
+      default: "'default'",
+    },
   ],
   examples: [
     {
@@ -59,6 +67,18 @@ export const docs = {
       label: 'Simple content',
       code: `<XDSCard>
   <p>Card content with default padding</p>
+</XDSCard>`,
+    },
+    {
+      label: 'Muted background',
+      code: `<XDSCard variant="muted" width={300}>
+  <p>De-emphasised card with wash background</p>
+</XDSCard>`,
+    },
+    {
+      label: 'Color variant',
+      code: `<XDSCard variant="blue" width={300}>
+  <p>Blue tinted card</p>
 </XDSCard>`,
     },
     {
@@ -88,6 +108,7 @@ export const docs = {
     },
   ],
   theming: {
+    container: true,
     targets: [
       {className: 'xds-card'},
     ],
@@ -96,11 +117,32 @@ export const docs = {
     ],
     cssProperties: [
       {
-        name: '--xds-card-padding',
+        name: 'padding',
         description:
-          "Controls Card container padding. Set in theme component overrides via `card: { base: { '--xds-card-padding': 'var(--spacing-3)' } }`. Cascades to all internal layout padding variables. Do not use `--layout-padding-*` vars directly.",
+          "Controls Card container padding. Accepts standard CSS padding shorthand (e.g. '16px 20px'). Automatically mapped to container tokens for layout integration. Supports paddingBlock/paddingInline for axis-specific control.",
         default: 'var(--spacing-4)',
       },
+    ],
+  },
+  usage: {
+    summary: 'Groups similar information inside containers for visual organization.',
+    content: `## When to use
+
+- When explicit grouping of related information is needed.
+- When browsing and scanning content is frequent.
+
+## Best practices
+
+- Do: Use whitespace, type scale, and dividers with cards.
+- Do: Prioritize sections as the default; use cards only for stronger visual distinction.
+- Don't: Exclusively use cards, as it diminishes visual hierarchy.
+- Don't: Use cards for primary content unless stronger visual separation is needed.
+- Start with sections; escalate to cards only when additional distinction is required.
+- Card elevation adapts automatically based on the background surface.`,
+    anatomy: [
+      {name: 'Card Header', required: false, description: 'Displays a title and optional end content.'},
+      {name: 'Card Body', required: true, description: 'Accepts any content.'},
+      {name: 'Card Footer', required: false, description: 'Contains actions.'},
     ],
   },
 };
@@ -193,6 +235,7 @@ export const docsZh = {
     },
   ],
   theming: {
+    container: true,
     targets: [
       {className: 'xds-card'},
     ],
@@ -201,9 +244,9 @@ export const docsZh = {
     ],
     cssProperties: [
       {
-        name: '--xds-card-padding',
+        name: 'padding',
         description:
-          "Controls Card container padding. Set in theme component overrides via `card: { base: { '--xds-card-padding': 'var(--spacing-3)' } }`. Cascades to all internal layout padding variables. Do not use `--layout-padding-*` vars directly.",
+          "Controls Card container padding. Accepts standard CSS padding shorthand (e.g. '16px 20px'). Automatically mapped to container tokens for layout integration. Supports paddingBlock/paddingInline for axis-specific control.",
         default: 'var(--spacing-4)',
       },
     ],

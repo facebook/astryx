@@ -391,6 +391,9 @@ export const docs = {
       ],
     },
   ],
+  usage: {
+    summary: 'Composable utilities for building structured layouts with container and content separation.',
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */

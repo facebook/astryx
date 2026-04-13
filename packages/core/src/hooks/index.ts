@@ -23,6 +23,9 @@ export {useMediaQuery} from './useMediaQuery';
 export {useOverflow} from './useOverflow';
 export type {UseOverflowOptions, UseOverflowReturn} from './useOverflow';
 
+export {useScrollOverflow} from './useScrollOverflow';
+export type {ScrollOverflowState} from './useScrollOverflow';
+
 export {useScrollLock} from './useScrollLock';
 
 export {useEntryAnimation} from './useEntryAnimation';
@@ -33,3 +36,5 @@ export type {
   StreamingTextSpeed,
   UseStreamingTextOptions,
 } from './useXDSStreamingText';
+export {useImageMode} from './useImageMode';
+export type {ImageSampleRegion, UseImageModeOptions} from './useImageMode';

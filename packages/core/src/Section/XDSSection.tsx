@@ -14,8 +14,8 @@
 
 import {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import {container} from '../Layout/container.stylex';
 import type {SpacingToken} from '../Layout/container.stylex';
 import {
@@ -130,27 +130,8 @@ const dynamicStyles = stylex.create({
   }),
 });
 
-export interface XDSSectionProps {
+export interface XDSSectionProps extends XDSBaseProps<HTMLElement> {
   ref?: React.Ref<HTMLElement>;
-  /**
-   * StyleX styles created via `stylex.create()`. Merged with the component's
-   * base styles inside a single `stylex.props()` call on the outer wrapper.
-   *
-   * @example
-   * ```
-   * const overrides = stylex.create({ root: { marginBottom: 8 } });
-   * <XDSSection xstyle={overrides.root} />
-   * ```
-   */
-  xstyle?: StyleXStyles;
-  /**
-   * CSS class name(s) appended to the root element.
-   */
-  className?: string;
-  /**
-   * Inline styles to apply to the root element.
-   */
-  style?: React.CSSProperties;
   /**
    * Visual variant of the section.
    * - 'section': Surface background color
@@ -241,7 +222,7 @@ export function XDSSection({
   ref,
   ...props
 }: XDSSectionProps) {
-  // When no explicit padding prop, use theme default (--xds-section-padding)
+  // When no explicit padding prop, use theme default (set via container tokens)
   const useThemeDefault = padding == null;
   const effectivePadding = padding ?? 4;
   const paddingToken = spacingStepToToken[effectivePadding] as SpacingToken;

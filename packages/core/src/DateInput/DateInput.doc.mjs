@@ -199,6 +199,12 @@ export const docs = {
       {className: 'xds-date-input', visualProps: ['size']},
     ],
   },
+  usage: {
+    summary: 'Field formatted for users to input a date.',
+    content: `## When to use
+
+- User needs to input a date (e.g. scheduling events, form submissions).`,
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */

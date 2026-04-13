@@ -196,6 +196,13 @@ export const docs = {
       ],
     },
   ],
+  usage: {
+    summary: 'General-purpose toolbar with start, center, and end content slots.',
+    content: `## When to use
+
+- Grouping related actions or controls in a horizontal bar.
+- Providing contextual actions above content areas like tables or editors.`,
+  },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */

@@ -251,7 +251,9 @@ export function Report() {
                   <XDSVStack gap={3}>
                     <XDSHeading level={3}>Dimensions</XDSHeading>
                     <div className="report-scoreGrid">
-                      {ALL_DIMENSIONS.map(dim => (
+                      {ALL_DIMENSIONS.filter(
+                        dim => universal.averages[dim] != null,
+                      ).map(dim => (
                         <ScoreCard
                           key={dim}
                           label={DIMENSION_LABELS[dim]}

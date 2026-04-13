@@ -132,7 +132,7 @@ export const docs = {
   accessibility: [
     'XDSTopNav renders a <nav> element with role="navigation" and aria-label set from the label prop',
     'XDSTopNavItem sets aria-current="page" when isSelected is true',
-    'XDSTopNavItem sets aria-label for icon-only items (when icon is provided and no children or label text is visible)',
+    'XDSTopNavItem sets aria-label when isIconOnly is true, keeping the item accessible.',
     'XDSTopNavItem sets aria-disabled and tabIndex=-1 when isDisabled is true',
     'XDSTopNavMenu sets aria-haspopup="true" on the trigger button',
     'XDSTopNavMegaMenu sets aria-haspopup="true" and aria-expanded on the trigger button',
@@ -267,7 +267,7 @@ export const docs = {
           name: 'label',
           type: 'string',
           description:
-            'Accessible label for the nav item. Used as visible text, or as aria-label for icon-only items.',
+            'Accessible label for the nav item. Rendered as visible text by default. When isIconOnly is true, used as aria-label instead.',
           required: true,
         },
         {
@@ -290,16 +290,23 @@ export const docs = {
           default: 'false',
         },
         {
+          name: 'isIconOnly',
+          type: 'boolean',
+          description:
+            'Renders the item as a square icon-only element. When true, label becomes the aria-label and visible text is hidden. Requires icon to be set.',
+          default: 'false',
+        },
+        {
           name: 'icon',
           type: 'ReactNode',
           description:
-            'Optional icon to display before the label. If provided without children, the item becomes icon-only.',
+            'Optional icon to display before the label.',
         },
         {
           name: 'children',
           type: 'ReactNode',
           description:
-            'Custom content to render instead of the label text. When omitted and an icon is provided, the item becomes icon-only.',
+            'Custom content to render instead of the label text.',
         },
         {
           name: 'as',
@@ -579,6 +586,27 @@ export const docs = {
       ],
     },
   ],
+  usage: {
+    summary: 'Horizontal navigation bar for product-level navigation.',
+    content: `## When to use
+
+- 5 or fewer nav items that should always be visible.
+- Items don't require icons.
+- Minimal navigation paired with controls or filters.
+- Can combine with side nav for ecosystem tools.
+
+## When NOT to use
+
+- Complex navigation hierarchies.
+- Products without clear ownership.
+- Don't use to filter content \u2014 use tabs or filter buttons instead.`,
+    anatomy: [
+      {name: 'Product icon and name', required: true, description: 'Identifies the product in the navigation bar.'},
+      {name: 'Navigation items', required: true, description: 'Primary links for product-level destinations.'},
+      {name: 'More menu', required: false, description: 'Overflow menu for additional navigation items.'},
+      {name: 'Flex area', required: false, description: 'Flexible region for search, primary action buttons, or other controls.'},
+    ],
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */
@@ -1184,7 +1212,7 @@ export const docsDense = {
   accessibility: [
     'XDSTopNav renders <nav> w/ role="navigation"+aria-label from label prop.',
     'XDSTopNavItem sets aria-current="page" when isSelected.',
-    'XDSTopNavItem sets aria-label for icon-only items (icon provided w/o children or visible label).',
+    'XDSTopNavItem sets aria-label when isIconOnly is true.',
     'XDSTopNavItem sets aria-disabled+tabIndex=-1 when isDisabled.',
     'XDSTopNavMenu sets aria-haspopup="true" on trigger button.',
     'XDSTopNavMegaMenu sets aria-haspopup="true"+aria-expanded on trigger button.',
@@ -1218,11 +1246,11 @@ export const docsDense = {
       name: 'XDSTopNavItem',
       description: 'Nav link for XDSTopNav startContent; renders as anchor w/ hover+selected states.',
       propDescriptions: {
-        label: 'Visible text or aria-label for icon-only items.',
+        label: 'Visible text or aria-label when isIconOnly is true.',
         href: 'Navigation URL.',
         isSelected: 'Sets aria-current="page"+highlighted styles.',
         isDisabled: 'Sets aria-disabled, prevents interaction.',
-        icon: 'Icon before label. W/o children becomes icon-only.',
+        icon: 'Icon before label.',
         children: 'Custom content instead of label text.',
         as: 'Custom link component. Overrides XDSLinkProvider default. Must accept href, className, style, children.',
       },

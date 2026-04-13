@@ -243,6 +243,24 @@ export const docs = {
     'Uses internal pending state to allow free-form typing while validating on commit.',
     'Units are displayed as a lighter grey suffix after the input value.',
   ],
+  usage: {
+    summary: 'Enables users to enter or edit numeric values with validation support.',
+    content: `## When to use
+
+- Numeric input within forms.
+
+## Best practices
+
+- Size the input to reflect expected content length.
+- Validation states: error (blocking), warning (non-blocking), success (confirmation).`,
+    anatomy: [
+      {name: 'Label', required: true, description: 'The label for the number input.'},
+      {name: 'Description', required: false, description: 'Additional description text below the label.'},
+      {name: 'Icon', required: false, description: 'An optional icon within the input.'},
+      {name: 'Placeholder', required: false, description: 'Placeholder text shown when the input is empty.'},
+      {name: 'Spinner', required: false, description: 'Increment and decrement controls for the value.'},
+    ],
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */

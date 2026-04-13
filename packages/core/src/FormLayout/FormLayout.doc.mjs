@@ -89,6 +89,38 @@ export const docs = {
     'XDSFormLayoutContext provides { direction } to children. Import from @xds/core/FormLayout to read layout direction in custom components.',
     'Also accepts standard HTML div attributes (id, role, aria-*, etc.) via rest props.',
   ],
+  usage: {
+    summary: 'Wraps input components to collect structured user input with validation and confirmation.',
+    content: `## When to use
+
+- Sign-in flows.
+- Creating or editing objects.
+- Submitting orders.
+- Changing settings.
+
+## When NOT to use
+
+- One-off confirmations.
+- Quick inline tweaks.
+- Navigation or search.
+
+## Best practices
+
+- Do: Use a single column layout.
+- Don't: Use a multi-column layout.
+- Do: Keep text width between 50\u201380 characters.
+- Don't: Position multiple fields across rows (except related short fields like city/state/zip).
+- Prefer labels over placeholders for input fields.
+- Validate input early to surface errors as soon as possible.
+- Minimize the number of fields to reduce user effort.
+- Use top-aligned labels for step-by-step flows (wizards).
+- Use left-aligned labels for scanning-heavy layouts (settings).`,
+    anatomy: [
+      {name: 'Form title', required: false, description: 'Heading that describes the purpose of the form.'},
+      {name: 'Fields', required: true, description: 'Input components with labels for collecting user data.'},
+      {name: 'Footer', required: false, description: 'Contains confirmation buttons such as Submit or Cancel.'},
+    ],
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */

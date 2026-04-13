@@ -168,6 +168,9 @@ export const docs = {
       ],
     },
   ],
+  usage: {
+    summary: 'CSS Grid-based layout with responsive auto-fit support.',
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */

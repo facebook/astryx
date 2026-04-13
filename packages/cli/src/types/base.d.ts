@@ -2,7 +2,6 @@
  * Shared types for the XDS CLI JSON API.
  *
  * CLIError and CLIUnsupportedError are the two error shapes.
- * CLIMarkdownResponse is the shared fallback for legacy .md files.
  * CLIAnyResponse is the union of all success response types.
  * CLIResult<T> wraps any response with possible errors.
  */
@@ -45,12 +44,6 @@ export interface CLIUnsupportedError {
   error: `JSON output is not supported for the '${string}' command`;
 }
 
-/** Legacy markdown fallback envelope. */
-export interface CLIMarkdownResponse {
-  type: 'markdown';
-  data: {name: string; format: 'markdown'; content: string};
-}
-
 /** Wrap any response type to include possible error shapes. */
 export type CLIResult<T> = T | CLIError | CLIUnsupportedError;
 
@@ -76,8 +69,7 @@ export type CLIAnyResponse =
   | UpgradeListResponse
   | UpgradeRunResponse
   | GapReportCategoriesResponse
-  | GapReportFileResponse
-  | CLIMarkdownResponse;
+  | GapReportFileResponse;
 
 /** Union of all type discriminator string literals. */
 export type CLIResponseType = CLIAnyResponse['type'];

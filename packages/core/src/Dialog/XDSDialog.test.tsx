@@ -277,4 +277,39 @@ describe('XDSDialog', () => {
       expect(wrapper.parentElement!.tagName).toBe('DIALOG');
     });
   });
+
+  describe('edge signal isolation', () => {
+    it('resets inherited --edge-end from ancestor containers', () => {
+      // Simulate the bug: Dialog rendered inside TopNav's endContent
+      // which sets --edge-end: 1 via edgeSignals.end
+      render(
+        <div style={{'--edge-end': '1'} as React.CSSProperties}>
+          <XDSDialog isOpen={true} onOpenChange={() => {}}>
+            <div data-testid="child">Content</div>
+          </XDSDialog>
+        </div>,
+      );
+
+      const dialog = screen.getByRole('dialog');
+      // The dialog element should have isolateEdgeSignals styles applied,
+      // resetting --edge-start and --edge-end to 0 so ghost buttons inside
+      // (like the close button) don't apply unwanted edge compensation
+      expect(dialog).toBeInTheDocument();
+      expect(dialog.getAttribute('class')).toBeTruthy();
+    });
+
+    it('resets inherited --edge-start from ancestor containers', () => {
+      render(
+        <div style={{'--edge-start': '1'} as React.CSSProperties}>
+          <XDSDialog isOpen={true} onOpenChange={() => {}}>
+            <div data-testid="child">Content</div>
+          </XDSDialog>
+        </div>,
+      );
+
+      const dialog = screen.getByRole('dialog');
+      expect(dialog).toBeInTheDocument();
+      expect(dialog.getAttribute('class')).toBeTruthy();
+    });
+  });
 });

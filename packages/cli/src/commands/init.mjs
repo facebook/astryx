@@ -90,17 +90,10 @@ async function runTemplate(targetDir, {interactive = true, templateName} = {}) {
     }
 
     const outputDir = path.resolve(targetDir, `./src/pages/${templateName}`);
-    const templateDir = path.join(CLI_ROOT, 'templates', templateName);
+    const srcPath = path.join(CLI_ROOT, 'templates', templateName, 'page.tsx');
     fs.mkdirSync(outputDir, {recursive: true});
-
-    const files = fs.readdirSync(templateDir);
-    for (const file of files) {
-      const srcPath = path.join(templateDir, file);
-      if (fs.statSync(srcPath).isFile()) {
-        fs.copyFileSync(srcPath, path.join(outputDir, file));
-      }
-    }
-    console.log(`✓ Template created at ${path.relative(targetDir, outputDir)}/`);
+    fs.copyFileSync(srcPath, path.join(outputDir, 'page.tsx'));
+    console.log(`✓ Template created at ${path.relative(targetDir, outputDir)}/page.tsx`);
     return;
   }
 
@@ -129,19 +122,12 @@ async function runTemplate(targetDir, {interactive = true, templateName} = {}) {
   );
 
   const outputDir = path.resolve(targetDir, targetPath);
-  const templateDir = path.join(CLI_ROOT, 'templates', templateChoice);
+  const srcPath = path.join(CLI_ROOT, 'templates', templateChoice, 'page.tsx');
 
   fs.mkdirSync(outputDir, {recursive: true});
+  fs.copyFileSync(srcPath, path.join(outputDir, 'page.tsx'));
 
-  const files = fs.readdirSync(templateDir);
-  for (const file of files) {
-    const srcPath = path.join(templateDir, file);
-    if (fs.statSync(srcPath).isFile()) {
-      fs.copyFileSync(srcPath, path.join(outputDir, file));
-    }
-  }
-
-  p.log.success(`Template created at ${path.relative(targetDir, outputDir)}/`);
+  p.log.success(`Template created at ${path.relative(targetDir, outputDir)}/page.tsx`);
 }
 
 // ─── Command ─────────────────────────────────────────────────────────────────

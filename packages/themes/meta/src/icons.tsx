@@ -31,6 +31,7 @@ import {
   EyeSlashIcon,
   ViewColumnsIcon,
   ClipboardDocumentIcon,
+  WrenchScrewdriverIcon,
 } from '@heroicons/react/24/outline';
 
 import {
@@ -38,6 +39,7 @@ import {
   XCircleIcon,
   ExclamationTriangleIcon,
   ArrowTopRightOnSquareIcon,
+  StopIcon,
 } from '@heroicons/react/24/solid';
 
 const iconProps = {
@@ -70,4 +72,6 @@ export const metaIconRegistry: XDSIconRegistry = {
   viewColumns: <ViewColumnsIcon {...iconProps} />,
   copy: <ClipboardDocumentIcon {...iconProps} />,
   checkDouble: <CheckIcon {...iconProps} />,
+  wrench: <WrenchScrewdriverIcon {...iconProps} />,
+  stop: <StopIcon {...iconProps} />,
 };

@@ -74,7 +74,7 @@ const SAMPLE_MD = [
 const STREAMING_RESPONSE = [
   '## Setting Up a Design System',
   '',
-  'A design system is more than a component library — it\'s a **shared language** between design and engineering. Here\'s how to build one that scales.',
+  "A design system is more than a component library — it's a **shared language** between design and engineering. Here's how to build one that scales.",
   '',
   '### 1. Start with Tokens',
   '',
@@ -83,23 +83,23 @@ const STREAMING_RESPONSE = [
   '```typescript',
   'const tokens = {',
   '  color: {',
-  '    primary: \'#0066FF\',',
-  '    secondary: \'#6B7280\',',
-  '    success: \'#10B981\',',
-  '    danger: \'#EF4444\',',
+  "    primary: '#0066FF',",
+  "    secondary: '#6B7280',",
+  "    success: '#10B981',",
+  "    danger: '#EF4444',",
   '  },',
   '  spacing: {',
-  '    xs: \'4px\',',
-  '    sm: \'8px\',',
-  '    md: \'16px\',',
-  '    lg: \'24px\',',
-  '    xl: \'32px\',',
+  "    xs: '4px',",
+  "    sm: '8px',",
+  "    md: '16px',",
+  "    lg: '24px',",
+  "    xl: '32px',",
   '  },',
   '  radius: {',
-  '    sm: \'4px\',',
-  '    md: \'8px\',',
-  '    lg: \'16px\',',
-  '    full: \'9999px\',',
+  "    sm: '4px',",
+  "    md: '8px',",
+  "    lg: '16px',",
+  "    full: '9999px',",
   '  },',
   '};',
   '```',
@@ -113,7 +113,7 @@ const STREAMING_RESPONSE = [
   '- **Composable** — small pieces that combine into complex UIs',
   '- **Accessible** — keyboard navigation and screen reader support built-in',
   '- **Themeable** — visual customization without forking',
-  '- **Documented** — usage examples, props tables, and do/don\'t guidelines',
+  "- **Documented** — usage examples, props tables, and do/don't guidelines",
   '',
   '> The best design systems are *opinionated enough* to ensure consistency, but *flexible enough* to handle edge cases gracefully.',
   '',
@@ -145,7 +145,7 @@ const STREAMING_RESPONSE = [
   '',
   '---',
   '',
-  'The most important thing? **Ship early, iterate often.** A design system that exists and is used beats a perfect one that\'s still in planning.',
+  "The most important thing? **Ship early, iterate often.** A design system that exists and is used beats a perfect one that's still in planning.",
 ].join('\n');
 
 export const Default: Story = {
@@ -223,7 +223,13 @@ export const Streaming: Story = {
 
     return (
       <div>
-        <div style={{marginBlockEnd: 12, display: 'flex', gap: 8, alignItems: 'center'}}>
+        <div
+          style={{
+            marginBlockEnd: 12,
+            display: 'flex',
+            gap: 8,
+            alignItems: 'center',
+          }}>
           <XDSButton
             label="Replay"
             variant="secondary"
@@ -232,13 +238,93 @@ export const Streaming: Story = {
             isDisabled={isStreaming}
           />
           <span style={{fontSize: 12, color: '#666'}}>
-            {isStreaming ? `Streaming... ${charIndex}/${text.length}` : 'Complete'}
+            {isStreaming
+              ? `Streaming... ${charIndex}/${text.length}`
+              : 'Complete'}
           </span>
         </div>
-        <XDSMarkdown key={key} isStreaming={isStreaming} density="compact" headingLevelStart={3}>
+        <XDSMarkdown
+          key={key}
+          isStreaming={isStreaming}
+          density="compact"
+          headingLevelStart={3}>
           {text.slice(0, charIndex)}
         </XDSMarkdown>
       </div>
     );
   },
+};
+
+export const WithImages: Story = {
+  name: 'With Images',
+  render: () => (
+    <div style={{maxWidth: 800}}>
+      <XDSMarkdown>{`
+Here is some text before the image.
+
+![A landscape photo](https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=680&h=400&fit=crop&auto=format)
+
+Text between two images.
+
+![A tall portrait photo](https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=400&h=600&fit=crop&auto=format)
+
+And here's a really wide one:
+
+![Wide panoramic shot](https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=1200&h=300&fit=crop&auto=format)
+
+Final paragraph after all images.
+`}</XDSMarkdown>
+    </div>
+  ),
+};
+
+const CONTENT_ALIGN_TEXT = `
+# Content Alignment
+
+This paragraph is constrained by \`contentWidth\`. Notice how it's narrower than the code block and table below. The alignment prop controls where this narrow prose sits within the wider container.
+
+Here's a bullet list that also respects prose width:
+- First item with some explanation text
+- Second item that wraps to show the width constraint
+- Third item for good measure
+
+\`\`\`typescript
+// Code blocks break out to full container width regardless of contentAlign
+export function calculateLayout(items: Item[], containerWidth: number): Layout {
+  const columns = Math.floor(containerWidth / COLUMN_MIN_WIDTH);
+  return { columns, gap: GRID_GAP, items: distributeItems(items, columns) };
+}
+\`\`\`
+
+Back to prose — this paragraph is aligned according to the \`contentAlign\` prop while the code block above spans the full width.
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| Button | Stable | Full API |
+| CodeBlock | Stable | With collapsible |
+| Markdown | In progress | Adding alignment |
+
+Final paragraph after the table.
+`;
+
+export const ContentAlignStart: Story = {
+  name: 'Content Align: Start',
+  render: () => (
+    <div style={{maxWidth: 900, border: '1px dashed #ccc', padding: 16}}>
+      <XDSMarkdown contentWidth={580} contentAlign="start">
+        {CONTENT_ALIGN_TEXT}
+      </XDSMarkdown>
+    </div>
+  ),
+};
+
+export const ContentAlignCenter: Story = {
+  name: 'Content Align: Center',
+  render: () => (
+    <div style={{maxWidth: 900, border: '1px dashed #ccc', padding: 16}}>
+      <XDSMarkdown contentWidth={580} contentAlign="center">
+        {CONTENT_ALIGN_TEXT}
+      </XDSMarkdown>
+    </div>
+  ),
 };

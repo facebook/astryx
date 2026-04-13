@@ -9,6 +9,7 @@
 
 import {useMemo, useRef} from 'react';
 import type React from 'react';
+import {Fragment} from 'react';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -84,6 +85,25 @@ export interface XDSMarkdownProps {
    * @default 'label'
    */
   citationStyle?: 'label' | 'number';
+  /**
+   * Max width for prose content (paragraphs, headings, lists, blockquotes).
+   * Tables and code blocks are unconstrained and can expand to the full
+   * container width. Use for readable line lengths in wide layouts.
+   *
+   * @example
+   * ```
+   * <XDSMarkdown contentWidth={640}>{text}</XDSMarkdown>
+   * ```
+   */
+  contentWidth?: number | string;
+  /**
+   * Alignment of prose content within the container when `contentWidth`
+   * is narrower than the available space.
+   * - 'start': left-aligned (default)
+   * - 'center': centered
+   * @default 'start'
+   */
+  contentAlign?: 'start' | 'center';
   xstyle?: StyleXStyles;
   className?: string;
   style?: React.CSSProperties;
@@ -94,12 +114,41 @@ export interface XDSMarkdownProps {
 // Styles
 // ---------------------------------------------------------------------------
 
+const ALIGN_MARGIN: Record<string, string> = {
+  start: '0',
+  center: 'auto',
+};
+
+const BLOCK_ALIGN_MARGIN: Record<string, string | null> = {
+  start: null,
+  center: 'auto',
+};
+
+const dynamicStyles = stylex.create({
+  proseWidth: (maxWidth: string) => ({
+    maxWidth,
+  }),
+  proseAlign: (marginInline: string) => ({
+    marginInline,
+  }),
+  blockWidth: (minWidth: string) => ({
+    minWidth: `min(${minWidth}, 100%)`,
+  }),
+  blockAlign: (marginInline: string) => ({
+    marginInline,
+  }),
+});
+
 const styles = stylex.create({
   root: {
     fontFamily: typographyVars['--font-family-body'],
     color: colorVars['--color-text-primary'],
     lineHeight: typeScaleVars['--text-body-leading'],
     fontSize: typeScaleVars['--text-body-size'],
+    width: '100%',
+    maxWidth: '100%',
+    minWidth: 0,
+    overflowWrap: 'break-word',
   },
   // Headings
   headingBase: {
@@ -220,19 +269,27 @@ const styles = stylex.create({
   blockquote: {
     borderInlineStartWidth: spacingVars['--spacing-0-5'],
     borderInlineStartStyle: 'solid',
-    borderInlineStartColor: colorVars['--color-accent'],
+    borderInlineStartColor: colorVars['--color-border-emphasized'],
     paddingInlineStart: spacingVars['--spacing-4'],
     color: colorVars['--color-text-secondary'],
     marginInlineStart: 0,
     marginInlineEnd: 0,
   },
   // Table
+  codeBlockWrapper: {
+    maxWidth: '100%',
+  },
   tableWrapper: {
     overflowX: 'auto',
+    maxWidth: '100%',
+  },
+  blockIndent: {
+    marginInline: `calc(-1 * ${spacingVars['--spacing-2']})`,
   },
   table: {
     borderCollapse: 'collapse',
-    width: '100%',
+    width: 'fit-content',
+    maxWidth: '100%',
   },
   th: {
     fontWeight: fontWeightVars['--font-weight-semibold'],
@@ -518,14 +575,13 @@ function wrapTextWithFade(
   // Split: some old, some new
   const splitAt = cursor.boundary - startOffset;
   return (
-    <>
+    <Fragment key={`fade-${key}-split`}>
       {content.slice(0, splitAt)}
       <span
-        key={`fade-${key}-${cursor.boundary}`}
         {...stylex.props(streamingStyles.fadeIn)}>
         {content.slice(splitAt)}
       </span>
-    </>
+    </Fragment>
   );
 }
 
@@ -777,6 +833,8 @@ function renderBlock(
   onLinkClick: XDSMarkdownProps['onLinkClick'] | undefined,
   cursor: StreamingCursor,
   citationCtx: CitationContext | null,
+  contentWidthValue: string | null,
+  contentAlign: 'start' | 'center',
 ): React.ReactNode {
   const spacing = getElementSpacing(node, density);
   const isFirst = index === 0;
@@ -799,6 +857,12 @@ function renderBlock(
             styles.headingBase,
             headingStyles[level],
             spacing,
+            contentWidthValue != null
+              ? dynamicStyles.proseWidth(contentWidthValue)
+              : null,
+            contentAlign !== 'start'
+              ? dynamicStyles.proseAlign(ALIGN_MARGIN[contentAlign])
+              : null,
             isFirst && styles.noMarginBlockStart,
             isLast && styles.noMarginBlockEnd,
           )}>
@@ -814,6 +878,12 @@ function renderBlock(
           key={index}
           {...stylex.props(
             spacing,
+            contentWidthValue != null
+              ? dynamicStyles.proseWidth(contentWidthValue)
+              : null,
+            contentAlign !== 'start'
+              ? dynamicStyles.proseAlign(ALIGN_MARGIN[contentAlign])
+              : null,
             isFirst && styles.noMarginBlockStart,
             isLast && styles.noMarginBlockEnd,
           )}>
@@ -830,10 +900,23 @@ function renderBlock(
           key={index}
           {...stylex.props(
             spacing,
+            styles.codeBlockWrapper,
             isFirst && styles.noMarginBlockStart,
             isLast && styles.noMarginBlockEnd,
           )}>
-          <XDSCodeBlock code={node.content} language={node.language} />
+          <XDSCodeBlock
+            code={node.content}
+            language={node.language}
+            isCollapsible
+            xstyle={[
+              contentWidthValue != null
+                ? dynamicStyles.blockWidth(contentWidthValue)
+                : undefined,
+              BLOCK_ALIGN_MARGIN[contentAlign] != null
+                ? dynamicStyles.blockAlign(BLOCK_ALIGN_MARGIN[contentAlign]!)
+                : undefined,
+            ]}
+          />
         </div>
       );
     }
@@ -844,6 +927,12 @@ function renderBlock(
           {...stylex.props(
             styles.blockquote,
             spacing,
+            contentWidthValue != null
+              ? dynamicStyles.proseWidth(contentWidthValue)
+              : null,
+            contentAlign !== 'start'
+              ? dynamicStyles.proseAlign(ALIGN_MARGIN[contentAlign])
+              : null,
             isFirst && styles.noMarginBlockStart,
             isLast && styles.noMarginBlockEnd,
           )}>
@@ -857,6 +946,8 @@ function renderBlock(
               onLinkClick,
               cursor,
               citationCtx,
+              contentWidthValue,
+              contentAlign,
             ),
           )}
         </blockquote>
@@ -885,6 +976,7 @@ function renderBlock(
               label="Task list"
               isLabelHidden
               value={checkedValues}
+              xstyle={styles.blockIndent}
               isReadOnly
               density="compact">
               {node.items.map((item, i) => {
@@ -914,6 +1006,8 @@ function renderBlock(
                         onLinkClick,
                         cursor,
                         citationCtx,
+                        contentWidthValue,
+                        contentAlign,
                       ),
                     )}
                   </>
@@ -949,12 +1043,19 @@ function renderBlock(
           key={index}
           {...stylex.props(
             spacing,
+            contentWidthValue != null
+              ? dynamicStyles.proseWidth(contentWidthValue)
+              : null,
+            contentAlign !== 'start'
+              ? dynamicStyles.proseAlign(ALIGN_MARGIN[contentAlign])
+              : null,
             isFirst && styles.noMarginBlockStart,
             isLast && styles.noMarginBlockEnd,
           )}>
           <XDSList
             listStyle={node.ordered ? 'decimal' : 'disc'}
-            density="compact">
+            density="compact"
+            xstyle={styles.blockIndent}>
             {node.items.map((item, i) => {
               const firstChild = item.children[0];
               const isInline =
@@ -984,6 +1085,8 @@ function renderBlock(
                       onLinkClick,
                       cursor,
                       citationCtx,
+                      contentWidthValue,
+                      contentAlign,
                     ),
                   )}
                 </>
@@ -1021,7 +1124,17 @@ function renderBlock(
             isFirst && styles.noMarginBlockStart,
             isLast && styles.noMarginBlockEnd,
           )}>
-          <table {...stylex.props(styles.table)}>
+          <table
+            {...stylex.props(
+              styles.table,
+              styles.blockIndent,
+              contentWidthValue != null
+                ? dynamicStyles.blockWidth(contentWidthValue)
+                : null,
+              BLOCK_ALIGN_MARGIN[contentAlign] != null
+                ? dynamicStyles.blockAlign(BLOCK_ALIGN_MARGIN[contentAlign]!)
+                : null,
+            )}>
             <thead>
               <tr>
                 {node.headers.map((h, i) => (
@@ -1133,6 +1246,8 @@ export function XDSMarkdown({
   onLinkClick,
   sources,
   citationStyle = 'label',
+  contentWidth = 680,
+  contentAlign = 'start',
   xstyle,
   className,
   style,
@@ -1205,6 +1320,12 @@ export function XDSMarkdown({
           onLinkClick,
           cursor,
           citationCtx,
+          contentWidth
+            ? typeof contentWidth === 'number'
+              ? `${contentWidth}px`
+              : contentWidth
+            : null,
+          contentAlign,
         ),
       )}
     </div>

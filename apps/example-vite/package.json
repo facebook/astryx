@@ -9,14 +9,15 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@stylexjs/stylex": "^0.17.4",
+    "@stylexjs/stylex": "^0.18.2",
     "@xds/core": "*",
     "@xds/theme-default": "*",
     "react": "^19.2.4",
-    "react-dom": "^19.2.4"
+    "react-dom": "^19.2.4",
+    "unplugin": "^2.3.11"
   },
   "devDependencies": {
-    "@stylexjs/unplugin": "^0.17.4",
+    "@stylexjs/unplugin": "^0.18.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^4.3.0",

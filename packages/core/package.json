@@ -27,6 +27,12 @@
       "import": "./dist/theme/tokens.stylex.mjs",
       "require": "./dist/theme/tokens.stylex.js"
     },
+    "./theme/syntax": {
+      "source": "./src/theme/syntax/index.ts",
+      "types": "./dist/theme/syntax/index.d.ts",
+      "import": "./dist/theme/syntax/index.mjs",
+      "require": "./dist/theme/syntax/index.js"
+    },
     "./xds.md": "./xds.md",
     "./AppShell": {
       "source": "./src/AppShell/index.ts",
@@ -81,6 +87,12 @@
       "types": "./dist/Card/index.d.ts",
       "import": "./dist/Card/index.mjs",
       "require": "./dist/Card/index.js"
+    },
+    "./Carousel": {
+      "source": "./src/Carousel/index.ts",
+      "types": "./dist/Carousel/index.d.ts",
+      "import": "./dist/Carousel/index.mjs",
+      "require": "./dist/Carousel/index.js"
     },
     "./Center": {
       "source": "./src/Center/index.ts",
@@ -388,6 +400,12 @@
       "import": "./dist/TextInput/index.mjs",
       "require": "./dist/TextInput/index.js"
     },
+    "./Thumbnail": {
+      "source": "./src/Thumbnail/index.ts",
+      "types": "./dist/Thumbnail/index.d.ts",
+      "import": "./dist/Thumbnail/index.mjs",
+      "require": "./dist/Thumbnail/index.js"
+    },
     "./TimeInput": {
       "source": "./src/TimeInput/index.ts",
       "types": "./dist/TimeInput/index.d.ts",
@@ -399,6 +417,12 @@
       "types": "./dist/Timestamp/index.d.ts",
       "import": "./dist/Timestamp/index.mjs",
       "require": "./dist/Timestamp/index.js"
+    },
+    "./Toast": {
+      "source": "./src/Toast/index.ts",
+      "types": "./dist/Toast/index.d.ts",
+      "import": "./dist/Toast/index.mjs",
+      "require": "./dist/Toast/index.js"
     },
     "./ToggleButton": {
       "source": "./src/ToggleButton/index.ts",
@@ -492,11 +516,11 @@
     "@babel/core": "^7.28.5",
     "@babel/preset-react": "^7.28.5",
     "@babel/preset-typescript": "^7.28.5",
-    "@stylexjs/babel-plugin": "^0.17.4",
+    "@stylexjs/babel-plugin": "^0.18.2",
     "@stylexjs/esbuild-plugin": "^0.11.1",
     "@testing-library/jest-dom": "^6.6.0",
     "@testing-library/react": "^16.0.0",
     "esbuild-plugin-babel": "^0.2.3",
-    "@stylexjs/stylex": "^0.17.4"
+    "@stylexjs/stylex": "^0.18.2"
   }
 }

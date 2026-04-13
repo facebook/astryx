@@ -6,15 +6,15 @@ const rootDir = path.resolve(__dirname, '../../..');
 const coreRoot = path.resolve(__dirname, '../../../packages/core/src');
 const themeDefaultRoot = path.resolve(
   __dirname,
-  '../../../packages/themes/default/src',
+  '../../../packages/themes/default/src/source.ts',
 );
 const themeNeutralRoot = path.resolve(
   __dirname,
-  '../../../packages/themes/neutral/src',
+  '../../../packages/themes/neutral/src/source.ts',
 );
 const themeBrutalistRoot = path.resolve(
   __dirname,
-  '../../../packages/themes/brutalist/src',
+  '../../../packages/themes/brutalist/src/source.ts',
 );
 
 /**
@@ -76,7 +76,7 @@ const config: StorybookConfig = {
               {
                 tag: 'style',
                 children:
-                  '@layer reset, priority1, priority2, priority3, priority4, priority5, priority6, priority7, priority8, priority9;',
+                  '@layer reset, priority1, priority2, priority3, priority4, priority5, priority6, priority7, priority8, priority9, xds-theme;',
                 injectTo: 'head-prepend',
               },
               {

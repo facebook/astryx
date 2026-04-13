@@ -21,6 +21,7 @@ export * from './Banner';
 export * from './Breadcrumbs';
 export * from './Button';
 export * from './Card';
+export * from './Carousel';
 export * from './Calendar';
 export * from './Center';
 export * from './CodeBlock';
@@ -60,6 +61,7 @@ export * from './ToggleButton';
 export * from './Token';
 export * from './Typeahead';
 export * from './Tokenizer';
+export * from './Thumbnail';
 export * from './PowerSearch';
 export * from './TreeList';
 
@@ -90,6 +92,22 @@ export type {
   ContextLayerReturn,
   FixedLayerReturn,
 } from './Layer';
+
+// Layer provider
+export {XDSLayerProvider} from './Layer';
+export type {XDSLayerProviderProps, LayerToastConfig} from './Layer';
+
+// Toast
+export {useXDSToast} from './Toast';
+export type {
+  XDSToastType,
+  XDSToastPosition,
+  XDSToastCollisionBehavior,
+  XDSToastDismissReason,
+  XDSToastOptions,
+  XDSToastDismissFn,
+  XDSShowToastFn,
+} from './Toast';
 
 // Popover component and hook
 export * from './Popover';

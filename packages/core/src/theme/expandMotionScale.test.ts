@@ -52,7 +52,7 @@ describe('expandMotionScale', () => {
     expect(tokens['--ease-standard']).toBe('cubic-bezier(0.0, 0.0, 0.2, 1)');
   });
 
-  it('produces exactly 6 duration tokens', () => {
+  it('produces exactly 6 duration tokens without slow', () => {
     const tokens = expandMotionScale({fast: 175, medium: 410, ratio: 0.75});
     const durationKeys = Object.keys(tokens).filter(k =>
       k.startsWith('--duration-'),
@@ -61,8 +61,48 @@ describe('expandMotionScale', () => {
     expect(durationKeys).toHaveLength(6);
   });
 
-  it('maintains ordering: min < base < max', () => {
+  it('produces 9 duration tokens with slow', () => {
+    const tokens = expandMotionScale({
+      fast: 175,
+      medium: 410,
+      slow: 975,
+      ratio: 0.75,
+    });
+    const durationKeys = Object.keys(tokens).filter(k =>
+      k.startsWith('--duration-'),
+    );
+
+    expect(durationKeys).toHaveLength(9);
+  });
+
+  it('computes default slow band', () => {
+    const tokens = expandMotionScale({
+      fast: 175,
+      medium: 410,
+      slow: 975,
+      ratio: 0.75,
+    });
+
+    expect(tokens['--duration-slow-min']).toBe('730ms'); // 975 × 0.75 = 731.25 → 730
+    expect(tokens['--duration-slow']).toBe('975ms');
+    expect(tokens['--duration-slow-max']).toBe('1300ms'); // 975 / 0.75 = 1300 → 1300
+  });
+
+  it('does not emit slow tokens when slow is omitted', () => {
     const tokens = expandMotionScale({fast: 175, medium: 410, ratio: 0.75});
+
+    expect(tokens['--duration-slow-min']).toBeUndefined();
+    expect(tokens['--duration-slow']).toBeUndefined();
+    expect(tokens['--duration-slow-max']).toBeUndefined();
+  });
+
+  it('maintains ordering: min < base < max', () => {
+    const tokens = expandMotionScale({
+      fast: 175,
+      medium: 410,
+      slow: 975,
+      ratio: 0.75,
+    });
 
     const fastMin = parseInt(tokens['--duration-fast-min']);
     const fast = parseInt(tokens['--duration-fast']);
@@ -70,11 +110,17 @@ describe('expandMotionScale', () => {
     const medMin = parseInt(tokens['--duration-medium-min']);
     const med = parseInt(tokens['--duration-medium']);
     const medMax = parseInt(tokens['--duration-medium-max']);
+    const slowMin = parseInt(tokens['--duration-slow-min']);
+    const slow = parseInt(tokens['--duration-slow']);
+    const slowMax = parseInt(tokens['--duration-slow-max']);
 
     expect(fastMin).toBeLessThan(fast);
     expect(fast).toBeLessThan(fastMax);
     expect(medMin).toBeLessThan(med);
     expect(med).toBeLessThan(medMax);
     expect(fastMax).toBeLessThan(medMin);
+    expect(medMax).toBeLessThan(slowMin);
+    expect(slowMin).toBeLessThan(slow);
+    expect(slow).toBeLessThan(slowMax);
   });
 });

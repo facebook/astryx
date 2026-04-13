@@ -13,6 +13,9 @@ export type {
   XDSChatComposerDensity,
 } from './XDSChatComposer';
 
+export {XDSChatSendButton} from './XDSChatSendButton';
+export type {XDSChatSendButtonProps} from './XDSChatSendButton';
+
 export {XDSChatComposerAttachments} from './XDSChatComposerAttachments';
 export type {XDSChatComposerAttachmentsProps} from './XDSChatComposerAttachments';
 
@@ -22,10 +25,14 @@ export {
 } from './XDSChatComposerInput';
 export type {
   XDSChatComposerInputProps,
+  XDSChatComposerInputHandle,
   XDSChatComposerToken,
   XDSChatComposerTrigger,
   XDSChatComposerTriggerItem,
 } from './XDSChatComposerInput';
+
+export {XDSChatTokenizedText} from './XDSChatTokenizedText';
+export type {XDSChatTokenizedTextProps} from './XDSChatTokenizedText';
 
 export {XDSChatMessageList} from './XDSChatMessageList';
 export type {XDSChatMessageListProps} from './XDSChatMessageList';
@@ -51,7 +58,39 @@ export type {
   XDSChatSystemMessageVariant,
 } from './XDSChatSystemMessage';
 
-export {useAutoScroll} from './useAutoScroll';
-export type {UseAutoScrollOptions, UseAutoScrollReturn} from './useAutoScroll';
+export {useXDSChatStreamScroll} from './useXDSChatStreamScroll';
+export type {
+  UseXDSChatStreamScrollOptions,
+  UseXDSChatStreamScrollReturn,
+} from './useXDSChatStreamScroll';
+export {useXDSChatNewMessages} from './useXDSChatNewMessages';
+export type {
+  UseXDSChatNewMessagesOptions,
+  UseXDSChatNewMessagesReturn,
+} from './useXDSChatNewMessages';
 
+export {useXDSChatPasteAsToken} from './useXDSChatPasteAsToken';
+export type {
+  UseXDSChatPasteAsTokenOptions,
+  UseXDSChatPasteAsTokenReturn,
+} from './useXDSChatPasteAsToken';
+export {useXDSChatComposerTokens} from './useXDSChatComposerTokens';
+export type {
+  UseXDSChatComposerTokensOptions,
+  UseXDSChatComposerTokensReturn,
+  TokenPortal,
+} from './useXDSChatComposerTokens';
 export type {XDSChatMessageSender, XDSChatDensity} from './XDSChatContext';
+export {useXDSChatLayoutContext} from './XDSChatContext';
+
+export {XDSChatToolCalls} from './XDSChatToolCalls';
+export type {
+  XDSChatToolCallsProps,
+  XDSChatToolCallItem,
+  XDSChatToolCallStatus,
+} from './XDSChatToolCalls';
+
+export {XDSChatLayout} from './XDSChatLayout';
+export {XDSChatLayoutScrollButton} from './XDSChatLayoutScrollButton';
+export type {XDSChatLayoutScrollButtonProps} from './XDSChatLayoutScrollButton';
+export type {XDSChatLayoutProps} from './XDSChatLayout';

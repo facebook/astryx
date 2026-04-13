@@ -352,7 +352,10 @@ export function XDSSideNavItem({
 
     // Shared collapsed item styles — used by trigger, link, and button
     const collapsedItemStyles = mergeProps(
-      xdsClassName('side-nav-item'),
+      xdsClassName('side-nav-item', {
+        size,
+        selected: isSelected ? 'selected' : null,
+      }),
       stylex.props(
         navItemStyles.item,
         navItemStyles[size],
@@ -484,7 +487,10 @@ export function XDSSideNavItem({
         onClick={handleClick}
         {...ariaProps}
         {...mergeProps(
-          xdsClassName('side-nav-item'),
+          xdsClassName('side-nav-item', {
+            size,
+            selected: isSelected ? 'selected' : null,
+          }),
           stylex.props(
             navItemStyles.item,
             navItemStyles[size],
@@ -502,7 +508,10 @@ export function XDSSideNavItem({
         disabled={isDisabled}
         {...ariaProps}
         {...mergeProps(
-          xdsClassName('side-nav-item'),
+          xdsClassName('side-nav-item', {
+            size,
+            selected: isSelected ? 'selected' : null,
+          }),
           stylex.props(
             navItemStyles.item,
             navItemStyles[size],

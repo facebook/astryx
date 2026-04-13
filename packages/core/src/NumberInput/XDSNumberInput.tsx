@@ -238,6 +238,10 @@ interface XDSNumberInputPropsBase extends Omit<
    * Callback fired when the user presses the Enter key.
    */
   onEnter?: () => void;
+  /**
+   * Callback fired on keydown events on the input.
+   */
+  onKeyDown?: (e: KeyboardEvent<HTMLInputElement>) => void;
 }
 
 /**
@@ -342,10 +346,12 @@ export function XDSNumberInput({
   onBlur,
   hasClear,
   onEnter,
+  onKeyDown,
   xstyle,
   className,
   style,
   ref,
+  ...rest
 }: XDSNumberInputProps) {
   const id = useId();
   const descriptionID = useId();
@@ -459,8 +465,18 @@ export function XDSNumberInput({
         }
         onEnter?.();
       }
+      onKeyDown?.(e);
     },
-    [pendingInput, value, onChange, min, max, isIntegerOnly, onEnter],
+    [
+      pendingInput,
+      value,
+      onChange,
+      min,
+      max,
+      isIntegerOnly,
+      onEnter,
+      onKeyDown,
+    ],
   );
 
   // Combine refs
@@ -524,6 +540,7 @@ export function XDSNumberInput({
         )}>
         {startIcon && <XDSIcon icon={startIcon} size="sm" color="primary" />}
         <input
+          {...rest}
           ref={setRefs}
           id={id}
           name={htmlName}
@@ -537,6 +554,7 @@ export function XDSNumberInput({
           placeholder={placeholder}
           disabled={isDisabled}
           autoFocus={hasAutoFocus}
+          data-autofocus={hasAutoFocus || undefined}
           min={min ?? undefined}
           max={max ?? undefined}
           step={step ?? undefined}

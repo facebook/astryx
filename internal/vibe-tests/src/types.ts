@@ -10,62 +10,12 @@ export interface Turn {
   evaluation?: Evaluation;
 }
 
-export type EscapeHatchType =
-  | 'hallucination'
-  | 'wrong_component'
-  | 'redundant_css'
-  | 'supplemental_css'
-  | 'wrapper_div'
-  | 'inline_style' // Anti-pattern: should use StyleX instead
-  | 'hardcoded_color' // Anti-pattern: breaks theming
-  | 'hardcoded_spacing' // Anti-pattern: breaks spacing system
-  | 'hardcoded_size' // Acceptable: explicit sizes are often needed
-  | 'custom_animation' // Gap: missing animation support
-  | 'layout_workaround' // Gap: missing layout primitive
-  | 'a11y_click_handler' // Anti-pattern: onClick on non-interactive element
-  | 'hardcoded_typography' // Anti-pattern: raw fontSize/fontWeight/lineHeight/fontFamily instead of tokens
-  | 'hallucinated_typography_token'; // Hallucination: invalid CSS variable like --font-size-*, --font-family-*
-
-export type EscapeHatchSeverity = 'critical' | 'acceptable';
-
-/**
- * Result quality tiers:
- * - gold: Pure XDS, no escape hatches needed
- * - green: Correct components, only acceptable escape hatches
- * - yellow: Minor issues (e.g., missing optional components)
- * - red: Critical failures (hallucinations, wrong components)
- */
-export type ResultTier = 'gold' | 'green' | 'yellow' | 'red';
-
-export interface EscapeHatch {
-  type: EscapeHatchType;
-  severity: EscapeHatchSeverity;
-  detail: string;
-  codeSnippet: string;
-  /** What capability gap does this escape hatch represent? */
-  gap?: string;
-}
-
-/** Suggestion for new component or API to cover escape hatch gaps */
-export interface GapSuggestion {
-  type: 'new_component' | 'new_prop' | 'new_variant' | 'documentation';
-  component?: string;
-  suggestion: string;
-  evidence: string[];
-  frequency: number;
-  effort: EffortEstimate;
-}
-
 export interface Evaluation {
   success: boolean;
-  /** Quality tier: gold (pure XDS), green (acceptable hatches), yellow (minor issues), red (critical) */
-  tier?: ResultTier;
   componentsUsed: string[];
   componentsExpected: string[];
-  /** Escape hatches can be strings (simple descriptions) or structured objects */
-  escapeHatches: (string | EscapeHatch)[];
-  /** Count of acceptable escape hatches (for scoring) */
-  escapeHatchCount?: number;
+  /** Escape hatches — kept for backwards compat with existing result JSON files */
+  escapeHatches: (string | Record<string, unknown>)[];
   failureMode: string | null;
   confusionSignals: string[];
 }
@@ -257,9 +207,18 @@ export interface QualityAssessment {
 }
 
 // ============================================================
-// Universal Evaluation Types (target-neutral, 5 dimensions)
+// Universal Evaluation Types (6 dimensions, 0-100 each)
 // ============================================================
 
+/**
+ * The 6 evaluation dimensions:
+ * - correctness, accessibility, codeQuality, efficiency, maintainability:
+ *   deterministic static analysis of generated code
+ * - design: vision LLM evaluation of rendered screenshots vs ideal reference
+ *   images. Scores layout fidelity, visual hierarchy, spacing, component
+ *   fidelity, and color/theming. Optional — only available when ideal images
+ *   exist and a vision model is configured.
+ */
 export type UniversalDimension =
   | 'correctness'
   | 'accessibility'

@@ -92,11 +92,7 @@ export const docs = {
 </XDSCheckboxList>`,
     },
   ],
-  theming: {
-    targets: [
-      {className: 'xds-checkbox-list-item'},
-    ],
-  },
+
   notes: [
     'XDSCheckboxList composes XDSField (label, description, status) and XDSList (density, dividers)',
     'XDSCheckboxListItem can be used inside XDSCheckboxList (collection mode) or XDSList (standalone mode)',
@@ -256,6 +252,18 @@ export const docs = {
       ],
     },
   ],
+  usage: {
+    summary: 'A checkbox group for multi-value selection from a list of options.',
+    content: `## When to use
+
+- Users need to select multiple options from a set.
+- All options should be visible at once.
+
+## When NOT to use
+
+- Only one option can be selected (use RadioList instead).
+- The option list is very long (consider MultiSelector instead).`,
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */
@@ -345,11 +353,7 @@ export const docsZh = {
 </XDSCheckboxList>`,
     },
   ],
-  theming: {
-    targets: [
-      {className: 'xds-checkbox-list-item'},
-    ],
-  },
+
   notes: [
     'XDSCheckboxList 组合 XDSField（标签、描述、状态）和 XDSList（密度、分隔线）',
     'XDSCheckboxListItem 可在 XDSCheckboxList（集合模式）或 XDSList（独立模式）内使用',

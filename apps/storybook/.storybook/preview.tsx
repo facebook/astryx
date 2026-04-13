@@ -1,6 +1,6 @@
 import type {Preview, Decorator} from '@storybook/react';
 import * as React from 'react';
-import {XDSTheme} from '@xds/core';
+import {XDSTheme, XDSLayerProvider} from '@xds/core';
 import {defaultTheme} from '@xds/theme-default';
 import {neutralTheme} from '@xds/theme-neutral';
 import {brutalistTheme} from '@xds/theme-brutalist';
@@ -54,13 +54,15 @@ const withXDSTheme: Decorator = (Story, context) => {
 
   return (
     <XDSTheme theme={theme} mode={mode}>
-      <div
-        style={{
-          backgroundColor: 'var(--color-background-surface)',
-          padding: 16,
-        }}>
-        <Story />
-      </div>
+      <XDSLayerProvider>
+        <div
+          style={{
+            backgroundColor: 'var(--color-background-surface)',
+            padding: 16,
+          }}>
+          <Story />
+        </div>
+      </XDSLayerProvider>
     </XDSTheme>
   );
 };

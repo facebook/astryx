@@ -65,6 +65,18 @@ export const docs = {
     'Not focusable — intended as a decorative indicator only.',
     'isPulsing animation respects prefers-reduced-motion: reduce.',
   ],
+  usage: {
+    summary: 'A small dot indicating status through semantic colors, often paired with a text label.',
+    content: `## When to use
+
+- Indicating status with semantic colors (e.g. active, inactive, warning, error).
+- Pairing with text labels to provide visual status cues.
+
+## Best practices
+
+- Do: Pair with a text label to ensure the status is accessible and clear.
+- Don't: Rely on color alone \u2014 always provide a text label for context.`,
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */

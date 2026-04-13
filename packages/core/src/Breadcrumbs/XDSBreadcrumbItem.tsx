@@ -2,7 +2,7 @@
 
 /**
  * @file XDSBreadcrumbItem.tsx
- * @input Uses React useContext, stylex, theme tokens, BreadcrumbContext
+ * @input Uses React useContext/useRef/useEffect, stylex, theme tokens, BreadcrumbContext
  * @output Exports XDSBreadcrumbItem component and XDSBreadcrumbItemProps
  * @position Individual breadcrumb item; used inside XDSBreadcrumbs
  *
@@ -13,7 +13,13 @@
  * - /apps/storybook/stories/Breadcrumbs.stories.tsx
  */
 
-import {useContext, type ReactNode, type MouseEvent} from 'react';
+import {
+  useContext,
+  useRef,
+  useEffect,
+  type ReactNode,
+  type MouseEvent,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars, typeScaleVars} from '../theme/tokens.stylex';
 import {BreadcrumbCtx} from './XDSBreadcrumbs';
@@ -70,6 +76,10 @@ const itemStyles = stylex.create({
     alignItems: 'center',
     gap: spacingVars['--spacing-1'],
     margin: 0,
+    '--separator-display': {
+      default: 'flex',
+      ':first-child': 'none',
+    },
   },
   defaultSize: {
     fontSize: typeScaleVars['--text-body-size'],
@@ -117,6 +127,13 @@ const itemStyles = stylex.create({
     alignItems: 'center',
     flexShrink: 0,
   },
+  separator: {
+    display: 'var(--separator-display)',
+    alignItems: 'center',
+    color: colorVars['--color-text-secondary'],
+    paddingBlock: spacingVars['--spacing-1'],
+    userSelect: 'none',
+  },
 });
 
 // =============================================================================
@@ -126,6 +143,10 @@ const itemStyles = stylex.create({
 /**
  * An individual breadcrumb item. Renders as a link (`<a>`) or a span
  * depending on whether it represents the current page.
+ *
+ * Each item renders its own leading separator, hidden on :first-child via
+ * CSS. Auto-current detection uses a post-render effect that checks the
+ * DOM — no React child introspection.
  *
  * @example
  * ```
@@ -143,9 +164,37 @@ export function XDSBreadcrumbItem({
   'data-testid': testId,
 }: XDSBreadcrumbItemProps) {
   const ctx = useContext(BreadcrumbCtx);
-  const isCurrent = isCurrentProp ?? ctx.isAutoLast;
   const LinkComponent = useXDSLinkComponent(as);
   const isSupporting = ctx.variant === 'supporting';
+  const liRef = useRef<HTMLLIElement>(null);
+
+  const isCurrent = isCurrentProp === true;
+  const isAutoCandidate = isCurrentProp == null;
+
+  // Auto-detect: if no sibling has aria-current="page" and this is the last
+  // non-separator item, set aria-current on our content element.
+  // Runs as useEffect (not layout) — only sets an aria attribute, no visual change.
+  useEffect(() => {
+    if (!isAutoCandidate) return;
+
+    const li = liRef.current;
+    if (!li) return;
+    const ol = li.parentElement;
+    if (!ol) return;
+
+    // All breadcrumb items (li without aria-hidden are items, with aria-hidden are separators — but we no longer have separator lis)
+    const items = Array.from(ol.children) as HTMLElement[];
+    const isLast = items.length > 0 && items[items.length - 1] === li;
+    const hasExplicit = ol.querySelector('[aria-current="page"]');
+
+    if (isLast && !hasExplicit) {
+      li.setAttribute('aria-current', 'page');
+    }
+
+    return () => {
+      li.removeAttribute('aria-current');
+    };
+  });
 
   const content = (
     <>
@@ -157,6 +206,7 @@ export function XDSBreadcrumbItem({
   if (isCurrent) {
     return (
       <li
+        ref={liRef}
         {...mergeProps(
           xdsClassName('breadcrumb-item'),
           stylex.props(
@@ -165,6 +215,9 @@ export function XDSBreadcrumbItem({
           ),
         )}
         data-testid={testId}>
+        <span aria-hidden="true" {...stylex.props(itemStyles.separator)}>
+          {ctx.separator}
+        </span>
         <span
           {...stylex.props(
             itemStyles.contentWrapper,
@@ -180,8 +233,11 @@ export function XDSBreadcrumbItem({
     );
   }
 
+  // Items without isCurrent set render as links (if href) or plain spans.
+  // The effect handles adding aria-current for auto-last detection.
   return (
     <li
+      ref={liRef}
       {...mergeProps(
         xdsClassName('breadcrumb-item'),
         stylex.props(
@@ -190,15 +246,31 @@ export function XDSBreadcrumbItem({
         ),
       )}
       data-testid={testId}>
-      <LinkComponent
-        href={href}
-        onClick={onClick}
-        {...stylex.props(
-          itemStyles.link,
-          isSupporting ? itemStyles.supportingLink : itemStyles.defaultLink,
-        )}>
-        {content}
-      </LinkComponent>
+      <span aria-hidden="true" {...stylex.props(itemStyles.separator)}>
+        {ctx.separator}
+      </span>
+      {href != null ? (
+        <LinkComponent
+          href={href}
+          onClick={onClick}
+          {...stylex.props(
+            itemStyles.link,
+            isSupporting ? itemStyles.supportingLink : itemStyles.defaultLink,
+          )}>
+          {content}
+        </LinkComponent>
+      ) : (
+        <span
+          {...stylex.props(
+            itemStyles.contentWrapper,
+            itemStyles.current,
+            isSupporting
+              ? itemStyles.supportingCurrent
+              : itemStyles.defaultCurrent,
+          )}>
+          {content}
+        </span>
+      )}
     </li>
   );
 }

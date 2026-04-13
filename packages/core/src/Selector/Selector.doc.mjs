@@ -238,6 +238,33 @@ export const docs = {
       ],
     },
   ],
+  usage: {
+    summary: 'Gives users a choice between multiple items within a dropdown list.',
+    content: `## When to use
+
+- Presenting 3\u201320 options in forms or settings.
+- Capturing or assigning a value from a predefined list.
+- For 20+ options, use a searchable Selector variant.
+
+## When NOT to use
+
+- Triggering actions (use Dropdown Menu instead).
+- Selecting with a default action (use Split Button instead).
+
+## Best practices
+
+- Do: Use to capture or assign values in forms, wizards, or settings.
+- Don't: Use for triggering actions \u2014 use Dropdown Menu instead.
+- Supports error, success, warning, and disabled states.`,
+    anatomy: [
+      {name: 'Label', required: false, description: 'Text label displayed above the selector.'},
+      {name: 'Placeholder', required: false, description: 'Hint text shown when no value is selected.'},
+      {name: 'Description', required: false, description: 'Helper text providing additional context.'},
+      {name: 'Left Icon', required: false, description: 'Icon displayed to the left of the selected value.'},
+      {name: 'Value', required: true, description: 'The currently selected item displayed in the selector.'},
+      {name: 'List', required: true, description: 'The dropdown list of selectable options.'},
+    ],
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */

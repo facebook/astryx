@@ -874,6 +874,7 @@ export default function FileExplorerPage() {
               isDisabled={selectedPath.length === 0}
               label="Go back"
               aria-label="Go back"
+              isIconOnly
             />
             <XDSButton
               variant="ghost"
@@ -882,6 +883,7 @@ export default function FileExplorerPage() {
               isDisabled
               label="Go forward"
               aria-label="Go forward"
+              isIconOnly
             />
             <XDSText type="label" style={{marginLeft: 6}}>
               {currentFolderName}
@@ -927,6 +929,7 @@ export default function FileExplorerPage() {
               icon={<GroupIcon />}
               label="Group"
               aria-label="Group"
+              isIconOnly
             />
             <XDSButton
               variant="ghost"
@@ -934,6 +937,7 @@ export default function FileExplorerPage() {
               icon={<ShareIcon />}
               label="Share"
               aria-label="Share"
+              isIconOnly
             />
             <XDSButton
               variant="ghost"
@@ -941,6 +945,7 @@ export default function FileExplorerPage() {
               icon={<TagIcon />}
               label="Tags"
               aria-label="Tags"
+              isIconOnly
             />
             <XDSButton
               variant="ghost"
@@ -948,6 +953,7 @@ export default function FileExplorerPage() {
               icon={<MoreIcon />}
               label="More"
               aria-label="More"
+              isIconOnly
             />
             <XDSButton
               variant="ghost"
@@ -955,13 +961,12 @@ export default function FileExplorerPage() {
               icon={<SearchIcon />}
               label="Search"
               aria-label="Search"
+              isIconOnly
             />
           </XDSHStack>
         }
       />
-
       <XDSDivider />
-
       {/* Columns */}
       <XDSHStack style={inlineStyles.body}>
         {columns.map((col, colIndex) => {

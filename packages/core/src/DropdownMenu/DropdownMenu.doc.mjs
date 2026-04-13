@@ -116,7 +116,7 @@ export const docs = {
   ],
   notes: [
     'Uses `useXDSLayer` with `mode: "context"` for CSS anchor positioning',
-    'Uses `XDSButton` internally — chevron is passed via `endContent` and auto-hidden for icon-only buttons',
+    'Uses `XDSButton` internally — chevron is passed via `endContent` and auto-hidden when `isIconOnly` is true',
     'Items are tracked via the `items` prop to enable keyboard navigation',
     'Light dismiss is enabled by default (clicking outside closes menu)',
   ],
@@ -333,6 +333,13 @@ export const docs = {
       ],
     },
   ],
+  usage: {
+    summary: 'Shows options for actions in a dropdown list.',
+    content: `## When to use
+
+- To present different action options as a next step in a process.
+- As sub-navigation to guide users to a next destination.`,
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */

@@ -60,5 +60,17 @@ export default tseslint.config(
     files: ["packages/core/src/**/*.{ts,tsx}"],
     ignores: ["packages/core/src/theme/**"],
     ...xdsConfig,
+    rules: {
+      ...xdsConfig.rules,
+      // Temporarily allow Children.* in files that need architectural fixes.
+      // Tracked: OverflowList, MetadataList, Carousel need data-driven APIs.
+      '@xds/no-react-introspection': ['error', {
+        allowFiles: [
+          'OverflowList/XDSOverflowList',
+          'MetadataList/XDSMetadataList',
+          'Carousel/XDSCarousel',
+        ],
+      }],
+    },
   },
 );

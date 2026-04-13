@@ -116,7 +116,6 @@ export default function LoginSimple() {
           Product Inc.
         </XDSText>
       </XDSVStack>
-
       {/* Card */}
       <XDSCard padding={8} width={400}>
         <XDSVStack gap={4}>
@@ -199,16 +198,14 @@ export default function LoginSimple() {
               label="Login with Apple"
               variant="secondary"
               icon={<AppleIcon />}
-              xstyle={styles.fullWidth}>
-              Login with Apple
-            </XDSButton>
+              xstyle={styles.fullWidth}
+            />
             <XDSButton
               label="Login with Google"
               variant="secondary"
               icon={<GoogleIcon />}
-              xstyle={styles.fullWidth}>
-              Login with Google
-            </XDSButton>
+              xstyle={styles.fullWidth}
+            />
           </XDSVStack>
 
           {/* Sign up link */}
@@ -222,7 +219,6 @@ export default function LoginSimple() {
           </XDSVStack>
         </XDSVStack>
       </XDSCard>
-
       {/* Terms — outside card */}
       <div style={{textAlign: 'center', maxWidth: 400}}>
         <XDSText type="supporting" color="secondary">

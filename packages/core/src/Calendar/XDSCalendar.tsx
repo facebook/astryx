@@ -405,6 +405,7 @@ export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
           icon={<XDSIcon icon="chevronLeft" size="sm" color="inherit" />}
           onClick={() => navigateMonth(-1)}
           isDisabled={!canNavigatePrevious}
+          isIconOnly
         />
 
         <span {...stylex.props(calendarStyles.monthYearLabel)}>
@@ -417,9 +418,9 @@ export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
           icon={<XDSIcon icon="chevronRight" size="sm" color="inherit" />}
           onClick={() => navigateMonth(1)}
           isDisabled={!canNavigateNext}
+          isIconOnly
         />
       </div>
-
       {/* Month grids */}
       <div {...stylex.props(calendarStyles.monthsContainer)}>
         {visibleMonths.map(month => (

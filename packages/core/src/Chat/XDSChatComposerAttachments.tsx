@@ -6,7 +6,7 @@
  * @output Exports XDSChatComposerAttachments component
  * @position Layout container for attachment items inside XDSChatComposer.
  *   Supports expanded (full content) and collapsed (count + label) states
- *   with animated grid-template-rows transition.
+ *   with fade animation and grid-template-rows height transition.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Chat/index.ts (exports)
@@ -89,34 +89,36 @@ const styles = stylex.create({
     borderTopRightRadius: radiusVars['--radius-page'],
   },
 
-  // Toggle row — click target area for collapse/expand
+  // Toggle row — both the bar handle and badge+label live in the
+  // same grid cell so they crossfade without layout shift.
   toggleRow: {
-    display: 'flex',
+    display: 'grid',
+    gridTemplateColumns: '1fr',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingBlock: spacingVars['--spacing-2'],
+    height: spacingVars['--spacing-5'],
     paddingInline: spacingVars['--spacing-4'],
-    marginBlockStart: `calc(-1 * ${spacingVars['--spacing-2']})`,
     marginInline: `calc(-1 * ${spacingVars['--spacing-4']})`,
     cursor: 'pointer',
     userSelect: 'none',
   },
-  toggleCollapsed: {
-    justifyContent: 'flex-start',
-    paddingBlockEnd: 0,
-  },
+  toggleCollapsed: {},
   toggleContent: {
+    gridRow: 1,
+    gridColumn: 1,
+    justifySelf: 'start',
     display: 'inline-flex',
     alignItems: 'center',
+    height: spacingVars['--spacing-5'],
     gap: spacingVars['--spacing-2'],
     borderRadius: radiusVars['--radius-full'],
     opacity: 1,
     transitionProperty: 'opacity',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
-    '@starting-style': {
-      opacity: 0,
-    },
+  },
+  toggleContentHidden: {
+    opacity: 0,
+    pointerEvents: 'none' as const,
   },
   collapseLabel: {
     color: {
@@ -126,12 +128,16 @@ const styles = stylex.create({
       },
     },
     fontSize: typeScaleVars['--text-body-size'],
-    lineHeight: typeScaleVars['--text-body-leading'],
+    lineHeight: spacingVars['--spacing-5'],
     transitionProperty: 'color',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
   },
   collapseBarHandle: {
+    gridRow: 1,
+    gridColumn: 1,
+    justifySelf: 'center',
+    alignSelf: 'start',
     width: '20px',
     height: '2px',
     borderRadius: radiusVars['--radius-full'],
@@ -145,12 +151,14 @@ const styles = stylex.create({
     transitionProperty: 'background-color, opacity',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
-    '@starting-style': {
-      opacity: 0,
-    },
+  },
+  collapseBarHandleHidden: {
+    opacity: 0,
+    pointerEvents: 'none' as const,
   },
 
-  // Animated content area
+  // Animated content area — height collapses via grid-template-rows,
+  // items stay in place and fade in/out (no translateY slide).
   contentGrid: {
     display: 'grid',
     gridTemplateRows: '1fr',
@@ -165,15 +173,18 @@ const styles = stylex.create({
     minHeight: 0,
     display: 'flex',
     flexWrap: 'wrap',
-    gap: spacingVars['--spacing-2'],
+    gap: spacingVars['--spacing-1'],
     alignItems: 'flex-start',
-    transform: 'translateY(0)',
-    transitionProperty: 'transform',
+    opacity: 1,
+    transitionProperty: 'opacity',
     transitionDuration: durationVars['--duration-medium'],
+    transitionDelay: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
   },
   contentCollapsed: {
-    transform: `translateY(calc(100% + ${spacingVars['--spacing-3']} + ${radiusVars['--radius-page']}))`,
+    opacity: 0,
+    transitionDelay: '0ms',
+    transitionDuration: durationVars['--duration-fast'],
   },
 });
 
@@ -224,38 +235,31 @@ export function XDSChatComposerAttachments({
             isCollapsed && styles.toggleCollapsed,
             stylex.defaultMarker(),
           )}
-          onClick={toggle}>
-          {isCollapsed ? (
-            <div
-              role="button"
-              tabIndex={0}
-              aria-expanded={false}
-              aria-label={`Expand ${label}`}
-              onKeyDown={e => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  toggle();
-                }
-              }}
-              {...stylex.props(styles.toggleContent)}>
-              <XDSBadge variant="neutral" label={count} />
-              <span {...stylex.props(styles.collapseLabel)}>{label}</span>
-            </div>
-          ) : (
-            <div
-              role="button"
-              tabIndex={0}
-              aria-expanded={true}
-              aria-label={`Collapse ${label}`}
-              onKeyDown={e => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  toggle();
-                }
-              }}
-              {...stylex.props(styles.collapseBarHandle)}
-            />
-          )}
+          role="button"
+          tabIndex={0}
+          aria-expanded={!isCollapsed}
+          aria-label={isCollapsed ? `Expand ${label}` : `Collapse ${label}`}
+          onClick={toggle}
+          onKeyDown={e => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              toggle();
+            }
+          }}>
+          <div
+            {...stylex.props(
+              styles.toggleContent,
+              !isCollapsed && styles.toggleContentHidden,
+            )}>
+            <XDSBadge variant="neutral" label={count} />
+            <span {...stylex.props(styles.collapseLabel)}>{label}</span>
+          </div>
+          <div
+            {...stylex.props(
+              styles.collapseBarHandle,
+              isCollapsed && styles.collapseBarHandleHidden,
+            )}
+          />
         </div>
       )}
 

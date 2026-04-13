@@ -54,6 +54,7 @@ export const Default: Story = {
           icon={<XDSIcon icon="menu" color="inherit" />}
           variant="ghost"
           onClick={() => setIsOpen(true)}
+          isIconOnly
         />
         <XDSMobileNav
           isOpen={isOpen}
@@ -199,6 +200,7 @@ export const ResponsivePattern: Story = {
             icon={<XDSIcon icon="menu" color="inherit" />}
             variant="ghost"
             onClick={() => setDrawerOpen(true)}
+            isIconOnly
           />
           <XDSMobileNav
             isOpen={drawerOpen}
@@ -312,6 +314,7 @@ export const WithoutTitle: Story = {
           icon={<XDSIcon icon="menu" color="inherit" />}
           variant="ghost"
           onClick={() => setIsOpen(true)}
+          isIconOnly
         />
         <XDSMobileNav isOpen={isOpen} onOpenChange={open => setIsOpen(open)}>
           <XDSSideNavSection title="Main">

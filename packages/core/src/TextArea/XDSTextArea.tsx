@@ -66,7 +66,6 @@ const styles = stylex.create({
       color: colorVars['--color-text-secondary'],
     },
     resize: 'vertical',
-    minHeight: '80px',
   },
   textareaDisabled: {
     cursor: 'not-allowed',
@@ -283,6 +282,7 @@ export function XDSTextArea({
   className,
   style,
   ref,
+  ...rest
 }: XDSTextAreaProps) {
   const id = useId();
   const descriptionID = useId();
@@ -367,6 +367,7 @@ export function XDSTextArea({
         )}>
         {startIcon && <XDSIcon icon={startIcon} size="sm" color="primary" />}
         <textarea
+          {...rest}
           ref={ref}
           id={id}
           name={htmlName}
@@ -380,6 +381,7 @@ export function XDSTextArea({
           disabled={effectivelyDisabled}
           spellCheck={hasSpellCheck}
           autoFocus={hasAutoFocus}
+          data-autofocus={hasAutoFocus || undefined}
           aria-describedby={ariaDescribedBy}
           aria-required={isRequired && !isOptional ? 'true' : undefined}
           aria-invalid={

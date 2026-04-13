@@ -48,16 +48,19 @@ export const Default: Story = {
           label="Search"
           variant="ghost"
           icon={<MagnifyingGlassIcon style={{width: 16, height: 16}} />}
+          isIconOnly
         />
         <XDSButton
           label="Notifications"
           variant="ghost"
           icon={<BellIcon style={{width: 16, height: 16}} />}
+          isIconOnly
         />
         <XDSButton
           label="Profile"
           variant="ghost"
           icon={<UserCircleIcon style={{width: 16, height: 16}} />}
+          isIconOnly
         />
       </>
     ),
@@ -88,6 +91,7 @@ export const WithLogo: Story = {
         label="Profile"
         variant="ghost"
         icon={<UserCircleIcon style={{width: 16, height: 16}} />}
+        isIconOnly
       />
     ),
   },
@@ -155,11 +159,13 @@ export const CenteredNavigation: Story = {
             label="Search"
             variant="ghost"
             icon={<MagnifyingGlassIcon style={{width: 16, height: 16}} />}
+            isIconOnly
           />
           <XDSButton
             label="Profile"
             variant="ghost"
             icon={<UserCircleIcon style={{width: 16, height: 16}} />}
+            isIconOnly
           />
         </>
       }
@@ -201,6 +207,7 @@ export const CenteredWithStartContent: Story = {
           label="Profile"
           variant="ghost"
           icon={<UserCircleIcon style={{width: 16, height: 16}} />}
+          isIconOnly
         />
       }
     />
@@ -274,11 +281,13 @@ export const FullExample: Story = {
             label="Search"
             variant="ghost"
             icon={<MagnifyingGlassIcon style={{width: 16, height: 16}} />}
+            isIconOnly
           />
           <XDSButton
             label="Notifications"
             variant="ghost"
             icon={<BellIcon style={{width: 16, height: 16}} />}
+            isIconOnly
           />
           <XDSButton label="Upgrade" variant="primary" />
         </>

@@ -218,6 +218,18 @@ export const docs = {
     'Interaction is blocked during busy state (loading or pending async action) to prevent double-input.',
     'Character counter is connected to the textarea via aria-describedby and uses aria-live="polite" for screen reader announcements.',
   ],
+  usage: {
+    summary: 'A multi-line text input for collecting longer user input.',
+    content: `## When to use
+
+- Users need to enter multiple lines of text.
+- Comments, descriptions, or longer-form content entry.
+
+## When NOT to use
+
+- Single-line input (use TextInput instead).
+- Rich text with formatting (use a rich text editor instead).`,
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */

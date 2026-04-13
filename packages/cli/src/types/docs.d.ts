@@ -6,7 +6,6 @@
  * xds --json docs                           -> docs.list
  * xds --json docs <topic>                   -> docs.detail
  * xds --json docs <topic> <section>         -> docs.detail.section
- * xds --json docs <topic> (legacy .md)      -> markdown (CLIMarkdownResponse)
  * (unknown topic/section)                   -> CLIError
  */
 

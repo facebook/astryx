@@ -14,6 +14,7 @@
 
 import {useCallback, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
+import type {StyleXStyles} from '@stylexjs/stylex';
 import {
   colorVars,
   spacingVars,
@@ -57,6 +58,26 @@ export interface XDSTabProps {
    * Icon element shown when tab is selected. Falls back to `icon` if not provided.
    */
   selectedIcon?: ReactNode;
+  /**
+   * StyleX styles created via `stylex.create()`. Merged with the component's
+   * base styles inside a single `stylex.props()` call for optimal deduplication.
+   *
+   * @example
+   * ```
+   * const overrides = stylex.create({ root: { paddingInline: 16 } });
+   * <XDSTab xstyle={overrides.root} ... />
+   * ```
+   */
+  xstyle?: StyleXStyles;
+  /**
+   * CSS class name(s) appended to the root element.
+   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
+   */
+  className?: string;
+  /**
+   * Inline styles to apply to the root element.
+   */
+  style?: React.CSSProperties;
 }
 
 // =============================================================================
@@ -98,36 +119,30 @@ const styles = stylex.create({
     color: colorVars['--color-text-accent'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
   },
-  underlineSelected: {
-    '::after': {
-      content: '""',
-      position: 'absolute',
-      bottom: 0,
-      left: spacingVars['--spacing-3'],
-      right: spacingVars['--spacing-3'],
-      height: '2px',
-      backgroundColor: colorVars['--color-accent'],
-      borderRadius: radiusVars['--radius-full'],
-    },
-  },
-  hoverUnderline: {
+  indicator: {
     position: 'absolute',
     bottom: 0,
     left: spacingVars['--spacing-3'],
     right: spacingVars['--spacing-3'],
     height: '2px',
-    backgroundColor: colorVars['--color-border'],
     borderRadius: radiusVars['--radius-full'],
+    pointerEvents: 'none',
+    transitionProperty: 'opacity, background-color',
+    transitionDuration: durationVars['--duration-fast'],
+    transitionTimingFunction: easeVars['--ease-standard'],
+  },
+  indicatorSelected: {
+    backgroundColor: colorVars['--color-accent'],
+    opacity: 1,
+  },
+  indicatorUnselected: {
+    backgroundColor: colorVars['--color-border'],
     opacity: {
       default: 0,
       [stylex.when.ancestor(':hover')]: {
         '@media (hover: hover)': 1,
       },
     },
-    transitionProperty: 'opacity',
-    transitionDuration: durationVars['--duration-fast'],
-    transitionTimingFunction: easeVars['--ease-standard'],
-    pointerEvents: 'none',
   },
   icon: {
     display: 'inline-flex',
@@ -182,6 +197,9 @@ export function XDSTab({
   href,
   icon,
   selectedIcon,
+  xstyle,
+  className,
+  style,
 }: XDSTabProps) {
   const tabListCtx = useXDSTabListContext();
   const LinkComponent = useXDSLinkComponent(as);
@@ -203,20 +221,34 @@ export function XDSTab({
   const sharedProps = {
     'aria-current': isSelected ? ('page' as const) : undefined,
     ...mergeProps(
-      xdsClassName('tab'),
+      xdsClassName('tab', {
+        selected: isSelected ? 'selected' : null,
+      }),
       stylex.props(
         styles.base,
         sizeStyles[size],
         isSelected && styles.selected,
-        isSelected && styles.underlineSelected,
         !isSelected && stylex.defaultMarker(),
+        xstyle,
       ),
+      className,
+      style,
     ),
   };
 
-  const hoverUnderlineElement = !isSelected ? (
-    <span {...stylex.props(styles.hoverUnderline)} />
-  ) : null;
+  const indicatorElement = (
+    <span
+      {...mergeProps(
+        xdsClassName('tab-indicator', {
+          selected: isSelected ? 'selected' : null,
+        }),
+        stylex.props(
+          styles.indicator,
+          isSelected ? styles.indicatorSelected : styles.indicatorUnselected,
+        ),
+      )}
+    />
+  );
 
   const labelElement = (
     <span {...stylex.props(styles.labelContainer)}>
@@ -232,7 +264,7 @@ export function XDSTab({
       <LinkComponent href={href} onClick={handleSelect} {...sharedProps}>
         {iconElement}
         {labelElement}
-        {hoverUnderlineElement}
+        {indicatorElement}
       </LinkComponent>
     );
   }
@@ -241,7 +273,7 @@ export function XDSTab({
     <button type="button" onClick={handleSelect} {...sharedProps}>
       {iconElement}
       {labelElement}
-      {hoverUnderlineElement}
+      {indicatorElement}
     </button>
   );
 }

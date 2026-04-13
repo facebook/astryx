@@ -111,40 +111,35 @@ export function discoverComponents(coreDir) {
 }
 
 /**
- * Merge a TranslationDoc overlay onto a base ComponentDoc.
- * Replaces prose fields (description, features, notes, accessibility, keyboard,
- * prop descriptions) while keeping structure (props, examples, types, defaults).
+ * Find the .doc.mjs file for a component.
+ * For sub-components (e.g. StackItem), returns the parent's .doc.mjs
+ * if the sub-component is documented there.
  */
 export function findComponentReadme(coreDir, name) {
   const srcDir = path.join(coreDir, 'src');
-  // Preferred: {Name}.doc.mjs, then README.md
-  const docNames = [`${name}.doc.mjs`, 'README.md'];
+  const exactDoc = `${name}.doc.mjs`;
 
-  for (const docName of docNames) {
-    // Direct match: src/{name}/{Name}.doc.mjs (or README.md)
-    const direct = path.join(srcDir, name, docName);
-    if (fs.existsSync(direct)) return direct;
-  }
+  // Direct match: src/{name}/{Name}.doc.mjs
+  const direct = path.join(srcDir, name, exactDoc);
+  if (fs.existsSync(direct)) return direct;
 
-  // Nested match: src/*/{name}/{Name}.doc.mjs (or README.md)
+  // Nested match: src/*/{name}/{Name}.doc.mjs
   const entries = fs.readdirSync(srcDir, {withFileTypes: true});
-  for (const docName of docNames) {
-    for (const entry of entries) {
-      if (!entry.isDirectory()) continue;
-      const nested = path.join(srcDir, entry.name, name, docName);
-      if (fs.existsSync(nested)) return nested;
-    }
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    const nested = path.join(srcDir, entry.name, name, exactDoc);
+    if (fs.existsSync(nested)) return nested;
   }
 
-  // Fallback: find the directory containing XDS{name}.tsx,
-  // then return the doc file in that directory or nearest parent
+  // Sub-component fallback: find the source file, then walk up
+  // looking for any .doc.mjs in the same or parent directories
   const sourcePath = findComponentSource(coreDir, name);
   if (sourcePath) {
     let dir = path.dirname(sourcePath);
     while (dir.startsWith(srcDir)) {
-      for (const docName of docNames) {
-        const docFile = path.join(dir, docName);
-        if (fs.existsSync(docFile)) return docFile;
+      const dirEntries = fs.readdirSync(dir);
+      for (const f of dirEntries) {
+        if (f.endsWith('.doc.mjs')) return path.join(dir, f);
       }
       dir = path.dirname(dir);
     }

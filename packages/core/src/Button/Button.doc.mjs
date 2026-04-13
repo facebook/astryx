@@ -23,7 +23,7 @@ export const docs = {
       name: 'label',
       type: 'string',
       description:
-        'Accessible label; used as aria-label for icon-only buttons.',
+        'Accessible label. Rendered as visible text by default; used as aria-label when isIconOnly is true.',
       required: true,
     },
     {
@@ -75,19 +75,26 @@ export const docs = {
       name: 'icon',
       type: 'ReactNode',
       description:
-        'Icon element. When provided without children the button renders as a square icon-only button.',
+        'Icon element rendered before the label text.',
+    },
+    {
+      name: 'isIconOnly',
+      type: 'boolean',
+      description:
+        'When true, renders as a square icon-only button with label as aria-label. Requires icon.',
+      default: 'false',
     },
     {
       name: 'children',
       type: 'ReactNode',
       description:
-        'Button content. When provided alongside icon, the text is rendered next to the icon.',
+        'Optional visible content. When provided, rendered instead of label as the visible text.',
     },
     {
       name: 'endContent',
       type: 'ReactElement<XDSIconProps> | ReactElement<XDSBadgeProps>',
       description:
-        'Trailing icon or badge rendered after the label. Only accepts <XDSIcon> or <XDSBadge>. Ignored for icon-only buttons. Color is inherited from the button variant.',
+        'Trailing icon or badge rendered after the label. Ignored when isIconOnly is true. Color is inherited from the button variant.',
     },
     {
       name: 'tooltip',
@@ -127,16 +134,15 @@ export const docs = {
     },
     {
       label: 'Icon-only button',
-      code: `// Pass \`icon\` without \`children\` — \`label\` becomes the aria-label
-<XDSButton label="Settings" icon={<GearIcon />} variant="ghost" />`,
+      code: '<XDSButton label="Settings" icon={<GearIcon />} variant="ghost" isIconOnly />',
     },
     {
       label: 'Icon-only with emoji content',
-      code: '<XDSButton label="Select rocket emoji" icon={<span>🚀</span>} variant="ghost" size="sm" />',
+      code: '<XDSButton label="Select rocket emoji" icon={<span>🚀</span>} variant="ghost" size="sm" isIconOnly />',
     },
     {
       label: 'Icon + visible label',
-      code: '<XDSButton label="Edit" icon={<PencilIcon />}>Edit</XDSButton>',
+      code: '<XDSButton label="Edit" icon={<PencilIcon />} />',
     },
     {
       label: 'endContent — badge after label',
@@ -144,19 +150,17 @@ export const docs = {
     },
     {
       label: 'endContent — icon, label, and badge',
-      code: '<XDSButton label="Edit" icon={<PencilIcon />} endContent={<XDSBadge label="New" />}>Edit</XDSButton>',
+      code: '<XDSButton label="Edit" icon={<PencilIcon />} endContent={<XDSBadge label="New" />} />',
     },
     {
       label: 'endContent — settings with badge',
-      code: `<XDSButton label="Settings" icon={<GearIcon />} endContent={<XDSBadge label="New" />}>
-  Settings
-</XDSButton>`,
+      code: '<XDSButton label="Settings" icon={<GearIcon />} endContent={<XDSBadge label="New" />} />',
     },
   ],
 
   accessibility: [
     'Renders a native <button> element for correct semantics and keyboard support',
-    'Icon-only buttons (icon without children) set aria-label from the label prop',
+    'Icon-only buttons (isIconOnly={true}) set aria-label from the label prop',
     'Loading state sets aria-busy and announces "Loading" via a role="status" live region',
     'Content is hidden from assistive tech during loading via aria-hidden',
     'When tooltip is present and button is disabled, uses aria-disabled instead of native disabled to keep the button focusable for keyboard tooltip access',
@@ -181,14 +185,50 @@ export const docs = {
     'Hover/active states use backgroundImage with linear-gradient to layer overlay colors on top of the base background.',
     'Destructive variant uses colorTokens.negative for its focus outline color.',
     'endContent is wrapped in a <span> with color: inherit so icons/badges match the button text color across all variants.',
-    'When icon is provided without children, the button becomes icon-only: it renders as a perfect square (aspectRatio: 1/1), and label is used as aria-label (not rendered visually). Works with any ReactNode as the icon — SVG components, emoji, or text.',
-    'endContent is ignored for icon-only buttons (when icon is provided without children) to preserve the square aspect ratio.',
+    'When isIconOnly is true, the button renders as a perfect square (aspectRatio: 1/1), and label is used as aria-label (not rendered visually). Works with any ReactNode as the icon — SVG components, emoji, or text.',
+    'endContent is ignored when isIconOnly is true to preserve the square aspect ratio.',
     'Prefer XDSButton over <div onClick> or <span onClick> for accessibility — it provides keyboard navigation, focus management, and screen reader support.',
     'Icon-only buttons are suitable for toolbars, action grids, and compact controls.',
     'onClick fires before onClickAction; calling preventDefault in onClick prevents onClickAction from running.',
     'type defaults to "button" (not "submit") to prevent accidental form submission.',
     'Disabled background gradient is cleared (backgroundImage: none) to prevent hover tint leaking through opacity.',
   ],
+  usage: {
+    summary: 'Buttons provide visual cues for actions and events, allowing users to commit actions and navigate a page flow.',
+    content: `## When to use
+
+- Submit a form.
+- Start a new task or action.
+- Trigger a new UI element to appear on the page.
+
+## Variants
+
+- **Secondary**: The standard button for most actions.
+- **Ghost**: Use when you need to limit the visual prominence of a button.
+- **Primary**: Use to draw emphasis to the primary action. A layout should only contain a single primary button.
+- **Destructive**: Use when the resulting action is the deletion of an object. Destructive buttons should trigger a confirmation dialog before the action is completed.
+
+## Best practices
+
+Do:
+- Convey clear action hierarchy: each surface should only have one primary button. Most buttons should use the secondary or ghost variant.
+- Use sentence case and no punctuation for labels.
+- Provide the logical next step in a task.
+- Use only one call-to-action per button.
+- Use an informative tone. Don't editorialize in a button.
+
+Don't:
+- Overuse primary buttons. Overusing colored buttons creates visual confusion and undermines page hierarchy.
+- Use all uppercase or all lowercase text.
+- Mix sizes in a single row.
+- Add custom gradients, drop shadows, or custom padding.`,
+    anatomy: [
+      {name: 'Icon', required: false, description: 'A leading icon that visually represents the meaning of the button label.'},
+      {name: 'Label', required: true, description: 'A text label describing the button action. Required for accessibility.'},
+      {name: 'End content', required: false, description: 'Trailing content that provides affordance to the type of action performed. Recommended when the expected action is non-obvious.'},
+      {name: 'Spinner', required: false, description: 'Indicates a loading state when the button action is not immediate.'},
+    ],
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */
@@ -398,7 +438,7 @@ export const docsDense = {
   ],
   accessibility: [
     'Native <button> for correct semantics + keyboard support.',
-    'Icon-only buttons set aria-label from label prop.',
+    'Icon-only buttons (isIconOnly) set aria-label from label prop.',
     'Loading sets aria-busy + announces via role="status" live region.',
     'Content hidden from AT during loading via aria-hidden.',
     'Tooltip+disabled uses aria-disabled to stay focusable.',
@@ -411,8 +451,8 @@ export const docsDense = {
     'hover/active use backgroundImage linear-gradient overlay on base bg',
     'destructive variant uses colorTokens.negative for focus outline',
     'endContent wrapped in <span> w/ color:inherit, matches button text across variants',
-    'icon w/o children=icon-only: square (aspectRatio:1/1), label=aria-label, any ReactNode as icon',
-    'endContent ignored for icon-only to preserve square ratio',
+    'isIconOnly=true: square (aspectRatio:1/1), label=aria-label, any ReactNode as icon',
+    'endContent ignored when isIconOnly to preserve square ratio',
     'prefer XDSButton over <div onClick> for a11y: keyboard nav, focus management, screen reader',
     'icon-only suits toolbars, action grids, compact controls',
     'onClick fires before onClickAction; preventDefault in onClick stops onClickAction',
@@ -420,7 +460,7 @@ export const docsDense = {
     'disabled clears backgroundImage:none to prevent hover tint leaking through opacity',
   ],
   propDescriptions: {
-    label: 'accessible label; aria-label for icon-only buttons',
+    label: 'accessible label; visible text by default, aria-label when isIconOnly',
     variant: 'visual style variant',
     size: 'size variant',
     type: 'HTML button type; defaults to "button"',
@@ -428,9 +468,10 @@ export const docsDense = {
     value: 'HTML value for form submission',
     form: 'associates button with form element by ID',
     isLoading: 'shows spinner+disables interaction; announces via live region',
-    icon: 'icon element; w/o children renders square icon-only button',
-    children: 'w/ icon, text rendered next to icon',
-    endContent: 'trailing icon/badge after label; accepts XDSIcon or XDSBadge; ignored for icon-only; color inherited',
+    icon: 'icon element rendered before label text',
+    isIconOnly: 'when true, renders square icon-only button; label becomes aria-label',
+    children: 'optional visible content; rendered instead of label when provided',
+    endContent: 'trailing icon/badge after label; ignored when isIconOnly; color inherited',
     tooltip: 'tooltip on hover',
     onClick: 'standard click handler; fires before onClickAction',
     onClickAction: 'async click handler; shows loading while promise pending',

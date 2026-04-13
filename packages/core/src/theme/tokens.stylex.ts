@@ -48,6 +48,8 @@ export const colorDefaults = {
   // Surface variants
   '--color-background-card': 'light-dark(#FFFFFF, #1F1F22)',
   '--color-background-popover': 'light-dark(#FFFFFF, #28292C)',
+  '--color-background-inverted': 'light-dark(#0A1317, #FFFFFF)',
+  '--color-background-error-inverted': 'light-dark(#AA071E, #E3193B)',
 
   // Status/Sentiment
   '--color-success': 'light-dark(#0D8626, #0D8626)',
@@ -241,6 +243,7 @@ export const shadowVars = stylex.defineVars(shadowDefaults);
 // Motion Tokens — Duration
 // =============================================================================
 // Duration primitives: pick a duration that matches the visual weight.
+// Three bands: fast (micro-interactions), medium (entrance/exit), slow (continuous).
 // min/max variants derive from base × ratio (default ratio ≈ 0.75).
 // See motion in defineTheme for computed generation.
 
@@ -251,6 +254,9 @@ export const durationDefaults = {
   '--duration-medium-min': '310ms',
   '--duration-medium': '410ms',
   '--duration-medium-max': '550ms',
+  '--duration-slow-min': '730ms',
+  '--duration-slow': '975ms',
+  '--duration-slow-max': '1300ms',
 } as const;
 
 export const durationVars = stylex.defineVars(durationDefaults);

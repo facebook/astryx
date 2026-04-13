@@ -12,10 +12,10 @@ import {XDSLink} from '@xds/core/Link';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSCard} from '@xds/core/Card';
 import {XDSSelector} from '@xds/core/Selector';
-import Image from 'next/image';
-import illustrationSrc from './illustration.png';
 import {colorVars, spacingVars, radiusVars} from '@xds/core/theme/tokens.stylex';
-import './form-two-column.css';
+
+const ILLUSTRATION_URL =
+  'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&q=80';
 
 // ─────────────────────────────────────────────────────────────
 // Constants
@@ -47,16 +47,64 @@ const CONTACT_COLUMNS = [
 ];
 
 // ─────────────────────────────────────────────────────────────
-// Styles — tokens for colors, radius, spacing only
-// Grid layout lives in form-two-column.css
+// Styles
 // ─────────────────────────────────────────────────────────────
 
 const styles = stylex.create({
+  page: {
+    backgroundColor: colorVars['--color-background-surface'],
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: '100svh',
+    padding: 48,
+  },
+  inner: {
+    maxWidth: 1100,
+    width: '100%',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 56,
+  },
+  topGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: 80,
+    alignItems: 'center',
+  },
+  headline: {
+    fontSize: 48,
+    fontWeight: 700,
+    lineHeight: 1.05,
+    letterSpacing: '-0.03em',
+    margin: 0,
+  },
   imagePlaceholder: {
     backgroundColor: colorVars['--color-background-surface'],
     borderRadius: radiusVars['--radius-container'],
     overflow: 'hidden',
     alignSelf: 'flex-start',
+    width: '85%',
+    aspectRatio: '4 / 3',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  inlineGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: 12,
+  },
+  footerGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr 1fr',
+    gap: 32,
+    paddingTop: 32,
+    textAlign: 'center',
+  },
+  footerLabel: {
+    textTransform: 'uppercase',
+    letterSpacing: '0.08em',
   },
   tokenWrap: {
     display: 'flex',
@@ -67,6 +115,29 @@ const styles = stylex.create({
     width: '100%',
   },
 });
+
+const mobileStyles = stylex.create({
+  page: {
+    padding: 20,
+    alignItems: 'flex-start',
+  },
+  topGrid: {
+    gridTemplateColumns: '1fr',
+    gap: 32,
+  },
+  image: {
+    width: '100%',
+  },
+  footerGrid: {
+    gridTemplateColumns: '1fr',
+    textAlign: 'left',
+  },
+  inlineGrid: {
+    gridTemplateColumns: '1fr',
+  },
+});
+
+const MOBILE = '@media (max-width: 767px)' as const;
 
 // ─────────────────────────────────────────────────────────────
 // Page
@@ -103,16 +174,16 @@ export default function FormTwoColumnPage() {
   const handleSubmit = () => setSubmitted(true);
 
   return (
-    <div className="ftc-page">
-      <div className="ftc-inner">
+    <div {...stylex.props(styles.page)}>
+      <div {...stylex.props(styles.inner)}>
 
         {/* ── Top: two-column ── */}
-        <div className="ftc-top-grid">
+        <div {...stylex.props(styles.topGrid)}>
 
           {/* Left: headline + description + illustration */}
           <XDSVStack gap={6}>
             <XDSVStack gap={3}>
-              <div className="ftc-headline">
+              <div {...stylex.props(styles.headline)}>
                 Let&apos;s work together
               </div>
               <XDSText type="body" color="secondary">
@@ -120,9 +191,9 @@ export default function FormTwoColumnPage() {
                 figure out the best path forward.
               </XDSText>
             </XDSVStack>
-            <div className="ftc-image" {...stylex.props(styles.imagePlaceholder)}>
-              <Image
-                src={illustrationSrc}
+            <div {...stylex.props(styles.imagePlaceholder)}>
+              <img
+                src={ILLUSTRATION_URL}
                 alt="Illustration"
                 style={{width: '100%', height: '100%', objectFit: 'contain'}}
               />
@@ -141,7 +212,7 @@ export default function FormTwoColumnPage() {
                 onChange={setFullName}
                 status={errors.fullName ? {type: 'error', message: errors.fullName} : undefined}
               />
-              <div className="ftc-inline-grid">
+              <div {...stylex.props(styles.inlineGrid)}>
                 <XDSTextInput
                   label="Email"
                   isLabelHidden
@@ -158,7 +229,7 @@ export default function FormTwoColumnPage() {
                   onChange={setCompany}
                 />
               </div>
-              <div className="ftc-inline-grid">
+              <div {...stylex.props(styles.inlineGrid)}>
                 <XDSTextInput
                   label="Job title"
                   isLabelHidden
@@ -220,11 +291,11 @@ export default function FormTwoColumnPage() {
         {/* ── Bottom: contact strip ── */}
         <div>
           <XDSDivider />
-          <div className="ftc-footer-grid">
+          <div {...stylex.props(styles.footerGrid)}>
             {CONTACT_COLUMNS.map(col => (
               <XDSVStack key={col.label} gap={1} hAlign="center">
                 <XDSText type="supporting" color="secondary">
-                  <span className="ftc-footer-label">{col.label}</span>
+                  <span {...stylex.props(styles.footerLabel)}>{col.label}</span>
                 </XDSText>
                 <XDSLink
                   label={col.email}

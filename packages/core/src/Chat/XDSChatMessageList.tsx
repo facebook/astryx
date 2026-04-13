@@ -2,14 +2,17 @@
 
 /**
  * @file XDSChatMessageList.tsx
- * @input Uses React, StyleX, XDSChatListContext, XDSIcon, theme tokens, useAutoScroll
+ * @input Uses React, StyleX, XDSChatListContext, theme tokens
  * @output Exports XDSChatMessageList component and XDSChatMessageListProps
- * @position Scrollable message container — holds XDSChatMessage children with auto-scroll
+ * @position Presentational message container — holds XDSChatMessage children
  *
- * Renders a scrollable container with role="log" for chat message histories.
- * Handles auto-scroll (pins to bottom during streaming), a floating
- * scroll-to-bottom button when scrolled up, and a "New messages" label
- * that expands into the button via width animation when new content arrives.
+ * Renders a container with role="log" for chat message histories.
+ * Handles density context, empty state, a spacer that pushes messages
+ * to the bottom, and an infinite scroll sentinel.
+ *
+ * Auto-scroll and the scroll-to-bottom button are owned by
+ * XDSChatLayout. When used standalone (without a layout), the list
+ * is purely presentational — compose useXDSChatStreamScroll yourself if needed.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Chat/index.ts (exports)
@@ -26,23 +29,13 @@ import {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
-import {
-  colorVars,
-  spacingVars,
-  radiusVars,
-  durationVars,
-  easeVars,
-  shadowVars,
-} from '../theme/tokens.stylex';
-import {XDSChatListContext, type XDSChatDensity} from './XDSChatContext';
+import {spacingVars} from '../theme/tokens.stylex';
+import {XDSChatListContext, type XDSChatDensity, useXDSChatLayoutContext} from './XDSChatContext';
 import {xdsClassName, mergeProps} from '../utils';
 import {XDSSpinner} from '../Spinner';
-import {XDSIcon} from '../Icon';
-import {XDSButton} from '../Button';
-import {useAutoScroll} from './useAutoScroll';
 
 export interface XDSChatMessageListProps {
-  /** Ref forwarded to the scrollable container element */
+  /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLDivElement>;
 
   /**
@@ -50,35 +43,6 @@ export interface XDSChatMessageListProps {
    * Also accepts XDSDivider (date separators) or any ReactNode.
    */
   children: ReactNode;
-
-  /**
-   * Whether auto-scroll behavior is enabled.
-   * When true (default), the list scrolls to bottom on new content
-   * if the user is near the bottom. When false, no auto-scrolling
-   * occurs — useful for static/view-only conversation history.
-   * @default true
-   */
-  hasAutoScroll?: boolean;
-
-  /**
-   * Distance from bottom (in px) within which new content triggers auto-scroll.
-   * Only applies when `hasAutoScroll` is true.
-   * @default 12
-   */
-  scrollThreshold?: number;
-
-  /**
-   * Distance from bottom (in px) beyond which the scroll-to-bottom button appears.
-   * @default 100
-   */
-  scrollUpThreshold?: number;
-
-  /**
-   * Label shown in the scroll-to-bottom button when new messages arrive.
-   * Revealed via a width animation on the button.
-   * @default 'New messages'
-   */
-  newMessagesLabel?: string;
 
   /**
    * Custom content when the list has no messages.
@@ -116,19 +80,9 @@ export interface XDSChatMessageListProps {
 // =============================================================================
 
 const styles = stylex.create({
-  outer: {
-    position: 'relative',
-    display: 'flex',
-    flexDirection: 'column',
-    flex: 1,
-    minHeight: 0,
-  },
   root: {
     display: 'flex',
     flexDirection: 'column',
-    overflowY: 'auto',
-    overflowX: 'hidden',
-    overflowAnchor: 'auto',
     flex: 1,
     minHeight: 0,
   },
@@ -162,52 +116,6 @@ const styles = stylex.create({
     justifyContent: 'center',
     paddingBlock: spacingVars['--spacing-3'],
   },
-
-  // --- Scroll-to-bottom button ---
-  // Container controls dimensions and clips content. The XDSButton inside
-  // is always full-size; the container's width transition reveals the label.
-  // Opaque popover bg on the container prevents hover tint bleed-through.
-  // `contain: layout style` isolates reflow from the scroll area.
-  scrollButtonContainer: {
-    position: 'absolute',
-    bottom: spacingVars['--spacing-3'],
-    left: '50%',
-    contain: 'layout style',
-    overflow: 'hidden',
-    borderRadius: radiusVars['--radius-full'],
-    backgroundColor: colorVars['--color-background-popover'],
-    boxShadow: shadowVars['--shadow-med'],
-    height: '32px',
-    zIndex: 1,
-    transitionProperty: 'opacity, transform, max-width',
-    transitionTimingFunction: easeVars['--ease-standard'],
-    transitionDuration: durationVars['--duration-fast-max'],
-  },
-  scrollButtonContainerHidden: {
-    opacity: 0,
-    pointerEvents: 'none',
-    maxWidth: '32px',
-    transform: 'translate(-50%, 8px)',
-    transitionDelay: '0ms',
-  },
-  scrollButtonContainerVisible: {
-    opacity: 1,
-    pointerEvents: 'auto',
-    transform: 'translate(-50%, 0)',
-    transitionDelay: '150ms',
-  },
-  scrollButtonCollapsed: {
-    maxWidth: '32px',
-  },
-  scrollButtonExpanded: {
-    maxWidth: '200px',
-  },
-  scrollButton: {
-    [radiusVars['--radius-element'] as string]: radiusVars['--radius-full'],
-    whiteSpace: 'nowrap',
-    paddingInline: spacingVars['--spacing-2'],
-  },
-
   emptyState: {
     display: 'flex',
     alignItems: 'center',
@@ -218,70 +126,18 @@ const styles = stylex.create({
 });
 
 // =============================================================================
-// Sub-components
-// =============================================================================
-
-/**
- * Animated scroll-to-bottom button.
- *
- * - Icon-only ghost XDSButton (chevron down) when the user is scrolled up
- * - Expands via max-width animation to reveal label when new messages arrive
- * - Container provides opaque popover surface so ghost hover tint doesn't bleed
- *
- * Structure: container (positioning, fade, opaque surface) → XDSButton (ghost)
- * The label is always in the DOM but clipped by `max-width: 0` + `overflow: hidden`.
- * `contain: layout style` on the container isolates reflow from the scroll area.
- */
-function ScrollToBottomButton({
-  isScrolledUp,
-  hasNewMessages,
-  label,
-  onClick,
-}: {
-  isScrolledUp: boolean;
-  hasNewMessages: boolean;
-  label: string;
-  onClick: () => void;
-}) {
-  const isVisible = isScrolledUp || hasNewMessages;
-
-  return (
-    <div
-      {...stylex.props(
-        styles.scrollButtonContainer,
-        isVisible
-          ? styles.scrollButtonContainerVisible
-          : styles.scrollButtonContainerHidden,
-        hasNewMessages
-          ? styles.scrollButtonExpanded
-          : styles.scrollButtonCollapsed,
-      )}>
-      <XDSButton
-        label={hasNewMessages ? label : 'Scroll to bottom'}
-        aria-label={hasNewMessages ? label : 'Scroll to bottom'}
-        icon={<XDSIcon icon="chevronDown" size="md" />}
-        variant="ghost"
-        size="md"
-        onClick={onClick}
-        xstyle={styles.scrollButton}>
-        {label}
-      </XDSButton>
-    </div>
-  );
-}
-
-// =============================================================================
 // Component
 // =============================================================================
 
 /**
- * Scrollable container for chat messages with auto-scroll and infinite scroll support.
+ * Presentational container for chat messages.
  *
- * Pins to the bottom when the user is near the end. Shows a muted
- * scroll-to-bottom icon button when scrolled up. When new messages
- * arrive while scrolled up, the button expands to show a
- * "New messages" label. Supports loading older messages via
- * `onScrollToTopAction`.
+ * Renders messages in a flex column with density-based spacing.
+ * A spacer pushes content to the bottom when the list isn't full.
+ * Supports loading older messages via `onScrollToTopAction`.
+ *
+ * Auto-scroll and the scroll-to-bottom button are owned by
+ * XDSChatLayout. Use useXDSChatStreamScroll for standalone scroll control.
  *
  * @example
  * ```
@@ -289,18 +145,11 @@ function ScrollToBottomButton({
  *   <XDSChatMessage sender="assistant" name="Navi" avatar={<XDSAvatar name="Navi" size="md" />}>
  *     <XDSChatMessageBubble>Hello!</XDSChatMessageBubble>
  *   </XDSChatMessage>
- *   <XDSChatMessage sender="user" name="Cindy">
- *     <XDSChatMessageBubble>Hey there!</XDSChatMessageBubble>
- *   </XDSChatMessage>
  * </XDSChatMessageList>
  * ```
  */
 export function XDSChatMessageList({
   children,
-  hasAutoScroll = true,
-  scrollThreshold = 12,
-  scrollUpThreshold = 100,
-  newMessagesLabel = 'New messages',
   emptyState,
   onScrollToTopAction,
   density = 'balanced',
@@ -310,38 +159,28 @@ export function XDSChatMessageList({
   'data-testid': testId,
   ref,
 }: XDSChatMessageListProps) {
-  const {
-    scrollRef,
-    isScrolledUp,
-    hasNewMessages,
-    handleScroll,
-    scrollToBottom,
-    dismissNewMessages,
-    onContentChange,
-  } = useAutoScroll({
-    enabled: hasAutoScroll,
-    threshold: scrollThreshold,
-    scrollUpThreshold,
-  });
-
+  const layoutContext = useXDSChatLayoutContext();
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
   const [isLoadingTop, startTransition] = useTransition();
 
-  // Track whether children exist (for empty state)
+  // Register inner content element with the layout for height observation
+  useEffect(() => {
+    if (layoutContext?.contentRef && innerRef.current) {
+      layoutContext.contentRef(innerRef.current);
+      return () => layoutContext.contentRef(null);
+    }
+  }, [layoutContext]);
+
   const hasChildren =
     children != null &&
     children !== false &&
     !(Array.isArray(children) && children.length === 0);
 
-  // Auto-scroll on new content (children change)
-  useEffect(() => {
-    onContentChange();
-  }, [children, onContentChange]);
-
   // IntersectionObserver for scroll-to-top infinite scroll
   useEffect(() => {
-    if (!onScrollToTopAction || !sentinelRef.current || !scrollRef.current)
-      return;
+    const scrollContainer = layoutContext?.scrollContainerRef?.current;
+    if (!onScrollToTopAction || !sentinelRef.current) return;
 
     const observer = new IntersectionObserver(
       entries => {
@@ -351,12 +190,12 @@ export function XDSChatMessageList({
           });
         }
       },
-      {root: scrollRef.current, threshold: 0},
+      {root: scrollContainer ?? null, threshold: 0},
     );
 
     observer.observe(sentinelRef.current);
     return () => observer.disconnect();
-  }, [onScrollToTopAction, scrollRef]);
+  }, [onScrollToTopAction, layoutContext]);
 
   const contextValue = useMemo(() => ({density}), [density]);
 
@@ -367,74 +206,41 @@ export function XDSChatMessageList({
         ? styles.gapSpacious
         : styles.gapBalanced;
 
-  // Merge refs
-  const setRefs = useCallback(
-    (el: HTMLDivElement | null) => {
-      (scrollRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
-      if (typeof ref === 'function') {
-        ref(el);
-      } else if (ref) {
-        (ref as React.MutableRefObject<HTMLDivElement | null>).current = el;
-      }
-    },
-    [ref, scrollRef],
-  );
-
-  // Click handler: dismiss new messages (scrolls to bottom) or just scroll
-  const handleButtonClick = useCallback(() => {
-    if (hasNewMessages) {
-      dismissNewMessages();
-    } else {
-      scrollToBottom();
-    }
-  }, [hasNewMessages, dismissNewMessages, scrollToBottom]);
-
   return (
     <XDSChatListContext.Provider value={contextValue}>
-      <div {...stylex.props(styles.outer)}>
-        <div
-          ref={setRefs}
-          role="log"
-          aria-live="polite"
-          tabIndex={0}
-          data-testid={testId}
-          onScroll={handleScroll}
-          {...mergeProps(
-            xdsClassName('chat-message-list', {density}),
-            stylex.props(styles.root, xstyle),
-            className,
-            style,
-          )}>
-          <div {...stylex.props(styles.inner, gapStyle)}>
-            {/* Sentinel for infinite scroll */}
-            {onScrollToTopAction && <div ref={sentinelRef} aria-hidden />}
+      <div
+        ref={ref}
+        role="log"
+        aria-live="polite"
+        tabIndex={0}
+        data-testid={testId}
+        {...mergeProps(
+          xdsClassName('chat-message-list', {density}),
+          stylex.props(styles.root, xstyle),
+          className,
+          style,
+        )}>
+        <div ref={innerRef} {...stylex.props(styles.inner, gapStyle)}>
+          {/* Sentinel for infinite scroll */}
+          {onScrollToTopAction && <div ref={sentinelRef} aria-hidden />}
 
-            {/* Loading spinner at top */}
-            {isLoadingTop && (
-              <div {...stylex.props(styles.loadingTop)}>
-                <XDSSpinner size="md" />
-              </div>
-            )}
+          {/* Loading spinner at top */}
+          {isLoadingTop && (
+            <div {...stylex.props(styles.loadingTop)}>
+              <XDSSpinner size="md" />
+            </div>
+          )}
 
-            {/* Spacer pushes messages to bottom when list isn't full */}
-            <div {...stylex.props(styles.spacer)} aria-hidden />
+          {/* Spacer pushes messages to bottom when list isn't full */}
+          <div {...stylex.props(styles.spacer)} aria-hidden />
 
-            {/* Messages or empty state */}
-            {hasChildren ? (
-              children
-            ) : emptyState ? (
-              <div {...stylex.props(styles.emptyState)}>{emptyState}</div>
-            ) : null}
-          </div>
+          {/* Messages or empty state */}
+          {hasChildren ? (
+            children
+          ) : emptyState ? (
+            <div {...stylex.props(styles.emptyState)}>{emptyState}</div>
+          ) : null}
         </div>
-
-        {/* Scroll-to-bottom button: icon-only when scrolled up, expands with label on new messages */}
-        <ScrollToBottomButton
-          isScrolledUp={isScrolledUp}
-          hasNewMessages={hasNewMessages}
-          label={newMessagesLabel}
-          onClick={handleButtonClick}
-        />
       </div>
     </XDSChatListContext.Provider>
   );

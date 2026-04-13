@@ -235,6 +235,13 @@ export const docs = {
       ],
     },
   ],
+  usage: {
+    summary: 'Multi-select dropdown with checkboxes for choosing multiple items from a list.',
+    content: `## When to use
+
+- Users need to select multiple values from a dropdown list.
+- For small, finite sets of options use CheckboxList instead.`,
+  },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */

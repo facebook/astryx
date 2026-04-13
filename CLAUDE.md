@@ -111,7 +111,7 @@ Look for `<!-- SYNC: ... -->` comments and `SYNC:` in file headers as reminders.
 |VARS: stylex.defineVars, stylex.createTheme (require .stylex.ts files) — YES
 |LAYOUT: grid, flex+gap, aspect-ratio, overscrollBehavior, scrollbar-gutter/width — YES
 |PATTERN: dialog entry animation -> @starting-style (not useState+rAF)
-|PATTERN: parent hover child style -> stylex.when.ancestor(':hover') (not CSS nesting). Ancestor element MUST have stylex.defaultMarker() in its stylex.props() call
+|PATTERN: parent hover child style -> stylex.when.ancestor(':hover', marker) (not CSS nesting). Use stylex.defineMarker() in a .stylex.ts file for scoped markers. Ancestor element MUST have marker.marker in its stylex.props() call. NEVER use stylex.defaultMarker() for form controls (CheckboxInput, RadioList, Switch) — it leaks hover/focus-within from outer containers like Popovers. Always use a component-scoped defineMarker() instead.
 |PATTERN: hover on touch -> @media (hover: hover) guard
 |PATTERN: zebra striping -> :nth-child(even) (not index%2 JS)
 |PATTERN: container responsive -> @container (not ResizeObserver)
@@ -124,14 +124,26 @@ Look for `<!-- SYNC: ... -->` comments and `SYNC:` in file headers as reminders.
 
 <!-- XDS-CLI:START -->
 
-XDS v0.0.4|Always run npx xds component <Name> before writing XDS component code.
-npx xds component <Name> props, usage, examples for any component
-npx xds component --list 95 components by category
-npx xds template <name> [path] scaffold page (blank, login, table)
-npx xds swizzle <Name> eject component source (use --gap to report why)
-npx xds upgrade --apply run version migration codemods
---detail compact|brief less output | --lang dense|zh translation
-RULE: after @xds/core bump, always run npx xds upgrade --apply
+XDS CLI|Run from repo root. Load agent docs before any component work.
+XDS="node packages/cli/bin/xds.mjs"
+BOOTSTRAP (run every branch, <500ms):
+$XDS help # discover all commands and options
+$XDS docs # list available doc topics
+$XDS docs principles --dense # design rules, anti-patterns, xstyle, tokens
+$XDS docs tokens --dense # spacing, color, radius, typography, shadow
+$XDS docs theme --dense # theme provider, light/dark, overrides
+$XDS component --list # all components grouped by category
+$XDS template --list # available page templates
+ON DEMAND:
+$XDS component <Name> --dense # props, variants, usage, anatomy for one component
+$XDS template <name> # emit full page source
+$XDS template <name> --skeleton # layout skeleton with spatial annotations
+$XDS swizzle <Name> # eject component source (use --gap to report why)
+$XDS upgrade --apply # run version migration codemods
+OPTIONS: --detail compact|brief less output | --dense token-efficient | --zh Chinese
+RULE: always run bootstrap on each branch — docs reflect the branch's actual API
+RULE: always run $XDS component <Name> --dense before modifying a component
+RULE: after @xds/core bump, always run $XDS upgrade --apply
 RULE: when swizzling, always use --gap to report missing capabilities
 
 <!-- XDS-CLI:END -->

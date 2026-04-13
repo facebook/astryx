@@ -35,3 +35,43 @@ export const XDSChatListContext = createContext<XDSChatListContextValue | null>(
 export function useXDSChatListContext(): XDSChatListContextValue | null {
   return useContext(XDSChatListContext);
 }
+
+// =============================================================================
+// Composer context — shared state between XDSChatComposer and XDSChatComposerInput
+// =============================================================================
+
+export interface XDSChatComposerContextValue {
+  value: string;
+  onChange: (value: string) => void;
+  onSubmit: (value: string) => void;
+  placeholder: string;
+  isDisabled: boolean;
+  isStreaming: boolean;
+  canSend: boolean;
+  onStop?: () => void;
+}
+
+export const XDSChatComposerContext =
+  createContext<XDSChatComposerContextValue | null>(null);
+
+export function useXDSChatComposerContext(): XDSChatComposerContextValue | null {
+  return useContext(XDSChatComposerContext);
+}
+
+// =============================================================================
+// Layout context — shared between XDSChatLayout and XDSChatMessageList
+// =============================================================================
+
+export interface XDSChatLayoutContextValue {
+  /** Ref to the scrollable container element that wraps the message area. */
+  scrollContainerRef: React.RefObject<HTMLElement | null>;
+  /** Callback ref for the message list content element — layout observes it for size changes. */
+  contentRef: (el: HTMLElement | null) => void;
+}
+
+export const XDSChatLayoutContext =
+  createContext<XDSChatLayoutContextValue | null>(null);
+
+export function useXDSChatLayoutContext(): XDSChatLayoutContextValue | null {
+  return useContext(XDSChatLayoutContext);
+}

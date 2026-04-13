@@ -88,6 +88,9 @@ layer.show();
       ],
     },
   ],
+  usage: {
+    summary: 'Core hook for overlay positioning using CSS Anchor Positioning and the Popover API.',
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */

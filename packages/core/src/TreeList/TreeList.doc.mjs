@@ -118,6 +118,14 @@ export const docs = {
       ],
     },
   ],
+  usage: {
+    summary: 'Displays hierarchical information with expandable and collapsible nodes.',
+    content: `## When to use
+
+- For file system navigators.
+- For visualizing hierarchical data.
+- When expand/collapse interactions are needed.`,
+  },
 };
 
 // -------------------------------------------------------

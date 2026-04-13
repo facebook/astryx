@@ -138,6 +138,13 @@ export const docs = {
     'aria-valuetext provides human-readable value description (determinate only)',
     'Indeterminate animation respects prefers-reduced-motion',
   ],
+  usage: {
+    summary: 'Displays determinate or indeterminate progress of a process.',
+    content: `## When to use
+
+- Showing completion progress of a known-length operation.
+- Indicating an indeterminate loading state with a known container size.`,
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */

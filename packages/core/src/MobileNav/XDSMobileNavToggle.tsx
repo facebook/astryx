@@ -11,7 +11,6 @@
  * Can be placed anywhere in the component tree (TopNav, content area, custom toolbar, etc.).
  */
 
-
 import {type ReactNode} from 'react';
 import {XDSButton} from '../Button';
 import {XDSIcon} from '../Icon';
@@ -81,6 +80,7 @@ export function XDSMobileNavToggle({
       xstyle={xstyle}
       className={className}
       style={style}
+      isIconOnly
     />
   );
 }

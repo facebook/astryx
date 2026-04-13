@@ -94,6 +94,7 @@ export const Default: Story = {
           label="Profile"
           variant="ghost"
           icon={<UserCircleIcon style={{width: 16, height: 16}} />}
+          isIconOnly
         />
       }
     />

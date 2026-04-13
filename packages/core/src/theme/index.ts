@@ -14,10 +14,13 @@
  */
 
 export {XDSTheme} from './XDSTheme';
+export {XDSMediaTheme} from './XDSMediaTheme';
+export type {XDSMediaThemeProps} from './XDSMediaTheme';
 export {
   defineTheme,
   generateThemeCSS,
   generateThemeCSSFlat,
+  generateOnMediaCSS,
   generateThemeRules,
   generateThemeRulesSplit,
   type ThemeCSSOutput,
@@ -38,6 +41,25 @@ export type {
 export type {SyntaxTokenName, DomainTokenName} from './domainTokens';
 
 export {syntaxTokenDefaults, domainTokenDefaults} from './domainTokens';
+
+// Syntax theme API
+export {
+  defineSyntaxTheme,
+  syntaxThemeStyle,
+  syntaxThemeToCSS,
+} from './syntax';
+export type {
+  SyntaxTheme,
+  SyntaxThemeInput,
+  SyntaxThemeTokenKey,
+  SyntaxThemeTokenMap,
+  SyntaxThemeTokenInput,
+  SyntaxTokenValue,
+} from './syntax';
+
+// XDSSyntaxTheme provider
+export {XDSSyntaxTheme, useXDSSyntaxTheme} from './syntax';
+export type {UseXDSSyntaxThemeReturn} from './syntax';
 
 export {expandTypeScale, generateTypeScaleComponents} from './expandTypeScale';
 export type {XDSTypeScaleConfig, TypeScaleTokens} from './expandTypeScale';
@@ -103,6 +125,13 @@ export type {
 
 export {useXDSTheme} from './useXDSTheme';
 export type {UseXDSThemeReturn} from './useXDSTheme';
+
+export {
+  defaultOnDarkTokens,
+  defaultOnLightTokens,
+  resolveOnMedia,
+} from './onMediaTokens';
+export type {OnMediaOverrides, ResolvedOnMedia} from './onMediaTokens';
 
 export type {
   ThemeMode,

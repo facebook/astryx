@@ -97,11 +97,18 @@ export const categories: SandboxCategory[] = [
     description:
       'Full-page application templates — dashboards, forms, and data views built with XDS.',
     pages: [
-      ...autoDiscoveredTemplates.map(t => ({
-        name: t.isReady ? t.name : t.name + ' (WIP)',
-        href: t.href,
-        description: t.description,
-      })),
+      {
+        name: 'Library',
+        href: '/templates/library/',
+        description: 'Browsable grid of XDS components organized by category',
+      },
+      ...autoDiscoveredTemplates
+        .filter(t => t.slug !== 'docsite-landing')
+        .map(t => ({
+          name: t.isReady ? t.name : t.name + ' (WIP)',
+          href: t.href,
+          description: t.description,
+        })),
     ],
   },
   {
@@ -113,6 +120,35 @@ export const categories: SandboxCategory[] = [
         name: 'Theme Editor',
         href: '/pages/theme-editor/',
         description: 'Customize and preview XDS design tokens',
+      },
+      {
+        name: 'Code Fiddle',
+        href: '/pages/code-fiddle/',
+        description:
+          'CodePen-style playground with code panels and live XDS preview',
+      },
+      {
+        name: 'CodeBlock Perf',
+        href: '/pages/codeblock-perf/',
+        description: 'Compare highlight modes and scroll performance',
+      },
+      {
+        name: 'Docsite',
+        href: '/pages/docsite/',
+        description:
+          'Template gallery with AI composer and component documentation',
+      },
+      {
+        name: 'Docsite Landing',
+        href: '/templates/docsite-landing/',
+        description:
+          'Template gallery with SideNav layout, AI chat, and resizable preview panel',
+      },
+      {
+        name: 'Media Mode',
+        href: '/pages/media-mode/',
+        description:
+          'Compare luminance algorithms (BT.709 / WCAG 2 / APCA) for dark/light surface detection',
       },
     ],
   },

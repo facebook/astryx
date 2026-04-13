@@ -17,3 +17,40 @@ export {
   SYNC_TOKENIZE_THRESHOLD,
   type Token,
 } from '@xds/core/CodeBlock';
+
+// Chat — experimental reasoning display
+export {
+  XDSChatReasoning,
+  type XDSChatReasoningProps,
+} from './ChatReasoning/XDSChatReasoning';
+
+// SVG Icon system — CSS-variable-driven multi-variation icons
+export {
+  XDSSVGIcon,
+  type XDSSVGIconProps,
+  type SVGIconVariation,
+  type SVGIconSize,
+  type SVGIconColor,
+  type SVGIconDef,
+  type IconShape,
+  type IconShapeRole,
+  iconVars,
+  variations,
+  opticalSize,
+  xIcon,
+  checkIcon,
+  bellIcon,
+  homeIcon,
+  settingsIcon,
+  calendarIcon,
+  menuIcon,
+  heartIcon,
+  eyeIcon,
+  starIcon,
+  folderIcon,
+  shieldIcon,
+  searchIcon,
+  mailIcon,
+  lockIcon,
+  starterIcons,
+} from './SVGIcon';

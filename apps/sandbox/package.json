@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
+    "build:deps": "yarn workspace @xds/core build && yarn workspace @xds/theme-default build && yarn workspace @xds/theme-neutral build && yarn workspace @xds/theme-brutalist build && yarn workspace @xds/theme-meta build && yarn workspace @xds/theme-whatsapp build && yarn workspace @xds/theme-daily build",
     "predev": "node ../../scripts/sync-templates.js",
     "dev": "next dev",
     "prebuild": "node ../../scripts/sync-templates.js",
@@ -11,24 +12,27 @@
     "postinstall": "xds agent-docs"
   },
   "dependencies": {
-    "@stylexjs/stylex": "^0.17.4",
+    "@heroicons/react": "^2.2.0",
+    "@stylexjs/stylex": "^0.18.2",
     "@xds/cli": "*",
     "@xds/core": "*",
+    "@xds/lab": "*",
     "@xds/theme-default": "*",
     "@xds/theme-neutral": "*",
     "@xds/theme-brutalist": "*",
     "@xds/theme-meta": "*",
     "@xds/theme-whatsapp": "*",
     "@xds/theme-daily": "*",
-    "next": "^15.5.14",
+    "next": "^15.5.15",
     "react": "^19.2.4",
-    "react-dom": "^19.2.4"
+    "react-dom": "^19.2.4",
+    "recharts": "^2.15.3"
   },
   "devDependencies": {
     "@babel/preset-react": "^7.25.0",
     "@babel/preset-typescript": "^7.25.0",
-    "@stylexjs/babel-plugin": "^0.17.4",
-    "@stylexjs/postcss-plugin": "^0.17.4",
+    "@stylexjs/babel-plugin": "^0.18.2",
+    "@stylexjs/postcss-plugin": "^0.18.2",
     "@types/node": "^22.0.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
