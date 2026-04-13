@@ -85,6 +85,7 @@ import {VegaChart} from '@xds/vega';
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
 | `spec` | `AnySpec` | -- | Vega or Vega-Lite spec with `$schema` (required) |
+| `data` | `ViewData` | -- | Initial dataset values — `{datasetName: tuples[]}` |
 | `compileOptions` | `CompileOptions` | -- | Options passed to `compile(spec, options)` — Vega-Lite only |
 | `parseConfig` | `Config` | -- | Vega config passed to `parse(spec, config)` |
 | `parseOptions` | `ParseOptions` | -- | Options passed to `parse(spec, config, options)` |
@@ -120,6 +121,21 @@ import {VegaChart} from '@xds/vega';
 | `parseOptions` field | Type | Description |
 |---|---|---|
 | `ast` | `boolean` | Retain expression AST in the runtime (useful for tooling) |
+
+### Data loading
+
+`data` maps dataset names to tuple arrays and is applied via `view.data(name, tuples)` after the View is created. Changing `data` reloads the datasets and re-runs the view *without* a full re-embed — the View is preserved. This makes it efficient for streaming or live-updating scenarios.
+
+```tsx
+<VegaChart
+  spec={spec}
+  data={{
+    table: [{category: 'A', value: 28}, {category: 'B', value: 55}],
+  }}
+/>
+```
+
+Each key must match a dataset name defined in the spec's `data` array.
 
 ### `parseSchema(schema)` (exported utility)
 

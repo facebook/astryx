@@ -8,9 +8,10 @@
  */
 
 import type {Spec as VegaSpec, Config, View, ViewOptions} from 'vega';
+import type {LoggerInterface} from 'vega-util';
 import type {TopLevelSpec as VegaLiteSpec, Config as VegaLiteConfig} from 'vega-lite';
 
-export type {VegaSpec, VegaLiteSpec, Config, View, ViewOptions};
+export type {VegaSpec, VegaLiteSpec, Config, View, ViewOptions, LoggerInterface};
 
 /**
  * Options for the Vega-Lite `compile()` function.
@@ -27,15 +28,9 @@ export interface CompileOptions {
   config?: VegaLiteConfig;
   /**
    * Custom logger used during compilation.
-   * Accepts any object matching the `LoggerInterface` shape from `vega-util`.
+   * @see https://github.com/vega/vega/blob/main/packages/vega-util/src/logger.ts
    */
-  logger?: {
-    level: (lvl?: number) => number | void;
-    warn: (...args: unknown[]) => void;
-    info: (...args: unknown[]) => void;
-    debug: (...args: unknown[]) => void;
-    error: (...args: unknown[]) => Error | void;
-  };
+  logger?: LoggerInterface;
   /**
    * Custom field title formatter. Overrides the global singleton used by
    * vega-lite to produce axis/legend/header titles from field definitions.
@@ -66,6 +61,27 @@ export interface ParseOptions {
 }
 
 /**
+ * Initial data to load into named Vega datasets after the View is created,
+ * before the first render.
+ *
+ * Each key is a dataset name matching a `data` entry in the Vega spec.
+ * Each value is the array of tuples passed to `view.data(name, tuples)`.
+ *
+ * This mirrors the setter overload of the View data API:
+ *   `view.data(name: string, tuples: any[]): this`
+ *
+ * @see https://vega.github.io/vega/docs/api/view/#view_data
+ *
+ * @example
+ * ```
+ * data={{
+ *   table: [{category: 'A', value: 28}, {category: 'B', value: 55}],
+ * }}
+ * ```
+ */
+export type ViewData = Record<string, any[]>;
+
+/**
  * Props for the `<VegaChart>` component.
  */
 export interface VegaChartProps {
@@ -83,6 +99,18 @@ export interface VegaChartProps {
    * @see https://vega.github.io/vega-lite/docs/spec.html
    */
   spec: AnySpec;
+  /**
+   * Initial data for named Vega datasets, applied via `view.data(name, tuples)`
+   * after the View is created and before the first render.
+   *
+   * Changing this prop re-loads the data and re-runs the view without
+   * re-creating it (no full re-embed).
+   *
+   * Each key must match a dataset name defined in the spec's `data` array.
+   *
+   * @see https://vega.github.io/vega/docs/api/view/#view_data
+   */
+  data?: ViewData;
   /**
    * Options passed to `vega-lite`'s `compile()` function.
    * Only applied when `spec.$schema` identifies a `vega-lite` spec.

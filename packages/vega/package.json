@@ -33,6 +33,7 @@
     "tsup": "^8.3.0",
     "typescript": "^5.7.0",
     "vega": "^6.2.0",
-    "vega-lite": "^6.4.2"
+    "vega-lite": "^6.4.2",
+    "vega-util": "^1.17.2"
   }
 }

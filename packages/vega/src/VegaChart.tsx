@@ -1,6 +1,6 @@
 /**
  * @file VegaChart.tsx
- * @input A Vega or Vega-Lite spec (distinguished by $schema), parse config/options, and view options
+ * @input A Vega or Vega-Lite spec (distinguished by $schema), parse config/options, view options, and data
  * @output A React component that renders the spec via the Vega runtime
  * @position Primary component in @xds/vega; owns the Vega View lifecycle
  *
@@ -11,7 +11,7 @@ import React, {useEffect, useRef} from 'react';
 import {parse, View} from 'vega';
 import {compile} from 'vega-lite';
 import {parseSchema} from './schema';
-import type {VegaChartProps, VegaSpec, VegaLiteSpec} from './types';
+import type {VegaChartProps, VegaSpec, VegaLiteSpec, ViewData} from './types';
 
 /**
  * `VegaChart` renders a Vega or Vega-Lite specification using the Vega runtime.
@@ -27,13 +27,17 @@ import type {VegaChartProps, VegaSpec, VegaLiteSpec} from './types';
  *   vega.parse(spec, parseConfig, parseOptions)
  *   new vega.View(runtime, { ...viewOptions, container })
  *
+ * Initial dataset values can be provided via `data` and updated independently
+ * without triggering a full re-embed -- only the data is reloaded.
+ *
  * It owns the full `View` lifecycle: creates the view on mount, re-creates
  * it when `spec`, `parseConfig`, `parseOptions`, or `viewOptions` changes,
  * and calls `view.finalize()` on cleanup to release all runtime resources.
  *
  * Callbacks (`onReady`, `onError`) are stable across renders via refs --
  * you don't need to memoize them. Pass stable references (or `useMemo`)
- * for `parseConfig`, `parseOptions`, and `viewOptions` to avoid re-renders.
+ * for `parseConfig`, `parseOptions`, `viewOptions`, and `data` to avoid
+ * unnecessary re-renders.
  *
  * @example
  * ```
@@ -44,13 +48,13 @@ import type {VegaChartProps, VegaSpec, VegaLiteSpec} from './types';
  *   spec={{
  *     $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
  *     mark: 'bar',
- *     data: {values: [{a: 'A', b: 28}, {a: 'B', b: 55}]},
+ *     data: {name: 'table'},
  *     encoding: {
  *       x: {field: 'a', type: 'ordinal'},
  *       y: {field: 'b', type: 'quantitative'},
  *     },
  *   }}
- *   viewOptions={{renderer: 'canvas', hover: true}}
+ *   data={{table: [{a: 'A', b: 28}, {a: 'B', b: 55}]}}
  * />
  *
  * // Vega spec -- rendered directly
@@ -63,6 +67,7 @@ import type {VegaChartProps, VegaSpec, VegaLiteSpec} from './types';
  */
 export function VegaChart({
   spec,
+  data,
   compileOptions,
   parseConfig,
   parseOptions,
@@ -73,6 +78,7 @@ export function VegaChart({
   onError,
 }: VegaChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const viewRef = useRef<View | null>(null);
 
   // Keep callbacks in refs so they don't need to be in the dep array.
   const onReadyRef = useRef(onReady);
@@ -80,11 +86,11 @@ export function VegaChart({
   onReadyRef.current = onReady;
   onErrorRef.current = onError;
 
+  // Effect 1: create/destroy the View when spec or construction options change.
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    let view: View | null = null;
     let cancelled = false;
 
     const fail = (err: unknown) => {
@@ -111,20 +117,23 @@ export function VegaChart({
       const runtime = parse(vegaSpec, parseConfig, parseOptions);
 
       // new View(runtime, viewOptions) -- container is always injected by us.
-      view = new View(runtime, {
+      const view = new View(runtime, {
         hover: true,
         ...viewOptions,
         container,
       });
 
+      viewRef.current = view;
+
       view
         .runAsync()
         .then(() => {
           if (cancelled) {
-            view?.finalize();
+            view.finalize();
+            viewRef.current = null;
             return;
           }
-          onReadyRef.current?.(view!);
+          onReadyRef.current?.(view);
         })
         .catch(fail);
     } catch (err) {
@@ -133,11 +142,25 @@ export function VegaChart({
 
     return () => {
       cancelled = true;
-      view?.finalize();
+      viewRef.current?.finalize();
+      viewRef.current = null;
     };
-  // Object props are intentionally in the dep array. Callers should memoize
-  // them to avoid unnecessary re-renders.
-  }, [spec, compileOptions, parseConfig, parseOptions, viewOptions]);
+  }, [spec, compileOptions, parseConfig, parseOptions, viewOptions]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Effect 2: load data into named datasets when `data` changes, without
+  // re-creating the View. Runs after the View effect so viewRef is populated.
+  useEffect(() => {
+    if (!data || !viewRef.current) return;
+    const view = viewRef.current;
+
+    for (const [name, tuples] of Object.entries(data)) {
+      view.data(name, tuples);
+    }
+
+    view.runAsync().catch((err: unknown) => {
+      onErrorRef.current?.(err instanceof Error ? err : new Error(String(err)));
+    });
+  }, [data]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return <div ref={containerRef} className={className} style={style} />;
 }
