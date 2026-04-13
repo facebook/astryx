@@ -271,7 +271,21 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
   }, [resolvedSource]);
 
   return (
-    <div style={{display: 'flex', flexDirection: 'column', height: '100vh'}}>
+    <div
+      className={toolbarHidden ? undefined : 'preview-has-toolbar'}
+      style={{display: 'flex', flexDirection: 'column', height: '100vh'}}>
+      {/*
+       * When the toolbar is visible, page roots that set height: 100vh/100dvh
+       * overflow because they measure against the real viewport, not the
+       * remaining space. This rule forces the page root to fill its container.
+       * It sits outside @layer so it beats StyleX atomic classes automatically.
+       */}
+      <style>{`
+        .preview-has-toolbar .preview-content-inner > * {
+          height: 100% !important;
+          min-height: 100% !important;
+        }
+      `}</style>
       {/* Toolbar */}
       <div
         style={{
@@ -280,7 +294,7 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
           gap: 8,
           padding: '6px 12px',
           borderBottom: '1px solid var(--color-border-emphasized)',
-          backgroundColor: '#f8f8f8',
+          backgroundColor: 'var(--color-background-surface)',
           flexShrink: 0,
           zIndex: 10,
         }}>
@@ -431,19 +445,20 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
           style={{
             flex: 1,
             minHeight: 0,
-            overflow: viewport === 'desktop' ? 'hidden' : 'auto',
+            overflow: 'auto',
             display: 'flex',
             justifyContent: 'center',
             padding: viewport !== 'desktop' ? '24px 16px' : 0,
             backgroundColor: viewport === 'desktop' ? 'transparent' : '#f0f0f0',
           }}>
           <div
+            className="preview-content-inner"
             style={{
               width: viewportWidths[viewport],
               maxWidth: '100%',
               height: viewport !== 'desktop' ? 'fit-content' : '100%',
               minHeight: viewport !== 'desktop' ? '100%' : undefined,
-              overflow: viewport === 'desktop' ? 'hidden' : 'auto',
+              overflow: 'auto',
               border:
                 viewport !== 'desktop'
                   ? '1px solid var(--color-border-emphasized)'
