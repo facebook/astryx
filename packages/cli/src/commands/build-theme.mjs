@@ -298,13 +298,22 @@ function parsePadding(props) {
         }
         break;
       }
-      case 'paddingBlock':
-        result.blockStart = value;
-        result.blockEnd = value;
+      case 'paddingBlock': {
+        const parts = value.trim().split(/\s+/);
+        result.blockStart = parts[0];
+        result.blockEnd = parts[1] ?? parts[0];
         break;
-      case 'paddingInline':
-        result.inline = value;
+      }
+      case 'paddingInline': {
+        const parts = value.trim().split(/\s+/);
+        if (parts.length === 1) {
+          result.inline = parts[0];
+        } else {
+          result.inlineStart = parts[0];
+          result.inlineEnd = parts[1];
+        }
         break;
+      }
       case 'paddingBlockStart':
         result.blockStart = value;
         break;
@@ -312,8 +321,10 @@ function parsePadding(props) {
         result.blockEnd = value;
         break;
       case 'paddingInlineStart':
+        result.inlineStart = value;
+        break;
       case 'paddingInlineEnd':
-        result.inline = value;
+        result.inlineEnd = value;
         break;
     }
   }
@@ -324,21 +335,37 @@ function expandContainerPadding(component, parsed) {
   const prefix = `--xds-${component}-padding`;
   const tokens = [];
 
+  // Resolve effective inline values (inlineStart/End override inline)
+  const effectiveInlineStart = parsed.inlineStart ?? parsed.inline;
+  const effectiveInlineEnd = parsed.inlineEnd ?? parsed.inline;
+  const inlineSymmetric =
+    effectiveInlineStart != null &&
+    effectiveInlineEnd != null &&
+    effectiveInlineStart === effectiveInlineEnd;
+
   // If all sides are the same, emit the shorthand token only
   const allSame =
-    parsed.inline != null &&
+    inlineSymmetric &&
     parsed.blockStart != null &&
     parsed.blockEnd != null &&
-    parsed.inline === parsed.blockStart &&
+    effectiveInlineStart === parsed.blockStart &&
     parsed.blockStart === parsed.blockEnd;
 
   if (allSame) {
-    tokens.push([prefix, parsed.inline]);
+    tokens.push([prefix, effectiveInlineStart]);
     return tokens;
   }
 
   // Directional tokens
-  if (parsed.inline != null) {
+  if (parsed.inlineStart != null || parsed.inlineEnd != null) {
+    // Asymmetric inline — emit start and end separately
+    if (effectiveInlineStart != null) {
+      tokens.push([`${prefix}-inline-start`, effectiveInlineStart]);
+    }
+    if (effectiveInlineEnd != null) {
+      tokens.push([`${prefix}-inline-end`, effectiveInlineEnd]);
+    }
+  } else if (parsed.inline != null) {
     tokens.push([`${prefix}-inline`, parsed.inline]);
   }
   if (parsed.blockStart != null) {

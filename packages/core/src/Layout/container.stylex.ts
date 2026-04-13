@@ -57,7 +57,10 @@ export type SpacingToken =
 const baseStyles = stylex.create({
   container: {
     boxSizing: 'border-box',
-    paddingInline: 'var(--container-padding-inline)',
+    paddingInlineStart:
+      'var(--container-padding-inline-start, var(--container-padding-inline))',
+    paddingInlineEnd:
+      'var(--container-padding-inline-end, var(--container-padding-inline))',
     paddingBlockStart: 'var(--container-padding-block-start)',
     paddingBlockEnd: 'var(--container-padding-block-end)',
   },
@@ -71,6 +74,8 @@ const baseStyles = stylex.create({
  *
  *   --xds-card-padding          (shorthand — all sides)
  *   --xds-card-padding-inline
+ *   --xds-card-padding-inline-start
+ *   --xds-card-padding-inline-end
  *   --xds-card-padding-block-start
  *   --xds-card-padding-block-end
  *
@@ -84,8 +89,11 @@ const baseStyles = stylex.create({
  * CSS custom property cascade — no layer competition.
  */
 const cardDefaultPaddingStyles = stylex.create({
-  containerPaddingInline: {
-    '--container-padding-inline': `var(--xds-card-padding-inline, var(--xds-card-padding, ${spacingVars['--spacing-4']}))`,
+  containerPaddingInlineStart: {
+    '--container-padding-inline-start': `var(--xds-card-padding-inline-start, var(--xds-card-padding-inline, var(--xds-card-padding, ${spacingVars['--spacing-4']})))`,
+  },
+  containerPaddingInlineEnd: {
+    '--container-padding-inline-end': `var(--xds-card-padding-inline-end, var(--xds-card-padding-inline, var(--xds-card-padding, ${spacingVars['--spacing-4']})))`,
   },
   containerPaddingBlockStart: {
     '--container-padding-block-start': `var(--xds-card-padding-block-start, var(--xds-card-padding, ${spacingVars['--spacing-4']}))`,
@@ -94,13 +102,13 @@ const cardDefaultPaddingStyles = stylex.create({
     '--container-padding-block-end': `var(--xds-card-padding-block-end, var(--xds-card-padding, ${spacingVars['--spacing-4']}))`,
   },
   layoutPaddingOuterX: {
-    '--layout-padding-outer-x': `var(--xds-card-padding-inline, var(--xds-card-padding, ${spacingVars['--spacing-4']}))`,
+    '--layout-padding-outer-x': `var(--xds-card-padding-inline-start, var(--xds-card-padding-inline, var(--xds-card-padding, ${spacingVars['--spacing-4']})))`,
   },
   layoutPaddingOuterY: {
     '--layout-padding-outer-y': `var(--xds-card-padding-block-start, var(--xds-card-padding, ${spacingVars['--spacing-4']}))`,
   },
   layoutPaddingInnerX: {
-    '--layout-padding-inner-x': `var(--xds-card-padding-inline, var(--xds-card-padding, ${spacingVars['--spacing-4']}))`,
+    '--layout-padding-inner-x': `var(--xds-card-padding-inline-start, var(--xds-card-padding-inline, var(--xds-card-padding, ${spacingVars['--spacing-4']})))`,
   },
   layoutPaddingInnerY: {
     '--layout-padding-inner-y': `var(--xds-card-padding-block-start, var(--xds-card-padding, ${spacingVars['--spacing-4']}))`,
@@ -108,8 +116,11 @@ const cardDefaultPaddingStyles = stylex.create({
 });
 
 const sectionDefaultPaddingStyles = stylex.create({
-  containerPaddingInline: {
-    '--container-padding-inline': `var(--xds-section-padding-inline, var(--xds-section-padding, ${spacingVars['--spacing-4']}))`,
+  containerPaddingInlineStart: {
+    '--container-padding-inline-start': `var(--xds-section-padding-inline-start, var(--xds-section-padding-inline, var(--xds-section-padding, ${spacingVars['--spacing-4']})))`,
+  },
+  containerPaddingInlineEnd: {
+    '--container-padding-inline-end': `var(--xds-section-padding-inline-end, var(--xds-section-padding-inline, var(--xds-section-padding, ${spacingVars['--spacing-4']})))`,
   },
   containerPaddingBlockStart: {
     '--container-padding-block-start': `var(--xds-section-padding-block-start, var(--xds-section-padding, ${spacingVars['--spacing-4']}))`,
@@ -118,13 +129,13 @@ const sectionDefaultPaddingStyles = stylex.create({
     '--container-padding-block-end': `var(--xds-section-padding-block-end, var(--xds-section-padding, ${spacingVars['--spacing-4']}))`,
   },
   layoutPaddingOuterX: {
-    '--layout-padding-outer-x': `var(--xds-section-padding-inline, var(--xds-section-padding, ${spacingVars['--spacing-4']}))`,
+    '--layout-padding-outer-x': `var(--xds-section-padding-inline-start, var(--xds-section-padding-inline, var(--xds-section-padding, ${spacingVars['--spacing-4']})))`,
   },
   layoutPaddingOuterY: {
     '--layout-padding-outer-y': `var(--xds-section-padding-block-start, var(--xds-section-padding, ${spacingVars['--spacing-4']}))`,
   },
   layoutPaddingInnerX: {
-    '--layout-padding-inner-x': `var(--xds-section-padding-inline, var(--xds-section-padding, ${spacingVars['--spacing-4']}))`,
+    '--layout-padding-inner-x': `var(--xds-section-padding-inline-start, var(--xds-section-padding-inline, var(--xds-section-padding, ${spacingVars['--spacing-4']})))`,
   },
   layoutPaddingInnerY: {
     '--layout-padding-inner-y': `var(--xds-section-padding-block-start, var(--xds-section-padding, ${spacingVars['--spacing-4']}))`,
@@ -132,8 +143,11 @@ const sectionDefaultPaddingStyles = stylex.create({
 });
 
 const dialogDefaultPaddingStyles = stylex.create({
-  containerPaddingInline: {
-    '--container-padding-inline': `var(--xds-dialog-padding-inline, var(--xds-dialog-padding, ${spacingVars['--spacing-4']}))`,
+  containerPaddingInlineStart: {
+    '--container-padding-inline-start': `var(--xds-dialog-padding-inline-start, var(--xds-dialog-padding-inline, var(--xds-dialog-padding, ${spacingVars['--spacing-4']})))`,
+  },
+  containerPaddingInlineEnd: {
+    '--container-padding-inline-end': `var(--xds-dialog-padding-inline-end, var(--xds-dialog-padding-inline, var(--xds-dialog-padding, ${spacingVars['--spacing-4']})))`,
   },
   containerPaddingBlockStart: {
     '--container-padding-block-start': `var(--xds-dialog-padding-block-start, var(--xds-dialog-padding, ${spacingVars['--spacing-4']}))`,
@@ -142,13 +156,13 @@ const dialogDefaultPaddingStyles = stylex.create({
     '--container-padding-block-end': `var(--xds-dialog-padding-block-end, var(--xds-dialog-padding, ${spacingVars['--spacing-4']}))`,
   },
   layoutPaddingOuterX: {
-    '--layout-padding-outer-x': `var(--xds-dialog-padding-inline, var(--xds-dialog-padding, ${spacingVars['--spacing-4']}))`,
+    '--layout-padding-outer-x': `var(--xds-dialog-padding-inline-start, var(--xds-dialog-padding-inline, var(--xds-dialog-padding, ${spacingVars['--spacing-4']})))`,
   },
   layoutPaddingOuterY: {
     '--layout-padding-outer-y': `var(--xds-dialog-padding-block-start, var(--xds-dialog-padding, ${spacingVars['--spacing-4']}))`,
   },
   layoutPaddingInnerX: {
-    '--layout-padding-inner-x': `var(--xds-dialog-padding-inline, var(--xds-dialog-padding, ${spacingVars['--spacing-4']}))`,
+    '--layout-padding-inner-x': `var(--xds-dialog-padding-inline-start, var(--xds-dialog-padding-inline, var(--xds-dialog-padding, ${spacingVars['--spacing-4']})))`,
   },
   layoutPaddingInnerY: {
     '--layout-padding-inner-y': `var(--xds-dialog-padding-block-start, var(--xds-dialog-padding, ${spacingVars['--spacing-4']}))`,
@@ -431,7 +445,8 @@ export function container({
     const defaults = themeDefaultStyles[useThemeDefault];
     return [
       baseStyles.container,
-      defaults.containerPaddingInline,
+      defaults.containerPaddingInlineStart,
+      defaults.containerPaddingInlineEnd,
       defaults.containerPaddingBlockStart,
       defaults.containerPaddingBlockEnd,
       defaults.layoutPaddingOuterX,

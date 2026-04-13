@@ -987,4 +987,61 @@ describe('container padding mapping', () => {
     expect(css).toContain('--xds-card-padding-block-end: 12px');
     expect(css).toContain('--xds-card-padding-inline: 20px');
   });
+
+  it('maps paddingBlock shorthand with two values', () => {
+    const theme = defineTheme({
+      name: 'test',
+      components: {
+        card: {
+          base: {paddingBlock: '16px 24px'},
+        },
+      },
+    });
+    const css = generateThemeCSSFlat(theme);
+    expect(css).toContain('--xds-card-padding-block-start: 16px');
+    expect(css).toContain('--xds-card-padding-block-end: 24px');
+  });
+
+  it('maps paddingInline shorthand with two values', () => {
+    const theme = defineTheme({
+      name: 'test',
+      components: {
+        card: {
+          base: {paddingInline: '12px 20px'},
+        },
+      },
+    });
+    const css = generateThemeCSSFlat(theme);
+    expect(css).toContain('--xds-card-padding-inline-start: 12px');
+    expect(css).toContain('--xds-card-padding-inline-end: 20px');
+  });
+
+  it('maps paddingBlockStart alone', () => {
+    const theme = defineTheme({
+      name: 'test',
+      components: {
+        card: {
+          base: {paddingBlockStart: '32px'},
+        },
+      },
+    });
+    const css = generateThemeCSSFlat(theme);
+    expect(css).toContain('--xds-card-padding-block-start: 32px');
+    expect(css).not.toContain('--xds-card-padding-block-end');
+    expect(css).not.toContain('--xds-card-padding-inline');
+  });
+
+  it('maps paddingInlineStart and paddingInlineEnd separately', () => {
+    const theme = defineTheme({
+      name: 'test',
+      components: {
+        card: {
+          base: {paddingInlineStart: '8px', paddingInlineEnd: '24px'},
+        },
+      },
+    });
+    const css = generateThemeCSSFlat(theme);
+    expect(css).toContain('--xds-card-padding-inline-start: 8px');
+    expect(css).toContain('--xds-card-padding-inline-end: 24px');
+  });
 });
