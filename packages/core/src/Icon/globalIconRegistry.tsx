@@ -46,7 +46,8 @@ export type XDSIconName =
   | 'copy'
   | 'checkDouble'
   | 'wrench'
-  | 'stop';
+  | 'stop'
+  | 'microphone';
 
 /**
  * Icon registry mapping semantic names to React nodes.

@@ -94,3 +94,18 @@ export {XDSChatLayout} from './XDSChatLayout';
 export {XDSChatLayoutScrollButton} from './XDSChatLayoutScrollButton';
 export type {XDSChatLayoutScrollButtonProps} from './XDSChatLayoutScrollButton';
 export type {XDSChatLayoutProps} from './XDSChatLayout';
+
+export {useSpeechRecognition} from './useSpeechRecognition';
+export type {
+  UseSpeechRecognitionOptions,
+  UseSpeechRecognitionReturn,
+} from './useSpeechRecognition';
+
+export {useXDSChatDictation} from './useXDSChatDictation';
+export type {
+  UseXDSChatDictationOptions,
+  UseXDSChatDictationReturn,
+} from './useXDSChatDictation';
+
+export {XDSChatDictationButton} from './XDSChatDictationButton';
+export type {XDSChatDictationButtonProps} from './XDSChatDictationButton';
