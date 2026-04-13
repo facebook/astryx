@@ -97,7 +97,7 @@ const fmt = (n: number) => `$${n.toFixed(2)}`;
 
 function ProductCard({product}: {product: Product}) {
   return (
-    <XDSCard padding={0}>
+    <XDSCard padding={0} variant="muted">
       <XDSAspectRatio ratio={4 / 3}>
         <img
           src={product.image}
