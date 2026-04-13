@@ -525,7 +525,7 @@
     "@stylexjs/babel-plugin": "^0.18.2",
     "@stylexjs/esbuild-plugin": "^0.11.1",
     "@testing-library/jest-dom": "^6.6.0",
-    "@testing-library/react": "^16.0.0",
+    "@testing-library/react": "^16.3.2",
     "esbuild-plugin-babel": "^0.2.3",
     "@stylexjs/stylex": "^0.18.2"
   }
