@@ -280,7 +280,7 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
           gap: 8,
           padding: '6px 12px',
           borderBottom: '1px solid var(--color-border-emphasized)',
-          backgroundColor: '#f8f8f8',
+          backgroundColor: 'var(--color-background-surface)',
           flexShrink: 0,
           zIndex: 10,
         }}>

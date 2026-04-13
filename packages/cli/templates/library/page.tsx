@@ -9,10 +9,13 @@ import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import {XDSToggleButton, XDSToggleButtonGroup} from '@xds/core/ToggleButton';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSDivider} from '@xds/core/Divider';
+import {XDSGrid} from '@xds/core/Grid';
+import {XDSHStack, XDSStack, XDSStackItem, XDSVStack} from '@xds/core/Stack';
+import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
 import {
   colorVars,
-  textSizeVars,
-  fontWeightVars,
+  radiusVars,
+
   spacingVars,
 } from '@xds/core/theme/tokens.stylex';
 import {XDSAppShell} from '@xds/core/AppShell';
@@ -28,6 +31,7 @@ import {
   BookOpenIcon,
   Squares2X2Icon,
   WrenchScrewdriverIcon,
+  MagnifyingGlassIcon,
 } from '@heroicons/react/24/outline';
 import {
   HomeIcon as HomeIconSolid,
@@ -278,45 +282,19 @@ const ITEMS: LibraryItem[] = [
 
 const styles = stylex.create({
   filterBar: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: spacingVars['--spacing-3'],
     paddingBottom: spacingVars['--spacing-8'],
-  },
-  toggleRow: {
-    display: 'flex',
   },
   filterSearch: {
     flex: 1,
     minWidth: 0,
   },
-  dividerRow: {
-    paddingTop: spacingVars['--spacing-6'],
-    paddingBottom: spacingVars['--spacing-8'],
-  },
-  sectionHeader: {
-    paddingBottom: spacingVars['--spacing-3'],
-  },
   thumbnail: {
     backgroundColor: colorVars['--color-background-body'],
     width: '100%',
   },
+
   cardBody: {
     padding: spacingVars['--spacing-4'],
-    display: 'flex',
-    flexDirection: 'column',
-  },
-  itemName: {
-    fontSize: textSizeVars['--font-size-base'],
-    fontWeight: fontWeightVars['--font-weight-semibold'],
-    color: colorVars['--color-text-primary'],
-    lineHeight: 1.375,
-    marginBottom: spacingVars['--spacing-2'],
-  },
-  itemDescription: {
-    fontSize: textSizeVars['--font-size-sm'],
-    color: colorVars['--color-text-secondary'],
-    lineHeight: 1.5,
   },
   emptyState: {
     padding: spacingVars['--spacing-12'],
@@ -376,13 +354,15 @@ function LibraryNav() {
 function LibraryCard({item}: {item: LibraryItem}) {
   return (
     <XDSCard padding={0}>
-      <XDSAspectRatio ratio={16 / 9} xstyle={styles.thumbnail}><div /></XDSAspectRatio>
-      <div {...stylex.props(styles.cardBody)}>
-        <span {...stylex.props(styles.itemName)}>{item.name}</span>
-        <span {...stylex.props(styles.itemDescription)}>
+      <XDSAspectRatio ratio={21 / 9} xstyle={styles.thumbnail}><div /></XDSAspectRatio>
+      <XDSVStack gap={1} xstyle={styles.cardBody}>
+        <XDSHeading level={3}>
+          {item.name}
+        </XDSHeading>
+        <XDSText type="body" size="sm" color="secondary">
           {item.description}
-        </span>
-      </div>
+        </XDSText>
+      </XDSVStack>
     </XDSCard>
   );
 }
@@ -395,27 +375,21 @@ function LibrarySection({
   items: LibraryItem[];
 }) {
   return (
-    <div>
-      <div {...stylex.props(styles.sectionHeader)}>
-        <XDSHeading level={3}>{category}</XDSHeading>
-      </div>
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
-          gap: 20,
-        }}>
+    <XDSVStack gap={6}>
+      <XDSHeading level={2}>{category}</XDSHeading>
+      <XDSGrid columns={4} gap={5}>
         {items.map(item => (
           <LibraryCard key={item.id} item={item} />
         ))}
-      </div>
-    </div>
+      </XDSGrid>
+    </XDSVStack>
   );
 }
 
 export default function LibraryPage() {
   const [activeTab, setActiveTab] = useState('All');
   const [search, setSearch] = useState('');
+  const [sortOrder, setSortOrder] = useState('A-Z');
 
   const filtered = useMemo(() => {
     let items =
@@ -454,25 +428,40 @@ export default function LibraryPage() {
         }
         content={
           <XDSLayoutContent padding={6}>
-            <div {...stylex.props(styles.filterBar)}>
+            <XDSStack direction="vertical" gap={3} xstyle={styles.filterBar}>
               <XDSTextInput
                 label="Search"
                 isLabelHidden
                 placeholder="Search..."
                 value={search}
                 onChange={setSearch}
+                startIcon={MagnifyingGlassIcon}
+                size="lg"
               />
-              <div {...stylex.props(styles.toggleRow)}>
+              <XDSHStack vAlign="center" hAlign="between">
                 <XDSToggleButtonGroup
                   label="Filter by category"
                   value={activeTab}
                   onChange={v => setActiveTab(v ?? 'All')}>
                   {CATEGORIES.map(cat => (
-                    <XDSToggleButton key={cat} label={cat} value={cat} />
+                    <XDSToggleButton
+                      key={cat}
+                      label={cat}
+                      value={cat}
+                      size="lg"
+                    />
                   ))}
                 </XDSToggleButtonGroup>
-              </div>
-            </div>
+                <XDSDropdownMenu
+                  button={{label: sortOrder, size: 'lg'}}
+                  items={[
+                    {label: 'A-Z', onClick: () => setSortOrder('A-Z')},
+                    {label: 'Z-A', onClick: () => setSortOrder('Z-A')},
+                    {label: 'Newest', onClick: () => setSortOrder('Newest')},
+                  ]}
+                />
+              </XDSHStack>
+            </XDSStack>
 
             {filtered.length === 0 ? (
               <div {...stylex.props(styles.emptyState)}>
@@ -481,32 +470,22 @@ export default function LibraryPage() {
                 </XDSText>
               </div>
             ) : groupedSections != null ? (
-              <div>
-                {groupedSections.map((section, i) => (
-                  <div key={section.category}>
-                    {i > 0 && (
-                      <div {...stylex.props(styles.dividerRow)}>
-                        <XDSDivider />
-                      </div>
-                    )}
-                    <LibrarySection
-                      category={section.category}
-                      items={section.items}
-                    />
-                  </div>
-                ))}
-              </div>
+              <XDSVStack gap={8}>
+                {groupedSections.flatMap((section, i) => [
+                  i > 0 && <XDSDivider key={`d-${section.category}`} />,
+                  <LibrarySection
+                    key={section.category}
+                    category={section.category}
+                    items={section.items}
+                  />,
+                ])}
+              </XDSVStack>
             ) : (
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(4, 1fr)',
-                  gap: 20,
-                }}>
+              <XDSGrid columns={4} gap={5}>
                 {filtered.map(item => (
                   <LibraryCard key={item.id} item={item} />
                 ))}
-              </div>
+              </XDSGrid>
             )}
           </XDSLayoutContent>
         }
