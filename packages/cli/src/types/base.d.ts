@@ -24,7 +24,13 @@ import type {
   DocsDetailResponse,
   DocsDetailSectionResponse,
 } from './docs';
-import type {TemplateListResponse, TemplateCopyResponse} from './template';
+import type {
+  TemplateListResponse,
+  TemplateShowResponse,
+  TemplateSkeletonResponse,
+  TemplateCopyResponse,
+  TemplateGetResponse,
+} from './template';
 import type {SwizzleListResponse, SwizzleCopyResponse} from './swizzle';
 import type {ThemeBuildResponse} from './theme';
 import type {UpgradeListResponse, UpgradeRunResponse} from './upgrade';
@@ -62,7 +68,10 @@ export type CLIAnyResponse =
   | DocsDetailResponse
   | DocsDetailSectionResponse
   | TemplateListResponse
+  | TemplateShowResponse
+  | TemplateSkeletonResponse
   | TemplateCopyResponse
+  | TemplateGetResponse
   | SwizzleListResponse
   | SwizzleCopyResponse
   | ThemeBuildResponse
