@@ -29,7 +29,7 @@
     "typecheck:json-api": "tsc --project tsconfig.json-api.json"
   },
   "dependencies": {
-    "@clack/prompts": "^0.9.1",
+    "@clack/prompts": "^1.2.0",
     "commander": "^12.1.0",
     "jiti": "^2.6.1"
   },
