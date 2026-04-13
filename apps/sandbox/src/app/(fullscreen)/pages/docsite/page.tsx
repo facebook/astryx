@@ -23,6 +23,9 @@ import {XDSDialog, XDSDialogHeader} from '@xds/core/Dialog';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSTooltip} from '@xds/core/Tooltip';
 import {XDSTable} from '@xds/core/Table';
+import {XDSTextInput} from '@xds/core/TextInput';
+import {XDSTextArea} from '@xds/core/TextArea';
+import {XDSTokenizer} from '@xds/core/Tokenizer';
 import {createStaticSource} from '@xds/core/Typeahead';
 
 // ---------------------------------------------------------------------------
@@ -107,6 +110,19 @@ const LinkIcon = (props: React.SVGProps<SVGSVGElement>) => (
     {...props}>
     <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
     <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+  </svg>
+);
+
+const CheckIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}>
+    <polyline points="20 6 9 17 4 12" />
   </svg>
 );
 
@@ -905,6 +921,21 @@ function ShimmerText({isActive}: {isActive: boolean}) {
 // Chat Panel (shown when generating)
 // ---------------------------------------------------------------------------
 
+const HamburgerIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}>
+    <line x1="3" y1="6" x2="21" y2="6" />
+    <line x1="3" y1="12" x2="21" y2="12" />
+    <line x1="3" y1="18" x2="21" y2="18" />
+  </svg>
+);
+
 const SidebarIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     viewBox="0 0 24 24"
@@ -929,8 +960,8 @@ function ChatPanel({
 }: {
   isGenerating: boolean;
   onSend?: () => void;
-  activeView: 'craft' | 'library' | 'learn' | 'profile';
-  setActiveView: (view: 'craft' | 'library' | 'learn' | 'profile') => void;
+  activeView: 'craft' | 'library' | 'profile';
+  setActiveView: (view: 'craft' | 'library' | 'profile') => void;
   templateName?: string;
   onBack?: () => void;
 }) {
@@ -1196,7 +1227,7 @@ const BookmarkIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-const PaperPlaneIcon = (props: React.SVGProps<SVGSVGElement>) => (
+const ShareIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -1205,8 +1236,9 @@ const PaperPlaneIcon = (props: React.SVGProps<SVGSVGElement>) => (
     strokeLinecap="round"
     strokeLinejoin="round"
     {...props}>
-    <path d="M3.714 3.048a.498.498 0 0 0-.683.627l2.843 7.627a2 2 0 0 1 0 1.396l-2.842 7.627a.498.498 0 0 0 .682.627l18-8.5a.5.5 0 0 0 0-.904z" />
-    <path d="M6 12h16" />
+    <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+    <polyline points="8 6 12 2 16 6" />
+    <line x1="12" y1="2" x2="12" y2="16" />
   </svg>
 );
 
@@ -1284,6 +1316,50 @@ const CursorAIIcon = (props: React.SVGProps<SVGSVGElement>) => (
       d="M415.035 156.35l-151.503-87.4695c-4.865-2.8094-10.868-2.8094-15.733 0l-151.4969 87.4695c-4.0897 2.362-6.6146 6.729-6.6146 11.459v176.383c0 4.73 2.5249 9.097 6.6146 11.458l151.5039 87.47c4.865 2.809 10.868 2.809 15.733 0l151.504-87.47c4.089-2.361 6.614-6.728 6.614-11.458v-176.383c0-4.73-2.525-9.097-6.614-11.459zm-9.516 18.528l-146.255 253.32c-.988 1.707-3.599 1.01-3.599-.967v-165.872c0-3.314-1.771-6.379-4.644-8.044l-143.645-82.932c-1.707-.988-1.01-3.599.968-3.599h292.509c4.154 0 6.75 4.503 4.673 8.101h-.007z"
       fill="currentColor"
     />
+  </svg>
+);
+
+const CloseIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}>
+    <line x1="18" y1="6" x2="6" y2="18" />
+    <line x1="6" y1="6" x2="18" y2="18" />
+  </svg>
+);
+
+const CopyIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}>
+    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+  </svg>
+);
+
+const RocketIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}>
+    <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" />
+    <path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" />
+    <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" />
+    <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" />
   </svg>
 );
 
@@ -1478,7 +1554,7 @@ function TemplatePreview({
                       label: 'Share',
                       variant: 'ghost',
                       isIconOnly: true,
-                      icon: <PaperPlaneIcon />,
+                      icon: <ShareIcon />,
                     }}
                     hasChevron={false}
                     menuWidth={220}
@@ -1692,6 +1768,15 @@ function ClassicTemplatePreview({
   const previewRef = useRef<HTMLDivElement>(null);
   const [previewSize, setPreviewSize] = useState({w: 0, h: 0});
   const [showCanvas, setShowCanvas] = useState(false);
+  const [showSendPopover, setShowSendPopover] = useState(false);
+  const [sendPopoverPos, setSendPopoverPos] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
+  const [sendCopied, setSendCopied] = useState(false);
+  const sendPopoverRef = useRef<HTMLDivElement>(null);
+
+  const shareCliCommand = `npx xds template ${templateName.toLowerCase().replace(/\s+/g, '-')} ./my-project`;
 
   useEffect(() => {
     if (isGenerating && previewRef.current) {
@@ -1707,6 +1792,20 @@ function ClassicTemplatePreview({
       return () => clearTimeout(id);
     }
   }, [isGenerating, showCanvas]);
+
+  useEffect(() => {
+    if (!showSendPopover) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        sendPopoverRef.current &&
+        !sendPopoverRef.current.contains(e.target as Node)
+      ) {
+        setShowSendPopover(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showSendPopover]);
 
   return (
     <div
@@ -1737,15 +1836,17 @@ function ClassicTemplatePreview({
             label="Template actions"
             startContent={
               <>
-                <XDSButton
-                  label="Back"
-                  variant="ghost"
-                  size="sm"
-                  icon={<ArrowLeftIcon />}
-                  isIconOnly
-                  onClick={onBack}
-                  style={{marginLeft: -8}}
-                />
+                <XDSTooltip content="Back">
+                  <XDSButton
+                    label="Back"
+                    variant="ghost"
+                    size="sm"
+                    icon={<ArrowLeftIcon />}
+                    isIconOnly
+                    onClick={onBack}
+                    style={{marginLeft: -8}}
+                  />
+                </XDSTooltip>
                 <XDSHeading level={3}>{templateName}</XDSHeading>
               </>
             }
@@ -1771,64 +1872,210 @@ function ClassicTemplatePreview({
             }
             endContent={
               <>
-                <XDSButton
-                  label="Code"
-                  variant="ghost"
-                  isIconOnly
-                  icon={<CodeIcon />}
-                />
-                <XDSButton
-                  label="Point"
-                  variant="ghost"
-                  isIconOnly
-                  icon={<CursorIcon />}
-                />
-                <XDSDropdownMenu
-                  button={{
-                    label: 'Theme',
-                    variant: 'ghost',
-                    icon: <PaletteIcon />,
-                    isIconOnly: true,
-                  }}
-                  hasChevron={false}
-                  items={XDS_THEMES.map(t => ({
-                    label: t.label,
-                    onClick: () => {},
-                  }))}
-                />
-                <XDSButton
-                  label="Toggle theme"
-                  variant="ghost"
-                  isIconOnly
-                  icon={<ContrastIcon />}
-                />
-                <XDSButton
-                  label="Save"
-                  variant="ghost"
-                  isIconOnly
-                  icon={<SaveIcon />}
-                />
-                <XDSDropdownMenu
-                  button={{
-                    label: 'Share',
-                    variant: 'ghost',
-                    icon: <PaperPlaneIcon />,
-                    isIconOnly: true,
-                  }}
-                  hasChevron={false}
-                  menuWidth={220}
-                  items={[
-                    {
-                      label: 'Copy CLI Command...',
-                      icon: TerminalIcon,
+                <XDSTooltip content="Code">
+                  <XDSButton
+                    label="Code"
+                    variant="ghost"
+                    isIconOnly
+                    icon={<CodeIcon />}
+                  />
+                </XDSTooltip>
+                <XDSTooltip content="Point">
+                  <XDSButton
+                    label="Point"
+                    variant="ghost"
+                    isIconOnly
+                    icon={<CursorIcon />}
+                  />
+                </XDSTooltip>
+                <XDSTooltip content="Theme">
+                  <XDSDropdownMenu
+                    button={{
+                      label: 'Theme',
+                      variant: 'ghost',
+                      icon: <PaletteIcon />,
+                      isIconOnly: true,
+                    }}
+                    hasChevron={false}
+                    items={XDS_THEMES.map(t => ({
+                      label: t.label,
                       onClick: () => {},
-                    },
-                    {type: 'divider' as const},
-                    {label: 'Claude Code', icon: ClaudeIcon, onClick: () => {}},
-                    {label: 'VSCode', icon: VSCodeIcon, onClick: () => {}},
-                    {label: 'Cursor', icon: CursorAIIcon, onClick: () => {}},
-                  ]}
+                    }))}
+                  />
+                </XDSTooltip>
+                <XDSTooltip content="Toggle theme">
+                  <XDSButton
+                    label="Toggle theme"
+                    variant="ghost"
+                    isIconOnly
+                    icon={<ContrastIcon />}
+                  />
+                </XDSTooltip>
+                <div
+                  style={{
+                    width: 1,
+                    height: 20,
+                    backgroundColor: 'var(--color-border-strong, #999)',
+                    margin: '0 4px',
+                    flexShrink: 0,
+                  }}
                 />
+                <XDSTooltip content="Save">
+                  <XDSButton
+                    label="Save"
+                    variant="ghost"
+                    isIconOnly
+                    icon={<SaveIcon />}
+                  />
+                </XDSTooltip>
+                <div
+                  ref={sendPopoverRef}
+                  style={{position: 'relative' as const}}>
+                  <XDSTooltip content="Share">
+                    <XDSButton
+                      label="Share"
+                      variant="ghost"
+                      isIconOnly
+                      icon={<ShareIcon />}
+                      onClick={() => {
+                        setShowSendPopover(prev => {
+                          if (!prev && sendPopoverRef.current) {
+                            const rect =
+                              sendPopoverRef.current.getBoundingClientRect();
+                            const popoverWidth = 340;
+                            const popoverHeight = 400;
+                            const left = Math.min(
+                              Math.max(8, rect.right - popoverWidth),
+                              window.innerWidth - popoverWidth - 16,
+                            );
+                            const top =
+                              rect.bottom + 4 + popoverHeight + 16 >
+                              window.innerHeight
+                                ? rect.top - popoverHeight - 4
+                                : rect.bottom + 4;
+                            setSendPopoverPos({top, left});
+                          }
+                          return !prev;
+                        });
+                      }}
+                    />
+                  </XDSTooltip>
+                  {showSendPopover && sendPopoverPos && (
+                    <div
+                      style={{
+                        position: 'fixed' as const,
+                        left: sendPopoverPos.left,
+                        top: sendPopoverPos.top,
+                        zIndex: 100,
+                        width: 340,
+                        backgroundColor: 'var(--color-background-card, #fff)',
+                        borderRadius: 12,
+                        boxShadow:
+                          '0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08)',
+                        padding: 20,
+                      }}>
+                      <XDSHeading level={4}>Add to your project</XDSHeading>
+                      <div style={{marginTop: 8}}>
+                        <XDSText type="body" color="secondary">
+                          Copy this snippet and paste it in your terminal to get
+                          started.
+                        </XDSText>
+                      </div>
+
+                      {/* Code block */}
+                      <div
+                        style={{
+                          position: 'relative' as const,
+                          backgroundColor: '#1a1a2e',
+                          borderRadius: 10,
+                          padding: '14px 16px',
+                          paddingRight: 44,
+                          marginTop: 12,
+                        }}>
+                        <code
+                          style={{
+                            color: '#fff',
+                            fontFamily: '"Roboto Mono", monospace',
+                            fontSize: 13,
+                            lineHeight: 1.5,
+                            wordBreak: 'break-all' as const,
+                          }}>
+                          {shareCliCommand}
+                        </code>
+                        <div
+                          style={{
+                            position: 'absolute' as const,
+                            top: 8,
+                            right: 8,
+                          }}>
+                          <XDSButton
+                            label={sendCopied ? 'Copied' : 'Copy'}
+                            variant="ghost"
+                            size="sm"
+                            isIconOnly
+                            icon={<CopyIcon />}
+                            style={{
+                              color: sendCopied ? '#4ade80' : '#fff',
+                            }}
+                            onClick={() => {
+                              navigator.clipboard.writeText(shareCliCommand);
+                              setSendCopied(true);
+                              setTimeout(() => setSendCopied(false), 2000);
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Divider */}
+                      <div
+                        style={{
+                          height: 1,
+                          backgroundColor: 'var(--color-divider, #e0e0e0)',
+                          margin: '16px 0',
+                        }}
+                      />
+
+                      {/* IDE options */}
+                      <div style={{marginBottom: 8}}>
+                        <XDSText
+                          type="supporting"
+                          weight="semibold"
+                          color="secondary">
+                          Open in...
+                        </XDSText>
+                      </div>
+                      {[
+                        {
+                          label: 'Claude Code',
+                          Icon: ClaudeIcon,
+                        },
+                        {label: 'VSCode', Icon: VSCodeIcon},
+                        {label: 'Cursor', Icon: CursorAIIcon},
+                      ].map(item => (
+                        <div
+                          key={item.label}
+                          onClick={() => setShowSendPopover(false)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 10,
+                            padding: '8px 4px',
+                            cursor: 'pointer',
+                            borderRadius: 8,
+                          }}>
+                          <item.Icon
+                            style={{
+                              width: 18,
+                              height: 18,
+                              flexShrink: 0,
+                            }}
+                          />
+                          <XDSText type="body">{item.label}</XDSText>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </>
             }
           />
@@ -2118,10 +2365,9 @@ const XDS_LOGO_PLAIN = (
   </svg>
 );
 
-const NAV_ITEMS: Array<{key: 'craft' | 'library' | 'learn'; label: string}> = [
+const NAV_ITEMS: Array<{key: 'craft' | 'library'; label: string}> = [
   {key: 'craft', label: 'Craft'},
   {key: 'library', label: 'Library'},
-  {key: 'learn', label: 'Learn'},
 ];
 
 function LogoNav({
@@ -2129,70 +2375,83 @@ function LogoNav({
   setActiveView,
   logo,
 }: {
-  activeView: 'craft' | 'library' | 'learn' | 'profile';
-  setActiveView: (view: 'craft' | 'library' | 'learn' | 'profile') => void;
+  activeView: 'craft' | 'library' | 'profile';
+  setActiveView: (view: 'craft' | 'library' | 'profile') => void;
   logo?: React.ReactNode;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
 
   return (
-    <div
-      style={{position: 'relative'}}
-      onMouseEnter={() => setIsOpen(true)}
-      onMouseLeave={() => {
-        setIsOpen(false);
-        setHoveredItem(null);
-      }}>
-      <div style={{cursor: 'pointer'}}>{logo || XDS_LOGO_PLAIN}</div>
-      {isOpen && (
-        <div
-          style={{
-            position: 'absolute',
-            top: -8,
-            left: -16,
-            backgroundColor: 'var(--color-background-card, white)',
-            borderRadius: 16,
-            boxShadow: '0 4px 24px rgba(0,0,0,0.12)',
-            padding: 8,
-            minWidth: 200,
-            zIndex: 100,
-          }}>
-          <div style={{marginBottom: 12, paddingLeft: 8, paddingRight: 8}}>
-            {logo || XDS_LOGO_PLAIN}
-          </div>
+    <div style={{display: 'flex', alignItems: 'center', gap: 4}}>
+      <XDSButton
+        label="Menu"
+        variant="ghost"
+        size="sm"
+        isIconOnly
+        icon={<HamburgerIcon />}
+      />
+      <div
+        style={{position: 'relative'}}
+        onMouseEnter={() => setIsOpen(true)}
+        onMouseLeave={() => {
+          setIsOpen(false);
+          setHoveredItem(null);
+        }}>
+        <div style={{cursor: 'pointer'}}>{logo || XDS_LOGO_PLAIN}</div>
+        {isOpen && (
           <div
-            style={{display: 'flex', flexDirection: 'column' as const, gap: 2}}>
-            {NAV_ITEMS.map(item => {
-              const isActive = activeView === item.key;
-              const isHovered = hoveredItem === item.key;
-              return (
-                <div
-                  key={item.key}
-                  onClick={() => setActiveView(item.key)}
-                  onMouseEnter={() => setHoveredItem(item.key)}
-                  onMouseLeave={() => setHoveredItem(null)}
-                  style={{
-                    padding: '8px 12px',
-                    borderRadius: 8,
-                    cursor: 'pointer',
-                    backgroundColor:
-                      isActive || isHovered
-                        ? 'var(--color-background-body, #f1f4f7)'
-                        : 'transparent',
-                    transition: 'background-color 150ms ease',
-                  }}>
-                  <XDSText
-                    type="body"
-                    weight={isActive ? 'semibold' : 'normal'}>
-                    {item.label}
-                  </XDSText>
-                </div>
-              );
-            })}
+            style={{
+              position: 'absolute',
+              top: -8,
+              left: -16,
+              backgroundColor: 'var(--color-background-card, white)',
+              borderRadius: 16,
+              boxShadow: '0 4px 24px rgba(0,0,0,0.12)',
+              padding: 8,
+              minWidth: 200,
+              zIndex: 100,
+            }}>
+            <div style={{marginBottom: 12, paddingLeft: 8, paddingRight: 8}}>
+              {logo || XDS_LOGO_PLAIN}
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column' as const,
+                gap: 2,
+              }}>
+              {NAV_ITEMS.map(item => {
+                const isActive = activeView === item.key;
+                const isHovered = hoveredItem === item.key;
+                return (
+                  <div
+                    key={item.key}
+                    onClick={() => setActiveView(item.key)}
+                    onMouseEnter={() => setHoveredItem(item.key)}
+                    onMouseLeave={() => setHoveredItem(null)}
+                    style={{
+                      padding: '8px 12px',
+                      borderRadius: 8,
+                      cursor: 'pointer',
+                      backgroundColor:
+                        isActive || isHovered
+                          ? 'var(--color-background-body, #f1f4f7)'
+                          : 'transparent',
+                      transition: 'background-color 150ms ease',
+                    }}>
+                    <XDSText
+                      type="body"
+                      weight={isActive ? 'semibold' : 'normal'}>
+                      {item.label}
+                    </XDSText>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
@@ -2202,8 +2461,8 @@ function AppTopNav({
   setActiveView,
   scrollContainerRef,
 }: {
-  activeView: 'craft' | 'library' | 'learn' | 'profile';
-  setActiveView: (view: 'craft' | 'library' | 'learn' | 'profile') => void;
+  activeView: 'craft' | 'library' | 'profile';
+  setActiveView: (view: 'craft' | 'library' | 'profile') => void;
   scrollContainerRef?: React.RefObject<HTMLDivElement | null>;
 }) {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -2603,8 +2862,8 @@ function DocsView({
   activeView,
   setActiveView,
 }: {
-  activeView: 'craft' | 'library' | 'learn' | 'profile';
-  setActiveView: (v: 'craft' | 'library' | 'learn' | 'profile') => void;
+  activeView: 'craft' | 'library' | 'profile';
+  setActiveView: (v: 'craft' | 'library' | 'profile') => void;
 }) {
   const [activeNav, setActiveNav] = useState('button');
   const [showCode, setShowCode] = useState(true);
@@ -3377,13 +3636,6 @@ function DocsView({
               }
               onClick={() => setActiveNav('getting-started')}
             />
-            <XDSListItem
-              label="Quick start"
-              isSelected={
-                selectedComponent !== null && activeNav === 'quick-start'
-              }
-              onClick={() => setActiveNav('quick-start')}
-            />
           </XDSList>
 
           {COMPONENT_CATEGORIES.map(category => (
@@ -3730,8 +3982,8 @@ function ProfileView({
   activeView,
   setActiveView,
 }: {
-  activeView: 'craft' | 'library' | 'learn' | 'profile';
-  setActiveView: (v: 'craft' | 'library' | 'learn' | 'profile') => void;
+  activeView: 'craft' | 'library' | 'profile';
+  setActiveView: (v: 'craft' | 'library' | 'profile') => void;
 }) {
   const [profileTab, setProfileTab] = useState('used');
   const [expandedCollection, setExpandedCollection] = useState<string | null>(
@@ -4103,6 +4355,100 @@ function ProfileView({
 }
 
 // ---------------------------------------------------------------------------
+// InlinePublishPanel — publish flow rendered inline in the left panel
+// ---------------------------------------------------------------------------
+
+const PUBLISH_TAGS = [
+  'Landing Page',
+  'Dashboard',
+  'Marketing',
+  'E-commerce',
+  'Documentation',
+  'SaaS',
+];
+
+function InlinePublishPanel({
+  templateName,
+  isVisible,
+  onBack,
+}: {
+  templateName: string;
+  isVisible: boolean;
+  onBack: () => void;
+}) {
+  const [name, setName] = useState(templateName);
+  const [description, setDescription] = useState('');
+  const [tags, setTags] = useState<Array<{id: string; label: string}>>([]);
+  const tagSource = createStaticSource(
+    PUBLISH_TAGS.map(t => ({id: t, label: t})),
+  );
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column' as const,
+        gap: 20,
+        overflowY: 'auto' as const,
+        flex: 1,
+      }}>
+      {/* Back button */}
+      <XDSButton
+        label="Back"
+        variant="ghost"
+        size="sm"
+        icon={<ArrowLeftIcon />}
+        onClick={onBack}
+        style={{marginLeft: -8, alignSelf: 'flex-start'}}
+      />
+
+      {/* Header */}
+      <XDSHeading level={3}>Publish to community</XDSHeading>
+      <XDSText type="supporting" color="secondary">
+        Share your work so others on the team can use it as a starting point.
+      </XDSText>
+
+      {/* Template name input */}
+      <XDSTextInput
+        label="Template name"
+        value={name}
+        onChange={v => setName(v)}
+        size="lg"
+      />
+
+      {/* Description textarea */}
+      <XDSTextArea
+        label="Description"
+        placeholder="Describe what makes this template unique..."
+        value={description}
+        onChange={v => setDescription(v)}
+        rows={3}
+      />
+
+      {/* Tags */}
+      <XDSTokenizer
+        label="Tags"
+        searchSource={tagSource}
+        value={tags}
+        onChange={items => setTags(items)}
+        placeholder="Add tags..."
+        hasEntriesOnFocus
+        hasCreate
+        size="md"
+      />
+
+      {/* Publish button */}
+      <XDSButton
+        variant="primary"
+        label="Publish template"
+        size="lg"
+        style={{width: '100%'}}
+      />
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // TemplateFullPreview — full-page preview (like Squarespace template demos)
 // ---------------------------------------------------------------------------
 
@@ -4150,12 +4496,63 @@ function TemplateFullPreview({
   );
   const [panelTab, setPanelTab] = useState<'properties' | 'chat'>(defaultTab);
   const [chatInput, setChatInput] = useState('');
+  const [showPublishModal, setShowPublishModal] = useState(false);
+  const [showSharePopover, setShowSharePopover] = useState(false);
+  const [showSendPopover, setShowSendPopover] = useState(false);
+  const [sendPopoverPos, setSendPopoverPos] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
+  const [sharePopoverPos, setSharePopoverPos] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
+  const [shareCopied, setShareCopied] = useState(false);
+  const [sendCopied, setSendCopied] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
+  const [liked, setLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(1645);
+  const [bookmarked, setBookmarked] = useState(false);
+  const [bookmarkCount, setBookmarkCount] = useState(892);
+  const sharePopoverRef = useRef<HTMLDivElement>(null);
+  const shareButtonRef = useRef<HTMLButtonElement>(null);
+  const sendPopoverRef = useRef<HTMLDivElement>(null);
+
+  const shareCliCommand = `npx xds template ${templateName.toLowerCase().replace(/\s+/g, '-')} ./my-project`;
 
   useEffect(() => {
     requestAnimationFrame(() => {
       requestAnimationFrame(() => setIsVisible(true));
     });
   }, []);
+
+  useEffect(() => {
+    if (!showSharePopover) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        sharePopoverRef.current &&
+        !sharePopoverRef.current.contains(e.target as Node)
+      ) {
+        setShowSharePopover(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showSharePopover]);
+
+  useEffect(() => {
+    if (!showSendPopover) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        sendPopoverRef.current &&
+        !sendPopoverRef.current.contains(e.target as Node)
+      ) {
+        setShowSendPopover(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showSendPopover]);
 
   return (
     <div
@@ -4190,364 +4587,575 @@ function TemplateFullPreview({
             display: 'flex',
             flexDirection: 'column' as const,
           }}>
-          {/* Back button + tabs on same row */}
+          {/* Details / Chat content — hidden when publish is visible */}
           <div
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              marginBottom: showChat ? 32 : 8,
-              paddingBottom: 0,
-              borderBottom: showChat
-                ? '1px solid var(--color-divider, #e0e0e0)'
-                : 'none',
+              display: showPublishModal ? 'none' : 'flex',
+              flexDirection: 'column' as const,
+              flex: 1,
             }}>
-            <XDSButton
-              label="Craft"
-              variant="ghost"
-              size="sm"
-              icon={<ArrowLeftIcon />}
-              isIconOnly={!!showChat}
-              onClick={onBack}
-              style={{marginLeft: -8, flexShrink: 0}}
-            />
-            {showChat && (
-              <div style={{display: 'flex', flex: 1}}>
-                {(['properties', 'chat'] as const).map(tab => (
-                  <button
-                    key={tab}
-                    onClick={() => setPanelTab(tab)}
-                    style={{
-                      flex: 1,
-                      padding: '8px 0',
-                      background: 'none',
-                      border: 'none',
-                      borderBottom:
-                        panelTab === tab
-                          ? '2px solid var(--color-text-primary, #111)'
-                          : '2px solid transparent',
-                      marginBottom: -1,
-                      cursor: 'pointer',
-                      textAlign: 'center' as const,
-                      transition: 'border-color 150ms ease',
-                    }}>
-                    <XDSText
-                      type="body"
-                      color={panelTab === tab ? 'primary' : 'secondary'}>
-                      {tab === 'properties' ? 'Details' : 'Chat'}
-                    </XDSText>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Chat tab content */}
-          {showChat && panelTab === 'chat' ? (
+            {/* Back button + tabs on same row */}
             <div
               style={{
                 display: 'flex',
-                flexDirection: 'column' as const,
-                flex: 1,
-                minHeight: 0,
+                alignItems: 'center',
+                gap: 8,
+                marginBottom: showChat ? 32 : 8,
+                paddingBottom: 0,
+                borderBottom: showChat
+                  ? '1px solid var(--color-divider, #e0e0e0)'
+                  : 'none',
               }}>
-              {/* Chat messages area */}
-              <div style={{flex: 1, overflowY: 'auto' as const}}>
-                {/* Welcome message bubble */}
-                <div
-                  style={{
-                    backgroundColor: 'var(--color-background-body, #f1f4f7)',
-                    borderRadius: 12,
-                    padding: 12,
-                  }}>
-                  <XDSText type="body">
-                    Hi! I can help you customize this template. Try asking me to
-                    change colors, layout, or content.
-                  </XDSText>
-                </div>
-              </div>
-
-              {/* Composer pinned to bottom */}
-              <div
-                style={{
-                  borderTop: '1px solid var(--color-divider, #e0e0e0)',
-                  padding: 8,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  margin: '0 -32px -32px -32px',
-                  paddingInline: 32,
-                  paddingBottom: 32,
-                }}>
+              <XDSTooltip content="Craft">
                 <XDSButton
-                  label="Attach"
+                  label="Craft"
                   variant="ghost"
                   size="sm"
-                  isIconOnly
-                  icon={<PlusIcon />}
+                  icon={<ArrowLeftIcon />}
+                  isIconOnly={!!showChat}
+                  onClick={onBack}
+                  style={{marginLeft: -8, flexShrink: 0}}
                 />
-                <input
-                  value={chatInput}
-                  onChange={e => setChatInput(e.target.value)}
-                  placeholder="What should we build?"
-                  style={{
-                    flex: 1,
-                    border: 'none',
-                    outline: 'none',
-                    backgroundColor: 'transparent',
-                    fontSize: 14,
-                    color: 'inherit',
-                  }}
-                />
-                <XDSButton
-                  label="Send"
-                  variant="primary"
-                  size="sm"
-                  isIconOnly
-                  icon={<SendIcon />}
-                  style={{borderRadius: 9999}}
-                />
-              </div>
-            </div>
-          ) : (
-            <>
-              {/* Template name */}
-              <XDSText type="display-2">{templateName}</XDSText>
-
-              {/* Description */}
-              <div style={{marginTop: 8}}>
-                <XDSText type="body" color="secondary">
-                  Buttons are clickable elements that are used to trigger
-                  actions. They communicate calls to action to the user and
-                  allow users to interact with pages in a variety of ways.
-                  Button labels express what action will occur when the user
-                  interacts with it.
-                </XDSText>
-              </div>
-
-              {/* Author section */}
-              <div
-                style={{
-                  marginTop: 16,
-                  display: 'flex',
-                  flexDirection: 'row' as const,
-                  alignItems: 'center',
-                  gap: 12,
-                }}>
-                <XDSAvatar
-                  size={36}
-                  src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&h=80&fit=crop&crop=face"
-                />
-                <div style={{display: 'flex', flexDirection: 'column', gap: 0}}>
-                  <XDSText type="supporting" color="secondary">
-                    Crafted by
-                  </XDSText>
-                  <XDSText type="body" style={{fontWeight: 600, fontSize: 16}}>
-                    Andrea Anderson
-                  </XDSText>
+              </XDSTooltip>
+              {showChat && (
+                <div style={{display: 'flex', flex: 1}}>
+                  {(['properties', 'chat'] as const).map(tab => (
+                    <button
+                      key={tab}
+                      onClick={() => setPanelTab(tab)}
+                      style={{
+                        flex: 1,
+                        padding: '8px 0',
+                        background: 'none',
+                        border: 'none',
+                        borderBottom:
+                          panelTab === tab
+                            ? '2px solid var(--color-text-primary, #111)'
+                            : '2px solid transparent',
+                        marginBottom: -1,
+                        cursor: 'pointer',
+                        textAlign: 'center' as const,
+                        transition: 'border-color 150ms ease',
+                      }}>
+                      <XDSText
+                        type="body"
+                        color={panelTab === tab ? 'primary' : 'secondary'}>
+                        {tab === 'properties' ? 'Details' : 'Chat'}
+                      </XDSText>
+                    </button>
+                  ))}
                 </div>
-              </div>
+              )}
+            </div>
 
-              {/* Stats buttons */}
+            {/* Chat tab content */}
+            {showChat && panelTab === 'chat' ? (
               <div
                 style={{
                   display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  marginTop: 16,
-                  marginLeft: -8,
-                  marginRight: -8,
+                  flexDirection: 'column' as const,
+                  flex: 1,
+                  minHeight: 0,
                 }}>
-                <div style={{display: 'flex', alignItems: 'center', gap: 4}}>
+                {/* Chat messages area */}
+                <div style={{flex: 1, overflowY: 'auto' as const}}>
+                  {/* Welcome message bubble */}
+                  <div
+                    style={{
+                      backgroundColor: 'var(--color-background-body, #f1f4f7)',
+                      borderRadius: 12,
+                      padding: 12,
+                    }}>
+                    <XDSText type="body">
+                      Hi! I can help you customize this template. Try asking me
+                      to change colors, layout, or content.
+                    </XDSText>
+                  </div>
+                </div>
+
+                {/* Composer pinned to bottom */}
+                <div
+                  style={{
+                    borderTop: '1px solid var(--color-divider, #e0e0e0)',
+                    padding: 8,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    margin: '0 -32px -32px -32px',
+                    paddingInline: 32,
+                    paddingBottom: 32,
+                  }}>
                   <XDSButton
-                    label="Link"
+                    label="Attach"
                     variant="ghost"
                     size="sm"
                     isIconOnly
-                    icon={<LinkIcon />}
+                    icon={<PlusIcon />}
                   />
-                  <XDSDropdownMenu
-                    button={{
-                      label: 'Share',
-                      variant: 'ghost',
-                      size: 'sm',
-                      isIconOnly: true,
-                      icon: <PaperPlaneIcon />,
+                  <input
+                    value={chatInput}
+                    onChange={e => setChatInput(e.target.value)}
+                    placeholder="What should we build?"
+                    style={{
+                      flex: 1,
+                      border: 'none',
+                      outline: 'none',
+                      backgroundColor: 'transparent',
+                      fontSize: 14,
+                      color: 'inherit',
                     }}
-                    hasChevron={false}
-                    menuWidth={220}
-                    items={[
-                      {
-                        label: 'Copy CLI Command...',
-                        icon: TerminalIcon,
-                        onClick: () => {},
-                      },
-                      {type: 'divider' as const},
-                      {
-                        label: 'Claude Code',
-                        icon: ClaudeIcon,
-                        onClick: () => {},
-                      },
-                      {label: 'VSCode', icon: VSCodeIcon, onClick: () => {}},
-                      {label: 'Cursor', icon: CursorAIIcon, onClick: () => {}},
-                    ]}
-                  />
-                </div>
-                <div style={{display: 'flex', alignItems: 'center', gap: 4}}>
-                  <XDSButton
-                    label="1,645"
-                    variant="ghost"
-                    size="sm"
-                    icon={<HeartIcon />}
                   />
                   <XDSButton
-                    label="892"
-                    variant="ghost"
+                    label="Send"
+                    variant="primary"
                     size="sm"
-                    icon={<BookmarkIcon />}
+                    isIconOnly
+                    icon={<SendIcon />}
+                    style={{borderRadius: 9999}}
                   />
                 </div>
               </div>
+            ) : (
+              <>
+                {/* Template name */}
+                <XDSText type="display-2">{templateName}</XDSText>
 
-              {/* CTA button */}
-              {!showEditor && (
-                <div style={{marginTop: 16}}>
-                  <XDSButton
-                    variant="primary"
-                    label="Start crafting"
-                    onClick={onUse}
-                    size="lg"
-                    style={{width: '100%'}}
-                  />
+                {/* Description */}
+                <div style={{marginTop: 8}}>
+                  <XDSText type="body" color="secondary">
+                    Buttons are clickable elements that are used to trigger
+                    actions. They communicate calls to action to the user and
+                    allow users to interact with pages in a variety of ways.
+                    Button labels express what action will occur when the user
+                    interacts with it.
+                  </XDSText>
                 </div>
-              )}
 
-              {/* Themes */}
-              <div style={{marginTop: 32}}>
-                <XDSHeading level={4}>Themes</XDSHeading>
+                {/* Author section */}
                 <div
                   style={{
-                    display: 'grid',
-                    gridTemplateColumns: '1fr 1fr',
-                    gap: 10,
-                    marginTop: 8,
+                    marginTop: 16,
+                    display: 'flex',
+                    flexDirection: 'row' as const,
+                    alignItems: 'center',
+                    gap: 12,
                   }}>
-                  {PREVIEW_COLOR_PALETTES.map(palette => (
-                    <div
-                      key={palette.name}
-                      onClick={() => setSelectedPalette(palette.name)}
-                      style={{
-                        cursor: 'pointer',
-                        border: `2px solid ${selectedPalette === palette.name ? 'var(--color-accent, #0066FF)' : 'transparent'}`,
-                        borderRadius: 14,
-                        overflow: 'hidden',
-                        transition: 'border-color 0.15s ease',
-                      }}>
-                      <XDSCard padding={0}>
-                        <div
-                          style={{
-                            display: 'flex',
-                            overflow: 'hidden',
-                            height: 48,
-                          }}>
-                          {palette.colors.map((color, i) => (
-                            <div
-                              key={i}
+                  <XDSAvatar
+                    size={36}
+                    src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&h=80&fit=crop&crop=face"
+                  />
+                  <div
+                    style={{display: 'flex', flexDirection: 'column', gap: 0}}>
+                    <XDSText type="supporting" color="secondary">
+                      Crafted by
+                    </XDSText>
+                    <XDSText
+                      type="body"
+                      style={{fontWeight: 600, fontSize: 16}}>
+                      Andrea Anderson
+                    </XDSText>
+                  </div>
+                </div>
+
+                {/* Stats buttons */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    marginTop: 16,
+                    marginLeft: -8,
+                    marginRight: -8,
+                  }}>
+                  <div style={{display: 'flex', alignItems: 'center', gap: 4}}>
+                    <XDSTooltip content="Copy link">
+                      <XDSButton
+                        label="Link"
+                        variant="ghost"
+                        size="sm"
+                        isIconOnly
+                        icon={
+                          linkCopied ? (
+                            <CheckIcon
                               style={{
-                                flex: 1,
-                                backgroundColor: color,
+                                strokeDasharray: 24,
+                                strokeDashoffset: 0,
+                                animation: 'checkDraw 0.3s ease-out',
                               }}
                             />
+                          ) : (
+                            <LinkIcon />
+                          )
+                        }
+                        onClick={() => {
+                          void navigator.clipboard.writeText(
+                            'https://xds.dev/templates/' +
+                              templateName.toLowerCase().replace(/\s+/g, '-'),
+                          );
+                          setLinkCopied(true);
+                          setTimeout(() => setLinkCopied(false), 2000);
+                        }}
+                      />
+                    </XDSTooltip>
+                    <div
+                      ref={sendPopoverRef}
+                      style={{position: 'relative' as const}}>
+                      <XDSTooltip content="Share">
+                        <XDSButton
+                          label="Share"
+                          variant="ghost"
+                          size="sm"
+                          isIconOnly
+                          icon={<ShareIcon />}
+                          onClick={() => {
+                            setShowSendPopover(prev => {
+                              if (!prev && sendPopoverRef.current) {
+                                const rect =
+                                  sendPopoverRef.current.getBoundingClientRect();
+                                const popoverWidth = 340;
+                                const popoverHeight = 400;
+                                const left = Math.min(
+                                  Math.max(8, rect.left),
+                                  window.innerWidth - popoverWidth - 16,
+                                );
+                                const top =
+                                  rect.bottom + 4 + popoverHeight + 16 >
+                                  window.innerHeight
+                                    ? rect.top - popoverHeight - 4
+                                    : rect.bottom + 4;
+                                setSendPopoverPos({top, left});
+                              }
+                              return !prev;
+                            });
+                          }}
+                        />
+                      </XDSTooltip>
+                      {showSendPopover && sendPopoverPos && (
+                        <div
+                          style={{
+                            position: 'fixed' as const,
+                            left: sendPopoverPos.left,
+                            top: sendPopoverPos.top,
+                            zIndex: 100,
+                            width: 340,
+                            backgroundColor:
+                              'var(--color-background-card, #fff)',
+                            borderRadius: 12,
+                            boxShadow:
+                              '0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08)',
+                            padding: 20,
+                          }}>
+                          <XDSHeading level={4}>Add to your project</XDSHeading>
+                          <div style={{marginTop: 8}}>
+                            <XDSText type="body" color="secondary">
+                              Copy this snippet and paste it in your terminal to
+                              get started.
+                            </XDSText>
+                          </div>
+
+                          {/* Code block */}
+                          <div
+                            style={{
+                              position: 'relative' as const,
+                              backgroundColor: '#1a1a2e',
+                              borderRadius: 10,
+                              padding: '14px 16px',
+                              paddingRight: 44,
+                              marginTop: 12,
+                            }}>
+                            <code
+                              style={{
+                                color: '#fff',
+                                fontFamily: '"Roboto Mono", monospace',
+                                fontSize: 13,
+                                lineHeight: 1.5,
+                                wordBreak: 'break-all' as const,
+                              }}>
+                              {shareCliCommand}
+                            </code>
+                            <div
+                              style={{
+                                position: 'absolute' as const,
+                                top: 8,
+                                right: 8,
+                              }}>
+                              <XDSButton
+                                label={sendCopied ? 'Copied' : 'Copy'}
+                                variant="ghost"
+                                size="sm"
+                                isIconOnly
+                                icon={<CopyIcon />}
+                                style={{
+                                  color: sendCopied ? '#4ade80' : '#fff',
+                                }}
+                                onClick={() => {
+                                  navigator.clipboard.writeText(
+                                    shareCliCommand,
+                                  );
+                                  setSendCopied(true);
+                                  setTimeout(() => setSendCopied(false), 2000);
+                                }}
+                              />
+                            </div>
+                          </div>
+
+                          {/* Divider */}
+                          <div
+                            style={{
+                              height: 1,
+                              backgroundColor: 'var(--color-divider, #e0e0e0)',
+                              margin: '16px 0',
+                            }}
+                          />
+
+                          {/* IDE options */}
+                          <div style={{marginBottom: 8}}>
+                            <XDSText
+                              type="supporting"
+                              weight="semibold"
+                              color="secondary">
+                              Open in...
+                            </XDSText>
+                          </div>
+                          {[
+                            {
+                              label: 'Claude Code',
+                              Icon: ClaudeIcon,
+                            },
+                            {label: 'VSCode', Icon: VSCodeIcon},
+                            {label: 'Cursor', Icon: CursorAIIcon},
+                          ].map(item => (
+                            <div
+                              key={item.label}
+                              onClick={() => setShowSendPopover(false)}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 10,
+                                padding: '8px 4px',
+                                cursor: 'pointer',
+                                borderRadius: 8,
+                              }}>
+                              <item.Icon
+                                style={{
+                                  width: 18,
+                                  height: 18,
+                                  flexShrink: 0,
+                                }}
+                              />
+                              <XDSText type="body">{item.label}</XDSText>
+                            </div>
                           ))}
                         </div>
-                      </XDSCard>
+                      )}
                     </div>
-                  ))}
+                  </div>
+                  <div style={{display: 'flex', alignItems: 'center', gap: 4}}>
+                    <XDSTooltip content="Like">
+                      <XDSButton
+                        label={likeCount.toLocaleString()}
+                        variant="ghost"
+                        size="sm"
+                        icon={
+                          <HeartIcon
+                            fill={liked ? 'currentColor' : 'none'}
+                            style={liked ? {color: '#e5484d'} : undefined}
+                          />
+                        }
+                        style={liked ? {color: '#e5484d'} : undefined}
+                        onClick={() => {
+                          setLiked(prev => !prev);
+                          setLikeCount(prev => (liked ? prev - 1 : prev + 1));
+                        }}
+                      />
+                    </XDSTooltip>
+                    <XDSTooltip content="Bookmark">
+                      <XDSButton
+                        label={bookmarkCount.toLocaleString()}
+                        variant="ghost"
+                        size="sm"
+                        icon={
+                          <BookmarkIcon
+                            fill={bookmarked ? 'currentColor' : 'none'}
+                            style={
+                              bookmarked
+                                ? {
+                                    color:
+                                      'var(--color-icon-highlight, #3b82f6)',
+                                  }
+                                : undefined
+                            }
+                          />
+                        }
+                        style={
+                          bookmarked
+                            ? {color: 'var(--color-icon-highlight, #3b82f6)'}
+                            : undefined
+                        }
+                        onClick={() => {
+                          setBookmarked(prev => !prev);
+                          setBookmarkCount(prev =>
+                            bookmarked ? prev - 1 : prev + 1,
+                          );
+                        }}
+                      />
+                    </XDSTooltip>
+                  </div>
                 </div>
-              </div>
 
-              {/* Font packs — removed */}
-              <div style={{marginTop: 32, display: 'none'}}>
-                <XDSHeading level={4}>Font packs</XDSHeading>
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: '1fr 1fr',
-                    gap: 10,
-                    marginTop: 8,
-                  }}>
-                  {PREVIEW_FONT_PACKS.map(pack => (
-                    <div
-                      key={pack.heading}
-                      onClick={() => setSelectedFontPack(pack.heading)}
-                      style={{
-                        cursor: 'pointer',
-                        border: `2px solid ${selectedFontPack === pack.heading ? 'var(--color-accent, #0066FF)' : 'transparent'}`,
-                        borderRadius: 14,
-                        overflow: 'hidden',
-                        transition: 'border-color 0.15s ease',
-                      }}>
-                      <XDSCard padding={2}>
-                        <div style={{fontFamily: pack.heading}}>
-                          <XDSText
-                            type="body"
-                            style={{fontWeight: 600, fontSize: 16}}>
-                            Heading
-                          </XDSText>
-                        </div>
-                        <div style={{fontFamily: pack.paragraph}}>
-                          <XDSText type="supporting" color="secondary">
-                            Paragraph text
-                          </XDSText>
-                        </div>
-                      </XDSCard>
-                    </div>
-                  ))}
-                </div>
-              </div>
+                {/* CTA button */}
+                {!showEditor && (
+                  <div style={{marginTop: 16}}>
+                    <XDSButton
+                      variant="primary"
+                      label="Start crafting"
+                      onClick={onUse}
+                      size="lg"
+                      style={{width: '100%'}}
+                    />
+                  </div>
+                )}
 
-              {/* Component used */}
-              <div style={{marginTop: 32}}>
-                <XDSHeading level={3}>Component used</XDSHeading>
-                <div
-                  style={{
-                    display: 'flex',
-                    flexWrap: 'wrap' as const,
-                    gap: 8,
-                    marginTop: 8,
-                  }}>
-                  <XDSToken label="XDSAppShell" />
-                  <XDSToken label="XDSTopNav" />
-                  <XDSToken label="XDSVStack" />
-                  <XDSToken label="XDSHStack" />
-                  <XDSToken label="XDSHeading" />
-                  <XDSToken label="XDSText" />
-                  <XDSToken label="XDSButton" />
-                  <XDSToken label="XDSCard" />
-                  <XDSToken label="XDSBadge" />
-                  <XDSToken label="XDSAvatar" />
+                {/* Themes */}
+                <div style={{marginTop: 32}}>
+                  <XDSHeading level={4}>Themes</XDSHeading>
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: '1fr 1fr',
+                      gap: 10,
+                      marginTop: 8,
+                    }}>
+                    {PREVIEW_COLOR_PALETTES.map(palette => (
+                      <div
+                        key={palette.name}
+                        onClick={() => setSelectedPalette(palette.name)}
+                        style={{
+                          cursor: 'pointer',
+                          border: `2px solid ${selectedPalette === palette.name ? 'var(--color-accent, #0066FF)' : 'transparent'}`,
+                          borderRadius: 14,
+                          overflow: 'hidden',
+                          transition: 'border-color 0.15s ease',
+                        }}>
+                        <XDSCard padding={0}>
+                          <div
+                            style={{
+                              display: 'flex',
+                              overflow: 'hidden',
+                              height: 48,
+                            }}>
+                            {palette.colors.map((color, i) => (
+                              <div
+                                key={i}
+                                style={{
+                                  flex: 1,
+                                  backgroundColor: color,
+                                }}
+                              />
+                            ))}
+                          </div>
+                        </XDSCard>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
 
-              {/* Keywords */}
-              <div style={{marginTop: 32}}>
-                <XDSHeading level={3}>Keywords</XDSHeading>
-                <div
-                  style={{
-                    display: 'flex',
-                    flexWrap: 'wrap' as const,
-                    gap: 4,
-                    marginTop: 8,
-                  }}>
-                  <XDSToken label="Dashboard" size="sm" />
-                  <XDSToken label="Admin" size="sm" />
-                  <XDSToken label="Layout" size="sm" />
-                  <XDSToken label="Navigation" size="sm" />
-                  <XDSToken label="Settings" size="sm" />
+                {/* Font packs — removed */}
+                <div style={{marginTop: 32, display: 'none'}}>
+                  <XDSHeading level={4}>Font packs</XDSHeading>
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: '1fr 1fr',
+                      gap: 10,
+                      marginTop: 8,
+                    }}>
+                    {PREVIEW_FONT_PACKS.map(pack => (
+                      <div
+                        key={pack.heading}
+                        onClick={() => setSelectedFontPack(pack.heading)}
+                        style={{
+                          cursor: 'pointer',
+                          border: `2px solid ${selectedFontPack === pack.heading ? 'var(--color-accent, #0066FF)' : 'transparent'}`,
+                          borderRadius: 14,
+                          overflow: 'hidden',
+                          transition: 'border-color 0.15s ease',
+                        }}>
+                        <XDSCard padding={2}>
+                          <div style={{fontFamily: pack.heading}}>
+                            <XDSText
+                              type="body"
+                              style={{fontWeight: 600, fontSize: 16}}>
+                              Heading
+                            </XDSText>
+                          </div>
+                          <div style={{fontFamily: pack.paragraph}}>
+                            <XDSText type="supporting" color="secondary">
+                              Paragraph text
+                            </XDSText>
+                          </div>
+                        </XDSCard>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            </>
-          )}
+
+                {/* Component used */}
+                <div style={{marginTop: 32}}>
+                  <XDSHeading level={3}>Component used</XDSHeading>
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexWrap: 'wrap' as const,
+                      gap: 8,
+                      marginTop: 8,
+                    }}>
+                    <XDSToken label="XDSAppShell" />
+                    <XDSToken label="XDSTopNav" />
+                    <XDSToken label="XDSVStack" />
+                    <XDSToken label="XDSHStack" />
+                    <XDSToken label="XDSHeading" />
+                    <XDSToken label="XDSText" />
+                    <XDSToken label="XDSButton" />
+                    <XDSToken label="XDSCard" />
+                    <XDSToken label="XDSBadge" />
+                    <XDSToken label="XDSAvatar" />
+                  </div>
+                </div>
+
+                {/* Keywords */}
+                <div style={{marginTop: 32}}>
+                  <XDSHeading level={3}>Keywords</XDSHeading>
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexWrap: 'wrap' as const,
+                      gap: 4,
+                      marginTop: 8,
+                    }}>
+                    <XDSToken label="Dashboard" size="sm" />
+                    <XDSToken label="Admin" size="sm" />
+                    <XDSToken label="Layout" size="sm" />
+                    <XDSToken label="Navigation" size="sm" />
+                    <XDSToken label="Settings" size="sm" />
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+          {/* Inline publish panel — shown when publish is active */}
+          <div
+            style={{
+              display: showPublishModal ? 'flex' : 'none',
+              flexDirection: 'column' as const,
+              flex: 1,
+            }}>
+            <InlinePublishPanel
+              templateName={templateName}
+              isVisible={showPublishModal}
+              onBack={() => setShowPublishModal(false)}
+            />
+          </div>
         </div>
       </div>
 
@@ -4578,89 +5186,242 @@ function TemplateFullPreview({
                   }
                   label="Viewport size"
                   size="sm">
-                  <XDSSegmentedControlItem
-                    value="desktop"
-                    label="Desktop"
-                    isLabelHidden
-                    icon={<DesktopIcon />}
-                  />
-                  <XDSSegmentedControlItem
-                    value="mobile"
-                    label="Mobile"
-                    isLabelHidden
-                    icon={<PhoneIcon />}
-                  />
+                  <XDSTooltip content="Desktop">
+                    <XDSSegmentedControlItem
+                      value="desktop"
+                      label="Desktop"
+                      isLabelHidden
+                      icon={<DesktopIcon />}
+                    />
+                  </XDSTooltip>
+                  <XDSTooltip content="Mobile">
+                    <XDSSegmentedControlItem
+                      value="mobile"
+                      label="Mobile"
+                      isLabelHidden
+                      icon={<PhoneIcon />}
+                    />
+                  </XDSTooltip>
                 </XDSSegmentedControl>
               }
               endContent={
                 <>
-                  <XDSButton
-                    label="Point"
-                    variant="ghost"
-                    isIconOnly
-                    icon={<CursorIcon />}
-                  />
-                  <XDSDropdownMenu
-                    button={{
-                      label: 'Theme',
-                      variant: 'ghost',
-                      isIconOnly: true,
-                      icon: <PaletteIcon />,
-                    }}
-                    hasChevron={false}
-                    items={XDS_THEMES.map(t => ({
-                      label: t.label,
-                      onClick: () => {},
-                    }))}
-                  />
-                  <XDSButton
-                    label="Toggle theme"
-                    variant="ghost"
-                    isIconOnly
-                    icon={<ContrastIcon />}
-                  />
-                  <XDSButton
-                    label="Toggle code"
-                    variant={editorView === 'code' ? 'secondary' : 'ghost'}
-                    isIconOnly
-                    icon={<CodeIcon />}
-                    onClick={() =>
-                      setEditorView(
-                        editorView === 'preview' ? 'code' : 'preview',
-                      )
-                    }
-                  />
-                  <XDSButton
-                    label="Save"
-                    variant="ghost"
-                    icon={<SaveIcon />}
-                    isIconOnly
-                    onClick={() => {}}
-                  />
-                  <XDSDropdownMenu
-                    button={{
-                      label: 'Share',
-                      variant: 'ghost',
-                      isIconOnly: true,
-                      icon: <PaperPlaneIcon />,
-                    }}
-                    hasChevron={false}
-                    menuWidth={220}
-                    items={[
-                      {
-                        label: 'Copy CLI Command...',
-                        icon: TerminalIcon,
+                  <XDSTooltip content="Point">
+                    <XDSButton
+                      label="Point"
+                      variant="ghost"
+                      isIconOnly
+                      icon={<CursorIcon />}
+                    />
+                  </XDSTooltip>
+                  <XDSTooltip content="Theme">
+                    <XDSDropdownMenu
+                      button={{
+                        label: 'Theme',
+                        variant: 'ghost',
+                        isIconOnly: true,
+                        icon: <PaletteIcon />,
+                      }}
+                      hasChevron={false}
+                      items={XDS_THEMES.map(t => ({
+                        label: t.label,
                         onClick: () => {},
-                      },
-                      {type: 'divider' as const},
-                      {
-                        label: 'Claude Code',
-                        icon: ClaudeIcon,
-                        onClick: () => {},
-                      },
-                      {label: 'VSCode', icon: VSCodeIcon, onClick: () => {}},
-                      {label: 'Cursor', icon: CursorAIIcon, onClick: () => {}},
-                    ]}
+                      }))}
+                    />
+                  </XDSTooltip>
+                  <XDSTooltip content="Toggle theme">
+                    <XDSButton
+                      label="Toggle theme"
+                      variant="ghost"
+                      isIconOnly
+                      icon={<ContrastIcon />}
+                    />
+                  </XDSTooltip>
+                  <XDSTooltip content="Toggle code">
+                    <XDSButton
+                      label="Toggle code"
+                      variant={editorView === 'code' ? 'secondary' : 'ghost'}
+                      isIconOnly
+                      icon={<CodeIcon />}
+                      onClick={() =>
+                        setEditorView(
+                          editorView === 'preview' ? 'code' : 'preview',
+                        )
+                      }
+                    />
+                  </XDSTooltip>
+                  <div
+                    style={{
+                      width: 1,
+                      height: 20,
+                      backgroundColor: 'var(--color-border-strong, #999)',
+                      margin: '0 4px',
+                      flexShrink: 0,
+                    }}
+                  />
+                  <XDSTooltip content="Save">
+                    <XDSButton
+                      label="Save"
+                      variant="ghost"
+                      icon={<SaveIcon />}
+                      isIconOnly
+                      onClick={() => {}}
+                    />
+                  </XDSTooltip>
+                  <div
+                    ref={sharePopoverRef}
+                    style={{position: 'relative' as const}}>
+                    <XDSTooltip content="Share">
+                      <XDSButton
+                        label="Share"
+                        variant="ghost"
+                        isIconOnly
+                        icon={<ShareIcon />}
+                        ref={shareButtonRef}
+                        onClick={() => {
+                          setShowSharePopover(prev => {
+                            if (!prev && shareButtonRef.current) {
+                              const rect =
+                                shareButtonRef.current.getBoundingClientRect();
+                              const popoverWidth = 340;
+                              const popoverHeight = 400;
+                              const left = Math.min(
+                                Math.max(8, rect.right - popoverWidth),
+                                window.innerWidth - popoverWidth - 16,
+                              );
+                              const top =
+                                rect.bottom + 4 + popoverHeight + 16 >
+                                window.innerHeight
+                                  ? rect.top - popoverHeight - 4
+                                  : rect.bottom + 4;
+                              setSharePopoverPos({top, left});
+                            }
+                            return !prev;
+                          });
+                        }}
+                      />
+                    </XDSTooltip>
+                    {showSharePopover && sharePopoverPos && (
+                      <div
+                        style={{
+                          position: 'fixed' as const,
+                          left: sharePopoverPos.left,
+                          top: sharePopoverPos.top,
+                          zIndex: 100,
+                          width: 340,
+                          backgroundColor: 'var(--color-background-card, #fff)',
+                          borderRadius: 12,
+                          boxShadow:
+                            '0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08)',
+                          padding: 20,
+                        }}>
+                        <XDSHeading level={4}>Add to your project</XDSHeading>
+                        <div style={{marginTop: 8}}>
+                          <XDSText type="body" color="secondary">
+                            Copy this snippet and paste it in your terminal to
+                            get started.
+                          </XDSText>
+                        </div>
+
+                        {/* Code block */}
+                        <div
+                          style={{
+                            position: 'relative' as const,
+                            backgroundColor: '#1a1a2e',
+                            borderRadius: 10,
+                            padding: '14px 16px',
+                            paddingRight: 44,
+                            marginTop: 12,
+                          }}>
+                          <code
+                            style={{
+                              color: '#fff',
+                              fontFamily: '"Roboto Mono", monospace',
+                              fontSize: 13,
+                              lineHeight: 1.5,
+                              wordBreak: 'break-all' as const,
+                            }}>
+                            {shareCliCommand}
+                          </code>
+                          <div
+                            style={{
+                              position: 'absolute' as const,
+                              top: 8,
+                              right: 8,
+                            }}>
+                            <XDSButton
+                              label={shareCopied ? 'Copied' : 'Copy'}
+                              variant="ghost"
+                              size="sm"
+                              isIconOnly
+                              icon={<CopyIcon />}
+                              style={{
+                                color: shareCopied ? '#4ade80' : '#fff',
+                              }}
+                              onClick={() => {
+                                navigator.clipboard.writeText(shareCliCommand);
+                                setShareCopied(true);
+                                setTimeout(() => setShareCopied(false), 2000);
+                              }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Divider */}
+                        <div
+                          style={{
+                            height: 1,
+                            backgroundColor: 'var(--color-divider, #e0e0e0)',
+                            margin: '16px 0',
+                          }}
+                        />
+
+                        {/* IDE options */}
+                        <div style={{marginBottom: 8}}>
+                          <XDSText
+                            type="supporting"
+                            weight="semibold"
+                            color="secondary">
+                            Open in...
+                          </XDSText>
+                        </div>
+                        {[
+                          {
+                            label: 'Claude Code',
+                            Icon: ClaudeIcon,
+                          },
+                          {label: 'VSCode', Icon: VSCodeIcon},
+                          {label: 'Cursor', Icon: CursorAIIcon},
+                        ].map(item => (
+                          <div
+                            key={item.label}
+                            onClick={() => setShowSharePopover(false)}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 10,
+                              padding: '8px 4px',
+                              cursor: 'pointer',
+                              borderRadius: 8,
+                            }}>
+                            <item.Icon
+                              style={{
+                                width: 18,
+                                height: 18,
+                                flexShrink: 0,
+                              }}
+                            />
+                            <XDSText type="body">{item.label}</XDSText>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <XDSButton
+                    label="Publish"
+                    variant="primary"
+                    size="sm"
+                    onClick={() => setShowPublishModal(true)}
                   />
                 </>
               }
@@ -4774,9 +5535,9 @@ function TemplateFullPreview({
         {/* Code block */}
         <div
           style={{
-            margin: 0,
-            border: 'none',
-            borderRadius: 0,
+            margin: '0 22px',
+            border: '1px solid var(--color-divider, rgba(0,0,0,0.1))',
+            borderRadius: 8,
             backgroundColor: 'var(--color-background-muted, rgba(0,0,0,0.03))',
             overflow: 'auto',
             flex: 1,
@@ -4912,12 +5673,43 @@ function TemplateCombinedView({
   const [isVisible, setIsVisible] = useState(false);
   const [chatPrompt, setChatPrompt] = useState('');
   const [rightPanelTab, setRightPanelTab] = useState('properties');
+  const [showSendPopover, setShowSendPopover] = useState(false);
+  const [sendPopoverPos, setSendPopoverPos] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
+  const [sendCopied, setSendCopied] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
+  const [liked, setLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(1645);
+  const [bookmarked, setBookmarked] = useState(false);
+  const [bookmarkCount, setBookmarkCount] = useState(892);
+  const sendPopoverRef = useRef<HTMLDivElement>(null);
+  const statsSendPopoverRef = useRef<HTMLDivElement>(null);
+
+  const shareCliCommand = `npx xds template ${templateName.toLowerCase().replace(/\s+/g, '-')} ./my-project`;
 
   useEffect(() => {
     requestAnimationFrame(() => {
       requestAnimationFrame(() => setIsVisible(true));
     });
   }, []);
+
+  useEffect(() => {
+    if (!showSendPopover) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (
+        sendPopoverRef.current?.contains(target) ||
+        statsSendPopoverRef.current?.contains(target)
+      ) {
+        return;
+      }
+      setShowSendPopover(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showSendPopover]);
 
   return (
     <div style={{display: 'flex', height: '100vh', overflow: 'hidden'}}>
@@ -4969,29 +5761,154 @@ function TemplateCombinedView({
               icon={<PhoneIcon />}
             />
           </XDSSegmentedControl>
-          <div style={{justifySelf: 'end'}}>
-            <XDSDropdownMenu
-              button={{
-                label: 'Share',
-                variant: 'ghost',
-                size: 'sm',
-                isIconOnly: true,
-                icon: <PaperPlaneIcon />,
-              }}
-              hasChevron={false}
-              menuWidth={220}
-              items={[
-                {
-                  label: 'Copy CLI Command...',
-                  icon: TerminalIcon,
-                  onClick: () => {},
-                },
-                {type: 'divider' as const},
-                {label: 'Claude Code', icon: ClaudeIcon, onClick: () => {}},
-                {label: 'VSCode', icon: VSCodeIcon, onClick: () => {}},
-                {label: 'Cursor', icon: CursorAIIcon, onClick: () => {}},
-              ]}
-            />
+          <div
+            ref={sendPopoverRef}
+            style={{justifySelf: 'end', position: 'relative' as const}}>
+            <XDSTooltip content="Share">
+              <XDSButton
+                label="Share"
+                variant="ghost"
+                size="sm"
+                isIconOnly
+                icon={<ShareIcon />}
+                onClick={() => {
+                  setShowSendPopover(prev => {
+                    if (!prev && sendPopoverRef.current) {
+                      const rect =
+                        sendPopoverRef.current.getBoundingClientRect();
+                      const popoverWidth = 340;
+                      const popoverHeight = 400;
+                      const left = Math.min(
+                        Math.max(8, rect.right - popoverWidth),
+                        window.innerWidth - popoverWidth - 16,
+                      );
+                      const top =
+                        rect.bottom + 4 + popoverHeight + 16 >
+                        window.innerHeight
+                          ? rect.top - popoverHeight - 4
+                          : rect.bottom + 4;
+                      setSendPopoverPos({top, left});
+                    }
+                    return !prev;
+                  });
+                }}
+              />
+            </XDSTooltip>
+            {showSendPopover && sendPopoverPos && (
+              <div
+                style={{
+                  position: 'fixed' as const,
+                  left: sendPopoverPos.left,
+                  top: sendPopoverPos.top,
+                  zIndex: 100,
+                  width: 340,
+                  backgroundColor: 'var(--color-background-card, #fff)',
+                  borderRadius: 12,
+                  boxShadow:
+                    '0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08)',
+                  padding: 20,
+                }}>
+                <XDSHeading level={4}>Add to your project</XDSHeading>
+                <div style={{marginTop: 8}}>
+                  <XDSText type="body" color="secondary">
+                    Copy this snippet and paste it in your terminal to get
+                    started.
+                  </XDSText>
+                </div>
+
+                {/* Code block */}
+                <div
+                  style={{
+                    position: 'relative' as const,
+                    backgroundColor: '#1a1a2e',
+                    borderRadius: 10,
+                    padding: '14px 16px',
+                    paddingRight: 44,
+                    marginTop: 12,
+                  }}>
+                  <code
+                    style={{
+                      color: '#fff',
+                      fontFamily: '"Roboto Mono", monospace',
+                      fontSize: 13,
+                      lineHeight: 1.5,
+                      wordBreak: 'break-all' as const,
+                    }}>
+                    {shareCliCommand}
+                  </code>
+                  <div
+                    style={{
+                      position: 'absolute' as const,
+                      top: 8,
+                      right: 8,
+                    }}>
+                    <XDSButton
+                      label={sendCopied ? 'Copied' : 'Copy'}
+                      variant="ghost"
+                      size="sm"
+                      isIconOnly
+                      icon={<CopyIcon />}
+                      style={{
+                        color: sendCopied ? '#4ade80' : '#fff',
+                      }}
+                      onClick={() => {
+                        navigator.clipboard.writeText(shareCliCommand);
+                        setSendCopied(true);
+                        setTimeout(() => setSendCopied(false), 2000);
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Divider */}
+                <div
+                  style={{
+                    height: 1,
+                    backgroundColor: 'var(--color-divider, #e0e0e0)',
+                    margin: '16px 0',
+                  }}
+                />
+
+                {/* IDE options */}
+                <div style={{marginBottom: 8}}>
+                  <XDSText
+                    type="supporting"
+                    weight="semibold"
+                    color="secondary">
+                    Open in...
+                  </XDSText>
+                </div>
+                {[
+                  {
+                    label: 'Claude Code',
+                    Icon: ClaudeIcon,
+                  },
+                  {label: 'VSCode', Icon: VSCodeIcon},
+                  {label: 'Cursor', Icon: CursorAIIcon},
+                ].map(item => (
+                  <div
+                    key={item.label}
+                    onClick={() => setShowSendPopover(false)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 10,
+                      padding: '8px 4px',
+                      cursor: 'pointer',
+                      borderRadius: 8,
+                    }}>
+                    <item.Icon
+                      style={{
+                        width: 18,
+                        height: 18,
+                        flexShrink: 0,
+                      }}
+                    />
+                    <XDSText type="body">{item.label}</XDSText>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -5142,52 +6059,227 @@ function TemplateCombinedView({
                   marginRight: -8,
                 }}>
                 <div style={{display: 'flex', alignItems: 'center', gap: 4}}>
-                  <XDSButton
-                    label="Link"
-                    variant="ghost"
-                    size="sm"
-                    isIconOnly
-                    icon={<LinkIcon />}
-                  />
-                  <XDSDropdownMenu
-                    button={{
-                      label: 'Share',
-                      variant: 'ghost',
-                      size: 'sm',
-                      isIconOnly: true,
-                      icon: <PaperPlaneIcon />,
-                    }}
-                    hasChevron={false}
-                    menuWidth={220}
-                    items={[
-                      {
-                        label: 'Copy CLI Command...',
-                        icon: TerminalIcon,
-                        onClick: () => {},
-                      },
-                      {type: 'divider' as const},
-                      {
-                        label: 'Claude Code',
-                        icon: ClaudeIcon,
-                        onClick: () => {},
-                      },
-                      {label: 'VSCode', icon: VSCodeIcon, onClick: () => {}},
-                      {label: 'Cursor', icon: CursorAIIcon, onClick: () => {}},
-                    ]}
-                  />
+                  <XDSTooltip content="Copy link">
+                    <XDSButton
+                      label="Link"
+                      variant="ghost"
+                      size="sm"
+                      isIconOnly
+                      icon={
+                        linkCopied ? (
+                          <CheckIcon
+                            style={{
+                              strokeDasharray: 24,
+                              strokeDashoffset: 0,
+                              animation: 'checkDraw 0.3s ease-out',
+                            }}
+                          />
+                        ) : (
+                          <LinkIcon />
+                        )
+                      }
+                      onClick={() => {
+                        void navigator.clipboard.writeText(
+                          'https://xds.dev/templates/' +
+                            templateName.toLowerCase().replace(/\s+/g, '-'),
+                        );
+                        setLinkCopied(true);
+                        setTimeout(() => setLinkCopied(false), 2000);
+                      }}
+                    />
+                  </XDSTooltip>
+                  <div
+                    ref={statsSendPopoverRef}
+                    style={{position: 'relative' as const}}>
+                    <XDSTooltip content="Share">
+                      <XDSButton
+                        label="Share"
+                        variant="ghost"
+                        size="sm"
+                        isIconOnly
+                        icon={<ShareIcon />}
+                        onClick={() => {
+                          setShowSendPopover(prev => {
+                            if (!prev && statsSendPopoverRef.current) {
+                              const rect =
+                                statsSendPopoverRef.current.getBoundingClientRect();
+                              const popoverWidth = 340;
+                              const popoverHeight = 400;
+                              const left = Math.min(
+                                Math.max(8, rect.left),
+                                window.innerWidth - popoverWidth - 16,
+                              );
+                              const top =
+                                rect.bottom + 4 + popoverHeight + 16 >
+                                window.innerHeight
+                                  ? rect.top - popoverHeight - 4
+                                  : rect.bottom + 4;
+                              setSendPopoverPos({top, left});
+                            }
+                            return !prev;
+                          });
+                        }}
+                      />
+                    </XDSTooltip>
+                    {showSendPopover && sendPopoverPos && (
+                      <div
+                        style={{
+                          position: 'fixed' as const,
+                          left: sendPopoverPos.left,
+                          top: sendPopoverPos.top,
+                          zIndex: 100,
+                          width: 340,
+                          backgroundColor: 'var(--color-background-card, #fff)',
+                          borderRadius: 12,
+                          boxShadow:
+                            '0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08)',
+                          padding: 20,
+                        }}>
+                        <XDSHeading level={4}>Add to your project</XDSHeading>
+                        <div style={{marginTop: 8}}>
+                          <XDSText type="body" color="secondary">
+                            Copy this snippet and paste it in your terminal to
+                            get started.
+                          </XDSText>
+                        </div>
+
+                        {/* Code block */}
+                        <div
+                          style={{
+                            position: 'relative' as const,
+                            backgroundColor: '#1a1a2e',
+                            borderRadius: 10,
+                            padding: '14px 16px',
+                            paddingRight: 44,
+                            marginTop: 12,
+                          }}>
+                          <code
+                            style={{
+                              color: '#fff',
+                              fontFamily: '"Roboto Mono", monospace',
+                              fontSize: 13,
+                              lineHeight: 1.5,
+                              wordBreak: 'break-all' as const,
+                            }}>
+                            {shareCliCommand}
+                          </code>
+                          <div
+                            style={{
+                              position: 'absolute' as const,
+                              top: 8,
+                              right: 8,
+                            }}>
+                            <XDSButton
+                              label={sendCopied ? 'Copied' : 'Copy'}
+                              variant="ghost"
+                              size="sm"
+                              isIconOnly
+                              icon={<CopyIcon />}
+                              style={{
+                                color: sendCopied ? '#4ade80' : '#fff',
+                              }}
+                              onClick={() => {
+                                navigator.clipboard.writeText(shareCliCommand);
+                                setSendCopied(true);
+                                setTimeout(() => setSendCopied(false), 2000);
+                              }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Divider */}
+                        <div
+                          style={{
+                            height: 1,
+                            backgroundColor: 'var(--color-divider, #e0e0e0)',
+                            margin: '16px 0',
+                          }}
+                        />
+
+                        {/* IDE options */}
+                        <div style={{marginBottom: 8}}>
+                          <XDSText
+                            type="supporting"
+                            weight="semibold"
+                            color="secondary">
+                            Open in...
+                          </XDSText>
+                        </div>
+                        {[
+                          {
+                            label: 'Claude Code',
+                            Icon: ClaudeIcon,
+                          },
+                          {label: 'VSCode', Icon: VSCodeIcon},
+                          {label: 'Cursor', Icon: CursorAIIcon},
+                        ].map(item => (
+                          <div
+                            key={item.label}
+                            onClick={() => setShowSendPopover(false)}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 10,
+                              padding: '8px 4px',
+                              cursor: 'pointer',
+                              borderRadius: 8,
+                            }}>
+                            <item.Icon
+                              style={{
+                                width: 18,
+                                height: 18,
+                                flexShrink: 0,
+                              }}
+                            />
+                            <XDSText type="body">{item.label}</XDSText>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div style={{display: 'flex', alignItems: 'center', gap: 4}}>
                   <XDSButton
-                    label="1,645"
+                    label={likeCount.toLocaleString()}
                     variant="ghost"
                     size="sm"
-                    icon={<HeartIcon />}
+                    icon={
+                      <HeartIcon
+                        fill={liked ? 'currentColor' : 'none'}
+                        style={liked ? {color: '#e5484d'} : undefined}
+                      />
+                    }
+                    style={liked ? {color: '#e5484d'} : undefined}
+                    onClick={() => {
+                      setLiked(prev => !prev);
+                      setLikeCount(prev => (liked ? prev - 1 : prev + 1));
+                    }}
                   />
                   <XDSButton
-                    label="892"
+                    label={bookmarkCount.toLocaleString()}
                     variant="ghost"
                     size="sm"
-                    icon={<BookmarkIcon />}
+                    icon={
+                      <BookmarkIcon
+                        fill={bookmarked ? 'currentColor' : 'none'}
+                        style={
+                          bookmarked
+                            ? {color: 'var(--color-icon-highlight, #3b82f6)'}
+                            : undefined
+                        }
+                      />
+                    }
+                    style={
+                      bookmarked
+                        ? {color: 'var(--color-icon-highlight, #3b82f6)'}
+                        : undefined
+                    }
+                    onClick={() => {
+                      setBookmarked(prev => !prev);
+                      setBookmarkCount(prev =>
+                        bookmarked ? prev - 1 : prev + 1,
+                      );
+                    }}
                   />
                 </div>
               </div>
@@ -5392,9 +6484,9 @@ function TemplateCombinedView({
 // ---------------------------------------------------------------------------
 
 export default function DocsiteLandingTemplate() {
-  const [activeView, setActiveView] = useState<
-    'craft' | 'library' | 'learn' | 'profile'
-  >('craft');
+  const [activeView, setActiveView] = useState<'craft' | 'library' | 'profile'>(
+    'craft',
+  );
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
@@ -5603,9 +6695,8 @@ export default function DocsiteLandingTemplate() {
             animation: 'slideInLeft 500ms cubic-bezier(0.16, 1, 0.3, 1)',
           }}>
           <style>
-            {
-              '@keyframes slideInLeft { from { opacity: 0; transform: translateX(-40px); } to { opacity: 1; transform: translateX(0); } }'
-            }
+            {'@keyframes slideInLeft { from { opacity: 0; transform: translateX(-40px); } to { opacity: 1; transform: translateX(0); } }' +
+              '@keyframes checkDraw { from { stroke-dashoffset: 24; } to { stroke-dashoffset: 0; } }'}
           </style>
           <div
             style={{
@@ -5665,47 +6756,6 @@ export default function DocsiteLandingTemplate() {
 
   if (activeView === 'library') {
     return <DocsView activeView={activeView} setActiveView={setActiveView} />;
-  }
-
-  if (activeView === 'learn') {
-    return (
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          height: '100vh',
-          backgroundColor: 'var(--color-background-card, white)',
-        }}>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '12px 24px',
-            borderBottom: '1px solid var(--color-border-default, #e0e0e0)',
-            backgroundColor: 'var(--color-background-card, white)',
-          }}>
-          <LogoNav activeView={activeView} setActiveView={setActiveView} />
-        </div>
-        <div
-          style={{
-            flex: 1,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}>
-          <div style={{textAlign: 'center', opacity: 0.5}}>
-            <div style={{fontSize: 48, marginBottom: 16}}>📚</div>
-            <div style={{marginBottom: 8}}>
-              <XDSHeading level={3}>Learn</XDSHeading>
-            </div>
-            <XDSText type="body" color="secondary">
-              Tutorials, guides, and resources — coming soon
-            </XDSText>
-          </div>
-        </div>
-      </div>
-    );
   }
 
   if (activeView === 'profile') {
