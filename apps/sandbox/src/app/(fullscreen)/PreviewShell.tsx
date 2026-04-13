@@ -430,7 +430,8 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
         <div
           style={{
             flex: 1,
-            overflow: 'auto',
+            minHeight: 0,
+            overflow: viewport === 'desktop' ? 'hidden' : 'auto',
             display: 'flex',
             justifyContent: 'center',
             padding: viewport !== 'desktop' ? '24px 16px' : 0,
@@ -442,7 +443,7 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
               maxWidth: '100%',
               height: viewport !== 'desktop' ? 'fit-content' : '100%',
               minHeight: viewport !== 'desktop' ? '100%' : undefined,
-              overflow: 'auto',
+              overflow: viewport === 'desktop' ? 'hidden' : 'auto',
               border:
                 viewport !== 'desktop'
                   ? '1px solid var(--color-border-emphasized)'
