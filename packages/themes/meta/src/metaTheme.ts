@@ -328,13 +328,13 @@ export const metaTheme = defineTheme({
     // =========================================================================
     card: {
       base: {
+        padding: '20px',
         '--card-radius': '32px',
-        '--xds-card-padding': '20px',
       },
     },
 
     // =========================================================================
-    // Section — 20px padding
+    // Section
     // =========================================================================
 
     // =========================================================================
@@ -517,7 +517,6 @@ export const metaTheme = defineTheme({
       base: {
         backgroundColor: 'light-dark(var(--color-background-surface), #1F1F20)',
         '--dialog-radius': '32px',
-        '--xds-card-padding': '20px',
       },
     },
 

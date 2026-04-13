@@ -584,6 +584,160 @@ export function defineTheme(input: XDSDefineThemeInput): XDSDefinedTheme {
  * Convert camelCase to kebab-case for CSS property names.
  * e.g. borderRadius → border-radius, backgroundColor → background-color
  */
+
+// =============================================================================
+// Container padding mapping
+// =============================================================================
+
+/**
+ * Components whose padding properties should be mapped to container tokens.
+ * When a theme sets `padding` on these components, the pipeline intercepts it
+ * and emits container token declarations instead.
+ */
+const CONTAINER_COMPONENTS = new Set(['card', 'section', 'dialog']);
+
+/** Padding properties that trigger container token mapping */
+const PADDING_PROPS = new Set([
+  'padding',
+  'paddingBlock',
+  'paddingInline',
+  'paddingBlockStart',
+  'paddingBlockEnd',
+  'paddingInlineStart',
+  'paddingInlineEnd',
+]);
+
+interface ParsedPadding {
+  blockStart?: string;
+  blockEnd?: string;
+  inline?: string;
+  inlineStart?: string;
+  inlineEnd?: string;
+}
+
+/**
+ * Parse CSS padding shorthand/longhand into block/inline values.
+ * Supports 1-3 value shorthands and logical properties.
+ */
+function parsePadding(props: [string, string][]): ParsedPadding {
+  const result: ParsedPadding = {};
+
+  for (const [prop, value] of props) {
+    switch (prop) {
+      case 'padding': {
+        const parts = value.trim().split(/\s+/);
+        if (parts.length === 1) {
+          result.blockStart = parts[0];
+          result.blockEnd = parts[0];
+          result.inline = parts[0];
+        } else if (parts.length === 2) {
+          result.blockStart = parts[0];
+          result.blockEnd = parts[0];
+          result.inline = parts[1];
+        } else if (parts.length >= 3) {
+          result.blockStart = parts[0];
+          result.inline = parts[1];
+          result.blockEnd = parts[2];
+        }
+        break;
+      }
+      case 'paddingBlock': {
+        const parts = value.trim().split(/\s+/);
+        result.blockStart = parts[0];
+        result.blockEnd = parts[1] ?? parts[0];
+        break;
+      }
+      case 'paddingInline': {
+        const parts = value.trim().split(/\s+/);
+        if (parts.length === 1) {
+          result.inline = parts[0];
+        } else {
+          result.inlineStart = parts[0];
+          result.inlineEnd = parts[1];
+        }
+        break;
+      }
+      case 'paddingBlockStart':
+        result.blockStart = value;
+        break;
+      case 'paddingBlockEnd':
+        result.blockEnd = value;
+        break;
+      case 'paddingInlineStart':
+        result.inlineStart = value;
+        break;
+      case 'paddingInlineEnd':
+        result.inlineEnd = value;
+        break;
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Expand parsed padding into component-scoped public tokens.
+ *
+ * Emits --xds-<component>-padding (shorthand) and directional overrides:
+ *   --xds-card-padding: 20px
+ *   --xds-card-padding-inline: 20px
+ *   --xds-card-padding-block-start: 20px
+ *   --xds-card-padding-block-end: 20px
+ *
+ * The container.stylex.ts default styles read these via var() fallbacks,
+ * so the theme CSS sets the value and the component picks it up through
+ * CSS custom property cascade — no layer competition with StyleX output.
+ */
+function expandContainerPadding(
+  component: string,
+  parsed: ParsedPadding,
+): [string, string][] {
+  const prefix = `--xds-${component}-padding`;
+  const tokens: [string, string][] = [];
+
+  // Resolve effective inline values (inlineStart/End override inline)
+  const effectiveInlineStart = parsed.inlineStart ?? parsed.inline;
+  const effectiveInlineEnd = parsed.inlineEnd ?? parsed.inline;
+  const inlineSymmetric =
+    effectiveInlineStart != null &&
+    effectiveInlineEnd != null &&
+    effectiveInlineStart === effectiveInlineEnd;
+
+  // If all sides are the same, emit the shorthand token only
+  const allSame =
+    inlineSymmetric &&
+    parsed.blockStart != null &&
+    parsed.blockEnd != null &&
+    effectiveInlineStart === parsed.blockStart &&
+    parsed.blockStart === parsed.blockEnd;
+
+  if (allSame) {
+    tokens.push([prefix, effectiveInlineStart!]);
+    return tokens;
+  }
+
+  // Directional tokens
+  if (parsed.inlineStart != null || parsed.inlineEnd != null) {
+    // Asymmetric inline — emit start and end separately
+    if (effectiveInlineStart != null) {
+      tokens.push([`${prefix}-inline-start`, effectiveInlineStart]);
+    }
+    if (effectiveInlineEnd != null) {
+      tokens.push([`${prefix}-inline-end`, effectiveInlineEnd]);
+    }
+  } else if (parsed.inline != null) {
+    tokens.push([`${prefix}-inline`, parsed.inline]);
+  }
+  if (parsed.blockStart != null) {
+    tokens.push([`${prefix}-block-start`, parsed.blockStart]);
+  }
+  if (parsed.blockEnd != null) {
+    tokens.push([`${prefix}-block-end`, parsed.blockEnd]);
+  }
+
+  return tokens;
+}
+
 function toKebabCase(str: string): string {
   return str.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`);
 }
@@ -647,9 +801,24 @@ export function generateThemeRules(theme: XDSDefinedTheme): string[] {
             }
           }
 
+          // Container padding mapping: intercept padding on container
+          // components and emit container token declarations instead
+          let finalProps = props;
+          if (CONTAINER_COMPONENTS.has(component)) {
+            const paddingProps = props.filter(([p]) => PADDING_PROPS.has(p));
+            if (paddingProps.length > 0) {
+              const nonPaddingProps = props.filter(
+                ([p]) => !PADDING_PROPS.has(p),
+              );
+              const parsed = parsePadding(paddingProps);
+              const containerTokens = expandContainerPadding(component, parsed);
+              finalProps = [...nonPaddingProps, ...containerTokens];
+            }
+          }
+
           // Emit base rule
-          if (props.length > 0) {
-            const declarations = props
+          if (finalProps.length > 0) {
+            const declarations = finalProps
               .map(([prop, value]) => `    ${toKebabCase(prop)}: ${value};`)
               .join('\n');
             parts.push(`  ${baseSelector} {\n${declarations}\n  }`);

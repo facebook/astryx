@@ -40,12 +40,17 @@ export type XDSLayoutHeight = 'fill' | 'auto';
 const styles = stylex.create({
   // Outer wrapper uses negative margin to escape container padding
   layoutOuter: {
-    marginInline: 'calc(-1 * var(--container-padding-inline, 0px))',
+    marginInlineStart:
+      'calc(-1 * var(--container-padding-inline-start, var(--container-padding-inline, 0px)))',
+    marginInlineEnd:
+      'calc(-1 * var(--container-padding-inline-end, var(--container-padding-inline, 0px)))',
     marginBlockStart: 'calc(-1 * var(--container-padding-block-start, 0px))',
     marginBlockEnd: 'calc(-1 * var(--container-padding-block-end, 0px))',
   },
   // Inner wrapper resets container padding vars for descendants
   layoutInner: {
+    '--container-padding-inline-start': '0px',
+    '--container-padding-inline-end': '0px',
     '--container-padding-inline': '0px',
     '--container-padding-block-start': '0px',
     '--container-padding-block-end': '0px',

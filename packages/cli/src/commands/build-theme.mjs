@@ -265,6 +265,118 @@ function resolveTokenValue(value) {
  * <!-- SYNC: packages/core/src/utils/xdsClassName.ts -->
  * The digit-prefix and value-to-class logic must match across all three files.
  */
+
+// =============================================================================
+// Container padding mapping
+// =============================================================================
+
+const CONTAINER_COMPONENTS = new Set(['card', 'section', 'dialog']);
+const PADDING_PROPS = new Set([
+  'padding', 'paddingBlock', 'paddingInline',
+  'paddingBlockStart', 'paddingBlockEnd',
+  'paddingInlineStart', 'paddingInlineEnd',
+]);
+
+function parsePadding(props) {
+  const result = {};
+  for (const [prop, value] of props) {
+    switch (prop) {
+      case 'padding': {
+        const parts = value.trim().split(/\s+/);
+        if (parts.length === 1) {
+          result.blockStart = parts[0];
+          result.blockEnd = parts[0];
+          result.inline = parts[0];
+        } else if (parts.length === 2) {
+          result.blockStart = parts[0];
+          result.blockEnd = parts[0];
+          result.inline = parts[1];
+        } else if (parts.length >= 3) {
+          result.blockStart = parts[0];
+          result.inline = parts[1];
+          result.blockEnd = parts[2];
+        }
+        break;
+      }
+      case 'paddingBlock': {
+        const parts = value.trim().split(/\s+/);
+        result.blockStart = parts[0];
+        result.blockEnd = parts[1] ?? parts[0];
+        break;
+      }
+      case 'paddingInline': {
+        const parts = value.trim().split(/\s+/);
+        if (parts.length === 1) {
+          result.inline = parts[0];
+        } else {
+          result.inlineStart = parts[0];
+          result.inlineEnd = parts[1];
+        }
+        break;
+      }
+      case 'paddingBlockStart':
+        result.blockStart = value;
+        break;
+      case 'paddingBlockEnd':
+        result.blockEnd = value;
+        break;
+      case 'paddingInlineStart':
+        result.inlineStart = value;
+        break;
+      case 'paddingInlineEnd':
+        result.inlineEnd = value;
+        break;
+    }
+  }
+  return result;
+}
+
+function expandContainerPadding(component, parsed) {
+  const prefix = `--xds-${component}-padding`;
+  const tokens = [];
+
+  // Resolve effective inline values (inlineStart/End override inline)
+  const effectiveInlineStart = parsed.inlineStart ?? parsed.inline;
+  const effectiveInlineEnd = parsed.inlineEnd ?? parsed.inline;
+  const inlineSymmetric =
+    effectiveInlineStart != null &&
+    effectiveInlineEnd != null &&
+    effectiveInlineStart === effectiveInlineEnd;
+
+  // If all sides are the same, emit the shorthand token only
+  const allSame =
+    inlineSymmetric &&
+    parsed.blockStart != null &&
+    parsed.blockEnd != null &&
+    effectiveInlineStart === parsed.blockStart &&
+    parsed.blockStart === parsed.blockEnd;
+
+  if (allSame) {
+    tokens.push([prefix, effectiveInlineStart]);
+    return tokens;
+  }
+
+  // Directional tokens
+  if (parsed.inlineStart != null || parsed.inlineEnd != null) {
+    // Asymmetric inline — emit start and end separately
+    if (effectiveInlineStart != null) {
+      tokens.push([`${prefix}-inline-start`, effectiveInlineStart]);
+    }
+    if (effectiveInlineEnd != null) {
+      tokens.push([`${prefix}-inline-end`, effectiveInlineEnd]);
+    }
+  } else if (parsed.inline != null) {
+    tokens.push([`${prefix}-inline`, parsed.inline]);
+  }
+  if (parsed.blockStart != null) {
+    tokens.push([`${prefix}-block-start`, parsed.blockStart]);
+  }
+  if (parsed.blockEnd != null) {
+    tokens.push([`${prefix}-block-end`, parsed.blockEnd]);
+  }
+  return tokens;
+}
+
 function parseStyleKey(key) {
   if (key === 'base') return '';
   return key
@@ -364,9 +476,21 @@ function generateCSS(themeDef, {prose = true} = {}) {
             }
           }
 
+          // Container padding mapping
+          let finalProps = props;
+          if (CONTAINER_COMPONENTS.has(component)) {
+            const paddingProps = props.filter(([p]) => PADDING_PROPS.has(p));
+            if (paddingProps.length > 0) {
+              const nonPaddingProps = props.filter(([p]) => !PADDING_PROPS.has(p));
+              const parsed = parsePadding(paddingProps);
+              const containerTokens = expandContainerPadding(component, parsed);
+              finalProps = [...nonPaddingProps, ...containerTokens];
+            }
+          }
+
           // Emit base rule
-          if (props.length > 0) {
-            const declarations = props
+          if (finalProps.length > 0) {
+            const declarations = finalProps
               .map(([prop, value]) => `    ${toKebabCase(prop)}: ${value};`)
               .join('\n');
             parts.push(`${baseSelector} {\n${declarations}\n  }`);
