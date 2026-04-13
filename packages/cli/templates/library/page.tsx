@@ -12,10 +12,7 @@ import {XDSDivider} from '@xds/core/Divider';
 import {XDSGrid} from '@xds/core/Grid';
 import {XDSHStack, XDSVStack} from '@xds/core/Stack';
 import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
-import {
-  colorVars,
-  spacingVars,
-} from '@xds/core/theme/tokens.stylex';
+import {colorVars, spacingVars} from '@xds/core/theme/tokens.stylex';
 import {XDSAppShell} from '@xds/core/AppShell';
 import {
   XDSSideNav,
@@ -277,7 +274,6 @@ const ITEMS: LibraryItem[] = [
   },
 ];
 
-
 const styles = stylex.create({
   sectionTop: {
     paddingTop: spacingVars['--spacing-4'],
@@ -296,13 +292,13 @@ const styles = stylex.create({
   hideOnSmall: {
     display: {
       default: 'none',
-      '@media (min-width: 600px)': 'block',
+      '@media (min-width: 768px)': 'block',
     },
   },
   hideOnLarge: {
     display: {
       default: 'block',
-      '@media (min-width: 600px)': 'none',
+      '@media (min-width: 768px)': 'none',
     },
   },
 });
@@ -359,11 +355,11 @@ function LibraryNav() {
 function LibraryCard({item}: {item: LibraryItem}) {
   return (
     <XDSCard padding={0}>
-      <XDSAspectRatio ratio={21 / 9} xstyle={styles.thumbnail}><div /></XDSAspectRatio>
+      <XDSAspectRatio ratio={21 / 9} xstyle={styles.thumbnail}>
+        <div />
+      </XDSAspectRatio>
       <XDSVStack gap={1} xstyle={styles.cardBody}>
-        <XDSHeading level={3}>
-          {item.name}
-        </XDSHeading>
+        <XDSHeading level={3}>{item.name}</XDSHeading>
         <XDSText type="body" size="sm" color="secondary">
           {item.description}
         </XDSText>
@@ -488,7 +484,7 @@ export default function LibraryPage() {
                 </div>
               ) : groupedSections != null ? (
                 <XDSVStack gap={6}>
-                  {groupedSections.flatMap((section) => [
+                  {groupedSections.flatMap(section => [
                     <XDSDivider key={`d-${section.category}`} />,
                     <LibrarySection
                       key={section.category}
