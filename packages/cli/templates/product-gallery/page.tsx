@@ -4,7 +4,7 @@ import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSCenter} from '@xds/core/Center';
 import {XDSText} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
-import {XDSCard} from '@xds/core/Card';
+
 import {XDSGrid} from '@xds/core/Grid';
 import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import {XDSIcon} from '@xds/core/Icon';
@@ -97,8 +97,13 @@ const fmt = (n: number) => `$${n.toFixed(2)}`;
 
 function ProductCard({product}: {product: Product}) {
   return (
-    <XDSCard padding={0} variant="muted">
-      <XDSAspectRatio ratio={4 / 3}>
+    <XDSVStack gap={3}>
+      <XDSAspectRatio
+        ratio={4 / 3}
+        style={{
+          borderRadius: 'var(--radius-container)',
+          overflow: 'clip',
+        }}>
         <img
           src={product.image}
           alt={product.name}
@@ -111,20 +116,18 @@ function ProductCard({product}: {product: Product}) {
         />
       </XDSAspectRatio>
 
-      <div style={{padding: 12}}>
-        <XDSVStack gap={1}>
-          <XDSText type="body" size="2xl" weight="medium">
-            {product.name}
-          </XDSText>
-          <XDSText type="body" color="secondary" maxLines={2}>
-            {product.description}
-          </XDSText>
-          <XDSText type="body" size="2xl" weight="bold">
-            {fmt(product.price)}
-          </XDSText>
-        </XDSVStack>
-      </div>
-    </XDSCard>
+      <XDSVStack gap={1}>
+        <XDSText type="body" size="2xl" weight="medium">
+          {product.name}
+        </XDSText>
+        <XDSText type="body" color="secondary" maxLines={2}>
+          {product.description}
+        </XDSText>
+        <XDSText type="body" size="2xl" weight="bold">
+          {fmt(product.price)}
+        </XDSText>
+      </XDSVStack>
+    </XDSVStack>
   );
 }
 
