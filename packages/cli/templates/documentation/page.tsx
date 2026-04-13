@@ -1076,11 +1076,9 @@ export default function DocumentationPage() {
             style={{
               display: 'flex',
               gap: 48,
-              maxWidth: 1000,
-              margin: '0 auto',
             }}>
             {/* Article content */}
-            <div style={{maxWidth: 740, flex: 1, minWidth: 0}}>
+            <div style={{flex: 1, minWidth: 0}}>
               {/* Header */}
               <div style={{marginBottom: 8}}>
                 <XDSText type="display-1">
@@ -1229,12 +1227,16 @@ export default function DocumentationPage() {
                     <XDSText type="body" weight="bold">
                       Install the core package
                     </XDSText>
-                    <div style={{marginTop: 12}}>
-                      <XDSCodeBlock
-                        code="npm install @xds/core"
-                        language="bash"
-                      />
-                    </div>
+                    <XDSCard
+                      padding={0}
+                      style={{marginTop: 12, overflow: 'hidden'}}>
+                      <div style={{width: '100%'}}>
+                        <XDSCodeBlock
+                          code="npm install @xds/core"
+                          language="bash"
+                        />
+                      </div>
+                    </XDSCard>
                   </div>
                 </div>
 
@@ -1267,12 +1269,16 @@ export default function DocumentationPage() {
                         your build configuration.
                       </XDSText>
                     </div>
-                    <div style={{marginTop: 12}}>
-                      <XDSCodeBlock
-                        code="npm install @stylexjs/babel-plugin"
-                        language="bash"
-                      />
-                    </div>
+                    <XDSCard
+                      padding={0}
+                      style={{marginTop: 12, overflow: 'hidden'}}>
+                      <div style={{width: '100%'}}>
+                        <XDSCodeBlock
+                          code="npm install @stylexjs/babel-plugin"
+                          language="bash"
+                        />
+                      </div>
+                    </XDSCard>
                   </div>
                 </div>
 
@@ -1299,16 +1305,20 @@ export default function DocumentationPage() {
                     <XDSText type="body" weight="bold">
                       Import your first component
                     </XDSText>
-                    <div style={{marginTop: 12}}>
-                      <XDSCodeBlock
-                        code={`import { XDSButton } from '@xds/core/Button';
+                    <XDSCard
+                      padding={0}
+                      style={{marginTop: 12, overflow: 'hidden'}}>
+                      <div style={{width: '100%'}}>
+                        <XDSCodeBlock
+                          code={`import { XDSButton } from '@xds/core/Button';
 
 export default function App() {
   return <XDSButton label="Hello XDS" variant="primary" />;
 }`}
-                        language="tsx"
-                      />
-                    </div>
+                          language="tsx"
+                        />
+                      </div>
+                    </XDSCard>
                   </div>
                 </div>
               </div>
@@ -1327,9 +1337,12 @@ export default function App() {
                     a theme provider.
                   </XDSText>
                 </div>
-                <div style={{marginTop: 16}}>
-                  <XDSCodeBlock
-                    code={`import { XDSThemeProvider } from '@xds/core/Theme';
+                <XDSCard
+                  padding={0}
+                  style={{marginTop: 16, overflow: 'hidden'}}>
+                  <div style={{width: '100%'}}>
+                    <XDSCodeBlock
+                      code={`import { XDSThemeProvider } from '@xds/core/Theme';
 
 export default function App({ children }) {
   return (
@@ -1338,9 +1351,10 @@ export default function App({ children }) {
     </XDSThemeProvider>
   );
 }`}
-                    language="tsx"
-                  />
-                </div>
+                      language="tsx"
+                    />
+                  </div>
+                </XDSCard>
                 <div style={{marginTop: 16}}>
                   <XDSText type="body" color="secondary">
                     See the theming guide for the full list of customizable
