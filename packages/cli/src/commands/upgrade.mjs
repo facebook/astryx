@@ -18,6 +18,7 @@
  *   --to <version>       Target version (default: latest in registry)
  *   --force              Run codemods even if versions appear up to date
  *   --codemod <name>     Run a specific transform only (skips version check)
+ *   --codemod-only       Skip version bump + install, run codemods only
  *   --path <dir>         Source directory (default: ./src)
  *   --install-deps       Auto-install jscodeshift without prompting (for CI/LLM)
  */
@@ -139,6 +140,7 @@ export function registerUpgrade(program) {
     .option('--to <version>', 'Target version', latestVersion)
     .option('--force', 'Run codemods even if versions appear up to date', false)
     .option('--codemod <name>', 'Run a specific transform only')
+    .option('--codemod-only', 'Skip version bump and install, run codemods only', false)
     .option('--path <dir>', 'Source directory to scan', './src')
     .option('--install-deps', 'Auto-install jscodeshift without prompting', false)
     .option('--list', 'List available codemods', false)
@@ -168,6 +170,11 @@ export function registerUpgrade(program) {
       // When --codemod is specified, skip version detection entirely —
       // the user asked for a specific transform, just run it.
       const skipVersionCheck = !!options.codemod;
+
+      // --codemod-only skips version bump + install but still uses --from/--to
+      // for codemod resolution. Useful for canary testing or running codemods
+      // independently of dependency changes.
+      const skipBump = options.codemodOnly || skipVersionCheck;
 
       // Detect current version (--from overrides package.json)
       const currentVersion = options.from ?? detectCurrentVersion();
@@ -240,7 +247,7 @@ export function registerUpgrade(program) {
       const receipt = {from: currentVersion, to: targetVersion, codemods: totalTransforms, depsUpdated: [], agentDocsRefreshed: false};
 
       // Bump @xds/* deps and install before running codemods
-      if (options.apply && !skipVersionCheck) {
+      if (options.apply && !skipBump) {
         const result = bumpXdsDeps(targetVersion);
         if (result && result.bumped.length > 0) {
           receipt.depsUpdated = result.bumped;
