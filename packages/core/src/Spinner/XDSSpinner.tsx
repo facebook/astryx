@@ -64,7 +64,7 @@ const styles = stylex.create({
   canvas: {
     backfaceVisibility: 'hidden',
     display: 'block',
-    animationDuration: durationVars['--duration-medium-max'],
+    animationDuration: durationVars['--duration-slow-min'],
     animationIterationCount: 'infinite',
     animationName: rotation,
     animationTimingFunction: 'linear',

@@ -186,12 +186,12 @@ export interface XDSDefineThemeInput {
    *
    * @example
    * ```
-   * motion: { fast: 175, medium: 410, ratio: 0.75 }
+   * motion: { fast: 175, medium: 410, slow: 975, ratio: 0.75 }
    *
    * // Suggested starting points:
    * //   Snappy:    { fast: 100, medium: 250, ratio: 0.75 }
-   * //   Default:   { fast: 175, medium: 410, ratio: 0.75 }
-   * //   Cinematic: { fast: 200, medium: 500, ratio: 0.7 }
+   * //   Default:   { fast: 175, medium: 410, slow: 975, ratio: 0.75 }
+   * //   Cinematic: { fast: 200, medium: 500, slow: 1200, ratio: 0.7 }
    * ```
    */
   motion?: XDSMotionScaleConfig;
@@ -898,7 +898,9 @@ export function generateOnMediaCSS(theme: XDSDefinedTheme): string {
                 const declarations = pseudoEntries
                   .map(([prop, value]) => `    ${toKebabCase(prop)}: ${value};`)
                   .join('\n');
-                parts.push(`  ${baseSelector}${pseudo} {\n${declarations}\n  }`);
+                parts.push(
+                  `  ${baseSelector}${pseudo} {\n${declarations}\n  }`,
+                );
               }
             }
           }
@@ -934,7 +936,9 @@ export function generateThemeCSS(theme: XDSDefinedTheme): ThemeCSSOutput {
 
   const onMediaCss = generateOnMediaCSS(theme);
   if (onMediaCss) {
-    componentCss = componentCss ? `${componentCss}\n\n${onMediaCss}` : onMediaCss;
+    componentCss = componentCss
+      ? `${componentCss}\n\n${onMediaCss}`
+      : onMediaCss;
   }
 
   return {prose: proseCss, component: componentCss};

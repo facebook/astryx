@@ -28,13 +28,13 @@
  * @example
  * ```
  * // Default XDS motion scale
- * { fast: 175, medium: 410, ratio: 0.75 }
+ * { fast: 175, medium: 410, slow: 975, ratio: 0.75 }
  *
  * // Snappy theme (reduced motion budget)
  * { fast: 100, medium: 250, ratio: 0.75 }
  *
  * // Cinematic theme (dramatic animations)
- * { fast: 200, medium: 500, ratio: 0.7 }
+ * { fast: 200, medium: 500, slow: 1200, ratio: 0.7 }
  *
  * // With custom easing
  * { fast: 175, medium: 410, ratio: 0.75, easing: 'cubic-bezier(0.0, 0.0, 0.2, 1)' }
@@ -45,6 +45,8 @@ export interface XDSMotionScaleConfig {
   fast: number;
   /** Base duration for entrance/exit animations in ms (dialog, drawer, panel). */
   medium: number;
+  /** Base duration for slow/continuous animations in ms (spinner, progress). */
+  slow?: number;
   /**
    * Scaling ratio for min/max variants.
    * min = base × ratio, max = base / ratio.
@@ -79,6 +81,9 @@ function roundMs(ms: number): number {
  *   medium-min = medium × ratio (quick entrance/exit)
  *   medium     = medium          (standard entrance/exit)
  *   medium-max = medium / ratio (dramatic entrance)
+ *   slow-min  = slow × ratio    (quick continuous animation) [optional]
+ *   slow      = slow             (standard continuous animation) [optional]
+ *   slow-max  = slow / ratio    (relaxed continuous animation) [optional]
  *
  * @param config — Motion scale configuration
  * @returns Token overrides to merge into the theme token map
@@ -86,7 +91,7 @@ function roundMs(ms: number): number {
 export function expandMotionScale(
   config: XDSMotionScaleConfig,
 ): MotionScaleTokens {
-  const {fast, medium, ratio, easing} = config;
+  const {fast, medium, slow, ratio, easing} = config;
 
   const tokens: MotionScaleTokens = {
     // Duration primitives
@@ -97,6 +102,13 @@ export function expandMotionScale(
     '--duration-medium': `${roundMs(medium)}ms`,
     '--duration-medium-max': `${roundMs(medium / ratio)}ms`,
   };
+
+  // Slow band (optional — only emitted when slow base is provided)
+  if (slow != null) {
+    tokens['--duration-slow-min'] = `${roundMs(slow * ratio)}ms`;
+    tokens['--duration-slow'] = `${roundMs(slow)}ms`;
+    tokens['--duration-slow-max'] = `${roundMs(slow / ratio)}ms`;
+  }
 
   // Easing override (optional — default comes from easeDefaults)
   if (easing) {

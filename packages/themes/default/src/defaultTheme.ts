@@ -50,7 +50,7 @@ export const defaultTheme = defineTheme({
   // Motion: base durations from Ted's proposal (#674), ratio=0.75.
   // Generates: fast-min=130ms, fast=175ms, fast-max=235ms,
   //            medium-min=310ms, medium=410ms, medium-max=545ms.
-  motion: {fast: 175, medium: 410, ratio: 0.75},
+  motion: {fast: 175, medium: 410, slow: 975, ratio: 0.75},
 
   // Syntax highlighting — tuned to the default palette
   syntax: defaultSyntax,
