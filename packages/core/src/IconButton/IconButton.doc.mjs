@@ -95,6 +95,8 @@ export const docs = {
     'All other XDSButton props (variant, size, onClick, etc.) are forwarded',
   ],
 
-  accessibility:
-    'Uses aria-label from the label prop. Same keyboard and screen reader behavior as XDSButton with isIconOnly.',
+  accessibility: [
+    'Uses aria-label from the label prop for screen reader accessibility',
+    'Same keyboard and screen reader behavior as XDSButton with isIconOnly',
+  ],
 };
