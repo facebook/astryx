@@ -664,29 +664,47 @@ function parsePadding(props: [string, string][]): ParsedPadding {
 }
 
 /**
- * Expand parsed padding into container token declarations.
- * Returns [prop, value] pairs for all 7 downstream tokens.
+ * Expand parsed padding into component-scoped public tokens.
+ *
+ * Emits --xds-<component>-padding (shorthand) and directional overrides:
+ *   --xds-card-padding: 20px
+ *   --xds-card-padding-inline: 20px
+ *   --xds-card-padding-block-start: 20px
+ *   --xds-card-padding-block-end: 20px
+ *
+ * The container.stylex.ts default styles read these via var() fallbacks,
+ * so the theme CSS sets the value and the component picks it up through
+ * CSS custom property cascade — no layer competition with StyleX output.
  */
-function expandContainerPadding(parsed: ParsedPadding): [string, string][] {
+function expandContainerPadding(
+  component: string,
+  parsed: ParsedPadding,
+): [string, string][] {
+  const prefix = `--xds-${component}-padding`;
   const tokens: [string, string][] = [];
 
+  // If all sides are the same, emit the shorthand token only
+  const allSame =
+    parsed.inline != null &&
+    parsed.blockStart != null &&
+    parsed.blockEnd != null &&
+    parsed.inline === parsed.blockStart &&
+    parsed.blockStart === parsed.blockEnd;
+
+  if (allSame) {
+    tokens.push([prefix, parsed.inline!]);
+    return tokens;
+  }
+
+  // Directional tokens
   if (parsed.inline != null) {
-    tokens.push(['--container-padding-inline', parsed.inline]);
-    tokens.push(['--layout-padding-outer-x', parsed.inline]);
-    tokens.push(['--layout-padding-inner-x', parsed.inline]);
+    tokens.push([`${prefix}-inline`, parsed.inline]);
   }
   if (parsed.blockStart != null) {
-    tokens.push(['--container-padding-block-start', parsed.blockStart]);
-    // Use blockStart for outer/inner y — these are typically symmetric
-    const blockY =
-      parsed.blockEnd != null && parsed.blockEnd !== parsed.blockStart
-        ? parsed.blockStart // asymmetric — use start for outer/inner
-        : parsed.blockStart;
-    tokens.push(['--layout-padding-outer-y', blockY]);
-    tokens.push(['--layout-padding-inner-y', blockY]);
+    tokens.push([`${prefix}-block-start`, parsed.blockStart]);
   }
   if (parsed.blockEnd != null) {
-    tokens.push(['--container-padding-block-end', parsed.blockEnd]);
+    tokens.push([`${prefix}-block-end`, parsed.blockEnd]);
   }
 
   return tokens;
@@ -765,7 +783,7 @@ export function generateThemeRules(theme: XDSDefinedTheme): string[] {
                 ([p]) => !PADDING_PROPS.has(p),
               );
               const parsed = parsePadding(paddingProps);
-              const containerTokens = expandContainerPadding(parsed);
+              const containerTokens = expandContainerPadding(component, parsed);
               finalProps = [...nonPaddingProps, ...containerTokens];
             }
           }

@@ -320,23 +320,32 @@ function parsePadding(props) {
   return result;
 }
 
-function expandContainerPadding(parsed) {
+function expandContainerPadding(component, parsed) {
+  const prefix = `--xds-${component}-padding`;
   const tokens = [];
+
+  // If all sides are the same, emit the shorthand token only
+  const allSame =
+    parsed.inline != null &&
+    parsed.blockStart != null &&
+    parsed.blockEnd != null &&
+    parsed.inline === parsed.blockStart &&
+    parsed.blockStart === parsed.blockEnd;
+
+  if (allSame) {
+    tokens.push([prefix, parsed.inline]);
+    return tokens;
+  }
+
+  // Directional tokens
   if (parsed.inline != null) {
-    tokens.push(['--container-padding-inline', parsed.inline]);
-    tokens.push(['--layout-padding-outer-x', parsed.inline]);
-    tokens.push(['--layout-padding-inner-x', parsed.inline]);
+    tokens.push([`${prefix}-inline`, parsed.inline]);
   }
   if (parsed.blockStart != null) {
-    tokens.push(['--container-padding-block-start', parsed.blockStart]);
-    const blockY = parsed.blockEnd != null && parsed.blockEnd !== parsed.blockStart
-      ? parsed.blockStart
-      : parsed.blockStart;
-    tokens.push(['--layout-padding-outer-y', blockY]);
-    tokens.push(['--layout-padding-inner-y', blockY]);
+    tokens.push([`${prefix}-block-start`, parsed.blockStart]);
   }
   if (parsed.blockEnd != null) {
-    tokens.push(['--container-padding-block-end', parsed.blockEnd]);
+    tokens.push([`${prefix}-block-end`, parsed.blockEnd]);
   }
   return tokens;
 }
@@ -447,7 +456,7 @@ function generateCSS(themeDef, {prose = true} = {}) {
             if (paddingProps.length > 0) {
               const nonPaddingProps = props.filter(([p]) => !PADDING_PROPS.has(p));
               const parsed = parsePadding(paddingProps);
-              const containerTokens = expandContainerPadding(parsed);
+              const containerTokens = expandContainerPadding(component, parsed);
               finalProps = [...nonPaddingProps, ...containerTokens];
             }
           }

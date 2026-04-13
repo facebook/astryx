@@ -243,7 +243,7 @@ export const metaTheme = defineTheme({
 
     // Supporting — CDS: 13px / 400
     '--text-supporting-size': '0.8125rem',
-    '--text-supporting-leading': '1.5385'
+    '--text-supporting-leading': '1.5385',
   },
 
   components: {
@@ -289,7 +289,10 @@ export const metaTheme = defineTheme({
         borderColor: 'light-dark(var(--color-accent), #4BA9FE)',
         color: 'light-dark(var(--color-accent), #4BA9FE)',
         fontWeight: '500',
-        ':hover': {backgroundColor: 'light-dark(rgba(0,100,224,0.06), rgba(75,169,254,0.1))'},
+        ':hover': {
+          backgroundColor:
+            'light-dark(rgba(0,100,224,0.06), rgba(75,169,254,0.1))',
+        },
         ':active': {opacity: '0.7'},
       },
       'variant:secondary-outline': {
@@ -299,7 +302,10 @@ export const metaTheme = defineTheme({
         borderColor: 'light-dark(var(--color-border), #525456)',
         color: 'light-dark(var(--color-text-primary), #F3F4F5)',
         fontWeight: '500',
-        ':hover': {backgroundColor: 'light-dark(rgba(0,0,0,0.04), rgba(255,255,255,0.06))'},
+        ':hover': {
+          backgroundColor:
+            'light-dark(rgba(0,0,0,0.04), rgba(255,255,255,0.06))',
+        },
         ':active': {opacity: '0.7'},
       },
       'variant:destructive-outline': {
@@ -309,7 +315,10 @@ export const metaTheme = defineTheme({
         borderColor: 'light-dark(var(--color-error), #FB7D87)',
         color: 'light-dark(var(--color-error), #FB7D87)',
         fontWeight: '500',
-        ':hover': {backgroundColor: 'light-dark(rgba(211,17,48,0.06), rgba(251,125,135,0.1))'},
+        ':hover': {
+          backgroundColor:
+            'light-dark(rgba(211,17,48,0.06), rgba(251,125,135,0.1))',
+        },
         ':active': {opacity: '0.7'},
       },
     },
@@ -319,16 +328,19 @@ export const metaTheme = defineTheme({
     // =========================================================================
     card: {
       base: {
+        padding: '20px',
         '--card-radius': '32px',
-        '--xds-card-padding': '20px',
       },
     },
 
     // =========================================================================
     // Section — 20px padding
     // =========================================================================
-
-
+    section: {
+      base: {
+        padding: '20px',
+      },
+    },
 
     // =========================================================================
     // Text input — CDS: 16px radius, 16px horizontal padding
@@ -470,8 +482,6 @@ export const metaTheme = defineTheme({
         boxShadow: '0 1px 3px rgba(0,0,0,0.2), 0 1px 2px rgba(0,0,0,0.15)',
       },
     },
-
-
 
     // =========================================================================
     // Divider — opaque gray instead of transparent blue-gray

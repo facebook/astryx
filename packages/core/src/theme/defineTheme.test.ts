@@ -865,7 +865,7 @@ describe('pseudo-class overrides in components', () => {
 });
 
 describe('container padding mapping', () => {
-  it('maps padding shorthand to container tokens on card', () => {
+  it('maps uniform padding to shorthand token on card', () => {
     const theme = defineTheme({
       name: 'test',
       components: {
@@ -875,19 +875,16 @@ describe('container padding mapping', () => {
       },
     });
     const css = generateThemeCSSFlat(theme);
-    // Should NOT emit padding property
-    expect(css).not.toContain('padding: 20px');
-    // Should emit container tokens
-    expect(css).toContain('--container-padding-inline: 20px');
-    expect(css).toContain('--container-padding-block-start: 20px');
-    expect(css).toContain('--container-padding-block-end: 20px');
-    expect(css).toContain('--layout-padding-outer-x: 20px');
-    expect(css).toContain('--layout-padding-outer-y: 20px');
-    expect(css).toContain('--layout-padding-inner-x: 20px');
-    expect(css).toContain('--layout-padding-inner-y: 20px');
+    // Should NOT emit raw padding property (only the scoped token)
+    expect(css).not.toMatch(/[^-]padding: 20px/);
+    // Should emit component-scoped shorthand token
+    expect(css).toContain('--xds-card-padding: 20px');
+    // Should NOT emit directional tokens (shorthand covers all sides)
+    expect(css).not.toContain('--xds-card-padding-inline');
+    expect(css).not.toContain('--xds-card-padding-block-start');
   });
 
-  it('maps asymmetric padding to different block/inline tokens', () => {
+  it('maps asymmetric padding to directional tokens', () => {
     const theme = defineTheme({
       name: 'test',
       components: {
@@ -897,11 +894,11 @@ describe('container padding mapping', () => {
       },
     });
     const css = generateThemeCSSFlat(theme);
-    expect(css).toContain('--container-padding-inline: 20px');
-    expect(css).toContain('--container-padding-block-start: 16px');
-    expect(css).toContain('--container-padding-block-end: 16px');
-    expect(css).toContain('--layout-padding-outer-x: 20px');
-    expect(css).toContain('--layout-padding-outer-y: 16px');
+    expect(css).toContain('--xds-card-padding-inline: 20px');
+    expect(css).toContain('--xds-card-padding-block-start: 16px');
+    expect(css).toContain('--xds-card-padding-block-end: 16px');
+    // Should NOT emit shorthand (sides differ)
+    expect(css).not.toMatch(/--xds-card-padding:[^-]/);
   });
 
   it('maps paddingBlock and paddingInline separately', () => {
@@ -914,9 +911,9 @@ describe('container padding mapping', () => {
       },
     });
     const css = generateThemeCSSFlat(theme);
-    expect(css).toContain('--container-padding-inline: 16px');
-    expect(css).toContain('--container-padding-block-start: 24px');
-    expect(css).toContain('--container-padding-block-end: 24px');
+    expect(css).toContain('--xds-card-padding-inline: 16px');
+    expect(css).toContain('--xds-card-padding-block-start: 24px');
+    expect(css).toContain('--xds-card-padding-block-end: 24px');
   });
 
   it('works for section and dialog too', () => {
@@ -932,11 +929,11 @@ describe('container padding mapping', () => {
       },
     });
     const css = generateThemeCSSFlat(theme);
-    // Section
-    expect(css).toContain('--container-padding-inline: 12px');
-    // Dialog
-    expect(css).toContain('--container-padding-inline: 32px');
-    expect(css).toContain('--container-padding-block-start: 24px');
+    // Section — uniform → shorthand
+    expect(css).toContain('--xds-section-padding: 12px');
+    // Dialog — asymmetric → directional
+    expect(css).toContain('--xds-dialog-padding-inline: 32px');
+    expect(css).toContain('--xds-dialog-padding-block-start: 24px');
   });
 
   it('does NOT map padding on non-container components', () => {
@@ -951,7 +948,7 @@ describe('container padding mapping', () => {
     const css = generateThemeCSSFlat(theme);
     // Button is not a container — padding passes through as-is
     expect(css).toContain('padding: 8px 16px');
-    expect(css).not.toContain('--container-padding');
+    expect(css).not.toContain('--xds-button-padding');
   });
 
   it('preserves non-padding properties alongside padding mapping', () => {
@@ -971,9 +968,9 @@ describe('container padding mapping', () => {
     // Non-padding props pass through
     expect(css).toContain('--card-radius: 16px');
     expect(css).toContain('background-color: white');
-    // Padding is mapped
-    expect(css).toContain('--container-padding-inline: 20px');
-    expect(css).not.toContain('padding: 20px');
+    // Padding is mapped to component-scoped token
+    expect(css).toContain('--xds-card-padding: 20px');
+    expect(css).not.toMatch(/[^-]padding: 20px/);
   });
 
   it('maps 3-value padding shorthand', () => {
@@ -986,8 +983,8 @@ describe('container padding mapping', () => {
       },
     });
     const css = generateThemeCSSFlat(theme);
-    expect(css).toContain('--container-padding-block-start: 16px');
-    expect(css).toContain('--container-padding-block-end: 12px');
-    expect(css).toContain('--container-padding-inline: 20px');
+    expect(css).toContain('--xds-card-padding-block-start: 16px');
+    expect(css).toContain('--xds-card-padding-block-end: 12px');
+    expect(css).toContain('--xds-card-padding-inline: 20px');
   });
 });

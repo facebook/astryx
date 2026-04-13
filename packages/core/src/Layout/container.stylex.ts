@@ -6,20 +6,27 @@
  *
  * ## Public API for themes
  *
- * Themes can override container padding via component-specific CSS custom
- * padding shorthand on the component override (e.g. `card: { base: { padding: '16px 20px' } }`):
+ * Themes set `padding` on container component overrides. The theme build
+ * pipeline expands this to component-scoped CSS custom properties:
+ *
+ *   --xds-card-padding            (shorthand — all sides)
+ *   --xds-card-padding-inline     (horizontal)
+ *   --xds-card-padding-block-start
+ *   --xds-card-padding-block-end
+ *
+ * Same pattern for section (--xds-section-padding-*) and dialog
+ * (--xds-dialog-padding-*).
  *
  * ```ts
  * components: {
- *   card: { base: { padding: 'var(--spacing-3)' } },
- *   section: { base: { padding: 'var(--spacing-3)' } },
- *   dialog: { base: { padding: '16px 20px' } },  // asymmetric OK
+ *   card: { base: { padding: '20px' } },          // → --xds-card-padding: 20px
+ *   section: { base: { padding: '12px 20px' } },  // → directional tokens
+ *   dialog: { base: { padding: '16px' } },
  * }
  * ```
  *
- * This is the **only** supported way for themes to adjust container padding.
- * Internal variables (`--layout-padding-inner-x`, etc.) are implementation
- * details and must not be referenced by themes.
+ * Internal variables (`--layout-padding-inner-x`, `--container-padding-*`)
+ * are implementation details and must not be referenced by themes.
  *
  * SYNC: When modified, update /packages/core/src/Layout/Layout.doc.mjs
  */
@@ -57,92 +64,94 @@ const baseStyles = stylex.create({
 });
 
 /**
- * Card default padding styles.
+ * Component-scoped padding tokens.
  *
- * Theme pipeline maps `padding` on card overrides to container tokens directly.
- * When no explicit padding prop is set, defaults to --spacing-4.
+ * Each container component (card, section, dialog) has public CSS custom
+ * properties that themes can set:
+ *
+ *   --xds-card-padding          (shorthand — all sides)
+ *   --xds-card-padding-inline
+ *   --xds-card-padding-block-start
+ *   --xds-card-padding-block-end
+ *
+ * The theme build pipeline maps `padding: '20px'` on a container component
+ * to these tokens. The component reads them with var() fallbacks to --spacing-4.
+ *
+ * This indirection exists because StyleX's useCSSLayers emits priority-0
+ * custom property assignments outside any @layer, making them impossible
+ * to override from @layer xds-theme. By reading from a higher-level token,
+ * the theme CSS sets the token value and the component picks it up via
+ * CSS custom property cascade — no layer competition.
  */
 const cardDefaultPaddingStyles = stylex.create({
   containerPaddingInline: {
-    '--container-padding-inline': spacingVars['--spacing-4'],
+    '--container-padding-inline': `var(--xds-card-padding-inline, var(--xds-card-padding, ${spacingVars['--spacing-4']}))`,
   },
   containerPaddingBlockStart: {
-    '--container-padding-block-start': spacingVars['--spacing-4'],
+    '--container-padding-block-start': `var(--xds-card-padding-block-start, var(--xds-card-padding, ${spacingVars['--spacing-4']}))`,
   },
   containerPaddingBlockEnd: {
-    '--container-padding-block-end': spacingVars['--spacing-4'],
+    '--container-padding-block-end': `var(--xds-card-padding-block-end, var(--xds-card-padding, ${spacingVars['--spacing-4']}))`,
   },
   layoutPaddingOuterX: {
-    '--layout-padding-outer-x': spacingVars['--spacing-4'],
+    '--layout-padding-outer-x': `var(--xds-card-padding-inline, var(--xds-card-padding, ${spacingVars['--spacing-4']}))`,
   },
   layoutPaddingOuterY: {
-    '--layout-padding-outer-y': spacingVars['--spacing-4'],
+    '--layout-padding-outer-y': `var(--xds-card-padding-block-start, var(--xds-card-padding, ${spacingVars['--spacing-4']}))`,
   },
   layoutPaddingInnerX: {
-    '--layout-padding-inner-x': spacingVars['--spacing-4'],
+    '--layout-padding-inner-x': `var(--xds-card-padding-inline, var(--xds-card-padding, ${spacingVars['--spacing-4']}))`,
   },
   layoutPaddingInnerY: {
-    '--layout-padding-inner-y': spacingVars['--spacing-4'],
+    '--layout-padding-inner-y': `var(--xds-card-padding-block-start, var(--xds-card-padding, ${spacingVars['--spacing-4']}))`,
   },
 });
 
-/**
- * Section default padding styles.
- *
- * Theme pipeline maps `padding` on section overrides to container tokens directly.
- * When no explicit padding prop is set, defaults to --spacing-4.
- */
 const sectionDefaultPaddingStyles = stylex.create({
   containerPaddingInline: {
-    '--container-padding-inline': spacingVars['--spacing-4'],
+    '--container-padding-inline': `var(--xds-section-padding-inline, var(--xds-section-padding, ${spacingVars['--spacing-4']}))`,
   },
   containerPaddingBlockStart: {
-    '--container-padding-block-start': spacingVars['--spacing-4'],
+    '--container-padding-block-start': `var(--xds-section-padding-block-start, var(--xds-section-padding, ${spacingVars['--spacing-4']}))`,
   },
   containerPaddingBlockEnd: {
-    '--container-padding-block-end': spacingVars['--spacing-4'],
+    '--container-padding-block-end': `var(--xds-section-padding-block-end, var(--xds-section-padding, ${spacingVars['--spacing-4']}))`,
   },
   layoutPaddingOuterX: {
-    '--layout-padding-outer-x': spacingVars['--spacing-4'],
+    '--layout-padding-outer-x': `var(--xds-section-padding-inline, var(--xds-section-padding, ${spacingVars['--spacing-4']}))`,
   },
   layoutPaddingOuterY: {
-    '--layout-padding-outer-y': spacingVars['--spacing-4'],
+    '--layout-padding-outer-y': `var(--xds-section-padding-block-start, var(--xds-section-padding, ${spacingVars['--spacing-4']}))`,
   },
   layoutPaddingInnerX: {
-    '--layout-padding-inner-x': spacingVars['--spacing-4'],
+    '--layout-padding-inner-x': `var(--xds-section-padding-inline, var(--xds-section-padding, ${spacingVars['--spacing-4']}))`,
   },
   layoutPaddingInnerY: {
-    '--layout-padding-inner-y': spacingVars['--spacing-4'],
+    '--layout-padding-inner-y': `var(--xds-section-padding-block-start, var(--xds-section-padding, ${spacingVars['--spacing-4']}))`,
   },
 });
 
-/**
- * Dialog default padding styles.
- *
- * Theme pipeline maps `padding` on dialog overrides to container tokens directly.
- * When no explicit padding prop is set, defaults to --spacing-4.
- */
 const dialogDefaultPaddingStyles = stylex.create({
   containerPaddingInline: {
-    '--container-padding-inline': spacingVars['--spacing-4'],
+    '--container-padding-inline': `var(--xds-dialog-padding-inline, var(--xds-dialog-padding, ${spacingVars['--spacing-4']}))`,
   },
   containerPaddingBlockStart: {
-    '--container-padding-block-start': spacingVars['--spacing-4'],
+    '--container-padding-block-start': `var(--xds-dialog-padding-block-start, var(--xds-dialog-padding, ${spacingVars['--spacing-4']}))`,
   },
   containerPaddingBlockEnd: {
-    '--container-padding-block-end': spacingVars['--spacing-4'],
+    '--container-padding-block-end': `var(--xds-dialog-padding-block-end, var(--xds-dialog-padding, ${spacingVars['--spacing-4']}))`,
   },
   layoutPaddingOuterX: {
-    '--layout-padding-outer-x': spacingVars['--spacing-4'],
+    '--layout-padding-outer-x': `var(--xds-dialog-padding-inline, var(--xds-dialog-padding, ${spacingVars['--spacing-4']}))`,
   },
   layoutPaddingOuterY: {
-    '--layout-padding-outer-y': spacingVars['--spacing-4'],
+    '--layout-padding-outer-y': `var(--xds-dialog-padding-block-start, var(--xds-dialog-padding, ${spacingVars['--spacing-4']}))`,
   },
   layoutPaddingInnerX: {
-    '--layout-padding-inner-x': spacingVars['--spacing-4'],
+    '--layout-padding-inner-x': `var(--xds-dialog-padding-inline, var(--xds-dialog-padding, ${spacingVars['--spacing-4']}))`,
   },
   layoutPaddingInnerY: {
-    '--layout-padding-inner-y': spacingVars['--spacing-4'],
+    '--layout-padding-inner-y': `var(--xds-dialog-padding-block-start, var(--xds-dialog-padding, ${spacingVars['--spacing-4']}))`,
   },
 });
 
