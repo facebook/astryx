@@ -8,6 +8,11 @@ updates:
     open-pull-requests-limit: 5
     labels:
       - "dependencies"
+    ignore:
+      # jsdom 29 overhauled CSSOM internals and broke aspect-ratio
+      # serialization. Revisit when jsdom fixes it upstream.
+      - dependency-name: "jsdom"
+        update-types: ["version-update:semver-major"]
     groups:
       # Group all patch/minor updates together to reduce PR noise
       dev-dependencies:
