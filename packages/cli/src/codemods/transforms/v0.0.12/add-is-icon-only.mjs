@@ -201,9 +201,16 @@ export default function transformer(file, api) {
   root.find(j.JSXIdentifier, {name: 'XDSButton'}).forEach(() => {
     hasRemainingXDSButton = true;
   });
+  // Also check for XDSButton in type annotations (e.g. typeof XDSButton)
+  root.find(j.Identifier, {name: 'XDSButton'}).forEach((path) => {
+    // Skip JSX identifiers (already counted above) and import specifiers
+    if (path.parent.node.type === 'JSXOpeningElement' ||
+        path.parent.node.type === 'JSXClosingElement' ||
+        path.parent.node.type === 'ImportSpecifier') return;
+    hasRemainingXDSButton = true;
+  });
 
   if (needsIconButtonImport) {
-    // Check if XDSIconButton is already imported
     let alreadyImported = false;
     root.find(j.ImportDeclaration).forEach((path) => {
       if (path.node.specifiers.some(
@@ -214,9 +221,11 @@ export default function transformer(file, api) {
     });
 
     if (!alreadyImported) {
-      // If no XDSButton usage remains, replace the Button import
+      // Handle @xds/core/Button import — may need splitting if it has
+      // other specifiers (type imports, other components)
       if (!hasRemainingXDSButton) {
         root.find(j.ImportDeclaration).forEach((path) => {
+          if (alreadyImported) return;
           const source = path.node.source.value;
           if (source !== '@xds/core/Button') return;
           const specs = path.node.specifiers;
@@ -225,9 +234,22 @@ export default function transformer(file, api) {
           );
           if (btnIdx === -1) return;
 
-          // Replace XDSButton specifier with XDSIconButton
-          specs[btnIdx] = j.importSpecifier(j.identifier('XDSIconButton'));
-          path.node.source = j.literal('@xds/core/IconButton');
+          // Remove XDSButton from this import
+          specs.splice(btnIdx, 1);
+
+          if (specs.length === 0) {
+            // No other specifiers — replace the entire import
+            specs.push(j.importSpecifier(j.identifier('XDSIconButton')));
+            path.node.source = j.stringLiteral('@xds/core/IconButton');
+          } else {
+            // Other specifiers remain (type imports, etc.) — keep this import
+            // for them and add a new one for XDSIconButton
+            const newImport = j.importDeclaration(
+              [j.importSpecifier(j.identifier('XDSIconButton'))],
+              j.stringLiteral('@xds/core/IconButton'),
+            );
+            path.insertAfter(newImport);
+          }
           alreadyImported = true;
         });
       }
@@ -245,11 +267,11 @@ export default function transformer(file, api) {
         });
       }
 
-      // Otherwise add a new import
+      // Otherwise add a new import after the last @xds import
       if (!alreadyImported) {
         const newImport = j.importDeclaration(
           [j.importSpecifier(j.identifier('XDSIconButton'))],
-          j.literal('@xds/core/IconButton'),
+          j.stringLiteral('@xds/core/IconButton'),
         );
 
         const xdsImports = root
@@ -270,5 +292,5 @@ export default function transformer(file, api) {
     }
   }
 
-  return root.toSource();
+  return root.toSource({quote: 'single'});
 }

@@ -129,4 +129,45 @@ describe('add-is-icon-only', () => {
     const output = await applyTransform(input);
     expect(output).toContain('</XDSIconButton>');
   });
+
+  // Bug fixes (#1346)
+
+  it('does not produce double semicolons after use client directive', async () => {
+    const input = `'use client';
+
+import {XDSButton} from '@xds/core/Button';
+
+function Foo() {
+  return <XDSButton label="X" icon={<I />} />;
+}`;
+    const output = await applyTransform(input);
+    expect(output).not.toContain(';;');
+    expect(output).toContain("'use client'");
+  });
+
+  it('splits type imports to correct module when replacing Button import', async () => {
+    const input = `import {XDSButton, type XDSButtonProps} from '@xds/core/Button';
+
+function Foo(props: XDSButtonProps) {
+  return <XDSButton label="X" icon={<I />} />;
+}`;
+    const output = await applyTransform(input);
+    // Type import should stay on @xds/core/Button
+    expect(output).toContain("XDSButtonProps");
+    expect(output).toContain("'@xds/core/Button'");
+    // Component import should be on @xds/core/IconButton
+    expect(output).toContain("XDSIconButton");
+    expect(output).toContain("'@xds/core/IconButton'");
+    // XDSButton should NOT be in any import (it was the only value import)
+    expect(output).not.toMatch(/import.*XDSButton[^P]/);
+  });
+
+  it('uses single quotes for new imports', async () => {
+    const input = `import {XDSButton} from '@xds/core/Button';
+<><XDSButton label="A" icon={<I />} /><XDSButton label="B" variant="primary" /></>`;
+    const output = await applyTransform(input);
+    // New IconButton import should use single quotes
+    expect(output).toContain("from '@xds/core/IconButton'");
+    expect(output).not.toContain('from "@xds/core/IconButton"');
+  });
 });
