@@ -43,7 +43,7 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^4.3.0",
     "@vitest/coverage-v8": "^2.1.0",
-    "eslint": "^9.15.0",
+    "eslint": "^10.2.0",
     "husky": "^9.1.7",
     "jscodeshift": "^17.3.0",
     "jsdom": "^27.4.0",
