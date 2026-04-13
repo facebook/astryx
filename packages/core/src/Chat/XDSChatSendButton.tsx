@@ -21,6 +21,7 @@ import * as stylex from '@stylexjs/stylex';
 import {XDSButton} from '../Button';
 import {getIcon} from '../Icon/globalIconRegistry';
 import {useXDSChatComposerContext} from './XDSChatContext';
+import {xdsClassName} from '../utils';
 
 // =============================================================================
 // Types
@@ -88,20 +89,22 @@ export function XDSChatSendButton(props: XDSChatSendButtonProps): ReactNode {
   const handleSend = onSend ?? (() => context?.onSubmit(''));
 
   return (
-    <XDSButton
-      label={isStreaming ? 'Stop' : 'Send'}
-      variant={isStreaming ? 'secondary' : 'primary'}
-      size={size}
-      icon={
-        isStreaming
-          ? (stopIcon ?? getIcon('stop'))
-          : (sendIcon ?? getIcon('arrowUp'))
-      }
-      isIconOnly
-      isDisabled={!isStreaming && isDisabled}
-      onClick={isStreaming ? onStop : handleSend}
-      xstyle={[styles.root, xstyle]}
-    />
+    <span className={xdsClassName('chat-send-button')}>
+      <XDSButton
+        label={isStreaming ? 'Stop' : 'Send'}
+        variant={isStreaming ? 'secondary' : 'primary'}
+        size={size}
+        icon={
+          isStreaming
+            ? (stopIcon ?? getIcon('stop'))
+            : (sendIcon ?? getIcon('arrowUp'))
+        }
+        isIconOnly
+        isDisabled={!isStreaming && isDisabled}
+        onClick={isStreaming ? onStop : handleSend}
+        xstyle={[styles.root, xstyle]}
+      />
+    </span>
   );
 }
 

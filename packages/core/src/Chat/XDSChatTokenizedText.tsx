@@ -17,6 +17,7 @@
 import type {ReactNode} from 'react';
 import {XDSBadge} from '../Badge';
 import type {XDSChatComposerToken} from './XDSChatComposerInput';
+import {xdsClassName} from '../utils';
 
 // =============================================================================
 // Types
@@ -74,11 +75,11 @@ export function XDSChatTokenizedText({
   tokens,
 }: XDSChatTokenizedTextProps) {
   if (!children || !tokens || tokens.length === 0) {
-    return <span style={{display: 'inline'}}>{children ?? ''}</span>;
+    return <span className={xdsClassName('chat-tokenized-text')} style={{display: 'inline'}}>{children ?? ''}</span>;
   }
 
   const parts = renderTokens(children, tokens);
-  return <span style={{display: 'inline'}}>{parts}</span>;
+  return <span className={xdsClassName('chat-tokenized-text')} style={{display: 'inline'}}>{parts}</span>;
 }
 
 XDSChatTokenizedText.displayName = 'XDSChatTokenizedText';
