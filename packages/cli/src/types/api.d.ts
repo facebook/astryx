@@ -28,6 +28,7 @@ import type {
   TemplateShowResponse,
   TemplateSkeletonResponse,
   TemplateCopyResponse,
+  TemplateGetResponse,
 } from './template';
 
 /** Structured API error with optional suggestions. */
@@ -123,3 +124,8 @@ export declare function template(
   name?: string,
   options?: TemplateOptions,
 ): Promise<TemplateResult>;
+
+export declare function getTemplateById(
+  id: string,
+  options?: {cwd?: string},
+): Promise<TemplateGetResponse>;
