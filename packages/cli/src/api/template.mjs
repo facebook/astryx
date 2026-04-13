@@ -226,47 +226,34 @@ export async function template(name, options = {}) {
   }
 
   const templateDir = path.join(TEMPLATES_DIR, name);
+  const pagePath = path.join(templateDir, 'page.tsx');
   const doc = await loadTemplateDoc(templateDir);
 
-  // Show mode: return file contents without writing to disk
+  if (!fs.existsSync(pagePath)) {
+    throw new XDSError(`No page.tsx found for template "${name}"`);
+  }
+
+  // Show mode: return page.tsx content without writing to disk
   if (show || !targetPath) {
-    const files = fs.readdirSync(templateDir);
-    const fileContents = {};
-    for (const file of files) {
-      if (file === 'template.doc.mjs') continue;
-      const srcPath = path.join(templateDir, file);
-      if (!fs.statSync(srcPath).isFile()) continue;
-      fileContents[file] = fs.readFileSync(srcPath, 'utf-8');
-    }
     return {
       type: 'template.show',
       data: {
         template: name,
         description: doc?.description || '',
-        components: extractComponents(path.join(templateDir, 'page.tsx')),
-        files: fileContents,
+        components: extractComponents(pagePath),
+        source: fs.readFileSync(pagePath, 'utf-8'),
       },
     };
   }
 
-  // Copy mode: write files to disk
+  // Copy mode: write page.tsx to disk
   const outputDir = path.resolve(cwd, targetPath);
   fs.mkdirSync(outputDir, {recursive: true});
-
-  const files = fs.readdirSync(templateDir);
-  let copied = 0;
-
-  for (const file of files) {
-    if (file === 'template.doc.mjs') continue;
-    const srcPath = path.join(templateDir, file);
-    if (!fs.statSync(srcPath).isFile()) continue;
-    fs.copyFileSync(srcPath, path.join(outputDir, file));
-    copied++;
-  }
+  fs.copyFileSync(pagePath, path.join(outputDir, 'page.tsx'));
 
   const relOutput = path.relative(cwd, outputDir);
   return {
     type: 'template.copy',
-    data: {template: name, outputDir: relOutput, filesCopied: copied},
+    data: {template: name, outputDir: relOutput, filesCopied: 1},
   };
 }

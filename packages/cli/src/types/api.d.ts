@@ -23,7 +23,12 @@ import type {
   DiscoverDetailDocResponse,
   DiscoverSearchResponse,
 } from './discover';
-import type {TemplateListResponse, TemplateCopyResponse} from './template';
+import type {
+  TemplateListResponse,
+  TemplateShowResponse,
+  TemplateSkeletonResponse,
+  TemplateCopyResponse,
+} from './template';
 
 /** Structured API error with optional suggestions. */
 export declare class XDSError extends Error {
@@ -102,11 +107,17 @@ export declare function discover(
 
 export interface TemplateOptions {
   list?: boolean;
+  skeleton?: boolean;
+  show?: boolean;
   targetPath?: string;
   cwd?: string;
 }
 
-type TemplateResult = TemplateListResponse | TemplateCopyResponse;
+type TemplateResult =
+  | TemplateListResponse
+  | TemplateShowResponse
+  | TemplateSkeletonResponse
+  | TemplateCopyResponse;
 
 export declare function template(
   name?: string,
