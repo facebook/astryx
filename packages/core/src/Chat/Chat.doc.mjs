@@ -67,7 +67,7 @@ export const docs = {
   components: [
     {
       name: 'XDSChatMessageList',
-      description: 'Presentational message container with density context and infinite scroll support. Provides role="log" with aria-live="polite" for accessibility. A flex spacer pushes messages to the bottom when the list isn\'t full. Auto-scroll is owned by XDSChatLayout.',
+      description: 'Presentational message container with density context and infinite scroll support. Provides role="log" with aria-live="polite" for accessibility. A flex spacer pushes messages to the bottom when the list isn\'t full.',
       props: [
         {name: 'children', type: 'ReactNode', description: 'Message elements — typically XDSChatMessage or XDSChatSystemMessage.', required: true},
         {name: 'emptyState', type: 'ReactNode', description: 'Content shown when the list has no messages.'},
@@ -75,20 +75,19 @@ export const docs = {
         {name: 'density', type: "'compact' | 'balanced' | 'spacious'", description: 'Visual density — flows to child messages via context.', default: "'balanced'"},
       ],
       examples: [
-        {label: 'Full conversation', code: `<XDSChatMessageList onScrollToTopAction={loadOlder}>
-  <XDSChatSystemMessage variant="divider">Today</XDSChatSystemMessage>
+        {label: 'Default', code: `<XDSChatMessageList>
   <XDSChatMessage sender="user">
     <XDSChatMessageBubble
-      metadata={<XDSChatMessageMetadata timestamp="2:30 PM" status="read" />}>
-      Can you review the Button component?
+      metadata={<XDSChatMessageMetadata timestamp={<XDSTimestamp value="2026-03-15T14:30:00" format="time" />} status="read" />}>
+      How should I handle state management in a React app?
     </XDSChatMessageBubble>
   </XDSChatMessage>
-  <XDSChatMessage sender="assistant" avatar={<XDSAvatar name="Navi" size="sm" />}>
-    <XDSChatMessageBubble name="Navi">
-      <XDSMarkdown>{response}</XDSMarkdown>
-    </XDSChatMessageBubble>
-    <XDSChatToolCalls calls={toolCalls} />
-    <XDSChatMessageMetadata timestamp="2:31 PM" footer={<span>Claude Opus</span>} />
+  <XDSChatMessage sender="assistant">
+    <XDSMarkdown density="compact">{response}</XDSMarkdown>
+    <XDSChatMessageMetadata
+      timestamp={<XDSTimestamp value="2026-03-15T14:30:30" format="time" />}
+      footer={<><span>Claude Opus 4.6</span><span>·</span><XDSButton label="Copy" icon={copyIcon} variant="ghost" size="sm" isIconOnly /></>}
+    />
   </XDSChatMessage>
 </XDSChatMessageList>`},
         {label: 'With empty state', code: `<XDSChatMessageList emptyState={<XDSEmptyState title="No messages" />}>\n  {[]}\n</XDSChatMessageList>`},

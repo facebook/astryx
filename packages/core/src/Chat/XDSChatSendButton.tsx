@@ -89,22 +89,21 @@ export function XDSChatSendButton(props: XDSChatSendButtonProps): ReactNode {
   const handleSend = onSend ?? (() => context?.onSubmit(''));
 
   return (
-    <span className={xdsClassName('chat-send-button')}>
-      <XDSButton
-        label={isStreaming ? 'Stop' : 'Send'}
-        variant={isStreaming ? 'secondary' : 'primary'}
-        size={size}
-        icon={
-          isStreaming
-            ? (stopIcon ?? getIcon('stop'))
-            : (sendIcon ?? getIcon('arrowUp'))
-        }
-        isIconOnly
-        isDisabled={!isStreaming && isDisabled}
-        onClick={isStreaming ? onStop : handleSend}
-        xstyle={[styles.root, xstyle]}
-      />
-    </span>
+    <XDSButton
+      label={isStreaming ? 'Stop' : 'Send'}
+      variant={isStreaming ? 'secondary' : 'primary'}
+      size={size}
+      icon={
+        isStreaming
+          ? (stopIcon ?? getIcon('stop'))
+          : (sendIcon ?? getIcon('arrowUp'))
+      }
+      isIconOnly
+      isDisabled={!isStreaming && isDisabled}
+      onClick={isStreaming ? onStop : handleSend}
+      className={xdsClassName('chat-send-button')}
+      xstyle={[styles.root, xstyle]}
+    />
   );
 }
 
