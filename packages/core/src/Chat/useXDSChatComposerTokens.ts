@@ -19,7 +19,10 @@
  */
 
 import {useCallback, useState} from 'react';
-import type {XDSChatComposerToken, XDSChatComposerTokenCustom} from './XDSChatComposerInput';
+import type {
+  XDSChatComposerToken,
+  XDSChatComposerTokenCustom,
+} from './XDSChatComposerInput';
 
 // =============================================================================
 // Types
@@ -44,7 +47,7 @@ export interface UseXDSChatComposerTokensReturn {
   /** Expand a token — replace the token span with its text value. */
   expandToken: (id: string) => void;
   /** Insert a token at the current cursor position. */
-  insertToken: (token: XDSChatComposerToken) => void;
+  insertToken: (token: XDSChatComposerToken) => string | undefined;
   /** Handle keydown — intercepts Backspace near tokens. Returns true if handled. */
   handleKeyDown: (e: React.KeyboardEvent) => boolean;
   /** Handle paste — prevents pasting into token spans. Returns true if handled. */
@@ -105,7 +108,7 @@ export function useXDSChatComposerTokens({
 
   // --- Insert token at cursor ---
   const insertToken = useCallback(
-    (token: XDSChatComposerToken) => {
+    (token: XDSChatComposerToken): string | undefined => {
       const editable = editableRef.current;
       if (!editable) return;
 
@@ -139,6 +142,7 @@ export function useXDSChatComposerTokens({
 
       // Register for portal rendering
       setTokenPortals(prev => [...prev, {id, span, token}]);
+      return id;
     },
     [editableRef],
   );
