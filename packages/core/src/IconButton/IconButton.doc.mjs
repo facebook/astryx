@@ -71,19 +71,19 @@ export const docs = {
 
   examples: [
     {
-      title: 'Ghost icon button',
+      label: 'Ghost icon button',
       code: '<XDSIconButton label="Settings" icon={<GearIcon />} variant="ghost" />',
     },
     {
-      title: 'Destructive icon button',
+      label: 'Destructive icon button',
       code: '<XDSIconButton label="Delete" icon={<TrashIcon />} variant="destructive" />',
     },
     {
-      title: 'Small emoji icon button',
+      label: 'Small emoji icon button',
       code: '<XDSIconButton label="Emoji" icon={<span>🚀</span>} variant="ghost" size="sm" />',
     },
     {
-      title: 'Primary icon button with tooltip',
+      label: 'Primary icon button with tooltip',
       code: '<XDSIconButton label="Add item" icon={<PlusIcon />} variant="primary" tooltip="Add a new item" />',
     },
   ],
