@@ -29,6 +29,7 @@ import {
   ViewColumnsIcon,
   ClipboardDocumentIcon,
   WrenchScrewdriverIcon,
+  MicrophoneIcon,
 } from '@heroicons/react/24/outline';
 
 import {
@@ -37,6 +38,7 @@ import {
   ExclamationTriangleIcon,
   ArrowTopRightOnSquareIcon,
   StopIcon,
+  StopCircleIcon,
 } from '@heroicons/react/24/solid';
 
 const iconProps = {
@@ -71,4 +73,5 @@ export const whatsappIconRegistry: XDSIconRegistry = {
   checkDouble: <CheckIcon {...iconProps} />,
   wrench: <WrenchScrewdriverIcon {...iconProps} />,
   stop: <StopIcon {...iconProps} />,
+  microphone: <MicrophoneIcon {...iconProps} />,
 };

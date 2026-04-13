@@ -37,6 +37,8 @@ import {
   CheckCheck,
   Wrench,
   Square,
+  Mic,
+  CircleDot,
 } from 'lucide-react';
 
 const iconProps = {
@@ -70,4 +72,5 @@ export const neutralIconRegistry: XDSIconRegistry = {
   checkDouble: <CheckCheck {...iconProps} />,
   wrench: <Wrench {...iconProps} />,
   stop: <Square {...iconProps} />,
+  microphone: <Mic {...iconProps} />,
 };

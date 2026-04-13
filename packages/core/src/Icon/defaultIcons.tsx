@@ -248,4 +248,15 @@ export const defaultIcons: XDSIconRegistry = {
       <rect x="6" y="6" width="12" height="12" rx="2" />
     </svg>
   ),
+
+  /** 🎤 — microphone (voice input / dictation) */
+  microphone: (
+    <svg {...svgProps}>
+      <path d="M12 2a3 3 0 00-3 3v6a3 3 0 006 0V5a3 3 0 00-3-3z" />
+      <path d="M19 10v1a7 7 0 01-14 0v-1" />
+      <path d="M12 18v4m-4 0h8" />
+    </svg>
+  ),
+
+  /** ⏺ — filled circle (recording indicator) */
 };
