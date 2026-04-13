@@ -23,6 +23,7 @@ export const docs = {
     'XDSSearchSource integration — reuses Typeahead search sources',
     'Concentric radius — inner elements follow outer shell curvature',
     'Themeable via --composer-radius and --composer-padding CSS vars',
+    'Extractable send/stop button (XDSChatSendButton) with automatic composer context',
   ],
   theming: {
     targets: [
@@ -179,6 +180,24 @@ export const docs = {
       ],
     },
     {
+      name: 'XDSChatSendButton',
+      description: 'Circular send/stop toggle button for the composer. Reads state from XDSChatComposerContext by default so it works automatically inside XDSChatComposer. All context values can be overridden via props for standalone usage.',
+      props: [
+        {name: 'isStreaming', type: 'boolean', description: 'Whether the assistant is currently streaming. Defaults to context value.'},
+        {name: 'isDisabled', type: 'boolean', description: 'Whether the send button is disabled. Defaults to !canSend from context.'},
+        {name: 'onSend', type: '() => void', description: 'Called when the user clicks send. Defaults to context onSubmit.'},
+        {name: 'onStop', type: '() => void', description: 'Called when the user clicks stop during streaming. Defaults to context onStop.'},
+        {name: 'sendIcon', type: 'ReactNode', description: 'Custom icon for the send state. Defaults to arrowUp from icon registry.'},
+        {name: 'stopIcon', type: 'ReactNode', description: 'Custom icon for the stop state. Defaults to stop from icon registry.'},
+        {name: 'size', type: "'sm' | 'md'", description: 'Button size.', default: "'md'"},
+        {name: 'xstyle', type: 'StyleXStyles', description: 'Additional StyleX styles.'},
+      ],
+      examples: [
+        {label: 'Default (inside composer)', code: '<XDSChatComposer onSubmit={handleSubmit} sendButton={<XDSChatSendButton />} />'},
+        {label: 'Custom icons', code: '<XDSChatSendButton sendIcon={<CustomSendIcon />} stopIcon={<CustomStopIcon />} onSend={handleSend} onStop={handleStop} />'},
+      ],
+    },
+    {
       name: 'XDSChatTokenizedText',
       description: 'Renders text with token patterns replaced by inline XDSBadge components. Use inside XDSChatMessageBubble to display @mentions or other tokens as styled badges.',
       props: [
@@ -236,6 +255,7 @@ export const docsZh = {
     'XDSSearchSource 集成 — 复用 Typeahead 搜索源',
     '同心圆角 — 内部元素跟随外部外壳曲率',
     '通过 --composer-radius 和 --composer-padding CSS 变量实现主题化',
+    '可提取的发送/停止按钮（XDSChatSendButton），自动读取编写器上下文',
   ],
   components: [
     {
@@ -331,6 +351,20 @@ export const docsZh = {
       },
     },
     {
+      name: 'XDSChatSendButton',
+      description: '编写器的圆形发送/停止切换按钮。默认从 XDSChatComposerContext 读取状态，在 XDSChatComposer 内自动工作。所有上下文值均可通过 props 覆盖以用于独立使用。',
+      propDescriptions: {
+        isStreaming: '助手是否正在流式响应。默认使用上下文值。',
+        isDisabled: '发送按钮是否禁用。默认使用上下文的 !canSend。',
+        onSend: '用户点击发送时调用。默认使用上下文的 onSubmit。',
+        onStop: '流式响应期间用户点击停止时调用。默认使用上下文的 onStop。',
+        sendIcon: '发送状态的自定义图标。默认使用图标注册表的 arrowUp。',
+        stopIcon: '停止状态的自定义图标。默认使用图标注册表的 stop。',
+        size: '按钮大小。',
+        xstyle: '额外的 StyleX 样式。',
+      },
+    },
+    {
 name: 'XDSChatTokenizedText',
       description: '渲染带有标记模式的文本，将匹配的模式替换为内联 XDSBadge 组件。在 XDSChatMessageBubble 内使用，以徽章样式显示 @提及或其他标记。',
       propDescriptions: {
@@ -372,6 +406,7 @@ export const docsDense = {
     'XDSSearchSource integration; reuses Typeahead search sources',
     'concentric radius; inner elements follow outer shell curvature',
     'themeable via --composer-radius + --composer-padding CSS vars',
+    'extractable send/stop btn (XDSChatSendButton) w/ auto composer context',
   ],
   components: [
     {
@@ -464,6 +499,20 @@ export const docsDense = {
       propDescriptions: {
         children: 'attachment items to render',
         count: 'total count; shows collapse/expand when exceeds visible',
+      },
+    },
+    {
+      name: 'XDSChatSendButton',
+      description: 'circular send/stop toggle btn for composer; reads XDSChatComposerContext; all context vals overridable via props',
+      propDescriptions: {
+        isStreaming: 'streaming state; defaults to context',
+        isDisabled: 'disabled; defaults to !canSend from context',
+        onSend: 'send click handler; defaults to context onSubmit',
+        onStop: 'stop click handler; defaults to context onStop',
+        sendIcon: 'custom send icon; default arrowUp from registry',
+        stopIcon: 'custom stop icon; default stop from registry',
+        size: 'btn size',
+        xstyle: 'additional StyleX styles',
       },
     },
     {
