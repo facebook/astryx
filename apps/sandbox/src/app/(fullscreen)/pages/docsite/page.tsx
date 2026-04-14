@@ -51,8 +51,7 @@ export default function DocsiteLandingTemplate() {
     const t = searchParams.get('template');
     const templateIdx = t !== null ? parseInt(t, 10) : null;
     return {view: v, templateIdx: isNaN(templateIdx as number) ? null : templateIdx};
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [searchParams]);
 
   const [activeView, setActiveView] = useState(
     'craft' as 'craft' | 'explore' | 'docs' | 'profile',
