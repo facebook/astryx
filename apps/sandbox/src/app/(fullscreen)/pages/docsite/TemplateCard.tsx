@@ -83,6 +83,7 @@ export function TemplateCard({
             width: '100%',
             height: 400,
             objectFit: 'cover' as const,
+            objectPosition: 'top',
             opacity: isGenerating ? 0 : 1,
             transition: 'opacity 600ms ease',
           }}
