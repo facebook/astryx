@@ -117,13 +117,19 @@ function ProductCard({product}: {product: Product}) {
       </XDSAspectRatio>
 
       <XDSVStack gap={1}>
-        <XDSText type="body" size="xl" weight="medium">
+        <XDSText
+          type="body"
+          weight="medium"
+          style={{fontSize: 'var(--font-size-xl)'}}>
           {product.name}
         </XDSText>
         <XDSText type="body" color="secondary" maxLines={2}>
           {product.description}
         </XDSText>
-        <XDSText type="body" size="xl" weight="bold">
+        <XDSText
+          type="body"
+          weight="bold"
+          style={{fontSize: 'var(--font-size-xl)'}}>
           {fmt(product.price)}
         </XDSText>
       </XDSVStack>
@@ -141,7 +147,11 @@ export default function ProductGalleryTemplate() {
           {/* Header — title left, description + CTA right */}
           <XDSHStack gap={4} vAlign="start">
             <div style={{flex: '1 1 0%', minWidth: 0}}>
-              <XDSText type="large" size="2xl" weight="bold" as="p">
+              <XDSText
+                type="large"
+                weight="bold"
+                as="p"
+                style={{fontSize: 'var(--font-size-2xl)'}}>
                 Make every day a little more delightful, one detail at a time.
               </XDSText>
             </div>
