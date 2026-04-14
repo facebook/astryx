@@ -35,6 +35,13 @@ import {
   BookmarkFilledIcon,
   MetaLogo,
   WhatsAppLogo,
+  DefaultThemeIcon,
+  NeutralThemeIcon,
+  BrutalistThemeIcon,
+  DailyThemeIcon,
+  ForestThemeIcon,
+  SunsetThemeIcon,
+  MidnightThemeIcon,
 } from './docsite-icons';
 import {
   XDS_THEMES,
@@ -49,8 +56,15 @@ import {InlinePublishPanel} from './InlinePublishPanel';
 import {SharePopover} from './SharePopover';
 
 const BRAND_LOGOS: Record<string, React.ComponentType<React.SVGProps<SVGSVGElement>>> = {
+  default: DefaultThemeIcon,
   meta: MetaLogo,
   whatsapp: WhatsAppLogo,
+  neutral: NeutralThemeIcon,
+  brutalist: BrutalistThemeIcon,
+  daily: DailyThemeIcon,
+  forest: ForestThemeIcon,
+  sunset: SunsetThemeIcon,
+  midnight: MidnightThemeIcon,
 };
 
 export function TemplateFullPreview({
@@ -542,7 +556,7 @@ export function TemplateFullPreview({
                       alignItems: 'center',
                       justifyContent: 'space-between',
                     }}>
-                    <XDSHeading level={4}>Themes</XDSHeading>
+                    <XDSHeading level={4}>Apply your themes</XDSHeading>
                     <XDSButton
                       variant="ghost"
                       size="sm"
@@ -553,9 +567,9 @@ export function TemplateFullPreview({
                   <div
                     style={{
                       display: 'grid',
-                      gridTemplateColumns: 'repeat(auto-fill, 40px)',
+                      gridTemplateColumns: 'repeat(auto-fill, 44px)',
                       gap: 8,
-                      marginTop: 10,
+                      marginTop: 12,
                     }}>
                     {THEME_PICKER_ENTRIES.filter(
                       t => pinnedThemes.has(t.key),
@@ -567,8 +581,8 @@ export function TemplateFullPreview({
                           <div
                             onClick={() => setSelectedTheme(entry.key)}
                             style={{
-                              width: 40,
-                              height: 40,
+                              width: 44,
+                              height: 44,
                               borderRadius: 10,
                               display: 'flex',
                               alignItems: 'center',
@@ -577,17 +591,16 @@ export function TemplateFullPreview({
                               border: isSelected
                                 ? '2px solid var(--color-accent, #0066FF)'
                                 : '2px solid var(--color-border, #E0E0E0)',
-                              backgroundColor:
-                                'var(--color-surface, #F5F5F5)',
+                              backgroundColor: '#fff',
                               transition: 'border-color 0.15s ease',
                             }}>
                             {BrandLogo ? (
-                              <BrandLogo width={20} height={20} />
+                              <BrandLogo width={28} height={28} />
                             ) : (
                               <div
                                 style={{
-                                  width: 16,
-                                  height: 16,
+                                  width: 24,
+                                  height: 24,
                                   borderRadius: '50%',
                                   backgroundColor: entry.accent,
                                 }}
