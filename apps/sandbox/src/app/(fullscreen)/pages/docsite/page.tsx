@@ -1,6 +1,6 @@
 'use client';
 
-import React, {useState, useEffect, useRef, useCallback, useMemo} from 'react';
+import React, {Suspense, useState, useEffect, useRef, useCallback, useMemo} from 'react';
 import {useSearchParams, useRouter} from 'next/navigation';
 
 import {createSimulation} from './BoidsCanvas';
@@ -41,7 +41,15 @@ import {
 // Page
 // ---------------------------------------------------------------------------
 
-export default function DocsiteLandingTemplate() {
+export default function DocsiteLandingPage() {
+  return (
+    <Suspense>
+      <DocsiteLandingTemplate />
+    </Suspense>
+  );
+}
+
+function DocsiteLandingTemplate() {
   const searchParams = useSearchParams();
   const router = useRouter();
 

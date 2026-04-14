@@ -35,7 +35,7 @@ import {
   XDS_THEMES,
   MOCK_CODE,
   TEMPLATES,
-  PREVIEW_COLOR_PALETTES,
+  PREVIEW_THEMES,
   PREVIEW_FONT_PACKS,
   AVATAR_IMAGE,
 } from './constants';
@@ -68,9 +68,7 @@ export function TemplateFullPreview({
     'preview' as 'preview' | 'code',
   );
   const [isVisible, setIsVisible] = useState(false);
-  const [selectedPalette, setSelectedPalette] = useState(
-    PREVIEW_COLOR_PALETTES[0].name as string | null,
-  );
+  const [selectedTheme, setSelectedTheme] = useState('default' as string | null);
   const [selectedFontPack, setSelectedFontPack] = useState(
     PREVIEW_FONT_PACKS[0].heading as string | null,
   );
@@ -515,45 +513,148 @@ export function TemplateFullPreview({
                 {/* Themes */}
                 <div style={{marginTop: 32}}>
                   <XDSHeading level={4}>Themes</XDSHeading>
-                  <div
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: '1fr 1fr',
-                      gap: 10,
-                      marginTop: 8,
-                    }}>
-                    {PREVIEW_COLOR_PALETTES.map(palette => (
-                      <div
-                        key={palette.name}
-                        onClick={() => setSelectedPalette(palette.name)}
-                        style={{
-                          cursor: 'pointer',
-                          border: `2px solid ${selectedPalette === palette.name ? 'var(--color-accent, #0066FF)' : 'transparent'}`,
-                          borderRadius: 14,
-                          overflow: 'hidden',
-                          transition: 'border-color 0.15s ease',
-                        }}>
-                        <XDSCard padding={0}>
+                  {(['pinned', 'official', 'community'] as const).map(
+                    category => {
+                      const themes = PREVIEW_THEMES.filter(
+                        t => t.category === category,
+                      );
+                      if (themes.length === 0) return null;
+                      return (
+                        <div key={category} style={{marginTop: 12}}>
+                          <XDSText
+                            type="supporting"
+                            color="secondary"
+                            style={{
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.05em',
+                            }}>
+                            {category}
+                          </XDSText>
                           <div
                             style={{
-                              display: 'flex',
-                              overflow: 'hidden',
-                              height: 48,
+                              display: 'grid',
+                              gridTemplateColumns: '1fr 1fr',
+                              gap: 10,
+                              marginTop: 6,
                             }}>
-                            {palette.colors.map((color, i) => (
-                              <div
-                                key={i}
-                                style={{
-                                  flex: 1,
-                                  backgroundColor: color,
-                                }}
-                              />
-                            ))}
+                            {themes.map(theme => {
+                              const isSelected =
+                                selectedTheme === theme.key;
+                              return (
+                                <div
+                                  key={`${category}-${theme.key}`}
+                                  onClick={() =>
+                                    setSelectedTheme(theme.key)
+                                  }
+                                  style={{
+                                    cursor: 'pointer',
+                                    border: `2px solid ${isSelected ? 'var(--color-accent, #0066FF)' : 'transparent'}`,
+                                    borderRadius: 14,
+                                    overflow: 'hidden',
+                                    transition: 'border-color 0.15s ease',
+                                  }}>
+                                  <XDSCard padding={0}>
+                                    <div
+                                      style={{
+                                        height: 56,
+                                        backgroundColor:
+                                          theme.colors.background,
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        overflow: 'hidden',
+                                      }}>
+                                      {/* Mini nav bar */}
+                                      <div
+                                        style={{
+                                          height: 12,
+                                          backgroundColor:
+                                            theme.colors.surface,
+                                          borderBottom: `1px solid ${theme.colors.border}`,
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          paddingInline: 6,
+                                          gap: 3,
+                                        }}>
+                                        <div
+                                          style={{
+                                            width: 4,
+                                            height: 4,
+                                            borderRadius: '50%',
+                                            backgroundColor:
+                                              theme.colors.accent,
+                                          }}
+                                        />
+                                        <div
+                                          style={{
+                                            width: 12,
+                                            height: 2,
+                                            borderRadius: 1,
+                                            backgroundColor:
+                                              theme.colors.text,
+                                            opacity: 0.4,
+                                          }}
+                                        />
+                                      </div>
+                                      {/* Content area */}
+                                      <div
+                                        style={{
+                                          flex: 1,
+                                          padding: 6,
+                                          display: 'flex',
+                                          flexDirection: 'column',
+                                          gap: 4,
+                                        }}>
+                                        <div
+                                          style={{
+                                            width: '70%',
+                                            height: 3,
+                                            borderRadius: 1,
+                                            backgroundColor:
+                                              theme.colors.text,
+                                            opacity: 0.7,
+                                          }}
+                                        />
+                                        <div
+                                          style={{
+                                            width: '50%',
+                                            height: 2,
+                                            borderRadius: 1,
+                                            backgroundColor:
+                                              theme.colors.text,
+                                            opacity: 0.3,
+                                          }}
+                                        />
+                                        <div
+                                          style={{
+                                            width: 24,
+                                            height: 8,
+                                            borderRadius: 3,
+                                            backgroundColor:
+                                              theme.colors.accent,
+                                            marginTop: 'auto',
+                                          }}
+                                        />
+                                      </div>
+                                    </div>
+                                  </XDSCard>
+                                  <div
+                                    style={{
+                                      padding: '4px 6px',
+                                      backgroundColor:
+                                        theme.colors.surface,
+                                    }}>
+                                    <XDSText type="supporting" color="secondary">
+                                      {theme.name}
+                                    </XDSText>
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
-                        </XDSCard>
-                      </div>
-                    ))}
-                  </div>
+                        </div>
+                      );
+                    },
+                  )}
                 </div>
 
                 {/* Font packs — removed */}
