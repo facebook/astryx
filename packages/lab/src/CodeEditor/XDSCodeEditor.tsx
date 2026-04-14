@@ -33,8 +33,8 @@ import {
 } from '@xds/core/theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '@xds/core/utils';
 import {
-  tokenize,
-  tokenizeAsync,
+  tokenizeFlat as tokenize,
+  tokenizeAsyncFlat as tokenizeAsync,
   SYNC_TOKENIZE_THRESHOLD,
 } from '@xds/core/CodeBlock';
 import type {Token} from '@xds/core/CodeBlock';
