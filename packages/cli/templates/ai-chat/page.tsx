@@ -520,7 +520,7 @@ export default function AIChatTemplate() {
                       {msg.attachments && msg.attachments.length > 0 && (
                         <XDSHStack gap={1} style={{flexWrap: 'wrap'}}>
                           {msg.attachments.map(f => (
-                            <XDSToken key={f} label={f} size="sm" />
+                            <XDSToken key={f} label={f} />
                           ))}
                         </XDSHStack>
                       )}
