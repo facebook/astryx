@@ -37,6 +37,7 @@ import {
   TEMPLATES,
   PREVIEW_COLOR_PALETTES,
   PREVIEW_FONT_PACKS,
+  AVATAR_IMAGE,
 } from './constants';
 import {InlinePublishPanel} from './InlinePublishPanel';
 import {SharePopover} from './SharePopover';
@@ -320,6 +321,7 @@ export function TemplateFullPreview({
                   <XDSAvatar
                     name="Andrea Anderson"
                     size={36}
+                    src={AVATAR_IMAGE}
                   />
                   <div
                     style={{display: 'flex', flexDirection: 'column', gap: 0}}>

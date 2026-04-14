@@ -14,6 +14,7 @@ import {
   PROFILE_LIKED_ITEMS,
   PROFILE_COLLECTIONS,
   DUMMY_IMAGE,
+  AVATAR_IMAGE,
 } from './constants';
 import {
   SearchIcon,
@@ -144,7 +145,7 @@ export function ProfileView({
               gap: 20,
               marginBottom: 24,
             }}>
-            <XDSAvatar name="Ruby Cheung" size="large" />
+            <XDSAvatar name="Ruby Cheung" size="large" src={AVATAR_IMAGE} />
             <div>
               <XDSHeading level={1}>Ruby Cheung</XDSHeading>
               <XDSText type="supporting" color="secondary">
