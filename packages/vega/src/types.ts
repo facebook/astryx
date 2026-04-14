@@ -96,7 +96,11 @@ export type ViewData = Record<string, unknown[]>;
  */
 export interface XDSVegaChartProps extends Omit<
   React.HTMLAttributes<HTMLDivElement>,
-  'contentEditable' | 'dangerouslySetInnerHTML' | 'suppressContentEditableWarning' | 'suppressHydrationWarning'
+  | 'contentEditable'
+  | 'dangerouslySetInnerHTML'
+  | 'suppressContentEditableWarning'
+  | 'suppressHydrationWarning'
+  | 'onError'
 > {
   /**
    * Ref forwarded to the root container div.
