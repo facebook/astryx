@@ -67,6 +67,30 @@ export interface XDSTableSortableColumnConfig {
 }
 
 // =============================================================================
+// Column Alignment
+// =============================================================================
+
+/**
+ * Horizontal text alignment for a table column.
+ * Applied to both the `<th>` and `<td>` elements.
+ *
+ * @default 'start'
+ */
+export type XDSTableColumnAlign = 'start' | 'center' | 'end';
+
+// =============================================================================
+// Row Vertical Alignment
+// =============================================================================
+
+/**
+ * Vertical alignment for table body row cells.
+ * Controls `vertical-align` on `<td>` elements.
+ *
+ * @default 'middle'
+ */
+export type XDSTableVerticalAlign = 'middle' | 'top' | 'bottom';
+
+// =============================================================================
 // Column Definition
 // =============================================================================
 
@@ -82,6 +106,22 @@ export interface XDSTableColumn<T extends Record<string, unknown>> {
   header?: ReactNode;
   /** Column width. Defaults to `proportional(1)`. */
   width?: ColumnWidth;
+  /**
+   * Horizontal text alignment for this column.
+   * Applied to both the header `<th>` and body `<td>` cells.
+   *
+   * @default 'start'
+   *
+   * @example
+   * ```
+   * // Right-align a numeric column
+   * { key: 'amount', header: 'Amount', align: 'end' }
+   *
+   * // Center-align a status column
+   * { key: 'status', header: 'Status', align: 'center' }
+   * ```
+   */
+  align?: XDSTableColumnAlign;
   /**
    * Sortable configuration for this column.
    * Set to `true` for default behavior (sortKey = column.key),

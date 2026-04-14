@@ -90,6 +90,18 @@ const dividerColumnStyles = stylex.create({
   },
 });
 
+const verticalAlignStyles = stylex.create({
+  middle: {
+    verticalAlign: 'middle',
+  },
+  top: {
+    verticalAlign: 'top',
+  },
+  bottom: {
+    verticalAlign: 'bottom',
+  },
+});
+
 /**
  * XDSTableCell — a `<td>` wrapper for children/streaming mode.
  *
@@ -108,6 +120,8 @@ export function XDSTableCell({
   children,
   xstyle,
   ref,
+  className: incomingClassName,
+  style: incomingStyle,
   ...props
 }: XDSTableCellProps) {
   const ctx = useTableContext();
@@ -117,7 +131,12 @@ export function XDSTableCell({
       <td
         ref={ref}
         {...props}
-        {...mergeProps(xdsClassName('table-cell'), stylex.props(xstyle))}>
+        {...mergeProps(
+          xdsClassName('table-cell'),
+          stylex.props(xstyle),
+          incomingClassName,
+          incomingStyle as React.CSSProperties,
+        )}>
         {children}
       </td>
     );
@@ -127,6 +146,7 @@ export function XDSTableCell({
     densityStyles[ctx.density],
     overflowStyles.cell,
     containerEdgeStyles[ctx.density],
+    verticalAlignStyles[ctx.verticalAlign],
     ...buildDividerStyles(ctx, dividerRowStyles.cell, dividerColumnStyles.cell),
   ];
 
@@ -137,6 +157,8 @@ export function XDSTableCell({
       {...mergeProps(
         xdsClassName('table-cell'),
         stylex.props(...mergeXStyle(cellStyles, xstyle)),
+        incomingClassName,
+        incomingStyle as React.CSSProperties,
       )}>
       {children}
     </td>

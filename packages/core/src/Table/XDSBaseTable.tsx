@@ -133,10 +133,16 @@ function TableRowInner<T extends Record<string, unknown>>({
 }: TableRowProps<T>): ReactElement {
   // Build cells first
   const cells = columns.map(col => {
+    // Apply column alignment to body cells
+    const initialCellHtmlProps: Record<string, unknown> = {};
+    if (col.align) {
+      initialCellHtmlProps.style = {textAlign: col.align};
+    }
+
     const cellRenderProps = applyPlugins(
       plugins,
       p => p.transformBodyCell,
-      {htmlProps: {}, styles: []} as BodyCellRenderProps,
+      {htmlProps: initialCellHtmlProps, styles: []} as BodyCellRenderProps,
       col,
       item,
     );
@@ -293,11 +299,19 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
   const headerCells = resolvedColumns.map(col => {
     const headerContent = col.header ?? col.key;
 
+    // Build initial htmlProps with column alignment if specified
+    const initialHeaderHtmlProps: Record<string, unknown> = {
+      'data-column-key': col.key,
+    };
+    if (col.align) {
+      initialHeaderHtmlProps.style = {textAlign: col.align};
+    }
+
     const cellRenderProps = applyPlugins(
       plugins,
       p => p.transformHeaderCell,
       {
-        htmlProps: {'data-column-key': col.key},
+        htmlProps: initialHeaderHtmlProps,
         styles: [],
         content: headerContent,
       } as HeaderCellRenderProps,
