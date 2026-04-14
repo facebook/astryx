@@ -292,13 +292,13 @@ const styles = stylex.create({
   hideOnSmall: {
     display: {
       default: 'none',
-      '@media (min-width: 768px)': 'block',
+      '@media (min-width: 840px)': 'block',
     },
   },
   hideOnLarge: {
     display: {
       default: 'block',
-      '@media (min-width: 768px)': 'none',
+      '@media (min-width: 840px)': 'none',
     },
   },
 });
