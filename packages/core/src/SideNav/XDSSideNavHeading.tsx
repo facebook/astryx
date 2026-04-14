@@ -48,6 +48,7 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
+    minHeight: spacingVars['--spacing-8'],
     padding: 0,
     boxSizing: 'border-box',
     textDecoration: 'none',
