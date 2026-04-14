@@ -149,7 +149,8 @@ export default function ProductGalleryTemplate() {
                 weight="bold"
                 as="p"
                 style={{fontSize: 'var(--font-size-2xl)'}}>
-                Make every day a little more delightful, one detail at a time.
+                Make every day a little more delightful, one small detail at a
+                time.
               </XDSText>
             </div>
             <div style={{flex: '1 1 0%', minWidth: 0}}>
