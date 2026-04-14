@@ -238,6 +238,77 @@ export const PUBLISH_TAGS = [
 ];
 
 // ---------------------------------------------------------------------------
+// Preview themes (used in TemplateFullPreview)
+// ---------------------------------------------------------------------------
+
+export type PreviewTheme = {
+  key: string;
+  name: string;
+  category: 'pinned' | 'official' | 'community';
+  colors: {
+    background: string;
+    surface: string;
+    border: string;
+    accent: string;
+    text: string;
+  };
+};
+
+export const PREVIEW_THEMES: PreviewTheme[] = [
+  // Pinned
+  {
+    key: 'default',
+    name: 'Default',
+    category: 'pinned',
+    colors: {background: '#FFFFFF', surface: '#F5F5F5', border: '#E0E0E0', accent: '#0066FF', text: '#111111'},
+  },
+  {
+    key: 'dark',
+    name: 'Dark',
+    category: 'pinned',
+    colors: {background: '#1A1A1A', surface: '#2A2A2A', border: '#3A3A3A', accent: '#3B82F6', text: '#F0F0F0'},
+  },
+  // Official
+  {
+    key: 'neutral',
+    name: 'Neutral',
+    category: 'official',
+    colors: {background: '#FAFAFA', surface: '#F0F0F0', border: '#D4D4D4', accent: '#525252', text: '#171717'},
+  },
+  {
+    key: 'warm',
+    name: 'Warm',
+    category: 'official',
+    colors: {background: '#FDF8F4', surface: '#F5E6D3', border: '#E0CEBD', accent: '#D4A574', text: '#2D2926'},
+  },
+  {
+    key: 'cool',
+    name: 'Cool',
+    category: 'official',
+    colors: {background: '#F0F4F8', surface: '#E2EAF2', border: '#C8D6E0', accent: '#4A90D9', text: '#1B2838'},
+  },
+  // Community
+  {
+    key: 'forest',
+    name: 'Forest',
+    category: 'community',
+    colors: {background: '#F4F7F4', surface: '#E8EDE8', border: '#C4D1C4', accent: '#2D8A4E', text: '#1A2E1A'},
+  },
+  {
+    key: 'sunset',
+    name: 'Sunset',
+    category: 'community',
+    colors: {background: '#FFF5F5', surface: '#FDE8E8', border: '#F5C6C6', accent: '#E5484D', text: '#2D1515'},
+  },
+  {
+    key: 'midnight',
+    name: 'Midnight',
+    category: 'community',
+    colors: {background: '#0F172A', surface: '#1E293B', border: '#334155', accent: '#818CF8', text: '#E2E8F0'},
+  },
+];
+
+// ---------------------------------------------------------------------------
 // Preview palettes and font packs
 // ---------------------------------------------------------------------------
 
