@@ -103,9 +103,14 @@ function ProductCard({product}: {product: Product}) {
         style={{
           borderRadius: 'var(--radius-container)',
           overflow: 'clip',
-          backgroundColor: 'var(--color-background-wash)',
         }}>
-        <div />
+        <div
+          style={{
+            width: '100%',
+            height: '100%',
+            backgroundColor: 'var(--color-background-wash)',
+          }}
+        />
       </XDSAspectRatio>
 
       <XDSVStack gap={1}>
