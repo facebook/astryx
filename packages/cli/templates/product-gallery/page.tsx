@@ -108,7 +108,7 @@ function ProductCard({product}: {product: Product}) {
           style={{
             width: '100%',
             height: '100%',
-            backgroundColor: 'var(--color-background-wash)',
+            backgroundColor: 'var(--color-background-wash, #f0f0f0)',
           }}
         />
       </XDSAspectRatio>
