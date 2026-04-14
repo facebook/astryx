@@ -13,6 +13,8 @@ import {
 import {XDSToken} from '@xds/core/Token';
 import {XDSToolbar} from '@xds/core/Toolbar';
 import {XDSTooltip} from '@xds/core/Tooltip';
+import {XDSDialog, XDSDialogHeader} from '@xds/core/Dialog';
+import {XDSTextInput} from '@xds/core/TextInput';
 
 import {
   ArrowLeftIcon,
@@ -30,17 +32,26 @@ import {
   CheckIcon,
   HeartIcon,
   BookmarkIcon,
+  BookmarkFilledIcon,
+  MetaLogo,
+  WhatsAppLogo,
 } from './docsite-icons';
 import {
   XDS_THEMES,
   MOCK_CODE,
   TEMPLATES,
-  PREVIEW_THEMES,
+  THEME_PICKER_ENTRIES,
   PREVIEW_FONT_PACKS,
   AVATAR_IMAGE,
 } from './constants';
+
 import {InlinePublishPanel} from './InlinePublishPanel';
 import {SharePopover} from './SharePopover';
+
+const BRAND_LOGOS: Record<string, React.ComponentType<React.SVGProps<SVGSVGElement>>> = {
+  meta: MetaLogo,
+  whatsapp: WhatsAppLogo,
+};
 
 export function TemplateFullPreview({
   templateName,
@@ -68,7 +79,20 @@ export function TemplateFullPreview({
     'preview' as 'preview' | 'code',
   );
   const [isVisible, setIsVisible] = useState(false);
-  const [selectedTheme, setSelectedTheme] = useState('default' as string | null);
+  const [selectedTheme, setSelectedTheme] = useState('default');
+  const [showThemeBrowse, setShowThemeBrowse] = useState(false);
+  const [themeSearch, setThemeSearch] = useState('');
+  const [pinnedThemes, setPinnedThemes] = useState(
+    () => new Set(THEME_PICKER_ENTRIES.filter(t => t.isPinnedByDefault).map(t => t.key)),
+  );
+  const togglePin = useCallback((key: string) => {
+    setPinnedThemes(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }, []);
   const [selectedFontPack, setSelectedFontPack] = useState(
     PREVIEW_FONT_PACKS[0].heading as string | null,
   );
@@ -510,152 +534,300 @@ export function TemplateFullPreview({
                   </div>
                 )}
 
-                {/* Themes */}
+                {/* Themes — pinned grid */}
                 <div style={{marginTop: 32}}>
-                  <XDSHeading level={4}>Themes</XDSHeading>
-                  {(['pinned', 'official', 'community'] as const).map(
-                    category => {
-                      const themes = PREVIEW_THEMES.filter(
-                        t => t.category === category,
-                      );
-                      if (themes.length === 0) return null;
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                    }}>
+                    <XDSHeading level={4}>Themes</XDSHeading>
+                    <XDSButton
+                      variant="ghost"
+                      size="sm"
+                      label="Browse"
+                      onClick={() => setShowThemeBrowse(true)}
+                    />
+                  </div>
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fill, 40px)',
+                      gap: 8,
+                      marginTop: 10,
+                    }}>
+                    {THEME_PICKER_ENTRIES.filter(
+                      t => pinnedThemes.has(t.key),
+                    ).map(entry => {
+                      const isSelected = selectedTheme === entry.key;
+                      const BrandLogo = BRAND_LOGOS[entry.key];
                       return (
-                        <div key={category} style={{marginTop: 12}}>
-                          <XDSText
-                            type="supporting"
-                            color="secondary"
-                            style={{
-                              textTransform: 'uppercase',
-                              letterSpacing: '0.05em',
-                            }}>
-                            {category}
-                          </XDSText>
+                        <XDSTooltip key={entry.key} content={entry.name}>
                           <div
+                            onClick={() => setSelectedTheme(entry.key)}
                             style={{
-                              display: 'grid',
-                              gridTemplateColumns: '1fr 1fr',
-                              gap: 10,
-                              marginTop: 6,
+                              width: 40,
+                              height: 40,
+                              borderRadius: 10,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              cursor: 'pointer',
+                              border: isSelected
+                                ? '2px solid var(--color-accent, #0066FF)'
+                                : '2px solid var(--color-border, #E0E0E0)',
+                              backgroundColor:
+                                'var(--color-surface, #F5F5F5)',
+                              transition: 'border-color 0.15s ease',
                             }}>
-                            {themes.map(theme => {
-                              const isSelected =
-                                selectedTheme === theme.key;
-                              return (
-                                <div
-                                  key={`${category}-${theme.key}`}
-                                  onClick={() =>
-                                    setSelectedTheme(theme.key)
-                                  }
-                                  style={{
-                                    cursor: 'pointer',
-                                    border: `2px solid ${isSelected ? 'var(--color-accent, #0066FF)' : 'transparent'}`,
-                                    borderRadius: 14,
-                                    overflow: 'hidden',
-                                    transition: 'border-color 0.15s ease',
-                                  }}>
-                                  <XDSCard padding={0}>
+                            {BrandLogo ? (
+                              <BrandLogo width={20} height={20} />
+                            ) : (
+                              <div
+                                style={{
+                                  width: 16,
+                                  height: 16,
+                                  borderRadius: '50%',
+                                  backgroundColor: entry.accent,
+                                }}
+                              />
+                            )}
+                          </div>
+                        </XDSTooltip>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* All themes browse dialog */}
+                <XDSDialog
+                  isOpen={showThemeBrowse}
+                  onOpenChange={open => {
+                    setShowThemeBrowse(open);
+                    if (!open) setThemeSearch('');
+                  }}
+                  width={560}>
+                  <XDSDialogHeader
+                    title="All Themes"
+                    onOpenChange={open => {
+                      setShowThemeBrowse(open);
+                      if (!open) setThemeSearch('');
+                    }}
+                  />
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 16,
+                      padding: 16,
+                    }}>
+                    <XDSTextInput
+                      label="Search"
+                      isLabelHidden
+                      placeholder="Search themes..."
+                      value={themeSearch}
+                      onChange={setThemeSearch}
+                    />
+                    <div
+                      style={{
+                        maxHeight: 420,
+                        overflowY: 'auto',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 16,
+                      }}>
+                      {(['official', 'community'] as const).map(
+                        category => {
+                          const entries = THEME_PICKER_ENTRIES.filter(
+                            t =>
+                              t.category === category &&
+                              t.name
+                                .toLowerCase()
+                                .includes(themeSearch.toLowerCase()),
+                          );
+                          if (entries.length === 0) return null;
+                          return (
+                            <div key={category}>
+                              <XDSText
+                                type="supporting"
+                                color="secondary"
+                                style={{
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '0.05em',
+                                  marginBottom: 8,
+                                }}>
+                                {category}
+                              </XDSText>
+                              <div
+                                style={{
+                                  display: 'grid',
+                                  gridTemplateColumns: '1fr 1fr',
+                                  gap: 10,
+                                }}>
+                                {entries.map(entry => {
+                                  const isSelected =
+                                    selectedTheme === entry.key;
+                                  const isPinned = pinnedThemes.has(
+                                    entry.key,
+                                  );
+                                  const p = entry.preview;
+                                  return (
                                     <div
+                                      key={entry.key}
                                       style={{
-                                        height: 56,
-                                        backgroundColor:
-                                          theme.colors.background,
-                                        display: 'flex',
-                                        flexDirection: 'column',
+                                        borderRadius: 12,
                                         overflow: 'hidden',
+                                        border: isSelected
+                                          ? '2px solid var(--color-accent, #0066FF)'
+                                          : '2px solid var(--color-border, #E0E0E0)',
+                                        cursor: 'pointer',
+                                        transition:
+                                          'border-color 0.15s ease',
                                       }}>
-                                      {/* Mini nav bar */}
+                                      {/* Mini UI mockup */}
                                       <div
+                                        onClick={() => {
+                                          setSelectedTheme(entry.key);
+                                          setShowThemeBrowse(false);
+                                          setThemeSearch('');
+                                        }}
                                         style={{
-                                          height: 12,
-                                          backgroundColor:
-                                            theme.colors.surface,
-                                          borderBottom: `1px solid ${theme.colors.border}`,
-                                          display: 'flex',
-                                          alignItems: 'center',
-                                          paddingInline: 6,
-                                          gap: 3,
-                                        }}>
-                                        <div
-                                          style={{
-                                            width: 4,
-                                            height: 4,
-                                            borderRadius: '50%',
-                                            backgroundColor:
-                                              theme.colors.accent,
-                                          }}
-                                        />
-                                        <div
-                                          style={{
-                                            width: 12,
-                                            height: 2,
-                                            borderRadius: 1,
-                                            backgroundColor:
-                                              theme.colors.text,
-                                            opacity: 0.4,
-                                          }}
-                                        />
-                                      </div>
-                                      {/* Content area */}
-                                      <div
-                                        style={{
-                                          flex: 1,
-                                          padding: 6,
+                                          height: 80,
+                                          backgroundColor: p.bg,
                                           display: 'flex',
                                           flexDirection: 'column',
-                                          gap: 4,
+                                          overflow: 'hidden',
                                         }}>
                                         <div
                                           style={{
-                                            width: '70%',
-                                            height: 3,
-                                            borderRadius: 1,
-                                            backgroundColor:
-                                              theme.colors.text,
-                                            opacity: 0.7,
-                                          }}
-                                        />
+                                            height: 14,
+                                            backgroundColor: p.surface,
+                                            borderBottom: `1px solid ${p.text}1A`,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            paddingInline: 8,
+                                            gap: 4,
+                                          }}>
+                                          <div
+                                            style={{
+                                              width: 5,
+                                              height: 5,
+                                              borderRadius: '50%',
+                                              backgroundColor:
+                                                p.accent,
+                                            }}
+                                          />
+                                          <div
+                                            style={{
+                                              width: 16,
+                                              height: 2,
+                                              borderRadius: 1,
+                                              backgroundColor: p.text,
+                                              opacity: 0.3,
+                                            }}
+                                          />
+                                        </div>
                                         <div
                                           style={{
-                                            width: '50%',
-                                            height: 2,
-                                            borderRadius: 1,
-                                            backgroundColor:
-                                              theme.colors.text,
-                                            opacity: 0.3,
-                                          }}
-                                        />
-                                        <div
+                                            flex: 1,
+                                            padding: 8,
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            gap: 5,
+                                          }}>
+                                          <div
+                                            style={{
+                                              width: '65%',
+                                              height: 4,
+                                              borderRadius: 2,
+                                              backgroundColor: p.text,
+                                              opacity: 0.6,
+                                            }}
+                                          />
+                                          <div
+                                            style={{
+                                              width: '45%',
+                                              height: 3,
+                                              borderRadius: 1.5,
+                                              backgroundColor: p.text,
+                                              opacity: 0.25,
+                                            }}
+                                          />
+                                          <div
+                                            style={{
+                                              width: 28,
+                                              height: 10,
+                                              borderRadius: 4,
+                                              backgroundColor:
+                                                p.accent,
+                                              marginTop: 'auto',
+                                            }}
+                                          />
+                                        </div>
+                                      </div>
+                                      {/* Name + pin */}
+                                      <div
+                                        style={{
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent:
+                                            'space-between',
+                                          padding: '6px 8px',
+                                          backgroundColor:
+                                            'var(--color-surface, #f5f5f5)',
+                                        }}>
+                                        <XDSText
+                                          type="supporting"
                                           style={{
-                                            width: 24,
-                                            height: 8,
-                                            borderRadius: 3,
-                                            backgroundColor:
-                                              theme.colors.accent,
-                                            marginTop: 'auto',
+                                            fontWeight: isSelected
+                                              ? 600
+                                              : 400,
+                                          }}>
+                                          {entry.name}
+                                        </XDSText>
+                                        <div
+                                          onClick={e => {
+                                            e.stopPropagation();
+                                            togglePin(entry.key);
                                           }}
-                                        />
+                                          style={{
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            padding: 2,
+                                          }}>
+                                          {isPinned ? (
+                                            <BookmarkFilledIcon
+                                              width={14}
+                                              height={14}
+                                              style={{
+                                                color:
+                                                  'var(--color-accent, #0066FF)',
+                                              }}
+                                            />
+                                          ) : (
+                                            <BookmarkIcon
+                                              width={14}
+                                              height={14}
+                                              style={{
+                                                color:
+                                                  'var(--color-secondary, #999)',
+                                              }}
+                                            />
+                                          )}
+                                        </div>
                                       </div>
                                     </div>
-                                  </XDSCard>
-                                  <div
-                                    style={{
-                                      padding: '4px 6px',
-                                      backgroundColor:
-                                        theme.colors.surface,
-                                    }}>
-                                    <XDSText type="supporting" color="secondary">
-                                      {theme.name}
-                                    </XDSText>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      );
-                    },
-                  )}
-                </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        },
+                      )}
+                    </div>
+                  </div>
+                </XDSDialog>
 
                 {/* Font packs — removed */}
                 <div style={{marginTop: 32, display: 'none'}}>
@@ -751,6 +923,7 @@ export function TemplateFullPreview({
               templateName={templateName}
               isVisible={showPublishModal}
               onBack={() => setShowPublishModal(false)}
+              onPublish={onBack}
             />
           </div>
         </div>

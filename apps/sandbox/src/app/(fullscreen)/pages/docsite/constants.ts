@@ -238,74 +238,31 @@ export const PUBLISH_TAGS = [
 ];
 
 // ---------------------------------------------------------------------------
-// Preview themes (used in TemplateFullPreview)
+// Theme picker entries (used in TemplateFullPreview)
 // ---------------------------------------------------------------------------
 
-export type PreviewTheme = {
+export type ThemePickerEntry = {
   key: string;
   name: string;
-  category: 'pinned' | 'official' | 'community';
-  colors: {
-    background: string;
-    surface: string;
-    border: string;
-    accent: string;
-    text: string;
-  };
+  category: 'official' | 'community';
+  accent: string;
+  description?: string;
+  isPinnedByDefault?: boolean;
+  preview: {bg: string; surface: string; accent: string; text: string};
 };
 
-export const PREVIEW_THEMES: PreviewTheme[] = [
-  // Pinned
-  {
-    key: 'default',
-    name: 'Default',
-    category: 'pinned',
-    colors: {background: '#FFFFFF', surface: '#F5F5F5', border: '#E0E0E0', accent: '#0066FF', text: '#111111'},
-  },
-  {
-    key: 'dark',
-    name: 'Dark',
-    category: 'pinned',
-    colors: {background: '#1A1A1A', surface: '#2A2A2A', border: '#3A3A3A', accent: '#3B82F6', text: '#F0F0F0'},
-  },
-  // Official
-  {
-    key: 'neutral',
-    name: 'Neutral',
-    category: 'official',
-    colors: {background: '#FAFAFA', surface: '#F0F0F0', border: '#D4D4D4', accent: '#525252', text: '#171717'},
-  },
-  {
-    key: 'warm',
-    name: 'Warm',
-    category: 'official',
-    colors: {background: '#FDF8F4', surface: '#F5E6D3', border: '#E0CEBD', accent: '#D4A574', text: '#2D2926'},
-  },
-  {
-    key: 'cool',
-    name: 'Cool',
-    category: 'official',
-    colors: {background: '#F0F4F8', surface: '#E2EAF2', border: '#C8D6E0', accent: '#4A90D9', text: '#1B2838'},
-  },
-  // Community
-  {
-    key: 'forest',
-    name: 'Forest',
-    category: 'community',
-    colors: {background: '#F4F7F4', surface: '#E8EDE8', border: '#C4D1C4', accent: '#2D8A4E', text: '#1A2E1A'},
-  },
-  {
-    key: 'sunset',
-    name: 'Sunset',
-    category: 'community',
-    colors: {background: '#FFF5F5', surface: '#FDE8E8', border: '#F5C6C6', accent: '#E5484D', text: '#2D1515'},
-  },
-  {
-    key: 'midnight',
-    name: 'Midnight',
-    category: 'community',
-    colors: {background: '#0F172A', surface: '#1E293B', border: '#334155', accent: '#818CF8', text: '#E2E8F0'},
-  },
+export const THEME_PICKER_ENTRIES: ThemePickerEntry[] = [
+  // Official — shipped theme packages
+  {key: 'default', name: 'Default', category: 'official', accent: '#0066FF', isPinnedByDefault: true, description: 'Clean blue accent with neutral grays', preview: {bg: '#FFFFFF', surface: '#F5F5F5', accent: '#0066FF', text: '#111111'}},
+  {key: 'meta', name: 'Meta', category: 'official', accent: '#0064E0', description: 'Meta brand with Figtree typography', preview: {bg: '#FFFFFF', surface: '#F2F4F6', accent: '#0064E0', text: '#111112'}},
+  {key: 'whatsapp', name: 'WhatsApp', category: 'official', accent: '#1DAA61', description: 'WhatsApp brand greens and warm grays', preview: {bg: '#FFFFFF', surface: '#F7F5F3', accent: '#1DAA61', text: '#111B21'}},
+  {key: 'neutral', name: 'Neutral', category: 'official', accent: '#525252', description: 'Understated grayscale palette', preview: {bg: '#FFFFFF', surface: '#FAFAFA', accent: '#525252', text: '#171717'}},
+  {key: 'brutalist', name: 'Brutalist', category: 'official', accent: '#FF1493', description: 'Bold pink, monospace, sharp edges', preview: {bg: '#FFFFFF', surface: '#F5F5F5', accent: '#FF1493', text: '#000000'}},
+  {key: 'daily', name: 'Daily', category: 'official', accent: '#0064E0', description: 'Light and airy daily-use theme', preview: {bg: '#FFFFFF', surface: '#F9FAFA', accent: '#0064E0', text: '#0A1317'}},
+  // Community — future user-contributed themes
+  {key: 'forest', name: 'Forest', category: 'community', accent: '#2D8A4E', description: 'Earthy greens and warm browns', preview: {bg: '#F4F7F4', surface: '#E8EDE8', accent: '#2D8A4E', text: '#1A2E1A'}},
+  {key: 'sunset', name: 'Sunset', category: 'community', accent: '#E5484D', description: 'Warm reds and golden highlights', preview: {bg: '#FFF5F5', surface: '#FDE8E8', accent: '#E5484D', text: '#2D1515'}},
+  {key: 'midnight', name: 'Midnight', category: 'community', accent: '#818CF8', description: 'Deep blues with soft violet accents', preview: {bg: '#0F172A', surface: '#1E293B', accent: '#818CF8', text: '#E2E8F0'}},
 ];
 
 // ---------------------------------------------------------------------------
