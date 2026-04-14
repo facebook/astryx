@@ -3,7 +3,7 @@
 import React, {useState} from 'react';
 import {XDSText} from '@xds/core/Text';
 
-const NAV_ITEMS = [
+const NAV_ITEMS: {key: 'craft' | 'explore' | 'docs' | 'profile'; label: string}[] = [
   {key: 'craft', label: 'Craft'},
   {key: 'docs', label: 'Library'},
 ];
@@ -63,7 +63,7 @@ export default function LogoNav({
   logo?: React.ReactNode;
 }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [hoveredItem, setHoveredItem] = useState(null);
+  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
 
   return (
     <div
