@@ -45,7 +45,7 @@ export function AppTopNav({
           alignItems: 'center',
           justifyContent: 'space-between',
           height: 48,
-          padding: '0 16px 0 24px',
+          padding: '0 24px',
           backgroundColor: 'var(--color-background-surface, white)',
           position: 'sticky',
           top: 0,
@@ -126,7 +126,7 @@ export function AppTopNav({
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          padding: '16px 16px 48px',
+          padding: '16px 16px 32px',
           maxHeight: isScrolled ? 0 : 200,
           overflow: 'hidden',
           opacity: isScrolled ? 0 : 1,
@@ -135,7 +135,7 @@ export function AppTopNav({
           ...(isScrolled ? {padding: 0} : {}),
         }}>
         <div style={{textAlign: 'center'}}>
-          <XDSText type="display-1">Craft what you imagine.</XDSText>
+          <XDSText type="display-2">Craft what you imagine.</XDSText>
         </div>
       </div>
 

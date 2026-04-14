@@ -1,6 +1,6 @@
 'use client';
 
-import React, {useState, useEffect, useRef, useCallback} from 'react';
+import React, {useState, useEffect, useRef} from 'react';
 import {XDSHeading, XDSText} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
 import {XDSCard} from '@xds/core/Card';
@@ -13,8 +13,6 @@ import {
 import {XDSToken} from '@xds/core/Token';
 import {XDSToolbar} from '@xds/core/Toolbar';
 import {XDSTooltip} from '@xds/core/Tooltip';
-import {XDSDialog, XDSDialogHeader} from '@xds/core/Dialog';
-import {XDSTextInput} from '@xds/core/TextInput';
 
 import {
   ArrowLeftIcon,
@@ -25,45 +23,23 @@ import {
   PaletteIcon,
   ContrastIcon,
   SaveIcon,
+  ShareIcon,
   PlusIcon,
   SendIcon,
+  LinkIcon,
   CheckIcon,
+  HeartIcon,
   BookmarkIcon,
-  BookmarkFilledIcon,
-  StarIcon,
-  StarFilledIcon,
-  SearchIcon,
-  MetaLogo,
-  WhatsAppLogo,
-  ThreadsLogo,
-  FacebookLogo,
-  DefaultThemeIcon,
-  ForestThemeIcon,
-  SunsetThemeIcon,
-  MidnightThemeIcon,
 } from './docsite-icons';
 import {
   XDS_THEMES,
   MOCK_CODE,
   TEMPLATES,
-  THEME_PICKER_ENTRIES,
+  PREVIEW_COLOR_PALETTES,
   PREVIEW_FONT_PACKS,
-  AVATAR_IMAGE,
 } from './constants';
-
 import {InlinePublishPanel} from './InlinePublishPanel';
 import {SharePopover} from './SharePopover';
-
-const BRAND_LOGOS: Record<string, React.ComponentType<React.SVGProps<SVGSVGElement>>> = {
-  default: DefaultThemeIcon,
-  meta: MetaLogo,
-  whatsapp: WhatsAppLogo,
-  threads: ThreadsLogo,
-  facebook: FacebookLogo,
-  forest: ForestThemeIcon,
-  sunset: SunsetThemeIcon,
-  midnight: MidnightThemeIcon,
-};
 
 export function TemplateFullPreview({
   templateName,
@@ -74,7 +50,6 @@ export function TemplateFullPreview({
   showChat = false,
   showEditor = false,
   defaultTab = 'properties',
-  hideShadows = false,
 }: {
   templateName: string;
   imageSrc: string;
@@ -84,27 +59,15 @@ export function TemplateFullPreview({
   showChat?: boolean;
   showEditor?: boolean;
   defaultTab?: 'properties' | 'chat';
-  hideShadows?: boolean;
 }) {
   const [viewMode, setViewMode] = useState('desktop' as 'desktop' | 'mobile');
   const [editorView, setEditorView] = useState(
     'preview' as 'preview' | 'code',
   );
   const [isVisible, setIsVisible] = useState(false);
-  const [selectedTheme, setSelectedTheme] = useState('default');
-  const [showThemeBrowse, setShowThemeBrowse] = useState(false);
-  const [themeSearch, setThemeSearch] = useState('');
-  const [pinnedThemes, setPinnedThemes] = useState(
-    () => new Set(THEME_PICKER_ENTRIES.filter(t => t.isPinnedByDefault).map(t => t.key)),
+  const [selectedPalette, setSelectedPalette] = useState(
+    PREVIEW_COLOR_PALETTES[0].name as string | null,
   );
-  const togglePin = useCallback((key: string) => {
-    setPinnedThemes(prev => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
-  }, []);
   const [selectedFontPack, setSelectedFontPack] = useState(
     PREVIEW_FONT_PACKS[0].heading as string | null,
   );
@@ -112,19 +75,24 @@ export function TemplateFullPreview({
     defaultTab as 'properties' | 'chat',
   );
   const [chatInput, setChatInput] = useState('');
-  const [codeContent, setCodeContent] = useState(MOCK_CODE);
   const [showPublishModal, setShowPublishModal] = useState(false);
+  const [showSharePopover, setShowSharePopover] = useState(false);
   const [showSendPopover, setShowSendPopover] = useState(false);
   const [sendPopoverPos, setSendPopoverPos] = useState(
     null as {top: number; left: number} | null,
   );
+  const [sharePopoverPos, setSharePopoverPos] = useState(
+    null as {top: number; left: number} | null,
+  );
+  const [shareCopied, setShareCopied] = useState(false);
   const [sendCopied, setSendCopied] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
+  const [liked, setLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(1645);
   const [bookmarked, setBookmarked] = useState(false);
   const [bookmarkCount, setBookmarkCount] = useState(892);
-  const [showAddPopover, setShowAddPopover] = useState(false);
-  const [addPopoverPos, setAddPopoverPos] = useState(null as {top: number; left: number} | null);
-  const addButtonRef = useRef(null as HTMLButtonElement | null);
-  const addPopoverRef = useRef(null as HTMLDivElement | null);
+  const sharePopoverRef = useRef(null as HTMLDivElement | null);
+  const shareButtonRef = useRef(null as HTMLButtonElement | null);
   const sendPopoverRef = useRef(null as HTMLDivElement | null);
 
   const shareCliCommand = `npx xds template ${templateName.toLowerCase().replace(/\s+/g, '-')} ./my-project`;
@@ -135,6 +103,19 @@ export function TemplateFullPreview({
     });
   }, []);
 
+  useEffect(() => {
+    if (!showSharePopover) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        sharePopoverRef.current &&
+        !sharePopoverRef.current.contains(e.target as Node)
+      ) {
+        setShowSharePopover(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showSharePopover]);
 
   useEffect(() => {
     if (!showSendPopover) return;
@@ -150,20 +131,6 @@ export function TemplateFullPreview({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showSendPopover]);
 
-  useEffect(() => {
-    if (!showAddPopover) return;
-    const handleClickOutside = (e: MouseEvent) => {
-      if (
-        addPopoverRef.current &&
-        !addPopoverRef.current.contains(e.target as Node)
-      ) {
-        setShowAddPopover(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showAddPopover]);
-
   return (
     <div
       style={{
@@ -175,21 +142,23 @@ export function TemplateFullPreview({
       {/* LEFT PANEL — details sidebar */}
       <div
         style={{
-          width: 380,
-          flexShrink: 0,
+          width: '30%',
+          maxWidth: 380,
+          minWidth: 300,
           padding: '16px 0 16px 16px',
           display: 'flex',
           backgroundColor: 'transparent',
           opacity: isVisible ? 1 : 0,
-          transform: isVisible ? 'none' : 'translateX(-60px)',
-          transition: 'opacity 500ms cubic-bezier(0.16, 1, 0.3, 1) 100ms, transform 500ms cubic-bezier(0.16, 1, 0.3, 1) 100ms',
+          transform: isVisible ? 'translateX(0)' : 'translateX(-60px)',
+          transition:
+            'opacity 500ms cubic-bezier(0.16, 1, 0.3, 1) 100ms, transform 500ms cubic-bezier(0.16, 1, 0.3, 1) 100ms',
         }}>
         <div
           style={{
             flex: 1,
             backgroundColor: 'var(--color-background-card, #fff)',
             borderRadius: 16,
-            boxShadow: hideShadows ? 'none' : '0 4px 24px rgba(0,0,0,0.08)',
+            boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
             padding: showChat ? '16px 32px 32px' : '24px 32px 32px',
             overflow: 'visible',
             display: 'flex',
@@ -325,25 +294,8 @@ export function TemplateFullPreview({
               </div>
             ) : (
               <>
-                {/* Template name — click to copy link */}
-                <span
-                  style={{cursor: 'pointer', textDecoration: 'none'}}
-                  onMouseEnter={(e: React.MouseEvent<HTMLElement>) => {
-                    e.currentTarget.style.textDecoration = 'underline';
-                  }}
-                  onMouseLeave={(e: React.MouseEvent<HTMLElement>) => {
-                    e.currentTarget.style.textDecoration = 'none';
-                  }}
-                  onClick={() => {
-                    void navigator.clipboard.writeText(
-                      'https://xds.dev/templates/' +
-                        templateName.toLowerCase().replace(/\s+/g, '-'),
-                    );
-                  }}>
-                  <XDSText type="display-2">
-                    {templateName}
-                  </XDSText>
-                </span>
+                {/* Template name */}
+                <XDSText type="display-2">{templateName}</XDSText>
 
                 {/* Description */}
                 <div style={{marginTop: 8}}>
@@ -366,9 +318,8 @@ export function TemplateFullPreview({
                     gap: 12,
                   }}>
                   <XDSAvatar
-                    name="Andrea Anderson"
                     size={36}
-                    src={AVATAR_IMAGE}
+                    src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&h=80&fit=crop&crop=face"
                   />
                   <div
                     style={{display: 'flex', flexDirection: 'column', gap: 0}}>
@@ -383,371 +334,197 @@ export function TemplateFullPreview({
                   </div>
                 </div>
 
-                {/* CTA buttons */}
-                {!showEditor && (
-                  <div style={{marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8, position: 'relative'}}>
-                    <div style={{display: 'flex', gap: 8}}>
+                {/* Stats buttons */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    marginTop: 16,
+                    marginLeft: -8,
+                    marginRight: -8,
+                  }}>
+                  <div style={{display: 'flex', alignItems: 'center', gap: 4}}>
+                    <XDSTooltip content="Copy link">
                       <XDSButton
-                        variant="primary"
-                        label="Start crafting"
-                        onClick={onUse}
-                        size="lg"
-                        style={{flex: 1}}
-                      />
-                      <XDSTooltip content="Bookmark">
-                        <XDSButton
-                          label={bookmarkCount.toLocaleString()}
-                          variant="secondary"
-                          size="lg"
-                          isIconOnly
-                          icon={
-                            <BookmarkIcon
-                              fill={bookmarked ? 'currentColor' : 'none'}
-                              style={
-                                bookmarked
-                                  ? {color: 'var(--color-icon-highlight, #3b82f6)'}
-                                  : undefined
-                              }
+                        label="Link"
+                        variant="ghost"
+                        size="sm"
+                        isIconOnly
+                        icon={
+                          linkCopied ? (
+                            <CheckIcon
+                              style={{
+                                strokeDasharray: 24,
+                                strokeDashoffset: 0,
+                                animation: 'checkDraw 0.3s ease-out',
+                              }}
                             />
-                          }
+                          ) : (
+                            <LinkIcon />
+                          )
+                        }
+                        onClick={() => {
+                          void navigator.clipboard.writeText(
+                            'https://xds.dev/templates/' +
+                              templateName.toLowerCase().replace(/\s+/g, '-'),
+                          );
+                          setLinkCopied(true);
+                          setTimeout(() => setLinkCopied(false), 2000);
+                        }}
+                      />
+                    </XDSTooltip>
+                    <div
+                      ref={sendPopoverRef}
+                      style={{position: 'relative' as const}}>
+                      <XDSTooltip content="Share">
+                        <XDSButton
+                          label="Share"
+                          variant="ghost"
+                          size="sm"
+                          isIconOnly
+                          icon={<ShareIcon />}
                           onClick={() => {
-                            setBookmarked(prev => !prev);
-                            setBookmarkCount(prev =>
-                              bookmarked ? prev - 1 : prev + 1,
-                            );
+                            setShowSendPopover(prev => {
+                              if (!prev && sendPopoverRef.current) {
+                                const rect =
+                                  sendPopoverRef.current.getBoundingClientRect();
+                                const popoverWidth = 340;
+                                const popoverHeight = 400;
+                                const left = Math.min(
+                                  Math.max(8, rect.left),
+                                  window.innerWidth - popoverWidth - 16,
+                                );
+                                const top =
+                                  rect.bottom + 4 + popoverHeight + 16 >
+                                  window.innerHeight
+                                    ? rect.top - popoverHeight - 4
+                                    : rect.bottom + 4;
+                                setSendPopoverPos({top, left});
+                              }
+                              return !prev;
+                            });
                           }}
                         />
                       </XDSTooltip>
-                    </div>
-                    <div ref={addPopoverRef}>
-                      <XDSButton
-                        ref={addButtonRef}
-                        variant="secondary"
-                        label="Add to your project"
-                        size="lg"
-                        style={{width: '100%'}}
-                        onClick={() => {
-                          if (addButtonRef.current) {
-                            const rect = addButtonRef.current.getBoundingClientRect();
-                            setAddPopoverPos({top: rect.bottom + 8, left: rect.left});
-                          }
-                          setShowAddPopover(prev => !prev);
-                        }}
-                      />
-                      {showAddPopover && addPopoverPos && (
+                      {showSendPopover && sendPopoverPos && (
                         <SharePopover
                           cliCommand={shareCliCommand}
-                          position={addPopoverPos}
-                          onClose={() => setShowAddPopover(false)}
+                          position={sendPopoverPos}
+                          onClose={() => setShowSendPopover(false)}
                         />
                       )}
                     </div>
                   </div>
-                )}
-
-                {/* Themes — pinned grid */}
-                <div style={{marginTop: 32}}>
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                    }}>
-                    <XDSHeading level={4}>Apply your themes</XDSHeading>
-                    <XDSButton
-                      variant="ghost"
-                      size="sm"
-                      label="Browse"
-                      onClick={() => setShowThemeBrowse(true)}
-                    />
-                  </div>
-                  <div
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(auto-fill, 44px)',
-                      gap: 8,
-                      marginTop: 12,
-                    }}>
-                    {THEME_PICKER_ENTRIES.filter(
-                      t => pinnedThemes.has(t.key),
-                    ).map(entry => {
-                      const isSelected = selectedTheme === entry.key;
-                      const BrandLogo = BRAND_LOGOS[entry.key];
-                      return (
-                        <XDSTooltip key={entry.key} content={entry.name}>
-                          <div
-                            onClick={() => setSelectedTheme(entry.key)}
-                            style={{
-                              width: 44,
-                              height: 44,
-                              borderRadius: 10,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              cursor: 'pointer',
-                              border: isSelected
-                                ? '2px solid var(--color-text-primary, #111)'
-                                : '2px solid var(--color-border, #E0E0E0)',
-                              backgroundColor: '#fff',
-                              transition: 'border-color 0.15s ease',
-                            }}>
-                            {BrandLogo ? (
-                              <BrandLogo width={28} height={28} />
-                            ) : (
-                              <div
-                                style={{
-                                  width: 24,
-                                  height: 24,
-                                  borderRadius: '50%',
-                                  backgroundColor: entry.accent,
-                                }}
-                              />
-                            )}
-                          </div>
-                        </XDSTooltip>
-                      );
-                    })}
+                  <div style={{display: 'flex', alignItems: 'center', gap: 4}}>
+                    <XDSTooltip content="Like">
+                      <XDSButton
+                        label={likeCount.toLocaleString()}
+                        variant="ghost"
+                        size="sm"
+                        icon={
+                          <HeartIcon
+                            fill={liked ? 'currentColor' : 'none'}
+                            style={liked ? {color: '#e5484d'} : undefined}
+                          />
+                        }
+                        style={liked ? {color: '#e5484d'} : undefined}
+                        onClick={() => {
+                          setLiked(prev => !prev);
+                          setLikeCount(prev => (liked ? prev - 1 : prev + 1));
+                        }}
+                      />
+                    </XDSTooltip>
+                    <XDSTooltip content="Bookmark">
+                      <XDSButton
+                        label={bookmarkCount.toLocaleString()}
+                        variant="ghost"
+                        size="sm"
+                        icon={
+                          <BookmarkIcon
+                            fill={bookmarked ? 'currentColor' : 'none'}
+                            style={
+                              bookmarked
+                                ? {
+                                    color:
+                                      'var(--color-icon-highlight, #3b82f6)',
+                                  }
+                                : undefined
+                            }
+                          />
+                        }
+                        style={
+                          bookmarked
+                            ? {color: 'var(--color-icon-highlight, #3b82f6)'}
+                            : undefined
+                        }
+                        onClick={() => {
+                          setBookmarked(prev => !prev);
+                          setBookmarkCount(prev =>
+                            bookmarked ? prev - 1 : prev + 1,
+                          );
+                        }}
+                      />
+                    </XDSTooltip>
                   </div>
                 </div>
 
-                {/* All themes browse dialog */}
-                <XDSDialog
-                  isOpen={showThemeBrowse}
-                  onOpenChange={open => {
-                    setShowThemeBrowse(open);
-                    if (!open) setThemeSearch('');
-                  }}
-                  width={720}>
-                  <XDSDialogHeader
-                    title="All Themes"
-                    onOpenChange={open => {
-                      setShowThemeBrowse(open);
-                      if (!open) setThemeSearch('');
-                    }}
-                  />
+                {/* CTA button */}
+                {!showEditor && (
+                  <div style={{marginTop: 16}}>
+                    <XDSButton
+                      variant="primary"
+                      label="Start crafting"
+                      onClick={onUse}
+                      size="lg"
+                      style={{width: '100%'}}
+                    />
+                  </div>
+                )}
+
+                {/* Themes */}
+                <div style={{marginTop: 32}}>
+                  <XDSHeading level={4}>Themes</XDSHeading>
                   <div
                     style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: 16,
-                      padding: 16,
+                      display: 'grid',
+                      gridTemplateColumns: '1fr 1fr',
+                      gap: 10,
+                      marginTop: 8,
                     }}>
-                    <XDSTextInput
-                      label="Search"
-                      isLabelHidden
-                      placeholder="Search themes..."
-                      value={themeSearch}
-                      onChange={setThemeSearch}
-                      size="lg"
-                      startIcon={SearchIcon}
-                    />
-                    <div
-                      style={{
-                        maxHeight: 560,
-                        overflowY: 'auto',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 8,
-                      }}>
-                      {(['official', 'community'] as const).map(
-                        category => {
-                          const entries = THEME_PICKER_ENTRIES.filter(
-                            t =>
-                              t.category === category &&
-                              t.name
-                                .toLowerCase()
-                                .includes(themeSearch.toLowerCase()),
-                          );
-                          if (entries.length === 0) return null;
-                          return (
-                            <div key={category}>
-                              <XDSText
-                                type="supporting"
-                                color="secondary"
-                                style={{
-                                  textTransform: 'uppercase',
-                                  letterSpacing: '0.05em',
-                                  marginBottom: 8,
-                                }}>
-                                {category}
-                              </XDSText>
+                    {PREVIEW_COLOR_PALETTES.map(palette => (
+                      <div
+                        key={palette.name}
+                        onClick={() => setSelectedPalette(palette.name)}
+                        style={{
+                          cursor: 'pointer',
+                          border: `2px solid ${selectedPalette === palette.name ? 'var(--color-accent, #0066FF)' : 'transparent'}`,
+                          borderRadius: 14,
+                          overflow: 'hidden',
+                          transition: 'border-color 0.15s ease',
+                        }}>
+                        <XDSCard padding={0}>
+                          <div
+                            style={{
+                              display: 'flex',
+                              overflow: 'hidden',
+                              height: 48,
+                            }}>
+                            {palette.colors.map((color, i) => (
                               <div
+                                key={i}
                                 style={{
-                                  display: 'grid',
-                                  gridTemplateColumns: '1fr 1fr 1fr',
-                                  gap: 8,
-                                }}>
-                                {entries.map(entry => {
-                                  const isSelected =
-                                    selectedTheme === entry.key;
-                                  const isPinned = pinnedThemes.has(
-                                    entry.key,
-                                  );
-                                  const p = entry.preview;
-                                  return (
-                                    <div
-                                      key={entry.key}
-                                      style={{
-                                        borderRadius: 12,
-                                        overflow: 'hidden',
-                                        border: isSelected
-                                          ? '2px solid var(--color-text-primary, #111)'
-                                          : '2px solid var(--color-border, #E0E0E0)',
-                                        cursor: 'pointer',
-                                        transition:
-                                          'border-color 0.15s ease',
-                                      }}>
-                                      {/* Mini UI mockup */}
-                                      <div
-                                        onClick={() => {
-                                          setSelectedTheme(entry.key);
-                                          setShowThemeBrowse(false);
-                                          setThemeSearch('');
-                                        }}
-                                        style={{
-                                          height: 100,
-                                          backgroundColor: p.bg,
-                                          display: 'flex',
-                                          flexDirection: 'column',
-                                          overflow: 'hidden',
-                                        }}>
-                                        <div
-                                          style={{
-                                            height: 14,
-                                            backgroundColor: p.surface,
-                                            borderBottom: `1px solid ${p.text}1A`,
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            paddingInline: 8,
-                                            gap: 4,
-                                          }}>
-                                          <div
-                                            style={{
-                                              width: 5,
-                                              height: 5,
-                                              borderRadius: '50%',
-                                              backgroundColor:
-                                                p.accent,
-                                            }}
-                                          />
-                                          <div
-                                            style={{
-                                              width: 16,
-                                              height: 2,
-                                              borderRadius: 1,
-                                              backgroundColor: p.text,
-                                              opacity: 0.3,
-                                            }}
-                                          />
-                                        </div>
-                                        <div
-                                          style={{
-                                            flex: 1,
-                                            padding: 8,
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            gap: 5,
-                                          }}>
-                                          <div
-                                            style={{
-                                              width: '65%',
-                                              height: 4,
-                                              borderRadius: 2,
-                                              backgroundColor: p.text,
-                                              opacity: 0.6,
-                                            }}
-                                          />
-                                          <div
-                                            style={{
-                                              width: '45%',
-                                              height: 3,
-                                              borderRadius: 1.5,
-                                              backgroundColor: p.text,
-                                              opacity: 0.25,
-                                            }}
-                                          />
-                                          <div
-                                            style={{
-                                              width: 28,
-                                              height: 10,
-                                              borderRadius: 4,
-                                              backgroundColor:
-                                                p.accent,
-                                              marginTop: 'auto',
-                                            }}
-                                          />
-                                        </div>
-                                      </div>
-                                      {/* Name + logo + pin */}
-                                      <div
-                                        style={{
-                                          display: 'flex',
-                                          alignItems: 'center',
-                                          justifyContent:
-                                            'space-between',
-                                          padding: '6px 8px',
-                                          backgroundColor:
-                                            'var(--color-surface, #f5f5f5)',
-                                        }}>
-                                        <div style={{display: 'flex', alignItems: 'center', gap: 6}}>
-                                          {(() => {
-                                            const Logo = BRAND_LOGOS[entry.key];
-                                            return Logo ? <Logo width={14} height={14} /> : (
-                                              <div style={{width: 14, height: 14, borderRadius: '50%', backgroundColor: entry.accent}} />
-                                            );
-                                          })()}
-                                          <XDSText
-                                            type="supporting"
-                                            style={{
-                                              fontWeight: isSelected
-                                                ? 600
-                                                : 400,
-                                            }}>
-                                            {entry.name}
-                                          </XDSText>
-                                        </div>
-                                        <div
-                                          onClick={e => {
-                                            e.stopPropagation();
-                                            togglePin(entry.key);
-                                          }}
-                                          style={{
-                                            cursor: 'pointer',
-                                            display: 'flex',
-                                            padding: 2,
-                                          }}>
-                                          {isPinned ? (
-                                            <StarFilledIcon
-                                              width={14}
-                                              height={14}
-                                              style={{
-                                                color:
-                                                  'var(--color-text-primary, #111)',
-                                              }}
-                                            />
-                                          ) : (
-                                            <StarIcon
-                                              width={14}
-                                              height={14}
-                                              style={{
-                                                color:
-                                                  'var(--color-secondary, #999)',
-                                              }}
-                                            />
-                                          )}
-                                        </div>
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          );
-                        },
-                      )}
-                    </div>
+                                  flex: 1,
+                                  backgroundColor: color,
+                                }}
+                              />
+                            ))}
+                          </div>
+                        </XDSCard>
+                      </div>
+                    ))}
                   </div>
-                </XDSDialog>
+                </div>
 
                 {/* Font packs — removed */}
                 <div style={{marginTop: 32, display: 'none'}}>
@@ -765,7 +542,7 @@ export function TemplateFullPreview({
                         onClick={() => setSelectedFontPack(pack.heading)}
                         style={{
                           cursor: 'pointer',
-                          border: `2px solid ${selectedFontPack === pack.heading ? 'var(--color-text-primary, #111)' : 'transparent'}`,
+                          border: `2px solid ${selectedFontPack === pack.heading ? 'var(--color-accent, #0066FF)' : 'transparent'}`,
                           borderRadius: 14,
                           overflow: 'hidden',
                           transition: 'border-color 0.15s ease',
@@ -843,7 +620,6 @@ export function TemplateFullPreview({
               templateName={templateName}
               isVisible={showPublishModal}
               onBack={() => setShowPublishModal(false)}
-              onPublish={onBack}
             />
           </div>
         </div>
@@ -858,17 +634,15 @@ export function TemplateFullPreview({
           display: 'flex',
           flexDirection: 'column' as const,
           opacity: isVisible ? 1 : 0,
-          transform: isVisible ? 'none' : 'translateX(40px)',
+          transform: isVisible ? 'translateX(0)' : 'translateX(40px)',
           transition:
             'opacity 500ms cubic-bezier(0.16, 1, 0.3, 1), transform 500ms cubic-bezier(0.16, 1, 0.3, 1)',
         }}>
         {/* Editor toolbar */}
-        <div style={{backgroundColor: 'var(--color-background-body, #f5f5f5)', borderBottom: 'none'}}>
+        <div style={{backgroundColor: 'var(--color-background-body, #f5f5f5)'}}>
           {showEditor ? (
             <XDSToolbar
               label="Template actions"
-              padding={1}
-              dividers={[]}
               startContent={<></>}
               centerContent={
                 <XDSSegmentedControl
@@ -960,6 +734,47 @@ export function TemplateFullPreview({
                       onClick={() => {}}
                     />
                   </XDSTooltip>
+                  <div
+                    ref={sharePopoverRef}
+                    style={{position: 'relative' as const}}>
+                    <XDSTooltip content="Share">
+                      <XDSButton
+                        label="Share"
+                        variant="ghost"
+                        isIconOnly
+                        icon={<ShareIcon />}
+                        ref={shareButtonRef}
+                        onClick={() => {
+                          setShowSharePopover(prev => {
+                            if (!prev && shareButtonRef.current) {
+                              const rect =
+                                shareButtonRef.current.getBoundingClientRect();
+                              const popoverWidth = 340;
+                              const popoverHeight = 400;
+                              const left = Math.min(
+                                Math.max(8, rect.right - popoverWidth),
+                                window.innerWidth - popoverWidth - 16,
+                              );
+                              const top =
+                                rect.bottom + 4 + popoverHeight + 16 >
+                                window.innerHeight
+                                  ? rect.top - popoverHeight - 4
+                                  : rect.bottom + 4;
+                              setSharePopoverPos({top, left});
+                            }
+                            return !prev;
+                          });
+                        }}
+                      />
+                    </XDSTooltip>
+                    {showSharePopover && sharePopoverPos && (
+                      <SharePopover
+                        cliCommand={shareCliCommand}
+                        position={sharePopoverPos}
+                        onClose={() => setShowSharePopover(false)}
+                      />
+                    )}
+                  </div>
                   <XDSButton
                     label="Publish"
                     variant="primary"
@@ -1006,7 +821,7 @@ export function TemplateFullPreview({
             padding: '22px 22px 22px',
             display: !showEditor || editorView === 'preview' ? 'flex' : 'none',
             justifyContent: 'center',
-            alignItems: 'center',
+            alignItems: 'flex-start',
             flex: 1,
             overflow: 'auto',
           }}>
@@ -1082,11 +897,9 @@ export function TemplateFullPreview({
             border: '1px solid var(--color-divider, rgba(0,0,0,0.1))',
             borderRadius: 8,
             backgroundColor: 'var(--color-background-muted, rgba(0,0,0,0.03))',
-            overflow: 'hidden',
+            overflow: 'auto',
             flex: 1,
-            display: showEditor && editorView === 'code' ? 'flex' : 'none',
-            flexDirection: 'column' as const,
-            minHeight: 0,
+            display: showEditor && editorView === 'code' ? 'block' : 'none',
           }}>
           <div
             style={{
@@ -1105,7 +918,7 @@ export function TemplateFullPreview({
               typescript — useUser.ts
             </span>
           </div>
-          <div style={{display: 'flex', flex: 1, minHeight: 0}}>
+          <div style={{display: 'flex'}}>
             <div
               style={{
                 padding: '12px 12px 12px 16px',
@@ -1118,14 +931,11 @@ export function TemplateFullPreview({
                 userSelect: 'none',
                 minWidth: 45,
               }}>
-              {codeContent.split('\n').map((_, i) => (
+              {MOCK_CODE.split('\n').map((_, i) => (
                 <div key={i}>{i + 1}</div>
               ))}
             </div>
-            <textarea
-              value={codeContent}
-              onChange={e => setCodeContent(e.target.value)}
-              spellCheck={false}
+            <pre
               style={{
                 flex: 1,
                 padding: '12px 16px',
@@ -1135,46 +945,59 @@ export function TemplateFullPreview({
                 margin: 0,
                 overflow: 'auto',
                 color: 'var(--color-text-primary, #0a1317)',
-                backgroundColor: 'transparent',
-                border: 'none',
-                outline: 'none',
-                resize: 'none',
-                whiteSpace: 'pre',
-                tabSize: 2,
-              }}
-            />
+              }}>
+              {MOCK_CODE}
+            </pre>
           </div>
         </div>
 
-        {/* More like this + Explore more — only visible in preview mode */}
+        {/* Similar templates — only visible in preview mode */}
         {(!showEditor || editorView === 'preview') && (
-          <>
-            <div style={{padding: '16px 32px 0'}}>
-              <XDSHeading level={2}>More like this</XDSHeading>
-              <div style={{display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12, marginTop: 16}}>
-                {TEMPLATES.filter((_, i) => i !== TEMPLATES.findIndex(tt => tt.name === templateName)).slice(0, 10).map((t, i) => (
-                  <XDSCard
-                    key={i}
-                    padding={0}
-                    onClick={() => {
-                      const idx = TEMPLATES.indexOf(t);
-                      onSelectTemplate?.(idx !== -1 ? idx : i);
+          <div
+            style={{
+              width: '100%',
+              padding: '24px 32px 32px',
+              boxSizing: 'border-box' as const,
+              marginTop: 'auto',
+              textAlign: 'center' as const,
+            }}>
+            <XDSHeading level={3}>Similar templates</XDSHeading>
+            <div
+              style={{
+                display: 'flex',
+                gap: 12,
+                marginTop: 12,
+                overflowX: 'auto' as const,
+                justifyContent: 'center',
+              }}>
+              {TEMPLATES.slice(0, 4).map((t, i) => (
+                <div
+                  key={i}
+                  onClick={() => onSelectTemplate?.(i)}
+                  style={{
+                    flex: '0 0 280px',
+                    aspectRatio: '1920 / 1200',
+                    border: '1px solid var(--color-divider, rgba(0,0,0,0.1))',
+                    backgroundColor: 'var(--color-background-card, #fff)',
+                    borderRadius: 8,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                    overflow: 'hidden',
+                    cursor: 'pointer',
+                  }}>
+                  <img
+                    src={t.src}
+                    alt={t.name}
+                    style={{
+                      display: 'block',
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
                     }}
-                    style={{cursor: 'pointer', aspectRatio: '16/10', overflow: 'hidden'}}>
-                    <img src={t.src} alt={t.name} style={{width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top', display: 'block'}} />
-                  </XDSCard>
-                ))}
-              </div>
+                  />
+                </div>
+              ))}
             </div>
-            <div style={{padding: '32px 32px 40px'}}>
-              <XDSHeading level={2}>Explore more</XDSHeading>
-              <div style={{display: 'flex', flexWrap: 'wrap' as const, gap: 8, marginTop: 16}}>
-                {['website', 'dashboard', 'admin panel', 'settings', 'form layout', 'data table', 'sidebar nav', 'landing page', 'e-commerce', 'documentation', 'profile page'].map(tag => (
-                  <XDSToken key={tag} label={tag} />
-                ))}
-              </div>
-            </div>
-          </>
+          </div>
         )}
       </div>
     </div>

@@ -2,7 +2,6 @@
 
 import React from 'react';
 import {XDSHeading, XDSText} from '@xds/core/Text';
-import {XDSCard} from '@xds/core/Card';
 import {XDSCodeBlock} from '@xds/core/CodeBlock';
 import {XDSList, XDSListItem} from '@xds/core/List';
 import {ClaudeIcon, VSCodeIcon, CursorAIIcon} from './docsite-icons';
@@ -18,7 +17,6 @@ export function SharePopover({
 }) {
   return (
     <div
-      data-share-popover
       style={{
         position: 'fixed' as const,
         left: position.left,
@@ -29,27 +27,33 @@ export function SharePopover({
         borderRadius: 12,
         boxShadow:
           '0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08)',
-        padding: 16,
+        padding: 20,
       }}>
       <XDSHeading level={3}>Add to your project</XDSHeading>
-      <div style={{marginTop: 0}}>
+      <div style={{marginTop: 8}}>
         <XDSText type="body" color="secondary">
           Copy this snippet and paste it in your terminal to get started.
         </XDSText>
       </div>
 
-      <div style={{marginTop: 16}}>
-        <XDSCard padding={0}>
-          <XDSCodeBlock code={cliCommand} language="bash" />
-        </XDSCard>
+      <div style={{marginTop: 12}}>
+        <XDSCodeBlock code={cliCommand} language="bash" />
       </div>
 
-      <div style={{marginTop: 16, marginBottom: 16}}>
-        <XDSText type="label" color="secondary">
-          Or open in
+      <div
+        style={{
+          height: 1,
+          backgroundColor: 'var(--color-divider, #e0e0e0)',
+          margin: '16px 0',
+        }}
+      />
+
+      <div style={{marginBottom: 8}}>
+        <XDSText type="supporting" weight="semibold" color="secondary">
+          Open in...
         </XDSText>
       </div>
-      <XDSList style={{margin: '-8px -8px -8px -8px'}}>
+      <XDSList>
         <XDSListItem
           label="Claude Code"
           startContent={

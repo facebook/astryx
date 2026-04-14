@@ -8,7 +8,7 @@ import {XDSTextArea} from '@xds/core/TextArea';
 import {XDSTokenizer} from '@xds/core/Tokenizer';
 import {createStaticSource} from '@xds/core/Typeahead';
 import {PUBLISH_TAGS} from './constants';
-
+import {ArrowLeftIcon} from './docsite-icons';
 
 // ---------------------------------------------------------------------------
 // InlinePublishPanel — publish flow rendered inline in the left panel
@@ -18,12 +18,10 @@ export function InlinePublishPanel({
   templateName,
   isVisible: _isVisible,
   onBack,
-  onPublish,
 }: {
   templateName: string;
   isVisible: boolean;
   onBack: () => void;
-  onPublish?: () => void;
 }) {
   const [name, setName] = useState(templateName);
   const [description, setDescription] = useState('');
@@ -33,10 +31,6 @@ export function InlinePublishPanel({
   );
 
   return (
-    <>
-    <style>
-      {'@keyframes publishFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }'}
-    </style>
     <div
       style={{
         display: 'flex',
@@ -44,16 +38,22 @@ export function InlinePublishPanel({
         gap: 20,
         overflowY: 'auto' as const,
         flex: 1,
-        margin: 16,
-        animation: 'publishFadeIn 400ms cubic-bezier(0.16, 1, 0.3, 1)',
       }}>
+      {/* Back button */}
+      <XDSButton
+        label="Back"
+        variant="ghost"
+        size="sm"
+        icon={<ArrowLeftIcon />}
+        onClick={onBack}
+        style={{marginLeft: -8, alignSelf: 'flex-start'}}
+      />
+
       {/* Header */}
-      <div style={{display: 'flex', flexDirection: 'column' as const, gap: 8}}>
-        <XDSHeading level={2}>Publish to community</XDSHeading>
-        <XDSText type="body" color="secondary">
-          Share your work so others on the team can use it as a starting point.
-        </XDSText>
-      </div>
+      <XDSHeading level={3}>Publish to community</XDSHeading>
+      <XDSText type="supporting" color="secondary">
+        Share your work so others on the team can use it as a starting point.
+      </XDSText>
 
       {/* Template name input */}
       <XDSTextInput
@@ -84,28 +84,13 @@ export function InlinePublishPanel({
         size="md"
       />
 
-      {/* Publish / Cancel buttons */}
-      <div style={{display: 'flex', flexDirection: 'column' as const, gap: 8, marginTop: 'auto'}}>
-        <XDSText type="supporting" color="secondary" style={{textAlign: 'center' as const}}>
-          Your template will go through a review process before appearing in the community grid.{' '}
-          <a href="#" onClick={e => e.preventDefault()} style={{color: 'var(--color-accent, #0066FF)', textDecoration: 'none'}}>Learn more</a>
-        </XDSText>
-        <XDSButton
-          variant="primary"
-          label="Submit template"
-          size="lg"
-          onClick={onPublish}
-          style={{width: '100%'}}
-        />
-        <XDSButton
-          variant="secondary"
-          label="Go back to editing"
-          size="lg"
-          onClick={onBack}
-          style={{width: '100%'}}
-        />
-      </div>
+      {/* Publish button */}
+      <XDSButton
+        variant="primary"
+        label="Publish template"
+        size="lg"
+        style={{width: '100%'}}
+      />
     </div>
-    </>
   );
 }

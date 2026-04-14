@@ -3,7 +3,7 @@
 import React, {useState} from 'react';
 import {XDSText} from '@xds/core/Text';
 
-const NAV_ITEMS: {key: 'craft' | 'explore' | 'docs' | 'profile'; label: string}[] = [
+const NAV_ITEMS = [
   {key: 'craft', label: 'Craft'},
   {key: 'docs', label: 'Library'},
 ];
@@ -25,8 +25,9 @@ export const XDS_LOGO_PLAIN = (
       strokeWidth={2}
       strokeLinecap="round"
       strokeLinejoin="round">
-      <line x1="4" y1="9" x2="20" y2="9" />
-      <line x1="4" y1="15" x2="20" y2="15" />
+      <line x1="4" y1="6" x2="20" y2="6" />
+      <line x1="4" y1="12" x2="20" y2="12" />
+      <line x1="4" y1="18" x2="20" y2="18" />
     </svg>
     <svg
       width="46"
@@ -56,13 +57,9 @@ export default function LogoNav({
   activeView,
   setActiveView,
   logo,
-}: {
-  activeView: string;
-  setActiveView: (view: 'craft' | 'explore' | 'docs' | 'profile') => void;
-  logo?: React.ReactNode;
 }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
+  const [hoveredItem, setHoveredItem] = useState(null);
 
   return (
     <div
