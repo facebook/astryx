@@ -56,7 +56,7 @@ export const XDS_LOGO_PLAIN = (
 export default function LogoNav({
   activeView,
   setActiveView,
-  logo,
+  logo = null,
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [hoveredItem, setHoveredItem] = useState(null);
