@@ -30,6 +30,7 @@ import type {XDSTabListSize} from './XDSTabListContext';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import type {XDSLinkComponentType} from '../Link/types';
 import {xdsClassName, mergeProps} from '../utils';
+import {tabScope} from './tab.markers.stylex';
 
 export interface XDSTabProps {
   /**
@@ -139,7 +140,7 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-border'],
     opacity: {
       default: 0,
-      [stylex.when.ancestor(':hover')]: {
+      [stylex.when.ancestor(':hover', tabScope)]: {
         '@media (hover: hover)': 1,
       },
     },
@@ -229,6 +230,7 @@ export function XDSTab({
         sizeStyles[size],
         isSelected && styles.selected,
         !isSelected && stylex.defaultMarker(),
+        !isSelected && tabScope,
         xstyle,
       ),
       className,

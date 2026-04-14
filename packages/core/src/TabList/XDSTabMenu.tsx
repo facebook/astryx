@@ -32,6 +32,7 @@ import {XDSDivider} from '../Divider';
 import {useXDSTabListContext} from './XDSTabListContext';
 import type {XDSTabListSize} from './XDSTabListContext';
 import {xdsClassName, mergeProps} from '../utils';
+import {tabScope} from './tab.markers.stylex';
 
 export interface XDSTabMenuOption {
   value: string;
@@ -132,7 +133,7 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-full'],
     opacity: {
       default: 0,
-      [stylex.when.ancestor(':hover')]: {
+      [stylex.when.ancestor(':hover', tabScope)]: {
         '@media (hover: hover)': 1,
       },
     },
@@ -278,6 +279,7 @@ export function XDSTabMenu({label, options}: XDSTabMenuProps) {
             sizeStyles[size],
             hasSelectedOption && styles.triggerSelected,
             !hasSelectedOption && stylex.defaultMarker(),
+            !hasSelectedOption && tabScope,
           ),
         )}>
         <span
