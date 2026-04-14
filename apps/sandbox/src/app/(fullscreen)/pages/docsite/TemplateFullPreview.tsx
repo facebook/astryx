@@ -318,8 +318,8 @@ export function TemplateFullPreview({
                     gap: 12,
                   }}>
                   <XDSAvatar
+                    name="Andrea Anderson"
                     size={36}
-                    src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&h=80&fit=crop&crop=face"
                   />
                   <div
                     style={{display: 'flex', flexDirection: 'column', gap: 0}}>
