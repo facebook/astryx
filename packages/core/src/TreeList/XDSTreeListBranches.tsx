@@ -13,7 +13,7 @@
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
 
-const LINE_WIDTH = 2;
+const LINE_WIDTH = 1;
 
 /**
  * Branch margin from the left edge. No exact spacing token for 10px,
@@ -21,8 +21,8 @@ const LINE_WIDTH = 2;
  */
 const BRANCH_MARGIN = `calc(${spacingVars['--spacing-2']} + ${spacingVars['--spacing-0-5']})`;
 
-/** Per-level indent width, matching --spacing-5 (20px). */
-const LEVEL_INDENT = spacingVars['--spacing-5'];
+/** Per-level indent width, matching --spacing-4 (16px). */
+const LEVEL_INDENT = spacingVars['--spacing-4'];
 
 const styles = stylex.create({
   container: {
@@ -47,7 +47,7 @@ const styles = stylex.create({
   },
   verticalToHalfWithTerminus: {
     height: '50%',
-    borderBottomRightRadius: LINE_WIDTH * 2,
+    
   },
   connectorContainer: {
     position: 'absolute',
@@ -128,7 +128,7 @@ export function XDSTreeListBranches({
           <div
             {...stylex.props(
               styles.verticalLine,
-              isLast ? styles.verticalToHalfWithTerminus : styles.verticalFull,
+              styles.verticalFull,
             )}
           />
         </div>

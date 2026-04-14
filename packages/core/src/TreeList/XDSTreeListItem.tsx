@@ -23,10 +23,7 @@ import {
 } from '../theme/tokens.stylex';
 import {getIcon} from '../Icon/globalIconRegistry';
 import {xdsClassName, mergeProps} from '../utils';
-import {
-  XDSTreeListBranches,
-  XDSTreeListHorizontalConnector,
-} from './XDSTreeListBranches';
+import {XDSTreeListBranches} from './XDSTreeListBranches';
 import type {XDSTreeListDensity} from './XDSTreeListTypes';
 
 // =============================================================================
@@ -47,10 +44,33 @@ const styles = stylex.create({
     listStyleType: 'none',
   },
   treeBranches: {
-    paddingInlineStart: `calc(${spacingVars['--spacing-2']} + ${spacingVars['--spacing-0-5']})`,
+    paddingInlineStart: `calc(${spacingVars['--spacing-2']})`,
   },
   rowWrapper: {
     position: 'relative',
+  },
+  rowInteractive: {
+    cursor: 'pointer',
+    borderRadius: radiusVars['--radius-element'],
+    transitionProperty: 'background-image',
+    transitionDuration: durationVars['--duration-fast'],
+    transitionTimingFunction: easeVars['--ease-standard'],
+    backgroundImage: {
+      default: null,
+      ':hover': {
+        '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
+      },
+      ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
+    },
+  },
+  rowDisabled: {
+    cursor: 'not-allowed',
+    opacity: 0.5,
+    pointerEvents: 'none' as const,
+  },
+  rowSelected: {
+    borderRadius: radiusVars['--radius-element'],
+    backgroundColor: colorVars['--color-accent-muted'],
   },
   contentWrapper: {
     borderRadius: radiusVars['--radius-element'],
@@ -200,7 +220,6 @@ const densityStyles = stylex.create({
   },
   spacious: {
     paddingBlock: spacingVars['--spacing-3'],
-    paddingInline: spacingVars['--spacing-3'],
     fontSize: typeScaleVars['--text-body-size'],
     lineHeight: typeScaleVars['--text-body-leading'],
   },
@@ -303,8 +322,8 @@ export function XDSTreeListItem({
   }, [onClick, hasChildren, onToggle, id, isDisabled]);
 
   const computedMarginLeft = hasChildren
-    ? `calc(${nestedLevel} * ${spacingVars['--spacing-5']})`
-    : `calc(${nestedLevel} * ${spacingVars['--spacing-5']} + ${spacingVars['--spacing-4']} + ${spacingVars['--spacing-2']})`;
+    ? `calc(${nestedLevel} * ${spacingVars['--spacing-4']})`
+    : `calc(${nestedLevel} * ${spacingVars['--spacing-4']} + ${spacingVars['--spacing-4']} + ${spacingVars['--spacing-2']})`;
 
   const labelAndDescription = (
     <>
@@ -398,11 +417,13 @@ export function XDSTreeListItem({
           nestedLevel={nestedLevel}
         />
       </div>
-      <div {...stylex.props(styles.rowWrapper)}>
-        <XDSTreeListHorizontalConnector
-          hasChildren={hasChildren}
-          nestedLevel={nestedLevel}
-        />
+      <div
+        {...stylex.props(
+          styles.rowWrapper,
+          (isInteractive || (hasChildren && onClick == null)) &&
+            styles.rowInteractive,
+          isDisabled && styles.rowDisabled,
+        )}>
         <div
           {...mergeProps(
             xdsClassName('tree-list-item', {
@@ -414,10 +435,7 @@ export function XDSTreeListItem({
               styles.contentWrapper,
               densityStyles[density],
               (isInteractive || (hasChildren && onClick == null)) &&
-                styles.interactive,
-              (isInteractive || (hasChildren && onClick == null)) &&
                 styles.focusWithinOutline,
-              isDisabled && styles.disabled,
               isSelected && styles.selected,
             ),
           )}
