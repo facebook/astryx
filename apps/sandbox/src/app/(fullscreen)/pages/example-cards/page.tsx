@@ -54,6 +54,17 @@ const styles = stylex.create({
     opacity: 0.3,
     minWidth: 0,
   },
+  barPurple: {
+    flex: 1,
+    borderRadius: 3,
+    backgroundColor: '#a855f7',
+    minWidth: 0,
+  },
+  sectionContainer: {
+    backgroundColor: 'var(--color-surface-secondary, #f5f5f5)',
+    borderRadius: 12,
+    padding: 14,
+  },
   dot: {
     width: 8,
     height: 8,
@@ -179,22 +190,22 @@ export default function ExampleCardsPage() {
                 <XDSHeading level={3}>
                   Contribution History
                 </XDSHeading>
-                <XDSBadge label="+2% vs last month" variant="success" />
+                <XDSBadge label="+12% vs last month" variant="info" />
               </div>
               <XDSText type="supporting" color="secondary">
                 Last 6 months of activity
               </XDSText>
               <div {...stylex.props(styles.chart)}>
-                {[40, 55, 35, 65, 50, 70].map((h, i) => (
+                {[40, 55, 60, 70, 55, 65].map((h, i) => (
                   <div
                     key={i}
-                    {...stylex.props(i < 4 ? styles.barMuted : styles.bar)}
+                    {...stylex.props(styles.barPurple)}
                     style={{height: h}}
                   />
                 ))}
               </div>
               <XDSHStack gap={4}>
-                {['Jan', 'Feb', 'Mar', 'Apr', 'May'].map(m => (
+                {['Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May'].map(m => (
                   <XDSText key={m} type="supporting" color="secondary">
                     {m}
                   </XDSText>
@@ -202,24 +213,28 @@ export default function ExampleCardsPage() {
               </XDSHStack>
               <XDSDivider />
               <div {...stylex.props(styles.row)}>
-                <XDSVStack gap={1}>
-                  <XDSText type="supporting" color="secondary">
-                    UPCOMING
-                  </XDSText>
-                  <XDSText type="label">May 25, 2024</XDSText>
-                  <XDSText type="supporting" color="secondary">
-                    $1,000 scheduled
-                  </XDSText>
-                </XDSVStack>
-                <XDSVStack gap={1}>
-                  <XDSText type="supporting" color="secondary">
-                    AUTO-SAVE PLAN
-                  </XDSText>
-                  <XDSText type="label">Accelerated</XDSText>
-                  <XDSText type="supporting" color="secondary">
-                    Recurring weekly
-                  </XDSText>
-                </XDSVStack>
+                <div {...stylex.props(styles.sectionContainer)}>
+                  <XDSVStack gap={1}>
+                    <XDSText type="supporting" color="secondary">
+                      UPCOMING
+                    </XDSText>
+                    <XDSText type="label">May 25, 2024</XDSText>
+                    <XDSText type="supporting" color="secondary">
+                      $1,000 scheduled
+                    </XDSText>
+                  </XDSVStack>
+                </div>
+                <div {...stylex.props(styles.sectionContainer)}>
+                  <XDSVStack gap={1}>
+                    <XDSText type="supporting" color="secondary">
+                      AUTO-SAVE PLAN
+                    </XDSText>
+                    <XDSText type="label">Accelerated</XDSText>
+                    <XDSText type="supporting" color="secondary">
+                      Recurring weekly
+                    </XDSText>
+                  </XDSVStack>
+                </div>
               </div>
               <XDSButton
                 label="View Full Report"
@@ -254,12 +269,25 @@ export default function ExampleCardsPage() {
                 value="USD — United States Dollar"
                 onChange={() => {}}
               />
-              <XDSVStack gap={1}>
-                <XDSText type="label">Minimum Payout Amount</XDSText>
-                <XDSHeading level={2}>$2500.00</XDSHeading>
-                <XDSText type="supporting" color="secondary">
-                  $50 (MIN) $10,000 (MAX)
-                </XDSText>
+              <XDSVStack gap={2}>
+                <div {...stylex.props(styles.row)}>
+                  <XDSText type="label">Minimum Payout Amount</XDSText>
+                  <XDSHeading level={2}>$2500.00</XDSHeading>
+                </div>
+                <XDSSlider
+                  label="Payout amount"
+                  isLabelHidden
+                  value={50}
+                  onChange={() => {}}
+                />
+                <div {...stylex.props(styles.row)}>
+                  <XDSText type="supporting" color="secondary">
+                    $50 (MIN)
+                  </XDSText>
+                  <XDSText type="supporting" color="secondary">
+                    $10,000 (MAX)
+                  </XDSText>
+                </div>
               </XDSVStack>
               <XDSTextInput
                 label="Notes"
