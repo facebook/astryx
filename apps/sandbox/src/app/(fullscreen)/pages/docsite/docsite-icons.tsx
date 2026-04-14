@@ -11,11 +11,11 @@ export {
   FolderIcon,
   ArrowLeftIcon,
   BookmarkIcon,
-  ShareIcon,
   ArrowRightIcon as SendIcon,
   PaintBrushIcon as PaletteIcon,
   SunIcon as ContrastIcon,
   ArrowUpTrayIcon as UploadIcon,
+  ArrowUpTrayIcon as ShareIcon,
   ArrowDownTrayIcon as DownloadIcon,
   ArrowTopRightOnSquareIcon as ExternalLinkIcon,
   ArrowsPointingOutIcon as FullscreenIcon,
@@ -29,6 +29,9 @@ export {
   MagnifyingGlassIcon as SearchIcon,
   UserIcon as ProfileIcon,
   AdjustmentsHorizontalIcon as FilterIcon,
+  Squares2X2Icon as GridIcon,
+  SparklesIcon,
+  StopIcon,
 } from '@heroicons/react/24/outline';
 
 // Brand icons — no Heroicons equivalent

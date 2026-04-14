@@ -2,6 +2,7 @@
 
 import React from 'react';
 import {XDSHeading, XDSText} from '@xds/core/Text';
+import {XDSCard} from '@xds/core/Card';
 import {XDSCodeBlock} from '@xds/core/CodeBlock';
 import {XDSList, XDSListItem} from '@xds/core/List';
 import {ClaudeIcon, VSCodeIcon, CursorAIIcon} from './docsite-icons';
@@ -17,6 +18,7 @@ export function SharePopover({
 }) {
   return (
     <div
+      data-share-popover
       style={{
         position: 'fixed' as const,
         left: position.left,
@@ -37,7 +39,9 @@ export function SharePopover({
       </div>
 
       <div style={{marginTop: 12}}>
-        <XDSCodeBlock code={cliCommand} language="bash" />
+        <XDSCard padding={0}>
+          <XDSCodeBlock code={cliCommand} language="bash" />
+        </XDSCard>
       </div>
 
       <div

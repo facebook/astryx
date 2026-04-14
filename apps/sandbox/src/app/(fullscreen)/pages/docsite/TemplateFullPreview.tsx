@@ -1,6 +1,6 @@
 'use client';
 
-import React, {useState, useEffect, useRef} from 'react';
+import React, {useState, useEffect, useRef, useCallback} from 'react';
 import {XDSHeading, XDSText} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
 import {XDSCard} from '@xds/core/Card';
@@ -51,6 +51,7 @@ export function TemplateFullPreview({
   showChat = false,
   showEditor = false,
   defaultTab = 'properties',
+  hideShadows = false,
 }: {
   templateName: string;
   imageSrc: string;
@@ -60,6 +61,7 @@ export function TemplateFullPreview({
   showChat?: boolean;
   showEditor?: boolean;
   defaultTab?: 'properties' | 'chat';
+  hideShadows?: boolean;
 }) {
   const [viewMode, setViewMode] = useState('desktop' as 'desktop' | 'mobile');
   const [editorView, setEditorView] = useState(
@@ -76,6 +78,7 @@ export function TemplateFullPreview({
     defaultTab as 'properties' | 'chat',
   );
   const [chatInput, setChatInput] = useState('');
+  const [codeContent, setCodeContent] = useState(MOCK_CODE);
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [showSharePopover, setShowSharePopover] = useState(false);
   const [showSendPopover, setShowSendPopover] = useState(false);
@@ -92,9 +95,36 @@ export function TemplateFullPreview({
   const [likeCount, setLikeCount] = useState(1645);
   const [bookmarked, setBookmarked] = useState(false);
   const [bookmarkCount, setBookmarkCount] = useState(892);
+  const [panelWidth, setPanelWidth] = useState(380);
+  const [isResizing, setIsResizing] = useState(false);
   const sharePopoverRef = useRef(null as HTMLDivElement | null);
   const shareButtonRef = useRef(null as HTMLButtonElement | null);
   const sendPopoverRef = useRef(null as HTMLDivElement | null);
+
+  const handleResizeStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+    const startX = e.clientX;
+    const startWidth = panelWidth;
+
+    const onMouseMove = (ev: MouseEvent) => {
+      const maxWidth = Math.floor(window.innerWidth / 2);
+      const newWidth = Math.min(Math.max(startWidth + (ev.clientX - startX), 280), maxWidth);
+      setPanelWidth(newWidth);
+    };
+    const onMouseUp = () => {
+      setIsResizing(false);
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  }, [panelWidth]);
 
   const shareCliCommand = `npx xds template ${templateName.toLowerCase().replace(/\s+/g, '-')} ./my-project`;
 
@@ -143,23 +173,25 @@ export function TemplateFullPreview({
       {/* LEFT PANEL — details sidebar */}
       <div
         style={{
-          width: '30%',
-          maxWidth: 380,
-          minWidth: 300,
+          width: panelWidth,
+          minWidth: 280,
+          maxWidth: '50vw',
+          flexShrink: 0,
           padding: '16px 0 16px 16px',
           display: 'flex',
           backgroundColor: 'transparent',
           opacity: isVisible ? 1 : 0,
           transform: isVisible ? 'none' : 'translateX(-60px)',
-          transition:
-            'opacity 500ms cubic-bezier(0.16, 1, 0.3, 1) 100ms, transform 500ms cubic-bezier(0.16, 1, 0.3, 1) 100ms',
+          transition: isResizing
+            ? 'opacity 500ms cubic-bezier(0.16, 1, 0.3, 1) 100ms, transform 500ms cubic-bezier(0.16, 1, 0.3, 1) 100ms'
+            : 'opacity 500ms cubic-bezier(0.16, 1, 0.3, 1) 100ms, transform 500ms cubic-bezier(0.16, 1, 0.3, 1) 100ms, width 150ms ease',
         }}>
         <div
           style={{
             flex: 1,
             backgroundColor: 'var(--color-background-card, #fff)',
             borderRadius: 16,
-            boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
+            boxShadow: hideShadows ? 'none' : '0 4px 24px rgba(0,0,0,0.08)',
             padding: showChat ? '16px 32px 32px' : '24px 32px 32px',
             overflow: 'visible',
             display: 'flex',
@@ -424,13 +456,13 @@ export function TemplateFullPreview({
                         label={likeCount.toLocaleString()}
                         variant="ghost"
                         size="sm"
+                        style={{color: 'var(--color-text-secondary, #65676B)'}}
                         icon={
                           <HeartIcon
                             fill={liked ? 'currentColor' : 'none'}
                             style={liked ? {color: '#e5484d'} : undefined}
                           />
                         }
-                        style={liked ? {color: '#e5484d'} : undefined}
                         onClick={() => {
                           setLiked(prev => !prev);
                           setLikeCount(prev => (liked ? prev - 1 : prev + 1));
@@ -442,6 +474,7 @@ export function TemplateFullPreview({
                         label={bookmarkCount.toLocaleString()}
                         variant="ghost"
                         size="sm"
+                        style={{color: 'var(--color-text-secondary, #65676B)'}}
                         icon={
                           <BookmarkIcon
                             fill={bookmarked ? 'currentColor' : 'none'}
@@ -454,11 +487,6 @@ export function TemplateFullPreview({
                                 : undefined
                             }
                           />
-                        }
-                        style={
-                          bookmarked
-                            ? {color: 'var(--color-icon-highlight, #3b82f6)'}
-                            : undefined
                         }
                         onClick={() => {
                           setBookmarked(prev => !prev);
@@ -627,6 +655,38 @@ export function TemplateFullPreview({
         </div>
       </div>
 
+      {/* Resize handle */}
+      <style>{`
+        .xds-resize-handle { opacity: 0; transition: opacity 150ms ease, background-color 150ms ease; }
+        .xds-resize-grip:hover .xds-resize-handle { opacity: 0.6; }
+        .xds-resize-grip[data-resizing="true"] .xds-resize-handle { opacity: 1; }
+      `}</style>
+      <div
+        onMouseDown={handleResizeStart}
+        data-resizing={isResizing}
+        className="xds-resize-grip"
+        style={{
+          width: 8,
+          flexShrink: 0,
+          cursor: 'col-resize',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 10,
+        }}>
+        <div
+          className="xds-resize-handle"
+          style={{
+            width: 3,
+            height: 32,
+            borderRadius: 2,
+              backgroundColor: isResizing
+              ? 'var(--color-icon-primary, #111)'
+              : 'var(--color-border-strong, #ccc)',
+          }}
+        />
+      </div>
+
       {/* RIGHT PANEL — preview area */}
       <div
         style={{
@@ -641,10 +701,12 @@ export function TemplateFullPreview({
             'opacity 500ms cubic-bezier(0.16, 1, 0.3, 1), transform 500ms cubic-bezier(0.16, 1, 0.3, 1)',
         }}>
         {/* Editor toolbar */}
-        <div style={{backgroundColor: 'var(--color-background-body, #f5f5f5)'}}>
+        <div style={{backgroundColor: 'var(--color-background-body, #f5f5f5)', borderBottom: 'none'}}>
           {showEditor ? (
             <XDSToolbar
               label="Template actions"
+              padding={1}
+              dividers={[]}
               startContent={<></>}
               centerContent={
                 <XDSSegmentedControl
@@ -899,9 +961,11 @@ export function TemplateFullPreview({
             border: '1px solid var(--color-divider, rgba(0,0,0,0.1))',
             borderRadius: 8,
             backgroundColor: 'var(--color-background-muted, rgba(0,0,0,0.03))',
-            overflow: 'auto',
+            overflow: 'hidden',
             flex: 1,
-            display: showEditor && editorView === 'code' ? 'block' : 'none',
+            display: showEditor && editorView === 'code' ? 'flex' : 'none',
+            flexDirection: 'column' as const,
+            minHeight: 0,
           }}>
           <div
             style={{
@@ -920,7 +984,7 @@ export function TemplateFullPreview({
               typescript — useUser.ts
             </span>
           </div>
-          <div style={{display: 'flex'}}>
+          <div style={{display: 'flex', flex: 1, minHeight: 0}}>
             <div
               style={{
                 padding: '12px 12px 12px 16px',
@@ -933,11 +997,14 @@ export function TemplateFullPreview({
                 userSelect: 'none',
                 minWidth: 45,
               }}>
-              {MOCK_CODE.split('\n').map((_, i) => (
+              {codeContent.split('\n').map((_, i) => (
                 <div key={i}>{i + 1}</div>
               ))}
             </div>
-            <pre
+            <textarea
+              value={codeContent}
+              onChange={e => setCodeContent(e.target.value)}
+              spellCheck={false}
               style={{
                 flex: 1,
                 padding: '12px 16px',
@@ -947,9 +1014,14 @@ export function TemplateFullPreview({
                 margin: 0,
                 overflow: 'auto',
                 color: 'var(--color-text-primary, #0a1317)',
-              }}>
-              {MOCK_CODE}
-            </pre>
+                backgroundColor: 'transparent',
+                border: 'none',
+                outline: 'none',
+                resize: 'none',
+                whiteSpace: 'pre',
+                tabSize: 2,
+              }}
+            />
           </div>
         </div>
 
@@ -982,7 +1054,7 @@ export function TemplateFullPreview({
                     border: '1px solid var(--color-divider, rgba(0,0,0,0.1))',
                     backgroundColor: 'var(--color-background-card, #fff)',
                     borderRadius: 8,
-                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                    boxShadow: hideShadows ? 'none' : '0 4px 20px rgba(0,0,0,0.08)',
                     overflow: 'hidden',
                     cursor: 'pointer',
                   }}>

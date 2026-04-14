@@ -126,7 +126,7 @@ export function AppTopNav({
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          padding: '16px 16px 32px',
+          padding: '16px 16px 40px',
           maxHeight: isScrolled ? 0 : 200,
           overflow: 'hidden',
           opacity: isScrolled ? 0 : 1,
