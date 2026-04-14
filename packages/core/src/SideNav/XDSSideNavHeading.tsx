@@ -49,7 +49,12 @@ const styles = stylex.create({
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
     minHeight: spacingVars['--spacing-8'],
-    padding: 0,
+    paddingInlineStart: {
+      default: spacingVars['--spacing-1'],
+      ':has(.xds-navicon)': 0,
+    },
+    paddingInlineEnd: spacingVars['--spacing-1'],
+    paddingBlock: 0,
     boxSizing: 'border-box',
     textDecoration: 'none',
     color: 'inherit',
