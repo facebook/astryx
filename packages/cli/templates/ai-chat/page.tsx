@@ -13,7 +13,14 @@ import {XDSNavIcon} from '@xds/core/NavIcon';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSChatComposer, XDSChatComposerAttachments, XDSChatComposerInput, type XDSChatComposerInputHandle} from '@xds/core/Chat';
+import {
+  XDSChatComposer,
+  XDSChatComposerAttachments,
+  XDSChatComposerInput,
+  XDSChatDictationButton,
+  useXDSChatDictation,
+  type XDSChatComposerInputHandle,
+} from '@xds/core/Chat';
 import {XDSToggleButton, XDSToggleButtonGroup} from '@xds/core/ToggleButton';
 import {XDSButton} from '@xds/core/Button';
 import {XDSToken} from '@xds/core/Token';
@@ -35,7 +42,6 @@ import {
   LockClosedIcon,
   ClockIcon,
   PaperClipIcon,
-  MicrophoneIcon,
   LightBulbIcon,
 } from '@heroicons/react/24/outline';
 import {
@@ -54,28 +60,92 @@ const CATEGORY_SUGGESTIONS: Record<
   Array<{heading: string; body: string; prompt: string}>
 > = {
   writing: [
-    {heading: 'Draft a professional email', body: 'Compose a clear, polished email for any audience', prompt: 'Help me draft a professional email'},
-    {heading: 'Improve my writing', body: 'Enhance the clarity, tone, and flow of my text', prompt: 'Review and improve the following text:'},
-    {heading: 'Create a project proposal', body: 'Write a proposal with goals, timeline, and deliverables', prompt: 'Help me write a project proposal for'},
-    {heading: 'Summarize a document', body: 'Condense a long document into key takeaways', prompt: 'Summarize the following document into key points:'},
+    {
+      heading: 'Draft a professional email',
+      body: 'Compose a clear, polished email for any audience',
+      prompt: 'Help me draft a professional email',
+    },
+    {
+      heading: 'Improve my writing',
+      body: 'Enhance the clarity, tone, and flow of my text',
+      prompt: 'Review and improve the following text:',
+    },
+    {
+      heading: 'Create a project proposal',
+      body: 'Write a proposal with goals, timeline, and deliverables',
+      prompt: 'Help me write a project proposal for',
+    },
+    {
+      heading: 'Summarize a document',
+      body: 'Condense a long document into key takeaways',
+      prompt: 'Summarize the following document into key points:',
+    },
   ],
   coding: [
-    {heading: 'Debug my code', body: 'Find and fix issues in a code snippet', prompt: 'Help me debug the following code:'},
-    {heading: 'Write a function', body: 'Generate a well-typed function with error handling', prompt: 'Write a function that'},
-    {heading: 'Explain this code', body: 'Break down complex code into understandable pieces', prompt: 'Explain what the following code does:'},
-    {heading: 'Review my pull request', body: 'Check for bugs, performance, and best practices', prompt: 'Review this code for bugs and improvements:'},
+    {
+      heading: 'Debug my code',
+      body: 'Find and fix issues in a code snippet',
+      prompt: 'Help me debug the following code:',
+    },
+    {
+      heading: 'Write a function',
+      body: 'Generate a well-typed function with error handling',
+      prompt: 'Write a function that',
+    },
+    {
+      heading: 'Explain this code',
+      body: 'Break down complex code into understandable pieces',
+      prompt: 'Explain what the following code does:',
+    },
+    {
+      heading: 'Review my pull request',
+      body: 'Check for bugs, performance, and best practices',
+      prompt: 'Review this code for bugs and improvements:',
+    },
   ],
   research: [
-    {heading: 'Compare options', body: 'Analyze pros and cons of different approaches', prompt: 'Compare the pros and cons of'},
-    {heading: 'Explain a concept', body: 'Break down a complex topic in simple terms', prompt: 'Explain the concept of'},
-    {heading: 'Find best practices', body: 'Research standards and recommended approaches', prompt: 'What are the best practices for'},
-    {heading: 'Summarize findings', body: 'Compile research into a structured overview', prompt: 'Summarize the key findings on'},
+    {
+      heading: 'Compare options',
+      body: 'Analyze pros and cons of different approaches',
+      prompt: 'Compare the pros and cons of',
+    },
+    {
+      heading: 'Explain a concept',
+      body: 'Break down a complex topic in simple terms',
+      prompt: 'Explain the concept of',
+    },
+    {
+      heading: 'Find best practices',
+      body: 'Research standards and recommended approaches',
+      prompt: 'What are the best practices for',
+    },
+    {
+      heading: 'Summarize findings',
+      body: 'Compile research into a structured overview',
+      prompt: 'Summarize the key findings on',
+    },
   ],
   creative: [
-    {heading: 'Brainstorm ideas', body: 'Generate creative concepts for a project', prompt: 'Brainstorm ideas for'},
-    {heading: 'Write a story', body: 'Create an engaging narrative with characters', prompt: 'Write a short story about'},
-    {heading: 'Design a concept', body: 'Explore product or visual design ideas', prompt: 'Help me design a concept for'},
-    {heading: 'Create a tagline', body: 'Craft a memorable phrase for a brand or product', prompt: 'Create a catchy tagline for'},
+    {
+      heading: 'Brainstorm ideas',
+      body: 'Generate creative concepts for a project',
+      prompt: 'Brainstorm ideas for',
+    },
+    {
+      heading: 'Write a story',
+      body: 'Create an engaging narrative with characters',
+      prompt: 'Write a short story about',
+    },
+    {
+      heading: 'Design a concept',
+      body: 'Explore product or visual design ideas',
+      prompt: 'Help me design a concept for',
+    },
+    {
+      heading: 'Create a tagline',
+      body: 'Craft a memorable phrase for a brand or product',
+      prompt: 'Create a catchy tagline for',
+    },
   ],
 };
 
@@ -155,6 +225,7 @@ export default function AIChatTemplate() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const composerInputRef = useRef<XDSChatComposerInputHandle>(null);
   const shouldFocusComposerRef = useRef(false);
+  const dictation = useXDSChatDictation({inputRef: composerInputRef});
   const activeMode = MODE_OPTIONS.find(m => m.key === mode) ?? MODE_OPTIONS[0];
   const suggestions = category ? CATEGORY_SUGGESTIONS[category] : null;
 
@@ -170,9 +241,7 @@ export default function AIChatTemplate() {
     }
     input.insertText(prompt);
     // Dispatch input event to trigger emitChange and clear placeholder
-    document.activeElement?.dispatchEvent(
-      new Event('input', {bubbles: true}),
-    );
+    document.activeElement?.dispatchEvent(new Event('input', {bubbles: true}));
   };
 
   return (
@@ -190,10 +259,20 @@ export default function AIChatTemplate() {
         {/* Greeting */}
         <XDSVStack gap={1} style={{paddingInline: 'var(--spacing-4)'}}>
           <XDSHStack gap={2} vAlign="center">
-            <SparklesIcon style={{width: 20, height: 20, color: 'var(--color-primary, #5B5BD6)'}} />
-            <XDSText type="large" as="h2">Hi, Andrew</XDSText>
+            <SparklesIcon
+              style={{
+                width: 20,
+                height: 20,
+                color: 'var(--color-primary, #5B5BD6)',
+              }}
+            />
+            <XDSText type="large" as="h2">
+              Hi, Andrew
+            </XDSText>
           </XDSHStack>
-          <XDSText type="display-2" as="h1">Where should we start?</XDSText>
+          <XDSText type="display-2" as="h1">
+            Where should we start?
+          </XDSText>
         </XDSVStack>
 
         {/* Composer */}
@@ -211,7 +290,12 @@ export default function AIChatTemplate() {
         <XDSChatComposer
           onSubmit={() => {}}
           placeholder="Ask anything"
-          input={<XDSChatComposerInput ref={composerInputRef} style={{minHeight: '44px'}} />}
+          input={
+            <XDSChatComposerInput
+              ref={composerInputRef}
+              style={{minHeight: '44px'}}
+            />
+          }
           attachments={
             attachments.length > 0 ? (
               <XDSChatComposerAttachments
@@ -329,15 +413,7 @@ export default function AIChatTemplate() {
               />
             </>
           }
-          sendActions={
-            <XDSButton
-              label="Voice input"
-              variant="ghost"
-              size="md"
-              icon={<MicrophoneIcon style={{width: 16, height: 16}} />}
-              isIconOnly
-            />
-          }
+          sendActions={<XDSChatDictationButton dictation={dictation} />}
         />
 
         {/* Category toggle buttons */}
@@ -359,9 +435,7 @@ export default function AIChatTemplate() {
 
           {/* Suggestion cards */}
           {suggestions && (
-            <XDSGrid
-              minChildWidth={280}
-              gap={3}>
+            <XDSGrid minChildWidth={280} gap={3}>
               {suggestions.map(suggestion => (
                 <XDSCard
                   variant="muted"
