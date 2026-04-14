@@ -142,9 +142,9 @@ const styles = stylex.create({
     height: '2px',
     borderRadius: radiusVars['--radius-full'],
     backgroundColor: {
-      default: colorVars['--color-border-emphasized'],
+      default: colorVars['--color-icon-secondary'],
       [stylex.when.ancestor(':hover')]: {
-        '@media (hover: hover)': colorVars['--color-text-primary'],
+        '@media (hover: hover)': colorVars['--color-icon-primary'],
       },
     },
     opacity: 1,

@@ -1,6 +1,6 @@
 'use client';
 
-import {useRef, useState} from 'react';
+import {useCallback, useRef, useState} from 'react';
 
 import {XDSAppShell} from '@xds/core/AppShell';
 import {
@@ -13,7 +13,22 @@ import {XDSNavIcon} from '@xds/core/NavIcon';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSChatComposer, XDSChatComposerAttachments, XDSChatComposerInput, type XDSChatComposerInputHandle} from '@xds/core/Chat';
+import {
+  XDSChatComposer,
+  XDSChatComposerAttachments,
+  XDSChatComposerInput,
+  XDSChatDictationButton,
+  XDSChatLayout,
+  XDSChatMessage,
+  XDSChatMessageBubble,
+  XDSChatMessageList,
+  XDSChatMessageMetadata,
+  XDSChatSystemMessage,
+  useXDSChatDictation,
+  type XDSChatComposerInputHandle,
+} from '@xds/core/Chat';
+import {XDSMarkdown} from '@xds/core/Markdown';
+import {XDSTimestamp} from '@xds/core/Timestamp';
 import {XDSToggleButton, XDSToggleButtonGroup} from '@xds/core/ToggleButton';
 import {XDSButton} from '@xds/core/Button';
 import {XDSToken} from '@xds/core/Token';
@@ -35,7 +50,6 @@ import {
   LockClosedIcon,
   ClockIcon,
   PaperClipIcon,
-  MicrophoneIcon,
   LightBulbIcon,
 } from '@heroicons/react/24/outline';
 import {
@@ -54,28 +68,92 @@ const CATEGORY_SUGGESTIONS: Record<
   Array<{heading: string; body: string; prompt: string}>
 > = {
   writing: [
-    {heading: 'Draft a professional email', body: 'Compose a clear, polished email for any audience', prompt: 'Help me draft a professional email'},
-    {heading: 'Improve my writing', body: 'Enhance the clarity, tone, and flow of my text', prompt: 'Review and improve the following text:'},
-    {heading: 'Create a project proposal', body: 'Write a proposal with goals, timeline, and deliverables', prompt: 'Help me write a project proposal for'},
-    {heading: 'Summarize a document', body: 'Condense a long document into key takeaways', prompt: 'Summarize the following document into key points:'},
+    {
+      heading: 'Draft a professional email',
+      body: 'Compose a clear, polished email for any audience',
+      prompt: 'Help me draft a professional email',
+    },
+    {
+      heading: 'Improve my writing',
+      body: 'Enhance the clarity, tone, and flow of my text',
+      prompt: 'Review and improve the following text:',
+    },
+    {
+      heading: 'Create a project proposal',
+      body: 'Write a proposal with goals, timeline, and deliverables',
+      prompt: 'Help me write a project proposal for',
+    },
+    {
+      heading: 'Summarize a document',
+      body: 'Condense a long document into key takeaways',
+      prompt: 'Summarize the following document into key points:',
+    },
   ],
   coding: [
-    {heading: 'Debug my code', body: 'Find and fix issues in a code snippet', prompt: 'Help me debug the following code:'},
-    {heading: 'Write a function', body: 'Generate a well-typed function with error handling', prompt: 'Write a function that'},
-    {heading: 'Explain this code', body: 'Break down complex code into understandable pieces', prompt: 'Explain what the following code does:'},
-    {heading: 'Review my pull request', body: 'Check for bugs, performance, and best practices', prompt: 'Review this code for bugs and improvements:'},
+    {
+      heading: 'Debug my code',
+      body: 'Find and fix issues in a code snippet',
+      prompt: 'Help me debug the following code:',
+    },
+    {
+      heading: 'Write a function',
+      body: 'Generate a well-typed function with error handling',
+      prompt: 'Write a function that',
+    },
+    {
+      heading: 'Explain this code',
+      body: 'Break down complex code into understandable pieces',
+      prompt: 'Explain what the following code does:',
+    },
+    {
+      heading: 'Review my pull request',
+      body: 'Check for bugs, performance, and best practices',
+      prompt: 'Review this code for bugs and improvements:',
+    },
   ],
   research: [
-    {heading: 'Compare options', body: 'Analyze pros and cons of different approaches', prompt: 'Compare the pros and cons of'},
-    {heading: 'Explain a concept', body: 'Break down a complex topic in simple terms', prompt: 'Explain the concept of'},
-    {heading: 'Find best practices', body: 'Research standards and recommended approaches', prompt: 'What are the best practices for'},
-    {heading: 'Summarize findings', body: 'Compile research into a structured overview', prompt: 'Summarize the key findings on'},
+    {
+      heading: 'Compare options',
+      body: 'Analyze pros and cons of different approaches',
+      prompt: 'Compare the pros and cons of',
+    },
+    {
+      heading: 'Explain a concept',
+      body: 'Break down a complex topic in simple terms',
+      prompt: 'Explain the concept of',
+    },
+    {
+      heading: 'Find best practices',
+      body: 'Research standards and recommended approaches',
+      prompt: 'What are the best practices for',
+    },
+    {
+      heading: 'Summarize findings',
+      body: 'Compile research into a structured overview',
+      prompt: 'Summarize the key findings on',
+    },
   ],
   creative: [
-    {heading: 'Brainstorm ideas', body: 'Generate creative concepts for a project', prompt: 'Brainstorm ideas for'},
-    {heading: 'Write a story', body: 'Create an engaging narrative with characters', prompt: 'Write a short story about'},
-    {heading: 'Design a concept', body: 'Explore product or visual design ideas', prompt: 'Help me design a concept for'},
-    {heading: 'Create a tagline', body: 'Craft a memorable phrase for a brand or product', prompt: 'Create a catchy tagline for'},
+    {
+      heading: 'Brainstorm ideas',
+      body: 'Generate creative concepts for a project',
+      prompt: 'Brainstorm ideas for',
+    },
+    {
+      heading: 'Write a story',
+      body: 'Create an engaging narrative with characters',
+      prompt: 'Write a short story about',
+    },
+    {
+      heading: 'Design a concept',
+      body: 'Explore product or visual design ideas',
+      prompt: 'Help me design a concept for',
+    },
+    {
+      heading: 'Create a tagline',
+      body: 'Craft a memorable phrase for a brand or product',
+      prompt: 'Create a catchy tagline for',
+    },
   ],
 };
 
@@ -94,6 +172,22 @@ const MODE_OPTIONS = [
   {key: 'sensitive', label: 'Sensitive', icon: LockClosedIcon},
   {key: 'deep', label: 'Deep Mode', icon: ClockIcon},
 ] as const;
+
+// ============= MESSAGE TYPES =============
+
+type ChatMessage =
+  | {
+      id: number;
+      role: 'user';
+      text: string;
+      attachments?: string[];
+      sentAt: Date;
+    }
+  | {id: number; role: 'assistant'; text: string; isStreaming?: boolean}
+  | {id: number; role: 'system'; text: string};
+
+const SIMULATED_RESPONSE =
+  'Thanks for your message! I\u2019m looking into this now.\n\nHere\u2019s what I found so far:\n\n1. **First**, I reviewed the relevant context from the attached files\n2. **Next**, I cross-referenced with the latest documentation\n3. **Finally**, I have a few recommendations\n\nLet me know if you\u2019d like me to dive deeper into any of these areas, or if you have follow-up questions.';
 
 // ============= SIDENAV =============
 
@@ -142,15 +236,100 @@ function AIChatSideNav() {
 // ============= MAIN COMPONENT =============
 
 export default function AIChatTemplate() {
+  const [view, setView] = useState<'landing' | 'chat'>('landing');
   const [mode, setMode] = useState<string | null>('auto');
   const [category, setCategory] = useState<string | null>(null);
-  const [attachments, setAttachments] = useState<string[]>([]);
+  const [attachments, setAttachments] = useState<string[]>([
+    'project_brief.pdf',
+    'wireframes_v2.fig',
+    'api_spec.yaml',
+    'user_research.csv',
+    'brand_guidelines.pdf',
+  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [isStreaming, setIsStreaming] = useState(false);
   const [isModeMenuOpen, setIsModeMenuOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const composerInputRef = useRef<XDSChatComposerInputHandle>(null);
   const shouldFocusComposerRef = useRef(false);
+  const streamRef = useRef<ReturnType<typeof setInterval>>(undefined);
+  const dictation = useXDSChatDictation({inputRef: composerInputRef});
   const activeMode = MODE_OPTIONS.find(m => m.key === mode) ?? MODE_OPTIONS[0];
   const suggestions = category ? CATEGORY_SUGGESTIONS[category] : null;
+
+  // ---------------------------------------------------------------------------
+  // Streaming
+  // ---------------------------------------------------------------------------
+
+  const streamResponse = useCallback((responseText: string) => {
+    const msgId = Date.now();
+    setIsStreaming(true);
+    setMessages(prev => [
+      ...prev,
+      {id: msgId, role: 'assistant', text: '', isStreaming: true},
+    ]);
+
+    let i = 0;
+    streamRef.current = setInterval(() => {
+      i += 2 + Math.floor(Math.random() * 4);
+      if (i >= responseText.length) {
+        clearInterval(streamRef.current);
+        setMessages(prev =>
+          prev.map(m =>
+            m.id === msgId ? {...m, text: responseText, isStreaming: false} : m,
+          ),
+        );
+        setIsStreaming(false);
+        return;
+      }
+      setMessages(prev =>
+        prev.map(m =>
+          m.id === msgId ? {...m, text: responseText.slice(0, i)} : m,
+        ),
+      );
+    }, 30);
+  }, []);
+
+  const handleStop = useCallback(() => {
+    clearInterval(streamRef.current);
+    setIsStreaming(false);
+    setMessages(prev =>
+      prev.map(m =>
+        m.role === 'assistant' && m.isStreaming
+          ? {...m, isStreaming: false}
+          : m,
+      ),
+    );
+  }, []);
+
+  // ---------------------------------------------------------------------------
+  // Submit
+  // ---------------------------------------------------------------------------
+
+  const handleSubmit = useCallback(
+    (value: string) => {
+      if (!value.trim()) return;
+
+      const userMsg: ChatMessage = {
+        id: Date.now(),
+        role: 'user',
+        text: value,
+        attachments: attachments.length > 0 ? [...attachments] : undefined,
+        sentAt: new Date(),
+      };
+
+      if (view === 'landing') {
+        setMessages([{id: 1, role: 'system', text: 'Today'}, userMsg]);
+        setAttachments([]);
+        setView('chat');
+        setTimeout(() => streamResponse(SIMULATED_RESPONSE), 600);
+      } else {
+        setMessages(prev => [...prev, userMsg]);
+        setTimeout(() => streamResponse(SIMULATED_RESPONSE), 600);
+      }
+    },
+    [view, attachments, streamResponse],
+  );
 
   const appendSuggestion = (prompt: string) => {
     const input = composerInputRef.current;
@@ -164,10 +343,226 @@ export default function AIChatTemplate() {
     }
     input.insertText(prompt);
     // Dispatch input event to trigger emitChange and clear placeholder
-    document.activeElement?.dispatchEvent(
-      new Event('input', {bubbles: true}),
-    );
+    document.activeElement?.dispatchEvent(new Event('input', {bubbles: true}));
   };
+
+  // ---------------------------------------------------------------------------
+  // Chat view
+  // ---------------------------------------------------------------------------
+
+  if (view === 'chat') {
+    return (
+      <XDSAppShell sideNav={<AIChatSideNav />} variant="elevated">
+        <div style={{height: '100%', display: 'flex', flexDirection: 'column'}}>
+          <XDSChatLayout
+            composer={
+              <>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  style={{display: 'none'}}
+                  onChange={e => {
+                    const files = Array.from(e.target.files ?? []);
+                    setAttachments(prev => [
+                      ...prev,
+                      ...files.map(f => f.name),
+                    ]);
+                    e.target.value = '';
+                  }}
+                />
+                <XDSChatComposer
+                  onSubmit={handleSubmit}
+                  onStop={handleStop}
+                  isStreaming={isStreaming}
+                  placeholder="Ask anything"
+                  input={
+                    <XDSChatComposerInput
+                      ref={composerInputRef}
+                      style={{minHeight: '44px'}}
+                    />
+                  }
+                  attachments={
+                    attachments.length > 0 ? (
+                      <XDSChatComposerAttachments count={attachments.length}>
+                        {attachments.map((name, i) => (
+                          <XDSToken
+                            key={i}
+                            label={name}
+                            onRemove={() =>
+                              setAttachments(prev =>
+                                prev.filter((_, j) => j !== i),
+                              )
+                            }
+                          />
+                        ))}
+                      </XDSChatComposerAttachments>
+                    ) : undefined
+                  }
+                  headerActions={
+                    <>
+                      <XDSButton
+                        label="Reference"
+                        variant="ghost"
+                        size="sm"
+                        icon={<AtSymbolIcon style={{width: 16, height: 16}} />}
+                        isIconOnly
+                        onClick={() => {
+                          const input = composerInputRef.current;
+                          if (!input) return;
+                          input.focus();
+                          const sel = window.getSelection();
+                          if (sel) {
+                            sel.selectAllChildren(document.activeElement!);
+                            sel.collapseToEnd();
+                          }
+                          input.insertText('@');
+                          document.activeElement?.dispatchEvent(
+                            new Event('input', {bubbles: true}),
+                          );
+                        }}
+                      />
+                      <XDSButton
+                        label="Attach"
+                        variant="ghost"
+                        size="sm"
+                        icon={<PaperClipIcon style={{width: 16, height: 16}} />}
+                        isIconOnly
+                        onClick={() => fileInputRef.current?.click()}
+                      />
+                    </>
+                  }
+                  footerActions={
+                    <>
+                      <XDSDropdownMenu
+                        button={{
+                          label: activeMode.label,
+                          variant: 'ghost',
+                          size: 'md',
+                          icon: (
+                            <activeMode.icon style={{width: 16, height: 16}} />
+                          ),
+                          children: activeMode.label,
+                        }}
+                        menuWidth={200}
+                        isMenuOpen={isModeMenuOpen}
+                        onOpenChange={(isOpen: boolean) => {
+                          setIsModeMenuOpen(isOpen);
+                          if (!isOpen && shouldFocusComposerRef.current) {
+                            shouldFocusComposerRef.current = false;
+                            setTimeout(() => {
+                              composerInputRef.current?.focus();
+                            }, 50);
+                          }
+                        }}
+                        items={MODE_OPTIONS.flatMap(opt => {
+                          const item = {
+                            label: opt.label,
+                            icon: opt.icon,
+                            onClick: () => {
+                              const tokenLabel = TOKEN_MODES[opt.key];
+                              if (tokenLabel) {
+                                composerInputRef.current?.focus();
+                                composerInputRef.current?.insertToken({
+                                  value: tokenLabel,
+                                  label: tokenLabel,
+                                  variant: 'orange',
+                                });
+                                document.activeElement?.dispatchEvent(
+                                  new Event('input', {bubbles: true}),
+                                );
+                                shouldFocusComposerRef.current = true;
+                              } else {
+                                setMode(opt.key);
+                              }
+                            },
+                          };
+                          return opt.key === 'sensitive'
+                            ? [{type: 'divider' as const}, item]
+                            : [item];
+                        })}
+                      />
+                      <XDSDropdownMenu
+                        button={{
+                          label: 'Settings',
+                          variant: 'ghost',
+                          size: 'md',
+                          icon: (
+                            <Cog6ToothIcon style={{width: 16, height: 16}} />
+                          ),
+                          children: 'Settings',
+                        }}
+                        menuWidth={200}
+                        items={[
+                          {label: 'Preferences', onClick: () => {}},
+                          {label: 'Keyboard shortcuts', onClick: () => {}},
+                          {label: 'About', onClick: () => {}},
+                        ]}
+                      />
+                    </>
+                  }
+                  sendActions={<XDSChatDictationButton dictation={dictation} />}
+                />
+              </>
+            }>
+            <XDSChatMessageList>
+              {messages.map(msg => {
+                if (msg.role === 'system') {
+                  return (
+                    <XDSChatSystemMessage key={msg.id} variant="divider">
+                      {msg.text}
+                    </XDSChatSystemMessage>
+                  );
+                }
+                if (msg.role === 'user') {
+                  return (
+                    <XDSChatMessage key={msg.id} sender="user">
+                      {msg.attachments && msg.attachments.length > 0 && (
+                        <XDSHStack gap={1} style={{flexWrap: 'wrap'}}>
+                          {msg.attachments.map(f => (
+                            <XDSToken key={f} label={f} />
+                          ))}
+                        </XDSHStack>
+                      )}
+                      <XDSChatMessageBubble
+                        metadata={
+                          <XDSChatMessageMetadata
+                            timestamp={
+                              <XDSTimestamp
+                                value={msg.sentAt.getTime()}
+                                format="time"
+                              />
+                            }
+                          />
+                        }>
+                        {msg.text}
+                      </XDSChatMessageBubble>
+                    </XDSChatMessage>
+                  );
+                }
+                return (
+                  <XDSChatMessage key={msg.id} sender="assistant">
+                    <XDSMarkdown density="compact">{msg.text}</XDSMarkdown>
+                    {!msg.isStreaming && msg.text && (
+                      <XDSChatMessageMetadata
+                        timestamp={
+                          <XDSTimestamp value={msg.id} format="time" />
+                        }
+                      />
+                    )}
+                  </XDSChatMessage>
+                );
+              })}
+            </XDSChatMessageList>
+          </XDSChatLayout>
+        </div>
+      </XDSAppShell>
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Landing view
+  // ---------------------------------------------------------------------------
 
   return (
     <XDSAppShell sideNav={<AIChatSideNav />} variant="elevated">
@@ -184,10 +579,20 @@ export default function AIChatTemplate() {
         {/* Greeting */}
         <XDSVStack gap={1} style={{paddingInline: 'var(--spacing-4)'}}>
           <XDSHStack gap={2} vAlign="center">
-            <SparklesIcon style={{width: 20, height: 20, color: 'var(--color-primary, #5B5BD6)'}} />
-            <XDSText type="large" as="h2">Hi, Andrew</XDSText>
+            <SparklesIcon
+              style={{
+                width: 20,
+                height: 20,
+                color: 'var(--color-primary, #5B5BD6)',
+              }}
+            />
+            <XDSText type="large" as="h2">
+              Hi, Andrew
+            </XDSText>
           </XDSHStack>
-          <XDSText type="display-2" as="h1">Where should we start?</XDSText>
+          <XDSText type="display-2" as="h1">
+            Where should we start?
+          </XDSText>
         </XDSVStack>
 
         {/* Composer */}
@@ -203,12 +608,21 @@ export default function AIChatTemplate() {
           }}
         />
         <XDSChatComposer
-          onSubmit={() => {}}
+          onSubmit={handleSubmit}
+          onStop={handleStop}
+          isStreaming={isStreaming}
           placeholder="Ask anything"
-          input={<XDSChatComposerInput ref={composerInputRef} style={{minHeight: '44px'}} />}
+          input={
+            <XDSChatComposerInput
+              ref={composerInputRef}
+              style={{minHeight: '44px'}}
+            />
+          }
           attachments={
             attachments.length > 0 ? (
-              <XDSChatComposerAttachments>
+              <XDSChatComposerAttachments
+                count={attachments.length}
+                defaultIsCollapsed>
                 {attachments.map((name, i) => (
                   <XDSToken
                     key={i}
@@ -266,7 +680,7 @@ export default function AIChatTemplate() {
                 }}
                 menuWidth={200}
                 isMenuOpen={isModeMenuOpen}
-                onOpenChange={isOpen => {
+                onOpenChange={(isOpen: boolean) => {
                   setIsModeMenuOpen(isOpen);
                   if (!isOpen && shouldFocusComposerRef.current) {
                     shouldFocusComposerRef.current = false;
@@ -321,15 +735,7 @@ export default function AIChatTemplate() {
               />
             </>
           }
-          sendActions={
-            <XDSButton
-              label="Voice input"
-              variant="ghost"
-              size="md"
-              icon={<MicrophoneIcon style={{width: 16, height: 16}} />}
-              isIconOnly
-            />
-          }
+          sendActions={<XDSChatDictationButton dictation={dictation} />}
         />
 
         {/* Category toggle buttons */}
@@ -351,9 +757,7 @@ export default function AIChatTemplate() {
 
           {/* Suggestion cards */}
           {suggestions && (
-            <XDSGrid
-              minChildWidth={280}
-              gap={3}>
+            <XDSGrid minChildWidth={280} gap={3}>
               {suggestions.map(suggestion => (
                 <XDSCard
                   variant="muted"
