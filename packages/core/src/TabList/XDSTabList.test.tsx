@@ -300,7 +300,7 @@ describe('XDSTabMenu', () => {
     ).toBeInTheDocument();
   });
 
-  it('renders heading divider with menu label in dropdown', () => {
+  it('renders heading with menu label in dropdown', () => {
     render(
       <XDSTabList value="home" onChange={() => {}}>
         <XDSTab value="home" label="Home" />
@@ -312,9 +312,9 @@ describe('XDSTabMenu', () => {
     const menu = screen.getByRole('menu', {name: 'More', hidden: true});
     expect(menu).toBeInTheDocument();
 
-    // The heading is an XDSDivider with role="separator"
-    const separator = screen.getByRole('separator', {hidden: true});
-    expect(separator).toBeInTheDocument();
+    // The heading is a presentation span with the menu label
+    const heading = screen.getByRole('presentation', {hidden: true});
+    expect(heading).toHaveTextContent('More');
   });
 
   it('selects a menu item and calls onChange', async () => {
