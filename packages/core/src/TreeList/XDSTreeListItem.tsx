@@ -49,29 +49,6 @@ const styles = stylex.create({
   rowWrapper: {
     position: 'relative',
   },
-  rowInteractive: {
-    cursor: 'pointer',
-    borderRadius: radiusVars['--radius-element'],
-    transitionProperty: 'background-image',
-    transitionDuration: durationVars['--duration-fast'],
-    transitionTimingFunction: easeVars['--ease-standard'],
-    backgroundImage: {
-      default: null,
-      ':hover': {
-        '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
-      },
-      ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
-    },
-  },
-  rowDisabled: {
-    cursor: 'not-allowed',
-    opacity: 0.5,
-    pointerEvents: 'none' as const,
-  },
-  rowSelected: {
-    borderRadius: radiusVars['--radius-element'],
-    backgroundColor: colorVars['--color-accent-muted'],
-  },
   contentWrapper: {
     borderRadius: radiusVars['--radius-element'],
     display: 'flex',
@@ -417,13 +394,7 @@ export function XDSTreeListItem({
           nestedLevel={nestedLevel}
         />
       </div>
-      <div
-        {...stylex.props(
-          styles.rowWrapper,
-          (isInteractive || (hasChildren && onClick == null)) &&
-            styles.rowInteractive,
-          isDisabled && styles.rowDisabled,
-        )}>
+      <div {...stylex.props(styles.rowWrapper)}>
         <div
           {...mergeProps(
             xdsClassName('tree-list-item', {
@@ -435,7 +406,10 @@ export function XDSTreeListItem({
               styles.contentWrapper,
               densityStyles[density],
               (isInteractive || (hasChildren && onClick == null)) &&
+                styles.interactive,
+              (isInteractive || (hasChildren && onClick == null)) &&
                 styles.focusWithinOutline,
+              isDisabled && styles.disabled,
               isSelected && styles.selected,
             ),
           )}
