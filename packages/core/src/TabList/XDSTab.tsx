@@ -103,7 +103,7 @@ const styles = stylex.create({
     color: colorVars['--color-text-secondary'],
     cursor: 'pointer',
     textDecoration: 'none',
-    transitionProperty: 'color',
+    transitionProperty: 'color, background-image',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
     outline: {
@@ -115,33 +115,38 @@ const styles = stylex.create({
       ':focus-visible': '2px',
     },
   },
-  selected: {
-    color: colorVars['--color-text-accent'],
-    fontWeight: fontWeightVars['--font-weight-semibold'],
-  },
-  indicator: {
+  hoverBg: {
     position: 'absolute',
-    bottom: 0,
-    left: spacingVars['--spacing-3'],
-    right: spacingVars['--spacing-3'],
-    height: '2px',
-    borderRadius: radiusVars['--radius-full'],
+    inset: 0,
+    margin: 'auto',
+    width: '100%',
+    borderRadius: radiusVars['--radius-element'],
     pointerEvents: 'none',
-    transitionProperty: 'opacity, background-color',
+    backgroundImage: {
+      default: null,
+      [stylex.when.ancestor(':hover')]: {
+        '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
+      },
+    },
+    transitionProperty: 'background-image',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
   },
-  indicatorSelected: {
-    backgroundColor: colorVars['--color-accent'],
-    opacity: 1,
+  selected: {
+    color: colorVars['--color-text-primary'],
+    fontWeight: fontWeightVars['--font-weight-semibold'],
   },
-  indicatorUnselected: {
-    backgroundColor: colorVars['--color-border'],
-    opacity: {
-      default: 0,
-      [stylex.when.ancestor(':hover')]: {
-        '@media (hover: hover)': 1,
-      },
+  underlineSelected: {
+    '::after': {
+      content: '""',
+      position: 'absolute',
+      bottom: 0,
+      left: spacingVars['--spacing-3'],
+      right: spacingVars['--spacing-3'],
+      minWidth: '24px',
+      height: '2px',
+      backgroundColor: colorVars['--color-icon-primary'],
+      borderRadius: radiusVars['--radius-full'],
     },
   },
   icon: {
@@ -167,9 +172,23 @@ const styles = stylex.create({
 });
 
 const sizeStyles = stylex.create({
+  sm: {height: sizeVars['--size-element-md']},
+  md: {height: sizeVars['--size-element-lg']},
+  lg: {height: '40px'},
+});
+
+// Hover bg uses the standard element size (one step smaller than tab)
+const hoverSizeStyles = stylex.create({
   sm: {height: sizeVars['--size-element-sm']},
   md: {height: sizeVars['--size-element-md']},
   lg: {height: sizeVars['--size-element-lg']},
+});
+
+const layoutStyles = stylex.create({
+  fill: {
+    flex: 1,
+    justifyContent: 'center',
+  },
 });
 
 const iconSizeStyles = stylex.create({
@@ -206,6 +225,7 @@ export function XDSTab({
 
   const isSelected = tabListCtx.value === value;
   const size: XDSTabListSize = tabListCtx.size;
+  const isFill = tabListCtx.layout === 'fill';
   const displayIcon = isSelected && selectedIcon ? selectedIcon : icon;
 
   const handleSelect = useCallback(() => {
@@ -228,7 +248,9 @@ export function XDSTab({
         styles.base,
         sizeStyles[size],
         isSelected && styles.selected,
-        !isSelected && stylex.defaultMarker(),
+        isSelected && styles.underlineSelected,
+        isFill && layoutStyles.fill,
+        stylex.defaultMarker(),
         xstyle,
       ),
       className,
@@ -236,17 +258,10 @@ export function XDSTab({
     ),
   };
 
-  const indicatorElement = (
+  const hoverBgElement = (
     <span
-      {...mergeProps(
-        xdsClassName('tab-indicator', {
-          selected: isSelected ? 'selected' : null,
-        }),
-        stylex.props(
-          styles.indicator,
-          isSelected ? styles.indicatorSelected : styles.indicatorUnselected,
-        ),
-      )}
+      aria-hidden="true"
+      {...stylex.props(styles.hoverBg, hoverSizeStyles[size])}
     />
   );
 
@@ -262,18 +277,18 @@ export function XDSTab({
   if (href != null) {
     return (
       <LinkComponent href={href} onClick={handleSelect} {...sharedProps}>
+        {hoverBgElement}
         {iconElement}
         {labelElement}
-        {indicatorElement}
       </LinkComponent>
     );
   }
 
   return (
     <button type="button" onClick={handleSelect} {...sharedProps}>
+      {hoverBgElement}
       {iconElement}
       {labelElement}
-      {indicatorElement}
     </button>
   );
 }

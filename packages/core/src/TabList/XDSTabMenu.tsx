@@ -28,7 +28,6 @@ import {
 } from '../theme/tokens.stylex';
 import {useXDSPopover} from '../Popover/useXDSPopover';
 import {useListFocus} from '../hooks/useListFocus';
-import {XDSDivider} from '../Divider';
 import {useXDSTabListContext} from './XDSTabListContext';
 import type {XDSTabListSize} from './XDSTabListContext';
 import {xdsClassName, mergeProps} from '../utils';
@@ -90,7 +89,7 @@ const styles = stylex.create({
     },
   },
   triggerSelected: {
-    color: colorVars['--color-text-accent'],
+    color: colorVars['--color-text-primary'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
   },
   triggerLabel: {
@@ -115,31 +114,30 @@ const styles = stylex.create({
       content: '""',
       position: 'absolute',
       bottom: 0,
-      left: 0,
-      right: 0,
+      left: spacingVars['--spacing-3'],
+      right: spacingVars['--spacing-3'],
+      minWidth: '24px',
       height: '2px',
-      backgroundColor: colorVars['--color-accent'],
+      backgroundColor: colorVars['--color-icon-primary'],
       borderRadius: radiusVars['--radius-full'],
     },
   },
-  hoverUnderline: {
+  hoverBg: {
     position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: '2px',
-    backgroundColor: colorVars['--color-border'],
-    borderRadius: radiusVars['--radius-full'],
-    opacity: {
-      default: 0,
+    inset: 0,
+    margin: 'auto',
+    width: '100%',
+    borderRadius: radiusVars['--radius-element'],
+    pointerEvents: 'none',
+    backgroundImage: {
+      default: null,
       [stylex.when.ancestor(':hover')]: {
-        '@media (hover: hover)': 1,
+        '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
       },
     },
-    transitionProperty: 'opacity',
+    transitionProperty: 'background-image',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
-    pointerEvents: 'none',
   },
   chevron: {
     width: spacingVars['--spacing-4'],
@@ -202,9 +200,24 @@ const styles = stylex.create({
     height: 16,
     color: colorVars['--color-icon-primary'],
   },
+  menuHeading: {
+    fontSize: typeScaleVars['--text-supporting-size'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
+    fontWeight: fontWeightVars['--font-weight-semibold'],
+    color: colorVars['--color-text-secondary'],
+    paddingBlock: spacingVars['--spacing-1'],
+    paddingInline: spacingVars['--spacing-3'],
+  },
 });
 
 const sizeStyles = stylex.create({
+  sm: {height: sizeVars['--size-element-md']},
+  md: {height: sizeVars['--size-element-lg']},
+  lg: {height: '40px'},
+});
+
+// Hover bg uses the standard element size (one step smaller than tab)
+const hoverSizeStyles = stylex.create({
   sm: {height: sizeVars['--size-element-sm']},
   md: {height: sizeVars['--size-element-md']},
   lg: {height: sizeVars['--size-element-lg']},
@@ -277,21 +290,19 @@ export function XDSTabMenu({label, options}: XDSTabMenuProps) {
             styles.trigger,
             sizeStyles[size],
             hasSelectedOption && styles.triggerSelected,
-            !hasSelectedOption && stylex.defaultMarker(),
+            hasSelectedOption && styles.underline,
+            stylex.defaultMarker(),
           ),
         )}>
         <span
-          {...stylex.props(
-            styles.triggerLabel,
-            hasSelectedOption && styles.underline,
-          )}>
+          aria-hidden="true"
+          {...stylex.props(styles.hoverBg, hoverSizeStyles[size])}
+        />
+        <span {...stylex.props(styles.triggerLabel)}>
           <span {...stylex.props(styles.triggerLabelText)}>{triggerLabel}</span>
           <span aria-hidden="true" {...stylex.props(styles.triggerLabelSizer)}>
             {triggerLabel}
           </span>
-          {!hasSelectedOption && (
-            <span {...stylex.props(styles.hoverUnderline)} />
-          )}
         </span>
         <span
           aria-hidden="true"
@@ -313,7 +324,9 @@ export function XDSTabMenu({label, options}: XDSTabMenuProps) {
             xdsClassName('tab-menu-dropdown'),
             stylex.props(styles.dropdown),
           )}>
-          <XDSDivider label={label} />
+          <span role="separator" {...stylex.props(styles.menuHeading)}>
+            {label}
+          </span>
           {options.map(option => {
             const isSelected = tabListCtx.value === option.value;
             return (
