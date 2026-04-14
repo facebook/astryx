@@ -714,35 +714,6 @@ export const ColumnAlignment: Story = {
   ),
 };
 
-/**
- * Column alignment inside a Card with grid dividers.
- * Shows how alignment composes with other table features.
- */
-export const ColumnAlignmentInCard: Story = {
-  decorators: [
-    Story => (
-      <div {...stylex.props(containerStoryStyles.pageWrapper)}>
-        <Story />
-      </div>
-    ),
-  ],
-  render: () => (
-    <XDSCard width={600}>
-      <XDSVStack gap={3}>
-        <XDSHeading level={3}>Expenses</XDSHeading>
-        <XDSTable
-          data={transactions}
-          columns={alignedColumns}
-          idKey="id"
-          dividers="grid"
-          density="compact"
-          hasHover
-        />
-      </XDSVStack>
-    </XDSCard>
-  ),
-};
-
 // =============================================================================
 // Vertical Alignment
 // =============================================================================
@@ -824,56 +795,4 @@ export const VerticalAlignment: Story = {
       ))}
     </div>
   ),
-};
-
-/**
- * Combined column alignment and vertical alignment.
- * Numeric columns right-aligned, quantity centered, content top-aligned
- * for readability with varying row heights.
- */
-export const CombinedAlignment: Story = {
-  decorators: [
-    Story => (
-      <div {...stylex.props(containerStoryStyles.pageWrapper)}>
-        <Story />
-      </div>
-    ),
-  ],
-  render: () => {
-    const cols: XDSTableColumn<TeamMember>[] = [
-      {key: 'name', header: 'Name', width: pixel(140)},
-      {
-        key: 'bio',
-        header: 'Bio',
-        width: proportional(3),
-        renderCell: item => (
-          <span
-            style={{
-              whiteSpace: 'normal',
-              overflow: 'visible',
-              display: 'block',
-            }}>
-            {item.bio}
-          </span>
-        ),
-      },
-      {key: 'role', header: 'Role', align: 'center', width: pixel(140)},
-    ];
-
-    return (
-      <XDSCard width={700}>
-        <XDSVStack gap={3}>
-          <XDSHeading level={3}>Team Directory</XDSHeading>
-          <XDSTable
-            data={teamMembers}
-            columns={cols}
-            idKey="id"
-            verticalAlign="top"
-            dividers="rows"
-            hasHover
-          />
-        </XDSVStack>
-      </XDSCard>
-    );
-  },
 };
