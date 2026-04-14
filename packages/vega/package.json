@@ -26,8 +26,7 @@
     "react": ">=19.0.0",
     "react-dom": ">=19.0.0",
     "vega": ">=6.0.0",
-    "vega-lite": ">=6.0.0",
-    "@xds/core": "*"
+    "vega-lite": ">=6.0.0"
   },
   "devDependencies": {
     "@types/react": "^19.2.14",
@@ -35,7 +34,6 @@
     "typescript": "^5.7.0",
     "vega": "^6.2.0",
     "vega-lite": "^6.4.2",
-    "vega-util": "^1.17.2",
-    "@xds/core": "*"
+    "vega-util": "^1.17.2"
   }
 }

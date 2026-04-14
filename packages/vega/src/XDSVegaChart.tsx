@@ -153,7 +153,7 @@ export function XDSVegaChart({
       cancelled = true;
       view?.finalize();
     };
-  }, [spec, data, compileOptions, parseConfig, parseOptions, viewOptions]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [spec, data, compileOptions, parseConfig, parseOptions, viewOptions]);
 
   return (
     <div

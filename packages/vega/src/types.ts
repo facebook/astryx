@@ -11,7 +11,6 @@ import type React from 'react';
 import type {Spec as VegaSpec, Config, View, ViewOptions} from 'vega';
 import type {LoggerInterface} from 'vega-util';
 import type {TopLevelSpec as VegaLiteSpec, Config as VegaLiteConfig} from 'vega-lite';
-import type {XDSBaseProps} from '@xds/core/XDSBaseProps';
 
 export type {VegaSpec, VegaLiteSpec, Config, View, ViewOptions, LoggerInterface};
 
@@ -39,8 +38,8 @@ export interface CompileOptions {
    *
    * Typed loosely to avoid coupling to vega-lite's unexported internal types.
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  fieldTitle?: (...args: any[]) => string;
+  // Typed loosely to avoid coupling to vega-lite's unexported internal types.
+  fieldTitle?: (...args: unknown[]) => string;
 }
 
 /**
@@ -82,19 +81,23 @@ export interface ParseOptions {
  * }}
  * ```
  */
-export type ViewData = Record<string, any[]>;
+export type ViewData = Record<string, unknown[]>;
 
 /**
  * Props for the `<XDSVegaChart>` component.
  *
- * Extends `XDSBaseProps<HTMLDivElement>` for full DOM event passthrough
- * (drag, pointer, keyboard, clipboard, etc.) and `data-testid` support.
+ * Extends `React.HTMLAttributes<HTMLDivElement>` (minus `contentEditable`,
+ * `dangerouslySetInnerHTML`) for full DOM event passthrough — drag, pointer,
+ * keyboard, clipboard, `data-testid`, etc.
  *
- * Note: `xstyle` is inherited from `XDSBaseProps` but has no effect —
- * `@xds/vega` does not depend on StyleX. Use `className` or `style` for
- * layout overrides instead.
+ * Note: unlike other XDS components, this component does not accept `xstyle`
+ * because `@xds/vega` does not depend on StyleX. Use `className` or `style`
+ * for layout overrides instead.
  */
-export interface XDSVegaChartProps extends XDSBaseProps<HTMLDivElement> {
+export interface XDSVegaChartProps extends Omit<
+  React.HTMLAttributes<HTMLDivElement>,
+  'contentEditable' | 'dangerouslySetInnerHTML' | 'suppressContentEditableWarning' | 'suppressHydrationWarning'
+> {
   /**
    * Ref forwarded to the root container div.
    */
