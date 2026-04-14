@@ -44,7 +44,7 @@ const styles = stylex.create({
     listStyleType: 'none',
   },
   treeBranches: {
-    paddingInlineStart: `calc(${spacingVars['--spacing-2']})`,
+    paddingInlineStart: spacingVars['--spacing-2'],
   },
   rowWrapper: {
     position: 'relative',
