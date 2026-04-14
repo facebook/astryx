@@ -180,7 +180,7 @@ interface BoidsSimulation {
   boids: BoidState[];
   update: () => void;
   setPredator: (pos: {x: number; y: number} | null) => void;
-  setCanvasWidth: (w: number) => void;
+  setCanvasWidth: (w: number, h?: number) => void;
 }
 
 function createSimulation(): BoidsSimulation {
