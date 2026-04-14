@@ -25,6 +25,7 @@ import '@xds/theme-neutral/theme.css';
 import '@xds/theme-brutalist/theme.css';
 import '@xds/theme-meta/theme.css';
 import '@xds/theme-daily/theme.css';
+import './globals.css';
 import {Providers} from './providers';
 
 export const metadata: Metadata = {
