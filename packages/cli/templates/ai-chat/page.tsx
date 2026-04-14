@@ -518,11 +518,11 @@ export default function AIChatTemplate() {
                   return (
                     <XDSChatMessage key={msg.id} sender="user">
                       {msg.attachments && msg.attachments.length > 0 && (
-                        <XDSChatComposerAttachments>
+                        <XDSHStack gap={1} style={{flexWrap: 'wrap'}}>
                           {msg.attachments.map(f => (
-                            <XDSToken key={f} label={f} />
+                            <XDSToken key={f} label={f} size="sm" />
                           ))}
-                        </XDSChatComposerAttachments>
+                        </XDSHStack>
                       )}
                       <XDSChatMessageBubble
                         metadata={
