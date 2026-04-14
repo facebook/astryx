@@ -115,6 +115,7 @@ interface ShellConfig {
   sideNavHeadingStyle: 'none' | 'simple' | 'link' | 'menu' | 'full';
   showSuperheading: boolean;
   showSubheading: boolean;
+  showHeadingIcon: boolean;
   showNestedItems: boolean;
   isCollapsible: boolean;
   isResizable: boolean;
@@ -125,6 +126,7 @@ interface ShellConfig {
   topNavStyle: 'items' | 'menus' | 'mega';
   showTopNavHeading: boolean;
   topNavHeadingStyle: 'none' | 'simple' | 'link' | 'menu' | 'full';
+  showTopNavHeadingIcon: boolean;
   showTopNavSuperheading: boolean;
   showTopNavSubheading: boolean;
 }
@@ -142,6 +144,7 @@ const DEFAULT_CONFIG: ShellConfig = {
   sideNavHeadingStyle: 'link',
   showSuperheading: false,
   showSubheading: false,
+  showHeadingIcon: true,
   showNestedItems: true,
   isCollapsible: true,
   isResizable: false,
@@ -152,6 +155,7 @@ const DEFAULT_CONFIG: ShellConfig = {
   topNavStyle: 'items',
   showTopNavHeading: true,
   topNavHeadingStyle: 'link',
+  showTopNavHeadingIcon: true,
   showTopNavSuperheading: false,
   showTopNavSubheading: false,
 };
@@ -231,6 +235,11 @@ function ConfigPanel({
               {value: 'menu', label: 'Menu'},
               {value: 'full', label: 'Full'},
             ]}
+          />
+          <ToggleRow
+            label="Heading Icon"
+            value={config.showHeadingIcon}
+            onChange={v => onChange({showHeadingIcon: v})}
           />
           <ToggleRow
             label="Superheading"
@@ -321,6 +330,11 @@ function ConfigPanel({
                   {value: 'menu', label: 'Menu'},
                   {value: 'full', label: 'Full'},
                 ]}
+              />
+              <ToggleRow
+                label="Heading Icon"
+                value={config.showTopNavHeadingIcon}
+                onChange={v => onChange({showTopNavHeadingIcon: v})}
               />
               <ToggleRow
                 label="Superheading"
@@ -497,7 +511,7 @@ function SampleSideNav({
   const heading =
     config.sideNavHeadingStyle === 'none' ? undefined : (
       <XDSSideNavHeading
-        icon={appIcon}
+        icon={config.showHeadingIcon ? appIcon : undefined}
         heading="Shell Lab"
         headingHref={
           config.sideNavHeadingStyle === 'link' ||
@@ -737,7 +751,7 @@ function SampleTopNav({
   const topNavHeading =
     config.showTopNavHeading && config.topNavHeadingStyle !== 'none' ? (
       <XDSTopNavHeading
-        logo={topNavLogo}
+        logo={config.showTopNavHeadingIcon ? topNavLogo : undefined}
         heading="Shell Lab"
         headingHref={
           config.topNavHeadingStyle === 'link' ||
@@ -758,7 +772,9 @@ function SampleTopNav({
         }
       />
     ) : config.showTopNavHeading ? (
-      <XDSTopNavHeading logo={topNavLogo} />
+      <XDSTopNavHeading
+        logo={config.showTopNavHeadingIcon ? topNavLogo : undefined}
+      />
     ) : undefined;
 
   return (
