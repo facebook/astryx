@@ -33,7 +33,12 @@ import type {XDSIconType} from '../Icon';
 import type {XDSIconName} from '../Icon/globalIconRegistry';
 import type {XDSInputStatus} from '../Field';
 import {useXDSPopover} from '../Popover/useXDSPopover';
-import {spacingVars, colorVars, typeScaleVars} from '../theme/tokens.stylex';
+import {
+  spacingVars,
+  colorVars,
+  typeScaleVars,
+  fontWeightVars,
+} from '../theme/tokens.stylex';
 import {useInternalConfig} from './useInternalConfig';
 import {usePowerSearchSource} from './usePowerSearchSource';
 import {formatFilterValue} from './formatFilterValue';
@@ -78,7 +83,7 @@ const OPERATOR_VALUE_TYPE_TO_ICON: Record<string, XDSIconName> = {
 
 const tokenValueStyles = stylex.create({
   value: {
-    fontWeight: 'bold',
+    fontWeight: fontWeightVars['--font-weight-bold'],
   },
 });
 

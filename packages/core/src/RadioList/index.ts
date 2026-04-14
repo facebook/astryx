@@ -9,7 +9,11 @@
  * SYNC: When modified, update this header
  */
 
-export {XDSRadioList} from './XDSRadioList';
-export type {XDSRadioListProps, XDSRadioListSize} from './XDSRadioList';
+export {XDSRadioList, XDSRadioListContext} from './XDSRadioList';
+export type {
+  XDSRadioListProps,
+  XDSRadioListSize,
+  XDSRadioListContextValue,
+} from './XDSRadioList';
 export {XDSRadioListItem} from './XDSRadioListItem';
 export type {XDSRadioListItemProps} from './XDSRadioListItem';
