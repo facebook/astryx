@@ -195,6 +195,12 @@ export const docs = {
       type: '(e: FocusEvent<HTMLTextAreaElement>) => void',
       description: 'Callback fired when the textarea loses focus.',
     },
+    {
+      name: 'xstyle',
+      type: 'StyleXStyles',
+      description:
+        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+    },
   ],
   theming: {
     targets: [
@@ -426,6 +432,12 @@ export const docsZh = {
       type: '(e: FocusEvent<HTMLTextAreaElement>) => void',
       description: '文本域失去焦点时触发的回调。',
     },
+    {
+      name: 'xstyle',
+      type: 'StyleXStyles',
+      description:
+        'StyleX 样式，用于布局自定义（边距、定位、尺寸）。必须是 stylex.create() 的值，而非内联样式对象如 style={{}}。',
+    },
   ],
   theming: {
     targets: [
@@ -511,5 +523,6 @@ export const docsDense = {
     htmlName: 'HTML name attr for form submissions.',
     onFocus: 'Callback on focus.',
     onBlur: 'Callback on blur.',
+    xstyle: 'StyleX styles for layout customization. Must be stylex.create() value, not inline style.',
   },
 };
