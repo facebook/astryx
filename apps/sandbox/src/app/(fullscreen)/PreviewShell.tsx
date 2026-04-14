@@ -628,7 +628,7 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
   }, [resolvedSource]);
 
   return (
-    <div style={{display: 'flex', flexDirection: 'column', height: '100vh'}}>
+    <div style={{display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'visible'}}>
       {/* Toolbar */}
       <div
         style={{
@@ -639,7 +639,9 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
           borderBottom: '1px solid var(--color-border-emphasized)',
           backgroundColor: 'var(--color-background-surface)',
           flexShrink: 0,
-          zIndex: 10,
+          zIndex: 1000,
+          position: 'relative',
+          overflow: 'visible',
         }}>
         <div style={{flex: 1, minWidth: 0}}>
           <button
@@ -662,7 +664,9 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
           </button>
         </div>
 
-        <VersionDropdown pathname={pathname} />
+        {pathname.replace(/\/$/, '').endsWith('/pages/docsite') && (
+          <VersionDropdown pathname={pathname} />
+        )}
 
         <XDSCommandPalette
           isOpen={paletteOpen}

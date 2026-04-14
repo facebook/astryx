@@ -18,6 +18,7 @@ const useSource = process.env.XDS_SOURCE === '1';
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'export',
+  reactStrictMode: false,
   trailingSlash: true,
   basePath: process.env.SANDBOX_BASE_PATH || '',
   env: {
