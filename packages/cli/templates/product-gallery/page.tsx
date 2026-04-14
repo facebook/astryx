@@ -99,22 +99,13 @@ function ProductCard({product}: {product: Product}) {
   return (
     <XDSVStack gap={3}>
       <XDSAspectRatio
-        ratio={4 / 3}
+        ratio={1}
         style={{
           borderRadius: 'var(--radius-container)',
           overflow: 'clip',
-        }}>
-        <img
-          src={product.image}
-          alt={product.name}
-          style={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            display: 'block',
-          }}
-        />
-      </XDSAspectRatio>
+          backgroundColor: 'var(--color-background-wash)',
+        }}
+      />
 
       <XDSVStack gap={1}>
         <XDSText
