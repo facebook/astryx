@@ -1,5 +1,5 @@
 import {describe, it, expect} from 'vitest';
-import {validateOutput} from '../runner.mjs';
+import {validateOutput, fixDirectiveCorruption} from '../runner.mjs';
 
 async function getJscodeshift(parser = 'tsx') {
   const jscodeshift = (await import('jscodeshift')).default;
@@ -65,5 +65,42 @@ const x = someValue.function toString() { [native code] }();
     const validation = validateOutput(result, source, j);
     expect(validation.valid).toBe(false);
     expect(validation.reason).toMatch(/corruption/);
+  });
+});
+
+describe('fixDirectiveCorruption', () => {
+  it('fixes double semicolon on use client', () => {
+    const input = "'use client';;\nimport {X} from 'y';";
+    expect(fixDirectiveCorruption(input)).toBe("'use client';\nimport {X} from 'y';");
+  });
+
+  it('fixes double semicolon on use server', () => {
+    const input = "'use server';;\nimport {X} from 'y';";
+    expect(fixDirectiveCorruption(input)).toBe("'use server';\nimport {X} from 'y';");
+  });
+
+  it('fixes double semicolon on use strict', () => {
+    const input = "'use strict';;\nvar x = 1;";
+    expect(fixDirectiveCorruption(input)).toBe("'use strict';\nvar x = 1;");
+  });
+
+  it('handles double-quoted directives', () => {
+    const input = '"use client";;\nimport {X} from "y";';
+    expect(fixDirectiveCorruption(input)).toBe('"use client";\nimport {X} from "y";');
+  });
+
+  it('does not modify correct directives', () => {
+    const input = "'use client';\nimport {X} from 'y';";
+    expect(fixDirectiveCorruption(input)).toBe(input);
+  });
+
+  it('does not modify double semicolons elsewhere', () => {
+    const input = "for (;;) {}";
+    expect(fixDirectiveCorruption(input)).toBe(input);
+  });
+
+  it('handles whitespace between semicolons', () => {
+    const input = "'use client'; ;\nimport {X} from 'y';";
+    expect(fixDirectiveCorruption(input)).toBe("'use client';\nimport {X} from 'y';");
   });
 });

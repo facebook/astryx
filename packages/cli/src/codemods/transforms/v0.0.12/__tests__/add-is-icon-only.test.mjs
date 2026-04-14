@@ -145,6 +145,24 @@ function Foo() {
     expect(output).toContain("'use client'");
   });
 
+  it('may produce double semicolons from jscodeshift bug (runner fixes this)', async () => {
+    // jscodeshift has a known bug where inserting new imports corrupts
+    // directive prologues. The runner's fixDirectiveCorruption() handles
+    // this — see validation.test.mjs for runner-level tests.
+    const input = `'use client';
+
+import {XDSButton} from '@xds/core/Button';
+import {SomeIcon} from '@heroicons/react/24/outline';
+
+export function F() {
+  return <><XDSButton label="X" icon={<I />} /><XDSButton label="Y" variant="primary" /></>;
+}`;
+    const output = await applyTransform(input);
+    // The transform itself works correctly
+    expect(output).toContain('XDSIconButton');
+    expect(output).toContain('XDSButton');
+  });
+
   it('splits type imports to correct module when replacing Button import', async () => {
     const input = `import {XDSButton, type XDSButtonProps} from '@xds/core/Button';
 
