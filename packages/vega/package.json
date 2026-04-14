@@ -1,6 +1,6 @@
 {
   "name": "@xds/vega",
-  "version": "0.0.10",
+  "version": "0.0.12",
   "description": "XDS Vega wrapper \u2014 chart and data visualization components",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
