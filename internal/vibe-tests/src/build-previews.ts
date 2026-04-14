@@ -14,7 +14,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as crypto from 'node:crypto';
 import {execSync} from 'node:child_process';
-import {getResultsDir, ensureDir, readJson, writeJson} from './utils.js';
+import {getResultsDir, ensureDir, readJson, writeJson, ensureTsxFiles} from './utils.js';
 
 const __dirname = path.dirname(new URL(import.meta.url).pathname);
 const VIBE_DIR = path.resolve(__dirname, '..');
@@ -674,6 +674,9 @@ async function main() {
     const codeDir = path.join(iterDir, 'results');
 
     if (!fs.existsSync(codeDir)) continue;
+
+    // Extract .tsx from JSON results if no .tsx files exist yet
+    ensureTsxFiles(codeDir);
 
     const files = fs.readdirSync(codeDir).filter(f => f.endsWith('.tsx'));
 
