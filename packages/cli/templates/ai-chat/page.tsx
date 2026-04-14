@@ -528,7 +528,10 @@ export default function AIChatTemplate() {
                         metadata={
                           <XDSChatMessageMetadata
                             timestamp={
-                              <XDSTimestamp value={msg.sentAt} format="time" />
+                              <XDSTimestamp
+                                value={msg.sentAt.getTime()}
+                                format="time"
+                              />
                             }
                           />
                         }>
@@ -543,10 +546,7 @@ export default function AIChatTemplate() {
                     {!msg.isStreaming && msg.text && (
                       <XDSChatMessageMetadata
                         timestamp={
-                          <XDSTimestamp
-                            value={new Date(msg.id)}
-                            format="time"
-                          />
+                          <XDSTimestamp value={msg.id} format="time" />
                         }
                       />
                     )}
