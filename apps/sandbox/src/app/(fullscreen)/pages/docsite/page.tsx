@@ -1,5 +1,6 @@
 'use client';
 
+import * as stylex from '@stylexjs/stylex';
 import React, {Suspense, useState, useEffect, useRef, useCallback, useMemo} from 'react';
 import {useSearchParams, useRouter} from 'next/navigation';
 
@@ -20,7 +21,7 @@ import {ProfileView} from './ProfileView';
 import {XDSAvatar} from '@xds/core/Avatar';
 import {XDSButton} from '@xds/core/Button';
 import {XDSCard} from '@xds/core/Card';
-import {XDSText} from '@xds/core/Text';
+import {XDSHeading, XDSText} from '@xds/core/Text';
 import {XDSToken} from '@xds/core/Token';
 import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
 import {
@@ -67,6 +68,13 @@ const BRAND_LOGOS: Record<string, React.ComponentType<React.SVGProps<SVGSVGEleme
   sunset: SunsetThemeIcon,
   midnight: MidnightThemeIcon,
 };
+
+const tokenStyles = stylex.create({
+  outline: {
+    backgroundColor: 'transparent',
+    border: '1px solid var(--color-border, #d0d0d0)',
+  },
+});
 
 // ---------------------------------------------------------------------------
 // Page
@@ -121,6 +129,8 @@ function DocsiteLandingTemplate() {
   const [card4SelectedThumb, setCard4SelectedThumb] = useState(0);
   const [card4SelectedOption, setCard4SelectedOption] = useState('default');
   const [card4ThemeBrowse, setCard4ThemeBrowse] = useState(false);
+  const [card4MoreLikeThisIdx, setCard4MoreLikeThisIdx] = useState<number | null>(null);
+  const card4ScrollRef = useRef<HTMLDivElement>(null);
   const [card4ThemeSearch, setCard4ThemeSearch] = useState('');
   const [card4PinnedThemes, setCard4PinnedThemes] = useState(
     () => new Set(THEME_PICKER_ENTRIES.filter(t => t.isPinnedByDefault).map(t => t.key)),
@@ -972,6 +982,13 @@ function DocsiteLandingTemplate() {
         const t = TEMPLATES[3];
         const thumbnailTemplates = TEMPLATES.slice(0, 5);
         const relatedTemplates = TEMPLATES.filter((_, i) => i !== 3).slice(0, 10);
+        const isMeta = card4SelectedOption === 'meta';
+        const moreLikeThisImages = [
+          {src: isMeta ? '/templates/more-like-this-1-meta.png' : '/templates/more-like-this-1.png', name: 'Shaped Grid Layout', description: 'A mosaic of shaped image frames arranged in a 3×3 grid. Great for showcasing collections with visual variety and personality.'},
+          {src: isMeta ? '/templates/more-like-this-2-meta.png' : '/templates/more-like-this-2.png', name: 'Hero Grid Layout', description: 'Four large images in a balanced 2×2 grid with a centered headline. Clean and impactful for hero sections and landing pages.'},
+          {src: isMeta ? '/templates/more-like-this-3-meta.png' : '/templates/more-like-this-3.png', name: 'Product Card Grid', description: 'Shaped image cards paired with titles, descriptions, and pricing in a 3×2 product grid. Ideal for storefronts and catalogs.'},
+          {src: isMeta ? '/templates/more-like-this-4-meta.png' : '/templates/more-like-this-4.png', name: 'Carousel Layout', description: 'A horizontal carousel of tall image cards with text overlays and navigation arrows. Perfect for featured content and storytelling.'},
+        ];
         const card4Options = [
           {key: 'default', label: 'Default Theme', description: 'Clean neutral palette with blue accent. Great for internal tools.', preview: {bg: '#F5F5F5', accent: '#0066FF'}},
           {key: 'meta', label: 'Meta Theme', description: 'Meta brand colors with Figtree typography.', preview: {bg: '#F2F4F6', accent: '#0064E0'}},
@@ -1024,29 +1041,29 @@ function DocsiteLandingTemplate() {
               </div>
 
               {/* Scrollable content */}
-              <div style={{overflowY: 'auto', borderRadius: 16}}>
+              <div ref={card4ScrollRef} style={{overflowY: 'auto', borderRadius: 16}}>
                 {/* Main content: image left + details right */}
-                <div style={{display: 'flex', minHeight: 0, padding: '0 24px'}}>
+                <div style={{display: 'flex', minHeight: 0, padding: '0 32px'}}>
                   {/* Left — Preview image + thumbnails */}
-                  <div style={{flex: 1, minWidth: 0, padding: '24px 24px 24px 0', display: 'flex', flexDirection: 'column', gap: 12}}>
+                  <div style={{flex: 1, minWidth: 0, padding: '32px 32px 32px 0', display: 'flex', flexDirection: 'column', gap: 12}}>
                     <div style={{flex: 1, aspectRatio: '16 / 10', backgroundColor: 'var(--color-background-muted, #f9f9f9)', borderRadius: 12, overflow: 'hidden', border: '1px solid var(--color-border, #e0e0e0)'}}>
                       <img
-                        src={card4SelectedThumb === 0 ? t.src : thumbnailTemplates[card4SelectedThumb]?.src || t.src}
-                        alt={t.name}
+                        src={card4MoreLikeThisIdx !== null ? moreLikeThisImages[card4MoreLikeThisIdx].src : (card4SelectedThumb === 0 ? (isMeta ? '/templates/card4-preview-meta.png' : t.src) : thumbnailTemplates[card4SelectedThumb]?.src || t.src)}
+                        alt={card4MoreLikeThisIdx !== null ? moreLikeThisImages[card4MoreLikeThisIdx].name : t.name}
                         style={{width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top'}}
                       />
                     </div>
                   </div>
 
                   {/* Right — Details panel */}
-                  <div style={{width: 360, flexShrink: 0, padding: '24px 0', display: 'flex', flexDirection: 'column'}}>
+                  <div style={{width: 360, flexShrink: 0, padding: '32px 0', display: 'flex', flexDirection: 'column'}}>
                     {/* Title */}
-                    <XDSText type="display-2">{t.name}</XDSText>
+                    <XDSText type="display-2">{card4MoreLikeThisIdx !== null ? moreLikeThisImages[card4MoreLikeThisIdx].name : t.name}</XDSText>
 
                     {/* Description */}
                     <div style={{marginTop: 8}}>
                       <XDSText type="body" color="secondary">
-                        Buttons are clickable elements that are used to trigger actions. They communicate calls to action to the user and allow users to interact with pages in a variety of ways. Button labels express what action will occur when the user interacts with it.
+                        {card4MoreLikeThisIdx !== null ? moreLikeThisImages[card4MoreLikeThisIdx].description : 'Buttons are clickable elements that are used to trigger actions. They communicate calls to action to the user and allow users to interact with pages in a variety of ways. Button labels express what action will occur when the user interacts with it.'}
                       </XDSText>
                     </div>
 
@@ -1104,7 +1121,7 @@ function DocsiteLandingTemplate() {
                           return (
                             <XDSTooltip key={entry.key} content={entry.name}>
                               <div
-                                onClick={() => setCard4SelectedOption(entry.key)}
+                                onClick={() => { setCard4SelectedOption(entry.key); setCard4MoreLikeThisIdx(null); }}
                                 style={{
                                   width: 44, height: 44, borderRadius: 10,
                                   display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
@@ -1167,7 +1184,7 @@ function DocsiteLandingTemplate() {
                                             transition: 'border-color 0.15s ease',
                                           }}>
                                           <div
-                                            onClick={() => { setCard4SelectedOption(entry.key); setCard4ThemeBrowse(false); setCard4ThemeSearch(''); }}
+                                            onClick={() => { setCard4SelectedOption(entry.key); setCard4MoreLikeThisIdx(null); setCard4ThemeBrowse(false); setCard4ThemeSearch(''); }}
                                             style={{height: 100, backgroundColor: p.bg, display: 'flex', flexDirection: 'column', overflow: 'hidden'}}>
                                             <div style={{height: 14, backgroundColor: p.surface, borderBottom: `1px solid ${p.text}1A`, display: 'flex', alignItems: 'center', paddingInline: 8, gap: 4}}>
                                               <div style={{width: 5, height: 5, borderRadius: '50%', backgroundColor: p.accent}} />
@@ -1216,7 +1233,7 @@ function DocsiteLandingTemplate() {
                       <XDSText type="body" style={{fontWeight: 600}}>Component used</XDSText>
                       <div style={{display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 16}}>
                         {['XDSAppShell', 'XDSTopNav', 'XDSVStack', 'XDSHStack', 'XDSHeading', 'XDSText', 'XDSButton', 'XDSCard', 'XDSBadge', 'XDSAvatar'].map(c => (
-                          <XDSToken key={c} label={c} />
+                          <XDSToken key={c} label={c} xstyle={tokenStyles.outline} />
                         ))}
                       </div>
                     </div>
@@ -1226,18 +1243,18 @@ function DocsiteLandingTemplate() {
 
                 {/* More like this */}
                 <div style={{padding: '16px 32px 0'}}>
-                  <XDSText type="display-3">More like this</XDSText>
-                  <div style={{display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12, marginTop: 16}}>
-                    {relatedTemplates.slice(0, 10).map((rt, i) => (
+                  <XDSHeading level={3}>More like this</XDSHeading>
+                  <div style={{display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginTop: 16}}>
+                    {moreLikeThisImages.map((img, i) => (
                       <XDSCard
                         key={i}
                         padding={0}
                         onClick={() => {
-                          const idx = TEMPLATES.indexOf(rt);
-                          setPreviewTarget(idx !== -1 ? idx : i);
+                          setCard4MoreLikeThisIdx(i);
+                          card4ScrollRef.current?.scrollTo({top: 0, behavior: 'smooth'});
                         }}
-                        style={{cursor: 'pointer', aspectRatio: '16/10', overflow: 'hidden'}}>
-                        <img src={rt.src} alt={rt.name} style={{width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top', display: 'block'}} />
+                        style={{cursor: 'pointer', aspectRatio: '16/10', overflow: 'hidden', outline: card4MoreLikeThisIdx === i ? '2px solid var(--color-accent, #0066FF)' : 'none', outlineOffset: -2}}>
+                        <img src={img.src} alt={img.name} style={{width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top', display: 'block'}} />
                       </XDSCard>
                     ))}
                   </div>
@@ -1245,10 +1262,10 @@ function DocsiteLandingTemplate() {
 
                 {/* Explore more */}
                 <div style={{padding: '32px 32px 40px'}}>
-                  <XDSText type="display-3">Explore more</XDSText>
+                  <XDSHeading level={3}>Explore more</XDSHeading>
                   <div style={{display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 16}}>
                     {['website', 'dashboard', 'admin panel', 'settings', 'form layout', 'data table', 'sidebar nav', 'landing page', 'e-commerce', 'documentation', 'profile page'].map(tag => (
-                      <XDSToken key={tag} label={tag} />
+                      <XDSToken key={tag} label={tag} xstyle={tokenStyles.outline} />
                     ))}
                   </div>
                 </div>
