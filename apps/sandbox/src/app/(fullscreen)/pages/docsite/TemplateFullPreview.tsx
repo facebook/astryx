@@ -33,12 +33,14 @@ import {
   HeartIcon,
   BookmarkIcon,
   BookmarkFilledIcon,
+  StarIcon,
+  StarFilledIcon,
+  SearchIcon,
   MetaLogo,
   WhatsAppLogo,
+  ThreadsLogo,
+  FacebookLogo,
   DefaultThemeIcon,
-  NeutralThemeIcon,
-  BrutalistThemeIcon,
-  DailyThemeIcon,
   ForestThemeIcon,
   SunsetThemeIcon,
   MidnightThemeIcon,
@@ -59,9 +61,8 @@ const BRAND_LOGOS: Record<string, React.ComponentType<React.SVGProps<SVGSVGEleme
   default: DefaultThemeIcon,
   meta: MetaLogo,
   whatsapp: WhatsAppLogo,
-  neutral: NeutralThemeIcon,
-  brutalist: BrutalistThemeIcon,
-  daily: DailyThemeIcon,
+  threads: ThreadsLogo,
+  facebook: FacebookLogo,
   forest: ForestThemeIcon,
   sunset: SunsetThemeIcon,
   midnight: MidnightThemeIcon,
@@ -131,36 +132,13 @@ export function TemplateFullPreview({
   const [likeCount, setLikeCount] = useState(1645);
   const [bookmarked, setBookmarked] = useState(false);
   const [bookmarkCount, setBookmarkCount] = useState(892);
-  const [panelWidth, setPanelWidth] = useState(380);
-  const [isResizing, setIsResizing] = useState(false);
+  const [showAddPopover, setShowAddPopover] = useState(false);
+  const [addPopoverPos, setAddPopoverPos] = useState(null as {top: number; left: number} | null);
+  const addButtonRef = useRef(null as HTMLButtonElement | null);
+  const addPopoverRef = useRef(null as HTMLDivElement | null);
   const sharePopoverRef = useRef(null as HTMLDivElement | null);
   const shareButtonRef = useRef(null as HTMLButtonElement | null);
   const sendPopoverRef = useRef(null as HTMLDivElement | null);
-
-  const handleResizeStart = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsResizing(true);
-    const startX = e.clientX;
-    const startWidth = panelWidth;
-
-    const onMouseMove = (ev: MouseEvent) => {
-      const maxWidth = Math.floor(window.innerWidth / 2);
-      const newWidth = Math.min(Math.max(startWidth + (ev.clientX - startX), 280), maxWidth);
-      setPanelWidth(newWidth);
-    };
-    const onMouseUp = () => {
-      setIsResizing(false);
-      document.removeEventListener('mousemove', onMouseMove);
-      document.removeEventListener('mouseup', onMouseUp);
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-    };
-
-    document.body.style.cursor = 'col-resize';
-    document.body.style.userSelect = 'none';
-    document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener('mouseup', onMouseUp);
-  }, [panelWidth]);
 
   const shareCliCommand = `npx xds template ${templateName.toLowerCase().replace(/\s+/g, '-')} ./my-project`;
 
@@ -198,6 +176,20 @@ export function TemplateFullPreview({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showSendPopover]);
 
+  useEffect(() => {
+    if (!showAddPopover) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        addPopoverRef.current &&
+        !addPopoverRef.current.contains(e.target as Node)
+      ) {
+        setShowAddPopover(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showAddPopover]);
+
   return (
     <div
       style={{
@@ -209,18 +201,14 @@ export function TemplateFullPreview({
       {/* LEFT PANEL — details sidebar */}
       <div
         style={{
-          width: panelWidth,
-          minWidth: 280,
-          maxWidth: '50vw',
+          width: 380,
           flexShrink: 0,
           padding: '16px 0 16px 16px',
           display: 'flex',
           backgroundColor: 'transparent',
           opacity: isVisible ? 1 : 0,
           transform: isVisible ? 'none' : 'translateX(-60px)',
-          transition: isResizing
-            ? 'opacity 500ms cubic-bezier(0.16, 1, 0.3, 1) 100ms, transform 500ms cubic-bezier(0.16, 1, 0.3, 1) 100ms'
-            : 'opacity 500ms cubic-bezier(0.16, 1, 0.3, 1) 100ms, transform 500ms cubic-bezier(0.16, 1, 0.3, 1) 100ms, width 150ms ease',
+          transition: 'opacity 500ms cubic-bezier(0.16, 1, 0.3, 1) 100ms, transform 500ms cubic-bezier(0.16, 1, 0.3, 1) 100ms',
         }}>
         <div
           style={{
@@ -444,47 +432,6 @@ export function TemplateFullPreview({
                         }}
                       />
                     </XDSTooltip>
-                    <div
-                      ref={sendPopoverRef}
-                      style={{position: 'relative' as const}}>
-                      <XDSTooltip content="Share">
-                        <XDSButton
-                          label="Share"
-                          variant="ghost"
-                          size="sm"
-                          isIconOnly
-                          icon={<ShareIcon />}
-                          onClick={() => {
-                            setShowSendPopover(prev => {
-                              if (!prev && sendPopoverRef.current) {
-                                const rect =
-                                  sendPopoverRef.current.getBoundingClientRect();
-                                const popoverWidth = 340;
-                                const popoverHeight = 400;
-                                const left = Math.min(
-                                  Math.max(8, rect.left),
-                                  window.innerWidth - popoverWidth - 16,
-                                );
-                                const top =
-                                  rect.bottom + 4 + popoverHeight + 16 >
-                                  window.innerHeight
-                                    ? rect.top - popoverHeight - 4
-                                    : rect.bottom + 4;
-                                setSendPopoverPos({top, left});
-                              }
-                              return !prev;
-                            });
-                          }}
-                        />
-                      </XDSTooltip>
-                      {showSendPopover && sendPopoverPos && (
-                        <SharePopover
-                          cliCommand={shareCliCommand}
-                          position={sendPopoverPos}
-                          onClose={() => setShowSendPopover(false)}
-                        />
-                      )}
-                    </div>
                   </div>
                   <div style={{display: 'flex', alignItems: 'center', gap: 4}}>
                     <XDSTooltip content="Like">
@@ -535,9 +482,9 @@ export function TemplateFullPreview({
                   </div>
                 </div>
 
-                {/* CTA button */}
+                {/* CTA buttons */}
                 {!showEditor && (
-                  <div style={{marginTop: 16}}>
+                  <div style={{marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8, position: 'relative'}}>
                     <XDSButton
                       variant="primary"
                       label="Start crafting"
@@ -545,6 +492,29 @@ export function TemplateFullPreview({
                       size="lg"
                       style={{width: '100%'}}
                     />
+                    <div ref={addPopoverRef}>
+                      <XDSButton
+                        ref={addButtonRef}
+                        variant="secondary"
+                        label="Add to your project"
+                        size="lg"
+                        style={{width: '100%'}}
+                        onClick={() => {
+                          if (addButtonRef.current) {
+                            const rect = addButtonRef.current.getBoundingClientRect();
+                            setAddPopoverPos({top: rect.bottom + 8, left: rect.left});
+                          }
+                          setShowAddPopover(prev => !prev);
+                        }}
+                      />
+                      {showAddPopover && addPopoverPos && (
+                        <SharePopover
+                          cliCommand={shareCliCommand}
+                          position={addPopoverPos}
+                          onClose={() => setShowAddPopover(false)}
+                        />
+                      )}
+                    </div>
                   </div>
                 )}
 
@@ -589,7 +559,7 @@ export function TemplateFullPreview({
                               justifyContent: 'center',
                               cursor: 'pointer',
                               border: isSelected
-                                ? '2px solid var(--color-accent, #0066FF)'
+                                ? '2px solid var(--color-text-primary, #111)'
                                 : '2px solid var(--color-border, #E0E0E0)',
                               backgroundColor: '#fff',
                               transition: 'border-color 0.15s ease',
@@ -620,7 +590,7 @@ export function TemplateFullPreview({
                     setShowThemeBrowse(open);
                     if (!open) setThemeSearch('');
                   }}
-                  width={560}>
+                  width={720}>
                   <XDSDialogHeader
                     title="All Themes"
                     onOpenChange={open => {
@@ -641,14 +611,16 @@ export function TemplateFullPreview({
                       placeholder="Search themes..."
                       value={themeSearch}
                       onChange={setThemeSearch}
+                      size="lg"
+                      startIcon={SearchIcon}
                     />
                     <div
                       style={{
-                        maxHeight: 420,
+                        maxHeight: 560,
                         overflowY: 'auto',
                         display: 'flex',
                         flexDirection: 'column',
-                        gap: 16,
+                        gap: 8,
                       }}>
                       {(['official', 'community'] as const).map(
                         category => {
@@ -675,8 +647,8 @@ export function TemplateFullPreview({
                               <div
                                 style={{
                                   display: 'grid',
-                                  gridTemplateColumns: '1fr 1fr',
-                                  gap: 10,
+                                  gridTemplateColumns: '1fr 1fr 1fr',
+                                  gap: 8,
                                 }}>
                                 {entries.map(entry => {
                                   const isSelected =
@@ -692,7 +664,7 @@ export function TemplateFullPreview({
                                         borderRadius: 12,
                                         overflow: 'hidden',
                                         border: isSelected
-                                          ? '2px solid var(--color-accent, #0066FF)'
+                                          ? '2px solid var(--color-text-primary, #111)'
                                           : '2px solid var(--color-border, #E0E0E0)',
                                         cursor: 'pointer',
                                         transition:
@@ -706,7 +678,7 @@ export function TemplateFullPreview({
                                           setThemeSearch('');
                                         }}
                                         style={{
-                                          height: 80,
+                                          height: 100,
                                           backgroundColor: p.bg,
                                           display: 'flex',
                                           flexDirection: 'column',
@@ -779,7 +751,7 @@ export function TemplateFullPreview({
                                           />
                                         </div>
                                       </div>
-                                      {/* Name + pin */}
+                                      {/* Name + logo + pin */}
                                       <div
                                         style={{
                                           display: 'flex',
@@ -790,15 +762,23 @@ export function TemplateFullPreview({
                                           backgroundColor:
                                             'var(--color-surface, #f5f5f5)',
                                         }}>
-                                        <XDSText
-                                          type="supporting"
-                                          style={{
-                                            fontWeight: isSelected
-                                              ? 600
-                                              : 400,
-                                          }}>
-                                          {entry.name}
-                                        </XDSText>
+                                        <div style={{display: 'flex', alignItems: 'center', gap: 6}}>
+                                          {(() => {
+                                            const Logo = BRAND_LOGOS[entry.key];
+                                            return Logo ? <Logo width={14} height={14} /> : (
+                                              <div style={{width: 14, height: 14, borderRadius: '50%', backgroundColor: entry.accent}} />
+                                            );
+                                          })()}
+                                          <XDSText
+                                            type="supporting"
+                                            style={{
+                                              fontWeight: isSelected
+                                                ? 600
+                                                : 400,
+                                            }}>
+                                            {entry.name}
+                                          </XDSText>
+                                        </div>
                                         <div
                                           onClick={e => {
                                             e.stopPropagation();
@@ -810,16 +790,16 @@ export function TemplateFullPreview({
                                             padding: 2,
                                           }}>
                                           {isPinned ? (
-                                            <BookmarkFilledIcon
+                                            <StarFilledIcon
                                               width={14}
                                               height={14}
                                               style={{
                                                 color:
-                                                  'var(--color-accent, #0066FF)',
+                                                  'var(--color-text-primary, #111)',
                                               }}
                                             />
                                           ) : (
-                                            <BookmarkIcon
+                                            <StarIcon
                                               width={14}
                                               height={14}
                                               style={{
@@ -858,7 +838,7 @@ export function TemplateFullPreview({
                         onClick={() => setSelectedFontPack(pack.heading)}
                         style={{
                           cursor: 'pointer',
-                          border: `2px solid ${selectedFontPack === pack.heading ? 'var(--color-accent, #0066FF)' : 'transparent'}`,
+                          border: `2px solid ${selectedFontPack === pack.heading ? 'var(--color-text-primary, #111)' : 'transparent'}`,
                           borderRadius: 14,
                           overflow: 'hidden',
                           transition: 'border-color 0.15s ease',
@@ -940,38 +920,6 @@ export function TemplateFullPreview({
             />
           </div>
         </div>
-      </div>
-
-      {/* Resize handle */}
-      <style>{`
-        .xds-resize-handle { opacity: 0; transition: opacity 150ms ease, background-color 150ms ease; }
-        .xds-resize-grip:hover .xds-resize-handle { opacity: 0.6; }
-        .xds-resize-grip[data-resizing="true"] .xds-resize-handle { opacity: 1; }
-      `}</style>
-      <div
-        onMouseDown={handleResizeStart}
-        data-resizing={isResizing}
-        className="xds-resize-grip"
-        style={{
-          width: 8,
-          flexShrink: 0,
-          cursor: 'col-resize',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 10,
-        }}>
-        <div
-          className="xds-resize-handle"
-          style={{
-            width: 3,
-            height: 32,
-            borderRadius: 2,
-              backgroundColor: isResizing
-              ? 'var(--color-icon-primary, #111)'
-              : 'var(--color-border-strong, #ccc)',
-          }}
-        />
       </div>
 
       {/* RIGHT PANEL — preview area */}
@@ -1172,7 +1120,7 @@ export function TemplateFullPreview({
             padding: '22px 22px 22px',
             display: !showEditor || editorView === 'preview' ? 'flex' : 'none',
             justifyContent: 'center',
-            alignItems: 'flex-start',
+            alignItems: 'center',
             flex: 1,
             overflow: 'auto',
           }}>
@@ -1312,53 +1260,35 @@ export function TemplateFullPreview({
           </div>
         </div>
 
-        {/* Similar templates — only visible in preview mode */}
+        {/* More like this + Explore more — only visible in preview mode */}
         {(!showEditor || editorView === 'preview') && (
-          <div
-            style={{
-              width: '100%',
-              padding: '24px 32px 32px',
-              boxSizing: 'border-box' as const,
-              marginTop: 'auto',
-              textAlign: 'center' as const,
-            }}>
-            <XDSHeading level={3}>Similar templates</XDSHeading>
-            <div
-              style={{
-                display: 'flex',
-                gap: 12,
-                marginTop: 12,
-                overflowX: 'auto' as const,
-                justifyContent: 'center',
-              }}>
-              {TEMPLATES.slice(0, 4).map((t, i) => (
-                <div
-                  key={i}
-                  onClick={() => onSelectTemplate?.(i)}
-                  style={{
-                    flex: '0 0 280px',
-                    aspectRatio: '1920 / 1200',
-                    border: '1px solid var(--color-divider, rgba(0,0,0,0.1))',
-                    backgroundColor: 'var(--color-background-card, #fff)',
-                    borderRadius: 8,
-                    boxShadow: hideShadows ? 'none' : '0 4px 20px rgba(0,0,0,0.08)',
-                    overflow: 'hidden',
-                    cursor: 'pointer',
-                  }}>
-                  <img
-                    src={t.src}
-                    alt={t.name}
-                    style={{
-                      display: 'block',
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover',
+          <>
+            <div style={{padding: '16px 32px 0'}}>
+              <XDSHeading level={2}>More like this</XDSHeading>
+              <div style={{display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12, marginTop: 16}}>
+                {TEMPLATES.filter((_, i) => i !== TEMPLATES.findIndex(tt => tt.name === templateName)).slice(0, 10).map((t, i) => (
+                  <XDSCard
+                    key={i}
+                    padding={0}
+                    onClick={() => {
+                      const idx = TEMPLATES.indexOf(t);
+                      onSelectTemplate?.(idx !== -1 ? idx : i);
                     }}
-                  />
-                </div>
-              ))}
+                    style={{cursor: 'pointer', aspectRatio: '16/10', overflow: 'hidden'}}>
+                    <img src={t.src} alt={t.name} style={{width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top', display: 'block'}} />
+                  </XDSCard>
+                ))}
+              </div>
             </div>
-          </div>
+            <div style={{padding: '32px 32px 40px'}}>
+              <XDSHeading level={2}>Explore more</XDSHeading>
+              <div style={{display: 'flex', flexWrap: 'wrap' as const, gap: 8, marginTop: 16}}>
+                {['website', 'dashboard', 'admin panel', 'settings', 'form layout', 'data table', 'sidebar nav', 'landing page', 'e-commerce', 'documentation', 'profile page'].map(tag => (
+                  <XDSToken key={tag} label={tag} />
+                ))}
+              </div>
+            </div>
+          </>
         )}
       </div>
     </div>

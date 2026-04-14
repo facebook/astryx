@@ -42,14 +42,16 @@ import {
   ShareIcon,
   BookmarkIcon,
   BookmarkFilledIcon,
+  StarIcon,
+  StarFilledIcon,
+  SearchIcon,
   LinkIcon,
   HeartIcon,
   MetaLogo,
   WhatsAppLogo,
+  ThreadsLogo,
+  FacebookLogo,
   DefaultThemeIcon,
-  NeutralThemeIcon,
-  BrutalistThemeIcon,
-  DailyThemeIcon,
   ForestThemeIcon,
   SunsetThemeIcon,
   MidnightThemeIcon,
@@ -59,9 +61,8 @@ const BRAND_LOGOS: Record<string, React.ComponentType<React.SVGProps<SVGSVGEleme
   default: DefaultThemeIcon,
   meta: MetaLogo,
   whatsapp: WhatsAppLogo,
-  neutral: NeutralThemeIcon,
-  brutalist: BrutalistThemeIcon,
-  daily: DailyThemeIcon,
+  threads: ThreadsLogo,
+  facebook: FacebookLogo,
   forest: ForestThemeIcon,
   sunset: SunsetThemeIcon,
   midnight: MidnightThemeIcon,
@@ -247,6 +248,7 @@ function DocsiteLandingTemplate() {
   const handleUse = useCallback((index: number) => {
     setPreviewTarget(null);
     setUseTarget(index);
+    setPanelTab('configure');
     setChatOpen(true);
   }, []);
 
@@ -840,6 +842,7 @@ function DocsiteLandingTemplate() {
         onUse={() => {
           setUseTarget(previewTarget);
           setPreviewTarget(null);
+          setPanelTab('configure');
           setChatOpen(true);
         }}
         onSelectTemplate={index => {
@@ -1030,7 +1033,7 @@ function DocsiteLandingTemplate() {
                       <img
                         src={card4SelectedThumb === 0 ? t.src : thumbnailTemplates[card4SelectedThumb]?.src || t.src}
                         alt={t.name}
-                        style={{width: '100%', height: '100%', objectFit: 'cover'}}
+                        style={{width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top'}}
                       />
                     </div>
                   </div>
@@ -1082,6 +1085,7 @@ function DocsiteLandingTemplate() {
                         onClick={() => {
                           setUseTarget(3);
                           setPreviewTarget(null);
+                          setPanelTab('configure');
                           setChatOpen(true);
                         }}
                       />
@@ -1104,7 +1108,7 @@ function DocsiteLandingTemplate() {
                                 style={{
                                   width: 44, height: 44, borderRadius: 10,
                                   display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                                  border: isSelected ? '2px solid var(--color-accent, #0066FF)' : '2px solid var(--color-border, #E0E0E0)',
+                                  border: isSelected ? '2px solid var(--color-text-primary, #111)' : '2px solid var(--color-border, #E0E0E0)',
                                   backgroundColor: '#fff',
                                   transition: 'border-color 0.15s ease',
                                 }}>
@@ -1123,7 +1127,7 @@ function DocsiteLandingTemplate() {
                       <XDSDialog
                         isOpen={card4ThemeBrowse}
                         onOpenChange={open => { setCard4ThemeBrowse(open); if (!open) setCard4ThemeSearch(''); }}
-                        width={560}>
+                        width={720}>
                         <XDSDialogHeader
                           title="All Themes"
                           onOpenChange={open => { setCard4ThemeBrowse(open); if (!open) setCard4ThemeSearch(''); }}
@@ -1135,8 +1139,10 @@ function DocsiteLandingTemplate() {
                             placeholder="Search themes..."
                             value={card4ThemeSearch}
                             onChange={setCard4ThemeSearch}
+                            size="lg"
+                            startIcon={SearchIcon}
                           />
-                          <div style={{maxHeight: 420, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16}}>
+                          <div style={{maxHeight: 560, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8}}>
                             {(['official', 'community'] as const).map(category => {
                               const entries = THEME_PICKER_ENTRIES.filter(
                                 e => e.category === category && e.name.toLowerCase().includes(card4ThemeSearch.toLowerCase()),
@@ -1147,7 +1153,7 @@ function DocsiteLandingTemplate() {
                                   <XDSText type="supporting" color="secondary" style={{textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8}}>
                                     {category}
                                   </XDSText>
-                                  <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10}}>
+                                  <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8}}>
                                     {entries.map(entry => {
                                       const isSelected = card4SelectedOption === entry.key;
                                       const isPinned = card4PinnedThemes.has(entry.key);
@@ -1157,12 +1163,12 @@ function DocsiteLandingTemplate() {
                                           key={entry.key}
                                           style={{
                                             borderRadius: 12, overflow: 'hidden', cursor: 'pointer',
-                                            border: isSelected ? '2px solid var(--color-accent, #0066FF)' : '2px solid var(--color-border, #E0E0E0)',
+                                            border: isSelected ? '2px solid var(--color-text-primary, #111)' : '2px solid var(--color-border, #E0E0E0)',
                                             transition: 'border-color 0.15s ease',
                                           }}>
                                           <div
                                             onClick={() => { setCard4SelectedOption(entry.key); setCard4ThemeBrowse(false); setCard4ThemeSearch(''); }}
-                                            style={{height: 80, backgroundColor: p.bg, display: 'flex', flexDirection: 'column', overflow: 'hidden'}}>
+                                            style={{height: 100, backgroundColor: p.bg, display: 'flex', flexDirection: 'column', overflow: 'hidden'}}>
                                             <div style={{height: 14, backgroundColor: p.surface, borderBottom: `1px solid ${p.text}1A`, display: 'flex', alignItems: 'center', paddingInline: 8, gap: 4}}>
                                               <div style={{width: 5, height: 5, borderRadius: '50%', backgroundColor: p.accent}} />
                                               <div style={{width: 16, height: 2, borderRadius: 1, backgroundColor: p.text, opacity: 0.3}} />
@@ -1174,14 +1180,22 @@ function DocsiteLandingTemplate() {
                                             </div>
                                           </div>
                                           <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 8px', backgroundColor: 'var(--color-surface, #f5f5f5)'}}>
-                                            <XDSText type="supporting" style={{fontWeight: isSelected ? 600 : 400}}>{entry.name}</XDSText>
+                                            <div style={{display: 'flex', alignItems: 'center', gap: 6}}>
+                                              {(() => {
+                                                const Logo = BRAND_LOGOS[entry.key];
+                                                return Logo ? <Logo width={14} height={14} /> : (
+                                                  <div style={{width: 14, height: 14, borderRadius: '50%', backgroundColor: entry.accent}} />
+                                                );
+                                              })()}
+                                              <XDSText type="supporting" style={{fontWeight: isSelected ? 600 : 400}}>{entry.name}</XDSText>
+                                            </div>
                                             <div
                                               onClick={e => { e.stopPropagation(); toggleCard4Pin(entry.key); }}
                                               style={{cursor: 'pointer', display: 'flex', padding: 2}}>
                                               {isPinned ? (
-                                                <BookmarkFilledIcon width={14} height={14} style={{color: 'var(--color-accent, #0066FF)'}} />
+                                                <StarFilledIcon width={14} height={14} style={{color: 'var(--color-text-primary, #111)'}} />
                                               ) : (
-                                                <BookmarkIcon width={14} height={14} style={{color: 'var(--color-secondary, #999)'}} />
+                                                <StarIcon width={14} height={14} style={{color: 'var(--color-secondary, #999)'}} />
                                               )}
                                             </div>
                                           </div>
@@ -1223,7 +1237,7 @@ function DocsiteLandingTemplate() {
                           setPreviewTarget(idx !== -1 ? idx : i);
                         }}
                         style={{cursor: 'pointer', aspectRatio: '16/10', overflow: 'hidden'}}>
-                        <img src={rt.src} alt={rt.name} style={{width: '100%', height: '100%', objectFit: 'cover', display: 'block'}} />
+                        <img src={rt.src} alt={rt.name} style={{width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top', display: 'block'}} />
                       </XDSCard>
                     ))}
                   </div>

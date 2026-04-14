@@ -260,7 +260,7 @@ export function TemplatePreview({
               overflow: 'auto',
               display: 'flex',
               justifyContent: 'center',
-              alignItems: viewportSize === 'phone' ? 'flex-start' : 'stretch',
+              alignItems: 'flex-start',
               backgroundColor: 'var(--color-background-body, #f5f5f5)',
               padding: viewportSize === 'phone' ? 24 : 16,
               cursor: isPointing ? 'crosshair' : undefined,
@@ -282,9 +282,8 @@ export function TemplatePreview({
               style={{
                 display: 'block',
                 width: viewportSize === 'phone' ? 375 : '100%',
-                minHeight: viewportSize === 'phone' ? undefined : '100%',
                 aspectRatio: viewportSize === 'phone' ? '9 / 19.5' : undefined,
-                objectFit: 'cover',
+                objectFit: viewportSize === 'phone' ? 'cover' : undefined,
                 borderRadius: viewportSize === 'phone' ? 36 : 12,
                 boxShadow: viewportSize === 'phone'
                   ? '0 8px 40px rgba(0,0,0,0.15)'
