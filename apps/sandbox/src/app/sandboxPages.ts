@@ -97,15 +97,10 @@ export const categories: SandboxCategory[] = [
     description:
       'Full-page application templates — dashboards, forms, and data views built with XDS.',
     pages: [
-      {
-        name: 'Library',
-        href: '/templates/library/',
-        description: 'Browsable grid of XDS components organized by category',
-      },
       ...autoDiscoveredTemplates
         .filter(t => t.slug !== 'docsite-landing')
         .map(t => ({
-          name: t.isReady ? t.name : t.name + ' (WIP)',
+          name: t.name,
           href: t.href,
           description: t.description,
         })),

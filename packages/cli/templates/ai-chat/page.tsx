@@ -1,6 +1,6 @@
 'use client';
 
-import React, {useState} from 'react';
+import {useRef, useState} from 'react';
 
 import {XDSAppShell} from '@xds/core/AppShell';
 import {
@@ -13,200 +13,87 @@ import {XDSNavIcon} from '@xds/core/NavIcon';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSChatComposer, XDSChatComposerInput} from '@xds/core/Chat';
-import {XDSToggleButton} from '@xds/core/ToggleButton';
+import {XDSChatComposer, XDSChatComposerAttachments, XDSChatComposerInput, type XDSChatComposerInputHandle} from '@xds/core/Chat';
+import {XDSToggleButton, XDSToggleButtonGroup} from '@xds/core/ToggleButton';
 import {XDSButton} from '@xds/core/Button';
+import {XDSToken} from '@xds/core/Token';
+import {XDSCard} from '@xds/core/Card';
+import {XDSGrid} from '@xds/core/Grid';
 
 import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
 import {
-  HomeIcon,
+  ChatBubbleOvalLeftIcon,
   FolderIcon,
-  ChartBarIcon,
-  UserGroupIcon,
   DocumentTextIcon,
   CubeIcon,
   Cog6ToothIcon,
-  SparklesIcon as HeroSparklesIcon,
-  PencilIcon,
+  AtSymbolIcon,
+  SparklesIcon,
+  PencilSquareIcon,
   CodeBracketIcon,
   MagnifyingGlassIcon,
-  PaintBrushIcon,
-  ShieldCheckIcon,
-  CpuChipIcon,
+  LockClosedIcon,
+  ClockIcon,
+  PaperClipIcon,
+  MicrophoneIcon,
+  LightBulbIcon,
 } from '@heroicons/react/24/outline';
 import {
-  HomeIcon as HomeIconSolid,
+  ChatBubbleOvalLeftIcon as ChatBubbleOvalLeftIconSolid,
   FolderIcon as FolderIconSolid,
 } from '@heroicons/react/24/solid';
 
-// ============= ICONS (inline SVG for portability) =============
+const TOKEN_MODES: Record<string, string> = {
+  sensitive: '/sensitive',
+  deep: '/deep-mode',
+};
 
-function SparklesIcon() {
-  return (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="var(--color-primary, #5B5BD6)"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round">
-      <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z" />
-      <path d="M20 3v4" />
-      <path d="M22 5h-4" />
-    </svg>
-  );
-}
+// Suggestion prompts per category
+const CATEGORY_SUGGESTIONS: Record<
+  string,
+  Array<{heading: string; body: string; prompt: string}>
+> = {
+  writing: [
+    {heading: 'Draft a professional email', body: 'Compose a clear, polished email for any audience', prompt: 'Help me draft a professional email'},
+    {heading: 'Improve my writing', body: 'Enhance the clarity, tone, and flow of my text', prompt: 'Review and improve the following text:'},
+    {heading: 'Create a project proposal', body: 'Write a proposal with goals, timeline, and deliverables', prompt: 'Help me write a project proposal for'},
+    {heading: 'Summarize a document', body: 'Condense a long document into key takeaways', prompt: 'Summarize the following document into key points:'},
+  ],
+  coding: [
+    {heading: 'Debug my code', body: 'Find and fix issues in a code snippet', prompt: 'Help me debug the following code:'},
+    {heading: 'Write a function', body: 'Generate a well-typed function with error handling', prompt: 'Write a function that'},
+    {heading: 'Explain this code', body: 'Break down complex code into understandable pieces', prompt: 'Explain what the following code does:'},
+    {heading: 'Review my pull request', body: 'Check for bugs, performance, and best practices', prompt: 'Review this code for bugs and improvements:'},
+  ],
+  research: [
+    {heading: 'Compare options', body: 'Analyze pros and cons of different approaches', prompt: 'Compare the pros and cons of'},
+    {heading: 'Explain a concept', body: 'Break down a complex topic in simple terms', prompt: 'Explain the concept of'},
+    {heading: 'Find best practices', body: 'Research standards and recommended approaches', prompt: 'What are the best practices for'},
+    {heading: 'Summarize findings', body: 'Compile research into a structured overview', prompt: 'Summarize the key findings on'},
+  ],
+  creative: [
+    {heading: 'Brainstorm ideas', body: 'Generate creative concepts for a project', prompt: 'Brainstorm ideas for'},
+    {heading: 'Write a story', body: 'Create an engaging narrative with characters', prompt: 'Write a short story about'},
+    {heading: 'Design a concept', body: 'Explore product or visual design ideas', prompt: 'Help me design a concept for'},
+    {heading: 'Create a tagline', body: 'Craft a memorable phrase for a brand or product', prompt: 'Create a catchy tagline for'},
+  ],
+};
 
-function WritingIcon() {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round">
-      <path d="M12 20h9" />
-      <path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z" />
-    </svg>
-  );
-}
-
-function CodingIcon() {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round">
-      <polyline points="16 18 22 12 16 6" />
-      <polyline points="8 6 2 12 8 18" />
-    </svg>
-  );
-}
-
-function ResearchIcon() {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round">
-      <circle cx="11" cy="11" r="8" />
-      <path d="m21 21-4.3-4.3" />
-    </svg>
-  );
-}
-
-function CreativeIcon() {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round">
-      <path d="M12 2a7 7 0 0 0-7 7c0 3.5 2.5 6 4 7.5.5.5 1 1 1 1.5v2h4v-2c0-.5.5-1 1-1.5 1.5-1.5 4-4 4-7.5a7 7 0 0 0-7-7z" />
-      <path d="M10 22h4" />
-    </svg>
-  );
-}
-
-function PaperclipIcon() {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round">
-      <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" />
-    </svg>
-  );
-}
-
-function AtomIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      {...props}>
-      <circle cx="12" cy="12" r="1" />
-      <path d="M20.2 20.2c2.04-2.03.02-7.36-4.5-11.9-4.54-4.52-9.87-6.54-11.9-4.5-2.04 2.03-.02 7.36 4.5 11.9 4.54 4.52 9.87 6.54 11.9 4.5Z" />
-      <path d="M15.7 15.7c4.52-4.54 6.54-9.87 4.5-11.9-2.03-2.04-7.36-.02-11.9 4.5-4.52 4.54-6.54 9.87-4.5 11.9 2.03 2.04 7.36.02 11.9-4.5Z" />
-    </svg>
-  );
-}
-
-// Mode options for the dropdown
-const MODE_OPTIONS = [
-  {key: 'auto', label: 'Auto', icon: HeroSparklesIcon},
-  {key: 'writing', label: 'Writing', icon: PencilIcon},
+// Shared category definitions used by both toggle group and mode menu
+const CATEGORIES = [
+  {key: 'writing', label: 'Writing', icon: PencilSquareIcon},
   {key: 'coding', label: 'Coding', icon: CodeBracketIcon},
   {key: 'research', label: 'Research', icon: MagnifyingGlassIcon},
-  {key: 'creative', label: 'Creative', icon: PaintBrushIcon},
-  {key: 'sensitive', label: 'Sensitive', icon: ShieldCheckIcon},
-  {key: 'deep', label: 'Deep Mode', icon: CpuChipIcon},
+  {key: 'creative', label: 'Creative', icon: LightBulbIcon},
 ] as const;
 
-function MicIcon() {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round">
-      <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
-      <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-      <line x1="12" x2="12" y1="19" y2="22" />
-    </svg>
-  );
-}
-
-function AtSignIcon() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round">
-      <circle cx="12" cy="12" r="4" />
-      <path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8" />
-    </svg>
-  );
-}
+// Mode options for the dropdown (categories + special modes)
+const MODE_OPTIONS = [
+  {key: 'auto', label: 'Auto', icon: SparklesIcon},
+  ...CATEGORIES,
+  {key: 'sensitive', label: 'Sensitive', icon: LockClosedIcon},
+  {key: 'deep', label: 'Deep Mode', icon: ClockIcon},
+] as const;
 
 // ============= SIDENAV =============
 
@@ -225,9 +112,9 @@ function AIChatSideNav() {
       }>
       <XDSSideNavSection title="Main">
         <XDSSideNavItem
-          label="Dashboard"
-          icon={HomeIcon}
-          selectedIcon={HomeIconSolid}
+          label="AI Chat"
+          icon={ChatBubbleOvalLeftIcon}
+          selectedIcon={ChatBubbleOvalLeftIconSolid}
           isSelected={active === 'dashboard'}
           onClick={() => setActive('dashboard')}
         />
@@ -238,18 +125,6 @@ function AIChatSideNav() {
           isSelected={active === 'projects'}
           onClick={() => setActive('projects')}
           endContent={<XDSBadge label="3" />}
-        />
-        <XDSSideNavItem
-          label="Analytics"
-          icon={ChartBarIcon}
-          isSelected={active === 'analytics'}
-          onClick={() => setActive('analytics')}
-        />
-        <XDSSideNavItem
-          label="Team"
-          icon={UserGroupIcon}
-          isSelected={active === 'team'}
-          onClick={() => setActive('team')}
         />
       </XDSSideNavSection>
       <XDSSideNavSection title="Documents">
@@ -267,54 +142,115 @@ function AIChatSideNav() {
 // ============= MAIN COMPONENT =============
 
 export default function AIChatTemplate() {
-  const [selected, setSelected] = useState<string | null>(null);
-  const [mode, setMode] = useState('auto');
+  const [mode, setMode] = useState<string | null>('auto');
+  const [category, setCategory] = useState<string | null>(null);
+  const [attachments, setAttachments] = useState<string[]>([]);
+  const [isModeMenuOpen, setIsModeMenuOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const composerInputRef = useRef<XDSChatComposerInputHandle>(null);
+  const shouldFocusComposerRef = useRef(false);
   const activeMode = MODE_OPTIONS.find(m => m.key === mode) ?? MODE_OPTIONS[0];
+  const suggestions = category ? CATEGORY_SUGGESTIONS[category] : null;
+
+  const appendSuggestion = (prompt: string) => {
+    const input = composerInputRef.current;
+    if (!input) return;
+    input.focus();
+    // Move cursor to end so text is always appended
+    const sel = window.getSelection();
+    if (sel) {
+      sel.selectAllChildren(document.activeElement!);
+      sel.collapseToEnd();
+    }
+    input.insertText(prompt);
+    // Dispatch input event to trigger emitChange and clear placeholder
+    document.activeElement?.dispatchEvent(
+      new Event('input', {bubbles: true}),
+    );
+  };
 
   return (
     <XDSAppShell sideNav={<AIChatSideNav />} variant="elevated">
       <XDSVStack
-        gap={5}
+        gap={8}
         style={{
           maxWidth: 720,
           margin: '0 auto',
-          paddingTop: 'min(20vh, 200px)',
-          paddingBottom: 48,
-          paddingInline: 24,
+          paddingBlock: 'var(--spacing-8)',
+          paddingInline: 'var(--spacing-4)',
           minHeight: '100%',
           justifyContent: 'center',
         }}>
         {/* Greeting */}
-        <XDSVStack gap={1}>
+        <XDSVStack gap={1} style={{paddingInline: 'var(--spacing-4)'}}>
           <XDSHStack gap={2} vAlign="center">
-            <SparklesIcon />
-            <XDSText type="large" weight="semibold">
-              Hi, Kenton
-            </XDSText>
+            <SparklesIcon style={{width: 20, height: 20, color: 'var(--color-primary, #5B5BD6)'}} />
+            <XDSText type="large" as="h2">Hi, Andrew</XDSText>
           </XDSHStack>
-          <XDSHeading level={1}>Where should we start?</XDSHeading>
+          <XDSText type="display-2" as="h1">Where should we start?</XDSText>
         </XDSVStack>
 
         {/* Composer */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          style={{display: 'none'}}
+          onChange={e => {
+            const files = Array.from(e.target.files ?? []);
+            setAttachments(prev => [...prev, ...files.map(f => f.name)]);
+            e.target.value = '';
+          }}
+        />
         <XDSChatComposer
           onSubmit={() => {}}
           placeholder="Ask anything"
-          input={<XDSChatComposerInput style={{minHeight: '44px'}} />}
+          input={<XDSChatComposerInput ref={composerInputRef} style={{minHeight: '44px'}} />}
+          attachments={
+            attachments.length > 0 ? (
+              <XDSChatComposerAttachments>
+                {attachments.map((name, i) => (
+                  <XDSToken
+                    key={i}
+                    label={name}
+                    onRemove={() =>
+                      setAttachments(prev => prev.filter((_, j) => j !== i))
+                    }
+                  />
+                ))}
+              </XDSChatComposerAttachments>
+            ) : undefined
+          }
           headerActions={
             <>
               <XDSButton
-                label="Mention"
+                label="Reference"
                 variant="ghost"
                 size="sm"
-                icon={<AtSignIcon />}
+                icon={<AtSymbolIcon style={{width: 16, height: 16}} />}
                 isIconOnly
+                onClick={() => {
+                  const input = composerInputRef.current;
+                  if (!input) return;
+                  input.focus();
+                  const sel = window.getSelection();
+                  if (sel) {
+                    sel.selectAllChildren(document.activeElement!);
+                    sel.collapseToEnd();
+                  }
+                  input.insertText('@');
+                  document.activeElement?.dispatchEvent(
+                    new Event('input', {bubbles: true}),
+                  );
+                }}
               />
               <XDSButton
                 label="Attach"
                 variant="ghost"
                 size="sm"
-                icon={<PaperclipIcon />}
+                icon={<PaperClipIcon style={{width: 16, height: 16}} />}
                 isIconOnly
+                onClick={() => fileInputRef.current?.click()}
               />
             </>
           }
@@ -325,14 +261,48 @@ export default function AIChatTemplate() {
                   label: activeMode.label,
                   variant: 'ghost',
                   size: 'md',
-                  icon: <AtomIcon />,
+                  icon: <activeMode.icon style={{width: 16, height: 16}} />,
                   children: activeMode.label,
                 }}
-                items={MODE_OPTIONS.map(opt => ({
-                  label: opt.label,
-                  icon: opt.icon,
-                  onClick: () => setMode(opt.key),
-                }))}
+                menuWidth={200}
+                isMenuOpen={isModeMenuOpen}
+                onOpenChange={isOpen => {
+                  setIsModeMenuOpen(isOpen);
+                  if (!isOpen && shouldFocusComposerRef.current) {
+                    shouldFocusComposerRef.current = false;
+                    // Delay focus until after menu restores focus to its trigger button
+                    setTimeout(() => {
+                      composerInputRef.current?.focus();
+                    }, 50);
+                  }
+                }}
+                items={MODE_OPTIONS.flatMap(opt => {
+                  const item = {
+                    label: opt.label,
+                    icon: opt.icon,
+                    onClick: () => {
+                      const tokenLabel = TOKEN_MODES[opt.key];
+                      if (tokenLabel) {
+                        composerInputRef.current?.focus();
+                        composerInputRef.current?.insertToken({
+                          value: tokenLabel,
+                          label: tokenLabel,
+                          variant: 'orange',
+                        });
+                        // Dispatch input event to trigger emitChange and clear placeholder
+                        document.activeElement?.dispatchEvent(
+                          new Event('input', {bubbles: true}),
+                        );
+                        shouldFocusComposerRef.current = true;
+                      } else {
+                        setMode(opt.key);
+                      }
+                    },
+                  };
+                  return opt.key === 'sensitive'
+                    ? [{type: 'divider' as const}, item]
+                    : [item];
+                })}
               />
               <XDSDropdownMenu
                 button={{
@@ -342,6 +312,7 @@ export default function AIChatTemplate() {
                   icon: <Cog6ToothIcon style={{width: 16, height: 16}} />,
                   children: 'Settings',
                 }}
+                menuWidth={200}
                 items={[
                   {label: 'Preferences', onClick: () => {}},
                   {label: 'Keyboard shortcuts', onClick: () => {}},
@@ -355,47 +326,64 @@ export default function AIChatTemplate() {
               label="Voice input"
               variant="ghost"
               size="md"
-              icon={<MicIcon />}
+              icon={<MicrophoneIcon style={{width: 16, height: 16}} />}
               isIconOnly
             />
           }
         />
 
         {/* Category toggle buttons */}
-        <XDSHStack gap={2} style={{flexWrap: 'wrap'}}>
-          <XDSToggleButton
-            label="Writing"
-            icon={<WritingIcon />}
-            isPressed={selected === 'writing'}
-            onPressedChange={() =>
-              setSelected(prev => (prev === 'writing' ? null : 'writing'))
-            }
-          />
-          <XDSToggleButton
-            label="Coding"
-            icon={<CodingIcon />}
-            isPressed={selected === 'coding'}
-            onPressedChange={() =>
-              setSelected(prev => (prev === 'coding' ? null : 'coding'))
-            }
-          />
-          <XDSToggleButton
-            label="Research"
-            icon={<ResearchIcon />}
-            isPressed={selected === 'research'}
-            onPressedChange={() =>
-              setSelected(prev => (prev === 'research' ? null : 'research'))
-            }
-          />
-          <XDSToggleButton
-            label="Creative"
-            icon={<CreativeIcon />}
-            isPressed={selected === 'creative'}
-            onPressedChange={() =>
-              setSelected(prev => (prev === 'creative' ? null : 'creative'))
-            }
-          />
-        </XDSHStack>
+        <XDSVStack gap={6} style={{paddingInline: 'var(--spacing-3)'}}>
+          <XDSToggleButtonGroup
+            label="Category"
+            value={category}
+            onChange={setCategory}
+            size="lg">
+            {CATEGORIES.map(cat => (
+              <XDSToggleButton
+                key={cat.key}
+                value={cat.key}
+                label={cat.label}
+                icon={<cat.icon style={{width: 16, height: 16}} />}
+              />
+            ))}
+          </XDSToggleButtonGroup>
+
+          {/* Suggestion cards */}
+          {suggestions && (
+            <XDSGrid
+              minChildWidth={280}
+              gap={3}>
+              {suggestions.map(suggestion => (
+                <XDSCard
+                  variant="muted"
+                  key={suggestion.heading}
+                  padding={3}
+                  style={{cursor: 'pointer'}}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => {
+                    appendSuggestion(suggestion.prompt);
+                    setMode(category);
+                  }}
+                  onKeyDown={(e: React.KeyboardEvent) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      appendSuggestion(suggestion.prompt);
+                      setMode(category);
+                    }
+                  }}>
+                  <XDSVStack gap={0.5}>
+                    <XDSHeading level={4}>{suggestion.heading}</XDSHeading>
+                    <XDSText type="body" color="secondary" size="xsm">
+                      {suggestion.body}
+                    </XDSText>
+                  </XDSVStack>
+                </XDSCard>
+              ))}
+            </XDSGrid>
+          )}
+        </XDSVStack>
       </XDSVStack>
     </XDSAppShell>
   );
