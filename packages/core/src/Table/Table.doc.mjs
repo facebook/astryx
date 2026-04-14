@@ -12,6 +12,8 @@ export const docs = {
     'Plugin system — extend table behavior with composable transform plugins',
     'Density variants: compact, balanced, spacious',
     'Divider styles: rows, columns, grid, none',
+    'Column alignment: start (default), center, end — per-column via align prop',
+    'Row vertical alignment: middle (default), top, bottom — table-level via verticalAlign prop',
     'Striped even rows and hover highlight via XDSTableContext',
     'Selection via useXDSTableSelectionState + useXDSTableSelection — checkboxes, select-all, disabled row handling',
     'Sorting via useXDSTableSortable — single or multi-column sort with header indicators',
@@ -75,6 +77,19 @@ export const docs = {
       label: 'Auto-generated columns',
       code: `// Columns auto-generated from data keys with capitalized headers
 <XDSTable data={users} isStriped />`,
+    },
+    {
+      label: 'Column alignment and vertical alignment',
+      code: `<XDSTable
+  data={transactions}
+  columns={[
+    { key: 'description', header: 'Description' },
+    { key: 'quantity', header: 'Qty', align: 'center', width: pixel(80) },
+    { key: 'amount', header: 'Amount', align: 'end', width: pixel(120) },
+  ]}
+  verticalAlign="top"
+  density="balanced"
+/>`,
     },
     {
       label: 'Rich cell content with renderCell',
