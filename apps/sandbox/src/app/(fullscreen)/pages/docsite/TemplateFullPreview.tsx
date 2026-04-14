@@ -150,7 +150,7 @@ export function TemplateFullPreview({
           display: 'flex',
           backgroundColor: 'transparent',
           opacity: isVisible ? 1 : 0,
-          transform: isVisible ? 'translateX(0)' : 'translateX(-60px)',
+          transform: isVisible ? 'none' : 'translateX(-60px)',
           transition:
             'opacity 500ms cubic-bezier(0.16, 1, 0.3, 1) 100ms, transform 500ms cubic-bezier(0.16, 1, 0.3, 1) 100ms',
         }}>
@@ -636,7 +636,7 @@ export function TemplateFullPreview({
           display: 'flex',
           flexDirection: 'column' as const,
           opacity: isVisible ? 1 : 0,
-          transform: isVisible ? 'translateX(0)' : 'translateX(40px)',
+          transform: isVisible ? 'none' : 'translateX(40px)',
           transition:
             'opacity 500ms cubic-bezier(0.16, 1, 0.3, 1), transform 500ms cubic-bezier(0.16, 1, 0.3, 1)',
         }}>
