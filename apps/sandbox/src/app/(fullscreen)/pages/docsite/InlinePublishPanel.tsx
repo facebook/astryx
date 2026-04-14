@@ -18,10 +18,12 @@ export function InlinePublishPanel({
   templateName,
   isVisible: _isVisible,
   onBack,
+  onPublish,
 }: {
   templateName: string;
   isVisible: boolean;
   onBack: () => void;
+  onPublish?: () => void;
 }) {
   const [name, setName] = useState(templateName);
   const [description, setDescription] = useState('');
@@ -88,6 +90,7 @@ export function InlinePublishPanel({
           variant="primary"
           label="Publish template"
           size="lg"
+          onClick={onPublish}
           style={{width: '100%'}}
         />
         <XDSButton
