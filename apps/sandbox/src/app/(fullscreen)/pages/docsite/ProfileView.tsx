@@ -144,7 +144,7 @@ export function ProfileView({
               gap: 20,
               marginBottom: 24,
             }}>
-            <XDSAvatar name="Ruby Cheung" size="large" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=160&h=160&fit=crop&crop=face" />
+            <XDSAvatar name="Ruby Cheung" size="large" />
             <div>
               <XDSHeading level={1}>Ruby Cheung</XDSHeading>
               <XDSText type="supporting" color="secondary">

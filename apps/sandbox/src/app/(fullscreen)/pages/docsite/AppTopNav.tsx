@@ -45,7 +45,7 @@ export function AppTopNav({
           alignItems: 'center',
           justifyContent: 'space-between',
           height: 48,
-          padding: '0 24px',
+          padding: '0 16px 0 24px',
           backgroundColor: 'var(--color-background-surface, white)',
           position: 'sticky',
           top: 0,
