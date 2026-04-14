@@ -1,5 +1,5 @@
 /**
- * @file VegaChart.tsx
+ * @file XDSVegaChart.tsx
  * @input A Vega or Vega-Lite spec (distinguished by $schema), parse config/options, view options, and data
  * @output A React component that renders the spec via the Vega runtime
  * @position Primary component in @xds/vega; owns the Vega View lifecycle
@@ -11,10 +11,10 @@ import React, {useEffect, useRef} from 'react';
 import {parse, View} from 'vega';
 import {compile} from 'vega-lite';
 import {parseSchema} from './schema';
-import type {VegaChartProps, VegaSpec, VegaLiteSpec, ViewData} from './types';
+import type {XDSVegaChartProps, VegaSpec, VegaLiteSpec} from './types';
 
 /**
- * `VegaChart` renders a Vega or Vega-Lite specification using the Vega runtime.
+ * `XDSVegaChart` renders a Vega or Vega-Lite specification using the Vega runtime.
  *
  * The component inspects `spec.$schema` to determine how to handle the spec:
  * - `vega-lite` schema -> compiled to Vega via `vega-lite`'s `compile()`, then rendered
@@ -27,11 +27,8 @@ import type {VegaChartProps, VegaSpec, VegaLiteSpec, ViewData} from './types';
  *   vega.parse(spec, parseConfig, parseOptions)
  *   new vega.View(runtime, { ...viewOptions, container })
  *
- * Initial dataset values can be provided via `data` and are loaded once
- * during View initialization, before the first render. `data` is not
- * reactive — changes after mount are ignored. Use `onReady` to get the
- * live `View` and call `view.data(name, tuples)` + `view.runAsync()`
- * yourself if you need to update data after render.
+ * Initial dataset values can be provided via `data`. They are loaded once
+ * during View initialization, before the first render, and are not reactive.
  *
  * It owns the full `View` lifecycle: creates the view on mount, re-creates
  * it when `spec`, `parseConfig`, `parseOptions`, or `viewOptions` changes,
@@ -42,12 +39,15 @@ import type {VegaChartProps, VegaSpec, VegaLiteSpec, ViewData} from './types';
  * for `parseConfig`, `parseOptions`, `viewOptions`, and `data` to avoid
  * unnecessary re-renders.
  *
+ * Note: this component does not accept `xstyle` because `@xds/vega` does not
+ * depend on StyleX. Use `className` or `style` for layout overrides.
+ *
  * @example
  * ```
- * import {VegaChart} from '@xds/vega';
+ * import {XDSVegaChart} from '@xds/vega';
  *
  * // Vega-Lite spec -- compiled automatically
- * <VegaChart
+ * <XDSVegaChart
  *   spec={{
  *     $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
  *     mark: 'bar',
@@ -61,14 +61,14 @@ import type {VegaChartProps, VegaSpec, VegaLiteSpec, ViewData} from './types';
  * />
  *
  * // Vega spec -- rendered directly
- * <VegaChart
+ * <XDSVegaChart
  *   spec={{$schema: 'https://vega.github.io/schema/vega/v5.json', marks: []}}
  *   parseConfig={{background: '#1a1a1a'}}
  *   viewOptions={{logLevel: 1, tooltip: myTooltipHandler}}
  * />
  * ```
  */
-export function VegaChart({
+export function XDSVegaChart({
   spec,
   data,
   compileOptions,
@@ -77,9 +77,11 @@ export function VegaChart({
   viewOptions,
   className,
   style,
+  ref,
   onReady,
   onError,
-}: VegaChartProps) {
+  ...props
+}: XDSVegaChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Keep callbacks in refs so they don't need to be in the dep array.
@@ -88,7 +90,6 @@ export function VegaChart({
   onReadyRef.current = onReady;
   onErrorRef.current = onError;
 
-  // Effect 1: create/destroy the View when spec or construction options change.
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -127,6 +128,7 @@ export function VegaChart({
       });
 
       // Load initial data into named datasets before the first render.
+      // data is not reactive -- changes after mount are ignored.
       if (data) {
         for (const [name, tuples] of Object.entries(data)) {
           view.data(name, tuples);
@@ -153,5 +155,18 @@ export function VegaChart({
     };
   }, [spec, data, compileOptions, parseConfig, parseOptions, viewOptions]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  return <div ref={containerRef} className={className} style={style} />;
+  return (
+    <div
+      ref={node => {
+        containerRef.current = node;
+        if (typeof ref === 'function') ref(node);
+        else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
+      }}
+      className={className}
+      style={style}
+      {...props}
+    />
+  );
 }
+
+XDSVegaChart.displayName = 'XDSVegaChart';

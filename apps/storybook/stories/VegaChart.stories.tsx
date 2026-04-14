@@ -1,5 +1,5 @@
 import type {Meta, StoryObj} from '@storybook/react';
-import {VegaChart} from '@xds/vega';
+import {XDSVegaChart} from '@xds/vega';
 import type {AnySpec} from '@xds/vega';
 
 /**
@@ -71,9 +71,9 @@ const radialPlotSpec: AnySpec = {
   ],
 };
 
-const meta: Meta<typeof VegaChart> = {
-  title: 'Vega/VegaChart',
-  component: VegaChart,
+const meta: Meta<typeof XDSVegaChart> = {
+  title: 'Vega/XDSVegaChart',
+  component: XDSVegaChart,
   tags: ['autodocs'],
   parameters: {
     layout: 'centered',
@@ -88,14 +88,11 @@ const meta: Meta<typeof VegaChart> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof VegaChart>;
+type Story = StoryObj<typeof XDSVegaChart>;
 
 export const RadialPlot: Story = {
   name: 'Radial Plot',
   args: {
     spec: radialPlotSpec,
-    renderer: 'svg',
   },
 };
-
-

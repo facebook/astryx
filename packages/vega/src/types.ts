@@ -7,9 +7,11 @@
  * SYNC: When modified, update /packages/vega/README.md
  */
 
+import type React from 'react';
 import type {Spec as VegaSpec, Config, View, ViewOptions} from 'vega';
 import type {LoggerInterface} from 'vega-util';
 import type {TopLevelSpec as VegaLiteSpec, Config as VegaLiteConfig} from 'vega-lite';
+import type {XDSBaseProps} from '@xds/core/XDSBaseProps';
 
 export type {VegaSpec, VegaLiteSpec, Config, View, ViewOptions, LoggerInterface};
 
@@ -35,8 +37,6 @@ export interface CompileOptions {
    * Custom field title formatter. Overrides the global singleton used by
    * vega-lite to produce axis/legend/header titles from field definitions.
    *
-   * Signature: `(fieldDef: FieldDefBase<string>, config: Config) => string`
-   *
    * Typed loosely to avoid coupling to vega-lite's unexported internal types.
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -44,7 +44,7 @@ export interface CompileOptions {
 }
 
 /**
- * A spec accepted by `<VegaChart>`. Must include a `$schema` field --
+ * A spec accepted by `<XDSVegaChart>`. Must include a `$schema` field --
  * the component uses it to decide whether to compile (Vega-Lite) or
  * render directly (Vega).
  */
@@ -85,9 +85,20 @@ export interface ParseOptions {
 export type ViewData = Record<string, any[]>;
 
 /**
- * Props for the `<VegaChart>` component.
+ * Props for the `<XDSVegaChart>` component.
+ *
+ * Extends `XDSBaseProps<HTMLDivElement>` for full DOM event passthrough
+ * (drag, pointer, keyboard, clipboard, etc.) and `data-testid` support.
+ *
+ * Note: `xstyle` is inherited from `XDSBaseProps` but has no effect —
+ * `@xds/vega` does not depend on StyleX. Use `className` or `style` for
+ * layout overrides instead.
  */
-export interface VegaChartProps {
+export interface XDSVegaChartProps extends XDSBaseProps<HTMLDivElement> {
+  /**
+   * Ref forwarded to the root container div.
+   */
+  ref?: React.Ref<HTMLDivElement>;
   /**
    * A Vega or Vega-Lite specification object.
    *
@@ -145,14 +156,6 @@ export interface VegaChartProps {
    * @see https://vega.github.io/vega/docs/api/view/
    */
   viewOptions?: Omit<ViewOptions, 'container'>;
-  /**
-   * Additional CSS class name applied to the container element.
-   */
-  className?: string;
-  /**
-   * Inline styles applied to the container element.
-   */
-  style?: React.CSSProperties;
   /**
    * Called with the live Vega `View` once the chart has rendered.
    * Use this to attach signal listeners, stream data, or drive animations.

@@ -1,7 +1,7 @@
 {
   "name": "@xds/vega",
-  "version": "0.0.1",
-  "description": "XDS Vega wrapper — chart and data visualization components",
+  "version": "0.0.10",
+  "description": "XDS Vega wrapper \u2014 chart and data visualization components",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
@@ -26,7 +26,8 @@
     "react": ">=19.0.0",
     "react-dom": ">=19.0.0",
     "vega": ">=6.0.0",
-    "vega-lite": ">=6.0.0"
+    "vega-lite": ">=6.0.0",
+    "@xds/core": "*"
   },
   "devDependencies": {
     "@types/react": "^19.2.14",
@@ -34,6 +35,7 @@
     "typescript": "^5.7.0",
     "vega": "^6.2.0",
     "vega-lite": "^6.4.2",
-    "vega-util": "^1.17.2"
+    "vega-util": "^1.17.2",
+    "@xds/core": "*"
   }
 }
