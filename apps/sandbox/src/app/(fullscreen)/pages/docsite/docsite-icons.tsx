@@ -39,24 +39,88 @@ export {BookmarkIcon as BookmarkFilledIcon} from '@heroicons/react/24/solid';
 // Brand logos for theme picker
 
 export const MetaLogo = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg viewBox="0 0 36 20" fill="none" {...props}>
-    <path
-      d="M7.584 4.547c1.86-2.86 4.05-4.494 6.66-4.494 3.96 0 5.58 3.21 6.66 6.27l.72 2.04c.78 2.22 1.59 4.02 3.3 4.02 2.16 0 3.72-2.64 3.72-6.06 0-5.1-3.48-9.27-9.66-9.27a10.02 10.02 0 00-8.394 4.53M7.584 4.547C4.494 8.717 2.694 14.027 2.694 17.027c0 2.28.78 3.54 2.22 3.54 1.98 0 3.18-2.64 4.62-6.36l.72-1.86c1.5-3.84 3.42-8.22 7.62-8.22 4.62 0 7.92 4.08 7.92 9.18 0 5.82-3.48 10.56-8.82 10.56-1.98 0-3.54-.6-4.86-1.62"
-      stroke="#0081FB"
-      strokeWidth={3.2}
-      strokeLinecap="round"
-    />
+  <svg viewBox="0 0 287.56 191" fill="none" {...props}>
+    <defs>
+      <linearGradient id="meta-g1" x1="61" y1="117" x2="259" y2="127" gradientUnits="userSpaceOnUse">
+        <stop offset="0" stopColor="#0064e1" /><stop offset="0.4" stopColor="#0064e1" /><stop offset="0.83" stopColor="#0073ee" /><stop offset="1" stopColor="#0082fb" />
+      </linearGradient>
+      <linearGradient id="meta-g2" x1="45" y1="139" x2="45" y2="66" gradientUnits="userSpaceOnUse">
+        <stop offset="0" stopColor="#0082fb" /><stop offset="1" stopColor="#0064e0" />
+      </linearGradient>
+    </defs>
+    <path fill="#0081fb" d="m31.06,125.96c0,10.98 2.41,19.41 5.56,24.51 4.13,6.68 10.29,9.51 16.57,9.51 8.1,0 15.51-2.01 29.79-21.76 11.44-15.83 24.92-38.05 33.99-51.98l15.36-23.6c10.67-16.39 23.02-34.61 37.18-46.96 11.56-10.08 24.03-15.68 36.58-15.68 21.07,0 41.14,12.21 56.5,35.11 16.81,25.08 24.97,56.67 24.97,89.27 0,19.38-3.82,33.62-10.32,44.87-6.28,10.88-18.52,21.75-39.11,21.75l0-31.02c17.63,0 22.03-16.2 22.03-34.74 0-26.42-6.16-55.74-19.73-76.69-9.63-14.86-22.11-23.94-35.84-23.94-14.85,0-26.8,11.2-40.23,31.17-7.14,10.61-14.47,23.54-22.7,38.13l-9.06,16.05c-18.2,32.27-22.81,39.62-31.91,51.75-15.95,21.24-29.57,29.29-47.5,29.29-21.27,0-34.72-9.21-43.05-23.09-6.8-11.31-10.14-26.15-10.14-43.06z" />
+    <path fill="url(#meta-g1)" d="m24.49,37.3c14.24-21.95 34.79-37.3 58.36-37.3 13.65,0 27.22,4.04 41.39,15.61 15.5,12.65 32.02,33.48 52.63,67.81l7.39,12.32c17.84,29.72 27.99,45.01 33.93,52.22 7.64,9.26 12.99,12.02 19.94,12.02 17.63,0 22.03-16.2 22.03-34.74l27.4-.86c0,19.38-3.82,33.62-10.32,44.87-6.28,10.88-18.52,21.75-39.11,21.75-12.8,0-24.14-2.78-36.68-14.61-9.64-9.08-20.91-25.21-29.58-39.71l-25.79-43.08c-12.94-21.62-24.81-37.74-31.68-45.04-7.39-7.85-16.89-17.33-32.05-17.33-12.27,0-22.69,8.61-31.41,21.78z" />
+    <path fill="url(#meta-g2)" d="m82.35,31.23c-12.27,0-22.69,8.61-31.41,21.78-12.33,18.61-19.88,46.33-19.88,72.95 0,10.98 2.41,19.41 5.56,24.51l-26.48,17.44c-6.8-11.31-10.14-26.15-10.14-43.06 0-30.75 8.44-62.8 24.49-87.55 14.24-21.95 34.79-37.3 58.36-37.3z" />
   </svg>
 );
 
 export const WhatsAppLogo = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 175.216 175.552" fill="none" {...props}>
+    <defs>
+      <linearGradient id="wa-g" x1="85.915" y1="32.567" x2="86.535" y2="137.092" gradientUnits="userSpaceOnUse">
+        <stop offset="0" stopColor="#57d163" /><stop offset="1" stopColor="#23b33a" />
+      </linearGradient>
+    </defs>
+    <path fill="url(#wa-g)" d="M87.184 25.227c-33.733 0-61.166 27.423-61.178 61.13a60.98 60.98 0 009.349 32.535l1.455 2.313-6.179 22.558 23.146-6.069 2.235 1.324c9.387 5.571 20.15 8.517 31.126 8.523h.023c33.707 0 61.14-27.426 61.153-61.135a60.75 60.75 0 00-17.895-43.251 60.75 60.75 0 00-43.235-17.928z" />
+    <path fill="#fff" fillRule="evenodd" d="M68.772 55.603c-1.378-3.061-2.828-3.123-4.137-3.176l-3.524-.043c-1.226 0-3.218.46-4.902 2.3s-6.435 6.287-6.435 15.332 6.588 17.785 7.506 19.013 12.718 20.381 31.405 27.75c15.529 6.124 18.689 4.906 22.061 4.6s10.877-4.447 12.408-8.74 1.532-7.971 1.073-8.74-1.685-1.226-3.525-2.146-10.877-5.367-12.562-5.981-2.91-.919-4.137.921-4.746 5.979-5.819 7.206-2.144 1.381-3.984.462-7.76-2.861-14.784-9.124c-5.465-4.873-9.154-10.891-10.228-12.73s-.114-2.835.808-3.751c.825-.824 1.838-2.147 2.759-3.22s1.224-1.84 1.836-3.065.307-2.301-.153-3.22-4.032-10.011-5.666-13.647" />
+  </svg>
+);
+
+// Theme icons — distinctive identifiers for each theme
+
+export const DefaultThemeIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 20 20" fill="currentColor" {...props}>
+    <rect x="2" y="2" width="7" height="7" rx="2" fill="#0066FF" />
+    <rect x="11" y="2" width="7" height="7" rx="2" fill="#3B82F6" opacity={0.6} />
+    <rect x="2" y="11" width="7" height="7" rx="2" fill="#93C5FD" opacity={0.4} />
+    <rect x="11" y="11" width="7" height="7" rx="2" fill="#DBEAFE" opacity={0.3} />
+  </svg>
+);
+
+export const NeutralThemeIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 20 20" fill="none" {...props}>
-    <path
-      fillRule="evenodd"
-      clipRule="evenodd"
-      d="M10 0C4.477 0 0 4.477 0 10c0 1.76.457 3.415 1.26 4.855L.044 19.544a.5.5 0 00.612.612l4.689-1.216A9.96 9.96 0 0010 20c5.523 0 10-4.477 10-10S15.523 0 10 0zm-3.11 5.906c.224-.005.473-.01.695.53.264.641.847 2.073.921 2.222.075.149.124.323.025.521-.1.199-.149.322-.297.496-.149.173-.313.387-.446.52-.149.148-.304.31-.13.607.173.298.77 1.27 1.653 2.059 1.135 1.012 2.093 1.325 2.39 1.475.297.149.471.124.644-.075.173-.198.743-.867.94-1.164.199-.298.397-.248.67-.149.272.1 1.733.818 2.03.967.298.149.496.223.57.347.075.124.075.719-.173 1.413-.248.694-1.435 1.328-2.006 1.413-.511.076-1.159.109-1.871-.118a17.15 17.15 0 01-1.694-.625c-2.98-1.287-4.928-4.29-5.077-4.487-.148-.199-1.213-1.612-1.213-3.074 0-1.463.768-2.182 1.04-2.479.272-.298.594-.372.792-.372.199 0 .397.002.57.01.182.01.427-.069.669.51z"
-      fill="#25D366"
-    />
+    <circle cx="10" cy="10" r="8" stroke="#525252" strokeWidth="2" />
+    <path d="M10 2a8 8 0 010 16V2z" fill="#525252" />
+  </svg>
+);
+
+export const BrutalistThemeIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 20 20" fill="none" {...props}>
+    <path d="M10 1L19 10L10 19L1 10Z" fill="#FF1493" />
+    <path d="M10 5L15 10L10 15L5 10Z" fill="#fff" />
+  </svg>
+);
+
+export const DailyThemeIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 20 20" fill="none" {...props}>
+    <circle cx="10" cy="10" r="4" fill="#0064E0" />
+    {[0, 45, 90, 135, 180, 225, 270, 315].map(deg => (
+      <line key={deg} x1="10" y1="2" x2="10" y2="4.5" stroke="#0064E0" strokeWidth="1.8" strokeLinecap="round" transform={`rotate(${deg} 10 10)`} />
+    ))}
+  </svg>
+);
+
+export const ForestThemeIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 20 20" fill="none" {...props}>
+    <path d="M10 2C10 2 4 8 4 12.5C4 15.5 6.7 18 10 18C13.3 18 16 15.5 16 12.5C16 8 10 2 10 2Z" fill="#2D8A4E" />
+    <path d="M10 10V17" stroke="#1A5C33" strokeWidth="1.5" strokeLinecap="round" />
+    <path d="M10 13C8.5 11.5 7 12 7 12" stroke="#1A5C33" strokeWidth="1.2" strokeLinecap="round" />
+  </svg>
+);
+
+export const SunsetThemeIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 20 20" fill="none" {...props}>
+    <path d="M3 14h14" stroke="#E5484D" strokeWidth="1.5" strokeLinecap="round" />
+    <path d="M5 14a5 5 0 0110 0" fill="#E5484D" />
+    <path d="M10 3v2M15.5 8.5l-1.4 1.4M4.5 8.5l1.4 1.4M17 14h0M3 14h0" stroke="#F59E0B" strokeWidth="1.5" strokeLinecap="round" />
+  </svg>
+);
+
+export const MidnightThemeIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 20 20" fill="none" {...props}>
+    <path d="M15.5 11.5A6.5 6.5 0 018.5 4.5 6.5 6.5 0 1015.5 11.5z" fill="#818CF8" />
+    <circle cx="14" cy="5" r="1" fill="#818CF8" opacity={0.6} />
+    <circle cx="16.5" cy="8" r="0.6" fill="#818CF8" opacity={0.4} />
   </svg>
 );
 

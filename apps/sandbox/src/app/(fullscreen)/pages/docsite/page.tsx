@@ -41,9 +41,31 @@ import {
   SaveIcon,
   ShareIcon,
   BookmarkIcon,
+  BookmarkFilledIcon,
   LinkIcon,
   HeartIcon,
+  MetaLogo,
+  WhatsAppLogo,
+  DefaultThemeIcon,
+  NeutralThemeIcon,
+  BrutalistThemeIcon,
+  DailyThemeIcon,
+  ForestThemeIcon,
+  SunsetThemeIcon,
+  MidnightThemeIcon,
 } from './docsite-icons';
+
+const BRAND_LOGOS: Record<string, React.ComponentType<React.SVGProps<SVGSVGElement>>> = {
+  default: DefaultThemeIcon,
+  meta: MetaLogo,
+  whatsapp: WhatsAppLogo,
+  neutral: NeutralThemeIcon,
+  brutalist: BrutalistThemeIcon,
+  daily: DailyThemeIcon,
+  forest: ForestThemeIcon,
+  sunset: SunsetThemeIcon,
+  midnight: MidnightThemeIcon,
+};
 
 // ---------------------------------------------------------------------------
 // Page
@@ -99,6 +121,17 @@ function DocsiteLandingTemplate() {
   const [card4SelectedOption, setCard4SelectedOption] = useState('default');
   const [card4ThemeBrowse, setCard4ThemeBrowse] = useState(false);
   const [card4ThemeSearch, setCard4ThemeSearch] = useState('');
+  const [card4PinnedThemes, setCard4PinnedThemes] = useState(
+    () => new Set(THEME_PICKER_ENTRIES.filter(t => t.isPinnedByDefault).map(t => t.key)),
+  );
+  const toggleCard4Pin = useCallback((key: string) => {
+    setCard4PinnedThemes(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }, []);
 
   const handleEditorResizeStart = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -945,8 +978,8 @@ function DocsiteLandingTemplate() {
           <>
             <style>{`
               @keyframes card4DrawerSlideUp {
-                from { transform: translate(-50%, -50%) translateY(40px); opacity: 0; }
-                to { transform: translate(-50%, -50%); opacity: 1; }
+                from { opacity: 0; }
+                to { opacity: 1; }
               }
               @keyframes card4BackdropFadeIn {
                 from { opacity: 0; }
@@ -965,8 +998,8 @@ function DocsiteLandingTemplate() {
             />
             {/* Drawer */}
             <div style={{
-              position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 101,
-              width: '90vw', maxWidth: 1200, maxHeight: '90vh',
+              position: 'fixed', inset: 0, margin: 'auto', zIndex: 101,
+              width: '90vw', maxWidth: 1200, height: 'fit-content', maxHeight: '90vh',
               backgroundColor: 'var(--color-background-card, #fff)',
               borderRadius: 16,
               boxShadow: '0 8px 60px rgba(0,0,0,0.2)',
@@ -988,7 +1021,7 @@ function DocsiteLandingTemplate() {
               </div>
 
               {/* Scrollable content */}
-              <div style={{flex: 1, overflowY: 'auto', borderRadius: 16}}>
+              <div style={{overflowY: 'auto', borderRadius: 16}}>
                 {/* Main content: image left + details right */}
                 <div style={{display: 'flex', minHeight: 0, padding: '0 24px'}}>
                   {/* Left — Preview image + thumbnails */}
@@ -1003,7 +1036,7 @@ function DocsiteLandingTemplate() {
                   </div>
 
                   {/* Right — Details panel */}
-                  <div style={{width: 360, flexShrink: 0, padding: '24px 0', display: 'flex', flexDirection: 'column', overflowY: 'auto'}}>
+                  <div style={{width: 360, flexShrink: 0, padding: '24px 0', display: 'flex', flexDirection: 'column'}}>
                     {/* Title */}
                     <XDSText type="display-2">{t.name}</XDSText>
 
@@ -1054,28 +1087,36 @@ function DocsiteLandingTemplate() {
                       />
                     </div>
 
-                    {/* Themes */}
+                    {/* Themes — pinned grid */}
                     <div style={{marginTop: 32}}>
                       <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
-                        <XDSText type="body" style={{fontWeight: 600}}>Themes</XDSText>
-                        <span onClick={() => setCard4ThemeBrowse(true)} style={{cursor: 'pointer', fontSize: 14, color: 'var(--color-text-secondary, #65676B)'}}>Browse</span>
+                        <XDSText type="body" style={{fontWeight: 600}}>Apply your themes</XDSText>
+                        <XDSButton variant="ghost" size="sm" label="Browse" onClick={() => setCard4ThemeBrowse(true)} />
                       </div>
-                      <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, 40px)', gap: 8, marginTop: 16}}>
-                        {THEME_PICKER_ENTRIES.filter(e => e.isPinnedByDefault || e.category === 'official').slice(0, 6).map(entry => (
-                          <XDSTooltip key={entry.key} content={entry.name}>
-                            <div
-                              onClick={() => setCard4SelectedOption(entry.key)}
-                              style={{
-                                width: 40, height: 40, borderRadius: 10,
-                                display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                                border: card4SelectedOption === entry.key ? '2px solid var(--color-accent, #0066FF)' : '2px solid var(--color-border, #E0E0E0)',
-                                backgroundColor: 'var(--color-surface, #F5F5F5)',
-                                transition: 'border-color 0.15s ease',
-                              }}>
-                              <div style={{width: 16, height: 16, borderRadius: '50%', backgroundColor: entry.accent}} />
-                            </div>
-                          </XDSTooltip>
-                        ))}
+                      <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, 44px)', gap: 8, marginTop: 12}}>
+                        {THEME_PICKER_ENTRIES.filter(e => card4PinnedThemes.has(e.key)).map(entry => {
+                          const isSelected = card4SelectedOption === entry.key;
+                          const BrandLogo = BRAND_LOGOS[entry.key];
+                          return (
+                            <XDSTooltip key={entry.key} content={entry.name}>
+                              <div
+                                onClick={() => setCard4SelectedOption(entry.key)}
+                                style={{
+                                  width: 44, height: 44, borderRadius: 10,
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                                  border: isSelected ? '2px solid var(--color-accent, #0066FF)' : '2px solid var(--color-border, #E0E0E0)',
+                                  backgroundColor: '#fff',
+                                  transition: 'border-color 0.15s ease',
+                                }}>
+                                {BrandLogo ? (
+                                  <BrandLogo width={28} height={28} />
+                                ) : (
+                                  <div style={{width: 24, height: 24, borderRadius: '50%', backgroundColor: entry.accent}} />
+                                )}
+                              </div>
+                            </XDSTooltip>
+                          );
+                        })}
                       </div>
 
                       {/* Theme browse dialog */}
@@ -1109,6 +1150,7 @@ function DocsiteLandingTemplate() {
                                   <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10}}>
                                     {entries.map(entry => {
                                       const isSelected = card4SelectedOption === entry.key;
+                                      const isPinned = card4PinnedThemes.has(entry.key);
                                       const p = entry.preview;
                                       return (
                                         <div
@@ -1133,6 +1175,15 @@ function DocsiteLandingTemplate() {
                                           </div>
                                           <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 8px', backgroundColor: 'var(--color-surface, #f5f5f5)'}}>
                                             <XDSText type="supporting" style={{fontWeight: isSelected ? 600 : 400}}>{entry.name}</XDSText>
+                                            <div
+                                              onClick={e => { e.stopPropagation(); toggleCard4Pin(entry.key); }}
+                                              style={{cursor: 'pointer', display: 'flex', padding: 2}}>
+                                              {isPinned ? (
+                                                <BookmarkFilledIcon width={14} height={14} style={{color: 'var(--color-accent, #0066FF)'}} />
+                                              ) : (
+                                                <BookmarkIcon width={14} height={14} style={{color: 'var(--color-secondary, #999)'}} />
+                                              )}
+                                            </div>
                                           </div>
                                         </div>
                                       );
