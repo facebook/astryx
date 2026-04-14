@@ -144,7 +144,13 @@ function AIChatSideNav() {
 export default function AIChatTemplate() {
   const [mode, setMode] = useState<string | null>('auto');
   const [category, setCategory] = useState<string | null>(null);
-  const [attachments, setAttachments] = useState<string[]>([]);
+  const [attachments, setAttachments] = useState<string[]>([
+    'project_brief.pdf',
+    'wireframes_v2.fig',
+    'api_spec.yaml',
+    'user_research.csv',
+    'brand_guidelines.pdf',
+  ]);
   const [isModeMenuOpen, setIsModeMenuOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const composerInputRef = useRef<XDSChatComposerInputHandle>(null);
@@ -208,7 +214,9 @@ export default function AIChatTemplate() {
           input={<XDSChatComposerInput ref={composerInputRef} style={{minHeight: '44px'}} />}
           attachments={
             attachments.length > 0 ? (
-              <XDSChatComposerAttachments>
+              <XDSChatComposerAttachments
+                count={attachments.length}
+                defaultIsCollapsed>
                 {attachments.map((name, i) => (
                   <XDSToken
                     key={i}
