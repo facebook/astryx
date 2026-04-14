@@ -82,7 +82,9 @@ const styles = stylex.create({
     width: '100%',
   },
   divider: {
-    backgroundImage: `linear-gradient(to top, ${colorVars['--color-border']} ${borderVars['--border-width']}, transparent ${borderVars['--border-width']})`,
+    borderBottomWidth: borderVars['--border-width'],
+    borderBottomStyle: 'solid',
+    borderBottomColor: colorVars['--color-border'],
   },
 });
 

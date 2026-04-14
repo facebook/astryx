@@ -27,6 +27,7 @@ import {
 } from '../theme/tokens.stylex';
 import {useXDSTabListContext} from './XDSTabListContext';
 import type {XDSTabListSize} from './XDSTabListContext';
+import {tabScope} from './tab.markers.stylex';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import type {XDSLinkComponentType} from '../Link/types';
 import {xdsClassName, mergeProps} from '../utils';
@@ -103,7 +104,7 @@ const styles = stylex.create({
     color: colorVars['--color-text-secondary'],
     cursor: 'pointer',
     textDecoration: 'none',
-    transitionProperty: 'color, background-image',
+    transitionProperty: 'color',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
     outline: {
@@ -122,13 +123,13 @@ const styles = stylex.create({
     width: '100%',
     borderRadius: radiusVars['--radius-element'],
     pointerEvents: 'none',
-    backgroundImage: {
-      default: null,
-      [stylex.when.ancestor(':hover')]: {
-        '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
+    backgroundColor: {
+      default: 'transparent',
+      [stylex.when.ancestor(':hover', tabScope)]: {
+        '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
     },
-    transitionProperty: 'background-image',
+    transitionProperty: 'background-color',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
   },
@@ -136,18 +137,25 @@ const styles = stylex.create({
     color: colorVars['--color-text-primary'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
   },
-  underlineSelected: {
-    '::after': {
-      content: '""',
-      position: 'absolute',
-      bottom: 0,
-      left: spacingVars['--spacing-3'],
-      right: spacingVars['--spacing-3'],
-      minWidth: '24px',
-      height: '2px',
-      backgroundColor: colorVars['--color-icon-primary'],
-      borderRadius: radiusVars['--radius-full'],
-    },
+  indicator: {
+    position: 'absolute',
+    bottom: 0,
+    left: spacingVars['--spacing-3'],
+    right: spacingVars['--spacing-3'],
+    height: '2px',
+    borderRadius: radiusVars['--radius-full'],
+    pointerEvents: 'none',
+    transitionProperty: 'opacity, background-color',
+    transitionDuration: durationVars['--duration-fast'],
+    transitionTimingFunction: easeVars['--ease-standard'],
+  },
+  indicatorSelected: {
+    backgroundColor: colorVars['--color-icon-primary'],
+    opacity: 1,
+  },
+  indicatorUnselected: {
+    backgroundColor: 'transparent',
+    opacity: 0,
   },
   icon: {
     display: 'inline-flex',
@@ -172,9 +180,9 @@ const styles = stylex.create({
 });
 
 const sizeStyles = stylex.create({
-  sm: {height: sizeVars['--size-element-md']},
-  md: {height: sizeVars['--size-element-lg']},
-  lg: {height: '40px'},
+  sm: {height: sizeVars['--size-element-sm']},
+  md: {height: sizeVars['--size-element-md']},
+  lg: {height: sizeVars['--size-element-lg']},
 });
 
 // Hover bg uses the standard element size (one step smaller than tab)
@@ -248,9 +256,8 @@ export function XDSTab({
         styles.base,
         sizeStyles[size],
         isSelected && styles.selected,
-        isSelected && styles.underlineSelected,
         isFill && layoutStyles.fill,
-        stylex.defaultMarker(),
+        tabScope,
         xstyle,
       ),
       className,
@@ -262,6 +269,20 @@ export function XDSTab({
     <span
       aria-hidden="true"
       {...stylex.props(styles.hoverBg, hoverSizeStyles[size])}
+    />
+  );
+
+  const indicatorElement = (
+    <span
+      {...mergeProps(
+        xdsClassName('tab-indicator', {
+          selected: isSelected ? 'selected' : null,
+        }),
+        stylex.props(
+          styles.indicator,
+          isSelected ? styles.indicatorSelected : styles.indicatorUnselected,
+        ),
+      )}
     />
   );
 
@@ -280,6 +301,7 @@ export function XDSTab({
         {hoverBgElement}
         {iconElement}
         {labelElement}
+        {indicatorElement}
       </LinkComponent>
     );
   }
@@ -289,6 +311,7 @@ export function XDSTab({
       {hoverBgElement}
       {iconElement}
       {labelElement}
+      {indicatorElement}
     </button>
   );
 }
