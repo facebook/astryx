@@ -2,5 +2,5 @@
 export const doc = {
   name: 'Dashboard',
   description: 'Analytics dashboard with KPI cards, charts, and data tables',
-  isReady: false,
+  isReady: true,
 };
