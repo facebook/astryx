@@ -173,7 +173,7 @@ export default function ProductGalleryTemplate() {
           </XDSHStack>
 
           {/* Product Grid */}
-          <XDSGrid columns={3} gap={4}>
+          <XDSGrid columns={3} gap={6}>
             {PRODUCTS.map(product => (
               <ProductCard key={product.id} product={product} />
             ))}
