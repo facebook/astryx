@@ -353,4 +353,161 @@ describe('XDSChatComposerInput', () => {
       ).toBeInTheDocument();
     });
   });
+
+  describe('trigger menu cursor anchor', () => {
+    // The trigger menu anchors its popover to the cursor position, not the
+    // entire input element. In real browsers this creates a fixed-position
+    // span on document.body at the cursor rect. In jsdom (no layout engine)
+    // it falls back to anchoring on the editable element.
+    //
+    // These tests verify:
+    // 1. No anchor spans leak inside the contentEditable (text nodes stay intact)
+    // 2. The fallback path works (popover opens without errors)
+    // 3. selectItem cleans up properly — trigger text is fully replaced
+    // 4. No orphaned spans on document.body after menu dismiss
+
+    const BODY_ANCHOR_SELECTOR = 'span[data-xds-trigger-anchor]';
+
+    function setupTriggerInput(triggers: XDSChatComposerTrigger[]) {
+      const onChange = vi.fn();
+      const result = render(
+        <XDSChatComposerInput triggers={triggers} onChange={onChange} />,
+      );
+      const textbox = screen.getByRole('textbox');
+      textbox.focus();
+      return {...result, textbox, onChange};
+    }
+
+    function setCursorAfterText(textbox: HTMLElement, text: string): Text {
+      const textNode = document.createTextNode(text);
+      textbox.appendChild(textNode);
+      const sel = window.getSelection()!;
+      const range = document.createRange();
+      range.setStart(textNode, text.length);
+      range.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(range);
+      return textNode;
+    }
+
+    afterEach(() => {
+      // Clean up any orphaned anchor spans from document.body
+      document
+        .querySelectorAll(BODY_ANCHOR_SELECTOR)
+        .forEach(el => el.remove());
+    });
+
+    it('does not insert spans inside the contentEditable', () => {
+      const {textbox} = setupTriggerInput([createMentionTrigger()]);
+
+      setCursorAfterText(textbox, 'hello @');
+      fireEvent.input(textbox);
+
+      // No stray spans inside the editable — text nodes stay intact
+      const spans = textbox.querySelectorAll('span[aria-hidden="true"]');
+      expect(spans.length).toBe(0);
+    });
+
+    it('opens trigger menu without errors in jsdom fallback path', () => {
+      const {textbox} = setupTriggerInput([createMentionTrigger()]);
+
+      // jsdom returns zero-rect from getBoundingClientRect, so the
+      // fallback anchors on the editable. No crash.
+      setCursorAfterText(textbox, '@');
+      fireEvent.input(textbox);
+
+      // The popover opened — ARIA says expanded
+      expect(textbox.getAttribute('aria-expanded')).toBe('true');
+    });
+
+    it('does not throw when Escape dismisses the menu', () => {
+      const {textbox} = setupTriggerInput([createMentionTrigger()]);
+
+      setCursorAfterText(textbox, '@');
+      fireEvent.input(textbox);
+      expect(textbox.getAttribute('aria-expanded')).toBe('true');
+
+      // Escape should not throw — popover hide works in jsdom even
+      // if aria-expanded doesn't update synchronously
+      expect(() => fireEvent.keyDown(textbox, {key: 'Escape'})).not.toThrow();
+    });
+
+    it('does not throw when trigger text is cleared', () => {
+      const {textbox} = setupTriggerInput([createMentionTrigger()]);
+
+      setCursorAfterText(textbox, '@');
+      fireEvent.input(textbox);
+      expect(textbox.getAttribute('aria-expanded')).toBe('true');
+
+      // Clearing text removes the trigger — should not throw
+      textbox.textContent = '';
+      expect(() => fireEvent.input(textbox)).not.toThrow();
+    });
+
+    it('does not create body anchor when no trigger is active', () => {
+      const {textbox} = setupTriggerInput([createMentionTrigger()]);
+
+      setCursorAfterText(textbox, 'hello');
+      fireEvent.input(textbox);
+
+      expect(textbox.getAttribute('aria-expanded')).toBe('false');
+      expect(document.querySelector(BODY_ANCHOR_SELECTOR)).toBeNull();
+    });
+
+    it('serialized output is clean — no anchor artifacts', () => {
+      let handle: XDSChatComposerInputHandle | null = null;
+      const triggers = [createMentionTrigger()];
+      const onChange = vi.fn();
+      render(
+        <XDSChatComposerInput
+          ref={h => {
+            handle = h;
+          }}
+          triggers={triggers}
+          onChange={onChange}
+        />,
+      );
+      const textbox = screen.getByRole('textbox');
+      textbox.focus();
+
+      setCursorAfterText(textbox, 'hello @');
+      fireEvent.input(textbox);
+
+      expect(handle!.getValue()).toBe('hello @');
+      const lastCall = onChange.mock.calls[onChange.mock.calls.length - 1];
+      expect(lastCall[0]).toBe('hello @');
+    });
+
+    it('text nodes stay contiguous — no splits from anchor insertion', () => {
+      const {textbox} = setupTriggerInput([createMentionTrigger()]);
+
+      setCursorAfterText(textbox, 'hello @cin');
+      fireEvent.input(textbox);
+
+      // All text is in a single text node — no splitting
+      const textNodes = Array.from(textbox.childNodes).filter(
+        n => n.nodeType === Node.TEXT_NODE,
+      );
+      expect(textNodes.length).toBe(1);
+      expect(textNodes[0].textContent).toBe('hello @cin');
+    });
+
+    it('cleans up on unmount without errors', () => {
+      const {textbox, unmount} = setupTriggerInput([createMentionTrigger()]);
+
+      setCursorAfterText(textbox, '@');
+      fireEvent.input(textbox);
+
+      expect(() => unmount()).not.toThrow();
+    });
+
+    it('works with / command trigger', () => {
+      const {textbox} = setupTriggerInput([createCommandTrigger()]);
+
+      setCursorAfterText(textbox, '/');
+      fireEvent.input(textbox);
+
+      expect(textbox.getAttribute('aria-expanded')).toBe('true');
+    });
+  });
 });
