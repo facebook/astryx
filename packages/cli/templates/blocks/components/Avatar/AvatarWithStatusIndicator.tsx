@@ -12,3 +12,8 @@ export default function AvatarWithStatusIndicator() {
     />
   );
 }
+
+export const showcase = {
+  aspectRatio: 1,
+  render: AvatarWithStatusIndicator,
+};
