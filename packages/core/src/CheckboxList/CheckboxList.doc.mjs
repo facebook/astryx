@@ -19,80 +19,6 @@ export const docs = {
     'Full-row click — clicking anywhere on the row toggles the checkbox',
     'Field integration — uses XDSField for label, description, and status messaging',
   ],
-  examples: [
-    {
-      label: 'Basic collection mode',
-      code: `<XDSCheckboxList
-  label="Notifications"
-  value={selected}
-  onChange={setSelected}
->
-  <XDSCheckboxListItem label="Email" value="email" />
-  <XDSCheckboxListItem label="SMS" value="sms" />
-  <XDSCheckboxListItem label="Push" value="push" />
-</XDSCheckboxList>`,
-    },
-    {
-      label: 'With descriptions',
-      code: `<XDSCheckboxList
-  label="Preferences"
-  value={selected}
-  onChange={setSelected}
-  hasDividers
->
-  <XDSCheckboxListItem
-    label="Email"
-    value="email"
-    description="Receive notifications via email"
-  />
-  <XDSCheckboxListItem
-    label="SMS"
-    value="sms"
-    description="Standard messaging rates apply"
-  />
-</XDSCheckboxList>`,
-    },
-    {
-      label: 'Standalone mode',
-      code: `<XDSList>
-  <XDSCheckboxListItem
-    label="Accept terms"
-    isChecked={accepted}
-    onCheck={setAccepted}
-  />
-  <XDSCheckboxListItem
-    label="Subscribe to newsletter"
-    isChecked={subscribed}
-    onCheck={setSubscribed}
-  />
-</XDSList>`,
-    },
-    {
-      label: 'With status',
-      code: `<XDSCheckboxList
-  label="Required selections"
-  value={selected}
-  onChange={setSelected}
-  status={{ type: 'error', message: 'Please select at least one option' }}
->
-  <XDSCheckboxListItem label="Option A" value="a" />
-  <XDSCheckboxListItem label="Option B" value="b" />
-</XDSCheckboxList>`,
-    },
-    {
-      label: 'Disabled group',
-      code: `<XDSCheckboxList
-  label="Locked selections"
-  value={['email']}
-  onChange={() => {}}
-  isDisabled
->
-  <XDSCheckboxListItem label="Email" value="email" />
-  <XDSCheckboxListItem label="SMS" value="sms" />
-</XDSCheckboxList>`,
-    },
-  ],
-
   notes: [
     'XDSCheckboxList composes XDSField (label, description, status) and XDSList (density, dividers)',
     'XDSCheckboxListItem can be used inside XDSCheckboxList (collection mode) or XDSList (standalone mode)',
@@ -106,17 +32,7 @@ export const docs = {
     {
       name: 'XDSCheckboxList',
       description:
-        'Checkbox group container with field integration for label, description, and status.',
-      examples: [
-        {
-          label: 'Basic',
-          code: `<XDSCheckboxList label="Notifications" value={selected} onChange={setSelected}>
-  <XDSCheckboxListItem label="Email" value="email" />
-  <XDSCheckboxListItem label="SMS" value="sms" />
-</XDSCheckboxList>`,
-        },
-      ],
-      props: [
+        'Checkbox group container with field integration for label, description, and status.',      props: [
         {
           name: 'label',
           type: 'string',
@@ -197,20 +113,6 @@ export const docs = {
       name: 'XDSCheckboxListItem',
       description:
         'Individual checkbox item with label, description, and end content slot. Works in collection mode (inside XDSCheckboxList) or standalone mode (inside XDSList).',
-      examples: [
-        {
-          label: 'Collection mode',
-          code: `<XDSCheckboxListItem label="Email" value="email" />`,
-        },
-        {
-          label: 'Standalone mode',
-          code: `<XDSCheckboxListItem
-  label="Accept terms"
-  isChecked={accepted}
-  onCheck={setAccepted}
-/>`,
-        },
-      ],
       props: [
         {
           name: 'label',
@@ -285,74 +187,6 @@ export const docsZh = {
     '全行点击 - 点击行中任意位置均可切换复选框',
     '字段集成 - 使用 XDSField 提供标签、描述和状态消息',
   ],
-  examples: [
-    {
-      label: '基础集合模式',
-      code: `<XDSCheckboxList
-  label="Notifications"
-  value={selected}
-  onChange={setSelected}
->
-  <XDSCheckboxListItem label="Email" value="email" />
-  <XDSCheckboxListItem label="SMS" value="sms" />
-  <XDSCheckboxListItem label="Push" value="push" />
-</XDSCheckboxList>`,
-    },
-    {
-      label: '带描述',
-      code: `<XDSCheckboxList
-  label="Preferences"
-  value={selected}
-  onChange={setSelected}
-  hasDividers
->
-  <XDSCheckboxListItem
-    label="Email"
-    value="email"
-    description="Receive notifications via email"
-  />
-  <XDSCheckboxListItem
-    label="SMS"
-    value="sms"
-    description="Standard messaging rates apply"
-  />
-</XDSCheckboxList>`,
-    },
-    {
-      label: '独立模式',
-      code: `<XDSList>
-  <XDSCheckboxListItem
-    label="Accept terms"
-    isChecked={accepted}
-    onCheck={setAccepted}
-  />
-</XDSList>`,
-    },
-    {
-      label: '带状态',
-      code: `<XDSCheckboxList
-  label="Required selections"
-  value={selected}
-  onChange={setSelected}
-  status={{ type: 'error', message: 'Please select at least one option' }}
->
-  <XDSCheckboxListItem label="Option A" value="a" />
-  <XDSCheckboxListItem label="Option B" value="b" />
-</XDSCheckboxList>`,
-    },
-    {
-      label: '禁用组',
-      code: `<XDSCheckboxList
-  label="Locked selections"
-  value={['email']}
-  onChange={() => {}}
-  isDisabled
->
-  <XDSCheckboxListItem label="Email" value="email" />
-  <XDSCheckboxListItem label="SMS" value="sms" />
-</XDSCheckboxList>`,
-    },
-  ],
 
   notes: [
     'XDSCheckboxList 组合 XDSField（标签、描述、状态）和 XDSList（密度、分隔线）',
@@ -368,15 +202,6 @@ export const docsZh = {
       name: 'XDSCheckboxList',
       description:
         '复选框组容器，集成字段功能，支持标签、描述和状态。',
-      examples: [
-        {
-          label: '基础用法',
-          code: `<XDSCheckboxList label="Notifications" value={selected} onChange={setSelected}>
-  <XDSCheckboxListItem label="Email" value="email" />
-  <XDSCheckboxListItem label="SMS" value="sms" />
-</XDSCheckboxList>`,
-        },
-      ],
       props: [
         {
           name: 'label',
@@ -458,20 +283,6 @@ export const docsZh = {
       name: 'XDSCheckboxListItem',
       description:
         '单个复选框选项，包含标签、描述和尾部内容插槽。可在集合模式或独立模式下使用。',
-      examples: [
-        {
-          label: '集合模式',
-          code: `<XDSCheckboxListItem label="Email" value="email" />`,
-        },
-        {
-          label: '独立模式',
-          code: `<XDSCheckboxListItem
-  label="Accept terms"
-  isChecked={accepted}
-  onCheck={setAccepted}
-/>`,
-        },
-      ],
       props: [
         {
           name: 'label',
