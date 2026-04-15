@@ -33,3 +33,8 @@ export default function TypeaheadBasicTypeahead() {
     />
   );
 }
+
+export const showcase = {
+  aspectRatio: 4 / 3,
+  render: TypeaheadBasicTypeahead,
+};
