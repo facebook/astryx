@@ -4,6 +4,10 @@ export const docs = {
   name: 'Timestamp',
   description:
     'Displays a formatted timestamp as human-readable text with optional tooltip and live updates. Renders via XDSText for consistent typography.',
+  showcase: {
+    aspectRatio: 1,
+    code: '<XDSTimestamp date={new Date()} />',
+  },
   keywords: ['date', 'time', 'datetime', 'relative', 'ago', 'clock', 'format', 'duration'],
   props: [
     {
@@ -78,38 +82,7 @@ export const docs = {
     'Semantic HTML: renders <time> with ISO 8601 datetime attribute',
     'Typography: delegates to XDSText for consistent sizing and color',
     "System formats: ISO-style dates/times for databases and logs",
-  ],
-  examples: [
-    {
-      label: 'Auto format (default)',
-      code: '<XDSTimestamp value="2026-03-25T12:00:00Z" />',
-    },
-    {
-      label: 'Relative format',
-      code: '<XDSTimestamp value={Date.now() / 1000 - 3600} format="relative" />',
-    },
-    {
-      label: 'Date only',
-      code: '<XDSTimestamp value="2026-02-19T17:00:00Z" format="date" />',
-    },
-    {
-      label: 'Date and time',
-      code: '<XDSTimestamp value="2026-02-19T17:00:00Z" format="date_time" />',
-    },
-    {
-      label: 'Time only',
-      code: '<XDSTimestamp value="2026-02-19T17:00:00Z" format="time" />',
-    },
-    {
-      label: 'System date/time',
-      code: '<XDSTimestamp value="2026-02-19T17:00:00Z" format="system_date_time" type="code" />',
-    },
-    {
-      label: 'Live updating',
-      code: '<XDSTimestamp value={Date.now() / 1000 - 120} format="relative" isLive />',
-    },
-  ],
-  theming: {
+  ],  theming: {
     targets: [
       {className: 'xds-timestamp', visualProps: ['type', 'color']},
     ],

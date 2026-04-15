@@ -4,6 +4,10 @@ export const docs = {
   name: 'Spinner',
   description:
     'An animated loading indicator with optional visible label.',
+  showcase: {
+    aspectRatio: 1,
+    code: '<XDSSpinner label="Loading" />',
+  },
   keywords: ["spinner","loader","loading","circular","progress","spin","activity","busy","indeterminate"],
   features: [
     'Canvas Animation: Lightweight canvas-based spinner with smooth 360° rotation',
@@ -44,35 +48,7 @@ export const docs = {
       description:
         'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
     },
-  ],
-  examples: [
-    {
-      label: 'Default',
-      code: `<XDSSpinner />`,
-    },
-    {
-      label: 'With label',
-      code: `<XDSSpinner label="Loading..." />`,
-    },
-    {
-      label: 'A11y only (no visible text)',
-      code: `<XDSSpinner aria-label="Loading data" />`,
-    },
-    {
-      label: 'Rich label with composition',
-      code: `<XDSSpinner
-  size="lg"
-  label={
-    <XDSVStack gap={0} hAlign="center">
-      <XDSText type="body" weight="bold">Fetching data</XDSText>
-      <XDSText type="supporting" color="secondary">This may take a moment</XDSText>
-    </XDSVStack>
-  }
-  aria-label="Fetching data"
-/>`,
-    },
-  ],
-  theming: {
+  ],  theming: {
     targets: [
       {className: 'xds-spinner', visualProps: ['size', 'shade']},
     ],
@@ -139,33 +115,6 @@ export const docsZh = {
       type: 'StyleXStyles',
       description:
         'StyleX 样式，用于布局自定义（边距、定位、尺寸）。必须是 stylex.create() 的值，而非内联样式对象如 style={{}}。',
-    },
-  ],
-  examples: [
-    {
-      label: '默认',
-      code: `<XDSSpinner />`,
-    },
-    {
-      label: '带标签',
-      code: `<XDSSpinner label="加载中..." />`,
-    },
-    {
-      label: '仅无障碍（无可见文本）',
-      code: `<XDSSpinner aria-label="正在加载数据" />`,
-    },
-    {
-      label: '富文本标签',
-      code: `<XDSSpinner
-  size="lg"
-  label={
-    <XDSVStack gap={0} hAlign="center">
-      <XDSText type="body" weight="bold">正在获取数据</XDSText>
-      <XDSText type="supporting" color="secondary">这可能需要一些时间</XDSText>
-    </XDSVStack>
-  }
-  aria-label="正在获取数据"
-/>`,
     },
   ],
   theming: {

@@ -4,6 +4,10 @@ export const docs = {
   name: 'TextInput',
   description:
     'A text input component for collecting user text input, with label, description, validation status, and optional/required indicators.',
+  showcase: {
+    aspectRatio: 4 / 3,
+    code: '<XDSTextInput label="Name" value="" onChange={() => {}} />',
+  },
   keywords: ["textinput","textfield","input","search","clearable","prefix","suffix","adornment","validation"],
   features: [
     'Label support — required label for accessibility (can be visually hidden)',
@@ -16,70 +20,7 @@ export const docs = {
     'Disabled state — visually dims the input and prevents interaction',
     'Accessible — label is always associated with the input via htmlFor/id; sets aria-invalid, aria-required, aria-busy, and aria-describedby as appropriate',
     'Styled with StyleX — uses XDS design tokens for consistent styling',
-  ],
-  examples: [
-    {
-      label: 'Basic',
-      code: '<XDSTextInput label="Name" value={name} onChange={setName} />',
-    },
-    {
-      label: 'With placeholder',
-      code: '<XDSTextInput label="Email" value={email} onChange={setEmail} placeholder="email@example.com" />',
-    },
-    {
-      label: 'Password input',
-      code: '<XDSTextInput type="password" label="Password" value={password} onChange={setPassword} />',
-    },
-    {
-      label: 'Hidden label',
-      code: '<XDSTextInput label="Search" isLabelHidden value={query} onChange={setQuery} placeholder="Search..." />',
-    },
-    {
-      label: 'With description',
-      code: `<XDSTextInput
-  label="Email"
-  description="We'll never share your email"
-  value={email}
-  onChange={setEmail}
-/>`,
-    },
-    {
-      label: 'Optional and required',
-      code: `<XDSTextInput label="Nickname" isOptional value={nickname} onChange={setNickname} />
-<XDSTextInput label="Username" isRequired value={username} onChange={setUsername} />`,
-    },
-    {
-      label: 'Validation status',
-      code: `<XDSTextInput
-  label="Email"
-  value={email}
-  onChange={setEmail}
-  status={{type: 'error', message: 'Invalid email address'}}
-/>`,
-    },
-    {
-      label: 'With start icon',
-      code: `<XDSTextInput
-  label="Search"
-  value={query}
-  onChange={setQuery}
-  startIcon={MagnifyingGlassIcon}
-  placeholder="Search..."
-/>`,
-    },
-    {
-      label: 'Async action with loading state',
-      code: `<XDSTextInput
-  label="Username"
-  value={username}
-  onChange={setUsername}
-  onChangeAction={async (value) => {
-    await checkAvailability(value);
-  }}
-/>`,
-    },
-  ],
-  props: [
+  ],  props: [
     {
       name: 'type',
       type: "'text' | 'password' | 'email'",
@@ -255,64 +196,6 @@ export const docsZh = {
     '禁用状态 — 视觉上使输入框变暗并阻止交互',
     '无障碍 — 标签始终通过 htmlFor/id 与输入框关联；根据需要设置 aria-invalid、aria-required、aria-busy 和 aria-describedby',
     '使用 StyleX 样式化 — 使用 XDS 设计令牌实现一致的样式',
-  ],
-  examples: [
-    {
-      label: '基础用法',
-      code: '<XDSTextInput label="Name" value={name} onChange={setName} />',
-    },
-    {
-      label: '带占位符',
-      code: '<XDSTextInput label="Email" value={email} onChange={setEmail} placeholder="email@example.com" />',
-    },
-    {
-      label: '隐藏标签',
-      code: '<XDSTextInput label="Search" isLabelHidden value={query} onChange={setQuery} placeholder="Search..." />',
-    },
-    {
-      label: '带描述',
-      code: `<XDSTextInput
-  label="Email"
-  description="We'll never share your email"
-  value={email}
-  onChange={setEmail}
-/>`,
-    },
-    {
-      label: '可选和必填',
-      code: `<XDSTextInput label="Nickname" isOptional value={nickname} onChange={setNickname} />
-<XDSTextInput label="Username" isRequired value={username} onChange={setUsername} />`,
-    },
-    {
-      label: '验证状态',
-      code: `<XDSTextInput
-  label="Email"
-  value={email}
-  onChange={setEmail}
-  status={{type: 'error', message: 'Invalid email address'}}
-/>`,
-    },
-    {
-      label: '带起始图标',
-      code: `<XDSTextInput
-  label="Search"
-  value={query}
-  onChange={setQuery}
-  startIcon={MagnifyingGlassIcon}
-  placeholder="Search..."
-/>`,
-    },
-    {
-      label: '带加载状态的异步操作',
-      code: `<XDSTextInput
-  label="Username"
-  value={username}
-  onChange={setUsername}
-  onChangeAction={async (value) => {
-    await checkAvailability(value);
-  }}
-/>`,
-    },
   ],
   props: [
     {

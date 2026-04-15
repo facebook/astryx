@@ -4,6 +4,10 @@ export const docs = {
   name: 'EmptyState',
   description:
     'An empty state placeholder for content areas with no data. Displays an icon or illustration, title, optional description, and action buttons.',
+  showcase: {
+    aspectRatio: 4 / 3,
+    code: '<XDSEmptyState title="No results" />',
+  },
   keywords: ["emptystate","empty","placeholder","nodata","blank","noresults","illustration","blankslate"],
   features: [
     'Uses role="status" so screen readers announce the empty state automatically',
@@ -13,36 +17,6 @@ export const docs = {
     'Compact variant reduces spacing for constrained content areas',
     'Accepts xstyle, className, and style props for custom container adjustments',
     'Forwarded ref lands on the root <div> container',
-  ],
-  examples: [
-    {
-      label: 'Minimal',
-      code: '<XDSEmptyState title="No results found" />',
-    },
-    {
-      label: 'With description',
-      code: `<XDSEmptyState
-  title="No results found"
-  description="Try adjusting your search or filters."
-/>`,
-    },
-    {
-      label: 'Full example with icon and action',
-      code: `<XDSEmptyState
-  icon={<XDSIcon icon={InboxIcon} size="lg" />}
-  title="No messages"
-  description="You're all caught up!"
-  actions={<XDSButton label="Compose" variant="primary" />}
-/>`,
-    },
-    {
-      label: 'Compact variant',
-      code: `<XDSEmptyState
-  title="No items"
-  description="Nothing to show here."
-  isCompact
-/>`,
-    },
   ],
   props: [
     {
@@ -136,36 +110,6 @@ export const docsZh = {
     '紧凑变体减少间距，适用于空间受限的内容区域',
     '接受 xstyle、className 和 style 属性用于自定义容器调整',
     '转发的 ref 指向根 <div> 容器',
-  ],
-  examples: [
-    {
-      label: '最简用法',
-      code: '<XDSEmptyState title="No results found" />',
-    },
-    {
-      label: '带描述',
-      code: `<XDSEmptyState
-  title="No results found"
-  description="Try adjusting your search or filters."
-/>`,
-    },
-    {
-      label: '带图标和操作的完整示例',
-      code: `<XDSEmptyState
-  icon={<XDSIcon icon={InboxIcon} size="lg" />}
-  title="No messages"
-  description="You're all caught up!"
-  actions={<XDSButton label="Compose" variant="primary" />}
-/>`,
-    },
-    {
-      label: '紧凑变体',
-      code: `<XDSEmptyState
-  title="No items"
-  description="Nothing to show here."
-  isCompact
-/>`,
-    },
   ],
   props: [
     {

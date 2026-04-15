@@ -12,8 +12,9 @@ export {discoverTemplates, listTemplates, getTemplateById} from '../api/template
 export function registerTemplate(program) {
   const templateCmd = program
     .command('template [name] [path]')
-    .description('Inject a page template')
-    .option('--list', 'List available templates with component compositions')
+    .description('Inject a page or block template')
+    .option('--list', 'List available templates')
+    .option('--type <type>', 'Filter by template type: page or block')
     .option('--skeleton', 'Show layout skeleton with spatial annotations (padding, gap, nesting)')
     .action(async (name, targetPath, options) => {
       const json = program.opts().json || false;
@@ -23,6 +24,7 @@ export function registerTemplate(program) {
         result = await templateApi(name, {
           list: options.list,
           skeleton: options.skeleton,
+          type: options.type,
           targetPath,
           cwd: process.cwd(),
         });
@@ -39,15 +41,28 @@ export function registerTemplate(program) {
 
       switch (result.type) {
         case 'template.list': {
-          console.log('\nAvailable templates:\n');
-          for (const t of result.data) {
-            const status = t.isReady ? '' : ' (WIP)';
-            console.log(`  ${t.name}${status}`);
-            if (t.description) console.log(`    ${t.description}`);
+          const pages = result.data.filter(t => t.type === 'page');
+          const blocks = result.data.filter(t => t.type === 'block');
+          if (pages.length > 0) {
+            console.log('\nPage Templates:\n');
+            for (const t of pages) {
+              const status = t.isReady ? '' : ' (WIP)';
+              console.log(`  ${t.name}${status}`);
+              if (t.description) console.log(`    ${t.description}`);
+            }
+          }
+          if (blocks.length > 0) {
+            console.log('\nBlock Templates:\n');
+            for (const t of blocks) {
+              const status = t.isReady ? '' : ' (WIP)';
+              console.log(`  ${t.name}${status}`);
+              if (t.description) console.log(`    ${t.description}`);
+            }
           }
           console.log('\nUsage:');
-          console.log('  xds template <name> [target-path]   Scaffold page');
-          console.log('  xds template <name> --skeleton      Layout reference\n');
+          console.log('  xds template <name> [target-path]   Scaffold page or block');
+          console.log('  xds template <name> --skeleton      Layout reference');
+          console.log('  xds template --list --type block    List only blocks\n');
           break;
         }
 
@@ -66,7 +81,7 @@ export function registerTemplate(program) {
         }
 
         case 'template.copy': {
-          console.log(`\n✓ Copied template to ${result.data.outputDir}/page.tsx\n`);
+          console.log(`\n✓ Copied template to ${result.data.outputDir}/${result.data.fileName}\n`);
           break;
         }
       }

@@ -4,6 +4,10 @@ export const docs = {
   name: 'DropdownMenu',
   description:
     'A dropdown menu component for displaying actionable items in a popup menu.',
+  showcase: {
+    aspectRatio: 4 / 3,
+    code: '<XDSDropdownMenu trigger={<button>Menu</button>} items={[{label: "Edit"}]} />',
+  },
   keywords: ["dropdown","menu","popover","select","actions","contextmenu","overflow","kebab","menubutton"],
   features: [
     'Button customization: Customize the trigger button via the `button` prop (supports all XDSButton props)',
@@ -14,88 +18,6 @@ export const docs = {
     'Keyboard navigation: Full keyboard support (Arrow keys, Home, End, Enter, Space, Escape)',
     'Accessibility: Proper ARIA roles (menu, menuitem) and attributes',
     'Custom rendering: Optional `children` render function with `XDSDropdownMenuItem` helper',
-  ],
-  examples: [
-    {
-      label: 'Basic usage',
-      code: `<XDSDropdownMenu
-  button={{ label: 'Actions' }}
-  items={[
-    { label: 'Edit', onClick: () => handleEdit() },
-    { label: 'Delete', onClick: () => handleDelete() },
-  ]}
-/>`,
-    },
-    {
-      label: 'With icons',
-      code: `<XDSDropdownMenu
-  button={{ label: 'Actions' }}
-  items={[
-    { label: 'Edit', icon: PencilIcon, onClick: () => handleEdit() },
-    { label: 'Delete', icon: TrashIcon, onClick: () => handleDelete() },
-  ]}
-/>`,
-    },
-    {
-      label: 'With sections',
-      code: `<XDSDropdownMenu
-  button={{ label: 'File', variant: 'ghost' }}
-  items={[
-    {
-      type: 'section',
-      title: 'Create',
-      items: [
-        { label: 'New File', onClick: () => handleNew() },
-        { label: 'New Folder', onClick: () => handleNewFolder() },
-      ],
-    },
-    {
-      type: 'section',
-      title: 'Manage',
-      items: [
-        { label: 'Rename', onClick: () => handleRename() },
-        { label: 'Delete', isDisabled: true },
-      ],
-    },
-  ]}
-/>`,
-    },
-    {
-      label: 'With dividers',
-      code: `<XDSDropdownMenu
-  button={{ label: 'Actions' }}
-  items={[
-    { label: 'Edit', onClick: () => handleEdit() },
-    { type: 'divider' },
-    { label: 'Delete', onClick: () => handleDelete() },
-  ]}
-/>`,
-    },
-    {
-      label: 'Controlled mode',
-      code: `const [isOpen, setIsOpen] = useState(false);
-<XDSDropdownMenu
-  button={{ label: 'Options' }}
-  items={[...]}
-  isMenuOpen={isOpen}
-  onOpenChange={setIsOpen}
-/>`,
-    },
-    {
-      label: 'Custom item rendering with XDSDropdownMenuItem',
-      code: `<XDSDropdownMenu
-  button={{ label: 'Users' }}
-  items={users}
->
-  {item => (
-    <XDSDropdownMenuItem
-      icon={item.icon}
-      label={item.label}
-      description={item.email}
-    />
-  )}
-</XDSDropdownMenu>`,
-    },
   ],
   theming: {
     targets: [
@@ -172,20 +94,7 @@ export const docs = {
           type: '(item: XDSDropdownMenuItemData) => ReactNode',
           description: 'Custom render function for each item in the list.',
         },
-      ],
-      examples: [
-        {
-          label: 'Basic',
-          code: `<XDSDropdownMenu
-  button={{ label: 'Actions' }}
-  items={[
-    { label: 'Edit', icon: PencilIcon, onClick: () => handleEdit() },
-    { label: 'Delete', icon: TrashIcon, onClick: () => handleDelete() },
-  ]}
-/>`,
-        },
-      ],
-    },
+      ],    },
     {
       name: 'XDSDropdownMenuItem',
       description:
@@ -218,16 +127,6 @@ export const docs = {
           description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
         },
       ],
-      examples: [
-        {
-          label: 'With icon and description',
-          code: `<XDSDropdownMenuItem
-  icon={UserIcon}
-  label="Alice Johnson"
-  description="alice@example.com"
-/>`,
-        },
-      ],
     },
     {
       name: 'XDSDropdownMenuItemData',
@@ -258,16 +157,6 @@ export const docs = {
           description: 'Icon to display before the item label.',
         },
       ],
-      examples: [
-        {
-          label: 'Basic item',
-          code: `{ label: 'Edit', onClick: () => handleEdit() }`,
-        },
-        {
-          label: 'Disabled item with icon',
-          code: `{ label: 'Delete', icon: TrashIcon, isDisabled: true }`,
-        },
-      ],
     },
     {
       name: 'XDSDropdownMenuDivider',
@@ -280,16 +169,6 @@ export const docs = {
           description:
             'Discriminant value that identifies this entry as a divider.',
           required: true,
-        },
-      ],
-      examples: [
-        {
-          label: 'Divider between items',
-          code: `items={[
-  { label: 'Edit', onClick: () => handleEdit() },
-  { type: 'divider' },
-  { label: 'Delete', onClick: () => handleDelete() },
-]}`,
         },
       ],
     },
@@ -318,19 +197,6 @@ export const docs = {
           required: true,
         },
       ],
-      examples: [
-        {
-          label: 'Section with title',
-          code: `{
-  type: 'section',
-  title: 'Create',
-  items: [
-    { label: 'New File', onClick: () => handleNew() },
-    { label: 'New Folder', onClick: () => handleNewFolder() },
-  ],
-}`,
-        },
-      ],
     },
   ],
   usage: {
@@ -356,88 +222,6 @@ export const docsZh = {
     '键盘导航：完整的键盘支持（方向键、Home、End、Enter、Space、Escape）',
     '无障碍：正确的 ARIA 角色（menu、menuitem）和属性',
     '自定义渲染：可选的 `children` 渲染函数，配合 `XDSDropdownMenuItem` 辅助组件',
-  ],
-  examples: [
-    {
-      label: '基础用法',
-      code: `<XDSDropdownMenu
-  button={{ label: 'Actions' }}
-  items={[
-    { label: 'Edit', onClick: () => handleEdit() },
-    { label: 'Delete', onClick: () => handleDelete() },
-  ]}
-/>`,
-    },
-    {
-      label: '带图标',
-      code: `<XDSDropdownMenu
-  button={{ label: 'Actions' }}
-  items={[
-    { label: 'Edit', icon: PencilIcon, onClick: () => handleEdit() },
-    { label: 'Delete', icon: TrashIcon, onClick: () => handleDelete() },
-  ]}
-/>`,
-    },
-    {
-      label: '带分组',
-      code: `<XDSDropdownMenu
-  button={{ label: 'File', variant: 'ghost' }}
-  items={[
-    {
-      type: 'section',
-      title: 'Create',
-      items: [
-        { label: 'New File', onClick: () => handleNew() },
-        { label: 'New Folder', onClick: () => handleNewFolder() },
-      ],
-    },
-    {
-      type: 'section',
-      title: 'Manage',
-      items: [
-        { label: 'Rename', onClick: () => handleRename() },
-        { label: 'Delete', isDisabled: true },
-      ],
-    },
-  ]}
-/>`,
-    },
-    {
-      label: '带分隔线',
-      code: `<XDSDropdownMenu
-  button={{ label: 'Actions' }}
-  items={[
-    { label: 'Edit', onClick: () => handleEdit() },
-    { type: 'divider' },
-    { label: 'Delete', onClick: () => handleDelete() },
-  ]}
-/>`,
-    },
-    {
-      label: '受控模式',
-      code: `const [isOpen, setIsOpen] = useState(false);
-<XDSDropdownMenu
-  button={{ label: 'Options' }}
-  items={[...]}
-  isMenuOpen={isOpen}
-  onOpenChange={setIsOpen}
-/>`,
-    },
-    {
-      label: '使用 XDSDropdownMenuItem 自定义项渲染',
-      code: `<XDSDropdownMenu
-  button={{ label: 'Users' }}
-  items={users}
->
-  {item => (
-    <XDSDropdownMenuItem
-      icon={item.icon}
-      label={item.label}
-      description={item.email}
-    />
-  )}
-</XDSDropdownMenu>`,
-    },
   ],
   theming: {
     targets: [
@@ -515,18 +299,6 @@ export const docsZh = {
           description: '列表中每个项的自定义渲染函数。',
         },
       ],
-      examples: [
-        {
-          label: '基础用法',
-          code: `<XDSDropdownMenu
-  button={{ label: 'Actions' }}
-  items={[
-    { label: 'Edit', icon: PencilIcon, onClick: () => handleEdit() },
-    { label: 'Delete', icon: TrashIcon, onClick: () => handleDelete() },
-  ]}
-/>`,
-        },
-      ],
     },
     {
       name: 'XDSDropdownMenuItem',
@@ -560,16 +332,6 @@ export const docsZh = {
           description: '根容器的 StyleX 样式。',
         },
       ],
-      examples: [
-        {
-          label: '带图标和描述',
-          code: `<XDSDropdownMenuItem
-  icon={UserIcon}
-  label="Alice Johnson"
-  description="alice@example.com"
-/>`,
-        },
-      ],
     },
     {
       name: 'XDSDropdownMenuItemData',
@@ -600,16 +362,6 @@ export const docsZh = {
           description: '显示在菜单项标签前的图标。',
         },
       ],
-      examples: [
-        {
-          label: '基础菜单项',
-          code: `{ label: 'Edit', onClick: () => handleEdit() }`,
-        },
-        {
-          label: '带图标的禁用项',
-          code: `{ label: 'Delete', icon: TrashIcon, isDisabled: true }`,
-        },
-      ],
     },
     {
       name: 'XDSDropdownMenuDivider',
@@ -622,16 +374,6 @@ export const docsZh = {
           description:
             '标识此条目为分隔线的判别值。',
           required: true,
-        },
-      ],
-      examples: [
-        {
-          label: '菜单项之间的分隔线',
-          code: `items={[
-  { label: 'Edit', onClick: () => handleEdit() },
-  { type: 'divider' },
-  { label: 'Delete', onClick: () => handleDelete() },
-]}`,
         },
       ],
     },
@@ -658,19 +400,6 @@ export const docsZh = {
           type: 'XDSDropdownMenuItemData[]',
           description: '属于此分组的可操作菜单项。',
           required: true,
-        },
-      ],
-      examples: [
-        {
-          label: '带标题的分组',
-          code: `{
-  type: 'section',
-  title: 'Create',
-  items: [
-    { label: 'New File', onClick: () => handleNew() },
-    { label: 'New Folder', onClick: () => handleNewFolder() },
-  ],
-}`,
         },
       ],
     },

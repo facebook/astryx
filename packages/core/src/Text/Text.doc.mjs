@@ -4,32 +4,11 @@ export const docs = {
   name: 'Text',
   description:
     'Typography components for the XDS design system, including semantic body text, headings, and a wrapper for applying typography styles to native HTML.',
-  keywords: ["text","typography","label","paragraph","heading","caption","font","body","subtitle"],
-  examples: [
-    {
-      label: 'Body text',
-      code: '<XDSText type="body">Body text content.</XDSText>',
-    },
-    {
-      label: 'Supporting text',
-      code: '<XDSText type="supporting">Helper text beneath a field.</XDSText>',
-    },
-    {
-      label: 'Heading',
-      code: '<XDSHeading level={1}>Page Title</XDSHeading>',
-    },
-    {
-      label: 'Truncated text with tooltip',
-      code: '<XDSText type="body" maxLines={2}>Very long text that will be clamped after two lines and show a tooltip on hover.</XDSText>',
-    },
-    {
-      label: 'Font wrapper for native HTML',
-      code: `<div className="xds-typography">
-  <article dangerouslySetInnerHTML={{__html: markdownContent}} />
-</div>`,
-    },
-  ],
-  features: [
+  showcase: {
+    aspectRatio: 1,
+    code: '<XDSText type="body">Hello world</XDSText>',
+  },
+  keywords: ["text","typography","label","paragraph","heading","caption","font","body","subtitle"],  features: [
     'Semantic text types (body, large, label, supporting, code) driven by theme tokens',
     'Headings use native h1–h6 elements with optional aria-level override for decoupled visual vs document hierarchy',
     'Line-clamp truncation with automatic overflow-detecting tooltip',
@@ -52,34 +31,7 @@ export const docs = {
     {
       name: 'XDSText',
       description:
-        'Semantic body text component that renders text with type-based styling from the theme, with optional truncation, decoration, and layout props.',
-      examples: [
-        {
-          label: 'Basic',
-          code: '<XDSText type="body">Body text</XDSText>',
-        },
-        {
-          label: 'All types',
-          code: `<XDSText type="body">Body</XDSText>
-<XDSText type="large">Large body</XDSText>
-<XDSText type="label">Label</XDSText>
-<XDSText type="supporting">Supporting</XDSText>
-<XDSText type="code">{'const x = 1;'}</XDSText>`,
-        },
-        {
-          label: 'Truncation',
-          code: '<XDSText type="body" maxLines={2}>Clamped to two lines with a tooltip on hover.</XDSText>',
-        },
-        {
-          label: 'Styled text',
-          code: '<XDSText type="body" color="secondary" weight="bold" hasTabularNumbers>42,000</XDSText>',
-        },
-        {
-          label: 'Block with strikethrough',
-          code: '<XDSText type="body" display="block" hasStrikethrough>Deprecated item</XDSText>',
-        },
-      ],
-      props: [
+        'Semantic body text component that renders text with type-based styling from the theme, with optional truncation, decoration, and layout props.',      props: [
         {
           name: 'type',
           type: "'body' | 'large' | 'label' | 'supporting' | 'code'",
@@ -185,24 +137,6 @@ export const docs = {
       name: 'XDSHeading',
       description:
         'Semantic heading component that renders h1–h6 elements with themed styling, themed sizing via type scale tokens, and line-clamp truncation.',
-      examples: [
-        {
-          label: 'Basic',
-          code: '<XDSHeading level={1}>Page Title</XDSHeading>',
-        },
-        {
-          label: 'Accessibility level override',
-          code: '<XDSHeading level={2} accessibilityLevel={3}>Sidebar Section</XDSHeading>',
-        },
-        {
-          label: 'Truncated heading',
-          code: '<XDSHeading level={2} maxLines={1}>Very Long Section Title That Gets Clipped</XDSHeading>',
-        },
-        {
-          label: 'Muted heading',
-          code: '<XDSHeading level={3} color="secondary">Muted Heading</XDSHeading>',
-        },
-      ],
       props: [
         {
           name: 'level',
@@ -292,34 +226,6 @@ export const docsZh = {
   name: 'Text',
   description:
     'XDS 设计系统的排版组件，包括语义化正文文本、标题以及将排版样式应用于原生 HTML 的包装器。',
-  examples: [
-    {
-      label: '正文文本',
-      code: '<XDSText type="body">Body text content.</XDSText>',
-    },
-    {
-      label: '辅助文本',
-      code: '<XDSText type="supporting">Helper text beneath a field.</XDSText>',
-    },
-    {
-      label: '标题',
-      code: '<XDSHeading level={1}>Page Title</XDSHeading>',
-    },
-    {
-      label: '编辑风格标题',
-      code: '<XDSHeading level={1}>Page Title</XDSHeading>',
-    },
-    {
-      label: '带工具提示的截断文本',
-      code: '<XDSText type="body" maxLines={2}>Very long text that will be clamped after two lines and show a tooltip on hover.</XDSText>',
-    },
-    {
-      label: '原生 HTML 字体包装器',
-      code: `<div className="xds-typography">
-  <article dangerouslySetInnerHTML={{__html: markdownContent}} />
-</div>`,
-    },
-  ],
   features: [
     '语义化文本类型（body、large、label、supporting、code），由主题令牌驱动',
     '标题使用原生 h1–h6 元素，支持可选的 aria-level 覆盖，实现视觉层级与文档层级的解耦',
@@ -344,32 +250,6 @@ export const docsZh = {
       name: 'XDSText',
       description:
         '语义化正文文本组件，使用来自主题的基于类型的样式渲染文本，支持可选的截断、装饰和布局属性。',
-      examples: [
-        {
-          label: '基础用法',
-          code: '<XDSText type="body">Body text</XDSText>',
-        },
-        {
-          label: '所有类型',
-          code: `<XDSText type="body">Body</XDSText>
-<XDSText type="large">Large body</XDSText>
-<XDSText type="label">Label</XDSText>
-<XDSText type="supporting">Supporting</XDSText>
-<XDSText type="code">{'const x = 1;'}</XDSText>`,
-        },
-        {
-          label: '截断',
-          code: '<XDSText type="body" maxLines={2}>Clamped to two lines with a tooltip on hover.</XDSText>',
-        },
-        {
-          label: '样式化文本',
-          code: '<XDSText type="body" color="secondary" weight="bold" hasTabularNumbers>42,000</XDSText>',
-        },
-        {
-          label: '块级删除线',
-          code: '<XDSText type="body" display="block" hasStrikethrough>Deprecated item</XDSText>',
-        },
-      ],
       props: [
         {
           name: 'type',
@@ -476,28 +356,6 @@ export const docsZh = {
       name: 'XDSHeading',
       description:
         '语义化标题组件，渲染带主题样式的 h1–h6 元素，支持可选的编辑风格比例和行截断。',
-      examples: [
-        {
-          label: '基础用法',
-          code: '<XDSHeading level={1}>Page Title</XDSHeading>',
-        },
-        {
-          label: '编辑风格比例',
-          code: '<XDSHeading level={1}>Page Title</XDSHeading>',
-        },
-        {
-          label: '无障碍级别覆盖',
-          code: '<XDSHeading level={2} accessibilityLevel={3}>Sidebar Section</XDSHeading>',
-        },
-        {
-          label: '截断标题',
-          code: '<XDSHeading level={2} maxLines={1}>Very Long Section Title That Gets Clipped</XDSHeading>',
-        },
-        {
-          label: '柔和标题',
-          code: '<XDSHeading level={3} color="secondary">Muted Heading</XDSHeading>',
-        },
-      ],
       props: [
         {
           name: 'level',

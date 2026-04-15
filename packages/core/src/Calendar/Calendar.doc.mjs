@@ -4,6 +4,10 @@ export const docs = {
   name: 'Calendar',
   description:
     'XDSCalendar component for date selection with single and range modes.',
+  showcase: {
+    aspectRatio: 3 / 4,
+    code: '<XDSCalendar />',
+  },
   keywords: ["calendar","datepicker","date picker","rangepicker","date range","monthview","daypicker"],
   features: [
     "Selection Modes: 'single' (default) and 'range'",
@@ -18,32 +22,6 @@ export const docs = {
     'A11y: selected date receives roving tabindex priority over today',
     'Nav buttons auto-disable when min/max boundary is within the current month',
     'Motion: day cell transitions respect prefers-reduced-motion',
-  ],
-  examples: [
-    {
-      label: 'Single date selection',
-      code: `<XDSCalendar
-  value="2026-01-28"
-  onChange={(value, valueAsDate) => console.log(value)}
-/>`,
-    },
-    {
-      label: 'Range selection',
-      code: `<XDSCalendar
-  mode="range"
-  value={{ start: "2026-01-28", end: "2026-02-05" }}
-  onChange={(range) => console.log(range.start, range.end)}
-/>`,
-    },
-    {
-      label: 'Two months with constraints',
-      code: `<XDSCalendar
-  numberOfMonths={2}
-  min="2026-01-01"
-  max="2026-12-31"
-  weekStartsOn={1}
-/>`,
-    },
   ],
   props: [
     {
@@ -163,32 +141,6 @@ export const docsZh = {
     '无障碍：选中日期获得漫游 tabindex 优先级',
     '导航按钮在 min/max 边界所在月份时自动禁用',
     '动效：日期单元格过渡遵循 prefers-reduced-motion',
-  ],
-  examples: [
-    {
-      label: '单日期选择',
-      code: `<XDSCalendar
-  value="2026-01-28"
-  onChange={(value, valueAsDate) => console.log(value)}
-/>`,
-    },
-    {
-      label: '范围选择',
-      code: `<XDSCalendar
-  mode="range"
-  value={{ start: "2026-01-28", end: "2026-02-05" }}
-  onChange={(range) => console.log(range.start, range.end)}
-/>`,
-    },
-    {
-      label: '带约束的双月显示',
-      code: `<XDSCalendar
-  numberOfMonths={2}
-  min="2026-01-01"
-  max="2026-12-31"
-  weekStartsOn={1}
-/>`,
-    },
   ],
   props: [
     {

@@ -4,6 +4,10 @@ export const docs = {
   name: 'MultiSelector',
   description:
     'Multi-select dropdown with checkboxes for choosing multiple items from a list. For small, finite sets like column toggles or filter facets — not a replacement for XDSTokenizer.',
+  showcase: {
+    aspectRatio: 4 / 3,
+    code: '<XDSMultiSelector label="Tags" items={[]} />',
+  },
   keywords: ['multiselect', 'checkbox', 'dropdown', 'multi', 'picker', 'checklist', 'facet', 'filter', 'select'],
   features: [
     'Checkbox-based multi-select — dropdown stays open on toggle',
@@ -31,57 +35,6 @@ export const docs = {
       {className: 'xds-multi-selector', visualProps: ['size', 'status']},
     ],
   },
-  examples: [
-    {
-      label: 'Basic',
-      code: `<XDSMultiSelector
-  label="Columns"
-  options={['Name', 'Email', 'Role', 'Status']}
-  value={selected}
-  onChange={setSelected}
-/>`,
-    },
-    {
-      label: 'With select all and search',
-      code: `<XDSMultiSelector
-  label="Columns"
-  options={['Name', 'Email', 'Role', 'Status', 'Created']}
-  value={selected}
-  onChange={setSelected}
-  hasSelectAll
-  hasSearch
-/>`,
-    },
-    {
-      label: 'Badges trigger display',
-      code: `<XDSMultiSelector
-  label="Filters"
-  options={['Active', 'Inactive', 'Pending', 'Archived']}
-  value={selected}
-  onChange={setSelected}
-  triggerDisplay="badges"
-  maxBadges={2}
-/>`,
-    },
-    {
-      label: 'Sections',
-      code: `<XDSMultiSelector
-  label="Permissions"
-  options={[
-    {type: 'section', title: 'Read', options: [
-      {value: 'read_posts', label: 'Read posts'},
-      {value: 'read_comments', label: 'Read comments'},
-    ]},
-    {type: 'section', title: 'Write', options: [
-      {value: 'write_posts', label: 'Write posts'},
-      {value: 'write_comments', label: 'Write comments'},
-    ]},
-  ]}
-  value={selected}
-  onChange={setSelected}
-/>`,
-    },
-  ],
   components: [
     {
       name: 'XDSMultiSelector',
@@ -211,29 +164,7 @@ export const docs = {
           description:
             'StyleX styles for layout customization. Must be a stylex.create() value.',
         },
-      ],
-      examples: [
-        {
-          label: 'Basic',
-          code: `<XDSMultiSelector
-  label="Columns"
-  options={['Name', 'Email', 'Role']}
-  value={selected}
-  onChange={setSelected}
-/>`,
-        },
-        {
-          label: 'With select all',
-          code: `<XDSMultiSelector
-  label="Columns"
-  options={['Name', 'Email', 'Role']}
-  value={selected}
-  onChange={setSelected}
-  hasSelectAll
-/>`,
-        },
-      ],
-    },
+      ],    },
   ],
   usage: {
     summary: 'Multi-select dropdown with checkboxes for choosing multiple items from a list.',

@@ -4,6 +4,10 @@ export const docs = {
   name: 'Layout',
   description:
     'Composable utilities and components for building structured layouts with a container/content separation pattern.',
+  showcase: {
+    aspectRatio: 16 / 9,
+    code: '<XDSLayout>Layout content</XDSLayout>',
+  },
   keywords: ["layout","container","content","flex","box","wrapper","scaffold","page","shell"],
   features: [
     'Primitive + higher-order architecture — XDSLayoutContainer is a primitive; XDSCard, XDSSection are higher-order',
@@ -13,49 +17,6 @@ export const docs = {
     'XDSLayout provides a page shell with header, sidebar(s), content, and footer slots',
     'XDSHStack and XDSVStack for simple stacking layouts',
     'XDSStackItem for fill/alignment control within stacks',
-  ],
-  examples: [
-    {
-      label: 'Basic page layout',
-      code: `<XDSLayout
-  header={<XDSLayoutHeader hasDivider>App Name</XDSLayoutHeader>}
-  content={<XDSLayoutContent>Body content</XDSLayoutContent>}
-  footer={<XDSLayoutFooter hasDivider>Footer</XDSLayoutFooter>}
-/>`,
-    },
-    {
-      label: 'App shell with sidebar',
-      code: `<XDSLayout
-  header={<XDSLayoutHeader hasDivider>App Name</XDSLayoutHeader>}
-  start={
-    <XDSLayoutPanel hasDivider width={240} role="navigation">
-      <Navigation />
-    </XDSLayoutPanel>
-  }
-  content={
-    <XDSLayoutContent role="main">
-      <MainContent />
-    </XDSLayoutContent>
-  }
-/>`,
-    },
-    {
-      label: 'Card layout',
-      code: `<XDSCard>
-  <XDSLayout
-    header={<XDSLayoutHeader hasDivider>Title</XDSLayoutHeader>}
-    content={<XDSLayoutContent>Body content</XDSLayoutContent>}
-    footer={
-      <XDSLayoutFooter hasDivider>
-        <XDSHStack gap={2} hAlign="end">
-          <XDSButton variant="secondary">Cancel</XDSButton>
-          <XDSButton variant="primary">Save</XDSButton>
-        </XDSHStack>
-      </XDSLayoutFooter>
-    }
-  />
-</XDSCard>`,
-    },
   ],
   theming: {
     targets: [
@@ -110,34 +71,7 @@ export const docs = {
             'Height behavior — fill the container or grow with content.',
           default: "'fill'",
         },
-      ],
-      examples: [
-        {
-          label: 'Basic',
-          code: `<XDSLayout
-  header={<XDSLayoutHeader hasDivider>App Name</XDSLayoutHeader>}
-  content={<XDSLayoutContent>Body content</XDSLayoutContent>}
-  footer={<XDSLayoutFooter hasDivider>Footer</XDSLayoutFooter>}
-/>`,
-        },
-        {
-          label: 'With start panel',
-          code: `<XDSLayout
-  header={<XDSLayoutHeader hasDivider>App Name</XDSLayoutHeader>}
-  start={
-    <XDSLayoutPanel hasDivider width={240} role="navigation">
-      <Navigation />
-    </XDSLayoutPanel>
-  }
-  content={
-    <XDSLayoutContent role="main">
-      <MainContent />
-    </XDSLayoutContent>
-  }
-/>`,
-        },
-      ],
-    },
+      ],    },
     {
       name: 'XDSLayoutHeader',
       description: 'Top bar for page titles, app bars, and toolbars.',
@@ -169,14 +103,6 @@ export const docs = {
           description: 'ARIA landmark role.',
         },
       ],
-      examples: [
-        {
-          label: 'Basic',
-          code: `<XDSLayoutHeader hasDivider role="banner">
-  Page Title
-</XDSLayoutHeader>`,
-        },
-      ],
     },
     {
       name: 'XDSLayoutContent',
@@ -202,14 +128,6 @@ export const docs = {
           name: 'role',
           type: 'AriaRole',
           description: 'ARIA landmark role.',
-        },
-      ],
-      examples: [
-        {
-          label: 'Basic',
-          code: `<XDSLayoutContent role="main">
-  <MainContent />
-</XDSLayoutContent>`,
         },
       ],
     },
@@ -242,14 +160,6 @@ export const docs = {
           name: 'role',
           type: 'AriaRole',
           description: 'ARIA landmark role.',
-        },
-      ],
-      examples: [
-        {
-          label: 'Basic',
-          code: `<XDSLayoutFooter hasDivider>
-  <XDSButton label="Save" variant="primary" />
-</XDSLayoutFooter>`,
         },
       ],
     },
@@ -285,110 +195,40 @@ export const docs = {
           description: 'ARIA landmark role.',
         },
       ],
-      examples: [
-        {
-          label: 'Navigation sidebar',
-          code: `<XDSLayoutPanel hasDivider width={240} role="navigation">
-  <Navigation />
-</XDSLayoutPanel>`,
-        },
-      ],
     },
     {
       name: 'XDSLayoutContainer',
       description:
         'Primitive component that sets CSS variables for padding, used as the base for XDSCard and XDSSection.',
       props: [],
-      examples: [
-        {
-          label: 'Basic',
-          code: '<XDSLayoutContainer>Content</XDSLayoutContainer>',
-        },
-      ],
     },
     {
       name: 'XDSCard',
       description:
         'Card with shadow and themed styling, built on XDSLayoutContainer.',
       props: [],
-      examples: [
-        {
-          label: 'Basic',
-          code: '<XDSCard>Card content</XDSCard>',
-        },
-        {
-          label: 'With layout structure',
-          code: `<XDSCard>
-  <XDSLayout
-    header={<XDSLayoutHeader hasDivider>Title</XDSLayoutHeader>}
-    content={<XDSLayoutContent>Body content</XDSLayoutContent>}
-    footer={
-      <XDSLayoutFooter hasDivider>
-        <XDSHStack gap={2} hAlign="end">
-          <XDSButton variant="secondary">Cancel</XDSButton>
-          <XDSButton variant="primary">Save</XDSButton>
-        </XDSHStack>
-      </XDSLayoutFooter>
-    }
-  />
-</XDSCard>`,
-        },
-      ],
     },
     {
       name: 'XDSSection',
       description:
         'Section with background variants (section, transparent, wash), built on XDSLayoutContainer.',
       props: [],
-      examples: [
-        {
-          label: 'Basic',
-          code: '<XDSSection>Section content</XDSSection>',
-        },
-      ],
     },
     {
       name: 'XDSHStack',
       description: 'Horizontal stack that arranges children left-to-right.',
       props: [],
-      examples: [
-        {
-          label: 'Basic',
-          code: `<XDSHStack gap={2} hAlign="end">
-  <XDSButton variant="secondary">Cancel</XDSButton>
-  <XDSButton variant="primary">Save</XDSButton>
-</XDSHStack>`,
-        },
-      ],
     },
     {
       name: 'XDSVStack',
       description: 'Vertical stack that arranges children top-to-bottom.',
       props: [],
-      examples: [
-        {
-          label: 'Basic',
-          code: `<XDSVStack gap={4}>
-  <XDSCard>First</XDSCard>
-  <XDSCard>Second</XDSCard>
-</XDSVStack>`,
-        },
-      ],
     },
     {
       name: 'XDSStackItem',
       description:
         'Stack item with fill and alignment control for use inside XDSHStack or XDSVStack.',
       props: [],
-      examples: [
-        {
-          label: 'Fill remaining space',
-          code: `<XDSHStack>
-  <XDSStackItem grow>Main content</XDSStackItem>
-  <XDSButton variant="primary">Action</XDSButton>
-</XDSHStack>`,
-        },
-      ],
     },
   ],
   usage: {
@@ -409,49 +249,6 @@ export const docsZh = {
     'XDSLayout 提供带有页眉、侧边栏、内容和页脚插槽的页面外壳',
     'XDSHStack 和 XDSVStack 用于简单的堆叠布局',
     'XDSStackItem 用于堆叠中的填充/对齐控制',
-  ],
-  examples: [
-    {
-      label: '基础页面布局',
-      code: `<XDSLayout
-  header={<XDSLayoutHeader hasDivider>App Name</XDSLayoutHeader>}
-  content={<XDSLayoutContent>Body content</XDSLayoutContent>}
-  footer={<XDSLayoutFooter hasDivider>Footer</XDSLayoutFooter>}
-/>`,
-    },
-    {
-      label: '带侧边栏的应用外壳',
-      code: `<XDSLayout
-  header={<XDSLayoutHeader hasDivider>App Name</XDSLayoutHeader>}
-  start={
-    <XDSLayoutPanel hasDivider width={240} role="navigation">
-      <Navigation />
-    </XDSLayoutPanel>
-  }
-  content={
-    <XDSLayoutContent role="main">
-      <MainContent />
-    </XDSLayoutContent>
-  }
-/>`,
-    },
-    {
-      label: '卡片布局',
-      code: `<XDSCard>
-  <XDSLayout
-    header={<XDSLayoutHeader hasDivider>Title</XDSLayoutHeader>}
-    content={<XDSLayoutContent>Body content</XDSLayoutContent>}
-    footer={
-      <XDSLayoutFooter hasDivider>
-        <XDSHStack gap={2} hAlign="end">
-          <XDSButton variant="secondary">Cancel</XDSButton>
-          <XDSButton variant="primary">Save</XDSButton>
-        </XDSHStack>
-      </XDSLayoutFooter>
-    }
-  />
-</XDSCard>`,
-    },
   ],
   theming: {
     targets: [
@@ -507,32 +304,6 @@ export const docsZh = {
           default: "'fill'",
         },
       ],
-      examples: [
-        {
-          label: '基础',
-          code: `<XDSLayout
-  header={<XDSLayoutHeader hasDivider>App Name</XDSLayoutHeader>}
-  content={<XDSLayoutContent>Body content</XDSLayoutContent>}
-  footer={<XDSLayoutFooter hasDivider>Footer</XDSLayoutFooter>}
-/>`,
-        },
-        {
-          label: '带起始面板',
-          code: `<XDSLayout
-  header={<XDSLayoutHeader hasDivider>App Name</XDSLayoutHeader>}
-  start={
-    <XDSLayoutPanel hasDivider width={240} role="navigation">
-      <Navigation />
-    </XDSLayoutPanel>
-  }
-  content={
-    <XDSLayoutContent role="main">
-      <MainContent />
-    </XDSLayoutContent>
-  }
-/>`,
-        },
-      ],
     },
     {
       name: 'XDSLayoutHeader',
@@ -565,14 +336,6 @@ export const docsZh = {
           description: 'ARIA 地标角色。',
         },
       ],
-      examples: [
-        {
-          label: '基础',
-          code: `<XDSLayoutHeader hasDivider role="banner">
-  Page Title
-</XDSLayoutHeader>`,
-        },
-      ],
     },
     {
       name: 'XDSLayoutContent',
@@ -598,14 +361,6 @@ export const docsZh = {
           name: 'role',
           type: 'AriaRole',
           description: 'ARIA 地标角色。',
-        },
-      ],
-      examples: [
-        {
-          label: '基础',
-          code: `<XDSLayoutContent role="main">
-  <MainContent />
-</XDSLayoutContent>`,
         },
       ],
     },
@@ -638,14 +393,6 @@ export const docsZh = {
           name: 'role',
           type: 'AriaRole',
           description: 'ARIA 地标角色。',
-        },
-      ],
-      examples: [
-        {
-          label: '基础',
-          code: `<XDSLayoutFooter hasDivider>
-  <XDSButton label="Save" variant="primary" />
-</XDSLayoutFooter>`,
         },
       ],
     },
@@ -681,110 +428,40 @@ export const docsZh = {
           description: 'ARIA 地标角色。',
         },
       ],
-      examples: [
-        {
-          label: '导航侧边栏',
-          code: `<XDSLayoutPanel hasDivider width={240} role="navigation">
-  <Navigation />
-</XDSLayoutPanel>`,
-        },
-      ],
     },
     {
       name: 'XDSLayoutContainer',
       description:
         '设置内边距 CSS 变量的基础组件，作为 XDSCard 和 XDSSection 的基础。',
       props: [],
-      examples: [
-        {
-          label: '基础',
-          code: '<XDSLayoutContainer>Content</XDSLayoutContainer>',
-        },
-      ],
     },
     {
       name: 'XDSCard',
       description:
         '基于 XDSLayoutContainer 构建的带有阴影和主题样式的卡片。',
       props: [],
-      examples: [
-        {
-          label: '基础',
-          code: '<XDSCard>Card content</XDSCard>',
-        },
-        {
-          label: '带布局结构',
-          code: `<XDSCard>
-  <XDSLayout
-    header={<XDSLayoutHeader hasDivider>Title</XDSLayoutHeader>}
-    content={<XDSLayoutContent>Body content</XDSLayoutContent>}
-    footer={
-      <XDSLayoutFooter hasDivider>
-        <XDSHStack gap={2} hAlign="end">
-          <XDSButton variant="secondary">Cancel</XDSButton>
-          <XDSButton variant="primary">Save</XDSButton>
-        </XDSHStack>
-      </XDSLayoutFooter>
-    }
-  />
-</XDSCard>`,
-        },
-      ],
     },
     {
       name: 'XDSSection',
       description:
         '基于 XDSLayoutContainer 构建的带有背景变体（section、transparent、wash）的区块。',
       props: [],
-      examples: [
-        {
-          label: '基础',
-          code: '<XDSSection>Section content</XDSSection>',
-        },
-      ],
     },
     {
       name: 'XDSHStack',
       description: '将子元素从左到右排列的水平堆叠。',
       props: [],
-      examples: [
-        {
-          label: '基础',
-          code: `<XDSHStack gap={2} hAlign="end">
-  <XDSButton variant="secondary">Cancel</XDSButton>
-  <XDSButton variant="primary">Save</XDSButton>
-</XDSHStack>`,
-        },
-      ],
     },
     {
       name: 'XDSVStack',
       description: '将子元素从上到下排列的垂直堆叠。',
       props: [],
-      examples: [
-        {
-          label: '基础',
-          code: `<XDSVStack gap={4}>
-  <XDSCard>First</XDSCard>
-  <XDSCard>Second</XDSCard>
-</XDSVStack>`,
-        },
-      ],
     },
     {
       name: 'XDSStackItem',
       description:
         '用于 XDSHStack 或 XDSVStack 内部的堆叠项，支持填充和对齐控制。',
       props: [],
-      examples: [
-        {
-          label: '填充剩余空间',
-          code: `<XDSHStack>
-  <XDSStackItem grow>Main content</XDSStackItem>
-  <XDSButton variant="primary">Action</XDSButton>
-</XDSHStack>`,
-        },
-      ],
     },
   ],
 };

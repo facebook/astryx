@@ -6,4 +6,5 @@ import * as stylex from '@stylexjs/stylex';
  * checkboxes are placed inside Popovers or other containers
  * that also have focus-within state.
  */
-export const checkboxScope = stylex.defineMarker();
+export const checkboxScope: ReturnType<typeof stylex.defineMarker> =
+  stylex.defineMarker();

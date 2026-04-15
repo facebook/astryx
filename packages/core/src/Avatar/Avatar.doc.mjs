@@ -4,6 +4,10 @@ export const docs = {
   name: 'Avatar',
   description:
     'Avatar component for displaying user profile pictures with fallback support.',
+  showcase: {
+    aspectRatio: 1,
+    code: '<XDSAvatar name="Jane Doe" />',
+  },
   keywords: ["avatar","profile","user","photo","thumbnail","initials","gravatar","pfp","userpic"],
   features: [
     'Image loading: Primary and fallback image sources',
@@ -13,35 +17,6 @@ export const docs = {
     'Status slot: Corner position for status indicators or badges',
     'Size-aware status dot: Built-in XDSAvatarStatusDot that scales proportionally with avatar size',
     'Accessible: Proper role and aria-label support',
-  ],
-  examples: [
-    {
-      label: 'With image',
-      code: '<XDSAvatar src="/user.jpg" name="John Doe" />',
-    },
-    {
-      label: 'Initials fallback',
-      code: '<XDSAvatar name="Jane Smith" size="large" />',
-    },
-    {
-      label: 'With size-aware status indicator',
-      code: `<XDSAvatar
-  src="/user.jpg"
-  name="John Doe"
-  size="medium"
-  status={<XDSAvatarStatusDot variant="positive" label="Online" />}
-/>`,
-    },
-    {
-      label: 'Status dot scales automatically across sizes',
-      code: `<XDSAvatar name="AB" size="tiny" status={<XDSAvatarStatusDot />} />
-<XDSAvatar name="CD" size="large" status={<XDSAvatarStatusDot />} />`,
-    },
-    {
-      label: 'Different variants for different contexts',
-      code: `<XDSAvatar name="EF" status={<XDSAvatarStatusDot variant="negative" label="Busy" />} />
-<XDSAvatar name="GH" status={<XDSAvatarStatusDot variant="neutral" label="Away" />} />`,
-    },
   ],
   theming: {
     targets: [
@@ -95,23 +70,7 @@ export const docs = {
           type: 'ReactNode',
           description: 'Corner content for status indicators.',
         },
-      ],
-      examples: [
-        {
-          label: 'Basic',
-          code: '<XDSAvatar src="/user.jpg" name="John Doe" size="medium" />',
-        },
-        {
-          label: 'With status dot',
-          code: `<XDSAvatar
-  src="/user.jpg"
-  name="John Doe"
-  size="medium"
-  status={<XDSAvatarStatusDot variant="positive" label="Online" />}
-/>`,
-        },
-      ],
-    },
+      ],    },
     {
       name: 'XDSAvatarStatusDot',
       description:
@@ -132,20 +91,6 @@ export const docs = {
           name: 'icon',
           type: 'ReactNode',
           description: 'Icon centered inside the dot (hidden at tiny sizes).',
-        },
-      ],
-      examples: [
-        {
-          label: 'Online',
-          code: '<XDSAvatarStatusDot variant="positive" label="Online" />',
-        },
-        {
-          label: 'Busy',
-          code: '<XDSAvatarStatusDot variant="negative" label="Busy" />',
-        },
-        {
-          label: 'Away',
-          code: '<XDSAvatarStatusDot variant="neutral" label="Away" />',
         },
       ],
     },
@@ -173,35 +118,6 @@ export const docsZh = {
     '状态插槽：角落位置用于状态指示器或徽章',
     '尺寸感知状态点：内置 XDSAvatarStatusDot，随头像尺寸等比缩放',
     '无障碍：支持正确的 role 和 aria-label',
-  ],
-  examples: [
-    {
-      label: '带图片',
-      code: '<XDSAvatar src="/user.jpg" name="John Doe" />',
-    },
-    {
-      label: '首字母回退',
-      code: '<XDSAvatar name="Jane Smith" size="large" />',
-    },
-    {
-      label: '带尺寸感知状态指示器',
-      code: `<XDSAvatar
-  src="/user.jpg"
-  name="John Doe"
-  size="medium"
-  status={<XDSAvatarStatusDot variant="positive" label="Online" />}
-/>`,
-    },
-    {
-      label: '状态点随尺寸自动缩放',
-      code: `<XDSAvatar name="AB" size="tiny" status={<XDSAvatarStatusDot />} />
-<XDSAvatar name="CD" size="large" status={<XDSAvatarStatusDot />} />`,
-    },
-    {
-      label: '不同变体用于不同场景',
-      code: `<XDSAvatar name="EF" status={<XDSAvatarStatusDot variant="negative" label="Busy" />} />
-<XDSAvatar name="GH" status={<XDSAvatarStatusDot variant="neutral" label="Away" />} />`,
-    },
   ],
   theming: {
     targets: [
@@ -256,21 +172,6 @@ export const docsZh = {
           description: '角落内容，用于状态指示器。',
         },
       ],
-      examples: [
-        {
-          label: '基础用法',
-          code: '<XDSAvatar src="/user.jpg" name="John Doe" size="medium" />',
-        },
-        {
-          label: '带状态点',
-          code: `<XDSAvatar
-  src="/user.jpg"
-  name="John Doe"
-  size="medium"
-  status={<XDSAvatarStatusDot variant="positive" label="Online" />}
-/>`,
-        },
-      ],
     },
     {
       name: 'XDSAvatarStatusDot',
@@ -292,20 +193,6 @@ export const docsZh = {
           name: 'icon',
           type: 'ReactNode',
           description: '居中显示在状态点内的图标（tiny 尺寸时隐藏）。',
-        },
-      ],
-      examples: [
-        {
-          label: '在线',
-          code: '<XDSAvatarStatusDot variant="positive" label="Online" />',
-        },
-        {
-          label: '忙碌',
-          code: '<XDSAvatarStatusDot variant="negative" label="Busy" />',
-        },
-        {
-          label: '离开',
-          code: '<XDSAvatarStatusDot variant="neutral" label="Away" />',
         },
       ],
     },

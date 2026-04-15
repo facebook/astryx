@@ -4,6 +4,10 @@ export const docs = {
   name: 'Token',
   description:
     'A chip/tag component for displaying entities inline. Renders as a <span> by default, <a> when href is provided, or a <span> with an invisible <button> inside when onClick is provided.',
+  showcase: {
+    aspectRatio: 1,
+    code: '<XDSToken label="Tag" />',
+  },
   keywords: ["token","chip","tag","pill","label","removable","dismissible","filter chip","closable"],
   features: [
     'Polymorphic — renders as <span>, <a>, or interactive <span>+<button> based on props',
@@ -88,34 +92,7 @@ export const docs = {
       description:
         'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
     },
-  ],
-  examples: [
-    {
-      label: 'Basic',
-      code: '<XDSToken label="Tag" />',
-    },
-    {
-      label: 'Colored',
-      code: '<XDSToken label="Status" color="green" />',
-    },
-    {
-      label: 'Removable',
-      code: '<XDSToken label="Filter" onRemove={(e) => handleRemove(e)} />',
-    },
-    {
-      label: 'Clickable',
-      code: '<XDSToken label="Category" onClick={() => navigate(\'/category\')} />',
-    },
-    {
-      label: 'As link',
-      code: '<XDSToken label="Profile" href="/user/123" />',
-    },
-    {
-      label: 'With icon and hidden label',
-      code: '<XDSToken label="User" icon={<UserIcon />} isLabelHidden />',
-    },
-  ],
-  theming: {
+  ],  theming: {
     targets: [
       {className: 'xds-token', visualProps: ['color', 'size']},
     ],
@@ -237,32 +214,6 @@ export const docsZh = {
       type: 'StyleXStyles',
       description:
         '用于布局自定义的 StyleX 样式（外边距、定位、尺寸）。必须是 stylex.create() 的值 — 不能是内联样式对象如 style={{}}。',
-    },
-  ],
-  examples: [
-    {
-      label: '基础用法',
-      code: '<XDSToken label="Tag" />',
-    },
-    {
-      label: '带颜色',
-      code: '<XDSToken label="Status" color="green" />',
-    },
-    {
-      label: '可移除',
-      code: '<XDSToken label="Filter" onRemove={(e) => handleRemove(e)} />',
-    },
-    {
-      label: '可点击',
-      code: '<XDSToken label="Category" onClick={() => navigate(\'/category\')} />',
-    },
-    {
-      label: '作为链接',
-      code: '<XDSToken label="Profile" href="/user/123" />',
-    },
-    {
-      label: '带图标和隐藏标签',
-      code: '<XDSToken label="User" icon={<UserIcon />} isLabelHidden />',
     },
   ],
   theming: {

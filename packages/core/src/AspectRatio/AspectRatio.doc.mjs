@@ -3,31 +3,15 @@
 export const docs = {
   name: 'AspectRatio',
   description: 'Maintains a specific aspect ratio for its children.',
+  showcase: {
+    aspectRatio: 16 / 9,
+    code: '<XDSAspectRatio ratio={16/9}><div style={{background: "#eee", height: "100%"}} /></XDSAspectRatio>',
+  },
   keywords: ["aspect-ratio","ratio","proportion","responsive","embed","container","widescreen","thumbnail","letterbox","crop"],
   features: [
     'Accepts any numeric ratio expressed as width/height (e.g. 16/9, 4/3, 1)',
     'Children are positioned absolutely to fill the container',
     'Supports theming via the aspectRatio component key',
-  ],
-  examples: [
-    {
-      label: 'Widescreen image (16:9)',
-      code: `<XDSAspectRatio ratio={16 / 9}>
-  <img src="image.jpg" alt="Widescreen image" style={{objectFit: 'cover'}} />
-</XDSAspectRatio>`,
-    },
-    {
-      label: 'Square',
-      code: `<XDSAspectRatio ratio={1}>
-  <Avatar />
-</XDSAspectRatio>`,
-    },
-    {
-      label: '4:3 video',
-      code: `<XDSAspectRatio ratio={4 / 3}>
-  <video src="video.mp4" />
-</XDSAspectRatio>`,
-    },
   ],
   props: [
     {
@@ -67,26 +51,6 @@ export const docsZh = {
     '接受任何以宽/高表示的数字比例（例如 16/9、4/3、1）',
     '子元素通过绝对定位填充容器',
     '通过 aspectRatio 组件键支持主题定制',
-  ],
-  examples: [
-    {
-      label: '宽屏图片 (16:9)',
-      code: `<XDSAspectRatio ratio={16 / 9}>
-  <img src="image.jpg" alt="Widescreen image" style={{objectFit: 'cover'}} />
-</XDSAspectRatio>`,
-    },
-    {
-      label: '正方形',
-      code: `<XDSAspectRatio ratio={1}>
-  <Avatar />
-</XDSAspectRatio>`,
-    },
-    {
-      label: '4:3 视频',
-      code: `<XDSAspectRatio ratio={4 / 3}>
-  <video src="video.mp4" />
-</XDSAspectRatio>`,
-    },
   ],
   props: [
     {

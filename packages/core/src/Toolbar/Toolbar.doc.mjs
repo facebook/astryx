@@ -4,6 +4,10 @@ export const docs = {
   name: 'Toolbar',
   description:
     'General-purpose toolbar with start, center, and end content slots. Built on XDSSection with roving tabindex keyboard navigation.',
+  showcase: {
+    aspectRatio: 16 / 4,
+    code: '<XDSToolbar label="Actions" />',
+  },
   keywords: ['toolbar', 'nav', 'bar', 'actions', 'buttonbar', 'header', 'footer', 'action-bar', 'control-bar'],
   features: [
     'Slot-based layout — startContent, centerContent, and endContent for flexible organization',
@@ -13,85 +17,7 @@ export const docs = {
     'Configurable gap — spacing scale gap between items within each slot',
     'Built on XDSSection — inherits variant, theming, and nesting behavior',
     'Composable overflow — use XDSOverflowList within slots for responsive collapsing',
-  ],
-  examples: [
-    {
-      label: 'Basic toolbar with start and end actions',
-      code: `<XDSToolbar
-  label="Text formatting"
-  startContent={
-    <>
-      <XDSButton label="Bold" variant="ghost" icon={<BoldIcon />} />
-      <XDSButton label="Italic" variant="ghost" icon={<ItalicIcon />} />
-      <XDSButton label="Underline" variant="ghost" icon={<UnderlineIcon />} />
-    </>
-  }
-  endContent={
-    <XDSButton label="Settings" variant="ghost" icon={<Cog6ToothIcon />} />
-  }
-/>`,
-    },
-    {
-      label: 'Three-slot layout with centered content',
-      code: `<XDSToolbar
-  label="Document actions"
-  startContent={<XDSButton label="Back" variant="ghost" />}
-  centerContent={<XDSText>Document Title</XDSText>}
-  endContent={<XDSButton label="Save" variant="primary" />}
-/>`,
-    },
-    {
-      label: 'Card header pattern',
-      code: `<XDSCard>
-  <XDSToolbar
-    label="Card actions"
-    startContent={<XDSText weight="bold">Users</XDSText>}
-    endContent={
-      <>
-        <XDSButton label="Filter" variant="ghost" icon={<FunnelIcon />} />
-        <XDSButton label="Add" variant="primary" />
-      </>
-    }
-  />
-  <XDSSection>{/* card body */}</XDSSection>
-</XDSCard>`,
-    },
-    {
-      label: 'With XDSOverflowList for responsive collapsing',
-      code: `<XDSToolbar
-  label="Actions"
-  startContent={
-    <XDSOverflowList
-      items={actions}
-      renderItem={(action) => (
-        <XDSButton key={action.id} label={action.label} variant="ghost" />
-      )}
-      renderOverflow={(items) => (
-        <XDSDropdownMenu
-          trigger={<XDSButton label="More" variant="ghost" />}
-          items={items.map(a => ({label: a.label, onSelect: a.onSelect}))}
-        />
-      )}
-    />
-  }
-/>`,
-    },
-    {
-      label: 'Compact density',
-      code: `<XDSToolbar
-  label="Compact actions"
-  density="compact"
-  startContent={
-    <>
-      <XDSButton label="Cut" variant="ghost" size="sm" />
-      <XDSButton label="Copy" variant="ghost" size="sm" />
-      <XDSButton label="Paste" variant="ghost" size="sm" />
-    </>
-  }
-/>`,
-    },
-  ],
-  theming: {
+  ],  theming: {
     targets: [
       {className: 'xds-toolbar', states: ['density']},
     ],
@@ -174,27 +100,7 @@ export const docs = {
           description:
             'StyleX styles for layout customization. Must be a stylex.create() value.',
         },
-      ],
-      examples: [
-        {
-          label: 'Basic',
-          code: `<XDSToolbar
-  label="Actions"
-  startContent={<XDSButton label="Save" variant="primary" />}
-  endContent={<XDSButton label="Cancel" variant="ghost" />}
-/>`,
-        },
-        {
-          label: 'With centered content',
-          code: `<XDSToolbar
-  label="Editor"
-  startContent={<XDSButton label="Back" variant="ghost" />}
-  centerContent={<XDSText>Document.tsx</XDSText>}
-  endContent={<XDSButton label="Publish" variant="primary" />}
-/>`,
-        },
-      ],
-    },
+      ],    },
   ],
   usage: {
     summary: 'General-purpose toolbar with start, center, and end content slots.',

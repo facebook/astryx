@@ -4,6 +4,10 @@ export const docs = {
   name: 'Slider',
   description:
     'A slider component for selecting numeric values or ranges with full keyboard and pointer support.',
+  showcase: {
+    aspectRatio: 4 / 3,
+    code: '<XDSSlider label="Volume" value={50} onChange={() => {}} />',
+  },
   keywords: ["slider","range","slidebar","trackbar","scrubber","knob","thumb","rangeslider"],
   features: [
     'Single & range modes: Pass a `number` for single thumb, `[number, number]` for range',
@@ -15,95 +19,7 @@ export const docs = {
     'Custom formatting: `formatValue` function for display and `aria-valuetext`',
     'Field integration: Uses `XDSField` for label, description, required/optional, and status messaging',
     'Accessible: Uses `role="slider"` with full ARIA attributes',
-  ],
-  examples: [
-    {
-      label: 'Basic single value',
-      code: '<XDSSlider label="Volume" value={50} onChange={setValue} />',
-    },
-    {
-      label: 'Range slider',
-      code: `<XDSSlider
-  label="Price range"
-  value={[20, 80]}
-  onChange={setRange}
-/>`,
-    },
-    {
-      label: 'With custom formatting',
-      code: `<XDSSlider
-  label="Temperature"
-  value={72}
-  onChange={setTemp}
-  min={32}
-  max={212}
-  formatValue={(v) => \`\${v}°F\`}
-/>`,
-    },
-    {
-      label: 'With step and marks',
-      code: `<XDSSlider
-  label="Rating"
-  value={3}
-  onChange={setRating}
-  min={1}
-  max={5}
-  step={1}
-  marks={[
-    { value: 1, label: 'Poor' },
-    { value: 3, label: 'Average' },
-    { value: 5, label: 'Excellent' },
-  ]}
-/>`,
-    },
-    {
-      label: 'Text value display',
-      code: `<XDSSlider
-  label="Opacity"
-  value={75}
-  onChange={setOpacity}
-  formatValue={(v) => \`\${v}%\`}
-  valueDisplay="text"
-/>`,
-    },
-    {
-      label: 'Range with minimum gap',
-      code: `<XDSSlider
-  label="Date range"
-  value={[10, 90]}
-  onChange={setDateRange}
-  minStepsBetweenThumbs={5}
-/>`,
-    },
-    {
-      label: 'With onChangeEnd for committing value',
-      code: `<XDSSlider
-  label="Brightness"
-  value={brightness}
-  onChange={setBrightness}
-  onChangeEnd={commitBrightness}
-/>`,
-    },
-    {
-      label: 'Vertical orientation',
-      code: `<XDSSlider
-  label="Level"
-  value={60}
-  onChange={setLevel}
-  orientation="vertical"
-/>`,
-    },
-    {
-      label: 'Disabled',
-      code: `<XDSSlider
-  label="Locked"
-  value={50}
-  onChange={() => {}}
-  isDisabled
-/>`,
-    },
-  ],
-  props: [
+  ],  props: [
     {
       name: 'label',
       type: 'string',
@@ -267,93 +183,6 @@ export const docsZh = {
     '自定义格式化：`formatValue` 函数用于显示和 `aria-valuetext`',
     '字段集成：使用 `XDSField` 提供标签、描述、必填/可选和状态消息',
     '无障碍：使用 `role="slider"` 配合完整的 ARIA 属性',
-  ],
-  examples: [
-    {
-      label: '基础单值',
-      code: '<XDSSlider label="Volume" value={50} onChange={setValue} />',
-    },
-    {
-      label: '范围滑块',
-      code: `<XDSSlider
-  label="Price range"
-  value={[20, 80]}
-  onChange={setRange}
-/>`,
-    },
-    {
-      label: '自定义格式化',
-      code: `<XDSSlider
-  label="Temperature"
-  value={72}
-  onChange={setTemp}
-  min={32}
-  max={212}
-  formatValue={(v) => \`\${v}°F\`}
-/>`,
-    },
-    {
-      label: '带步进和刻度标记',
-      code: `<XDSSlider
-  label="Rating"
-  value={3}
-  onChange={setRating}
-  min={1}
-  max={5}
-  step={1}
-  marks={[
-    { value: 1, label: 'Poor' },
-    { value: 3, label: 'Average' },
-    { value: 5, label: 'Excellent' },
-  ]}
-/>`,
-    },
-    {
-      label: '文本值显示',
-      code: `<XDSSlider
-  label="Opacity"
-  value={75}
-  onChange={setOpacity}
-  formatValue={(v) => \`\${v}%\`}
-  valueDisplay="text"
-/>`,
-    },
-    {
-      label: '带最小间距的范围',
-      code: `<XDSSlider
-  label="Date range"
-  value={[10, 90]}
-  onChange={setDateRange}
-  minStepsBetweenThumbs={5}
-/>`,
-    },
-    {
-      label: '使用 onChangeEnd 提交值',
-      code: `<XDSSlider
-  label="Brightness"
-  value={brightness}
-  onChange={setBrightness}
-  onChangeEnd={commitBrightness}
-/>`,
-    },
-    {
-      label: '垂直方向',
-      code: `<XDSSlider
-  label="Level"
-  value={60}
-  onChange={setLevel}
-  orientation="vertical"
-/>`,
-    },
-    {
-      label: '禁用',
-      code: `<XDSSlider
-  label="Locked"
-  value={50}
-  onChange={() => {}}
-  isDisabled
-/>`,
-    },
   ],
   props: [
     {

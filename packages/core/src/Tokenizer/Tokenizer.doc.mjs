@@ -4,6 +4,10 @@ export const docs = {
   name: 'Tokenizer',
   description:
     'Multi-select typeahead with token chips for selected items. Composes XDSBaseTypeahead for search and XDSToken for chips.',
+  showcase: {
+    aspectRatio: 4 / 3,
+    code: '<XDSTokenizer label="Tags" items={[]} />',
+  },
   keywords: ["tokenizer","multiselect","multi-select","chips","tags","combobox","autocomplete","taginput","chipinput"],
   props: [
     {
@@ -163,74 +167,7 @@ export const docs = {
       description:
         'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
     },
-  ],
-  examples: [
-    {
-      label: 'Basic multi-select',
-      code: `const source = {
-  search: query => users.filter(u => u.label.includes(query)),
-  bootstrap: () => users.slice(0, 5),
-};
-
-<XDSTokenizer
-  label="Team Members"
-  searchSource={source}
-  value={selected}
-  onChange={(items, change) => {
-    setSelected(items);
-  }}
-  placeholder="Search people..."
-/>`,
-    },
-    {
-      label: 'With max entries and clear all',
-      code: `<XDSTokenizer
-  label="Tags"
-  searchSource={tagSource}
-  value={tags}
-  onChange={(items) => setTags(items)}
-  maxEntries={5}
-  hasClear
-  placeholder="Add up to 5 tags..."
-/>`,
-    },
-    {
-      label: 'Free-text tags (hasCreate)',
-      code: `const emptySource = { search: () => [], bootstrap: () => [] };
-
-<XDSTokenizer
-  label="Tags"
-  searchSource={emptySource}
-  value={tags}
-  onChange={(items, change) => {
-    setTags(items);
-    if (change.type === 'create') {
-      console.log('New tag:', change.item.label);
-    }
-  }}
-  hasCreate
-  placeholder="Type a tag and press Enter..."
-/>`,
-    },
-    {
-      label: 'Custom token rendering',
-      code: `<XDSTokenizer
-  label="Tags"
-  searchSource={tagSource}
-  value={tags}
-  onChange={(items) => setTags(items)}
-  renderToken={(item, onRemove) => (
-    <XDSToken
-      label={item.label}
-      color={item.auxiliaryData.color}
-      onRemove={onRemove}
-    />
-  )}
-  maxEntries={10}
-/>`,
-    },
-  ],
-  features: [
+  ],  features: [
     'Token chips for each selected item with remove buttons',
     'Filtered search that automatically excludes already-selected items',
     'Max entries to limit number of selections — input hides when limit is reached',
@@ -422,54 +359,6 @@ export const docsZh = {
       type: 'StyleXStyles',
       description:
         '用于布局自定义的 StyleX 样式（外边距、定位、尺寸）。必须是 stylex.create() 的值 — 不能是内联样式对象如 style={{}}。',
-    },
-  ],
-  examples: [
-    {
-      label: '基础多选',
-      code: `const source = {
-  search: query => users.filter(u => u.label.includes(query)),
-  bootstrap: () => users.slice(0, 5),
-};
-
-<XDSTokenizer
-  label="Team Members"
-  searchSource={source}
-  value={selected}
-  onChange={(items, change) => {
-    setSelected(items);
-  }}
-  placeholder="Search people..."
-/>`,
-    },
-    {
-      label: '带最大条目数和全部清除',
-      code: `<XDSTokenizer
-  label="Tags"
-  searchSource={tagSource}
-  value={tags}
-  onChange={(items) => setTags(items)}
-  maxEntries={5}
-  hasClear
-  placeholder="Add up to 5 tags..."
-/>`,
-    },
-    {
-      label: '自定义标记渲染',
-      code: `<XDSTokenizer
-  label="Tags"
-  searchSource={tagSource}
-  value={tags}
-  onChange={(items) => setTags(items)}
-  renderToken={(item, onRemove) => (
-    <XDSToken
-      label={item.label}
-      color={item.auxiliaryData.color}
-      onRemove={onRemove}
-    />
-  )}
-  maxEntries={10}
-/>`,
     },
   ],
   features: [

@@ -4,6 +4,10 @@ export const docs = {
   name: 'SideNav',
   description:
     'Sidebar navigation component for application pages. Supports sections, nested items, selected state, icons, and collapsible sidebar.',
+  showcase: {
+    aspectRatio: 3 / 4,
+    code: '<XDSSideNav><XDSSideNavItem label="Dashboard" /></XDSSideNav>',
+  },
   keywords: ["sidenav","sidebar","navigation","drawer","menu","nav","aside","sidemenu","navmenu","sider","treeview"],
   features: [
     'Five-zone layout: header, topContent, children (scrollable), footer, footerIcons',
@@ -40,84 +44,7 @@ export const docs = {
     'Depends on useXDSPopover for the header menu popover and XDSIcon for rendering icon components in nav items.',
     'XDSSideNavCollapseButton renders as an icon-only ghost button by default. Place it in footerIcons, header, or outside the sidenav (pass sideNavRef).',
     'useXDSSideNavCollapse hook exposes { isCollapsed, toggle, isCollapsible } for custom collapse controls.',
-  ],
-  examples: [
-    {
-      label: 'With XDSAppShell + TopNav (no header)',
-      code: `// TopNav provides identity → SideNav has no header
-<XDSAppShell
-  topNav={<XDSTopNav heading={<XDSTopNavHeading heading="My App" />} />}
-  sideNav={
-    <XDSSideNav>
-      <XDSSideNavSection title="Main" isHeaderHidden>
-        <XDSSideNavItem
-          label="Dashboard"
-          icon={HomeIcon}
-          isSelected
-          href="/dashboard"
-        />
-        <XDSSideNavItem label="Projects" icon={FolderIcon} href="/projects" />
-      </XDSSideNavSection>
-    </XDSSideNav>
-  }>
-  <Content />
-</XDSAppShell>`,
-    },
-    {
-      label: 'Collapsible sidebar',
-      code: `<XDSAppShell
-  sideNav={
-    <XDSSideNav
-      collapsible
-      header={<XDSSideNavHeading heading="My App" headingHref="/" />}
-      footerIcons={<XDSSideNavCollapseButton />}>
-      <XDSSideNavSection title="Main" isHeaderHidden>
-        <XDSSideNavItem label="Dashboard" icon={HomeIcon} isSelected href="/dashboard" />
-        <XDSSideNavItem label="Projects" icon={FolderIcon} href="/projects" />
-      </XDSSideNavSection>
-    </XDSSideNav>
-  }>
-  <Content />
-</XDSAppShell>`,
-    },
-    {
-      label: 'Standalone (no TopNav)',
-      code: `// No TopNav → SideNav header provides identity
-<XDSAppShell
-  sideNav={
-    <XDSSideNav
-      header={
-        <XDSSideNavHeading icon={<AppIcon />} heading="My App" headingHref="/" />
-      }
-      topContent={<XDSButton label="Create new" variant="primary" />}
-      footerIcons={<XDSButton icon={HelpIcon} variant="ghost" label="Help" />}>
-      <XDSSideNavSection title="Main">
-        <XDSSideNavItem
-          label="Dashboard"
-          icon={HomeIcon}
-          selectedIcon={HomeIconSolid}
-          isSelected
-          href="/dashboard"
-        />
-        <XDSSideNavItem
-          label="Projects"
-          icon={FolderIcon}
-          href="/projects"
-          endContent={<XDSBadge label={3} />}
-        />
-      </XDSSideNavSection>
-
-      <XDSSideNavSection title="Settings">
-        <XDSSideNavItem label="General" href="/settings/general" />
-        <XDSSideNavItem label="Security" href="/settings/security" />
-      </XDSSideNavSection>
-    </XDSSideNav>
-  }>
-  <Content />
-</XDSAppShell>`,
-    },
-  ],
-  components: [
+  ],  components: [
     {
       name: 'XDSSideNav',
       description:
@@ -161,21 +88,7 @@ export const docs = {
           description:
             'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
         },
-      ],
-      examples: [
-        {
-          label: 'Basic',
-          code: `<XDSSideNav
-  header={<XDSSideNavHeading icon={<AppIcon />} heading="My App" headingHref="/" />}
-  topContent={<XDSButton label="Create new" variant="primary" />}>
-  <XDSSideNavSection title="Main">
-    <XDSSideNavItem label="Dashboard" icon={HomeIcon} isSelected href="/dashboard" />
-    <XDSSideNavItem label="Projects" icon={FolderIcon} href="/projects" />
-  </XDSSideNavSection>
-</XDSSideNav>`,
-        },
-      ],
-    },
+      ],    },
     {
       name: 'XDSSideNavHeading',
       description:
@@ -226,41 +139,6 @@ export const docs = {
           name: 'headerEndContent',
           type: 'ReactNode',
           description: 'Content rendered at the trailing edge of the heading row, between text and chevron. Useful for badges, status indicators, or compact action buttons. Hidden when collapsed.',
-        },
-      ],
-      examples: [
-        {
-          label: 'Title link only',
-          code: `<XDSSideNavHeading icon={<AppIcon />} heading="My App" headingHref="/" />`,
-        },
-        {
-          label: 'With superheading and subheading',
-          code: `<XDSSideNavHeading
-  icon={<AppIcon />}
-  superheading="Acme Corp"
-  superheadingHref="/org"
-  heading="My App"
-  headingHref="/"
-  subheading="v2.0"
-/>`,
-        },
-        {
-          label: 'With menu',
-          code: `<XDSSideNavHeading
-  icon={<AppIcon />}
-  heading="My App"
-  headingHref="/"
-  menu={<WorkspaceSwitcher />}
-/>`,
-        },
-        {
-          label: 'With header end content',
-          code: `<XDSSideNavHeading
-  icon={<AppIcon />}
-  heading="My App"
-  headingHref="/"
-  headerEndContent={<XDSBadge label="3" variant="error" />}
-/>`,
         },
       ],
     },
@@ -330,30 +208,6 @@ export const docs = {
           default: 'false',
         },
       ],
-      examples: [
-        {
-          label: 'Basic link',
-          code: `<XDSSideNavItem label="Dashboard" icon={HomeIcon} href="/dashboard" />`,
-        },
-        {
-          label: 'Selected with alternate icon and badge',
-          code: `<XDSSideNavItem
-  label="Dashboard"
-  icon={HomeIcon}
-  selectedIcon={HomeIconSolid}
-  isSelected
-  href="/dashboard"
-  endContent={<XDSBadge label={3} />}
-/>`,
-        },
-        {
-          label: 'Collapsible nested items',
-          code: `<XDSSideNavItem label="Settings" icon={GearIcon} collapsible>
-  <XDSSideNavItem label="General" href="/settings/general" />
-  <XDSSideNavItem label="Security" href="/settings/security" />
-</XDSSideNavItem>`,
-        },
-      ],
     },
     {
       name: 'XDSSideNavSection',
@@ -389,28 +243,6 @@ export const docs = {
           default: 'false',
         },
       ],
-      examples: [
-        {
-          label: 'Basic section',
-          code: `<XDSSideNavSection title="Main">
-  <XDSSideNavItem label="Dashboard" href="/dashboard" />
-  <XDSSideNavItem label="Projects" href="/projects" />
-</XDSSideNavSection>`,
-        },
-        {
-          label: 'With end content and hidden header',
-          code: `<XDSSideNavSection title="Settings" endContent={<XDSBadge label="New" />}>
-  <XDSSideNavItem label="General" href="/settings/general" />
-  <XDSSideNavItem label="Security" href="/settings/security" />
-</XDSSideNavSection>`,
-        },
-        {
-          label: 'Hidden header (used with TopNav)',
-          code: `<XDSSideNavSection title="Main" isHeaderHidden>
-  <XDSSideNavItem label="Dashboard" icon={HomeIcon} isSelected href="/dashboard" />
-</XDSSideNavSection>`,
-        },
-      ],
     },
     {
       name: 'XDSSideNavCollapseButton',
@@ -434,24 +266,6 @@ export const docs = {
           type: 'ReactNode',
           description:
             'Custom button content. Overrides the default chevron icon and label.',
-        },
-      ],
-      examples: [
-        {
-          label: 'In footer icons (default)',
-          code: `<XDSSideNav collapsible footerIcons={<XDSSideNavCollapseButton />}>
-  <XDSSideNavSection title="Main" isHeaderHidden>
-    <XDSSideNavItem label="Dashboard" icon={HomeIcon} href="/dashboard" />
-  </XDSSideNavSection>
-</XDSSideNav>`,
-        },
-        {
-          label: 'With custom label',
-          code: `<XDSSideNav collapsible footerIcons={<XDSSideNavCollapseButton label="Toggle sidebar" />}>
-  <XDSSideNavSection title="Main" isHeaderHidden>
-    <XDSSideNavItem label="Dashboard" icon={HomeIcon} href="/dashboard" />
-  </XDSSideNavSection>
-</XDSSideNav>`,
         },
       ],
     },
@@ -521,82 +335,6 @@ export const docsZh = {
     'XDSSideNavCollapseButton 默认渲染为仅图标的 ghost 按钮。可放置在 footerIcons、header 中，或侧边栏外部（传入 sideNavRef）。',
     'useXDSSideNavCollapse hook 暴露 { isCollapsed, toggle, isCollapsible }，用于自定义折叠控件。',
   ],
-  examples: [
-    {
-      label: '可折叠侧边栏',
-      code: `<XDSAppShell
-  sideNav={
-    <XDSSideNav
-      collapsible
-      header={<XDSSideNavHeading heading="My App" headingHref="/" />}
-      footerIcons={<XDSSideNavCollapseButton />}>
-      <XDSSideNavSection title="Main" isHeaderHidden>
-        <XDSSideNavItem label="Dashboard" icon={HomeIcon} isSelected href="/dashboard" />
-        <XDSSideNavItem label="Projects" icon={FolderIcon} href="/projects" />
-      </XDSSideNavSection>
-    </XDSSideNav>
-  }>
-  <Content />
-</XDSAppShell>`,
-    },
-    {
-      label: '配合 XDSAppShell + TopNav（无头部）',
-      code: `// TopNav provides identity → SideNav has no header
-<XDSAppShell
-  topNav={<XDSTopNav heading={<XDSTopNavHeading heading="My App" />} />}
-  sideNav={
-    <XDSSideNav>
-      <XDSSideNavSection title="Main" isHeaderHidden>
-        <XDSSideNavItem
-          label="Dashboard"
-          icon={HomeIcon}
-          isSelected
-          href="/dashboard"
-        />
-        <XDSSideNavItem label="Projects" icon={FolderIcon} href="/projects" />
-      </XDSSideNavSection>
-    </XDSSideNav>
-  }>
-  <Content />
-</XDSAppShell>`,
-    },
-    {
-      label: '独立使用（无 TopNav）',
-      code: `// No TopNav → SideNav header provides identity
-<XDSAppShell
-  sideNav={
-    <XDSSideNav
-      header={
-        <XDSSideNavHeading icon={<AppIcon />} heading="My App" headingHref="/" />
-      }
-      topContent={<XDSButton label="Create new" variant="primary" />}
-      footerIcons={<XDSButton icon={HelpIcon} variant="ghost" label="Help" />}>
-      <XDSSideNavSection title="Main">
-        <XDSSideNavItem
-          label="Dashboard"
-          icon={HomeIcon}
-          selectedIcon={HomeIconSolid}
-          isSelected
-          href="/dashboard"
-        />
-        <XDSSideNavItem
-          label="Projects"
-          icon={FolderIcon}
-          href="/projects"
-          endContent={<XDSBadge label={3} />}
-        />
-      </XDSSideNavSection>
-
-      <XDSSideNavSection title="Settings">
-        <XDSSideNavItem label="General" href="/settings/general" />
-        <XDSSideNavItem label="Security" href="/settings/security" />
-      </XDSSideNavSection>
-    </XDSSideNav>
-  }>
-  <Content />
-</XDSAppShell>`,
-    },
-  ],
   components: [
     {
       name: 'XDSSideNav',
@@ -640,19 +378,6 @@ export const docsZh = {
           type: 'StyleXStyles',
           description:
             '用于布局自定义的 StyleX 样式（边距、定位、尺寸）。必须是 stylex.create() 的值，而非内联样式对象如 style={{}}。',
-        },
-      ],
-      examples: [
-        {
-          label: '基础用法',
-          code: `<XDSSideNav
-  header={<XDSSideNavHeading icon={<AppIcon />} heading="My App" headingHref="/" />}
-  topContent={<XDSButton label="Create new" variant="primary" />}>
-  <XDSSideNavSection title="Main">
-    <XDSSideNavItem label="Dashboard" icon={HomeIcon} isSelected href="/dashboard" />
-    <XDSSideNavItem label="Projects" icon={FolderIcon} href="/projects" />
-  </XDSSideNavSection>
-</XDSSideNav>`,
         },
       ],
     },
@@ -706,32 +431,6 @@ export const docsZh = {
           name: 'headerEndContent',
           type: 'ReactNode',
           description: '在标题行尾部渲染的内容，位于文本和箭头之间。适用于徽章、状态指示器或紧凑操作按钮。折叠时隐藏。',
-        },
-      ],
-      examples: [
-        {
-          label: '仅标题链接',
-          code: `<XDSSideNavHeading icon={<AppIcon />} heading="My App" headingHref="/" />`,
-        },
-        {
-          label: '带上方标题和下方标题',
-          code: `<XDSSideNavHeading
-  icon={<AppIcon />}
-  superheading="Acme Corp"
-  superheadingHref="/org"
-  heading="My App"
-  headingHref="/"
-  subheading="v2.0"
-/>`,
-        },
-        {
-          label: '带菜单',
-          code: `<XDSSideNavHeading
-  icon={<AppIcon />}
-  heading="My App"
-  headingHref="/"
-  menu={<WorkspaceSwitcher />}
-/>`,
         },
       ],
     },
@@ -801,30 +500,6 @@ export const docsZh = {
           default: 'false',
         },
       ],
-      examples: [
-        {
-          label: '基础链接',
-          code: `<XDSSideNavItem label="Dashboard" icon={HomeIcon} href="/dashboard" />`,
-        },
-        {
-          label: '选中状态，带替代图标和徽章',
-          code: `<XDSSideNavItem
-  label="Dashboard"
-  icon={HomeIcon}
-  selectedIcon={HomeIconSolid}
-  isSelected
-  href="/dashboard"
-  endContent={<XDSBadge label={3} />}
-/>`,
-        },
-        {
-          label: '可折叠嵌套项',
-          code: `<XDSSideNavItem label="Settings" icon={GearIcon} collapsible>
-  <XDSSideNavItem label="General" href="/settings/general" />
-  <XDSSideNavItem label="Security" href="/settings/security" />
-</XDSSideNavItem>`,
-        },
-      ],
     },
     {
       name: 'XDSSideNavSection',
@@ -860,28 +535,6 @@ export const docsZh = {
           default: 'false',
         },
       ],
-      examples: [
-        {
-          label: '基础分组',
-          code: `<XDSSideNavSection title="Main">
-  <XDSSideNavItem label="Dashboard" href="/dashboard" />
-  <XDSSideNavItem label="Projects" href="/projects" />
-</XDSSideNavSection>`,
-        },
-        {
-          label: '带尾部内容和隐藏头部',
-          code: `<XDSSideNavSection title="Settings" endContent={<XDSBadge label="New" />}>
-  <XDSSideNavItem label="General" href="/settings/general" />
-  <XDSSideNavItem label="Security" href="/settings/security" />
-</XDSSideNavSection>`,
-        },
-        {
-          label: '隐藏头部（配合 TopNav 使用）',
-          code: `<XDSSideNavSection title="Main" isHeaderHidden>
-  <XDSSideNavItem label="Dashboard" icon={HomeIcon} isSelected href="/dashboard" />
-</XDSSideNavSection>`,
-        },
-      ],
     },
     {
       name: 'XDSSideNavCollapseButton',
@@ -905,16 +558,6 @@ export const docsZh = {
           type: 'ReactNode',
           description:
             '自定义按钮内容。覆盖默认的箭头图标和标签。',
-        },
-      ],
-      examples: [
-        {
-          label: '在底部图标栏中（默认）',
-          code: `<XDSSideNav collapsible footerIcons={<XDSSideNavCollapseButton />}>
-  <XDSSideNavSection title="Main" isHeaderHidden>
-    <XDSSideNavItem label="Dashboard" icon={HomeIcon} href="/dashboard" />
-  </XDSSideNavSection>
-</XDSSideNav>`,
         },
       ],
     },

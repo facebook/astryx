@@ -4,6 +4,10 @@ export const docs = {
   name: 'OverflowList',
   description:
     'Horizontal list that hides items that overflow the available width and shows a custom indicator. Uses a hidden measurement container to avoid layout flicker.',
+  showcase: {
+    aspectRatio: 16 / 4,
+    code: '<XDSOverflowList items={[]} renderItem={() => null} renderOverflow={() => null} />',
+  },
   keywords: [
     'overflow',
     'truncate',
@@ -68,34 +72,6 @@ export const docs = {
       type: 'StyleXStyles',
       description:
         'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object.',
-    },
-  ],
-  examples: [
-    {
-      label: 'Basic with overflow button',
-      code: `<XDSOverflowList
-  gap={2}
-  overflowRenderer={(items) => (
-    <XDSButton label={` + "`+${items.length} more`" + `} variant="ghost" />
-  )}>
-  <XDSButton label="Action 1" />
-  <XDSButton label="Action 2" />
-  <XDSButton label="Action 3" />
-  <XDSButton label="Action 4" />
-</XDSOverflowList>`,
-    },
-    {
-      label: 'Overflow into dropdown menu',
-      code: `const labels = ['Save', 'Edit', 'Share', 'Delete'];
-<XDSOverflowList
-  overflowRenderer={(overflowItems) => (
-    <XDSDropdownMenu
-      button={{label: ` + "`+${overflowItems.length}`" + `, variant: 'ghost'}}
-      items={overflowItems.map(({index}) => ({label: labels[index]}))}
-    />
-  )}>
-  {labels.map(l => <XDSButton key={l} label={l} />)}
-</XDSOverflowList>`,
     },
   ],
   theming: {
@@ -177,34 +153,6 @@ export const docsZh = {
       type: 'StyleXStyles',
       description:
         '用于布局自定义的 StyleX 样式（外边距、定位、尺寸）。必须使用 stylex.create() 的值，而非内联样式对象。',
-    },
-  ],
-  examples: [
-    {
-      label: '基础溢出按钮',
-      code: `<XDSOverflowList
-  gap={2}
-  overflowRenderer={(items) => (
-    <XDSButton label={` + "`+${items.length} 更多`" + `} variant="ghost" />
-  )}>
-  <XDSButton label="操作 1" />
-  <XDSButton label="操作 2" />
-  <XDSButton label="操作 3" />
-  <XDSButton label="操作 4" />
-</XDSOverflowList>`,
-    },
-    {
-      label: '溢出到下拉菜单',
-      code: `const labels = ['保存', '编辑', '分享', '删除'];
-<XDSOverflowList
-  overflowRenderer={(overflowItems) => (
-    <XDSDropdownMenu
-      button={{label: ` + "`+${overflowItems.length}`" + `, variant: 'ghost'}}
-      items={overflowItems.map(({index}) => ({label: labels[index]}))}
-    />
-  )}>
-  {labels.map(l => <XDSButton key={l} label={l} />)}
-</XDSOverflowList>`,
     },
   ],
   accessibility: [

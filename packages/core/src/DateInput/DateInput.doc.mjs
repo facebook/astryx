@@ -4,6 +4,10 @@ export const docs = {
   name: 'DateInput',
   description:
     'XDSDateInput component combining a text input with a calendar popover for date selection.',
+  showcase: {
+    aspectRatio: 4 / 3,
+    code: '<XDSDateInput label="Date" />',
+  },
   keywords: ["dateinput","datepicker","datefield","calendar","dateselect","dateentry","datechooser"],
   features: [
     'Text Input — manual date entry with flexible parsing (supports various formats)',
@@ -12,58 +16,6 @@ export const docs = {
     'Status Indicators — error, warning, and success states with messages',
     'Accessibility — full keyboard navigation, focus trapping, screen reader support',
     'Field Integration — built on XDSField for consistent label, description, and validation states',
-  ],
-  examples: [
-    {
-      label: 'Basic',
-      code: `<XDSDateInput
-  label="Event date"
-  value={date}
-  onChange={setDate}
-/>`,
-    },
-    {
-      label: 'With constraints',
-      code: `<XDSDateInput
-  label="Departure date"
-  value={date}
-  onChange={setDate}
-  min="2026-01-01"
-  max="2026-12-31"
-  placeholder="Pick a date"
-/>`,
-    },
-    {
-      label: 'Two-month calendar',
-      code: `<XDSDateInput
-  label="Check-in date"
-  value={date}
-  onChange={setDate}
-  numberOfMonths={2}
-/>`,
-    },
-    {
-      label: 'With description and required',
-      code: `<XDSDateInput
-  label="Due date"
-  description="When should this task be completed?"
-  isRequired
-  value={date}
-  onChange={setDate}
-/>`,
-    },
-    {
-      label: 'With error status',
-      code: `<XDSDateInput
-  label="Event date"
-  value={date}
-  onChange={setDate}
-  status={{
-    type: 'error',
-    message: 'This date is not available',
-  }}
-/>`,
-    },
   ],
   props: [
     {
@@ -219,58 +171,6 @@ export const docsZh = {
     '状态指示器——错误、警告和成功状态及消息',
     '无障碍——完整的键盘导航、焦点捕获、屏幕阅读器支持',
     '字段集成——基于 XDSField 构建，提供一致的标签、描述和验证状态',
-  ],
-  examples: [
-    {
-      label: '基础用法',
-      code: `<XDSDateInput
-  label="Event date"
-  value={date}
-  onChange={setDate}
-/>`,
-    },
-    {
-      label: '带约束',
-      code: `<XDSDateInput
-  label="Departure date"
-  value={date}
-  onChange={setDate}
-  min="2026-01-01"
-  max="2026-12-31"
-  placeholder="Pick a date"
-/>`,
-    },
-    {
-      label: '双月日历',
-      code: `<XDSDateInput
-  label="Check-in date"
-  value={date}
-  onChange={setDate}
-  numberOfMonths={2}
-/>`,
-    },
-    {
-      label: '带描述和必填',
-      code: `<XDSDateInput
-  label="Due date"
-  description="When should this task be completed?"
-  isRequired
-  value={date}
-  onChange={setDate}
-/>`,
-    },
-    {
-      label: '带错误状态',
-      code: `<XDSDateInput
-  label="Event date"
-  value={date}
-  onChange={setDate}
-  status={{
-    type: 'error',
-    message: 'This date is not available',
-  }}
-/>`,
-    },
   ],
   props: [
     {

@@ -4,6 +4,10 @@ export const docs = {
   name: 'Skeleton',
   description:
     'A placeholder loading component that displays an animated pulsing effect while content is loading.',
+  showcase: {
+    aspectRatio: 4 / 3,
+    code: '<XDSSkeleton />',
+  },
   keywords: ["skeleton","placeholder","loading","shimmer","pulse","loader","bone","ghost","preloader"],
   features: [
     'Pulsing Animation: Smooth opacity animation using stepped timing for a subtle shimmer effect',
@@ -38,30 +42,7 @@ export const docs = {
         'Index for staggered animation timing. For element at index n, animation starts at DELAY_TIME + (STAGGER_TIME × n).',
       default: '0',
     },
-  ],
-  examples: [
-    {
-      label: 'Basic text placeholder',
-      code: '<XDSSkeleton width={200} height={16} />',
-    },
-    {
-      label: 'Circular avatar placeholder',
-      code: '<XDSSkeleton width={40} height={40} radius="rounded" />',
-    },
-    {
-      label: 'Full-width with percentage',
-      code: '<XDSSkeleton width="100%" height={20} />',
-    },
-    {
-      label: 'Staggered animation for multiple skeletons',
-      code: `<div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-  <XDSSkeleton width={300} height={16} index={0} />
-  <XDSSkeleton width={280} height={16} index={1} />
-  <XDSSkeleton width={320} height={16} index={2} />
-</div>`,
-    },
-  ],
-  theming: {
+  ],  theming: {
     targets: [
       {className: 'xds-skeleton'},
     ],
@@ -123,28 +104,6 @@ export const docsZh = {
       description:
         '交错动画时序的索引。对于索引为 n 的元素，动画在 DELAY_TIME + (STAGGER_TIME × n) 时开始。',
       default: '0',
-    },
-  ],
-  examples: [
-    {
-      label: '基础文本占位',
-      code: '<XDSSkeleton width={200} height={16} />',
-    },
-    {
-      label: '圆形头像占位',
-      code: '<XDSSkeleton width={40} height={40} radius="rounded" />',
-    },
-    {
-      label: '百分比全宽',
-      code: '<XDSSkeleton width="100%" height={20} />',
-    },
-    {
-      label: '多个骨架屏的交错动画',
-      code: `<div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-  <XDSSkeleton width={300} height={16} index={0} />
-  <XDSSkeleton width={280} height={16} index={1} />
-  <XDSSkeleton width={320} height={16} index={2} />
-</div>`,
     },
   ],
   theming: {

@@ -4,6 +4,10 @@ export const docs = {
   name: 'Chat',
   description:
     'Chat components for AI chat interfaces. Layout (MessageList, Message, Bubble, SystemMessage) + Composer (Composer, ComposerInput with trigger menus, ComposerAttachments).',
+  showcase: {
+    aspectRatio: 4 / 3,
+    code: '<XDSChatMessageList><XDSChatMessage sender="user"><XDSChatBubble>Hello</XDSChatBubble></XDSChatMessage></XDSChatMessageList>',
+  },
   keywords: ['chat', 'message', 'bubble', 'conversation', 'ai', 'assistant', 'thread', 'system-message', 'composer', 'mention', 'trigger', 'typeahead', 'token', 'imperative', 'tokenized-text'],
   features: [
     'Composition model — MessageList > Message > Bubble',
@@ -47,23 +51,6 @@ export const docs = {
       {name: '--button-radius', description: 'Concentric button radius inside the composer.', default: 'max(var(--radius-element), calc(var(--composer-radius) - var(--composer-padding)))', derived: true, formula: 'max(var(--radius-element), calc(var(--composer-radius) - var(--composer-padding)))'},
     ],
   },
-  examples: [
-    {
-      label: 'Basic conversation',
-      code: `<XDSChatMessageList>
-  <XDSChatMessage sender="assistant" name="Navi" avatar={<XDSAvatar name="Navi" size="sm" />}>
-    <XDSChatMessageBubble>Hello! How can I help?</XDSChatMessageBubble>
-  </XDSChatMessage>
-  <XDSChatMessage sender="user" name="Cindy">
-    <XDSChatMessageBubble>What's the status?</XDSChatMessageBubble>
-  </XDSChatMessage>
-</XDSChatMessageList>`,
-    },
-    {
-      label: 'System message with divider',
-      code: `<XDSChatSystemMessage variant="divider">Today</XDSChatSystemMessage>`,
-    },
-  ],
   components: [
     {
       name: 'XDSChatMessageList',
@@ -73,24 +60,6 @@ export const docs = {
         {name: 'emptyState', type: 'ReactNode', description: 'Content shown when the list has no messages.'},
         {name: 'onScrollToTopAction', type: '() => Promise<void>', description: 'Async action fired when user scrolls to top. Use for loading older messages. Wrapped in useTransition — shows a spinner at the top while pending.'},
         {name: 'density', type: "'compact' | 'balanced' | 'spacious'", description: 'Visual density — flows to child messages via context.', default: "'balanced'"},
-      ],
-      examples: [
-        {label: 'Default', code: `<XDSChatMessageList>
-  <XDSChatMessage sender="user">
-    <XDSChatMessageBubble
-      metadata={<XDSChatMessageMetadata timestamp={<XDSTimestamp value="2026-03-15T14:30:00" format="time" />} status="read" />}>
-      How should I handle state management in a React app?
-    </XDSChatMessageBubble>
-  </XDSChatMessage>
-  <XDSChatMessage sender="assistant">
-    <XDSMarkdown density="compact">{response}</XDSMarkdown>
-    <XDSChatMessageMetadata
-      timestamp={<XDSTimestamp value="2026-03-15T14:30:30" format="time" />}
-      footer={<><span>Claude Opus 4.6</span><span>·</span><XDSButton label="Copy" icon={copyIcon} variant="ghost" size="sm" isIconOnly /></>}
-    />
-  </XDSChatMessage>
-</XDSChatMessageList>`},
-        {label: 'With empty state', code: `<XDSChatMessageList emptyState={<XDSEmptyState title="No messages" />}>\n  {[]}\n</XDSChatMessageList>`},
       ],
     },
     {
@@ -104,9 +73,6 @@ export const docs = {
         {name: 'metadata', type: 'ReactNode', description: 'Metadata rendered below the message body. Use when the last child is raw content (not a bubble). If the last child is a bubble, put metadata on the bubble\'s `metadata` prop instead.'},
         {name: 'density', type: "'compact' | 'balanced' | 'spacious'", description: 'Visual density. Inherited from list context if not set.'},
       ],
-      examples: [
-        {label: 'Assistant message', code: `<XDSChatMessage sender="assistant" name="Navi" avatar={<XDSAvatar name="Navi" size="sm" />}>\n  <XDSChatMessageBubble>Hello!</XDSChatMessageBubble>\n</XDSChatMessage>`},
-      ],
     },
     {
       name: 'XDSChatMessageBubble',
@@ -118,10 +84,6 @@ export const docs = {
         {name: 'metadata', type: 'ReactNode', description: "Metadata content rendered below the bubble, aligned with bubble text padding. Use on the last bubble in a message. If the last content is raw (no bubble), use XDSChatMessage's `metadata` prop instead."},
         {name: 'group', type: "'first' | 'middle' | 'last'", description: 'Position within a multi-bubble group. Controls corner radius reduction on the sender side. Leave unset for standalone bubbles (full radius).'},
       ],
-      examples: [
-        {label: 'With metadata', code: `<XDSChatMessage sender="user">\n  <XDSChatMessageBubble\n    name="Cindy"\n    metadata={<XDSChatMessageMetadata timestamp="2:30 PM" status="read" />}>\n    Hey, how's it going?\n  </XDSChatMessageBubble>\n</XDSChatMessage>`},
-        {label: 'Grouped bubbles', code: `<XDSChatMessage sender="assistant">\n  <XDSChatMessageBubble group="first">First part</XDSChatMessageBubble>\n  <XDSChatMessageBubble group="last">Second part</XDSChatMessageBubble>\n</XDSChatMessage>`},
-      ],
     },
     {
       name: 'XDSChatMessageMetadata',
@@ -131,10 +93,6 @@ export const docs = {
         {name: 'footer', type: 'ReactNode', description: 'Footer content — model info, reaction buttons, copy button.'},
         {name: 'status', type: "'sending' | 'sent' | 'delivered' | 'read' | 'error'", description: 'Message delivery status. Shows icon + label.'},
       ],
-      examples: [
-        {label: 'With timestamp and status', code: `<XDSChatMessageMetadata timestamp={<XDSTimestamp value="..." format="time" />} status="read" />`},
-        {label: 'With footer actions', code: `<XDSChatMessageMetadata\n  timestamp="2:30 PM"\n  footer={<><span>Claude Opus</span><XDSButton label="Copy" icon={copyIcon} variant="ghost" size="sm" isIconOnly /></>}\n/>`},
-      ],
     },
     {
       name: 'XDSChatSystemMessage',
@@ -143,10 +101,6 @@ export const docs = {
         {name: 'children', type: 'ReactNode', description: 'System message content.', required: true},
         {name: 'variant', type: "'default' | 'divider'", description: 'Visual variant. Divider adds horizontal lines on each side (uses XDSDivider internally).', default: "'default'"},
         {name: 'icon', type: 'ReactNode', description: 'Icon rendered before the text. Typically an XDSIcon.'},
-      ],
-      examples: [
-        {label: 'Date divider', code: `<XDSChatSystemMessage variant="divider">Today</XDSChatSystemMessage>`},
-        {label: 'Status notice', code: `<XDSChatSystemMessage>Cindy shared a file</XDSChatSystemMessage>`},
       ],
     },
     {
@@ -171,12 +125,6 @@ export const docs = {
         {name: 'status', type: "{ type: 'error' | 'warning'; message?: string }", description: 'Status message rendered below (or above) the composer.'},
         {name: 'statusPosition', type: "'top' | 'bottom'", description: 'Where to render the status.', default: "'bottom'"},
       ],
-
-      examples: [
-        {label: 'Simplest', code: '<XDSChatComposer onSubmit={handleSubmit} />'},
-        {label: 'With trigger menus', code: '<XDSChatComposer onSubmit={handleSubmit} input={<XDSChatComposerInput triggers={triggers} />} />'},
-        {label: 'Theme override', code: "defineTheme({ components: { 'chat-composer': { base: { '--composer-radius': '20px' } } } })"},
-      ],
     },
     {
       name: 'XDSChatComposerInput',
@@ -196,9 +144,6 @@ export const docs = {
         {name: 'onFiles', type: '(files: File[]) => void', description: 'File drop/paste handler.'},
         {name: 'onSubmit', type: '(value: string) => void', description: 'Submit handler (Enter without Shift).'},
       ],
-      examples: [
-        {label: 'With mentions', code: `<XDSChatComposerInput triggers={[{ character: '@', searchSource: createStaticSource(users), onSelect: (item) => ({ value: '@' + item.id, render: () => <span>@{item.label}</span> }) }]} />`},
-      ],
     },
     {
       name: 'XDSChatComposerAttachments',
@@ -206,9 +151,6 @@ export const docs = {
       props: [
         {name: 'children', type: 'ReactNode', description: 'Attachment items to render.', required: true},
         {name: 'count', type: 'number', description: 'Total attachment count. When provided and exceeds visible children, shows a collapse/expand toggle.'},
-      ],
-      examples: [
-        {label: 'With tokens', code: `<XDSChatComposerAttachments>\n  <XDSToken label="report.pdf" onDismiss={() => {}} />\n</XDSChatComposerAttachments>`},
       ],
     },
     {
@@ -224,10 +166,6 @@ export const docs = {
         {name: 'size', type: "'sm' | 'md'", description: 'Button size.', default: "'md'"},
         {name: 'xstyle', type: 'StyleXStyles', description: 'Additional StyleX styles.'},
       ],
-      examples: [
-        {label: 'Default (inside composer)', code: '<XDSChatComposer onSubmit={handleSubmit} sendButton={<XDSChatSendButton />} />'},
-        {label: 'Custom icons', code: '<XDSChatSendButton sendIcon={<CustomSendIcon />} stopIcon={<CustomStopIcon />} onSend={handleSend} onStop={handleStop} />'},
-      ],
     },
     {
       name: 'XDSChatToolCalls',
@@ -239,10 +177,6 @@ export const docs = {
         {name: 'defaultIsExpanded', type: 'boolean', description: 'Default expanded state (uncontrolled).', default: 'false'},
         {name: 'onExpandedChange', type: '(isExpanded: boolean) => void', description: 'Callback when expanded state changes.'},
       ],
-      examples: [
-        {label: 'From LLM response', code: `<XDSChatToolCalls calls={message.toolCalls.map(tc => ({\n  name: tc.toolName,\n  status: tc.state,\n  duration: tc.duration,\n  target: tc.args?.path,\n  node: 'xds',\n}))} />`},
-        {label: 'With result details', code: `<XDSChatToolCalls calls={[{\n  name: 'edit',\n  target: 'Button.tsx',\n  status: 'complete',\n  duration: '120ms',\n  additions: 8,\n  deletions: 2,\n  resultDetail: <XDSCodeBlock code={diff} language="diff" />,\n}]} />`},
-      ],
     },
     {
       name: 'XDSChatTokenizedText',
@@ -250,9 +184,6 @@ export const docs = {
       props: [
         {name: 'children', type: 'string', description: 'The message text containing token patterns.', required: true},
         {name: 'tokens', type: 'XDSChatMessageTokenConfig[]', description: 'Token definitions. Each has pattern (string to match), label (display text), and optional variant.'},
-      ],
-      examples: [
-        {label: 'With mentions', code: `<XDSChatMessageBubble>\n  <XDSChatTokenizedText\n    tokens={[{pattern: '@cindy', label: '@Cindy Zhang', variant: 'blue'}]}\n  >\n    Hey @cindy, can you review this?\n  </XDSChatTokenizedText>\n</XDSChatMessageBubble>`},
       ],
     },
   ],
@@ -272,46 +203,6 @@ const chatLayoutComponent = {
     {name: 'scrollButton', type: 'ReactNode | null', description: 'Scroll-to-bottom button rendered above the composer. Defaults to XDSChatLayoutScrollButton with auto-scroll integration. Pass null to hide.'},
     {name: 'scrollRef', type: 'React.RefObject<HTMLElement | null>', description: 'External scroll container ref. When provided, auto-scroll and scroll-to-bottom target this element instead of the layout root. Use when the chat is embedded in a page where a parent element or the document body scrolls.'},
   ],
-  examples: [
-    {label: 'Full AI chat', code: `<div style={{height: '100vh', display: 'flex', flexDirection: 'column'}}>
-  <XDSChatLayout
-    composer={
-      <XDSChatComposer
-        onSubmit={handleSubmit}
-        onStop={handleStop}
-        isStreaming={isStreaming}
-        headerActions={
-          <>
-            <XDSButton label="Mention" variant="ghost" size="sm" icon={atSignIcon} isIconOnly />
-            <XDSButton label="Attach" variant="ghost" size="sm" icon={paperclipIcon} isIconOnly />
-          </>
-        }
-        input={<XDSChatComposerInput triggers={triggers} placeholder="Ask about the codebase..." />}
-        footerActions={<XDSButton label="Claude Opus" variant="ghost" size="md" />}
-      />
-    }>
-    <XDSChatMessageList>
-      <XDSChatSystemMessage variant="divider">Today</XDSChatSystemMessage>
-      <XDSChatMessage sender="user">
-        <XDSChatMessageBubble
-          metadata={<XDSChatMessageMetadata timestamp="2:30 PM" status="read" />}>
-          Can you review the Button component?
-        </XDSChatMessageBubble>
-      </XDSChatMessage>
-      <XDSChatMessage sender="assistant" avatar={<XDSAvatar name="Navi" size="sm" />}>
-        <XDSMarkdown>{response}</XDSMarkdown>
-        <XDSChatToolCalls calls={toolCalls} />
-        <XDSChatMessageMetadata
-          timestamp="2:31 PM"
-          footer={<><XDSButton label="Copy" icon={copyIcon} variant="ghost" size="sm" isIconOnly /></>}
-        />
-      </XDSChatMessage>
-    </XDSChatMessageList>
-  </XDSChatLayout>
-</div>`},
-    {label: 'Page body scrolling', code: `const scrollRef = useRef(document.documentElement);\n<XDSChatLayout scrollRef={scrollRef} composer={<XDSChatComposer onSubmit={handleSubmit} />}>\n  <XDSChatMessageList>{messages.map(renderMessage)}</XDSChatMessageList>\n</XDSChatLayout>`},
-    {label: 'With empty state', code: `<XDSChatLayout\n  composer={<XDSChatComposer onSubmit={handleSubmit} />}\n  emptyState={<XDSEmptyState title="No messages yet" description="Start a conversation below." />}>\n  {[]}\n</XDSChatLayout>`},
-  ],
 };
 docs.components.push(chatLayoutComponent);
 
@@ -322,10 +213,6 @@ const chatLayoutScrollButtonComponent = {
     {name: 'isVisible', type: 'boolean', description: 'Whether the button is visible.', required: true},
     {name: 'label', type: 'string', description: 'Optional label — expands the button (e.g. "New messages").'},
     {name: 'onClick', type: '() => void', description: 'Click handler — typically scrolls to bottom and dismisses new message indicator.', required: true},
-  ],
-  examples: [
-    {label: 'With new messages label', code: `<XDSChatLayoutScrollButton isVisible={true} label="New messages" onClick={scrollToBottom} />`},
-    {label: 'Icon only', code: `<XDSChatLayoutScrollButton isVisible={isScrolledUp} onClick={scrollToBottom} />`},
   ],
 };
 docs.components.push(chatLayoutScrollButtonComponent);

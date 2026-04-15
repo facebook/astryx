@@ -4,6 +4,10 @@ export const docs = {
   name: 'Banner',
   description:
     'Persistent status notification for info, warning, error, or success messages.',
+  showcase: {
+    aspectRatio: 16 / 4,
+    code: '<XDSBanner variant="info">Important update</XDSBanner>',
+  },
 
   keywords: ["banner","alert","notification","callout","notice","status","message","info","warning","error","success","toast"],
   features: [
@@ -15,36 +19,6 @@ export const docs = {
     'Status colors: info uses --color-accent-muted, warning uses --color-warning-muted, error uses --color-error-muted, success uses --color-success-muted',
     'Card container (default): has border-radius with optional card content area below the colored header',
     'Section container: no border-radius, full-width for page-level banners',
-  ],
-
-  examples: [
-    {
-      label: 'Simple — just the colored header',
-      code: '<XDSBanner status="info" title="New update available" />',
-    },
-    {
-      label: 'With description and self-dismissing behavior',
-      code: `<XDSBanner
-  status="error"
-  title="Something went wrong"
-  description="Please try again later."
-  isDismissable
-  onDismiss={() => logDismiss()}
-/>`,
-    },
-    {
-      label: 'With content area (card background below header)',
-      code: `<XDSBanner
-  status="error"
-  title="Multiple errors found"
-  description="The following issues need to be resolved:"
->
-  <ul>
-    <li>Email address is invalid</li>
-    <li>Password must be at least 8 characters</li>
-  </ul>
-</XDSBanner>`,
-    },
   ],
 
   props: [
@@ -170,36 +144,6 @@ export const docsZh = {
     '状态颜色：info 使用 --color-accent-muted，warning 使用 --color-warning-muted，error 使用 --color-error-muted，success 使用 --color-success-muted',
     'Card 变体（默认）：带圆角，彩色头部下方可选卡片内容区',
     'Section 变体：无圆角，全宽，适用于页面级横幅',
-  ],
-
-  examples: [
-    {
-      label: '简单用法——仅彩色头部',
-      code: '<XDSBanner status="info" title="New update available" />',
-    },
-    {
-      label: '带描述和自动关闭行为',
-      code: `<XDSBanner
-  status="error"
-  title="Something went wrong"
-  description="Please try again later."
-  isDismissable
-  onDismiss={() => logDismiss()}
-/>`,
-    },
-    {
-      label: '带内容区（头部下方的卡片背景）',
-      code: `<XDSBanner
-  status="error"
-  title="Multiple errors found"
-  description="The following issues need to be resolved:"
->
-  <ul>
-    <li>Email address is invalid</li>
-    <li>Password must be at least 8 characters</li>
-  </ul>
-</XDSBanner>`,
-    },
   ],
 
   props: [

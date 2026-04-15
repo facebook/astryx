@@ -3,6 +3,10 @@
 export const docs = {
   name: 'Breadcrumbs',
   description: 'A navigation breadcrumb trail with semantic HTML.',
+  showcase: {
+    aspectRatio: 16 / 4,
+    code: '<XDSBreadcrumbs items={[{label: "Home"}, {label: "Settings"}]} />',
+  },
   keywords: ["breadcrumbs","breadcrumb","navigation","nav","crumbs","trail","path","hierarchy","wayfinding","steps"],
   features: [
     'Renders a <nav> landmark with an ordered list of breadcrumb items',
@@ -12,38 +16,6 @@ export const docs = {
     'Separators are hidden from assistive technology via aria-hidden',
     'Supports icons before item labels via startIcon',
     'Auto-detects the last child as the current page when no isCurrent is set',
-  ],
-  examples: [
-    {
-      label: 'Basic',
-      code: `<XDSBreadcrumbs>
-  <XDSBreadcrumbItem href="/">Home</XDSBreadcrumbItem>
-  <XDSBreadcrumbItem href="/projects">Projects</XDSBreadcrumbItem>
-  <XDSBreadcrumbItem isCurrent>My Project</XDSBreadcrumbItem>
-</XDSBreadcrumbs>`,
-    },
-    {
-      label: 'Supporting variant',
-      code: `<XDSBreadcrumbs variant="supporting">
-  <XDSBreadcrumbItem href="/">Home</XDSBreadcrumbItem>
-  <XDSBreadcrumbItem isCurrent>Page</XDSBreadcrumbItem>
-</XDSBreadcrumbs>`,
-    },
-    {
-      label: 'With icons',
-      code: `<XDSBreadcrumbs>
-  <XDSBreadcrumbItem href="/" startIcon={<XDSIcon icon={HomeIcon} size="sm" />}>
-    Home
-  </XDSBreadcrumbItem>
-  <XDSBreadcrumbItem isCurrent>Settings</XDSBreadcrumbItem>
-</XDSBreadcrumbs>`,
-    },
-    {
-      label: 'Item with icon and click handler',
-      code: `<XDSBreadcrumbItem href="/settings" startIcon={<XDSIcon icon={CogIcon} size="sm" />}>
-  Settings
-</XDSBreadcrumbItem>`,
-    },
   ],
   theming: {
     targets: [
@@ -96,25 +68,7 @@ export const docs = {
           description:
             'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
         },
-      ],
-      examples: [
-        {
-          label: 'Basic',
-          code: `<XDSBreadcrumbs>
-  <XDSBreadcrumbItem href="/">Home</XDSBreadcrumbItem>
-  <XDSBreadcrumbItem href="/projects">Projects</XDSBreadcrumbItem>
-  <XDSBreadcrumbItem isCurrent>My Project</XDSBreadcrumbItem>
-</XDSBreadcrumbs>`,
-        },
-        {
-          label: 'Supporting variant',
-          code: `<XDSBreadcrumbs variant="supporting">
-  <XDSBreadcrumbItem href="/">Home</XDSBreadcrumbItem>
-  <XDSBreadcrumbItem isCurrent>Page</XDSBreadcrumbItem>
-</XDSBreadcrumbs>`,
-        },
-      ],
-    },
+      ],    },
     {
       name: 'XDSBreadcrumbItem',
       description:
@@ -156,22 +110,6 @@ export const docs = {
             'Custom link component to render instead of <a>. Overrides the provider-level default from XDSLinkProvider. Only applies to non-current items.',
         },
       ],
-      examples: [
-        {
-          label: 'Link item',
-          code: `<XDSBreadcrumbItem href="/projects">Projects</XDSBreadcrumbItem>`,
-        },
-        {
-          label: 'Current page item',
-          code: `<XDSBreadcrumbItem isCurrent>My Project</XDSBreadcrumbItem>`,
-        },
-        {
-          label: 'With icon',
-          code: `<XDSBreadcrumbItem href="/settings" startIcon={<XDSIcon icon={CogIcon} size="sm" />}>
-  Settings
-</XDSBreadcrumbItem>`,
-        },
-      ],
     },
   ],
   usage: {
@@ -196,38 +134,6 @@ export const docsZh = {
     '分隔符通过 aria-hidden 对辅助技术隐藏',
     '通过 startIcon 支持在项目标签前显示图标',
     '未设置 isCurrent 时自动检测最后一个子元素为当前页面',
-  ],
-  examples: [
-    {
-      label: '基础用法',
-      code: `<XDSBreadcrumbs>
-  <XDSBreadcrumbItem href="/">Home</XDSBreadcrumbItem>
-  <XDSBreadcrumbItem href="/projects">Projects</XDSBreadcrumbItem>
-  <XDSBreadcrumbItem isCurrent>My Project</XDSBreadcrumbItem>
-</XDSBreadcrumbs>`,
-    },
-    {
-      label: 'Supporting 变体',
-      code: `<XDSBreadcrumbs variant="supporting">
-  <XDSBreadcrumbItem href="/">Home</XDSBreadcrumbItem>
-  <XDSBreadcrumbItem isCurrent>Page</XDSBreadcrumbItem>
-</XDSBreadcrumbs>`,
-    },
-    {
-      label: '带图标',
-      code: `<XDSBreadcrumbs>
-  <XDSBreadcrumbItem href="/" startIcon={<XDSIcon icon={HomeIcon} size="sm" />}>
-    Home
-  </XDSBreadcrumbItem>
-  <XDSBreadcrumbItem isCurrent>Settings</XDSBreadcrumbItem>
-</XDSBreadcrumbs>`,
-    },
-    {
-      label: '带图标和点击处理的项目',
-      code: `<XDSBreadcrumbItem href="/settings" startIcon={<XDSIcon icon={CogIcon} size="sm" />}>
-  Settings
-</XDSBreadcrumbItem>`,
-    },
   ],
   theming: {
     targets: [
@@ -281,23 +187,6 @@ export const docsZh = {
             '用于布局自定义的 StyleX 样式（外边距、定位、尺寸）。必须是 stylex.create() 的值，而非内联样式对象如 style={{}}。',
         },
       ],
-      examples: [
-        {
-          label: '基础用法',
-          code: `<XDSBreadcrumbs>
-  <XDSBreadcrumbItem href="/">Home</XDSBreadcrumbItem>
-  <XDSBreadcrumbItem href="/projects">Projects</XDSBreadcrumbItem>
-  <XDSBreadcrumbItem isCurrent>My Project</XDSBreadcrumbItem>
-</XDSBreadcrumbs>`,
-        },
-        {
-          label: 'Supporting 变体',
-          code: `<XDSBreadcrumbs variant="supporting">
-  <XDSBreadcrumbItem href="/">Home</XDSBreadcrumbItem>
-  <XDSBreadcrumbItem isCurrent>Page</XDSBreadcrumbItem>
-</XDSBreadcrumbs>`,
-        },
-      ],
     },
     {
       name: 'XDSBreadcrumbItem',
@@ -338,22 +227,6 @@ export const docsZh = {
           type: 'XDSLinkComponentType',
           description:
             '自定义链接组件，代替 <a> 渲染。覆盖 XDSLinkProvider 设置的默认值。仅适用于非当前项。',
-        },
-      ],
-      examples: [
-        {
-          label: '链接项',
-          code: `<XDSBreadcrumbItem href="/projects">Projects</XDSBreadcrumbItem>`,
-        },
-        {
-          label: '当前页面项',
-          code: `<XDSBreadcrumbItem isCurrent>My Project</XDSBreadcrumbItem>`,
-        },
-        {
-          label: '带图标',
-          code: `<XDSBreadcrumbItem href="/settings" startIcon={<XDSIcon icon={CogIcon} size="sm" />}>
-  Settings
-</XDSBreadcrumbItem>`,
         },
       ],
     },

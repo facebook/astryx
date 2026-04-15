@@ -5,6 +5,10 @@
 export const docs = {
   name: 'Divider',
   description: 'Visual separator with optional label, using XDS design tokens.',
+  showcase: {
+    aspectRatio: 16 / 4,
+    code: '<XDSDivider />',
+  },
   keywords: ["divider","separator","hr","rule","line","border","spacer","horizontal rule"],
   features: [
     'Supports horizontal and vertical orientations',
@@ -12,28 +16,6 @@ export const docs = {
     'Subtle and strong visual weight variants',
     'Full-bleed mode extends the divider to container edges via negative margins',
     'Themeable via className — target .xds-divider with variant and orientation classes',
-  ],
-  examples: [
-    {
-      label: 'Basic',
-      code: '<XDSDivider />',
-    },
-    {
-      label: 'With label',
-      code: '<XDSDivider label="or" />',
-    },
-    {
-      label: 'Vertical',
-      code: '<XDSDivider orientation="vertical" />',
-    },
-    {
-      label: 'Strong variant',
-      code: '<XDSDivider variant="strong" />',
-    },
-    {
-      label: 'Full bleed',
-      code: '<XDSDivider isFullBleed />',
-    },
   ],
   props: [
     {
@@ -104,28 +86,6 @@ export const docsZh = {
     '柔和和加强两种视觉粗细变体',
     '全出血模式通过负边距将分隔线延伸至容器边缘',
     '可通过 className 进行主题定制 — 使用变体和方向类定位 .xds-divider',
-  ],
-  examples: [
-    {
-      label: '基础用法',
-      code: '<XDSDivider />',
-    },
-    {
-      label: '带标签',
-      code: '<XDSDivider label="or" />',
-    },
-    {
-      label: '垂直方向',
-      code: '<XDSDivider orientation="vertical" />',
-    },
-    {
-      label: '加强变体',
-      code: '<XDSDivider variant="strong" />',
-    },
-    {
-      label: '全出血',
-      code: '<XDSDivider isFullBleed />',
-    },
   ],
   props: [
     {
