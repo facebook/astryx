@@ -1,15 +1,7 @@
 # PR CI: test, build, analyze, a11y audit, and comment
 # Everything runs in parallel where possible
 #
-# Pipeline:
-#   test ─────────────────────────────────────────────────────┐
-#   check-components ────────────────────────────────────────┐│
-#   build (core) ─┬─ build-storybook ─┬─ deploy-preview ────┤├─ (merge)
-#                  ├─ build-sandbox ───┘                     ││
-#                  └─ analyze ─ pr-comment                   ││
-#                       └─ pr-a11y ─ pr-comment-update ──────┘│
-#
-# Merge queue: test + build run on merge_group events so the
+# Merge queue: test + build also run on merge_group events so the
 # merge queue can gate on them before landing a PR.
 name: CI
 
@@ -68,8 +60,8 @@ jobs:
 
       - run: yarn test
 
-  # Build core packages, verify, typecheck, analyze.
-  # Storybook and Sandbox build in parallel after this (separate jobs).
+  # Build storybook + analyze components (parallel with test)
+  # Uploads storybook preview and analysis artifacts for downstream jobs
   build:
     runs-on: ubuntu-latest
     outputs:
@@ -106,6 +98,9 @@ jobs:
       - name: Typecheck template docs
         run: yarn workspace @xds/cli typecheck:template-docs
 
+      - name: Build Storybook
+        run: yarn workspace @xds/storybook build
+
       - name: Compute PR preview path
         if: github.event_name == 'pull_request'
         id: urls
@@ -120,6 +115,28 @@ jobs:
           echo "pr_number=${PR_NUMBER}" >> $GITHUB_OUTPUT
           echo "storybook_url=https://${REPO_OWNER}.github.io/${REPO_NAME}/pr/${PR_NUMBER}/" >> $GITHUB_OUTPUT
           echo "sandbox_url=https://${REPO_OWNER}.github.io/${REPO_NAME}/pr/${PR_NUMBER}/sandbox/" >> $GITHUB_OUTPUT
+
+      - name: Build Sandbox
+        if: github.event_name == 'pull_request'
+        run: yarn workspace @xds/sandbox build
+        env:
+          SANDBOX_BASE_PATH: /pr/${{ steps.urls.outputs.pr_number }}/sandbox
+
+      - name: Upload Storybook artifact
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v7
+        with:
+          name: storybook-${{ steps.urls.outputs.short_hash }}
+          path: apps/storybook/dist/
+          retention-days: 30
+
+      - name: Upload Sandbox artifact
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v7
+        with:
+          name: sandbox-${{ steps.urls.outputs.short_hash }}
+          path: apps/sandbox/out/
+          retention-days: 30
 
       - name: Analyze components
         if: github.event_name == 'pull_request'
@@ -137,75 +154,13 @@ jobs:
           path: analysis.json
           retention-days: 1
 
-  # Build Storybook (parallel with Sandbox after core build)
-  build-storybook:
-    if: github.event_name == 'pull_request'
-    needs: [build]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: 20
-          cache: 'yarn'
-
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
-
-      - name: Build core package
-        run: yarn build
-
-      - name: Build Storybook
-        run: yarn workspace @xds/storybook build
-
-      - name: Upload Storybook artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: storybook-${{ needs.build.outputs.short_hash }}
-          path: apps/storybook/dist/
-          retention-days: 30
-
-  # Build Sandbox (parallel with Storybook after core build)
-  build-sandbox:
-    if: github.event_name == 'pull_request'
-    needs: [build]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: 20
-          cache: 'yarn'
-
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
-
-      - name: Build core package
-        run: yarn build
-
-      - name: Build Sandbox
-        run: yarn workspace @xds/sandbox build
-        env:
-          SANDBOX_BASE_PATH: /pr/${{ needs.build.outputs.pr_number }}/sandbox
-
-      - name: Upload Sandbox artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: sandbox-${{ needs.build.outputs.short_hash }}
-          path: apps/sandbox/out/
-          retention-days: 30
-
   # Deploy PR preview to GitHub Pages.
-  # Waits for both Storybook and Sandbox builds.
+  # Uses a per-PR concurrency group so multiple PRs deploy in parallel.
+  # Instead of peaceiris/actions-gh-pages (which can conflict with main's
+  # force-push), we do a manual git push with retry-on-conflict.
   deploy-preview:
     if: github.event_name == 'pull_request'
-    needs: [build, build-storybook, build-sandbox]
+    needs: [build]
     runs-on: ubuntu-latest
     concurrency:
       group: "pr-preview-${{ needs.build.outputs.pr_number }}"
@@ -267,7 +222,7 @@ jobs:
           exit 1
 
   # Post PR comment with preview links + analysis as soon as build finishes
-  # Does NOT wait for Storybook/Sandbox — those deploy later
+  # Does NOT wait for test or a11y — those update the comment later
   pr-comment:
     if: github.event_name == 'pull_request'
     needs: [build]
@@ -338,10 +293,10 @@ jobs:
               });
             }
 
-  # Accessibility audit — needs Storybook build
+  # Accessibility audit
   # Skipped when no components changed.
   pr-a11y:
-    needs: [build, build-storybook, check-components]
+    needs: [build, check-components]
     if: github.event_name == 'pull_request' && needs.check-components.outputs.has_components == 'true'
     runs-on: ubuntu-latest
     steps:
