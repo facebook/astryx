@@ -24,22 +24,6 @@ export const docs = {
   ],
   keyboard:
     'Escape closes any open layer.',
-  examples: [
-    {
-      label: 'useXDSLayer — context mode',
-      code: `const layer = useXDSLayer({mode: 'context'});
-
-<button ref={layer.ref}>Trigger</button>
-{layer.render(<Content />, {placement: 'above', alignment: 'center'})}`,
-    },
-    {
-      label: 'useXDSLayer — fixed mode',
-      code: `const layer = useXDSLayer({mode: 'fixed'});
-
-layer.show();
-{layer.render(<Content />, {x: mouseX, y: mouseY})}`,
-    },
-  ],
   components: [
     {
       name: 'useXDSLayer',
@@ -69,24 +53,7 @@ layer.show();
           description:
             'StyleX styles for layout customization.',
         },
-      ],
-      examples: [
-        {
-          label: 'Context mode',
-          code: `const layer = useXDSLayer({mode: 'context'});
-
-<button ref={layer.ref}>Trigger</button>
-{layer.render(<Content />, {placement: 'above', alignment: 'center'})}`,
-        },
-        {
-          label: 'Fixed mode',
-          code: `const layer = useXDSLayer({mode: 'fixed'});
-
-layer.show();
-{layer.render(<Content />, {x: mouseX, y: mouseY})}`,
-        },
-      ],
-    },
+      ],    },
   ],
   usage: {
     summary: 'Core hook for overlay positioning using CSS Anchor Positioning and the Popover API.',
@@ -117,22 +84,6 @@ export const docsZh = {
   ],
   keyboard:
     'Escape 键关闭任何打开的层。',
-  examples: [
-    {
-      label: 'useXDSLayer — 上下文模式',
-      code: `const layer = useXDSLayer({mode: 'context'});
-
-<button ref={layer.ref}>Trigger</button>
-{layer.render(<Content />, {placement: 'above', alignment: 'center'})}`,
-    },
-    {
-      label: 'useXDSLayer — 固定模式',
-      code: `const layer = useXDSLayer({mode: 'fixed'});
-
-layer.show();
-{layer.render(<Content />, {x: mouseX, y: mouseY})}`,
-    },
-  ],
   components: [
     {
       name: 'useXDSLayer',
@@ -161,22 +112,6 @@ layer.show();
           type: 'StyleXStyles',
           description:
             '用于布局自定义的 StyleX 样式。',
-        },
-      ],
-      examples: [
-        {
-          label: '上下文模式',
-          code: `const layer = useXDSLayer({mode: 'context'});
-
-<button ref={layer.ref}>Trigger</button>
-{layer.render(<Content />, {placement: 'above', alignment: 'center'})}`,
-        },
-        {
-          label: '固定模式',
-          code: `const layer = useXDSLayer({mode: 'fixed'});
-
-layer.show();
-{layer.render(<Content />, {x: mouseX, y: mouseY})}`,
         },
       ],
     },
