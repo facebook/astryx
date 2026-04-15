@@ -29,3 +29,8 @@ export default function HoverCardHook() {
     </>
   );
 }
+
+export const showcase = {
+  aspectRatio: 1,
+  render: HoverCardHook,
+};
