@@ -45,10 +45,10 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-2'],
     minHeight: spacingVars['--spacing-8'],
     paddingInlineStart: {
-      default: spacingVars['--spacing-1'],
+      default: spacingVars['--spacing-2'],
       ':has(.xds-navicon)': 0,
     },
-    paddingInlineEnd: spacingVars['--spacing-1'],
+    paddingInlineEnd: spacingVars['--spacing-2'],
     paddingBlock: 0,
     boxSizing: 'border-box',
     textDecoration: 'none',
