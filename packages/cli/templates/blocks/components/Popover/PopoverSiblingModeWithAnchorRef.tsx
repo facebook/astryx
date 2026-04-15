@@ -1,5 +1,6 @@
 'use client';
 
+import type {RefObject} from 'react';
 import {useRef} from 'react';
 import {XDSPopover} from '@xds/core/Popover';
 import {XDSButton} from '@xds/core/Button';
@@ -18,11 +19,8 @@ export default function PopoverSiblingModeWithAnchorRef() {
   return (
     <>
       <XDSButton label="Actions" ref={buttonRef} />
-      // @ts-expect-error migrated example
-      {/* @ts-expect-error migrated example */}
       <XDSPopover
-        // @ts-expect-error migrated example
-        anchorRef={buttonRef}
+        anchorRef={buttonRef as RefObject<HTMLElement>}
         label="Actions"
         content={<ActionMenu />}
         placement="below"

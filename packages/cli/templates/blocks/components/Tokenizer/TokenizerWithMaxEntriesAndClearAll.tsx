@@ -2,26 +2,30 @@
 
 import {useState} from 'react';
 import {XDSTokenizer} from '@xds/core/Tokenizer';
+import type {XDSSearchableItem, XDSSearchSource} from '@xds/core/Typeahead';
 
-// @ts-expect-error migrated example
-// @ts-expect-error migrated example
-const tagSource = {
-  search: (query: string) => [{label: 'Bug', value: 'bug'}, {label: 'Feature', value: 'feature'}].filter(t => t.label.toLowerCase().includes(query.toLowerCase())),
-  bootstrap: () => [{label: 'Bug', value: 'bug'}, {label: 'Feature', value: 'feature'}],
+const tagSource: XDSSearchSource = {
+  search: (query: string) =>
+    (
+      [
+        {id: 'bug', label: 'Bug'},
+        {id: 'feature', label: 'Feature'},
+      ] satisfies XDSSearchableItem[]
+    ).filter((t) => t.label.toLowerCase().includes(query.toLowerCase())),
+  bootstrap: () => [
+    {id: 'bug', label: 'Bug'},
+    {id: 'feature', label: 'Feature'},
+  ],
 };
 
 export default function TokenizerWithMaxEntriesAndClearAll() {
-  const [tags, setTags] = useState([]);
+  const [tags, setTags] = useState<XDSSearchableItem[]>([]);
 
   return (
-    // @ts-expect-error migrated example
-    // @ts-expect-error migrated example
     <XDSTokenizer
       label="Tags"
-      // @ts-expect-error migrated example
       searchSource={tagSource}
       value={tags}
-      // @ts-expect-error migrated example
       onChange={(items) => setTags(items)}
       maxEntries={5}
       hasClear

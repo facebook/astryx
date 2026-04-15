@@ -17,8 +17,6 @@ function Avatar() {
 
 export default function TopNavInXDSLayoutHeaderSlot() {
   return (
-    // @ts-expect-error migrated example
-    // @ts-expect-error migrated example
     <XDSLayout
       header={
         <XDSTopNav

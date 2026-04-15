@@ -2,8 +2,9 @@
 
 import {useState} from 'react';
 import {XDSPowerSearch} from '@xds/core/PowerSearch';
+import type {PowerSearchConfig, PowerSearchFilter} from '@xds/core/PowerSearch';
 
-const config = {
+const config: PowerSearchConfig = {
   name: 'TaskSearch',
   fields: [
     {
@@ -27,19 +28,14 @@ const config = {
 };
 
 export default function PowerSearchWithInitialFilters() {
-  const [filters, setFilters] = useState([
-    {field: 'status', operator: 'is', value: {type: 'enum', value: 'open'}},
+  const [filters, setFilters] = useState<ReadonlyArray<PowerSearchFilter>>([
+    {field: 'status', operator: 'is', value: {type: 'enum' as const, value: 'open'}},
   ]);
 
   return (
-    // @ts-expect-error migrated example
-    // @ts-expect-error migrated example
     <XDSPowerSearch
-      // @ts-expect-error migrated example
       config={config}
-      // @ts-expect-error migrated example
       filters={filters}
-      // @ts-expect-error migrated example
       onChange={(newFilters) => setFilters(newFilters)}
       placeholder="Add filters..."
     />

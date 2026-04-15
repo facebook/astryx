@@ -25,8 +25,6 @@ export default function AppShellResponsiveMobileNav() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    // @ts-expect-error migrated example
-    // @ts-expect-error migrated example
     <XDSAppShell
       topNav={
         <XDSTopNav
@@ -54,8 +52,7 @@ export default function AppShellResponsiveMobileNav() {
         <XDSMobileNav
           isOpen={mobileOpen}
           onOpenChange={(open) => setMobileOpen(open)}
-          // @ts-expect-error migrated example
-          title="My App">
+          header="My App">
           <div style={{padding: 16}}>Navigation items</div>
         </XDSMobileNav>
       }>

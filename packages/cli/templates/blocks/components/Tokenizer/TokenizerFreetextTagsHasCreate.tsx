@@ -2,16 +2,17 @@
 
 import {useState} from 'react';
 import {XDSTokenizer} from '@xds/core/Tokenizer';
+import type {XDSSearchableItem, XDSSearchSource} from '@xds/core/Typeahead';
 
 export default function TokenizerFreetextTagsHasCreate() {
-  const [tags, setTags] = useState([]);
+  const [tags, setTags] = useState<XDSSearchableItem[]>([]);
 
-  const emptySource = { search: () => [], bootstrap: () => [] };
-  
+  const emptySource: XDSSearchSource = {
+    search: () => [],
+    bootstrap: () => [],
+  };
 
   return (
-    // @ts-expect-error migrated example
-    // @ts-expect-error migrated example
     <XDSTokenizer
       label="Tags"
       searchSource={emptySource}
@@ -19,7 +20,6 @@ export default function TokenizerFreetextTagsHasCreate() {
       onChange={(items, change) => {
         setTags(items);
         if (change.type === 'create') {
-          // @ts-expect-error migrated example
           console.log('New tag:', change.item.label);
         }
       }}

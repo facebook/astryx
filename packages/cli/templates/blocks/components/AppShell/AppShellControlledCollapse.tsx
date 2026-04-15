@@ -8,8 +8,6 @@ import {useState} from 'react';
 export default function AppShellControlledCollapse() {
   const [collapsed, setCollapsed] = useState(false);
   return (
-    // @ts-expect-error migrated example
-    // @ts-expect-error migrated example
     <XDSAppShell
       topNav={
         <XDSTopNav
@@ -22,9 +20,7 @@ export default function AppShellControlledCollapse() {
           <div style={{padding: 16}}>Navigation items</div>
         </XDSSideNav>
       }
-      // @ts-expect-error migrated example
-      isSideNavCollapsed={collapsed}
-      onSideNavCollapsedChange={setCollapsed}>
+      mobileNav={{isOpen: collapsed, onOpenChange: setCollapsed}}>
       <div style={{padding: 24}}>
         <h1>Content</h1>
         <p>SideNav collapse is controlled externally.</p>

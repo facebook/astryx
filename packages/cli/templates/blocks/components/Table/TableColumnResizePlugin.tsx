@@ -1,8 +1,6 @@
 'use client';
 
 import {useState} from 'react';
-// @ts-expect-error migrated example
-// @ts-expect-error migrated example
 import {XDSTable, useXDSTableColumnResize} from '@xds/core/Table';
 
 const users = [
@@ -15,18 +13,14 @@ const columns = [
 ];
 
 export default function TableColumnResizePlugin() {
-  const [columnWidths, setColumnWidths] = useState({});
-  // @ts-expect-error migrated example
-  // @ts-expect-error migrated example
+  const [columnWidths, setColumnWidths] = useState<Record<string, number>>({});
   const resizePlugin = useXDSTableColumnResize({
     columnWidths,
     columns,
-    onColumnResizeEnd: (updates: any) => setColumnWidths(prev => ({...prev, ...updates})),
+    onColumnResizeEnd: (updates) => setColumnWidths(prev => ({...prev, ...updates})),
   });
 
   return (
-    // @ts-expect-error migrated example
-    // @ts-expect-error migrated example
     <XDSTable
       data={users}
       columns={columns}

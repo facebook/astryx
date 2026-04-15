@@ -6,8 +6,7 @@ import {XDSHeading} from '@xds/core/Text';
 export default function MetadataListWithTitleAndShowMore() {
   return (
     <XDSMetadataList
-      // @ts-expect-error migrated example
-      title={<XDSHeading type="header4">Details</XDSHeading>}
+      title={<XDSHeading level={4}>Details</XDSHeading>}
       maxNumOfItems={3}>
       <XDSMetadataListItem label="Name">Value</XDSMetadataListItem>
       <XDSMetadataListItem label="Status">Active</XDSMetadataListItem>

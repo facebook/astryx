@@ -1,8 +1,7 @@
 'use client';
 
 import {XDSNavIcon} from '@xds/core/NavIcon';
-// @ts-expect-error migrated example
-import {XDSPageNavHeader} from '@xds/core/SideNav';
+import {XDSSideNavHeading} from '@xds/core/SideNav';
 
 function CubeIcon() {
   return (
@@ -14,7 +13,7 @@ function CubeIcon() {
 
 export default function NavIconInSideNavigation() {
   return (
-    <XDSPageNavHeader
+    <XDSSideNavHeading
       icon={<XDSNavIcon icon={<CubeIcon />} />}
       heading="My App"
     />

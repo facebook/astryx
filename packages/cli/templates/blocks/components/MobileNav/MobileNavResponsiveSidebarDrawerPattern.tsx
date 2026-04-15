@@ -47,13 +47,10 @@ export default function MobileNavResponsiveSidebarDrawerPattern() {
           variant="ghost"
           onClick={() => setDrawerOpen(true)}
         />
-        // @ts-expect-error migrated example
-        {/* @ts-expect-error migrated example */}
         <XDSMobileNav
           isOpen={drawerOpen}
-          onOpenChange={() => setDrawerOpen(false)}
-          // @ts-expect-error migrated example
-          title="My App">
+          onOpenChange={setDrawerOpen}
+          header="My App">
           {navSections}
         </XDSMobileNav>
       </>

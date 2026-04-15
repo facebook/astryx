@@ -23,8 +23,6 @@ export default function SelectorWithObjectItems() {
   const [value, setValue] = useState('');
 
   return (
-    // @ts-expect-error migrated example
-    // @ts-expect-error migrated example
     <XDSSelector
       label="Settings"
       options={[
@@ -32,7 +30,7 @@ export default function SelectorWithObjectItems() {
         {value: 'settings', label: 'Settings', icon: CogIcon, disabled: true},
       ]}
       value={value}
-      onChange={setValue}
+      onChange={(v) => setValue(v)}
     />
   );
 }

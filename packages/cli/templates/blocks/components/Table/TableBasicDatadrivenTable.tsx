@@ -14,8 +14,6 @@ const users = [
 
 export default function TableBasicDatadrivenTable() {
   return (
-    // @ts-expect-error migrated example
-    // @ts-expect-error migrated example
     <XDSTable
       data={users}
       columns={[
@@ -23,8 +21,7 @@ export default function TableBasicDatadrivenTable() {
           key: 'name',
           header: 'Name',
           renderCell: user => (
-            // @ts-expect-error migrated example
-            <XDSHStack gap={2} align="center">
+            <XDSHStack gap={2} vAlign="center">
               <XDSAvatar name={user.name} size="small" />
               <XDSVStack gap={1}>
                 <XDSText type="body" weight="semibold">
@@ -42,10 +39,8 @@ export default function TableBasicDatadrivenTable() {
           header: 'Status',
           width: pixel(140),
           renderCell: user => (
-            // @ts-expect-error migrated example
-            <XDSHStack gap={2} align="center">
-              // @ts-expect-error migrated example
-              <XDSStatusDot status={user.isActive ? 'positive' : 'negative'} />
+            <XDSHStack gap={2} vAlign="center">
+              <XDSStatusDot variant={user.isActive ? 'positive' : 'negative'} label={user.isActive ? 'Active' : 'Inactive'} />
               <XDSBadge variant={user.isActive ? 'success' : 'error'} label={user.isActive ? 'Active' : 'Inactive'} />
             </XDSHStack>
           ),

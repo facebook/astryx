@@ -1,7 +1,7 @@
 'use client';
 
 import {XDSProgressBar} from '@xds/core/ProgressBar';
-import {XDSLayout} from '@xds/core/Layout';
+import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 import {XDSIcon} from '@xds/core/Icon';
 
@@ -15,22 +15,20 @@ function CheckCircleIcon() {
 
 export default function ProgressBarComposedWithStatusIcon() {
   return (
-    // @ts-expect-error migrated example
-    <XDSLayout direction="column" gap="1">
+    <XDSVStack gap={1}>
       <XDSProgressBar
         value={100}
         label="Upload complete"
         variant="positive"
         hasValueLabel
       />
-      // @ts-expect-error migrated example
-      <XDSLayout direction="row" gap="1" align="center">
+      <XDSHStack gap={1} vAlign="center">
         <XDSIcon icon={CheckCircleIcon} color="positive" size="sm" />
         <XDSText type="body" color="secondary" size="sm">
           Upload complete
         </XDSText>
-      </XDSLayout>
-    </XDSLayout>
+      </XDSHStack>
+    </XDSVStack>
   );
 }
 

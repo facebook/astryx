@@ -6,35 +6,34 @@ import {XDSOverflowList} from '@xds/core/OverflowList';
 import {XDSToolbar} from '@xds/core/Toolbar';
 
 const actions = [
-  {id: '1', label: 'Cut', onSelect: () => {}},
-  {id: '2', label: 'Copy', onSelect: () => {}},
-  {id: '3', label: 'Paste', onSelect: () => {}},
+  {id: '1', label: 'Cut', onClick: () => {}},
+  {id: '2', label: 'Copy', onClick: () => {}},
+  {id: '3', label: 'Paste', onClick: () => {}},
 ];
 
 export default function ToolbarWithXDSOverflowListForResponsiveCollapsing() {
   return (
-    // @ts-expect-error migrated example
-    // @ts-expect-error migrated example
     <XDSToolbar
       label="Actions"
       startContent={
         <XDSOverflowList
-          // @ts-expect-error migrated example
-          items={actions}
-          // @ts-expect-error migrated example
-          renderItem={(action) => (
-            <XDSButton key={action.id} label={action.label} variant="ghost" />
-          )}
-          // @ts-expect-error migrated example
-          renderOverflow={(items) => (
+          overflowRenderer={(overflowItems) => (
             <XDSDropdownMenu
-              // @ts-expect-error migrated example
-              trigger={<XDSButton label="More" variant="ghost" />}
-              // @ts-expect-error migrated example
-              items={items.map(a => ({label: a.label, onSelect: a.onSelect}))}
+              button={{label: 'More', variant: 'ghost'}}
+              items={overflowItems.map(({index}) => ({
+                label: actions[index].label,
+                onClick: actions[index].onClick,
+              }))}
             />
-          )}
-        />
+          )}>
+          {actions.map((action) => (
+            <XDSButton
+              key={action.id}
+              label={action.label}
+              variant="ghost"
+            />
+          ))}
+        </XDSOverflowList>
       }
     />
   );

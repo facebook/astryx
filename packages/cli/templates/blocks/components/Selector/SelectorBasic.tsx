@@ -7,13 +7,11 @@ export default function SelectorBasic() {
   const [value, setValue] = useState('');
 
   return (
-    // @ts-expect-error migrated example
-    // @ts-expect-error migrated example
     <XDSSelector
       label="Fruit"
       options={['Apple', 'Banana', 'Orange']}
       value={value}
-      onChange={setValue}
+      onChange={(v) => setValue(v)}
     />
   );
 }

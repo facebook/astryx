@@ -25,15 +25,12 @@ const users = [
 
 export default function DropdownMenuCustomItemRendering() {
   return (
-    // @ts-expect-error migrated example
-    // @ts-expect-error migrated example
     <XDSDropdownMenu button={{label: 'Users'}} items={users}>
       {item => (
         <XDSDropdownMenuItem
           icon={item.icon}
           label={item.label}
-          // @ts-expect-error migrated example
-          description={item.email}
+          description={(item as (typeof users)[number]).email}
         />
       )}
     </XDSDropdownMenu>

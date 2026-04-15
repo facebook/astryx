@@ -5,8 +5,11 @@ import {XDSTopNav, XDSTopNavHeading} from '@xds/core/TopNav';
 import {XDSSideNav} from '@xds/core/SideNav';
 import {XDSHeading} from '@xds/core/Text';
 import {XDSTextInput} from '@xds/core/TextInput';
+import {useState} from 'react';
 
 export default function AppShellPaddedContent() {
+  const [appName, setAppName] = useState('');
+
   return (
     <XDSAppShell
       contentPadding={4}
@@ -22,8 +25,11 @@ export default function AppShellPaddedContent() {
         </XDSSideNav>
       }>
       <XDSHeading level={1}>General</XDSHeading>
-      // @ts-expect-error migrated example
-      <XDSTextInput label="App Name" />
+      <XDSTextInput
+        label="App Name"
+        value={appName}
+        onChange={(v) => setAppName(v)}
+      />
     </XDSAppShell>
   );
 }

@@ -1,34 +1,47 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSToken} from '@xds/core/Token';
+import {XDSToken, type XDSTokenColor} from '@xds/core/Token';
 import {XDSTokenizer} from '@xds/core/Tokenizer';
+import type {XDSSearchableItem, XDSSearchSource} from '@xds/core/Typeahead';
 
-// @ts-expect-error migrated example
-// @ts-expect-error migrated example
-const tagSource = {
-  search: (query: string) => [{label: 'Bug', value: 'bug', auxiliaryData: {color: 'red'}}, {label: 'Feature', value: 'feature', auxiliaryData: {color: 'blue'}}].filter(t => t.label.toLowerCase().includes(query.toLowerCase())),
-  bootstrap: () => [{label: 'Bug', value: 'bug', auxiliaryData: {color: 'red'}}, {label: 'Feature', value: 'feature', auxiliaryData: {color: 'blue'}}],
+type TagItem = XDSSearchableItem<{color: XDSTokenColor}>;
+
+const tagSource: XDSSearchSource<TagItem> = {
+  search: (query: string) =>
+    (
+      [
+        {id: 'bug', label: 'Bug', auxiliaryData: {color: 'red' as const}},
+        {
+          id: 'feature',
+          label: 'Feature',
+          auxiliaryData: {color: 'blue' as const},
+        },
+      ] satisfies TagItem[]
+    ).filter((t) => t.label.toLowerCase().includes(query.toLowerCase())),
+  bootstrap: () => [
+    {id: 'bug', label: 'Bug', auxiliaryData: {color: 'red' as const}},
+    {
+      id: 'feature',
+      label: 'Feature',
+      auxiliaryData: {color: 'blue' as const},
+    },
+  ],
 };
 
 export default function TokenizerCustomTokenRendering() {
-  const [tags, setTags] = useState([]);
+  const [tags, setTags] = useState<TagItem[]>([]);
 
   return (
-    // @ts-expect-error migrated example
-    // @ts-expect-error migrated example
     <XDSTokenizer
       label="Tags"
-      // @ts-expect-error migrated example
       searchSource={tagSource}
       value={tags}
-      // @ts-expect-error migrated example
       onChange={(items) => setTags(items)}
       renderToken={(item, onRemove) => (
         <XDSToken
           label={item.label}
-          // @ts-expect-error migrated example
-          color={item.auxiliaryData.color}
+          color={item.auxiliaryData?.color}
           onRemove={onRemove}
         />
       )}

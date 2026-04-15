@@ -1,19 +1,19 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSTimeInput} from '@xds/core/TimeInput';
+import {XDSTimeInput, type XDSTimeInputProps} from '@xds/core/TimeInput';
+
+type TimeValue = NonNullable<XDSTimeInputProps['value']>;
 
 export default function TimeInput24hourFormatWithClearButton() {
-  const [time, setTime] = useState('09:00');
+  const [time, setTime] = useState<TimeValue | undefined>(
+    '09:00' as TimeValue,
+  );
 
   return (
-    // @ts-expect-error migrated example
-    // @ts-expect-error migrated example
     <XDSTimeInput
       label="Meeting time"
-      // @ts-expect-error migrated example
       value={time}
-      // @ts-expect-error migrated example
       onChange={setTime}
       hourFormat="24h"
       hasClear

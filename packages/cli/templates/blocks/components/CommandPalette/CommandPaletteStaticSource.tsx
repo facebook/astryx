@@ -1,8 +1,8 @@
 'use client';
 
 import {useState} from 'react';
-// @ts-expect-error migrated example
-import {XDSCommandPalette, createStaticSource} from '@xds/core/CommandPalette';
+import {XDSCommandPalette} from '@xds/core/CommandPalette';
+import {createStaticSource} from '@xds/core/Typeahead';
 import {XDSButton} from '@xds/core/Button';
 
 const source = createStaticSource([

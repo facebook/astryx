@@ -9,8 +9,6 @@ const transactions = [
 
 export default function TableColumnAlignmentAndVerticalAlignment() {
   return (
-    // @ts-expect-error migrated example
-    // @ts-expect-error migrated example
     <XDSTable
       data={transactions}
       columns={[

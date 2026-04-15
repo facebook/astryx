@@ -27,6 +27,14 @@ function UnderlineIcon() {
   );
 }
 
+function SettingsIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="12" cy="12" r="10" />
+    </svg>
+  );
+}
+
 export default function ToolbarBasicToolbarWithStartAndEndActions() {
   return (
     <XDSToolbar
@@ -39,8 +47,7 @@ export default function ToolbarBasicToolbarWithStartAndEndActions() {
         </>
       }
       endContent={
-        // @ts-expect-error migrated example
-        <XDSButton label="Settings" variant="ghost" icon={<Cog6ToothIcon />} />
+        <XDSButton label="Settings" variant="ghost" icon={<SettingsIcon />} />
       }
     />
   );

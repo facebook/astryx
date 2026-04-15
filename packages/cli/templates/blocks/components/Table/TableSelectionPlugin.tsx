@@ -1,8 +1,6 @@
 'use client';
 
 import {useState} from 'react';
-// @ts-expect-error migrated example
-// @ts-expect-error migrated example
 import {XDSTable, useXDSTableSelection, useXDSTableSelectionState} from '@xds/core/Table';
 
 type User = {id: string; name: string; email: string};
@@ -18,22 +16,15 @@ const columns = [
 export default function TableSelectionPlugin() {
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
   
-  // @ts-expect-error migrated example
-  // @ts-expect-error migrated example
   const {selectionConfig} = useXDSTableSelectionState<User>({
     data: users,
     idKey: 'id',
     selectedKeys,
     setSelectedKeys,
   });
-  // @ts-expect-error migrated example
-  // @ts-expect-error migrated example
   const selectionPlugin = useXDSTableSelection<User>(selectionConfig);
-  
 
   return (
-    // @ts-expect-error migrated example
-    // @ts-expect-error migrated example
     <XDSTable
       data={users}
       columns={columns}

@@ -8,11 +8,8 @@ function Child() {
 }
 
 export default function StackStyleXUtilityAdvancedUse() {
-  
-
   return (
-    // @ts-expect-error migrated example
-    <div {...stylex.props(...stack({direction: 'horizontal', gap: 2}))}>
+    <div {...(stylex.props(...stack({direction: 'horizontal', gap: 2})) as React.HTMLAttributes<HTMLDivElement>)}>
       <Child />
       <Child />
     </div>

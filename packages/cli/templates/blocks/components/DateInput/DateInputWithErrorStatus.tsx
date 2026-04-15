@@ -2,16 +2,14 @@
 
 import {useState} from 'react';
 import {XDSDateInput} from '@xds/core/DateInput';
+import type {ISODateString} from '@xds/core/Calendar';
 
 export default function DateInputWithErrorStatus() {
-  const [date, setDate] = useState<string | undefined>(undefined);
+  const [date, setDate] = useState<ISODateString | undefined>(undefined);
 
   return (
-    // @ts-expect-error migrated example
-    // @ts-expect-error migrated example
     <XDSDateInput
       label="Event date"
-      // @ts-expect-error migrated example
       value={date}
       onChange={setDate}
       status={{

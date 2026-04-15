@@ -12,8 +12,6 @@ const transactions = [
 
 export default function TableRichCellContentWithRenderCell() {
   return (
-    // @ts-expect-error migrated example
-    // @ts-expect-error migrated example
     <XDSTable
       data={transactions}
       columns={[
@@ -34,9 +32,8 @@ export default function TableRichCellContentWithRenderCell() {
           header: 'Amount',
           renderCell: tx => (
             <XDSText
-              weight="semibold"
-              // @ts-expect-error migrated example
-              color={tx.amount > 0 ? 'positive' : 'negative'}>
+              type="body"
+              weight="semibold">
               {tx.amount > 0 ? '+' : ''}
               {tx.amount.toFixed(2)}
             </XDSText>

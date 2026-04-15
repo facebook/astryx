@@ -1,13 +1,14 @@
 'use client';
 
 import {useState} from 'react';
-// @ts-expect-error migrated example
-import {XDSDialog, XDSDialogFooter} from '@xds/core/Dialog';
+import {XDSDialog} from '@xds/core/Dialog';
+import {XDSLayoutFooter} from '@xds/core/Layout';
 import {XDSFormLayout} from '@xds/core/FormLayout';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSButton} from '@xds/core/Button';
 
 export default function FormLayoutDialogComposition() {
+  const [isOpen, setIsOpen] = useState(true);
   const [name, setName] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -15,16 +16,19 @@ export default function FormLayoutDialogComposition() {
   };
 
   return (
-    // @ts-expect-error migrated example
-    <XDSDialog>
+    <XDSDialog isOpen={isOpen} onOpenChange={setIsOpen}>
       <form id="edit-form" onSubmit={handleSubmit}>
         <XDSFormLayout>
-          <XDSTextInput label="Name" value={name} onChange={setName} />
+          <XDSTextInput
+            label="Name"
+            value={name}
+            onChange={(v) => setName(v)}
+          />
         </XDSFormLayout>
       </form>
-      <XDSDialogFooter>
+      <XDSLayoutFooter>
         <XDSButton label="Save" type="submit" form="edit-form" />
-      </XDSDialogFooter>
+      </XDSLayoutFooter>
     </XDSDialog>
   );
 }

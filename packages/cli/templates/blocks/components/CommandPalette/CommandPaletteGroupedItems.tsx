@@ -1,8 +1,8 @@
 'use client';
 
 import {useState} from 'react';
-// @ts-expect-error migrated example
-import {XDSCommandPalette, createStaticSource} from '@xds/core/CommandPalette';
+import {XDSCommandPalette} from '@xds/core/CommandPalette';
+import {createStaticSource} from '@xds/core/Typeahead';
 import {XDSButton} from '@xds/core/Button';
 
 function FileIcon() {
@@ -54,8 +54,7 @@ export default function CommandPaletteGroupedItems() {
         searchSource={source}
         renderItem={(item) => (
           <>
-            // @ts-expect-error migrated example
-            {item.auxiliaryData?.icon?.()}
+            {(item.auxiliaryData as any)?.icon?.()}
             {item.label}
           </>
         )}

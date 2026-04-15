@@ -20,19 +20,16 @@ export default function SelectorCustomRendering() {
   const [value, setValue] = useState('');
 
   return (
-    // @ts-expect-error migrated example
-    // @ts-expect-error migrated example
     <XDSSelector
       label="User"
       options={users}
       value={value}
-      onChange={setValue}>
-      {(user) => (
+      onChange={(v) => setValue(v)}>
+      {(option) => (
         <XDSSelectorItem
           icon={UserIcon}
-          label={user.label}
-          // @ts-expect-error migrated example
-          description={user.email}
+          label={option.label}
+          description={users.find(u => u.value === option.value)?.email}
         />
       )}
     </XDSSelector>
