@@ -221,4 +221,25 @@ export const XDSChartColors = {
     ),
     neutral: resolve(dataTokenDefaults['--color-data-neutral']),
   },
+
+  /**
+   * Add alpha (opacity) to any hex color. Returns an rgba() string.
+   * Composable with any palette color for data-driven opacity.
+   *
+   * @example
+   * ```
+   * XDSChartColors.alpha('#0171E3', 0.5)       // 'rgba(1,113,227,0.5)'
+   * XDSChartColors.alpha(XDSChartColors.categorical(1)[0], d.confidence)
+   * ```
+   */
+  alpha(hex: string, opacity: number): string {
+    const match = hex.match(
+      /^#?([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})$/,
+    );
+    if (!match) return hex;
+    const r = parseInt(match[1], 16);
+    const g = parseInt(match[2], 16);
+    const b = parseInt(match[3], 16);
+    return `rgba(${r},${g},${b},${Math.max(0, Math.min(1, opacity))})`;
+  },
 } as const;
