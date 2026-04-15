@@ -76,21 +76,9 @@ export type UseXDSTableColumnSettingsConfig<
  *
  * @example
  * ```
- * // With the state hook (recommended)
  * const state = useXDSTableColumnSettingsState({ columns, activeColumnKeys, onChangeActiveColumnKeys });
  * const plugin = useXDSTableColumnSettings(state.columnSettingsConfig);
- *
  * <XDSTable columns={allColumns} plugins={{ columnSettings: plugin }} />
- * ```
- *
- * @example
- * ```
- * // Without state hook — manual config
- * const plugin = useXDSTableColumnSettings({
- *   columns: columnDefs,
- *   activeColumnKeys: activeKeys,
- *   onChangeActiveColumnKeys: setActiveKeys,
- * });
  * ```
  */
 export function useXDSTableColumnSettings<

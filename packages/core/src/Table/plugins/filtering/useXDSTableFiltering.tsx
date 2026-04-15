@@ -266,24 +266,13 @@ export type XDSTableFilterVariant = 'popover' | 'inline' | 'inline-compact';
  *
  * @example
  * ```
- * const [filters, setFilters] = useState<XDSTableFilterState>({});
- *
+ * const {filters, onFilterChange} = useXDSTableFilterState();
  * const filterPlugin = useXDSTableFiltering({
  *   filters,
- *   onFilterChange: (columnKey, value) => {
- *     setFilters(prev => {
- *       const next = { ...prev };
- *       if (value == null) {
- *         delete next[columnKey];
- *       } else {
- *         next[columnKey] = value;
- *       }
- *       return next;
- *     });
- *   },
+ *   onFilterChange,
+ *   variant: 'inline',
  * });
- *
- * <XDSTable plugins={[filterPlugin]} ... />
+ * <XDSTable plugins={{ filter: filterPlugin }} columns={columns} data={data} />
  * ```
  */
 export interface UseXDSTableFilteringConfig {
@@ -997,27 +986,19 @@ function InlineFilterSlot({
  *
  * @example
  * ```
- * const [filters, setFilters] = useState<XDSTableFilterState>({});
- *
+ * const {filters, onFilterChange} = useXDSTableFilterState();
  * const filterPlugin = useXDSTableFiltering({
  *   filters,
- *   onFilterChange: (key, value) => {
- *     setFilters(prev => ({
- *       ...prev,
- *       [key]: value ?? undefined,
- *     }));
- *   },
+ *   onFilterChange,
  *   variant: 'popover',
  * });
- *
  * <XDSTable
  *   data={users}
  *   columns={[
  *     { key: 'name', header: 'Name', filter: 'name' },
  *     { key: 'status', header: 'Status', filter: 'status' },
- *     { key: 'age', header: 'Age', filter: 'age' },
  *   ]}
- *   plugins={[filterPlugin]}
+ *   plugins={{ filter: filterPlugin }}
  * />
  * ```
  */

@@ -13,7 +13,6 @@
  * @example
  * ```
  * const dialog = useXDSImperativeDialog();
- *
  * <button onClick={() => dialog.show(<MyContent />)}>Open</button>
  * {dialog.element}
  * ```
@@ -44,16 +43,9 @@ export interface XDSImperativeDialogReturn {
  * @example
  * ```
  * const dialog = useXDSImperativeDialog();
- *
- * // Fire and forget — no isOpen state needed
  * onClick={() => dialog.show(
  *   <XDSCodeBlock code={output} language="bash" />
  * )}
- *
- * // With options
- * onClick={() => dialog.show(content, { width: 720, variant: 'fullscreen' })}
- *
- * // Render the portal
  * return <>{dialog.element}</>;
  * ```
  */

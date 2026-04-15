@@ -40,7 +40,6 @@ export interface UseXDSTableFilterStateResult {
  * @example
  * ```
  * const {filters, onFilterChange} = useXDSTableFilterState();
- *
  * const filterPlugin = useXDSTableFiltering({
  *   filters,
  *   onFilterChange,

@@ -262,17 +262,9 @@ function getPositionArea(
  *
  * @example
  * ```
- * // Context mode (anchor positioning)
  * const layer = useXDSLayer({ mode: 'context' });
- *
  * <button ref={layer.ref}>Trigger</button>
  * {layer.render(<Content />, { placement: 'above', alignment: 'center' })}
- *
- * // Fixed mode (positioned at coordinates)
- * const layer = useXDSLayer({ mode: 'fixed' });
- *
- * layer.show();
- * {layer.render(<Content />, { x: mouseX, y: mouseY })}
  * ```
  */
 export function useXDSLayer(options: ContextLayerOptions): ContextLayerReturn;

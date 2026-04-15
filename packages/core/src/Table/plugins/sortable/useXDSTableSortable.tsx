@@ -73,13 +73,8 @@ export type XDSTableSortState<TSortKey extends string = string> =
  * const [sort, setSort] = useState<XDSTableSortState>([
  *   { sortKey: 'name', direction: 'ascending' },
  * ]);
- *
- * const sortPlugin = useXDSTableSortable({
- *   sort,
- *   onSortChange: setSort,
- * });
- *
- * <XDSTable plugins={{ sort: sortPlugin }} ... />
+ * const sortPlugin = useXDSTableSortable({ sort, onSortChange: setSort });
+ * <XDSTable plugins={{ sort: sortPlugin }} columns={columns} data={data} />
  * ```
  */
 export interface UseXDSTableSortableConfig<TSortKey extends string = string> {
@@ -321,7 +316,6 @@ function SortHeaderButton<T extends Record<string, unknown>>({
  * ```
  * const [sort, setSort] = useState<XDSTableSortState>([]);
  * const sortPlugin = useXDSTableSortable({ sort, onSortChange: setSort });
- *
  * <XDSTable
  *   data={users}
  *   columns={[
