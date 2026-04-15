@@ -16,3 +16,8 @@ export default function NumberInputWithMinMaxConstraints() {
     />
   );
 }
+
+export const showcase = {
+  aspectRatio: 4 / 3,
+  render: NumberInputWithMinMaxConstraints,
+};

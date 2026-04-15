@@ -16,3 +16,8 @@ export default function NumberInputWithStepForDecimals() {
     />
   );
 }
+
+export const showcase = {
+  aspectRatio: 4 / 3,
+  render: NumberInputWithStepForDecimals,
+};

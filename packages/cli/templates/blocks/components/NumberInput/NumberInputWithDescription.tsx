@@ -15,3 +15,8 @@ export default function NumberInputWithDescription() {
     />
   );
 }
+
+export const showcase = {
+  aspectRatio: 4 / 3,
+  render: NumberInputWithDescription,
+};
