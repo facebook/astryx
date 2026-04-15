@@ -79,14 +79,16 @@ async function main() {
   if (dryRun) console.log(`   ⚠️  DRY RUN — will build but not push`);
   console.log('');
 
-  // Step 1: Build previews if .tsx result files exist
+  // Step 1: Build previews if result files exist (.tsx or .json)
   if (!skipPreviews) {
     const iterationsWithCode: string[] = [];
     for (const id of [iteration, baseline, html].filter(Boolean) as string[]) {
       const codeDir = path.join(VIBE_DIR, 'results', id, 'results');
       if (
         fs.existsSync(codeDir) &&
-        fs.readdirSync(codeDir).some(f => f.endsWith('.tsx'))
+        fs
+          .readdirSync(codeDir)
+          .some(f => f.endsWith('.tsx') || f.endsWith('.json'))
       ) {
         iterationsWithCode.push(id);
       }
