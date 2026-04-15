@@ -51,41 +51,13 @@ function Example() {
 }`,
     },
   ],
-  props: {
-    isOpen: {
-      type: 'boolean',
-      required: true,
-      description: 'Whether the dialog is open.',
-    },
-    onOpenChange: {
-      type: '(isOpen: boolean) => unknown',
-      required: true,
-      description: 'Visibility change callback.',
-    },
-    title: {
-      type: 'string',
-      required: true,
-      description: 'Dialog title. Linked via aria-labelledby.',
-    },
-    description: {
-      type: 'string',
-      required: true,
-      description: 'Consequence description. Linked via aria-describedby.',
-    },
-    cancel: {
-      type: 'ReactNode',
-      required: true,
-      description: 'Cancel action slot. Auto-closes on click.',
-    },
-    action: {
-      type: 'ReactNode',
-      required: true,
-      description: 'Confirm action slot. Does NOT auto-close.',
-    },
-    width: {
-      type: 'number | string',
-      default: '400',
-      description: 'Dialog width.',
-    },
-  },
+  props: [
+    {name: 'isOpen', type: 'boolean', required: true, description: 'Whether the dialog is open.'},
+    {name: 'onOpenChange', type: '(isOpen: boolean) => unknown', required: true, description: 'Visibility change callback.'},
+    {name: 'title', type: 'string', required: true, description: 'Dialog title. Linked via aria-labelledby.'},
+    {name: 'description', type: 'string', required: true, description: 'Consequence description. Linked via aria-describedby.'},
+    {name: 'cancel', type: 'ReactNode', required: true, description: 'Cancel action slot. Auto-closes on click.'},
+    {name: 'action', type: 'ReactNode', required: true, description: 'Confirm action slot. Does NOT auto-close.'},
+    {name: 'width', type: 'number | string', default: '400', description: 'Dialog width.'},
+  ],
 };
