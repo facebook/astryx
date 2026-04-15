@@ -18,6 +18,7 @@ import {
   ContrastIcon,
   SaveIcon,
   ShareIcon,
+  LinkIcon,
 } from './docsite-icons';
 import {SharePopover} from './SharePopover';
 
@@ -190,6 +191,15 @@ export function TemplatePreview({
                       flexShrink: 0,
                     }}
                   />
+                  <XDSTooltip content="Copy link">
+                    <XDSButton
+                      label="Copy link"
+                      variant="ghost"
+                      icon={<LinkIcon />}
+                      isIconOnly
+                      onClick={() => {}}
+                    />
+                  </XDSTooltip>
                   <XDSTooltip content="Save">
                     <XDSButton
                       label="Save"
@@ -199,38 +209,41 @@ export function TemplatePreview({
                       onClick={() => {}}
                     />
                   </XDSTooltip>
+                  <XDSButton
+                    label="Publish"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => onPublish?.()}
+                  />
                   <div
                     style={{position: 'relative'}}>
-                    <XDSTooltip content="Share">
-                      <XDSButton
-                        label="Share"
-                        variant="ghost"
-                        isIconOnly
-                        icon={<ShareIcon />}
-                        ref={shareButtonRef}
-                        onClick={() => {
-                          setShowSharePopover(prev => {
-                            if (!prev && shareButtonRef.current) {
-                              const rect =
-                                (shareButtonRef.current as HTMLElement).getBoundingClientRect();
-                              const popoverWidth = 340;
-                              const popoverHeight = 400;
-                              const left = Math.min(
-                                Math.max(8, rect.right - popoverWidth),
-                                window.innerWidth - popoverWidth - 16,
-                              );
-                              const top =
-                                rect.bottom + 4 + popoverHeight + 16 >
-                                window.innerHeight
-                                  ? rect.top - popoverHeight - 4
-                                  : rect.bottom + 4;
-                              setSharePopoverPos({top, left});
-                            }
-                            return !prev;
-                          });
-                        }}
-                      />
-                    </XDSTooltip>
+                    <XDSButton
+                      label="Use in product"
+                      variant="primary"
+                      size="sm"
+                      ref={shareButtonRef}
+                      onClick={() => {
+                        setShowSharePopover(prev => {
+                          if (!prev && shareButtonRef.current) {
+                            const rect =
+                              (shareButtonRef.current as HTMLElement).getBoundingClientRect();
+                            const popoverWidth = 340;
+                            const popoverHeight = 400;
+                            const left = Math.min(
+                              Math.max(8, rect.right - popoverWidth),
+                              window.innerWidth - popoverWidth - 16,
+                            );
+                            const top =
+                              rect.bottom + 4 + popoverHeight + 16 >
+                              window.innerHeight
+                                ? rect.top - popoverHeight - 4
+                                : rect.bottom + 4;
+                            setSharePopoverPos({top, left});
+                          }
+                          return !prev;
+                        });
+                      }}
+                    />
                     {showSharePopover && sharePopoverPos && (
                       <SharePopover
                         cliCommand={shareCliCommand}
@@ -239,12 +252,6 @@ export function TemplatePreview({
                       />
                     )}
                   </div>
-                  <XDSButton
-                    label="Publish"
-                    variant="primary"
-                    size="sm"
-                    onClick={() => onPublish?.()}
-                  />
                 </>
                 )
               }
