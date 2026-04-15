@@ -19,35 +19,6 @@ export const docs = {
       required: true,
     },
   ],
-  examples: [
-    {
-      label: 'In top navigation',
-      code: `import {CubeIcon} from '@heroicons/react/24/solid';
-
-<XDSTopNavHeading
-  heading="My App"
-  logo={<XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />}
-/>`,
-    },
-    {
-      label: 'In side navigation',
-      code: `import {CubeIcon} from '@heroicons/react/24/solid';
-
-<XDSPageNavHeader
-  icon={<XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />}
-  heading="My App"
-/>`,
-    },
-    {
-      label: 'With HomeIcon',
-      code: `import {HomeIcon} from '@heroicons/react/24/solid';
-
-<XDSTopNavHeading
-  heading="Dashboard"
-  logo={<XDSNavIcon icon={<HomeIcon style={{width: 16, height: 16}} />} />}
-/>`,
-    },
-  ],
   theming: {
     targets: [
       {className: 'xds-navicon'},
@@ -75,35 +46,6 @@ export const docsZh = {
       description:
         '在圆形背景内渲染的图标元素。应为 XDSIcon 或类似的图标组件。',
       required: true,
-    },
-  ],
-  examples: [
-    {
-      label: '在顶部导航中',
-      code: `import {CubeIcon} from '@heroicons/react/24/solid';
-
-<XDSTopNavHeading
-  heading="My App"
-  logo={<XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />}
-/>`,
-    },
-    {
-      label: '在侧边导航中',
-      code: `import {CubeIcon} from '@heroicons/react/24/solid';
-
-<XDSPageNavHeader
-  icon={<XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />}
-  heading="My App"
-/>`,
-    },
-    {
-      label: '使用 HomeIcon',
-      code: `import {HomeIcon} from '@heroicons/react/24/solid';
-
-<XDSTopNavHeading
-  heading="Dashboard"
-  logo={<XDSNavIcon icon={<HomeIcon style={{width: 16, height: 16}} />} />}
-/>`,
     },
   ],
   theming: {
