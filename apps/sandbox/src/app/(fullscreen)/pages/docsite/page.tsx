@@ -1,5 +1,6 @@
 'use client';
 
+import * as stylex from '@stylexjs/stylex';
 import React, {Suspense, useState, useEffect, useRef, useCallback, useMemo} from 'react';
 import {useSearchParams, useRouter} from 'next/navigation';
 
@@ -13,14 +14,13 @@ import type {PanelTab, PointedElement} from './ChatPanel';
 import {InlinePublishPanel} from './InlinePublishPanel';
 import {TemplatePreview} from './TemplatePreview';
 import {SharePopover} from './SharePopover';
-import {TemplateFullPreview} from './TemplateFullPreview';
 import {AppTopNav} from './AppTopNav';
 import {DocsView} from './DocsView';
 import {ProfileView} from './ProfileView';
 import {XDSAvatar} from '@xds/core/Avatar';
 import {XDSButton} from '@xds/core/Button';
 import {XDSCard} from '@xds/core/Card';
-import {XDSText} from '@xds/core/Text';
+import {XDSHeading, XDSText} from '@xds/core/Text';
 import {XDSToken} from '@xds/core/Token';
 import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
 import {
@@ -46,7 +46,6 @@ import {
   StarFilledIcon,
   SearchIcon,
   LinkIcon,
-  HeartIcon,
   MetaLogo,
   WhatsAppLogo,
   ThreadsLogo,
@@ -67,6 +66,20 @@ const BRAND_LOGOS: Record<string, React.ComponentType<React.SVGProps<SVGSVGEleme
   sunset: SunsetThemeIcon,
   midnight: MidnightThemeIcon,
 };
+
+const tokenStyles = stylex.create({
+  outline: {
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: 'var(--color-border-emphasized)',
+  },
+  pill: {
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: 'var(--color-border-emphasized)',
+    borderRadius: 9999,
+  },
+});
 
 // ---------------------------------------------------------------------------
 // Page
@@ -118,9 +131,14 @@ function DocsiteLandingTemplate() {
   const [sharePopoverPos, setSharePopoverPos] = useState(null as {top: number; left: number} | null);
   const shareButtonRef = useRef<HTMLButtonElement>(null);
   const scrollContainerRef = useRef(null);
-  const [card4SelectedThumb, setCard4SelectedThumb] = useState(0);
   const [card4SelectedOption, setCard4SelectedOption] = useState('default');
   const [card4ThemeBrowse, setCard4ThemeBrowse] = useState(false);
+  const [card4Bookmarked, setCard4Bookmarked] = useState(false);
+  const card4ScrollRef = useRef<HTMLDivElement>(null);
+  const card4AddButtonRef = useRef<HTMLButtonElement>(null);
+  const card4AddPopoverRef = useRef<HTMLDivElement>(null);
+  const [card4ShowAddPopover, setCard4ShowAddPopover] = useState(false);
+  const [card4AddPopoverPos, setCard4AddPopoverPos] = useState(null as {top: number; left: number} | null);
   const [card4ThemeSearch, setCard4ThemeSearch] = useState('');
   const [card4PinnedThemes, setCard4PinnedThemes] = useState(
     () => new Set(THEME_PICKER_ENTRIES.filter(t => t.isPinnedByDefault).map(t => t.key)),
@@ -280,395 +298,8 @@ function DocsiteLandingTemplate() {
 
   const isGenerating = generatingSource !== null;
 
-  // Combined preview + editor view for 2nd card (index 1)
-  if (previewTarget === 1 && activeView === 'craft') {
-    const t = TEMPLATES[1];
-    return (
-      <TemplateFullPreview
-        templateName={t.name}
-        imageSrc={t.src}
-        onBack={() => {
-          setPreviewTarget(null);
-        }}
-        onUse={() => {}}
-        onSelectTemplate={index => {
-          setPreviewTarget(index);
-        }}
-        showChat
-        showEditor
-      />
-    );
-  }
-
-  // Customize flow for 2nd card (index 1) — opens with chat tab
-  if (useTarget === 1 && activeView === 'craft') {
-    const t = TEMPLATES[1];
-    return (
-      <TemplateFullPreview
-        templateName={t.name}
-        imageSrc={t.src}
-        onBack={() => {
-          setUseTarget(null);
-          setChatOpen(false);
-        }}
-        onUse={() => {}}
-        onSelectTemplate={index => {
-          setPreviewTarget(index);
-        }}
-        showChat
-        showEditor
-        defaultTab="chat"
-      />
-    );
-  }
-
-  // Editor flow for Card 3 — flat left panel (layout testing bed)
-  if (useTarget === 2 && activeView === 'craft') {
-    const t = TEMPLATES[2];
-    return (
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column' as const,
-          height: '100vh',
-          overflow: 'hidden',
-          backgroundColor: 'var(--color-background-card, #fff)',
-        }}>
-        <style>
-          {'@keyframes editorSlideIn { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }' +
-            '@keyframes editorSlideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }' +
-            '@keyframes editorFadeIn { from { opacity: 0; } to { opacity: 1; } }' +
-            '@keyframes publishFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }' +
-            '@keyframes publishToolbarIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }' +
-            '.xds-editor-resize-handle { opacity: 0; transition: opacity 150ms ease, background-color 150ms ease; }' +
-            '.xds-editor-resize-grip:hover .xds-editor-resize-handle { opacity: 0.6; }' +
-            '.xds-editor-resize-grip[data-resizing="true"] .xds-editor-resize-handle { opacity: 1; }'}
-        </style>
-        {/* Unified header toolbar (hidden when publishing — toolbar moves into right panel) */}
-        <div
-          style={{
-            display: showPublishCard1 ? 'none' : 'flex',
-            alignItems: 'center',
-            backgroundColor: 'var(--color-background-card, #fff)',
-            borderBottom: '1px solid var(--color-divider, #e0e0e0)',
-            flexShrink: 0,
-            animation: 'editorSlideDown 400ms cubic-bezier(0.16, 1, 0.3, 1)',
-          }}>
-          {/* Left: back + tabs */}
-          <div
-            style={{
-              width: editorPanelWidth,
-              minWidth: 280,
-              maxWidth: '50vw',
-              flexShrink: 0,
-              display: 'flex',
-              alignItems: 'stretch',
-              alignSelf: 'stretch',
-              padding: '0 8px 0 16px',
-              borderRight: '1px solid var(--color-divider, #e0e0e0)',
-            }}>
-            <XDSButton
-              label="Back"
-              variant="ghost"
-              size="sm"
-              icon={<ArrowLeftIcon />}
-              isIconOnly
-              onClick={handleBackFromUse}
-              style={{flexShrink: 0, marginRight: 4, alignSelf: 'center'}}
-            />
-            {(['configure', 'properties', 'code'] as const).map(tab => (
-              <button
-                key={tab}
-                onClick={() => setPanelTab(tab)}
-                style={{
-                  flex: 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: '0 8px',
-                  background: 'none',
-                  border: 'none',
-                  borderBottom:
-                    panelTab === tab
-                      ? '2px solid var(--color-text-primary, #111)'
-                      : '2px solid transparent',
-                  marginBottom: -1,
-                  cursor: 'pointer',
-                  transition: 'border-color 150ms ease',
-                }}>
-                <XDSText
-                  type="body"
-                  color={panelTab === tab ? 'primary' : 'secondary'}>
-                  {tab === 'configure'
-                    ? 'Craft'
-                    : tab === 'properties'
-                      ? 'Properties'
-                      : 'Code'}
-                </XDSText>
-              </button>
-            ))}
-          </div>
-          {/* Right: toolbar actions */}
-          <div style={{flex: 1, minWidth: 0}}>
-            <XDSToolbar
-              label="Template actions"
-              padding={1}
-              startContent={<></>}
-              centerContent={
-                <XDSSegmentedControl
-                  value={editorViewport}
-                  onChange={(v: string) => setEditorViewport(v)}
-                  label="Viewport size"
-                  size="sm">
-                  <XDSTooltip content="Desktop">
-                    <XDSSegmentedControlItem
-                      value="desktop"
-                      label="Desktop"
-                      isLabelHidden
-                      icon={<DesktopIcon />}
-                    />
-                  </XDSTooltip>
-                  <XDSTooltip content="Phone">
-                    <XDSSegmentedControlItem
-                      value="phone"
-                      label="Phone"
-                      isLabelHidden
-                      icon={<PhoneIcon />}
-                    />
-                  </XDSTooltip>
-                </XDSSegmentedControl>
-              }
-              endContent={
-                <>
-                  <XDSTooltip content="Point">
-                    <XDSButton
-                      label="Point"
-                      variant={isPointing ? 'secondary' : 'ghost'}
-                      size="sm"
-                      isIconOnly
-                      icon={<CursorIcon />}
-                      onClick={() => setIsPointing(p => !p)}
-                    />
-                  </XDSTooltip>
-                  <XDSTooltip content="Theme">
-                    <XDSDropdownMenu
-                      button={{
-                        label: 'Theme',
-                        variant: 'ghost',
-                        size: 'sm',
-                        isIconOnly: true,
-                        icon: <PaletteIcon />,
-                      }}
-                      hasChevron={false}
-                      items={XDS_THEMES.map(theme => ({
-                        label: theme.label,
-                        onClick: () => {},
-                      }))}
-                    />
-                  </XDSTooltip>
-                  <XDSTooltip content="Toggle theme">
-                    <XDSButton
-                      label="Toggle theme"
-                      variant="ghost"
-                      size="sm"
-                      isIconOnly
-                      icon={<ContrastIcon />}
-                    />
-                  </XDSTooltip>
-                  <div
-                    style={{
-                      width: 1,
-                      height: 20,
-                      backgroundColor: 'var(--color-border-strong, #999)',
-                      margin: '0 4px',
-                      flexShrink: 0,
-                    }}
-                  />
-                  <XDSTooltip content="Save">
-                    <XDSButton
-                      label="Save"
-                      variant="ghost"
-                      size="sm"
-                      icon={<SaveIcon />}
-                      isIconOnly
-                    />
-                  </XDSTooltip>
-                  <div style={{position: 'relative'}}>
-                    <XDSTooltip content="Share">
-                      <XDSButton
-                        label="Share"
-                        variant="secondary"
-                        size="sm"
-                        isIconOnly
-                        icon={<ShareIcon />}
-                        ref={shareButtonRef}
-                        onClick={() => {
-                          setShowSharePopover(prev => {
-                            if (!prev && shareButtonRef.current) {
-                              const rect = shareButtonRef.current.getBoundingClientRect();
-                              const popoverWidth = 340;
-                              const popoverHeight = 400;
-                              const left = Math.min(
-                                Math.max(8, rect.right - popoverWidth),
-                                window.innerWidth - popoverWidth - 16,
-                              );
-                              const top =
-                                rect.bottom + 4 + popoverHeight + 16 > window.innerHeight
-                                  ? rect.top - popoverHeight - 4
-                                  : rect.bottom + 4;
-                              setSharePopoverPos({top, left});
-                            }
-                            return !prev;
-                          });
-                        }}
-                      />
-                    </XDSTooltip>
-                    {showSharePopover && sharePopoverPos && (
-                      <SharePopover
-                        cliCommand={`npx xds template ${t.name.toLowerCase().replace(/\s+/g, '-')} ./my-project`}
-                        position={sharePopoverPos}
-                        onClose={() => setShowSharePopover(false)}
-                      />
-                    )}
-                  </div>
-                  <XDSButton
-                    label="Publish"
-                    variant="primary"
-                    size="sm"
-                    onClick={() => { setShowPublishCard1(true); setEditorPanelWidth(380); }}
-                  />
-                </>
-              }
-            />
-          </div>
-        </div>
-        {/* Content area */}
-        <div style={{display: 'flex', flex: 1, overflow: 'hidden'}}>
-          <div
-            style={{
-              width: editorPanelWidth,
-              minWidth: 280,
-              maxWidth: '50vw',
-              flexShrink: 0,
-              display: 'flex',
-              flexDirection: 'column' as const,
-              backgroundColor: 'var(--color-background-card, #fff)',
-              borderRight: '1px solid var(--color-divider, #e0e0e0)',
-              overflow: 'hidden',
-              animation: 'editorSlideIn 500ms cubic-bezier(0.16, 1, 0.3, 1)',
-            }}>
-            {showPublishCard1 ? (
-              <InlinePublishPanel
-                templateName={t.name}
-                isVisible={showPublishCard1}
-                onBack={() => setShowPublishCard1(false)}
-                onPublish={handleBackFromUse}
-              />
-            ) : (
-              <ChatPanel
-                isGenerating={previewGenerating}
-                onSend={handlePreviewSend}
-                activeView={activeView}
-                setActiveView={setActiveView}
-                templateName={t.name}
-                onBack={handleBackFromUse}
-                activeTab={panelTab}
-                onTabChange={setPanelTab}
-                pointedElement={pointedElement}
-                hideHeader
-              />
-            )}
-          </div>
-          {/* Resize handle (hidden when publishing) */}
-          <div
-            onMouseDown={showPublishCard1 ? undefined : handleEditorResizeStart}
-            data-resizing={isEditorResizing}
-            className="xds-editor-resize-grip"
-            style={{
-              width: showPublishCard1 ? 0 : 12,
-              flexShrink: 0,
-              cursor: showPublishCard1 ? 'default' : 'col-resize',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              zIndex: 10,
-              backgroundColor: 'var(--color-background-body, #f5f5f5)',
-              overflow: 'hidden',
-            }}>
-            <div
-              className="xds-editor-resize-handle"
-              style={{
-                width: 3,
-                height: 32,
-                borderRadius: 2,
-                backgroundColor: isEditorResizing
-                  ? 'var(--color-icon-primary, #111)'
-                  : 'var(--color-border-strong, #ccc)',
-              }}
-            />
-          </div>
-          <div
-            style={{flex: 1, display: 'flex', flexDirection: 'column' as const, minWidth: 0, overflow: 'hidden', animation: 'editorFadeIn 600ms ease'}}>
-            {showPublishCard1 && (
-              <div style={{
-                flexShrink: 0,
-                animation: 'publishToolbarIn 400ms cubic-bezier(0.16, 1, 0.3, 1)',
-              }}>
-                <XDSToolbar
-                  label="Viewport controls"
-                  padding={1}
-                  startContent={<></>}
-                  centerContent={
-                    <XDSSegmentedControl
-                      value={editorViewport}
-                      onChange={(v: string) => setEditorViewport(v)}
-                      label="Viewport size"
-                      size="sm">
-                      <XDSTooltip content="Desktop">
-                        <XDSSegmentedControlItem
-                          value="desktop"
-                          label="Desktop"
-                          isLabelHidden
-                          icon={<DesktopIcon />}
-                        />
-                      </XDSTooltip>
-                      <XDSTooltip content="Phone">
-                        <XDSSegmentedControlItem
-                          value="phone"
-                          label="Phone"
-                          isLabelHidden
-                          icon={<PhoneIcon />}
-                        />
-                      </XDSTooltip>
-                    </XDSSegmentedControl>
-                  }
-                />
-              </div>
-            )}
-            <TemplatePreview
-              templateName={t.name}
-              imageSrc={t.src}
-              onBack={handleBackFromUse}
-              isGenerating={previewGenerating}
-              simulation={simRef.current!}
-              onPublish={() => { setShowPublishCard1(true); setEditorPanelWidth(380); }}
-              isPointing={isPointing}
-              onPointingChange={setIsPointing}
-              onElementPointed={el => {
-                setPointedElement(el);
-                setPanelTab('properties');
-              }}
-              hideToolbar
-              externalViewportSize={editorViewport}
-            />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Editor flow for non-2nd cards that went through preview → use
-  if (useTarget !== null && useTarget !== 1 && useTarget !== 2 && activeView === 'craft') {
+  // Editor flow — same layout for all cards
+  if (useTarget !== null && activeView === 'craft') {
     const t = TEMPLATES[useTarget % TEMPLATES.length];
     return (
       <div
@@ -828,30 +459,7 @@ function DocsiteLandingTemplate() {
     );
   }
 
-  // Preview page for all other cards (two-step: preview → editor)
-  // Card 4 (previewTarget === 3) is handled as a bottom drawer overlay on the craft grid below.
-  if (previewTarget !== null && previewTarget !== 3 && useTarget === null && activeView === 'craft') {
-    const t = TEMPLATES[previewTarget % TEMPLATES.length];
-    return (
-      <TemplateFullPreview
-        templateName={t.name}
-        imageSrc={t.src}
-        onBack={() => {
-          setPreviewTarget(null);
-        }}
-        onUse={() => {
-          setUseTarget(previewTarget);
-          setPreviewTarget(null);
-          setPanelTab('configure');
-          setChatOpen(true);
-        }}
-        onSelectTemplate={index => {
-          setPreviewTarget(index);
-        }}
-        hideShadows={previewTarget === 2}
-      />
-    );
-  }
+  // All card previews are handled as a bottom drawer overlay on the craft grid below.
 
   if (activeView === 'docs') {
     return <DocsView activeView={activeView} setActiveView={setActiveView} />;
@@ -967,16 +575,14 @@ function DocsiteLandingTemplate() {
 
       {!chatOpen && <AIComposer />}
 
-      {/* Card 4 — Bottom drawer overlay */}
-      {previewTarget === 3 && (() => {
-        const t = TEMPLATES[3];
-        const thumbnailTemplates = TEMPLATES.slice(0, 5);
-        const relatedTemplates = TEMPLATES.filter((_, i) => i !== 3).slice(0, 10);
-        const card4Options = [
-          {key: 'default', label: 'Default Theme', description: 'Clean neutral palette with blue accent. Great for internal tools.', preview: {bg: '#F5F5F5', accent: '#0066FF'}},
-          {key: 'meta', label: 'Meta Theme', description: 'Meta brand colors with Figtree typography.', preview: {bg: '#F2F4F6', accent: '#0064E0'}},
-          {key: 'dark', label: 'Dark Mode', description: 'Dark surface with high-contrast text. Reduces eye strain.', preview: {bg: '#1E293B', accent: '#818CF8'}},
-        ];
+      {/* Bottom drawer overlay */}
+      {previewTarget !== null && (() => {
+        const t = TEMPLATES[previewTarget % TEMPLATES.length];
+        const isMeta = previewTarget === 3 && card4SelectedOption === 'meta';
+        const moreLikeThisImages = TEMPLATES
+          .map((tmpl, i) => ({src: tmpl.src, name: tmpl.name, description: `${tmpl.name} template`, originalIndex: i}))
+          .filter(item => item.originalIndex !== previewTarget)
+          .slice(0, 4);
         return (
           <>
             <style>{`
@@ -1024,14 +630,14 @@ function DocsiteLandingTemplate() {
               </div>
 
               {/* Scrollable content */}
-              <div style={{overflowY: 'auto', borderRadius: 16}}>
+              <div ref={card4ScrollRef} style={{overflowY: 'auto', borderRadius: 16}}>
                 {/* Main content: image left + details right */}
-                <div style={{display: 'flex', minHeight: 0, padding: '0 24px'}}>
+                <div style={{display: 'flex', minHeight: 0, padding: '0 32px'}}>
                   {/* Left — Preview image + thumbnails */}
-                  <div style={{flex: 1, minWidth: 0, padding: '24px 24px 24px 0', display: 'flex', flexDirection: 'column', gap: 12}}>
+                  <div style={{flex: 1, minWidth: 0, padding: '32px 32px 32px 0', display: 'flex', flexDirection: 'column', gap: 12}}>
                     <div style={{flex: 1, aspectRatio: '16 / 10', backgroundColor: 'var(--color-background-muted, #f9f9f9)', borderRadius: 12, overflow: 'hidden', border: '1px solid var(--color-border, #e0e0e0)'}}>
                       <img
-                        src={card4SelectedThumb === 0 ? t.src : thumbnailTemplates[card4SelectedThumb]?.src || t.src}
+                        src={isMeta ? '/templates/card4-preview-meta.png' : t.src}
                         alt={t.name}
                         style={{width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top'}}
                       />
@@ -1039,14 +645,14 @@ function DocsiteLandingTemplate() {
                   </div>
 
                   {/* Right — Details panel */}
-                  <div style={{width: 360, flexShrink: 0, padding: '24px 0', display: 'flex', flexDirection: 'column'}}>
+                  <div style={{width: 360, flexShrink: 0, padding: '32px 0', display: 'flex', flexDirection: 'column'}}>
                     {/* Title */}
                     <XDSText type="display-2">{t.name}</XDSText>
 
                     {/* Description */}
                     <div style={{marginTop: 8}}>
                       <XDSText type="body" color="secondary">
-                        Buttons are clickable elements that are used to trigger actions. They communicate calls to action to the user and allow users to interact with pages in a variety of ways. Button labels express what action will occur when the user interacts with it.
+                        A ready-to-use {t.name.toLowerCase()} template built with XDS components. Customize it with your own content and theme to match your brand.
                       </XDSText>
                     </div>
 
@@ -1065,30 +671,56 @@ function DocsiteLandingTemplate() {
                         <XDSTooltip content="Copy link">
                           <XDSButton label="Link" variant="ghost" size="sm" isIconOnly icon={<LinkIcon />} />
                         </XDSTooltip>
-                        <XDSTooltip content="Share">
-                          <XDSButton label="Share" variant="ghost" size="sm" isIconOnly icon={<ShareIcon />} />
-                        </XDSTooltip>
                       </div>
                       <div style={{display: 'flex', alignItems: 'center', gap: 4}}>
-                        <XDSButton label="1,645" variant="ghost" size="sm" style={{color: 'var(--color-text-secondary, #65676B)'}} icon={<HeartIcon />} />
-                        <XDSButton label="892" variant="ghost" size="sm" style={{color: 'var(--color-text-secondary, #65676B)'}} icon={<BookmarkIcon />} />
+                        <XDSButton
+                          label={card4Bookmarked ? '893' : '892'}
+                          variant="ghost"
+                          size="sm"
+                          style={{color: card4Bookmarked ? 'var(--color-accent, #0066FF)' : 'var(--color-text-secondary, #65676B)'}}
+                          icon={card4Bookmarked ? <BookmarkFilledIcon /> : <BookmarkIcon />}
+                          onClick={() => setCard4Bookmarked(prev => !prev)}
+                        />
                       </div>
                     </div>
 
-                    {/* CTA */}
-                    <div style={{marginTop: 16}}>
+                    {/* CTA buttons */}
+                    <div style={{marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8, position: 'relative'}}>
                       <XDSButton
-                        label="Start crafting"
                         variant="primary"
+                        label="Start crafting"
                         size="lg"
                         style={{width: '100%'}}
                         onClick={() => {
-                          setUseTarget(3);
+                          setUseTarget(previewTarget);
                           setPreviewTarget(null);
                           setPanelTab('configure');
                           setChatOpen(true);
                         }}
                       />
+                      <div ref={card4AddPopoverRef}>
+                        <XDSButton
+                          ref={card4AddButtonRef}
+                          variant="secondary"
+                          label="Use in your product"
+                          size="lg"
+                          style={{width: '100%'}}
+                          onClick={() => {
+                            if (card4AddButtonRef.current) {
+                              const rect = card4AddButtonRef.current.getBoundingClientRect();
+                              setCard4AddPopoverPos({top: rect.bottom + 8, left: rect.left});
+                            }
+                            setCard4ShowAddPopover(prev => !prev);
+                          }}
+                        />
+                        {card4ShowAddPopover && card4AddPopoverPos && (
+                          <SharePopover
+                            cliCommand={`npx xds template ${t.name.toLowerCase().replace(/\s+/g, '-')} ./my-project`}
+                            position={card4AddPopoverPos}
+                            onClose={() => setCard4ShowAddPopover(false)}
+                          />
+                        )}
+                      </div>
                     </div>
 
                     {/* Themes — pinned grid */}
@@ -1108,7 +740,7 @@ function DocsiteLandingTemplate() {
                                 style={{
                                   width: 44, height: 44, borderRadius: 10,
                                   display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                                  border: isSelected ? '2px solid var(--color-text-primary, #111)' : '2px solid var(--color-border, #E0E0E0)',
+                                  border: isSelected ? '2px solid var(--color-accent)' : '2px solid var(--color-border-emphasized)',
                                   backgroundColor: '#fff',
                                   transition: 'border-color 0.15s ease',
                                 }}>
@@ -1163,7 +795,7 @@ function DocsiteLandingTemplate() {
                                           key={entry.key}
                                           style={{
                                             borderRadius: 12, overflow: 'hidden', cursor: 'pointer',
-                                            border: isSelected ? '2px solid var(--color-text-primary, #111)' : '2px solid var(--color-border, #E0E0E0)',
+                                            border: isSelected ? '2px solid var(--color-accent)' : '2px solid var(--color-border-emphasized)',
                                             transition: 'border-color 0.15s ease',
                                           }}>
                                           <div
@@ -1216,7 +848,7 @@ function DocsiteLandingTemplate() {
                       <XDSText type="body" style={{fontWeight: 600}}>Component used</XDSText>
                       <div style={{display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 16}}>
                         {['XDSAppShell', 'XDSTopNav', 'XDSVStack', 'XDSHStack', 'XDSHeading', 'XDSText', 'XDSButton', 'XDSCard', 'XDSBadge', 'XDSAvatar'].map(c => (
-                          <XDSToken key={c} label={c} />
+                          <XDSToken key={c} label={c} xstyle={tokenStyles.outline} style={{backgroundColor: 'transparent'}} />
                         ))}
                       </div>
                     </div>
@@ -1226,18 +858,18 @@ function DocsiteLandingTemplate() {
 
                 {/* More like this */}
                 <div style={{padding: '16px 32px 0'}}>
-                  <XDSText type="display-3">More like this</XDSText>
-                  <div style={{display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12, marginTop: 16}}>
-                    {relatedTemplates.slice(0, 10).map((rt, i) => (
+                  <XDSHeading level={3}>More like this</XDSHeading>
+                  <div style={{display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginTop: 16}}>
+                    {moreLikeThisImages.map((img) => (
                       <XDSCard
-                        key={i}
+                        key={img.originalIndex}
                         padding={0}
                         onClick={() => {
-                          const idx = TEMPLATES.indexOf(rt);
-                          setPreviewTarget(idx !== -1 ? idx : i);
+                          setPreviewTarget(img.originalIndex);
+                          card4ScrollRef.current?.scrollTo({top: 0, behavior: 'smooth'});
                         }}
                         style={{cursor: 'pointer', aspectRatio: '16/10', overflow: 'hidden'}}>
-                        <img src={rt.src} alt={rt.name} style={{width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top', display: 'block'}} />
+                        <img src={img.src} alt={img.name} style={{width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top', display: 'block'}} />
                       </XDSCard>
                     ))}
                   </div>
@@ -1245,10 +877,10 @@ function DocsiteLandingTemplate() {
 
                 {/* Explore more */}
                 <div style={{padding: '32px 32px 40px'}}>
-                  <XDSText type="display-3">Explore more</XDSText>
+                  <XDSHeading level={3}>Explore more</XDSHeading>
                   <div style={{display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 16}}>
                     {['website', 'dashboard', 'admin panel', 'settings', 'form layout', 'data table', 'sidebar nav', 'landing page', 'e-commerce', 'documentation', 'profile page'].map(tag => (
-                      <XDSToken key={tag} label={tag} />
+                      <XDSToken key={tag} label={tag} xstyle={tokenStyles.pill} style={{backgroundColor: 'transparent'}} />
                     ))}
                   </div>
                 </div>
