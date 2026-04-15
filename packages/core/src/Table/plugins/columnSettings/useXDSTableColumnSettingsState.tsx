@@ -36,25 +36,17 @@ import type {XDSColumnSettingsOption} from './useXDSTableColumnSettings';
  * @example
  * ```
  * const [activeKeys, setActiveKeys] = useState(['name', 'email', 'role']);
- *
  * const columnState = useXDSTableColumnSettingsState({
  *   columns: [
  *     { key: 'name', label: 'Name', isAlwaysVisible: true },
  *     { key: 'email', label: 'Email' },
  *     { key: 'role', label: 'Role' },
- *     { key: 'status', label: 'Status' },
  *   ],
  *   activeColumnKeys: activeKeys,
  *   onChangeActiveColumnKeys: setActiveKeys,
  * });
- *
  * const plugin = useXDSTableColumnSettings(columnState.columnSettingsConfig);
- *
- * <XDSTable
- *   data={data}
- *   columns={allColumns}
- *   plugins={{ columnSettings: plugin }}
- * />
+ * <XDSTable data={data} columns={allColumns} plugins={{ columnSettings: plugin }} />
  * ```
  */
 export interface UseXDSTableColumnSettingsStateConfig<
@@ -162,7 +154,6 @@ export interface UseXDSTableColumnSettingsStateReturn<
  * @example
  * ```
  * const [activeKeys, setActiveKeys] = useState(['name', 'email']);
- *
  * const state = useXDSTableColumnSettingsState({
  *   columns: [
  *     { key: 'name', label: 'Name', isAlwaysVisible: true },
@@ -172,20 +163,8 @@ export interface UseXDSTableColumnSettingsStateReturn<
  *   activeColumnKeys: activeKeys,
  *   onChangeActiveColumnKeys: setActiveKeys,
  * });
- *
- * // Feed into the plugin hook
  * const plugin = useXDSTableColumnSettings(state.columnSettingsConfig);
- *
- * // Build your own column picker UI using state helpers
- * state.columns.map(col => (
- *   <Checkbox
- *     key={col.key}
- *     checked={state.isColumnActive(col.key)}
- *     disabled={!state.isColumnToggleable(col.key)}
- *     onChange={() => state.toggleColumn(col.key)}
- *     label={col.label}
- *   />
- * ));
+ * <XDSTable data={data} columns={allColumns} plugins={{ columnSettings: plugin }} />
  * ```
  */
 export function useXDSTableColumnSettingsState<

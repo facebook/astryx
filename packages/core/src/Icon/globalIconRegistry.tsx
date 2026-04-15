@@ -68,11 +68,9 @@ let globalRegistry: Partial<XDSIconRegistry> = {};
  * server-rendered ones that can't access React Context.
  *
  * @example
- * ```ts
- * // app/layout.tsx (RSC-compatible)
+ * ```
  * import { registerIcons } from '@xds/core';
  * import { brandIcons } from './brand-icons';
- *
  * registerIcons(brandIcons);
  * ```
  */

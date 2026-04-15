@@ -58,50 +58,14 @@ const styles = stylex.create({
  *
  * @example
  * ```
- * // Client-side pagination
  * const [page, setPage] = useState(1);
- * const pageSize = 10;
- *
  * const plugin = useXDSTablePagination({
  *   page,
  *   onPageChange: setPage,
  *   totalItems: data.length,
- *   pageSize,
+ *   pageSize: 10,
  * });
- *
- * <XDSTable
- *   data={paginateData(data, page, pageSize)}
- *   columns={columns}
- *   plugins={{ pagination: plugin }}
- * />
- * ```
- *
- * @example
- * ```
- * // Server-side pagination \u2014 data already sliced
- * const plugin = useXDSTablePagination({
- *   page,
- *   onPageChange: (p) => fetchPage(p),
- *   totalItems: serverTotal,
- *   pageSize: 25,
- * });
- *
- * <XDSTable
- *   data={serverData}
- *   columns={columns}
- *   plugins={{ pagination: plugin }}
- * />
- * ```
- *
- * @example
- * ```
- * // Cursor-based pagination \u2014 total unknown
- * const plugin = useXDSTablePagination({
- *   page,
- *   onPageChange: setPage,
- *   hasMore: cursor != null,
- *   pageSize: 20,
- * });
+ * <XDSTable data={pageData} columns={columns} plugins={{ pagination: plugin }} />
  * ```
  */
 export interface UseXDSTablePaginationConfig {
@@ -215,19 +179,13 @@ export interface UseXDSTablePaginationConfig {
  * @example
  * ```
  * const [page, setPage] = useState(1);
- * const pageSize = 10;
- *
  * const plugin = useXDSTablePagination({
  *   page,
  *   onPageChange: setPage,
  *   totalItems: data.length,
- *   pageSize,
+ *   pageSize: 10,
  * });
- *
- * <XDSTable
- *   data={paginateData(data, page, pageSize)}
- *   plugins={{ pagination: plugin }}
- * />
+ * <XDSTable data={pageData} plugins={{ pagination: plugin }} />
  * ```
  */
 export function useXDSTablePagination<T extends Record<string, unknown>>(

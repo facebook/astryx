@@ -150,38 +150,8 @@ function findMatches(
  *
  * @example
  * ```
- * // Basic: auto-detect URLs and emails
  * const nodes = useXDSLinkify('Visit https://example.com or email hi@example.com');
  * return <p>{nodes}</p>;
- * ```
- *
- * @example
- * ```
- * // Custom patterns: task and diff references
- * const nodes = useXDSLinkify('See T1234 and D5678', {
- *   patterns: [
- *     {
- *       pattern: /\bT(\d+)\b/g,
- *       href: (m) => `https://tasks.example.com/${m[1]}`,
- *     },
- *     {
- *       pattern: /\bD(\d+)\b/g,
- *       href: (m) => `https://phabricator.example.com/${m[0]}`,
- *     },
- *   ],
- * });
- * ```
- *
- * @example
- * ```
- * // With XDSMarkdown — linkify text nodes in rendered markdown
- * <XDSMarkdown
- *   components={{
- *     p: ({children}) => <p>{useXDSLinkify(String(children))}</p>,
- *   }}
- * >
- *   {markdown}
- * </XDSMarkdown>
  * ```
  */
 export function useXDSLinkify(

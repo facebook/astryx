@@ -71,7 +71,6 @@ export interface XDSTableProps<T extends Record<string, unknown>> extends Omit<
    *
    * @example
    * ```
-   * // Top-align rows for multi-line cell content
    * <XDSTable data={items} columns={columns} verticalAlign="top" />
    * ```
    */

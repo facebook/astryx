@@ -49,19 +49,8 @@ export type XDSTableSortComparator<T> = (a: T, b: T) => number;
  *   data: users,
  *   defaultSort: [{ sortKey: 'name', direction: 'ascending' }],
  * });
- *
  * const sortPlugin = useXDSTableSortable(sortConfig);
  * <XDSTable data={sortedData} plugins={{ sort: sortPlugin }} />
- * ```
- *
- * @example
- * ```
- * const [sort, setSort] = useState<XDSTableSortState>([]);
- * const { sortedData, sortConfig } = useXDSTableSortableState({
- *   data: users,
- *   sort,
- *   onSortChange: setSort,
- * });
  * ```
  */
 export interface UseXDSTableSortableStateConfig<
@@ -220,18 +209,10 @@ function sortData<
  * const { sortedData, sortConfig } = useXDSTableSortableState({
  *   data: employees,
  *   defaultSort: [{ sortKey: 'name', direction: 'ascending' }],
- *   comparators: {
- *     age: (a, b) => a.age - b.age,
- *   },
+ *   comparators: { age: (a, b) => a.age - b.age },
  * });
- *
  * const sortPlugin = useXDSTableSortable(sortConfig);
- *
- * <XDSTable
- *   data={sortedData}
- *   columns={columns}
- *   plugins={{ sort: sortPlugin }}
- * />
+ * <XDSTable data={sortedData} columns={columns} plugins={{ sort: sortPlugin }} />
  * ```
  */
 export function useXDSTableSortableState<
