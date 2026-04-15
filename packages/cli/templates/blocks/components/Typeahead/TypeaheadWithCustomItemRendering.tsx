@@ -38,7 +38,7 @@ export default function TypeaheadWithCustomItemRendering() {
       onChange={setAssignee}
       placeholder="Search users..."
       hasEntriesOnFocus
-      renderItem={(item) => (
+      renderItem={(item: UserItem) => (
         <XDSTypeaheadItem
           item={item}
           icon={
