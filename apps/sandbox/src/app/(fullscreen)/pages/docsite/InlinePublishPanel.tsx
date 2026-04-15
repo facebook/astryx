@@ -86,9 +86,12 @@ export function InlinePublishPanel({
 
       {/* Publish / Cancel buttons */}
       <div style={{display: 'flex', flexDirection: 'column' as const, gap: 8, marginTop: 'auto'}}>
+        <XDSText type="supporting" color="secondary" style={{textAlign: 'center' as const}}>
+          Your template will go through a review process before appearing in the community grid.
+        </XDSText>
         <XDSButton
           variant="primary"
-          label="Publish template"
+          label="Submit template"
           size="lg"
           onClick={onPublish}
           style={{width: '100%'}}
