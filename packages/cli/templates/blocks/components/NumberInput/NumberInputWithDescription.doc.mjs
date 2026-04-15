@@ -4,6 +4,6 @@ export const doc = {
   name: 'NumberInput — With Description',
   description: 'Number input with helper description text below the label.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['NumberInput'],
 };

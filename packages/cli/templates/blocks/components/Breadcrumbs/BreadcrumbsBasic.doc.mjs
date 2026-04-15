@@ -4,6 +4,6 @@ export const doc = {
   name: 'Breadcrumbs — Basic',
   description: 'Basic breadcrumb trail with linked items and current page.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 16 / 4,
   componentsUsed: ['Breadcrumbs'],
 };

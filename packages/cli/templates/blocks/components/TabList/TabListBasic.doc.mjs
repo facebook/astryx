@@ -4,6 +4,6 @@ export const doc = {
   name: 'TabList — Basic',
   description: 'Basic',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 16 / 4,
   componentsUsed: ['TabList', 'Tab'],
 };

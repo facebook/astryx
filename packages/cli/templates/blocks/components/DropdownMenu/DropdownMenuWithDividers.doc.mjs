@@ -4,6 +4,6 @@ export const doc = {
   name: 'DropdownMenu — With Dividers',
   description: 'Dropdown menu with visual dividers separating item groups.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['DropdownMenu'],
 };

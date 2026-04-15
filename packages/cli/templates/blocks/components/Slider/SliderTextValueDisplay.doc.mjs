@@ -4,6 +4,6 @@ export const doc = {
   name: 'Slider — Text value display',
   description: 'Text value display',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Slider'],
 };

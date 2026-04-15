@@ -4,6 +4,6 @@ export const doc = {
   name: 'Calendar — Two Months',
   description: 'Two-month calendar display with date constraints and Monday start.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 3 / 4,
   componentsUsed: ['Calendar'],
 };

@@ -4,6 +4,6 @@ export const doc = {
   name: 'Switch — With error status',
   description: 'With error status',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Switch'],
 };

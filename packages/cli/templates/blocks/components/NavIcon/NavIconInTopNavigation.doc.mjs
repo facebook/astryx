@@ -4,6 +4,6 @@ export const doc = {
   name: 'NavIcon — In Top Navigation',
   description: 'Circular accent icon used as a logo in a top navigation heading.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 16 / 4,
   componentsUsed: ['NavIcon', 'TopNav'],
 };

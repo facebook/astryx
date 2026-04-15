@@ -4,6 +4,6 @@ export const doc = {
   name: 'Selector — With Status And Field Props',
   description: 'Required selector with error validation status.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Selector'],
 };

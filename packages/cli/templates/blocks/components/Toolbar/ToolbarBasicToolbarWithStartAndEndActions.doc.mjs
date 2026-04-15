@@ -4,6 +4,6 @@ export const doc = {
   name: 'Toolbar — Basic toolbar with start and end actions',
   description: 'Basic toolbar with start and end actions',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 16 / 4,
   componentsUsed: ['Toolbar', 'Button'],
 };

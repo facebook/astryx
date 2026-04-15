@@ -4,6 +4,6 @@ export const doc = {
   name: 'RadioList — Basic',
   description: 'Simple radio group for single-value selection.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['RadioList'],
 };

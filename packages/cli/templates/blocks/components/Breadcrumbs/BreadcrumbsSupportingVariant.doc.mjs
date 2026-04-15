@@ -4,6 +4,6 @@ export const doc = {
   name: 'Breadcrumbs — Supporting Variant',
   description: 'Smaller breadcrumbs with secondary text styling.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 16 / 4,
   componentsUsed: ['Breadcrumbs'],
 };

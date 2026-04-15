@@ -4,6 +4,6 @@ export const doc = {
   name: 'Card — Muted Background',
   description: 'De-emphasised card with wash background variant.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Card'],
 };

@@ -4,6 +4,6 @@ export const doc = {
   name: 'Toolbar — Card header pattern',
   description: 'Card header pattern',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 16 / 4,
   componentsUsed: ['Card', 'Toolbar', 'Text', 'Button', 'Section'],
 };

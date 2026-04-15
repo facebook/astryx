@@ -4,6 +4,6 @@ export const doc = {
   name: 'RadioList — Horizontal Layout',
   description: 'Radio group displayed in a horizontal row layout.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['RadioList'],
 };

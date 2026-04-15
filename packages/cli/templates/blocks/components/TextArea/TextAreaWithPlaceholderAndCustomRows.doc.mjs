@@ -4,6 +4,6 @@ export const doc = {
   name: 'TextArea — With placeholder and custom rows',
   description: 'With placeholder and custom rows',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['TextArea'],
 };

@@ -4,6 +4,6 @@ export const doc = {
   name: 'DropdownMenu — Custom Item Rendering',
   description: 'Dropdown menu with custom item rendering using XDSDropdownMenuItem.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['DropdownMenu'],
 };

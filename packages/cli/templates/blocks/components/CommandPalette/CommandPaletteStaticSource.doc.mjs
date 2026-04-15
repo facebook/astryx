@@ -4,6 +4,6 @@ export const doc = {
   name: 'CommandPalette — Static Source',
   description: 'Command palette with a static list of searchable items.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['CommandPalette', 'Button'],
 };

@@ -4,6 +4,6 @@ export const doc = {
   name: 'TextInput — With start icon',
   description: 'With start icon',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['TextInput'],
 };

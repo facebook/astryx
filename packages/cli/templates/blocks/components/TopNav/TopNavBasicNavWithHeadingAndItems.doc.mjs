@@ -4,6 +4,6 @@ export const doc = {
   name: 'TopNav — Basic nav with heading and items',
   description: 'Basic nav with heading and items',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 16 / 4,
   componentsUsed: ['TopNav', 'TopNavHeading', 'NavIcon', 'TopNavItem', 'Button'],
 };

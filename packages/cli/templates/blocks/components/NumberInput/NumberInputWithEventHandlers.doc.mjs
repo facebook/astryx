@@ -4,6 +4,6 @@ export const doc = {
   name: 'NumberInput — With Event Handlers',
   description: 'Number input with onEnter, onFocus, and onBlur event callbacks.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['NumberInput'],
 };

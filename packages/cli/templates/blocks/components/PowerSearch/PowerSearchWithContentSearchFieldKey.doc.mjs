@@ -4,6 +4,6 @@ export const doc = {
   name: 'PowerSearch — With Content Search Field Key',
   description: 'Power search with free-text search that maps to a content field.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['PowerSearch'],
 };

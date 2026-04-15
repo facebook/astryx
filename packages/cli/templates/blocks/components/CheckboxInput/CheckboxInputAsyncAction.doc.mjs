@@ -4,6 +4,6 @@ export const doc = {
   name: 'CheckboxInput — Async Action',
   description: 'Checkbox with async action that shows a loading spinner while pending.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['CheckboxInput'],
 };

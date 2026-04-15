@@ -4,6 +4,6 @@ export const doc = {
   name: 'Breadcrumbs — Item With Icon',
   description: 'Breadcrumb item with icon and click handler.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 16 / 4,
   componentsUsed: ['Breadcrumbs'],
 };

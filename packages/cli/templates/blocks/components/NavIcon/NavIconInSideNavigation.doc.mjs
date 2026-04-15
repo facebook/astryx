@@ -4,6 +4,6 @@ export const doc = {
   name: 'NavIcon — In Side Navigation',
   description: 'Circular accent icon used in a page navigation header.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 16 / 4,
   componentsUsed: ['NavIcon', 'PageNav'],
 };

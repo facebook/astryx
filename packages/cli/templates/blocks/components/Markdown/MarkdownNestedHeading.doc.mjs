@@ -4,6 +4,6 @@ export const doc = {
   name: 'Markdown — Nested Heading',
   description: 'Markdown with shifted heading levels to fit within page hierarchy.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Markdown'],
 };

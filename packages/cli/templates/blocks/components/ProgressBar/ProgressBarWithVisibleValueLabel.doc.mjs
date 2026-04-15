@@ -4,6 +4,6 @@ export const doc = {
   name: 'ProgressBar — With Visible Value Label',
   description: 'Progress bar with a visible percentage value label.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 16 / 4,
   componentsUsed: ['ProgressBar'],
 };

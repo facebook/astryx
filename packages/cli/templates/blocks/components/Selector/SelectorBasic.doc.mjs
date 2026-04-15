@@ -4,6 +4,6 @@ export const doc = {
   name: 'Selector — Basic',
   description: 'Simple dropdown selector with string options.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Selector'],
 };

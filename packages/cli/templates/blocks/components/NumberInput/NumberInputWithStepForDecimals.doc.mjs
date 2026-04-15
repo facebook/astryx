@@ -4,6 +4,6 @@ export const doc = {
   name: 'NumberInput — With Step For Decimals',
   description: 'Number input with decimal step increments for price entry.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['NumberInput'],
 };

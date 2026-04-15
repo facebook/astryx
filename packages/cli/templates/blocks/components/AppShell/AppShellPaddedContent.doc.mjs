@@ -4,6 +4,6 @@ export const doc = {
   name: 'AppShell — Padded Content',
   description: 'Settings page layout with contentPadding for form-style content.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['AppShell', 'TopNav', 'SideNav', 'Heading', 'TextInput'],
 };

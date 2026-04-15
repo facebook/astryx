@@ -4,6 +4,6 @@ export const doc = {
   name: 'MetadataList — Basic',
   description: 'Simple key-value metadata list with two items.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['MetadataList'],
 };

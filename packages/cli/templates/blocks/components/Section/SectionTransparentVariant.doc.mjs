@@ -4,6 +4,6 @@ export const doc = {
   name: 'Section — Transparent Variant',
   description: 'Section container with a transparent background.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Section', 'Layout'],
 };

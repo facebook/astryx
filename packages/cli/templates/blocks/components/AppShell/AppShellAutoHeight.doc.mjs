@@ -4,6 +4,6 @@ export const doc = {
   name: 'AppShell — Auto Height',
   description: 'Shell with auto height mode for content-heavy pages that scroll naturally.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['AppShell', 'TopNav', 'SideNav'],
 };

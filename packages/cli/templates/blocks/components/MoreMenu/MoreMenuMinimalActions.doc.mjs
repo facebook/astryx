@@ -4,6 +4,6 @@ export const doc = {
   name: 'MoreMenu — Minimal Actions',
   description: 'Simple three-dot overflow menu with two action items.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['MoreMenu'],
 };

@@ -4,6 +4,6 @@ export const doc = {
   name: 'CheckboxInput — Hidden Label',
   description: 'Checkbox with a visually hidden label for compact layouts.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['CheckboxInput'],
 };

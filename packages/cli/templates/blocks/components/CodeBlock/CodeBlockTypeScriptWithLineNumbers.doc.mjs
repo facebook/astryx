@@ -4,6 +4,6 @@ export const doc = {
   name: 'CodeBlock — TypeScript With Line Numbers',
   description: 'Syntax-highlighted TypeScript code block with line numbers and title.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['CodeBlock'],
 };

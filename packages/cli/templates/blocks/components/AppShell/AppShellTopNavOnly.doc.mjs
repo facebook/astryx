@@ -4,6 +4,6 @@ export const doc = {
   name: 'AppShell — TopNav Only',
   description: 'Layout with only a top navigation bar and no side navigation.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['AppShell', 'TopNav'],
 };

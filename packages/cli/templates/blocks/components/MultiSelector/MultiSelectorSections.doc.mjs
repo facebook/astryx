@@ -4,6 +4,6 @@ export const doc = {
   name: 'MultiSelector — Sections',
   description: 'Multi-select dropdown with labeled option sections.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['MultiSelector'],
 };

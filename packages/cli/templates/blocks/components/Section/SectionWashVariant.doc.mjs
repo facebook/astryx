@@ -4,6 +4,6 @@ export const doc = {
   name: 'Section — Wash Variant',
   description: 'Section container with a wash background variant.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Section', 'Layout'],
 };

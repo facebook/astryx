@@ -4,6 +4,6 @@ export const doc = {
   name: 'Typeahead — With custom item rendering',
   description: 'With custom item rendering',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Typeahead', 'TypeaheadItem', 'Avatar'],
 };

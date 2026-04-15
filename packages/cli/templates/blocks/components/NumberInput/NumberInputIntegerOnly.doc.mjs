@@ -4,6 +4,6 @@ export const doc = {
   name: 'NumberInput — Integer Only',
   description: 'Number input restricted to integer values only.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['NumberInput'],
 };

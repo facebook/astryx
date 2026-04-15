@@ -4,6 +4,6 @@ export const doc = {
   name: 'Slider — Vertical orientation',
   description: 'Vertical orientation',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Slider'],
 };

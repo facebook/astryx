@@ -4,6 +4,6 @@ export const doc = {
   name: 'Slider — Basic single value',
   description: 'Basic single value',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Slider'],
 };

@@ -4,6 +4,6 @@ export const doc = {
   name: 'TextInput — Password input',
   description: 'Password input',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['TextInput'],
 };

@@ -4,6 +4,6 @@ export const doc = {
   name: 'SegmentedControl — Disabled',
   description: 'Disabled segmented control with all items non-interactive.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['SegmentedControl'],
 };

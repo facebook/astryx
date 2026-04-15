@@ -4,6 +4,6 @@ export const doc = {
   name: 'Card — Accordion',
   description: 'Accordion of collapsible cards using XDSCollapsibleGroup.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Card', 'Collapsible', 'VStack'],
 };

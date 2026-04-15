@@ -4,6 +4,6 @@ export const doc = {
   name: 'Toolbar — Three-slot layout with centered content',
   description: 'Three-slot layout with centered content',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 16 / 4,
   componentsUsed: ['Toolbar', 'Button', 'Text'],
 };

@@ -4,6 +4,6 @@ export const doc = {
   name: 'CheckboxInput — With Description',
   description: 'Checkbox with descriptive helper text below the label.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['CheckboxInput'],
 };

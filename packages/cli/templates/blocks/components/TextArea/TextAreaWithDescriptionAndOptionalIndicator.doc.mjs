@@ -4,6 +4,6 @@ export const doc = {
   name: 'TextArea — With description and optional indicator',
   description: 'With description and optional indicator',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['TextArea'],
 };

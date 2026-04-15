@@ -4,6 +4,6 @@ export const doc = {
   name: 'Collapsible — Single Mode Accordion',
   description: 'Coordinated group where only one section can be open at a time.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Collapsible', 'Card', 'VStack'],
 };

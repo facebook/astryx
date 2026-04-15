@@ -4,6 +4,6 @@ export const doc = {
   name: 'Selector — Sections',
   description: 'Selector dropdown with labeled option sections.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Selector'],
 };

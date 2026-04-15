@@ -4,6 +4,6 @@ export const doc = {
   name: 'OverflowList — Overflow Into Dropdown Menu',
   description: 'Overflow items collapse into a dropdown menu for action access.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 16 / 4,
   componentsUsed: ['OverflowList', 'Button', 'DropdownMenu'],
 };

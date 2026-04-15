@@ -4,6 +4,6 @@ export const doc = {
   name: 'MoreMenu — Custom Item Rendering',
   description: 'Overflow menu with custom item rendering using XDSDropdownMenuItem.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['MoreMenu', 'DropdownMenu'],
 };

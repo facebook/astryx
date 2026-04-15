@@ -4,6 +4,6 @@ export const doc = {
   name: 'TopNav — In XDSLayout header slot',
   description: 'In XDSLayout header slot',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 16 / 4,
   componentsUsed: ['Layout', 'TopNav', 'TopNavHeading', 'TopNavItem', 'LayoutContent'],
 };

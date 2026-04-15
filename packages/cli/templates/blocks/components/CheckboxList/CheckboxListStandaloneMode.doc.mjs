@@ -4,6 +4,6 @@ export const doc = {
   name: 'CheckboxList — Standalone Mode',
   description: 'Individual checkbox items with independent state inside a list.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['CheckboxList', 'List'],
 };

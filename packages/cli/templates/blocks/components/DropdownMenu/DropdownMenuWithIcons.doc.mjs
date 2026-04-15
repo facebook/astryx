@@ -4,6 +4,6 @@ export const doc = {
   name: 'DropdownMenu — With Icons',
   description: 'Dropdown menu items with leading icons.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['DropdownMenu'],
 };

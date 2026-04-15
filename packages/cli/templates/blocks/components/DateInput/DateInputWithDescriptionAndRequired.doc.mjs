@@ -4,6 +4,6 @@ export const doc = {
   name: 'DateInput — With Description And Required',
   description: 'Required date input with helper description text below the label.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['DateInput'],
 };

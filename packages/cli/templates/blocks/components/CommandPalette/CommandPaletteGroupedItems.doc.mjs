@@ -4,6 +4,6 @@ export const doc = {
   name: 'CommandPalette — Grouped Items',
   description: 'Command palette with auto-grouped items and custom item rendering.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['CommandPalette', 'Button'],
 };

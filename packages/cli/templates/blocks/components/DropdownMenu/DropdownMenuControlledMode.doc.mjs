@@ -4,6 +4,6 @@ export const doc = {
   name: 'DropdownMenu — Controlled Mode',
   description: 'Dropdown menu with externally controlled open state.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['DropdownMenu'],
 };

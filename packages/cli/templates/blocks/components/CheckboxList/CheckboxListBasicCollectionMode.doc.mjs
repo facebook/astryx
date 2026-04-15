@@ -4,6 +4,6 @@ export const doc = {
   name: 'CheckboxList — Basic Collection Mode',
   description: 'Checkbox group with parent-managed state for multi-value selection.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['CheckboxList'],
 };

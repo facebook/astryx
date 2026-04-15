@@ -4,6 +4,6 @@ export const doc = {
   name: 'Tokenizer — Custom token rendering',
   description: 'Custom token rendering',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Tokenizer', 'Token'],
 };

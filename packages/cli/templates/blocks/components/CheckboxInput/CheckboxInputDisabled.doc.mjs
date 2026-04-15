@@ -4,6 +4,6 @@ export const doc = {
   name: 'CheckboxInput — Disabled',
   description: 'Disabled checkbox with description explaining the restriction.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['CheckboxInput'],
 };

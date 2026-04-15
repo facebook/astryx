@@ -4,6 +4,6 @@ export const doc = {
   name: 'Tokenizer — Free-text tags (hasCreate)',
   description: 'Free-text tags (hasCreate)',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Tokenizer'],
 };

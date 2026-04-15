@@ -4,6 +4,6 @@ export const doc = {
   name: 'Table — Column alignment and vertical alignment',
   description: 'Column alignment and vertical alignment',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Table'],
 };

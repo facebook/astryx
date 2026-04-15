@@ -4,6 +4,6 @@ export const doc = {
   name: 'AppShell — SideNav Only',
   description: 'Layout with side navigation only and no top navigation bar.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['AppShell', 'SideNav'],
 };

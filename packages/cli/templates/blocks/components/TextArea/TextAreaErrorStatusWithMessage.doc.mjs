@@ -4,6 +4,6 @@ export const doc = {
   name: 'TextArea — Error status with message',
   description: 'Error status with message',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['TextArea'],
 };

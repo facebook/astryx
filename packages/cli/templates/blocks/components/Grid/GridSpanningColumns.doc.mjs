@@ -4,6 +4,6 @@ export const doc = {
   name: 'Grid — Spanning Columns',
   description: 'Grid item spanning multiple columns using XDSGridSpan.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Grid'],
 };

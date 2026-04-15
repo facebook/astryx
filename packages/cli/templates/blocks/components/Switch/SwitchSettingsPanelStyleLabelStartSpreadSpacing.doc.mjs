@@ -4,6 +4,6 @@ export const doc = {
   name: 'Switch — Settings panel style (label start, spread spacing)',
   description: 'Settings panel style (label start, spread spacing)',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Switch'],
 };

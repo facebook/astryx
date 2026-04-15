@@ -4,6 +4,6 @@ export const doc = {
   name: 'CheckboxList — With Descriptions',
   description: 'Checkbox group with secondary text and dividers between items.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['CheckboxList'],
 };

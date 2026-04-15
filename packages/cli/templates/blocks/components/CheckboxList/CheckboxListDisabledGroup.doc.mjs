@@ -4,6 +4,6 @@ export const doc = {
   name: 'CheckboxList — Disabled Group',
   description: 'Checkbox group with all items disabled.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['CheckboxList'],
 };

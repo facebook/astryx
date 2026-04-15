@@ -4,6 +4,6 @@ export const doc = {
   name: 'Dialog — Static Position',
   description: 'Dialog positioned at a fixed location instead of centered.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Dialog', 'Button', 'Layout'],
 };

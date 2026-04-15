@@ -4,6 +4,6 @@ export const doc = {
   name: 'TimeInput — 24-hour format with clear button',
   description: '24-hour format with clear button',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['TimeInput'],
 };

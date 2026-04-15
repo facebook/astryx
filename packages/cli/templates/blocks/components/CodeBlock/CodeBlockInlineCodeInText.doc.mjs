@@ -4,6 +4,6 @@ export const doc = {
   name: 'CodeBlock — Inline Code In Text',
   description: 'Inline code element styled with monospace font inside prose text.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['CodeBlock', 'Text'],
 };

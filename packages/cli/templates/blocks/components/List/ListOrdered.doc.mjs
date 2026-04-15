@@ -4,6 +4,6 @@ export const doc = {
   name: 'List — Ordered',
   description: 'Ordered list rendered with decimal markers.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 3 / 4,
   componentsUsed: ['List'],
 };

@@ -4,6 +4,6 @@ export const doc = {
   name: 'Calendar — Single Date',
   description: 'Calendar with single date selection mode.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 3 / 4,
   componentsUsed: ['Calendar'],
 };

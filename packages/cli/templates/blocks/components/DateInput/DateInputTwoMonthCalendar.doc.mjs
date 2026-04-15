@@ -4,6 +4,6 @@ export const doc = {
   name: 'DateInput — Two-Month Calendar',
   description: 'Date input displaying two months simultaneously in the calendar popover.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['DateInput'],
 };

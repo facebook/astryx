@@ -4,6 +4,6 @@ export const doc = {
   name: 'ProgressBar — Composed With External Description',
   description: 'Progress bar composed with external descriptive text below.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 16 / 4,
   componentsUsed: ['ProgressBar', 'Text'],
 };

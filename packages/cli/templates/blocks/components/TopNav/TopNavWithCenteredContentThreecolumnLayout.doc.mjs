@@ -4,6 +4,6 @@ export const doc = {
   name: 'TopNav — With centered content (three-column layout)',
   description: 'With centered content (three-column layout)',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 16 / 4,
   componentsUsed: ['TopNav', 'TopNavHeading', 'TopNavItem'],
 };

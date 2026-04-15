@@ -4,6 +4,6 @@ export const doc = {
   name: 'AlertDialog — Delete Confirmation',
   description: 'Confirmation dialog triggered by a danger button for destructive actions.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['AlertDialog', 'Button'],
 };

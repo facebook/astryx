@@ -4,6 +4,6 @@ export const doc = {
   name: 'Field — With Description',
   description: 'Form field with helper description text below the label.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Field'],
 };

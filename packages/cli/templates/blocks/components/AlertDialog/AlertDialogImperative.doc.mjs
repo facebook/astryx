@@ -4,6 +4,6 @@ export const doc = {
   name: 'AlertDialog — Imperative',
   description: 'Fire-and-forget alert dialog using the imperative hook API.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['AlertDialog'],
 };

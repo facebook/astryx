@@ -4,6 +4,6 @@ export const doc = {
   name: 'Toolbar — With XDSOverflowList for responsive collapsing',
   description: 'With XDSOverflowList for responsive collapsing',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 16 / 4,
   componentsUsed: ['Toolbar', 'OverflowList', 'Button', 'DropdownMenu'],
 };

@@ -4,6 +4,6 @@ export const doc = {
   name: 'SegmentedControl — Basic',
   description: 'Segmented control for switching between view modes.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['SegmentedControl'],
 };

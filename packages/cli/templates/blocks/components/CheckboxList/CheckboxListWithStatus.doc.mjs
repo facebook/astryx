@@ -4,6 +4,6 @@ export const doc = {
   name: 'CheckboxList — With Status',
   description: 'Checkbox group displaying an error validation message.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['CheckboxList'],
 };

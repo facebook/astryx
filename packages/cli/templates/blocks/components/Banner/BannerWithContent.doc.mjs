@@ -4,6 +4,6 @@ export const doc = {
   name: 'Banner — With Content',
   description: 'Error banner with a content area listing issues below the header.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 16 / 4,
   componentsUsed: ['Banner'],
 };

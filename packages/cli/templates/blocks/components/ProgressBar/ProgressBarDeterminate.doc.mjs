@@ -4,6 +4,6 @@ export const doc = {
   name: 'ProgressBar — Determinate',
   description: 'Determinate progress bar showing 75% completion.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 16 / 4,
   componentsUsed: ['ProgressBar'],
 };

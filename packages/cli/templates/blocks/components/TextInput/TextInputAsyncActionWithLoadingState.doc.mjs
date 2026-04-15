@@ -4,6 +4,6 @@ export const doc = {
   name: 'TextInput — Async action with loading state',
   description: 'Async action with loading state',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['TextInput'],
 };

@@ -4,6 +4,6 @@ export const doc = {
   name: 'NumberInput — With Units Display',
   description: 'Number input with a percentage units suffix.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['NumberInput'],
 };

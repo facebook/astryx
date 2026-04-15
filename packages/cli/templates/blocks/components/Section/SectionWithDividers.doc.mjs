@@ -4,6 +4,6 @@ export const doc = {
   name: 'Section — With Dividers',
   description: 'Section with top and bottom divider borders.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Section', 'Layout'],
 };

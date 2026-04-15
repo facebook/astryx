@@ -4,6 +4,6 @@ export const doc = {
   name: 'Selector — With Object Items',
   description: 'Selector with object items including icons and disabled state.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Selector'],
 };

@@ -4,6 +4,6 @@ export const doc = {
   name: 'EmptyState — With Description',
   description: 'Empty state with title and secondary description text.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['EmptyState'],
 };

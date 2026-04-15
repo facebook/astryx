@@ -4,6 +4,6 @@ export const doc = {
   name: 'SegmentedControl — With Icons',
   description: 'Segmented control with icon and label pairs for each segment.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['SegmentedControl', 'Icon'],
 };

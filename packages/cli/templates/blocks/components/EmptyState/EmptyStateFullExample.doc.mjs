@@ -4,6 +4,6 @@ export const doc = {
   name: 'EmptyState — Full Example',
   description: 'Empty state with icon, title, description, and action button.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['EmptyState', 'Icon', 'Button'],
 };

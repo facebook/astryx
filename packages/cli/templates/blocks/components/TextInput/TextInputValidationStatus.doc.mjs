@@ -4,6 +4,6 @@ export const doc = {
   name: 'TextInput — Validation status',
   description: 'Validation status',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['TextInput'],
 };

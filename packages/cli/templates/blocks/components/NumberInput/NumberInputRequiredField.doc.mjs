@@ -4,6 +4,6 @@ export const doc = {
   name: 'NumberInput — Required Field',
   description: 'Number input marked as a required field.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['NumberInput'],
 };

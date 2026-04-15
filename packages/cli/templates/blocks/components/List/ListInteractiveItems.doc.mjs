@@ -4,6 +4,6 @@ export const doc = {
   name: 'List — Interactive Items',
   description: 'List with clickable and linkable interactive items.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 3 / 4,
   componentsUsed: ['List'],
 };

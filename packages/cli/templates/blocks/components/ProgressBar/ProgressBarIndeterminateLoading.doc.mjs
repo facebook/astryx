@@ -4,6 +4,6 @@ export const doc = {
   name: 'ProgressBar — Indeterminate Loading',
   description: 'Animated indeterminate progress bar for unknown-duration operations.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 16 / 4,
   componentsUsed: ['ProgressBar'],
 };

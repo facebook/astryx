@@ -4,6 +4,6 @@ export const doc = {
   name: 'RadioList — With Descriptions',
   description: 'Radio group with description text for each option.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['RadioList'],
 };

@@ -4,6 +4,6 @@ export const doc = {
   name: 'Slider — Range slider',
   description: 'Range slider',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Slider'],
 };

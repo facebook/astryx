@@ -4,6 +4,6 @@ export const doc = {
   name: 'Table — Auto-generated columns',
   description: 'Auto-generated columns',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Table'],
 };

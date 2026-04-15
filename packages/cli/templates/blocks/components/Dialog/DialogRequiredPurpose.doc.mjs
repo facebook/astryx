@@ -4,6 +4,6 @@ export const doc = {
   name: 'Dialog — Required Purpose',
   description: 'Non-dismissible dialog that requires an explicit user action to close.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Dialog', 'Layout', 'Button'],
 };

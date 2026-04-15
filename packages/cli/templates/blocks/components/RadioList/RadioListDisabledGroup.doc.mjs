@@ -4,6 +4,6 @@ export const doc = {
   name: 'RadioList — Disabled Group',
   description: 'Radio group with all items disabled.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['RadioList'],
 };

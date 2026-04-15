@@ -4,6 +4,6 @@ export const doc = {
   name: 'Banner — Simple',
   description: 'Simple info banner with only the colored header.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 16 / 4,
   componentsUsed: ['Banner'],
 };

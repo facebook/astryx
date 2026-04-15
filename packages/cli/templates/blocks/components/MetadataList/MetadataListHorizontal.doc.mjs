@@ -4,6 +4,6 @@ export const doc = {
   name: 'MetadataList — Horizontal',
   description: 'Horizontal metadata list with flex-wrap layout.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['MetadataList'],
 };

@@ -4,6 +4,6 @@ export const doc = {
   name: 'Popover — Sibling Mode With Anchor Ref',
   description: 'Popover attached to an external trigger element via anchorRef.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Popover', 'Button'],
 };

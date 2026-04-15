@@ -4,6 +4,6 @@ export const doc = {
   name: 'Grid — Auto-Fit Max Columns',
   description: 'Auto-fit grid with a maximum column count cap.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Grid'],
 };

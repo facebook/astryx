@@ -4,6 +4,6 @@ export const doc = {
   name: 'Table — Custom plugin',
   description: 'Custom plugin',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Table'],
 };

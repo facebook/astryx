@@ -4,6 +4,6 @@ export const doc = {
   name: 'MultiSelector — Badges Trigger Display',
   description: 'Multi-select showing selected items as badges in the trigger.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['MultiSelector'],
 };

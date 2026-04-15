@@ -4,6 +4,6 @@ export const doc = {
   name: 'Slider — With onChangeEnd for committing value',
   description: 'With onChangeEnd for committing value',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Slider'],
 };

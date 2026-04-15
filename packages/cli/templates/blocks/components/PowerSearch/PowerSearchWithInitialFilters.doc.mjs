@@ -4,6 +4,6 @@ export const doc = {
   name: 'PowerSearch — With Initial Filters',
   description: 'Structured filter bar pre-populated with an initial filter token.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['PowerSearch'],
 };

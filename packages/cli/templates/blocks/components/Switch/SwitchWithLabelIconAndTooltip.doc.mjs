@@ -4,6 +4,6 @@ export const doc = {
   name: 'Switch — With label icon and tooltip',
   description: 'With label icon and tooltip',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Switch'],
 };

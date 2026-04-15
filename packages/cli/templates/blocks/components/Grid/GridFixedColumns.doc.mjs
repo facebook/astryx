@@ -4,6 +4,6 @@ export const doc = {
   name: 'Grid — Fixed Columns',
   description: 'Fixed 3-column grid layout with consistent gap spacing.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Grid'],
 };

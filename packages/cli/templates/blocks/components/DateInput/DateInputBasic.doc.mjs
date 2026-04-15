@@ -4,6 +4,6 @@ export const doc = {
   name: 'DateInput — Basic',
   description: 'Simple date input with text entry and calendar popover.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['DateInput'],
 };

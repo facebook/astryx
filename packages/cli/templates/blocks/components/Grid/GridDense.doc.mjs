@@ -4,6 +4,6 @@ export const doc = {
   name: 'Grid — Dense',
   description: 'Dense 6-column grid for compact controls like icon grids or color swatches.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Grid', 'Button'],
 };

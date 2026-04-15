@@ -4,6 +4,6 @@ export const doc = {
   name: 'AppShell — Full Bleed With Padded',
   description: 'Full-bleed layout with a padded details section below.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['AppShell', 'TopNav', 'Heading', 'Text', 'Section'],
 };

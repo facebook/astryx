@@ -4,6 +4,6 @@ export const doc = {
   name: 'ProgressBar — Hidden Label',
   description: 'Progress bar with a visually hidden but accessible label.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 16 / 4,
   componentsUsed: ['ProgressBar'],
 };

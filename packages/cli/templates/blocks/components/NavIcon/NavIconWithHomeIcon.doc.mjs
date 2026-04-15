@@ -4,6 +4,6 @@ export const doc = {
   name: 'NavIcon — With Home Icon',
   description: 'Top navigation heading with a home icon in the NavIcon container.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 16 / 4,
   componentsUsed: ['NavIcon', 'TopNav'],
 };

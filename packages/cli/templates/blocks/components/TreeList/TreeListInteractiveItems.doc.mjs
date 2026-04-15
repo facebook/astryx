@@ -4,6 +4,6 @@ export const doc = {
   name: 'TreeList — Interactive items',
   description: 'Interactive items',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 3 / 4,
   componentsUsed: ['TreeList'],
 };

@@ -4,6 +4,6 @@ export const doc = {
   name: 'Toolbar — Compact density',
   description: 'Compact density',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 16 / 4,
   componentsUsed: ['Toolbar', 'Button'],
 };

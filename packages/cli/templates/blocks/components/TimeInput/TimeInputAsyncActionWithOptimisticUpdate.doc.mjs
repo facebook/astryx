@@ -4,6 +4,6 @@ export const doc = {
   name: 'TimeInput — Async action with optimistic update',
   description: 'Async action with optimistic update',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['TimeInput'],
 };

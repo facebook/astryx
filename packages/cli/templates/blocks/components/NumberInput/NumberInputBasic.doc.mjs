@@ -4,6 +4,6 @@ export const doc = {
   name: 'NumberInput — Basic',
   description: 'Simple number input with a label.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['NumberInput'],
 };

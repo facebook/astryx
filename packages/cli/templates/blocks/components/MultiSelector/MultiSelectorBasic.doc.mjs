@@ -4,6 +4,6 @@ export const doc = {
   name: 'MultiSelector — Basic',
   description: 'Simple multi-select dropdown with string options.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['MultiSelector'],
 };

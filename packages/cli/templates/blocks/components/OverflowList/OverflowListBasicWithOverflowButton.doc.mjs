@@ -4,6 +4,6 @@ export const doc = {
   name: 'OverflowList — Basic With Overflow Button',
   description: 'Horizontal list that shows a "+N more" button when items overflow.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 16 / 4,
   componentsUsed: ['OverflowList', 'Button'],
 };

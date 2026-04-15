@@ -4,6 +4,6 @@ export const doc = {
   name: 'MobileNav — Shared Children With SideNav',
   description: 'Sharing the same navigation sections between a SideNav and MobileNav drawer.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 3 / 4,
   componentsUsed: ['MobileNav', 'SideNav'],
 };

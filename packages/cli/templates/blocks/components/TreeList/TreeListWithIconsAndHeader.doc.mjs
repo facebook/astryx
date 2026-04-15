@@ -4,6 +4,6 @@ export const doc = {
   name: 'TreeList — With icons and header',
   description: 'With icons and header',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 3 / 4,
   componentsUsed: ['TreeList'],
 };

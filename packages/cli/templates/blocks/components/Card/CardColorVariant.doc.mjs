@@ -4,6 +4,6 @@ export const doc = {
   name: 'Card — Color Variant',
   description: 'Card with a non-semantic blue background color.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Card'],
 };

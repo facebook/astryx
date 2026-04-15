@@ -4,6 +4,6 @@ export const doc = {
   name: 'Banner — Dismissable',
   description: 'Error banner with description and self-dismissing behavior.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 16 / 4,
   componentsUsed: ['Banner'],
 };

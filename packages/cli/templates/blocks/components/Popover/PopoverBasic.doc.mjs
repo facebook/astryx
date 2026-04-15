@@ -4,6 +4,6 @@ export const doc = {
   name: 'Popover — Basic',
   description: 'Click-triggered popover anchored below a button trigger.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Popover', 'Button'],
 };

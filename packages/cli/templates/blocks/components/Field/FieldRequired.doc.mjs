@@ -4,6 +4,6 @@ export const doc = {
   name: 'Field — Required',
   description: 'Form field showing a "Required" indicator next to the label.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Field'],
 };

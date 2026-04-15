@@ -4,6 +4,6 @@ export const doc = {
   name: 'Selector — Custom Rendering',
   description: 'Selector with custom item rendering using XDSSelectorItem.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Selector'],
 };

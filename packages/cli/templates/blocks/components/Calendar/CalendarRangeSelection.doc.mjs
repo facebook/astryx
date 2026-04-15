@@ -4,6 +4,6 @@ export const doc = {
   name: 'Calendar — Range Selection',
   description: 'Calendar with date range selection mode.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 3 / 4,
   componentsUsed: ['Calendar'],
 };

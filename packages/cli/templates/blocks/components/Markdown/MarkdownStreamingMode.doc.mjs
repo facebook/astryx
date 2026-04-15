@@ -4,6 +4,6 @@ export const doc = {
   name: 'Markdown — Streaming Mode',
   description: 'Markdown with streaming mode for chunk-by-chunk text delivery with fade-in.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Markdown'],
 };

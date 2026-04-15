@@ -4,6 +4,6 @@ export const doc = {
   name: 'NumberInput — With Min Max Constraints',
   description: 'Number input constrained to a minimum and maximum value range.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['NumberInput'],
 };

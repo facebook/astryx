@@ -4,6 +4,6 @@ export const doc = {
   name: 'Card — Basic With Layout',
   description: 'Card with header, content, and footer using XDSLayout.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Card', 'Layout'],
 };

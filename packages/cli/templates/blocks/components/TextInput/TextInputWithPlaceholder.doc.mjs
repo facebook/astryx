@@ -4,6 +4,6 @@ export const doc = {
   name: 'TextInput — With placeholder',
   description: 'With placeholder',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['TextInput'],
 };

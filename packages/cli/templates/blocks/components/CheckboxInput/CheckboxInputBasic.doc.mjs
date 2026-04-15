@@ -4,6 +4,6 @@ export const doc = {
   name: 'CheckboxInput — Basic',
   description: 'Basic checkbox for toggling a boolean value.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['CheckboxInput'],
 };

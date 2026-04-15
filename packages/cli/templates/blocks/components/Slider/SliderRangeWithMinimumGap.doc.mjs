@@ -4,6 +4,6 @@ export const doc = {
   name: 'Slider — Range with minimum gap',
   description: 'Range with minimum gap',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Slider'],
 };

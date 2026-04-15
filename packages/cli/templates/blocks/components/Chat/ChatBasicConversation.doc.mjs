@@ -4,6 +4,6 @@ export const doc = {
   name: 'Chat — Basic Conversation',
   description: 'Basic conversation with assistant and user messages.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Chat', 'Avatar'],
 };

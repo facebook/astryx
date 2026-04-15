@@ -4,6 +4,6 @@ export const doc = {
   name: 'Chat — System Message With Divider',
   description: 'System message with divider variant for date separators.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Chat'],
 };

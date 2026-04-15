@@ -4,6 +4,6 @@ export const doc = {
   name: 'CheckboxInput — Indeterminate',
   description: 'Checkbox with indeterminate state for select-all patterns.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['CheckboxInput'],
 };

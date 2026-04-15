@@ -4,6 +4,6 @@ export const doc = {
   name: 'MoreMenu — With Sections',
   description: 'Overflow menu with grouped sections for organizing actions.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['MoreMenu'],
 };

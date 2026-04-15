@@ -4,6 +4,6 @@ export const doc = {
   name: 'CheckboxInput — With Error',
   description: 'Checkbox displaying an error validation message.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['CheckboxInput'],
 };

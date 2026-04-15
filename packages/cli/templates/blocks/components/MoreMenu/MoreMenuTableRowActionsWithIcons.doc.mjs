@@ -4,6 +4,6 @@ export const doc = {
   name: 'MoreMenu — Table Row Actions With Icons',
   description: 'Small overflow menu for table row actions with icons and a divider.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['MoreMenu'],
 };

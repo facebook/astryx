@@ -4,6 +4,6 @@ export const doc = {
   name: 'FormLayout — Nested Layouts',
   description: 'Nested form layouts combining horizontal name fields with a vertical email field.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['FormLayout', 'TextInput'],
 };

@@ -4,6 +4,6 @@ export const doc = {
   name: 'ProgressBar — Custom Value Label Formatter',
   description: 'Progress bar with a custom GB value label formatter.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 16 / 4,
   componentsUsed: ['ProgressBar'],
 };

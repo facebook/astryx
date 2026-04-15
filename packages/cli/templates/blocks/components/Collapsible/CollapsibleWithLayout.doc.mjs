@@ -4,6 +4,6 @@ export const doc = {
   name: 'Collapsible — With Layout',
   description: 'Collapsible section with structured Layout content and footer.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Collapsible', 'Card', 'Layout'],
 };

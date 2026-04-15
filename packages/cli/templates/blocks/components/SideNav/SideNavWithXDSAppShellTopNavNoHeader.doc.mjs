@@ -4,6 +4,6 @@ export const doc = {
   name: 'SideNav — With XDSAppShell + TopNav (no header)',
   description: 'With XDSAppShell + TopNav (no header)',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 3 / 4,
   componentsUsed: ['AppShell', 'TopNav', 'TopNavHeading', 'SideNav', 'SideNavSection', 'SideNavItem'],
 };

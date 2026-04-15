@@ -4,6 +4,6 @@ export const doc = {
   name: 'Divider — Strong Variant',
   description: 'Divider with stronger visual weight for emphasis.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 16 / 4,
   componentsUsed: ['Divider'],
 };

@@ -4,6 +4,6 @@ export const doc = {
   name: 'Tokenizer — With max entries and clear all',
   description: 'With max entries and clear all',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Tokenizer'],
 };

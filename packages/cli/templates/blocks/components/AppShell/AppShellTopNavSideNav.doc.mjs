@@ -4,6 +4,6 @@ export const doc = {
   name: 'AppShell — TopNav + SideNav',
   description: 'Most common layout with top navigation bar and side navigation.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['AppShell', 'TopNav', 'SideNav'],
 };

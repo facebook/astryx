@@ -4,6 +4,6 @@ export const doc = {
   name: 'SegmentedControl — Icon Only Compact',
   description: 'Compact icon-only segmented control for toolbar use.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['SegmentedControl', 'Icon'],
 };

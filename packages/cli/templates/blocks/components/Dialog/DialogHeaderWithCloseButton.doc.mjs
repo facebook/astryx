@@ -4,6 +4,6 @@ export const doc = {
   name: 'Dialog — Header With Close Button',
   description: 'Dialog header with title, subtitle, and a close button.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Dialog', 'Layout', 'Button'],
 };

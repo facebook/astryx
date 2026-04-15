@@ -4,6 +4,6 @@ export const doc = {
   name: 'NumberInput — Optional Field',
   description: 'Number input marked as an optional field.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['NumberInput'],
 };

@@ -4,6 +4,6 @@ export const doc = {
   name: 'Card — Simple Content',
   description: 'Card with simple text content and default padding.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Card'],
 };

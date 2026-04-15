@@ -4,6 +4,6 @@ export const doc = {
   name: 'List — Basic',
   description: 'Basic list with label and description for each item.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 3 / 4,
   componentsUsed: ['List'],
 };

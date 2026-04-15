@@ -4,6 +4,6 @@ export const doc = {
   name: 'Slider — With step and marks',
   description: 'With step and marks',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Slider'],
 };

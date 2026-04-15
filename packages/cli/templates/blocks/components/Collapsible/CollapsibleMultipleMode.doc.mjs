@@ -4,6 +4,6 @@ export const doc = {
   name: 'Collapsible — Multiple Mode',
   description: 'Coordinated group where multiple sections can be open simultaneously.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Collapsible', 'Card', 'VStack'],
 };

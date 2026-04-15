@@ -4,6 +4,6 @@ export const doc = {
   name: 'List — With Dividers And Header',
   description: 'List with dividers between items, a header, and start content icons.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 3 / 4,
   componentsUsed: ['List', 'Icon'],
 };

@@ -4,6 +4,6 @@ export const doc = {
   name: 'Dialog — Fullscreen Variant',
   description: 'Full-viewport dialog with header, content, and footer.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Dialog', 'Layout', 'Button'],
 };

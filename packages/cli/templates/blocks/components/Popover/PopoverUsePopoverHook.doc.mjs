@@ -4,6 +4,6 @@ export const doc = {
   name: 'Popover — Use Popover Hook',
   description: 'Popover created with the useXDSPopover hook for custom trigger control.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Popover'],
 };

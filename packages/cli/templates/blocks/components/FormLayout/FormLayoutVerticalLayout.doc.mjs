@@ -4,6 +4,6 @@ export const doc = {
   name: 'FormLayout — Vertical Layout',
   description: 'Default vertical form layout stacking fields top-to-bottom.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['FormLayout', 'TextInput'],
 };

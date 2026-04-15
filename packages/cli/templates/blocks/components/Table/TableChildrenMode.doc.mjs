@@ -4,6 +4,6 @@ export const doc = {
   name: 'Table — Children mode',
   description: 'Children mode',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Table', 'TableRow', 'TableCell', 'HStack', 'Avatar', 'Text', 'Badge'],
 };

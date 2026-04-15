@@ -4,6 +4,6 @@ export const doc = {
   name: 'EmptyState — Compact Variant',
   description: 'Compact empty state with reduced spacing for constrained areas.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['EmptyState'],
 };

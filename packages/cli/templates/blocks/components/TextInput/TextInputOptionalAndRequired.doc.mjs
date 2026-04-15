@@ -4,6 +4,6 @@ export const doc = {
   name: 'TextInput — Optional and required',
   description: 'Optional and required',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['TextInput'],
 };

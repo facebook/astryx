@@ -4,6 +4,6 @@ export const doc = {
   name: 'Table — Selection plugin',
   description: 'Selection plugin',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['TableSelectionState', 'TableSelection', 'Table'],
 };

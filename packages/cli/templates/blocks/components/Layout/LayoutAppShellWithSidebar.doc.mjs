@@ -4,6 +4,6 @@ export const doc = {
   name: 'Layout — App Shell With Sidebar',
   description: 'App shell layout with a navigation sidebar panel.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Layout'],
 };

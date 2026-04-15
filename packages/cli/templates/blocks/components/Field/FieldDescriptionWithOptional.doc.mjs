@@ -4,6 +4,6 @@ export const doc = {
   name: 'Field — Description With Optional',
   description: 'Optional field with description text and bullet separator indicator.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Field'],
 };

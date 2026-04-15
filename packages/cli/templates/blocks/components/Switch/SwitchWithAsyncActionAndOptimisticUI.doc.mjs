@@ -4,6 +4,6 @@ export const doc = {
   name: 'Switch — With async action and optimistic UI',
   description: 'With async action and optimistic UI',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Switch'],
 };

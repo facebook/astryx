@@ -4,6 +4,6 @@ export const doc = {
   name: 'AppShell — Padded With Full Bleed',
   description: 'Padded layout with a full-bleed chart section using XDSSection padding override.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['AppShell', 'TopNav', 'Heading', 'Section', 'Card'],
 };

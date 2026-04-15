@@ -4,6 +4,6 @@ export const doc = {
   name: 'TimeInput — With seconds and error status',
   description: 'With seconds and error status',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['TimeInput'],
 };

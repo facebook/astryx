@@ -4,6 +4,6 @@ export const doc = {
   name: 'Markdown — Basic Usage',
   description: 'Renders a markdown string with heading, bold, italic, and list.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Markdown'],
 };

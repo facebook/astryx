@@ -4,6 +4,6 @@ export const doc = {
   name: 'Section — Full Bleed',
   description: 'Section with zero padding for edge-to-edge content.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Section', 'Layout'],
 };

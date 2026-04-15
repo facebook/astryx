@@ -4,6 +4,6 @@ export const doc = {
   name: 'AppShell — Responsive MobileNav',
   description: 'Responsive layout with SideNav for desktop and MobileNav drawer for mobile.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['AppShell', 'TopNav', 'SideNav', 'MobileNav', 'Button'],
 };

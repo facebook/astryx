@@ -4,6 +4,6 @@ export const doc = {
   name: 'MobileNav — Responsive Sidebar Drawer Pattern',
   description: 'Responsive pattern that renders a SideNav on desktop and a MobileNav drawer on mobile.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 3 / 4,
   componentsUsed: ['MobileNav', 'SideNav', 'Button'],
 };

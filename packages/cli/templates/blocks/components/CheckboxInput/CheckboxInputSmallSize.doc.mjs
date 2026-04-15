@@ -4,6 +4,6 @@ export const doc = {
   name: 'CheckboxInput — Small Size',
   description: 'Compact checkbox using the sm size variant.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['CheckboxInput'],
 };

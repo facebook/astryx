@@ -4,6 +4,6 @@ export const doc = {
   name: 'Typeahead — Basic typeahead',
   description: 'Basic typeahead',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Typeahead'],
 };

@@ -4,6 +4,6 @@ export const doc = {
   name: 'TextArea — With character counter',
   description: 'With character counter',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['TextArea'],
 };

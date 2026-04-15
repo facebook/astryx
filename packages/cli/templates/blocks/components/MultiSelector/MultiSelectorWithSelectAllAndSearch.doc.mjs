@@ -4,6 +4,6 @@ export const doc = {
   name: 'MultiSelector — With Select All And Search',
   description: 'Multi-select dropdown with select-all checkbox and search filtering.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['MultiSelector'],
 };

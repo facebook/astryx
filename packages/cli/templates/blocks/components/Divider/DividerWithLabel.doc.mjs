@@ -4,6 +4,6 @@ export const doc = {
   name: 'Divider — With Label',
   description: 'Divider with a centered text label.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 16 / 4,
   componentsUsed: ['Divider'],
 };

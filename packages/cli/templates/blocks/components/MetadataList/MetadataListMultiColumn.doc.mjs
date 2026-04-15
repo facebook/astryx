@@ -4,6 +4,6 @@ export const doc = {
   name: 'MetadataList — Multi Column',
   description: 'Metadata list using auto-fill multi-column layout.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['MetadataList'],
 };

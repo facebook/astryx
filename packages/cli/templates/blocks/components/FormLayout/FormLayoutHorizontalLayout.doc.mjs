@@ -4,6 +4,6 @@ export const doc = {
   name: 'FormLayout — Horizontal Layout',
   description: 'Horizontal form layout arranging related fields side-by-side.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['FormLayout', 'TextInput'],
 };

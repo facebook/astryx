@@ -4,6 +4,6 @@ export const doc = {
   name: 'Table — Basic data-driven table',
   description: 'Basic data-driven table',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Table', 'HStack', 'Avatar', 'VStack', 'Text', 'StatusDot', 'Badge'],
 };

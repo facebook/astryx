@@ -4,6 +4,6 @@ export const doc = {
   name: 'AppShell — Controlled Collapse',
   description: 'AppShell with externally controlled side navigation collapse state.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['AppShell', 'TopNav', 'SideNav'],
 };

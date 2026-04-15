@@ -4,6 +4,6 @@ export const doc = {
   name: 'Field — Hidden Label',
   description: 'Form field with a visually hidden label accessible to screen readers.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Field'],
 };

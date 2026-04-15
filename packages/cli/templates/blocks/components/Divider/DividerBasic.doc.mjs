@@ -4,6 +4,6 @@ export const doc = {
   name: 'Divider — Basic',
   description: 'A simple horizontal divider line.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 16 / 4,
   componentsUsed: ['Divider'],
 };

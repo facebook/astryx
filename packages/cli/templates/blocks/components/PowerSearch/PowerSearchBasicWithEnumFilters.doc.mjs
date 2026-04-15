@@ -4,6 +4,6 @@ export const doc = {
   name: 'PowerSearch — Basic With Enum Filters',
   description: 'Structured filter bar with enum and string field types.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['PowerSearch'],
 };

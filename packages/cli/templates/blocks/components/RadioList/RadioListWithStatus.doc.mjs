@@ -4,6 +4,6 @@ export const doc = {
   name: 'RadioList — With Status',
   description: 'Required radio group with an error validation status message.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['RadioList'],
 };

@@ -4,6 +4,6 @@ export const doc = {
   name: 'Dialog — Basic With Layout',
   description: 'Modal dialog with header, content, and footer action buttons.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Dialog', 'Layout', 'Button'],
 };
