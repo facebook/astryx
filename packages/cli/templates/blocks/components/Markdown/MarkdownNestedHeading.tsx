@@ -9,3 +9,8 @@ export default function MarkdownNestedHeading() {
     </XDSMarkdown>
   );
 }
+
+export const showcase = {
+  aspectRatio: 4 / 3,
+  render: MarkdownNestedHeading,
+};

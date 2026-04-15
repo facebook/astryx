@@ -26,3 +26,8 @@ export default function MarkdownStreamingMode() {
 
   return <XDSMarkdown isStreaming={isStreaming}>{text}</XDSMarkdown>;
 }
+
+export const showcase = {
+  aspectRatio: 4 / 3,
+  render: MarkdownStreamingMode,
+};

@@ -9,3 +9,8 @@ export default function MarkdownBasicUsage() {
     </XDSMarkdown>
   );
 }
+
+export const showcase = {
+  aspectRatio: 4 / 3,
+  render: MarkdownBasicUsage,
+};
