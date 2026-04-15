@@ -18,6 +18,8 @@ export {
   ArrowUpTrayIcon as ShareIcon,
   ArrowDownTrayIcon as DownloadIcon,
   ArrowTopRightOnSquareIcon as ExternalLinkIcon,
+  ArrowUpOnSquareIcon as ShareOutIcon,
+  MoonIcon,
   ArrowsPointingOutIcon as FullscreenIcon,
   Bars3Icon as HamburgerIcon,
   CodeBracketIcon as CodeIcon,
