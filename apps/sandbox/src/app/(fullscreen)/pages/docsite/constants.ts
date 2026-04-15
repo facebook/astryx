@@ -184,7 +184,7 @@ export const TEMPLATES: {
   {name: 'Contact Form', src: FIRST_CARD_IMAGE, size: 'large'},
   {name: 'Shopping Details', src: SHOPPING_DETAILS_IMAGE, size: 'small'},
   {name: 'Button Component', src: SCREENSHOT_3_IMAGE, size: 'small'},
-  {name: 'Settings Page', src: '/templates/card4-preview.png', size: 'small'},
+  {name: 'Settings Page', src: `${basePath}/templates/card4-preview.png`, size: 'small'},
   {name: 'Login Form', src: DUMMY_IMAGE, size: 'xlarge'},
   {name: 'Dashboard', src: DUMMY_IMAGE, size: 'large'},
   {name: 'Data Table', src: DUMMY_IMAGE, size: 'small'},
