@@ -29,3 +29,8 @@ export default function StackPageLayout() {
     </XDSVStack>
   );
 }
+
+export const showcase = {
+  aspectRatio: 1,
+  render: StackPageLayout,
+};

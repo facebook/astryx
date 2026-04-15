@@ -22,3 +22,8 @@ export default function StackSidebarLayout() {
     </XDSHStack>
   );
 }
+
+export const showcase = {
+  aspectRatio: 1,
+  render: StackSidebarLayout,
+};
