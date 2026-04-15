@@ -154,16 +154,18 @@ function StarRating({rating, count}: {rating: number; count: number}) {
 
 // ─── Image URLs ─────────────────────────────────────────────────────────────
 // Light product photography from the xds_oss asset set (ceramics collection)
+// Asset Manager CDN: https://www.internalfb.com/assets/set/xds_oss/{name}/mode_light
 // IMAGES[0] = fallback hero; IMAGES[1..6] = thumbnails (first is selected by default)
-const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+const asset = (name: string) =>
+  `https://www.internalfb.com/assets/set/xds_oss/${name}/mode_light?mode=light`;
 const IMAGES = [
-  `${basePath}/templates/light-product-1.png`,
-  `${basePath}/templates/light-product-1.png`,
-  `${basePath}/templates/light-product-2.png`,
-  `${basePath}/templates/light-product-3.png`,
-  `${basePath}/templates/light-product-4.png`,
-  `${basePath}/templates/light-product-5.png`,
-  `${basePath}/templates/light-product-2.png`,
+  asset('light-product-1'),
+  asset('light-product-1'),
+  asset('light-product-2'),
+  asset('light-product-3'),
+  asset('light-product-4'),
+  asset('light-product-5'),
+  asset('light-product-2'),
 ];
 
 // ─── Product Data ───────────────────────────────────────────────────────────
