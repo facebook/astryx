@@ -6,7 +6,6 @@ import {XDSVStack} from '@xds/core/Layout';
 import {XDSCenter} from '@xds/core/Center';
 import {XDSText} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
-import {XDSCard} from '@xds/core/Card';
 import {XDSAspectRatio} from '@xds/core/AspectRatio';
 
 
@@ -130,7 +129,7 @@ const GALLERY_ITEMS: GalleryItem[] = [
 
 function GalleryItemCard({item}: {item: GalleryItem}) {
   return (
-    <XDSCard padding={0} style={{breakInside: 'avoid', marginBottom: 16}}>
+    <div style={{breakInside: 'avoid', marginBottom: 16}}>
       <XDSAspectRatio ratio={item.ratio}>
         <img
           src={item.src}
@@ -139,14 +138,11 @@ function GalleryItemCard({item}: {item: GalleryItem}) {
             width: '100%',
             height: '100%',
             objectFit: 'cover',
+            borderRadius: 'var(--radius-element, 8px)',
           }}
         />
       </XDSAspectRatio>
-      <XDSVStack gap={0.5} style={{padding: '12px 16px 16px'}}>
-        <XDSText type="label">{item.title}</XDSText>
-        <XDSText type="supporting">{item.photographer}</XDSText>
-      </XDSVStack>
-    </XDSCard>
+    </div>
   );
 }
 
