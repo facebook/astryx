@@ -33,3 +33,8 @@ export default function ProgressBarComposedWithStatusIcon() {
     </XDSLayout>
   );
 }
+
+export const showcase = {
+  aspectRatio: 16 / 4,
+  render: ProgressBarComposedWithStatusIcon,
+};
