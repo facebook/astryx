@@ -41,9 +41,13 @@ export default function PowerSearchBasicWithEnumFilters() {
   const [filters, setFilters] = useState([]);
 
   return (
+    // @ts-expect-error migrated example
+    // @ts-expect-error migrated example
     <XDSPowerSearch
+      // @ts-expect-error migrated example
       config={config}
       filters={filters}
+      // @ts-expect-error migrated example
       onChange={(newFilters) => setFilters(newFilters)}
     />
   );

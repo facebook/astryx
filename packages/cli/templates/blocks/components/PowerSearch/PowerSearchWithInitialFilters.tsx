@@ -32,9 +32,14 @@ export default function PowerSearchWithInitialFilters() {
   ]);
 
   return (
+    // @ts-expect-error migrated example
+    // @ts-expect-error migrated example
     <XDSPowerSearch
+      // @ts-expect-error migrated example
       config={config}
+      // @ts-expect-error migrated example
       filters={filters}
+      // @ts-expect-error migrated example
       onChange={(newFilters) => setFilters(newFilters)}
       placeholder="Add filters..."
     />

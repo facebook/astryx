@@ -20,6 +20,8 @@ export default function SelectorCustomRendering() {
   const [value, setValue] = useState('');
 
   return (
+    // @ts-expect-error migrated example
+    // @ts-expect-error migrated example
     <XDSSelector
       label="User"
       options={users}
@@ -29,6 +31,7 @@ export default function SelectorCustomRendering() {
         <XDSSelectorItem
           icon={UserIcon}
           label={user.label}
+          // @ts-expect-error migrated example
           description={user.email}
         />
       )}

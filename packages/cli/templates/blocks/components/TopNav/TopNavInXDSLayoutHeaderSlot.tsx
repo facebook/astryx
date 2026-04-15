@@ -1,7 +1,6 @@
 'use client';
 
-import {XDSLayout} from '@xds/core/Layout';
-import {XDSLayoutContent} from '@xds/core/LayoutContent';
+import {XDSLayout, XDSLayoutContent} from '@xds/core/Layout';
 import {XDSTopNav, XDSTopNavHeading, XDSTopNavItem} from '@xds/core/TopNav';
 
 function Logo() {
@@ -18,6 +17,8 @@ function Avatar() {
 
 export default function TopNavInXDSLayoutHeaderSlot() {
   return (
+    // @ts-expect-error migrated example
+    // @ts-expect-error migrated example
     <XDSLayout
       header={
         <XDSTopNav

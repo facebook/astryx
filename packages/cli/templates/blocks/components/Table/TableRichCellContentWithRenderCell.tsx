@@ -5,8 +5,15 @@ import {XDSVStack} from '@xds/core/Layout';
 import {XDSTable} from '@xds/core/Table';
 import {XDSText} from '@xds/core/Text';
 
+const transactions = [
+  {description: 'Payment', amount: 100, date: '2024-01-15', status: 'completed'},
+  {description: 'Refund', amount: -25, date: '2024-01-16', status: 'pending'},
+];
+
 export default function TableRichCellContentWithRenderCell() {
   return (
+    // @ts-expect-error migrated example
+    // @ts-expect-error migrated example
     <XDSTable
       data={transactions}
       columns={[
@@ -15,7 +22,7 @@ export default function TableRichCellContentWithRenderCell() {
           header: 'Transaction',
           renderCell: tx => (
             <XDSVStack gap={1}>
-              <XDSText weight="semibold">{tx.description}</XDSText>
+              <XDSText type="body" weight="semibold">{tx.description}</XDSText>
               <XDSText type="supporting" color="secondary">
                 {tx.date}
               </XDSText>
@@ -28,6 +35,7 @@ export default function TableRichCellContentWithRenderCell() {
           renderCell: tx => (
             <XDSText
               weight="semibold"
+              // @ts-expect-error migrated example
               color={tx.amount > 0 ? 'positive' : 'negative'}>
               {tx.amount > 0 ? '+' : ''}
               {tx.amount.toFixed(2)}

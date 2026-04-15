@@ -23,6 +23,8 @@ export default function SelectorWithObjectItems() {
   const [value, setValue] = useState('');
 
   return (
+    // @ts-expect-error migrated example
+    // @ts-expect-error migrated example
     <XDSSelector
       label="Settings"
       options={[

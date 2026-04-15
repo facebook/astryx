@@ -4,7 +4,7 @@ import {useState} from 'react';
 import {XDSSlider} from '@xds/core/Slider';
 
 export default function SliderWithCustomFormatting() {
-  const [temp, setTemp] = useState('');
+  const [temp, setTemp] = useState(72);
 
   return (
     <XDSSlider

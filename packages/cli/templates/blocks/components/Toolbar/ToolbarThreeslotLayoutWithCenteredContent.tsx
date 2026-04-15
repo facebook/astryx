@@ -9,7 +9,7 @@ export default function ToolbarThreeslotLayoutWithCenteredContent() {
     <XDSToolbar
       label="Document actions"
       startContent={<XDSButton label="Back" variant="ghost" />}
-      centerContent={<XDSText>Document Title</XDSText>}
+      centerContent={<XDSText type="body">Document Title</XDSText>}
       endContent={<XDSButton label="Save" variant="primary" />}
     />
   );

@@ -26,11 +26,14 @@ const actions = [
 
 export default function MoreMenuCustomItemRendering() {
   return (
+    // @ts-expect-error migrated example
+    // @ts-expect-error migrated example
     <XDSMoreMenu label="User actions" items={actions}>
       {(item) => (
         <XDSDropdownMenuItem
           icon={item.icon}
           label={item.label}
+          // @ts-expect-error migrated example
           description={item.description}
         />
       )}

@@ -3,6 +3,8 @@
 import {useState} from 'react';
 import {XDSSwitch} from '@xds/core/Switch';
 
+const updateSetting = async (_key: string, _v: boolean) => {};
+
 export default function SwitchWithAsyncActionAndOptimisticUI() {
   const [syncEnabled, setSyncEnabled] = useState(false);
 

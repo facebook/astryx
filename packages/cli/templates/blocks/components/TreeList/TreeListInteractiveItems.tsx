@@ -2,6 +2,8 @@
 
 import {XDSTreeList} from '@xds/core/TreeList';
 
+const navigate = (path: string) => console.log(path);
+
 export default function TreeListInteractiveItems() {
   return (
     <XDSTreeList

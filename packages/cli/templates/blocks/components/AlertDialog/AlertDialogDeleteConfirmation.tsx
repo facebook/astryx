@@ -10,7 +10,7 @@ export default function AlertDialogDeleteConfirmation() {
     <>
       <XDSButton
         label="Delete"
-        variant="danger"
+        variant="destructive"
         onClick={() => setIsOpen(true)}
       />
       <XDSAlertDialog

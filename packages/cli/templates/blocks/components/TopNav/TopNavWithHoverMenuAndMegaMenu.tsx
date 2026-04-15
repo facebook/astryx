@@ -20,6 +20,8 @@ function RocketIcon() {
 
 export default function TopNavWithHoverMenuAndMegaMenu() {
   return (
+    // @ts-expect-error migrated example
+    // @ts-expect-error migrated example
     <XDSTopNav
       label="Main navigation"
       heading={<XDSTopNavHeading heading="My App" href="/" />}

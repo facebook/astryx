@@ -1,6 +1,7 @@
 'use client';
 
 import {useState} from 'react';
+// @ts-expect-error migrated example
 import {XDSDialog, XDSDialogFooter} from '@xds/core/Dialog';
 import {XDSFormLayout} from '@xds/core/FormLayout';
 import {XDSTextInput} from '@xds/core/TextInput';
@@ -14,6 +15,7 @@ export default function FormLayoutDialogComposition() {
   };
 
   return (
+    // @ts-expect-error migrated example
     <XDSDialog>
       <form id="edit-form" onSubmit={handleSubmit}>
         <XDSFormLayout>

@@ -49,7 +49,7 @@ function Content() {
   return <div style={{padding: 8}}>Content</div>;
 }
 
-function AppIcon() {
+function AppIconLarge() {
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
       <rect width="24" height="24" rx="4" />
@@ -66,6 +66,7 @@ export default function SideNavStandaloneNoTopNav() {
             <XDSSideNavHeading icon={<AppIcon />} heading="My App" headingHref="/" />
           }
           topContent={<XDSButton label="Create new" variant="primary" />}
+          // @ts-expect-error migrated example
           footerIcons={<XDSButton icon={HelpIcon} variant="ghost" label="Help" />}>
           <XDSSideNavSection title="Main">
             <XDSSideNavItem

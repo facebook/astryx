@@ -2,7 +2,7 @@
 
 import {XDSCollapsible, XDSCollapsibleGroup} from '@xds/core/Collapsible';
 import {XDSCard} from '@xds/core/Card';
-import {XDSVStack} from '@xds/core/VStack';
+import {XDSVStack} from '@xds/core/Stack';
 
 export default function CollapsibleMultipleMode() {
   return (

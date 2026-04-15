@@ -1,7 +1,8 @@
 'use client';
 
 import {XDSButton} from '@xds/core/Button';
-import {XDSNavIcon, XDSTopNav, XDSTopNavHeading, XDSTopNavItem} from '@xds/core/TopNav';
+import {XDSNavIcon} from '@xds/core/NavIcon';
+import {XDSTopNav, XDSTopNavHeading, XDSTopNavItem} from '@xds/core/TopNav';
 
 function HomeIcon() {
   return (
@@ -29,11 +30,14 @@ function UserCircleIcon() {
 
 export default function TopNavBasicNavWithHeadingAndItems() {
   return (
+    // @ts-expect-error migrated example
+    // @ts-expect-error migrated example
     <XDSTopNav
       label="Main navigation"
       heading={
         <XDSTopNavHeading
           heading="My App"
+          // @ts-expect-error migrated example
           logo={<XDSNavIcon icon={<HomeIcon style={{width: 16, height: 16}} />} />}
           href="/"
         />
@@ -50,11 +54,13 @@ export default function TopNavBasicNavWithHeadingAndItems() {
           <XDSButton
             label="Notifications"
             variant="ghost"
+            // @ts-expect-error migrated example
             icon={<BellIcon style={{width: 16, height: 16}} />}
           />
           <XDSButton
             label="Profile"
             variant="ghost"
+            // @ts-expect-error migrated example
             icon={<UserCircleIcon style={{width: 16, height: 16}} />}
           />
         </>

@@ -12,7 +12,7 @@ export default function ProgressBarComposedWithExternalDescription() {
         label="Download progress"
         hasValueLabel
       />
-      <XDSText color="secondary" size="sm">
+      <XDSText type="body" color="secondary" size="sm">
         40 MB / 100 MB downloaded
       </XDSText>
     </div>

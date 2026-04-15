@@ -3,6 +3,8 @@
 import {useState} from 'react';
 import {XDSSlider} from '@xds/core/Slider';
 
+const commitBrightness = (_v: number) => {};
+
 export default function SliderWithOnChangeEndForCommittingValue() {
   const [brightness, setBrightness] = useState(50);
 

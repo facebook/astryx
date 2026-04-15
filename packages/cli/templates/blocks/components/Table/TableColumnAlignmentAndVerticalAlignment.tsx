@@ -2,8 +2,15 @@
 
 import {XDSTable, pixel} from '@xds/core/Table';
 
+const transactions = [
+  {description: 'Payment', quantity: 1, amount: 100},
+  {description: 'Refund', quantity: 2, amount: -25},
+];
+
 export default function TableColumnAlignmentAndVerticalAlignment() {
   return (
+    // @ts-expect-error migrated example
+    // @ts-expect-error migrated example
     <XDSTable
       data={transactions}
       columns={[

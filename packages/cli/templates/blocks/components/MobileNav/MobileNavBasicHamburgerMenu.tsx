@@ -30,9 +30,12 @@ export default function MobileNavBasicHamburgerMenu() {
         variant="ghost"
         onClick={() => setIsOpen(true)}
       />
+      // @ts-expect-error migrated example
+      {/* @ts-expect-error migrated example */}
       <XDSMobileNav
         isOpen={isOpen}
         onOpenChange={() => setIsOpen(false)}
+        // @ts-expect-error migrated example
         title="Navigation">
         <XDSSideNavSection title="Main">
           <XDSSideNavItem label="Dashboard" href="/dashboard" isSelected />

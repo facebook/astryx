@@ -4,7 +4,7 @@ import {useState} from 'react';
 import {XDSSlider} from '@xds/core/Slider';
 
 export default function SliderWithStepAndMarks() {
-  const [rating, setRating] = useState('');
+  const [rating, setRating] = useState(3);
 
   return (
     <XDSSlider

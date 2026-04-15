@@ -3,6 +3,8 @@
 import {useState} from 'react';
 import {XDSTextInput} from '@xds/core/TextInput';
 
+const checkAvailability = async (_value: string) => true;
+
 export default function TextInputAsyncActionWithLoadingState() {
   const [username, setUsername] = useState('');
 

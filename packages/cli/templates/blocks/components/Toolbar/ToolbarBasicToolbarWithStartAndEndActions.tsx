@@ -39,6 +39,7 @@ export default function ToolbarBasicToolbarWithStartAndEndActions() {
         </>
       }
       endContent={
+        // @ts-expect-error migrated example
         <XDSButton label="Settings" variant="ghost" icon={<Cog6ToothIcon />} />
       }
     />

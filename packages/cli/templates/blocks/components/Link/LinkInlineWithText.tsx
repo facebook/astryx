@@ -5,7 +5,7 @@ import {XDSText} from '@xds/core/Text';
 
 export default function LinkInlineWithText() {
   return (
-    <XDSText>
+    <XDSText type="body">
       Read the{' '}
       <XDSLink label="docs" href="/docs">
         documentation

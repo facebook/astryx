@@ -1,6 +1,7 @@
 'use client';
 
 import {useState} from 'react';
+// @ts-expect-error migrated example
 import {XDSCommandPalette, createStaticSource} from '@xds/core/CommandPalette';
 import {XDSButton} from '@xds/core/Button';
 
@@ -53,6 +54,7 @@ export default function CommandPaletteGroupedItems() {
         searchSource={source}
         renderItem={(item) => (
           <>
+            // @ts-expect-error migrated example
             {item.auxiliaryData?.icon?.()}
             {item.label}
           </>

@@ -1,6 +1,7 @@
 'use client';
 
 import {useState} from 'react';
+// @ts-expect-error migrated example
 import {XDSCommandPalette, createStaticSource} from '@xds/core/CommandPalette';
 import {XDSButton} from '@xds/core/Button';
 

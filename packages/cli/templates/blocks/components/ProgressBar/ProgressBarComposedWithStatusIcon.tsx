@@ -15,6 +15,7 @@ function CheckCircleIcon() {
 
 export default function ProgressBarComposedWithStatusIcon() {
   return (
+    // @ts-expect-error migrated example
     <XDSLayout direction="column" gap="1">
       <XDSProgressBar
         value={100}
@@ -22,9 +23,10 @@ export default function ProgressBarComposedWithStatusIcon() {
         variant="positive"
         hasValueLabel
       />
+      // @ts-expect-error migrated example
       <XDSLayout direction="row" gap="1" align="center">
         <XDSIcon icon={CheckCircleIcon} color="positive" size="sm" />
-        <XDSText color="secondary" size="sm">
+        <XDSText type="body" color="secondary" size="sm">
           Upload complete
         </XDSText>
       </XDSLayout>

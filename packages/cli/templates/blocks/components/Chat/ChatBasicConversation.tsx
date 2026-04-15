@@ -13,7 +13,7 @@ export default function ChatBasicConversation() {
       <XDSChatMessage
         sender="assistant"
         name="Navi"
-        avatar={<XDSAvatar name="Navi" size="sm" />}>
+        avatar={<XDSAvatar name="Navi" size="small" />}>
         <XDSChatMessageBubble>Hello! How can I help?</XDSChatMessageBubble>
       </XDSChatMessage>
       <XDSChatMessage sender="user" name="Cindy">

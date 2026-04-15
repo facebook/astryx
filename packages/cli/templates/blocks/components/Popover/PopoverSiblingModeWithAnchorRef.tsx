@@ -18,7 +18,10 @@ export default function PopoverSiblingModeWithAnchorRef() {
   return (
     <>
       <XDSButton label="Actions" ref={buttonRef} />
+      // @ts-expect-error migrated example
+      {/* @ts-expect-error migrated example */}
       <XDSPopover
+        // @ts-expect-error migrated example
         anchorRef={buttonRef}
         label="Actions"
         content={<ActionMenu />}

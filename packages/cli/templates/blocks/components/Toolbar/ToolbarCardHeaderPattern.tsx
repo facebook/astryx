@@ -19,7 +19,7 @@ export default function ToolbarCardHeaderPattern() {
     <XDSCard>
       <XDSToolbar
         label="Card actions"
-        startContent={<XDSText weight="bold">Users</XDSText>}
+        startContent={<XDSText type="body" weight="bold">Users</XDSText>}
         endContent={
           <>
             <XDSButton label="Filter" variant="ghost" icon={<FunnelIcon />} />

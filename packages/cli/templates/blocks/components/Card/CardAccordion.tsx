@@ -2,7 +2,7 @@
 
 import {XDSCard} from '@xds/core/Card';
 import {XDSCollapsible, XDSCollapsibleGroup} from '@xds/core/Collapsible';
-import {XDSVStack} from '@xds/core/VStack';
+import {XDSVStack} from '@xds/core/Stack';
 
 export default function CardAccordion() {
   return (

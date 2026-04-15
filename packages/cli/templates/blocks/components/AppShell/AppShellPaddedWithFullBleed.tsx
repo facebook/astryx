@@ -2,7 +2,7 @@
 
 import {XDSAppShell} from '@xds/core/AppShell';
 import {XDSTopNav, XDSTopNavHeading} from '@xds/core/TopNav';
-import {XDSHeading} from '@xds/core/Heading';
+import {XDSHeading} from '@xds/core/Text';
 import {XDSSection} from '@xds/core/Section';
 import {XDSCard} from '@xds/core/Card';
 

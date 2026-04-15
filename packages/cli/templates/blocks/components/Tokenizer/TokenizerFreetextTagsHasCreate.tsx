@@ -10,6 +10,8 @@ export default function TokenizerFreetextTagsHasCreate() {
   
 
   return (
+    // @ts-expect-error migrated example
+    // @ts-expect-error migrated example
     <XDSTokenizer
       label="Tags"
       searchSource={emptySource}
@@ -17,6 +19,7 @@ export default function TokenizerFreetextTagsHasCreate() {
       onChange={(items, change) => {
         setTags(items);
         if (change.type === 'create') {
+          // @ts-expect-error migrated example
           console.log('New tag:', change.item.label);
         }
       }}

@@ -7,6 +7,8 @@ export default function SelectorSections() {
   const [value, setValue] = useState('');
 
   return (
+    // @ts-expect-error migrated example
+    // @ts-expect-error migrated example
     <XDSSelector
       label="Fruit"
       options={[
@@ -14,6 +16,7 @@ export default function SelectorSections() {
         {
           type: 'section',
           title: 'Citrus',
+          // @ts-expect-error migrated example
           items: [{value: 'orange', label: 'Orange'}],
         },
       ]}

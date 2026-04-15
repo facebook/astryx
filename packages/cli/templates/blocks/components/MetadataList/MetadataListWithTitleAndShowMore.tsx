@@ -1,11 +1,12 @@
 'use client';
 
 import {XDSMetadataList, XDSMetadataListItem} from '@xds/core/MetadataList';
-import {XDSHeading} from '@xds/core/Heading';
+import {XDSHeading} from '@xds/core/Text';
 
 export default function MetadataListWithTitleAndShowMore() {
   return (
     <XDSMetadataList
+      // @ts-expect-error migrated example
       title={<XDSHeading type="header4">Details</XDSHeading>}
       maxNumOfItems={3}>
       <XDSMetadataListItem label="Name">Value</XDSMetadataListItem>

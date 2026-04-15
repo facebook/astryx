@@ -2,7 +2,7 @@
 
 import {XDSAppShell} from '@xds/core/AppShell';
 import {XDSTopNav, XDSTopNavHeading} from '@xds/core/TopNav';
-import {XDSHeading} from '@xds/core/Heading';
+import {XDSHeading} from '@xds/core/Text';
 import {XDSText} from '@xds/core/Text';
 import {XDSSection} from '@xds/core/Section';
 
@@ -29,7 +29,7 @@ export default function AppShellFullBleedWithPadded() {
       </div>
       <XDSSection padding={4}>
         <XDSHeading level={1}>Video Title</XDSHeading>
-        <XDSText>Video description</XDSText>
+        <XDSText type="body">Video description</XDSText>
       </XDSSection>
     </XDSAppShell>
   );

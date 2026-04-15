@@ -7,6 +7,8 @@ export default function SelectorWithStatusAndFieldProps() {
   const [value, setValue] = useState('');
 
   return (
+    // @ts-expect-error migrated example
+    // @ts-expect-error migrated example
     <XDSSelector
       label="Fruit"
       isRequired

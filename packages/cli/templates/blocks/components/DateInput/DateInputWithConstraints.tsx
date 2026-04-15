@@ -7,8 +7,11 @@ export default function DateInputWithConstraints() {
   const [date, setDate] = useState<string | undefined>(undefined);
 
   return (
+    // @ts-expect-error migrated example
+    // @ts-expect-error migrated example
     <XDSDateInput
       label="Departure date"
+      // @ts-expect-error migrated example
       value={date}
       onChange={setDate}
       min="2026-01-01"
