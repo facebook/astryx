@@ -19,3 +19,8 @@ export default function SelectorWithStatusAndFieldProps() {
     />
   );
 }
+
+export const showcase = {
+  aspectRatio: 4 / 3,
+  render: SelectorWithStatusAndFieldProps,
+};

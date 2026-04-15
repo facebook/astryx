@@ -17,3 +17,8 @@ export default function SelectorBasic() {
     />
   );
 }
+
+export const showcase = {
+  aspectRatio: 4 / 3,
+  render: SelectorBasic,
+};
