@@ -14,94 +14,6 @@ export const docs = {
     'Custom positioning: Static position support via the position prop',
     'Accessible: Proper ARIA attributes and keyboard navigation',
   ],
-  examples: [
-    {
-      label: 'Basic dialog with Layout',
-      code: `import {XDSDialog} from '@xds/core/Dialog';
-import {
-  XDSLayout,
-  XDSLayoutHeader,
-  XDSLayoutContent,
-  XDSLayoutFooter,
-} from '@xds/core/Layout';
-import {XDSButton} from '@xds/core/Button';
-import {useState} from 'react';
-
-function Example() {
-  const [isOpen, setIsOpen] = useState(false);
-
-  return (
-    <>
-      <XDSButton label="Open Dialog" onClick={() => setIsOpen(true)} />
-
-      <XDSDialog isOpen={isOpen} onOpenChange={open => setIsOpen(open)}>
-        <XDSLayout
-          header={<XDSLayoutHeader hasDivider>Title</XDSLayoutHeader>}
-          content={<XDSLayoutContent>Content goes here</XDSLayoutContent>}
-          footer={
-            <XDSLayoutFooter hasDivider>
-              <XDSButton
-                label="Cancel"
-                variant="secondary"
-                onClick={() => setIsOpen(false)}
-              />
-              <XDSButton
-                label="Confirm"
-                variant="primary"
-                onClick={() => setIsOpen(false)}
-              />
-            </XDSLayoutFooter>
-          }
-        />
-      </XDSDialog>
-    </>
-  );
-}`,
-    },
-    {
-      label: 'Static position',
-      code: `<XDSDialog
-  isOpen={isOpen}
-  onOpenChange={open => setIsOpen(open)}
-  position={{top: 100, right: 20}}>
-  {/* content */}
-</XDSDialog>`,
-    },
-    {
-      label: 'Fullscreen variant',
-      code: `<XDSDialog
-  isOpen={isOpen}
-  onOpenChange={open => setIsOpen(open)}
-  variant="fullscreen">
-  <XDSLayout
-    header={<XDSLayoutHeader hasDivider>Full-screen title</XDSLayoutHeader>}
-    content={<XDSLayoutContent>Content goes here</XDSLayoutContent>}
-    footer={
-      <XDSLayoutFooter hasDivider>
-        <XDSButton label="Close" onClick={() => setIsOpen(false)} />
-      </XDSLayoutFooter>
-    }
-  />
-</XDSDialog>`,
-    },
-    {
-      label: 'Required purpose (non-dismissible)',
-      code: `<XDSDialog
-  isOpen={isOpen}
-  onOpenChange={open => setIsOpen(open)}
-  purpose="required">
-  {/* user must take an explicit action to close */}
-</XDSDialog>`,
-    },
-    {
-      label: 'XDSDialogHeader with close button',
-      code: `<XDSDialogHeader
-  title="Confirm Action"
-  subtitle="This cannot be undone"
-  onOpenChange={open => setIsOpen(open)}
-/>`,
-    },
-  ],
   theming: {
     container: true,
     targets: [
@@ -188,24 +100,7 @@ function Example() {
             'Controls dismissal behavior: required disables Escape and backdrop click; form disables backdrop click after interaction; info allows both.',
           default: "'info'",
         },
-      ],
-      examples: [
-        {
-          label: 'Basic',
-          code: `<XDSDialog isOpen={isOpen} onOpenChange={open => setIsOpen(open)}>
-  <XDSLayout
-    header={<XDSLayoutHeader hasDivider>Title</XDSLayoutHeader>}
-    content={<XDSLayoutContent>Content goes here</XDSLayoutContent>}
-    footer={
-      <XDSLayoutFooter hasDivider>
-        <XDSButton label="Confirm" variant="primary" onClick={() => setIsOpen(false)} />
-      </XDSLayoutFooter>
-    }
-  />
-</XDSDialog>`,
-        },
-      ],
-    },
+      ],    },
     {
       name: 'XDSDialogHeader',
       description:
@@ -244,24 +139,6 @@ function Example() {
           type: 'boolean',
           description: 'Adds border at the bottom edge.',
           default: 'true',
-        },
-      ],
-      examples: [
-        {
-          label: 'With title, subtitle, and close button',
-          code: `<XDSDialogHeader
-  title="Confirm Action"
-  subtitle="This cannot be undone"
-  onOpenChange={open => setIsOpen(open)}
-/>`,
-        },
-        {
-          label: 'With start content (back button)',
-          code: `<XDSDialogHeader
-  title="Step 2 of 3"
-  startContent={<XDSButton label="Back" variant="secondary" onClick={goBack} />}
-  onOpenChange={open => setIsOpen(open)}
-/>`,
         },
       ],
     },
@@ -307,94 +184,6 @@ export const docsZh = {
     '基于用途的关闭控制：required、form 和 info 控制 Escape 键和遮罩层点击行为',
     '自定义定位：通过 position 属性支持静态定位',
     '无障碍：正确的 ARIA 属性和键盘导航',
-  ],
-  examples: [
-    {
-      label: '带布局的基础对话框',
-      code: `import {XDSDialog} from '@xds/core/Dialog';
-import {
-  XDSLayout,
-  XDSLayoutHeader,
-  XDSLayoutContent,
-  XDSLayoutFooter,
-} from '@xds/core/Layout';
-import {XDSButton} from '@xds/core/Button';
-import {useState} from 'react';
-
-function Example() {
-  const [isOpen, setIsOpen] = useState(false);
-
-  return (
-    <>
-      <XDSButton label="Open Dialog" onClick={() => setIsOpen(true)} />
-
-      <XDSDialog isOpen={isOpen} onOpenChange={open => setIsOpen(open)}>
-        <XDSLayout
-          header={<XDSLayoutHeader hasDivider>Title</XDSLayoutHeader>}
-          content={<XDSLayoutContent>Content goes here</XDSLayoutContent>}
-          footer={
-            <XDSLayoutFooter hasDivider>
-              <XDSButton
-                label="Cancel"
-                variant="secondary"
-                onClick={() => setIsOpen(false)}
-              />
-              <XDSButton
-                label="Confirm"
-                variant="primary"
-                onClick={() => setIsOpen(false)}
-              />
-            </XDSLayoutFooter>
-          }
-        />
-      </XDSDialog>
-    </>
-  );
-}`,
-    },
-    {
-      label: '静态定位',
-      code: `<XDSDialog
-  isOpen={isOpen}
-  onOpenChange={open => setIsOpen(open)}
-  position={{top: 100, right: 20}}>
-  {/* content */}
-</XDSDialog>`,
-    },
-    {
-      label: '全屏变体',
-      code: `<XDSDialog
-  isOpen={isOpen}
-  onOpenChange={open => setIsOpen(open)}
-  variant="fullscreen">
-  <XDSLayout
-    header={<XDSLayoutHeader hasDivider>Full-screen title</XDSLayoutHeader>}
-    content={<XDSLayoutContent>Content goes here</XDSLayoutContent>}
-    footer={
-      <XDSLayoutFooter hasDivider>
-        <XDSButton label="Close" onClick={() => setIsOpen(false)} />
-      </XDSLayoutFooter>
-    }
-  />
-</XDSDialog>`,
-    },
-    {
-      label: 'required 用途（不可关闭）',
-      code: `<XDSDialog
-  isOpen={isOpen}
-  onOpenChange={open => setIsOpen(open)}
-  purpose="required">
-  {/* user must take an explicit action to close */}
-</XDSDialog>`,
-    },
-    {
-      label: '带关闭按钮的 XDSDialogHeader',
-      code: `<XDSDialogHeader
-  title="Confirm Action"
-  subtitle="This cannot be undone"
-  onOpenChange={open => setIsOpen(open)}
-/>`,
-    },
   ],
   theming: {
     container: true,
@@ -483,22 +272,6 @@ function Example() {
           default: "'info'",
         },
       ],
-      examples: [
-        {
-          label: '基础用法',
-          code: `<XDSDialog isOpen={isOpen} onOpenChange={open => setIsOpen(open)}>
-  <XDSLayout
-    header={<XDSLayoutHeader hasDivider>Title</XDSLayoutHeader>}
-    content={<XDSLayoutContent>Content goes here</XDSLayoutContent>}
-    footer={
-      <XDSLayoutFooter hasDivider>
-        <XDSButton label="Confirm" variant="primary" onClick={() => setIsOpen(false)} />
-      </XDSLayoutFooter>
-    }
-  />
-</XDSDialog>`,
-        },
-      ],
     },
     {
       name: 'XDSDialogHeader',
@@ -538,24 +311,6 @@ function Example() {
           type: 'boolean',
           description: '在底部边缘添加分隔线。',
           default: 'true',
-        },
-      ],
-      examples: [
-        {
-          label: '带标题、副标题和关闭按钮',
-          code: `<XDSDialogHeader
-  title="Confirm Action"
-  subtitle="This cannot be undone"
-  onOpenChange={open => setIsOpen(open)}
-/>`,
-        },
-        {
-          label: '带起始内容（返回按钮）',
-          code: `<XDSDialogHeader
-  title="Step 2 of 3"
-  startContent={<XDSButton label="Back" variant="secondary" onClick={goBack} />}
-  onOpenChange={open => setIsOpen(open)}
-/>`,
         },
       ],
     },
