@@ -95,7 +95,7 @@ export function InlinePublishPanel({
         />
         <XDSButton
           variant="secondary"
-          label="Cancel"
+          label="Go back to editing"
           size="lg"
           onClick={onBack}
           style={{width: '100%'}}
