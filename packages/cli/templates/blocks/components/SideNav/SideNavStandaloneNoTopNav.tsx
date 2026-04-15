@@ -94,3 +94,8 @@ export default function SideNavStandaloneNoTopNav() {
     </XDSAppShell>
   );
 }
+
+export const showcase = {
+  aspectRatio: 3 / 4,
+  render: SideNavStandaloneNoTopNav,
+};
