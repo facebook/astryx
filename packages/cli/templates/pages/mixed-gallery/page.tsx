@@ -2,35 +2,13 @@
 
 import {useState} from 'react';
 import {XDSAppShell} from '@xds/core/AppShell';
-import {XDSTopNav, XDSTopNavHeading, XDSTopNavItem} from '@xds/core/TopNav';
 import {XDSVStack} from '@xds/core/Layout';
 import {XDSCenter} from '@xds/core/Center';
-import {XDSText, XDSHeading} from '@xds/core/Text';
+import {XDSText} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
-import {XDSNavIcon} from '@xds/core/NavIcon';
 import {XDSCard} from '@xds/core/Card';
 import {XDSAspectRatio} from '@xds/core/AspectRatio';
 
-// ─── Icons ──────────────────────────────────────────────────────────────────
-
-const ApertureIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    {...props}>
-    <circle cx="12" cy="12" r="10" />
-    <line x1="14.31" y1="8" x2="20.05" y2="17.94" />
-    <line x1="9.69" y1="8" x2="21.17" y2="8" />
-    <line x1="7.38" y1="12" x2="13.12" y2="2.06" />
-    <line x1="9.69" y1="16" x2="3.95" y2="6.06" />
-    <line x1="14.31" y1="16" x2="2.83" y2="16" />
-    <line x1="16.62" y1="12" x2="10.88" y2="21.94" />
-  </svg>
-);
 
 // ─── Categories & Gallery Data ──────────────────────────────────────────────
 
@@ -147,48 +125,6 @@ const GALLERY_ITEMS: GalleryItem[] = [
   },
 ];
 
-// ─── TopNav ─────────────────────────────────────────────────────────────────
-
-function GalleryTopNav({
-  activeCategory,
-  onCategoryChange,
-}: {
-  activeCategory: Category;
-  onCategoryChange: (cat: Category) => void;
-}) {
-  return (
-    <XDSTopNav
-      label="Gallery navigation"
-      heading={
-        <XDSTopNavHeading
-          heading="Studio"
-          logo={
-            <XDSNavIcon
-              icon={<ApertureIcon style={{width: 16, height: 16}} />}
-            />
-          }
-          href="#"
-        />
-      }
-      centerContent={
-        <>
-          {CATEGORIES.map(cat => (
-            <XDSTopNavItem
-              key={cat}
-              label={cat}
-              href="#"
-              isSelected={activeCategory === cat}
-              onClick={(e: React.MouseEvent) => {
-                e.preventDefault();
-                onCategoryChange(cat);
-              }}
-            />
-          ))}
-        </>
-      }
-    />
-  );
-}
 
 // ─── Gallery Item ───────────────────────────────────────────────────────────
 
@@ -226,12 +162,6 @@ export default function MixedGalleryTemplate() {
 
   return (
     <XDSAppShell
-      topNav={
-        <GalleryTopNav
-          activeCategory={activeCategory}
-          onCategoryChange={setActiveCategory}
-        />
-      }
       height="auto"
       contentPadding={0}
       variant="surface">
@@ -242,8 +172,14 @@ export default function MixedGalleryTemplate() {
             <XDSVStack
               gap={2}
               style={{alignItems: 'center', textAlign: 'center'}}>
-              <XDSHeading level={1}>Curated Collection</XDSHeading>
-              <XDSText type="body" color="secondary">
+              <XDSText
+                type="large"
+                weight="bold"
+                as="p"
+                style={{fontSize: 'var(--font-size-2xl)'}}>
+                Curated Collection
+              </XDSText>
+              <XDSText type="body">
                 A handpicked selection of photography across nature,
                 architecture, and portraiture
               </XDSText>
