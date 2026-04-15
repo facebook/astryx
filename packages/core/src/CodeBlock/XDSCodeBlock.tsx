@@ -4,17 +4,11 @@
  * @input Uses React, StyleX, theme tokens, CSS Custom Highlight API
  * @output Exports XDSCodeBlock component and XDSCodeBlockProps
  * @position Core implementation; read-only syntax-highlighted code display
- *
- * SYNC: When modified, update:
- * - /packages/core/src/CodeBlock/index.ts (exports if types change)
- * - /packages/core/src/CodeBlock/tokenizer.ts (shared tokenizer)
- * - /packages/core/src/CodeBlock/highlightStyles.ts (::highlight rules)
  */
 
 import {
   useLayoutEffect,
   useEffect,
-  useId,
   useRef,
   useState,
   useCallback,
@@ -38,8 +32,13 @@ import {
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 import {XDSIcon} from '../Icon';
-import {tokenize, tokenizeAsync, SYNC_TOKENIZE_THRESHOLD} from './tokenizer';
-import type {Token} from './tokenizer';
+import {
+  tokenize,
+  tokenizeAsync,
+  flatTokensToLines,
+  SYNC_TOKENIZE_THRESHOLD,
+} from './tokenizer';
+import type {Token, TokenLine} from './tokenizer';
 import {ensureHighlightStyles} from './highlightStyles';
 import {applyHighlightRangesChunked} from './highlightRanges';
 
@@ -94,7 +93,6 @@ const styles = stylex.create({
     overflowX: 'auto',
     overflowY: 'auto',
   },
-
   codeWrapper: {
     display: 'flex',
     minWidth: 'fit-content',
@@ -102,7 +100,6 @@ const styles = stylex.create({
   codeWrapperCompact: {
     marginBlockStart: `calc(-1 * ${spacingVars['--spacing-2']})`,
   },
-  // Collapse animation via grid-template-rows
   collapseGrid: {
     display: 'grid',
     gridTemplateRows: '1fr',
@@ -215,30 +212,43 @@ const styles = stylex.create({
 });
 
 // ---------------------------------------------------------------------------
-// Line rendering (shared)
+// Line rendering
 // ---------------------------------------------------------------------------
 
 const LINE_CHUNK_SIZE = 20;
 const LINE_CHUNK_THRESHOLD = 100;
 
 /**
- * Memoized line component to avoid re-rendering unchanged lines.
+ * Memoized chunk component — cheaper than memoizing every individual line.
  */
-const CodeLine = React.memo(function CodeLine({
-  lineIndex,
-  isHighlighted,
-  children,
+const CodeChunk = React.memo(function CodeChunk({
+  lines,
+  startIndex,
+  highlightSet,
+  renderLineContent,
 }: {
-  lineIndex: number;
-  isHighlighted: boolean;
-  children: React.ReactNode;
+  lines: string[];
+  startIndex: number;
+  highlightSet: Set<number> | null;
+  renderLineContent: (line: string, lineIndex: number) => React.ReactNode;
 }) {
   return (
-    <div
-      data-line={lineIndex + 1}
-      {...stylex.props(styles.line, isHighlighted && styles.lineHighlighted)}>
-      {children}
-    </div>
+    <>
+      {lines.map((line, j) => {
+        const i = startIndex + j;
+        return (
+          <div
+            key={i}
+            data-line={i + 1}
+            {...stylex.props(
+              styles.line,
+              (highlightSet?.has(i + 1) ?? false) && styles.lineHighlighted,
+            )}>
+            {renderLineContent(line, i)}
+          </div>
+        );
+      })}
+    </>
   );
 });
 
@@ -250,17 +260,15 @@ function renderLines(
 ): React.ReactNode {
   chunkSize = Math.max(1, Math.floor(chunkSize));
 
-  const renderLine = (line: string, i: number) => (
-    <CodeLine
-      key={i}
-      lineIndex={i}
-      isHighlighted={highlightSet?.has(i + 1) ?? false}>
-      {renderLineContent(line, i)}
-    </CodeLine>
-  );
-
   if (lines.length < LINE_CHUNK_THRESHOLD) {
-    return lines.map(renderLine);
+    return (
+      <CodeChunk
+        lines={lines}
+        startIndex={0}
+        highlightSet={highlightSet}
+        renderLineContent={renderLineContent}
+      />
+    );
   }
 
   const chunks: React.ReactNode[] = [];
@@ -274,7 +282,12 @@ function renderLines(
         key={start}
         {...stylex.props(styles.lineChunk)}
         style={{containIntrinsicBlockSize: `auto ${estimatedHeight}`}}>
-        {chunkLines.map((line, j) => renderLine(line, start + j))}
+        <CodeChunk
+          lines={chunkLines}
+          startIndex={start}
+          highlightSet={highlightSet}
+          renderLineContent={renderLineContent}
+        />
       </div>,
     );
   }
@@ -297,32 +310,13 @@ export interface XDSCodeBlockProps extends XDSBaseProps<HTMLPreElement> {
   onCopy?: () => void;
   isWrapped?: boolean;
   maxHeight?: number | string;
-  /**
-   * Allow collapsing the code body into just the header bar.
-   * Starts expanded; the header becomes clickable to toggle.
-   * Only shows the toggle when the code exceeds `collapsibleThreshold` lines.
-   * @default false
-   */
   isCollapsible?: boolean;
-  /**
-   * Minimum number of lines before the collapse toggle appears.
-   * Below this threshold the code block renders normally even when
-   * `isCollapsible` is true.
-   * @default 10
-   */
   collapsibleThreshold?: number;
   size?: 'sm' | 'md';
   tokenizer?: (
     code: string,
     language: string,
   ) => Array<{type: string; start: number; end: number}>;
-  /**
-   * Highlighting strategy.
-   * - `'auto'` — uses CSS Custom Highlight API when available, falls back to spans
-   * - `'ranges'` — force CSS Custom Highlight API (no-op if unsupported)
-   * - `'spans'` — force span-based rendering
-   * @default 'auto'
-   */
   highlightMode?: 'auto' | 'ranges' | 'spans';
 }
 
@@ -338,110 +332,42 @@ function hasHighlightAPI(): boolean {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Span-mode code element
-// ---------------------------------------------------------------------------
-
-function findFirstTokenIndex(tokens: Token[], lineStart: number): number {
-  let lo = 0;
-  let hi = tokens.length;
-  while (lo < hi) {
-    const mid = (lo + hi) >>> 1;
-    if (tokens[mid].end <= lineStart) {
-      lo = mid + 1;
-    } else {
-      hi = mid;
-    }
-  }
-  return lo;
-}
-
-function buildSpanLine(
-  lineText: string,
-  lineStart: number,
-  tokens: Token[],
-  searchStart: number,
-): React.ReactNode {
-  if (tokens.length === 0) {
-    return lineText || '\u200b';
-  }
-
-  const lineEnd = lineStart + lineText.length;
-  const parts: React.ReactNode[] = [];
-  let cursor = lineStart;
-  let hasTokens = false;
-
-  for (let i = searchStart; i < tokens.length; i++) {
-    const token = tokens[i];
-    if (token.start >= lineEnd) break;
-    if (token.end <= lineStart) continue;
-
-    hasTokens = true;
-    const tStart = Math.max(token.start, lineStart);
-    const tEnd = Math.min(token.end, lineEnd);
-
-    if (tStart > cursor) {
-      parts.push(lineText.slice(cursor - lineStart, tStart - lineStart));
-    }
-    parts.push(
-      <span
-        key={`${tStart}-${token.type}`}
-        className={`xds-token-${token.type}`}>
-        {lineText.slice(tStart - lineStart, tEnd - lineStart)}
-      </span>,
-    );
-    cursor = tEnd;
-  }
-
-  if (!hasTokens) return lineText || '\u200b';
-  if (cursor < lineEnd) parts.push(lineText.slice(cursor - lineStart));
-  return parts.length > 0 ? parts : '\u200b';
-}
-
 /**
- * Span-mode: tokenizes code and renders lines with <span> tokens.
- * Only mounts when highlightMode resolves to spans.
+ * Hook: per-line tokens with sync/async + custom tokenizer compat.
  */
-function SpanCodeContent({
-  code,
-  language,
-  lines,
-  lineOffsets,
-  highlightSet,
-  isWrapped,
-  sizeStyle,
-  customTokenizer,
-}: {
-  code: string;
-  language: string;
-  lines: string[];
-  lineOffsets: number[];
-  highlightSet: Set<number> | null;
-  isWrapped: boolean;
-  sizeStyle: stylex.StyleXStyles;
-  customTokenizer?: XDSCodeBlockProps['tokenizer'];
-}) {
-  const [asyncTokens, setAsyncTokens] = useState<Token[] | null>(null);
-
-  useLayoutEffect(() => {
-    ensureHighlightStyles();
-  }, []);
+function useTokenLines(
+  code: string,
+  language: string,
+  customTokenizer?: XDSCodeBlockProps['tokenizer'],
+): TokenLine[] {
+  const [asyncTokens, setAsyncTokens] = useState<TokenLine[] | null>(null);
 
   const syncTokens = useMemo(() => {
     if (code.length >= SYNC_TOKENIZE_THRESHOLD) return null;
-    const tok = customTokenizer ?? tokenize;
-    return tok(code, language);
+    if (customTokenizer) {
+      return flatTokensToLines(customTokenizer(code, language), code);
+    }
+    return tokenize(code, language);
   }, [code, language, customTokenizer]);
 
   useEffect(() => {
     if (code.length < SYNC_TOKENIZE_THRESHOLD) return;
 
     const abortController = new AbortController();
-    tokenizeAsync(code, language, abortController.signal).then(tokens => {
-      if (!abortController.signal.aborted) {
-        setAsyncTokens(tokens);
-      }
-    });
+
+    if (customTokenizer) {
+      Promise.resolve().then(() => {
+        if (abortController.signal.aborted) return;
+        const flat = customTokenizer(code, language);
+        setAsyncTokens(flatTokensToLines(flat, code));
+      });
+    } else {
+      tokenizeAsync(code, language, abortController.signal).then(tokens => {
+        if (!abortController.signal.aborted) {
+          setAsyncTokens(tokens);
+        }
+      });
+    }
 
     return () => {
       abortController.abort();
@@ -449,25 +375,69 @@ function SpanCodeContent({
     };
   }, [code, language, customTokenizer]);
 
-  const spanTokens = syncTokens ?? asyncTokens ?? [];
+  return syncTokens ?? asyncTokens ?? [];
+}
 
-  const tokenSearchStarts = useMemo(() => {
-    if (spanTokens.length === 0) return null;
-    const starts = new Array<number>(lines.length);
-    for (let i = 0; i < lines.length; i++) {
-      starts[i] = findFirstTokenIndex(spanTokens, lineOffsets[i]);
-    }
-    return starts;
-  }, [spanTokens, lines.length, lineOffsets]);
+// ---------------------------------------------------------------------------
+// Span-mode code element
+// ---------------------------------------------------------------------------
 
-  function renderLineContent(line: string, lineIndex: number): React.ReactNode {
-    return buildSpanLine(
-      line,
-      lineOffsets[lineIndex],
-      spanTokens,
-      tokenSearchStarts?.[lineIndex] ?? 0,
-    );
+function buildSpanLine(
+  lineText: string,
+  tokens: Token[],
+): React.ReactNode {
+  if (tokens.length === 0) {
+    return lineText || '\u200b';
   }
+
+  const parts: React.ReactNode[] = [];
+  let cursor = 0;
+
+  for (const token of tokens) {
+    if (token.start > cursor) {
+      parts.push(lineText.slice(cursor, token.start));
+    }
+    const end = Math.min(token.end, lineText.length);
+    parts.push(
+      <span
+        key={`${token.start}-${token.type}`}
+        className={`xds-token-${token.type}`}>
+        {lineText.slice(token.start, end)}
+      </span>,
+    );
+    cursor = end;
+  }
+
+  if (cursor < lineText.length) {
+    parts.push(lineText.slice(cursor));
+  }
+  return parts.length > 0 ? parts : '\u200b';
+}
+
+function SpanCodeContent({
+  lines,
+  tokenLines,
+  highlightSet,
+  isWrapped,
+  sizeStyle,
+}: {
+  lines: string[];
+  tokenLines: TokenLine[];
+  highlightSet: Set<number> | null;
+  isWrapped: boolean;
+  sizeStyle: stylex.StyleXStyles;
+}) {
+  useLayoutEffect(() => {
+    ensureHighlightStyles();
+  }, []);
+
+  const renderLineContent = useCallback(
+    (line: string, lineIndex: number): React.ReactNode => {
+      const tokens = tokenLines[lineIndex] ?? [];
+      return buildSpanLine(line, tokens);
+    },
+    [tokenLines],
+  );
 
   return (
     <code
@@ -485,66 +455,35 @@ function SpanCodeContent({
 // Range-mode code element
 // ---------------------------------------------------------------------------
 
-/**
- * Range-mode: renders plain text lines, applies CSS Custom Highlight API
- * ranges in a non-blocking effect. Only mounts when highlightMode
- * resolves to ranges.
- */
 function RangeCodeContent({
-  code,
-  language,
   lines,
+  tokenLines,
   highlightSet,
   isWrapped,
   sizeStyle,
-  customTokenizer,
 }: {
-  code: string;
-  language: string;
   lines: string[];
+  tokenLines: TokenLine[];
   highlightSet: Set<number> | null;
   isWrapped: boolean;
   sizeStyle: stylex.StyleXStyles;
-  customTokenizer?: XDSCodeBlockProps['tokenizer'];
 }) {
   const codeRef = useRef<HTMLElement>(null);
-  const instanceId = useId();
 
-  // Apply highlight ranges in a non-blocking effect so the code text
-  // is visible and scrollable immediately. Colors appear a frame later.
   useEffect(() => {
     if (!hasHighlightAPI()) return;
-
     ensureHighlightStyles();
 
     const codeEl = codeRef.current;
-    if (!codeEl) return;
+    if (!codeEl || tokenLines.length === 0) return;
 
-    if (code.length < SYNC_TOKENIZE_THRESHOLD) {
-      const tok = customTokenizer ?? tokenize;
-      const tokens = tok(code, language);
-      if (tokens.length === 0) return;
-      return applyHighlightRangesChunked(codeEl, tokens);
-    }
+    return applyHighlightRangesChunked(codeEl, tokenLines);
+  }, [tokenLines]);
 
-    const abortController = new AbortController();
-    let cleanup: (() => void) | undefined;
-
-    tokenizeAsync(code, language, abortController.signal).then(tokens => {
-      if (abortController.signal.aborted) return;
-      if (tokens.length === 0) return;
-      cleanup = applyHighlightRangesChunked(codeEl, tokens);
-    });
-
-    return () => {
-      abortController.abort();
-      cleanup?.();
-    };
-  }, [code, language, customTokenizer, instanceId]);
-
-  function renderLineContent(line: string): React.ReactNode {
-    return line || '\u200b';
-  }
+  const renderLineContent = useCallback(
+    (line: string): React.ReactNode => line || '\u200b',
+    [],
+  );
 
   return (
     <code
@@ -554,9 +493,6 @@ function RangeCodeContent({
         sizeStyle,
         isWrapped && styles.codeWrapped,
       )}>
-      {/* No content-visibility chunking in range mode — TreeWalker
-          can't see text nodes inside content-visibility: auto divs,
-          so highlight ranges would be missing for off-screen lines. */}
       {renderLines(lines, highlightSet, renderLineContent, Infinity)}
     </code>
   );
@@ -566,22 +502,6 @@ function RangeCodeContent({
 // Main component
 // ---------------------------------------------------------------------------
 
-/**
- * A read-only syntax-highlighted code block.
- *
- * Uses the CSS Custom Highlight API for zero-DOM-overhead syntax coloring.
- * Falls back to span-based rendering in browsers without support, or when
- * `highlightMode="spans"` is explicitly set.
- *
- * @example
- * ```
- * <XDSCodeBlock
- *   code={`const x = 42;`}
- *   language="typescript"
- *   hasLineNumbers
- * />
- * ```
- */
 export function XDSCodeBlock({
   code,
   language = 'plaintext',
@@ -610,19 +530,15 @@ export function XDSCodeBlock({
     highlightMode === 'spans' ||
     (highlightMode === 'auto' && !hasHighlightAPI());
 
-  const {lines, lineOffsets} = useMemo(() => {
+  const lines = useMemo(() => {
     const l = code.split('\n');
     if (l.length > 1 && l[l.length - 1] === '') {
       l.pop();
     }
-    const offsets = new Array<number>(l.length);
-    let offset = 0;
-    for (let i = 0; i < l.length; i++) {
-      offsets[i] = offset;
-      offset += l[i].length + 1;
-    }
-    return {lines: l, lineOffsets: offsets};
+    return l;
   }, [code]);
+
+  const tokenLines = useTokenLines(code, language, customTokenizer);
 
   const highlightSet = useMemo(
     () => (highlightLines ? new Set(highlightLines) : null),
@@ -643,7 +559,6 @@ export function XDSCodeBlock({
     hasLanguageLabel && language !== 'plaintext' ? language : null;
   const showHeader = title != null || languageLabel != null;
 
-  // Collapse state — starts expanded, user can collapse long blocks
   const canCollapse = isCollapsible && lines.length >= collapsibleThreshold;
   const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -653,62 +568,40 @@ export function XDSCodeBlock({
     : undefined;
 
   const copyIcon = copied ? (
-    <svg
-      width="1em"
-      height="1em"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      strokeLinecap="round"
-      strokeLinejoin="round">
+    <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
       <path d="M5 13l4 4L19 7" />
     </svg>
   ) : (
-    <svg
-      width="1em"
-      height="1em"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      strokeLinecap="round"
-      strokeLinejoin="round">
+    <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
       <path d="M8 4v12a2 2 0 002 2h8a2 2 0 002-2V7.242a2 2 0 00-.602-1.43L16.083 2.57A2 2 0 0014.685 2H10a2 2 0 00-2 2z" />
       <path d="M16 18v2a2 2 0 01-2 2H6a2 2 0 01-2-2V9a2 2 0 012-2h2" />
     </svg>
   );
 
   const copyButtonEl = hasCopyButton ? (
-    <button
-      type="button"
-      onClick={handleCopy}
+    <button type="button" onClick={handleCopy}
       aria-label={copied ? 'Copied' : 'Copy code'}
-      {...stylex.props(
-        styles.copyButton,
-        !showHeader && styles.copyButtonAbsolute,
-      )}>
+      {...stylex.props(styles.copyButton, !showHeader && styles.copyButtonAbsolute)}>
       {copyIcon}
     </button>
   ) : null;
 
-  // Header element — clickable when collapsible
   const headerEl = showHeader ? (
     <div
       role={canCollapse ? 'button' : undefined}
       tabIndex={canCollapse ? 0 : undefined}
       aria-expanded={canCollapse ? !isCollapsed : undefined}
       onClick={canCollapse ? () => setIsCollapsed(prev => !prev) : undefined}
-      onKeyDown={
-        canCollapse
-          ? (e: React.KeyboardEvent) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                setIsCollapsed(prev => !prev);
-              }
+      onKeyDown={canCollapse
+        ? (e: React.KeyboardEvent) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              setIsCollapsed(prev => !prev);
             }
-          : undefined
-      }
+          }
+        : undefined}
       {...stylex.props(
         styles.header,
         hasLineNumbers ? styles.headerWithDivider : styles.headerCompact,
@@ -719,11 +612,10 @@ export function XDSCodeBlock({
         {title && languageLabel ? ' — ' : ''}
         {languageLabel}
         {canCollapse && (
-          <span
-            {...stylex.props(
-              styles.collapseChevron,
-              isCollapsed && styles.collapseChevronCollapsed,
-            )}>
+          <span {...stylex.props(
+            styles.collapseChevron,
+            isCollapsed && styles.collapseChevronCollapsed,
+          )}>
             <XDSIcon icon="chevronDown" size="xsm" color="inherit" />
           </span>
         )}
@@ -732,48 +624,31 @@ export function XDSCodeBlock({
     </div>
   ) : null;
 
-  // Code body
   const codeBody = (
-    <div
-      ref={scrollContainerRef}
-      {...stylex.props(styles.scrollContainer)}
-      style={scrollStyle}>
-      <div
-        {...stylex.props(
-          styles.codeWrapper,
-          showHeader && !hasLineNumbers && styles.codeWrapperCompact,
-        )}>
+    <div ref={scrollContainerRef} {...stylex.props(styles.scrollContainer)} style={scrollStyle}>
+      <div {...stylex.props(styles.codeWrapper, showHeader && !hasLineNumbers && styles.codeWrapperCompact)}>
         {hasLineNumbers && (
-          <div
-            {...stylex.props(styles.gutter, gutterSizeStyle)}
-            aria-hidden="true">
+          <div {...stylex.props(styles.gutter, gutterSizeStyle)} aria-hidden="true">
             {lines.map((_, i) => (
-              <div key={i} {...stylex.props(styles.gutterLine)}>
-                {i + 1}
-              </div>
+              <div key={i} {...stylex.props(styles.gutterLine)}>{i + 1}</div>
             ))}
           </div>
         )}
         {useSpans ? (
           <SpanCodeContent
-            code={code}
-            language={language}
             lines={lines}
-            lineOffsets={lineOffsets}
+            tokenLines={tokenLines}
             highlightSet={highlightSet}
             isWrapped={isWrapped}
             sizeStyle={sizeStyle}
-            customTokenizer={customTokenizer}
           />
         ) : (
           <RangeCodeContent
-            code={code}
-            language={language}
             lines={lines}
+            tokenLines={tokenLines}
             highlightSet={highlightSet}
             isWrapped={isWrapped}
             sizeStyle={sizeStyle}
-            customTokenizer={customTokenizer}
           />
         )}
       </div>
@@ -783,20 +658,11 @@ export function XDSCodeBlock({
   return (
     <pre
       ref={ref}
-      {...mergeProps(
-        xdsClassName('codeblock', {size, language}),
-        stylex.props(styles.root, xstyle),
-        className,
-        style,
-      )}
+      {...mergeProps(xdsClassName('codeblock', {size, language}), stylex.props(styles.root, xstyle), className, style)}
       {...props}>
       {headerEl}
       {canCollapse ? (
-        <div
-          {...stylex.props(
-            styles.collapseGrid,
-            isCollapsed && styles.collapseGridCollapsed,
-          )}>
+        <div {...stylex.props(styles.collapseGrid, isCollapsed && styles.collapseGridCollapsed)}>
           <div {...stylex.props(styles.collapseInner)}>{codeBody}</div>
         </div>
       ) : (

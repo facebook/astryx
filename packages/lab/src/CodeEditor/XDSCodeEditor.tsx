@@ -37,8 +37,8 @@ import {
   tokenizeAsync,
   SYNC_TOKENIZE_THRESHOLD,
 } from '@xds/core/CodeBlock';
-import type {Token} from '@xds/core/CodeBlock';
-import {ensureHighlightStyles, TOKEN_TYPES} from '@xds/core/CodeBlock';
+import type {Token, TokenLine} from '@xds/core/CodeBlock';
+import {ensureHighlightStyles, applyHighlightRangesChunked} from '@xds/core/CodeBlock';
 
 // ---------------------------------------------------------------------------
 // Styles
@@ -145,7 +145,7 @@ export interface XDSCodeEditorProps extends Omit<
   tokenizer?: (
     code: string,
     language: string,
-  ) => Array<{type: string; start: number; end: number}>;
+  ) => TokenLine[];
   /**
    * How to apply syntax highlighting.
    * - 'css-highlight': Uses CSS Custom Highlight API (zero DOM overhead).
@@ -184,45 +184,39 @@ let editorInstanceCounter = 0;
 // Span-based rendering helpers
 // ---------------------------------------------------------------------------
 
+
 /**
- * Build span-based highlighted line content from tokens.
+ * Build span-based highlighted line content from per-line tokens.
  */
 function buildSpanLine(
   lineText: string,
-  lineStart: number,
   tokens: Token[],
 ): React.ReactNode {
   if (!lineText) return '\u200b';
-
-  const lineEnd = lineStart + lineText.length;
-  const lineTokens = tokens.filter(t => t.start < lineEnd && t.end > lineStart);
-
-  if (lineTokens.length === 0) return lineText;
+  if (tokens.length === 0) return lineText;
 
   const parts: React.ReactNode[] = [];
-  let cursor = lineStart;
+  let cursor = 0;
 
-  for (const token of lineTokens) {
-    const tStart = Math.max(token.start, lineStart);
-    const tEnd = Math.min(token.end, lineEnd);
-
-    if (tStart > cursor) {
-      parts.push(lineText.slice(cursor - lineStart, tStart - lineStart));
+  for (const token of tokens) {
+    if (token.start > cursor) {
+      parts.push(lineText.slice(cursor, token.start));
     }
 
+    const end = Math.min(token.end, lineText.length);
     parts.push(
       <span
-        key={`${tStart}-${token.type}`}
+        key={`${token.start}-${token.type}`}
         className={`xds-token-${token.type}`}>
-        {lineText.slice(tStart - lineStart, tEnd - lineStart)}
+        {lineText.slice(token.start, end)}
       </span>,
     );
 
-    cursor = tEnd;
+    cursor = end;
   }
 
-  if (cursor < lineEnd) {
-    parts.push(lineText.slice(cursor - lineStart));
+  if (cursor < lineText.length) {
+    parts.push(lineText.slice(cursor));
   }
 
   return parts.length > 0 ? parts : lineText;
@@ -231,104 +225,13 @@ function buildSpanLine(
 /**
  * Build span-based content for all lines.
  */
-function buildSpanContent(lines: string[], tokens: Token[]): React.ReactNode {
-  return lines.map((line, i) => {
-    let lineStart = 0;
-    for (let j = 0; j < i; j++) {
-      lineStart += lines[j].length + 1;
-    }
-    return (
-      <div key={i}>
-        {buildSpanLine(line, lineStart, tokens)}
-        {i < lines.length - 1 ? '\n' : null}
-      </div>
-    );
-  });
-}
-
-// ---------------------------------------------------------------------------
-// Shared highlight range application
-// ---------------------------------------------------------------------------
-
-function applyEditorHighlightRanges(
-  el: HTMLElement,
-  tokens: Token[],
-): () => void {
-  const tokensByType = new Map<string, Token[]>();
-  for (const token of tokens) {
-    const existing = tokensByType.get(token.type);
-    if (existing) {
-      existing.push(token);
-    } else {
-      tokensByType.set(token.type, [token]);
-    }
-  }
-
-  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
-  const textNodes: Array<{node: Text; start: number}> = [];
-  let totalOffset = 0;
-
-  let node = walker.nextNode();
-  while (node) {
-    textNodes.push({node: node as Text, start: totalOffset});
-    totalOffset += (node as Text).length;
-    node = walker.nextNode();
-  }
-
-  function findPosition(offset: number): {node: Text; offset: number} | null {
-    for (let i = textNodes.length - 1; i >= 0; i--) {
-      const entry = textNodes[i];
-      if (offset >= entry.start) {
-        const localOffset = offset - entry.start;
-        if (localOffset <= entry.node.length) {
-          return {node: entry.node, offset: localOffset};
-        }
-        return null;
-      }
-    }
-    return null;
-  }
-
-  const myRanges: Range[] = [];
-
-  for (const tokenType of TOKEN_TYPES) {
-    const typedTokens = tokensByType.get(tokenType);
-    if (!typedTokens || typedTokens.length === 0) continue;
-
-    const name = `xds-${tokenType}`;
-    let highlight = CSS.highlights.get(name);
-    if (!highlight) {
-      highlight = new Highlight();
-      CSS.highlights.set(name, highlight);
-    }
-
-    for (const token of typedTokens) {
-      const startPos = findPosition(token.start);
-      const endPos = findPosition(token.end);
-      if (!startPos || !endPos) continue;
-
-      try {
-        const range = new Range();
-        range.setStart(startPos.node, startPos.offset);
-        range.setEnd(endPos.node, endPos.offset);
-        highlight.add(range);
-        myRanges.push(range);
-      } catch {
-        // Skip invalid ranges
-      }
-    }
-  }
-
-  return () => {
-    for (const range of myRanges) {
-      for (const tokenType of TOKEN_TYPES) {
-        const highlight = CSS.highlights.get(`xds-${tokenType}`);
-        if (highlight) {
-          highlight.delete(range);
-        }
-      }
-    }
-  };
+function buildSpanContent(lines: string[], tokenLines: TokenLine[]): React.ReactNode {
+  return lines.map((line, i) => (
+    <div key={i}>
+      {buildSpanLine(line, tokenLines[i] ?? [])}
+      {i < lines.length - 1 ? '\n' : null}
+    </div>
+  ));
 }
 
 // ---------------------------------------------------------------------------
@@ -380,7 +283,7 @@ export function XDSCodeEditor({
   const useSpans = highlightModeProp === 'spans' || !hasHighlightAPI();
 
   // Async tokens for span mode overlay
-  const [asyncTokens, setAsyncTokens] = useState<Token[] | null>(null);
+  const [asyncTokens, setAsyncTokens] = useState<TokenLine[] | null>(null);
 
   const lines = value.split('\n');
 
@@ -420,7 +323,7 @@ export function XDSCodeEditor({
     };
   }, [useSpans, value, language, customTokenizer]);
 
-  const spanTokens = syncTokens ?? asyncTokens ?? [];
+  const spanTokens: TokenLine[] = syncTokens ?? asyncTokens ?? [];
 
   // Ensure styles are always injected
   useLayoutEffect(() => {
@@ -440,7 +343,7 @@ export function XDSCodeEditor({
     const tokens = tok(value, language);
     if (tokens.length === 0) return;
 
-    return applyEditorHighlightRanges(el, tokens);
+    return applyHighlightRangesChunked(el, tokens);
   }, [useSpans, value, language, customTokenizer, instanceId]);
 
   // Apply CSS Custom Highlight API ranges — large code (async)
@@ -458,7 +361,7 @@ export function XDSCodeEditor({
     tokenizeAsync(value, language, abortController.signal).then(tokens => {
       if (abortController.signal.aborted) return;
       if (tokens.length === 0) return;
-      cleanup = applyEditorHighlightRanges(el, tokens);
+      cleanup = applyHighlightRangesChunked(el, tokens);
     });
 
     return () => {
@@ -581,7 +484,7 @@ export function XDSCodeEditor({
   // is made transparent so the overlay provides the visual coloring while
   // the contentEditable handles input/caret.
   const spanOverlay =
-    useSpans && spanTokens.length > 0 ? (
+    useSpans && spanTokens.some(line => line.length > 0) ? (
       <div
         aria-hidden="true"
         style={{
@@ -645,7 +548,7 @@ export function XDSCodeEditor({
           onCompositionEnd={handleCompositionEnd}
           {...stylex.props(styles.editor, sizeStyle)}
           style={
-            useSpans && spanTokens.length > 0
+            useSpans && spanTokens.some(line => line.length > 0)
               ? {color: 'transparent', caretColor: 'inherit'}
               : undefined
           }
