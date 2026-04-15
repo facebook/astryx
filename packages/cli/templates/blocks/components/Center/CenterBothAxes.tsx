@@ -9,3 +9,8 @@ export default function CenterBothAxes() {
     </XDSCenter>
   );
 }
+
+export const showcase = {
+  aspectRatio: 1,
+  render: CenterBothAxes,
+};
