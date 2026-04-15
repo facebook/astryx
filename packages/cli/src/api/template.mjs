@@ -99,6 +99,15 @@ async function discoverAll() {
   return [...pages, ...blocks].sort((a, b) => a.name.localeCompare(b.name));
 }
 
+export async function findRelatedBlocks(componentName) {
+  const blocks = await discoverBlocks();
+  return blocks.filter(b =>
+    b.componentsUsed.some(c =>
+      c.toLowerCase() === componentName.toLowerCase(),
+    ),
+  );
+}
+
 const UBIQUITOUS = new Set([
   'Text', 'Heading', 'Button', 'HStack', 'VStack', 'Link',
   'StackItem', 'Icon',
