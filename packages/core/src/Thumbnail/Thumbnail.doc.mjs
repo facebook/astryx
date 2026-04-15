@@ -75,18 +75,7 @@ export const docs = {
       type: 'string',
       description: 'Test selector for automated testing frameworks.',
     },
-  ],
-  examples: [
-    {
-      label: 'Image with remove',
-      code: '<XDSThumbnail src="/photo.jpg" alt="Vacation" label="vacation.jpg" onRemove={() => {}} />',
-    },
-    {
-      label: 'Clickable',
-      code: '<XDSThumbnail src="/preview.png" alt="Preview" onClick={openLightbox} />',
-    },
-  ],
-  theming: {
+  ],  theming: {
     targets: [
       {className: 'xds-thumbnail'},
     ],
