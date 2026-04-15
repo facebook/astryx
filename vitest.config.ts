@@ -45,7 +45,7 @@ export default defineConfig({
       // Map @xds/core subpath imports to source for lab package tests.
       // Must use regex to match subpaths like @xds/core/Dialog, @xds/core/theme/tokens.stylex
       // while not breaking core's own relative imports.
-      { find: /^@xds\/core\/(.*)$/, replacement: path.join(coreSrc, '$1') },
+      {find: /^@xds\/core\/(.*)$/, replacement: path.join(coreSrc, '$1')},
     ],
   },
   test: {
@@ -63,5 +63,12 @@ export default defineConfig({
       exclude: ['**/*.test.{ts,tsx}', '**/*.stories.{ts,tsx}', '**/index.ts'],
     },
     setupFiles: ['./internal/test-utils/src/setup.ts'],
+    // Increase worker heap to prevent OOM crashes on memory-heavy test files
+    // (e.g. Chat composer tests with contentEditable + popover portals in jsdom).
+    poolOptions: {
+      forks: {
+        execArgv: ['--max-old-space-size=4096'],
+      },
+    },
   },
 });
