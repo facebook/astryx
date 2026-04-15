@@ -2,5 +2,6 @@
 export const doc = {
   name: 'Mixed Gallery',
   description: 'Masonry-style image gallery with varying image sizes',
+  type: 'page',
   isReady: true,
 };

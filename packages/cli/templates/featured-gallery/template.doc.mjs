@@ -2,5 +2,6 @@
 export const doc = {
   name: 'Featured Gallery',
   description: 'Showcase layout with one large hero image and smaller thumbnails',
+  type: 'page',
   isReady: true,
 };
