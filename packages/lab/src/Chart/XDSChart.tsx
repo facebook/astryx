@@ -71,7 +71,7 @@ const DEFAULT_MARGIN: ChartMargin = {top: 16, right: 16, bottom: 32, left: 48};
  * <XDSChart data={data} xKey="month" yKeys={['revenue']} height={300}>
  *   <XDSChartAxis position="bottom" />
  *   <XDSChartAxis position="left" />
- *   <XDSChartBar dataKey="revenue" color={XDSChartColors.categorical(1)[0]} />
+ *   <XDSChartBar dataKey="revenue" color={useXDSChartColors().categorical(1)[0]} />
  * </XDSChart>
  * ```
  */

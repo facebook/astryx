@@ -1,18 +1,58 @@
 /**
  * @file useXDSChartColors.ts
- * @output Theme-aware chart color palette hook
+ * @output Theme-aware chart color palette hook — the only way to get chart colors
  * @position Consumed by chart components and any data-viz surface inside a themed tree
  *
- * Wraps the static XDSChartColors API with live theme token resolution
- * via useXDSTheme. Returns the same API shape but colors resolve for
- * the current light/dark mode.
+ * Resolves data-viz tokens from the current theme context. All chart components
+ * and stories should use this hook — no static color accessors.
  */
 
 import {useMemo} from 'react';
 import {useXDSTheme} from '@xds/core/theme';
-import type {SequentialHue} from '../ChartColors/XDSChartColors';
 
-// Token name mappings
+// =============================================================================
+// Types
+// =============================================================================
+
+/** Hue names available in the sequential ramps */
+export type SequentialHue =
+  | 'blue'
+  | 'shamrock'
+  | 'orange'
+  | 'pink'
+  | 'purple'
+  | 'red'
+  | 'teal'
+  | 'yellow'
+  | 'gray';
+
+/** Return type of useXDSChartColors */
+export interface XDSChartColorsAPI {
+  categorical(n: number): string[];
+  sequential: Record<SequentialHue, (n: number) => string[]>;
+  diverging: {
+    positiveNegative(n: number): string[];
+    coldHot(n: number): string[];
+    custom(
+      neg: SequentialHue,
+      pos: SequentialHue,
+      n: number,
+      midpoint?: string,
+    ): string[];
+  };
+  semantic: {
+    positive: string;
+    negative: string;
+    warning: string;
+    neutral: string;
+  };
+  alpha(hex: string, opacity: number): string;
+}
+
+// =============================================================================
+// Internals
+// =============================================================================
+
 const CATEGORICAL_TOKENS = [
   '--color-data-categorical-blue',
   '--color-data-categorical-orange',
@@ -48,20 +88,35 @@ function pickFromRamp(stops: string[], n: number): string[] {
   );
 }
 
+function hexAlpha(hex: string, opacity: number): string {
+  const match = hex.match(
+    /^#?([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})$/,
+  );
+  if (!match) return hex;
+  const r = parseInt(match[1], 16);
+  const g = parseInt(match[2], 16);
+  const b = parseInt(match[3], 16);
+  return `rgba(${r},${g},${b},${Math.max(0, Math.min(1, opacity))})`;
+}
+
+// =============================================================================
+// Hook
+// =============================================================================
+
 /**
- * Theme-aware chart colors. Same API as XDSChartColors but resolves
- * from the live theme context — respects light/dark mode and custom themes.
+ * Theme-aware chart colors. Resolves data-viz tokens from the current
+ * theme context — respects light/dark mode and custom themes.
  *
  * @example
  * ```
- * const chartColors = useXDSChartColors();
- * chartColors.categorical(5)
- * chartColors.sequential.blue(3)
- * chartColors.diverging.positiveNegative(5)
- * chartColors.alpha('#0171E3', 0.5)
+ * const colors = useXDSChartColors();
+ * colors.categorical(5)
+ * colors.sequential.blue(3)
+ * colors.diverging.positiveNegative(5)
+ * colors.alpha('#0171E3', 0.5)
  * ```
  */
-export function useXDSChartColors() {
+export function useXDSChartColors(): XDSChartColorsAPI {
   const {token} = useXDSTheme();
 
   return useMemo(() => {
@@ -126,16 +181,7 @@ export function useXDSChartColors() {
         neutral: resolve('--color-data-neutral'),
       },
 
-      alpha(hex: string, opacity: number): string {
-        const match = hex.match(
-          /^#?([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})$/,
-        );
-        if (!match) return hex;
-        const r = parseInt(match[1], 16);
-        const g = parseInt(match[2], 16);
-        const b = parseInt(match[3], 16);
-        return `rgba(${r},${g},${b},${Math.max(0, Math.min(1, opacity))})`;
-      },
+      alpha: hexAlpha,
     };
   }, [token]);
 }

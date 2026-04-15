@@ -92,7 +92,7 @@ function createProgram(gl: WebGLRenderingContext): WebGLProgram | null {
  *
  * @example
  * ```
- * <XDSChartDotGL dataKey="value" color={XDSChartColors.categorical(1)[0]} />
+ * <XDSChartDotGL dataKey="value" color={useXDSChartColors().categorical(1)[0]} />
  * <XDSChartDotGL dataKey="value" color="#0171E3" size={4} opacity={0.6} />
  * ```
  */

@@ -22,7 +22,7 @@ export interface XDSChartHeatmapGLProps {
   valueKey: string;
   /**
    * Color ramp — array of hex colors from low to high intensity.
-   * Use XDSChartColors.sequential.blue(5) or similar.
+   * Use useXDSChartColors().sequential.blue(5) or similar.
    */
   colorRange: string[];
   /** Explicit domain [min, max]. If omitted, computed from data. */
@@ -118,7 +118,7 @@ function sampleRamp(
  *   xKey="hour"
  *   yKey="day"
  *   valueKey="activity"
- *   colorRange={XDSChartColors.sequential.blue(5)}
+ *   colorRange={useXDSChartColors().sequential.blue(5)}
  * />
  * ```
  */

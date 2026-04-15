@@ -54,15 +54,15 @@ function isBandScale(scale: unknown): scale is ScaleBand<string> {
  * // Financial OHLC
  * <XDSChartCandlestick
  *   high="high" low="low" open="open" close="close"
- *   upColor={XDSChartColors.semantic.positive}
- *   downColor={XDSChartColors.semantic.negative}
+ *   upColor={useXDSChartColors().semantic.positive}
+ *   downColor={useXDSChartColors().semantic.negative}
  * />
  *
  * // Tufte range-bar
  * <XDSChartCandlestick
  *   variant="bar"
  *   high="max" low="min" open="q1" close="median"
- *   color={XDSChartColors.categorical(1)[0]}
+ *   color={useXDSChartColors().categorical(1)[0]}
  * />
  * ```
  */

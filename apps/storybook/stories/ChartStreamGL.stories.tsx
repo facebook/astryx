@@ -5,7 +5,7 @@ import {
   XDSChartAxis,
   XDSChartGrid,
   XDSChartStreamGL,
-  XDSChartColors,
+  useXDSChartColors,
   type XDSChartStreamGLHandle,
 } from '@xds/lab';
 import {XDSStack, XDSText} from '@xds/core';
@@ -17,13 +17,12 @@ const meta: Meta = {
 
 export default meta;
 
-const colors = XDSChartColors.categorical(5);
-
 // =============================================================================
 // Simulated Stock Ticker
 // =============================================================================
 
 function StockTicker() {
+  const colors = useXDSChartColors().categorical(5);
   const streamRef = useRef<XDSChartStreamGLHandle>(null);
   const priceRef = useRef(150);
   const tRef = useRef(0);
@@ -125,6 +124,7 @@ function useMetricStream(
 }
 
 function ServerMetrics() {
+  const colors = useXDSChartColors().categorical(5);
   const cpuRef = useRef<XDSChartStreamGLHandle>(null);
   const memRef = useRef<XDSChartStreamGLHandle>(null);
   const netRef = useRef<XDSChartStreamGLHandle>(null);
@@ -227,6 +227,7 @@ export const ServerDashboard: StoryObj = {
 // =============================================================================
 
 function Seismograph() {
+  const colors = useXDSChartColors().categorical(5);
   const streamRef = useRef<XDSChartStreamGLHandle>(null);
   const tRef = useRef(0);
   const quakeRef = useRef(0);
@@ -295,6 +296,7 @@ export const SeismographDemo: StoryObj = {
 // =============================================================================
 
 function MultiSensor() {
+  const colors = useXDSChartColors().categorical(5);
   const s1Ref = useRef<XDSChartStreamGLHandle>(null);
   const s2Ref = useRef<XDSChartStreamGLHandle>(null);
   const s3Ref = useRef<XDSChartStreamGLHandle>(null);

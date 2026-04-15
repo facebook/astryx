@@ -55,9 +55,6 @@ export {
   starterIcons,
 } from './SVGIcon';
 
-// Chart colors — palette accessor for data visualization
-export {XDSChartColors, type SequentialHue} from './ChartColors';
-
 // Chart components — composable d3-based data visualization
 export {
   XDSChart,
@@ -100,4 +97,6 @@ export {
   m4Reduce,
   type M4Point,
   useXDSChartColors,
+  type XDSChartColorsAPI,
+  type SequentialHue,
 } from './Chart';

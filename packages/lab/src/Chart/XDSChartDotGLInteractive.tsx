@@ -154,7 +154,7 @@ function linkProgram(
  * ```
  * <XDSChartDotGLInteractive
  *   dataKey="value"
- *   color={XDSChartColors.categorical(1)[0]}
+ *   color={useXDSChartColors().categorical(1)[0]}
  *   renderTooltip={(d, i) => <span>Point {i}: {d.value}</span>}
  * />
  * ```

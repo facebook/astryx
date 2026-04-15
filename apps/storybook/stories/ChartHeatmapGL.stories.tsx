@@ -4,18 +4,15 @@ import {
   XDSChartAxis,
   XDSChartHeatmapGL,
   XDSChartLegend,
-  XDSChartColors,
+  useXDSChartColors,
+  type SequentialHue,
 } from '@xds/lab';
 import {XDSStack, XDSText} from '@xds/core';
 import {XDSHeading} from '@xds/core/Text';
 
-const meta: Meta = {
-  title: 'Lab/XDSChartHeatmapGL',
-};
-
+const meta: Meta = {title: 'Lab/XDSChartHeatmapGL'};
 export default meta;
 
-// Generate a proper 2D grid: days x hours
 const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const hours = [
   '6am',
@@ -28,7 +25,6 @@ const hours = [
   '8pm',
   '10pm',
 ];
-
 const gridData = days.flatMap((day, di) =>
   hours.map((hour, hi) => ({
     hour,
@@ -39,9 +35,9 @@ const gridData = days.flatMap((day, di) =>
   })),
 );
 
-/** Activity heatmap \u2014 days x hours */
-export const ActivityGrid: StoryObj = {
-  render: () => (
+function ActivityGridDemo() {
+  const colors = useXDSChartColors();
+  return (
     <XDSStack direction="vertical" gap={4}>
       <XDSHeading level={3}>Heatmap \u2014 Activity by Day x Hour</XDSHeading>
       <XDSChart data={gridData} xKey="hour" yKeys={['activity']} height={280}>
@@ -50,24 +46,26 @@ export const ActivityGrid: StoryObj = {
           xKey="hour"
           yKey="day"
           valueKey="activity"
-          colorRange={XDSChartColors.sequential.blue(5)}
+          colorRange={colors.sequential.blue(5)}
         />
         <XDSChartLegend
-          gradient={XDSChartColors.sequential.blue(5)}
+          gradient={colors.sequential.blue(5)}
           domain={[0, 100]}
           label="Activity"
         />
       </XDSChart>
     </XDSStack>
-  ),
-};
+  );
+}
+export const ActivityGrid: StoryObj = {render: () => <ActivityGridDemo />};
 
-/** Multiple color ramps on the same grid */
-export const ColorRamps: StoryObj = {
-  render: () => (
+function ColorRampsDemo() {
+  const colors = useXDSChartColors();
+  const hues: SequentialHue[] = ['blue', 'shamrock', 'orange', 'purple', 'red'];
+  return (
     <XDSStack direction="vertical" gap={6}>
       <XDSHeading level={3}>Heatmap Color Ramps</XDSHeading>
-      {(['blue', 'shamrock', 'orange', 'purple', 'red'] as const).map(hue => (
+      {hues.map(hue => (
         <XDSStack key={hue} direction="vertical" gap={1}>
           <XDSText type="label">sequential.{hue}(5)</XDSText>
           <XDSChart
@@ -80,16 +78,16 @@ export const ColorRamps: StoryObj = {
               xKey="hour"
               yKey="day"
               valueKey="activity"
-              colorRange={XDSChartColors.sequential[hue](5)}
+              colorRange={colors.sequential[hue](5)}
             />
           </XDSChart>
         </XDSStack>
       ))}
     </XDSStack>
-  ),
-};
+  );
+}
+export const ColorRamps: StoryObj = {render: () => <ColorRampsDemo />};
 
-// Large grid: 50x50 = 2500 cells
 const bigRows = Array.from({length: 50}, (_, i) => String(i));
 const bigCols = Array.from({length: 50}, (_, i) => String(i));
 const bigGrid = bigRows.flatMap(row =>
@@ -102,28 +100,26 @@ const bigGrid = bigRows.flatMap(row =>
   })),
 );
 
-/** Large 50x50 grid \u2014 2,500 cells */
-export const LargeGrid: StoryObj = {
-  render: () => (
+function LargeGridDemo() {
+  const colors = useXDSChartColors();
+  return (
     <XDSStack direction="vertical" gap={4}>
-      <XDSHeading level={3}>Heatmap \u2014 50x50 Grid (2,500 cells)</XDSHeading>
-      <XDSText type="supporting" color="secondary">
-        2,500 cells rendered in a single WebGL draw call
-      </XDSText>
+      <XDSHeading level={3}>Heatmap \u2014 50x50 Grid</XDSHeading>
       <XDSChart data={bigGrid} xKey="col" yKeys={['value']} height={400}>
         <XDSChartHeatmapGL
           xKey="col"
           yKey="row"
           valueKey="value"
-          colorRange={XDSChartColors.sequential.red(5)}
+          colorRange={colors.sequential.red(5)}
           cellGap={0}
         />
         <XDSChartLegend
-          gradient={XDSChartColors.sequential.red(5)}
+          gradient={colors.sequential.red(5)}
           domain={[0, 100]}
           label="Intensity"
         />
       </XDSChart>
     </XDSStack>
-  ),
-};
+  );
+}
+export const LargeGrid: StoryObj = {render: () => <LargeGridDemo />};

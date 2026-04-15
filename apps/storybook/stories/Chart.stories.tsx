@@ -11,36 +11,25 @@ import {
   XDSChartCandlestick,
   XDSChartTooltip,
   XDSChartLegend,
-  XDSChartColors,
+  useXDSChartColors,
 } from '@xds/lab';
 
 /**
  * `XDSChart` is the root container for all chart components. It computes
  * scales from data and provides them to children via React context.
  *
- * All child components (marks, axes, grid, tooltips) read from this shared
- * context — ensuring every element maps data to pixels through the same
- * coordinate space.
- *
- * ## Key Props
- *
- * - `data` — array of objects with consistent keys
- * - `xKey` — key for x-axis values (string = band scale, number = linear)
- * - `yKeys` — key(s) used to compute y-domain
- * - `yDomain` — explicit y-axis range `[min, max]` (data can still expand beyond)
- * - `yBaseline` — `'auto'` | `'zero'` | `'data'`
- * - `height` — chart height in pixels (width is responsive)
+ * Colors come from `useXDSChartColors()` — theme-aware, always resolved
+ * for the current light/dark mode.
  *
  * ## Composition
  *
- * Charts are built by composing mark, axis, and interaction components:
- *
  * ```tsx
+ * const colors = useXDSChartColors();
  * <XDSChart data={data} xKey="month" yKeys={['revenue']}>
  *   <XDSChartGrid horizontal />
  *   <XDSChartAxis position="bottom" />
  *   <XDSChartAxis position="left" />
- *   <XDSChartBar dataKey="revenue" color={colors[0]} />
+ *   <XDSChartBar dataKey="revenue" color={colors.categorical(1)[0]} />
  *   <XDSChartTooltip />
  * </XDSChart>
  * ```
@@ -66,24 +55,25 @@ const monthlyData = [
   {month: 'Jun', revenue: 6200, expenses: 3400, trend: 5000},
 ];
 
-const colors = XDSChartColors.categorical(3);
-
-/** Basic bar chart with axes, grid, and tooltip. */
-export const BarChart: StoryObj = {
-  render: () => (
+function BarChartDemo() {
+  const colors = useXDSChartColors();
+  return (
     <XDSChart data={monthlyData} xKey="month" yKeys={['revenue']} height={300}>
       <XDSChartGrid horizontal />
       <XDSChartAxis position="bottom" />
       <XDSChartAxis position="left" />
-      <XDSChartBar dataKey="revenue" color={colors[0]} />
+      <XDSChartBar dataKey="revenue" color={colors.categorical(1)[0]} />
       <XDSChartTooltip />
     </XDSChart>
-  ),
-};
+  );
+}
 
-/** Line chart with dots and a two-series legend. */
-export const LineChart: StoryObj = {
-  render: () => (
+export const BarChart: StoryObj = {render: () => <BarChartDemo />};
+
+function LineChartDemo() {
+  const colors = useXDSChartColors();
+  const c = colors.categorical(2);
+  return (
     <XDSChart
       data={monthlyData}
       xKey="month"
@@ -92,22 +82,25 @@ export const LineChart: StoryObj = {
       <XDSChartGrid horizontal />
       <XDSChartAxis position="bottom" />
       <XDSChartAxis position="left" />
-      <XDSChartLine dataKey="revenue" color={colors[0]} dots />
-      <XDSChartLine dataKey="expenses" color={colors[1]} dots />
+      <XDSChartLine dataKey="revenue" color={c[0]} dots />
+      <XDSChartLine dataKey="expenses" color={c[1]} dots />
       <XDSChartLegend
         items={[
-          {label: 'Revenue', color: colors[0]},
-          {label: 'Expenses', color: colors[1]},
+          {label: 'Revenue', color: c[0]},
+          {label: 'Expenses', color: c[1]},
         ]}
       />
       <XDSChartTooltip />
     </XDSChart>
-  ),
-};
+  );
+}
 
-/** Mixed bar + line on the same chart — both map through the same yScale. */
-export const MixedChart: StoryObj = {
-  render: () => (
+export const LineChart: StoryObj = {render: () => <LineChartDemo />};
+
+function MixedChartDemo() {
+  const colors = useXDSChartColors();
+  const c = colors.categorical(3);
+  return (
     <XDSChart
       data={monthlyData}
       xKey="month"
@@ -116,22 +109,25 @@ export const MixedChart: StoryObj = {
       <XDSChartGrid horizontal />
       <XDSChartAxis position="bottom" />
       <XDSChartAxis position="left" />
-      <XDSChartBar dataKey="revenue" color={colors[0]} />
-      <XDSChartLine dataKey="trend" color={colors[2]} dots />
+      <XDSChartBar dataKey="revenue" color={c[0]} />
+      <XDSChartLine dataKey="trend" color={c[2]} dots />
       <XDSChartLegend
         items={[
-          {label: 'Revenue', color: colors[0]},
-          {label: 'Trend', color: colors[2]},
+          {label: 'Revenue', color: c[0]},
+          {label: 'Trend', color: c[2]},
         ]}
       />
       <XDSChartTooltip />
     </XDSChart>
-  ),
-};
+  );
+}
 
-/** Scatter plot with two dot series. */
-export const ScatterPlot: StoryObj = {
-  render: () => (
+export const MixedChart: StoryObj = {render: () => <MixedChartDemo />};
+
+function ScatterPlotDemo() {
+  const colors = useXDSChartColors();
+  const c = colors.categorical(2);
+  return (
     <XDSChart
       data={monthlyData}
       xKey="month"
@@ -140,20 +136,21 @@ export const ScatterPlot: StoryObj = {
       <XDSChartGrid horizontal vertical />
       <XDSChartAxis position="bottom" />
       <XDSChartAxis position="left" />
-      <XDSChartDot dataKey="revenue" color={colors[0]} radius={5} />
-      <XDSChartDot dataKey="expenses" color={colors[1]} radius={5} />
+      <XDSChartDot dataKey="revenue" color={c[0]} radius={5} />
+      <XDSChartDot dataKey="expenses" color={c[1]} radius={5} />
       <XDSChartLegend
         items={[
-          {label: 'Revenue', color: colors[0]},
-          {label: 'Expenses', color: colors[1]},
+          {label: 'Revenue', color: c[0]},
+          {label: 'Expenses', color: c[1]},
         ]}
       />
       <XDSChartTooltip />
     </XDSChart>
-  ),
-};
+  );
+}
 
-// --- Confidence intervals ---
+export const ScatterPlot: StoryObj = {render: () => <ScatterPlotDemo />};
+
 const ciData = [
   {month: 'Jan', mean: 42, upper95: 52, lower95: 32},
   {month: 'Feb', mean: 38, upper95: 50, lower95: 26},
@@ -163,9 +160,10 @@ const ciData = [
   {month: 'Jun', mean: 62, upper95: 74, lower95: 50},
 ];
 
-/** Line with 95% confidence band using XDSChartArea. */
-export const ConfidenceBand: StoryObj = {
-  render: () => (
+function ConfidenceBandDemo() {
+  const colors = useXDSChartColors();
+  const c = colors.categorical(1);
+  return (
     <XDSChart
       data={ciData}
       xKey="month"
@@ -177,16 +175,17 @@ export const ConfidenceBand: StoryObj = {
       <XDSChartArea
         yUpper="upper95"
         yLower="lower95"
-        color={colors[0]}
+        color={c[0]}
         opacity={0.15}
       />
-      <XDSChartLine dataKey="mean" color={colors[0]} dots />
+      <XDSChartLine dataKey="mean" color={c[0]} dots />
       <XDSChartTooltip />
     </XDSChart>
-  ),
-};
+  );
+}
 
-// --- Error bars ---
+export const ConfidenceBand: StoryObj = {render: () => <ConfidenceBandDemo />};
+
 const errorData = [
   {cat: 'A', value: 45, upper: 52, lower: 38},
   {cat: 'B', value: 62, upper: 70, lower: 54},
@@ -194,9 +193,9 @@ const errorData = [
   {cat: 'D', value: 55, upper: 60, lower: 50},
 ];
 
-/** Bar chart with whisker error bars. */
-export const WithErrorBars: StoryObj = {
-  render: () => (
+function ErrorBarDemo() {
+  const colors = useXDSChartColors();
+  return (
     <XDSChart
       data={errorData}
       xKey="cat"
@@ -205,13 +204,14 @@ export const WithErrorBars: StoryObj = {
       <XDSChartGrid horizontal />
       <XDSChartAxis position="bottom" />
       <XDSChartAxis position="left" />
-      <XDSChartBar dataKey="value" color={colors[0]} />
+      <XDSChartBar dataKey="value" color={colors.categorical(1)[0]} />
       <XDSChartErrorBar yUpper="upper" yLower="lower" />
     </XDSChart>
-  ),
-};
+  );
+}
 
-// --- Candlestick ---
+export const WithErrorBars: StoryObj = {render: () => <ErrorBarDemo />};
+
 const ohlcData = [
   {day: 'Mon', open: 100, close: 108, high: 112, low: 98},
   {day: 'Tue', open: 108, close: 103, high: 110, low: 101},
@@ -220,7 +220,6 @@ const ohlcData = [
   {day: 'Fri', open: 106, close: 114, high: 118, low: 105},
 ];
 
-/** OHLC candlestick — default filled variant. */
 export const Candlestick: StoryObj = {
   render: () => (
     <XDSChart
@@ -237,9 +236,9 @@ export const Candlestick: StoryObj = {
   ),
 };
 
-/** OHLC bar variant — vertical line with open/close ticks. */
-export const CandlestickBar: StoryObj = {
-  render: () => (
+function CandlestickBarDemo() {
+  const colors = useXDSChartColors();
+  return (
     <XDSChart
       data={ohlcData}
       xKey="day"
@@ -255,13 +254,14 @@ export const CandlestickBar: StoryObj = {
         low="low"
         open="open"
         close="close"
-        color={colors[0]}
+        color={colors.categorical(1)[0]}
       />
     </XDSChart>
-  ),
-};
+  );
+}
 
-// --- Zero-centered ---
+export const CandlestickBar: StoryObj = {render: () => <CandlestickBarDemo />};
+
 const plData = [
   {month: 'Jan', profit: 12},
   {month: 'Feb', profit: -8},
@@ -271,9 +271,9 @@ const plData = [
   {month: 'Jun', profit: -3},
 ];
 
-/** Positive/negative bars with yBaseline="zero" for symmetric axis. */
-export const ZeroCentered: StoryObj = {
-  render: () => (
+function ZeroCenteredDemo() {
+  const colors = useXDSChartColors();
+  return (
     <XDSChart
       data={plData}
       xKey="month"
@@ -283,14 +283,16 @@ export const ZeroCentered: StoryObj = {
       <XDSChartGrid horizontal />
       <XDSChartAxis position="bottom" />
       <XDSChartAxis position="left" />
-      <XDSChartBar dataKey="profit" color={colors[0]} />
+      <XDSChartBar dataKey="profit" color={colors.categorical(1)[0]} />
     </XDSChart>
-  ),
-};
+  );
+}
 
-/** Gradient legend piped directly from XDSChartColors palettes. */
-export const GradientLegend: StoryObj = {
-  render: () => (
+export const ZeroCentered: StoryObj = {render: () => <ZeroCenteredDemo />};
+
+function GradientLegendDemo() {
+  const colors = useXDSChartColors();
+  return (
     <XDSChart
       data={[
         {x: 0, v: 0},
@@ -300,10 +302,12 @@ export const GradientLegend: StoryObj = {
       yKeys={['v']}
       height={80}>
       <XDSChartLegend
-        gradient={XDSChartColors.sequential.blue(5)}
+        gradient={colors.sequential.blue(5)}
         domain={[0, 100]}
         label="Temperature"
       />
     </XDSChart>
-  ),
-};
+  );
+}
+
+export const GradientLegend: StoryObj = {render: () => <GradientLegendDemo />};

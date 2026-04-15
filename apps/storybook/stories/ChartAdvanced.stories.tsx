@@ -9,20 +9,14 @@ import {
   XDSChartErrorBar,
   XDSChartCandlestick,
   XDSChartLegend,
-  XDSChartColors,
+  useXDSChartColors,
 } from '@xds/lab';
 import {XDSStack, XDSText} from '@xds/core';
 import {XDSHeading} from '@xds/core/Text';
 
-const meta: Meta = {
-  title: 'Lab/XDSChartAdvanced',
-};
-
+const meta: Meta = {title: 'Lab/XDSChartAdvanced'};
 export default meta;
 
-const colors = XDSChartColors.categorical(3);
-
-// --- Confidence interval data ---
 const ciData = [
   {month: 'Jan', mean: 42, upper95: 52, lower95: 32, upper80: 48, lower80: 36},
   {month: 'Feb', mean: 38, upper95: 50, lower95: 26, upper80: 44, lower80: 32},
@@ -32,9 +26,10 @@ const ciData = [
   {month: 'Jun', mean: 62, upper95: 74, lower95: 50, upper80: 68, lower80: 56},
 ];
 
-/** Line chart with 95% and 80% confidence bands */
-export const ConfidenceIntervals: StoryObj = {
-  render: () => (
+function ConfidenceIntervalsDemo() {
+  const colors = useXDSChartColors();
+  const c = colors.categorical(3);
+  return (
     <XDSStack direction="vertical" gap={4}>
       <XDSHeading level={3}>Confidence Intervals</XDSHeading>
       <XDSChart
@@ -48,31 +43,35 @@ export const ConfidenceIntervals: StoryObj = {
         <XDSChartArea
           yUpper="upper95"
           yLower="lower95"
-          color={colors[0]}
+          color={c[0]}
           opacity={0.1}
         />
         <XDSChartArea
           yUpper="upper80"
           yLower="lower80"
-          color={colors[0]}
+          color={c[0]}
           opacity={0.2}
         />
-        <XDSChartLine dataKey="mean" color={colors[0]} dots />
+        <XDSChartLine dataKey="mean" color={c[0]} dots />
         <XDSChartLegend
           items={[
-            {label: 'Mean', color: colors[0]},
-            {label: '80% CI', color: XDSChartColors.alpha(colors[0], 0.3)},
-            {label: '95% CI', color: XDSChartColors.alpha(colors[0], 0.15)},
+            {label: 'Mean', color: c[0]},
+            {label: '80% CI', color: colors.alpha(c[0], 0.3)},
+            {label: '95% CI', color: colors.alpha(c[0], 0.15)},
           ]}
         />
       </XDSChart>
     </XDSStack>
-  ),
+  );
+}
+export const ConfidenceIntervals: StoryObj = {
+  render: () => <ConfidenceIntervalsDemo />,
 };
 
-/** Upper-only confidence band */
-export const UpperConfidence: StoryObj = {
-  render: () => (
+function UpperConfidenceDemo() {
+  const colors = useXDSChartColors();
+  const c = colors.categorical(3);
+  return (
     <XDSStack direction="vertical" gap={4}>
       <XDSHeading level={3}>Upper Confidence Only</XDSHeading>
       <XDSChart
@@ -86,16 +85,18 @@ export const UpperConfidence: StoryObj = {
         <XDSChartArea
           yUpper="upper95"
           baseline="mean"
-          color={colors[1]}
+          color={c[1]}
           opacity={0.2}
         />
-        <XDSChartLine dataKey="mean" color={colors[1]} dots />
+        <XDSChartLine dataKey="mean" color={c[1]} dots />
       </XDSChart>
     </XDSStack>
-  ),
+  );
+}
+export const UpperConfidence: StoryObj = {
+  render: () => <UpperConfidenceDemo />,
 };
 
-// --- Error bar data ---
 const errorData = [
   {category: 'A', value: 45, upper: 52, lower: 38},
   {category: 'B', value: 62, upper: 70, lower: 54},
@@ -104,9 +105,9 @@ const errorData = [
   {category: 'E', value: 48, upper: 58, lower: 38},
 ];
 
-/** Bar chart with error bars */
-export const ErrorBars: StoryObj = {
-  render: () => (
+function ErrorBarsDemo() {
+  const colors = useXDSChartColors();
+  return (
     <XDSStack direction="vertical" gap={4}>
       <XDSHeading level={3}>Bar Chart with Error Bars</XDSHeading>
       <XDSChart
@@ -117,14 +118,14 @@ export const ErrorBars: StoryObj = {
         <XDSChartGrid horizontal />
         <XDSChartAxis position="bottom" />
         <XDSChartAxis position="left" />
-        <XDSChartBar dataKey="value" color={colors[0]} />
+        <XDSChartBar dataKey="value" color={colors.categorical(1)[0]} />
         <XDSChartErrorBar yUpper="upper" yLower="lower" />
       </XDSChart>
     </XDSStack>
-  ),
-};
+  );
+}
+export const ErrorBars: StoryObj = {render: () => <ErrorBarsDemo />};
 
-// --- Candlestick data ---
 const ohlcData = [
   {day: 'Mon', open: 100, close: 108, high: 112, low: 98},
   {day: 'Tue', open: 108, close: 103, high: 110, low: 101},
@@ -133,7 +134,6 @@ const ohlcData = [
   {day: 'Fri', open: 106, close: 114, high: 118, low: 105},
 ];
 
-/** Traditional candlestick chart */
 export const Candlestick: StoryObj = {
   render: () => (
     <XDSStack direction="vertical" gap={4}>
@@ -153,14 +153,13 @@ export const Candlestick: StoryObj = {
   ),
 };
 
-/** OHLC bar variant */
-export const CandlestickBar: StoryObj = {
-  render: () => (
+function CandlestickBarDemo() {
+  const colors = useXDSChartColors();
+  return (
     <XDSStack direction="vertical" gap={4}>
       <XDSHeading level={3}>OHLC Bar</XDSHeading>
       <XDSText type="supporting" color="secondary">
-        Line, gap, dot, gap, line. Vertical line for range, left tick at open,
-        right tick at close.
+        Vertical line for range, left tick at open, right tick at close.
       </XDSText>
       <XDSChart
         data={ohlcData}
@@ -177,14 +176,14 @@ export const CandlestickBar: StoryObj = {
           low="low"
           open="open"
           close="close"
-          color={colors[0]}
+          color={colors.categorical(1)[0]}
         />
       </XDSChart>
     </XDSStack>
-  ),
-};
+  );
+}
+export const CandlestickBar: StoryObj = {render: () => <CandlestickBarDemo />};
 
-// --- Positive/negative data ---
 const plData = [
   {month: 'Jan', profit: 12},
   {month: 'Feb', profit: -8},
@@ -194,9 +193,9 @@ const plData = [
   {month: 'Jun', profit: -3},
 ];
 
-/** Zero-centered bar chart for positive/negative data */
-export const ZeroCentered: StoryObj = {
-  render: () => (
+function ZeroCenteredDemo() {
+  const colors = useXDSChartColors();
+  return (
     <XDSStack direction="vertical" gap={4}>
       <XDSHeading level={3}>
         Zero-Centered (yBaseline=&quot;zero&quot;)
@@ -210,15 +209,16 @@ export const ZeroCentered: StoryObj = {
         <XDSChartGrid horizontal />
         <XDSChartAxis position="bottom" />
         <XDSChartAxis position="left" />
-        <XDSChartBar dataKey="profit" color={colors[0]} />
+        <XDSChartBar dataKey="profit" color={colors.categorical(1)[0]} />
       </XDSChart>
     </XDSStack>
-  ),
-};
+  );
+}
+export const ZeroCentered: StoryObj = {render: () => <ZeroCenteredDemo />};
 
-/** Gradient legend piped from XDSChartColors */
-export const GradientLegend: StoryObj = {
-  render: () => (
+function GradientLegendDemo() {
+  const colors = useXDSChartColors();
+  return (
     <XDSStack direction="vertical" gap={6}>
       <XDSHeading level={3}>Gradient Legends</XDSHeading>
       <XDSStack direction="vertical" gap={4}>
@@ -231,7 +231,7 @@ export const GradientLegend: StoryObj = {
           yKeys={['v']}
           height={80}>
           <XDSChartLegend
-            gradient={XDSChartColors.sequential.blue(5)}
+            gradient={colors.sequential.blue(5)}
             domain={[0, 100]}
             label="Temperature"
           />
@@ -245,7 +245,7 @@ export const GradientLegend: StoryObj = {
           yKeys={['v']}
           height={80}>
           <XDSChartLegend
-            gradient={XDSChartColors.diverging.coldHot(7)}
+            gradient={colors.diverging.coldHot(7)}
             domain={[-50, 50]}
             label="Change %"
             tickFormat={v => `${v > 0 ? '+' : ''}${v}%`}
@@ -260,7 +260,7 @@ export const GradientLegend: StoryObj = {
           yKeys={['v']}
           height={80}>
           <XDSChartLegend
-            gradient={XDSChartColors.diverging.positiveNegative(9)}
+            gradient={colors.diverging.positiveNegative(9)}
             domain={[-100, 100]}
             label="Profit/Loss"
             ticks={5}
@@ -268,5 +268,6 @@ export const GradientLegend: StoryObj = {
         </XDSChart>
       </XDSStack>
     </XDSStack>
-  ),
-};
+  );
+}
+export const GradientLegend: StoryObj = {render: () => <GradientLegendDemo />};

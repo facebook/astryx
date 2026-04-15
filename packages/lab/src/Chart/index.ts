@@ -33,4 +33,8 @@ export {
 export {useChart} from './ChartContext';
 export type {ChartContext, ChartMargin, ChartScale} from './types';
 export {m4Reduce, type M4Point} from './m4';
-export {useXDSChartColors} from './useXDSChartColors';
+export {
+  useXDSChartColors,
+  type XDSChartColorsAPI,
+  type SequentialHue,
+} from './useXDSChartColors';

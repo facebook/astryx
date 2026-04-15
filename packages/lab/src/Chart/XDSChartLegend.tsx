@@ -7,7 +7,7 @@
  * - Discrete: pass `items` — renders color swatches with labels
  * - Gradient: pass `gradient` + `domain` — renders a continuous color bar with tick labels
  *
- * The `gradient` prop accepts the output of XDSChartColors.sequential/diverging directly.
+ * The `gradient` prop accepts the output of useXDSChartColors().sequential/diverging directly.
  */
 
 export interface XDSChartLegendItem {
@@ -20,7 +20,7 @@ export interface XDSChartLegendProps {
   items?: XDSChartLegendItem[];
   /**
    * Continuous gradient — array of hex colors from low to high.
-   * Pass the output of XDSChartColors.sequential.blue(5) or diverging directly.
+   * Pass the output of useXDSChartColors().sequential.blue(5) or diverging directly.
    */
   gradient?: string[];
   /** Numeric domain for the gradient [min, max]. Required when gradient is set. */
@@ -54,16 +54,16 @@ function toGradientCSS(colors: string[]): string {
  *   {label: 'Expenses', color: colors[1]},
  * ]} />
  *
- * // Continuous — pipe XDSChartColors directly
+ * // Continuous — pipe useXDSChartColors() directly
  * <XDSChartLegend
- *   gradient={XDSChartColors.sequential.blue(5)}
+ *   gradient={useXDSChartColors().sequential.blue(5)}
  *   domain={[0, 100]}
  *   label="Temperature"
  * />
  *
  * // Diverging
  * <XDSChartLegend
- *   gradient={XDSChartColors.diverging.coldHot(7)}
+ *   gradient={useXDSChartColors().diverging.coldHot(7)}
  *   domain={[-50, 50]}
  *   label="Change %"
  * />
