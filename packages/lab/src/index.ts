@@ -54,3 +54,6 @@ export {
   lockIcon,
   starterIcons,
 } from './SVGIcon';
+
+// Chart colors — palette accessor for data visualization
+export {XDSChartColors, type SequentialHue} from './ChartColors';
