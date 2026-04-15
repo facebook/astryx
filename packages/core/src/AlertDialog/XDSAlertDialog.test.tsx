@@ -83,6 +83,19 @@ describe('XDSAlertDialog', () => {
     expect(onOpenChange).not.toHaveBeenCalled();
   });
 
+  it('does not auto-close when disabled cancel is clicked', () => {
+    const onOpenChange = vi.fn();
+    render(
+      <XDSAlertDialog
+        {...defaultProps}
+        onOpenChange={onOpenChange}
+        cancel={<button aria-disabled="true">Cancel</button>}
+      />,
+    );
+    fireEvent.click(screen.getByText('Cancel'));
+    expect(onOpenChange).not.toHaveBeenCalled();
+  });
+
   it('does not render when isOpen is false', () => {
     render(<XDSAlertDialog {...defaultProps} isOpen={false} />);
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
@@ -91,5 +104,12 @@ describe('XDSAlertDialog', () => {
   it('accepts custom width', () => {
     render(<XDSAlertDialog {...defaultProps} width={600} />);
     expect(screen.getByRole('alertdialog')).toBeInTheDocument();
+  });
+
+  it('has data-autofocus on cancel wrapper', () => {
+    render(<XDSAlertDialog {...defaultProps} />);
+    const cancelBtn = screen.getByText('Cancel');
+    const wrapper = cancelBtn.closest('[data-autofocus]');
+    expect(wrapper).toBeInTheDocument();
   });
 });

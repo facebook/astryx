@@ -13,7 +13,7 @@
  * - /apps/storybook/stories/AlertDialog.stories.tsx (storybook stories)
  */
 
-import {useId, useCallback, useRef, useEffect, type ReactNode} from 'react';
+import {useId, useCallback, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSDialog} from '../Dialog';
 import {XDSLayout} from '../Layout/XDSLayout';
@@ -53,7 +53,7 @@ export interface XDSAlertDialogProps {
   description: string;
 
   /**
-   * Cancel action slot. Receives initial focus when the dialog opens.
+   * Cancel action slot. First focusable element receives initial focus.
    * Clicking this automatically calls `onOpenChange(false)`.
    */
   cancel: ReactNode;
@@ -77,7 +77,8 @@ export interface XDSAlertDialogProps {
  *
  * Uses `role="alertdialog"` and requires explicit user action to dismiss.
  * Cannot be dismissed by clicking outside. Escape key triggers cancel.
- * Initial focus goes to the cancel button (least destructive action).
+ * Initial focus goes to the cancel button (least destructive action)
+ * via `data-autofocus` on the cancel wrapper.
  *
  * @example
  * ```
@@ -105,21 +106,17 @@ export function XDSAlertDialog({
 }: XDSAlertDialogProps) {
   const titleId = useId();
   const descriptionId = useId();
-  const cancelRef = useRef<HTMLDivElement>(null);
 
-  const handleClose = useCallback(() => {
-    onOpenChange(false);
-  }, [onOpenChange]);
-
-  // Focus the cancel button when the dialog opens (least destructive action)
-  useEffect(() => {
-    if (isOpen && cancelRef.current) {
-      const focusable = cancelRef.current.querySelector<HTMLElement>(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-      );
-      focusable?.focus();
-    }
-  }, [isOpen]);
+  const handleCancelClick = useCallback(
+    (e: React.MouseEvent) => {
+      // Don't auto-close if the cancel button is disabled
+      const target = e.target as HTMLElement;
+      const button = target.closest('button, [role="button"]');
+      if (button?.getAttribute('aria-disabled') === 'true') return;
+      onOpenChange(false);
+    },
+    [onOpenChange],
+  );
 
   return (
     <XDSDialog
@@ -146,8 +143,8 @@ export function XDSAlertDialog({
           <XDSLayoutFooter>
             <XDSHStack gap={2} hAlign="end">
               <div
-                ref={cancelRef}
-                onClick={handleClose}
+                data-autofocus=""
+                onClick={handleCancelClick}
                 {...stylex.props(styles.cancelWrapper)}>
                 {cancel}
               </div>
