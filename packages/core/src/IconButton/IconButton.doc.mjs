@@ -69,25 +69,6 @@ export const docs = {
     },
   ],
 
-  examples: [
-    {
-      label: 'Ghost icon button',
-      code: '<XDSIconButton label="Settings" icon={<GearIcon />} variant="ghost" />',
-    },
-    {
-      label: 'Destructive icon button',
-      code: '<XDSIconButton label="Delete" icon={<TrashIcon />} variant="destructive" />',
-    },
-    {
-      label: 'Small emoji icon button',
-      code: '<XDSIconButton label="Emoji" icon={<span>🚀</span>} variant="ghost" size="sm" />',
-    },
-    {
-      label: 'Primary icon button with tooltip',
-      code: '<XDSIconButton label="Add item" icon={<PlusIcon />} variant="primary" tooltip="Add a new item" />',
-    },
-  ],
-
   notes: [
     'Prefer XDSIconButton over <XDSButton isIconOnly> for explicit intent',
     'The label prop is always used as aria-label — required for accessibility',
