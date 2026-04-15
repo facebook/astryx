@@ -18,6 +18,24 @@
 
 export {XDSVegaChart} from './XDSVegaChart';
 export {parseSchema} from './schema';
-export type {XDSVegaChartProps, AnySpec, ViewData, VegaSpec, VegaLiteSpec, CompileOptions, ParseOptions, Config, ViewOptions, LoggerInterface} from './types';
+export {
+  buildVegaLiteConfig,
+  DEFAULT_STROKE_WIDTH,
+  DEFAULT_POINT_SIZE,
+  DEFAULT_LEGEND_ORIENT,
+  LEGEND_OFFSET,
+  TITLE_OFFSET,
+} from './vegaLiteConfig';
+export type {
+  XDSVegaChartProps,
+  AnySpec,
+  ViewData,
+  VegaSpec,
+  VegaLiteSpec,
+  CompileOptions,
+  ParseOptions,
+  Config,
+  ViewOptions,
+  LoggerInterface,
+} from './types';
 export type {SchemaLibrary, SchemaResult} from './schema';
-
