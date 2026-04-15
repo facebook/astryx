@@ -1,6 +1,6 @@
 'use client';
 
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {XDSVStack} from '@xds/core/Layout';
 import {XDSCenter} from '@xds/core/Center';
 import {XDSText} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
@@ -144,8 +144,8 @@ export default function ProductGalleryTemplate() {
     <XDSCenter axis="horizontal">
       <div style={{maxWidth: 1200, width: '100%', padding: '32px 24px 64px'}}>
         <XDSVStack gap={6}>
-          {/* Header */}
-          <XDSGrid minChildWidth={280} columns={2} gap={4}>
+          {/* Header — XDSGrid handles responsive stacking */}
+          <XDSGrid minChildWidth={280} columns={2} gap={4} align="start">
             <XDSText
               type="large"
               weight="bold"
@@ -170,8 +170,8 @@ export default function ProductGalleryTemplate() {
             </XDSVStack>
           </XDSGrid>
 
-          {/* Product Grid — responsive: 3→2→1 cols */}
-          <XDSGrid minChildWidth={280} columns={3} gap={6}>
+          {/* Product Grid — 3 cols desktop, wraps to 2→1 on smaller screens */}
+          <XDSGrid minChildWidth={300} gap={6}>
             {PRODUCTS.map(product => (
               <ProductCard key={product.id} product={product} />
             ))}
