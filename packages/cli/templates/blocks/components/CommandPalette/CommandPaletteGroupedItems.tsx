@@ -54,7 +54,7 @@ export default function CommandPaletteGroupedItems() {
         searchSource={source}
         renderItem={(item) => (
           <>
-            {(item.auxiliaryData as any)?.icon?.()}
+            {(item.auxiliaryData as Record<string, unknown>)?.icon?.()}
             {item.label}
           </>
         )}
