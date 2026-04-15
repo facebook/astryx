@@ -10,3 +10,8 @@ export default function TextInputWithPlaceholder() {
     <XDSTextInput label="Email" value={email} onChange={setEmail} placeholder="email@example.com" />
   );
 }
+
+export const showcase = {
+  aspectRatio: 4 / 3,
+  render: TextInputWithPlaceholder,
+};

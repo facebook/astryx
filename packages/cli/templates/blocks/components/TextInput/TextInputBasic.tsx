@@ -10,3 +10,8 @@ export default function TextInputBasic() {
     <XDSTextInput label="Name" value={name} onChange={setName} />
   );
 }
+
+export const showcase = {
+  aspectRatio: 4 / 3,
+  render: TextInputBasic,
+};

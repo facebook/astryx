@@ -10,3 +10,8 @@ export default function TextInputPasswordInput() {
     <XDSTextInput type="password" label="Password" value={password} onChange={setPassword} />
   );
 }
+
+export const showcase = {
+  aspectRatio: 4 / 3,
+  render: TextInputPasswordInput,
+};

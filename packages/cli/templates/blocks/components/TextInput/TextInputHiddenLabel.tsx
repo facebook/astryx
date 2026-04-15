@@ -10,3 +10,8 @@ export default function TextInputHiddenLabel() {
     <XDSTextInput label="Search" isLabelHidden value={query} onChange={setQuery} placeholder="Search..." />
   );
 }
+
+export const showcase = {
+  aspectRatio: 4 / 3,
+  render: TextInputHiddenLabel,
+};

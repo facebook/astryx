@@ -19,3 +19,8 @@ export default function TextInputAsyncActionWithLoadingState() {
     />
   );
 }
+
+export const showcase = {
+  aspectRatio: 4 / 3,
+  render: TextInputAsyncActionWithLoadingState,
+};
