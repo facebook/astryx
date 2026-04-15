@@ -74,7 +74,7 @@ function Example() {
     {name: 'actionLabel', type: 'string', required: true, description: 'Action button label.'},
     {name: 'onAction', type: '() => unknown', required: true, description: 'Called when action button is clicked. Does NOT auto-close.'},
     {name: 'cancelLabel', type: 'string', default: "'Cancel'", description: 'Cancel button label.'},
-    {name: 'actionVariant', type: 'XDSButtonVariant', default: "'danger'", description: 'Action button variant.'},
+    {name: 'actionVariant', type: 'XDSButtonVariant', default: "'destructive'", description: 'Action button variant.'},
     {name: 'isActionLoading', type: 'boolean', description: 'Shows loading spinner on the action button.'},
     {name: 'width', type: 'number | string', default: '400', description: 'Dialog width.'},
   ],

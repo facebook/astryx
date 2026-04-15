@@ -15,7 +15,7 @@ const meta: Meta<typeof XDSAlertDialog> = {
     width: {control: 'number'},
     actionVariant: {
       control: 'select',
-      options: ['danger', 'primary', 'secondary', 'ghost'],
+      options: ['destructive', 'primary', 'secondary', 'ghost'],
     },
   },
 };
@@ -33,7 +33,7 @@ export const Delete: Story = {
       <>
         <XDSButton
           label="Delete item"
-          variant="danger"
+          variant="destructive"
           onClick={() => setIsOpen(true)}
         />
         <XDSAlertDialog
@@ -61,7 +61,7 @@ export const Async: Story = {
       <>
         <XDSButton
           label="Revoke access"
-          variant="danger"
+          variant="destructive"
           onClick={() => setIsOpen(true)}
         />
         <XDSAlertDialog
@@ -120,7 +120,7 @@ export const Imperative: Story = {
       <>
         <XDSButton
           label="Delete item"
-          variant="danger"
+          variant="destructive"
           onClick={() =>
             alert.show({
               title: 'Delete item?',

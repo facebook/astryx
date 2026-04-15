@@ -60,7 +60,7 @@ export interface XDSAlertDialogProps {
 
   /**
    * Variant for the action button.
-   * @default 'danger'
+   * @default 'destructive'
    */
   actionVariant?: XDSButtonVariant;
 
@@ -109,7 +109,7 @@ export function XDSAlertDialog({
   description,
   cancelLabel = 'Cancel',
   actionLabel,
-  actionVariant = 'danger',
+  actionVariant = 'destructive',
   isActionLoading,
   onAction,
   width = 400,
