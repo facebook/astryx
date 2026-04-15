@@ -34,43 +34,11 @@ export const docs = {
       {name: '--hovercard-radius', description: 'Border radius of the hover card', default: 'var(--radius-container)'},
     ],
   },
-  examples: [
-    {
-      label: 'XDSHoverCard — basic',
-      code: `<XDSHoverCard content={<ProfileCard user={user} />} placement="above">
-  <XDSButton>Hover me</XDSButton>
-</XDSHoverCard>`,
-    },
-    {
-      label: 'useXDSHoverCard hook',
-      code: `const hoverCard = useXDSHoverCard({placement: 'above'});
-
-<XDSButton ref={hoverCard.ref} aria-describedby={hoverCard.describedBy}>
-  Hover me
-</XDSButton>
-{hoverCard.renderHoverCard(<ProfileCard user={user} />)}`,
-    },
-  ],
   components: [
     {
       name: 'XDSHoverCard',
       description:
-        'Component wrapper for hover card display — a richer, larger overlay triggered on hover or focus.',
-      examples: [
-        {
-          label: 'Basic',
-          code: `<XDSHoverCard content={<ProfileCard user={user} />} placement="above">
-  <XDSButton>Hover me</XDSButton>
-</XDSHoverCard>`,
-        },
-        {
-          label: 'With delay',
-          code: `<XDSHoverCard content={<ProfileCard user={user} />} delay={500} hideDelay={300}>
-  <span>Hover me</span>
-</XDSHoverCard>`,
-        },
-      ],
-      props: [
+        'Component wrapper for hover card display — a richer, larger overlay triggered on hover or focus.',      props: [
         {
           name: 'children',
           type: 'ReactNode',
@@ -136,17 +104,6 @@ export const docs = {
       name: 'useXDSHoverCard',
       description:
         'Hook for hover card behavior with hover/focus triggers. Builds on useXDSLayer.',
-      examples: [
-        {
-          label: 'Basic hook usage',
-          code: `const hoverCard = useXDSHoverCard({placement: 'above'});
-
-<XDSButton ref={hoverCard.ref} aria-describedby={hoverCard.describedBy}>
-  Hover me
-</XDSButton>
-{hoverCard.renderHoverCard(<ProfileCard user={user} />)}`,
-        },
-      ],
       props: [
         {
           name: 'placement',
@@ -260,42 +217,11 @@ export const docsZh = {
       {name: '--hovercard-radius', description: 'Border radius of the hover card', default: 'var(--radius-container)'},
     ],
   },
-  examples: [
-    {
-      label: 'XDSHoverCard 基本用法',
-      code: `<XDSHoverCard content={<ProfileCard user={user} />} placement="above">
-  <XDSButton>Hover me</XDSButton>
-</XDSHoverCard>`,
-    },
-    {
-      label: 'useXDSHoverCard Hook',
-      code: `const hoverCard = useXDSHoverCard({placement: 'above'});
-
-<XDSButton ref={hoverCard.ref} aria-describedby={hoverCard.describedBy}>
-  Hover me
-</XDSButton>
-{hoverCard.renderHoverCard(<ProfileCard user={user} />)}`,
-    },
-  ],
   components: [
     {
       name: 'XDSHoverCard',
       description:
         '悬浮卡片显示的组件包装器，在悬停或聚焦时触发更丰富、更大的浮层。',
-      examples: [
-        {
-          label: '基本用法',
-          code: `<XDSHoverCard content={<ProfileCard user={user} />} placement="above">
-  <XDSButton>Hover me</XDSButton>
-</XDSHoverCard>`,
-        },
-        {
-          label: '带延迟',
-          code: `<XDSHoverCard content={<ProfileCard user={user} />} delay={500} hideDelay={300}>
-  <span>Hover me</span>
-</XDSHoverCard>`,
-        },
-      ],
       props: [
         {
           name: 'children',
@@ -362,17 +288,6 @@ export const docsZh = {
       name: 'useXDSHoverCard',
       description:
         '具有悬停/聚焦触发行为的悬浮卡片 Hook，基于 useXDSLayer 构建。',
-      examples: [
-        {
-          label: '基本 Hook 用法',
-          code: `const hoverCard = useXDSHoverCard({placement: 'above'});
-
-<XDSButton ref={hoverCard.ref} aria-describedby={hoverCard.describedBy}>
-  Hover me
-</XDSButton>
-{hoverCard.renderHoverCard(<ProfileCard user={user} />)}`,
-        },
-      ],
       props: [
         {
           name: 'placement',
