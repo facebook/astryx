@@ -16,3 +16,8 @@ export default function LayoutBasicPage() {
     />
   );
 }
+
+export const showcase = {
+  aspectRatio: 4 / 3,
+  render: LayoutBasicPage,
+};
