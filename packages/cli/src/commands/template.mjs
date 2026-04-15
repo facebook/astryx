@@ -81,7 +81,7 @@ export function registerTemplate(program) {
         }
 
         case 'template.copy': {
-          console.log(`\n✓ Copied template to ${result.data.outputDir}/page.tsx\n`);
+          console.log(`\n✓ Copied template to ${result.data.outputDir}/${result.data.fileName}\n`);
           break;
         }
       }

@@ -368,6 +368,6 @@ export async function template(name, options = {}) {
   const relOutput = path.relative(cwd, outputDir);
   return {
     type: 'template.copy',
-    data: {template: name, outputDir: relOutput, filesCopied: 1},
+    data: {template: name, outputDir: relOutput, fileName: outputFileName, filesCopied: 1},
   };
 }
