@@ -130,7 +130,7 @@ export function XDSAlertDialog({
       role="alertdialog"
       aria-labelledby={titleId}
       aria-describedby={descriptionId}
-      {...xdsClassName('alert-dialog')}>
+      className={xdsClassName('alert-dialog')}>
       <XDSLayout
         content={
           <XDSLayoutContent>
