@@ -14,8 +14,3 @@ export default function TreeListInteractiveItems() {
     />
   );
 }
-
-export const showcase = {
-  aspectRatio: 3 / 4,
-  render: TreeListInteractiveItems,
-};

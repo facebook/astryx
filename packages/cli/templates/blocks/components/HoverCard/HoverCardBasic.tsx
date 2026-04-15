@@ -21,8 +21,3 @@ export default function HoverCardBasic() {
     </XDSHoverCard>
   );
 }
-
-export const showcase = {
-  aspectRatio: 1,
-  render: HoverCardBasic,
-};

@@ -12,8 +12,3 @@ export default function IconSemanticNames() {
     </div>
   );
 }
-
-export const showcase = {
-  aspectRatio: 1,
-  render: IconSemanticNames,
-};

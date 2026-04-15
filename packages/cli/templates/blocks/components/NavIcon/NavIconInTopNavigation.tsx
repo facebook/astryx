@@ -19,8 +19,3 @@ export default function NavIconInTopNavigation() {
     />
   );
 }
-
-export const showcase = {
-  aspectRatio: 16 / 4,
-  render: NavIconInTopNavigation,
-};

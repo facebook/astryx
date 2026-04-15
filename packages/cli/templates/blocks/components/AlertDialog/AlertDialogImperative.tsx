@@ -21,8 +21,3 @@ export default function AlertDialogImperative() {
     </>
   );
 }
-
-export const showcase = {
-  aspectRatio: 4 / 3,
-  render: AlertDialogImperative,
-};

@@ -62,8 +62,3 @@ export default function CommandPaletteGroupedItems() {
     </>
   );
 }
-
-export const showcase = {
-  aspectRatio: 4 / 3,
-  render: CommandPaletteGroupedItems,
-};

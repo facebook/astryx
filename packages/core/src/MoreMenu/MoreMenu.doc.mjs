@@ -4,6 +4,10 @@ export const docs = {
   name: 'MoreMenu',
   description:
     'Overflow menu with a three-dot icon trigger. A convenience wrapper that composes an icon-only XDSButton with a dropdown menu, eliminating the boilerplate of wiring up state management, positioning, and accessibility attributes.',
+  showcase: {
+    aspectRatio: 4 / 3,
+    code: '<XDSMoreMenu items={[{label: "Edit"}]} />',
+  },
   keywords: ["moremenu","overflow","kebab","dotmenu","threedot","ellipsis","dropdown","contextmenu","actionmenu"],
   props: [
     {

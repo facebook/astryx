@@ -10,8 +10,3 @@ export default function StackOverrideAlignmentPerItem() {
     </XDSHStack>
   );
 }
-
-export const showcase = {
-  aspectRatio: 1,
-  render: StackOverrideAlignmentPerItem,
-};

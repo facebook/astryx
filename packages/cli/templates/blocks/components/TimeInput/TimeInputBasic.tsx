@@ -14,8 +14,3 @@ export default function TimeInputBasic() {
     <XDSTimeInput label="Start time" value={time} onChange={setTime} />
   );
 }
-
-export const showcase = {
-  aspectRatio: 4 / 3,
-  render: TimeInputBasic,
-};

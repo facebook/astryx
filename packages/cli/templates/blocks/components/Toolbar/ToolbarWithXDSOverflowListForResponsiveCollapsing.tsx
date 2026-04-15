@@ -38,8 +38,3 @@ export default function ToolbarWithXDSOverflowListForResponsiveCollapsing() {
     />
   );
 }
-
-export const showcase = {
-  aspectRatio: 16 / 4,
-  render: ToolbarWithXDSOverflowListForResponsiveCollapsing,
-};

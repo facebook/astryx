@@ -20,8 +20,3 @@ export default function TimeInput24hourFormatWithClearButton() {
     />
   );
 }
-
-export const showcase = {
-  aspectRatio: 4 / 3,
-  render: TimeInput24hourFormatWithClearButton,
-};

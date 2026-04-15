@@ -10,8 +10,3 @@ export default function TextAreaWithPlaceholderAndCustomRows() {
     <XDSTextArea label="Notes" rows={5} value={notes} onChange={setNotes} placeholder="Enter your notes..." />
   );
 }
-
-export const showcase = {
-  aspectRatio: 4 / 3,
-  render: TextAreaWithPlaceholderAndCustomRows,
-};

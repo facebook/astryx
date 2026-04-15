@@ -15,8 +15,3 @@ export default function StackStyleXUtilityAdvancedUse() {
     </div>
   );
 }
-
-export const showcase = {
-  aspectRatio: 1,
-  render: StackStyleXUtilityAdvancedUse,
-};

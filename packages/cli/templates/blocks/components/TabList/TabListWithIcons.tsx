@@ -37,8 +37,3 @@ export default function TabListWithIcons() {
     </XDSTabList>
   );
 }
-
-export const showcase = {
-  aspectRatio: 16 / 4,
-  render: TabListWithIcons,
-};

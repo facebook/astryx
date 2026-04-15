@@ -12,8 +12,3 @@ export default function SliderDisabled() {
     />
   );
 }
-
-export const showcase = {
-  aspectRatio: 4 / 3,
-  render: SliderDisabled,
-};

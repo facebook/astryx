@@ -20,8 +20,3 @@ export default function AspectRatioVideo() {
     </XDSAspectRatio>
   );
 }
-
-export const showcase = {
-  aspectRatio: 1,
-  render: AspectRatioVideo,
-};

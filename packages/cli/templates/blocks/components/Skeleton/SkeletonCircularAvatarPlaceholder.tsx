@@ -7,8 +7,3 @@ export default function SkeletonCircularAvatarPlaceholder() {
     <XDSSkeleton width={40} height={40} radius="rounded" />
   );
 }
-
-export const showcase = {
-  aspectRatio: 1,
-  render: SkeletonCircularAvatarPlaceholder,
-};

@@ -7,8 +7,3 @@ export default function TextHeading() {
     <XDSHeading level={1}>Page Title</XDSHeading>
   );
 }
-
-export const showcase = {
-  aspectRatio: 1,
-  render: TextHeading,
-};

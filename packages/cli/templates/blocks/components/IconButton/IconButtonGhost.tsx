@@ -22,8 +22,3 @@ export default function IconButtonGhost() {
     <XDSIconButton label="Settings" icon={<GearIcon />} variant="ghost" />
   );
 }
-
-export const showcase = {
-  aspectRatio: 1,
-  render: IconButtonGhost,
-};

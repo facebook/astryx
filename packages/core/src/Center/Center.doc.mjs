@@ -3,6 +3,10 @@
 export const docs = {
   name: 'Center',
   description: 'Centers children horizontally and/or vertically using flexbox.',
+  showcase: {
+    aspectRatio: 1,
+    code: '<XDSCenter>Centered</XDSCenter>',
+  },
   keywords: ["center","centered","centering","align","alignment","justify","flexbox","middle"],
   features: [
     'Supports centering on both axes, horizontal only, or vertical only',

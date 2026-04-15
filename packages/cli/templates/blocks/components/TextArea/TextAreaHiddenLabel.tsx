@@ -10,8 +10,3 @@ export default function TextAreaHiddenLabel() {
     <XDSTextArea label="Comments" isLabelHidden value={comments} onChange={setComments} placeholder="Add a comment..." />
   );
 }
-
-export const showcase = {
-  aspectRatio: 4 / 3,
-  render: TextAreaHiddenLabel,
-};

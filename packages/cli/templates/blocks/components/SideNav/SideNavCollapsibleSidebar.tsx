@@ -41,8 +41,3 @@ export default function SideNavCollapsibleSidebar() {
     </XDSAppShell>
   );
 }
-
-export const showcase = {
-  aspectRatio: 3 / 4,
-  render: SideNavCollapsibleSidebar,
-};

@@ -10,8 +10,3 @@ export default function SliderBasicSingleValue() {
     <XDSSlider label="Volume" value={50} onChange={setValue} />
   );
 }
-
-export const showcase = {
-  aspectRatio: 4 / 3,
-  render: SliderBasicSingleValue,
-};

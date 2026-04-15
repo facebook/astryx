@@ -4,6 +4,10 @@ export const docs = {
   name: 'Table',
   description:
     'Data-driven table with rich cell content via renderCell. Compose cells with XDSBadge, XDSStatusDot, XDSText, XDSAvatar, and layout primitives. XDSBaseTable provides the unstyled structural core with a composable plugin pipeline.',
+  showcase: {
+    aspectRatio: 4 / 3,
+    code: '<XDSTable data={[]} columns={[]} />',
+  },
   keywords: ["table","datatable","datagrid","spreadsheet","sorting","virtualized","columns","rows","selection","pinning"],
   features: [
     'Data-driven rendering — pass data + columns, rows render automatically',

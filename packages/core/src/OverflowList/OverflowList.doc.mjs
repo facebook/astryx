@@ -4,6 +4,10 @@ export const docs = {
   name: 'OverflowList',
   description:
     'Horizontal list that hides items that overflow the available width and shows a custom indicator. Uses a hidden measurement container to avoid layout flicker.',
+  showcase: {
+    aspectRatio: 16 / 4,
+    code: '<XDSOverflowList items={[]} renderItem={() => null} renderOverflow={() => null} />',
+  },
   keywords: [
     'overflow',
     'truncate',

@@ -14,8 +14,3 @@ export default function ToastBasic() {
     />
   );
 }
-
-export const showcase = {
-  aspectRatio: 1,
-  render: ToastBasic,
-};

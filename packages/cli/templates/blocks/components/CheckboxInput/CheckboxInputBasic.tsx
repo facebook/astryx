@@ -13,8 +13,3 @@ export default function CheckboxInputBasic() {
     />
   );
 }
-
-export const showcase = {
-  aspectRatio: 4 / 3,
-  render: CheckboxInputBasic,
-};

@@ -17,8 +17,3 @@ export default function SliderWithCustomFormatting() {
     />
   );
 }
-
-export const showcase = {
-  aspectRatio: 4 / 3,
-  render: SliderWithCustomFormatting,
-};

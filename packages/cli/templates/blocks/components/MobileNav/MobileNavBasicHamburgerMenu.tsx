@@ -43,8 +43,3 @@ export default function MobileNavBasicHamburgerMenu() {
     </>
   );
 }
-
-export const showcase = {
-  aspectRatio: 3 / 4,
-  render: MobileNavBasicHamburgerMenu,
-};

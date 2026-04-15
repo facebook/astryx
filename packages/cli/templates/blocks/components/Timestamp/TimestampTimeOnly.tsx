@@ -7,8 +7,3 @@ export default function TimestampTimeOnly() {
     <XDSTimestamp value="2026-02-19T17:00:00Z" format="time" />
   );
 }
-
-export const showcase = {
-  aspectRatio: 1,
-  render: TimestampTimeOnly,
-};

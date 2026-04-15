@@ -24,8 +24,3 @@ export default function TextInputWithStartIcon() {
     />
   );
 }
-
-export const showcase = {
-  aspectRatio: 4 / 3,
-  render: TextInputWithStartIcon,
-};

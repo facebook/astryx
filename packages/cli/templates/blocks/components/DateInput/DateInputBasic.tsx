@@ -9,8 +9,3 @@ export default function DateInputBasic() {
 
   return <XDSDateInput label="Event date" value={date} onChange={setDate} />;
 }
-
-export const showcase = {
-  aspectRatio: 4 / 3,
-  render: DateInputBasic,
-};

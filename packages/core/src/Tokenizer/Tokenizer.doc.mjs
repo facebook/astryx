@@ -4,6 +4,10 @@ export const docs = {
   name: 'Tokenizer',
   description:
     'Multi-select typeahead with token chips for selected items. Composes XDSBaseTypeahead for search and XDSToken for chips.',
+  showcase: {
+    aspectRatio: 4 / 3,
+    code: '<XDSTokenizer label="Tags" items={[]} />',
+  },
   keywords: ["tokenizer","multiselect","multi-select","chips","tags","combobox","autocomplete","taginput","chipinput"],
   props: [
     {

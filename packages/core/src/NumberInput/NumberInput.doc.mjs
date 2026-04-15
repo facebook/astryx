@@ -4,6 +4,10 @@ export const docs = {
   name: 'NumberInput',
   description:
     'A number input component for collecting numeric user input with validation.',
+  showcase: {
+    aspectRatio: 4 / 3,
+    code: '<XDSNumberInput label="Amount" value={0} onChange={() => {}} />',
+  },
   keywords: ["numberinput","numberfield","stepper","spinner","counter","increment","decrement","quantity","numberpicker"],
   features: [
     'Label Support — required label for accessibility (can be visually hidden)',

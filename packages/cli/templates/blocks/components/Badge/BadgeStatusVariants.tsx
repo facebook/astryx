@@ -11,8 +11,3 @@ export default function BadgeStatusVariants() {
     </div>
   );
 }
-
-export const showcase = {
-  aspectRatio: 1,
-  render: BadgeStatusVariants,
-};

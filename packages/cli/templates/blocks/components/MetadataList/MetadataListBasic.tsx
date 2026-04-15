@@ -10,8 +10,3 @@ export default function MetadataListBasic() {
     </XDSMetadataList>
   );
 }
-
-export const showcase = {
-  aspectRatio: 4 / 3,
-  render: MetadataListBasic,
-};

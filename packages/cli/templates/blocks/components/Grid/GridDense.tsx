@@ -41,8 +41,3 @@ export default function GridDense() {
     </XDSGrid>
   );
 }
-
-export const showcase = {
-  aspectRatio: 4 / 3,
-  render: GridDense,
-};

@@ -7,8 +7,3 @@ export default function SkeletonBasicTextPlaceholder() {
     <XDSSkeleton width={200} height={16} />
   );
 }
-
-export const showcase = {
-  aspectRatio: 1,
-  render: SkeletonBasicTextPlaceholder,
-};

@@ -27,8 +27,3 @@ export default function IconButtonPrimaryWithTooltip() {
     />
   );
 }
-
-export const showcase = {
-  aspectRatio: 1,
-  render: IconButtonPrimaryWithTooltip,
-};

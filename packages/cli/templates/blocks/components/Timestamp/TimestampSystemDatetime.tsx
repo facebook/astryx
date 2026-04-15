@@ -7,8 +7,3 @@ export default function TimestampSystemDatetime() {
     <XDSTimestamp value="2026-02-19T17:00:00Z" format="system_date_time" type="code" />
   );
 }
-
-export const showcase = {
-  aspectRatio: 1,
-  render: TimestampSystemDatetime,
-};

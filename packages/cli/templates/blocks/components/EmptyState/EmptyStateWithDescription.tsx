@@ -10,8 +10,3 @@ export default function EmptyStateWithDescription() {
     />
   );
 }
-
-export const showcase = {
-  aspectRatio: 4 / 3,
-  render: EmptyStateWithDescription,
-};

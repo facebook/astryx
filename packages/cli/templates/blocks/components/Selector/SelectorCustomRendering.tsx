@@ -35,8 +35,3 @@ export default function SelectorCustomRendering() {
     </XDSSelector>
   );
 }
-
-export const showcase = {
-  aspectRatio: 4 / 3,
-  render: SelectorCustomRendering,
-};

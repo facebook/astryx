@@ -13,8 +13,3 @@ export default function ProgressBarCustomValueLabelFormatter() {
     />
   );
 }
-
-export const showcase = {
-  aspectRatio: 16 / 4,
-  render: ProgressBarCustomValueLabelFormatter,
-};

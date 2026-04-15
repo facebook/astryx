@@ -37,8 +37,3 @@ export default function MoreMenuCustomItemRendering() {
     </XDSMoreMenu>
   );
 }
-
-export const showcase = {
-  aspectRatio: 4 / 3,
-  render: MoreMenuCustomItemRendering,
-};

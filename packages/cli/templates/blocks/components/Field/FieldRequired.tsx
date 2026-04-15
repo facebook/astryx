@@ -12,8 +12,3 @@ export default function FieldRequired() {
     </XDSField>
   );
 }
-
-export const showcase = {
-  aspectRatio: 4 / 3,
-  render: FieldRequired,
-};

@@ -4,6 +4,10 @@ export const docs = {
   name: 'MultiSelector',
   description:
     'Multi-select dropdown with checkboxes for choosing multiple items from a list. For small, finite sets like column toggles or filter facets — not a replacement for XDSTokenizer.',
+  showcase: {
+    aspectRatio: 4 / 3,
+    code: '<XDSMultiSelector label="Tags" items={[]} />',
+  },
   keywords: ['multiselect', 'checkbox', 'dropdown', 'multi', 'picker', 'checklist', 'facet', 'filter', 'select'],
   features: [
     'Checkbox-based multi-select — dropdown stays open on toggle',

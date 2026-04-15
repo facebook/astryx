@@ -4,6 +4,10 @@ export const docs = {
   name: 'Avatar',
   description:
     'Avatar component for displaying user profile pictures with fallback support.',
+  showcase: {
+    aspectRatio: 1,
+    code: '<XDSAvatar name="Jane Doe" />',
+  },
   keywords: ["avatar","profile","user","photo","thumbnail","initials","gravatar","pfp","userpic"],
   features: [
     'Image loading: Primary and fallback image sources',

@@ -26,8 +26,3 @@ export default function TypeaheadWithValidationStatus() {
     />
   );
 }
-
-export const showcase = {
-  aspectRatio: 4 / 3,
-  render: TypeaheadWithValidationStatus,
-};

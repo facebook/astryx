@@ -62,8 +62,3 @@ export default function TableRichCellContentWithRenderCell() {
     />
   );
 }
-
-export const showcase = {
-  aspectRatio: 4 / 3,
-  render: TableRichCellContentWithRenderCell,
-};

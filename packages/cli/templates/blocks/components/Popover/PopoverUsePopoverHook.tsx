@@ -30,8 +30,3 @@ export default function PopoverUsePopoverHook() {
     </>
   );
 }
-
-export const showcase = {
-  aspectRatio: 4 / 3,
-  render: PopoverUsePopoverHook,
-};

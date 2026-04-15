@@ -13,8 +13,3 @@ export default function TabListBasic() {
     </XDSTabList>
   );
 }
-
-export const showcase = {
-  aspectRatio: 16 / 4,
-  render: TabListBasic,
-};

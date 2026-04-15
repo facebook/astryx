@@ -14,8 +14,3 @@ export default function LinkInlineWithText() {
     </XDSText>
   );
 }
-
-export const showcase = {
-  aspectRatio: 1,
-  render: LinkInlineWithText,
-};

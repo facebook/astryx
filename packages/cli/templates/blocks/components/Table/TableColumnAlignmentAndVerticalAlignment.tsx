@@ -21,8 +21,3 @@ export default function TableColumnAlignmentAndVerticalAlignment() {
     />
   );
 }
-
-export const showcase = {
-  aspectRatio: 4 / 3,
-  render: TableColumnAlignmentAndVerticalAlignment,
-};

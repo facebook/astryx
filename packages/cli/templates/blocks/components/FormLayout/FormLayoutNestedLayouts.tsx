@@ -19,8 +19,3 @@ export default function FormLayoutNestedLayouts() {
     </XDSFormLayout>
   );
 }
-
-export const showcase = {
-  aspectRatio: 4 / 3,
-  render: FormLayoutNestedLayouts,
-};

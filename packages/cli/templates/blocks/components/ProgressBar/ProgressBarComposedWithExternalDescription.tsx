@@ -18,8 +18,3 @@ export default function ProgressBarComposedWithExternalDescription() {
     </div>
   );
 }
-
-export const showcase = {
-  aspectRatio: 16 / 4,
-  render: ProgressBarComposedWithExternalDescription,
-};

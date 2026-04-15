@@ -15,8 +15,3 @@ export default function PaginationPageNumberButtons() {
     />
   );
 }
-
-export const showcase = {
-  aspectRatio: 1,
-  render: PaginationPageNumberButtons,
-};

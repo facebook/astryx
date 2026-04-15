@@ -7,8 +7,3 @@ export default function SpinnerWithLabel() {
     <XDSSpinner label="Loading..." />
   );
 }
-
-export const showcase = {
-  aspectRatio: 1,
-  render: SpinnerWithLabel,
-};

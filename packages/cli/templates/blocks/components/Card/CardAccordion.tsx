@@ -22,8 +22,3 @@ export default function CardAccordion() {
     </XDSCollapsibleGroup>
   );
 }
-
-export const showcase = {
-  aspectRatio: 4 / 3,
-  render: CardAccordion,
-};

@@ -7,8 +7,3 @@ export default function TextBodyText() {
     <XDSText type="body">Body text content.</XDSText>
   );
 }
-
-export const showcase = {
-  aspectRatio: 1,
-  render: TextBodyText,
-};

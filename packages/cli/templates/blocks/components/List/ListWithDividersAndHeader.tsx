@@ -33,8 +33,3 @@ export default function ListWithDividersAndHeader() {
     </XDSList>
   );
 }
-
-export const showcase = {
-  aspectRatio: 3 / 4,
-  render: ListWithDividersAndHeader,
-};

@@ -16,8 +16,3 @@ export default function CalendarRangeSelection() {
     />
   );
 }
-
-export const showcase = {
-  aspectRatio: 3 / 4,
-  render: CalendarRangeSelection,
-};

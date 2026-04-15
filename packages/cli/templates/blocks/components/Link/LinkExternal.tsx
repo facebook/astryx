@@ -9,8 +9,3 @@ export default function LinkExternal() {
     </XDSLink>
   );
 }
-
-export const showcase = {
-  aspectRatio: 1,
-  render: LinkExternal,
-};

@@ -33,8 +33,3 @@ export default function ToggleButtonMultiselectGroup() {
     </XDSToggleButtonGroup>
   );
 }
-
-export const showcase = {
-  aspectRatio: 1,
-  render: ToggleButtonMultiselectGroup,
-};

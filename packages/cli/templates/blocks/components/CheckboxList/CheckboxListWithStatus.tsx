@@ -17,8 +17,3 @@ export default function CheckboxListWithStatus() {
     </XDSCheckboxList>
   );
 }
-
-export const showcase = {
-  aspectRatio: 4 / 3,
-  render: CheckboxListWithStatus,
-};

@@ -28,8 +28,3 @@ export default function GridSpanningColumns() {
     </XDSGrid>
   );
 }
-
-export const showcase = {
-  aspectRatio: 4 / 3,
-  render: GridSpanningColumns,
-};

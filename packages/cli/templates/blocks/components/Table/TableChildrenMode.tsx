@@ -23,8 +23,3 @@ export default function TableChildrenMode() {
     </XDSTable>
   );
 }
-
-export const showcase = {
-  aspectRatio: 4 / 3,
-  render: TableChildrenMode,
-};

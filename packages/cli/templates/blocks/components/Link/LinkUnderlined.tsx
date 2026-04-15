@@ -9,8 +9,3 @@ export default function LinkUnderlined() {
     </XDSLink>
   );
 }
-
-export const showcase = {
-  aspectRatio: 1,
-  render: LinkUnderlined,
-};

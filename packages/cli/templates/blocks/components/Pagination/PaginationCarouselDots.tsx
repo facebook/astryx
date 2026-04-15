@@ -15,8 +15,3 @@ export default function PaginationCarouselDots() {
     />
   );
 }
-
-export const showcase = {
-  aspectRatio: 1,
-  render: PaginationCarouselDots,
-};

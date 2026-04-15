@@ -10,8 +10,3 @@ export default function ListOrdered() {
     </XDSList>
   );
 }
-
-export const showcase = {
-  aspectRatio: 3 / 4,
-  render: ListOrdered,
-};

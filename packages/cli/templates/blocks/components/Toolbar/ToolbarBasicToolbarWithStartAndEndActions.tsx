@@ -52,8 +52,3 @@ export default function ToolbarBasicToolbarWithStartAndEndActions() {
     />
   );
 }
-
-export const showcase = {
-  aspectRatio: 16 / 4,
-  render: ToolbarBasicToolbarWithStartAndEndActions,
-};

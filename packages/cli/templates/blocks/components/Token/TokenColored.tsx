@@ -7,8 +7,3 @@ export default function TokenColored() {
     <XDSToken label="Status" color="green" />
   );
 }
-
-export const showcase = {
-  aspectRatio: 1,
-  render: TokenColored,
-};

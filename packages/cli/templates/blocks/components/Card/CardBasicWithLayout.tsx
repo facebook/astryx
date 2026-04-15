@@ -19,8 +19,3 @@ export default function CardBasicWithLayout() {
     </XDSCard>
   );
 }
-
-export const showcase = {
-  aspectRatio: 4 / 3,
-  render: CardBasicWithLayout,
-};

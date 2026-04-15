@@ -12,8 +12,3 @@ export default function LinkWithTooltip() {
     </XDSLink>
   );
 }
-
-export const showcase = {
-  aspectRatio: 1,
-  render: LinkWithTooltip,
-};

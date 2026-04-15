@@ -13,8 +13,3 @@ export default function BannerDismissable() {
     />
   );
 }
-
-export const showcase = {
-  aspectRatio: 16 / 4,
-  render: BannerDismissable,
-};

@@ -4,6 +4,10 @@ export const docs = {
   name: 'Button',
   description:
     'XDSButton component with multiple variants, sizes, and isLoading state support.',
+  showcase: {
+    aspectRatio: 1,
+    code: '<XDSButton label="Click me" variant="primary" />',
+  },
 
   keywords: ["button","btn","cta","submit","action","loading","primary","secondary","ghost","destructive","danger"],
   features: [

@@ -10,8 +10,3 @@ export default function TextAreaBasic() {
     <XDSTextArea label="Description" value={description} onChange={setDescription} />
   );
 }
-
-export const showcase = {
-  aspectRatio: 4 / 3,
-  render: TextAreaBasic,
-};

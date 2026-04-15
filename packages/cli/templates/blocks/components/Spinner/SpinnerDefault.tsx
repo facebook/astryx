@@ -7,8 +7,3 @@ export default function SpinnerDefault() {
     <XDSSpinner />
   );
 }
-
-export const showcase = {
-  aspectRatio: 1,
-  render: SpinnerDefault,
-};

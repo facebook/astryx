@@ -17,8 +17,3 @@ export default function RadioListBasic() {
     </XDSRadioList>
   );
 }
-
-export const showcase = {
-  aspectRatio: 4 / 3,
-  render: RadioListBasic,
-};

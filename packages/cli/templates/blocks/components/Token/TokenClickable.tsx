@@ -12,8 +12,3 @@ export default function TokenClickable() {
     />
   );
 }
-
-export const showcase = {
-  aspectRatio: 1,
-  render: TokenClickable,
-};

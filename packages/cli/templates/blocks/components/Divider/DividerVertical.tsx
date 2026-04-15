@@ -11,8 +11,3 @@ export default function DividerVertical() {
     </div>
   );
 }
-
-export const showcase = {
-  aspectRatio: 16 / 4,
-  render: DividerVertical,
-};

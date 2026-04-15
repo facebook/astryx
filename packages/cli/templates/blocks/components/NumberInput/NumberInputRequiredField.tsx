@@ -15,8 +15,3 @@ export default function NumberInputRequiredField() {
     />
   );
 }
-
-export const showcase = {
-  aspectRatio: 4 / 3,
-  render: NumberInputRequiredField,
-};

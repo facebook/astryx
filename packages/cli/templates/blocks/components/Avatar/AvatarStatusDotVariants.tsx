@@ -16,8 +16,3 @@ export default function AvatarStatusDotVariants() {
     </div>
   );
 }
-
-export const showcase = {
-  aspectRatio: 1,
-  render: AvatarStatusDotVariants,
-};

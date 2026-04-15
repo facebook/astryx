@@ -28,8 +28,3 @@ export default function PopoverSiblingModeWithAnchorRef() {
     </>
   );
 }
-
-export const showcase = {
-  aspectRatio: 4 / 3,
-  render: PopoverSiblingModeWithAnchorRef,
-};

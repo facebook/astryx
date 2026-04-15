@@ -34,8 +34,3 @@ export default function SelectorWithObjectItems() {
     />
   );
 }
-
-export const showcase = {
-  aspectRatio: 4 / 3,
-  render: SelectorWithObjectItems,
-};

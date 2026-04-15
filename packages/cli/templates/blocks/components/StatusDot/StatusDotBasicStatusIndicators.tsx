@@ -11,8 +11,3 @@ export default function StatusDotBasicStatusIndicators() {
     </>
   );
 }
-
-export const showcase = {
-  aspectRatio: 1,
-  render: StatusDotBasicStatusIndicators,
-};

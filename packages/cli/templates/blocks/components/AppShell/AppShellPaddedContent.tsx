@@ -33,8 +33,3 @@ export default function AppShellPaddedContent() {
     </XDSAppShell>
   );
 }
-
-export const showcase = {
-  aspectRatio: 4 / 3,
-  render: AppShellPaddedContent,
-};

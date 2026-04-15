@@ -14,8 +14,3 @@ export default function TextInputOptionalAndRequired() {
     </>
   );
 }
-
-export const showcase = {
-  aspectRatio: 4 / 3,
-  render: TextInputOptionalAndRequired,
-};

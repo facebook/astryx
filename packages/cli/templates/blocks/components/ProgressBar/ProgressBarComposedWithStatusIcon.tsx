@@ -31,8 +31,3 @@ export default function ProgressBarComposedWithStatusIcon() {
     </XDSVStack>
   );
 }
-
-export const showcase = {
-  aspectRatio: 16 / 4,
-  render: ProgressBarComposedWithStatusIcon,
-};

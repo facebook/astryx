@@ -42,8 +42,3 @@ export default function DropdownMenuWithIcons() {
     />
   );
 }
-
-export const showcase = {
-  aspectRatio: 4 / 3,
-  render: DropdownMenuWithIcons,
-};

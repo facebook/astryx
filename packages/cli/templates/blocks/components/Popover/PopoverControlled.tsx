@@ -25,8 +25,3 @@ export default function PopoverControlled() {
     </XDSPopover>
   );
 }
-
-export const showcase = {
-  aspectRatio: 4 / 3,
-  render: PopoverControlled,
-};

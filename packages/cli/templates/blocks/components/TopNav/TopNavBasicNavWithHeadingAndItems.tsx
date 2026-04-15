@@ -63,8 +63,3 @@ export default function TopNavBasicNavWithHeadingAndItems() {
     />
   );
 }
-
-export const showcase = {
-  aspectRatio: 16 / 4,
-  render: TopNavBasicNavWithHeadingAndItems,
-};

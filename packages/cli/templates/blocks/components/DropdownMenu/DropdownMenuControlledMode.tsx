@@ -19,8 +19,3 @@ export default function DropdownMenuControlledMode() {
     />
   );
 }
-
-export const showcase = {
-  aspectRatio: 4 / 3,
-  render: DropdownMenuControlledMode,
-};

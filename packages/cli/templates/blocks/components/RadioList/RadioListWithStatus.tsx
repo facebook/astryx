@@ -18,8 +18,3 @@ export default function RadioListWithStatus() {
     </XDSRadioList>
   );
 }
-
-export const showcase = {
-  aspectRatio: 4 / 3,
-  render: RadioListWithStatus,
-};

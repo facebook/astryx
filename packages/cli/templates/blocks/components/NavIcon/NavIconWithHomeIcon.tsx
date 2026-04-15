@@ -19,8 +19,3 @@ export default function NavIconWithHomeIcon() {
     />
   );
 }
-
-export const showcase = {
-  aspectRatio: 16 / 4,
-  render: NavIconWithHomeIcon,
-};

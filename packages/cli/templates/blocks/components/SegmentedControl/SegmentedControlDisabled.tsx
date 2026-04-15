@@ -20,8 +20,3 @@ export default function SegmentedControlDisabled() {
     </XDSSegmentedControl>
   );
 }
-
-export const showcase = {
-  aspectRatio: 4 / 3,
-  render: SegmentedControlDisabled,
-};

@@ -13,8 +13,3 @@ export default function TabListWithLinks() {
     </XDSTabList>
   );
 }
-
-export const showcase = {
-  aspectRatio: 16 / 4,
-  render: TabListWithLinks,
-};

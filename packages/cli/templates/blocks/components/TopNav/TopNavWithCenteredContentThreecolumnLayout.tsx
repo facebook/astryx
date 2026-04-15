@@ -21,8 +21,3 @@ export default function TopNavWithCenteredContentThreecolumnLayout() {
     />
   );
 }
-
-export const showcase = {
-  aspectRatio: 16 / 4,
-  render: TopNavWithCenteredContentThreecolumnLayout,
-};

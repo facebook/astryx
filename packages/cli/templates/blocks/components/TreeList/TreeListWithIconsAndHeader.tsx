@@ -31,8 +31,3 @@ export default function TreeListWithIconsAndHeader() {
     />
   );
 }
-
-export const showcase = {
-  aspectRatio: 3 / 4,
-  render: TreeListWithIconsAndHeader,
-};

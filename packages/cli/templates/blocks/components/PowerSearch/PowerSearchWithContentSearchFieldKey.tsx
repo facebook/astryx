@@ -48,8 +48,3 @@ export default function PowerSearchWithContentSearchFieldKey() {
     />
   );
 }
-
-export const showcase = {
-  aspectRatio: 4 / 3,
-  render: PowerSearchWithContentSearchFieldKey,
-};

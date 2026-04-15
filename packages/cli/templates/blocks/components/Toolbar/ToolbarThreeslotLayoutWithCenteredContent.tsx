@@ -14,8 +14,3 @@ export default function ToolbarThreeslotLayoutWithCenteredContent() {
     />
   );
 }
-
-export const showcase = {
-  aspectRatio: 16 / 4,
-  render: ToolbarThreeslotLayoutWithCenteredContent,
-};

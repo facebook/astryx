@@ -10,8 +10,3 @@ export default function CarouselNoButtons() {
     </XDSCarousel>
   );
 }
-
-export const showcase = {
-  aspectRatio: 1,
-  render: CarouselNoButtons,
-};

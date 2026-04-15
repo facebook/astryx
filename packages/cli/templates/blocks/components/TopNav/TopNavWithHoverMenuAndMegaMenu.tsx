@@ -55,8 +55,3 @@ export default function TopNavWithHoverMenuAndMegaMenu() {
     />
   );
 }
-
-export const showcase = {
-  aspectRatio: 16 / 4,
-  render: TopNavWithHoverMenuAndMegaMenu,
-};

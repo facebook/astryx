@@ -14,8 +14,3 @@ export default function CheckboxListBasicCollectionMode() {
     </XDSCheckboxList>
   );
 }
-
-export const showcase = {
-  aspectRatio: 4 / 3,
-  render: CheckboxListBasicCollectionMode,
-};

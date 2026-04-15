@@ -20,8 +20,3 @@ export default function CenterHorizontal() {
     </XDSCenter>
   );
 }
-
-export const showcase = {
-  aspectRatio: 1,
-  render: CenterHorizontal,
-};

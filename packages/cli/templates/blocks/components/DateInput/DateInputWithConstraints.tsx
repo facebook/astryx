@@ -18,8 +18,3 @@ export default function DateInputWithConstraints() {
     />
   );
 }
-
-export const showcase = {
-  aspectRatio: 4 / 3,
-  render: DateInputWithConstraints,
-};

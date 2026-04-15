@@ -7,8 +7,3 @@ export default function TimestampLiveUpdating() {
     <XDSTimestamp value={Date.now() / 1000 - 120} format="relative" isLive />
   );
 }
-
-export const showcase = {
-  aspectRatio: 1,
-  render: TimestampLiveUpdating,
-};

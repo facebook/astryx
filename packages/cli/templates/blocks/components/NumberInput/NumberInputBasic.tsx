@@ -10,8 +10,3 @@ export default function NumberInputBasic() {
     <XDSNumberInput label="Quantity" value={quantity} onChange={setQuantity} />
   );
 }
-
-export const showcase = {
-  aspectRatio: 4 / 3,
-  render: NumberInputBasic,
-};

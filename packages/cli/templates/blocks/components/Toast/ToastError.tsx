@@ -14,8 +14,3 @@ export default function ToastError() {
     />
   );
 }
-
-export const showcase = {
-  aspectRatio: 1,
-  render: ToastError,
-};

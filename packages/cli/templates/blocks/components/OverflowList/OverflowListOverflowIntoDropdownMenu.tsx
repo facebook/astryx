@@ -21,8 +21,3 @@ export default function OverflowListOverflowIntoDropdownMenu() {
     </XDSOverflowList>
   );
 }
-
-export const showcase = {
-  aspectRatio: 16 / 4,
-  render: OverflowListOverflowIntoDropdownMenu,
-};

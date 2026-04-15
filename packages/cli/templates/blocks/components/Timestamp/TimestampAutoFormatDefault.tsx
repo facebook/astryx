@@ -7,8 +7,3 @@ export default function TimestampAutoFormatDefault() {
     <XDSTimestamp value="2026-03-25T12:00:00Z" />
   );
 }
-
-export const showcase = {
-  aspectRatio: 1,
-  render: TimestampAutoFormatDefault,
-};

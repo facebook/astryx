@@ -4,6 +4,10 @@ export const docs = {
   name: 'SegmentedControl',
   description:
     'Segmented button group for single selection with radio group semantics. Visually resembles a tab bar but controls a value, not a view.',
+  showcase: {
+    aspectRatio: 4 / 3,
+    code: '<XDSSegmentedControl items={[{label: "Tab 1", value: "1"}]} />',
+  },
   keywords: ['radio', 'tabs', 'toggle', 'toggle-group', 'pill', 'button-group', 'switch', 'segment', 'control'],
   features: [
     'Context-based communication: XDSSegmentedControlContext passes value/onChange/size/isDisabled from parent to children',

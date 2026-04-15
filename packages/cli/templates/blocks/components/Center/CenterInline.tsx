@@ -22,8 +22,3 @@ export default function CenterInline() {
     </XDSCenter>
   );
 }
-
-export const showcase = {
-  aspectRatio: 1,
-  render: CenterInline,
-};

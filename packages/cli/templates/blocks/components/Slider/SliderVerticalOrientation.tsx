@@ -15,8 +15,3 @@ export default function SliderVerticalOrientation() {
     />
   );
 }
-
-export const showcase = {
-  aspectRatio: 4 / 3,
-  render: SliderVerticalOrientation,
-};

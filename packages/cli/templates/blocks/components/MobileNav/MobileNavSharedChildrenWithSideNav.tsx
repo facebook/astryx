@@ -25,8 +25,3 @@ export default function MobileNavSharedChildrenWithSideNav() {
     </>
   );
 }
-
-export const showcase = {
-  aspectRatio: 3 / 4,
-  render: MobileNavSharedChildrenWithSideNav,
-};

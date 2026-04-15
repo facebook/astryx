@@ -11,8 +11,3 @@ export default function SkeletonStaggeredAnimationForMultipleSkeletons() {
     </div>
   );
 }
-
-export const showcase = {
-  aspectRatio: 1,
-  render: SkeletonStaggeredAnimationForMultipleSkeletons,
-};

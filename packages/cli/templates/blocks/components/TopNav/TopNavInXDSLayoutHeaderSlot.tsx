@@ -39,8 +39,3 @@ export default function TopNavInXDSLayoutHeaderSlot() {
     />
   );
 }
-
-export const showcase = {
-  aspectRatio: 16 / 4,
-  render: TopNavInXDSLayoutHeaderSlot,
-};

@@ -4,6 +4,10 @@ export const docs = {
   name: 'DateInput',
   description:
     'XDSDateInput component combining a text input with a calendar popover for date selection.',
+  showcase: {
+    aspectRatio: 4 / 3,
+    code: '<XDSDateInput label="Date" />',
+  },
   keywords: ["dateinput","datepicker","datefield","calendar","dateselect","dateentry","datechooser"],
   features: [
     'Text Input — manual date entry with flexible parsing (supports various formats)',

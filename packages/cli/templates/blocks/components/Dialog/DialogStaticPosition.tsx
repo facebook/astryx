@@ -24,8 +24,3 @@ export default function DialogStaticPosition() {
     </>
   );
 }
-
-export const showcase = {
-  aspectRatio: 4 / 3,
-  render: DialogStaticPosition,
-};

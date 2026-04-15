@@ -231,7 +231,16 @@ interface BaseDoc {
    *  For multi-component dirs, these show how the components work together.
    *  Start with the most common usage pattern, then progress to advanced.
    *  Include 2-5 examples (complex components may justify more). */
-  examples: Example[];
+  examples?: Example[];
+  /** Minimal JSX code string showing the component in its simplest valid
+   *  form. Used as the live preview "cover image" in gallery views.
+   *  e.g. `'<XDSButton label="Click" variant="primary" />'` */
+  showcase?: {
+    /** Width-to-height ratio for the preview container. */
+    aspectRatio: number;
+    /** JSX code string of the component in minimal form. */
+    code: string;
+  };
   /** Search keywords for CLI discovery. Terms a developer might type when
    *  looking for this component: synonyms, related UI concepts, and common
    *  names from other design systems (MUI, Chakra, Radix, shadcn).

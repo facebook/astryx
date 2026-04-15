@@ -9,8 +9,3 @@ export default function ThumbnailClickable() {
     <XDSThumbnail src="/preview.png" alt="Preview" onClick={openLightbox} />
   );
 }
-
-export const showcase = {
-  aspectRatio: 1,
-  render: ThumbnailClickable,
-};

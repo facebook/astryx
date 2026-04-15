@@ -12,8 +12,3 @@ export default function SectionWashVariant() {
     </XDSSection>
   );
 }
-
-export const showcase = {
-  aspectRatio: 4 / 3,
-  render: SectionWashVariant,
-};

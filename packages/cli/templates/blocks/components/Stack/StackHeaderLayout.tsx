@@ -29,8 +29,3 @@ export default function StackHeaderLayout() {
     </XDSHStack>
   );
 }
-
-export const showcase = {
-  aspectRatio: 1,
-  render: StackHeaderLayout,
-};

@@ -23,8 +23,3 @@ export default function TableCustomPlugin() {
     <XDSTable data={users} plugins={{highlight: highlightPlugin}} />
   );
 }
-
-export const showcase = {
-  aspectRatio: 4 / 3,
-  render: TableCustomPlugin,
-};

@@ -31,8 +31,3 @@ export default function MoreMenuTableRowActionsWithIcons() {
     />
   );
 }
-
-export const showcase = {
-  aspectRatio: 4 / 3,
-  render: MoreMenuTableRowActionsWithIcons,
-};
