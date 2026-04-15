@@ -11,3 +11,8 @@ export default function EmptyStateCompactVariant() {
     />
   );
 }
+
+export const showcase = {
+  aspectRatio: 4 / 3,
+  render: EmptyStateCompactVariant,
+};
