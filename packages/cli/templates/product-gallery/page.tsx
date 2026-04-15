@@ -141,9 +141,9 @@ export default function ProductGalleryTemplate() {
     <XDSCenter axis="horizontal">
       <div style={{maxWidth: 1200, width: '100%', padding: '32px 24px 64px'}}>
         <XDSVStack gap={6}>
-          {/* Header — title left, description + CTA right */}
-          <XDSHStack gap={4} vAlign="start">
-            <div style={{flex: '1 1 0%', minWidth: 0}}>
+          {/* Header — side-by-side on desktop, stacked on mobile */}
+          <div className="product-gallery-header">
+            <div className="product-gallery-header-title">
               <XDSText
                 type="large"
                 weight="bold"
@@ -153,7 +153,7 @@ export default function ProductGalleryTemplate() {
                 time.
               </XDSText>
             </div>
-            <div style={{flex: '1 1 0%', minWidth: 0}}>
+            <div className="product-gallery-header-body">
               <XDSVStack gap={3}>
                 <XDSText type="body">
                   Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed
@@ -171,15 +171,34 @@ export default function ProductGalleryTemplate() {
                 </div>
               </XDSVStack>
             </div>
-          </XDSHStack>
+          </div>
 
-          {/* Product Grid */}
-          <XDSGrid columns={3} gap={6}>
+          {/* Product Grid — 3 cols desktop, 2 cols mobile */}
+          <XDSGrid columns={3} minChildWidth={250} gap={6}>
             {PRODUCTS.map(product => (
               <ProductCard key={product.id} product={product} />
             ))}
           </XDSGrid>
         </XDSVStack>
+
+        {/* Responsive styles */}
+        <style>{`
+          .product-gallery-header {
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+          }
+          .product-gallery-header-title,
+          .product-gallery-header-body {
+            flex: 1 1 0%;
+            min-width: 0;
+          }
+          @media (max-width: 640px) {
+            .product-gallery-header {
+              flex-direction: column;
+            }
+          }
+        `}</style>
       </div>
     </XDSCenter>
   );
