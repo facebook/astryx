@@ -87,7 +87,8 @@ export function InlinePublishPanel({
       {/* Publish / Cancel buttons */}
       <div style={{display: 'flex', flexDirection: 'column' as const, gap: 8, marginTop: 'auto'}}>
         <XDSText type="supporting" color="secondary" style={{textAlign: 'center' as const}}>
-          Your template will go through a review process before appearing in the community grid.
+          Your template will go through a review process before appearing in the community grid.{' '}
+          <a href="#" onClick={e => e.preventDefault()} style={{color: 'var(--color-accent, #0066FF)', textDecoration: 'none'}}>Learn more</a>
         </XDSText>
         <XDSButton
           variant="primary"

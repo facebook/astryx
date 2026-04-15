@@ -22,6 +22,8 @@ import {
   ShareOutIcon,
   FullscreenIcon,
   MoonIcon,
+  LinkIcon,
+  CheckIcon,
 } from './docsite-icons';
 import {SharePopover} from './SharePopover';
 
@@ -70,11 +72,18 @@ export function TemplatePreview({
   const [showCanvas, setShowCanvas] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [linkCopied, setLinkCopied] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
   const handleSave = useCallback(() => {
     setSaveState('saving');
     setTimeout(() => setSaveState('saved'), 1200);
+  }, []);
+
+  const handleCopyLink = useCallback(() => {
+    navigator.clipboard.writeText(window.location.href);
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 2000);
   }, []);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showSharePopover, setShowSharePopover] = useState(false);
@@ -236,14 +245,23 @@ export function TemplatePreview({
                       />
                     </XDSTooltip>
                   </XDSSegmentedControl>
+                  <XDSTooltip content="Preview">
+                    <XDSButton
+                      label="Preview"
+                      variant="ghost"
+                      isIconOnly
+                      icon={<FullscreenIcon />}
+                      onClick={() => onFullPreviewChange?.(true)}
+                    />
+                  </XDSTooltip>
                   {saveState === 'saved' ? (
-                    <XDSTooltip content="Share">
+                    <XDSTooltip content={linkCopied ? "Copied!" : "Copy link"}>
                       <XDSButton
-                        label="Share"
+                        label={linkCopied ? "Copied" : "Copy link"}
                         variant="ghost"
-                        icon={<ShareOutIcon />}
+                        icon={linkCopied ? <CheckIcon color="var(--color-icon-primary, #111)" /> : <LinkIcon />}
                         isIconOnly
-                        onClick={() => {}}
+                        onClick={handleCopyLink}
                       />
                     </XDSTooltip>
                   ) : saveState === 'saving' ? (
@@ -261,15 +279,6 @@ export function TemplatePreview({
                       />
                     </XDSTooltip>
                   )}
-                  <XDSTooltip content="Preview">
-                    <XDSButton
-                      label="Preview"
-                      variant="ghost"
-                      isIconOnly
-                      icon={<FullscreenIcon />}
-                      onClick={() => onFullPreviewChange?.(true)}
-                    />
-                  </XDSTooltip>
                   <XDSButton
                     label="Submit"
                     variant="secondary"
