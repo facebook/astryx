@@ -36,3 +36,8 @@ export default function TokenizerCustomTokenRendering() {
     />
   );
 }
+
+export const showcase = {
+  aspectRatio: 4 / 3,
+  render: TokenizerCustomTokenRendering,
+};
