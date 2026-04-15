@@ -8,8 +8,6 @@ export {
   tokenize,
   tokenizeAsync,
   tokenizeStreaming,
-  tokenizeFlat,
-  tokenizeAsyncFlat,
   flatTokensToLines,
   SYNC_TOKENIZE_THRESHOLD,
 } from './tokenizer';
