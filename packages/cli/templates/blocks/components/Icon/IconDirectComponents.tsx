@@ -39,3 +39,8 @@ export default function IconDirectComponents() {
     </div>
   );
 }
+
+export const showcase = {
+  aspectRatio: 1,
+  render: IconDirectComponents,
+};

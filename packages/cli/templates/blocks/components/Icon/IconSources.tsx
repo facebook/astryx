@@ -25,3 +25,8 @@ export default function IconSources() {
     </div>
   );
 }
+
+export const showcase = {
+  aspectRatio: 1,
+  render: IconSources,
+};
