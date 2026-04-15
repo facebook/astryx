@@ -207,6 +207,11 @@ export default function ProductGalleryTemplate() {
               grid-template-columns: repeat(2, 1fr);
             }
           }
+          @media (max-width: 420px) {
+            .product-gallery-grid .xds-grid {
+              grid-template-columns: 1fr;
+            }
+          }
         `}</style>
       </div>
     </XDSCenter>
