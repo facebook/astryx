@@ -128,6 +128,12 @@ export const docs = {
           description: 'XDSTab and XDSTabMenu items to render inside the nav.',
           required: true,
         },
+        {
+          name: 'xstyle',
+          type: 'StyleXStyles',
+          description:
+            'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+        },
       ],
       examples: [
         {
@@ -186,6 +192,12 @@ export const docs = {
           type: 'ReactNode',
           description:
             'Icon element shown when the tab is selected; falls back to icon if not provided.',
+        },
+        {
+          name: 'xstyle',
+          type: 'StyleXStyles',
+          description:
+            'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
         },
       ],
       examples: [
@@ -388,6 +400,12 @@ export const docsZh = {
           description: '在 nav 内渲染的 XDSTab 和 XDSTabMenu 项。',
           required: true,
         },
+        {
+          name: 'xstyle',
+          type: 'StyleXStyles',
+          description:
+            'StyleX 样式，用于布局自定义（边距、定位、尺寸）。必须是 stylex.create() 的值，而非内联样式对象如 style={{}}。',
+        },
       ],
       examples: [
         {
@@ -446,6 +464,12 @@ export const docsZh = {
           type: 'ReactNode',
           description:
             '标签选中时显示的图标元素；未提供时回退到 icon。',
+        },
+        {
+          name: 'xstyle',
+          type: 'StyleXStyles',
+          description:
+            'StyleX 样式，用于布局自定义（边距、定位、尺寸）。必须是 stylex.create() 的值，而非内联样式对象如 style={{}}。',
         },
       ],
       examples: [
@@ -548,6 +572,7 @@ export const docsDense = {
         size: 'Size variant applied to all child tabs.',
         hasDivider: 'Show bottom border divider under tab list.',
         children: 'XDSTab + XDSTabMenu items inside nav.',
+        xstyle: 'StyleX styles for layout customization. Must be stylex.create() value, not inline style.',
       },
     },
     {
@@ -560,6 +585,7 @@ export const docsDense = {
         as: 'Custom link component overriding XDSLinkProvider; only w/ href.',
         icon: 'Icon shown when not selected.',
         selectedIcon: 'Icon shown when selected; falls back to icon.',
+        xstyle: 'StyleX styles for layout customization. Must be stylex.create() value, not inline style.',
       },
     },
     {

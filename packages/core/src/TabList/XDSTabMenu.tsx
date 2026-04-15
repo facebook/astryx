@@ -28,9 +28,9 @@ import {
 } from '../theme/tokens.stylex';
 import {useXDSPopover} from '../Popover/useXDSPopover';
 import {useListFocus} from '../hooks/useListFocus';
-import {XDSDivider} from '../Divider';
 import {useXDSTabListContext} from './XDSTabListContext';
 import type {XDSTabListSize} from './XDSTabListContext';
+import {tabScope} from './tab.markers.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 
 export interface XDSTabMenuOption {
@@ -90,7 +90,7 @@ const styles = stylex.create({
     },
   },
   triggerSelected: {
-    color: colorVars['--color-text-accent'],
+    color: colorVars['--color-text-primary'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
   },
   triggerLabel: {
@@ -110,36 +110,38 @@ const styles = stylex.create({
     pointerEvents: 'none',
     fontWeight: fontWeightVars['--font-weight-semibold'],
   },
-  underline: {
-    '::after': {
-      content: '""',
-      position: 'absolute',
-      bottom: 0,
-      left: 0,
-      right: 0,
-      height: '2px',
-      backgroundColor: colorVars['--color-accent'],
-      borderRadius: radiusVars['--radius-full'],
-    },
-  },
-  hoverUnderline: {
+  indicator: {
     position: 'absolute',
     bottom: 0,
-    left: 0,
-    right: 0,
+    left: spacingVars['--spacing-3'],
+    right: spacingVars['--spacing-3'],
     height: '2px',
-    backgroundColor: colorVars['--color-border'],
     borderRadius: radiusVars['--radius-full'],
-    opacity: {
-      default: 0,
-      [stylex.when.ancestor(':hover')]: {
-        '@media (hover: hover)': 1,
-      },
-    },
-    transitionProperty: 'opacity',
+    pointerEvents: 'none',
+    transitionProperty: 'opacity, background-color',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
+  },
+  indicatorSelected: {
+    backgroundColor: colorVars['--color-icon-primary'],
+    opacity: 1,
+  },
+  hoverBg: {
+    position: 'absolute',
+    inset: 0,
+    margin: 'auto',
+    width: '100%',
+    borderRadius: radiusVars['--radius-element'],
     pointerEvents: 'none',
+    backgroundColor: {
+      default: 'transparent',
+      [stylex.when.ancestor(':hover', tabScope)]: {
+        '@media (hover: hover)': colorVars['--color-overlay-hover'],
+      },
+    },
+    transitionProperty: 'background-color',
+    transitionDuration: durationVars['--duration-fast'],
+    transitionTimingFunction: easeVars['--ease-standard'],
   },
   chevron: {
     width: spacingVars['--spacing-4'],
@@ -158,7 +160,6 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-0-5'],
     paddingBlock: spacingVars['--spacing-1'],
     paddingInline: spacingVars['--spacing-1'],
-    minWidth: '160px',
   },
   menuItem: {
     display: 'flex',
@@ -202,9 +203,24 @@ const styles = stylex.create({
     height: 16,
     color: colorVars['--color-icon-primary'],
   },
+  menuHeading: {
+    fontSize: typeScaleVars['--text-supporting-size'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
+    fontWeight: fontWeightVars['--font-weight-semibold'],
+    color: colorVars['--color-text-secondary'],
+    paddingBlock: spacingVars['--spacing-1'],
+    paddingInline: spacingVars['--spacing-3'],
+  },
 });
 
 const sizeStyles = stylex.create({
+  sm: {height: sizeVars['--size-element-sm']},
+  md: {height: sizeVars['--size-element-md']},
+  lg: {height: sizeVars['--size-element-lg']},
+});
+
+// Hover bg uses the standard element size (one step smaller than tab)
+const hoverSizeStyles = stylex.create({
   sm: {height: sizeVars['--size-element-sm']},
   md: {height: sizeVars['--size-element-md']},
   lg: {height: sizeVars['--size-element-lg']},
@@ -277,21 +293,18 @@ export function XDSTabMenu({label, options}: XDSTabMenuProps) {
             styles.trigger,
             sizeStyles[size],
             hasSelectedOption && styles.triggerSelected,
-            !hasSelectedOption && stylex.defaultMarker(),
+            tabScope,
           ),
         )}>
         <span
-          {...stylex.props(
-            styles.triggerLabel,
-            hasSelectedOption && styles.underline,
-          )}>
+          aria-hidden="true"
+          {...stylex.props(styles.hoverBg, hoverSizeStyles[size])}
+        />
+        <span {...stylex.props(styles.triggerLabel)}>
           <span {...stylex.props(styles.triggerLabelText)}>{triggerLabel}</span>
           <span aria-hidden="true" {...stylex.props(styles.triggerLabelSizer)}>
             {triggerLabel}
           </span>
-          {!hasSelectedOption && (
-            <span {...stylex.props(styles.hoverUnderline)} />
-          )}
         </span>
         <span
           aria-hidden="true"
@@ -301,6 +314,14 @@ export function XDSTabMenu({label, options}: XDSTabMenuProps) {
           )}>
           <XDSIcon icon="chevronDown" size="sm" color="inherit" />
         </span>
+        {hasSelectedOption && (
+          <span
+            {...mergeProps(
+              xdsClassName('tab-indicator', {selected: 'selected'}),
+              stylex.props(styles.indicator, styles.indicatorSelected),
+            )}
+          />
+        )}
       </button>
       {popover.render(
         <div
@@ -313,7 +334,9 @@ export function XDSTabMenu({label, options}: XDSTabMenuProps) {
             xdsClassName('tab-menu-dropdown'),
             stylex.props(styles.dropdown),
           )}>
-          <XDSDivider label={label} />
+          <span role="presentation" {...stylex.props(styles.menuHeading)}>
+            {label}
+          </span>
           {options.map(option => {
             const isSelected = tabListCtx.value === option.value;
             return (

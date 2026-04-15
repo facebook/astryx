@@ -24,6 +24,7 @@ import {XDSTableContext} from './XDSTableContext';
 import {useXDSBaseTablePlugins} from './useXDSBaseTablePlugins';
 import type {
   XDSBaseTableProps,
+  XDSTableVerticalAlign,
   TablePlugin,
   TableRenderProps,
   TableRowComponentProps,
@@ -62,6 +63,19 @@ export interface XDSTableProps<T extends Record<string, unknown>> extends Omit<
   isStriped?: boolean;
   /** Hover highlight on rows. @default false */
   hasHover?: boolean;
+  /**
+   * Vertical alignment for body row cells.
+   * Controls `vertical-align` on `<td>` elements.
+   *
+   * @default 'middle'
+   *
+   * @example
+   * ```
+   * // Top-align rows for multi-line cell content
+   * <XDSTable data={items} columns={columns} verticalAlign="top" />
+   * ```
+   */
+  verticalAlign?: XDSTableVerticalAlign;
   /** Named plugins to extend table behavior */
   plugins?: Record<string, TablePlugin<T>>;
 }
@@ -135,6 +149,7 @@ function XDSTableInner<T extends Record<string, unknown>>({
   dividers = 'rows',
   isStriped = false,
   hasHover = false,
+  verticalAlign = 'middle',
   plugins: userPlugins,
   columns,
   data,
@@ -149,8 +164,8 @@ function XDSTableInner<T extends Record<string, unknown>>({
   const mergedPlugins = useXDSBaseTablePlugins<T>(basePlugins, userPlugins);
 
   const contextValue = useMemo(
-    () => ({density, dividers, isStriped, hasHover}),
-    [density, dividers, isStriped, hasHover],
+    () => ({density, dividers, isStriped, hasHover, verticalAlign}),
+    [density, dividers, isStriped, hasHover, verticalAlign],
   );
 
   return (

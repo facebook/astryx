@@ -35,7 +35,7 @@ export {
   StarIcon,
 } from '@heroicons/react/24/outline';
 
-export {BookmarkIcon as BookmarkFilledIcon, HeartIcon as HeartFilledIcon, StarIcon as StarFilledIcon} from '@heroicons/react/24/solid';
+export {BookmarkIcon as BookmarkFilledIcon, StarIcon as StarFilledIcon} from '@heroicons/react/24/solid';
 
 // Brand logos for theme picker
 

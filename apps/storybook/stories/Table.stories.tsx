@@ -116,6 +116,11 @@ const meta: Meta<typeof XDSTable> = {
       control: 'boolean',
       description: 'Highlight rows on hover',
     },
+    verticalAlign: {
+      control: 'select',
+      options: ['middle', 'top', 'bottom'],
+      description: 'Vertical alignment for body row cells',
+    },
   },
 };
 
@@ -625,6 +630,169 @@ export const StandaloneVsContainer: Story = {
           <XDSTable data={users.slice(0, 3)} columns={simpleColumns} />
         </XDSCard>
       </div>
+    </div>
+  ),
+};
+
+// =============================================================================
+// Column Alignment
+// =============================================================================
+
+interface Transaction extends Record<string, unknown> {
+  id: string;
+  description: string;
+  category: string;
+  quantity: number;
+  amount: string;
+}
+
+const transactions: Transaction[] = [
+  {
+    id: '1',
+    description: 'Cloud hosting (monthly)',
+    category: 'Infrastructure',
+    quantity: 1,
+    amount: '$2,400.00',
+  },
+  {
+    id: '2',
+    description: 'Design software licenses',
+    category: 'Tools',
+    quantity: 12,
+    amount: '$1,188.00',
+  },
+  {
+    id: '3',
+    description: 'Team offsite catering',
+    category: 'Events',
+    quantity: 45,
+    amount: '$3,150.00',
+  },
+  {
+    id: '4',
+    description: 'Ergonomic keyboards',
+    category: 'Hardware',
+    quantity: 8,
+    amount: '$1,592.00',
+  },
+  {
+    id: '5',
+    description: 'Annual conference tickets',
+    category: 'Travel',
+    quantity: 3,
+    amount: '$4,500.00',
+  },
+];
+
+const alignedColumns: XDSTableColumn<Transaction>[] = [
+  {key: 'description', header: 'Description', width: proportional(2)},
+  {key: 'category', header: 'Category'},
+  {key: 'quantity', header: 'Qty', align: 'center', width: pixel(80)},
+  {key: 'amount', header: 'Amount', align: 'end', width: pixel(120)},
+];
+
+/**
+ * Per-column horizontal alignment via the `align` prop.
+ *
+ * - `'start'` (default) — left in LTR, right in RTL
+ * - `'center'` — centered text
+ * - `'end'` — right in LTR, left in RTL
+ *
+ * Alignment applies to both the header `<th>` and body `<td>` cells.
+ * Numeric columns typically use `align: 'end'`, while status or icon
+ * columns work well with `align: 'center'`.
+ */
+export const ColumnAlignment: Story = {
+  render: () => (
+    <XDSTable
+      data={transactions}
+      columns={alignedColumns}
+      idKey="id"
+      hasHover
+      dividers="rows"
+    />
+  ),
+};
+
+// =============================================================================
+// Vertical Alignment
+// =============================================================================
+
+interface TeamMember extends Record<string, unknown> {
+  id: string;
+  name: string;
+  bio: string;
+  role: string;
+}
+
+const teamMembers: TeamMember[] = [
+  {
+    id: '1',
+    name: 'Alice Johnson',
+    bio: 'Full-stack engineer with 8 years of experience. Specializes in distributed systems and performance optimization. Previously at Stripe and Google.',
+    role: 'Staff Engineer',
+  },
+  {
+    id: '2',
+    name: 'Bob Smith',
+    bio: 'Product designer focused on design systems and accessibility.',
+    role: 'Senior Designer',
+  },
+  {
+    id: '3',
+    name: 'Charlie Brown',
+    bio: 'Engineering manager leading the platform team. Passionate about developer experience, tooling, and building inclusive teams that ship with confidence.',
+    role: 'EM',
+  },
+];
+
+const verticalAlignColumns: XDSTableColumn<TeamMember>[] = [
+  {key: 'name', header: 'Name', width: pixel(140)},
+  {
+    key: 'bio',
+    header: 'Bio',
+    width: proportional(3),
+    renderCell: item => (
+      <span
+        style={{
+          whiteSpace: 'normal',
+          overflow: 'visible',
+          display: 'block',
+        }}>
+        {item.bio}
+      </span>
+    ),
+  },
+  {key: 'role', header: 'Role', align: 'end', width: pixel(140)},
+];
+
+/**
+ * Compares all three `verticalAlign` options side by side.
+ *
+ * - `'middle'` (default) — vertically centers cell content
+ * - `'top'` — aligns to the top, useful for multi-line cells
+ * - `'bottom'` — aligns to the bottom
+ *
+ * Uses a multi-line "Bio" column with wrapping text to make
+ * the vertical alignment difference visible.
+ */
+export const VerticalAlignment: Story = {
+  render: () => (
+    <div style={{display: 'flex', flexDirection: 'column', gap: '32px'}}>
+      {(['middle', 'top', 'bottom'] as const).map(vAlign => (
+        <div key={vAlign}>
+          <p style={{margin: '0 0 8px', fontWeight: 600}}>
+            verticalAlign=&quot;{vAlign}&quot;
+          </p>
+          <XDSTable
+            data={teamMembers}
+            columns={verticalAlignColumns}
+            idKey="id"
+            verticalAlign={vAlign}
+            dividers="rows"
+          />
+        </div>
+      ))}
     </div>
   ),
 };

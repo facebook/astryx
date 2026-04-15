@@ -192,6 +192,12 @@ export const docs = {
       description:
         'Tooltip text rendered as an info icon at the end of the label row.',
     },
+    {
+      name: 'xstyle',
+      type: 'StyleXStyles',
+      description:
+        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+    },
   ],
   accessibility: [
     'The visible label is associated with the input via htmlFor / id.',
@@ -409,6 +415,12 @@ export const docsZh = {
       description:
         '在标签行末尾以信息图标形式渲染的工具提示文本。',
     },
+    {
+      name: 'xstyle',
+      type: 'StyleXStyles',
+      description:
+        'StyleX 样式，用于布局自定义（边距、定位、尺寸）。必须是 stylex.create() 的值，而非内联样式对象如 style={{}}。',
+    },
   ],
   accessibility: [
     '可见标签通过 htmlFor / id 与输入框关联。',
@@ -472,5 +484,6 @@ export const docsDense = {
     size: 'Input element height.',
     status: 'Colored border+icon. Message rendered below input.',
     labelTooltip: 'Tooltip as info icon at label row end.',
+    xstyle: 'StyleX styles for layout customization. Must be stylex.create() value, not inline style.',
   },
 };

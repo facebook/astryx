@@ -131,7 +131,6 @@ export const WithIcons: Story = {
   render: args => {
     const [value, setValue] = useState('home');
 
-    // Inline SVG icons for the story
     const HomeIcon = (
       <svg viewBox="0 0 16 16" fill="currentColor" width="100%" height="100%">
         <path d="M8.543 2.232a.75.75 0 0 0-1.085 0l-5.25 5.5A.75.75 0 0 0 2.75 9H4v4a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1v-2h1v2a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1V9h1.25a.75.75 0 0 0 .543-1.268l-5.25-5.5Z" />
@@ -161,41 +160,47 @@ export const WithIcons: Story = {
  * Demonstrates a common page header pattern: large tab list items on the left
  * with action buttons on the right, separated by a full-width divider underneath.
  *
- * Uses `XDSHStack` with `XDSStackItem size="fill"` to push the actions to the
- * trailing edge, and `XDSDivider` below for visual separation from page content.
+ * Uses hasDivider on the TabList for a full-width divider that sits behind
+ * the active tab's underline indicator.
  */
 export const WithActions: Story = {
   render: () => {
     const [value, setValue] = useState('all');
     return (
-      <div>
-        <XDSHStack vAlign="center">
-          <XDSStackItem size="fill">
-            <XDSTabList value={value} onChange={setValue} size="lg">
-              <XDSTab value="all" label="All items" />
-              <XDSTab value="active" label="Active" />
-              <XDSTab value="archived" label="Archived" />
-            </XDSTabList>
-          </XDSStackItem>
-          <XDSStackItem>
-            <XDSHStack gap={1} vAlign="center">
-              <XDSButton
-                label="Filter"
-                variant="ghost"
-                size="md"
-                icon={<FunnelIcon />}
-                isIconOnly
-              />
-              <XDSButton
-                label="New item"
-                variant="primary"
-                size="md"
-                icon={<PlusIcon />}
-              />
-            </XDSHStack>
-          </XDSStackItem>
-        </XDSHStack>
-        <XDSDivider />
+      <XDSTabList value={value} onChange={setValue} size="lg" hasDivider>
+        <XDSTab value="all" label="All items" />
+        <XDSTab value="active" label="Active" />
+        <XDSTab value="archived" label="Archived" />
+        <div style={{marginInlineStart: 'auto', display: 'flex', alignItems: 'center', gap: '4px'}}>
+          <XDSButton
+            label="Filter"
+            variant="ghost"
+            size="sm"
+            icon={<FunnelIcon />}
+            isIconOnly
+          />
+          <XDSButton
+            label="New item"
+            variant="primary"
+            size="sm"
+            icon={<PlusIcon />}
+          />
+        </div>
+      </XDSTabList>
+    );
+  },
+};
+
+export const FillLayout: Story = {
+  render: () => {
+    const [value, setValue] = useState('home');
+    return (
+      <div style={{width: '500px'}}>
+        <XDSTabList value={value} onChange={setValue} layout="fill" hasDivider>
+          <XDSTab value="home" label="Home" />
+          <XDSTab value="projects" label="Projects" />
+          <XDSTab value="settings" label="Settings" />
+        </XDSTabList>
       </div>
     );
   },

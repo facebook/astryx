@@ -912,6 +912,110 @@ describe('XDSTableCell', () => {
   });
 });
 
+// =============================================================================
+// Column Alignment Tests
+// =============================================================================
+
+describe('column alignment', () => {
+  it('applies textAlign to header and body cells via inline style', () => {
+    const {container} = render(
+      <XDSTable
+        data={users}
+        columns={[
+          {key: 'name', header: 'Name'},
+          {key: 'age', header: 'Age', align: 'end'},
+          {key: 'email', header: 'Email', align: 'center'},
+        ]}
+      />,
+    );
+
+    const headerCells = container.querySelectorAll('th');
+    // First column: no explicit align (default 'start' is handled by CSS default)
+    expect(headerCells[0]).not.toHaveStyle({textAlign: 'end'});
+    expect(headerCells[0]).not.toHaveStyle({textAlign: 'center'});
+    // Second column: end aligned
+    expect(headerCells[1]).toHaveStyle({textAlign: 'end'});
+    // Third column: center aligned
+    expect(headerCells[2]).toHaveStyle({textAlign: 'center'});
+
+    const bodyRows = container.querySelectorAll('tbody tr');
+    const firstRowCells = bodyRows[0].querySelectorAll('td');
+    expect(firstRowCells[1]).toHaveStyle({textAlign: 'end'});
+    expect(firstRowCells[2]).toHaveStyle({textAlign: 'center'});
+  });
+
+  it('defaults to start alignment when align is not specified', () => {
+    const {container} = render(
+      <XDSTable data={users} columns={[{key: 'name', header: 'Name'}]} />,
+    );
+
+    const headerCell = container.querySelector('th');
+    // No textAlign inline style when default
+    expect(headerCell?.style.textAlign).toBeFalsy();
+  });
+
+  it('applies align through the plugin pipeline on XDSBaseTable', () => {
+    const {container} = render(
+      <XDSBaseTable
+        data={users}
+        columns={[
+          {key: 'name', header: 'Name', align: 'center'},
+          {key: 'age', header: 'Age', align: 'end'},
+        ]}
+      />,
+    );
+
+    const headerCells = container.querySelectorAll('th');
+    expect(headerCells[0]).toHaveStyle({textAlign: 'center'});
+    expect(headerCells[1]).toHaveStyle({textAlign: 'end'});
+
+    const bodyCells = container.querySelectorAll('tbody td');
+    expect(bodyCells[0]).toHaveStyle({textAlign: 'center'});
+    expect(bodyCells[1]).toHaveStyle({textAlign: 'end'});
+  });
+});
+
+// =============================================================================
+// Vertical Alignment Tests
+// =============================================================================
+
+describe('vertical alignment', () => {
+  it('defaults to middle vertical alignment', () => {
+    const {container} = render(
+      <XDSTable data={users} columns={[{key: 'name', header: 'Name'}]} />,
+    );
+
+    const bodyCell = container.querySelector('tbody td');
+    expect(bodyCell).toHaveStyle({verticalAlign: 'middle'});
+  });
+
+  it('applies top vertical alignment', () => {
+    const {container} = render(
+      <XDSTable
+        data={users}
+        columns={[{key: 'name', header: 'Name'}]}
+        verticalAlign="top"
+      />,
+    );
+
+    const bodyCell = container.querySelector('tbody td');
+    expect(bodyCell).toHaveStyle({verticalAlign: 'top'});
+  });
+
+  it('applies bottom vertical alignment', () => {
+    const {container} = render(
+      <XDSTable
+        data={users}
+        columns={[{key: 'name', header: 'Name'}]}
+        verticalAlign="bottom"
+      />,
+    );
+
+    const bodyCell = container.querySelector('tbody td');
+    expect(bodyCell).toHaveStyle({verticalAlign: 'bottom'});
+  });
+});
+
 describe('emptyState', () => {
   it('renders default empty state when data is empty', () => {
     render(

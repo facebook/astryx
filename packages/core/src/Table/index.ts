@@ -38,6 +38,8 @@ export {
 } from './columnUtils';
 export type {
   XDSTableColumn,
+  XDSTableColumnAlign,
+  XDSTableVerticalAlign,
   ColumnWidth,
   ProportionalWidth,
   PixelWidth,

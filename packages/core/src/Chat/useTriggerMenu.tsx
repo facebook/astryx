@@ -258,9 +258,18 @@ export function useTriggerMenu(
 
   const triggerStartRef = useRef<number>(-1);
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const anchorSpanRef = useRef<HTMLSpanElement | null>(null);
+
+  const removeAnchorSpan = useCallback(() => {
+    if (anchorSpanRef.current) {
+      anchorSpanRef.current.remove();
+      anchorSpanRef.current = null;
+    }
+  }, []);
 
   const popover = useXDSPopover({
     onHide: useCallback(() => {
+      removeAnchorSpan();
       setState(prev => ({
         ...prev,
         isActive: false,
@@ -270,7 +279,7 @@ export function useTriggerMenu(
         highlightedIndex: 0,
         isLoading: false,
       }));
-    }, []),
+    }, [removeAnchorSpan]),
     hasLightDismiss: true,
     hasCloseButton: false,
     hasAutoFocus: false,
@@ -282,8 +291,9 @@ export function useTriggerMenu(
       if (searchTimeoutRef.current) {
         clearTimeout(searchTimeoutRef.current);
       }
+      removeAnchorSpan();
     };
-  }, []);
+  }, [removeAnchorSpan]);
 
   const reset = useCallback(() => {
     if (searchTimeoutRef.current) {
@@ -295,15 +305,62 @@ export function useTriggerMenu(
     if (trigger?.searchSource) {
       trigger.searchSource.cancel?.();
     }
+    removeAnchorSpan();
     popover.hide();
     triggerStartRef.current = -1;
-  }, [popover, state.activeTrigger]);
+  }, [popover, state.activeTrigger, removeAnchorSpan]);
 
+  // Anchor the popover to the cursor position (not the entire input).
+  // We append a zero-size span to document.body positioned at the cursor
+  // rect — outside the contentEditable to avoid splitting text nodes.
   const setAnchor = useCallback(() => {
     const editable = editableRef.current;
     if (!editable) return;
-    popover.triggerRef(editable);
-  }, [editableRef, popover]);
+
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) {
+      popover.triggerRef(editable);
+      return;
+    }
+
+    removeAnchorSpan();
+
+    const range = selection.getRangeAt(0).cloneRange();
+    range.collapse(true);
+
+    // getBoundingClientRect is unavailable in some environments (e.g. jsdom)
+    const rect =
+      typeof range.getBoundingClientRect === 'function'
+        ? range.getBoundingClientRect()
+        : null;
+
+    // Fall back to the editable when layout info is unavailable
+    if (
+      !rect ||
+      (rect.width === 0 &&
+        rect.height === 0 &&
+        rect.top === 0 &&
+        rect.left === 0)
+    ) {
+      popover.triggerRef(editable);
+      return;
+    }
+
+    const span = document.createElement('span');
+    span.setAttribute('aria-hidden', 'true');
+    span.setAttribute('data-xds-trigger-anchor', '');
+    span.style.position = 'fixed';
+    span.style.left = `${rect.left}px`;
+    span.style.top = `${rect.top}px`;
+    span.style.width = `${Math.max(rect.width, 1)}px`;
+    span.style.height = `${rect.height}px`;
+    span.style.pointerEvents = 'none';
+    span.style.opacity = '0';
+    document.body.appendChild(span);
+
+    anchorSpanRef.current = span;
+    popover.triggerRef(span);
+  }, [editableRef, popover, removeAnchorSpan]);
 
   const searchItems = useCallback(
     (trigger: XDSChatComposerTrigger, query: string) => {
@@ -364,6 +421,11 @@ export function useTriggerMenu(
       const editable = editableRef.current;
       if (!editable) return;
 
+      // Clean up anchor span before modifying DOM — if the span were
+      // inside the editable it would split text nodes and break offsets.
+      // With the body-appended approach this is just bookkeeping.
+      removeAnchorSpan();
+
       deleteTriggerText(editable, triggerStartRef.current);
 
       const result = trigger.onSelect(item);
@@ -379,6 +441,7 @@ export function useTriggerMenu(
     [
       state.activeTrigger,
       editableRef,
+      removeAnchorSpan,
       onInsertText,
       onInsertToken,
       onEmitChange,
@@ -556,9 +619,9 @@ export function useTriggerMenu(
                     aria-selected={idx === state.highlightedIndex}
                     tabIndex={-1}
                     onMouseDown={e => {
-                    e.preventDefault(); // Keep focus in the editable
-                    selectItem(item);
-                  }}
+                      e.preventDefault(); // Keep focus in the editable
+                      selectItem(item);
+                    }}
                     onMouseEnter={() =>
                       setState(prev => ({...prev, highlightedIndex: idx}))
                     }

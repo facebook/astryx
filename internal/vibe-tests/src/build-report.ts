@@ -16,7 +16,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {execSync} from 'node:child_process';
-import {getResultsDir, readJson, ensureDir} from './utils.js';
+import {getResultsDir, readJson, ensureDir, ensureTsxFiles} from './utils.js';
 import type {UniversalAggregate, UniversalComparison} from './types.js';
 
 const APP_DIR = path.join(import.meta.dirname, '..', 'app');
@@ -275,6 +275,7 @@ async function main() {
   const sourceCode: Record<string, string> = {};
   const codeDir = path.join(iterDir, 'results');
   if (fs.existsSync(codeDir)) {
+    ensureTsxFiles(codeDir);
     for (const file of fs
       .readdirSync(codeDir)
       .filter(f => f.endsWith('.tsx'))) {
@@ -288,6 +289,7 @@ async function main() {
     baselineSourceCode = {};
     const baseCodeDir = path.join(resultsDir, baseline, 'results');
     if (fs.existsSync(baseCodeDir)) {
+      ensureTsxFiles(baseCodeDir);
       for (const file of fs
         .readdirSync(baseCodeDir)
         .filter(f => f.endsWith('.tsx'))) {
@@ -305,6 +307,7 @@ async function main() {
     htmlSourceCode = {};
     const htmlCodeDir = path.join(resultsDir, html, 'results');
     if (fs.existsSync(htmlCodeDir)) {
+      ensureTsxFiles(htmlCodeDir);
       for (const file of fs
         .readdirSync(htmlCodeDir)
         .filter(f => f.endsWith('.tsx'))) {

@@ -38,6 +38,12 @@ export const docs = {
         'Accessible name for screen readers. Defaults to label (if string) or "Loading".',
       default: "'Loading'",
     },
+    {
+      name: 'xstyle',
+      type: 'StyleXStyles',
+      description:
+        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+    },
   ],
   examples: [
     {
@@ -128,6 +134,12 @@ export const docsZh = {
       description: '屏幕阅读器的无障碍名称。默认为 label（如果是字符串）或 "Loading"。',
       default: "'Loading'",
     },
+    {
+      name: 'xstyle',
+      type: 'StyleXStyles',
+      description:
+        'StyleX 样式，用于布局自定义（边距、定位、尺寸）。必须是 stylex.create() 的值，而非内联样式对象如 style={{}}。',
+    },
   ],
   examples: [
     {
@@ -194,5 +206,6 @@ export const docsDense = {
     shade: 'Color shade for light or dark backgrounds.',
     label: 'Visible content below spinner. String auto-sets aria-label.',
     'aria-label': 'A11y name for screen readers. Defaults to label or "Loading".',
+    xstyle: 'StyleX styles for layout customization. Must be stylex.create() value, not inline style.',
   },
 };

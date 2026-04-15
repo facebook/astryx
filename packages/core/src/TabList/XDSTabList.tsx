@@ -35,6 +35,13 @@ export interface XDSTabListProps {
    */
   size?: XDSTabListSize;
   /**
+   * Layout mode for tab sizing.
+   * - `'hug'` (default): each tab hugs its content width.
+   * - `'fill'`: tabs stretch equally to fill the container width.
+   * @default 'hug'
+   */
+  layout?: 'hug' | 'fill';
+  /**
    * Whether to show a bottom divider under the tab list.
    * @default false
    */
@@ -71,6 +78,9 @@ const styles = stylex.create({
     alignItems: 'stretch',
     gap: spacingVars['--spacing-0-5'],
   },
+  fill: {
+    width: '100%',
+  },
   divider: {
     borderBottomWidth: borderVars['--border-width'],
     borderBottomStyle: 'solid',
@@ -98,6 +108,7 @@ export function XDSTabList({
   value,
   onChange,
   size = 'md',
+  layout = 'hug',
   hasDivider = false,
   xstyle,
   className,
@@ -105,8 +116,8 @@ export function XDSTabList({
   children,
 }: XDSTabListProps) {
   const contextValue = useMemo(
-    () => ({value, onChange, size}),
-    [value, onChange, size],
+    () => ({value, onChange, size, layout}),
+    [value, onChange, size, layout],
   );
 
   return (
@@ -115,7 +126,12 @@ export function XDSTabList({
         aria-label="Tabs"
         {...mergeProps(
           xdsClassName('tab-list', {size}),
-          stylex.props(styles.nav, hasDivider && styles.divider, xstyle),
+          stylex.props(
+            styles.nav,
+            layout === 'fill' && styles.fill,
+            hasDivider && styles.divider,
+            xstyle,
+          ),
           className,
           style,
         )}>

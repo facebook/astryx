@@ -27,6 +27,7 @@ import {
 } from '../theme/tokens.stylex';
 import {useXDSTabListContext} from './XDSTabListContext';
 import type {XDSTabListSize} from './XDSTabListContext';
+import {tabScope} from './tab.markers.stylex';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import type {XDSLinkComponentType} from '../Link/types';
 import {xdsClassName, mergeProps} from '../utils';
@@ -115,8 +116,25 @@ const styles = stylex.create({
       ':focus-visible': '2px',
     },
   },
+  hoverBg: {
+    position: 'absolute',
+    inset: 0,
+    margin: 'auto',
+    width: '100%',
+    borderRadius: radiusVars['--radius-element'],
+    pointerEvents: 'none',
+    backgroundColor: {
+      default: 'transparent',
+      [stylex.when.ancestor(':hover', tabScope)]: {
+        '@media (hover: hover)': colorVars['--color-overlay-hover'],
+      },
+    },
+    transitionProperty: 'background-color',
+    transitionDuration: durationVars['--duration-fast'],
+    transitionTimingFunction: easeVars['--ease-standard'],
+  },
   selected: {
-    color: colorVars['--color-text-accent'],
+    color: colorVars['--color-text-primary'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
   },
   indicator: {
@@ -132,17 +150,12 @@ const styles = stylex.create({
     transitionTimingFunction: easeVars['--ease-standard'],
   },
   indicatorSelected: {
-    backgroundColor: colorVars['--color-accent'],
+    backgroundColor: colorVars['--color-icon-primary'],
     opacity: 1,
   },
   indicatorUnselected: {
-    backgroundColor: colorVars['--color-border'],
-    opacity: {
-      default: 0,
-      [stylex.when.ancestor(':hover')]: {
-        '@media (hover: hover)': 1,
-      },
-    },
+    backgroundColor: 'transparent',
+    opacity: 0,
   },
   icon: {
     display: 'inline-flex',
@@ -170,6 +183,20 @@ const sizeStyles = stylex.create({
   sm: {height: sizeVars['--size-element-sm']},
   md: {height: sizeVars['--size-element-md']},
   lg: {height: sizeVars['--size-element-lg']},
+});
+
+// Hover bg uses the standard element size (one step smaller than tab)
+const hoverSizeStyles = stylex.create({
+  sm: {height: sizeVars['--size-element-sm']},
+  md: {height: sizeVars['--size-element-md']},
+  lg: {height: sizeVars['--size-element-lg']},
+});
+
+const layoutStyles = stylex.create({
+  fill: {
+    flex: 1,
+    justifyContent: 'center',
+  },
 });
 
 const iconSizeStyles = stylex.create({
@@ -206,6 +233,7 @@ export function XDSTab({
 
   const isSelected = tabListCtx.value === value;
   const size: XDSTabListSize = tabListCtx.size;
+  const isFill = tabListCtx.layout === 'fill';
   const displayIcon = isSelected && selectedIcon ? selectedIcon : icon;
 
   const handleSelect = useCallback(() => {
@@ -228,13 +256,21 @@ export function XDSTab({
         styles.base,
         sizeStyles[size],
         isSelected && styles.selected,
-        !isSelected && stylex.defaultMarker(),
+        isFill && layoutStyles.fill,
+        tabScope,
         xstyle,
       ),
       className,
       style,
     ),
   };
+
+  const hoverBgElement = (
+    <span
+      aria-hidden="true"
+      {...stylex.props(styles.hoverBg, hoverSizeStyles[size])}
+    />
+  );
 
   const indicatorElement = (
     <span
@@ -262,6 +298,7 @@ export function XDSTab({
   if (href != null) {
     return (
       <LinkComponent href={href} onClick={handleSelect} {...sharedProps}>
+        {hoverBgElement}
         {iconElement}
         {labelElement}
         {indicatorElement}
@@ -271,6 +308,7 @@ export function XDSTab({
 
   return (
     <button type="button" onClick={handleSelect} {...sharedProps}>
+      {hoverBgElement}
       {iconElement}
       {labelElement}
       {indicatorElement}

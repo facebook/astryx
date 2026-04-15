@@ -189,3 +189,65 @@ export function progressBar(
 export function timestamp(): string {
   return new Date().toISOString();
 }
+
+/**
+ * Result file entry from the JSON evaluation format.
+ * Each JSON file is an array of these (one per trajectory depth).
+ */
+interface JsonResultEntry {
+  response: string;
+  trajectoryDepth: number;
+  [key: string]: unknown;
+}
+
+/**
+ * Ensure .tsx files exist in a results directory.
+ *
+ * Handles two result formats:
+ *   1. Direct .tsx files (old format) — already present, nothing to do
+ *   2. .json evaluation files (new format) — each is an array of entries
+ *      with a `response` field containing TSX code; extracts depth-0 entry
+ *
+ * Returns the list of prompt IDs that have .tsx files after extraction.
+ */
+export function ensureTsxFiles(codeDir: string): string[] {
+  const tsxFiles = fs.readdirSync(codeDir).filter(f => f.endsWith('.tsx'));
+  if (tsxFiles.length > 0) {
+    return tsxFiles.map(f => path.basename(f, '.tsx'));
+  }
+
+  // No .tsx files — try extracting from JSON results
+  const jsonFiles = fs.readdirSync(codeDir).filter(f => f.endsWith('.json'));
+  const extracted: string[] = [];
+
+  for (const jsonFile of jsonFiles) {
+    const promptId = path.basename(jsonFile, '.json');
+    const jsonPath = path.join(codeDir, jsonFile);
+
+    try {
+      const data = JSON.parse(
+        fs.readFileSync(jsonPath, 'utf-8'),
+      ) as JsonResultEntry | JsonResultEntry[];
+
+      // Find the depth-0 entry (initial generation, before follow-ups)
+      const entries = Array.isArray(data) ? data : [data];
+      const entry = entries.find(e => e.trajectoryDepth === 0) ?? entries[0];
+
+      if (entry?.response && typeof entry.response === 'string') {
+        const tsxPath = path.join(codeDir, `${promptId}.tsx`);
+        fs.writeFileSync(tsxPath, entry.response);
+        extracted.push(promptId);
+      }
+    } catch {
+      // Skip malformed JSON files
+    }
+  }
+
+  if (extracted.length > 0) {
+    console.log(
+      `  ⚡ Extracted ${extracted.length} .tsx file(s) from JSON results`,
+    );
+  }
+
+  return extracted;
+}
