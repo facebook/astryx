@@ -84,11 +84,11 @@ export default defineConfig({
       // Theme: resolve to source (no StyleX usage, just defineTheme + icons).
       {
         find: '@xds/theme-default',
-        replacement: path.resolve(repoRoot, 'packages/themes/default/src'),
+        replacement: path.resolve(repoRoot, 'packages/themes/default/src/source.ts'),
       },
       {
         find: '@xds/theme/default',
-        replacement: path.resolve(repoRoot, 'packages/themes/default/src'),
+        replacement: path.resolve(repoRoot, 'packages/themes/default/src/source.ts'),
       },
     ],
   },
