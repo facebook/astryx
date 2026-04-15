@@ -32,8 +32,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
+
+      - name: Fetch base branch
+        run: git fetch origin ${{ github.base_ref }} --depth=1
 
       - name: Check for component changes
         id: check
@@ -59,17 +60,6 @@ jobs:
 
       - run: yarn test
 
-      - run: yarn build
-
-      - name: Verify package exports
-        run: node scripts/verify-exports.mjs
-
-      - name: Typecheck component docs
-        run: yarn workspace @xds/core typecheck:docs
-
-      - name: Typecheck template docs
-        run: yarn workspace @xds/cli typecheck:template-docs
-
   # Build storybook + analyze components (parallel with test)
   # Uploads storybook preview and analysis artifacts for downstream jobs
   build:
@@ -82,8 +72,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
+
+      - name: Fetch base branch for PR analysis
+        if: github.event_name == 'pull_request'
+        run: git fetch origin ${{ github.base_ref }} --depth=1
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -99,6 +91,12 @@ jobs:
 
       - name: Verify package exports
         run: node scripts/verify-exports.mjs
+
+      - name: Typecheck component docs
+        run: yarn workspace @xds/core typecheck:docs
+
+      - name: Typecheck template docs
+        run: yarn workspace @xds/cli typecheck:template-docs
 
       - name: Build Storybook
         run: yarn workspace @xds/storybook build
