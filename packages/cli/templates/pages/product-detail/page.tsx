@@ -5,9 +5,11 @@ import {XDSAppShell} from '@xds/core/AppShell';
 import {XDSTopNav, XDSTopNavHeading, XDSTopNavItem} from '@xds/core/TopNav';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSCenter} from '@xds/core/Center';
+import {XDSGrid} from '@xds/core/Grid';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
 import {XDSNumberInput} from '@xds/core/NumberInput';
+import {XDSIcon} from '@xds/core/Icon';
 import {
   XDSSegmentedControl,
   XDSSegmentedControlItem,
@@ -207,7 +209,7 @@ function StoreTopNav() {
         <XDSTopNavHeading
           heading="Kiln & Table"
           logo={
-            <XDSNavIcon icon={<BagIcon style={{width: 16, height: 16}} />} />
+            <XDSNavIcon icon={<XDSIcon icon={BagIcon} size="sm" />} />
           }
           href="#"
         />
@@ -226,25 +228,25 @@ function StoreTopNav() {
           <XDSButton
             label="Search"
             variant="ghost"
-            icon={<SearchIcon style={{width: 16, height: 16}} />}
+            icon={<XDSIcon icon={SearchIcon} size="sm" />}
             isIconOnly
           />
           <XDSButton
             label="Wishlist"
             variant="ghost"
-            icon={<HeartIcon style={{width: 16, height: 16}} />}
+            icon={<XDSIcon icon={HeartIcon} size="sm" />}
             isIconOnly
           />
           <XDSButton
             label="Account"
             variant="ghost"
-            icon={<UserIcon style={{width: 16, height: 16}} />}
+            icon={<XDSIcon icon={UserIcon} size="sm" />}
             isIconOnly
           />
           <XDSButton
             label="Cart"
             variant="ghost"
-            icon={<BagIcon style={{width: 16, height: 16}} />}
+            icon={<XDSIcon icon={BagIcon} size="sm" />}
             isIconOnly
           />
         </>
@@ -275,16 +277,11 @@ function ImageGallery({
           aspectRatio: '4 / 5',
           objectFit: 'cover',
           borderRadius: 'var(--radius-container, 12px)',
-          backgroundColor: '#e8e8e8',
+          backgroundColor: 'var(--color-surface-secondary)',
         }}
       />
       {/* Thumbnail grid */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: 8,
-        }}>
+      <XDSGrid columns={3} gap={2}>
         {thumbnails.map((src, i) => (
           <img
             key={i}
@@ -313,7 +310,7 @@ function ImageGallery({
             }}
           />
         ))}
-      </div>
+      </XDSGrid>
     </div>
   );
 }
@@ -331,15 +328,7 @@ function ProductInfo() {
     <XDSVStack gap={5}>
       {/* Title & Rating */}
       <XDSVStack gap={2}>
-        <p
-          style={{
-            fontSize: 'var(--font-size-4xl, 2.25rem)',
-            lineHeight: 1.1,
-            fontWeight: 700,
-            margin: 0,
-          }}>
-          {PRODUCT.name}
-        </p>
+        <XDSHeading level={1}>{PRODUCT.name}</XDSHeading>
         <StarRating rating={4.3} count={128} />
         <XDSHStack gap={2} style={{alignItems: 'center'}}>
           <XDSText type="large" weight="bold">
@@ -389,7 +378,7 @@ function ProductInfo() {
         <XDSButton
           label="Decrease quantity"
           variant="ghost"
-          icon={<MinusIcon style={{width: 16, height: 16}} />}
+          icon={<XDSIcon icon={MinusIcon} size="sm" />}
           onClickAction={decrement}
           isDisabled={(quantity ?? 1) <= 1}
           isIconOnly
@@ -408,7 +397,7 @@ function ProductInfo() {
         <XDSButton
           label="Increase quantity"
           variant="ghost"
-          icon={<PlusIcon style={{width: 16, height: 16}} />}
+          icon={<XDSIcon icon={PlusIcon} size="sm" />}
           onClickAction={increment}
           isDisabled={(quantity ?? 1) >= 10}
           isIconOnly
@@ -437,7 +426,7 @@ function ProductInfo() {
             label="Add to wishlist"
             variant="ghost"
             size="lg"
-            icon={<HeartIcon style={{width: 16, height: 16}} />}
+            icon={<XDSIcon icon={HeartIcon} size="sm" />}
             isIconOnly
           />
         </XDSHStack>
@@ -489,13 +478,8 @@ export default function ProductDetailTemplate() {
             width: '100%',
             padding: '32px 24px',
           }}>
-          <div
-            style={{
-              display: 'flex',
-              gap: 40,
-              alignItems: 'flex-start',
-            }}>
-            <div style={{flex: '1 1 55%', minWidth: 0}}>
+          <XDSGrid columns={2} gap={5}>
+            <div style={{minWidth: 0}}>
               <ImageGallery
                 selected={selectedThumb}
                 onSelect={setSelectedThumb}
@@ -503,14 +487,14 @@ export default function ProductDetailTemplate() {
             </div>
             <div
               style={{
-                flex: '1 1 45%',
                 minWidth: 0,
                 position: 'sticky',
                 top: 64,
+                alignSelf: 'start',
               }}>
               <ProductInfo />
             </div>
-          </div>
+          </XDSGrid>
         </div>
       </XDSCenter>
     </XDSAppShell>
