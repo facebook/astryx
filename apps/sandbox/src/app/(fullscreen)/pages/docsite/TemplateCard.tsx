@@ -39,7 +39,10 @@ export function TemplateCard({
   const useButtonRef = useRef<HTMLButtonElement>(null);
   const [showUsePopover, setShowUsePopover] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
-  const [usePopoverPos, setUsePopoverPos] = useState<{top: number; left: number} | null>(null);
+  const [usePopoverPos, setUsePopoverPos] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
 
   const handleUseClick = useCallback(() => {
     if (useButtonRef.current) {
@@ -143,17 +146,20 @@ export function TemplateCard({
                 left: 0,
                 right: 0,
                 padding: 16,
-                background: 'linear-gradient(to top, rgba(0,0,0,0.6), transparent)',
+                background:
+                  'linear-gradient(to top, rgba(0,0,0,0.6), transparent)',
                 display: 'flex',
                 alignItems: 'flex-end',
                 justifyContent: 'space-between',
               }}>
               {/* Template info */}
               <div style={{display: 'flex', flexDirection: 'column', gap: 0}}>
-                <XDSText type="heading-3" style={{color: '#fff', fontWeight: 700}}>
+                <XDSText type="body" weight="bold" style={{color: '#fff'}}>
                   {name}
                 </XDSText>
-                <XDSText type="supporting" style={{color: 'rgba(255,255,255,0.7)'}}>
+                <XDSText
+                  type="supporting"
+                  style={{color: 'rgba(255,255,255,0.7)'}}>
                   Andrea Anderson
                 </XDSText>
               </div>
