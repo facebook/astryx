@@ -10,3 +10,8 @@ export default function TooltipXDSTooltipBasic() {
     </XDSTooltip>
   );
 }
+
+export const showcase = {
+  aspectRatio: 1,
+  render: TooltipXDSTooltipBasic,
+};

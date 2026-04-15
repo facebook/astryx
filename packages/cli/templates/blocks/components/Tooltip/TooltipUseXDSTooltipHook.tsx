@@ -14,3 +14,8 @@ export default function TooltipUseXDSTooltipHook() {
     </>
   );
 }
+
+export const showcase = {
+  aspectRatio: 1,
+  render: TooltipUseXDSTooltipHook,
+};
