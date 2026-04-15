@@ -40,3 +40,8 @@ export default function DialogBasicWithLayout() {
     </>
   );
 }
+
+export const showcase = {
+  aspectRatio: 4 / 3,
+  render: DialogBasicWithLayout,
+};
