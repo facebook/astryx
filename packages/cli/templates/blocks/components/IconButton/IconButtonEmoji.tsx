@@ -12,3 +12,8 @@ export default function IconButtonEmoji() {
     />
   );
 }
+
+export const showcase = {
+  aspectRatio: 1,
+  render: IconButtonEmoji,
+};

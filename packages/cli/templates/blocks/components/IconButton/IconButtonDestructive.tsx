@@ -26,3 +26,8 @@ export default function IconButtonDestructive() {
     />
   );
 }
+
+export const showcase = {
+  aspectRatio: 1,
+  render: IconButtonDestructive,
+};
