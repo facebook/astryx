@@ -1,13 +1,14 @@
 'use client';
 
-import React, {useState, useEffect, useRef, useCallback} from 'react';
+import React, {useState, useEffect} from 'react';
 import {XDSCard} from '@xds/core/Card';
 import {XDSButton} from '@xds/core/Button';
 import {XDSText} from '@xds/core/Text';
+import {XDSStack} from '@xds/core/Layout';
+import {XDSPopover} from '@xds/core/Popover';
 import {BookmarkIcon, BookmarkFilledIcon} from './docsite-icons';
-import {BoidsCanvas} from './BoidsCanvas';
-import type {BoidsSimulation} from './BoidsCanvas';
-import {SharePopover} from './SharePopover';
+import {CraftingCat} from './CraftingCat';
+import {SharePopoverContent} from './SharePopover';
 
 export function TemplateCard({
   src,
@@ -18,7 +19,6 @@ export function TemplateCard({
   onMoreLikeThis: _onMoreLikeThis,
   onUse,
   onPreview,
-  simulation,
   cardSize: _cardSize = 'medium',
 }: {
   src: string;
@@ -29,33 +29,15 @@ export function TemplateCard({
   onMoreLikeThis?: () => void;
   onUse: () => void;
   onPreview: () => void;
-  simulation: BoidsSimulation;
   cardSize?: 'xlarge' | 'large' | 'medium' | 'small';
 }) {
   const [hovered, setHovered] = useState(false);
-  const containerRef = useRef(null as HTMLDivElement | null);
-  const [size, setSize] = useState({w: 0, h: 0});
   const [showCanvas, setShowCanvas] = useState(false);
-  const useButtonRef = useRef<HTMLButtonElement>(null);
   const [showUsePopover, setShowUsePopover] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
-  const [usePopoverPos, setUsePopoverPos] = useState<{
-    top: number;
-    left: number;
-  } | null>(null);
-
-  const handleUseClick = useCallback(() => {
-    if (useButtonRef.current) {
-      const rect = useButtonRef.current.getBoundingClientRect();
-      setUsePopoverPos({top: rect.bottom + 8, left: rect.left});
-    }
-    setShowUsePopover(prev => !prev);
-  }, []);
 
   useEffect(() => {
-    if (isGenerating && containerRef.current) {
-      const rect = containerRef.current.getBoundingClientRect();
-      setSize({w: rect.width, h: rect.height});
+    if (isGenerating) {
       setShowCanvas(true);
     }
   }, [isGenerating]);
@@ -71,7 +53,6 @@ export function TemplateCard({
   return (
     <XDSCard padding={0}>
       <div
-        ref={containerRef}
         style={{
           position: 'relative',
           cursor: 'pointer',
@@ -87,7 +68,7 @@ export function TemplateCard({
           style={{
             display: 'block',
             width: '100%',
-            height: 400,
+            aspectRatio: '1920 / 1205',
             objectFit: 'cover' as const,
             objectPosition: 'top',
             opacity: isGenerating ? 0 : 1,
@@ -100,14 +81,13 @@ export function TemplateCard({
             style={{
               position: 'absolute',
               inset: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
               opacity: isGenerating ? 1 : 0,
               transition: 'opacity 600ms ease',
             }}>
-            <BoidsCanvas
-              width={size.w}
-              height={size.h}
-              simulation={simulation}
-            />
+            <CraftingCat />
           </div>
         )}
         {!isGenerating && (
@@ -153,7 +133,7 @@ export function TemplateCard({
                 justifyContent: 'space-between',
               }}>
               {/* Template info */}
-              <div style={{display: 'flex', flexDirection: 'column', gap: 0}}>
+              <XDSStack direction="vertical" gap={0}>
                 <XDSText type="body" weight="bold" style={{color: '#fff'}}>
                   {name}
                 </XDSText>
@@ -162,17 +142,29 @@ export function TemplateCard({
                   style={{color: 'rgba(255,255,255,0.7)'}}>
                   Andrea Anderson
                 </XDSText>
-              </div>
+              </XDSStack>
               {/* Action buttons */}
-              <div style={{display: 'flex', gap: 8}}>
-                <XDSButton
-                  ref={useButtonRef}
-                  label="Use"
-                  variant="secondary"
-                  size="sm"
-                  style={{backgroundColor: 'var(--color-background-surface)'}}
-                  onClick={handleUseClick}
-                />
+              <XDSStack direction="horizontal" gap={2}>
+                <XDSPopover
+                  label="Add to project"
+                  isOpen={showUsePopover}
+                  onOpenChange={setShowUsePopover}
+                  placement="above"
+                  alignment="start"
+                  width={340}
+                  content={
+                    <SharePopoverContent
+                      cliCommand={`npx xds template ${name.toLowerCase().replace(/\s+/g, '-')}`}
+                      onClose={() => setShowUsePopover(false)}
+                    />
+                  }>
+                  <XDSButton
+                    label="Use"
+                    variant="secondary"
+                    size="sm"
+                    style={{backgroundColor: 'var(--color-background-surface)'}}
+                  />
+                </XDSPopover>
                 <XDSButton
                   label="Craft"
                   variant="secondary"
@@ -180,14 +172,7 @@ export function TemplateCard({
                   style={{backgroundColor: 'var(--color-background-surface)'}}
                   onClick={onUse}
                 />
-              </div>
-              {showUsePopover && usePopoverPos && (
-                <SharePopover
-                  cliCommand={`npx xds template ${name.toLowerCase().replace(/\s+/g, '-')}`}
-                  position={usePopoverPos}
-                  onClose={() => setShowUsePopover(false)}
-                />
-              )}
+              </XDSStack>
             </div>
           </div>
         )}

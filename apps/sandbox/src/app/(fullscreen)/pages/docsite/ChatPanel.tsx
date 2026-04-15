@@ -1,12 +1,28 @@
 'use client';
 
+import * as stylex from '@stylexjs/stylex';
 import React, {useState} from 'react';
 import {XDSButton} from '@xds/core/Button';
-import {XDSHeading, XDSText} from '@xds/core/Text';
-import {PlusIcon, SendIcon, SidebarIcon, ArrowLeftIcon, GridIcon, SparklesIcon, StopIcon, ChevronDownIcon} from './docsite-icons';
-import LogoNav from './LogoNav';
+import {
+  XDSChatComposer,
+  XDSChatComposerInput,
+  XDSChatMessage,
+  XDSChatMessageBubble,
+} from '@xds/core/Chat';
+import {XDSCodeBlock} from '@xds/core/CodeBlock';
+import {XDSDivider} from '@xds/core/Divider';
+import {XDSEmptyState} from '@xds/core/EmptyState';
+import {XDSMetadataList, XDSMetadataListItem} from '@xds/core/MetadataList';
+import {XDSText} from '@xds/core/Text';
+import {ArrowLeftIcon} from './docsite-icons';
 import {ShimmerText} from './ShimmerText';
 import {MOCK_CODE} from './constants';
+
+const composerStyles = stylex.create({
+  noShadow: {
+    boxShadow: 'none',
+  },
+});
 
 export type PanelTab = 'configure' | 'properties' | 'code';
 
@@ -19,8 +35,8 @@ export type PointedElement = {
 export function ChatPanel({
   isGenerating,
   onSend,
-  activeView,
-  setActiveView,
+  activeView: _activeView,
+  setActiveView: _setActiveView,
   templateName,
   onBack,
   activeTab,
@@ -40,7 +56,6 @@ export function ChatPanel({
   hideHeader?: boolean;
 }) {
   const [prompt, setPrompt] = useState('');
-  const [codeContent, setCodeContent] = useState(MOCK_CODE);
   const tab = activeTab ?? 'configure';
 
   return (
@@ -51,26 +66,6 @@ export function ChatPanel({
         height: '100%',
         width: '100%',
       }}>
-      {/* Header: logo or back+title */}
-      {!hideHeader && !templateName && (
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '12px 16px',
-            flexShrink: 0,
-          }}>
-          <LogoNav activeView={activeView} setActiveView={setActiveView} />
-          <XDSButton
-            label="Toggle sidebar"
-            variant="ghost"
-            size="sm"
-            isIconOnly
-            icon={<SidebarIcon />}
-          />
-        </div>
-      )}
       {/* Tab bar (editor mode only) */}
       {!hideHeader && templateName && onTabChange && (
         <div
@@ -110,9 +105,7 @@ export function ChatPanel({
                 textAlign: 'center' as const,
                 transition: 'border-color 150ms ease',
               }}>
-              <XDSText
-                type="body"
-                color={tab === t ? 'primary' : 'secondary'}>
+              <XDSText type="body" color={tab === t ? 'primary' : 'secondary'}>
                 {t === 'configure'
                   ? 'Craft'
                   : t === 'properties'
@@ -128,17 +121,13 @@ export function ChatPanel({
       {(!templateName || !onTabChange || tab === 'configure') && (
         <>
           <div style={{flex: 1, padding: 16, overflow: 'auto'}}>
-            <div
-              style={{
-                backgroundColor: 'var(--color-background-body, #f1f4f7)',
-                borderRadius: 12,
-                padding: 12,
-                marginBottom: 16,
-              }}>
-              <XDSText type="body">
-                Can you customize this template by adding a divider line under
-                the header and use a card for the lists
-              </XDSText>
+            <div style={{marginBottom: 16}}>
+              <XDSChatMessage sender="user">
+                <XDSChatMessageBubble>
+                  Can you customize this template by adding a divider line under
+                  the header and use a card for the lists
+                </XDSChatMessageBubble>
+              </XDSChatMessage>
             </div>
             <div style={{padding: '0 4px'}}>
               <ShimmerText isActive={isGenerating} />
@@ -149,59 +138,17 @@ export function ChatPanel({
             style={{
               padding: templateName ? 12 : 12,
             }}>
-            <div
-              style={{
-                borderRadius: 16,
-                backgroundColor: 'var(--color-background-card, white)',
-                border: '1px solid var(--color-divider, #e0e0e0)',
-                padding: 8,
-                display: 'flex',
-                flexDirection: 'column' as const,
-                gap: 8,
-              }}>
-              <div
-                style={{display: 'flex', alignItems: 'center', padding: 8}}>
-                <input
-                  style={{
-                    flex: 1,
-                    border: 'none',
-                    outline: 'none',
-                    backgroundColor: 'transparent',
-                    fontFamily: 'inherit',
-                    fontSize: 14,
-                  }}
-                  placeholder="Ask for changes"
-                  value={prompt}
-                  onChange={e => setPrompt(e.target.value)}
-                />
-              </div>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  width: '100%',
-                  paddingInlineStart: 4,
-                  paddingTop: 4,
-                }}>
-                <XDSButton
-                  label="Attach"
-                  variant="ghost"
-                  size="sm"
-                  isIconOnly
-                  icon={<PlusIcon />}
-                />
-                <XDSButton
-                  label="Send"
-                  variant="primary"
-                  size="sm"
-                  isIconOnly
-                  icon={<SendIcon />}
-                  style={{borderRadius: 9999}}
-                  onClick={onSend}
-                />
-              </div>
-            </div>
+            <XDSChatComposer
+              onSubmit={() => {
+                onSend?.();
+                setPrompt('');
+              }}
+              value={prompt}
+              onChange={setPrompt}
+              placeholder="Ask for changes"
+              xstyle={composerStyles.noShadow}
+              input={<XDSChatComposerInput placeholder="Ask for changes" />}
+            />
           </div>
         </>
       )}
@@ -210,154 +157,79 @@ export function ChatPanel({
       {templateName && onTabChange && tab === 'properties' && (
         <div style={{flex: 1, padding: 16, overflow: 'auto'}}>
           {pointedElement ? (
-            <div style={{display: 'flex', flexDirection: 'column' as const, gap: 16}}>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column' as const,
+                gap: 16,
+              }}>
               <div>
                 <XDSText type="supporting" color="secondary">
                   Element
                 </XDSText>
                 <XDSText type="body" style={{fontWeight: 600, marginTop: 4}}>
-                  {'<'}{pointedElement.tagName.toLowerCase()}{'>'}
+                  {'<'}
+                  {pointedElement.tagName.toLowerCase()}
+                  {'>'}
                   {pointedElement.componentName && (
-                    <span style={{
-                      marginLeft: 8,
-                      fontSize: 12,
-                      color: 'var(--color-text-secondary, #65676B)',
-                      fontWeight: 400,
-                    }}>
+                    <span
+                      style={{
+                        marginLeft: 8,
+                        fontSize: 12,
+                        color: 'var(--color-text-secondary, #65676B)',
+                        fontWeight: 400,
+                      }}>
                       {pointedElement.componentName}
                     </span>
                   )}
                 </XDSText>
               </div>
-              <div style={{height: 1, backgroundColor: 'var(--color-divider, #e0e0e0)'}} />
-              <div>
-                <XDSText type="supporting" color="secondary" style={{marginBottom: 8}}>
-                  Layout
-                </XDSText>
-                {[
-                  {label: 'Width', value: pointedElement.rect ? `${Math.round(pointedElement.rect.width)}px` : '—'},
-                  {label: 'Height', value: pointedElement.rect ? `${Math.round(pointedElement.rect.height)}px` : '—'},
-                ].map(row => (
-                  <div
-                    key={row.label}
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      padding: '6px 0',
-                    }}>
-                    <XDSText type="body" color="secondary">{row.label}</XDSText>
-                    <XDSText type="body" style={{fontFamily: '"Roboto Mono", monospace', fontSize: 13}}>{row.value}</XDSText>
-                  </div>
-                ))}
-              </div>
-              <div style={{height: 1, backgroundColor: 'var(--color-divider, #e0e0e0)'}} />
-              <div>
-                <XDSText type="supporting" color="secondary" style={{marginBottom: 8}}>
-                  Styles
-                </XDSText>
-                {[
-                  {label: 'Background', value: '#ffffff'},
-                  {label: 'Border radius', value: '12px'},
-                  {label: 'Padding', value: '16px'},
-                  {label: 'Font size', value: '14px'},
-                ].map(row => (
-                  <div
-                    key={row.label}
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      padding: '6px 0',
-                    }}>
-                    <XDSText type="body" color="secondary">{row.label}</XDSText>
-                    <XDSText type="body" style={{fontFamily: '"Roboto Mono", monospace', fontSize: 13}}>{row.value}</XDSText>
-                  </div>
-                ))}
-              </div>
+              <XDSDivider />
+              <XDSMetadataList title="Layout">
+                <XDSMetadataListItem label="Width">
+                  {pointedElement.rect
+                    ? `${Math.round(pointedElement.rect.width)}px`
+                    : '—'}
+                </XDSMetadataListItem>
+                <XDSMetadataListItem label="Height">
+                  {pointedElement.rect
+                    ? `${Math.round(pointedElement.rect.height)}px`
+                    : '—'}
+                </XDSMetadataListItem>
+              </XDSMetadataList>
+              <XDSDivider />
+              <XDSMetadataList title="Styles">
+                <XDSMetadataListItem label="Background">
+                  #ffffff
+                </XDSMetadataListItem>
+                <XDSMetadataListItem label="Border radius">
+                  12px
+                </XDSMetadataListItem>
+                <XDSMetadataListItem label="Padding">16px</XDSMetadataListItem>
+                <XDSMetadataListItem label="Font size">
+                  14px
+                </XDSMetadataListItem>
+              </XDSMetadataList>
             </div>
           ) : (
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column' as const,
-                alignItems: 'center',
-                justifyContent: 'center',
-                height: '100%',
-                gap: 8,
-                opacity: 0.5,
-              }}>
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z" />
-                <path d="M13 13l6 6" />
-              </svg>
-              <XDSText type="body" color="secondary" style={{textAlign: 'center' as const}}>
-                Click the Point tool in the toolbar, then click an element in the preview
-              </XDSText>
-            </div>
+            <XDSEmptyState
+              title="No element selected"
+              description="Click the Point tool in the toolbar, then click an element in the preview"
+              isCompact
+            />
           )}
         </div>
       )}
 
       {/* Code tab */}
       {templateName && onTabChange && tab === 'code' && (
-        <div style={{flex: 1, display: 'flex', flexDirection: 'column' as const, minHeight: 0}}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '8px 12px 8px 16px',
-              flexShrink: 0,
-            }}>
-            <span
-              style={{
-                fontFamily: '"Roboto Mono", monospace',
-                fontSize: 12,
-                fontWeight: 500,
-                color: 'var(--color-text-secondary, #4e606f)',
-              }}>
-              typescript — useUser.ts
-            </span>
-          </div>
-          <div style={{display: 'flex', flex: 1, minHeight: 0}}>
-            <div
-              style={{
-                padding: '12px 12px 12px 16px',
-                borderRight:
-                  '1px solid var(--color-divider, rgba(0,0,0,0.1))',
-                fontFamily: '"Roboto Mono", monospace',
-                fontSize: 13,
-                lineHeight: '20px',
-                color: 'var(--color-text-disabled, #a4b0bc)',
-                textAlign: 'right' as const,
-                userSelect: 'none' as const,
-                minWidth: 36,
-              }}>
-              {codeContent.split('\n').map((_, i) => (
-                <div key={i}>{i + 1}</div>
-              ))}
-            </div>
-            <textarea
-              value={codeContent}
-              onChange={e => setCodeContent(e.target.value)}
-              spellCheck={false}
-              style={{
-                flex: 1,
-                padding: '12px 16px',
-                fontFamily: '"Roboto Mono", monospace',
-                fontSize: 13,
-                lineHeight: '20px',
-                margin: 0,
-                overflow: 'auto',
-                color: 'var(--color-text-primary, #0a1317)',
-                backgroundColor: 'transparent',
-                border: 'none',
-                outline: 'none',
-                resize: 'none',
-                whiteSpace: 'pre',
-                tabSize: 2,
-              }}
-            />
-          </div>
+        <div style={{flex: 1, minHeight: 0, overflow: 'auto'}}>
+          <XDSCodeBlock
+            code={MOCK_CODE}
+            language="typescript"
+            title="useUser.ts"
+            hasLineNumbers
+          />
         </div>
       )}
     </div>
