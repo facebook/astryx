@@ -54,3 +54,8 @@ export default function SegmentedControlWithIcons() {
     </XDSSegmentedControl>
   );
 }
+
+export const showcase = {
+  aspectRatio: 4 / 3,
+  render: SegmentedControlWithIcons,
+};
