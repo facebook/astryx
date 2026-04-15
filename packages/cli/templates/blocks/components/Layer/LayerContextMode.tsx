@@ -20,3 +20,8 @@ export default function LayerContextMode() {
     </>
   );
 }
+
+export const showcase = {
+  aspectRatio: 1,
+  render: LayerContextMode,
+};

@@ -27,3 +27,8 @@ export default function LayerFixedMode() {
     </>
   );
 }
+
+export const showcase = {
+  aspectRatio: 1,
+  render: LayerFixedMode,
+};
