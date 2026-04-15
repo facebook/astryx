@@ -7,3 +7,8 @@ export default function SkeletonFullwidthWithPercentage() {
     <XDSSkeleton width="100%" height={20} />
   );
 }
+
+export const showcase = {
+  aspectRatio: 1,
+  render: SkeletonFullwidthWithPercentage,
+};
