@@ -35,9 +35,9 @@ const XDS_WORDMARK = (
 );
 
 export function AppTopNav({
-  activeView,
+  activeView: _activeView,
   setActiveView,
-  scrollContainerRef,
+  scrollContainerRef: _scrollContainerRef,
   activeTab,
   onActiveTabChange,
 }: {

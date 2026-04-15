@@ -35,8 +35,8 @@ export type PointedElement = {
 export function ChatPanel({
   isGenerating,
   onSend,
-  activeView,
-  setActiveView,
+  activeView: _activeView,
+  setActiveView: _setActiveView,
   templateName,
   onBack,
   activeTab,

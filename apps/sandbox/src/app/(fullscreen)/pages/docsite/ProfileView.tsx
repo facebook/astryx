@@ -109,7 +109,7 @@ export function DialogPreview() {
 // ---------------------------------------------------------------------------
 
 export function ProfileView({
-  activeView,
+  activeView: _activeView,
   setActiveView,
 }: {
   activeView: 'craft' | 'explore' | 'docs' | 'profile';

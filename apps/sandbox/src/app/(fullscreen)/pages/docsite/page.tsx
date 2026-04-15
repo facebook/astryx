@@ -13,7 +13,6 @@ import {useSearchParams, useRouter} from 'next/navigation';
 
 import {
   TEMPLATES,
-  XDS_THEMES,
   AVATAR_IMAGE,
   THEME_PICKER_ENTRIES,
   basePath,
@@ -38,30 +37,16 @@ import {XDSDivider} from '@xds/core/Divider';
 import {XDSHeading, XDSText} from '@xds/core/Text';
 import {XDSTabList, XDSTab} from '@xds/core/TabList';
 import {XDSToken} from '@xds/core/Token';
-import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
-import {
-  XDSSegmentedControl,
-  XDSSegmentedControlItem,
-} from '@xds/core/SegmentedControl';
 import {XDSPopover} from '@xds/core/Popover';
 import {XDSTextInput} from '@xds/core/TextInput';
-import {XDSToolbar} from '@xds/core/Toolbar';
 import {XDSTooltip} from '@xds/core/Tooltip';
 import {
   ArrowLeftIcon,
-  DesktopIcon,
-  PhoneIcon,
-  CursorIcon,
-  PaletteIcon,
-  ContrastIcon,
-  SaveIcon,
-  ShareIcon,
   BookmarkIcon,
   BookmarkFilledIcon,
   StarIcon,
   StarFilledIcon,
   SearchIcon,
-  LinkIcon,
   MetaLogo,
   WhatsAppLogo,
   ThreadsLogo,
@@ -139,7 +124,7 @@ function DocsiteLandingTemplate() {
   const [selected, setSelected] = useState(new Set());
   const [activeTab, setActiveTab] = useState('all');
   const [isMobile, setIsMobile] = useState(false);
-  const [isTablet, setIsTablet] = useState(false);
+  const [_isTablet, setIsTablet] = useState(false);
   const [generatingSource, setGeneratingSource] = useState(
     null as number | null,
   );
@@ -157,7 +142,7 @@ function DocsiteLandingTemplate() {
   const [pointedElement, setPointedElement] = useState<PointedElement>(null);
   const [editorPanelWidth, setEditorPanelWidth] = useState(380);
   const [isEditorResizing, setIsEditorResizing] = useState(false);
-  const [editorViewport, setEditorViewport] = useState('desktop');
+  const [_editorViewport, _setEditorViewport] = useState('desktop');
   const [fullPreview, setFullPreview] = useState(false);
 
   const scrollContainerRef = useRef(null);

@@ -102,7 +102,10 @@ export function InlinePublishPanel({
             style={{textAlign: 'center' as const}}>
             Your template will go through a review process before appearing in
             the community grid.{' '}
-            <XDSLink href="#" onClick={e => e.preventDefault()}>
+            <XDSLink
+              label="Learn more"
+              href="#"
+              onClick={e => e.preventDefault()}>
               Learn more
             </XDSLink>
           </XDSText>

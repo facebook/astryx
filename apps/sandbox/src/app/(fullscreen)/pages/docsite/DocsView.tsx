@@ -11,7 +11,6 @@ import {XDSCard} from '@xds/core/Card';
 import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
 import {XDSList, XDSListItem} from '@xds/core/List';
 import {XDSTable} from '@xds/core/Table';
-import {XDSTooltip} from '@xds/core/Tooltip';
 import {XDSCommandPalette} from '@xds/core/CommandPalette';
 import {
   ExternalLinkIcon,
@@ -53,7 +52,7 @@ const XDS_WORDMARK = (
 );
 
 export function DocsView({
-  activeView,
+  activeView: _activeView,
   setActiveView,
 }: {
   activeView: 'craft' | 'explore' | 'docs' | 'profile';

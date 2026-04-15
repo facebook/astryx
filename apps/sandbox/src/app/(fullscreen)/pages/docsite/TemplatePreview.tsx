@@ -18,8 +18,6 @@ import {
   PaletteIcon,
   ContrastIcon,
   SaveIcon,
-  ShareIcon,
-  ShareOutIcon,
   FullscreenIcon,
   MoonIcon,
   LinkIcon,
@@ -28,7 +26,7 @@ import {
 import {XDSPopover} from '@xds/core/Popover';
 import {SharePopoverContent} from './SharePopover';
 
-import {VIEWPORT_WIDTHS, XDS_THEMES} from './constants';
+import {XDS_THEMES} from './constants';
 import {CraftingCat} from './CraftingCat';
 
 import type {PointedElement} from './ChatPanel';
