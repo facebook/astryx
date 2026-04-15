@@ -27,3 +27,8 @@ export default function ToastWithAction() {
     />
   );
 }
+
+export const showcase = {
+  aspectRatio: 1,
+  render: ToastWithAction,
+};
