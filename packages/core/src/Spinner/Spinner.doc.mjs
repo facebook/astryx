@@ -4,10 +4,6 @@ export const docs = {
   name: 'Spinner',
   description:
     'An animated loading indicator with optional visible label.',
-  showcase: {
-    aspectRatio: 1,
-    code: '<XDSSpinner label="Loading" />',
-  },
   keywords: ["spinner","loader","loading","circular","progress","spin","activity","busy","indeterminate"],
   features: [
     'Canvas Animation: Lightweight canvas-based spinner with smooth 360° rotation',

@@ -4,10 +4,6 @@ export const docs = {
   name: 'MobileNav',
   description:
     'Slide-out drawer overlay for mobile navigation. The mobile counterpart to XDSSideNav — accepts the same children (XDSSideNavSection, XDSSideNavItem, or any ReactNode).',
-  showcase: {
-    aspectRatio: 3 / 4,
-    code: '<XDSMobileNav>Nav items</XDSMobileNav>',
-  },
   keywords: ["mobilenav","drawer","sidebar","navigation","hamburger","menu","offcanvas","slideout","navdrawer"],
   props: [
     {

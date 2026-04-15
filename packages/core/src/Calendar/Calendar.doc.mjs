@@ -4,10 +4,6 @@ export const docs = {
   name: 'Calendar',
   description:
     'XDSCalendar component for date selection with single and range modes.',
-  showcase: {
-    aspectRatio: 3 / 4,
-    code: '<XDSCalendar />',
-  },
   keywords: ["calendar","datepicker","date picker","rangepicker","date range","monthview","daypicker"],
   features: [
     "Selection Modes: 'single' (default) and 'range'",

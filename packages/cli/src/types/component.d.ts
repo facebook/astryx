@@ -10,6 +10,7 @@
  * xds --json component Button               -> component.detail
  * xds --json component Button --props       -> component.detail.props
  * xds --json component Button --source      -> component.detail.source
+ * xds --json component Button --showcase    -> component.detail.showcase
  * (not found)                               -> CLIError
  */
 
@@ -49,4 +50,10 @@ export interface ComponentDetailPropsResponse {
 export interface ComponentDetailSourceResponse {
   type: 'component.detail.source';
   data: {component: string; source: string};
+}
+
+/** xds --json component <name> --showcase */
+export interface ComponentDetailShowcaseResponse {
+  type: 'component.detail.showcase';
+  data: {component: string; aspectRatio: number; source: string};
 }

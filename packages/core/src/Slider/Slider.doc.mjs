@@ -3,12 +3,7 @@
 export const docs = {
   name: 'Slider',
   description:
-    'A slider component for selecting numeric values or ranges with full keyboard and pointer support.',
-  showcase: {
-    aspectRatio: 4 / 3,
-    code: '<XDSSlider label="Volume" value={50} onChange={() => {}} />',
-  },
-  keywords: ["slider","range","slidebar","trackbar","scrubber","knob","thumb","rangeslider"],
+    'A slider component for selecting numeric values or ranges with full keyboard and pointer support.',  keywords: ["slider","range","slidebar","trackbar","scrubber","knob","thumb","rangeslider"],
   features: [
     'Single & range modes: Pass a `number` for single thumb, `[number, number]` for range',
     'Orientation: Supports `horizontal` and `vertical` layouts',

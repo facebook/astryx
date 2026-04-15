@@ -3,12 +3,7 @@
 export const docs = {
   name: 'DropdownMenu',
   description:
-    'A dropdown menu component for displaying actionable items in a popup menu.',
-  showcase: {
-    aspectRatio: 4 / 3,
-    code: '<XDSDropdownMenu trigger={<button>Menu</button>} items={[{label: "Edit"}]} />',
-  },
-  keywords: ["dropdown","menu","popover","select","actions","contextmenu","overflow","kebab","menubutton"],
+    'A dropdown menu component for displaying actionable items in a popup menu.',  keywords: ["dropdown","menu","popover","select","actions","contextmenu","overflow","kebab","menubutton"],
   features: [
     'Button customization: Customize the trigger button via the `button` prop (supports all XDSButton props)',
     'Data-driven items: Pass items via the `items` prop with support for sections and dividers',

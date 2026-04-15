@@ -4,10 +4,6 @@ export const docs = {
   name: 'Kbd',
   description:
     'Displays a keyboard shortcut as styled <kbd> elements. Use in tooltips, menus, and documentation to show key combinations.',
-  showcase: {
-    aspectRatio: 1,
-    code: '<XDSKbd>⌘K</XDSKbd>',
-  },
   keywords: ["kbd","keyboard","shortcut","hotkey","keybinding","keystroke","keycombo","modifier","accelerator"],
   features: [
     'Key parsing — splits "mod+k" into individual styled <kbd> elements',

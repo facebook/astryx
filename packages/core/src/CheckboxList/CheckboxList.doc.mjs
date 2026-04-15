@@ -3,12 +3,7 @@
 export const docs = {
   name: 'CheckboxList',
   description:
-    'A checkbox group component for multi-value selection from a list of options. Supports collection mode (parent-managed state) and standalone mode (per-item state).',
-  showcase: {
-    aspectRatio: 4 / 3,
-    code: '<XDSCheckboxList label="Options" items={[{label: "Option A", value: "a"}]} />',
-  },
-  keywords: ["checkboxlist","checkbox","checkboxgroup","multichoice","multiselect","checklist"],
+    'A checkbox group component for multi-value selection from a list of options. Supports collection mode (parent-managed state) and standalone mode (per-item state).',  keywords: ["checkboxlist","checkbox","checkboxgroup","multichoice","multiselect","checklist"],
   features: [
     'Accessible — uses native <input type="checkbox"> with proper ARIA attributes',
     'Collection mode — parent manages selected values as string[], items derive checked state',

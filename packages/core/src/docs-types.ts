@@ -48,28 +48,6 @@ export interface PropDoc {
 }
 
 /**
- * A usage example showing the component in JSX. Examples should progress
- * from basic to advanced. Include 2-5 examples per component (complex
- * components like Table or Layer may justify more).
- *
- * @example
- * ```
- * {label: 'Basic', code: '<XDSButton variant="primary">Save</XDSButton>'}
- * {label: 'With icon', code: '<XDSButton icon={PlusIcon} variant="secondary">Add</XDSButton>'}
- * ```
- */
-export interface Example {
-  /** Short descriptive title in sentence case, 2-8 words.
-   *  e.g. `"Basic"`, `"With icon"`, `"Rich cell content with renderCell"`.
-   *  Omit only for trivial single-example sub-components. */
-  label?: string;
-  /** JSX code string. Use regular strings for single-line snippets and
-   *  template literals for multi-line code. Prefer realistic variable names
-   *  (`users`, `transactions`) over generic ones (`data`, `value1`). */
-  code: string;
-}
-
-/**
  * A theming target — a stable CSS class name that `defineTheme` can target
  * via `@scope` selectors. Each component renders one or more class names
  * via `xdsClassName()`, and themes can override styles for each.
@@ -159,8 +137,6 @@ export interface ComponentEntry {
   description: string;
   /** All public props for this component. */
   props: PropDoc[];
-  /** Usage examples for this component. */
-  examples?: Example[];
 }
 
 /**
@@ -227,20 +203,6 @@ interface BaseDoc {
    *  Be specific enough to differentiate from similar components.
    *  e.g. `"Data-driven table with rich cell content via renderCell."` */
   description: string;
-  /** Top-level usage examples showing the component in real scenarios.
-   *  For multi-component dirs, these show how the components work together.
-   *  Start with the most common usage pattern, then progress to advanced.
-   *  Include 2-5 examples (complex components may justify more). */
-  examples?: Example[];
-  /** Minimal JSX code string showing the component in its simplest valid
-   *  form. Used as the live preview "cover image" in gallery views.
-   *  e.g. `'<XDSButton label="Click" variant="primary" />'` */
-  showcase?: {
-    /** Width-to-height ratio for the preview container. */
-    aspectRatio: number;
-    /** JSX code string of the component in minimal form. */
-    code: string;
-  };
   /** Search keywords for CLI discovery. Terms a developer might type when
    *  looking for this component: synonyms, related UI concepts, and common
    *  names from other design systems (MUI, Chakra, Radix, shadcn).
@@ -335,7 +297,7 @@ export type ComponentDoc = SingleComponentDoc | MultiComponentDoc;
  * Translation overlay for component documentation.
  *
  * Contains only the prose fields that change between languages/formats.
- * The CLI merges this onto the base `docs` at read time — props, examples,
+ * The CLI merges this onto the base `docs` at read time — props,
  * types, defaults, and code all come from `docs`.
  *
  * Used by both `docsZh` (Chinese translation) and `docsDense` (compressed format).
@@ -505,3 +467,21 @@ export interface BlockTemplateDoc extends BaseTemplateDoc {
 }
 
 export type TemplateDoc = PageTemplateDoc | BlockTemplateDoc;
+
+/**
+ * Showcase metadata for a component.
+ *
+ * Each component can have a showcase file in `packages/cli/templates/showcase/`
+ * consisting of a `{Name}.doc.mjs` (this type) and a `{Name}.tsx` (the component).
+ *
+ *   /\*\* \@type \{import('@xds/core').ComponentShowcaseDoc\} *\/
+ *   export const doc = \{ name: 'Button', aspectRatio: 1 \};
+ */
+export interface ComponentShowcaseDoc {
+  /** Component name (matches the directory name).
+   *  e.g. `"Button"`, `"Layout"`, `"Dialog"` */
+  name: string;
+  /** Width-to-height ratio for the preview container.
+   *  e.g. `1`, `16 / 9`, `4 / 3` */
+  aspectRatio: number;
+}

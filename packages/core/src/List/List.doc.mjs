@@ -4,10 +4,6 @@ export const docs = {
   name: 'List',
   description:
     'Vertical list component for rendering collections of items with consistent spacing, dividers, and marker styles. Uses a composition model: XDSList wraps XDSListItem sub-components.',
-  showcase: {
-    aspectRatio: 3 / 4,
-    code: '<XDSList><XDSListItem>Item 1</XDSListItem></XDSList>',
-  },
   keywords: ["list","listitem","listbox","menu","collection","items","ul","navlist"],
   features: [
     'Composition model — XDSList wraps XDSListItem sub-components',

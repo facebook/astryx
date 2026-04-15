@@ -3,10 +3,6 @@
 export const docs = {
   name: 'CheckboxInput',
   description: 'A checkbox input component for toggling boolean values.',
-  showcase: {
-    aspectRatio: 4 / 3,
-    code: '<XDSCheckboxInput label="Accept terms" />',
-  },
   keywords: ["checkbox","check","toggle","tick","indeterminate","boolean","tristate"],
   features: [
     'Accessible — always includes a label (can be visually hidden)',

@@ -3,10 +3,6 @@
 export const docs = {
   name: 'Card',
   description: 'Card container component with shadow and themed styling.',
-  showcase: {
-    aspectRatio: 4 / 3,
-    code: '<XDSCard>Card content</XDSCard>',
-  },
   keywords: ["card","surface","panel","container","elevated","shadow","box","paper","tile","well"],
   features: [
     'Top-level container for elevated content',

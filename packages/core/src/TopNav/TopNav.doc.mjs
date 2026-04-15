@@ -4,10 +4,6 @@ export const docs = {
   name: 'TopNav',
   description:
     'Top navigation bar component for application headers with slot-based layout and companion nav item components.',
-  showcase: {
-    aspectRatio: 16 / 4,
-    code: '<XDSTopNav label="Navigation" />',
-  },
   keywords: ["topnav","navbar","appbar","header","toolbar","navigation","menubar","topbar"],
   features: [
     'Slot-based layout — heading, startContent, centerContent, and endContent slots for flexible organization',

@@ -4,10 +4,6 @@ export const docs = {
   name: 'Thumbnail',
   description:
     'A square preview card for image attachments. Shows a skeleton shimmer while uploading, the image on success, or a placeholder icon when no source is provided.',
-  showcase: {
-    aspectRatio: 1,
-    code: '<XDSThumbnail src="https://via.placeholder.com/80" alt="Preview" />',
-  },
   keywords: ["thumbnail","attachment","preview","image","upload","dismiss","remove","loading"],
   features: [
     'Square 1:1 aspect ratio via CSS aspect-ratio',

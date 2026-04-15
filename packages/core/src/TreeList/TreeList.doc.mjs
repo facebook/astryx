@@ -3,12 +3,7 @@
 export const docs = {
   name: 'TreeList',
   description:
-    'Data-driven tree list component for rendering hierarchical data with expand/collapse, branch lines, and interactive items. Uses a flat items array with recursive children — no composition, no cloneElement.',
-  showcase: {
-    aspectRatio: 3 / 4,
-    code: '<XDSTreeList items={[{label: "Root"}]} />',
-  },
-  keywords: ['tree', 'hierarchy', 'nested', 'accordion', 'folder', 'expand', 'collapse', 'treeview', 'outline'],
+    'Data-driven tree list component for rendering hierarchical data with expand/collapse, branch lines, and interactive items. Uses a flat items array with recursive children — no composition, no cloneElement.',  keywords: ['tree', 'hierarchy', 'nested', 'accordion', 'folder', 'expand', 'collapse', 'treeview', 'outline'],
   features: [
     'Data-driven API — items array with recursive children',
     'Internal expansion state — seed via isExpanded on each item',

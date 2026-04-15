@@ -4,10 +4,6 @@ export const docs = {
   name: 'Badge',
   description:
     'A badge component for displaying status indicators, counts, or labels.',
-  showcase: {
-    aspectRatio: 1,
-    code: '<XDSBadge label="New" />',
-  },
   keywords: ["badge","tag","chip","label","status","indicator","count","counter","pill","notification","marker"],
   props: [
     {

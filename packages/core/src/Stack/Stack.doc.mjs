@@ -3,12 +3,7 @@
 export const docs = {
   name: 'Stack',
   description:
-    'Stack layout primitives for arranging items in horizontal or vertical sequences using flexbox-based layout with themed spacing tokens.',
-  showcase: {
-    aspectRatio: 4 / 3,
-    code: '<XDSVStack gap={2}><div>Item 1</div><div>Item 2</div></XDSVStack>',
-  },
-  keywords: ["stack","hstack","vstack","flexbox","flex","spacing","gap","horizontal","vertical","row","column"],
+    'Stack layout primitives for arranging items in horizontal or vertical sequences using flexbox-based layout with themed spacing tokens.',  keywords: ["stack","hstack","vstack","flexbox","flex","spacing","gap","horizontal","vertical","row","column"],
   features: [
     'Horizontal (XDSHStack) and vertical (XDSVStack) stacking',
     'Themed spacing via gap tokens from the design system spacing scale',
