@@ -23,3 +23,8 @@ export default function CheckboxListStandaloneMode() {
     </XDSList>
   );
 }
+
+export const showcase = {
+  aspectRatio: 4 / 3,
+  render: CheckboxListStandaloneMode,
+};
