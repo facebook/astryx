@@ -131,52 +131,17 @@ const DENSITY_LEVELS: Array<{
 }> = [
   {
     min: 0,
-    chars: ['·'],
-    font: `${CELL_H - 3}px monospace`,
-    alpha: 0.25,
-    usePrimary: false,
-  },
-  {
-    min: 1,
-    chars: ['∘'],
-    font: `${CELL_H - 1}px monospace`,
-    alpha: 0.4,
-    usePrimary: false,
-  },
-  {
-    min: 2,
-    chars: ['○'],
+    chars: ['\u25CB'],
     font: `${CELL_H}px monospace`,
-    alpha: 0.5,
+    alpha: 0.6,
     usePrimary: false,
   },
   {
     min: 3,
-    chars: ['◎'],
-    font: `${CELL_H}px monospace`,
-    alpha: 0.55,
-    usePrimary: true,
-  },
-  {
-    min: 4,
-    chars: ['◉'],
+    chars: ['\u2299'],
     font: `bold ${CELL_H}px monospace`,
-    alpha: 0.65,
-    usePrimary: true,
-  },
-  {
-    min: 5,
-    chars: ['●'],
-    font: `bold ${CELL_H + 1}px monospace`,
-    alpha: 0.8,
-    usePrimary: true,
-  },
-  {
-    min: 7,
-    chars: ['⬤'],
-    font: `bold ${CELL_H + 2}px monospace`,
-    alpha: 0.95,
-    usePrimary: true,
+    alpha: 0.6,
+    usePrimary: false,
   },
 ];
 
@@ -198,7 +163,7 @@ function parseColor(color: string): [number, number, number] {
 }
 
 // Simulation runs in normalized 0–1 coordinates
-const SIM_COUNT = 350;
+const SIM_COUNT = 1000;
 
 function createBoid(): BoidState {
   const a = Math.random() * Math.PI * 2;
@@ -214,6 +179,8 @@ function createBoid(): BoidState {
 interface BoidsSimulation {
   boids: BoidState[];
   update: () => void;
+  setPredator: (pos: {x: number; y: number} | null) => void;
+  setCanvasWidth: (w: number, h?: number) => void;
 }
 
 function createSimulation(): BoidsSimulation {
@@ -223,104 +190,143 @@ function createSimulation(): BoidsSimulation {
     way = 0.5,
     wvx = 0.0005,
     wvy = 0.0003;
+  let predator: {x: number; y: number} | null = null;
+  let canvasWidth = 1920;
+  let canvasHeight = 1080;
 
-  function getNearestN(b: BoidState, n: number) {
-    const d: Array<{o: BoidState; d2: number}> = [];
-    for (const o of boids) {
-      if (o === b) continue;
-      const dx = o.x - b.x,
-        dy = o.y - b.y;
-      d.push({o, d2: dx * dx + dy * dy});
-    }
-    d.sort((a, c) => a.d2 - c.d2);
-    return d.slice(0, n).map(x => x.o);
+  const CENTERING_FACTOR = 0.00015;
+  const AVOID_FACTOR = 0.15;
+  const MATCHING_FACTOR = 0.05;
+
+  // Convert pixel values to normalized, and compute isotropic distance
+  function px(v: number) {
+    return v / canvasWidth;
+  }
+  function dist(dx: number, dy: number) {
+    // Scale dy by aspect ratio so distances are isotropic in pixel space
+    const dyPx = dy * (canvasWidth / canvasHeight);
+    return Math.sqrt(dx * dx + dyPx * dyPx);
+  }
+  function pixelSpeed(vx: number, vy: number) {
+    return Math.sqrt((vx * canvasWidth) ** 2 + (vy * canvasHeight) ** 2);
   }
 
   function update() {
-    const maxSpd = 0.006;
-    const cohW = 0.06;
-    const swirlW = 0.03;
-    const sepW = 0.4;
-    const aliW = 0.08;
-    const SEP_D = 0.025;
+    // Scale pixel params to current canvas size
+    const TURN_FACTOR = px(0.2);
+    const VISUAL_RANGE = px(40);
+    const PROTECTED_RANGE = px(8);
+    const MAX_SPEED = px(6); // used for predator force scaling
+    const EDGE_MARGIN = px(80);
+    const PREDATOR_RANGE = px(150);
 
+    // Wandering attractor
     wax += wvx;
     way += wvy;
-    wvx += (Math.random() - 0.5) * 0.00015;
-    wvy += (Math.random() - 0.5) * 0.00012;
+    wvx += (Math.random() - 0.5) * 0.00004;
+    wvy += (Math.random() - 0.5) * 0.00003;
     const ws = Math.sqrt(wvx * wvx + wvy * wvy);
-    if (ws > 0.001) {
-      wvx = (wvx / ws) * 0.001;
-      wvy = (wvy / ws) * 0.001;
+    if (ws > 0.0003) {
+      wvx = (wvx / ws) * 0.0003;
+      wvy = (wvy / ws) * 0.0003;
     }
     if (wax < 0.15 || wax > 0.85) wvx *= -1;
     if (way < 0.15 || way > 0.85) wvy *= -1;
 
     for (const b of boids) {
-      const nb = getNearestN(b, 7);
-      let cx = 0,
-        cy = 0,
-        ax = 0,
-        ay = 0,
-        sx = 0,
-        sy = 0;
-      for (const o of nb) {
-        cx += o.x;
-        cy += o.y;
-        ax += o.vx;
-        ay += o.vy;
+      let close_dx = 0,
+        close_dy = 0;
+      let xvel_avg = 0,
+        yvel_avg = 0;
+      let xpos_avg = 0,
+        ypos_avg = 0;
+      let neighbors = 0;
+
+      for (const o of boids) {
+        if (o === b) continue;
         const dx = b.x - o.x,
-          dy = b.y - o.y,
-          dd = Math.sqrt(dx * dx + dy * dy) + 0.0001;
-        if (dd < SEP_D) {
-          sx += dx / dd;
-          sy += dy / dd;
+          dy = b.y - o.y;
+        const d = dist(dx, dy);
+        if (d < PROTECTED_RANGE) {
+          close_dx += dx;
+          close_dy += dy;
+        } else if (d < VISUAL_RANGE) {
+          xpos_avg += o.x;
+          ypos_avg += o.y;
+          xvel_avg += o.vx;
+          yvel_avg += o.vy;
+          neighbors++;
         }
       }
-      const n = nb.length;
-      if (n > 0) {
-        cx /= n;
-        cy /= n;
-        const tx = cx - b.x,
-          ty = cy - b.y;
-        b.vx += tx * cohW;
-        b.vy += ty * cohW;
-        b.vx += -ty * swirlW;
-        b.vy += tx * swirlW;
-        ax /= n;
-        ay /= n;
-        b.vx += (ax - b.vx) * aliW;
-        b.vy += (ay - b.vy) * aliW;
-      }
-      b.vx += sx * sepW;
-      b.vy += sy * sepW;
 
+      if (neighbors > 0) {
+        xpos_avg /= neighbors;
+        ypos_avg /= neighbors;
+        xvel_avg /= neighbors;
+        yvel_avg /= neighbors;
+        b.vx += (xpos_avg - b.x) * CENTERING_FACTOR; // cohesion
+        b.vy += (ypos_avg - b.y) * CENTERING_FACTOR;
+        b.vx += (xvel_avg - b.vx) * MATCHING_FACTOR; // alignment
+        b.vy += (yvel_avg - b.vy) * MATCHING_FACTOR;
+      }
+
+      b.vx += close_dx * AVOID_FACTOR; // separation
+      b.vy += close_dy * AVOID_FACTOR;
+
+      // Edge turning
+      if (b.x < EDGE_MARGIN) b.vx += TURN_FACTOR;
+      if (b.x > 1 - EDGE_MARGIN) b.vx -= TURN_FACTOR;
+      if (b.y < EDGE_MARGIN) b.vy += TURN_FACTOR;
+      if (b.y > 1 - EDGE_MARGIN) b.vy -= TURN_FACTOR;
+
+      // Wander pull
       const wdx = wax - b.x,
         wdy = way - b.y,
         wd = Math.sqrt(wdx * wdx + wdy * wdy) + 0.001;
-      b.vx += (wdx / wd) * 0.00002 * wd * 100;
-      b.vy += (wdy / wd) * 0.00002 * wd * 100;
+      b.vx += wdx * 0.0002;
+      b.vy += wdy * 0.0002;
 
-      const s = Math.sqrt(b.vx * b.vx + b.vy * b.vy);
-      const mn = maxSpd * 0.3;
-      if (s > maxSpd) {
-        b.vx = (b.vx / s) * maxSpd;
-        b.vy = (b.vy / s) * maxSpd;
+      // Predator — flee on hover
+      if (predator) {
+        const dx = b.x - predator.x,
+          dy = b.y - predator.y;
+        const d = dist(dx, dy);
+        if (d < PREDATOR_RANGE && d > 0) {
+          const force = MAX_SPEED * 0.5 * (1 - d / PREDATOR_RANGE);
+          b.vx += (dx / d) * force;
+          b.vy += (dy / d) * force;
+        }
       }
-      if (s < mn && s > 0) {
-        b.vx = (b.vx / s) * mn;
-        b.vy = (b.vy / s) * mn;
+
+      // Speed clamping (isotropic in pixel space)
+      const sPx = pixelSpeed(b.vx, b.vy);
+      if (sPx > 3) {
+        const scale = 3 / sPx;
+        b.vx *= scale;
+        b.vy *= scale;
       }
+      if (sPx < 1.5 && sPx > 0) {
+        const scale = 1.5 / sPx;
+        b.vx *= scale;
+        b.vy *= scale;
+      }
+
       b.x += b.vx;
       b.y += b.vy;
-      if (b.x < 0) b.x += 1;
-      if (b.x > 1) b.x -= 1;
-      if (b.y < 0) b.y += 1;
-      if (b.y > 1) b.y -= 1;
     }
   }
 
-  return {boids, update};
+  return {
+    boids,
+    update,
+    setPredator: pos => {
+      predator = pos;
+    },
+    setCanvasWidth: (w: number, h?: number) => {
+      canvasWidth = w;
+      if (h) canvasHeight = h;
+    },
+  };
 }
 
 function getDensityLevel(density: number) {
@@ -354,19 +360,43 @@ function BoidsCanvas({
     };
   }, []);
 
+  // Predator: mouse hover repels boids
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const handleMouseMove = (e: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      simulation.setPredator({
+        x: (e.clientX - rect.left) / rect.width,
+        y: (e.clientY - rect.top) / rect.height,
+      });
+    };
+    const handleMouseLeave = () => simulation.setPredator(null);
+    canvas.addEventListener('mousemove', handleMouseMove);
+    canvas.addEventListener('mouseleave', handleMouseLeave);
+    return () => {
+      canvas.removeEventListener('mousemove', handleMouseMove);
+      canvas.removeEventListener('mouseleave', handleMouseLeave);
+      simulation.setPredator(null);
+    };
+  }, [simulation]);
+
+  // Always simulate at 1920x1080 so behavior matches the HTML version
+  useEffect(() => {
+    simulation.setCanvasWidth(1920, 1080);
+  }, [simulation]);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || width === 0 || height === 0) return;
 
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = width * dpr;
-    canvas.height = height * dpr;
+    // Render at 1920x1080 internally, CSS scales it to fit
+    const W = 1920;
+    const H = 1080;
+    canvas.width = W;
+    canvas.height = H;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-    const W = width;
-    const H = height;
     const cols = Math.floor(W / CELL_W);
     const rows = Math.floor(H / CELL_H);
 
@@ -413,7 +443,7 @@ function BoidsCanvas({
       style={{
         display: 'block',
         width: '100%',
-        aspectRatio: '1920 / 1200',
+        aspectRatio: '1920 / 1080',
       }}
     />
   );
@@ -490,7 +520,7 @@ function TemplateCard({
           style={{
             display: 'block',
             width: '100%',
-            aspectRatio: '1920 / 1200',
+            aspectRatio: '1920 / 1080',
             objectFit: 'cover' as const,
             opacity: isGenerating ? 0 : 1,
             transition: 'opacity 600ms ease',
@@ -1264,7 +1294,7 @@ function TemplatePreview({
               style={{
                 display: 'block',
                 width: '100%',
-                aspectRatio: '1920 / 1200',
+                aspectRatio: '1920 / 1080',
                 objectFit: 'cover',
                 opacity: isGenerating ? 0 : 1,
                 transition: 'opacity 600ms ease',
@@ -1396,7 +1426,7 @@ function TemplatePreview({
                 key={i}
                 style={{
                   flex: 1,
-                  aspectRatio: '1920 / 1200',
+                  aspectRatio: '1920 / 1080',
                   border: '1px solid var(--color-divider, rgba(0,0,0,0.1))',
                   borderRadius: 12,
                   overflow: 'hidden',
@@ -1573,9 +1603,9 @@ export default function DocsiteLandingTemplate() {
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [isMobile, setIsMobile] = useState(false);
   const [generatingSource, setGeneratingSource] = useState<number | null>(null);
-  const [chatOpen, setChatOpen] = useState(false);
-  const [useTarget, setUseTarget] = useState<number | null>(null);
-  const [previewGenerating, setPreviewGenerating] = useState(false);
+  const [chatOpen, setChatOpen] = useState(true);
+  const [useTarget, setUseTarget] = useState<number | null>(0);
+  const [previewGenerating, setPreviewGenerating] = useState(true);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const previewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const simRef = useRef<BoidsSimulation | null>(null);
@@ -1657,10 +1687,11 @@ export default function DocsiteLandingTemplate() {
       if (generatingSource !== null) return;
       setGeneratingSource(index);
       setChatOpen(true);
-      timerRef.current = setTimeout(() => {
-        setGeneratingSource(null);
-        timerRef.current = null;
-      }, 5000);
+      // Persistent generating state for demo
+      // timerRef.current = setTimeout(() => {
+      //   setGeneratingSource(null);
+      //   timerRef.current = null;
+      // }, 5000);
     },
     [generatingSource],
   );
@@ -1675,17 +1706,15 @@ export default function DocsiteLandingTemplate() {
     setChatOpen(false);
   }, []);
 
-  const handlePreviewSend = useCallback(
-    (_value: string) => {
-      if (previewGenerating) return;
-      setPreviewGenerating(true);
-      previewTimerRef.current = setTimeout(() => {
-        setPreviewGenerating(false);
-        previewTimerRef.current = null;
-      }, 5000);
-    },
-    [previewGenerating],
-  );
+  const handlePreviewSend = useCallback(() => {
+    if (previewGenerating) return;
+    setPreviewGenerating(true);
+    // Persistent generating state for demo
+    // previewTimerRef.current = setTimeout(() => {
+    //   setPreviewGenerating(false);
+    //   previewTimerRef.current = null;
+    // }, 5000);
+  }, [previewGenerating]);
 
   useEffect(() => {
     return () => {
