@@ -7,3 +7,8 @@ export default function StatusDotPulsingAnimation() {
     <XDSStatusDot variant="positive" label="Live" isPulsing />
   );
 }
+
+export const showcase = {
+  aspectRatio: 1,
+  render: StatusDotPulsingAnimation,
+};
