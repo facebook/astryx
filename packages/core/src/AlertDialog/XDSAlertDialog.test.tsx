@@ -28,8 +28,8 @@ describe('XDSAlertDialog', () => {
     onOpenChange: vi.fn(),
     title: 'Delete item?',
     description: 'This action cannot be undone.',
-    cancel: <button>Cancel</button>,
-    action: <button>Delete</button>,
+    actionLabel: 'Delete',
+    onAction: vi.fn(),
   };
 
   it('renders with alertdialog role', () => {
@@ -69,6 +69,11 @@ describe('XDSAlertDialog', () => {
     expect(screen.getByText('Delete')).toBeInTheDocument();
   });
 
+  it('uses custom cancel label', () => {
+    render(<XDSAlertDialog {...defaultProps} cancelLabel="Never mind" />);
+    expect(screen.getByText('Never mind')).toBeInTheDocument();
+  });
+
   it('calls onOpenChange(false) when cancel is clicked', () => {
     const onOpenChange = vi.fn();
     render(<XDSAlertDialog {...defaultProps} onOpenChange={onOpenChange} />);
@@ -76,23 +81,17 @@ describe('XDSAlertDialog', () => {
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
-  it('does not auto-close when action is clicked', () => {
+  it('calls onAction when action is clicked', () => {
+    const onAction = vi.fn();
+    render(<XDSAlertDialog {...defaultProps} onAction={onAction} />);
+    fireEvent.click(screen.getByText('Delete'));
+    expect(onAction).toHaveBeenCalled();
+  });
+
+  it('does not call onOpenChange when action is clicked', () => {
     const onOpenChange = vi.fn();
     render(<XDSAlertDialog {...defaultProps} onOpenChange={onOpenChange} />);
     fireEvent.click(screen.getByText('Delete'));
-    expect(onOpenChange).not.toHaveBeenCalled();
-  });
-
-  it('does not auto-close when disabled cancel is clicked', () => {
-    const onOpenChange = vi.fn();
-    render(
-      <XDSAlertDialog
-        {...defaultProps}
-        onOpenChange={onOpenChange}
-        cancel={<button aria-disabled="true">Cancel</button>}
-      />,
-    );
-    fireEvent.click(screen.getByText('Cancel'));
     expect(onOpenChange).not.toHaveBeenCalled();
   });
 
@@ -106,10 +105,8 @@ describe('XDSAlertDialog', () => {
     expect(screen.getByRole('alertdialog')).toBeInTheDocument();
   });
 
-  it('has data-autofocus on cancel wrapper', () => {
+  it('defaults cancel label to Cancel', () => {
     render(<XDSAlertDialog {...defaultProps} />);
-    const cancelBtn = screen.getByText('Cancel');
-    const wrapper = cancelBtn.closest('[data-autofocus]');
-    expect(wrapper).toBeInTheDocument();
+    expect(screen.getByText('Cancel')).toBeInTheDocument();
   });
 });

@@ -2,7 +2,7 @@
 
 /**
  * @file XDSAlertDialog.tsx
- * @input Uses React, XDSDialog, XDSLayout, XDSHeading, XDSText
+ * @input Uses React, XDSDialog, XDSLayout, XDSHeading, XDSText, XDSButton
  * @output Exports XDSAlertDialog component, XDSAlertDialogProps type
  * @position Core implementation; consumed by index.ts, tested by XDSAlertDialog.test.tsx
  *
@@ -14,7 +14,6 @@
  */
 
 import {useId, useCallback, type ReactNode} from 'react';
-import * as stylex from '@stylexjs/stylex';
 import {XDSDialog} from '../Dialog';
 import {XDSLayout} from '../Layout/XDSLayout';
 import {XDSLayoutContent} from '../Layout/XDSLayoutContent';
@@ -22,13 +21,8 @@ import {XDSLayoutFooter} from '../Layout/XDSLayoutFooter';
 import {XDSHStack} from '../Stack';
 import {XDSHeading} from '../Text/XDSHeading';
 import {XDSText} from '../Text/XDSText';
+import {XDSButton, type XDSButtonVariant} from '../Button';
 import {xdsClassName} from '../utils';
-
-const styles = stylex.create({
-  cancelWrapper: {
-    display: 'contents',
-  },
-});
 
 export interface XDSAlertDialogProps {
   /**
@@ -53,16 +47,33 @@ export interface XDSAlertDialogProps {
   description: string;
 
   /**
-   * Cancel action slot. First focusable element receives initial focus.
-   * Clicking this automatically calls `onOpenChange(false)`.
+   * Label for the cancel button. Rendered as a ghost XDSButton.
+   * Clicking cancel calls `onOpenChange(false)`.
+   * @default 'Cancel'
    */
-  cancel: ReactNode;
+  cancelLabel?: string;
 
   /**
-   * Confirm action slot. Does NOT auto-close —
-   * the consumer controls when to call `onOpenChange(false)`.
+   * Label for the action button.
    */
-  action: ReactNode;
+  actionLabel: string;
+
+  /**
+   * Variant for the action button.
+   * @default 'danger'
+   */
+  actionVariant?: XDSButtonVariant;
+
+  /**
+   * Whether the action button shows a loading spinner.
+   */
+  isActionLoading?: boolean;
+
+  /**
+   * Callback fired when the action button is clicked.
+   * The dialog does NOT auto-close — call `onOpenChange(false)` when done.
+   */
+  onAction: () => unknown;
 
   /**
    * The width of the dialog.
@@ -77,8 +88,7 @@ export interface XDSAlertDialogProps {
  *
  * Uses `role="alertdialog"` and requires explicit user action to dismiss.
  * Cannot be dismissed by clicking outside. Escape key triggers cancel.
- * Initial focus goes to the cancel button (least destructive action)
- * via `data-autofocus` on the cancel wrapper.
+ * Initial focus goes to the cancel button (least destructive action).
  *
  * @example
  * ```
@@ -87,11 +97,8 @@ export interface XDSAlertDialogProps {
  *   onOpenChange={setIsOpen}
  *   title="Delete item?"
  *   description="This action cannot be undone."
- *   cancel={<XDSButton variant="secondary" label="Cancel" />}
- *   action={
- *     <XDSButton variant="danger" label="Delete"
- *       onClick={async () => { await deleteItem(); setIsOpen(false); }} />
- *   }
+ *   actionLabel="Delete"
+ *   onAction={async () => { await deleteItem(); setIsOpen(false); }}
  * />
  * ```
  */
@@ -100,23 +107,19 @@ export function XDSAlertDialog({
   onOpenChange,
   title,
   description,
-  cancel,
-  action,
+  cancelLabel = 'Cancel',
+  actionLabel,
+  actionVariant = 'danger',
+  isActionLoading,
+  onAction,
   width = 400,
 }: XDSAlertDialogProps) {
   const titleId = useId();
   const descriptionId = useId();
 
-  const handleCancelClick = useCallback(
-    (e: React.MouseEvent) => {
-      // Don't auto-close if the cancel button is disabled
-      const target = e.target as HTMLElement;
-      const button = target.closest('button, [role="button"]');
-      if (button?.getAttribute('aria-disabled') === 'true') return;
-      onOpenChange(false);
-    },
-    [onOpenChange],
-  );
+  const handleCancel = useCallback(() => {
+    onOpenChange(false);
+  }, [onOpenChange]);
 
   return (
     <XDSDialog
@@ -142,13 +145,17 @@ export function XDSAlertDialog({
         footer={
           <XDSLayoutFooter>
             <XDSHStack gap={2} hAlign="end">
-              <div
-                data-autofocus=""
-                onClick={handleCancelClick}
-                {...stylex.props(styles.cancelWrapper)}>
-                {cancel}
-              </div>
-              {action}
+              <XDSButton
+                variant="ghost"
+                label={cancelLabel}
+                onClick={handleCancel}
+              />
+              <XDSButton
+                variant={actionVariant}
+                label={actionLabel}
+                onClick={onAction}
+                isLoading={isActionLoading}
+              />
             </XDSHStack>
           </XDSLayoutFooter>
         }
