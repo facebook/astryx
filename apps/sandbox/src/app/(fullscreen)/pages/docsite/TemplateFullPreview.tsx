@@ -25,12 +25,9 @@ import {
   PaletteIcon,
   ContrastIcon,
   SaveIcon,
-  ShareIcon,
   PlusIcon,
   SendIcon,
-  LinkIcon,
   CheckIcon,
-  HeartIcon,
   BookmarkIcon,
   BookmarkFilledIcon,
   StarIcon,
@@ -117,27 +114,17 @@ export function TemplateFullPreview({
   const [chatInput, setChatInput] = useState('');
   const [codeContent, setCodeContent] = useState(MOCK_CODE);
   const [showPublishModal, setShowPublishModal] = useState(false);
-  const [showSharePopover, setShowSharePopover] = useState(false);
   const [showSendPopover, setShowSendPopover] = useState(false);
   const [sendPopoverPos, setSendPopoverPos] = useState(
     null as {top: number; left: number} | null,
   );
-  const [sharePopoverPos, setSharePopoverPos] = useState(
-    null as {top: number; left: number} | null,
-  );
-  const [shareCopied, setShareCopied] = useState(false);
   const [sendCopied, setSendCopied] = useState(false);
-  const [linkCopied, setLinkCopied] = useState(false);
-  const [liked, setLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(1645);
   const [bookmarked, setBookmarked] = useState(false);
   const [bookmarkCount, setBookmarkCount] = useState(892);
   const [showAddPopover, setShowAddPopover] = useState(false);
   const [addPopoverPos, setAddPopoverPos] = useState(null as {top: number; left: number} | null);
   const addButtonRef = useRef(null as HTMLButtonElement | null);
   const addPopoverRef = useRef(null as HTMLDivElement | null);
-  const sharePopoverRef = useRef(null as HTMLDivElement | null);
-  const shareButtonRef = useRef(null as HTMLButtonElement | null);
   const sendPopoverRef = useRef(null as HTMLDivElement | null);
 
   const shareCliCommand = `npx xds template ${templateName.toLowerCase().replace(/\s+/g, '-')} ./my-project`;
@@ -148,19 +135,6 @@ export function TemplateFullPreview({
     });
   }, []);
 
-  useEffect(() => {
-    if (!showSharePopover) return;
-    const handleClickOutside = (e: MouseEvent) => {
-      if (
-        sharePopoverRef.current &&
-        !sharePopoverRef.current.contains(e.target as Node)
-      ) {
-        setShowSharePopover(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showSharePopover]);
 
   useEffect(() => {
     if (!showSendPopover) return;
@@ -365,8 +339,6 @@ export function TemplateFullPreview({
                       'https://xds.dev/templates/' +
                         templateName.toLowerCase().replace(/\s+/g, '-'),
                     );
-                    setLinkCopied(true);
-                    setTimeout(() => setLinkCopied(false), 2000);
                   }}>
                   <XDSText type="display-2">
                     {templateName}
@@ -408,69 +380,6 @@ export function TemplateFullPreview({
                       style={{fontWeight: 600, fontSize: 16}}>
                       Andrea Anderson
                     </XDSText>
-                  </div>
-                </div>
-
-                {/* Stats buttons */}
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    marginTop: 16,
-                    marginLeft: -8,
-                    marginRight: -8,
-                  }}>
-                  <div style={{display: 'flex', alignItems: 'center', gap: 4}}>
-                    <XDSTooltip content="Copy link">
-                      <XDSButton
-                        label="Link"
-                        variant="ghost"
-                        size="sm"
-                        isIconOnly
-                        icon={
-                          linkCopied ? (
-                            <CheckIcon
-                              style={{
-                                strokeDasharray: 24,
-                                strokeDashoffset: 0,
-                                animation: 'checkDraw 0.3s ease-out',
-                              }}
-                            />
-                          ) : (
-                            <LinkIcon />
-                          )
-                        }
-                        onClick={() => {
-                          void navigator.clipboard.writeText(
-                            'https://xds.dev/templates/' +
-                              templateName.toLowerCase().replace(/\s+/g, '-'),
-                          );
-                          setLinkCopied(true);
-                          setTimeout(() => setLinkCopied(false), 2000);
-                        }}
-                      />
-                    </XDSTooltip>
-                  </div>
-                  <div style={{display: 'flex', alignItems: 'center', gap: 4}}>
-                    <XDSTooltip content="Like">
-                      <XDSButton
-                        label={likeCount.toLocaleString()}
-                        variant="ghost"
-                        size="sm"
-                        style={{color: 'var(--color-text-secondary, #65676B)'}}
-                        icon={
-                          <HeartIcon
-                            fill={liked ? 'currentColor' : 'none'}
-                            style={liked ? {color: '#e5484d'} : undefined}
-                          />
-                        }
-                        onClick={() => {
-                          setLiked(prev => !prev);
-                          setLikeCount(prev => (liked ? prev - 1 : prev + 1));
-                        }}
-                      />
-                    </XDSTooltip>
                   </div>
                 </div>
 
@@ -1051,47 +960,6 @@ export function TemplateFullPreview({
                       onClick={() => {}}
                     />
                   </XDSTooltip>
-                  <div
-                    ref={sharePopoverRef}
-                    style={{position: 'relative' as const}}>
-                    <XDSTooltip content="Share">
-                      <XDSButton
-                        label="Share"
-                        variant="ghost"
-                        isIconOnly
-                        icon={<ShareIcon />}
-                        ref={shareButtonRef}
-                        onClick={() => {
-                          setShowSharePopover(prev => {
-                            if (!prev && shareButtonRef.current) {
-                              const rect =
-                                shareButtonRef.current.getBoundingClientRect();
-                              const popoverWidth = 340;
-                              const popoverHeight = 400;
-                              const left = Math.min(
-                                Math.max(8, rect.right - popoverWidth),
-                                window.innerWidth - popoverWidth - 16,
-                              );
-                              const top =
-                                rect.bottom + 4 + popoverHeight + 16 >
-                                window.innerHeight
-                                  ? rect.top - popoverHeight - 4
-                                  : rect.bottom + 4;
-                              setSharePopoverPos({top, left});
-                            }
-                            return !prev;
-                          });
-                        }}
-                      />
-                    </XDSTooltip>
-                    {showSharePopover && sharePopoverPos && (
-                      <SharePopover
-                        cliCommand={shareCliCommand}
-                        position={sharePopoverPos}
-                        onClose={() => setShowSharePopover(false)}
-                      />
-                    )}
-                  </div>
                   <XDSButton
                     label="Publish"
                     variant="primary"
