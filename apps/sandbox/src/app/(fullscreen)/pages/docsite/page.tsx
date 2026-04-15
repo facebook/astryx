@@ -48,6 +48,7 @@ import {
   SearchIcon,
   LinkIcon,
   HeartIcon,
+  HeartFilledIcon,
   MetaLogo,
   WhatsAppLogo,
   ThreadsLogo,
@@ -71,8 +72,15 @@ const BRAND_LOGOS: Record<string, React.ComponentType<React.SVGProps<SVGSVGEleme
 
 const tokenStyles = stylex.create({
   outline: {
-    backgroundColor: 'transparent',
-    border: '1px solid var(--color-border, #d0d0d0)',
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: 'var(--color-border-emphasized)',
+  },
+  pill: {
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: 'var(--color-border-emphasized)',
+    borderRadius: 9999,
   },
 });
 
@@ -130,7 +138,13 @@ function DocsiteLandingTemplate() {
   const [card4SelectedOption, setCard4SelectedOption] = useState('default');
   const [card4ThemeBrowse, setCard4ThemeBrowse] = useState(false);
   const [card4MoreLikeThisIdx, setCard4MoreLikeThisIdx] = useState<number | null>(null);
+  const [card4Liked, setCard4Liked] = useState(false);
+  const [card4Bookmarked, setCard4Bookmarked] = useState(false);
   const card4ScrollRef = useRef<HTMLDivElement>(null);
+  const card4AddButtonRef = useRef<HTMLButtonElement>(null);
+  const card4AddPopoverRef = useRef<HTMLDivElement>(null);
+  const [card4ShowAddPopover, setCard4ShowAddPopover] = useState(false);
+  const [card4AddPopoverPos, setCard4AddPopoverPos] = useState(null as {top: number; left: number} | null);
   const [card4ThemeSearch, setCard4ThemeSearch] = useState('');
   const [card4PinnedThemes, setCard4PinnedThemes] = useState(
     () => new Set(THEME_PICKER_ENTRIES.filter(t => t.isPinnedByDefault).map(t => t.key)),
@@ -984,10 +998,10 @@ function DocsiteLandingTemplate() {
         const relatedTemplates = TEMPLATES.filter((_, i) => i !== 3).slice(0, 10);
         const isMeta = card4SelectedOption === 'meta';
         const moreLikeThisImages = [
-          {src: isMeta ? '/templates/more-like-this-1-meta.png' : '/templates/more-like-this-1.png', name: 'Shaped Grid Layout', description: 'A mosaic of shaped image frames arranged in a 3×3 grid. Great for showcasing collections with visual variety and personality.'},
-          {src: isMeta ? '/templates/more-like-this-2-meta.png' : '/templates/more-like-this-2.png', name: 'Hero Grid Layout', description: 'Four large images in a balanced 2×2 grid with a centered headline. Clean and impactful for hero sections and landing pages.'},
-          {src: isMeta ? '/templates/more-like-this-3-meta.png' : '/templates/more-like-this-3.png', name: 'Product Card Grid', description: 'Shaped image cards paired with titles, descriptions, and pricing in a 3×2 product grid. Ideal for storefronts and catalogs.'},
-          {src: isMeta ? '/templates/more-like-this-4-meta.png' : '/templates/more-like-this-4.png', name: 'Carousel Layout', description: 'A horizontal carousel of tall image cards with text overlays and navigation arrows. Perfect for featured content and storytelling.'},
+          {src: '/templates/card4-related-1.png', name: 'Shaped Grid Layout', description: 'A mosaic of shaped image frames arranged in a 3×3 grid. Great for showcasing collections with visual variety and personality.'},
+          {src: '/templates/card4-related-2.png', name: 'Carousel Layout', description: 'A horizontal carousel of tall image cards with text overlays and navigation arrows. Perfect for featured content and storytelling.'},
+          {src: '/templates/card4-related-3.png', name: 'Hero Grid Layout', description: 'Four large images in a balanced 2×2 grid with a centered headline. Clean and impactful for hero sections and landing pages.'},
+          {src: '/templates/card4-related-4.png', name: 'Product Card Grid', description: 'Shaped image cards paired with titles, descriptions, and pricing in a 3×2 product grid. Ideal for storefronts and catalogs.'},
         ];
         const card4Options = [
           {key: 'default', label: 'Default Theme', description: 'Clean neutral palette with blue accent. Great for internal tools.', preview: {bg: '#F5F5F5', accent: '#0066FF'}},
@@ -1087,16 +1101,30 @@ function DocsiteLandingTemplate() {
                         </XDSTooltip>
                       </div>
                       <div style={{display: 'flex', alignItems: 'center', gap: 4}}>
-                        <XDSButton label="1,645" variant="ghost" size="sm" style={{color: 'var(--color-text-secondary, #65676B)'}} icon={<HeartIcon />} />
-                        <XDSButton label="892" variant="ghost" size="sm" style={{color: 'var(--color-text-secondary, #65676B)'}} icon={<BookmarkIcon />} />
+                        <XDSButton
+                          label={card4Liked ? '1,646' : '1,645'}
+                          variant="ghost"
+                          size="sm"
+                          style={{color: card4Liked ? 'var(--color-text-red, #E3193B)' : 'var(--color-text-secondary, #65676B)'}}
+                          icon={card4Liked ? <HeartFilledIcon /> : <HeartIcon />}
+                          onClick={() => setCard4Liked(prev => !prev)}
+                        />
+                        <XDSButton
+                          label={card4Bookmarked ? '893' : '892'}
+                          variant="ghost"
+                          size="sm"
+                          style={{color: card4Bookmarked ? 'var(--color-accent, #0066FF)' : 'var(--color-text-secondary, #65676B)'}}
+                          icon={card4Bookmarked ? <BookmarkFilledIcon /> : <BookmarkIcon />}
+                          onClick={() => setCard4Bookmarked(prev => !prev)}
+                        />
                       </div>
                     </div>
 
-                    {/* CTA */}
-                    <div style={{marginTop: 16}}>
+                    {/* CTA buttons */}
+                    <div style={{marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8, position: 'relative'}}>
                       <XDSButton
-                        label="Start crafting"
                         variant="primary"
+                        label="Start crafting"
                         size="lg"
                         style={{width: '100%'}}
                         onClick={() => {
@@ -1106,6 +1134,29 @@ function DocsiteLandingTemplate() {
                           setChatOpen(true);
                         }}
                       />
+                      <div ref={card4AddPopoverRef}>
+                        <XDSButton
+                          ref={card4AddButtonRef}
+                          variant="secondary"
+                          label="Add to your project"
+                          size="lg"
+                          style={{width: '100%'}}
+                          onClick={() => {
+                            if (card4AddButtonRef.current) {
+                              const rect = card4AddButtonRef.current.getBoundingClientRect();
+                              setCard4AddPopoverPos({top: rect.bottom + 8, left: rect.left});
+                            }
+                            setCard4ShowAddPopover(prev => !prev);
+                          }}
+                        />
+                        {card4ShowAddPopover && card4AddPopoverPos && (
+                          <SharePopover
+                            cliCommand={`npx xds template ${TEMPLATES[3].name.toLowerCase().replace(/\s+/g, '-')} ./my-project`}
+                            position={card4AddPopoverPos}
+                            onClose={() => setCard4ShowAddPopover(false)}
+                          />
+                        )}
+                      </div>
                     </div>
 
                     {/* Themes — pinned grid */}
@@ -1125,7 +1176,7 @@ function DocsiteLandingTemplate() {
                                 style={{
                                   width: 44, height: 44, borderRadius: 10,
                                   display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                                  border: isSelected ? '2px solid var(--color-text-primary, #111)' : '2px solid var(--color-border, #E0E0E0)',
+                                  border: isSelected ? '2px solid var(--color-accent)' : '2px solid var(--color-border-emphasized)',
                                   backgroundColor: '#fff',
                                   transition: 'border-color 0.15s ease',
                                 }}>
@@ -1180,7 +1231,7 @@ function DocsiteLandingTemplate() {
                                           key={entry.key}
                                           style={{
                                             borderRadius: 12, overflow: 'hidden', cursor: 'pointer',
-                                            border: isSelected ? '2px solid var(--color-text-primary, #111)' : '2px solid var(--color-border, #E0E0E0)',
+                                            border: isSelected ? '2px solid var(--color-accent)' : '2px solid var(--color-border-emphasized)',
                                             transition: 'border-color 0.15s ease',
                                           }}>
                                           <div
@@ -1233,7 +1284,7 @@ function DocsiteLandingTemplate() {
                       <XDSText type="body" style={{fontWeight: 600}}>Component used</XDSText>
                       <div style={{display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 16}}>
                         {['XDSAppShell', 'XDSTopNav', 'XDSVStack', 'XDSHStack', 'XDSHeading', 'XDSText', 'XDSButton', 'XDSCard', 'XDSBadge', 'XDSAvatar'].map(c => (
-                          <XDSToken key={c} label={c} xstyle={tokenStyles.outline} />
+                          <XDSToken key={c} label={c} xstyle={tokenStyles.outline} style={{backgroundColor: 'transparent'}} />
                         ))}
                       </div>
                     </div>
@@ -1265,7 +1316,7 @@ function DocsiteLandingTemplate() {
                   <XDSHeading level={3}>Explore more</XDSHeading>
                   <div style={{display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 16}}>
                     {['website', 'dashboard', 'admin panel', 'settings', 'form layout', 'data table', 'sidebar nav', 'landing page', 'e-commerce', 'documentation', 'profile page'].map(tag => (
-                      <XDSToken key={tag} label={tag} xstyle={tokenStyles.outline} />
+                      <XDSToken key={tag} label={tag} xstyle={tokenStyles.pill} style={{backgroundColor: 'transparent'}} />
                     ))}
                   </div>
                 </div>
