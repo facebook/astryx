@@ -4,10 +4,6 @@ export const docs = {
   name: 'NavIcon',
   description:
     'Circular icon container with accent background for navigation headers.',
-  showcase: {
-    aspectRatio: 16 / 4,
-    code: '<XDSNavIcon label="Home" />',
-  },
   keywords: ["navicon","iconbutton","toolbar icon","appbar icon","nav button"],
   features: [
     'Shared — used in both XDSTopNavHeading and XDSPageNavHeader',

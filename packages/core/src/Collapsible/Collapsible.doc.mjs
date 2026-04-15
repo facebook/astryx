@@ -3,10 +3,6 @@
 export const docs = {
   name: 'Collapsible',
   description: 'Collapsible content primitive and group coordination.',
-  showcase: {
-    aspectRatio: 4 / 3,
-    code: '<XDSCollapsible trigger="Details">Hidden content</XDSCollapsible>',
-  },
   keywords: ["accordion","collapse","expandable","disclosure","toggle","panel","foldable","expander","expand"],
   features: [
     'XDSCollapsible makes any content collapsible — a trigger toggles visibility of the content area',

@@ -42,10 +42,6 @@ export const docs = {
         {name: 'style', type: 'CSSProperties', description: 'Inline styles. Prefer xstyle for StyleX-optimized styling.'},
         {name: 'data-testid', type: 'string', description: 'Test selector for automated testing frameworks.'},
       ],
-      examples: [
-        {label: 'Basic usage', code: '<XDSCodeBlock\n  code={`const x = 42;`}\n  language="typescript"\n  hasLineNumbers\n/>'},
-        {label: 'With title and line highlighting', code: '<XDSCodeBlock\n  code={snippetCode}\n  language="typescript"\n  title="utils.ts"\n  highlightLines={[3, 4, 5]}\n/>'},
-      ],
     },
     {
       name: 'XDSCode',
@@ -57,14 +53,7 @@ export const docs = {
         {name: 'style', type: 'CSSProperties', description: 'Inline styles. Prefer xstyle for StyleX-optimized styling.'},
         {name: 'data-testid', type: 'string', description: 'Test selector for automated testing frameworks.'},
       ],
-      examples: [
-        {label: 'Inline in prose', code: '<XDSText type="body">\n  Pass <XDSCode>xstyle</XDSCode> a <XDSCode>stylex.create()</XDSCode> value.\n</XDSText>'},
-      ],
     },
-  ],
-  examples: [
-    {label: 'TypeScript with line numbers', code: '<XDSCodeBlock\n  code={`function greet(name: string) { return name; }`}\n  language="typescript"\n  hasLineNumbers\n  title="greet.ts"\n/>'},
-    {label: 'Inline code in text', code: '<XDSText type="body">\n  Use <XDSCode>const</XDSCode> for block-scoped declarations.\n</XDSText>'},
   ],
   theming: {
     targets: [

@@ -4,10 +4,6 @@ export const docs = {
   name: 'ToggleButton',
   description:
     'A button that toggles between pressed and unpressed states, with optional icon swap and group integration for single or multi-select behavior.',
-  showcase: {
-    aspectRatio: 1,
-    code: '<XDSToggleButton label="Bold" isIconOnly />',
-  },
   keywords: ["toggle","togglebutton","pressed","toolbar","formatting","segmented","button-group","exclusive","multi-select"],
   features: [
     'Controlled toggle via isPressed/onPressedChange',

@@ -4,10 +4,6 @@ export const docs = {
   name: 'Text',
   description:
     'Typography components for the XDS design system, including semantic body text, headings, and a wrapper for applying typography styles to native HTML.',
-  showcase: {
-    aspectRatio: 1,
-    code: '<XDSText type="body">Hello world</XDSText>',
-  },
   keywords: ["text","typography","label","paragraph","heading","caption","font","body","subtitle"],  features: [
     'Semantic text types (body, large, label, supporting, code) driven by theme tokens',
     'Headings use native h1–h6 elements with optional aria-level override for decoupled visual vs document hierarchy',

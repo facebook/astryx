@@ -4,10 +4,6 @@ export const docs = {
   name: 'Layer',
   description:
     'Core hook for overlay positioning using CSS Anchor Positioning and the Popover API — no React portals needed. Popover, HoverCard, and Tooltip build on this foundation and live in their own directories.',
-  showcase: {
-    aspectRatio: 1,
-    code: '<XDSLayer>Layer content</XDSLayer>',
-  },
   keywords: ["layer","overlay","popover","positioning","anchor","floating","dropdown","popper","popup","portal"],
   features: [
     'CSS Anchor Positioning for automatic placement relative to trigger elements',

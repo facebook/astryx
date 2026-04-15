@@ -4,10 +4,6 @@ export const docs = {
   name: 'Field',
   description:
     'A form field wrapper component that provides label, description, and optional/required indicators.',
-  showcase: {
-    aspectRatio: 4 / 3,
-    code: '<XDSField label="Name"><input /></XDSField>',
-  },
   keywords: ["field","formfield","formgroup","formcontrol","label","input","required","optional","helpertext","hint"],
   features: [
     'Label Support — required label for accessibility (can be visually hidden)',

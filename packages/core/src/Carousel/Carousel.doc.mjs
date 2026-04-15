@@ -4,10 +4,6 @@ export const docs = {
   name: 'Carousel',
   description:
     'Horizontal scroll container with fade-edge overflow indication, optional navigation buttons, and scroll-snap support.',
-  showcase: {
-    aspectRatio: 16 / 9,
-    code: '<XDSCarousel><div>Slide 1</div></XDSCarousel>',
-  },
   keywords: ['carousel', 'slider', 'scroll', 'gallery', 'filmstrip', 'swiper', 'horizontal', 'overflow', 'snap'],
   features: [
     'Overflow Detection: Gradient fades appear at edges when content overflows, signaling more items',

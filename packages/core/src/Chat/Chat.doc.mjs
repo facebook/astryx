@@ -4,10 +4,6 @@ export const docs = {
   name: 'Chat',
   description:
     'Chat components for AI chat interfaces. Layout (MessageList, Message, Bubble, SystemMessage) + Composer (Composer, ComposerInput with trigger menus, ComposerAttachments).',
-  showcase: {
-    aspectRatio: 4 / 3,
-    code: '<XDSChatMessageList><XDSChatMessage sender="user"><XDSChatBubble>Hello</XDSChatBubble></XDSChatMessage></XDSChatMessageList>',
-  },
   keywords: ['chat', 'message', 'bubble', 'conversation', 'ai', 'assistant', 'thread', 'system-message', 'composer', 'mention', 'trigger', 'typeahead', 'token', 'imperative', 'tokenized-text'],
   features: [
     'Composition model — MessageList > Message > Bubble',

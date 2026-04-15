@@ -4,10 +4,6 @@ export const docs = {
   name: 'Markdown',
   description:
     'Renders a markdown string as XDS components. Supports headings, paragraphs, bold, italic, code, lists, tables, links, images, blockquotes, horizontal rules, and task lists. Handles streaming text with a smooth fade-in animation.',
-  showcase: {
-    aspectRatio: 4 / 3,
-    code: '<XDSMarkdown content="# Hello" />',
-  },
   keywords: [
     'markdown',
     'rich text',

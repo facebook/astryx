@@ -4,10 +4,6 @@ export const docs = {
   name: 'Layout',
   description:
     'Composable utilities and components for building structured layouts with a container/content separation pattern.',
-  showcase: {
-    aspectRatio: 16 / 9,
-    code: '<XDSLayout>Layout content</XDSLayout>',
-  },
   keywords: ["layout","container","content","flex","box","wrapper","scaffold","page","shell"],
   features: [
     'Primitive + higher-order architecture — XDSLayoutContainer is a primitive; XDSCard, XDSSection are higher-order',

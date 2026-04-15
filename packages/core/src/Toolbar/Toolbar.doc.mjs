@@ -4,10 +4,6 @@ export const docs = {
   name: 'Toolbar',
   description:
     'General-purpose toolbar with start, center, and end content slots. Built on XDSSection with roving tabindex keyboard navigation.',
-  showcase: {
-    aspectRatio: 16 / 4,
-    code: '<XDSToolbar label="Actions" />',
-  },
   keywords: ['toolbar', 'nav', 'bar', 'actions', 'buttonbar', 'header', 'footer', 'action-bar', 'control-bar'],
   features: [
     'Slot-based layout — startContent, centerContent, and endContent for flexible organization',

@@ -4,10 +4,6 @@ export const docs = {
   name: 'IconButton',
   description:
     'An icon-only button. Thin wrapper around XDSButton with isIconOnly always true.',
-  showcase: {
-    aspectRatio: 1,
-    code: '<XDSIconButton label="Settings" icon="gear" />',
-  },
 
   keywords: ['icon-button', 'icon', 'button', 'toolbar', 'action', 'compact'],
   features: [

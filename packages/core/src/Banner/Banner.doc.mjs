@@ -4,10 +4,6 @@ export const docs = {
   name: 'Banner',
   description:
     'Persistent status notification for info, warning, error, or success messages.',
-  showcase: {
-    aspectRatio: 16 / 4,
-    code: '<XDSBanner variant="info">Important update</XDSBanner>',
-  },
 
   keywords: ["banner","alert","notification","callout","notice","status","message","info","warning","error","success","toast"],
   features: [

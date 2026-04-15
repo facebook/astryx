@@ -150,10 +150,10 @@ export type {
   SingleComponentDoc,
   MultiComponentDoc,
   PropDoc,
-  Example,
   ComponentEntry,
   ThemingTarget,
   CSSPropertyDoc,
   ComponentVar,
   TranslationDoc,
+  ComponentShowcaseDoc,
 } from './docs-types';

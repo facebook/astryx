@@ -3,12 +3,7 @@
 export const docs = {
   name: 'RadioList',
   description:
-    'A radio group component for single-value selection from a list of options.',
-  showcase: {
-    aspectRatio: 4 / 3,
-    code: '<XDSRadioList label="Choice" items={[{label: "A", value: "a"}]} />',
-  },
-  keywords: ["radiolist","radio","radiogroup","radiobutton","optionlist","singlechoice","choicelist"],
+    'A radio group component for single-value selection from a list of options.',  keywords: ["radiolist","radio","radiogroup","radiobutton","optionlist","singlechoice","choicelist"],
   features: [
     'Accessible — uses native <input type="radio"> with proper role="radiogroup" and ARIA attributes',
     'Orientation — supports vertical and horizontal layouts',

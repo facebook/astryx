@@ -3,12 +3,7 @@
 export const docs = {
   name: 'Timestamp',
   description:
-    'Displays a formatted timestamp as human-readable text with optional tooltip and live updates. Renders via XDSText for consistent typography.',
-  showcase: {
-    aspectRatio: 1,
-    code: '<XDSTimestamp date={new Date()} />',
-  },
-  keywords: ['date', 'time', 'datetime', 'relative', 'ago', 'clock', 'format', 'duration'],
+    'Displays a formatted timestamp as human-readable text with optional tooltip and live updates. Renders via XDSText for consistent typography.',  keywords: ['date', 'time', 'datetime', 'relative', 'ago', 'clock', 'format', 'duration'],
   props: [
     {
       name: 'value',

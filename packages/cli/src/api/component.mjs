@@ -18,6 +18,7 @@ import {
 import {loadDocs} from '../lib/component-loader.mjs';
 import {searchComponents} from '../lib/string-utils.mjs';
 import {XDSError} from './error.mjs';
+import {findShowcase} from './template.mjs';
 
 /**
  * @param {string} [name]
@@ -27,6 +28,7 @@ import {XDSError} from './error.mjs';
  * @param {string} [options.category]
  * @param {boolean} [options.props]
  * @param {boolean} [options.source]
+ * @param {boolean} [options.showcase]
  * @param {'full'|'compact'|'brief'} [options.detail]
  * @param {string} [options.lang]
  * @param {boolean} [options.zh]
@@ -40,6 +42,7 @@ export async function component(name, options = {}) {
     category,
     props = false,
     source = false,
+    showcase = false,
     detail = 'full',
     lang = null,
     zh = false,
@@ -131,6 +134,21 @@ export async function component(name, options = {}) {
       throw new XDSError(`Source for "${name}" not found`);
     }
     return {type: 'component.detail.source', data: {component: dirName, source: fs.readFileSync(sourcePath, 'utf-8')}};
+  }
+
+  if (showcase) {
+    const match = await findShowcase(dirName);
+    if (!match) {
+      throw new XDSError(`No showcase found for "${name}"`);
+    }
+    return {
+      type: 'component.detail.showcase',
+      data: {
+        component: dirName,
+        aspectRatio: match.aspectRatio,
+        source: fs.readFileSync(match.filePath, 'utf-8'),
+      },
+    };
   }
 
   let readmePath = findComponentReadme(coreDir, dirName);

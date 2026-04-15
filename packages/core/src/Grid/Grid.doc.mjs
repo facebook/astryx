@@ -2,12 +2,7 @@
 
 export const docs = {
   name: 'Grid',
-  description: 'CSS Grid-based layout with responsive auto-fit support.',
-  showcase: {
-    aspectRatio: 4 / 3,
-    code: '<XDSGrid columns={3}><div>1</div><div>2</div><div>3</div></XDSGrid>',
-  },
-  keywords: ["grid","columns","responsive","auto-fit","masonry","tiles","row","col","simplegrid"],
+  description: 'CSS Grid-based layout with responsive auto-fit support.',  keywords: ["grid","columns","responsive","auto-fit","masonry","tiles","row","col","simplegrid"],
   features: [
     'Fixed-column grids via the `columns` prop',
     'Responsive auto-fit columns via `minChildWidth` — items wrap based on available space',
