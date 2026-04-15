@@ -159,8 +159,8 @@ export interface ComponentEntry {
   description: string;
   /** All public props for this component. */
   props: PropDoc[];
-  /** At least one usage example for this component. */
-  examples: Example[];
+  /** Usage examples for this component. */
+  examples?: Example[];
 }
 
 /**

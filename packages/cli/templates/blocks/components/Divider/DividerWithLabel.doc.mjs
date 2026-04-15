@@ -1,4 +1,4 @@
-/** @type {import('../../../../../../core/src/docs-types').TemplateDoc} */
+/** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
   name: 'Divider — With Label',

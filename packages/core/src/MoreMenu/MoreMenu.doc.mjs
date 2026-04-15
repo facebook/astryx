@@ -151,47 +151,6 @@ export const docsZh = {
         '用于布局自定义的 StyleX 样式（边距、定位、尺寸）。必须是 stylex.create() 的值，不能是内联样式对象如 style={{}}。',
     },
   ],
-    },
-    {
-      type: 'section',
-      title: 'Danger zone',
-      items: [
-        { label: 'Delete', onClick: handleDelete },
-      ],
-    },
-  ]}
-/>`,
-    },
-    {
-      label: '卡片标题中的溢出菜单',
-      code: `<XDSHStack align="center" justify="between">
-  <XDSHeading level={3}>Card Title</XDSHeading>
-  <XDSMoreMenu
-    items={[
-      { label: 'Edit', onClick: handleEdit },
-      { label: 'Duplicate', onClick: handleDuplicate },
-      { type: 'divider' },
-      { label: 'Delete', onClick: handleDelete },
-    ]}
-  />
-</XDSHStack>`,
-    },
-    {
-      label: '自定义项目渲染',
-      code: `<XDSMoreMenu
-  label="User actions"
-  items={actions}
->
-  {item => (
-    <XDSDropdownMenuItem
-      icon={item.icon}
-      label={item.label}
-      description={item.description}
-    />
-  )}
-</XDSMoreMenu>`,
-    },
-  ],
   features: [
     "零配置默认值：三点图标、'More options' 标签、ghost 变体，只需传入 items",
     '数据驱动的菜单项：与 XDSDropdownMenu 相同的 items 属性（项目、分割线、分组）',
