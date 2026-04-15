@@ -184,7 +184,12 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
-    padding: 0,
+    paddingInlineStart: {
+      default: spacingVars['--spacing-2'],
+      ':has(.xds-navicon)': 0,
+    },
+    paddingInlineEnd: spacingVars['--spacing-2'],
+    paddingBlock: 0,
     marginBlockStart: spacingVars['--spacing-1'],
     marginBlockEnd: spacingVars['--spacing-2'],
     marginInline: spacingVars['--spacing-1'],
