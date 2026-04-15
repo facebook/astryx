@@ -8,7 +8,7 @@ import {
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSButton} from '@xds/core/Button';
 import {XDSIcon} from '@xds/core/Icon';
-import {XDSList, XDSListItem} from '@xds/core/List';
+import {XDSListItem} from '@xds/core/List';
 import {XDSMoreMenu} from '@xds/core/MoreMenu';
 import {XDSNavIcon} from '@xds/core/NavIcon';
 import {XDSText} from '@xds/core/Text';
@@ -22,10 +22,6 @@ import {
   QuestionMarkCircleIcon,
   DocumentTextIcon,
   CubeIcon,
-  BuildingOfficeIcon,
-  UserIcon,
-  PlusIcon,
-  ArrowRightStartOnRectangleIcon,
 } from '@heroicons/react/24/outline';
 import {
   HomeIcon as HomeIconSolid,
@@ -41,7 +37,7 @@ const meta: Meta<typeof XDSSideNav> = {
   },
   decorators: [
     Story => (
-      <div style={{width: 280, height: 600, border: '1px solid #e5e7eb'}}>
+      <div style={{height: 480}}>
         <Story />
       </div>
     ),
@@ -148,36 +144,12 @@ export const WithHeaderMenu: Story = {
           heading="Product Name"
           subheading="Business Account"
           menu={
-            <XDSList
-              density="compact"
-              header={
-                <XDSText type="supporting" color="secondary">
-                  Switch account
-                </XDSText>
-              }>
-              <XDSListItem
-                label="Personal Account"
-                startContent={<XDSIcon icon={UserIcon} size="sm" />}
-                href="#"
-              />
-              <XDSListItem
-                label="Acme Corp"
-                startContent={<XDSIcon icon={BuildingOfficeIcon} size="sm" />}
-                href="#"
-              />
-              <XDSListItem
-                label="Add account"
-                startContent={<XDSIcon icon={PlusIcon} size="sm" />}
-                href="#"
-              />
-              <XDSListItem
-                label="Sign out"
-                startContent={
-                  <XDSIcon icon={ArrowRightStartOnRectangleIcon} size="sm" />
-                }
-                href="#"
-              />
-            </XDSList>
+            <>
+              <XDSListItem label="Personal Account" href="#" />
+              <XDSListItem label="Acme Corp" href="#" />
+              <XDSListItem label="Add account" href="#" />
+              <XDSListItem label="Sign out" href="#" />
+            </>
           }
         />
       }>
@@ -212,29 +184,11 @@ export const SuiteHeader: Story = {
           heading="Product Name"
           headingHref="/product"
           menu={
-            <XDSList
-              density="compact"
-              header={
-                <XDSText type="supporting" color="secondary">
-                  Switch product
-                </XDSText>
-              }>
-              <XDSListItem
-                label="Analytics"
-                startContent={<XDSIcon icon={ChartBarIcon} size="sm" />}
-                href="#"
-              />
-              <XDSListItem
-                label="Commerce"
-                startContent={<XDSIcon icon={CubeIcon} size="sm" />}
-                href="#"
-              />
-              <XDSListItem
-                label="Team Hub"
-                startContent={<XDSIcon icon={UserGroupIcon} size="sm" />}
-                href="#"
-              />
-            </XDSList>
+            <>
+              <XDSListItem label="Analytics" href="#" />
+              <XDSListItem label="Commerce" href="#" />
+              <XDSListItem label="Team Hub" href="#" />
+            </>
           }
         />
       }>
@@ -550,10 +504,10 @@ export const HeaderEndContentWithMenu: Story = {
           subheading="Business Account"
           headerEndContent={<XDSBadge label="New" variant="info" />}
           menu={
-            <XDSList density="compact">
+            <>
               <XDSListItem label="Switch Account" href="#" />
               <XDSListItem label="Sign Out" href="#" />
-            </XDSList>
+            </>
           }
         />
       }>

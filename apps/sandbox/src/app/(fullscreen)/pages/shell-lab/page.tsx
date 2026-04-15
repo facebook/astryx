@@ -115,6 +115,7 @@ interface ShellConfig {
   sideNavHeadingStyle: 'none' | 'simple' | 'link' | 'menu' | 'full';
   showSuperheading: boolean;
   showSubheading: boolean;
+  headingIconStyle: 'navicon' | 'icon' | 'none';
   showNestedItems: boolean;
   isCollapsible: boolean;
   isResizable: boolean;
@@ -125,6 +126,7 @@ interface ShellConfig {
   topNavStyle: 'items' | 'menus' | 'mega';
   showTopNavHeading: boolean;
   topNavHeadingStyle: 'none' | 'simple' | 'link' | 'menu' | 'full';
+  topNavHeadingIconStyle: 'navicon' | 'icon' | 'none';
   showTopNavSuperheading: boolean;
   showTopNavSubheading: boolean;
 }
@@ -142,6 +144,7 @@ const DEFAULT_CONFIG: ShellConfig = {
   sideNavHeadingStyle: 'link',
   showSuperheading: false,
   showSubheading: false,
+  headingIconStyle: 'navicon',
   showNestedItems: true,
   isCollapsible: true,
   isResizable: false,
@@ -152,6 +155,7 @@ const DEFAULT_CONFIG: ShellConfig = {
   topNavStyle: 'items',
   showTopNavHeading: true,
   topNavHeadingStyle: 'link',
+  topNavHeadingIconStyle: 'navicon',
   showTopNavSuperheading: false,
   showTopNavSubheading: false,
 };
@@ -230,6 +234,20 @@ function ConfigPanel({
               {value: 'link', label: 'Link'},
               {value: 'menu', label: 'Menu'},
               {value: 'full', label: 'Full'},
+            ]}
+          />
+          <SelectorRow
+            label="Icon"
+            value={config.headingIconStyle}
+            onChange={v =>
+              onChange({
+                headingIconStyle: v as ShellConfig['headingIconStyle'],
+              })
+            }
+            options={[
+              {value: 'navicon', label: 'NavIcon'},
+              {value: 'icon', label: 'Icon (24px)'},
+              {value: 'none', label: 'None'},
             ]}
           />
           <ToggleRow
@@ -320,6 +338,21 @@ function ConfigPanel({
                   {value: 'link', label: 'Link'},
                   {value: 'menu', label: 'Menu'},
                   {value: 'full', label: 'Full'},
+                ]}
+              />
+              <SelectorRow
+                label="Icon"
+                value={config.topNavHeadingIconStyle}
+                onChange={v =>
+                  onChange({
+                    topNavHeadingIconStyle:
+                      v as ShellConfig['topNavHeadingIconStyle'],
+                  })
+                }
+                options={[
+                  {value: 'navicon', label: 'NavIcon'},
+                  {value: 'icon', label: 'Icon (24px)'},
+                  {value: 'none', label: 'None'},
                 ]}
               />
               <ToggleRow
@@ -471,7 +504,7 @@ function SampleSideNav({
   externalCollapsed?: boolean;
   setExternalCollapsed?: (v: boolean) => void;
 }) {
-  const appIcon = (
+  const appNavIcon = (
     <XDSNavIcon
       icon={
         <svg
@@ -485,6 +518,24 @@ function SampleSideNav({
       }
     />
   );
+
+  const appBareIcon = (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      width="24"
+      height="24">
+      <path d="M21 16.5c0 .38-.21.71-.53.88l-7.9 4.44c-.36.2-.8.2-1.14 0l-7.9-4.44A.991.991 0 013 16.5v-9c0-.38.21-.71.53-.88l7.9-4.44c.36-.2.8-.2 1.14 0l7.9 4.44c.32.17.53.5.53.88v9z" />
+    </svg>
+  );
+
+  const appIcon =
+    config.headingIconStyle === 'navicon'
+      ? appNavIcon
+      : config.headingIconStyle === 'icon'
+        ? appBareIcon
+        : undefined;
 
   const headingMenu = (
     <XDSList density="spacious">
@@ -711,7 +762,7 @@ function SampleTopNav({
         ? menuItems
         : plainItems;
 
-  const topNavLogo = (
+  const topNavNavIcon = (
     <XDSNavIcon
       icon={
         <svg
@@ -725,6 +776,24 @@ function SampleTopNav({
       }
     />
   );
+
+  const topNavBareIcon = (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      width="24"
+      height="24">
+      <path d="M21 16.5c0 .38-.21.71-.53.88l-7.9 4.44c-.36.2-.8.2-1.14 0l-7.9-4.44A.991.991 0 013 16.5v-9c0-.38.21-.71.53-.88l7.9-4.44c.36-.2.8-.2 1.14 0l7.9 4.44c.32.17.53.5.53.88v9z" />
+    </svg>
+  );
+
+  const topNavLogo =
+    config.topNavHeadingIconStyle === 'navicon'
+      ? topNavNavIcon
+      : config.topNavHeadingIconStyle === 'icon'
+        ? topNavBareIcon
+        : undefined;
 
   const topNavHeadingMenu = (
     <XDSList density="spacious">
