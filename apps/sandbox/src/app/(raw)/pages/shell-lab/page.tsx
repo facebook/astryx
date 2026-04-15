@@ -102,12 +102,21 @@ const DocsIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
+/**
+ * A React component that renders null. Simulates the Next.js parallel route
+ * pattern where a slot (e.g. @sidebar/default.tsx) returns null — the slot
+ * still receives a React element, but it produces no DOM output.
+ */
+function EmptySlot() {
+  return null;
+}
+
 interface ShellConfig {
   variant: 'wash' | 'surface' | 'section' | 'elevated';
   height: 'fill' | 'auto';
   sideNavBreakpoint: 'sm' | 'md' | 'lg' | 'none';
-  showSideNav: boolean;
-  showTopNav: boolean;
+  sideNavMode: 'show' | 'hide' | 'empty-component';
+  topNavMode: 'show' | 'hide' | 'empty-component';
   showBanner: boolean;
   showFooter: boolean;
   showFooterIcons: boolean;
@@ -122,7 +131,7 @@ interface ShellConfig {
   collapseToggleLocation: 'sidenav' | 'topnav';
   mobileNavMode: 'auto' | 'customContent' | 'customToggle' | 'disabled';
   mobileNavSide: 'start' | 'end';
-  topNavAlignment: 'start' | 'center' | 'end';
+  topNavAlignment: 'none' | 'start' | 'center' | 'end';
   topNavStyle: 'items' | 'menus' | 'mega';
   showTopNavHeading: boolean;
   topNavHeadingStyle: 'none' | 'simple' | 'link' | 'menu' | 'full';
@@ -135,8 +144,8 @@ const DEFAULT_CONFIG: ShellConfig = {
   variant: 'section',
   height: 'fill',
   sideNavBreakpoint: 'md',
-  showSideNav: true,
-  showTopNav: true,
+  sideNavMode: 'show',
+  topNavMode: 'show',
   showBanner: false,
   showFooter: false,
   showFooterIcons: true,
@@ -215,10 +224,19 @@ function ConfigPanel({
           <XDSText type="label" weight="bold">
             SideNav
           </XDSText>
-          <ToggleRow
-            label="Show"
-            value={config.showSideNav}
-            onChange={v => onChange({showSideNav: v})}
+          <SelectorRow
+            label="Mode"
+            value={config.sideNavMode}
+            onChange={v =>
+              onChange({
+                sideNavMode: v as ShellConfig['sideNavMode'],
+              })
+            }
+            options={[
+              {value: 'show', label: 'Show'},
+              {value: 'hide', label: 'Hide'},
+              {value: 'empty-component', label: 'Empty Component'},
+            ]}
           />
           <SelectorRow
             label="Heading"
@@ -312,10 +330,19 @@ function ConfigPanel({
           <XDSText type="label" weight="bold">
             TopNav
           </XDSText>
-          <ToggleRow
-            label="Show"
-            value={config.showTopNav}
-            onChange={v => onChange({showTopNav: v})}
+          <SelectorRow
+            label="Mode"
+            value={config.topNavMode}
+            onChange={v =>
+              onChange({
+                topNavMode: v as ShellConfig['topNavMode'],
+              })
+            }
+            options={[
+              {value: 'show', label: 'Show'},
+              {value: 'hide', label: 'Hide'},
+              {value: 'empty-component', label: 'Empty Component'},
+            ]}
           />
           <ToggleRow
             label="Heading"
@@ -374,6 +401,7 @@ function ConfigPanel({
               onChange({topNavAlignment: v as ShellConfig['topNavAlignment']})
             }
             options={[
+              {value: 'none', label: 'None'},
               {value: 'start', label: 'Start'},
               {value: 'center', label: 'Center'},
               {value: 'end', label: 'End'},
@@ -966,7 +994,7 @@ export default function ShellLabPage() {
         height={config.height}
         contentPadding={6}
         topNav={
-          config.showTopNav ? (
+          config.topNavMode === 'show' ? (
             <SampleTopNav
               config={config}
               onToggleCollapse={
@@ -976,15 +1004,19 @@ export default function ShellLabPage() {
                   : undefined
               }
             />
+          ) : config.topNavMode === 'empty-component' ? (
+            <EmptySlot />
           ) : undefined
         }
         sideNav={
-          config.showSideNav ? (
+          config.sideNavMode === 'show' ? (
             <SampleSideNav
               config={config}
               externalCollapsed={externalCollapsed}
               setExternalCollapsed={setExternalCollapsed}
             />
+          ) : config.sideNavMode === 'empty-component' ? (
+            <EmptySlot />
           ) : undefined
         }
         mobileNav={mobileNav}
