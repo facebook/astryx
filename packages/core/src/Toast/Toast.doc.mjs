@@ -64,23 +64,7 @@ export const docs = {
       type: '(reason: "auto" | "manual") => void',
       description: 'Callback fired when the toast is removed.',
     },
-  ],
-
-  examples: [
-    {
-      label: 'Basic',
-      code: `const toast = useXDSToast();\ntoast({ body: "Changes saved" });`,
-    },
-    {
-      label: 'Error',
-      code: `toast({ body: "Failed to save", type: "error" });`,
-    },
-    {
-      label: 'With action',
-      code: `toast({\n  body: "Item deleted",\n  isAutoHide: false,\n  endContent: <XDSButton label="Undo" variant="secondary" size="sm" onClick={undo} />,\n});`,
-    },
-  ],
-  theming: {
+  ],  theming: {
     targets: [
       {className: 'xds-toast', visualProps: ['type']},
     ],
