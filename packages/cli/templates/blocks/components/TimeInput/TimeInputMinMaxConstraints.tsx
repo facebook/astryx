@@ -22,3 +22,8 @@ export default function TimeInputMinMaxConstraints() {
     />
   );
 }
+
+export const showcase = {
+  aspectRatio: 4 / 3,
+  render: TimeInputMinMaxConstraints,
+};

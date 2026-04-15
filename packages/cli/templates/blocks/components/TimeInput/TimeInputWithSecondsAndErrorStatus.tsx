@@ -20,3 +20,8 @@ export default function TimeInputWithSecondsAndErrorStatus() {
     />
   );
 }
+
+export const showcase = {
+  aspectRatio: 4 / 3,
+  render: TimeInputWithSecondsAndErrorStatus,
+};
