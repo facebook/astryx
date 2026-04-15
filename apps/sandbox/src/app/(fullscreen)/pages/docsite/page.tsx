@@ -314,7 +314,7 @@ function DocsiteLandingTemplate() {
           display: 'flex',
           height: '100vh',
           overflow: 'hidden',
-          backgroundColor: 'var(--color-background-surface, #fff)',
+          backgroundColor: useTarget === 0 ? 'var(--color-background-body)' : 'var(--color-background-surface, #fff)',
         }}>
         <style>
           {'@keyframes slideInLeft { from { opacity: 0; transform: translateX(-40px); } to { opacity: 1; transform: translateX(0); } }' +
@@ -339,7 +339,7 @@ function DocsiteLandingTemplate() {
               flex: 1,
               backgroundColor: 'var(--color-background-card, #fff)',
               borderRadius: 16,
-              border: '1px solid var(--color-divider, #e0e0e0)',
+              border: useTarget === 0 ? 'none' : '1px solid var(--color-divider, #e0e0e0)',
               overflow: 'hidden',
               display: 'flex',
               flexDirection: 'column' as const,
@@ -430,7 +430,8 @@ function DocsiteLandingTemplate() {
             alignItems: 'center',
             justifyContent: 'center',
             zIndex: 10,
-            backgroundColor: 'var(--color-background-surface, #fff)',
+            backgroundColor: 'transparent',
+            marginRight: useTarget === 0 ? -16 : 0,
           }}>
           <div
             className="xds-editor-resize-handle"
@@ -445,7 +446,7 @@ function DocsiteLandingTemplate() {
           />
         </div>}
         <div
-          style={{flex: 1, display: 'flex', flexDirection: 'column' as const, minWidth: 0, overflow: 'hidden'}}>
+          style={{flex: 1, display: 'flex', flexDirection: 'column' as const, minWidth: 0, overflow: 'visible'}}>
           <TemplatePreview
             templateName={t.name}
             imageSrc={t.src}
@@ -463,6 +464,7 @@ function DocsiteLandingTemplate() {
             isFullPreview={fullPreview}
             onFullPreviewChange={setFullPreview}
             hideToolbar={fullPreview}
+            previewBackground={useTarget === 0 ? 'var(--color-background-body)' : undefined}
           />
         </div>
       </div>
@@ -677,17 +679,31 @@ function DocsiteLandingTemplate() {
 
                     {/* CTA buttons */}
                     <div style={{marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8, position: 'relative'}}>
-                      <div style={{display: 'flex', gap: 8}}>
+                      <XDSButton
+                        variant="primary"
+                        label="Start crafting"
+                        size="lg"
+                        style={{width: '100%'}}
+                        onClick={() => {
+                          setUseTarget(previewTarget);
+                          setPreviewTarget(null);
+                          setPanelTab('configure');
+                          setChatOpen(true);
+                        }}
+                      />
+                      <div style={{display: 'flex', gap: 8}} ref={card4AddPopoverRef}>
                         <XDSButton
-                          variant="primary"
-                          label="Start crafting"
+                          ref={card4AddButtonRef}
+                          variant="secondary"
+                          label="Use in your product"
                           size="lg"
                           style={{flex: 1}}
                           onClick={() => {
-                            setUseTarget(previewTarget);
-                            setPreviewTarget(null);
-                            setPanelTab('configure');
-                            setChatOpen(true);
+                            if (card4AddButtonRef.current) {
+                              const rect = card4AddButtonRef.current.getBoundingClientRect();
+                              setCard4AddPopoverPos({top: rect.bottom + 8, left: rect.left});
+                            }
+                            setCard4ShowAddPopover(prev => !prev);
                           }}
                         />
                         <XDSTooltip content="Bookmark">
@@ -700,22 +716,6 @@ function DocsiteLandingTemplate() {
                             onClick={() => setCard4Bookmarked(prev => !prev)}
                           />
                         </XDSTooltip>
-                      </div>
-                      <div ref={card4AddPopoverRef}>
-                        <XDSButton
-                          ref={card4AddButtonRef}
-                          variant="secondary"
-                          label="Use in your product"
-                          size="lg"
-                          style={{width: '100%'}}
-                          onClick={() => {
-                            if (card4AddButtonRef.current) {
-                              const rect = card4AddButtonRef.current.getBoundingClientRect();
-                              setCard4AddPopoverPos({top: rect.bottom + 8, left: rect.left});
-                            }
-                            setCard4ShowAddPopover(prev => !prev);
-                          }}
-                        />
                         {card4ShowAddPopover && card4AddPopoverPos && (
                           <SharePopover
                             cliCommand={`npx xds template ${t.name.toLowerCase().replace(/\s+/g, '-')} ./my-project`}
@@ -740,6 +740,7 @@ function DocsiteLandingTemplate() {
                           xstyle={popoverStyles.themeBrowse}
                           content={
                             <div style={{display: 'flex', flexDirection: 'column', gap: 16}}>
+                              <div tabIndex={0} style={{position: 'absolute', opacity: 0, width: 0, height: 0, overflow: 'hidden'}} />
                               <XDSTextInput
                                 label="Search"
                                 isLabelHidden
@@ -772,7 +773,7 @@ function DocsiteLandingTemplate() {
                                               key={entry.key}
                                               style={{
                                                 borderRadius: 12, overflow: 'hidden', cursor: 'pointer',
-                                                border: isSelected ? '2px solid var(--color-accent)' : '2px solid var(--color-border-emphasized)',
+                                                border: isSelected ? '1.5px solid var(--color-accent)' : '1px solid var(--color-border-emphasized)',
                                                 transition: 'border-color 0.15s ease',
                                               }}>
                                               <div
@@ -842,7 +843,7 @@ function DocsiteLandingTemplate() {
                                 style={{
                                   width: 44, height: 44, borderRadius: 10,
                                   display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                                  border: isSelected ? '2px solid var(--color-accent)' : '2px solid var(--color-border-emphasized)',
+                                  border: isSelected ? '1.5px solid var(--color-accent)' : '1px solid var(--color-border-emphasized)',
                                   backgroundColor: '#fff',
                                   transition: 'border-color 0.15s ease',
                                 }}>
@@ -855,16 +856,6 @@ function DocsiteLandingTemplate() {
                             </XDSTooltip>
                           );
                         })}
-                      </div>
-                    </div>
-
-                    {/* Component used */}
-                    <div style={{marginTop: 24}}>
-                      <XDSText type="body" style={{fontWeight: 600}}>Component used</XDSText>
-                      <div style={{display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 16}}>
-                        {['XDSAppShell', 'XDSTopNav', 'XDSVStack', 'XDSHStack', 'XDSHeading', 'XDSText', 'XDSButton', 'XDSCard', 'XDSBadge', 'XDSAvatar'].map(c => (
-                          <XDSToken key={c} label={c} xstyle={tokenStyles.outline} style={{backgroundColor: 'transparent'}} />
-                        ))}
                       </div>
                     </div>
 
@@ -891,11 +882,21 @@ function DocsiteLandingTemplate() {
                 </div>
 
                 {/* Explore more */}
-                <div style={{padding: '24px 24px 24px'}}>
+                <div style={{padding: '24px 24px 0'}}>
                   <XDSHeading level={3}>Explore more</XDSHeading>
                   <div style={{display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 16}}>
                     {['website', 'dashboard', 'admin panel', 'settings', 'form layout', 'data table', 'sidebar nav', 'landing page', 'e-commerce', 'documentation', 'profile page'].map(tag => (
                       <XDSToken key={tag} label={tag} xstyle={tokenStyles.pill} style={{backgroundColor: 'transparent'}} />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Component used */}
+                <div style={{padding: '24px 24px 24px'}}>
+                  <XDSHeading level={3}>Component used</XDSHeading>
+                  <div style={{display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 16}}>
+                    {['XDSAppShell', 'XDSTopNav', 'XDSVStack', 'XDSHStack', 'XDSHeading', 'XDSText', 'XDSButton', 'XDSCard', 'XDSBadge', 'XDSAvatar'].map(c => (
+                      <XDSToken key={c} label={c} xstyle={tokenStyles.outline} style={{backgroundColor: 'transparent'}} />
                     ))}
                   </div>
                 </div>

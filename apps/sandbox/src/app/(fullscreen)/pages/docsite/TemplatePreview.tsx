@@ -1,12 +1,13 @@
 'use client';
 
-import React, {useState, useEffect, useRef} from 'react';
+import React, {useState, useEffect, useRef, useCallback} from 'react';
 import {XDSButton} from '@xds/core/Button';
 import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
 import {
   XDSSegmentedControl,
   XDSSegmentedControlItem,
 } from '@xds/core/SegmentedControl';
+import {XDSSpinner} from '@xds/core/Spinner';
 import {XDSToolbar} from '@xds/core/Toolbar';
 import {XDSTooltip} from '@xds/core/Tooltip';
 
@@ -44,6 +45,7 @@ export function TemplatePreview({
   isPublishing = false,
   isFullPreview = false,
   onFullPreviewChange,
+  previewBackground,
 }: {
   templateName: string;
   imageSrc: string;
@@ -59,6 +61,7 @@ export function TemplatePreview({
   isPublishing?: boolean;
   isFullPreview?: boolean;
   onFullPreviewChange?: (full: boolean) => void;
+  previewBackground?: string;
 }) {
   const [internalViewportSize, setViewportSize] = useState('desktop');
   const viewportSize = externalViewportSize ?? internalViewportSize;
@@ -66,7 +69,13 @@ export function TemplatePreview({
   const [previewSize, setPreviewSize] = useState({w: 0, h: 0});
   const [showCanvas, setShowCanvas] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [isScrolled, setIsScrolled] = useState(false);
+
+  const handleSave = useCallback(() => {
+    setSaveState('saving');
+    setTimeout(() => setSaveState('saved'), 1200);
+  }, []);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showSharePopover, setShowSharePopover] = useState(false);
   const [sharePopoverPos, setSharePopoverPos] = useState(null as {top: number; left: number} | null);
@@ -133,19 +142,45 @@ export function TemplatePreview({
               justifyContent: 'center',
             }}>
             <div style={{
-              backgroundColor: 'var(--color-background-card, #fff)',
+              backgroundColor: isScrolled ? 'var(--color-background-card, #fff)' : (previewBackground ?? 'var(--color-background-card, #fff)'),
               borderRadius: 'var(--radius-container, 12px)',
               border: 'none',
               display: 'inline-flex',
               padding: '4px 0',
               boxShadow: isScrolled ? '0 2px 8px rgba(0,0,0,0.12)' : 'none',
+              transition: 'background-color 200ms ease, box-shadow 200ms ease 200ms',
               transition: 'box-shadow 300ms ease',
             }}>
             <XDSToolbar
               label="Template actions"
               padding={0}
               centerContent={
-                isPublishing ? undefined : (
+                isPublishing ? (
+                <>
+                  <XDSSegmentedControl
+                    value={viewportSize}
+                    onChange={setViewportSize}
+                    label="Viewport size"
+                    size="sm">
+                    <XDSTooltip content="Desktop">
+                      <XDSSegmentedControlItem
+                        value="desktop"
+                        label="Desktop"
+                        isLabelHidden
+                        icon={<DesktopIcon />}
+                      />
+                    </XDSTooltip>
+                    <XDSTooltip content="Phone">
+                      <XDSSegmentedControlItem
+                        value="phone"
+                        label="Phone"
+                        isLabelHidden
+                        icon={<PhoneIcon />}
+                      />
+                    </XDSTooltip>
+                  </XDSSegmentedControl>
+                </>
+                ) : (
                 <>
                   <XDSTooltip content="Point">
                     <XDSButton
@@ -202,24 +237,31 @@ export function TemplatePreview({
                       />
                     </XDSTooltip>
                   </XDSSegmentedControl>
-                  <XDSTooltip content="Share">
-                    <XDSButton
-                      label="Share"
-                      variant="ghost"
-                      icon={<ShareOutIcon />}
-                      isIconOnly
-                      onClick={() => {}}
-                    />
-                  </XDSTooltip>
-                  <XDSTooltip content="Save">
-                    <XDSButton
-                      label="Save"
-                      variant="ghost"
-                      icon={<SaveIcon />}
-                      isIconOnly
-                      onClick={() => {}}
-                    />
-                  </XDSTooltip>
+                  {saveState === 'saved' ? (
+                    <XDSTooltip content="Share">
+                      <XDSButton
+                        label="Share"
+                        variant="ghost"
+                        icon={<ShareOutIcon />}
+                        isIconOnly
+                        onClick={() => {}}
+                      />
+                    </XDSTooltip>
+                  ) : saveState === 'saving' ? (
+                    <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32}}>
+                      <XDSSpinner size="sm" />
+                    </div>
+                  ) : (
+                    <XDSTooltip content="Save">
+                      <XDSButton
+                        label="Save"
+                        variant="ghost"
+                        icon={<SaveIcon />}
+                        isIconOnly
+                        onClick={handleSave}
+                      />
+                    </XDSTooltip>
+                  )}
                   <XDSTooltip content="Preview">
                     <XDSButton
                       label="Preview"
@@ -283,7 +325,7 @@ export function TemplatePreview({
       <div
         style={{
           flex: 1,
-          overflow: 'hidden',
+          overflow: previewBackground ? 'visible' : 'hidden',
           padding: 0,
           display: 'flex',
           flexDirection: 'column' as const,
@@ -320,8 +362,8 @@ export function TemplatePreview({
               display: 'flex',
               justifyContent: 'center',
               alignItems: 'flex-start',
-              backgroundColor: 'var(--color-background-surface, #fff)',
-              padding: isFullPreview ? 0 : (viewportSize === 'phone' ? 24 : '64px 16px 16px 0'),
+              backgroundColor: previewBackground ?? 'var(--color-background-surface, #fff)',
+              padding: isFullPreview ? 0 : (viewportSize === 'phone' ? 24 : (previewBackground ? '64px 16px 16px 16px' : '64px 16px 16px 0')),
               cursor: isPointing ? 'crosshair' : undefined,
               transition: 'background-color 300ms ease, padding 300ms ease',
             }}
@@ -338,7 +380,8 @@ export function TemplatePreview({
             <div style={{
               width: viewportSize === 'phone' ? 375 : '100%',
               borderRadius: viewportSize === 'phone' ? 36 : (isFullPreview ? 0 : 'var(--radius-container, 12px)'),
-              border: isFullPreview ? 'none' : '1px solid var(--color-divider, #e0e0e0)',
+              border: previewBackground ? 'none' : (isFullPreview ? 'none' : '1px solid var(--color-divider, #e0e0e0)'),
+              boxShadow: previewBackground && !isFullPreview ? 'rgba(0, 0, 0, 0.08) 0px 1px 3px, rgba(0, 0, 0, 0.06) 0px 4px 12px' : 'none',
               overflow: 'hidden',
               flexShrink: 0,
               margin: isFullPreview ? 0 : 'auto 0',

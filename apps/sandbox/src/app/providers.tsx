@@ -7,7 +7,6 @@ import {neutralTheme} from '@xds/theme-neutral/built';
 import {brutalistTheme} from '@xds/theme-brutalist/built';
 import {metaTheme} from '@xds/theme-meta/built';
 import {whatsappTheme} from '@xds/theme-whatsapp/built';
-import {dailyTheme} from '@xds/theme-daily/built';
 import type {XDSDefinedTheme, ThemeMode} from '@xds/core/theme';
 
 const themes: Record<string, XDSDefinedTheme> = {
@@ -16,7 +15,6 @@ const themes: Record<string, XDSDefinedTheme> = {
   brutalist: brutalistTheme,
   meta: metaTheme,
   whatsapp: whatsappTheme,
-  daily: dailyTheme,
 };
 
 type ThemeContextValue = {
