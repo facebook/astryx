@@ -96,7 +96,8 @@ const fmt = (n: number) => `$${n.toFixed(2)}`;
 
 function ProductCard({product}: {product: Product}) {
   return (
-    <XDSVStack gap={3}>
+    <a href="#" onClick={e => e.preventDefault()} style={{textDecoration: 'none', color: 'inherit', cursor: 'pointer'}}>
+      <XDSVStack gap={3}>
       <XDSAspectRatio
         ratio={1}
         style={{
@@ -134,6 +135,7 @@ function ProductCard({product}: {product: Product}) {
         </XDSText>
       </XDSVStack>
     </XDSVStack>
+    </a>
   );
 }
 
