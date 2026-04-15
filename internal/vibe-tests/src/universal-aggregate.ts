@@ -16,7 +16,7 @@ import type {
   UniversalScore,
   UniversalAggregate,
 } from './types.js';
-import {getResultsDir, writeJson} from './utils.js';
+import {getResultsDir, writeJson, ensureTsxFiles} from './utils.js';
 import {evaluate, getDimensionNames} from './universal-eval.js';
 
 const DIMENSION_LABELS: Partial<Record<UniversalDimension, string>> = {
@@ -78,7 +78,8 @@ async function main() {
     ]),
   );
 
-  // Load .tsx files
+  // Load .tsx files (extract from JSON results if needed)
+  ensureTsxFiles(codeDir);
   const files = fs.readdirSync(codeDir).filter(f => f.endsWith('.tsx'));
 
   if (files.length === 0) {

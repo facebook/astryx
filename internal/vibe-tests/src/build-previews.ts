@@ -14,7 +14,13 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as crypto from 'node:crypto';
 import {execSync} from 'node:child_process';
-import {getResultsDir, ensureDir, readJson, writeJson} from './utils.js';
+import {
+  getResultsDir,
+  ensureDir,
+  readJson,
+  writeJson,
+  ensureTsxFiles,
+} from './utils.js';
 
 const __dirname = path.dirname(new URL(import.meta.url).pathname);
 const VIBE_DIR = path.resolve(__dirname, '..');
@@ -36,7 +42,6 @@ const LIGHTNINGCSS_TARGETS_JS = `{
   safari: (17 << 16) | (5 << 8),
 }`;
 
-
 /**
  * Fix missing XDS component imports in AI-generated .tsx files.
  * Scans for XDS* identifiers used in JSX that aren't imported,
@@ -56,7 +61,10 @@ function fixMissingXDSImports(filePath: string): string[] {
     /import\s*\{([^}]+)\}\s*from\s*['"]@xds\/core[^'"]*['"]/g;
   while ((match = importPattern.exec(code)) !== null) {
     for (const specifier of match[1].split(',')) {
-      const name = specifier.trim().split(/\s+as\s+/)[0].trim();
+      const name = specifier
+        .trim()
+        .split(/\s+as\s+/)[0]
+        .trim();
       if (name.startsWith('XDS')) importedComponents.add(name);
     }
   }
@@ -367,10 +375,10 @@ import {viteSingleFile} from 'vite-plugin-singlefile';`;
         .resolve(REPO_ROOT, 'packages/core/src')
         .replace(/\\/g, '/')}',
       '@xds/theme/default': '${path
-        .resolve(REPO_ROOT, 'packages/themes/default/src')
+        .resolve(REPO_ROOT, 'packages/themes/default/src/source.ts')
         .replace(/\\/g, '/')}',
       '@xds/theme/neutral': '${path
-        .resolve(REPO_ROOT, 'packages/themes/neutral/src')
+        .resolve(REPO_ROOT, 'packages/themes/neutral/src/source.ts')
         .replace(/\\/g, '/')}',
     },`;
 
@@ -378,7 +386,7 @@ import {viteSingleFile} from 'vite-plugin-singlefile';`;
     target === 'xds' || target === 'xds-tailwind'
       ? xdsAliases
       : target === 'baseline'
-      ? `
+        ? `
     alias: {
       '@/components/ui': '${path
         .resolve(VIBE_DIR, '.baseline-shims/components/ui')
@@ -387,7 +395,7 @@ import {viteSingleFile} from 'vite-plugin-singlefile';`;
         .resolve(VIBE_DIR, '.baseline-shims/lib/utils')
         .replace(/\\/g, '/')}',
     },`
-      : '';
+        : '';
 
   // XDS+Tailwind needs PostCSS with Tailwind for utility class resolution
   const cssConfig =
@@ -674,6 +682,9 @@ async function main() {
     const codeDir = path.join(iterDir, 'results');
 
     if (!fs.existsSync(codeDir)) continue;
+
+    // Extract .tsx from JSON results if no .tsx files exist yet
+    ensureTsxFiles(codeDir);
 
     const files = fs.readdirSync(codeDir).filter(f => f.endsWith('.tsx'));
 
