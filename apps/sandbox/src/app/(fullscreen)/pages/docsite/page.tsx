@@ -314,7 +314,7 @@ function DocsiteLandingTemplate() {
           display: 'flex',
           height: '100vh',
           overflow: 'hidden',
-          backgroundColor: useTarget === 0 ? 'var(--color-background-body)' : 'var(--color-background-surface, #fff)',
+          backgroundColor: useTarget !== 3 ? 'var(--color-background-body)' : 'var(--color-background-surface, #fff)',
         }}>
         <style>
           {'@keyframes slideInLeft { from { opacity: 0; transform: translateX(-40px); } to { opacity: 1; transform: translateX(0); } }' +
@@ -339,7 +339,7 @@ function DocsiteLandingTemplate() {
               flex: 1,
               backgroundColor: 'var(--color-background-card, #fff)',
               borderRadius: 16,
-              border: useTarget === 0 ? 'none' : '1px solid var(--color-divider, #e0e0e0)',
+              border: useTarget !== 3 ? 'none' : '1px solid var(--color-divider, #e0e0e0)',
               overflow: 'hidden',
               display: 'flex',
               flexDirection: 'column' as const,
@@ -431,7 +431,7 @@ function DocsiteLandingTemplate() {
             justifyContent: 'center',
             zIndex: 10,
             backgroundColor: 'transparent',
-            marginRight: useTarget === 0 ? -16 : 0,
+            marginRight: useTarget !== 3 ? -16 : 0,
           }}>
           <div
             className="xds-editor-resize-handle"
@@ -464,7 +464,7 @@ function DocsiteLandingTemplate() {
             isFullPreview={fullPreview}
             onFullPreviewChange={setFullPreview}
             hideToolbar={fullPreview}
-            previewBackground={useTarget === 0 ? 'var(--color-background-body)' : undefined}
+            previewBackground={useTarget !== 3 ? 'var(--color-background-body)' : undefined}
           />
         </div>
       </div>
