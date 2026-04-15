@@ -12,17 +12,10 @@
  * - /apps/storybook/stories/AlertDialog.stories.tsx
  */
 
-import {useState, useCallback, useMemo} from 'react';
+import {useState, useCallback, useMemo, type ReactNode} from 'react';
 import {XDSAlertDialog, type XDSAlertDialogProps} from './XDSAlertDialog';
-import type {ReactNode} from 'react';
 
-type AlertDialogOptions = Omit<
-  XDSAlertDialogProps,
-  'isOpen' | 'onOpenChange' | 'onAction'
-> & {
-  /** Callback fired when the action button is clicked. Call hide() when done. */
-  onAction: () => unknown;
-};
+type AlertDialogOptions = Omit<XDSAlertDialogProps, 'isOpen' | 'onOpenChange'>;
 
 export interface XDSImperativeAlertDialogReturn {
   /** Show the alert dialog. */
@@ -74,15 +67,13 @@ export function useXDSImperativeAlertDialog(): XDSImperativeAlertDialogReturn {
 
   const element = useMemo(() => {
     if (!options) return null;
-    const {onAction, ...rest} = options;
     return (
       <XDSAlertDialog
-        {...rest}
+        {...options}
         isOpen={isOpen}
         onOpenChange={open => {
           if (!open) setIsOpen(false);
         }}
-        onAction={onAction}
       />
     );
   }, [isOpen, options]);

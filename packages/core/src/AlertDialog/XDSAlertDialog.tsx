@@ -13,7 +13,7 @@
  * - /apps/storybook/stories/AlertDialog.stories.tsx (storybook stories)
  */
 
-import {useId, useCallback, type ReactNode} from 'react';
+import {useId, useCallback} from 'react';
 import {XDSDialog} from '../Dialog';
 import {XDSLayout} from '../Layout/XDSLayout';
 import {XDSLayoutContent} from '../Layout/XDSLayoutContent';
