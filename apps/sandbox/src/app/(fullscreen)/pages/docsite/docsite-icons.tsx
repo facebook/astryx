@@ -31,13 +31,15 @@ export {
   MagnifyingGlassIcon as SearchIcon,
   UserIcon as ProfileIcon,
   AdjustmentsHorizontalIcon as FilterIcon,
+  BarsArrowDownIcon as SortIcon,
   Squares2X2Icon as GridIcon,
+  XMarkIcon,
   SparklesIcon,
   StopIcon,
   StarIcon,
 } from '@heroicons/react/24/outline';
 
-export {BookmarkIcon as BookmarkFilledIcon, HeartIcon as HeartFilledIcon, StarIcon as StarFilledIcon} from '@heroicons/react/24/solid';
+export {BookmarkIcon as BookmarkFilledIcon, HeartIcon as HeartFilledIcon, StarIcon as StarFilledIcon, CheckBadgeIcon as VerifiedIcon} from '@heroicons/react/24/solid';
 
 // Brand logos for theme picker
 

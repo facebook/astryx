@@ -4,25 +4,48 @@ import React, {useState, useEffect} from 'react';
 import {XDSTabList, XDSTab} from '@xds/core/TabList';
 import {XDSText} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
+import {XDSToken} from '@xds/core/Token';
 import {XDSList, XDSListItem} from '@xds/core/List';
+import {XDSTextInput} from '@xds/core/TextInput';
+import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
 import {XDSCommandPalette} from '@xds/core/CommandPalette';
-import {SearchIcon, ProfileIcon, FilterIcon} from './docsite-icons';
-import {SEARCH_COMMANDS} from './constants';
+import {SearchIcon, ProfileIcon, FilterIcon, SortIcon} from './docsite-icons';
+import {SEARCH_COMMANDS, FILTER_COLUMNS} from './constants';
 import LogoNav from './LogoNav';
 
 export function AppTopNav({
   activeView,
   setActiveView,
   scrollContainerRef,
+  templateFilter,
+  onTemplateFilterChange,
+  templateAuthors,
+  activeFilters,
+  onToggleFilter,
+  onClearFilters,
+  sortOption,
+  onSortChange,
+  craftTitle,
 }: {
   activeView: 'craft' | 'explore' | 'docs' | 'profile';
   setActiveView: (view: 'craft' | 'explore' | 'docs' | 'profile') => void;
   scrollContainerRef?: React.RefObject<HTMLDivElement | null>;
+  templateFilter?: 'all' | 'official' | string;
+  onTemplateFilterChange?: (filter: 'all' | 'official' | string) => void;
+  templateAuthors?: string[];
+  activeFilters?: Set<string>;
+  onToggleFilter?: (filter: string) => void;
+  onClearFilters?: () => void;
+  sortOption?: string;
+  onSortChange?: (option: string) => void;
+  craftTitle?: string | null;
 }) {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [authorSearch, setAuthorSearch] = useState('');
+  const hasActiveFilters = activeFilters && activeFilters.size > 0;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -92,14 +115,24 @@ export function AppTopNav({
             justifyContent: 'flex-end',
           }}>
           {isScrolled && (
-            <XDSButton
-              label="Filter"
-              variant="ghost"
-              size="sm"
-              isIconOnly
-              icon={<FilterIcon />}
-              onClick={() => setIsFilterOpen(!isFilterOpen)}
-            />
+            <>
+              <XDSButton
+                label="Filter"
+                variant="ghost"
+                size="sm"
+                isIconOnly
+                icon={<FilterIcon />}
+                onClick={() => setIsFilterOpen(!isFilterOpen)}
+              />
+              <XDSDropdownMenu
+                button={{label: sortOption === 'trending' ? 'Most popular' : sortOption === 'newest' ? 'Newest first' : 'Oldest first', variant: 'ghost', size: 'sm'}}
+                items={[
+                  {label: 'Most popular', onClick: () => onSortChange?.('trending')},
+                  {label: 'Newest first', onClick: () => onSortChange?.('newest')},
+                  {label: 'Oldest first', onClick: () => onSortChange?.('oldest')},
+                ]}
+              />
+            </>
           )}
           <XDSButton
             label="Search"
@@ -120,7 +153,8 @@ export function AppTopNav({
         </div>
       </nav>
 
-      {/* Hero section — collapses when scrolled */}
+      {/* Hero section — collapses when scrolled or on results page */}
+      {!craftTitle && (
       <div
         style={{
           display: 'flex',
@@ -138,8 +172,10 @@ export function AppTopNav({
           <XDSText type="display-1">Craft what you imagine.</XDSText>
         </div>
       </div>
+      )}
 
-      {/* Tabs row — collapses when scrolled (tabs move to nav bar) */}
+      {/* Tabs row — collapses when scrolled or on results page */}
+      {!craftTitle && (
       <div
         style={{
           display: 'grid',
@@ -164,7 +200,7 @@ export function AppTopNav({
           <XDSTab value="theme" label="Theme" />
           <XDSTab value="components" label="Components" />
         </XDSTabList>
-        <div style={{justifySelf: 'end'}}>
+        <div style={{justifySelf: 'end', display: 'flex', gap: 4}}>
           <XDSButton
             label="Filter"
             variant="ghost"
@@ -173,8 +209,17 @@ export function AppTopNav({
             icon={<FilterIcon />}
             onClick={() => setIsFilterOpen(!isFilterOpen)}
           />
+          <XDSDropdownMenu
+            button={{label: sortOption === 'trending' ? 'Most popular' : sortOption === 'newest' ? 'Newest first' : 'Oldest first', variant: 'ghost', size: 'sm'}}
+            items={[
+              {label: 'Most popular', onClick: () => onSortChange?.('trending')},
+              {label: 'Newest first', onClick: () => onSortChange?.('newest')},
+              {label: 'Oldest first', onClick: () => onSortChange?.('oldest')},
+            ]}
+          />
         </div>
       </div>
+      )}
 
       <div
         style={{
@@ -194,48 +239,56 @@ export function AppTopNav({
           transition:
             'max-height var(--duration-medium, 410ms) var(--ease-standard, cubic-bezier(0.24, 1, 0.4, 1)), opacity var(--duration-fast, 175ms) var(--ease-standard, cubic-bezier(0.24, 1, 0.4, 1)), padding var(--duration-medium, 410ms) var(--ease-standard, cubic-bezier(0.24, 1, 0.4, 1)), gap var(--duration-medium, 410ms) var(--ease-standard, cubic-bezier(0.24, 1, 0.4, 1))',
         }}>
-        {[
-          {
-            heading: 'Categories',
-            items: [
-              'AI',
-              'Health & Fitness',
-              'Productivity',
-              'Shopping',
-              'Education',
-            ],
-          },
-          {
-            heading: 'Screens',
-            items: [
-              'My Account & Profile',
-              'Charts',
-              'Login',
-              'Filter & Sort',
-              'Signup',
-            ],
-          },
-          {
-            heading: 'UI Elements',
-            items: [
-              'Dropdown Menu',
-              'Side Navigation',
-              'Stepper',
-              'Text Field',
-              'Navigation Menu',
-            ],
-          },
-          {
-            heading: 'Flows',
-            items: [
-              'Reporting',
-              'Resetting Password',
-              'Onboarding',
-              'Setting Up',
-              'Filtering & Sorting',
-            ],
-          },
-        ].map(col => (
+        {/* Source filter */}
+        <div>
+          <XDSText
+            type="supporting"
+            color="secondary"
+            style={{
+              marginBottom: 12,
+              display: 'block',
+            }}>
+            Source
+          </XDSText>
+          <div style={{marginLeft: -8, marginRight: -8}}>
+            <XDSList density="compact">
+              <XDSListItem
+                label="All"
+                isSelected={templateFilter === 'all'}
+                onClick={() => {
+                  onTemplateFilterChange?.('all');
+                  setAuthorSearch('');
+                }}
+              />
+              <XDSListItem
+                label="XDS Official"
+                isSelected={templateFilter === 'official'}
+                onClick={() => {
+                  onTemplateFilterChange?.('official');
+                  setAuthorSearch('');
+                }}
+              />
+            </XDSList>
+          </div>
+          <div style={{marginTop: 12}}>
+            <XDSTextInput
+              label="Author"
+              isLabelHidden
+              placeholder="Search by author..."
+              value={authorSearch}
+              onChange={v => {
+                setAuthorSearch(v);
+                if (v.trim()) {
+                  onTemplateFilterChange?.(v.trim());
+                } else {
+                  onTemplateFilterChange?.('all');
+                }
+              }}
+              size="sm"
+            />
+          </div>
+        </div>
+        {FILTER_COLUMNS.map(col => (
           <div key={col.heading}>
             <XDSText
               type="supporting"
@@ -249,13 +302,46 @@ export function AppTopNav({
             <div style={{marginLeft: -8, marginRight: -8}}>
               <XDSList density="compact">
                 {col.items.map(item => (
-                  <XDSListItem key={item} label={item} onClick={() => {}} />
+                  <XDSListItem
+                    key={item}
+                    label={item}
+                    isSelected={activeFilters?.has(item)}
+                    onClick={() => onToggleFilter?.(item)}
+                  />
                 ))}
               </XDSList>
             </div>
           </div>
         ))}
       </div>
+
+      {/* Active filter chips — shown only when filters are active */}
+      {hasActiveFilters && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '8px 24px',
+            flexWrap: 'wrap',
+          }}>
+          {Array.from(activeFilters).map(filter => (
+            <XDSToken
+              key={filter}
+              label={filter}
+              onRemove={() => onToggleFilter?.(filter)}
+            />
+          ))}
+          <button
+            onClick={onClearFilters}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              padding: '4px 8px', font: 'inherit',
+            }}>
+            <XDSText type="supporting" color="secondary">Clear all</XDSText>
+          </button>
+        </div>
+      )}
 
       <XDSCommandPalette
         isOpen={isSearchOpen}

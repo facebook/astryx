@@ -74,6 +74,7 @@ export const SIM_COUNT = 350;
 export const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
 export const DUMMY_IMAGE = `${basePath}/templates/dummy-placeholder.png`;
 export const AVATAR_IMAGE = `${basePath}/templates/avatar-profile.jpg`;
+export const XDS_DESIGN_AVATAR = `${basePath}/templates/xds-design-avatar.png`;
 export const FIRST_CARD_IMAGE = `${basePath}/templates/first-card.png`;
 export const SHOPPING_DETAILS_IMAGE = `${basePath}/templates/shopping-details.png`;
 export const SCREENSHOT_3_IMAGE = `${basePath}/templates/screenshot-3.png`;
@@ -180,22 +181,43 @@ export const TEMPLATES: {
   name: string;
   src: string;
   size: 'xlarge' | 'large' | 'medium' | 'small';
+  author: string;
+  isOfficial: boolean;
 }[] = [
-  {name: 'Contact Form', src: FIRST_CARD_IMAGE, size: 'large'},
-  {name: 'Shopping Details', src: SHOPPING_DETAILS_IMAGE, size: 'small'},
-  {name: 'Button Component', src: SCREENSHOT_3_IMAGE, size: 'small'},
-  {name: 'Settings Page', src: `${basePath}/templates/card4-preview.png`, size: 'small'},
-  {name: 'Login Form', src: DUMMY_IMAGE, size: 'xlarge'},
-  {name: 'Dashboard', src: DUMMY_IMAGE, size: 'large'},
-  {name: 'Data Table', src: DUMMY_IMAGE, size: 'small'},
-  {name: 'File Explorer', src: DUMMY_IMAGE, size: 'small'},
-  {name: 'Contact Form', src: DUMMY_IMAGE, size: 'small'},
-  {name: 'Editor', src: DUMMY_IMAGE, size: 'xlarge'},
-  {name: 'Analytics', src: DUMMY_IMAGE, size: 'large'},
-  {name: 'User Profile', src: DUMMY_IMAGE, size: 'small'},
-  {name: 'Notifications', src: DUMMY_IMAGE, size: 'small'},
-  {name: 'Calendar', src: DUMMY_IMAGE, size: 'small'},
-  {name: 'Onboarding', src: DUMMY_IMAGE, size: 'xlarge'},
+  {name: 'Contact Form', src: FIRST_CARD_IMAGE, size: 'large', author: 'Andrea Anderson', isOfficial: true},
+  {name: 'Shopping Details', src: SHOPPING_DETAILS_IMAGE, size: 'small', author: 'Andrea Anderson', isOfficial: true},
+  {name: 'Button Component', src: SCREENSHOT_3_IMAGE, size: 'small', author: 'XDS Design', isOfficial: true},
+  {name: 'Settings Page', src: `${basePath}/templates/card4-preview.png`, size: 'small', author: 'XDS Design', isOfficial: true},
+  {name: 'Login Form', src: DUMMY_IMAGE, size: 'xlarge', author: 'Marcus Chen', isOfficial: false},
+  {name: 'Dashboard', src: DUMMY_IMAGE, size: 'large', author: 'Marcus Chen', isOfficial: false},
+  {name: 'Data Table', src: DUMMY_IMAGE, size: 'small', author: 'XDS Design', isOfficial: true},
+  {name: 'File Explorer', src: DUMMY_IMAGE, size: 'small', author: 'Sarah Kim', isOfficial: false},
+  {name: 'Contact Form', src: DUMMY_IMAGE, size: 'small', author: 'Sarah Kim', isOfficial: false},
+  {name: 'Editor', src: DUMMY_IMAGE, size: 'xlarge', author: 'Andrea Anderson', isOfficial: true},
+  {name: 'Analytics', src: DUMMY_IMAGE, size: 'large', author: 'Marcus Chen', isOfficial: false},
+  {name: 'User Profile', src: DUMMY_IMAGE, size: 'small', author: 'Sarah Kim', isOfficial: false},
+  {name: 'Notifications', src: DUMMY_IMAGE, size: 'small', author: 'XDS Design', isOfficial: true},
+  {name: 'Calendar', src: DUMMY_IMAGE, size: 'small', author: 'Andrea Anderson', isOfficial: false},
+  {name: 'Onboarding', src: DUMMY_IMAGE, size: 'xlarge', author: 'XDS Design', isOfficial: true},
+];
+
+// ---------------------------------------------------------------------------
+// Filter panel columns
+// ---------------------------------------------------------------------------
+
+export const FILTER_COLUMNS: {heading: string; items: string[]}[] = [
+  {
+    heading: 'Categories',
+    items: ['AI', 'Health & Fitness', 'Productivity', 'Shopping', 'Education'],
+  },
+  {
+    heading: 'Templates',
+    items: ['My Account & Profile', 'Charts', 'Login', 'Filter & Sort', 'Signup'],
+  },
+  {
+    heading: 'Components',
+    items: ['Dropdown Menu', 'Side Navigation', 'Stepper', 'Text Field', 'Navigation Menu'],
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -203,12 +225,14 @@ export const TEMPLATES: {
 // ---------------------------------------------------------------------------
 
 export const PROFILE_USED_ITEMS = [
-  {name: 'Dashboard Pro', lastUsed: 'Last used 2 days ago'},
-  {name: 'Login Form', lastUsed: 'Last used 2 days ago'},
-  {name: 'Settings Panel', lastUsed: 'Last used 2 days ago'},
-  {name: 'E-commerce Kit', lastUsed: 'Last used 2 days ago'},
-  {name: 'Data Table', lastUsed: 'Last used 2 days ago'},
-  {name: 'Contact Form', lastUsed: 'Last used 2 days ago'},
+  {name: 'AppShell', description: 'AppShell provides a foundational page layout with header, sidebar, and content regions.'},
+  {name: 'Avatar', description: 'Avatars represent a person or entity with an image, initials, or icon.'},
+  {name: 'Badge', description: 'Badges display small counts or status labels. They can be attached to icons, buttons, or list items.'},
+  {name: 'Banner', description: 'Banners show important, non-modal messages at the top of a page or section.'},
+  {name: 'Button', description: 'Buttons let people take action. They can be used in forms, dialogs, and toolbars.'},
+  {name: 'Calendar', description: 'Calendar provides a date-picking grid for selecting single dates or date ranges.'},
+  {name: 'Dialog', description: 'Dialogs are modal overlays that require user attention or action before continuing.'},
+  {name: 'DropdownMenu', description: 'DropdownMenu presents a list of actions or options in a floating overlay.'},
 ];
 
 export const PROFILE_LIKED_ITEMS = [

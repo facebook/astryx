@@ -6,7 +6,7 @@ import {useSearchParams, useRouter} from 'next/navigation';
 
 import {createSimulation} from './BoidsCanvas';
 import type {BoidsSimulation} from './BoidsCanvas';
-import {TEMPLATES, XDS_THEMES, AVATAR_IMAGE, THEME_PICKER_ENTRIES, basePath} from './constants';
+import {TEMPLATES, XDS_THEMES, AVATAR_IMAGE, XDS_DESIGN_AVATAR, THEME_PICKER_ENTRIES, FILTER_COLUMNS, basePath} from './constants';
 import {TemplateCard} from './TemplateCard';
 import {AIComposer} from './AIComposer';
 import {ChatPanel} from './ChatPanel';
@@ -27,6 +27,9 @@ import {
   XDSSegmentedControl,
   XDSSegmentedControlItem,
 } from '@xds/core/SegmentedControl';
+import {XDSIcon} from '@xds/core/Icon';
+import {XDSLink} from '@xds/core/Link';
+import {XDSList, XDSListItem} from '@xds/core/List';
 import {XDSPopover} from '@xds/core/Popover';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSToolbar} from '@xds/core/Toolbar';
@@ -38,6 +41,7 @@ import {
   CursorIcon,
   PaletteIcon,
   ContrastIcon,
+  MoonIcon,
   SaveIcon,
   ShareIcon,
   BookmarkIcon,
@@ -54,6 +58,9 @@ import {
   ForestThemeIcon,
   SunsetThemeIcon,
   MidnightThemeIcon,
+  FilterIcon,
+  SortIcon,
+  VerifiedIcon,
 } from './docsite-icons';
 
 const BRAND_LOGOS: Record<string, React.ComponentType<React.SVGProps<SVGSVGElement>>> = {
@@ -85,7 +92,82 @@ const popoverStyles = stylex.create({
   themeBrowse: {
     padding: 16,
   },
+  filterDropdown: {
+    padding: 8,
+  },
 });
+
+function SearchableFilterDropdown({
+  label,
+  items,
+  selectedFilters,
+  onToggle,
+  verifiedItems,
+}: {
+  label: string;
+  items: string[];
+  selectedFilters: Set<string>;
+  onToggle: (item: string) => void;
+  verifiedItems?: Set<string>;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const filtered = items.filter(item =>
+    item.toLowerCase().includes(search.toLowerCase()),
+  );
+  return (
+    <XDSPopover
+      label={label}
+      placement="below"
+      alignment="start"
+      width={280}
+      isOpen={isOpen}
+      onOpenChange={open => { setIsOpen(open); if (!open) setSearch(''); }}
+      xstyle={popoverStyles.filterDropdown}
+      content={
+        <div style={{display: 'flex', flexDirection: 'column', gap: 4}}>
+          <div tabIndex={0} style={{position: 'absolute', opacity: 0, width: 0, height: 0, overflow: 'hidden'}} />
+          <XDSTextInput
+            label="Search"
+            isLabelHidden
+            placeholder={`Search ${label.toLowerCase()}...`}
+            value={search}
+            onChange={setSearch}
+            size="lg"
+            startIcon={SearchIcon}
+          />
+          <div style={{maxHeight: 280, overflowY: 'auto', margin: '0 -8px'}}>
+            {filtered.length === 0 ? (
+              <div style={{padding: '12px 16px'}}>
+                <XDSText type="body" color="secondary">No results</XDSText>
+              </div>
+            ) : (
+              <XDSList density="spacious">
+                {filtered.map(item => (
+                  <XDSListItem
+                    key={item}
+                    label={item}
+                    isSelected={selectedFilters.has(item)}
+                    onClick={() => { onToggle(item); }}
+                    endContent={verifiedItems?.has(item) ? (
+                      <XDSIcon icon={VerifiedIcon} size="sm" color="accent" />
+                    ) : undefined}
+                  />
+                ))}
+              </XDSList>
+            )}
+          </div>
+        </div>
+      }>
+      <XDSButton
+        label={label}
+        variant="ghost"
+        size="sm"
+        endContent={<XDSIcon icon="chevronDown" size="sm" color="inherit" />}
+      />
+    </XDSPopover>
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Page
@@ -102,19 +184,77 @@ export default function DocsiteLandingPage() {
 function DocsiteLandingTemplate() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const [previewMode, setPreviewMode] = useState<'light' | 'dark'>('light');
+  const [previewTheme, setPreviewTheme] = useState('default');
+
+  const previewImageFilter = useMemo(() => {
+    const filters: string[] = [];
+    if (previewMode === 'dark') {
+      filters.push('invert(0.88)', 'hue-rotate(180deg)');
+    }
+    const themeFilters: Record<string, string> = {
+      neutral: 'saturate(0.3)',
+      brutalist: 'contrast(1.2) saturate(0.5)',
+      meta: 'sepia(0.15) saturate(1.4) hue-rotate(200deg)',
+      whatsapp: 'sepia(0.2) saturate(1.3) hue-rotate(100deg)',
+    };
+    if (themeFilters[previewTheme]) {
+      filters.push(themeFilters[previewTheme]);
+    }
+    return filters.length > 0 ? filters.join(' ') : undefined;
+  }, [previewMode, previewTheme]);
 
   // Read initial state from URL params
   const initialView = useMemo(() => {
     const v = searchParams.get('view');
     const t = searchParams.get('template');
+    const q = searchParams.get('q');
     const templateIdx = t !== null ? parseInt(t, 10) : null;
-    return {view: v, templateIdx: isNaN(templateIdx as number) ? null : templateIdx};
+    return {view: v, templateIdx: isNaN(templateIdx as number) ? null : templateIdx, query: q};
   }, [searchParams]);
 
   const [activeView, setActiveView] = useState(
     'craft' as 'craft' | 'explore' | 'docs' | 'profile',
   );
+  const [craftTitle, setCraftTitle] = useState<string | null>(initialView.query);
+  const [craftLoading, setCraftLoading] = useState(false);
+  const [craftExiting, setCraftExiting] = useState(false);
+  const [resultFilters, setResultFilters] = useState<Set<string>>(() => new Set());
+  const handleToggleResultFilter = useCallback((filter: string) => {
+    setResultFilters(prev => {
+      const next = new Set(prev);
+      if (next.has(filter)) next.delete(filter);
+      else next.add(filter);
+      return next;
+    });
+  }, []);
+  const craftLoadingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleBackFromResults = useCallback(() => {
+    setCraftExiting(true);
+    setCraftLoading(true);
+    setResultFilters(new Set());
+    if (craftLoadingTimer.current) clearTimeout(craftLoadingTimer.current);
+    craftLoadingTimer.current = setTimeout(() => {
+      setCraftTitle(null);
+      setCraftLoading(false);
+      setCraftExiting(false);
+      craftLoadingTimer.current = null;
+    }, 600);
+  }, []);
+  const handleTokenClick = useCallback((label: string) => {
+    setPreviewTarget(null);
+    setCraftTitle(label);
+    setCraftLoading(true);
+    if (craftLoadingTimer.current) clearTimeout(craftLoadingTimer.current);
+    craftLoadingTimer.current = setTimeout(() => {
+      setCraftLoading(false);
+      craftLoadingTimer.current = null;
+    }, 900);
+  }, []);
   const [selected, setSelected] = useState(new Set());
+  const [templateFilter, setTemplateFilter] = useState<'all' | 'official' | string>('all');
+  const [activeFilters, setActiveFilters] = useState<Set<string>>(() => new Set());
+  const [sortOption, setSortOption] = useState('newest');
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
   const [generatingSource, setGeneratingSource] = useState(null as number | null);
@@ -126,6 +266,7 @@ function DocsiteLandingTemplate() {
     initialView.view === 'editor' ? initialView.templateIdx : null,
   );
   const [previewGenerating, setPreviewGenerating] = useState(false);
+  const [previewTransitioning, setPreviewTransitioning] = useState(false);
   const [showPublishCard1, setShowPublishCard1] = useState(false);
   const [panelTab, setPanelTab] = useState<PanelTab>('configure');
   const [isPointing, setIsPointing] = useState(false);
@@ -203,15 +344,22 @@ function DocsiteLandingTemplate() {
       path += '?view=preview&template=' + previewTarget;
     } else if (useTarget !== null) {
       path += '?view=editor&template=' + useTarget;
+    } else if (craftTitle) {
+      path += '?q=' + encodeURIComponent(craftTitle);
     }
     router.replace(path, {scroll: false});
-  }, [previewTarget, useTarget, router]);
+  }, [previewTarget, useTarget, craftTitle, router]);
 
-  // Reset preview/editor state when switching views
+  // Reset preview/editor state when switching views (skip initial mount)
+  const prevViewRef = useRef(activeView);
   useEffect(() => {
+    if (prevViewRef.current === activeView) return;
+    prevViewRef.current = activeView;
     setPreviewTarget(null);
     setUseTarget(null);
     setChatOpen(false);
+    setCraftTitle(null);
+    setResultFilters(new Set());
   }, [activeView]);
   const timerRef = useRef(null as ReturnType<typeof setTimeout> | null);
   const previewTimerRef = useRef(null as ReturnType<typeof setTimeout> | null);
@@ -300,10 +448,41 @@ function DocsiteLandingTemplate() {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
       if (previewTimerRef.current) clearTimeout(previewTimerRef.current);
+      if (craftLoadingTimer.current) clearTimeout(craftLoadingTimer.current);
     };
   }, []);
 
   const isGenerating = generatingSource !== null;
+
+  const templateAuthors = useMemo(() => {
+    const authors = Array.from(new Set(TEMPLATES.map(t => t.author)));
+    return authors.sort((a, b) => {
+      if (a === 'XDS Design') return -1;
+      if (b === 'XDS Design') return 1;
+      return a.localeCompare(b);
+    });
+  }, []);
+
+  const handleToggleFilter = useCallback((filter: string) => {
+    setActiveFilters(prev => {
+      const next = new Set(prev);
+      if (next.has(filter)) next.delete(filter);
+      else next.add(filter);
+      return next;
+    });
+  }, []);
+
+  const handleClearFilters = useCallback(() => {
+    setActiveFilters(new Set());
+  }, []);
+
+  const filteredTemplates = useMemo(() => {
+    return TEMPLATES.map((t, i) => ({...t, originalIndex: i})).filter(t => {
+      if (templateFilter === 'all') return true;
+      if (templateFilter === 'official') return t.isOfficial;
+      return t.author.toLowerCase().includes(templateFilter.toLowerCase());
+    });
+  }, [templateFilter]);
 
   // Editor flow — same layout for all cards
   if (useTarget !== null && activeView === 'craft') {
@@ -495,6 +674,15 @@ function DocsiteLandingTemplate() {
         activeView={activeView}
         setActiveView={setActiveView}
         scrollContainerRef={scrollContainerRef}
+        templateFilter={templateFilter}
+        onTemplateFilterChange={setTemplateFilter}
+        templateAuthors={templateAuthors}
+        activeFilters={activeFilters}
+        onToggleFilter={handleToggleFilter}
+        onClearFilters={handleClearFilters}
+        sortOption={sortOption}
+        onSortChange={setSortOption}
+        craftTitle={craftTitle}
       />
       <div
         style={{
@@ -540,6 +728,162 @@ function DocsiteLandingTemplate() {
                 overflow: 'auto',
                 padding: '16px 24px 140px',
               }}>
+              
+              <style>{`
+                @keyframes craftShimmer {
+                  0% { background-position: -400px 0; }
+                  100% { background-position: 400px 0; }
+                }
+                @keyframes craftCardFadeIn {
+                  from { opacity: 0; transform: translateY(12px); }
+                  to { opacity: 1; transform: translateY(0); }
+                }
+                @keyframes craftTitleSlideIn {
+                  from { opacity: 0; transform: translateX(-16px); }
+                  to { opacity: 1; transform: translateX(0); }
+                }
+              `}</style>
+              {craftTitle && (
+                <div style={{
+                  maxWidth: 2000, margin: '0 auto 16px', display: 'flex', alignItems: 'center', gap: 12,
+                  ...(craftExiting
+                    ? {opacity: 0, transform: 'translateX(-16px)', transition: 'opacity 300ms ease, transform 300ms ease'}
+                    : {animation: 'craftTitleSlideIn 400ms cubic-bezier(0.16, 1, 0.3, 1)'}),
+                }}>
+                  <XDSButton
+                    label="Back"
+                    variant="ghost"
+                    size="lg"
+                    icon={<ArrowLeftIcon />}
+                    isIconOnly
+                    onClick={handleBackFromResults}
+                    style={{marginLeft: -8}}
+                  />
+                  <XDSText type="display-1">{craftTitle}</XDSText>
+                </div>
+              )}
+              {craftTitle && !craftLoading && (
+                <div style={{
+                  maxWidth: 2000, margin: '0 auto 20px', display: 'flex', flexDirection: 'column', gap: 4,
+                  animation: 'craftTitleSlideIn 400ms 100ms cubic-bezier(0.16, 1, 0.3, 1) both',
+                }}>
+                  <div style={{display: 'flex', alignItems: 'center', gap: 4, marginLeft: -8, marginRight: -8}}>
+                    {FILTER_COLUMNS.map(col => (
+                      <SearchableFilterDropdown
+                        key={col.heading}
+                        label={col.heading}
+                        items={col.items}
+                        selectedFilters={resultFilters}
+                        onToggle={handleToggleResultFilter}
+                      />
+                    ))}
+                    <SearchableFilterDropdown
+                      label="Author"
+                      items={templateAuthors}
+                      selectedFilters={resultFilters}
+                      onToggle={handleToggleResultFilter}
+                      verifiedItems={new Set(['XDS Design'])}
+                    />
+                    <div style={{marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 16}}>
+                      <XDSText type="supporting" color="secondary" style={{whiteSpace: 'nowrap'}}>
+                        Showing {filteredTemplates.length} screens
+                      </XDSText>
+                      <XDSToolbar
+                        label="View controls"
+                        density="compact"
+                        startContent={
+                          <>
+                            <XDSButton
+                              label={previewMode === 'dark' ? 'Light mode' : 'Dark mode'}
+                              variant="ghost"
+                              size="sm"
+                              isIconOnly
+                              icon={previewMode === 'dark' ? <ContrastIcon /> : <MoonIcon />}
+                              onClick={() => setPreviewMode(previewMode === 'dark' ? 'light' : 'dark')}
+                            />
+                            <XDSDropdownMenu
+                              button={{label: 'Theme', variant: 'ghost', size: 'sm', isIconOnly: true, icon: <PaletteIcon />}}
+                              hasChevron={false}
+                              menuWidth={160}
+                              items={[
+                                {label: 'Default', onClick: () => setPreviewTheme('default')},
+                                {label: 'Neutral', onClick: () => setPreviewTheme('neutral')},
+                                {label: 'Brutalist', onClick: () => setPreviewTheme('brutalist')},
+                                {label: 'Meta', onClick: () => setPreviewTheme('meta')},
+                                {label: 'WhatsApp', onClick: () => setPreviewTheme('whatsapp')},
+                              ]}
+                            />
+                          </>
+                        }
+                      />
+                      <XDSDropdownMenu
+                        button={{label: sortOption === 'trending' ? 'Most popular' : sortOption === 'newest' ? 'Newest first' : 'Oldest first', variant: 'ghost', size: 'sm'}}
+                        items={[
+                          {label: 'Most popular', onClick: () => setSortOption('trending')},
+                          {label: 'Newest first', onClick: () => setSortOption('newest')},
+                          {label: 'Oldest first', onClick: () => setSortOption('oldest')},
+                        ]}
+                      />
+                    </div>
+                  </div>
+                  {resultFilters.size > 0 && (
+                    <div style={{display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap'}}>
+                      {Array.from(resultFilters).map(f => (
+                        <XDSToken key={f} label={f} size="sm" onRemove={() => handleToggleResultFilter(f)} />
+                      ))}
+                      <XDSText type="supporting">
+                        <XDSLink label="Clear all" color="secondary" onClick={() => setResultFilters(new Set())}>Clear all</XDSLink>
+                      </XDSText>
+                    </div>
+                  )}
+                </div>
+              )}
+              {craftLoading ? (
+                <div
+                  style={{
+                    maxWidth: 2000,
+                    margin: '0 auto',
+                    display: 'grid',
+                    gridTemplateColumns: isMobile
+                      ? '1fr'
+                      : isTablet
+                        ? 'repeat(2, 1fr)'
+                        : 'repeat(4, 1fr)',
+                    gap: 16,
+                  }}>
+                  {Array.from({length: 8}).map((_, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        borderRadius: 16,
+                        overflow: 'hidden',
+                        animation: `craftCardFadeIn 400ms ${i * 60}ms cubic-bezier(0.16, 1, 0.3, 1) both`,
+                      }}>
+                      <div style={{
+                        aspectRatio: '4 / 3',
+                        background: 'linear-gradient(90deg, var(--color-background-muted, #f0f0f0) 0%, var(--color-background-surface, #fafafa) 50%, var(--color-background-muted, #f0f0f0) 100%)',
+                        backgroundSize: '800px 100%',
+                        animation: 'craftShimmer 1.6s ease-in-out infinite',
+                        borderRadius: '16px 16px 0 0',
+                      }} />
+                      <div style={{padding: 16, display: 'flex', flexDirection: 'column', gap: 10}}>
+                        <div style={{
+                          height: 14, width: '60%', borderRadius: 6,
+                          background: 'linear-gradient(90deg, var(--color-background-muted, #f0f0f0) 0%, var(--color-background-surface, #fafafa) 50%, var(--color-background-muted, #f0f0f0) 100%)',
+                          backgroundSize: '800px 100%',
+                          animation: 'craftShimmer 1.6s ease-in-out infinite',
+                        }} />
+                        <div style={{
+                          height: 10, width: '40%', borderRadius: 6,
+                          background: 'linear-gradient(90deg, var(--color-background-muted, #f0f0f0) 0%, var(--color-background-surface, #fafafa) 50%, var(--color-background-muted, #f0f0f0) 100%)',
+                          backgroundSize: '800px 100%',
+                          animation: 'craftShimmer 1.6s ease-in-out infinite',
+                        }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
               <div
                 style={{
                   maxWidth: 2000,
@@ -553,33 +897,42 @@ function DocsiteLandingTemplate() {
                   gap: 16,
                   gridAutoRows: '1fr',
                 }}>
-                {TEMPLATES.map((template, i) => (
-                  <div key={`${template.name}-${i}`}>
+                {filteredTemplates.map((template, i) => (
+                  <div
+                    key={`${template.name}-${template.originalIndex}`}
+                    style={{
+                      ...(craftTitle ? {
+                        animation: `craftCardFadeIn 400ms ${i * 50}ms cubic-bezier(0.16, 1, 0.3, 1) both`,
+                      } : undefined),
+                      filter: previewImageFilter,
+                      transition: 'filter 300ms ease',
+                    }}>
                     <TemplateCard
                       src={template.src}
                       name={template.name}
-                      isSelected={selected.has(i)}
-                      isGenerating={isGenerating && generatingSource !== i}
+                      isSelected={selected.has(template.originalIndex)}
+                      isGenerating={isGenerating && generatingSource !== template.originalIndex}
                       cardSize={template.size}
                       onSelect={() =>
                         setSelected(prev => {
                           const next = new Set(prev);
-                          if (next.has(i)) {
-                            next.delete(i);
+                          if (next.has(template.originalIndex)) {
+                            next.delete(template.originalIndex);
                           } else {
-                            next.add(i);
+                            next.add(template.originalIndex);
                           }
                           return next;
                         })
                       }
-                      onMoreLikeThis={() => handleMoreLikeThis(i)}
-                      onUse={() => handleUse(i)}
-                      onPreview={() => handlePreview(i)}
+                      onMoreLikeThis={() => handleMoreLikeThis(template.originalIndex)}
+                      onUse={() => handleUse(template.originalIndex)}
+                      onPreview={() => handlePreview(template.originalIndex)}
                       simulation={simRef.current!}
                     />
                   </div>
                 ))}
               </div>
+              )}
             </div>
           </div>
         </div>
@@ -605,6 +958,10 @@ function DocsiteLandingTemplate() {
               @keyframes card4BackdropFadeIn {
                 from { opacity: 0; }
                 to { opacity: 1; }
+              }
+              @keyframes previewFadeIn {
+                from { opacity: 0; transform: translateY(8px); }
+                to { opacity: 1; transform: translateY(0); }
               }
             `}</style>
             {/* Backdrop */}
@@ -651,29 +1008,40 @@ function DocsiteLandingTemplate() {
                       <img
                         src={isMeta ? `${basePath}/templates/card4-preview-meta.png` : t.src}
                         alt={t.name}
-                        style={{width: '100%', display: 'block'}}
+                        style={{
+                          width: '100%', display: 'block',
+                          opacity: previewTransitioning ? 0 : 1,
+                          transition: 'opacity 250ms ease',
+                          animation: previewTransitioning ? 'none' : 'previewFadeIn 300ms ease',
+                        }}
                       />
                     </div>
                   </div>
 
                   {/* Right — Details panel */}
                   <div style={{width: 360, flexShrink: 0, padding: '24px 0', display: 'flex', flexDirection: 'column'}}>
-                    {/* Title */}
-                    <XDSText type="display-2">{t.name}</XDSText>
+                    <div style={{
+                      opacity: previewTransitioning ? 0 : 1,
+                      transition: 'opacity 250ms ease',
+                      animation: previewTransitioning ? 'none' : 'previewFadeIn 300ms ease',
+                    }}>
+                      {/* Title */}
+                      <XDSText type="display-2">{t.name}</XDSText>
 
-                    {/* Description */}
-                    <div style={{marginTop: 8}}>
-                      <XDSText type="body" color="secondary">
-                        A ready-to-use {t.name.toLowerCase()} template built with XDS components. Customize it with your own content and theme to match your brand.
-                      </XDSText>
-                    </div>
+                      {/* Description */}
+                      <div style={{marginTop: 8}}>
+                        <XDSText type="body" color="secondary">
+                          A ready-to-use {t.name.toLowerCase()} template built with XDS components. Customize it with your own content and theme to match your brand.
+                        </XDSText>
+                      </div>
 
-                    {/* Author */}
-                    <div style={{marginTop: 16, display: 'flex', alignItems: 'center', gap: 12}}>
-                      <XDSAvatar name="Andrea Anderson" size={36} src={AVATAR_IMAGE} />
-                      <div style={{display: 'flex', flexDirection: 'column'}}>
-                        <XDSText type="supporting" color="secondary">Crafted by</XDSText>
-                        <XDSText type="body" style={{fontWeight: 600, fontSize: 16}}>Andrea Anderson</XDSText>
+                      {/* Author */}
+                      <div style={{marginTop: 16, display: 'flex', alignItems: 'center', gap: 12}}>
+                        <XDSAvatar name={t.author} size={36} src={t.author === 'XDS Design' ? XDS_DESIGN_AVATAR : AVATAR_IMAGE} />
+                        <div style={{display: 'flex', flexDirection: 'column'}}>
+                          <XDSText type="supporting" color="secondary">Crafted by</XDSText>
+                          <XDSText type="body" style={{fontWeight: 600, fontSize: 16}}>{t.author}</XDSText>
+                        </div>
                       </div>
                     </div>
 
@@ -871,11 +1239,20 @@ function DocsiteLandingTemplate() {
                         key={img.originalIndex}
                         padding={0}
                         onClick={() => {
-                          setPreviewTarget(img.originalIndex);
-                          card4ScrollRef.current?.scrollTo({top: 0, behavior: 'smooth'});
+                          setPreviewTransitioning(true);
+                          setTimeout(() => {
+                            setPreviewTarget(img.originalIndex);
+                            card4ScrollRef.current?.scrollTo({top: 0});
+                            setTimeout(() => setPreviewTransitioning(false), 50);
+                          }, 250);
                         }}
                         style={{cursor: 'pointer', aspectRatio: '16/10', overflow: 'hidden'}}>
-                        <img src={img.src} alt={img.name} style={{width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top', display: 'block'}} />
+                        <img src={img.src} alt={img.name} style={{
+                          width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top', display: 'block',
+                          opacity: previewTransitioning ? 0 : 1,
+                          transition: 'opacity 250ms ease',
+                          animation: previewTransitioning ? 'none' : 'previewFadeIn 300ms ease',
+                        }} />
                       </XDSCard>
                     ))}
                   </div>
@@ -884,9 +1261,14 @@ function DocsiteLandingTemplate() {
                 {/* Explore more */}
                 <div style={{padding: '24px 24px 0'}}>
                   <XDSHeading level={3}>Explore more</XDSHeading>
-                  <div style={{display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 16}}>
+                  <div style={{
+                    display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 16,
+                    opacity: previewTransitioning ? 0 : 1,
+                    transition: 'opacity 250ms ease',
+                    animation: previewTransitioning ? 'none' : 'previewFadeIn 300ms ease',
+                  }}>
                     {['website', 'dashboard', 'admin panel', 'settings', 'form layout', 'data table', 'sidebar nav', 'landing page', 'e-commerce', 'documentation', 'profile page'].map(tag => (
-                      <XDSToken key={tag} label={tag} xstyle={tokenStyles.pill} style={{backgroundColor: 'transparent'}} />
+                      <XDSToken key={tag} label={tag} xstyle={tokenStyles.pill} style={{backgroundColor: 'transparent', cursor: 'pointer'}} onClick={() => handleTokenClick(tag)} />
                     ))}
                   </div>
                 </div>
@@ -894,9 +1276,14 @@ function DocsiteLandingTemplate() {
                 {/* Component used */}
                 <div style={{padding: '24px 24px 24px'}}>
                   <XDSHeading level={3}>Component used</XDSHeading>
-                  <div style={{display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 16}}>
+                  <div style={{
+                    display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 16,
+                    opacity: previewTransitioning ? 0 : 1,
+                    transition: 'opacity 250ms ease',
+                    animation: previewTransitioning ? 'none' : 'previewFadeIn 300ms ease',
+                  }}>
                     {['XDSAppShell', 'XDSTopNav', 'XDSVStack', 'XDSHStack', 'XDSHeading', 'XDSText', 'XDSButton', 'XDSCard', 'XDSBadge', 'XDSAvatar'].map(c => (
-                      <XDSToken key={c} label={c} xstyle={tokenStyles.outline} style={{backgroundColor: 'transparent'}} />
+                      <XDSToken key={c} label={c} xstyle={tokenStyles.outline} style={{backgroundColor: 'transparent', cursor: 'pointer'}} onClick={() => handleTokenClick(c)} />
                     ))}
                   </div>
                 </div>
