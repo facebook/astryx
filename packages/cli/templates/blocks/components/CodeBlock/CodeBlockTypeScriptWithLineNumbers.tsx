@@ -12,3 +12,8 @@ export default function CodeBlockTypeScriptWithLineNumbers() {
     />
   );
 }
+
+export const showcase = {
+  aspectRatio: 4 / 3,
+  render: CodeBlockTypeScriptWithLineNumbers,
+};
