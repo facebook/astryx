@@ -12,40 +12,6 @@ export const docs = {
     'Flexible sizing via SizeValue for width, height, maxWidth, and minHeight',
     'Supports `padding={0}` for edge-to-edge content',
   ],
-  examples: [
-    {
-      label: 'Wash variant',
-      code: `<XDSSection variant="wash" width={300} height={250}>
-  <XDSLayout
-    content={<XDSLayoutContent>Content in wash section</XDSLayoutContent>}
-  />
-</XDSSection>`,
-    },
-    {
-      label: 'Transparent variant',
-      code: `<XDSSection variant="transparent">
-  <XDSLayout
-    content={<XDSLayoutContent>Transparent background</XDSLayoutContent>}
-  />
-</XDSSection>`,
-    },
-    {
-      label: 'With dividers',
-      code: `<XDSSection variant="section" dividers={['top', 'bottom']}>
-  <XDSLayout
-    content={<XDSLayoutContent>Section with top and bottom borders</XDSLayoutContent>}
-  />
-</XDSSection>`,
-    },
-    {
-      label: 'Full bleed',
-      code: `<XDSSection variant="wash" padding={0}>
-  <XDSLayout
-    content={<XDSLayoutContent>Edge-to-edge content</XDSLayoutContent>}
-  />
-</XDSSection>`,
-    },
-  ],
   props: [
     {
       name: 'variant',
@@ -131,40 +97,6 @@ export const docsZh = {
     '支持在任意边的组合上设置分隔线边框（top、bottom、start、end）',
     '通过 SizeValue 灵活设置宽度、高度、最大宽度和最小高度',
     '支持 `padding={0}` 实现全宽内容',
-  ],
-  examples: [
-    {
-      label: 'Wash 变体',
-      code: `<XDSSection variant="wash" width={300} height={250}>
-  <XDSLayout
-    content={<XDSLayoutContent>Content in wash section</XDSLayoutContent>}
-  />
-</XDSSection>`,
-    },
-    {
-      label: 'Transparent 变体',
-      code: `<XDSSection variant="transparent">
-  <XDSLayout
-    content={<XDSLayoutContent>Transparent background</XDSLayoutContent>}
-  />
-</XDSSection>`,
-    },
-    {
-      label: '带分隔线',
-      code: `<XDSSection variant="section" dividers={['top', 'bottom']}>
-  <XDSLayout
-    content={<XDSLayoutContent>Section with top and bottom borders</XDSLayoutContent>}
-  />
-</XDSSection>`,
-    },
-    {
-      label: '全出血',
-      code: `<XDSSection variant="wash" padding={0}>
-  <XDSLayout
-    content={<XDSLayoutContent>Edge-to-edge content</XDSLayoutContent>}
-  />
-</XDSSection>`,
-    },
   ],
   props: [
     {
