@@ -7,3 +7,8 @@ export default function TextTruncatedTextWithTooltip() {
     <XDSText type="body" maxLines={2}>Very long text that will be clamped after two lines and show a tooltip on hover.</XDSText>
   );
 }
+
+export const showcase = {
+  aspectRatio: 1,
+  render: TextTruncatedTextWithTooltip,
+};

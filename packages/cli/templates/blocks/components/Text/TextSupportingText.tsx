@@ -7,3 +7,8 @@ export default function TextSupportingText() {
     <XDSText type="supporting">Helper text beneath a field.</XDSText>
   );
 }
+
+export const showcase = {
+  aspectRatio: 1,
+  render: TextSupportingText,
+};
