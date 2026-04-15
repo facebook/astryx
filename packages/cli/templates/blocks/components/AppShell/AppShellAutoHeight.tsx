@@ -26,3 +26,8 @@ export default function AppShellAutoHeight() {
     </XDSAppShell>
   );
 }
+
+export const showcase = {
+  aspectRatio: 4 / 3,
+  render: AppShellAutoHeight,
+};

@@ -103,3 +103,8 @@ export default function AppShellTopNavSideNav() {
     </XDSAppShell>
   );
 }
+
+export const showcase = {
+  aspectRatio: 4 / 3,
+  render: AppShellTopNavSideNav,
+};

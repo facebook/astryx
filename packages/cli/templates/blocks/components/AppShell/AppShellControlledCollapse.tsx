@@ -32,3 +32,8 @@ export default function AppShellControlledCollapse() {
     </XDSAppShell>
   );
 }
+
+export const showcase = {
+  aspectRatio: 4 / 3,
+  render: AppShellControlledCollapse,
+};

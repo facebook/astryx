@@ -66,3 +66,8 @@ export default function AppShellResponsiveMobileNav() {
     </XDSAppShell>
   );
 }
+
+export const showcase = {
+  aspectRatio: 4 / 3,
+  render: AppShellResponsiveMobileNav,
+};

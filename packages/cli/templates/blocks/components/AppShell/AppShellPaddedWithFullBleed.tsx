@@ -33,3 +33,8 @@ export default function AppShellPaddedWithFullBleed() {
     </XDSAppShell>
   );
 }
+
+export const showcase = {
+  aspectRatio: 4 / 3,
+  render: AppShellPaddedWithFullBleed,
+};
