@@ -9,3 +9,8 @@ export default function KbdInLabel() {
     </span>
   );
 }
+
+export const showcase = {
+  aspectRatio: 1,
+  render: KbdInLabel,
+};
