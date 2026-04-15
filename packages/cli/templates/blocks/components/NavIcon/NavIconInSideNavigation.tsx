@@ -20,3 +20,8 @@ export default function NavIconInSideNavigation() {
     />
   );
 }
+
+export const showcase = {
+  aspectRatio: 16 / 4,
+  render: NavIconInSideNavigation,
+};
