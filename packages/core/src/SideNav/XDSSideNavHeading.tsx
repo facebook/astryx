@@ -106,8 +106,6 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    width: spacingVars['--spacing-8'],
-    height: spacingVars['--spacing-8'],
   },
   textContainer: {
     display: 'flex',
