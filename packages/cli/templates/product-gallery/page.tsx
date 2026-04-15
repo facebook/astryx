@@ -174,11 +174,13 @@ export default function ProductGalleryTemplate() {
           </div>
 
           {/* Product Grid — 3 cols desktop, 2 cols mobile */}
-          <XDSGrid columns={3} minChildWidth={250} gap={6}>
-            {PRODUCTS.map(product => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </XDSGrid>
+          <div className="product-gallery-grid">
+            <XDSGrid columns={3} gap={6}>
+              {PRODUCTS.map(product => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </XDSGrid>
+          </div>
         </XDSVStack>
 
         {/* Responsive styles */}
@@ -196,6 +198,9 @@ export default function ProductGalleryTemplate() {
           @media (max-width: 640px) {
             .product-gallery-header {
               flex-direction: column;
+            }
+            .product-gallery-grid .xds-grid {
+              grid-template-columns: repeat(2, 1fr);
             }
           }
         `}</style>
