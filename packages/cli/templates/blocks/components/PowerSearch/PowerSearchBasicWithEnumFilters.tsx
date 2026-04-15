@@ -52,3 +52,8 @@ export default function PowerSearchBasicWithEnumFilters() {
     />
   );
 }
+
+export const showcase = {
+  aspectRatio: 4 / 3,
+  render: PowerSearchBasicWithEnumFilters,
+};

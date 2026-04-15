@@ -45,3 +45,8 @@ export default function PowerSearchWithInitialFilters() {
     />
   );
 }
+
+export const showcase = {
+  aspectRatio: 4 / 3,
+  render: PowerSearchWithInitialFilters,
+};
