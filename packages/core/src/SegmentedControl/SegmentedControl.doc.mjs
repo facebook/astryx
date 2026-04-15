@@ -16,38 +16,6 @@ export const docs = {
     'Disabled state: entire group or individual items via aria-disabled (maintains focusability)',
     'Hover state: unselected items show overlay on hover with @media (hover: hover) guard',
   ],
-  examples: [
-    {
-      label: 'Basic',
-      code: `<XDSSegmentedControl value={view} onChange={setView} label="View mode">
-  <XDSSegmentedControlItem value="grid" label="Grid" />
-  <XDSSegmentedControlItem value="list" label="List" />
-  <XDSSegmentedControlItem value="table" label="Table" />
-</XDSSegmentedControl>`,
-    },
-    {
-      label: 'With icons',
-      code: `<XDSSegmentedControl value={view} onChange={setView} label="View mode">
-  <XDSSegmentedControlItem value="grid" label="Grid" icon={<XDSIcon icon={Squares2X2Icon} color="inherit" />} />
-  <XDSSegmentedControlItem value="list" label="List" icon={<XDSIcon icon={ListBulletIcon} color="inherit" />} />
-  <XDSSegmentedControlItem value="table" label="Table" icon={<XDSIcon icon={TableCellsIcon} color="inherit" />} />
-</XDSSegmentedControl>`,
-    },
-    {
-      label: 'Icon-only compact',
-      code: `<XDSSegmentedControl value={view} onChange={setView} label="View mode" size="sm">
-  <XDSSegmentedControlItem value="grid" label="Grid" isLabelHidden icon={<XDSIcon icon={Squares2X2Icon} color="inherit" />} />
-  <XDSSegmentedControlItem value="list" label="List" isLabelHidden icon={<XDSIcon icon={ListBulletIcon} color="inherit" />} />
-</XDSSegmentedControl>`,
-    },
-    {
-      label: 'Disabled',
-      code: `<XDSSegmentedControl value={view} onChange={setView} label="View mode" isDisabled>
-  <XDSSegmentedControlItem value="grid" label="Grid" />
-  <XDSSegmentedControlItem value="list" label="List" />
-</XDSSegmentedControl>`,
-    },
-  ],
   theming: {
     targets: [
       {className: 'xds-segmented-control', visualProps: ['size']},
@@ -121,18 +89,7 @@ export const docs = {
           type: 'StyleXStyles',
           description: 'Additional StyleX styles for the container.',
         },
-      ],
-      examples: [
-        {
-          label: 'Basic',
-          code: `<XDSSegmentedControl value={view} onChange={setView} label="View mode">
-  <XDSSegmentedControlItem value="grid" label="Grid" />
-  <XDSSegmentedControlItem value="list" label="List" />
-  <XDSSegmentedControlItem value="table" label="Table" />
-</XDSSegmentedControl>`,
-        },
-      ],
-    },
+      ],    },
     {
       name: 'XDSSegmentedControlItem',
       description:
@@ -169,16 +126,6 @@ export const docs = {
           type: 'boolean',
           description: 'Whether this individual item is disabled.',
           default: 'false',
-        },
-      ],
-      examples: [
-        {
-          label: 'With icon and label',
-          code: '<XDSSegmentedControlItem value="grid" label="Grid" icon={<XDSIcon icon={Squares2X2Icon} color="inherit" />} />',
-        },
-        {
-          label: 'Icon-only',
-          code: '<XDSSegmentedControlItem value="grid" label="Grid" isLabelHidden icon={<XDSIcon icon={Squares2X2Icon} color="inherit" />} />',
         },
       ],
     },
