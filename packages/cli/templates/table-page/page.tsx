@@ -498,9 +498,7 @@ const styles = stylex.create({
     justifyContent: 'center',
     flexShrink: 0,
   },
-  tableWrapper: {
-    borderTop: '1px solid var(--color-divider, #e0e0e0)',
-  },
+
   headerPadding: {
     padding: 16,
   },
@@ -654,10 +652,6 @@ export default function DataTableTemplate() {
           </div>
         )}
 
-        <style>{`
-          .xds-table-cell:first-child, .xds-table-header-cell:first-child { padding-left: 16px; }
-          .xds-base-table thead tr { border-top: 1px solid var(--color-border); }
-        `}</style>
         <XDSTable<DogRow>
           data={filtered}
           columns={columns}
