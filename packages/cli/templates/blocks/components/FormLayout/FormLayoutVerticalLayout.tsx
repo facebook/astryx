@@ -15,3 +15,8 @@ export default function FormLayoutVerticalLayout() {
     </XDSFormLayout>
   );
 }
+
+export const showcase = {
+  aspectRatio: 4 / 3,
+  render: FormLayoutVerticalLayout,
+};

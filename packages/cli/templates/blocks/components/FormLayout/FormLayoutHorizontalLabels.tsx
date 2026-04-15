@@ -23,3 +23,8 @@ export default function FormLayoutHorizontalLabels() {
     </XDSFormLayout>
   );
 }
+
+export const showcase = {
+  aspectRatio: 4 / 3,
+  render: FormLayoutHorizontalLabels,
+};
