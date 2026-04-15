@@ -22,3 +22,8 @@ export default function ChatBasicConversation() {
     </XDSChatMessageList>
   );
 }
+
+export const showcase = {
+  aspectRatio: 4 / 3,
+  render: ChatBasicConversation,
+};
