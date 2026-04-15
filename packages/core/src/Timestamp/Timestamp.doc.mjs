@@ -2,8 +2,7 @@
 
 export const docs = {
   name: 'Timestamp',
-  description:
-    'Displays a formatted timestamp as human-readable text with optional tooltip and live updates. Renders via XDSText for consistent typography.',  keywords: ['date', 'time', 'datetime', 'relative', 'ago', 'clock', 'format', 'duration'],
+  keywords: ['date', 'time', 'datetime', 'relative', 'ago', 'clock', 'format', 'duration'],
   props: [
     {
       name: 'value',
@@ -70,37 +69,27 @@ export const docs = {
       description: 'Font weight override.',
     },
   ],
-  features: [
-    "Formats: 'relative', 'date', 'date_time', 'time', 'system_date', 'system_date_time', 'system_time', 'auto'",
-    'Live updates: opt-in timer that adjusts frequency based on age',
-    'Tooltip: shows full date/time on hover for relative timestamps',
-    'Semantic HTML: renders <time> with ISO 8601 datetime attribute',
-    'Typography: delegates to XDSText for consistent sizing and color',
-    "System formats: ISO-style dates/times for databases and logs",
-  ],  theming: {
+  theming: {
     targets: [
       {className: 'xds-timestamp', visualProps: ['type', 'color']},
     ],
   },
-  accessibility: [
-    'Renders as <time datetime="..."> with ISO 8601 datetime attribute for machines.',
-    'Sets aria-label with full absolute time when displaying relative format.',
-    'Tooltip is keyboard accessible via focus.',
-  ],
   usage: {
-    summary: 'Displays the absolute or relative date and time of an event or its duration.',
-    content: `## When to use
-
-- Showing an exact date and time (absolute format).
-- Indicating freshness with an "ago" format (relative).
-- Displaying event duration.
-
-## Best practices
-
-- Do: Choose a format that fits the context (absolute for precision, relative for recency).
-- Do: Ensure consistent timestamp formatting within the same view.
-- Do: Use a single time unit for table column displays.
-- Do: Provide tooltips with additional detail such as timezone or full date.`,
+    description:
+      'Timestamp displays a formatted timestamp as human-readable text with optional tooltip and live updates, rendering via XDSText for consistent typography. Choose a format that fits the context — absolute for precision, relative for recency — and ensure consistent formatting within the same view.',
+    features: [
+      "Formats: 'relative', 'date', 'date_time', 'time', 'system_date', 'system_date_time', 'system_time', 'auto'",
+      'Live updates: opt-in timer that adjusts frequency based on age',
+      'Tooltip: shows full date/time on hover for relative timestamps',
+      'Semantic HTML: renders <time> with ISO 8601 datetime attribute',
+      'Typography: delegates to XDSText for consistent sizing and color',
+      "System formats: ISO-style dates/times for databases and logs",
+    ],
+    accessibility: [
+      'Renders as <time datetime="..."> with ISO 8601 datetime attribute for machines.',
+      'Sets aria-label with full absolute time when displaying relative format.',
+      'Tooltip is keyboard accessible via focus.',
+    ],
     anatomy: [
       {name: 'Time or Duration Value', required: true, description: 'The displayed time, date, or duration text.'},
       {name: 'Hover Indication', required: false, description: 'Visual cue indicating additional detail is available on hover.'},
@@ -111,20 +100,6 @@ export const docs = {
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsZh = {
-  description: '以人类可读文本显示格式化时间戳，可选工具提示和实时更新。',
-  features: [
-    "格式：'relative'、'date'、'date_time'、'time'、'system_date'、'system_date_time'、'system_time'、'auto'",
-    '实时更新：根据时间戳年龄自适应频率的计时器',
-    '工具提示：悬停时显示相对时间戳的完整日期/时间',
-    '语义化 HTML：使用 ISO 8601 datetime 属性渲染 <time>',
-    '排版：委托给 XDSText 以保持一致的大小和颜色',
-    "系统格式：数据库和日志的 ISO 风格日期/时间",
-  ],
-  accessibility: [
-    '作为带有 ISO 8601 datetime 属性的 <time datetime="..."> 渲染，供机器读取。',
-    '显示相对格式时，设置带有完整绝对时间的 aria-label。',
-    '工具提示可通过焦点访问键盘。',
-  ],
   propDescriptions: {
     value: '要显示的日期/时间。接受 Unix 时间戳（秒）或 ISO 8601 字符串。',
     format: "显示格式。'relative' 显示 '2小时前'，'date' 显示日期，'auto' 根据时间近远自动切换。",
@@ -136,6 +111,22 @@ export const docsZh = {
     size: '显式字体大小覆盖。',
     color: '文字颜色。',
     weight: '字体粗细覆盖。',
+  },
+  usage: {
+    description: '以人类可读文本显示格式化时间戳，可选工具提示和实时更新。',
+    features: [
+      "格式：'relative'、'date'、'date_time'、'time'、'system_date'、'system_date_time'、'system_time'、'auto'",
+      '实时更新：根据时间戳年龄自适应频率的计时器',
+      '工具提示：悬停时显示相对时间戳的完整日期/时间',
+      '语义化 HTML：使用 ISO 8601 datetime 属性渲染 <time>',
+      '排版：委托给 XDSText 以保持一致的大小和颜色',
+      "系统格式：数据库和日志的 ISO 风格日期/时间",
+    ],
+    accessibility: [
+      '作为带有 ISO 8601 datetime 属性的 <time datetime="..."> 渲染，供机器读取。',
+      '显示相对格式时，设置带有完整绝对时间的 aria-label。',
+      '工具提示可通过焦点访问键盘。',
+    ],
   },
 };
 

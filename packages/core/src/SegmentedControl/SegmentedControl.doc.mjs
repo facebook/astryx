@@ -2,44 +2,13 @@
 
 export const docs = {
   name: 'SegmentedControl',
-  description:
-    'Segmented button group for single selection with radio group semantics. Visually resembles a tab bar but controls a value, not a view.',  keywords: ['radio', 'tabs', 'toggle', 'toggle-group', 'pill', 'button-group', 'switch', 'segment', 'control'],
-  features: [
-    'Context-based communication: XDSSegmentedControlContext passes value/onChange/size/isDisabled from parent to children',
-    'Radio group semantics: role="radiogroup" with role="radio" items and aria-checked',
-    'Roving tabindex: only the selected item is tabbable (tabIndex=0), others are tabIndex=-1',
-    'Keyboard navigation: ArrowLeft/ArrowRight navigate + select, Home/End jump to first/last, wraps around',
-    'Animated indicator: selected item has a raised surface background with box-shadow',
-    'Icon + label or icon-only items (isLabelHidden hides label visually, keeps it as aria-label)',
-    'Size variants: sm (compact for toolbars), md (default), lg (larger touch targets)',
-    'Disabled state: entire group or individual items via aria-disabled (maintains focusability)',
-    'Hover state: unselected items show overlay on hover with @media (hover: hover) guard',
-  ],
+  keywords: ['radio', 'tabs', 'toggle', 'toggle-group', 'pill', 'button-group', 'switch', 'segment', 'control'],
   theming: {
     targets: [
       {className: 'xds-segmented-control', visualProps: ['size']},
       {className: 'xds-segmented-control-item'},
     ],
   },
-  accessibility: [
-    'Container has role="radiogroup" with aria-label from the label prop (never rendered visually)',
-    'Items have role="radio" with aria-checked indicating selection state',
-    'Roving tabindex: selected item has tabIndex=0, others have tabIndex=-1',
-    'Arrow keys navigate and select simultaneously (radio group pattern)',
-    'Disabled items use aria-disabled (not native disabled) to maintain focusability',
-    'Icon-only items use isLabelHidden — label becomes aria-label',
-  ],
-  keyboard:
-    'ArrowRight/ArrowLeft navigate and select (wrapping). Home/End jump to first/last item. Only the selected item is in the tab order.',
-  notes: [
-    'Controlled-only — no uncontrolled mode in v1',
-    'Horizontal-only — no vertical orientation in v1',
-    'Deselection not allowed (radio semantics — always one selected)',
-    'Uses aria-disabled instead of native disabled to maintain keyboard focusability',
-    'Keyboard navigation skips disabled items',
-    'Track background uses --color-neutral, selected indicator uses --color-background-surface with --shadow-low',
-    'label prop on XDSSegmentedControl is aria-only (like XDSTabList aria-label), never rendered visually',
-  ],
   components: [
     {
       name: 'XDSSegmentedControl',
@@ -130,53 +99,39 @@ export const docs = {
     },
   ],
   usage: {
-    summary: 'Segmented button group for single selection with radio group semantics.',
-    content: `## When to use
-
-- Switching between a small set of mutually exclusive views or modes.
-- When all options should be visible at once.
-
-## When NOT to use
-
-- For two-state toggles (use ToggleButton instead).
-- For navigation between pages (use Tabs instead).`,
+    description:
+      'Segmented button group for single selection with radio group semantics. Visually resembles a tab bar but controls a value, not a view. Use for switching between a small set of mutually exclusive views or modes when all options should be visible at once. For two-state toggles, use ToggleButton; for page navigation, use Tabs.',
+    features: [
+      'Animated indicator with raised surface background and box-shadow',
+      'Icon + label or icon-only items (isLabelHidden hides label visually, keeps it as aria-label)',
+      'Size variants: sm (compact for toolbars), md (default), lg (larger touch targets)',
+      'Disabled state: entire group or individual items via aria-disabled (maintains focusability)',
+    ],
+    accessibility: [
+      'Container has role="radiogroup" with aria-label from the label prop (never rendered visually)',
+      'Items have role="radio" with aria-checked indicating selection state',
+      'Roving tabindex: selected item has tabIndex=0, others have tabIndex=-1',
+      'Arrow keys navigate and select simultaneously (radio group pattern)',
+      'Disabled items use aria-disabled (not native disabled) to maintain focusability',
+      'Icon-only items use isLabelHidden — label becomes aria-label',
+      'Keyboard: ArrowRight/ArrowLeft navigate and select (wrapping); Home/End jump to first/last item; only the selected item is in the tab order.',
+    ],
+    notes: [
+      'Controlled-only — no uncontrolled mode in v1',
+      'Horizontal-only — no vertical orientation in v1',
+      'Deselection not allowed (radio semantics — always one selected)',
+      'Uses aria-disabled instead of native disabled to maintain keyboard focusability',
+      'Keyboard navigation skips disabled items',
+      'Track background uses --color-neutral, selected indicator uses --color-background-surface with --shadow-low',
+      'label prop on XDSSegmentedControl is aria-only (like XDSTabList aria-label), never rendered visually',
+      'Context-based communication: XDSSegmentedControlContext passes value/onChange/size/isDisabled from parent to children',
+      'Hover state: unselected items show overlay on hover with @media (hover: hover) guard',
+    ],
   },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsZh = {
-  description:
-    '分段按钮组，用于单选，具有单选组语义。外观类似标签栏，但控制的是值而非视图。',
-  features: [
-    '基于上下文通信：XDSSegmentedControlContext 将 value/onChange/size/isDisabled 从父组件传递给子组件',
-    '单选组语义：role="radiogroup" 配合 role="radio" 子项和 aria-checked',
-    '漫游焦点：仅选中项可通过 Tab 访问（tabIndex=0），其余为 tabIndex=-1',
-    '键盘导航：ArrowLeft/ArrowRight 导航并选中，Home/End 跳转到首尾，循环切换',
-    '动画指示器：选中项具有带 box-shadow 的凸起表面背景',
-    '图标+文本或纯图标项（isLabelHidden 隐藏文本，保留为 aria-label）',
-    '尺寸变体：sm（紧凑，适用于工具栏）、md（默认）、lg（更大触摸目标）',
-    '禁用状态：可禁用整组或单个项，使用 aria-disabled 保持可聚焦性',
-    '悬停状态：未选中项悬停时显示覆盖层，使用 @media (hover: hover) 保护',
-  ],
-  accessibility: [
-    '容器具有 role="radiogroup"，aria-label 来自 label 属性（不会渲染为可见内容）',
-    '子项具有 role="radio"，aria-checked 表示选中状态',
-    '漫游焦点：选中项 tabIndex=0，其余 tabIndex=-1',
-    '方向键同时导航和选中（单选组模式）',
-    '禁用项使用 aria-disabled（非原生 disabled）以保持可聚焦性',
-    '纯图标项使用 isLabelHidden，label 变为 aria-label',
-  ],
-  keyboard:
-    'ArrowRight/ArrowLeft 导航并选中（循环）。Home/End 跳转到首尾项。仅选中项在 Tab 顺序中。',
-  notes: [
-    '仅受控模式，v1 无非受控模式',
-    '仅水平方向，v1 无垂直方向',
-    '不允许取消选中（单选语义，始终有一项选中）',
-    '使用 aria-disabled 替代原生 disabled 以保持键盘可聚焦性',
-    '键盘导航会跳过禁用项',
-    '轨道背景使用 --color-neutral，选中指示器使用 --color-background-surface 配合 --shadow-low',
-    'XDSSegmentedControl 的 label 属性仅用于 aria（类似 XDSTabList 的 aria-label），不会渲染为可见内容',
-  ],
   components: [
     {
       name: 'XDSSegmentedControl',
@@ -205,6 +160,39 @@ export const docsZh = {
       },
     },
   ],
+  usage: {
+    description:
+      '分段按钮组，用于单选，具有单选组语义。外观类似标签栏，但控制的是值而非视图。',
+    features: [
+      '基于上下文通信：XDSSegmentedControlContext 将 value/onChange/size/isDisabled 从父组件传递给子组件',
+      '单选组语义：role="radiogroup" 配合 role="radio" 子项和 aria-checked',
+      '漫游焦点：仅选中项可通过 Tab 访问（tabIndex=0），其余为 tabIndex=-1',
+      '键盘导航：ArrowLeft/ArrowRight 导航并选中，Home/End 跳转到首尾，循环切换',
+      '动画指示器：选中项具有带 box-shadow 的凸起表面背景',
+      '图标+文本或纯图标项（isLabelHidden 隐藏文本，保留为 aria-label）',
+      '尺寸变体：sm（紧凑，适用于工具栏）、md（默认）、lg（更大触摸目标）',
+      '禁用状态：可禁用整组或单个项，使用 aria-disabled 保持可聚焦性',
+      '悬停状态：未选中项悬停时显示覆盖层，使用 @media (hover: hover) 保护',
+    ],
+    accessibility: [
+      '容器具有 role="radiogroup"，aria-label 来自 label 属性（不会渲染为可见内容）',
+      '子项具有 role="radio"，aria-checked 表示选中状态',
+      '漫游焦点：选中项 tabIndex=0，其余 tabIndex=-1',
+      '方向键同时导航和选中（单选组模式）',
+      '禁用项使用 aria-disabled（非原生 disabled）以保持可聚焦性',
+      '纯图标项使用 isLabelHidden，label 变为 aria-label',
+      'Keyboard: ArrowRight/ArrowLeft 导航并选中（循环）。Home/End 跳转到首尾项。仅选中项在 Tab 顺序中。',
+    ],
+    notes: [
+      '仅受控模式，v1 无非受控模式',
+      '仅水平方向，v1 无垂直方向',
+      '不允许取消选中（单选语义，始终有一项选中）',
+      '使用 aria-disabled 替代原生 disabled 以保持键盘可聚焦性',
+      '键盘导航会跳过禁用项',
+      '轨道背景使用 --color-neutral，选中指示器使用 --color-background-surface 配合 --shadow-low',
+      'XDSSegmentedControl 的 label 属性仅用于 aria（类似 XDSTabList 的 aria-label），不会渲染为可见内容',
+    ],
+  },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */

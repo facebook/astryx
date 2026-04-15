@@ -155,8 +155,9 @@ export async function searchComponents(needle, coreDir, components) {
       }
 
       // Description search (whole word boundary)
-      if (docs.description && term.length >= 3) {
-        const descLower = docs.description.toLowerCase();
+      const searchDesc = docs.usage?.description || docs.description;
+      if (searchDesc && term.length >= 3) {
+        const descLower = searchDesc.toLowerCase();
         const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const re = new RegExp('\\b' + escaped + '\\b');
         if (re.test(descLower)) {
@@ -165,8 +166,9 @@ export async function searchComponents(needle, coreDir, components) {
       }
 
       // Feature search (whole word boundary)
-      if (docs.features && Array.isArray(docs.features) && term.length >= 3) {
-        for (const feat of docs.features) {
+      const searchFeatures = docs.usage?.features || docs.features;
+      if (searchFeatures && Array.isArray(searchFeatures) && term.length >= 3) {
+        for (const feat of searchFeatures) {
           const featLower = feat.toLowerCase();
           const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
           const re = new RegExp('\\b' + escaped + '\\b');

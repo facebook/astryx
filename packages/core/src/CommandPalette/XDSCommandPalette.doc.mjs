@@ -1,8 +1,6 @@
 /** @type {import('../docs-types').ComponentDoc} */
 export const docs = {
   name: 'CommandPalette',
-  description:
-    'A searchSource-driven command palette dialog. Provide a search source and get filtering, keyboard navigation, grouping, and selection. Uses the same XDSSearchSource interface as XDSTypeahead.',
   keywords: [
     'command',
     'spotlight',
@@ -15,16 +13,6 @@ export const docs = {
     'modal',
     'dialog',
     'navigation',
-  ],
-  features: [
-    'searchSource: same XDSSearchSource interface as XDSTypeahead — static, async, or hybrid',
-    'Auto-grouping: items with auxiliaryData.group are auto-grouped in default rendering',
-    'createStaticSource: utility for static lists with optional keyword matching',
-    'Async support: spinner shows in input while search resolves',
-    'Keyboard navigation: arrow keys, Enter to select, Escape to close',
-    'Picker mode: value/onValueChange for persistent selection',
-    'Composable: XDSCommandPaletteInput, XDSCommandPaletteList, XDSCommandPaletteGroup, XDSCommandPaletteItem, XDSCommandPaletteFooter, XDSCommandPaletteEmpty',
-    'renderItem: custom per-item render while preserving auto-grouping',
   ],
   components: [
     {
@@ -298,56 +286,70 @@ export const docs = {
       {className: 'xds-command-palette-list'},
     ],
   },
-  accessibility: [
-    'Dialog uses XDSDialog — native <dialog> with showModal() for correct modal ARIA semantics.',
-    'Input renders as a search input with combobox role, aria-expanded, and aria-controls pointing to the list.',
-    'List renders as role="listbox" with aria-label.',
-    'Items render as role="option" with aria-selected.',
-    'Keyboard navigation uses useCombobox from XDSSelector for consistent arrow key, Home/End, Enter, and Escape behavior.',
-    'Spinner in input uses role="status" to announce loading to screen readers.',
-  ],
-  keyboard:
-    'Arrow Up/Down: navigate items; Enter: select highlighted item; Escape: close palette; Tab: moves focus to footer actions',
-  notes: [
-    'Uses XDSSearchSource interface — the same as XDSTypeahead. Any source compatible with XDSTypeahead works here.',
-    'createStaticSource supports keyword-based matching in addition to substring matching.',
-    'Auto-grouping reads auxiliaryData.group from each item — no extra config needed.',
-    'Picker mode (value/onValueChange) keeps the palette open and tracks a persistent selection.',
-    'The isBusy signal from searchSource drives the spinner in XDSCommandPaletteInput automatically.',
-  ],
+  usage: {
+    description:
+      'CommandPalette is a searchSource-driven command palette dialog that provides filtering, keyboard navigation, grouping, and selection. It uses the same XDSSearchSource interface as XDSTypeahead, supporting static, async, or hybrid data sources.',
+    features: [
+      'searchSource: same XDSSearchSource interface as XDSTypeahead — static, async, or hybrid',
+      'Auto-grouping: items with auxiliaryData.group are auto-grouped in default rendering',
+      'createStaticSource: utility for static lists with optional keyword matching',
+      'Async support: spinner shows in input while search resolves',
+      'Keyboard navigation: arrow keys, Enter to select, Escape to close',
+      'Picker mode: value/onValueChange for persistent selection',
+      'Composable: XDSCommandPaletteInput, XDSCommandPaletteList, XDSCommandPaletteGroup, XDSCommandPaletteItem, XDSCommandPaletteFooter, XDSCommandPaletteEmpty',
+      'renderItem: custom per-item render while preserving auto-grouping',
+    ],
+    accessibility: [
+      'Dialog uses XDSDialog — native <dialog> with showModal() for correct modal ARIA semantics.',
+      'Input renders as a search input with combobox role, aria-expanded, and aria-controls pointing to the list.',
+      'List renders as role="listbox" with aria-label.',
+      'Items render as role="option" with aria-selected.',
+      'Keyboard navigation uses useCombobox from XDSSelector for consistent arrow key, Home/End, Enter, and Escape behavior.',
+      'Spinner in input uses role="status" to announce loading to screen readers.',
+      'Keyboard: Arrow Up/Down navigate items; Enter selects highlighted item; Escape closes palette; Tab moves focus to footer actions.',
+    ],
+    notes: [
+      'Uses XDSSearchSource interface — the same as XDSTypeahead. Any source compatible with XDSTypeahead works here.',
+      'createStaticSource supports keyword-based matching in addition to substring matching.',
+      'Auto-grouping reads auxiliaryData.group from each item — no extra config needed.',
+      'Picker mode (value/onValueChange) keeps the palette open and tracks a persistent selection.',
+      'The isBusy signal from searchSource drives the spinner in XDSCommandPaletteInput automatically.',
+    ],
+  },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsZh = {
-  description:
-    '由 searchSource 驱动的命令面板对话框。提供搜索源，即可获得过滤、键盘导航、分组和选择功能。与 XDSTypeahead 使用相同的 XDSSearchSource 接口。',
-  features: [
-    'searchSource：与 XDSTypeahead 相同的 XDSSearchSource 接口——静态、异步或混合',
-    '自动分组：auxiliaryData.group 中的项目在默认渲染中自动分组',
-    'createStaticSource：用于静态列表的工具函数，支持关键词匹配',
-    '异步支持：搜索解析时在输入框中显示加载指示器',
-    '键盘导航：方向键、Enter 选择、Escape 关闭',
-    '选择器模式：通过 value/onValueChange 实现持久选择',
-    '可组合：XDSCommandPaletteInput、XDSCommandPaletteList、XDSCommandPaletteGroup 等子组件',
-    'renderItem：自定义每个条目的渲染，同时保留自动分组',
-  ],
-  accessibility: [
-    '对话框使用 XDSDialog——原生 <dialog> 配合 showModal() 实现正确的模态 ARIA 语义。',
-    '输入框渲染为搜索输入，具有 combobox 角色、aria-expanded 和指向列表的 aria-controls。',
-    '列表渲染为 role="listbox"，带有 aria-label。',
-    '条目渲染为 role="option"，带有 aria-selected。',
-    '键盘导航使用 XDSSelector 的 useCombobox，确保方向键、Home/End、Enter 和 Escape 行为一致。',
-    '输入框中的加载指示器使用 role="status" 向屏幕阅读器播报加载状态。',
-  ],
-  keyboard:
-    '上下方向键：导航条目；Enter：选择高亮条目；Escape：关闭面板；Tab：移动焦点到页脚操作',
-  notes: [
-    '使用 XDSSearchSource 接口——与 XDSTypeahead 相同。任何与 XDSTypeahead 兼容的源都可以在此使用。',
-    'createStaticSource 除子字符串匹配外还支持关键词匹配。',
-    '自动分组读取每个条目的 auxiliaryData.group——无需额外配置。',
-    '选择器模式（value/onValueChange）保持面板打开并跟踪持久选择。',
-    '来自 searchSource 的 isBusy 信号自动驱动 XDSCommandPaletteInput 中的加载指示器。',
-  ],
+  usage: {
+    description:
+      '由 searchSource 驱动的命令面板对话框。提供搜索源，即可获得过滤、键盘导航、分组和选择功能。与 XDSTypeahead 使用相同的 XDSSearchSource 接口。',
+    features: [
+      'searchSource：与 XDSTypeahead 相同的 XDSSearchSource 接口——静态、异步或混合',
+      '自动分组：auxiliaryData.group 中的项目在默认渲染中自动分组',
+      'createStaticSource：用于静态列表的工具函数，支持关键词匹配',
+      '异步支持：搜索解析时在输入框中显示加载指示器',
+      '键盘导航：方向键、Enter 选择、Escape 关闭',
+      '选择器模式：通过 value/onValueChange 实现持久选择',
+      '可组合：XDSCommandPaletteInput、XDSCommandPaletteList、XDSCommandPaletteGroup 等子组件',
+      'renderItem：自定义每个条目的渲染，同时保留自动分组',
+    ],
+    accessibility: [
+      '对话框使用 XDSDialog——原生 <dialog> 配合 showModal() 实现正确的模态 ARIA 语义。',
+      '输入框渲染为搜索输入，具有 combobox 角色、aria-expanded 和指向列表的 aria-controls。',
+      '列表渲染为 role="listbox"，带有 aria-label。',
+      '条目渲染为 role="option"，带有 aria-selected。',
+      '键盘导航使用 XDSSelector 的 useCombobox，确保方向键、Home/End、Enter 和 Escape 行为一致。',
+      '输入框中的加载指示器使用 role="status" 向屏幕阅读器播报加载状态。',
+      'Keyboard: 上下方向键：导航条目；Enter：选择高亮条目；Escape：关闭面板；Tab：移动焦点到页脚操作',
+    ],
+    notes: [
+      '使用 XDSSearchSource 接口——与 XDSTypeahead 相同。任何与 XDSTypeahead 兼容的源都可以在此使用。',
+      'createStaticSource 除子字符串匹配外还支持关键词匹配。',
+      '自动分组读取每个条目的 auxiliaryData.group——无需额外配置。',
+      '选择器模式（value/onValueChange）保持面板打开并跟踪持久选择。',
+      '来自 searchSource 的 isBusy 信号自动驱动 XDSCommandPaletteInput 中的加载指示器。',
+    ],
+  },
   components: [
     {
       name: 'XDSCommandPalette',
@@ -383,11 +385,7 @@ export const docsZh = {
     {
       name: 'XDSCommandPaletteList',
       description: '可滚动的结果容器。作为 listbox 渲染以符合 ARIA 规范。',
-      propDescriptions: {
-        children: '条目、分组和空状态。',
-        label: 'listbox 的无障碍标签。',
-        xstyle: 'StyleX 布局自定义样式。必须是 stylex.create() 的值。',
-      },
+      propDescriptions: {children: '条目、分组和空状态。', label: 'listbox 的无障碍标签。', xstyle: 'StyleX 布局自定义样式。必须是 stylex.create() 的值。'},
     },
     {
       name: 'XDSCommandPaletteItem',
@@ -405,26 +403,17 @@ export const docsZh = {
     {
       name: 'XDSCommandPaletteGroup',
       description: '带标题标签的视觉分组。放置在 XDSCommandPaletteList 内。',
-      propDescriptions: {
-        heading: '分组标题文本。',
-        children: 'XDSCommandPaletteItem 子元素。',
-        xstyle: 'StyleX 布局自定义样式。必须是 stylex.create() 的值。',
-      },
+      propDescriptions: {heading: '分组标题文本。', children: 'XDSCommandPaletteItem 子元素。', xstyle: 'StyleX 布局自定义样式。必须是 stylex.create() 的值。'},
     },
     {
       name: 'XDSCommandPaletteFooter',
       description: '显示键盘导航提示的页脚。未提供子元素时渲染默认方向键/Enter/Escape 提示。',
-      propDescriptions: {
-        children: '自定义页脚内容。省略时通过 XDSKbd 渲染默认键盘提示。',
-        xstyle: 'StyleX 布局自定义样式。必须是 stylex.create() 的值。',
-      },
+      propDescriptions: {children: '自定义页脚内容。省略时通过 XDSKbd 渲染默认键盘提示。', xstyle: 'StyleX 布局自定义样式。必须是 stylex.create() 的值。'},
     },
     {
       name: 'XDSCommandPaletteEmpty',
       description: '结果区域的空状态展示。由 XDSCommandPalette 在无结果和无查询状态下自动渲染。',
-      propDescriptions: {
-        children: '要显示的消息或内容。',
-      },
+      propDescriptions: {children: '要显示的消息或内容。'},
     },
   ],
 };

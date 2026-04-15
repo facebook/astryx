@@ -2,21 +2,7 @@
 
 export const docs = {
   name: 'Thumbnail',
-  description:
-    'A square preview card for image attachments. Shows a skeleton shimmer while uploading, the image on success, or a placeholder icon when no source is provided.',
   keywords: ["thumbnail","attachment","preview","image","upload","dismiss","remove","loading"],
-  features: [
-    'Square 1:1 aspect ratio via CSS aspect-ratio',
-    'Skeleton shimmer during upload (isLoading)',
-    'Upload overlay with spinner when isLoading + src',
-    'Image preview with object-fit: cover',
-    'APCA-based luminance detection for adaptive remove button contrast',
-    'Concentric radius: button radius derived from container radius minus inset',
-    'Hover shadow on interactive thumbnails (onClick)',
-    'Label shown as tooltip on hover, used as aria-label',
-    'Placeholder icon when no src',
-    'Disabled state blocks all interactions and reduces opacity',
-  ],
   props: [
     {
       name: 'src',
@@ -80,29 +66,33 @@ export const docs = {
       {className: 'xds-thumbnail'},
     ],
   },
-  accessibility: [
-    'label prop provides aria-label for the thumbnail and its remove button.',
-    'onClick renders as a button for keyboard and screen reader access.',
-    'Remove button uses aria-label derived from the label prop.',
-  ],
+  usage: {
+    description:
+      'Thumbnail is a square preview card for image attachments. It shows a skeleton shimmer while uploading, the image on success, or a placeholder icon when no source is provided.',
+    features: [
+      'Square 1:1 aspect ratio via CSS aspect-ratio',
+      'Skeleton shimmer during upload (isLoading)',
+      'Upload overlay with spinner when isLoading + src',
+      'Image preview with object-fit: cover',
+      'Hover shadow on interactive thumbnails (onClick)',
+      'Label shown as tooltip on hover, used as aria-label',
+      'Placeholder icon when no src',
+      'Disabled state blocks all interactions and reduces opacity',
+    ],
+    accessibility: [
+      'label prop provides aria-label for the thumbnail and its remove button.',
+      'onClick renders as a button for keyboard and screen reader access.',
+      'Remove button uses aria-label derived from the label prop.',
+    ],
+    notes: [
+      'APCA-based luminance detection for adaptive remove button contrast.',
+      'Concentric radius: button radius derived from container radius minus inset.',
+    ],
+  },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsZh = {
-  description:
-    '图片附件的方形预览卡片。上传时显示骨架屏动画，成功时显示图片，无图片源时显示占位图标。',
-  features: [
-    '通过 CSS aspect-ratio 实现 1:1 正方形比例',
-    '上传时骨架屏闪烁效果（isLoading）',
-    'isLoading + src 时显示上传覆盖层和加载指示器',
-    '通过 object-fit: cover 预览图片',
-    '基于 APCA 亮度检测的自适应移除按钮对比度',
-    '同心圆角：按钮圆角由容器圆角减去内边距推导',
-    '可交互缩略图（onClick）的悬停阴影',
-    '标签作为悬停提示工具和 aria-label 显示',
-    '无 src 时显示占位图标',
-    '禁用状态阻止所有交互并降低不透明度',
-  ],
   propDescriptions: {
     src: '图片源 URL。',
     alt: '图片的替代文本。',
@@ -116,11 +106,27 @@ export const docsZh = {
     style: '根元素的内联样式。建议使用 xstyle。',
     'data-testid': '用于自动化测试框架的测试选择器。',
   },
-  accessibility: [
-    'label 属性为缩略图及其移除按钮提供 aria-label。',
-    'onClick 渲染为按钮以支持键盘和屏幕阅读器访问。',
-    '移除按钮使用从 label 属性推导的 aria-label。',
-  ],
+  usage: {
+    description:
+      '图片附件的方形预览卡片。上传时显示骨架屏动画，成功时显示图片，无图片源时显示占位图标。',
+    features: [
+      '通过 CSS aspect-ratio 实现 1:1 正方形比例',
+      '上传时骨架屏闪烁效果（isLoading）',
+      'isLoading + src 时显示上传覆盖层和加载指示器',
+      '通过 object-fit: cover 预览图片',
+      '基于 APCA 亮度检测的自适应移除按钮对比度',
+      '同心圆角：按钮圆角由容器圆角减去内边距推导',
+      '可交互缩略图（onClick）的悬停阴影',
+      '标签作为悬停提示工具和 aria-label 显示',
+      '无 src 时显示占位图标',
+      '禁用状态阻止所有交互并降低不透明度',
+    ],
+    accessibility: [
+      'label 属性为缩略图及其移除按钮提供 aria-label。',
+      'onClick 渲染为按钮以支持键盘和屏幕阅读器访问。',
+      '移除按钮使用从 label 属性推导的 aria-label。',
+    ],
+  },
 };
 
 export const docsDense = {
