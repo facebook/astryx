@@ -26,12 +26,9 @@ const nextConfig = {
   },
   transpilePackages: [
     // Only transpile @xds/core in source mode — in dist mode, it's pre-built.
+    // Theme packages are NOT listed here — their exports already resolve to
+    // pre-compiled dist/ files (ESM + CSS), so re-transpilation is wasted work.
     ...(useSource ? ['@xds/core'] : []),
-    '@xds/theme-default',
-    '@xds/theme-neutral',
-    '@xds/theme-brutalist',
-    '@xds/theme-meta',
-    '@xds/theme-daily',
   ],
   images: {
     unoptimized: true,
