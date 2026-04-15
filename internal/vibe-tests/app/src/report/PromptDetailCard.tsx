@@ -75,9 +75,9 @@ function Findings({score}: {score: UniversalScore}) {
                 : f.severity === 'moderate'
                   ? 'warning'
                   : 'neutral'
-            }>
-            {f.severity ?? 'info'}
-          </XDSBadge>
+            }
+            label={f.severity ?? 'info'}
+          />
           <XDSText key={`text-${i}`} type="body">
             <strong>{f.dimension}</strong> — {f.detail}
           </XDSText>
@@ -144,49 +144,49 @@ export function PromptDetailCard({
                   <XDSButton
                     variant="secondary"
                     size="sm"
-                    onClick={() => window.open(previewUrls.xds, '_blank')}>
-                    XDS Preview
-                  </XDSButton>
+                    onClick={() => window.open(previewUrls.xds, '_blank')}
+                    label="XDS Preview"
+                  />
                 )}
                 {previewUrls?.baseline && (
                   <XDSButton
                     variant="secondary"
                     size="sm"
-                    onClick={() => window.open(previewUrls.baseline, '_blank')}>
-                    Baseline Preview
-                  </XDSButton>
+                    onClick={() => window.open(previewUrls.baseline, '_blank')}
+                    label="Baseline Preview"
+                  />
                 )}
                 {previewUrls?.html && (
                   <XDSButton
                     variant="secondary"
                     size="sm"
-                    onClick={() => window.open(previewUrls.html, '_blank')}>
-                    HTML Preview
-                  </XDSButton>
+                    onClick={() => window.open(previewUrls.html, '_blank')}
+                    label="HTML Preview"
+                  />
                 )}
                 {hasXdsCode && (
                   <XDSButton
                     variant="ghost"
                     size="sm"
-                    onClick={() => onViewCode('xds')}>
-                    XDS Code
-                  </XDSButton>
+                    onClick={() => onViewCode('xds')}
+                    label="XDS Code"
+                  />
                 )}
                 {hasBaselineCode && (
                   <XDSButton
                     variant="ghost"
                     size="sm"
-                    onClick={() => onViewCode('baseline')}>
-                    Baseline Code
-                  </XDSButton>
+                    onClick={() => onViewCode('baseline')}
+                    label="Baseline Code"
+                  />
                 )}
                 {hasHtmlCode && (
                   <XDSButton
                     variant="ghost"
                     size="sm"
-                    onClick={() => onViewCode('html')}>
-                    HTML Code
-                  </XDSButton>
+                    onClick={() => onViewCode('html')}
+                    label="HTML Code"
+                  />
                 )}
               </div>
             )}
