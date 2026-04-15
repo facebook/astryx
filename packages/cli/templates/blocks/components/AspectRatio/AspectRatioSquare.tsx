@@ -19,3 +19,8 @@ export default function AspectRatioSquare() {
     </XDSAspectRatio>
   );
 }
+
+export const showcase = {
+  aspectRatio: 1,
+  render: AspectRatioSquare,
+};

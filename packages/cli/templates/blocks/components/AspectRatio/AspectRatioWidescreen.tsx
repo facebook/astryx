@@ -13,3 +13,8 @@ export default function AspectRatioWidescreen() {
     </XDSAspectRatio>
   );
 }
+
+export const showcase = {
+  aspectRatio: 1,
+  render: AspectRatioWidescreen,
+};
