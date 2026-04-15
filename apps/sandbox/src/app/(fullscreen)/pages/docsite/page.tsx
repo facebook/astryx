@@ -6,7 +6,7 @@ import {useSearchParams, useRouter} from 'next/navigation';
 
 import {createSimulation} from './BoidsCanvas';
 import type {BoidsSimulation} from './BoidsCanvas';
-import {TEMPLATES, XDS_THEMES, AVATAR_IMAGE, THEME_PICKER_ENTRIES} from './constants';
+import {TEMPLATES, XDS_THEMES, AVATAR_IMAGE, THEME_PICKER_ENTRIES, basePath} from './constants';
 import {TemplateCard} from './TemplateCard';
 import {AIComposer} from './AIComposer';
 import {ChatPanel} from './ChatPanel';
@@ -637,7 +637,7 @@ function DocsiteLandingTemplate() {
                   <div style={{flex: 1, minWidth: 0, padding: '32px 32px 32px 0', display: 'flex', flexDirection: 'column', gap: 12}}>
                     <div style={{flex: 1, aspectRatio: '16 / 10', backgroundColor: 'var(--color-background-muted, #f9f9f9)', borderRadius: 12, overflow: 'hidden', border: '1px solid var(--color-border, #e0e0e0)'}}>
                       <img
-                        src={isMeta ? '/templates/card4-preview-meta.png' : t.src}
+                        src={isMeta ? `${basePath}/templates/card4-preview-meta.png` : t.src}
                         alt={t.name}
                         style={{width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top'}}
                       />
@@ -665,39 +665,32 @@ function DocsiteLandingTemplate() {
                       </div>
                     </div>
 
-                    {/* Stats buttons */}
-                    <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 16, marginLeft: -8, marginRight: -8}}>
-                      <div style={{display: 'flex', alignItems: 'center', gap: 4}}>
-                        <XDSTooltip content="Copy link">
-                          <XDSButton label="Link" variant="ghost" size="sm" isIconOnly icon={<LinkIcon />} />
-                        </XDSTooltip>
-                      </div>
-                      <div style={{display: 'flex', alignItems: 'center', gap: 4}}>
-                        <XDSButton
-                          label={card4Bookmarked ? '893' : '892'}
-                          variant="ghost"
-                          size="sm"
-                          style={{color: card4Bookmarked ? 'var(--color-accent, #0066FF)' : 'var(--color-text-secondary, #65676B)'}}
-                          icon={card4Bookmarked ? <BookmarkFilledIcon /> : <BookmarkIcon />}
-                          onClick={() => setCard4Bookmarked(prev => !prev)}
-                        />
-                      </div>
-                    </div>
-
                     {/* CTA buttons */}
                     <div style={{marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8, position: 'relative'}}>
-                      <XDSButton
-                        variant="primary"
-                        label="Start crafting"
-                        size="lg"
-                        style={{width: '100%'}}
-                        onClick={() => {
-                          setUseTarget(previewTarget);
-                          setPreviewTarget(null);
-                          setPanelTab('configure');
-                          setChatOpen(true);
-                        }}
-                      />
+                      <div style={{display: 'flex', gap: 8}}>
+                        <XDSButton
+                          variant="primary"
+                          label="Start crafting"
+                          size="lg"
+                          style={{flex: 1}}
+                          onClick={() => {
+                            setUseTarget(previewTarget);
+                            setPreviewTarget(null);
+                            setPanelTab('configure');
+                            setChatOpen(true);
+                          }}
+                        />
+                        <XDSTooltip content="Bookmark">
+                          <XDSButton
+                            label={card4Bookmarked ? '893' : '892'}
+                            variant="secondary"
+                            size="lg"
+                            isIconOnly
+                            icon={card4Bookmarked ? <BookmarkFilledIcon /> : <BookmarkIcon />}
+                            onClick={() => setCard4Bookmarked(prev => !prev)}
+                          />
+                        </XDSTooltip>
+                      </div>
                       <div ref={card4AddPopoverRef}>
                         <XDSButton
                           ref={card4AddButtonRef}

@@ -351,8 +351,27 @@ export function TemplateFullPreview({
               </div>
             ) : (
               <>
-                {/* Template name */}
-                <XDSText type="display-2">{templateName}</XDSText>
+                {/* Template name — click to copy link */}
+                <span
+                  style={{cursor: 'pointer', textDecoration: 'none'}}
+                  onMouseEnter={(e: React.MouseEvent<HTMLElement>) => {
+                    e.currentTarget.style.textDecoration = 'underline';
+                  }}
+                  onMouseLeave={(e: React.MouseEvent<HTMLElement>) => {
+                    e.currentTarget.style.textDecoration = 'none';
+                  }}
+                  onClick={() => {
+                    void navigator.clipboard.writeText(
+                      'https://xds.dev/templates/' +
+                        templateName.toLowerCase().replace(/\s+/g, '-'),
+                    );
+                    setLinkCopied(true);
+                    setTimeout(() => setLinkCopied(false), 2000);
+                  }}>
+                  <XDSText type="display-2">
+                    {templateName}
+                  </XDSText>
+                </span>
 
                 {/* Description */}
                 <div style={{marginTop: 8}}>
@@ -452,46 +471,45 @@ export function TemplateFullPreview({
                         }}
                       />
                     </XDSTooltip>
-                    <XDSTooltip content="Bookmark">
-                      <XDSButton
-                        label={bookmarkCount.toLocaleString()}
-                        variant="ghost"
-                        size="sm"
-                        style={{color: 'var(--color-text-secondary, #65676B)'}}
-                        icon={
-                          <BookmarkIcon
-                            fill={bookmarked ? 'currentColor' : 'none'}
-                            style={
-                              bookmarked
-                                ? {
-                                    color:
-                                      'var(--color-icon-highlight, #3b82f6)',
-                                  }
-                                : undefined
-                            }
-                          />
-                        }
-                        onClick={() => {
-                          setBookmarked(prev => !prev);
-                          setBookmarkCount(prev =>
-                            bookmarked ? prev - 1 : prev + 1,
-                          );
-                        }}
-                      />
-                    </XDSTooltip>
                   </div>
                 </div>
 
                 {/* CTA buttons */}
                 {!showEditor && (
                   <div style={{marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8, position: 'relative'}}>
-                    <XDSButton
-                      variant="primary"
-                      label="Start crafting"
-                      onClick={onUse}
-                      size="lg"
-                      style={{width: '100%'}}
-                    />
+                    <div style={{display: 'flex', gap: 8}}>
+                      <XDSButton
+                        variant="primary"
+                        label="Start crafting"
+                        onClick={onUse}
+                        size="lg"
+                        style={{flex: 1}}
+                      />
+                      <XDSTooltip content="Bookmark">
+                        <XDSButton
+                          label={bookmarkCount.toLocaleString()}
+                          variant="secondary"
+                          size="lg"
+                          isIconOnly
+                          icon={
+                            <BookmarkIcon
+                              fill={bookmarked ? 'currentColor' : 'none'}
+                              style={
+                                bookmarked
+                                  ? {color: 'var(--color-icon-highlight, #3b82f6)'}
+                                  : undefined
+                              }
+                            />
+                          }
+                          onClick={() => {
+                            setBookmarked(prev => !prev);
+                            setBookmarkCount(prev =>
+                              bookmarked ? prev - 1 : prev + 1,
+                            );
+                          }}
+                        />
+                      </XDSTooltip>
+                    </div>
                     <div ref={addPopoverRef}>
                       <XDSButton
                         ref={addButtonRef}
