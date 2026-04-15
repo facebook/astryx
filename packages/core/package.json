@@ -34,6 +34,12 @@
       "require": "./dist/theme/syntax/index.js"
     },
     "./xds.md": "./xds.md",
+    "./AlertDialog": {
+      "source": "./src/AlertDialog/index.ts",
+      "types": "./dist/AlertDialog/index.d.ts",
+      "import": "./dist/AlertDialog/index.mjs",
+      "require": "./dist/AlertDialog/index.js"
+    },
     "./AppShell": {
       "source": "./src/AppShell/index.ts",
       "types": "./dist/AppShell/index.d.ts",

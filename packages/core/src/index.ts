@@ -68,6 +68,7 @@ export * from './TreeList';
 
 // Keyboard shortcut display
 export * from './Kbd';
+export * from './AlertDialog';
 export * from './Dialog';
 export * from './DropdownMenu';
 export * from './MoreMenu';
