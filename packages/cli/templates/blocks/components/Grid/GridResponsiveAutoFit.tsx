@@ -25,3 +25,8 @@ export default function GridResponsiveAutoFit() {
     </XDSGrid>
   );
 }
+
+export const showcase = {
+  aspectRatio: 4 / 3,
+  render: GridResponsiveAutoFit,
+};
