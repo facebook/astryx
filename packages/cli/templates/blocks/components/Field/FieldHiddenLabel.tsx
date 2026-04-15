@@ -12,3 +12,8 @@ export default function FieldHiddenLabel() {
     </XDSField>
   );
 }
+
+export const showcase = {
+  aspectRatio: 4 / 3,
+  render: FieldHiddenLabel,
+};

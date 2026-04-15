@@ -17,3 +17,8 @@ export default function FieldWithDescription() {
     </XDSField>
   );
 }
+
+export const showcase = {
+  aspectRatio: 4 / 3,
+  render: FieldWithDescription,
+};
