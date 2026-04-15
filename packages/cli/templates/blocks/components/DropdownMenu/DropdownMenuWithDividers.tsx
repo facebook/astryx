@@ -14,3 +14,8 @@ export default function DropdownMenuWithDividers() {
     />
   );
 }
+
+export const showcase = {
+  aspectRatio: 4 / 3,
+  render: DropdownMenuWithDividers,
+};
