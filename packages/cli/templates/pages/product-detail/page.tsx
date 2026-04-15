@@ -153,17 +153,17 @@ function StarRating({rating, count}: {rating: number; count: number}) {
 }
 
 // ─── Image URLs ─────────────────────────────────────────────────────────────
-// Light product photography placeholders (local SVG assets)
+// Light product photography from the xds_oss asset set (ceramics collection)
 // IMAGES[0] = fallback hero; IMAGES[1..6] = thumbnails (first is selected by default)
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
 const IMAGES = [
-  `${basePath}/templates/light-product-1.svg`,
-  `${basePath}/templates/light-product-1.svg`,
-  `${basePath}/templates/light-product-2.svg`,
-  `${basePath}/templates/light-product-3.svg`,
-  `${basePath}/templates/light-product-4.svg`,
-  `${basePath}/templates/light-product-5.svg`,
-  `${basePath}/templates/light-product-6.svg`,
+  `${basePath}/templates/light-product-1.png`,
+  `${basePath}/templates/light-product-1.png`,
+  `${basePath}/templates/light-product-2.png`,
+  `${basePath}/templates/light-product-3.png`,
+  `${basePath}/templates/light-product-4.png`,
+  `${basePath}/templates/light-product-5.png`,
+  `${basePath}/templates/light-product-2.png`,
 ];
 
 // ─── Product Data ───────────────────────────────────────────────────────────
