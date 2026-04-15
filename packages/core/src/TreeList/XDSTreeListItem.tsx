@@ -23,10 +23,7 @@ import {
 } from '../theme/tokens.stylex';
 import {getIcon} from '../Icon/globalIconRegistry';
 import {xdsClassName, mergeProps} from '../utils';
-import {
-  XDSTreeListBranches,
-  XDSTreeListHorizontalConnector,
-} from './XDSTreeListBranches';
+import {XDSTreeListBranches} from './XDSTreeListBranches';
 import type {XDSTreeListDensity} from './XDSTreeListTypes';
 
 // =============================================================================
@@ -47,7 +44,7 @@ const styles = stylex.create({
     listStyleType: 'none',
   },
   treeBranches: {
-    paddingInlineStart: `calc(${spacingVars['--spacing-2']} + ${spacingVars['--spacing-0-5']})`,
+    paddingInlineStart: spacingVars['--spacing-2'],
   },
   rowWrapper: {
     position: 'relative',
@@ -200,7 +197,6 @@ const densityStyles = stylex.create({
   },
   spacious: {
     paddingBlock: spacingVars['--spacing-3'],
-    paddingInline: spacingVars['--spacing-3'],
     fontSize: typeScaleVars['--text-body-size'],
     lineHeight: typeScaleVars['--text-body-leading'],
   },
@@ -303,8 +299,8 @@ export function XDSTreeListItem({
   }, [onClick, hasChildren, onToggle, id, isDisabled]);
 
   const computedMarginLeft = hasChildren
-    ? `calc(${nestedLevel} * ${spacingVars['--spacing-5']})`
-    : `calc(${nestedLevel} * ${spacingVars['--spacing-5']} + ${spacingVars['--spacing-4']} + ${spacingVars['--spacing-2']})`;
+    ? `calc(${nestedLevel} * ${spacingVars['--spacing-4']})`
+    : `calc(${nestedLevel} * ${spacingVars['--spacing-4']} + ${spacingVars['--spacing-4']} + ${spacingVars['--spacing-2']})`;
 
   const labelAndDescription = (
     <>
@@ -399,10 +395,6 @@ export function XDSTreeListItem({
         />
       </div>
       <div {...stylex.props(styles.rowWrapper)}>
-        <XDSTreeListHorizontalConnector
-          hasChildren={hasChildren}
-          nestedLevel={nestedLevel}
-        />
         <div
           {...mergeProps(
             xdsClassName('tree-list-item', {
