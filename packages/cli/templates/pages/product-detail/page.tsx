@@ -168,30 +168,30 @@ const IMAGES = [
 
 // ─── Product Data ───────────────────────────────────────────────────────────
 const PRODUCT = {
-  name: 'Arc Floor Lamp',
-  price: 249.0,
-  originalPrice: 329.0,
+  name: 'Solstice Mug & Plate Set',
+  price: 89.0,
+  originalPrice: 119.0,
   description:
-    'A sculptural arc floor lamp that balances bold geometry with warm ambient light. The adjustable arm extends up to 72 inches, casting a wide pool of light over a reading nook, sofa, or desk. The weighted marble base keeps it stable without a bulky footprint. A built-in dimmer on the cord lets you shift from bright task lighting to a soft evening glow. Pairs beautifully with mid-century and minimalist interiors alike.',
+    'A hand-thrown mug and plate set that brings quiet warmth to every meal. The mug sits easy in the hand with a generous 12 oz capacity, while the 8-inch plate works for everything from toast to tapas. Each piece is kiln-fired at 2,300°F for a finish that resists chips and stains. Subtle variations in the reactive glaze mean no two sets are exactly alike. Dishwasher and microwave safe.',
   composition:
-    'Powder-coated steel arm with a brushed brass finish at the joints. Natural Carrara marble base (each piece has unique veining). Linen drum shade lined in white for even light diffusion. UL-listed for dry locations. Uses one standard E26 bulb (LED recommended, up to 100W equivalent).',
+    'High-fire stoneware clay, wheel-thrown and trimmed by hand. Reactive glaze applied by dipping — color pools and breaks naturally over the clay body. Lead-free and food-safe. Unglazed foot ring reveals the raw clay underneath. Each piece is bisque-fired, glazed, then fired again to cone 10 in a gas reduction kiln.',
   deliveryReturns:
-    'Free white-glove delivery on all lighting orders. Professional assembly included. Returns accepted within 14 days — item must be unassembled in original packaging. Replacement shades available separately.',
+    'Free shipping on all ceramics orders over $75. Each piece is individually wrapped in recycled kraft paper and cushioned for transit. Returns accepted within 30 days — items must be unused and in original packaging. Replacement pieces available individually.',
   dimensions:
-    'Overall height: 183 cm / 72 in (adjustable). Base diameter: 30 cm / 12 in. Shade diameter: 36 cm / 14 in. Shade height: 25 cm / 10 in. Arm reach: 100 cm / 39 in.',
+    'Mug height: 9.5 cm / 3.75 in. Mug diameter: 8.5 cm / 3.35 in. Capacity: 350 ml / 12 oz. Plate diameter: 20 cm / 8 in. Plate height: 2 cm / 0.75 in. Weight: 680 g / 1.5 lb (set).',
 };
 
 const COLORS = [
-  {value: 'matte-black', label: 'Matte Black'},
-  {value: 'brass', label: 'Brass'},
-  {value: 'white', label: 'White'},
-  {value: 'walnut', label: 'Walnut'},
+  {value: 'snow', label: 'Snow'},
+  {value: 'oat', label: 'Oat'},
+  {value: 'sage', label: 'Sage'},
+  {value: 'charcoal', label: 'Charcoal'},
 ];
 
 const FINISHES = [
-  {value: 'linen', label: 'Linen'},
-  {value: 'frosted', label: 'Frosted Glass'},
-  {value: 'rattan', label: 'Rattan'},
+  {value: 'matte', label: 'Matte'},
+  {value: 'satin', label: 'Satin'},
+  {value: 'speckled', label: 'Speckled'},
 ];
 
 const fmt = (n: number) => `$${n.toFixed(2)}`;
@@ -203,7 +203,7 @@ function StoreTopNav() {
       label="Store navigation"
       heading={
         <XDSTopNavHeading
-          heading="Haus Studio"
+          heading="Kiln & Table"
           logo={
             <XDSNavIcon icon={<BagIcon style={{width: 16, height: 16}} />} />
           }
@@ -213,9 +213,9 @@ function StoreTopNav() {
       centerContent={
         <>
           <XDSTopNavItem label="New Arrivals" href="#" />
-          <XDSTopNavItem label="Lighting" href="#" isSelected />
-          <XDSTopNavItem label="Furniture" href="#" />
-          <XDSTopNavItem label="Decor" href="#" />
+          <XDSTopNavItem label="Mugs" href="#" isSelected />
+          <XDSTopNavItem label="Plates & Bowls" href="#" />
+          <XDSTopNavItem label="Serveware" href="#" />
           <XDSTopNavItem label="About" href="#" />
         </>
       }
@@ -318,8 +318,8 @@ function ImageGallery({
 
 // ─── Product Info ───────────────────────────────────────────────────────────
 function ProductInfo() {
-  const [color, setColor] = useState('matte-black');
-  const [finish, setFinish] = useState('linen');
+  const [color, setColor] = useState('snow');
+  const [finish, setFinish] = useState('matte');
   const [quantity, setQuantity] = useState<number | null>(1);
 
   const decrement = () => setQuantity(q => Math.max(1, (q ?? 1) - 1));
@@ -349,11 +349,11 @@ function ProductInfo() {
           <XDSBadge variant="error" label="Sale" />
         </XDSHStack>
       </XDSVStack>
-      {/* Color Selector */}
+      {/* Glaze Selector */}
       <XDSVStack gap={2}>
-        <XDSText type="label">Color</XDSText>
+        <XDSText type="label">Glaze</XDSText>
         <div style={{width: 'fit-content'}}>
-          <XDSSegmentedControl value={color} onChange={setColor} label="Color">
+          <XDSSegmentedControl value={color} onChange={setColor} label="Glaze">
             {COLORS.map(c => (
               <XDSSegmentedControlItem
                 key={c.value}
@@ -364,14 +364,14 @@ function ProductInfo() {
           </XDSSegmentedControl>
         </div>
       </XDSVStack>
-      {/* Shade Finish Selector */}
+      {/* Finish Selector */}
       <XDSVStack gap={2}>
-        <XDSText type="label">Shade Finish</XDSText>
+        <XDSText type="label">Finish</XDSText>
         <div style={{width: 'fit-content'}}>
           <XDSSegmentedControl
             value={finish}
             onChange={setFinish}
-            label="Shade Finish">
+            label="Finish">
             {FINISHES.map(f => (
               <XDSSegmentedControlItem
                 key={f.value}
