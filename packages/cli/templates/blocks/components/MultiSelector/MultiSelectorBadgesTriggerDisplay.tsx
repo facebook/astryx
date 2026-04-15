@@ -17,3 +17,8 @@ export default function MultiSelectorBadgesTriggerDisplay() {
     />
   );
 }
+
+export const showcase = {
+  aspectRatio: 4 / 3,
+  render: MultiSelectorBadgesTriggerDisplay,
+};
