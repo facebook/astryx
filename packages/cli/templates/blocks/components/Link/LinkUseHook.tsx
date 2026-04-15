@@ -11,3 +11,8 @@ function MyLink({as}: {as?: XDSLinkComponentType}) {
 export default function LinkUseHook() {
   return <MyLink />;
 }
+
+export const showcase = {
+  aspectRatio: 1,
+  render: LinkUseHook,
+};

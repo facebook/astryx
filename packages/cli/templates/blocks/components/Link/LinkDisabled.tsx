@@ -9,3 +9,8 @@ export default function LinkDisabled() {
     </XDSLink>
   );
 }
+
+export const showcase = {
+  aspectRatio: 1,
+  render: LinkDisabled,
+};

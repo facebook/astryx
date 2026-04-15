@@ -26,3 +26,8 @@ export default function LinkProvider() {
     </XDSLinkProvider>
   );
 }
+
+export const showcase = {
+  aspectRatio: 1,
+  render: LinkProvider,
+};

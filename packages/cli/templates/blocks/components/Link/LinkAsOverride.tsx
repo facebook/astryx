@@ -21,3 +21,8 @@ export default function LinkAsOverride() {
     </XDSLink>
   );
 }
+
+export const showcase = {
+  aspectRatio: 1,
+  render: LinkAsOverride,
+};
