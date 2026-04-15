@@ -9,26 +9,6 @@ export const docs = {
     'Inline-flex mode for centering inline content such as text and icons',
     'Accepts explicit width and height to size the container',
   ],
-  examples: [
-    {
-      label: 'Center both axes (default)',
-      code: `<XDSCenter width={300} height={200}>
-  <Content />
-</XDSCenter>`,
-    },
-    {
-      label: 'Center horizontally only',
-      code: `<XDSCenter axis="horizontal">
-  <Logo />
-</XDSCenter>`,
-    },
-    {
-      label: 'Inline centering for icons',
-      code: `<XDSCenter isInline>
-  <XDSIcon icon={StarIcon} />
-</XDSCenter>`,
-    },
-  ],
   props: [
     {
       name: 'axis',
@@ -82,26 +62,6 @@ export const docsZh = {
     '支持双轴居中、仅水平居中或仅垂直居中',
     '内联 flex 模式，用于居中文本和图标等内联内容',
     '接受显式的宽度和高度来设置容器尺寸',
-  ],
-  examples: [
-    {
-      label: '双轴居中（默认）',
-      code: `<XDSCenter width={300} height={200}>
-  <Content />
-</XDSCenter>`,
-    },
-    {
-      label: '仅水平居中',
-      code: `<XDSCenter axis="horizontal">
-  <Logo />
-</XDSCenter>`,
-    },
-    {
-      label: '图标内联居中',
-      code: `<XDSCenter isInline>
-  <XDSIcon icon={StarIcon} />
-</XDSCenter>`,
-    },
   ],
   props: [
     {
