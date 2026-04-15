@@ -15,3 +15,8 @@ export default function ListInteractiveItems() {
     </XDSList>
   );
 }
+
+export const showcase = {
+  aspectRatio: 3 / 4,
+  render: ListInteractiveItems,
+};

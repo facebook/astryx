@@ -10,3 +10,8 @@ export default function ListBasic() {
     </XDSList>
   );
 }
+
+export const showcase = {
+  aspectRatio: 3 / 4,
+  render: ListBasic,
+};
