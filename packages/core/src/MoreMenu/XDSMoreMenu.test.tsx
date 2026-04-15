@@ -101,8 +101,8 @@ describe('XDSMoreMenu', () => {
   it('supports disabled state', () => {
     render(<XDSMoreMenu items={defaultItems} isDisabled />);
     const button = screen.getByRole('button', {name: 'More options'});
-    // MoreMenu uses tooltip when closed, so Button uses aria-disabled
-    // instead of native disabled to keep the button focusable for tooltip access
+    // Button uses aria-disabled (not native disabled) to keep
+    // the button focusable for tooltip access
     expect(button).toHaveAttribute('aria-disabled', 'true');
   });
 
