@@ -113,21 +113,6 @@ export const docs = {
           default: '480',
         },
       ],
-      examples: [
-        {
-          label: 'Static source',
-          code: `const source = createStaticSource([
-  {id: 'home', label: 'Home'},
-  {id: 'settings', label: 'Settings'},
-]);
-
-<XDSCommandPalette
-  isOpen={isOpen}
-  onOpenChange={setIsOpen}
-  searchSource={source}
-/>`,
-        },
-      ],
     },
     {
       name: 'XDSCommandPaletteInput',
@@ -171,14 +156,6 @@ export const docs = {
             'StyleX styles for layout customization. Must be a stylex.create() value.',
         },
       ],
-      examples: [
-        {
-          label: 'Custom placeholder',
-          code: `<XDSCommandPalette isOpen={isOpen} onOpenChange={setIsOpen} searchSource={source}
-  input={<XDSCommandPaletteInput placeholder="Search commands..." />}
-/>`,
-        },
-      ],
     },
     {
       name: 'XDSCommandPaletteList',
@@ -202,16 +179,6 @@ export const docs = {
           type: 'StyleXStyles',
           description:
             'StyleX styles for layout customization. Must be a stylex.create() value.',
-        },
-      ],
-      examples: [
-        {
-          label: 'Basic',
-          code: `<XDSCommandPaletteList>
-  <XDSCommandPaletteItem value="home" onSelect={goHome}>
-    Go Home
-  </XDSCommandPaletteItem>
-</XDSCommandPaletteList>`,
         },
       ],
     },
@@ -264,16 +231,6 @@ export const docs = {
             'StyleX styles for layout customization. Must be a stylex.create() value.',
         },
       ],
-      examples: [
-        {
-          label: 'With icon and shortcut',
-          code: `<XDSCommandPaletteItem value="settings" onSelect={() => navigate('/settings')}>
-  <XDSIcon name="settings" size="sm" />
-  Settings
-  <XDSKbd keys={['⌘', ',']} />
-</XDSCommandPaletteItem>`,
-        },
-      ],
     },
     {
       name: 'XDSCommandPaletteGroup',
@@ -298,15 +255,6 @@ export const docs = {
             'StyleX styles for layout customization. Must be a stylex.create() value.',
         },
       ],
-      examples: [
-        {
-          label: 'Basic',
-          code: `<XDSCommandPaletteGroup heading="Navigation">
-  <XDSCommandPaletteItem value="home" onSelect={goHome}>Home</XDSCommandPaletteItem>
-  <XDSCommandPaletteItem value="settings" onSelect={goSettings}>Settings</XDSCommandPaletteItem>
-</XDSCommandPaletteGroup>`,
-        },
-      ],
     },
     {
       name: 'XDSCommandPaletteFooter',
@@ -326,14 +274,6 @@ export const docs = {
             'StyleX styles for layout customization. Must be a stylex.create() value.',
         },
       ],
-      examples: [
-        {
-          label: 'Default hints',
-          code: `<XDSCommandPalette isOpen={isOpen} onOpenChange={setIsOpen} searchSource={source}
-  footer={<XDSCommandPaletteFooter />}
-/>`,
-        },
-      ],
     },
     {
       name: 'XDSCommandPaletteEmpty',
@@ -347,54 +287,6 @@ export const docs = {
           required: true,
         },
       ],
-      examples: [
-        {
-          label: 'Custom empty state',
-          code: `<XDSCommandPalette
-  isOpen={isOpen}
-  onOpenChange={setIsOpen}
-  searchSource={source}
-  emptySearchText={
-    <XDSCommandPaletteEmpty>No commands found</XDSCommandPaletteEmpty>
-  }
-/>`,
-        },
-      ],
-    },
-  ],
-  examples: [
-    {
-      label: 'Static source with createStaticSource',
-      code: `const source = createStaticSource([
-  {id: 'home', label: 'Home'},
-  {id: 'settings', label: 'Settings'},
-  {id: 'logout', label: 'Sign out'},
-]);
-
-function MyCommandPalette() {
-  const [isOpen, setIsOpen] = useState(false);
-  return (
-    <XDSCommandPalette
-      isOpen={isOpen}
-      onOpenChange={setIsOpen}
-      searchSource={source}
-    />
-  );
-}`,
-    },
-    {
-      label: 'Grouped items with renderItem',
-      code: `<XDSCommandPalette
-  isOpen={isOpen}
-  onOpenChange={setIsOpen}
-  searchSource={source}
-  renderItem={(item) => (
-    <>
-      <XDSIcon name={item.auxiliaryData.icon} size="sm" />
-      {item.label}
-    </>
-  )}
-/>`,
     },
   ],
   theming: {

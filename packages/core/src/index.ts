@@ -150,7 +150,6 @@ export type {
   SingleComponentDoc,
   MultiComponentDoc,
   PropDoc,
-  Example,
   ComponentEntry,
   ThemingTarget,
   CSSPropertyDoc,
