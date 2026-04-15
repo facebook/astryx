@@ -10,3 +10,8 @@ export default function TextAreaWithDescriptionAndOptionalIndicator() {
     <XDSTextArea label="Bio" description="Tell us about yourself" isOptional value={bio} onChange={setBio} />
   );
 }
+
+export const showcase = {
+  aspectRatio: 4 / 3,
+  render: TextAreaWithDescriptionAndOptionalIndicator,
+};

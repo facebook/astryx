@@ -10,3 +10,8 @@ export default function TextAreaWithCharacterCounter() {
     <XDSTextArea label="Summary" maxLength={280} value={summary} onChange={setSummary} />
   );
 }
+
+export const showcase = {
+  aspectRatio: 4 / 3,
+  render: TextAreaWithCharacterCounter,
+};
