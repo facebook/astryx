@@ -57,3 +57,28 @@ export {
 
 // Chart colors — palette accessor for data visualization
 export {XDSChartColors, type SequentialHue} from './ChartColors';
+
+// Chart components — composable d3-based data visualization
+export {
+  XDSChart,
+  type XDSChartProps,
+  XDSChartAxis,
+  type XDSChartAxisProps,
+  XDSChartGrid,
+  type XDSChartGridProps,
+  XDSChartBar,
+  type XDSChartBarProps,
+  XDSChartLine,
+  type XDSChartLineProps,
+  XDSChartDot,
+  type XDSChartDotProps,
+  XDSChartTooltip,
+  type XDSChartTooltipProps,
+  XDSChartLegend,
+  type XDSChartLegendProps,
+  type XDSChartLegendItem,
+  useChart,
+  type ChartContext,
+  type ChartMargin,
+  type ChartScale,
+} from './Chart';
