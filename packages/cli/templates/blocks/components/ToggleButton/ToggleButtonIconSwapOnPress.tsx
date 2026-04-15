@@ -32,3 +32,8 @@ export default function ToggleButtonIconSwapOnPress() {
     />
   );
 }
+
+export const showcase = {
+  aspectRatio: 1,
+  render: ToggleButtonIconSwapOnPress,
+};

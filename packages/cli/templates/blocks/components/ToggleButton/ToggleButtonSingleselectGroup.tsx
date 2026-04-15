@@ -29,3 +29,8 @@ export default function ToggleButtonSingleselectGroup() {
     </XDSToggleButtonGroup>
   );
 }
+
+export const showcase = {
+  aspectRatio: 1,
+  render: ToggleButtonSingleselectGroup,
+};

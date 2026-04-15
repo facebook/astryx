@@ -23,3 +23,8 @@ export default function ToggleButtonIcononlyToggle() {
     />
   );
 }
+
+export const showcase = {
+  aspectRatio: 1,
+  render: ToggleButtonIcononlyToggle,
+};
