@@ -15,3 +15,8 @@ export default function TokenWithIconAndHiddenLabel() {
     <XDSToken label="User" icon={<UserIcon />} isLabelHidden />
   );
 }
+
+export const showcase = {
+  aspectRatio: 1,
+  render: TokenWithIconAndHiddenLabel,
+};

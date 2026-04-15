@@ -10,3 +10,8 @@ export default function TokenRemovable() {
     <XDSToken label="Filter" onRemove={(e) => handleRemove(e)} />
   );
 }
+
+export const showcase = {
+  aspectRatio: 1,
+  render: TokenRemovable,
+};

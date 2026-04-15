@@ -8,3 +8,8 @@ export default function TokenClickable() {
     <XDSToken label="Category" onClick={() => navigate('/category')} />
   );
 }
+
+export const showcase = {
+  aspectRatio: 1,
+  render: TokenClickable,
+};

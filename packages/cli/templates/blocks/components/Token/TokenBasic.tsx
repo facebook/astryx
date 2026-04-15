@@ -7,3 +7,8 @@ export default function TokenBasic() {
     <XDSToken label="Tag" />
   );
 }
+
+export const showcase = {
+  aspectRatio: 1,
+  render: TokenBasic,
+};

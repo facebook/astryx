@@ -7,3 +7,8 @@ export default function TokenAsLink() {
     <XDSToken label="Profile" href="/user/123" />
   );
 }
+
+export const showcase = {
+  aspectRatio: 1,
+  render: TokenAsLink,
+};
