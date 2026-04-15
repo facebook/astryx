@@ -1,6 +1,7 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {useState} from 'react';
 import {XDSDropdownMenu, XDSDropdownMenuItem} from '@xds/core/DropdownMenu';
+import {XDSDivider} from '@xds/core/Divider';
 import {
   PencilIcon,
   TrashIcon,
@@ -36,9 +37,6 @@ const meta: Meta<typeof XDSDropdownMenu> = {
     menuWidth: {
       control: 'text',
       description: 'Custom menu width (number for px or CSS string)',
-    },
-    children: {
-      description: 'Custom render function for items',
     },
     'data-testid': {
       control: 'text',
@@ -281,23 +279,28 @@ export const WithOnClick: Story = {
   },
 };
 
-// Custom item rendering with XDSDropdownMenuItem
+// Custom item rendering with compound mode
 export const CustomItemRender: Story = {
   render: () => (
-    <XDSDropdownMenu
-      button={{label: 'Select User'}}
-      items={[
-        {label: 'Alice Johnson'},
-        {label: 'Bob Smith'},
-        {label: 'Carol Williams'},
-      ]}>
-      {item => (
-        <XDSDropdownMenuItem
-          icon={UserIcon}
-          label={item.label}
-          description={`${item.label.toLowerCase().replace(' ', '.')}@example.com`}
-        />
-      )}
+    <XDSDropdownMenu button={{label: 'Select User'}} menuWidth={280}>
+      <XDSDropdownMenuItem
+        icon={UserIcon}
+        label="Alice Johnson"
+        description="alice.johnson@example.com"
+        onClick={() => console.log('Alice')}
+      />
+      <XDSDropdownMenuItem
+        icon={UserIcon}
+        label="Bob Smith"
+        description="bob.smith@example.com"
+        onClick={() => console.log('Bob')}
+      />
+      <XDSDropdownMenuItem
+        icon={UserIcon}
+        label="Carol Williams"
+        description="carol.williams@example.com"
+        onClick={() => console.log('Carol')}
+      />
     </XDSDropdownMenu>
   ),
 };
@@ -368,5 +371,126 @@ export const NoChevron: Story = {
         {label: 'Size', onClick: () => console.log('Size')},
       ]}
     />
+  ),
+};
+
+// Compound-component mode — JSX children with interactive items
+export const CompoundBasic: Story = {
+  render: () => (
+    <XDSDropdownMenu button={{label: 'Actions'}}>
+      <XDSDropdownMenuItem
+        icon={PencilIcon}
+        label="Edit"
+        onClick={() => console.log('Edit')}
+      />
+      <XDSDropdownMenuItem
+        icon={DocumentDuplicateIcon}
+        label="Duplicate"
+        onClick={() => console.log('Duplicate')}
+      />
+      <XDSDivider />
+      <XDSDropdownMenuItem
+        icon={TrashIcon}
+        label="Delete"
+        onClick={() => console.log('Delete')}
+      />
+    </XDSDropdownMenu>
+  ),
+};
+
+// Compound mode with disabled items
+export const CompoundWithDisabled: Story = {
+  render: () => (
+    <XDSDropdownMenu button={{label: 'File Actions'}}>
+      <XDSDropdownMenuItem
+        icon={PencilIcon}
+        label="Edit"
+        onClick={() => console.log('Edit')}
+      />
+      <XDSDropdownMenuItem
+        icon={DocumentDuplicateIcon}
+        label="Duplicate"
+        onClick={() => console.log('Duplicate')}
+      />
+      <XDSDivider />
+      <XDSDropdownMenuItem
+        icon={TrashIcon}
+        label="Delete (no permission)"
+        isDisabled
+      />
+    </XDSDropdownMenu>
+  ),
+};
+
+// Compound mode with conditional items
+export const CompoundConditional: Story = {
+  render: () => {
+    const [canDelete, setCanDelete] = useState(false);
+    return (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 16,
+          alignItems: 'center',
+        }}>
+        <label style={{display: 'flex', gap: 8, alignItems: 'center'}}>
+          <input
+            type="checkbox"
+            checked={canDelete}
+            onChange={e => setCanDelete(e.target.checked)}
+          />
+          Show delete option
+        </label>
+        <XDSDropdownMenu button={{label: 'Actions'}}>
+          <XDSDropdownMenuItem
+            icon={PencilIcon}
+            label="Edit"
+            onClick={() => console.log('Edit')}
+          />
+          <XDSDropdownMenuItem
+            icon={ShareIcon}
+            label="Share"
+            onClick={() => console.log('Share')}
+          />
+          {canDelete && (
+            <>
+              <XDSDivider />
+              <XDSDropdownMenuItem
+                icon={TrashIcon}
+                label="Delete"
+                onClick={() => console.log('Delete')}
+              />
+            </>
+          )}
+        </XDSDropdownMenu>
+      </div>
+    );
+  },
+};
+
+// Compound mode with descriptions
+export const CompoundWithDescriptions: Story = {
+  render: () => (
+    <XDSDropdownMenu button={{label: 'Select User'}} menuWidth={280}>
+      <XDSDropdownMenuItem
+        icon={UserIcon}
+        label="Alice Johnson"
+        description="alice.johnson@example.com"
+        onClick={() => console.log('Alice')}
+      />
+      <XDSDropdownMenuItem
+        icon={UserIcon}
+        label="Bob Smith"
+        description="bob.smith@example.com"
+        onClick={() => console.log('Bob')}
+      />
+      <XDSDropdownMenuItem
+        icon={UserIcon}
+        label="Carol Williams"
+        description="carol.williams@example.com"
+        onClick={() => console.log('Carol')}
+      />
+    </XDSDropdownMenu>
   ),
 };
