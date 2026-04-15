@@ -4,10 +4,6 @@ export const docs = {
   name: 'Toast',
   description:
     'Toast notification system with auto-dismiss, stacking, deduplication, and smooth animations. Uses XDSMediaTheme for inverted surface theming.',
-  showcase: {
-    aspectRatio: 4 / 3,
-    code: '<XDSToast message="Saved successfully" />',
-  },
 
   keywords: ["toast","notification","snackbar","alert","message","feedback","status"],
   features: [

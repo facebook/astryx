@@ -4,10 +4,6 @@ export const docs = {
   name: 'Tooltip',
   description:
     'A hover/focus triggered tooltip for displaying short, non-interactive text anchored to a trigger element.',
-  showcase: {
-    aspectRatio: 1,
-    code: '<XDSTooltip content="Help text"><button>Hover</button></XDSTooltip>',
-  },
   keywords: ["tooltip","hint","infotip","title","hover","flyout","balloon","helpertext"],
   features: [
     'CSS Anchor Positioning for automatic placement relative to trigger elements',

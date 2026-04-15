@@ -3,12 +3,7 @@
 export const docs = {
   name: 'TextInput',
   description:
-    'A text input component for collecting user text input, with label, description, validation status, and optional/required indicators.',
-  showcase: {
-    aspectRatio: 4 / 3,
-    code: '<XDSTextInput label="Name" value="" onChange={() => {}} />',
-  },
-  keywords: ["textinput","textfield","input","search","clearable","prefix","suffix","adornment","validation"],
+    'A text input component for collecting user text input, with label, description, validation status, and optional/required indicators.',  keywords: ["textinput","textfield","input","search","clearable","prefix","suffix","adornment","validation"],
   features: [
     'Label support — required label for accessibility (can be visually hidden)',
     'Description — optional text displayed between the label and input',

@@ -4,10 +4,6 @@ export const docs = {
   name: 'SideNav',
   description:
     'Sidebar navigation component for application pages. Supports sections, nested items, selected state, icons, and collapsible sidebar.',
-  showcase: {
-    aspectRatio: 3 / 4,
-    code: '<XDSSideNav><XDSSideNavItem label="Dashboard" /></XDSSideNav>',
-  },
   keywords: ["sidenav","sidebar","navigation","drawer","menu","nav","aside","sidemenu","navmenu","sider","treeview"],
   features: [
     'Five-zone layout: header, topContent, children (scrollable), footer, footerIcons',

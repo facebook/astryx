@@ -4,10 +4,6 @@ export const docs = {
   name: 'TimeInput',
   description:
     'Time input with free-text entry, text parsing, and arrow-key navigation.',
-  showcase: {
-    aspectRatio: 4 / 3,
-    code: '<XDSTimeInput label="Time" />',
-  },
   keywords: ["timeinput","timepicker","time","clock","hour","minute","ampm","timeselect","timefield"],
   features: [
     'Accepts free-text time entry and parses common formats (e.g. "2:30 PM", "14:30")',

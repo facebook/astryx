@@ -4,10 +4,6 @@ export const docs = {
   name: 'Section',
   description:
     'Container with background variants for creating visually distinct regions that automatically escape parent container padding for edge-to-edge fills.',
-  showcase: {
-    aspectRatio: 4 / 3,
-    code: '<XDSSection title="Section">Content</XDSSection>',
-  },
   keywords: ["section","panel","container","group","fieldset","region","block"],
   features: [
     'Background variants: section, transparent, and wash',

@@ -4,10 +4,6 @@ export const docs = {
   name: 'AppShell',
   description:
     'Application-level layout shell providing header, side navigation, and main content area — composes XDSLayout internally and replaces the XDSPage + XDSPageLayout pattern.',
-  showcase: {
-    aspectRatio: 16 / 9,
-    code: '<XDSAppShell><div>Content</div></XDSAppShell>',
-  },
   keywords: ["appshell","layout","scaffold","sidebar","sidenav","topnav","header","navigation","dashboard","shell","page","frame"],
   features: [
     'Two navigation slots: topNav (horizontal bar) and sideNav (vertical sidebar)',

@@ -4,10 +4,6 @@ export const docs = {
   name: 'AlertDialog',
   description:
     'Confirmation dialog for destructive or irreversible actions. Uses role="alertdialog" with required title, description, and cancel/action buttons.',
-  showcase: {
-    aspectRatio: 4 / 3,
-    code: '<XDSAlertDialog title="Confirm" description="Are you sure?" />',
-  },
   keywords: [
     'alert',
     'alertdialog',

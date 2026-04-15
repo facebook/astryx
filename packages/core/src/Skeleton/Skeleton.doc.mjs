@@ -4,10 +4,6 @@ export const docs = {
   name: 'Skeleton',
   description:
     'A placeholder loading component that displays an animated pulsing effect while content is loading.',
-  showcase: {
-    aspectRatio: 4 / 3,
-    code: '<XDSSkeleton />',
-  },
   keywords: ["skeleton","placeholder","loading","shimmer","pulse","loader","bone","ghost","preloader"],
   features: [
     'Pulsing Animation: Smooth opacity animation using stepped timing for a subtle shimmer effect',

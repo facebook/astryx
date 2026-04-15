@@ -155,4 +155,5 @@ export type {
   CSSPropertyDoc,
   ComponentVar,
   TranslationDoc,
+  ComponentShowcaseDoc,
 } from './docs-types';

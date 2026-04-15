@@ -467,3 +467,21 @@ export interface BlockTemplateDoc extends BaseTemplateDoc {
 }
 
 export type TemplateDoc = PageTemplateDoc | BlockTemplateDoc;
+
+/**
+ * Showcase metadata for a component.
+ *
+ * Each component can have a showcase file in `packages/cli/templates/showcase/`
+ * consisting of a `{Name}.doc.mjs` (this type) and a `{Name}.tsx` (the component).
+ *
+ *   /\*\* \@type \{import('@xds/core').ComponentShowcaseDoc\} *\/
+ *   export const doc = \{ name: 'Button', aspectRatio: 1 \};
+ */
+export interface ComponentShowcaseDoc {
+  /** Component name (matches the directory name).
+   *  e.g. `"Button"`, `"Layout"`, `"Dialog"` */
+  name: string;
+  /** Width-to-height ratio for the preview container.
+   *  e.g. `1`, `16 / 9`, `4 / 3` */
+  aspectRatio: number;
+}

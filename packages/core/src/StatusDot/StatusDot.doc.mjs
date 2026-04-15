@@ -4,10 +4,6 @@ export const docs = {
   name: 'StatusDot',
   description:
     'A small colored dot indicator for status display (online/offline, severity, etc).',
-  showcase: {
-    aspectRatio: 1,
-    code: '<XDSStatusDot variant="positive" label="Online" />',
-  },
   keywords: ["statusdot","dot","indicator","status","signal","presence","availability","online","pip"],
   features: [
     'Five semantic color variants: positive, warning, negative, info, neutral',

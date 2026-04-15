@@ -4,10 +4,6 @@ export const docs = {
   name: 'FormLayout',
   description:
     'A spatial layout container for arranging form fields with consistent spacing and direction.',
-  showcase: {
-    aspectRatio: 4 / 3,
-    code: '<XDSFormLayout>Form fields</XDSFormLayout>',
-  },
   keywords: ["formlayout","form","fieldset","formgroup","formcontainer","fields","vertical","horizontal"],
   props: [
     {
