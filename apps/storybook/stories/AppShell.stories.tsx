@@ -252,62 +252,171 @@ export default meta;
 type Story = StoryObj<typeof XDSAppShell>;
 
 // =============================================================================
+// Empty slot components — simulates framework patterns (e.g. Next.js parallel
+// routes) where a slot receives a React component that renders nothing.
+// =============================================================================
+
+/**
+ * A React component that renders null. Simulates the Next.js parallel route
+ * pattern where a `@sidebar/default.tsx` returns null — the slot still
+ * receives a React element, but it produces no DOM output.
+ */
+function EmptySideNav() {
+  return null;
+}
+
+function EmptyTopNavItems() {
+  return null;
+}
+
+/**
+ * TopNav with heading and endContent but no collapsible items.
+ * Simulates the pattern where a TopNav exists structurally but has no
+ * startContent or centerContent for the mobile drawer.
+ */
+function TopNavHeadingOnly() {
+  return (
+    <XDSTopNav
+      label="Main navigation"
+      heading={
+        <XDSTopNavHeading
+          heading="Acme App"
+          logo={
+            <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
+          }
+        />
+      }
+      endContent={
+        <XDSButton
+          label="Profile"
+          variant="ghost"
+          icon={<UserCircleIcon style={{width: 16, height: 16}} />}
+          isIconOnly
+        />
+      }
+    />
+  );
+}
+
+// =============================================================================
 // Playground (interactive controls)
 // =============================================================================
 
 /**
  * Interactive playground with controls for toggling top nav and side nav.
- * When top nav is turned off, the side nav automatically shows a header
- * with the app title since there's no top bar to display it.
+ *
+ * Each slot has three modes:
+ * - **show** — renders the slot with content
+ * - **hide** — passes `undefined` (slot not present)
+ * - **empty component** — passes a React component that renders `null`
+ *
+ * The "empty component" mode demonstrates a real-world pattern from
+ * frameworks like Next.js, where parallel route slots (e.g. `@sidebar`)
+ * always pass a React element — even when the current route's
+ * `default.tsx` returns null. This means the slot prop is not
+ * `undefined`, but the component produces no DOM output.
+ *
+ * Bug to observe: In "empty component" mode, AppShell still enables
+ * mobile nav because it checks `sideNav != null` (true — it's a React
+ * element) rather than detecting that nothing rendered.
  */
-export const Playground: StoryObj<
-  typeof XDSAppShell & {showTopNav: boolean; showSideNav: boolean}
-> = {
+export const Playground: Story = {
+   
   argTypes: {
-    showTopNav: {
-      control: 'boolean',
-      description: 'Show the top navigation bar',
-    },
-    showSideNav: {
-      control: 'boolean',
-      description: 'Show the side navigation',
-    },
-    background: {
+    topNav: {
       control: 'radio',
-      options: ['surface', 'wash'],
-      description: 'Background color of the shell',
+      options: ['show', 'hide', 'empty-component'],
+      description:
+        'TopNav slot: show (with content), hide (undefined), or empty component (renders null)',
+    },
+    sideNav: {
+      control: 'radio',
+      options: ['show', 'hide', 'empty-component'],
+      description:
+        'SideNav slot: show (with content), hide (undefined), or empty component (renders null)',
+    },
+    topNavItems: {
+      control: 'radio',
+      options: ['show', 'hide', 'empty-component'],
+      description:
+        'TopNav startContent: show (nav items), hide (no startContent), or empty component (renders null)',
+    },
+    variant: {
+      control: 'radio',
+      options: ['elevated', 'wash', 'surface', 'section'],
+      description: 'Navigation background style',
     },
     height: {
       control: 'radio',
       options: ['fill', 'auto'],
     },
-  },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } as Record<string, any>,
   args: {
-    showTopNav: true,
-    showSideNav: true,
-    background: 'wash',
+    topNav: 'show',
+    sideNav: 'show',
+    topNavItems: 'show',
+    variant: 'elevated',
     height: 'fill',
-  },
-  render: function PlaygroundStory(args: {
-    showTopNav: boolean;
-    showSideNav: boolean;
-    background: 'surface' | 'wash';
-    height: 'fill' | 'auto';
-  }) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } as Record<string, any>,
+  render: function PlaygroundStory(args: Record<string, string>) {
+    const topNavStartContent =
+      args.topNavItems === 'show' ? (
+        <>
+          <XDSTopNavItem label="Home" href="#" isSelected />
+          <XDSTopNavItem label="Products" href="#" />
+          <XDSTopNavItem label="Docs" href="#" />
+        </>
+      ) : args.topNavItems === 'empty-component' ? (
+        <EmptyTopNavItems />
+      ) : undefined;
+
+    const topNav =
+      args.topNav === 'show' ? (
+        <XDSTopNav
+          label="Main navigation"
+          heading={
+            <XDSTopNavHeading
+              heading="Acme App"
+              logo={
+                <XDSNavIcon
+                  icon={<CubeIcon style={{width: 16, height: 16}} />}
+                />
+              }
+            />
+          }
+          startContent={topNavStartContent}
+          endContent={
+            <XDSButton
+              label="Profile"
+              variant="ghost"
+              icon={<UserCircleIcon style={{width: 16, height: 16}} />}
+              isIconOnly
+            />
+          }
+        />
+      ) : args.topNav === 'empty-component' ? (
+        <TopNavHeadingOnly />
+      ) : undefined;
+
+    const sideNav =
+      args.sideNav === 'show' ? (
+        args.topNav !== 'hide' ? (
+          <SideNavWithoutHeader />
+        ) : (
+          <SideNavWithHeader />
+        )
+      ) : args.sideNav === 'empty-component' ? (
+        <EmptySideNav />
+      ) : undefined;
+
     return (
       <XDSAppShell
         contentPadding={6}
-        topNav={args.showTopNav ? <AppTopNav /> : undefined}
-        sideNav={
-          args.showSideNav ? (
-            args.showTopNav ? (
-              <SideNavWithoutHeader />
-            ) : (
-              <SideNavWithHeader />
-            )
-          ) : undefined
-        }
-        background={args.background}
+        variant={args.variant}
+        topNav={topNav}
+        sideNav={sideNav}
         height={args.height}>
         <MockContent />
       </XDSAppShell>
