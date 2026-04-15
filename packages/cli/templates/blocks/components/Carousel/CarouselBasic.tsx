@@ -11,3 +11,8 @@ export default function CarouselBasic() {
     </XDSCarousel>
   );
 }
+
+export const showcase = {
+  aspectRatio: 1,
+  render: CarouselBasic,
+};

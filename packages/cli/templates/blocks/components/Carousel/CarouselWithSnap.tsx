@@ -13,3 +13,8 @@ export default function CarouselWithSnap() {
     </XDSCarousel>
   );
 }
+
+export const showcase = {
+  aspectRatio: 1,
+  render: CarouselWithSnap,
+};
