@@ -148,8 +148,7 @@ export function TemplatePreview({
               display: 'inline-flex',
               padding: '4px 0',
               boxShadow: isScrolled ? '0 2px 8px rgba(0,0,0,0.12)' : 'none',
-              transition: 'background-color 200ms ease, box-shadow 200ms ease 200ms',
-              transition: 'box-shadow 300ms ease',
+              transition: 'background-color 200ms ease, box-shadow 300ms ease',
             }}>
             <XDSToolbar
               label="Template actions"
