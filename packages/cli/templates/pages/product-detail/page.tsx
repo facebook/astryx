@@ -153,16 +153,17 @@ function StarRating({rating, count}: {rating: number; count: number}) {
 }
 
 // ─── Image URLs ─────────────────────────────────────────────────────────────
-// Main hero: B&W living room (unsplash pqyu59ZcbLU)
-// Thumbnails: B&W interiors of similar tone
+// Light product photography placeholders (local SVG assets)
+// IMAGES[0] = fallback hero; IMAGES[1..6] = thumbnails (first is selected by default)
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
 const IMAGES = [
-  'https://images.unsplash.com/photo-1567016432779-094069958ea5?w=800&q=80',
-  'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400&q=80',
-  'https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?w=400&q=80',
-  'https://images.unsplash.com/photo-1560448204-603b3fc33ddc?w=400&q=80',
-  'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=400&q=80',
-  'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&q=80',
-  'https://images.unsplash.com/photo-1489171078254-c3365d6e359f?w=400&q=80',
+  `${basePath}/templates/light-product-1.svg`,
+  `${basePath}/templates/light-product-1.svg`,
+  `${basePath}/templates/light-product-2.svg`,
+  `${basePath}/templates/light-product-3.svg`,
+  `${basePath}/templates/light-product-4.svg`,
+  `${basePath}/templates/light-product-5.svg`,
+  `${basePath}/templates/light-product-6.svg`,
 ];
 
 // ─── Product Data ───────────────────────────────────────────────────────────
