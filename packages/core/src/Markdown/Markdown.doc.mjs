@@ -110,26 +110,6 @@ export const docs = {
       description: 'Test selector for automated testing frameworks.',
     },
   ],
-  examples: [
-    {
-      label: 'Basic usage',
-      code: `<XDSMarkdown>
-  {'# Hello\\n\\nThis is **bold** and _italic_ text.\\n\\n- Item one\\n- Item two'}
-</XDSMarkdown>`,
-    },
-    {
-      label: 'Streaming mode',
-      code: `<XDSMarkdown isStreaming={isStreaming}>
-  {streamedText}
-</XDSMarkdown>`,
-    },
-    {
-      label: 'Nested under a heading',
-      code: `<XDSMarkdown headingLevelStart={3}>
-  {'# Section\\n\\nThis renders as an h3.'}
-</XDSMarkdown>`,
-    },
-  ],
   theming: {
     targets: [
       {className: 'xds-markdown', visualProps: ['density']},
@@ -241,20 +221,6 @@ export const docsZh = {
       name: 'data-testid',
       type: 'string',
       description: '用于自动化测试框架的测试选择器。',
-    },
-  ],
-  examples: [
-    {
-      label: '基本用法',
-      code: `<XDSMarkdown>
-  {'# Hello\\n\\nThis is **bold** text.'}
-</XDSMarkdown>`,
-    },
-    {
-      label: '流式模式',
-      code: `<XDSMarkdown isStreaming={isStreaming}>
-  {streamedText}
-</XDSMarkdown>`,
     },
   ],
   theming: {
