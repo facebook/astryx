@@ -62,3 +62,8 @@ export default function MobileNavResponsiveSidebarDrawerPattern() {
 
   return <XDSSideNav>{navSections}</XDSSideNav>;
 }
+
+export const showcase = {
+  aspectRatio: 3 / 4,
+  render: MobileNavResponsiveSidebarDrawerPattern,
+};
