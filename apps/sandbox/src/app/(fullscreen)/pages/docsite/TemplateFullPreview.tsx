@@ -352,8 +352,7 @@ export function TemplateFullPreview({
             ) : (
               <>
                 {/* Template name — click to copy link */}
-                <XDSText
-                  type="display-2"
+                <span
                   style={{cursor: 'pointer', textDecoration: 'none'}}
                   onMouseEnter={(e: React.MouseEvent<HTMLElement>) => {
                     e.currentTarget.style.textDecoration = 'underline';
@@ -369,8 +368,10 @@ export function TemplateFullPreview({
                     setLinkCopied(true);
                     setTimeout(() => setLinkCopied(false), 2000);
                   }}>
-                  {templateName}
-                </XDSText>
+                  <XDSText type="display-2">
+                    {templateName}
+                  </XDSText>
+                </span>
 
                 {/* Description */}
                 <div style={{marginTop: 8}}>
