@@ -219,7 +219,7 @@ export function TemplateCard({
                   ]}
                 />
                 <XDSButton
-                  label="Customize"
+                  label="Craft"
                   variant="secondary"
                   size="sm"
                   style={{backgroundColor: 'var(--color-background-surface)'}}
