@@ -2,44 +2,13 @@
 
 export const docs = {
   name: 'SegmentedControl',
-  description:
-    'Segmented button group for single selection with radio group semantics. Visually resembles a tab bar but controls a value, not a view.',  keywords: ['radio', 'tabs', 'toggle', 'toggle-group', 'pill', 'button-group', 'switch', 'segment', 'control'],
-  features: [
-    'Context-based communication: XDSSegmentedControlContext passes value/onChange/size/isDisabled from parent to children',
-    'Radio group semantics: role="radiogroup" with role="radio" items and aria-checked',
-    'Roving tabindex: only the selected item is tabbable (tabIndex=0), others are tabIndex=-1',
-    'Keyboard navigation: ArrowLeft/ArrowRight navigate + select, Home/End jump to first/last, wraps around',
-    'Animated indicator: selected item has a raised surface background with box-shadow',
-    'Icon + label or icon-only items (isLabelHidden hides label visually, keeps it as aria-label)',
-    'Size variants: sm (compact for toolbars), md (default), lg (larger touch targets)',
-    'Disabled state: entire group or individual items via aria-disabled (maintains focusability)',
-    'Hover state: unselected items show overlay on hover with @media (hover: hover) guard',
-  ],
+  keywords: ['radio', 'tabs', 'toggle', 'toggle-group', 'pill', 'button-group', 'switch', 'segment', 'control'],
   theming: {
     targets: [
       {className: 'xds-segmented-control', visualProps: ['size']},
       {className: 'xds-segmented-control-item'},
     ],
   },
-  accessibility: [
-    'Container has role="radiogroup" with aria-label from the label prop (never rendered visually)',
-    'Items have role="radio" with aria-checked indicating selection state',
-    'Roving tabindex: selected item has tabIndex=0, others have tabIndex=-1',
-    'Arrow keys navigate and select simultaneously (radio group pattern)',
-    'Disabled items use aria-disabled (not native disabled) to maintain focusability',
-    'Icon-only items use isLabelHidden — label becomes aria-label',
-  ],
-  keyboard:
-    'ArrowRight/ArrowLeft navigate and select (wrapping). Home/End jump to first/last item. Only the selected item is in the tab order.',
-  notes: [
-    'Controlled-only — no uncontrolled mode in v1',
-    'Horizontal-only — no vertical orientation in v1',
-    'Deselection not allowed (radio semantics — always one selected)',
-    'Uses aria-disabled instead of native disabled to maintain keyboard focusability',
-    'Keyboard navigation skips disabled items',
-    'Track background uses --color-neutral, selected indicator uses --color-background-surface with --shadow-low',
-    'label prop on XDSSegmentedControl is aria-only (like XDSTabList aria-label), never rendered visually',
-  ],
   components: [
     {
       name: 'XDSSegmentedControl',
@@ -130,16 +99,34 @@ export const docs = {
     },
   ],
   usage: {
-    summary: 'Segmented button group for single selection with radio group semantics.',
-    content: `## When to use
-
-- Switching between a small set of mutually exclusive views or modes.
-- When all options should be visible at once.
-
-## When NOT to use
-
-- For two-state toggles (use ToggleButton instead).
-- For navigation between pages (use Tabs instead).`,
+    description:
+      'Segmented button group for single selection with radio group semantics. Visually resembles a tab bar but controls a value, not a view. Use for switching between a small set of mutually exclusive views or modes when all options should be visible at once. For two-state toggles, use ToggleButton; for page navigation, use Tabs.',
+    features: [
+      'Animated indicator with raised surface background and box-shadow',
+      'Icon + label or icon-only items (isLabelHidden hides label visually, keeps it as aria-label)',
+      'Size variants: sm (compact for toolbars), md (default), lg (larger touch targets)',
+      'Disabled state: entire group or individual items via aria-disabled (maintains focusability)',
+    ],
+    accessibility: [
+      'Container has role="radiogroup" with aria-label from the label prop (never rendered visually)',
+      'Items have role="radio" with aria-checked indicating selection state',
+      'Roving tabindex: selected item has tabIndex=0, others have tabIndex=-1',
+      'Arrow keys navigate and select simultaneously (radio group pattern)',
+      'Disabled items use aria-disabled (not native disabled) to maintain focusability',
+      'Icon-only items use isLabelHidden — label becomes aria-label',
+      'Keyboard: ArrowRight/ArrowLeft navigate and select (wrapping); Home/End jump to first/last item; only the selected item is in the tab order.',
+    ],
+    notes: [
+      'Controlled-only — no uncontrolled mode in v1',
+      'Horizontal-only — no vertical orientation in v1',
+      'Deselection not allowed (radio semantics — always one selected)',
+      'Uses aria-disabled instead of native disabled to maintain keyboard focusability',
+      'Keyboard navigation skips disabled items',
+      'Track background uses --color-neutral, selected indicator uses --color-background-surface with --shadow-low',
+      'label prop on XDSSegmentedControl is aria-only (like XDSTabList aria-label), never rendered visually',
+      'Context-based communication: XDSSegmentedControlContext passes value/onChange/size/isDisabled from parent to children',
+      'Hover state: unselected items show overlay on hover with @media (hover: hover) guard',
+    ],
   },
 };
 

@@ -2,19 +2,7 @@
 
 export const docs = {
   name: 'Field',
-  description:
-    'A form field wrapper component that provides label, description, and optional/required indicators.',
   keywords: ["field","formfield","formgroup","formcontrol","label","input","required","optional","helpertext","hint"],
-  features: [
-    'Label Support — required label for accessibility (can be visually hidden)',
-    'Description — optional description text displayed between the label and input',
-    'Optional/Required Indicators — display "Optional" or "Required" text with bullet separator',
-    'Label Tooltip — optional info icon with tooltip at end of label',
-    'Disabled State — propagates disabled styling to label',
-    'Status Messages — attached/detached validation feedback with role="status" and aria-live="polite"',
-    'Accessible — label properly associated with input via htmlFor/id',
-    'Styled with StyleX — uses XDS design tokens for consistent styling',
-  ],
   theming: {
     targets: [
       {className: 'xds-field'},
@@ -25,17 +13,6 @@ export const docs = {
       {name: '--input-radius', description: 'Border radius of input fields', default: 'var(--radius-element)'},
     ],
   },
-  notes: [
-    'Parent components are responsible for generating IDs (using the useId hook).',
-    'Label is always rendered for accessibility; use isLabelHidden to hide visually.',
-    'Hidden label uses a CSS technique that remains accessible to screen readers.',
-    'Description is rendered when provided; if descriptionID is also provided, the description element gets that ID for aria-describedby association.',
-    'isOptional and isRequired are mutually exclusive; setting both will show "Optional" (dev warning emitted).',
-    'Optional/Required text appears on the same line as the label.',
-    'Status messages use role="status" and aria-live="polite" for screen reader announcements.',
-    'Use statusVariant="attached" (default) for bordered inputs; "detached" for checkboxes, switches, sliders.',
-    'isDisabled propagates disabled styling to the label (color + cursor).',
-  ],
   components: [
     {
       name: 'XDSField',
@@ -236,10 +213,28 @@ export const docs = {
     },
   ],
   usage: {
-    summary: 'A form field wrapper that provides label, description, and optional/required indicators around an input.',
-    content: `## When to use
-
-- Wrapping input components in forms to provide consistent labels, descriptions, and validation states.`,
+    description: 'A form field wrapper that provides label, description, and optional/required indicators around an input. Use to wrap input components in forms for consistent labels, descriptions, and validation states.',
+    features: [
+      'Label Support — required label for accessibility (can be visually hidden)',
+      'Description — optional description text displayed between the label and input',
+      'Optional/Required Indicators — display "Optional" or "Required" text with bullet separator',
+      'Label Tooltip — optional info icon with tooltip at end of label',
+      'Disabled State — propagates disabled styling to label',
+      'Status Messages — attached/detached validation feedback with role="status" and aria-live="polite"',
+      'Accessible — label properly associated with input via htmlFor/id',
+      'Styled with StyleX — uses XDS design tokens for consistent styling',
+    ],
+    notes: [
+      'Parent components are responsible for generating IDs (using the useId hook).',
+      'Label is always rendered for accessibility; use isLabelHidden to hide visually.',
+      'Hidden label uses a CSS technique that remains accessible to screen readers.',
+      'Description is rendered when provided; if descriptionID is also provided, the description element gets that ID for aria-describedby association.',
+      'isOptional and isRequired are mutually exclusive; setting both will show "Optional" (dev warning emitted).',
+      'Optional/Required text appears on the same line as the label.',
+      'Status messages use role="status" and aria-live="polite" for screen reader announcements.',
+      'Use statusVariant="attached" (default) for bordered inputs; "detached" for checkboxes, switches, sliders.',
+      'isDisabled propagates disabled styling to the label (color + cursor).',
+    ],
   },
 };
 

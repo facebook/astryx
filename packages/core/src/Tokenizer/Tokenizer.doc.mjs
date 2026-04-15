@@ -2,8 +2,7 @@
 
 export const docs = {
   name: 'Tokenizer',
-  description:
-    'Multi-select typeahead with token chips for selected items. Composes XDSBaseTypeahead for search and XDSToken for chips.',  keywords: ["tokenizer","multiselect","multi-select","chips","tags","combobox","autocomplete","taginput","chipinput"],
+  keywords: ["tokenizer","multiselect","multi-select","chips","tags","combobox","autocomplete","taginput","chipinput"],
   props: [
     {
       name: 'label',
@@ -162,40 +161,32 @@ export const docs = {
       description:
         'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
     },
-  ],  features: [
-    'Token chips for each selected item with remove buttons',
-    'Filtered search that automatically excludes already-selected items',
-    'Max entries to limit number of selections — input hides when limit is reached',
-    'Clear all button for bulk removal of all tokens',
-    'Custom token and item rendering via renderToken and renderItem',
-    'Backspace on empty input removes the last token',
-    "Change metadata: onChange receives a second argument with type ('add' | 'create' | 'remove' | 'reorder')",
-    'Free-text token creation via hasCreate prop — shows a "Create" option in the dropdown for new values',
   ],
   theming: {
     targets: [
       {className: 'xds-tokenizer', visualProps: ['size']},
     ],
   },
-  accessibility: [
-    'Wrapped in XDSField for label, description, and status message association.',
-    'Token container has role="group" with aria-label.',
-    'Clear all button has aria-label="Clear all".',
-    'Combobox pattern provided by XDSBaseTypeahead with aria-expanded and aria-autocomplete.',
-  ],
-  keyboard:
-    'Backspace on empty input removes last token; Arrow keys navigate dropdown; Enter selects highlighted item; Escape closes dropdown',
   usage: {
-    summary: 'Converts text into tokens, enabling users to filter content and make selections.',
-    content: `## When to use
-
-- Convert plain text into tokens for metadata.
-- Predict entries from a data source.
-- Allow users to create custom entries.
-
-## Best practices
-
-- Don't: Apply colored backgrounds to tokens within a tokenizer.`,
+    description:
+      'Tokenizer is a multi-select typeahead that converts text into token chips for selected items, enabling users to filter content and make selections from a data source. It composes XDSBaseTypeahead for search and XDSToken for chips. Avoid applying colored backgrounds to tokens within a tokenizer.',
+    features: [
+      'Token chips for each selected item with remove buttons',
+      'Filtered search that automatically excludes already-selected items',
+      'Max entries to limit number of selections — input hides when limit is reached',
+      'Clear all button for bulk removal of all tokens',
+      'Custom token and item rendering via renderToken and renderItem',
+      'Backspace on empty input removes the last token',
+      "Change metadata: onChange receives a second argument with type ('add' | 'create' | 'remove' | 'reorder')",
+      'Free-text token creation via hasCreate prop — shows a "Create" option in the dropdown for new values',
+    ],
+    accessibility: [
+      'Wrapped in XDSField for label, description, and status message association.',
+      'Token container has role="group" with aria-label.',
+      'Clear all button has aria-label="Clear all".',
+      'Combobox pattern provided by XDSBaseTypeahead with aria-expanded and aria-autocomplete.',
+      'Keyboard: Backspace on empty input removes last token; Arrow keys navigate dropdown; Enter selects highlighted item; Escape closes dropdown.',
+    ],
   },
 };
 

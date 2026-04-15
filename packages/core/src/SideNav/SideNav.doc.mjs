@@ -2,29 +2,7 @@
 
 export const docs = {
   name: 'SideNav',
-  description:
-    'Sidebar navigation component for application pages. Supports sections, nested items, selected state, icons, and collapsible sidebar.',
   keywords: ["sidenav","sidebar","navigation","drawer","menu","nav","aside","sidemenu","navmenu","sider","treeview"],
-  features: [
-    'Five-zone layout: header, topContent, children (scrollable), footer, footerIcons',
-    'Smart header interaction boundary logic — links and menu trigger coexist without overlap',
-    'Nested items via children on XDSSideNavItem',
-    'Selected state with optional alternate icon for filled/outline variants',
-    'Section grouping with optional title, subtitle, and end content',
-    'Collapsible sidebar via collapsible prop — collapses to icon-only toolbar, uncontrolled or controlled',
-    'Accessible — nav landmark, aria-current="page", role="group" with aria-labelledby on sections',
-    'Keyboard navigable — Tab through items, Enter/Space to activate',
-    'Resizable sidebar via resizable prop — drag handle at inline-end edge, pointer-based resize with min/max constraints',
-    'Heading text overflow detection with tooltip — shows full text on hover when heading, superheading, or subheading is truncated by ellipsis',
-    'Header end content slot — headerEndContent prop on XDSSideNavHeading for badges, status indicators, or action buttons at the trailing edge of the heading row',
-  ],
-  accessibility: [
-    '<nav aria-label="Side navigation"> wraps the entire component',
-    'aria-current="page" is applied to the selected item',
-    'Sections use role="group" with aria-labelledby pointing to the section title',
-    'isHeaderHidden visually hides the section title while keeping it accessible to screen readers',
-  ],
-  keyboard: 'Tab through items, Enter/Space to activate links',
   theming: {
     targets: [
       {className: 'xds-side-nav', visualProps: ['mode']},
@@ -33,14 +11,7 @@ export const docs = {
       {className: 'xds-side-nav-section'},
     ],
   },
-  notes: [
-    'When used inside XDSAppShell alongside XDSTopNav, omit XDSSideNavHeading — the TopNav already provides app identity and including the header would duplicate it.',
-    'Without a TopNav, include XDSSideNavHeading to provide app identity.',
-    'Header interaction model: headingHref only → whole header is one link; headingHref + superheadingHref, no menu → each text is an independent link; menu only, no hrefs → whole header is the popover trigger; menu + hrefs → links are independent <a> elements, chevron/remaining area is the popover trigger.',
-    'Depends on useXDSPopover for the header menu popover and XDSIcon for rendering icon components in nav items.',
-    'XDSSideNavCollapseButton renders as an icon-only ghost button by default. Place it in footerIcons, header, or outside the sidenav (pass sideNavRef).',
-    'useXDSSideNavCollapse hook exposes { isCollapsed, toggle, isCollapsible } for custom collapse controls.',
-  ],  components: [
+  components: [
     {
       name: 'XDSSideNav',
       description:
@@ -267,24 +238,34 @@ export const docs = {
     },
   ],
   usage: {
-    summary: 'Navigation system helping users find and browse information. Left nav is the default recommendation.',
-    content: `## When to use
-
-- 5 or more navigation items.
-- Customizable navigation structure.
-- Complex grouping of navigation items.
-- Secondary item actions needed.
-- Collapsible navigation sections.
-
-## When NOT to use
-
-- Filter-primary tools (use tabs or filter buttons instead).
-- Housing wide components that need more horizontal space.
-
-## Best practices
-
-- Do: Use descriptive names for navigation items.
-- Don't: Use navigation to filter content \u2014 use tabs or filter buttons instead.`,
+    description:
+      'Sidebar navigation component for application pages, supporting sections, nested items, selected state, icons, and collapsible sidebar. Left nav is the default recommendation for 5+ navigation items or complex grouping. Do not use for filter-primary tools \u2014 use tabs or filter buttons instead.',
+    features: [
+      'Five-zone layout: header, topContent, children (scrollable), footer, footerIcons',
+      'Smart header interaction boundary logic \u2014 links and menu trigger coexist without overlap',
+      'Nested items via children on XDSSideNavItem',
+      'Selected state with optional alternate icon for filled/outline variants',
+      'Section grouping with optional title, subtitle, and end content',
+      'Collapsible sidebar via collapsible prop \u2014 collapses to icon-only toolbar, uncontrolled or controlled',
+      'Resizable sidebar via resizable prop \u2014 drag handle at inline-end edge, pointer-based resize with min/max constraints',
+      'Heading text overflow detection with tooltip \u2014 shows full text on hover when truncated',
+      'Header end content slot for badges, status indicators, or action buttons',
+    ],
+    accessibility: [
+      '<nav aria-label="Side navigation"> wraps the entire component',
+      'aria-current="page" is applied to the selected item',
+      'Sections use role="group" with aria-labelledby pointing to the section title',
+      'isHeaderHidden visually hides the section title while keeping it accessible to screen readers',
+      'Keyboard: Tab through items, Enter/Space to activate links',
+    ],
+    notes: [
+      'When used inside XDSAppShell alongside XDSTopNav, omit XDSSideNavHeading \u2014 the TopNav already provides app identity and including the header would duplicate it.',
+      'Without a TopNav, include XDSSideNavHeading to provide app identity.',
+      'Header interaction model: headingHref only \u2192 whole header is one link; headingHref + superheadingHref, no menu \u2192 each text is an independent link; menu only, no hrefs \u2192 whole header is the popover trigger; menu + hrefs \u2192 links are independent <a> elements, chevron/remaining area is the popover trigger.',
+      'Depends on useXDSPopover for the header menu popover and XDSIcon for rendering icon components in nav items.',
+      'XDSSideNavCollapseButton renders as an icon-only ghost button by default. Place it in footerIcons, header, or outside the sidenav (pass sideNavRef).',
+      'useXDSSideNavCollapse hook exposes { isCollapsed, toggle, isCollapsible } for custom collapse controls.',
+    ],
     anatomy: [
       {name: 'Product icon and name', required: false, description: 'Branding area at the top of the nav.'},
       {name: 'Navigation items', required: true, description: 'Sections and groups of navigable links.'},

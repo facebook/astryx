@@ -2,37 +2,12 @@
 
 export const docs = {
   name: 'Link',
-  description:
-    'XDSLink component for styled anchor links with multiple variants and features, plus polymorphic link infrastructure for rendering custom link components (Next.js Link, React Router Link, etc.).',
   keywords: ["link","anchor","href","hyperlink","navigation","url","external","textlink"],
-  features: [
-    "Color control: Uses XDSText color prop ('active' default, 'secondary', 'inherit', etc.)",
-    'External links: Opens in new tab with external link icon',
-    'Tooltip support: Display tooltip text on hover',
-    'Underline control: Always show underline or only on hover',
-    'Inline support: Inherits parent font styles when used within text',
-    'Standalone mode: Applies base font sizing for independent links',
-    'Disabled state: Visual and interaction disabled',
-    'Focus visible: Accessible focus outline',
-    'Polymorphic link: Render as a custom component via `as` prop or XDSLinkProvider',
-  ],
   theming: {
     targets: [
       {className: 'xds-link', visualProps: ['color']},
     ],
   },
-  notes: [
-    'By default, links inherit font family, size, line-height, and weight from parent elements',
-    'Use isStandalone prop when the link is not inline within other text content',
-    'isExternalLink automatically sets target="_blank" and rel="noopener noreferrer" for security',
-    'Disabled state uses aria-disabled and pointer-events: none for accessibility',
-    'Tooltip wraps the link in XDSTooltip component when provided',
-    'XDSLinkComponentType is React.ElementType, allowing both string tags ("a") and custom components',
-    'XDSLinkContext is separated from XDSLinkProvider (mirrors ThemeContext/XDSTheme pattern) so consumers can import the context without the full provider',
-    'XDSLinkProvider memoizes its context value to prevent unnecessary re-renders',
-    'Polymorphic link resolution order: (1) per-component as prop (highest priority), (2) XDSLinkProvider context, (3) native <a> element (default)',
-    'All XDS components that render links (XDSLink, XDSTopNavItem, XDSSideNavItem, XDSBreadcrumbItem, XDSTab) support rendering as a custom link component',
-  ],
   components: [
     {
       name: 'XDSLink',
@@ -122,22 +97,31 @@ export const docs = {
     },
   ],
   usage: {
-    summary: 'Clickable element that leads to a new destination or performs an action.',
-    content: `## When to use
-
-- To embed actions inline on a page.
-- To provide a path to more information.
-
-## When NOT to use
-
-- Don't use to trigger dropdown menus.
-- Don't use icon-only links without a visible label.
-
-## Best practices
-
-- Do: Write descriptive link text and front-load key information.
-- Do: Keep link text concise.
-- Do: Include context about the destination for "Learn more" links.`,
+    description:
+      'Styled anchor link with multiple variants, external link support, and polymorphic rendering for custom link components (Next.js Link, React Router Link). Use for inline text navigation or standalone actions — write descriptive, concise link text and avoid icon-only links without a visible label.',
+    features: [
+      "Color control: Uses XDSText color prop ('active' default, 'secondary', 'inherit', etc.)",
+      'External links: Opens in new tab with external link icon',
+      'Tooltip support: Display tooltip text on hover',
+      'Underline control: Always show underline or only on hover',
+      'Inline support: Inherits parent font styles when used within text',
+      'Standalone mode: Applies base font sizing for independent links',
+      'Disabled state: Visual and interaction disabled',
+      'Focus visible: Accessible focus outline',
+      'Polymorphic link: Render as a custom component via `as` prop or XDSLinkProvider',
+    ],
+    notes: [
+      'By default, links inherit font family, size, line-height, and weight from parent elements.',
+      'Use isStandalone prop when the link is not inline within other text content.',
+      'isExternalLink automatically sets target="_blank" and rel="noopener noreferrer" for security.',
+      'Disabled state uses aria-disabled and pointer-events: none for accessibility.',
+      'Tooltip wraps the link in XDSTooltip component when provided.',
+      'XDSLinkComponentType is React.ElementType, allowing both string tags ("a") and custom components.',
+      'XDSLinkContext is separated from XDSLinkProvider (mirrors ThemeContext/XDSTheme pattern) so consumers can import the context without the full provider.',
+      'XDSLinkProvider memoizes its context value to prevent unnecessary re-renders.',
+      'Polymorphic link resolution order: (1) per-component as prop (highest priority), (2) XDSLinkProvider context, (3) native <a> element (default).',
+      'All XDS components that render links (XDSLink, XDSTopNavItem, XDSSideNavItem, XDSBreadcrumbItem, XDSTab) support rendering as a custom link component.',
+    ],
     anatomy: [
       {name: 'Label', required: true, description: 'The visible text of the link.'},
       {name: 'Right icon', required: false, description: 'Icon placed after the label to indicate an action affordance.'},

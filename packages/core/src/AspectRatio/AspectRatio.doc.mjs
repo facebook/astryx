@@ -2,12 +2,16 @@
 
 export const docs = {
   name: 'AspectRatio',
-  description: 'Maintains a specific aspect ratio for its children.',  keywords: ["aspect-ratio","ratio","proportion","responsive","embed","container","widescreen","thumbnail","letterbox","crop"],
-  features: [
-    'Accepts any numeric ratio expressed as width/height (e.g. 16/9, 4/3, 1)',
-    'Children are positioned absolutely to fill the container',
-    'Supports theming via the aspectRatio component key',
-  ],
+  keywords: ["aspect-ratio","ratio","proportion","responsive","embed","container","widescreen","thumbnail","letterbox","crop"],
+  usage: {
+    description:
+      'Maintains a specific aspect ratio for its children, useful for responsive media containers like embedded videos and images.',
+    features: [
+      'Accepts any numeric ratio expressed as width/height (e.g. 16/9, 4/3, 1)',
+      'Children are positioned absolutely to fill the container',
+      'Supports theming via the aspectRatio component key',
+    ],
+  },
   props: [
     {
       name: 'ratio',
@@ -32,9 +36,6 @@ export const docs = {
     targets: [
       {className: 'xds-aspect-ratio'},
     ],
-  },
-  usage: {
-    summary: 'Maintains a specific aspect ratio for its children, useful for responsive media containers.',
   },
 };
 

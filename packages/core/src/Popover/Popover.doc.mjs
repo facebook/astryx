@@ -2,31 +2,7 @@
 
 export const docs = {
   name: 'Popover',
-  description:
-    'A click-triggered popover for displaying interactive content anchored to a trigger element, implementing the button + dialog ARIA pattern.',  keywords: ["popover","popup","dropdown","tooltip","overlay","flyout","callout","popper","anchor","floating","bubble"],
-  features: [
-    'CSS Anchor Positioning for automatic placement relative to trigger elements',
-    'Popover API for top-layer rendering — no React portals needed',
-    'Controlled and uncontrolled modes',
-    'Light dismiss support (click outside or Escape to close)',
-    'Focus trap inside open popovers',
-    'ARIA button + dialog pattern applied automatically to trigger elements',
-    'Sibling mode via anchorRef for external trigger elements',
-    'Stable anchor wrapper immune to pressed-state transforms',
-  ],
-  notes: [
-    'XDSPopover locates the trigger button inside children by searching for <button> or [role="button"] — the child tree must contain one. It applies click/keydown handlers and aria-haspopup, aria-expanded, aria-controls automatically.',
-    'XDSPopover uses an inline-flex anchor wrapper so that pressed-state transforms on the trigger (e.g. :active scale) do not shift the anchor position and cause popover jitter.',
-    'In sibling mode (anchorRef prop), XDSPopover attaches to an external ref rather than wrapping children — useful when the trigger and overlay are not parent/child.',
-    'LayerPlacement values: above | below | start | end. LayerAlignment values: start | center | end.',
-  ],
-  accessibility: [
-    'Implements the button + dialog ARIA pattern: aria-haspopup, aria-expanded, and aria-controls are set on the trigger button automatically.',
-    'Traps focus inside the popover dialog while it is open.',
-    'Supports keyboard activation for role="button" elements (Enter and Space) in addition to native <button> click synthesis.',
-  ],
-  keyboard:
-    'Escape closes the popover. Enter/Space open the popover when the trigger has focus. Focus is trapped inside an open popover.',
+  keywords: ["popover","popup","dropdown","tooltip","overlay","flyout","callout","popper","anchor","floating","bubble"],
   components: [
     {
       name: 'XDSPopover',
@@ -164,26 +140,30 @@ export const docs = {
     ],
   },
   usage: {
-    summary: 'A floating card toggled open on click for secondary actions or supplementary information.',
-    content: `## When to use
-
-- Secondary menu options.
-- Customizable settings panels.
-- Filtering options.
-- Supplementary information that does not warrant a full dialog.
-
-## When NOT to use
-
-- Static content display (use Card instead).
-- Hover-triggered previews (use HoverCard instead).
-- Brief helper text (use Tooltip instead).
-- Complex flows requiring full focus (use Dialog instead).
-
-## Best practices
-
-- Do: Use a clear trigger element such as a button or link.
-- Don't: Confuse with Tooltip \u2014 Popovers are click-triggered and contain richer content.
-- Include a close button in the header for easy dismissal.`,
+    description:
+      'A click-triggered popover for displaying interactive content anchored to a trigger element, implementing the button + dialog ARIA pattern. Use for secondary actions or supplementary information that does not warrant a full dialog — for hover-triggered previews use HoverCard, and for brief helper text use Tooltip.',
+    features: [
+      'CSS Anchor Positioning for automatic placement relative to trigger elements',
+      'Popover API for top-layer rendering — no React portals needed',
+      'Controlled and uncontrolled modes',
+      'Light dismiss support (click outside or Escape to close)',
+      'Focus trap inside open popovers',
+      'ARIA button + dialog pattern applied automatically to trigger elements',
+      'Sibling mode via anchorRef for external trigger elements',
+      'Stable anchor wrapper immune to pressed-state transforms',
+    ],
+    accessibility: [
+      'Implements the button + dialog ARIA pattern: aria-haspopup, aria-expanded, and aria-controls are set on the trigger button automatically.',
+      'Traps focus inside the popover dialog while it is open.',
+      'Supports keyboard activation for role="button" elements (Enter and Space) in addition to native <button> click synthesis.',
+      'Keyboard: Escape closes the popover; Enter/Space open the popover when the trigger has focus; focus is trapped inside an open popover.',
+    ],
+    notes: [
+      'XDSPopover locates the trigger button inside children by searching for <button> or [role="button"] — the child tree must contain one. It applies click/keydown handlers and aria-haspopup, aria-expanded, aria-controls automatically.',
+      'XDSPopover uses an inline-flex anchor wrapper so that pressed-state transforms on the trigger (e.g. :active scale) do not shift the anchor position and cause popover jitter.',
+      'In sibling mode (anchorRef prop), XDSPopover attaches to an external ref rather than wrapping children — useful when the trigger and overlay are not parent/child.',
+      'LayerPlacement values: above | below | start | end. LayerAlignment values: start | center | end.',
+    ],
     anatomy: [
       {name: 'Header', required: true, description: 'Contains the title, optional subheader, and close button.'},
       {name: 'Body', required: true, description: 'Main content area of the popover.'},

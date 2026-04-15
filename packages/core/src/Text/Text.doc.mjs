@@ -2,27 +2,13 @@
 
 export const docs = {
   name: 'Text',
-  description:
-    'Typography components for the XDS design system, including semantic body text, headings, and a wrapper for applying typography styles to native HTML.',
-  keywords: ["text","typography","label","paragraph","heading","caption","font","body","subtitle"],  features: [
-    'Semantic text types (body, large, label, supporting, code) driven by theme tokens',
-    'Headings use native h1–h6 elements with optional aria-level override for decoupled visual vs document hierarchy',
-    'Line-clamp truncation with automatic overflow-detecting tooltip',
-    'Optical alignment (text-box-trim / capsize) for precise vertical rhythm',
-    'Tabular number support for aligned numeric data',
-    'All typography driven by CSS custom properties — fully themeable per-component',
-  ],
+  keywords: ["text","typography","label","paragraph","heading","caption","font","body","subtitle"],
   theming: {
     targets: [
       {className: 'xds-heading', visualProps: ['level', 'color']},
       {className: 'xds-text', visualProps: ['type', 'color']},
     ],
   },
-  accessibility: [
-    'XDSHeading renders the correct semantic h1–h6 element based on the `level` prop.',
-    'When `accessibilityLevel` differs from `level`, `aria-level` is set so screen readers announce the correct document outline position while preserving the visual style.',
-    'Truncated text sets a native `title` attribute as a fallback, and also lazily renders an XDSTooltip for sighted keyboard users.',
-  ],
   components: [
     {
       name: 'XDSText',
@@ -213,7 +199,21 @@ export const docs = {
     },
   ],
   usage: {
-    summary: 'Typography components for body text, headings, and semantic text rendering.',
+    description:
+      'Text provides typography components for the XDS design system, including semantic body text via XDSText, headings via XDSHeading, and a wrapper for applying typography styles to native HTML.',
+    features: [
+      'Semantic text types (body, large, label, supporting, code) driven by theme tokens',
+      'Headings use native h1–h6 elements with optional aria-level override for decoupled visual vs document hierarchy',
+      'Line-clamp truncation with automatic overflow-detecting tooltip',
+      'Optical alignment (text-box-trim / capsize) for precise vertical rhythm',
+      'Tabular number support for aligned numeric data',
+      'All typography driven by CSS custom properties — fully themeable per-component',
+    ],
+    accessibility: [
+      'XDSHeading renders the correct semantic h1–h6 element based on the `level` prop.',
+      'When `accessibilityLevel` differs from `level`, `aria-level` is set so screen readers announce the correct document outline position while preserving the visual style.',
+      'Truncated text sets a native `title` attribute as a fallback, and also lazily renders an XDSTooltip for sighted keyboard users.',
+    ],
   },
 };
 

@@ -2,22 +2,7 @@
 
 export const docs = {
   name: 'Toast',
-  description:
-    'Toast notification system with auto-dismiss, stacking, deduplication, and smooth animations. Uses XDSMediaTheme for inverted surface theming.',
-
   keywords: ["toast","notification","snackbar","alert","message","feedback","status"],
-  features: [
-    "Types: 'info' (default), 'error'",
-    'Auto-dismiss: info toasts dismiss after 5s, error toasts persist',
-    'Pause on hover/focus: timer pauses during interaction',
-    'Stacking: multiple toasts stack with smooth enter/exit animations',
-    'Deduplication: uniqueID with ignore or overwrite collision behavior',
-    'Programmatic dismiss: show() returns a dismiss function',
-    'End content slot: trailing actions (buttons, links)',
-    'Fallback viewport: works without a provider via document.body fallback',
-    'Inverted surface: uses XDSMediaTheme for correct colors on dark/light backgrounds',
-    'Accessible: role=status/alert, aria-live=polite/assertive',
-  ],
 
   props: [
     {
@@ -71,18 +56,22 @@ export const docs = {
   },
 
   usage: {
-    summary: 'Transient notification that appears briefly to confirm an action or surface non-critical information.',
-    content: `## When to use
-
-- Confirming a completed action (e.g., "Saved successfully").
-- Surfacing non-critical, time-sensitive information.
-- Providing undo opportunities for reversible actions.
-
-## When NOT to use
-
-- Critical information that requires user action (use Banner instead).
-- Persistent messages (use Banner instead).
-- Validation errors on form fields (use Field status instead).`,
+    description:
+      'Toast is a transient notification that appears briefly to confirm actions or surface non-critical information, such as save confirmations or undo opportunities. It provides auto-dismiss, stacking, deduplication, and smooth animations with inverted surface theming via XDSMediaTheme. For critical information requiring user action or persistent messages, use Banner instead.',
+    features: [
+      "Types: 'info' (default), 'error'",
+      'Auto-dismiss: info toasts dismiss after 5s, error toasts persist',
+      'Pause on hover/focus: timer pauses during interaction',
+      'Stacking: multiple toasts stack with smooth enter/exit animations',
+      'Deduplication: uniqueID with ignore or overwrite collision behavior',
+      'Programmatic dismiss: show() returns a dismiss function',
+      'End content slot: trailing actions (buttons, links)',
+      'Fallback viewport: works without a provider via document.body fallback',
+      'Inverted surface: uses XDSMediaTheme for correct colors on dark/light backgrounds',
+    ],
+    accessibility: [
+      'Uses role=status for info toasts and role=alert for error toasts, with aria-live=polite and aria-live=assertive respectively.',
+    ],
   },
 };
 

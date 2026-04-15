@@ -2,17 +2,7 @@
 
 export const docs = {
   name: 'DateInput',
-  description:
-    'XDSDateInput component combining a text input with a calendar popover for date selection.',
   keywords: ["dateinput","datepicker","datefield","calendar","dateselect","dateentry","datechooser"],
-  features: [
-    'Text Input — manual date entry with flexible parsing (supports various formats)',
-    'Calendar Popover — click icon or use keyboard to open calendar picker',
-    'Date Constraints — min, max, and custom dateConstraints functions',
-    'Status Indicators — error, warning, and success states with messages',
-    'Accessibility — full keyboard navigation, focus trapping, screen reader support',
-    'Field Integration — built on XDSField for consistent label, description, and validation states',
-  ],
   props: [
     {
       name: 'label',
@@ -136,22 +126,28 @@ export const docs = {
         'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
     },
   ],
-  keyboard:
-    'Tab moves between input and calendar icon button; Enter/Space on icon opens/closes the calendar; Escape closes the calendar popover; Arrow keys navigate between days; Page Up/Down navigate between months.',
-  notes: [
-    'The text input accepts multiple date formats: ISO (2026-01-28), US (01/28/2026, 1/28/2026), and written (Jan 28, 2026 / January 28 2026).',
-    'Invalid input reverts to the previous valid value on blur.',
-  ],
   theming: {
     targets: [
       {className: 'xds-date-input', visualProps: ['size']},
     ],
   },
   usage: {
-    summary: 'Field formatted for users to input a date.',
-    content: `## When to use
-
-- User needs to input a date (e.g. scheduling events, form submissions).`,
+    description: 'A date input field combining a text input with a calendar popover for date selection. Use when users need to input a date, such as scheduling events or form submissions.',
+    features: [
+      'Text Input — manual date entry with flexible parsing (supports various formats)',
+      'Calendar Popover — click icon or use keyboard to open calendar picker',
+      'Date Constraints — min, max, and custom dateConstraints functions',
+      'Status Indicators — error, warning, and success states with messages',
+      'Accessibility — full keyboard navigation, focus trapping, screen reader support',
+      'Field Integration — built on XDSField for consistent label, description, and validation states',
+    ],
+    accessibility: [
+      'Keyboard: Tab moves between input and calendar icon button; Enter/Space on icon opens/closes the calendar; Escape closes the calendar popover; Arrow keys navigate between days; Page Up/Down navigate between months',
+    ],
+    notes: [
+      'The text input accepts multiple date formats: ISO (2026-01-28), US (01/28/2026, 1/28/2026), and written (Jan 28, 2026 / January 28 2026).',
+      'Invalid input reverts to the previous valid value on blur.',
+    ],
   },
 };
 

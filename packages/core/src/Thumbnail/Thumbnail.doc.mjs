@@ -2,21 +2,7 @@
 
 export const docs = {
   name: 'Thumbnail',
-  description:
-    'A square preview card for image attachments. Shows a skeleton shimmer while uploading, the image on success, or a placeholder icon when no source is provided.',
   keywords: ["thumbnail","attachment","preview","image","upload","dismiss","remove","loading"],
-  features: [
-    'Square 1:1 aspect ratio via CSS aspect-ratio',
-    'Skeleton shimmer during upload (isLoading)',
-    'Upload overlay with spinner when isLoading + src',
-    'Image preview with object-fit: cover',
-    'APCA-based luminance detection for adaptive remove button contrast',
-    'Concentric radius: button radius derived from container radius minus inset',
-    'Hover shadow on interactive thumbnails (onClick)',
-    'Label shown as tooltip on hover, used as aria-label',
-    'Placeholder icon when no src',
-    'Disabled state blocks all interactions and reduces opacity',
-  ],
   props: [
     {
       name: 'src',
@@ -80,11 +66,29 @@ export const docs = {
       {className: 'xds-thumbnail'},
     ],
   },
-  accessibility: [
-    'label prop provides aria-label for the thumbnail and its remove button.',
-    'onClick renders as a button for keyboard and screen reader access.',
-    'Remove button uses aria-label derived from the label prop.',
-  ],
+  usage: {
+    description:
+      'Thumbnail is a square preview card for image attachments. It shows a skeleton shimmer while uploading, the image on success, or a placeholder icon when no source is provided.',
+    features: [
+      'Square 1:1 aspect ratio via CSS aspect-ratio',
+      'Skeleton shimmer during upload (isLoading)',
+      'Upload overlay with spinner when isLoading + src',
+      'Image preview with object-fit: cover',
+      'Hover shadow on interactive thumbnails (onClick)',
+      'Label shown as tooltip on hover, used as aria-label',
+      'Placeholder icon when no src',
+      'Disabled state blocks all interactions and reduces opacity',
+    ],
+    accessibility: [
+      'label prop provides aria-label for the thumbnail and its remove button.',
+      'onClick renders as a button for keyboard and screen reader access.',
+      'Remove button uses aria-label derived from the label prop.',
+    ],
+    notes: [
+      'APCA-based luminance detection for adaptive remove button contrast.',
+      'Concentric radius: button radius derived from container radius minus inset.',
+    ],
+  },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */

@@ -2,17 +2,7 @@
 
 export const docs = {
   name: 'RadioList',
-  description:
-    'A radio group component for single-value selection from a list of options.',  keywords: ["radiolist","radio","radiogroup","radiobutton","optionlist","singlechoice","choicelist"],
-  features: [
-    'Accessible — uses native <input type="radio"> with proper role="radiogroup" and ARIA attributes',
-    'Orientation — supports vertical and horizontal layouts',
-    'Sizes — sm (18px radio, 20px wrapper) and md (22px radio, 24px wrapper)',
-    'Descriptions — optional description text per item',
-    'Custom content — startContent and endContent slots on each item',
-    'Disabled state — supports disabling the entire group or individual items',
-    'Field integration — uses XDSField for label, description, required/optional, and status messaging',
-  ],
+  keywords: ["radiolist","radio","radiogroup","radiobutton","optionlist","singlechoice","choicelist"],
   theming: {
     targets: [
       {className: 'xds-radio-list', visualProps: ['orientation', 'size']},
@@ -21,14 +11,6 @@ export const docs = {
       {className: 'xds-radio-dot', visualProps: ['size']},
     ],
   },
-  notes: [
-    'XDSRadioList creates a RadioListContext that provides name, value, onChange, isDisabled, isRequired, size, and status to child items',
-    'XDSRadioListItem must be used within an XDSRadioList — throws if context is missing',
-    'Uses a hidden native <input type="radio"> with a custom visual overlay for consistent styling',
-    'Focus outline uses the standard XDS focus outline token with 2px offset',
-    'Hover states use color-mix() for consistent overlay tinting',
-    'Size variants match CheckboxInput dimensions for visual consistency',
-  ],
   components: [
     {
       name: 'XDSRadioList',
@@ -161,21 +143,27 @@ export const docs = {
     },
   ],
   usage: {
-    summary: 'Allows a user to make a single selection from a list of options.',
-    content: `## When to use
-
-- Presenting a limited set of options where only one can be selected.
-- Making the single-selection constraint visually clear to users.
-
-## When NOT to use
-
-- Multiple selections are needed (use CheckboxList instead).
-- The option list is very long (consider Selector instead).
-
-## Best practices
-
-- Do: Use a vertical list when labels are long or need detailed descriptions.
-- Do: Use a horizontal input group for compact side-by-side comparison of short options.`,
+    description:
+      'A radio group component for single-value selection from a list of options. Use when presenting a limited set of mutually exclusive choices where only one can be selected. For multiple selections use CheckboxList; for long option lists consider Selector.',
+    features: [
+      'Supports vertical and horizontal layouts',
+      'Size variants: sm (18px radio, 20px wrapper) and md (22px radio, 24px wrapper)',
+      'Optional description text per item',
+      'startContent and endContent slots on each item',
+      'Supports disabling the entire group or individual items',
+      'Field integration via XDSField for label, description, required/optional, and status messaging',
+    ],
+    accessibility: [
+      'Uses native <input type="radio"> with proper role="radiogroup" and ARIA attributes',
+    ],
+    notes: [
+      'XDSRadioList creates a RadioListContext that provides name, value, onChange, isDisabled, isRequired, size, and status to child items',
+      'XDSRadioListItem must be used within an XDSRadioList — throws if context is missing',
+      'Uses a hidden native <input type="radio"> with a custom visual overlay for consistent styling',
+      'Focus outline uses the standard XDS focus outline token with 2px offset',
+      'Hover states use color-mix() for consistent overlay tinting',
+      'Size variants match CheckboxInput dimensions for visual consistency',
+    ],
     anatomy: [
       {name: 'Header', required: false, description: 'Optional heading above the radio list.'},
       {name: 'Children', required: true, description: 'The radio list items rendered as selectable options.'},

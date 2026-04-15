@@ -2,16 +2,7 @@
 
 export const docs = {
   name: 'Spinner',
-  description:
-    'An animated loading indicator with optional visible label.',
   keywords: ["spinner","loader","loading","circular","progress","spin","activity","busy","indeterminate"],
-  features: [
-    'Canvas Animation: Lightweight canvas-based spinner with smooth 360° rotation',
-    'Size Variants: Three sizes (sm, md, lg) matching existing inline spinners',
-    'Shade Support: Default shade for light backgrounds, onMedia for dark/accent backgrounds',
-    'Label: Optional visible label (string or ReactNode) displayed below spinner',
-    'Accessible: role="status" with aria-label; defaults to label text or "Loading"',
-  ],
   props: [
     {
       name: 'size',
@@ -49,24 +40,25 @@ export const docs = {
       {className: 'xds-spinner', visualProps: ['size', 'shade']},
     ],
   },
-  notes: [
-    'Uses CSS border technique: three visible borders + one transparent for the gap.',
-    'Animation: rotate(360deg) at 0.75s linear infinite.',
-    'Color inherits from currentColor, controlled by shade styles using theme tokens.',
-    'Element is a <span> with display: inline-block for inline composability.',
-    'XDSSpinner is intentionally minimal — compose with layout and text components for full loading states.',
-    'Size reference: sm = 10×10px / 3px border, md = 14×14px / 3px border, lg = 18×18px / 3px border.',
-  ],
   usage: {
-    summary: 'An animated loading indicator for indeterminate wait states.',
-    content: `## When to use
-
-- Indicating an ongoing process with unknown duration.
-- Inline loading states within buttons or other components.
-
-## When NOT to use
-
-- Content of known size is loading (use Skeleton instead).`,
+    description:
+      'An animated loading indicator for indeterminate wait states with an optional visible label. Use for indicating ongoing processes with unknown duration or inline loading states within buttons and other components. For content of known size, use Skeleton instead.',
+    features: [
+      'Three sizes (sm, md, lg) matching existing inline spinners',
+      'Shade support: default for light backgrounds, onMedia for dark/accent backgrounds',
+      'Optional visible label (string or ReactNode) displayed below spinner',
+    ],
+    accessibility: [
+      'Uses role="status" with aria-label; defaults to label text or "Loading"',
+    ],
+    notes: [
+      'Uses CSS border technique: three visible borders + one transparent for the gap.',
+      'Animation: rotate(360deg) at 0.75s linear infinite.',
+      'Color inherits from currentColor, controlled by shade styles using theme tokens.',
+      'Element is a <span> with display: inline-block for inline composability.',
+      'XDSSpinner is intentionally minimal — compose with layout and text components for full loading states.',
+      'Size reference: sm = 10×10px / 3px border, md = 14×14px / 3px border, lg = 18×18px / 3px border.',
+    ],
   },
 };
 

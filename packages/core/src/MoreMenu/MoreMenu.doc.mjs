@@ -2,8 +2,7 @@
 
 export const docs = {
   name: 'MoreMenu',
-  description:
-    'Overflow menu with a three-dot icon trigger. A convenience wrapper that composes an icon-only XDSButton with a dropdown menu, eliminating the boilerplate of wiring up state management, positioning, and accessibility attributes.',  keywords: ["moremenu","overflow","kebab","dotmenu","threedot","ellipsis","dropdown","contextmenu","actionmenu"],
+  keywords: ["moremenu","overflow","kebab","dotmenu","threedot","ellipsis","dropdown","contextmenu","actionmenu"],
   props: [
     {
       name: 'items',
@@ -56,37 +55,32 @@ export const docs = {
         'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
     },
   ],
-  features: [
-    "Zero-config defaults: three-dot icon, 'More options' label, ghost variant — just pass items",
-    'Data-driven items: same items prop as XDSDropdownMenu (items, dividers, sections)',
-    'Icon-only trigger: always renders as a square icon button with aria-label',
-    'Tooltip: shows label on hover, hidden when menu is open',
-    'Custom rendering: optional children render function for custom item content',
-  ],
   theming: {
     targets: [
       {className: 'xds-more-menu'},
     ],
   },
-  accessibility: [
-    'Proper ARIA roles: menu and menuitem on dropdown elements.',
-    'Trigger button has aria-haspopup="menu" and aria-expanded.',
-    'aria-activedescendant tracks the highlighted menu item.',
-    'Disabled items have aria-disabled set.',
-    'Sections use role="group" with aria-label.',
-  ],
-  keyboard:
-    'Arrow keys navigate items; Home/End jump to first/last; Enter/Space select highlighted item; Escape closes menu',
-  notes: [
-    'For full control over trigger rendering or menu content, compose XDSButton + useXDSLayer + XDSDropdownMenuItem directly.',
-    'Use XDSMoreMenu for icon-only overflow actions in tight spaces (table rows, card headers). Use XDSDropdownMenu for labeled trigger buttons with chevrons.',
-  ],
   usage: {
-    summary: 'Overflow menu with a three-dot icon trigger for secondary actions.',
-    content: `## When to use
-
-- Presenting secondary or overflow actions in a compact space.
-- Actions that don't warrant their own visible button.`,
+    description:
+      'Overflow menu with a three-dot icon trigger for presenting secondary or overflow actions in a compact space. A convenience wrapper that composes an icon-only XDSButton with a dropdown menu, eliminating the boilerplate of wiring up state management, positioning, and accessibility attributes.',
+    features: [
+      "Zero-config defaults: three-dot icon, 'More options' label, ghost variant — just pass items",
+      'Data-driven items: same items prop as XDSDropdownMenu (items, dividers, sections)',
+      'Icon-only trigger: always renders as a square icon button with aria-label',
+      'Tooltip: shows label on hover, hidden when menu is open',
+      'Custom rendering: optional children render function for custom item content',
+    ],
+    accessibility: [
+      'Proper ARIA roles: menu and menuitem on dropdown elements.',
+      'Trigger button has aria-haspopup="menu" and aria-expanded.',
+      'aria-activedescendant tracks the highlighted menu item.',
+      'Disabled items have aria-disabled set.',
+      'Sections use role="group" with aria-label.',
+      'Keyboard: Arrow keys navigate items; Home/End jump to first/last; Enter/Space select highlighted item; Escape closes menu.',
+    ],
+    notes: [
+      'For full control over trigger rendering or menu content, compose XDSButton + useXDSLayer + XDSDropdownMenuItem directly.',
+    ],
   },
 };
 /** @type {import('../docs-types').ComponentDoc} */

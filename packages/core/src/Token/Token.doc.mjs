@@ -2,18 +2,7 @@
 
 export const docs = {
   name: 'Token',
-  description:
-    'A chip/tag component for displaying entities inline. Renders as a <span> by default, <a> when href is provided, or a <span> with an invisible <button> inside when onClick is provided.',
   keywords: ["token","chip","tag","pill","label","removable","dismissible","filter chip","closable"],
-  features: [
-    'Polymorphic — renders as <span>, <a>, or interactive <span>+<button> based on props',
-    'Invisible button pattern for onClick preserves real button semantics while allowing focus-within outline on the full token',
-    'Remove button with expanded 14px hit-area tap target via ::after pseudo-element',
-    'Eleven color variants including a neutral default',
-    'Leading icon and trailing endContent slots',
-    'Label can be visually hidden while remaining accessible to screen readers',
-    'Disabled state reduces opacity and blocks pointer events',
-  ],
   props: [
     {
       name: 'label',
@@ -93,26 +82,26 @@ export const docs = {
       {className: 'xds-token', visualProps: ['color', 'size']},
     ],
   },
-  accessibility: [
-    'When isLabelHidden is true, the label is clipped visually but exposed via aria-label on the root element so screen readers still announce it.',
-    'The description prop maps to aria-description on the root element for supplementary context.',
-    'When onClick is provided, the clickable content is wrapped in a real <button> so keyboard users can activate it with Enter or Space.',
-    'The remove button has an automatic aria-label of "Remove <label>" and an expanded touch target via a ::after pseudo-element.',
-    'When href is provided, aria-disabled is set on the <a> element when isDisabled is true.',
-  ],
-  keyboard:
-    'Tab focuses the token (or its inner button when onClick is used). Enter/Space activate a clickable token or the remove button. Remove button is reachable as a separate Tab stop.',
   usage: {
-    summary: 'Displays entities inline for tags or names.',
-    content: `## When to use
-
-- Concise metadata display.
-- Icon with colored background indicator.
-- Combined icon, text, and number representation.
-
-## When NOT to use
-
-- Static indicators without interaction \u2014 use Badge instead (Badge is 20px, Token is 28px).`,
+    description:
+      'Token is a chip/tag component for displaying entities inline, rendering as a <span> by default, <a> when href is provided, or a <span> with an invisible <button> when onClick is used. It is ideal for concise metadata display such as tags, names, or colored indicators. For static indicators without interaction, use Badge instead.',
+    features: [
+      'Polymorphic — renders as <span>, <a>, or interactive <span>+<button> based on props',
+      'Invisible button pattern for onClick preserves real button semantics while allowing focus-within outline on the full token',
+      'Remove button with expanded 14px hit-area tap target via ::after pseudo-element',
+      'Eleven color variants including a neutral default',
+      'Leading icon and trailing endContent slots',
+      'Label can be visually hidden while remaining accessible to screen readers',
+      'Disabled state reduces opacity and blocks pointer events',
+    ],
+    accessibility: [
+      'When isLabelHidden is true, the label is clipped visually but exposed via aria-label on the root element so screen readers still announce it.',
+      'The description prop maps to aria-description on the root element for supplementary context.',
+      'When onClick is provided, the clickable content is wrapped in a real <button> so keyboard users can activate it with Enter or Space.',
+      'The remove button has an automatic aria-label of "Remove <label>" and an expanded touch target via a ::after pseudo-element.',
+      'When href is provided, aria-disabled is set on the <a> element when isDisabled is true.',
+      'Keyboard: Tab focuses the token (or its inner button when onClick is used); Enter/Space activate a clickable token or the remove button; Remove button is reachable as a separate Tab stop.',
+    ],
     anatomy: [
       {name: 'Color', required: false, description: 'Background color indicator.'},
       {name: 'Label', required: true, description: 'Text label for the token.'},

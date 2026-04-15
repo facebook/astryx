@@ -2,29 +2,30 @@
 
 export const docs = {
   name: 'Breadcrumbs',
-  description: 'A navigation breadcrumb trail with semantic HTML.',  keywords: ["breadcrumbs","breadcrumb","navigation","nav","crumbs","trail","path","hierarchy","wayfinding","steps"],
-  features: [
-    'Renders a <nav> landmark with an ordered list of breadcrumb items',
-    'Configurable separator between items (defaults to /)',
-    'Two visual variants: default and supporting (smaller, secondary text)',
-    'Current page item is marked with aria-current="page"',
-    'Separators are hidden from assistive technology via aria-hidden',
-    'Supports icons before item labels via startIcon',
-    'Auto-detects the last child as the current page when no isCurrent is set',
-  ],
+  keywords: ["breadcrumbs","breadcrumb","navigation","nav","crumbs","trail","path","hierarchy","wayfinding","steps"],
+  usage: {
+    description:
+      'A secondary navigation trail with semantic HTML that orients the user within a content hierarchy. Use to show the user\'s position relative to the product architecture and enable quick back-and-forth navigation.',
+    features: [
+      'Configurable separator between items (defaults to /)',
+      'Two visual variants: default and supporting (smaller, secondary text)',
+      'Supports icons before item labels via startIcon',
+      'Auto-detects the last child as the current page when no isCurrent is set',
+    ],
+    accessibility: [
+      'Container renders as a <nav aria-label> landmark; the label defaults to "Breadcrumb" and is customizable via the label prop',
+      'Items are placed inside an <ol> with individual <li> wrappers for correct list semantics',
+      'The current page item receives aria-current="page"',
+      'Separators are rendered with aria-hidden="true" so screen readers skip them',
+      'Auto-detects the last child as the current item when no isCurrent prop is explicitly set',
+    ],
+  },
   theming: {
     targets: [
       {className: 'xds-breadcrumb-item'},
       {className: 'xds-breadcrumbs', visualProps: ['variant']},
     ],
   },
-  accessibility: [
-    'Container renders as a <nav aria-label> landmark; the label defaults to "Breadcrumb" and is customizable via the label prop',
-    'Items are placed inside an <ol> with individual <li> wrappers for correct list semantics',
-    'The current page item receives aria-current="page"',
-    'Separators are rendered with aria-hidden="true" so screen readers skip them',
-    'Auto-detects the last child as the current item when no isCurrent prop is explicitly set',
-  ],
   components: [
     {
       name: 'XDSBreadcrumbs',
@@ -107,14 +108,6 @@ export const docs = {
       ],
     },
   ],
-  usage: {
-    summary: 'A secondary form of navigation that orients the user within a hierarchy.',
-    content: `## When to use
-
-- To show the user's position relative to the product architecture.
-- To enable quick back-and-forth navigation.
-- To organize content hierarchy of 2 or more levels.`,
-  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */

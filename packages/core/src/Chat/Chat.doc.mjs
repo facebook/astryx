@@ -2,29 +2,7 @@
 
 export const docs = {
   name: 'Chat',
-  description:
-    'Chat components for AI chat interfaces. Layout (MessageList, Message, Bubble, SystemMessage) + Composer (Composer, ComposerInput with trigger menus, ComposerAttachments).',
   keywords: ['chat', 'message', 'bubble', 'conversation', 'ai', 'assistant', 'thread', 'system-message', 'composer', 'mention', 'trigger', 'typeahead', 'token', 'imperative', 'tokenized-text'],
-  features: [
-    'Composition model — MessageList > Message > Bubble',
-    'Sender-aware styling (user, assistant, system) via context',
-    'Auto-scroll with "New messages" indicator',
-    'Infinite scroll via onScrollToTopAction with useTransition',
-    'Density variants: compact, balanced, spacious (flows via context)',
-    'System messages with optional divider variant for date separators',
-    'Free-form children — not all content needs a bubble',
-    'Timestamp display: hover or header',
-    'Message status indicators (sending, sent, delivered, read, error)',
-    'role="log" with aria-live="polite" for accessibility',
-    'Composer layout shell with named semantic slots',
-    'ContentEditable input with @ mention and / command trigger menus',
-    'Imperative handle on ComposerInput for programmatic token/text insertion',
-    'Tokenized text rendering in message bubbles via XDSChatTokenizedText',
-    'XDSSearchSource integration — reuses Typeahead search sources',
-    'Concentric radius — inner elements follow outer shell curvature',
-    'Themeable via --composer-radius and --composer-padding CSS vars',
-    'Extractable send/stop button (XDSChatSendButton) with automatic composer context',
-  ],
   theming: {
     targets: [
       {className: 'xds-chat-layout', visualProps: ['density']},
@@ -184,7 +162,27 @@ export const docs = {
     },
   ],
   usage: {
-    summary: 'Chat components for building AI chat interfaces, including message lists, message bubbles, a composer, and a layout shell.',
+    description: 'Chat components for building AI chat interfaces. Provides layout primitives (MessageList, Message, Bubble, SystemMessage) and a composer with trigger menus and attachments for constructing full chat experiences.',
+    features: [
+      'Composition model — MessageList > Message > Bubble',
+      'Sender-aware styling (user, assistant, system) via context',
+      'Auto-scroll with "New messages" indicator',
+      'Infinite scroll via onScrollToTopAction with useTransition',
+      'Density variants: compact, balanced, spacious (flows via context)',
+      'System messages with optional divider variant for date separators',
+      'Free-form children — not all content needs a bubble',
+      'Timestamp display: hover or header',
+      'Message status indicators (sending, sent, delivered, read, error)',
+      'role="log" with aria-live="polite" for accessibility',
+      'Composer layout shell with named semantic slots',
+      'ContentEditable input with @ mention and / command trigger menus',
+      'Imperative handle on ComposerInput for programmatic token/text insertion',
+      'Tokenized text rendering in message bubbles via XDSChatTokenizedText',
+      'XDSSearchSource integration — reuses Typeahead search sources',
+      'Concentric radius — inner elements follow outer shell curvature',
+      'Themeable via --composer-radius and --composer-padding CSS vars',
+      'Extractable send/stop button (XDSChatSendButton) with automatic composer context',
+    ],
   },
 };
 

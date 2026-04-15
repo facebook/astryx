@@ -2,8 +2,7 @@
 
 export const docs = {
   name: 'PowerSearch',
-  description:
-    'Structured filter bar where each token represents a filter (field + operator + value). Users select fields from a typeahead dropdown, configure operators and values in an edit popover, and manage filters as removable tokens.',  keywords: ["powersearch","search","searchbar","filter","filterbar","faceted","querybuilder","structured","omnibar"],
+  keywords: ["powersearch","search","searchbar","filter","filterbar","faceted","querybuilder","structured","omnibar"],
   props: [
     {
       name: 'config',
@@ -116,32 +115,24 @@ export const docs = {
         'StyleX styles for layout customization. Must be a stylex.create() value.',
     },
   ],
-  features: [
-    'Typeahead field selection with search and aliases',
-    'Edit popover with field, operator, and value selectors',
-    'Support for 13 value types: string, integer, float, enum, date, time, and more',
-    'Token-based display with click-to-edit and remove',
-    'Imperative API for focus/blur control via ref',
-    'Read-only mode for displaying filters without editing',
-  ],
-  accessibility: [
-    'Built on XDSTokenizer which provides combobox pattern with aria-expanded and aria-autocomplete.',
-    'Filter tokens have accessible labels with field name, operator, and value.',
-    'Edit popover uses XDSPopover with focus trapping and light dismiss.',
-    'Clear all button has accessible label.',
-  ],
-  keyboard:
-    'Type to search fields; Enter to select; Click token to edit; Backspace on empty input removes last filter; Escape closes popover',
   usage: {
-    summary: 'Structured filter bar where each token represents a filter with field, operator, and value.',
-    content: `## When to use
-
-- Complex filtering across multiple dimensions.
-- Users need to build and combine filter criteria.
-
-## When NOT to use
-
-- Simple single-field search (use a text input instead).`,
+    description:
+      'Structured filter bar where each token represents a filter (field + operator + value). Users select fields from a typeahead dropdown, configure operators and values in an edit popover, and manage filters as removable tokens. Use for complex multi-dimensional filtering; for simple single-field search, use a text input instead.',
+    features: [
+      'Typeahead field selection with search and aliases',
+      'Edit popover with field, operator, and value selectors',
+      'Support for 13 value types: string, integer, float, enum, date, time, and more',
+      'Token-based display with click-to-edit and remove',
+      'Imperative API for focus/blur control via ref',
+      'Read-only mode for displaying filters without editing',
+    ],
+    accessibility: [
+      'Built on XDSTokenizer which provides combobox pattern with aria-expanded and aria-autocomplete.',
+      'Filter tokens have accessible labels with field name, operator, and value.',
+      'Edit popover uses XDSPopover with focus trapping and light dismiss.',
+      'Clear all button has accessible label.',
+      'Keyboard: Type to search fields; Enter to select; Click token to edit; Backspace on empty input removes last filter; Escape closes popover.',
+    ],
   },
 };
 

@@ -2,38 +2,13 @@
 
 export const docs = {
   name: 'TreeList',
-  description:
-    'Data-driven tree list component for rendering hierarchical data with expand/collapse, branch lines, and interactive items. Uses a flat items array with recursive children — no composition, no cloneElement.',  keywords: ['tree', 'hierarchy', 'nested', 'accordion', 'folder', 'expand', 'collapse', 'treeview', 'outline'],
-  features: [
-    'Data-driven API — items array with recursive children',
-    'Internal expansion state — seed via isExpanded on each item',
-    'Branch connector lines with center/top alignment',
-    'Density variants: compact, balanced, spacious',
-    'Interactive items via invisible button or anchor pattern',
-    'Start and end content slots (icon, avatar, badge)',
-    'Optional header associated via aria-labelledby',
-    'No context for positional data — computed at render time',
-  ],  accessibility: [
-    'Semantic <ul role="tree"> with <li role="treeitem"> elements',
-    '<ul role="group"> for nested children',
-    'aria-expanded on items with children',
-    'aria-labelledby links the header element to the tree',
-    'aria-selected on selected items',
-    'aria-disabled on disabled items',
-    'Chevron toggle button with aria-label="Toggle children"',
-    'Interactive items are keyboard-focusable via Tab',
-  ],
+  keywords: ['tree', 'hierarchy', 'nested', 'accordion', 'folder', 'expand', 'collapse', 'treeview', 'outline'],
   theming: {
     targets: [
       {className: 'xds-tree-list', visualProps: ['density']},
       {className: 'xds-tree-list-item', states: ['selected', 'disabled']},
     ],
   },
-  notes: [
-    'Data-driven pattern: Unlike XDSList which uses children composition, XDSTreeList accepts an items array. This avoids cloneElement and enables the component to compute positional data (nestedLevel, isLast, ancestorsIsLast) at render time.',
-    'Expansion control: Expansion state is managed internally. Seed initial state by setting isExpanded: true on individual items in the data.',
-    'Performance: React reconciliation via key={id} means expanding a node only causes DOM updates in that subtree. Siblings with stable keys and same props are skipped by React.',
-  ],
   components: [
     {
       name: 'XDSTreeList',
@@ -68,12 +43,33 @@ export const docs = {
     },
   ],
   usage: {
-    summary: 'Displays hierarchical information with expandable and collapsible nodes.',
-    content: `## When to use
-
-- For file system navigators.
-- For visualizing hierarchical data.
-- When expand/collapse interactions are needed.`,
+    description:
+      'TreeList is a data-driven component for displaying hierarchical information with expandable and collapsible nodes. It uses a flat items array with recursive children for rendering hierarchical data with branch lines and interactive items—no composition, no cloneElement. Use for file system navigators or visualizing hierarchical data.',
+    features: [
+      'Data-driven API — items array with recursive children',
+      'Internal expansion state — seed via isExpanded on each item',
+      'Branch connector lines with center/top alignment',
+      'Density variants: compact, balanced, spacious',
+      'Interactive items via invisible button or anchor pattern',
+      'Start and end content slots (icon, avatar, badge)',
+      'Optional header associated via aria-labelledby',
+      'No context for positional data — computed at render time',
+    ],
+    accessibility: [
+      'Semantic <ul role="tree"> with <li role="treeitem"> elements',
+      '<ul role="group"> for nested children',
+      'aria-expanded on items with children',
+      'aria-labelledby links the header element to the tree',
+      'aria-selected on selected items',
+      'aria-disabled on disabled items',
+      'Chevron toggle button with aria-label="Toggle children"',
+      'Interactive items are keyboard-focusable via Tab',
+    ],
+    notes: [
+      'Data-driven pattern: Unlike XDSList which uses children composition, XDSTreeList accepts an items array. This avoids cloneElement and enables the component to compute positional data (nestedLevel, isLast, ancestorsIsLast) at render time.',
+      'Expansion control: Expansion state is managed internally. Seed initial state by setting isExpanded: true on individual items in the data.',
+      'Performance: React reconciliation via key={id} means expanding a node only causes DOM updates in that subtree. Siblings with stable keys and same props are skipped by React.',
+    ],
   },
 };
 

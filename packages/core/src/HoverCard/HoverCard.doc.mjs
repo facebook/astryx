@@ -2,29 +2,7 @@
 
 export const docs = {
   name: 'HoverCard',
-  description:
-    'A hover/focus triggered overlay for displaying rich, interactive content anchored to a trigger element.',  keywords: ["hovercard","hover card","popover","tooltip","preview card","flyout","overlay","hover popup"],
-  features: [
-    'CSS Anchor Positioning for automatic placement relative to trigger elements',
-    'Popover API for top-layer rendering — no React portals needed',
-    'Hover triggers with configurable show and hide delays',
-    'Focus triggers with auto-detection for focusable elements',
-    'Stay-open behavior when mouse/focus moves into the hover card',
-    'display:contents wrapper preserves children refs',
-    'Hover indication (dashed underline) for text-only triggers',
-  ],
-  notes: [
-    'useXDSHoverCard returns a describedBy id — pass it as aria-describedby on the trigger for screen reader support.',
-    'When composing multiple aria-describedby sources, merge them with a utility: ids.filter(Boolean).join(" ") || undefined.',
-    'LayerPlacement values: above | below | start | end. LayerAlignment values: start | center | end.',
-  ],
-  accessibility: [
-    'Links the hover card content to the trigger via aria-describedby.',
-    'When composing multiple aria-describedby sources, merge them with a utility.',
-    'Escape key dismisses the hover card and returns focus to the trigger.',
-  ],
-  keyboard:
-    'Escape closes the hover card. Focus triggers show/hide based on the focusTrigger option.',
+  keywords: ["hovercard","hover card","popover","tooltip","preview card","flyout","overlay","hover popup"],
   theming: {
     targets: [
       {className: 'xds-hovercard'},
@@ -154,26 +132,27 @@ export const docs = {
     },
   ],
   usage: {
-    summary: 'Interactive cards providing additional information on hover.',
-    content: `## When to use
-
-- Non-critical supplementary information.
-- Progressive disclosure of details.
-- Non-interruptive education or onboarding.
-- Rich content with media (images, icons, text pairings).
-
-## When NOT to use
-
-- Plain text hints \u2014 use Tooltip instead.
-- Dropdown menus \u2014 use Popover instead.
-- Page content grouping \u2014 use Card instead.
-- Arbitrary or frequently changing content.
-
-## Best practices
-
-- Do: Use thoughtfully and situationally.
-- Don't: Use on arbitrary or frequently changing content.
-- Place hover card 4px from the context element.`,
+    description:
+      'A hover/focus triggered overlay for displaying rich, interactive content anchored to a trigger element. Use hover cards for non-critical supplementary information, progressive disclosure, or non-interruptive education \u2014 for plain text hints use Tooltip, for menus use Popover.',
+    features: [
+      'CSS Anchor Positioning for automatic placement relative to trigger elements',
+      'Popover API for top-layer rendering \u2014 no React portals needed',
+      'Hover triggers with configurable show and hide delays',
+      'Focus triggers with auto-detection for focusable elements',
+      'Stay-open behavior when mouse/focus moves into the hover card',
+      'Hover indication (dashed underline) for text-only triggers',
+    ],
+    accessibility: [
+      'Links the hover card content to the trigger via aria-describedby.',
+      'When composing multiple aria-describedby sources, merge them with a utility.',
+      'Keyboard: Escape dismisses the hover card and returns focus to the trigger; focus events trigger show/hide based on the focusTrigger option.',
+    ],
+    notes: [
+      'useXDSHoverCard returns a describedBy id \u2014 pass it as aria-describedby on the trigger for screen reader support.',
+      'When composing multiple aria-describedby sources, merge them with a utility: ids.filter(Boolean).join(" ") || undefined.',
+      'LayerPlacement values: above | below | start | end. LayerAlignment values: start | center | end.',
+      'display:contents wrapper preserves children refs.',
+    ],
     anatomy: [
       {name: 'Header', required: false, description: 'Eyebrow header with optional copy and close buttons.'},
       {name: 'Body', required: true, description: 'Text pairings, icons, and media content.'},

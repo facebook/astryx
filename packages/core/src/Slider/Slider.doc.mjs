@@ -2,19 +2,8 @@
 
 export const docs = {
   name: 'Slider',
-  description:
-    'A slider component for selecting numeric values or ranges with full keyboard and pointer support.',  keywords: ["slider","range","slidebar","trackbar","scrubber","knob","thumb","rangeslider"],
-  features: [
-    'Single & range modes: Pass a `number` for single thumb, `[number, number]` for range',
-    'Orientation: Supports `horizontal` and `vertical` layouts',
-    'Value display: Tooltip (default), inline text, or none',
-    'Tick marks: Optional marks at specified positions with labels',
-    'Keyboard navigation: Arrow keys, Page Up/Down, Home/End',
-    'Drag interaction: Pointer capture for smooth dragging',
-    'Custom formatting: `formatValue` function for display and `aria-valuetext`',
-    'Field integration: Uses `XDSField` for label, description, required/optional, and status messaging',
-    'Accessible: Uses `role="slider"` with full ARIA attributes',
-  ],  props: [
+  keywords: ["slider","range","slidebar","trackbar","scrubber","knob","thumb","rangeslider"],
+  props: [
     {
       name: 'label',
       type: 'string',
@@ -140,26 +129,31 @@ export const docs = {
       {className: 'xds-slider-thumb', visualProps: ['orientation'], states: ['disabled']},
     ],
   },
-  accessibility: [
-    'Uses `role="slider"` with `aria-valuenow`, `aria-valuemin`, `aria-valuemax`, and `aria-valuetext` on each thumb.',
-    'The label is always rendered in the DOM for accessibility even when `isLabelHidden` is true.',
-    'Tooltip display uses `XDSTooltip` with `delay={0}` and `focusTrigger="always"` so value is always visible on focus.',
-  ],
-  keyboard:
-    'Arrow keys ±1 step, Page Up/Down ±10 steps, Home/End jump to min/max.',
-  notes: [
-    'The ref is merged with an internal `trackRef` used for pointer position calculations.',
-    'Pointer capture is used during drag for smooth interaction even when the cursor leaves the track.',
-    '`snapToStep` rounds to the nearest valid step value; `clamp` enforces min/max bounds.',
-    'In range mode, the closest thumb to the click position is selected automatically.',
-    '`minStepsBetweenThumbs` enforces a minimum gap between range thumbs.',
-    'Vertical orientation inverts the Y axis so that bottom = min and top = max.',
-  ],
   usage: {
-    summary: 'Allows a user to select a single number within a fixed range.',
-    content: `## When to use
-
-- To help users explore and select a number within a constrained range.`,
+    description:
+      'A slider component for selecting numeric values or ranges with full keyboard and pointer support. Use to help users explore and select a number within a constrained range.',
+    features: [
+      'Single and range modes: pass a number for single thumb, [number, number] for range',
+      'Supports horizontal and vertical layouts',
+      'Value display: tooltip (default), inline text, or none',
+      'Tick marks at specified positions with optional labels',
+      'Custom value formatting via formatValue for display and aria-valuetext',
+      'Field integration via XDSField for label, description, required/optional, and status messaging',
+    ],
+    accessibility: [
+      'Uses `role="slider"` with `aria-valuenow`, `aria-valuemin`, `aria-valuemax`, and `aria-valuetext` on each thumb.',
+      'The label is always rendered in the DOM for accessibility even when `isLabelHidden` is true.',
+      'Tooltip display uses `XDSTooltip` with `delay={0}` and `focusTrigger="always"` so value is always visible on focus.',
+      'Keyboard: Arrow keys \u00b11 step, Page Up/Down \u00b110 steps, Home/End jump to min/max.',
+    ],
+    notes: [
+      'The ref is merged with an internal `trackRef` used for pointer position calculations.',
+      'Pointer capture is used during drag for smooth interaction even when the cursor leaves the track.',
+      '`snapToStep` rounds to the nearest valid step value; `clamp` enforces min/max bounds.',
+      'In range mode, the closest thumb to the click position is selected automatically.',
+      '`minStepsBetweenThumbs` enforces a minimum gap between range thumbs.',
+      'Vertical orientation inverts the Y axis so that bottom = min and top = max.',
+    ],
   },
 };
 

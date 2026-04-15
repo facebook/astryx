@@ -2,23 +2,7 @@
 
 export const docs = {
   name: 'MetadataList',
-  description:
-    'A read-only labeled list for displaying key-value metadata. Semantic equivalent of HTML <dl>/<dt>/<dd> with layout control, column modes, and consistent styling. Uses a composition model: XDSMetadataList wraps XDSMetadataListItem sub-components.',  keywords: ["metadata","description","definition","keyvalue","properties","details","attributes","summary"],
-  features: [
-    'Composition model — XDSMetadataList wraps XDSMetadataListItem sub-components',
-    'Column modes: single, multi (auto-fill), or fixed number',
-    'Label positioning: start (side-by-side) or top (stacked)',
-    'Horizontal orientation with flex-wrap',
-    'Show more / show less toggle when items exceed maxNumOfItems',
-    'Optional title heading above the list',
-    'Optional icon before label text',
-    'Semantic <dl>/<dt>/<dd> HTML structure',
-  ],
-  accessibility: [
-    'Semantic <dl> with <dt>/<dd> pairs',
-    'aria-controls links the show more/less button to the list',
-    'aria-expanded indicates whether the list is fully expanded',
-  ],
+  keywords: ["metadata","description","definition","keyvalue","properties","details","attributes","summary"],
   theming: {
     targets: [
       {
@@ -103,20 +87,23 @@ export const docs = {
     },
   ],
   usage: {
-    summary: 'An editable list of key-value pairs providing a comprehensive overview of an object\'s attributes.',
-    content: `## When to use
-
-- Display and edit key-value pairs for object attributes.
-- Use edit mode for inline editing.
-- Use disclosure to collapse/expand sections.
-
-## When NOT to use
-
-- For extensive form input, use forms instead.
-
-## Best practices
-
-- Default to collapsed state showing the top 6 items.`,
+    description:
+      'A labeled list for displaying key-value metadata, providing a comprehensive overview of an object\'s attributes. Uses semantic HTML <dl>/<dt>/<dd> with layout control, column modes, and consistent styling via a composition model of XDSMetadataList and XDSMetadataListItem sub-components.',
+    features: [
+      'Composition model — XDSMetadataList wraps XDSMetadataListItem sub-components',
+      'Column modes: single, multi (auto-fill), or fixed number',
+      'Label positioning: start (side-by-side) or top (stacked)',
+      'Horizontal orientation with flex-wrap',
+      'Show more / show less toggle when items exceed maxNumOfItems',
+      'Optional title heading above the list',
+      'Optional icon before label text',
+      'Semantic <dl>/<dt>/<dd> HTML structure',
+    ],
+    accessibility: [
+      'Semantic <dl> with <dt>/<dd> pairs',
+      'aria-controls links the show more/less button to the list',
+      'aria-expanded indicates whether the list is fully expanded',
+    ],
     anatomy: [
       {name: 'Title', required: false, description: 'Optional title for the metadata list.'},
       {name: 'Label', required: true, description: 'The key label for each metadata entry.'},

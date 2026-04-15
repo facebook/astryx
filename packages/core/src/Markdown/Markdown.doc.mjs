@@ -2,8 +2,6 @@
 
 export const docs = {
   name: 'Markdown',
-  description:
-    'Renders a markdown string as XDS components. Supports headings, paragraphs, bold, italic, code, lists, tables, links, images, blockquotes, horizontal rules, and task lists. Handles streaming text with a smooth fade-in animation.',
   keywords: [
     'markdown',
     'rich text',
@@ -14,18 +12,6 @@ export const docs = {
     'formatted text',
     'md',
     'markdown renderer',
-  ],
-  features: [
-    'Zero dependencies — built-in markdown parser, no external library',
-    'Streaming mode — smooth fade-in animation for chunk-by-chunk text delivery',
-    'XDS integration — uses XDSList, XDSCodeBlock, XDSCode, and XDSCheckboxList for semantic output',
-    'Heading level shift — headingLevelStart maps # to any h1-h6 level for page hierarchy',
-    'Link interception — onLinkClick handler can intercept or prevent link navigation',
-    "Density — default and compact spacing modes",
-    "Task lists — GitHub Flavored Markdown checkboxes rendered via XDSCheckboxList in isReadOnly mode",
-    'Tables — rendered as accessible HTML tables with XDS typography',
-    'Citation chips — sources prop renders [id] and 【id】 markers as linked chips with label or number style',
-    'Content width — contentWidth constrains prose to a readable width while tables and code blocks expand to the full container',
   ],
   props: [
     {
@@ -115,15 +101,28 @@ export const docs = {
       {className: 'xds-markdown', visualProps: ['density']},
     ],
   },
-  accessibility: [
-    'Root element uses role="document" to establish a document landmark for screen readers.',
-    'Lists are rendered as semantic <ul>/<ol> elements.',
-    'Tables include proper <thead>/<tbody> with alignment attributes.',
-    'Task list checkboxes are rendered via XDSCheckboxList with isReadOnly.',
-    'Code blocks use XDSCodeBlock with appropriate ARIA attributes.',
-  ],
   usage: {
-    summary: 'Renders a markdown string as XDS-styled components.',
+    description:
+      'Renders a markdown string as XDS-styled components, supporting headings, paragraphs, bold, italic, code, lists, tables, links, images, blockquotes, horizontal rules, and task lists. Handles streaming text delivery with a smooth fade-in animation.',
+    features: [
+      'Zero dependencies — built-in markdown parser, no external library',
+      'Streaming mode — smooth fade-in animation for chunk-by-chunk text delivery',
+      'XDS integration — uses XDSList, XDSCodeBlock, XDSCode, and XDSCheckboxList for semantic output',
+      'Heading level shift — headingLevelStart maps # to any h1-h6 level for page hierarchy',
+      'Link interception — onLinkClick handler can intercept or prevent link navigation',
+      'Density — default and compact spacing modes',
+      'Task lists — GitHub Flavored Markdown checkboxes rendered via XDSCheckboxList in isReadOnly mode',
+      'Tables — rendered as accessible HTML tables with XDS typography',
+      'Citation chips — sources prop renders [id] and 【id】 markers as linked chips with label or number style',
+      'Content width — contentWidth constrains prose to a readable width while tables and code blocks expand to the full container',
+    ],
+    accessibility: [
+      'Root element uses role="document" to establish a document landmark for screen readers.',
+      'Lists are rendered as semantic <ul>/<ol> elements.',
+      'Tables include proper <thead>/<tbody> with alignment attributes.',
+      'Task list checkboxes are rendered via XDSCheckboxList with isReadOnly.',
+      'Code blocks use XDSCodeBlock with appropriate ARIA attributes.',
+    ],
   },
 };
 

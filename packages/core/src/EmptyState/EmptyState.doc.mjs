@@ -2,18 +2,7 @@
 
 export const docs = {
   name: 'EmptyState',
-  description:
-    'An empty state placeholder for content areas with no data. Displays an icon or illustration, title, optional description, and action buttons.',
   keywords: ["emptystate","empty","placeholder","nodata","blank","noresults","illustration","blankslate"],
-  features: [
-    'Uses role="status" so screen readers announce the empty state automatically',
-    'Icon slot renders as decorative (aria-hidden="true") — no extra labeling needed',
-    'Title renders as a heading element (h1-h6, default h3) for correct document outline',
-    'Actions are laid out horizontally by default and stack vertically in compact mode',
-    'Compact variant reduces spacing for constrained content areas',
-    'Accepts xstyle, className, and style props for custom container adjustments',
-    'Forwarded ref lands on the root <div> container',
-  ],
   props: [
     {
       name: 'title',
@@ -66,24 +55,22 @@ export const docs = {
       {className: 'xds-emptystate'},
     ],
   },
-  accessibility: [
-    'Container uses role="status" to announce the empty state content to screen readers.',
-    'Icon wrapper has aria-hidden="true" so decorative icons are ignored by assistive technology.',
-    'Title renders as a heading element (h1-h6 via headingLevel prop, default h3), keeping it in the document heading outline.',
-  ],
   usage: {
-    summary: 'Provides guidance and context when there is no data to display.',
-    content: `## When to use
-
-- Null states when no content exists yet.
-- Failed loading states.
-- When search or filter results return nothing.
-
-## Best practices
-
-- Do: Be clear and direct with messaging.
-- Do: Use simple language and provide context.
-- Do: Offer a next step so users know how to proceed.`,
+    description: 'An empty state placeholder that provides guidance and context when there is no data to display. Use for null states, failed loading states, or when search and filter results return nothing. Be clear with messaging and offer a next step so users know how to proceed.',
+    features: [
+      'Uses role="status" so screen readers announce the empty state automatically',
+      'Icon slot renders as decorative (aria-hidden="true") — no extra labeling needed',
+      'Title renders as a heading element (h1-h6, default h3) for correct document outline',
+      'Actions are laid out horizontally by default and stack vertically in compact mode',
+      'Compact variant reduces spacing for constrained content areas',
+      'Accepts xstyle, className, and style props for custom container adjustments',
+      'Forwarded ref lands on the root <div> container',
+    ],
+    accessibility: [
+      'Container uses role="status" to announce the empty state content to screen readers.',
+      'Icon wrapper has aria-hidden="true" so decorative icons are ignored by assistive technology.',
+      'Title renders as a heading element (h1-h6 via headingLevel prop, default h3), keeping it in the document heading outline.',
+    ],
     anatomy: [
       {name: 'Illustration', required: false, description: 'Visual cue that reinforces the empty state context.'},
       {name: 'Title', required: true, description: 'Primary message explaining the empty state.'},

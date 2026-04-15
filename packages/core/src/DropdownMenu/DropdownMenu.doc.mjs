@@ -2,18 +2,7 @@
 
 export const docs = {
   name: 'DropdownMenu',
-  description:
-    'A dropdown menu component for displaying actionable items in a popup menu.',  keywords: ["dropdown","menu","popover","select","actions","contextmenu","overflow","kebab","menubutton"],
-  features: [
-    'Button customization: Customize the trigger button via the `button` prop (supports all XDSButton props)',
-    'Data-driven items: Pass items via the `items` prop with support for sections and dividers',
-    'Controlled/Uncontrolled: Supports both controlled (`isMenuOpen`/`onOpenChange`) and uncontrolled modes',
-    'Custom menu width: Override default width (matches button) via `menuWidth` prop',
-    'Sections: Group related items with optional headers using `XDSDropdownMenuSection`',
-    'Keyboard navigation: Full keyboard support (Arrow keys, Home, End, Enter, Space, Escape)',
-    'Accessibility: Proper ARIA roles (menu, menuitem) and attributes',
-    'Custom rendering: Optional `children` render function with `XDSDropdownMenuItem` helper',
-  ],
+  keywords: ["dropdown","menu","popover","select","actions","contextmenu","overflow","kebab","menubutton"],
   theming: {
     targets: [
       {className: 'xds-dropdown-menu'},
@@ -24,19 +13,6 @@ export const docs = {
       {name: '--dropdown-padding', description: 'Inner padding of the menu popup', default: 'var(--spacing-1)'},
     ],
   },
-  keyboard:
-    'Arrow keys navigate items, Home/End jump to first/last, Enter/Space select, Escape closes the menu',
-  accessibility: [
-    'Uses proper ARIA roles: `menu` on the popup container, `menuitem` on each item',
-    'Focus returns to the trigger button when the menu closes',
-    'Keyboard navigation automatically skips disabled items',
-  ],
-  notes: [
-    'Uses `useXDSLayer` with `mode: "context"` for CSS anchor positioning',
-    'Uses `XDSButton` internally — chevron is passed via `endContent` and auto-hidden when `isIconOnly` is true',
-    'Items are tracked via the `items` prop to enable keyboard navigation',
-    'Light dismiss is enabled by default (clicking outside closes menu)',
-  ],
   components: [
     {
       name: 'XDSDropdownMenu',
@@ -195,11 +171,29 @@ export const docs = {
     },
   ],
   usage: {
-    summary: 'Shows options for actions in a dropdown list.',
-    content: `## When to use
-
-- To present different action options as a next step in a process.
-- As sub-navigation to guide users to a next destination.`,
+    description: 'A dropdown menu for displaying actionable items in a popup. Use to present action options as a next step in a process or as sub-navigation to guide users to a destination.',
+    features: [
+      'Button customization: Customize the trigger button via the `button` prop (supports all XDSButton props)',
+      'Data-driven items: Pass items via the `items` prop with support for sections and dividers',
+      'Controlled/Uncontrolled: Supports both controlled (`isMenuOpen`/`onOpenChange`) and uncontrolled modes',
+      'Custom menu width: Override default width (matches button) via `menuWidth` prop',
+      'Sections: Group related items with optional headers using `XDSDropdownMenuSection`',
+      'Keyboard navigation: Full keyboard support (Arrow keys, Home, End, Enter, Space, Escape)',
+      'Accessibility: Proper ARIA roles (menu, menuitem) and attributes',
+      'Custom rendering: Optional `children` render function with `XDSDropdownMenuItem` helper',
+    ],
+    accessibility: [
+      'Uses proper ARIA roles: `menu` on the popup container, `menuitem` on each item',
+      'Focus returns to the trigger button when the menu closes',
+      'Keyboard navigation automatically skips disabled items',
+      'Keyboard: Arrow keys navigate items, Home/End jump to first/last, Enter/Space select, Escape closes the menu',
+    ],
+    notes: [
+      'Uses `useXDSLayer` with `mode: "context"` for CSS anchor positioning',
+      'Uses `XDSButton` internally — chevron is passed via `endContent` and auto-hidden when `isIconOnly` is true',
+      'Items are tracked via the `items` prop to enable keyboard navigation',
+      'Light dismiss is enabled by default (clicking outside closes menu)',
+    ],
   },
 };
 

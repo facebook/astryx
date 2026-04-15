@@ -2,25 +2,7 @@
 
 export const docs = {
   name: 'NumberInput',
-  description:
-    'A number input component for collecting numeric user input with validation.',  keywords: ["numberinput","numberfield","stepper","spinner","counter","increment","decrement","quantity","numberpicker"],
-  features: [
-    'Label Support — required label for accessibility (can be visually hidden)',
-    'Description — optional description text displayed between the label and input',
-    'Optional/Required Indicators — display "Optional" or "Required" text with bullet separator',
-    'Label Tooltip — optional info icon with tooltip at end of label',
-    'Label Icon — optional icon before the label text',
-    'Accessible — label properly associated with input via htmlFor/id',
-    'Styled with StyleX — uses XDS design tokens for consistent styling',
-    'Size Variants — three sizes (sm, md, lg) for different contexts',
-    'Status Handling — error, warning, and success states with messages',
-    'Number Constraints — support for min, max, and step attributes',
-    'Validated onChange — only calls onChange when the entered value passes validation',
-    'Units Display — optional units suffix (e.g., "%" or "GB")',
-    'Integer Mode — option to restrict to integers only',
-    'Native Controls — uses type="number" for browser step controls',
-    'Event Callbacks — onFocus, onBlur, and onEnter handlers',
-  ],
+  keywords: ["numberinput","numberfield","stepper","spinner","counter","increment","decrement","quantity","numberpicker"],
   props: [
     {
       name: 'label',
@@ -172,28 +154,37 @@ export const docs = {
       {className: 'xds-number-input', visualProps: ['size']},
     ],
   },
-  accessibility: [
-    'Label is always rendered and associated with the input via htmlFor/id using the useId hook.',
-    'Use isLabelHidden to hide the label visually while keeping it accessible to screen readers via a CSS technique.',
-    'Wraps XDSField for consistent label, description, and optional/required indicator handling.',
-  ],
-  notes: [
-    'isOptional and isRequired are mutually exclusive; if both are set, "Optional" is shown.',
-    'Uses type="number" to enable native browser step controls (up/down arrows).',
-    'Validated onChange: only calls onChange when the entered value is a valid number that passes min/max/integer constraints.',
-    'Uses internal pending state to allow free-form typing while validating on commit.',
-    'Units are displayed as a lighter grey suffix after the input value.',
-  ],
   usage: {
-    summary: 'Enables users to enter or edit numeric values with validation support.',
-    content: `## When to use
-
-- Numeric input within forms.
-
-## Best practices
-
-- Size the input to reflect expected content length.
-- Validation states: error (blocking), warning (non-blocking), success (confirmation).`,
+    description:
+      'A number input component for collecting and editing numeric values with validation support. Use within forms with support for min/max/step constraints, units display, and error/warning/success validation states.',
+    features: [
+      'Label Support — required label for accessibility (can be visually hidden)',
+      'Description — optional description text displayed between the label and input',
+      'Optional/Required Indicators — display "Optional" or "Required" text with bullet separator',
+      'Label Tooltip — optional info icon with tooltip at end of label',
+      'Label Icon — optional icon before the label text',
+      'Accessible — label properly associated with input via htmlFor/id',
+      'Size Variants — three sizes (sm, md, lg) for different contexts',
+      'Status Handling — error, warning, and success states with messages',
+      'Number Constraints — support for min, max, and step attributes',
+      'Validated onChange — only calls onChange when the entered value passes validation',
+      'Units Display — optional units suffix (e.g., "%" or "GB")',
+      'Integer Mode — option to restrict to integers only',
+      'Native Controls — uses type="number" for browser step controls',
+      'Event Callbacks — onFocus, onBlur, and onEnter handlers',
+    ],
+    accessibility: [
+      'Label is always rendered and associated with the input via htmlFor/id using the useId hook.',
+      'Use isLabelHidden to hide the label visually while keeping it accessible to screen readers via a CSS technique.',
+      'Wraps XDSField for consistent label, description, and optional/required indicator handling.',
+    ],
+    notes: [
+      'isOptional and isRequired are mutually exclusive; if both are set, "Optional" is shown.',
+      'Uses type="number" to enable native browser step controls (up/down arrows).',
+      'Validated onChange: only calls onChange when the entered value is a valid number that passes min/max/integer constraints.',
+      'Uses internal pending state to allow free-form typing while validating on commit.',
+      'Units are displayed as a lighter grey suffix after the input value.',
+    ],
     anatomy: [
       {name: 'Label', required: true, description: 'The label for the number input.'},
       {name: 'Description', required: false, description: 'Additional description text below the label.'},

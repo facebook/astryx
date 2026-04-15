@@ -2,37 +2,13 @@
 
 export const docs = {
   name: 'List',
-  description:
-    'Vertical list component for rendering collections of items with consistent spacing, dividers, and marker styles. Uses a composition model: XDSList wraps XDSListItem sub-components.',
   keywords: ["list","listitem","listbox","menu","collection","items","ul","navlist"],
-  features: [
-    'Composition model — XDSList wraps XDSListItem sub-components',
-    'Density variants: compact, balanced, spacious',
-    'Optional dividers between items',
-    'Optional header associated via aria-labelledby',
-    'List marker styles: none, disc, decimal (renders <ol>), circle',
-    'Interactive items via invisible button or anchor pattern',
-    'Start and end content slots (icon, avatar, badge, chevron)',
-  ],
-  accessibility: [
-    'Semantic <ul> / <ol> with <li> elements',
-    'role="list" added when listStyle=\'none\' (Safari fix for list semantics removed by CSS list-style:none)',
-    'aria-labelledby links the header element to the list',
-    'aria-selected on selected items',
-    'aria-disabled on disabled items',
-    'Dividers are aria-hidden="true"',
-    'Interactive items are keyboard-focusable via Tab',
-  ],
   theming: {
     targets: [
       {className: 'xds-list', visualProps: ['density', 'listStyle']},
       {className: 'xds-list-item'},
     ],
   },
-  notes: [
-    'Invisible button pattern: when onClick is provided, an invisible <button> wraps the label + description for accessibility. The <li> is the visual container with hover/press styles. startContent and endContent are siblings to the button (not inside it). Container click fires onClick unless the click originated from an interactive child. :focus-within on the container shows the focus outline.',
-    'When href is provided instead of onClick, the same invisible pattern uses an <a> element.',
-  ],
   components: [
     {
       name: 'XDSList',
@@ -136,16 +112,30 @@ export const docs = {
     },
   ],
   usage: {
-    summary: 'Organizes information or interactive elements.',
-    content: `## When to use
-
-- To organize text, media, charts, or actions.
-- To create subgroups of parallel information.
-- When items need add, edit, delete, or expand operations.
-
-## Best practices
-
-- Do: Place lists within a container such as a card or dialog.`,
+    description:
+      'Vertical list component for rendering collections of items with consistent spacing, dividers, and marker styles. Uses a composition model where XDSList wraps XDSListItem sub-components. Place lists within a container such as a card or dialog.',
+    features: [
+      'Composition model — XDSList wraps XDSListItem sub-components',
+      'Density variants: compact, balanced, spacious',
+      'Optional dividers between items',
+      'Optional header associated via aria-labelledby',
+      'List marker styles: none, disc, decimal (renders <ol>), circle',
+      'Interactive items via invisible button or anchor pattern',
+      'Start and end content slots (icon, avatar, badge, chevron)',
+    ],
+    accessibility: [
+      'Semantic <ul> / <ol> with <li> elements.',
+      'role="list" added when listStyle=\'none\' (Safari fix for list semantics removed by CSS list-style:none).',
+      'aria-labelledby links the header element to the list.',
+      'aria-selected on selected items.',
+      'aria-disabled on disabled items.',
+      'Dividers are aria-hidden="true".',
+      'Interactive items are keyboard-focusable via Tab.',
+    ],
+    notes: [
+      'Invisible button pattern: when onClick is provided, an invisible <button> wraps the label + description for accessibility. The <li> is the visual container with hover/press styles. startContent and endContent are siblings to the button (not inside it). Container click fires onClick unless the click originated from an interactive child. :focus-within on the container shows the focus outline.',
+      'When href is provided instead of onClick, the same invisible pattern uses an <a> element.',
+    ],
     anatomy: [
       {name: 'List title', required: true, description: 'Heading that labels the list.'},
       {name: 'Description', required: false, description: 'Supplementary text below the title.'},

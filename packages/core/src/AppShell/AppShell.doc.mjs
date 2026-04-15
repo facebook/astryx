@@ -2,18 +2,33 @@
 
 export const docs = {
   name: 'AppShell',
-  description:
-    'Application-level layout shell providing header, side navigation, and main content area — composes XDSLayout internally and replaces the XDSPage + XDSPageLayout pattern.',
   keywords: ["appshell","layout","scaffold","sidebar","sidenav","topnav","header","navigation","dashboard","shell","page","frame"],
-  features: [
-    'Two navigation slots: topNav (horizontal bar) and sideNav (vertical sidebar)',
-    'Two height modes: fill (viewport-height, independent scroll containers) and auto (page-scroll with sticky nav)',
-    'Controlled and uncontrolled sideNav collapse with responsive auto-collapse via mobileNav breakpoint',
-    'Mobile: collapsed sideNav renders as an overlay with backdrop',
-    'Composes XDSLayout internally for automatic padding collapse, scroll containment, and slot awareness',
-    'Semantic HTML: <main> with role="main", SideNav with role="navigation", skip-to-content link',
-    'Escape key closes mobile sideNav overlay',
-  ],
+  usage: {
+    description:
+      'Application-level layout shell providing header, side navigation, and main content area. Composes XDSLayout internally and replaces the XDSPage + XDSPageLayout pattern.',
+    features: [
+      'Two navigation slots: topNav (horizontal bar) and sideNav (vertical sidebar)',
+      'Two height modes: fill (viewport-height, independent scroll containers) and auto (page-scroll with sticky nav)',
+      'Controlled and uncontrolled sideNav collapse with responsive auto-collapse via mobileNav breakpoint',
+      'Mobile: collapsed sideNav renders as an overlay with backdrop',
+      'Composes XDSLayout internally for automatic padding collapse, scroll containment, and slot awareness',
+    ],
+    accessibility: [
+      'Semantic HTML via XDSLayout slots — each slot maps to a proper landmark element.',
+      '<main> content area has role="main" for landmark navigation.',
+      'SideNav has role="navigation" with aria-label="Application navigation".',
+      'Skip-to-content link is visually hidden but shown on focus for keyboard users.',
+      'Keyboard: Escape key closes the mobile sideNav overlay.',
+    ],
+    notes: [
+      'When a TopNav is present, omit XDSSideNavHeading from the SideNav — the TopNav already provides app identity. Adding both would double the identity.',
+      'When there is no TopNav, include XDSSideNavHeading inside the SideNav so the app name and logo are present.',
+      'XDSAppShell composes XDSLayout internally: topNav + banner map to XDSLayoutHeader, sideNav maps to XDSLayoutPanel, and children map to XDSLayoutContent.',
+      'SideNav collapse animations currently snap open/closed; ViewTransitions support is planned.',
+      'In "auto" height mode, TopNav gets position: sticky; top: 0 and SideNav gets position: sticky; top: <header-height>.',
+      'In "fill" height mode, the shell fills 100dvh, TopNav is pinned at the top, and both the SideNav and content area have independent scroll containers.',
+    ],
+  },
   props: [
     {
       name: 'children',
@@ -87,28 +102,10 @@ export const docs = {
         'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
     },
   ],
-  accessibility: [
-    'Semantic HTML via XDSLayout slots — each slot maps to a proper landmark element.',
-    '<main> content area has role="main" for landmark navigation.',
-    'SideNav has role="navigation" with aria-label="Application navigation".',
-    'Skip-to-content link is visually hidden but shown on focus for keyboard users.',
-    'Escape key closes the mobile sideNav overlay.',
-  ],
   theming: {
     targets: [
       {className: 'xds-app-shell', visualProps: ['variant', 'height']},
     ],
-  },
-  notes: [
-    'When a TopNav is present, omit XDSSideNavHeading from the SideNav — the TopNav already provides app identity. Adding both would double the identity.',
-    'When there is no TopNav, include XDSSideNavHeading inside the SideNav so the app name and logo are present.',
-    'XDSAppShell composes XDSLayout internally: topNav + banner map to XDSLayoutHeader, sideNav maps to XDSLayoutPanel, and children map to XDSLayoutContent.',
-    'SideNav collapse animations currently snap open/closed; ViewTransitions support is planned.',
-    'In "auto" height mode, TopNav gets position: sticky; top: 0 and SideNav gets position: sticky; top: <header-height>.',
-    'In "fill" height mode, the shell fills 100dvh, TopNav is pinned at the top, and both the SideNav and content area have independent scroll containers.',
-  ],
-  usage: {
-    summary: 'Application-level layout shell providing header, side navigation, and main content area.',
   },
 };
 

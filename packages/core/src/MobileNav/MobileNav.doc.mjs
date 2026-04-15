@@ -2,8 +2,6 @@
 
 export const docs = {
   name: 'MobileNav',
-  description:
-    'Slide-out drawer overlay for mobile navigation. The mobile counterpart to XDSSideNav — accepts the same children (XDSSideNavSection, XDSSideNavItem, or any ReactNode).',
   keywords: ["mobilenav","drawer","sidebar","navigation","hamburger","menu","offcanvas","slideout","navdrawer"],
   props: [
     {
@@ -46,33 +44,30 @@ export const docs = {
       default: "'start'",
     },
   ],
-  features: [
-    'Native <dialog> element with showModal() for top-layer rendering — no z-index stacking issues',
-    'Animated slide-in from start or end edge with backdrop fade',
-    'Shares children with XDSSideNav — extract nav sections into a variable and render in both',
-    'RTL-aware: automatically mirrors slide direction for right-to-left layouts',
-    'Respects prefers-reduced-motion: reduces animation duration',
-  ],
-  accessibility: [
-    'Uses native <dialog> with showModal() for correct ARIA modal semantics.',
-    "aria-label set to title or 'Navigation' as fallback.",
-    'Focus trapping provided by showModal() (browser-native).',
-    'Escape key closes via native cancel event.',
-    'Backdrop click closes the drawer.',
-    'Body scroll locked while modal is open.',
-  ],
-  keyboard:
-    'Escape closes the drawer; Tab/Shift+Tab cycles focus within the drawer (browser-native focus trapping)',
   theming: {
     targets: [
       {className: 'xds-mobile-nav', visualProps: ['side']},
     ],
   },
   usage: {
-    summary: 'Slide-out drawer overlay for mobile navigation, the mobile counterpart to SideNav.',
-    content: `## When to use
-
-- Providing navigation on mobile viewports where a persistent side nav is not practical.`,
+    description:
+      'Slide-out drawer overlay for mobile navigation, the mobile counterpart to XDSSideNav. Accepts the same children (XDSSideNavSection, XDSSideNavItem, or any ReactNode), providing navigation on mobile viewports where a persistent side nav is not practical.',
+    features: [
+      'Native <dialog> element with showModal() for top-layer rendering — no z-index stacking issues',
+      'Animated slide-in from start or end edge with backdrop fade',
+      'Shares children with XDSSideNav — extract nav sections into a variable and render in both',
+      'RTL-aware: automatically mirrors slide direction for right-to-left layouts',
+      'Respects prefers-reduced-motion: reduces animation duration',
+    ],
+    accessibility: [
+      'Uses native <dialog> with showModal() for correct ARIA modal semantics.',
+      "aria-label set to title or 'Navigation' as fallback.",
+      'Focus trapping provided by showModal() (browser-native).',
+      'Escape key closes via native cancel event.',
+      'Backdrop click closes the drawer.',
+      'Body scroll locked while modal is open.',
+      'Keyboard: Escape closes the drawer; Tab/Shift+Tab cycles focus within the drawer (browser-native focus trapping).',
+    ],
   },
 };
 /** @type {import('../docs-types').ComponentDoc} */

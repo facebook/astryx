@@ -4,15 +4,7 @@
 
 export const docs = {
   name: 'Divider',
-  description: 'Visual separator with optional label, using XDS design tokens.',
   keywords: ["divider","separator","hr","rule","line","border","spacer","horizontal rule"],
-  features: [
-    'Supports horizontal and vertical orientations',
-    'Optional label centered on the divider line',
-    'Subtle and strong visual weight variants',
-    'Full-bleed mode extends the divider to container edges via negative margins',
-    'Themeable via className — target .xds-divider with variant and orientation classes',
-  ],
   props: [
     {
       name: 'orientation',
@@ -51,24 +43,14 @@ export const docs = {
     ],
   },
   usage: {
-    summary: 'Separates different pieces of content.',
-    content: `## When to use
-
-- Standard level: subtle hairlines to demote sections or regions.
-- Emphasized level: critical visual lines for chart axes or input borders.
-- High contrast level: strong visual separation.
-
-## When NOT to use
-
-- Emphasized dividers for sectional distinction \u2014 use standard instead.
-- Standard dividers for critical content boundaries \u2014 use emphasized instead.
-
-## Best practices
-
-- Do: Use standard dividers for demoting sections and regions.
-- Do: Use emphasized dividers for interactive element boundaries.
-- Don't: Use emphasized dividers for sectional distinction.
-- Don't: Use standard dividers for critical content boundaries.`,
+    description: 'A visual separator for dividing content sections. Use subtle dividers to demote sections, emphasized dividers for interactive element boundaries, and strong dividers for high-contrast separation.',
+    features: [
+      'Supports horizontal and vertical orientations',
+      'Optional label centered on the divider line',
+      'Subtle and strong visual weight variants',
+      'Full-bleed mode extends the divider to container edges via negative margins',
+      'Themeable via className — target .xds-divider with variant and orientation classes',
+    ],
   },
 };
 

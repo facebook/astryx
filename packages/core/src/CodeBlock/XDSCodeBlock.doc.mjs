@@ -1,22 +1,9 @@
 /** @type {import('../docs-types').ComponentDoc} */
 export const docs = {
   name: 'CodeBlock',
-  description:
-    'Syntax-highlighted code block using the CSS Custom Highlight API for zero-DOM-overhead coloring, with span-based fallback. XDSCode renders inline code within prose.',
   keywords: [
     'code', 'syntax', 'highlight', 'snippet', 'prism', 'shiki',
     'pre', 'monospace', 'codeblock', 'inline',
-  ],
-  features: [
-    "CSS Custom Highlight API: zero-DOM-overhead syntax coloring; spans fallback for unsupported browsers",
-    "Line numbers: optional gutter via hasLineNumbers",
-    "Line highlighting: 1-indexed lines via highlightLines",
-    "Copy button: built-in with onCopy callback",
-    "Header: optional title + language label",
-    "Sizes: sm and md",
-    "Wrapping: isWrapped toggles long-line wrapping vs horizontal scroll",
-    "Languages: TypeScript, JavaScript, CSS, HTML, JSON, plaintext (default)",
-    "XDSCode: inline code element with monospace styling for use inside prose",
   ],
   components: [
     {
@@ -61,19 +48,34 @@ export const docs = {
       {className: 'xds-codeblock', visualProps: ['size', 'language']},
     ],
   },
-  accessibility: [
-    'XDSCodeBlock renders as <pre> with nested <code> for correct semantic markup.',
-    'Copy button has an accessible label and uses aria-live to announce copy success.',
-    'Line numbers are aria-hidden to avoid screen reader noise.',
-    'Title and language label are visible text in the header, not tooltips.',
-  ],
-  notes: [
-    'Uses CSS Custom Highlight API (CSS.highlights) when available; falls back to span-based rendering automatically.',
-    'Tokenization is async -- initial render shows unstyled code, highlights applied on next paint.',
-    'SYNC_TOKENIZE_THRESHOLD: short code strings tokenized synchronously to avoid async flash.',
-    'Custom tokenizers support unsupported languages -- pass {type, start, end}[] token array.',
-    'Token types map to xds-token-{type} CSS classes for custom syntax theme overrides.',
-  ],
+  usage: {
+    description:
+      'CodeBlock provides syntax-highlighted code display using the CSS Custom Highlight API for zero-DOM-overhead coloring, with a span-based fallback for unsupported browsers. XDSCode renders inline code within prose with monospace styling.',
+    features: [
+      'CSS Custom Highlight API: zero-DOM-overhead syntax coloring; spans fallback for unsupported browsers',
+      'Line numbers: optional gutter via hasLineNumbers',
+      'Line highlighting: 1-indexed lines via highlightLines',
+      'Copy button: built-in with onCopy callback',
+      'Header: optional title + language label',
+      'Sizes: sm and md',
+      'Wrapping: isWrapped toggles long-line wrapping vs horizontal scroll',
+      'Languages: TypeScript, JavaScript, CSS, HTML, JSON, plaintext (default)',
+      'XDSCode: inline code element with monospace styling for use inside prose',
+    ],
+    accessibility: [
+      'XDSCodeBlock renders as <pre> with nested <code> for correct semantic markup.',
+      'Copy button has an accessible label and uses aria-live to announce copy success.',
+      'Line numbers are aria-hidden to avoid screen reader noise.',
+      'Title and language label are visible text in the header, not tooltips.',
+    ],
+    notes: [
+      'Uses CSS Custom Highlight API (CSS.highlights) when available; falls back to span-based rendering automatically.',
+      'Tokenization is async -- initial render shows unstyled code, highlights applied on next paint.',
+      'SYNC_TOKENIZE_THRESHOLD: short code strings tokenized synchronously to avoid async flash.',
+      'Custom tokenizers support unsupported languages -- pass {type, start, end}[] token array.',
+      'Token types map to xds-token-{type} CSS classes for custom syntax theme overrides.',
+    ],
+  },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */

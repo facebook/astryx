@@ -2,8 +2,7 @@
 
 export const docs = {
   name: 'Pagination',
-  description:
-    'Standalone pagination controls for navigating through pages of content. Supports multiple display variants and works with known totals or cursor-based pagination.',  keywords: ["pagination","pager","paginator","pagenavigation","paging","paginate","pages","pagecontrol"],
+  keywords: ["pagination","pager","paginator","pagenavigation","paging","paginate","pages","pagecontrol"],
   props: [
     {
       name: 'page',
@@ -98,41 +97,37 @@ export const docs = {
         'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
     },
   ],
-  features: [
-    "Five display variants: 'pages', 'count', 'compact', 'dots', 'none'",
-    'Offset and cursor-based pagination: provide totalItems/totalPages for known totals, or hasMore for cursor-based',
-    'Page size selector: shows a dropdown when pageSizeOptions is provided',
-    'Ellipsis truncation for page numbers via generatePageRange utility',
-    'React transitions: onChangeAction uses useTransition for built-in loading state',
-    "Sizes: 'sm' and 'md'",
-  ],
-  accessibility: [
-    'Root is <nav> with configurable aria-label.',
-    'Current page button has aria-current="page".',
-    'Prev/next buttons have descriptive aria-label.',
-    'Ellipsis elements are aria-hidden.',
-    'All interactive elements are keyboard accessible.',
-  ],
   theming: {
     targets: [
       {className: 'xds-pagination', visualProps: ['size', 'variant']},
       {className: 'xds-pagination-dot', visualProps: ['size'], states: ['active']},
     ],
   },
-  notes: [
-    "Page number buttons use XDSButton (variant='ghost' for inactive, variant='primary' for active) for theming and swizzle compatibility.",
-    "Prev/next buttons use XDSButton with variant='ghost' and icon-only mode.",
-    'Dot indicators use xds-pagination-dot className with size and active state classes for theme targeting.',
-    'Returns null when totalItems <= 0 or totalPages <= 0.',
-    'Also exports generatePageRange utility for computing visible page numbers with ellipsis.',
-  ],
   usage: {
-    summary: 'Communicates the number of elements that can be loaded within a given context.',
-    content: `## When to use
-
-- Showing current position within a paginated set.
-- Accessing previous and next items.
-- Selecting a specific page from a range.`,
+    description:
+      'Standalone pagination controls for navigating through pages of content. Communicates the number of elements that can be loaded within a given context, supporting multiple display variants and working with known totals or cursor-based pagination.',
+    features: [
+      "Five display variants: 'pages', 'count', 'compact', 'dots', 'none'",
+      'Offset and cursor-based pagination: provide totalItems/totalPages for known totals, or hasMore for cursor-based',
+      'Page size selector: shows a dropdown when pageSizeOptions is provided',
+      'Ellipsis truncation for page numbers via generatePageRange utility',
+      'React transitions: onChangeAction uses useTransition for built-in loading state',
+      "Sizes: 'sm' and 'md'",
+    ],
+    accessibility: [
+      'Root is <nav> with configurable aria-label.',
+      'Current page button has aria-current="page".',
+      'Prev/next buttons have descriptive aria-label.',
+      'Ellipsis elements are aria-hidden.',
+      'All interactive elements are keyboard accessible.',
+    ],
+    notes: [
+      "Page number buttons use XDSButton (variant='ghost' for inactive, variant='primary' for active) for theming and swizzle compatibility.",
+      "Prev/next buttons use XDSButton with variant='ghost' and icon-only mode.",
+      'Dot indicators use xds-pagination-dot className with size and active state classes for theme targeting.',
+      'Returns null when totalItems <= 0 or totalPages <= 0.',
+      'Also exports generatePageRange utility for computing visible page numbers with ellipsis.',
+    ],
   },
 };
 

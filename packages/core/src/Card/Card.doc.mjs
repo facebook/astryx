@@ -2,16 +2,27 @@
 
 export const docs = {
   name: 'Card',
-  description: 'Card container component with shadow and themed styling.',
   keywords: ["card","surface","panel","container","elevated","shadow","box","paper","tile","well"],
-  features: [
-    'Top-level container for elevated content',
-    'Provides card-specific appearance: background, shadow, and border-radius',
-    'Sets CSS variables for child layout components',
-    'Supports `padding={0}` for edge-to-edge content',
-    'Composable with XDSLayout, XDSCollapsible, and XDSCollapsibleGroup',
-    'Background color variants: default, muted, and 10 non-semantic palette colors',
-  ],
+  usage: {
+    description:
+      'Card container that groups related information inside elevated containers for visual organization. Use when explicit grouping is needed — prefer sections as the default and escalate to cards only when stronger visual distinction is required.',
+    features: [
+      'Top-level container for elevated content',
+      'Provides card-specific appearance: background, shadow, and border-radius',
+      'Supports `padding={0}` for edge-to-edge content',
+      'Composable with XDSLayout, XDSCollapsible, and XDSCollapsibleGroup',
+      'Background color variants: default, muted, and 10 non-semantic palette colors',
+    ],
+    notes: [
+      'Sets CSS variables for child layout components',
+      'Card elevation adapts automatically based on the background surface.',
+    ],
+    anatomy: [
+      {name: 'Card Header', required: false, description: 'Displays a title and optional end content.'},
+      {name: 'Card Body', required: true, description: 'Accepts any content.'},
+      {name: 'Card Footer', required: false, description: 'Contains actions.'},
+    ],
+  },
   props: [
     {
       name: 'width',
@@ -67,27 +78,6 @@ export const docs = {
           "Controls Card container padding. Accepts standard CSS padding shorthand (e.g. '16px 20px'). Automatically mapped to container tokens for layout integration. Supports paddingBlock/paddingInline for axis-specific control.",
         default: 'var(--spacing-4)',
       },
-    ],
-  },
-  usage: {
-    summary: 'Groups similar information inside containers for visual organization.',
-    content: `## When to use
-
-- When explicit grouping of related information is needed.
-- When browsing and scanning content is frequent.
-
-## Best practices
-
-- Do: Use whitespace, type scale, and dividers with cards.
-- Do: Prioritize sections as the default; use cards only for stronger visual distinction.
-- Don't: Exclusively use cards, as it diminishes visual hierarchy.
-- Don't: Use cards for primary content unless stronger visual separation is needed.
-- Start with sections; escalate to cards only when additional distinction is required.
-- Card elevation adapts automatically based on the background surface.`,
-    anatomy: [
-      {name: 'Card Header', required: false, description: 'Displays a title and optional end content.'},
-      {name: 'Card Body', required: true, description: 'Accepts any content.'},
-      {name: 'Card Footer', required: false, description: 'Contains actions.'},
     ],
   },
 };

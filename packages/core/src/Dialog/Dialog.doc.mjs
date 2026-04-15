@@ -2,17 +2,7 @@
 
 export const docs = {
   name: 'Dialog',
-  description:
-    'Modal dialog using the native <dialog> element with automatic focus trapping, backdrop, and purpose-based dismissal control.',  keywords: ["dialog","modal","popup","overlay","lightbox","alert","confirm","prompt","backdrop","focus trap"],
-  features: [
-    "Native <dialog>: Uses the browser's built-in modal behavior via showModal()",
-    'Automatic focus trap: Focus is trapped within the dialog when open (browser-native)',
-    'Backdrop: Native ::backdrop pseudo-element with blur effect',
-    'Variants: standard (configurable dimensions) and fullscreen (full viewport)',
-    'Purpose-based dismissal: required, form, and info control Escape key and backdrop-click behavior',
-    'Custom positioning: Static position support via the position prop',
-    'Accessible: Proper ARIA attributes and keyboard navigation',
-  ],
+  keywords: ["dialog","modal","popup","overlay","lightbox","alert","confirm","prompt","backdrop","focus trap"],
   theming: {
     container: true,
     targets: [
@@ -30,20 +20,6 @@ export const docs = {
       },
     ],
   },
-  keyboard:
-    'Escape closes the dialog (unless purpose="required"); focus is trapped inside the dialog while open.',
-  accessibility: [
-    'Uses the native <dialog> element with showModal() for correct ARIA modal semantics.',
-    'Focus is automatically trapped by the browser when using showModal().',
-    'XDSDialogHeader title receives focus when the dialog opens.',
-  ],
-  notes: [
-    'Height is unset (grows with content) and constrained by the maxHeight prop.',
-    'When variant="fullscreen", the width, maxHeight, and position props are ignored.',
-    'For form purpose, backdrop click is only allowed before the user has interacted with the dialog.',
-    'Purpose=required disables both Escape key and backdrop click; purpose=form disables backdrop click after interaction; purpose=info (default) allows both.',
-    'XDSDialog is designed to be used with XDSLayout as its child.',
-  ],
   components: [
     {
       name: 'XDSDialog',
@@ -143,23 +119,29 @@ export const docs = {
     },
   ],
   usage: {
-    summary: 'A top-level dialog that communicates important information and pauses the user\'s workflow.',
-    content: `## When to use
-
-- Pause a user's workflow to communicate top-level information.
-- Guide users through multi-step workflows.
-- Surface information that requires acknowledgement.
-- Present confirmations before destructive actions.
-
-## Best practices
-
-- Do: Include a back arrow for two-view dialogs.
-- Do: Include a step count indicator for dialogs with 3 or more views.
-- Don't: Remove all dismissal behaviors.
-- Use sentence case for dialog content.
-- Match the call-to-action label to the dialog headline.
-- Number steps in multi-step dialogs.
-- Dismissal types: informational (all exit methods), form (disable click-outside), required (only footer buttons).`,
+    description: "A modal dialog that communicates important information and pauses the user's workflow. Built on the native <dialog> element with automatic focus trapping, backdrop, and purpose-based dismissal control. Use for multi-step workflows, confirmations before destructive actions, or information requiring acknowledgement.",
+    features: [
+      "Native <dialog>: Uses the browser's built-in modal behavior via showModal()",
+      'Automatic focus trap: Focus is trapped within the dialog when open (browser-native)',
+      'Backdrop: Native ::backdrop pseudo-element with blur effect',
+      'Variants: standard (configurable dimensions) and fullscreen (full viewport)',
+      'Purpose-based dismissal: required, form, and info control Escape key and backdrop-click behavior',
+      'Custom positioning: Static position support via the position prop',
+      'Accessible: Proper ARIA attributes and keyboard navigation',
+    ],
+    accessibility: [
+      'Uses the native <dialog> element with showModal() for correct ARIA modal semantics.',
+      'Focus is automatically trapped by the browser when using showModal().',
+      'XDSDialogHeader title receives focus when the dialog opens.',
+      'Keyboard: Escape closes the dialog (unless purpose="required"); focus is trapped inside the dialog while open.',
+    ],
+    notes: [
+      'Height is unset (grows with content) and constrained by the maxHeight prop.',
+      'When variant="fullscreen", the width, maxHeight, and position props are ignored.',
+      'For form purpose, backdrop click is only allowed before the user has interacted with the dialog.',
+      'Purpose=required disables both Escape key and backdrop click; purpose=form disables backdrop click after interaction; purpose=info (default) allows both.',
+      'XDSDialog is designed to be used with XDSLayout as its child.',
+    ],
     anatomy: [
       {name: 'Body', required: true, description: 'The main content area of the dialog.'},
       {name: 'Header', required: true, description: 'Contains the title, actions, and close button.'},

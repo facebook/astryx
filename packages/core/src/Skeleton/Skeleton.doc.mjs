@@ -2,16 +2,7 @@
 
 export const docs = {
   name: 'Skeleton',
-  description:
-    'A placeholder loading component that displays an animated pulsing effect while content is loading.',
   keywords: ["skeleton","placeholder","loading","shimmer","pulse","loader","bone","ghost","preloader"],
-  features: [
-    'Pulsing Animation: Smooth opacity animation using stepped timing for a subtle shimmer effect',
-    'Staggered Animation: Sequential skeletons can be staggered to create a wave effect',
-    'High Contrast Support: Automatically adjusts for users with prefers-contrast: more',
-    'Flexible Sizing: Width and height props accept pixels or any CSS value',
-    'Token-aligned Radius: Border radius options map directly to design tokens',
-  ],
   props: [
     {
       name: 'width',
@@ -43,23 +34,23 @@ export const docs = {
       {className: 'xds-skeleton'},
     ],
   },
-  notes: [
-    'Uses steps(10, end) timing function for a subtle shimmer effect.',
-    'Animation alternates between 0.25 and 1.0 opacity.',
-    'Background color comes from the glimmer token, with glimmerHighContrast for accessibility.',
-    'Numeric dimensions are converted to pixels; strings are passed through as-is.',
-    'Animation timing constants: DELAY_TIME (1000ms) initial delay before animation starts, FADE_TIME (1000ms) duration of one opacity cycle, STAGGER_TIME (100ms) delay increment between sequential elements.',
-  ],
   usage: {
-    summary: 'A placeholder loading component that displays an animated pulsing effect while content is loading.',
-    content: `## When to use
-
-- Content of known size is loading.
-- Building skeleton screens that match the layout of the content being loaded.
-
-## When NOT to use
-
-- Content dimensions are unknown (use Spinner instead).`,
+    description:
+      'A placeholder loading component that displays an animated pulsing effect while content is loading. Use when content of known size is loading to build skeleton screens matching the layout. For unknown content dimensions, use Spinner instead.',
+    features: [
+      'Smooth opacity animation using stepped timing for a subtle shimmer effect',
+      'Sequential skeletons can be staggered to create a wave effect',
+      'High contrast support: automatically adjusts for prefers-contrast: more',
+      'Flexible sizing: width and height accept pixels or any CSS value',
+      'Token-aligned radius: border radius options map directly to design tokens',
+    ],
+    notes: [
+      'Uses steps(10, end) timing function for a subtle shimmer effect.',
+      'Animation alternates between 0.25 and 1.0 opacity.',
+      'Background color comes from the glimmer token, with glimmerHighContrast for accessibility.',
+      'Numeric dimensions are converted to pixels; strings are passed through as-is.',
+      'Animation timing constants: DELAY_TIME (1000ms) initial delay before animation starts, FADE_TIME (1000ms) duration of one opacity cycle, STAGGER_TIME (100ms) delay increment between sequential elements.',
+    ],
   },
 };
 

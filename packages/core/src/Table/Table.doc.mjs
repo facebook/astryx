@@ -2,27 +2,8 @@
 
 export const docs = {
   name: 'Table',
-  description:
-    'Data-driven table with rich cell content via renderCell. Compose cells with XDSBadge, XDSStatusDot, XDSText, XDSAvatar, and layout primitives. XDSBaseTable provides the unstyled structural core with a composable plugin pipeline.',  keywords: ["table","datatable","datagrid","spreadsheet","sorting","virtualized","columns","rows","selection","pinning"],
-  features: [
-    'Data-driven rendering — pass data + columns, rows render automatically',
-    'Rich cell content via renderCell — compose XDS components (XDSBadge, XDSStatusDot, XDSText, XDSAvatar) inside table cells',
-    'Children mode — compose XDSTableRow/XDSTableCell directly for manual layouts',
-    'Plugin system — extend table behavior with composable transform plugins',
-    'Density variants: compact, balanced, spacious',
-    'Divider styles: rows, columns, grid, none',
-    'Column alignment: start (default), center, end — per-column via align prop',
-    'Row vertical alignment: middle (default), top, bottom — table-level via verticalAlign prop',
-    'Striped even rows and hover highlight via XDSTableContext',
-    'Selection via useXDSTableSelectionState + useXDSTableSelection — checkboxes, select-all, disabled row handling',
-    'Sorting via useXDSTableSortable — single or multi-column sort with header indicators',
-    'Pagination via useXDSTablePagination — client-side, server-side, or cursor-based with auto-rendered controls',
-    'Column visibility via useXDSTableColumnSettings — toggle, reorder, and reset columns with XDSMultiSelector integration',
-    'Column resize via useXDSTableColumnResize — drag-to-resize column headers with min/max constraints and proportional-preserving behavior',
-    'Body rows memoized with custom comparison — only changed rows re-render',
-    'Auto-generated columns from data object keys when columns prop is omitted',
-    'Themeable via className — target .xds-base-table, .xds-table-row, .xds-table-cell, .xds-table-header-cell',
-  ],  theming: {
+  keywords: ["table","datatable","datagrid","spreadsheet","sorting","virtualized","columns","rows","selection","pinning"],
+  theming: {
     targets: [
       {className: 'xds-base-table'},
       {className: 'xds-table-row'},
@@ -30,22 +11,6 @@ export const docs = {
       {className: 'xds-table-header-cell'},
     ],
   },
-  accessibility: [
-    'Selection plugin sets aria-selected on selected body rows',
-    'Select-all and per-row checkboxes use visually hidden labels ("Select all rows", "Select row") via isLabelHidden',
-    'Non-selectable rows (getIsItemSelectable returns false) render no checkbox',
-    'Disabled rows (getIsItemEnabled returns false) render a disabled checkbox',
-  ],
-  notes: [
-    'Two-layer design: XDSBaseTable provides unstyled structure and the plugin pipeline; XDSTable wraps it with XDSTableContext and styled sub-components.',
-    'Styling is owned by components (XDSTableRow, XDSTableCell, XDSTableHeaderCell), not by plugins — each reads XDSTableContext to apply density, dividers, striped, and hover styles.',
-    'XDSTable accepts plugins as a named Record<string, TablePlugin<T>> and converts to an ordered array internally; XDSBaseTable accepts an ordered array directly.',
-    'The selection plugin uses useSyncExternalStore so only the row whose selection state changed re-renders. useXDSTableSelectionState manages the selection set and handles disabled/selectable row filtering for select-all automatically.',
-    'useXDSTableColumnResize — drag-to-resize column headers. Proportional columns preserve their ratio when neighboring columns are resized. Pass columnWidths state and onColumnResizeEnd to control width persistence. Use minWidth/maxWidth for per-resize constraints.',
-    'Body rows are memoized via React.memo with a custom comparison. For optimal performance, define columns outside the component or memoize them to avoid triggering full re-renders.',
-    'Columns can be auto-generated from data keys using generateColumns(); column widths are expressed as proportional (fr-like) or fixed pixel values via the proportional() and pixel() helpers.',
-    'tableProps on XDSBaseTable passes additional HTML attributes directly to the <table> element.',
-  ],
   components: [
     {
       name: 'XDSTable',
@@ -443,23 +408,42 @@ export const docs = {
     },
   ],
   usage: {
-    summary: 'Displays information with consistent data dimensionality in a grid format.',
-    content: `## When to use
-
-- Simple tables for read-only data display.
-- Data tables with column controls.
-- Complex tables with control toolbars and detail panes.
-
-## When NOT to use
-
-- Consider lists or card-lists for simpler or inconsistent data.
-
-## Best practices
-
-- Do: Use row activation to show details in a side panel.
-- Don't: Use row expansion for details (breaks column alignment).
-- Layout presets: space-optimized (40px rows), balanced (56px default), content-optimized (dynamic height).
-- Cell types: Content (main with media), Text, Value (right-aligned numbers), Status (dot + label).`,
+    description:
+      'Table is a data-driven grid for displaying information with consistent data dimensionality. It supports rich cell content via renderCell, composing XDS components like XDSBadge, XDSStatusDot, and XDSAvatar inside cells. XDSBaseTable provides the unstyled structural core with a composable plugin pipeline for selection, sorting, pagination, and column management. Use lists or card-lists instead for simpler or inconsistent data.',
+    features: [
+      'Data-driven rendering — pass data + columns, rows render automatically',
+      'Rich cell content via renderCell — compose XDS components (XDSBadge, XDSStatusDot, XDSText, XDSAvatar) inside table cells',
+      'Children mode — compose XDSTableRow/XDSTableCell directly for manual layouts',
+      'Plugin system — extend table behavior with composable transform plugins',
+      'Density variants: compact, balanced, spacious',
+      'Divider styles: rows, columns, grid, none',
+      'Column alignment: start (default), center, end — per-column via align prop',
+      'Row vertical alignment: middle (default), top, bottom — table-level via verticalAlign prop',
+      'Striped even rows and hover highlight via XDSTableContext',
+      'Selection via useXDSTableSelectionState + useXDSTableSelection — checkboxes, select-all, disabled row handling',
+      'Sorting via useXDSTableSortable — single or multi-column sort with header indicators',
+      'Pagination via useXDSTablePagination — client-side, server-side, or cursor-based with auto-rendered controls',
+      'Column visibility via useXDSTableColumnSettings — toggle, reorder, and reset columns with XDSMultiSelector integration',
+      'Column resize via useXDSTableColumnResize — drag-to-resize column headers with min/max constraints and proportional-preserving behavior',
+      'Auto-generated columns from data object keys when columns prop is omitted',
+      'Themeable via className — target .xds-base-table, .xds-table-row, .xds-table-cell, .xds-table-header-cell',
+    ],
+    accessibility: [
+      'Selection plugin sets aria-selected on selected body rows',
+      'Select-all and per-row checkboxes use visually hidden labels ("Select all rows", "Select row") via isLabelHidden',
+      'Non-selectable rows (getIsItemSelectable returns false) render no checkbox',
+      'Disabled rows (getIsItemEnabled returns false) render a disabled checkbox',
+    ],
+    notes: [
+      'Two-layer design: XDSBaseTable provides unstyled structure and the plugin pipeline; XDSTable wraps it with XDSTableContext and styled sub-components.',
+      'Styling is owned by components (XDSTableRow, XDSTableCell, XDSTableHeaderCell), not by plugins — each reads XDSTableContext to apply density, dividers, striped, and hover styles.',
+      'XDSTable accepts plugins as a named Record<string, TablePlugin<T>> and converts to an ordered array internally; XDSBaseTable accepts an ordered array directly.',
+      'The selection plugin uses useSyncExternalStore so only the row whose selection state changed re-renders. useXDSTableSelectionState manages the selection set and handles disabled/selectable row filtering for select-all automatically.',
+      'useXDSTableColumnResize — drag-to-resize column headers. Proportional columns preserve their ratio when neighboring columns are resized. Pass columnWidths state and onColumnResizeEnd to control width persistence. Use minWidth/maxWidth for per-resize constraints.',
+      'Body rows are memoized via React.memo with a custom comparison. For optimal performance, define columns outside the component or memoize them to avoid triggering full re-renders.',
+      'Columns can be auto-generated from data keys using generateColumns(); column widths are expressed as proportional (fr-like) or fixed pixel values via the proportional() and pixel() helpers.',
+      'tableProps on XDSBaseTable passes additional HTML attributes directly to the <table> element.',
+    ],
     anatomy: [
       {name: 'Column Header', required: true, description: 'Displays titles, sorting controls, and bulk selection.'},
       {name: 'Body Rows', required: true, description: 'Rows with consistent data structure.'},

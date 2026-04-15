@@ -2,19 +2,8 @@
 
 export const docs = {
   name: 'TabList',
-  description:
-    'Tab navigation components with overflow menu support, rendering as a semantic nav landmark with button or anchor tab items.',  keywords: ["tabs","tabbar","tabstrip","navigation","tabpanel","tabgroup","segmented","navtabs","tab"],
-  features: [
-    'Context-based communication: XDSTabListContext passes value/onChange/size from XDSTabList to children',
-    'Single-responsibility XDSTab: renders as <button> or <a> (when href is provided) in the nav',
-    'Overflow menu: XDSTabMenu accepts an options prop and renders menu items internally from the dropdown',
-    "Dynamic trigger label: menu trigger shows the selected option's label when one is active",
-    "Menu heading: dropdown includes an XDSDivider with the menu's label as a separator heading",
-    'Selection indicator: selected menu items show a checkmark icon (matching XDSSelector pattern)',
-    'Keyboard navigation: Tab between items, ArrowUp/Down in menu, Home/End, Escape closes menu (via useListFocus)',
-    'Hover state: unselected tabs show a gray underline on hover; no background hover overlay',
-    'Accessibility: nav landmark, aria-current="page" on selected tabs, role="menu" + aria-label on dropdown, aria-controls connecting trigger to menu, role="menuitem" for items, role="separator" for heading divider',
-  ],  theming: {
+  keywords: ["tabs","tabbar","tabstrip","navigation","tabpanel","tabgroup","segmented","navtabs","tab"],
+  theming: {
     targets: [
       {className: 'xds-tab-list', visualProps: ['size']},
       {className: 'xds-tab', states: ['selected']},
@@ -24,27 +13,6 @@ export const docs = {
       {className: 'xds-tab-menu-item'},
     ],
   },
-  accessibility: [
-    'XDSTabList renders as a <nav> landmark with aria-label="Tabs"',
-    'XDSTab renders as <button> or <a> — uses navigation pattern, not role="tab"',
-    'Selected XDSTab has aria-current="page"',
-    'XDSTabMenu trigger has aria-haspopup="menu", aria-expanded, and aria-controls pointing to the menu element',
-    'XDSTabMenu dropdown has role="menu" and aria-label matching the label prop',
-    'XDSTabMenu heading divider has role="separator"',
-    'XDSTabMenu items have role="menuitem" and aria-current="true" when selected',
-  ],
-  keyboard:
-    'Tab moves focus between tab items; within the XDSTabMenu dropdown: ArrowUp/ArrowDown navigate items (wrapping), Home/End jump to first/last item, Escape closes the menu.',
-  notes: [
-    'XDSTab renders as <button> by default and as <a> when href is provided',
-    'XDSTabMenu renders menu items internally from the options prop — no child composition',
-    'Trigger label derives from options.find(o => o.value === ctx.value)?.label ?? label',
-    'Menu trigger underline scopes to the label text span only, not the chevron icon',
-    'Icons on menu items render via XDSIcon with size="sm" and color="secondary"',
-    'Selected menu items show a CheckIcon checkmark (matching XDSSelector pattern)',
-    'hasDivider on XDSTabList controls the bottom border (default: off)',
-    'Size uses sizeVars tokens for tab heights (sm/md/lg)',
-  ],
   components: [
     {
       name: 'XDSTabList',
@@ -160,15 +128,37 @@ export const docs = {
     },
   ],
   usage: {
-    summary: 'Organizes content into tabbed sections for quick access to categorized information.',
-    content: `## When to use
-
-- To organize large amounts of content into categories accessible above the fold.
-
-## Best practices
-
-- Two styles are available: underlined tabs and header tabs.
-- Tab items overflow into a "more" menu when horizontal space is limited.`,
+    description:
+      'TabList provides tab navigation with overflow menu support, organizing content into tabbed sections for quick access to categorized information. It renders as a semantic nav landmark with button or anchor tab items, and overflows into a "more" menu when horizontal space is limited.',
+    features: [
+      'Single-responsibility XDSTab: renders as <button> or <a> (when href is provided) in the nav',
+      'Overflow menu: XDSTabMenu accepts an options prop and renders menu items internally from the dropdown',
+      "Dynamic trigger label: menu trigger shows the selected option's label when one is active",
+      "Menu heading: dropdown includes an XDSDivider with the menu's label as a separator heading",
+      'Selection indicator: selected menu items show a checkmark icon (matching XDSSelector pattern)',
+      'Hover state: unselected tabs show a gray underline on hover; no background hover overlay',
+    ],
+    accessibility: [
+      'XDSTabList renders as a <nav> landmark with aria-label="Tabs"',
+      'XDSTab renders as <button> or <a> — uses navigation pattern, not role="tab"',
+      'Selected XDSTab has aria-current="page"',
+      'XDSTabMenu trigger has aria-haspopup="menu", aria-expanded, and aria-controls pointing to the menu element',
+      'XDSTabMenu dropdown has role="menu" and aria-label matching the label prop',
+      'XDSTabMenu heading divider has role="separator"',
+      'XDSTabMenu items have role="menuitem" and aria-current="true" when selected',
+      'Keyboard: Tab moves focus between tab items; within XDSTabMenu dropdown: ArrowUp/ArrowDown navigate items (wrapping), Home/End jump to first/last item, Escape closes the menu',
+    ],
+    notes: [
+      'XDSTabListContext passes value/onChange/size from XDSTabList to children',
+      'XDSTab renders as <button> by default and as <a> when href is provided',
+      'XDSTabMenu renders menu items internally from the options prop — no child composition',
+      'Trigger label derives from options.find(o => o.value === ctx.value)?.label ?? label',
+      'Menu trigger underline scopes to the label text span only, not the chevron icon',
+      'Icons on menu items render via XDSIcon with size="sm" and color="secondary"',
+      'Selected menu items show a CheckIcon checkmark (matching XDSSelector pattern)',
+      'hasDivider on XDSTabList controls the bottom border (default: off)',
+      'Size uses sizeVars tokens for tab heights (sm/md/lg)',
+    ],
     anatomy: [
       {name: 'Left Content', required: false, description: 'Most important area; hugs content width.'},
       {name: 'Center-Fill Content', required: false, description: 'Stretches to fill available space.'},

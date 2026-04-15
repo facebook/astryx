@@ -2,21 +2,8 @@
 
 export const docs = {
   name: 'Switch',
-  description:
-    'A toggle switch component for boolean values with integrated label support.',
   keywords: ["switch","toggle","onoff","flipswitch","boolean","toggleswitch"],
-  features: [
-    'Boolean toggle — fixed 40x24px track with animated 16px (off) / 20px (on) thumb',
-    'Label integration — uses XDSFieldLabel for accessible labels with optional tooltip and icon',
-    'Label position — label can appear before or after the switch via labelPosition',
-    'Label spacing — supports spread layout to push label and switch to opposite ends',
-    'Description — optional description text displayed below the label',
-    'Optional/required indicators — visual markers for field status',
-    'Status messages — error, warning, success, or info message boxes below the switch',
-    'Async action support — onChangeAction with optimistic UI and built-in loading spinner',
-    'Accessibility — native checkbox with role="switch", aria-describedby, aria-invalid, aria-busy',
-    'Reduced motion — respects prefers-reduced-motion for track and thumb transitions',
-  ],  props: [
+  props: [
     {
       name: 'ref',
       type: 'React.Ref<HTMLInputElement>',
@@ -134,33 +121,37 @@ export const docs = {
       {className: 'xds-switch-field', visualProps: ['labelPosition', 'labelSpacing']},
     ],
   },
-  accessibility: [
-    'Renders a native <input type="checkbox" role="switch"> for correct switch semantics',
-    'Label is always associated via htmlFor/id even when visually hidden',
-    'Description text is linked via aria-describedby on the input element',
-    'Status messages are linked via aria-describedby; aria-invalid is set when status type is "error"',
-    'aria-busy is set during async onChangeAction execution',
-  ],
-  keyboard: 'Space toggles the switch; Tab/Shift+Tab moves focus in and out',
-  notes: [
-    'Fixed dimensions: 40px width, 24px height, 16px thumb (off), 20px thumb (on)',
-    'Track and thumb use CSS transitions for background-color, transform, width, and height',
-    'Hover tints are applied via stylex.when.ancestor with a @media (hover: hover) guard',
-    'onChangeAction uses React useTransition and useOptimistic for seamless async toggling',
-    'labelPosition="start" with labelSpacing="spread" produces a settings panel style layout',
-    'Follows the same patterns as XDSCheckboxInput for structural consistency',
-    'Interaction is blocked during busy state (loading or pending async action) to prevent double-toggling',
-    'Track and thumb transitions respect prefers-reduced-motion (0s duration when reduced motion preferred)',
-  ],
   usage: {
-    summary: 'Conveys a binary on/off state that takes effect immediately.',
-    content: `## When to use
-
-- Settings that take effect immediately upon toggling.
-
-## When NOT to use
-
-- When changes require a separate submit step \u2014 use a checkbox instead.`,
+    description:
+      'A toggle switch component for boolean values with integrated label support that conveys an on/off state taking effect immediately. Use for settings that apply instantly upon toggling; for changes requiring a separate submit step, use a checkbox instead.',
+    features: [
+      'Boolean toggle with animated thumb for visual on/off states',
+      'Label integration — uses XDSFieldLabel for accessible labels with optional tooltip and icon',
+      'Label position — label can appear before or after the switch via labelPosition',
+      'Label spacing — supports spread layout to push label and switch to opposite ends',
+      'Description — optional description text displayed below the label',
+      'Optional/required indicators — visual markers for field status',
+      'Status messages — error, warning, success, or info message boxes below the switch',
+      'Async action support — onChangeAction with optimistic UI and built-in loading spinner',
+      'Reduced motion — respects prefers-reduced-motion for track and thumb transitions',
+    ],
+    accessibility: [
+      'Renders a native <input type="checkbox" role="switch"> for correct switch semantics',
+      'Label is always associated via htmlFor/id even when visually hidden',
+      'Description text is linked via aria-describedby on the input element',
+      'Status messages are linked via aria-describedby; aria-invalid is set when status type is "error"',
+      'aria-busy is set during async onChangeAction execution',
+      'Keyboard: Space toggles the switch; Tab/Shift+Tab moves focus in and out',
+    ],
+    notes: [
+      'Fixed dimensions: 40px width, 24px height, 16px thumb (off), 20px thumb (on)',
+      'Track and thumb use CSS transitions for background-color, transform, width, and height',
+      'Hover tints are applied via stylex.when.ancestor with a @media (hover: hover) guard',
+      'onChangeAction uses React useTransition and useOptimistic for seamless async toggling',
+      'Follows the same patterns as XDSCheckboxInput for structural consistency',
+      'Interaction is blocked during busy state (loading or pending async action) to prevent double-toggling',
+      'Track and thumb transitions respect prefers-reduced-motion (0s duration when reduced motion preferred)',
+    ],
   },
 };
 

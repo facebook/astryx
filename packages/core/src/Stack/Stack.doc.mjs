@@ -2,25 +2,13 @@
 
 export const docs = {
   name: 'Stack',
-  description:
-    'Stack layout primitives for arranging items in horizontal or vertical sequences using flexbox-based layout with themed spacing tokens.',  keywords: ["stack","hstack","vstack","flexbox","flex","spacing","gap","horizontal","vertical","row","column"],
-  features: [
-    'Horizontal (XDSHStack) and vertical (XDSVStack) stacking',
-    'Themed spacing via gap tokens from the design system spacing scale',
-    'Individual item control via XDSStackItem',
-    'Polymorphic rendering support via the element prop',
-    'Low-level StyleX utilities (stack, stackItem) for advanced use cases',
-  ],  theming: {
+  keywords: ["stack","hstack","vstack","flexbox","flex","spacing","gap","horizontal","vertical","row","column"],
+  theming: {
     targets: [
       {className: 'xds-stack', visualProps: ['direction', 'gap', 'wrap']},
       {className: 'xds-stack-item', visualProps: ['size']},
     ],
   },
-  notes: [
-    "Import from '@xds/core/Layout': XDSHStack, XDSVStack, XDSStackItem, stack, stackItem.",
-    'The gap prop accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.',
-    'stack and stackItem are low-level StyleX utilities for advanced cases where the component API is insufficient.',
-  ],
   components: [
     {
       name: 'XDSHStack',
@@ -182,7 +170,20 @@ export const docs = {
     },
   ],
   usage: {
-    summary: 'Layout primitives for arranging items in horizontal or vertical sequences using flexbox.',
+    description:
+      'Stack provides layout primitives for arranging items in horizontal or vertical sequences. It uses flexbox-based layout with themed spacing tokens from the design system.',
+    features: [
+      'Horizontal (XDSHStack) and vertical (XDSVStack) stacking',
+      'Themed spacing via gap tokens from the design system spacing scale',
+      'Individual item control via XDSStackItem',
+      'Polymorphic rendering support via the element prop',
+      'Low-level StyleX utilities (stack, stackItem) for advanced use cases',
+    ],
+    notes: [
+      "Import from '@xds/core/Layout': XDSHStack, XDSVStack, XDSStackItem, stack, stackItem.",
+      'The gap prop accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.',
+      'stack and stackItem are low-level StyleX utilities for advanced cases where the component API is insufficient.',
+    ],
   },
 };
 

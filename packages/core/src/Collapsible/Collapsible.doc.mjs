@@ -2,33 +2,12 @@
 
 export const docs = {
   name: 'Collapsible',
-  description: 'Collapsible content primitive and group coordination.',
   keywords: ["accordion","collapse","expandable","disclosure","toggle","panel","foldable","expander","expand"],
-  features: [
-    'XDSCollapsible makes any content collapsible — a trigger toggles visibility of the content area',
-    'Handles state management, accessibility (aria-expanded, keyboard activation), and a chevron indicator',
-    'Supports uncontrolled (defaultIsOpen), controlled (isOpen / onOpenChange), and group-coordinated modes',
-    'XDSCollapsibleGroup coordinates multiple XDSCollapsible instances so only one (single mode) or multiple (multiple mode) can be open at a time',
-    'XDSCollapsibleGroup renders no wrapper DOM element',
-    'When inside a group, XDSCollapsible defers open/close state to the group context via the value prop',
-  ],
-  keyboard:
-    'Enter or Space activates the trigger button to toggle open/close state.',
-  accessibility: [
-    'Trigger renders as a <button> with aria-expanded reflecting the current open state',
-    'A chevron indicator provides a visual affordance for the expanded/collapsed state',
-  ],
   theming: {
     targets: [
       {className: 'xds-collapsible'},
     ],
   },
-  notes: [
-    'XDSCollapsible manages its own open/close state by default (uncontrolled)',
-    'When nested inside an XDSCollapsibleGroup with a matching value prop, it defers to the group context',
-    'XDSCollapsibleGroup provides context with isOpen(value) and toggle(value) methods',
-    'The group renders no wrapper DOM — layout is the responsibility of the consumer (e.g. XDSVStack)',
-  ],
   components: [
     {
       name: 'XDSCollapsible',
@@ -106,11 +85,26 @@ export const docs = {
     },
   ],
   usage: {
-    summary: 'Contains information that may need additional space to display.',
-    content: `## When to use
-
-- Presenting additional information for items in a list.
-- Content that can be hidden to save space and revealed on demand.`,
+    description: 'A collapsible content primitive for revealing and hiding content on demand. Use to present additional information in lists or to hide content that can be revealed when needed.',
+    features: [
+      'XDSCollapsible makes any content collapsible — a trigger toggles visibility of the content area',
+      'Handles state management, accessibility (aria-expanded, keyboard activation), and a chevron indicator',
+      'Supports uncontrolled (defaultIsOpen), controlled (isOpen / onOpenChange), and group-coordinated modes',
+      'XDSCollapsibleGroup coordinates multiple XDSCollapsible instances so only one (single mode) or multiple (multiple mode) can be open at a time',
+      'XDSCollapsibleGroup renders no wrapper DOM element',
+      'When inside a group, XDSCollapsible defers open/close state to the group context via the value prop',
+    ],
+    accessibility: [
+      'Trigger renders as a <button> with aria-expanded reflecting the current open state',
+      'A chevron indicator provides a visual affordance for the expanded/collapsed state',
+      'Keyboard: Enter or Space activates the trigger button to toggle open/close state',
+    ],
+    notes: [
+      'XDSCollapsible manages its own open/close state by default (uncontrolled)',
+      'When nested inside an XDSCollapsibleGroup with a matching value prop, it defers to the group context',
+      'XDSCollapsibleGroup provides context with isOpen(value) and toggle(value) methods',
+      'The group renders no wrapper DOM — layout is the responsibility of the consumer (e.g. XDSVStack)',
+    ],
   },
 };
 

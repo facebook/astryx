@@ -2,19 +2,7 @@
 
 export const docs = {
   name: 'ProgressBar',
-  description:
-    'A progress bar for displaying determinate or indeterminate progress.',  keywords: ["progressbar","progress","loader","loading","linear","determinate","indeterminate","meter"],
-  features: [
-    'Determinate mode uses role="meter" with aria-valuenow, aria-valuemin, and aria-valuemax',
-    'Indeterminate mode uses role="progressbar" without value attributes',
-    'Label is always connected via aria-labelledby',
-    'aria-valuetext provides human-readable value description (determinate only)',
-    'Indeterminate animation respects prefers-reduced-motion',
-    'Supports four semantic color variants: accent, positive, warning, negative',
-    'Single track height: 8px',
-    'Supports custom value label formatter via formatValueLabel',
-    'Compose additional labels, status icons, and descriptions outside the component — ProgressBar is intentionally minimal',
-  ],
+  keywords: ["progressbar","progress","loader","loading","linear","determinate","indeterminate","meter"],
   props: [
     {
       name: 'label',
@@ -77,23 +65,25 @@ export const docs = {
       {className: 'xds-progressbar-fill', visualProps: ['variant']},
     ],
   },
-  notes: [
-    'ProgressBar is intentionally minimal — it handles the meter/track and an optional value label. For additional context like descriptions, status icons, or custom label placements, compose them alongside the bar using layout components.',
-    'Do not add props for label placement, progress descriptions, or embedded icons. These are composition concerns, not meter concerns.',
-  ],
-  accessibility: [
-    'Determinate: uses role="meter" with aria-valuenow, aria-valuemin, aria-valuemax',
-    'Indeterminate: uses role="progressbar" without value attributes',
-    'Label is always connected via aria-labelledby',
-    'aria-valuetext provides human-readable value description (determinate only)',
-    'Indeterminate animation respects prefers-reduced-motion',
-  ],
   usage: {
-    summary: 'Displays determinate or indeterminate progress of a process.',
-    content: `## When to use
-
-- Showing completion progress of a known-length operation.
-- Indicating an indeterminate loading state with a known container size.`,
+    description:
+      'A progress bar for displaying determinate or indeterminate progress of a process. Use for showing completion progress of known-length operations or indicating indeterminate loading states with a known container size.',
+    features: [
+      'Supports four semantic color variants: accent, positive, warning, negative',
+      'Supports custom value label formatter via formatValueLabel',
+    ],
+    accessibility: [
+      'Determinate: uses role="meter" with aria-valuenow, aria-valuemin, aria-valuemax',
+      'Indeterminate: uses role="progressbar" without value attributes',
+      'Label is always connected via aria-labelledby',
+      'aria-valuetext provides human-readable value description (determinate only)',
+      'Indeterminate animation respects prefers-reduced-motion',
+    ],
+    notes: [
+      'ProgressBar is intentionally minimal — it handles the meter/track and an optional value label. For additional context like descriptions, status icons, or custom label placements, compose them alongside the bar using layout components.',
+      'Do not add props for label placement, progress descriptions, or embedded icons. These are composition concerns, not meter concerns.',
+      'Single track height: 8px',
+    ],
   },
 };
 

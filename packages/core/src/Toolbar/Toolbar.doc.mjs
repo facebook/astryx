@@ -2,41 +2,12 @@
 
 export const docs = {
   name: 'Toolbar',
-  description:
-    'General-purpose toolbar with start, center, and end content slots. Built on XDSSection with roving tabindex keyboard navigation.',
   keywords: ['toolbar', 'nav', 'bar', 'actions', 'buttonbar', 'header', 'footer', 'action-bar', 'control-bar'],
-  features: [
-    'Slot-based layout — startContent, centerContent, and endContent for flexible organization',
-    'Three-column centering — centerContent switches to CSS grid (1fr auto 1fr) for true centering',
-    'Roving tabindex — arrow key navigation via useListFocus with orientation support',
-    'Density variants — default (40px) and compact (32px) minimum heights',
-    'Configurable gap — spacing scale gap between items within each slot',
-    'Built on XDSSection — inherits variant, theming, and nesting behavior',
-    'Composable overflow — use XDSOverflowList within slots for responsive collapsing',
-  ],  theming: {
+  theming: {
     targets: [
       {className: 'xds-toolbar', states: ['density']},
     ],
   },
-  accessibility: [
-    'Inner element renders role="toolbar" with aria-label from label prop',
-    'aria-orientation reflects the orientation prop (horizontal or vertical)',
-    'Roving tabindex via useListFocus — arrow keys move focus between focusable items (buttons, inputs, [tabindex="0"])',
-    'Home/End keys jump to first/last focusable item',
-    'Horizontal orientation: ArrowLeft/ArrowRight navigate; Vertical orientation: ArrowUp/ArrowDown navigate',
-  ],
-  keyboard:
-    'ArrowLeft/ArrowRight (horizontal) or ArrowUp/ArrowDown (vertical) to move between items; Home/End for first/last item',
-  notes: [
-    'Built on XDSSection — variant prop controls background (default: transparent)',
-    'Two-slot layout (no centerContent): flex row with space-between',
-    'Three-slot layout (with centerContent): CSS grid 1fr auto 1fr for true centering',
-    'startContent only: fills width; endContent only: aligns to end',
-    'centerContent has min-width:0 and overflow:hidden for graceful truncation',
-    'No built-in overflow — compose with XDSOverflowList for responsive collapsing',
-    'Density controls minimum height — compact: 32px, default: 40px',
-    'Gap prop controls spacing between items within slots (default: --spacing-2 / 8px)',
-  ],
   components: [
     {
       name: 'XDSToolbar',
@@ -99,11 +70,34 @@ export const docs = {
       ],    },
   ],
   usage: {
-    summary: 'General-purpose toolbar with start, center, and end content slots.',
-    content: `## When to use
-
-- Grouping related actions or controls in a horizontal bar.
-- Providing contextual actions above content areas like tables or editors.`,
+    description:
+      'Toolbar is a general-purpose container with start, center, and end content slots for grouping related actions or controls in a horizontal bar. Built on XDSSection with roving tabindex keyboard navigation, it is ideal for providing contextual actions above content areas like tables or editors.',
+    features: [
+      'Slot-based layout — startContent, centerContent, and endContent for flexible organization',
+      'Three-column centering — centerContent switches to CSS grid (1fr auto 1fr) for true centering',
+      'Roving tabindex — arrow key navigation via useListFocus with orientation support',
+      'Density variants — default (40px) and compact (32px) minimum heights',
+      'Configurable gap — spacing scale gap between items within each slot',
+      'Built on XDSSection — inherits variant, theming, and nesting behavior',
+      'Composable overflow — use XDSOverflowList within slots for responsive collapsing',
+    ],
+    accessibility: [
+      'Inner element renders role="toolbar" with aria-label from label prop.',
+      'aria-orientation reflects the orientation prop (horizontal or vertical).',
+      'Roving tabindex via useListFocus — arrow keys move focus between focusable items (buttons, inputs, [tabindex="0"]).',
+      'Home/End keys jump to first/last focusable item.',
+      'Keyboard: ArrowLeft/ArrowRight (horizontal) or ArrowUp/ArrowDown (vertical) to move between items; Home/End for first/last item.',
+    ],
+    notes: [
+      'Built on XDSSection — variant prop controls background (default: transparent)',
+      'Two-slot layout (no centerContent): flex row with space-between',
+      'Three-slot layout (with centerContent): CSS grid 1fr auto 1fr for true centering',
+      'startContent only: fills width; endContent only: aligns to end',
+      'centerContent has min-width:0 and overflow:hidden for graceful truncation',
+      'No built-in overflow — compose with XDSOverflowList for responsive collapsing',
+      'Density controls minimum height — compact: 32px, default: 40px',
+      'Gap prop controls spacing between items within slots (default: --spacing-2 / 8px)',
+    ],
   },
 };
 

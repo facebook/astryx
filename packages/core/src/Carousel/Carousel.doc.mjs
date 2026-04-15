@@ -2,18 +2,29 @@
 
 export const docs = {
   name: 'Carousel',
-  description:
-    'Horizontal scroll container with fade-edge overflow indication, optional navigation buttons, and scroll-snap support.',
   keywords: ['carousel', 'slider', 'scroll', 'gallery', 'filmstrip', 'swiper', 'horizontal', 'overflow', 'snap'],
-  features: [
-    'Overflow Detection: Gradient fades appear at edges when content overflows, signaling more items',
-    'Navigation Buttons: Prev/next buttons appear on hover (desktop only) via XDSLayer top-layer rendering',
-    'Scroll Snap: Optional snap-to-item behavior for precise item alignment',
-    'Gap Scale: Configurable item spacing using the spacing token scale (0 to 4)',
-    'Scale Animation: Items scale down slightly when entering/exiting the viewport via scroll-driven animation',
-    'Accessible: role="region" with aria-roledescription="carousel" and configurable aria-label',
-    'Reduced Motion: Respects prefers-reduced-motion for scroll behavior and entry animations',
-  ],
+  usage: {
+    description:
+      'Horizontal scroll container with fade-edge overflow indication, optional navigation buttons, and scroll-snap support.',
+    features: [
+      'Overflow Detection: Gradient fades appear at edges when content overflows, signaling more items',
+      'Navigation Buttons: Prev/next buttons appear on hover (desktop only) via XDSLayer top-layer rendering',
+      'Scroll Snap: Optional snap-to-item behavior for precise item alignment',
+      'Gap Scale: Configurable item spacing using the spacing token scale (0 to 4)',
+      'Scale Animation: Items scale down slightly when entering/exiting the viewport via scroll-driven animation',
+    ],
+    accessibility: [
+      'Root element uses role="region" with aria-roledescription="carousel" for screen reader context.',
+      'Navigation buttons have accessible labels ("Scroll left", "Scroll right").',
+      'Scroll behavior and scale animations respect prefers-reduced-motion.',
+    ],
+    notes: [
+      'Navigation buttons render on the top layer via XDSLayer, so they escape parent overflow clipping.',
+      'The fade-edge effect uses CSS mask-image gradients that transition smoothly.',
+      'Each child is wrapped in a flex-shrink:0 container with scroll-snap-align:start when snap is enabled.',
+      'Items use scroll-driven animation (animationTimeline: view(inline)) for the scale effect.',
+    ],
+  },
   props: [
     {name: 'children', type: 'ReactNode', description: 'Carousel items rendered in a horizontal scroll container.', required: true},
     {name: 'gap', type: "0 | 0.5 | 1 | 1.5 | 2 | 3 | 4", description: 'Gap between items using the spacing token scale.', default: '1'},
@@ -31,17 +42,6 @@ export const docs = {
       {className: 'xds-carousel'},
     ],
   },
-  accessibility: [
-    'Root element uses role="region" with aria-roledescription="carousel" for screen reader context.',
-    'Navigation buttons have accessible labels ("Scroll left", "Scroll right").',
-    'Scroll behavior and scale animations respect prefers-reduced-motion.',
-  ],
-  notes: [
-    'Navigation buttons render on the top layer via XDSLayer, so they escape parent overflow clipping.',
-    'The fade-edge effect uses CSS mask-image gradients that transition smoothly.',
-    'Each child is wrapped in a flex-shrink:0 container with scroll-snap-align:start when snap is enabled.',
-    'Items use scroll-driven animation (animationTimeline: view(inline)) for the scale effect.',
-  ],
 };
 
 /** @type {import('../docs-types').TranslationDoc} */

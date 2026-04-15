@@ -2,20 +2,7 @@
 
 export const docs = {
   name: 'CheckboxInput',
-  description: 'A checkbox input component for toggling boolean values.',
   keywords: ["checkbox","check","toggle","tick","indeterminate","boolean","tristate"],
-  features: [
-    'Accessible — always includes a label (can be visually hidden)',
-    'Indeterminate state — supports indeterminate for "select all" patterns',
-    'Descriptions — optional description text below the label',
-    'Sizes — sm (compact) and md (default)',
-    'Async actions — onChangeAction with optimistic updates and loading spinner',
-    'Status messages — error, warning, success validation feedback',
-    'Optional/required indicators — label suffix with field state',
-    'Label icons — optional icon before label text',
-    'Disabled state — full support for disabled state styling',
-    'Reduced motion — respects prefers-reduced-motion',
-  ],
   props: [
     {
       name: 'ref',
@@ -117,19 +104,27 @@ export const docs = {
       {className: 'xds-checkbox'},
     ],
   },
-  notes: [
-    'Uses a hidden native <input type="checkbox"> for accessibility with a custom visual checkbox overlay.',
-    'The visual checkbox responds to hover, focus, and checked states via ancestor selectors (stylex.when.ancestor).',
-    'Label is clickable and properly associated with the input via htmlFor/id.',
-    'Focus outline uses the standard XDS focus ring token.',
-    'Interaction is blocked during busy state (loading or pending async action) to prevent double-toggling.',
-  ],
   usage: {
-    summary: 'A checkbox input for toggling boolean values.',
-    content: `## When to use
-
-- Toggling a single boolean setting.
-- Selecting multiple options from a set (use CheckboxList for groups).`,
+    description: 'A checkbox input for toggling boolean values. Use for toggling a single boolean setting, or select multiple options from a set with CheckboxList for groups.',
+    features: [
+      'Accessible — always includes a label (can be visually hidden)',
+      'Indeterminate state — supports indeterminate for "select all" patterns',
+      'Descriptions — optional description text below the label',
+      'Sizes — sm (compact) and md (default)',
+      'Async actions — onChangeAction with optimistic updates and loading spinner',
+      'Status messages — error, warning, success validation feedback',
+      'Optional/required indicators — label suffix with field state',
+      'Label icons — optional icon before label text',
+      'Disabled state — full support for disabled state styling',
+      'Reduced motion — respects prefers-reduced-motion',
+    ],
+    notes: [
+      'Uses a hidden native <input type="checkbox"> for accessibility with a custom visual checkbox overlay.',
+      'The visual checkbox responds to hover, focus, and checked states via ancestor selectors (stylex.when.ancestor).',
+      'Label is clickable and properly associated with the input via htmlFor/id.',
+      'Focus outline uses the standard XDS focus ring token.',
+      'Interaction is blocked during busy state (loading or pending async action) to prevent double-toggling.',
+    ],
   },
 };
 

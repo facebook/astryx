@@ -2,8 +2,6 @@
 
 export const docs = {
   name: 'AlertDialog',
-  description:
-    'Confirmation dialog for destructive or irreversible actions. Uses role="alertdialog" with required title, description, and cancel/action buttons.',
   keywords: [
     'alert',
     'alertdialog',
@@ -14,14 +12,20 @@ export const docs = {
     'modal',
     'dialog',
   ],
-  features: [
-    'ARIA alertdialog: Uses role="alertdialog" with aria-labelledby and aria-describedby',
-    'No backdrop dismiss: Cannot be closed by clicking outside the dialog',
-    'Escape = Cancel: Pressing Escape triggers the cancel action',
-    'Built-in buttons: Ghost cancel and configurable action button rendered internally',
-    'Action does not auto-close: Supports async operations with loading states',
-    'Imperative API: useXDSImperativeAlertDialog for fire-and-forget usage',
-  ],
+  usage: {
+    description:
+      'Confirmation dialog for destructive or irreversible actions. Uses role="alertdialog" with required title, description, and cancel/action buttons.',
+    features: [
+      'No backdrop dismiss: Cannot be closed by clicking outside the dialog',
+      'Built-in buttons: Ghost cancel and configurable action button rendered internally',
+      'Action does not auto-close: Supports async operations with loading states',
+      'Imperative API: useXDSImperativeAlertDialog for fire-and-forget usage',
+    ],
+    accessibility: [
+      'Uses role="alertdialog" with aria-labelledby and aria-describedby',
+      'Keyboard: Escape triggers the cancel action',
+    ],
+  },
   props: [
     {name: 'isOpen', type: 'boolean', required: true, description: 'Whether the dialog is open.'},
     {name: 'onOpenChange', type: '(isOpen: boolean) => unknown', required: true, description: 'Visibility change callback.'},

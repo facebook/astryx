@@ -160,31 +160,32 @@ export interface AnatomyElement {
 }
 
 /**
- * Usage guidance for a component — when to use it, when not to,
- * and the visual anatomy of its parts.
+ * Unified documentation for a component — what it is, what it can do,
+ * accessibility, implementation notes, and visual anatomy.
  *
- * `summary` is a design-oriented overview (vs. the developer-focused `description`).
- * `content` is freeform markdown for usage guidance — authors can structure it
- * however they like (when to use, when not to, do/don't, migration notes, etc.).
- * `anatomy` is a structured breakdown of the component's visual elements.
+ * All prose about a component lives here. The only fields that stay on
+ * BaseDoc are `name`, `keywords`, and `theming` (identity/discovery/styling).
  */
 export interface UsageDoc {
-  /** Design-oriented summary of the component's purpose and role in the UI.
-   *  More conceptual than `description` — explains *what problem* the component
-   *  solves rather than *what API* it exposes.
-   *  e.g. `"Buttons communicate calls to action and allow users to interact
-   *  with pages in a variety of ways."` */
-  summary?: string;
-  /** Freeform markdown covering usage guidance. Use markdown headers and lists
-   *  to organize content. Common sections include "When to use", "When NOT to use",
-   *  but authors are free to structure this however makes sense.
-   *
-   *  @example
-   *  ```
-   *  `## When to use\n- To trigger an action\n- To navigate when the action is primary\n\n## When NOT to use\n- For navigation — use Link instead`
-   *  ```
-   */
-  content?: string;
+  /** What the component is and when to use it. 1-3 sentences combining
+   *  the developer summary with design guidance.
+   *  e.g. `"Buttons provide visual cues for actions and events. XDSButton
+   *  supports primary, secondary, ghost, and destructive variants with
+   *  built-in loading states. Use secondary for most actions, reserve
+   *  primary for a single emphasized action per layout."` */
+  description: string;
+  /** Key capabilities as short bullet points. Each string is one feature.
+   *  Focus on what the component CAN DO, not how it's implemented.
+   *  e.g. `"Variants: 'primary', 'secondary', 'ghost', 'destructive'"` */
+  features?: string[];
+  /** Accessibility notes including keyboard interaction. Each string is
+   *  one self-contained note. Keyboard bindings use the format
+   *  `"Keyboard: Enter/Space activates; Tab/Shift+Tab moves focus"`.
+   *  e.g. `"Uses native <dialog> with showModal() for correct ARIA modal semantics."` */
+  accessibility?: string[];
+  /** Technical implementation notes — architecture decisions, performance
+   *  considerations, caveats. Only internal details, not usage guidance. */
+  notes?: string[];
   /** Structural/visual anatomy of the component. Each entry describes one
    *  element that makes up the component (icon slot, label, container, etc.).
    *  Order entries in the visual reading order (leading → trailing, top → bottom). */
@@ -199,22 +200,12 @@ interface BaseDoc {
   /** Directory name without the XDS prefix, PascalCase.
    *  e.g. `"Button"`, `"Table"`, `"TextInput"`, `"AppShell"` */
   name: string;
-  /** One-sentence summary of the component or component group.
-   *  Be specific enough to differentiate from similar components.
-   *  e.g. `"Data-driven table with rich cell content via renderCell."` */
-  description: string;
   /** Search keywords for CLI discovery. Terms a developer might type when
    *  looking for this component: synonyms, related UI concepts, and common
    *  names from other design systems (MUI, Chakra, Radix, shadcn).
    *  Lowercase only. Used by `xds component <term>` for fuzzy matching.
    *  e.g. `['accordion', 'expand', 'toggle', 'disclosure']` for Collapsible */
   keywords?: string[];
-  /** Key capabilities as short bullet points. Each string is one feature.
-   *  Strongly recommended even though optional — all existing components
-   *  include this field. Use "Category: details" format.
-   *  e.g. `"Variants: 'primary', 'secondary', 'ghost', 'destructive'"`,
-   *  `"Single & range modes: pass a number or [number, number]"` */
-  features?: string[];
   /** Theming configuration. Documents the stable CSS class names
    *  rendered by this component that themes can target via `@scope`
    *  selectors in `defineTheme`. */
@@ -235,25 +226,9 @@ interface BaseDoc {
      *  internal variables must not be listed here. */
     cssProperties?: CSSPropertyDoc[];
   };
-  /** Accessibility notes — ARIA patterns, screen reader behavior.
-   *  Each string is one self-contained, declarative note.
-   *  e.g. `"Uses native <dialog> with showModal() for correct ARIA modal semantics."`,
-   *  `"Selection plugin sets aria-selected on selected body rows"` */
-  accessibility?: string[];
-  /** Keyboard interaction summary as a single string. Separate bindings
-   *  with semicolons or commas. Use key names like `Arrow keys`, `Enter/Space`,
-   *  `Escape`, `Tab/Shift+Tab`, `Home/End`.
-   *  e.g. `"Space toggles the switch; Tab/Shift+Tab moves focus in and out"` */
-  keyboard?: string;
-  /** Additional technical notes — architecture decisions, performance
-   *  considerations, implementation details, caveats. Each string is one
-   *  self-contained note. Do not duplicate information from `features`,
-   *  `accessibility`, or `keyboard`. */
-  notes?: string[];
-  /** Design-oriented usage guidance: when to use this component, when not to,
-   *  and the visual anatomy of its parts. Complements the developer-focused
-   *  fields (`description`, `features`, `props`). */
-  usage?: UsageDoc;
+  /** All component documentation — description, features, accessibility,
+   *  implementation notes, and visual anatomy. */
+  usage: UsageDoc;
 }
 
 /**

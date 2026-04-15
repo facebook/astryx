@@ -2,15 +2,7 @@
 
 export const docs = {
   name: 'Kbd',
-  description:
-    'Displays a keyboard shortcut as styled <kbd> elements. Use in tooltips, menus, and documentation to show key combinations.',
   keywords: ["kbd","keyboard","shortcut","hotkey","keybinding","keystroke","keycombo","modifier","accelerator"],
-  features: [
-    'Key parsing — splits "mod+k" into individual styled <kbd> elements',
-    'Modifier symbols — maps mod/ctrl/alt/shift/enter/backspace/escape/arrows to platform symbols',
-    'Inline display — renders as inline-flex for use inside text, tooltips, and menus',
-    'Accessible — aria-hidden="true" since shortcuts are supplementary to visible labels',
-  ],
   props: [
     {
       name: 'keys',
@@ -41,21 +33,24 @@ export const docs = {
   theming: {
     targets: [{className: 'xds-kbd'}],
   },
-  accessibility: [
-    'Renders with aria-hidden="true" — keyboard shortcuts are visual hints, not primary content',
-    'Uses semantic <kbd> elements for each key',
-  ],
-  keyboard: 'Not interactive — purely presentational',
-  notes: [
-    'Fixed 20px height with min-width 20px per key badge',
-    'Uses --color-background-body background and --color-text-secondary text color',
-    'Key display symbols follow macOS conventions (⌘, ⌥, ⇧, ⌃)',
-  ],
   usage: {
-    summary: 'Displays a keyboard shortcut as styled key elements.',
-    content: `## When to use
-
-- Showing keyboard shortcuts in tooltips, menus, and documentation.`,
+    description:
+      'Displays a keyboard shortcut as styled <kbd> elements. Use in tooltips, menus, and documentation to show key combinations.',
+    features: [
+      'Key parsing — splits "mod+k" into individual styled <kbd> elements',
+      'Modifier symbols — maps mod/ctrl/alt/shift/enter/backspace/escape/arrows to platform symbols',
+      'Inline display — renders as inline-flex for use inside text, tooltips, and menus',
+    ],
+    accessibility: [
+      'Renders with aria-hidden="true" — keyboard shortcuts are visual hints, not primary content.',
+      'Uses semantic <kbd> elements for each key.',
+      'Keyboard: Not interactive — purely presentational.',
+    ],
+    notes: [
+      'Fixed 20px height with min-width 20px per key badge.',
+      'Uses --color-background-body background and --color-text-secondary text color.',
+      'Key display symbols follow macOS conventions (⌘, ⌥, ⇧, ⌃).',
+    ],
   },
 };
 

@@ -2,17 +2,8 @@
 
 export const docs = {
   name: 'TopNav',
-  description:
-    'Top navigation bar component for application headers with slot-based layout and companion nav item components.',
   keywords: ["topnav","navbar","appbar","header","toolbar","navigation","menubar","topbar"],
-  features: [
-    'Slot-based layout — heading, startContent, centerContent, and endContent slots for flexible organization',
-    'Three-column centering — when centerContent is provided, switches to CSS grid (1fr auto 1fr) for true horizontal centering',
-    'Companion components — XDSTopNavHeading, XDSTopNavItem, XDSTopNavMenu, XDSTopNavMegaMenu',
-    'Accessible — uses role="navigation" with aria-label, aria-current="page" on selected items',
-    'Themeable via className — target .xds-top-nav and sub-component classes',
-    'Link customization — XDSTopNavItem accepts an as prop to swap the anchor element (e.g. for React Router)',
-  ],  theming: {
+  theming: {
     targets: [
       {className: 'xds-top-nav', states: ['mode']},
       {className: 'xds-top-nav-item', states: ['mode']},
@@ -23,26 +14,6 @@ export const docs = {
       {className: 'xds-top-nav-menu'},
     ],
   },
-  accessibility: [
-    'XDSTopNav renders a <nav> element with role="navigation" and aria-label set from the label prop',
-    'XDSTopNavItem sets aria-current="page" when isSelected is true',
-    'XDSTopNavItem sets aria-label when isIconOnly is true, keeping the item accessible.',
-    'XDSTopNavItem sets aria-disabled and tabIndex=-1 when isDisabled is true',
-    'XDSTopNavMenu sets aria-haspopup="true" on the trigger button',
-    'XDSTopNavMegaMenu sets aria-haspopup="true" and aria-expanded on the trigger button',
-    'XDSTopNavMegaMenu menu items are unreachable by keyboard (tabIndex=-1) when the panel is closed',
-    'Escape key closes the XDSTopNavMegaMenu panel',
-  ],
-  keyboard:
-    'Tab to navigate between items; Escape closes XDSTopNavMegaMenu panels',
-  notes: [
-    'Default height is 48px (--spacing-12) with 16px horizontal padding',
-    'Without centerContent: heading and startContent grow to push endContent right (flex layout)',
-    'With centerContent: switches to CSS grid (gridTemplateColumns: 1fr auto 1fr) — the right column is always rendered even when endContent is absent to maintain the three-column structure',
-    'Positioning (sticky/fixed) is handled by the layout system (e.g. XDSAppShell), not TopNav itself',
-    'Dividers are controlled by the layout system (e.g. XDSLayoutHeader hasDivider), not TopNav',
-    'XDSTopNavMegaMenu panels position relative to the nearest positioned ancestor — wrap XDSTopNav in a container with position: relative for correct full-width behavior',
-  ],
   components: [
     {
       name: 'XDSTopNav',
@@ -327,19 +298,34 @@ export const docs = {
     },
   ],
   usage: {
-    summary: 'Horizontal navigation bar for product-level navigation.',
-    content: `## When to use
-
-- 5 or fewer nav items that should always be visible.
-- Items don't require icons.
-- Minimal navigation paired with controls or filters.
-- Can combine with side nav for ecosystem tools.
-
-## When NOT to use
-
-- Complex navigation hierarchies.
-- Products without clear ownership.
-- Don't use to filter content \u2014 use tabs or filter buttons instead.`,
+    description:
+      'TopNav is a horizontal navigation bar for product-level navigation in application headers, featuring a slot-based layout with heading, startContent, centerContent, and endContent slots, plus companion nav item and menu components. Use for 5 or fewer always-visible nav items or minimal navigation paired with controls. Do not use for complex navigation hierarchies or to filter content—use tabs or filter buttons instead.',
+    features: [
+      'Slot-based layout — heading, startContent, centerContent, and endContent slots for flexible organization',
+      'Three-column centering — when centerContent is provided, switches to CSS grid (1fr auto 1fr) for true horizontal centering',
+      'Companion components — XDSTopNavHeading, XDSTopNavItem, XDSTopNavMenu, XDSTopNavMegaMenu',
+      'Themeable via className — target .xds-top-nav and sub-component classes',
+      'Link customization — XDSTopNavItem accepts an as prop to swap the anchor element (e.g. for React Router)',
+    ],
+    accessibility: [
+      'XDSTopNav renders a <nav> element with role="navigation" and aria-label set from the label prop.',
+      'XDSTopNavItem sets aria-current="page" when isSelected is true.',
+      'XDSTopNavItem sets aria-label when isIconOnly is true, keeping the item accessible.',
+      'XDSTopNavItem sets aria-disabled and tabIndex=-1 when isDisabled is true.',
+      'XDSTopNavMenu sets aria-haspopup="true" on the trigger button.',
+      'XDSTopNavMegaMenu sets aria-haspopup="true" and aria-expanded on the trigger button.',
+      'XDSTopNavMegaMenu menu items are unreachable by keyboard (tabIndex=-1) when the panel is closed.',
+      'Escape key closes the XDSTopNavMegaMenu panel.',
+      'Keyboard: Tab to navigate between items; Escape closes XDSTopNavMegaMenu panels.',
+    ],
+    notes: [
+      'Default height is 48px (--spacing-12) with 16px horizontal padding',
+      'Without centerContent: heading and startContent grow to push endContent right (flex layout)',
+      'With centerContent: switches to CSS grid (gridTemplateColumns: 1fr auto 1fr) — the right column is always rendered even when endContent is absent to maintain the three-column structure',
+      'Positioning (sticky/fixed) is handled by the layout system (e.g. XDSAppShell), not TopNav itself',
+      'Dividers are controlled by the layout system (e.g. XDSLayoutHeader hasDivider), not TopNav',
+      'XDSTopNavMegaMenu panels position relative to the nearest positioned ancestor — wrap XDSTopNav in a container with position: relative for correct full-width behavior',
+    ],
     anatomy: [
       {name: 'Product icon and name', required: true, description: 'Identifies the product in the navigation bar.'},
       {name: 'Navigation items', required: true, description: 'Primary links for product-level destinations.'},

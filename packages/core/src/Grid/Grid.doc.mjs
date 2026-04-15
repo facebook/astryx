@@ -2,25 +2,28 @@
 
 export const docs = {
   name: 'Grid',
-  description: 'CSS Grid-based layout with responsive auto-fit support.',  keywords: ["grid","columns","responsive","auto-fit","masonry","tiles","row","col","simplegrid"],
-  features: [
-    'Fixed-column grids via the `columns` prop',
-    'Responsive auto-fit columns via `minChildWidth` — items wrap based on available space',
-    'Combine `minChildWidth` and `columns` to cap the maximum number of columns',
-    'Gap tokens via `SpacingScale` values for `gap`, `rowGap`, and `columnGap`',
-    'Vertical and horizontal item alignment via `align` and `justify`',
-    'XDSGridSpan lets individual items span multiple columns or rows',
-    'Theming support — override root styles via the `grid` component key',
-  ],
+  keywords: ["grid","columns","responsive","auto-fit","masonry","tiles","row","col","simplegrid"],
+  usage: {
+    description:
+      'CSS Grid-based layout with responsive auto-fit support. Use for any grid layout instead of manual CSS grid — it handles gap tokens and works with any column count.',
+    features: [
+      'Fixed-column grids via the `columns` prop',
+      'Responsive auto-fit columns via `minChildWidth` — items wrap based on available space',
+      'Combine `minChildWidth` and `columns` to cap the maximum number of columns',
+      'Gap tokens via `SpacingScale` values for `gap`, `rowGap`, and `columnGap`',
+      'Vertical and horizontal item alignment via `align` and `justify`',
+      'XDSGridSpan lets individual items span multiple columns or rows',
+    ],
+    notes: [
+      'Use XDSGrid for any grid layout instead of manual CSS grid (`display: "grid"`, `gridTemplateColumns`). It handles gap tokens and works with any column count.',
+    ],
+  },
   theming: {
     targets: [
       {className: 'xds-grid', visualProps: ['align', 'columns', 'gap', 'justify']},
       {className: 'xds-grid-span'},
     ],
   },
-  notes: [
-    'Use XDSGrid for any grid layout instead of manual CSS grid (`display: "grid"`, `gridTemplateColumns`). It handles gap tokens and works with any column count.',
-  ],
   components: [
     {
       name: 'XDSGrid',
@@ -108,9 +111,6 @@ export const docs = {
       ],
     },
   ],
-  usage: {
-    summary: 'CSS Grid-based layout with responsive auto-fit support.',
-  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */

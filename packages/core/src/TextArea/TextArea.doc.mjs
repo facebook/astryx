@@ -2,24 +2,8 @@
 
 export const docs = {
   name: 'TextArea',
-  description:
-    'A multi-line text input component for collecting longer user input.',  keywords: ["textarea","textfield","multiline","comment","message","autoresize","autosize","charlimit"],
-  features: [
-    'Label support — required label for accessibility, can be visually hidden',
-    'Description — optional text displayed between the label and textarea',
-    'Optional/Required indicators — displays "Optional" or "Required" text with bullet separator',
-    'Status variants — warning, error, and success states with colored borders and icons',
-    'Character counter — displays current/max length when maxLength is set (does not enforce natively)',
-    'Start icon — optional icon rendered inside the leading edge of the input',
-    'Label tooltip — optional info icon with tooltip at the end of the label',
-    'Loading state — shows a spinner and uses optimistic updates via useOptimistic',
-    'Async action support — onChangeAction fires after onChange inside a React transition',
-    'Disabled state — visual opacity and cursor changes, no interaction',
-    'Accessible — label associated via htmlFor/id, aria-describedby, aria-required, aria-invalid, aria-busy',
-    'Resizable — vertical resize enabled by default',
-    'Spell check — browser spell checking enabled by default, configurable',
-    'Reduced motion — respects prefers-reduced-motion for input wrapper transitions',
-  ],  props: [
+  keywords: ["textarea","textfield","multiline","comment","message","autoresize","autosize","charlimit"],
+  props: [
     {
       name: 'ref',
       type: 'React.Ref<HTMLTextAreaElement>',
@@ -169,34 +153,41 @@ export const docs = {
       {className: 'xds-textarea'},
     ],
   },
-  accessibility: [
-    'Label is always rendered in the DOM; use isLabelHidden to hide it visually while keeping it accessible.',
-    'The textarea id is generated via useId and linked to its label via htmlFor, ensuring correct label association.',
-    'aria-describedby is set to the description and/or status message IDs when those elements are present.',
-    'aria-required="true" is set when isRequired is true.',
-    'aria-invalid="true" is set when status.type is "error".',
-    'aria-busy is set while an optimistic update or loading state is active.',
-  ],
-  notes: [
-    'isOptional and isRequired are mutually exclusive; if both are set, "Optional" takes precedence.',
-    'The component uses useOptimistic for instant UI feedback when onChangeAction returns a Promise.',
-    'Textarea has vertical resize enabled via CSS.',
-    'Wraps XDSField for consistent label, description, and status message layout.',
-    'The character counter uses optimisticValue and turns red when it exceeds maxLength.',
-    'Interaction is blocked during busy state (loading or pending async action) to prevent double-input.',
-    'Character counter is connected to the textarea via aria-describedby and uses aria-live="polite" for screen reader announcements.',
-  ],
   usage: {
-    summary: 'A multi-line text input for collecting longer user input.',
-    content: `## When to use
-
-- Users need to enter multiple lines of text.
-- Comments, descriptions, or longer-form content entry.
-
-## When NOT to use
-
-- Single-line input (use TextInput instead).
-- Rich text with formatting (use a rich text editor instead).`,
+    description:
+      'TextArea is a multi-line text input for collecting longer user input such as comments, descriptions, or longer-form content. Use TextInput instead for single-line input, or a rich text editor for formatted content.',
+    features: [
+      'Label support — required label for accessibility, can be visually hidden',
+      'Description — optional text displayed between the label and textarea',
+      'Optional/Required indicators — displays "Optional" or "Required" text with bullet separator',
+      'Status variants — warning, error, and success states with colored borders and icons',
+      'Character counter — displays current/max length when maxLength is set (does not enforce natively)',
+      'Start icon — optional icon rendered inside the leading edge of the input',
+      'Label tooltip — optional info icon with tooltip at the end of the label',
+      'Loading state — shows a spinner and uses optimistic updates via useOptimistic',
+      'Async action support — onChangeAction fires after onChange inside a React transition',
+      'Disabled state — visual opacity and cursor changes, no interaction',
+      'Resizable — vertical resize enabled by default',
+      'Spell check — browser spell checking enabled by default, configurable',
+      'Reduced motion — respects prefers-reduced-motion for input wrapper transitions',
+    ],
+    accessibility: [
+      'Label is always rendered in the DOM; use isLabelHidden to hide it visually while keeping it accessible.',
+      'The textarea id is generated via useId and linked to its label via htmlFor, ensuring correct label association.',
+      'aria-describedby is set to the description and/or status message IDs when those elements are present.',
+      'aria-required="true" is set when isRequired is true.',
+      'aria-invalid="true" is set when status.type is "error".',
+      'aria-busy is set while an optimistic update or loading state is active.',
+    ],
+    notes: [
+      'isOptional and isRequired are mutually exclusive; if both are set, "Optional" takes precedence.',
+      'The component uses useOptimistic for instant UI feedback when onChangeAction returns a Promise.',
+      'Textarea has vertical resize enabled via CSS.',
+      'Wraps XDSField for consistent label, description, and status message layout.',
+      'The character counter uses optimisticValue and turns red when it exceeds maxLength.',
+      'Interaction is blocked during busy state (loading or pending async action) to prevent double-input.',
+      'Character counter is connected to the textarea via aria-describedby and uses aria-live="polite" for screen reader announcements.',
+    ],
   },
 };
 

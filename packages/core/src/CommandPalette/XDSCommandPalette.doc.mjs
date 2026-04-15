@@ -1,8 +1,6 @@
 /** @type {import('../docs-types').ComponentDoc} */
 export const docs = {
   name: 'CommandPalette',
-  description:
-    'A searchSource-driven command palette dialog. Provide a search source and get filtering, keyboard navigation, grouping, and selection. Uses the same XDSSearchSource interface as XDSTypeahead.',
   keywords: [
     'command',
     'spotlight',
@@ -15,16 +13,6 @@ export const docs = {
     'modal',
     'dialog',
     'navigation',
-  ],
-  features: [
-    'searchSource: same XDSSearchSource interface as XDSTypeahead — static, async, or hybrid',
-    'Auto-grouping: items with auxiliaryData.group are auto-grouped in default rendering',
-    'createStaticSource: utility for static lists with optional keyword matching',
-    'Async support: spinner shows in input while search resolves',
-    'Keyboard navigation: arrow keys, Enter to select, Escape to close',
-    'Picker mode: value/onValueChange for persistent selection',
-    'Composable: XDSCommandPaletteInput, XDSCommandPaletteList, XDSCommandPaletteGroup, XDSCommandPaletteItem, XDSCommandPaletteFooter, XDSCommandPaletteEmpty',
-    'renderItem: custom per-item render while preserving auto-grouping',
   ],
   components: [
     {
@@ -298,23 +286,36 @@ export const docs = {
       {className: 'xds-command-palette-list'},
     ],
   },
-  accessibility: [
-    'Dialog uses XDSDialog — native <dialog> with showModal() for correct modal ARIA semantics.',
-    'Input renders as a search input with combobox role, aria-expanded, and aria-controls pointing to the list.',
-    'List renders as role="listbox" with aria-label.',
-    'Items render as role="option" with aria-selected.',
-    'Keyboard navigation uses useCombobox from XDSSelector for consistent arrow key, Home/End, Enter, and Escape behavior.',
-    'Spinner in input uses role="status" to announce loading to screen readers.',
-  ],
-  keyboard:
-    'Arrow Up/Down: navigate items; Enter: select highlighted item; Escape: close palette; Tab: moves focus to footer actions',
-  notes: [
-    'Uses XDSSearchSource interface — the same as XDSTypeahead. Any source compatible with XDSTypeahead works here.',
-    'createStaticSource supports keyword-based matching in addition to substring matching.',
-    'Auto-grouping reads auxiliaryData.group from each item — no extra config needed.',
-    'Picker mode (value/onValueChange) keeps the palette open and tracks a persistent selection.',
-    'The isBusy signal from searchSource drives the spinner in XDSCommandPaletteInput automatically.',
-  ],
+  usage: {
+    description:
+      'CommandPalette is a searchSource-driven command palette dialog that provides filtering, keyboard navigation, grouping, and selection. It uses the same XDSSearchSource interface as XDSTypeahead, supporting static, async, or hybrid data sources.',
+    features: [
+      'searchSource: same XDSSearchSource interface as XDSTypeahead — static, async, or hybrid',
+      'Auto-grouping: items with auxiliaryData.group are auto-grouped in default rendering',
+      'createStaticSource: utility for static lists with optional keyword matching',
+      'Async support: spinner shows in input while search resolves',
+      'Keyboard navigation: arrow keys, Enter to select, Escape to close',
+      'Picker mode: value/onValueChange for persistent selection',
+      'Composable: XDSCommandPaletteInput, XDSCommandPaletteList, XDSCommandPaletteGroup, XDSCommandPaletteItem, XDSCommandPaletteFooter, XDSCommandPaletteEmpty',
+      'renderItem: custom per-item render while preserving auto-grouping',
+    ],
+    accessibility: [
+      'Dialog uses XDSDialog — native <dialog> with showModal() for correct modal ARIA semantics.',
+      'Input renders as a search input with combobox role, aria-expanded, and aria-controls pointing to the list.',
+      'List renders as role="listbox" with aria-label.',
+      'Items render as role="option" with aria-selected.',
+      'Keyboard navigation uses useCombobox from XDSSelector for consistent arrow key, Home/End, Enter, and Escape behavior.',
+      'Spinner in input uses role="status" to announce loading to screen readers.',
+      'Keyboard: Arrow Up/Down navigate items; Enter selects highlighted item; Escape closes palette; Tab moves focus to footer actions.',
+    ],
+    notes: [
+      'Uses XDSSearchSource interface — the same as XDSTypeahead. Any source compatible with XDSTypeahead works here.',
+      'createStaticSource supports keyword-based matching in addition to substring matching.',
+      'Auto-grouping reads auxiliaryData.group from each item — no extra config needed.',
+      'Picker mode (value/onValueChange) keeps the palette open and tracks a persistent selection.',
+      'The isBusy signal from searchSource drives the spinner in XDSCommandPaletteInput automatically.',
+    ],
+  },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */

@@ -2,31 +2,7 @@
 
 export const docs = {
   name: 'CheckboxList',
-  description:
-    'A checkbox group component for multi-value selection from a list of options. Supports collection mode (parent-managed state) and standalone mode (per-item state).',  keywords: ["checkboxlist","checkbox","checkboxgroup","multichoice","multiselect","checklist"],
-  features: [
-    'Accessible — uses native <input type="checkbox"> with proper ARIA attributes',
-    'Collection mode — parent manages selected values as string[], items derive checked state',
-    'Standalone mode — individual items use isChecked/onCheck for independent control',
-    'Density — compact, balanced, spacious via XDSList integration',
-    'Dividers — optional border dividers between items',
-    'Indeterminate — supports three-state checkbox (true, false, indeterminate) in standalone mode',
-    'Descriptions — optional secondary text per item',
-    'End content — slot for badges, actions, or other content after the label',
-    'Disabled state — supports disabling the entire group or individual items',
-    'Async actions — onChangeAction with optimistic updates and busy state',
-    'Full-row click — clicking anywhere on the row toggles the checkbox',
-    'Field integration — uses XDSField for label, description, and status messaging',
-  ],
-  notes: [
-    'XDSCheckboxList composes XDSField (label, description, status) and XDSList (density, dividers)',
-    'XDSCheckboxListItem can be used inside XDSCheckboxList (collection mode) or XDSList (standalone mode)',
-    'In collection mode, XDSCheckboxListItem requires a `value` prop — throws if missing',
-    'Uses XDSCheckboxInput internally with isLabelHidden for the checkbox visual',
-    'Full-row click target with guard against interactive endContent children',
-    'Async actions use useOptimistic + useTransition for immediate visual feedback',
-    'Density maps to checkbox size: compact → sm, balanced/spacious → md',
-  ],
+  keywords: ["checkboxlist","checkbox","checkboxgroup","multichoice","multiselect","checklist"],
   components: [
     {
       name: 'XDSCheckboxList',
@@ -154,16 +130,30 @@ export const docs = {
     },
   ],
   usage: {
-    summary: 'A checkbox group for multi-value selection from a list of options.',
-    content: `## When to use
-
-- Users need to select multiple options from a set.
-- All options should be visible at once.
-
-## When NOT to use
-
-- Only one option can be selected (use RadioList instead).
-- The option list is very long (consider MultiSelector instead).`,
+    description: 'A checkbox group for multi-value selection from a list of options. Use when users need to select multiple visible options from a set. For single selection use RadioList; for long option lists consider MultiSelector.',
+    features: [
+      'Accessible — uses native <input type="checkbox"> with proper ARIA attributes',
+      'Collection mode — parent manages selected values as string[], items derive checked state',
+      'Standalone mode — individual items use isChecked/onCheck for independent control',
+      'Density — compact, balanced, spacious via XDSList integration',
+      'Dividers — optional border dividers between items',
+      'Indeterminate — supports three-state checkbox (true, false, indeterminate) in standalone mode',
+      'Descriptions — optional secondary text per item',
+      'End content — slot for badges, actions, or other content after the label',
+      'Disabled state — supports disabling the entire group or individual items',
+      'Async actions — onChangeAction with optimistic updates and busy state',
+      'Full-row click — clicking anywhere on the row toggles the checkbox',
+      'Field integration — uses XDSField for label, description, and status messaging',
+    ],
+    notes: [
+      'XDSCheckboxList composes XDSField (label, description, status) and XDSList (density, dividers)',
+      'XDSCheckboxListItem can be used inside XDSCheckboxList (collection mode) or XDSList (standalone mode)',
+      'In collection mode, XDSCheckboxListItem requires a `value` prop — throws if missing',
+      'Uses XDSCheckboxInput internally with isLabelHidden for the checkbox visual',
+      'Full-row click target with guard against interactive endContent children',
+      'Async actions use useOptimistic + useTransition for immediate visual feedback',
+      'Density maps to checkbox size: compact → sm, balanced/spacious → md',
+    ],
   },
 };
 

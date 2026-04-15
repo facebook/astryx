@@ -2,16 +2,7 @@
 
 export const docs = {
   name: 'Section',
-  description:
-    'Container with background variants for creating visually distinct regions that automatically escape parent container padding for edge-to-edge fills.',
   keywords: ["section","panel","container","group","fieldset","region","block"],
-  features: [
-    'Background variants: section, transparent, and wash',
-    'Automatically escapes parent container padding for edge-to-edge fills',
-    'Supports divider borders on any combination of sides (top, bottom, start, end)',
-    'Flexible sizing via SizeValue for width, height, maxWidth, and minHeight',
-    'Supports `padding={0}` for edge-to-edge content',
-  ],
   props: [
     {
       name: 'variant',
@@ -78,11 +69,15 @@ export const docs = {
     ],
   },
   usage: {
-    summary: 'Container for creating visually distinct regions on a page.',
-    content: `## When to use
-
-- Chunking information into groups using whitespace, dividers, or type scale.
-- Prefer sections over cards as the default page structure; use cards only when stronger visual distinction is needed.`,
+    description:
+      'Container with background variants for creating visually distinct regions on a page. Automatically escapes parent container padding for edge-to-edge fills. Prefer sections over cards as the default page structure; use cards only when stronger visual distinction is needed.',
+    features: [
+      'Background variants: section, transparent, and wash',
+      'Automatically escapes parent container padding for edge-to-edge fills',
+      'Supports divider borders on any combination of sides (top, bottom, start, end)',
+      'Flexible sizing via SizeValue for width, height, maxWidth, and minHeight',
+      'Supports `padding={0}` for edge-to-edge content',
+    ],
   },
 };
 

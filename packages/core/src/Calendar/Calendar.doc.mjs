@@ -2,23 +2,38 @@
 
 export const docs = {
   name: 'Calendar',
-  description:
-    'XDSCalendar component for date selection with single and range modes.',
   keywords: ["calendar","datepicker","date picker","rangepicker","date range","monthview","daypicker"],
-  features: [
-    "Selection Modes: 'single' (default) and 'range'",
-    'Multi-Month Display: Show 1 or 2 months side by side',
-    'Date Constraints: min, max, and custom dateConstraints functions',
-    'Locale Options: weekStartsOn for configurable first day of week',
-    'Week Numbers: Optional ISO week number column',
-    'Controlled/Uncontrolled: Supports both patterns via value/defaultValue',
-    'Keyboard: Escape cancels in-progress range selection',
-    'A11y: day name headers use role="columnheader", day buttons expose data-date attribute',
-    'A11y: outside days are aria-disabled and not clickable even when visible',
-    'A11y: selected date receives roving tabindex priority over today',
-    'Nav buttons auto-disable when min/max boundary is within the current month',
-    'Motion: day cell transitions respect prefers-reduced-motion',
-  ],
+  usage: {
+    description:
+      'A calendar component for date selection supporting single and range selection modes with customizable constraints and locale options.',
+    features: [
+      "Selection Modes: 'single' (default) and 'range'",
+      'Multi-Month Display: Show 1 or 2 months side by side',
+      'Date Constraints: min, max, and custom dateConstraints functions',
+      'Locale Options: weekStartsOn for configurable first day of week',
+      'Week Numbers: Optional ISO week number column',
+      'Controlled/Uncontrolled: Supports both patterns via value/defaultValue',
+      'Nav buttons auto-disable when min/max boundary is within the current month',
+    ],
+    accessibility: [
+      'Keyboard: Escape cancels in-progress range selection',
+      'Day name headers use role="columnheader", day buttons expose data-date attribute',
+      'Outside days are aria-disabled and not clickable even when visible',
+      'Selected date receives roving tabindex priority over today',
+      'Day cell transitions respect prefers-reduced-motion',
+    ],
+    notes: [
+      'ISODateString type: `${number}${number}${number}${number}-${number}${number}-${number}${number}`',
+      'DayOfWeek type: 0 | 1 | 2 | 3 | 4 | 5 | 6',
+      'DateRange interface: { start: ISODateString; end: ISODateString }',
+      'Day buttons render a data-date="YYYY-MM-DD" attribute for testing and scripting',
+      'Roving tabindex priority: selected date > today > first enabled day',
+      'In range mode, pressing Escape resets the pending start date without firing onChange',
+      'Previous/next month buttons become disabled when the current view contains the min or max date',
+      'Outside days (adjacent month) are rendered with aria-disabled="true" and ignore clicks',
+      'Day cell transitions are suppressed under @media (prefers-reduced-motion: reduce)',
+    ],
+  },
   props: [
     {
       name: 'mode',
@@ -102,20 +117,6 @@ export const docs = {
       {className: 'xds-calendar', visualProps: ['mode']},
       {className: 'xds-calendar-day', states: ['selected', 'today', 'disabled', 'in-range']},
     ],
-  },
-  notes: [
-    'ISODateString type: `${number}${number}${number}${number}-${number}${number}-${number}${number}`',
-    'DayOfWeek type: 0 | 1 | 2 | 3 | 4 | 5 | 6',
-    'DateRange interface: { start: ISODateString; end: ISODateString }',
-    'Day buttons render a data-date="YYYY-MM-DD" attribute for testing and scripting',
-    'Roving tabindex priority: selected date > today > first enabled day',
-    'In range mode, pressing Escape resets the pending start date without firing onChange',
-    'Previous/next month buttons become disabled when the current view contains the min or max date',
-    'Outside days (adjacent month) are rendered with aria-disabled="true" and ignore clicks',
-    'Day cell transitions are suppressed under @media (prefers-reduced-motion: reduce)',
-  ],
-  usage: {
-    summary: 'A calendar component for date selection supporting single and range selection modes.',
   },
 };
 

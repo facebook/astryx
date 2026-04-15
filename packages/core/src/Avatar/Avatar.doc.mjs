@@ -2,33 +2,37 @@
 
 export const docs = {
   name: 'Avatar',
-  description:
-    'Avatar component for displaying user profile pictures with fallback support.',
   keywords: ["avatar","profile","user","photo","thumbnail","initials","gravatar","pfp","userpic"],
-  features: [
-    'Image loading: Primary and fallback image sources',
-    'Initials fallback: Auto-generates initials from user name',
-    'Default icon: Generic person icon when no image or name provided',
-    'Sizes: tiny (20px), xsmall (24px), small (36px), medium (48px), large (128px), plus numeric pixel values',
-    'Status slot: Corner position for status indicators or badges',
-    'Size-aware status dot: Built-in XDSAvatarStatusDot that scales proportionally with avatar size',
-    'Accessible: Proper role and aria-label support',
-  ],
+  usage: {
+    description:
+      'Displays a user profile picture with automatic fallback to initials when no image is available. Use to represent a user or entity visually alongside user information.',
+    features: [
+      'Image loading: Primary and fallback image sources',
+      'Initials fallback: Auto-generates initials from user name',
+      'Default icon: Generic person icon when no image or name provided',
+      'Sizes: tiny (20px), xsmall (24px), small (36px), medium (48px), large (128px), plus numeric pixel values',
+      'Status slot: Corner position for status indicators or badges',
+      'Size-aware status dot: Built-in XDSAvatarStatusDot that scales proportionally with avatar size',
+    ],
+    accessibility: [
+      'Proper role and aria-label support',
+    ],
+    notes: [
+      'Always circular shape (border-radius: 50%)',
+      'Uses color.deemphasized and color.textSecondary for fallback background',
+      'Initials extracted from first and last word of name',
+      'XDSAvatarSizeContext provides the resolved numeric size to sub-components',
+      'Status dot uses CIRCLE_EDGE_OFFSET_RATIO for positioning at the 45° point on the circle edge',
+      'Fallback cascade: (1) src loads → show image; (2) src fails → try fallbackSrc; (3) fallbackSrc fails/missing → show initials from name; (4) no name → show generic person icon',
+      'Status dot size tiers: avatar ≤ 36px → 8px dot with 1px border; avatar 40–72px → 16px dot with 2px border; avatar ≥ 96px → 24px dot with 4px border',
+    ],
+  },
   theming: {
     targets: [
       {className: 'xds-avatar', visualProps: ['size']},
       {className: 'xds-avatar-status-dot', visualProps: ['variant']},
     ],
   },
-  notes: [
-    'Always circular shape (border-radius: 50%)',
-    'Uses color.deemphasized and color.textSecondary for fallback background',
-    'Initials extracted from first and last word of name',
-    'XDSAvatarSizeContext provides the resolved numeric size to sub-components',
-    'Status dot uses CIRCLE_EDGE_OFFSET_RATIO for positioning at the 45° point on the circle edge',
-    'Fallback cascade: (1) src loads → show image; (2) src fails → try fallbackSrc; (3) fallbackSrc fails/missing → show initials from name; (4) no name → show generic person icon',
-    'Status dot size tiers: avatar ≤ 36px → 8px dot with 1px border; avatar 40–72px → 16px dot with 2px border; avatar ≥ 96px → 24px dot with 4px border',
-  ],
   components: [
     {
       name: 'XDSAvatar',
@@ -91,14 +95,6 @@ export const docs = {
       ],
     },
   ],
-  usage: {
-    summary: 'Displays a user profile picture with automatic fallback to initials when no image is available.',
-    content: `## When to use
-
-- Representing a user or entity visually.
-- Showing a profile image alongside user information.
-- Displaying a fallback when no image is provided.`,
-  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */

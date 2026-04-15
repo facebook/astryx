@@ -77,7 +77,7 @@ export async function component(name, options = {}) {
           if (readme && readme.endsWith('.doc.mjs')) {
             try {
               const docs = await loadDocs(readme, {zh, lang});
-              entries.push({name: comp, description: docs.description, import: resolveImportPath(coreDir, comp)});
+              entries.push({name: comp, description: docs.usage?.description || docs.description || '', import: resolveImportPath(coreDir, comp)});
             } catch {
               entries.push({name: comp, description: '', import: resolveImportPath(coreDir, comp)});
             }
@@ -102,7 +102,7 @@ export async function component(name, options = {}) {
           if (readme && readme.endsWith('.doc.mjs')) {
             try {
               const docs = await loadDocs(readme, {zh, lang});
-              result[cat].push({name: comp, description: docs.description, import: resolveImportPath(coreDir, comp)});
+              result[cat].push({name: comp, description: docs.usage?.description || docs.description || '', import: resolveImportPath(coreDir, comp)});
             } catch {
               result[cat].push({name: comp, description: '', import: resolveImportPath(coreDir, comp)});
             }

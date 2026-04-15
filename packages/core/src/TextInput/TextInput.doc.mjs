@@ -2,20 +2,8 @@
 
 export const docs = {
   name: 'TextInput',
-  description:
-    'A text input component for collecting user text input, with label, description, validation status, and optional/required indicators.',  keywords: ["textinput","textfield","input","search","clearable","prefix","suffix","adornment","validation"],
-  features: [
-    'Label support — required label for accessibility (can be visually hidden)',
-    'Description — optional text displayed between the label and input',
-    'Optional/Required indicators — "Optional" or "Required" text with bullet separator',
-    'Label tooltip — optional info icon with tooltip at the end of the label',
-    'Validation status — error, warning, and success states with colored borders and icons',
-    'Start icon — optional icon displayed at the start of the input',
-    'Loading state — shows a spinner and sets aria-busy while an async action is pending',
-    'Disabled state — visually dims the input and prevents interaction',
-    'Accessible — label is always associated with the input via htmlFor/id; sets aria-invalid, aria-required, aria-busy, and aria-describedby as appropriate',
-    'Styled with StyleX — uses XDS design tokens for consistent styling',
-  ],  props: [
+  keywords: ["textinput","textfield","input","search","clearable","prefix","suffix","adornment","validation"],
+  props: [
     {
       name: 'type',
       type: "'text' | 'password' | 'email'",
@@ -141,30 +129,33 @@ export const docs = {
       {className: 'xds-text-input', visualProps: ['size']},
     ],
   },
-  accessibility: [
-    'Label is always rendered and associated with the input via htmlFor/id (using useId). Use isLabelHidden to hide it visually while keeping it accessible to screen readers.',
-    'aria-describedby is set automatically when description or a status message is present.',
-    'aria-invalid="true" is set when status.type is "error".',
-    'aria-required="true" is set when isRequired is true.',
-    'aria-busy is set while an optimistic update or isLoading is active.',
-  ],
-  notes: [
-    'isOptional and isRequired are mutually exclusive — if both are set, "Optional" is shown.',
-    'onChangeAction fires after onChange inside a React transition, enabling useOptimistic for an instant UI update while the async work completes.',
-    'The component wraps XDSField for label, description, and optional/required rendering.',
-    'The size prop supports "sm", "md", and "lg".',
-  ],
   usage: {
-    summary: 'Enables users to enter or edit text or numeric values.',
-    content: `## When to use
-
-- Short-form and long-form text entries.
-
-## Best practices
-
-- Do: Size the input to reflect the expected content length.
-- Do: Use validation messaging for required fields.
-- Validation states: error (blocking), warning (non-blocking), success (confirmation).`,
+    description:
+      'TextInput enables users to enter or edit short-form text values with built-in label, description, validation status, and optional/required indicators. Size the input to reflect the expected content length and use validation messaging for required fields.',
+    features: [
+      'Label support — required label for accessibility (can be visually hidden)',
+      'Description — optional text displayed between the label and input',
+      'Optional/Required indicators — "Optional" or "Required" text with bullet separator',
+      'Label tooltip — optional info icon with tooltip at the end of the label',
+      'Validation status — error, warning, and success states with colored borders and icons',
+      'Start icon — optional icon displayed at the start of the input',
+      'Loading state — shows a spinner and sets aria-busy while an async action is pending',
+      'Disabled state — visually dims the input and prevents interaction',
+      'Styled with StyleX — uses XDS design tokens for consistent styling',
+    ],
+    accessibility: [
+      'Label is always rendered and associated with the input via htmlFor/id (using useId). Use isLabelHidden to hide it visually while keeping it accessible to screen readers.',
+      'aria-describedby is set automatically when description or a status message is present.',
+      'aria-invalid="true" is set when status.type is "error".',
+      'aria-required="true" is set when isRequired is true.',
+      'aria-busy is set while an optimistic update or isLoading is active.',
+    ],
+    notes: [
+      'isOptional and isRequired are mutually exclusive — if both are set, "Optional" is shown.',
+      'onChangeAction fires after onChange inside a React transition, enabling useOptimistic for an instant UI update while the async work completes.',
+      'The component wraps XDSField for label, description, and optional/required rendering.',
+      'The size prop supports "sm", "md", and "lg".',
+    ],
     anatomy: [
       {name: 'Label', required: true, description: 'Text that identifies the input field.'},
       {name: 'Description', required: false, description: 'Helper text providing additional context.'},

@@ -2,20 +2,40 @@
 
 export const docs = {
   name: 'Banner',
-  description:
-    'Persistent status notification for info, warning, error, or success messages.',
-
   keywords: ["banner","alert","notification","callout","notice","status","message","info","warning","error","success","toast"],
-  features: [
-    'Two-part layout: colored status header with icon, title, description, action buttons, and optional dismiss; optional card-background content area below',
-    'When no children are provided, only the colored header renders',
-    'Self-managed dismiss state — banner hides itself on dismiss without requiring external state wiring',
-    'onDismiss callback fires alongside the internal state change for logging or backend sync',
-    'Default status icons from @heroicons/react/24/solid: InformationCircleIcon (info), ExclamationTriangleIcon (warning), XCircleIcon (error), CheckCircleIcon (success)',
-    'Status colors: info uses --color-accent-muted, warning uses --color-warning-muted, error uses --color-error-muted, success uses --color-success-muted',
-    'Card container (default): has border-radius with optional card content area below the colored header',
-    'Section container: no border-radius, full-width for page-level banners',
-  ],
+  usage: {
+    description:
+      'Persistent status notification that displays a prominent message and related actions. Communicates critical or non-critical information for info, warning, error, or success scenarios. Keep titles and descriptions to 1–2 lines and default to the collapsed state.',
+    features: [
+      'Two-part layout: colored status header with icon, title, description, action buttons, and optional dismiss; optional card-background content area below',
+      'When no children are provided, only the colored header renders',
+      'Self-managed dismiss state — banner hides itself on dismiss without requiring external state wiring',
+      'onDismiss callback fires alongside the internal state change for logging or backend sync',
+      'Card container (default): has border-radius with optional card content area below the colored header',
+      'Section container: no border-radius, full-width for page-level banners',
+    ],
+    accessibility: [
+      'Uses role="alert" for error and warning statuses',
+      'Uses role="status" for info and success statuses',
+      'Dismiss button has aria-label="Dismiss"',
+      'Status icon is aria-hidden="true" — status is conveyed by the ARIA role instead',
+    ],
+    notes: [
+      'Default status icons from @heroicons/react/24/solid: InformationCircleIcon (info), ExclamationTriangleIcon (warning), XCircleIcon (error), CheckCircleIcon (success)',
+      'Status colors: info uses --color-accent-muted, warning uses --color-warning-muted, error uses --color-error-muted, success uses --color-success-muted',
+      'Banner uses `status` as its extensible theming axis. Custom statuses via `defineTheme` components: `status:neutral`.',
+      'Collapsible support is planned: the content area will support collapsing via useXDSCollapsible (issue #187)',
+    ],
+    anatomy: [
+      {name: 'Icon', required: true, description: 'Visual indicator for the banner type.'},
+      {name: 'Heading', required: false, description: 'Required if no description is provided.'},
+      {name: 'Description', required: false, description: 'Required if no heading is provided.'},
+      {name: 'Action Button', required: false, description: 'Actionable button related to the banner message.'},
+      {name: 'Expand/Collapse Button', required: false, description: 'Toggles additional banner content.'},
+      {name: 'Dismissible Button', required: false, description: 'Dismisses the banner. Not available for critical banners.'},
+      {name: 'Flex Space', required: false, description: 'Additional space for supplementary info.'},
+    ],
+  },
 
   props: [
     {
@@ -79,13 +99,6 @@ export const docs = {
     },
   ],
 
-  accessibility: [
-    'Uses role="alert" for error and warning statuses',
-    'Uses role="status" for info and success statuses',
-    'Dismiss button has aria-label="Dismiss"',
-    'Status icon is aria-hidden="true" — status is conveyed by the ARIA role instead',
-  ],
-
   theming: {
     targets: [
       {className: 'xds-banner', visualProps: ['container', 'status']},
@@ -93,34 +106,6 @@ export const docs = {
     ],
     vars: [
       {name: '--banner-radius', description: 'Border radius (card container only)', default: 'var(--radius-container)'},
-    ],
-  },
-  notes: [
-    'Banner uses `status` as its extensible theming axis. Custom statuses via `defineTheme` components: `status:neutral`.',
-    'Collapsible support is planned: the content area will support collapsing via useXDSCollapsible (issue #187)',
-  ],
-  usage: {
-    summary: 'Displays a prominent message and related actions to communicate critical or non-critical information.',
-    content: `## When to use
-
-- To communicate critical or non-critical information at the top of a page, below headers, or in card format.
-
-## Best practices
-
-- Do: Display the action on both the banner and the page.
-- Do: Keep titles and descriptions to 1\u20132 lines.
-- Do: Default to the collapsed state.
-- Don't: Replace user actions on the page \u2014 banners are temporary.
-- Don't: Add lengthy content.
-- Don't: Use expanded as the default state.`,
-    anatomy: [
-      {name: 'Icon', required: true, description: 'Visual indicator for the banner type.'},
-      {name: 'Heading', required: false, description: 'Required if no description is provided.'},
-      {name: 'Description', required: false, description: 'Required if no heading is provided.'},
-      {name: 'Action Button', required: false, description: 'Actionable button related to the banner message.'},
-      {name: 'Expand/Collapse Button', required: false, description: 'Toggles additional banner content.'},
-      {name: 'Dismissible Button', required: false, description: 'Dismisses the banner. Not available for critical banners.'},
-      {name: 'Flex Space', required: false, description: 'Additional space for supplementary info.'},
     ],
   },
 };

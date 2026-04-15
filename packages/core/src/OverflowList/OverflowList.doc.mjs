@@ -2,8 +2,7 @@
 
 export const docs = {
   name: 'OverflowList',
-  description:
-    'Horizontal list that hides items that overflow the available width and shows a custom indicator. Uses a hidden measurement container to avoid layout flicker.',  keywords: [
+  keywords: [
     'overflow',
     'truncate',
     'collapse',
@@ -14,14 +13,6 @@ export const docs = {
     'more',
     'clamp',
     'responsive',
-  ],
-  features: [
-    "Hides items that don't fit in the container width",
-    'Custom overflow indicator via overflowRenderer — receives the list of hidden items',
-    'Indicator space reserved via hidden measurement — no manual width needed',
-    'Collapse from start or end',
-    'Minimum visible items guarantee',
-    'observeParent behavior for content-sized containers alongside siblings',
   ],
   props: [
     {
@@ -74,20 +65,28 @@ export const docs = {
       {className: 'xds-overflow-list'},
     ],
   },
-  accessibility: [
-    'The hidden measurement container is aria-hidden and inert — it does not appear in the accessibility tree.',
-    'The visible container renders a plain div with no implicit role. Add aria-label if the list has semantic meaning.',
-    'When using overflowRenderer with a dropdown, ensure the trigger has a meaningful label (e.g., "+3 more actions").',
-  ],
-  notes: [
-    'Overflow detection uses ResizeObserver on the container or its parent, depending on the behavior prop.',
-    'The overflowRenderer is rendered in a hidden measurement container at full item count to reserve the correct space before any items are hidden.',
-    'Items are measured in the hidden container without visible paint — switching from hidden to visible is instant with no layout shift.',
-    "For collapseFrom='start', items are hidden from the beginning and the overflow indicator appears at the start.",
-    'Use minVisibleItems to guarantee at least N items are always visible regardless of available space.',
-  ],
   usage: {
-    summary: 'Horizontal list that hides items exceeding the available width and shows an overflow indicator.',
+    description:
+      'Horizontal list that hides items exceeding the available width and shows a custom overflow indicator. Uses a hidden measurement container to avoid layout flicker.',
+    features: [
+      "Hides items that don't fit in the container width",
+      'Custom overflow indicator via overflowRenderer — receives the list of hidden items',
+      'Indicator space reserved via hidden measurement — no manual width needed',
+      'Collapse from start or end',
+      'Minimum visible items guarantee',
+      'observeParent behavior for content-sized containers alongside siblings',
+    ],
+    accessibility: [
+      'The hidden measurement container is aria-hidden and inert — it does not appear in the accessibility tree.',
+      'The visible container renders a plain div with no implicit role. Add aria-label if the list has semantic meaning.',
+      'When using overflowRenderer with a dropdown, ensure the trigger has a meaningful label (e.g., "+3 more actions").',
+    ],
+    notes: [
+      'Overflow detection uses ResizeObserver on the container or its parent, depending on the behavior prop.',
+      'The overflowRenderer is rendered in a hidden measurement container at full item count to reserve the correct space before any items are hidden.',
+      'Items are measured in the hidden container without visible paint — switching from hidden to visible is instant with no layout shift.',
+      "For collapseFrom='start', items are hidden from the beginning and the overflow indicator appears at the start.",
+    ],
   },
 };
 

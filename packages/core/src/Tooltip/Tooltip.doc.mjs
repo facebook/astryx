@@ -2,32 +2,8 @@
 
 export const docs = {
   name: 'Tooltip',
-  description:
-    'A hover/focus triggered tooltip for displaying short, non-interactive text anchored to a trigger element.',
   keywords: ["tooltip","hint","infotip","title","hover","flyout","balloon","helpertext"],
-  features: [
-    'CSS Anchor Positioning for automatic placement relative to trigger elements',
-    'Popover API for top-layer rendering — no React portals needed',
-    'Hover triggers with configurable show and hide delays',
-    'Focus triggers with auto-detection for focusable elements',
-    'Inverted color palette (dark background, light text) for high contrast',
-    'display:contents wrapper preserves children refs',
-    'Hover indication (dashed underline) for text-only triggers',
-    'Sibling mode via anchorRef for external trigger elements',
-  ],
-  notes: [
-    'Unlike HoverCard, tooltips don\'t stay open when hovering the tooltip content.',
-    'Tooltips have shorter delays and use inverted colors for high contrast.',
-    'Tooltips are for short, non-interactive text. For interactive content, use XDSHoverCard or XDSPopover.',
-    'In sibling mode (anchorRef prop), XDSTooltip attaches to an external ref rather than wrapping children.',
-    'LayerPlacement values: above | below | start | end. LayerAlignment values: start | center | end.',
-  ],
-  accessibility: [
-    'Links the tooltip content to the trigger via aria-describedby.',
-    'When composing multiple aria-describedby sources, merge them with a utility.',
-  ],
-  keyboard:
-    'Focus on the trigger shows the tooltip. Blur hides it.',  components: [
+  components: [
     {
       name: 'XDSTooltip',
       description:
@@ -157,22 +133,30 @@ export const docs = {
     ],
   },
   usage: {
-    summary: 'Non-interactive hints that provide additional information in the context of a specific UI element.',
-    content: `## When to use
-
-- Progressive disclosure of non-interactive content.
-- Non-interruptive education.
-- Show full text for truncated labels.
-
-## When NOT to use
-
-- For interactive content, use HoverCard instead.
-
-## Best practices
-
-- Limit tooltip content to approximately 140 characters.
-- Place tooltip 8px from the context element.
-- Supported placements: above, below, left, right.`,
+    description:
+      'Tooltip provides non-interactive hints that display additional information in the context of a specific UI element, triggered by hover or focus. It is ideal for progressive disclosure, non-interruptive education, or showing full text for truncated labels. For interactive content, use HoverCard instead; limit tooltip content to approximately 140 characters.',
+    features: [
+      'CSS Anchor Positioning for automatic placement relative to trigger elements',
+      'Popover API for top-layer rendering — no React portals needed',
+      'Hover triggers with configurable show and hide delays',
+      'Focus triggers with auto-detection for focusable elements',
+      'Inverted color palette (dark background, light text) for high contrast',
+      'display:contents wrapper preserves children refs',
+      'Hover indication (dashed underline) for text-only triggers',
+      'Sibling mode via anchorRef for external trigger elements',
+    ],
+    accessibility: [
+      'Links the tooltip content to the trigger via aria-describedby.',
+      'When composing multiple aria-describedby sources, merge them with a utility.',
+      'Keyboard: Focus on the trigger shows the tooltip; blur hides it.',
+    ],
+    notes: [
+      'Unlike HoverCard, tooltips don\'t stay open when hovering the tooltip content.',
+      'Tooltips have shorter delays and use inverted colors for high contrast.',
+      'Tooltips are for short, non-interactive text. For interactive content, use XDSHoverCard or XDSPopover.',
+      'In sibling mode (anchorRef prop), XDSTooltip attaches to an external ref rather than wrapping children.',
+      'LayerPlacement values: above | below | start | end. LayerAlignment values: start | center | end.',
+    ],
   },
 };
 

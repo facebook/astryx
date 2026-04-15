@@ -2,19 +2,8 @@
 
 export const docs = {
   name: 'TimeInput',
-  description:
-    'Time input with free-text entry, text parsing, and arrow-key navigation.',
   keywords: ["timeinput","timepicker","time","clock","hour","minute","ampm","timeselect","timefield"],
-  features: [
-    'Accepts free-text time entry and parses common formats (e.g. "2:30 PM", "14:30")',
-    'Supports 12-hour and 24-hour display formats',
-    'Arrow-up / arrow-down adjust the time by a configurable minute increment',
-    'Optional seconds display via hasSeconds',
-    'Optional clear button via hasClear',
-    'Min / max range constraints reject out-of-range values',
-    'Async action support via onChangeAction with optimistic UI and loading spinner',
-    'Accessible — label, description, and status message are wired to aria-describedby; aria-required and aria-invalid reflect field state',
-  ],  props: [
+  props: [
     {
       name: 'label',
       type: 'string',
@@ -147,27 +136,33 @@ export const docs = {
         'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
     },
   ],
-  accessibility: [
-    'The visible label is associated with the input via htmlFor / id.',
-    'isLabelHidden visually hides the label while keeping it in the accessibility tree.',
-    'description and status.message are linked to the input via aria-describedby.',
-    'aria-required is set when isRequired is true.',
-    'aria-invalid is set when status.type is "error".',
-    'aria-busy reflects the loading / optimistic-pending state.',
-    'The clear button has an explicit aria-label of "Clear time".',
-  ],
-  keyboard:
-    'ArrowUp / ArrowDown adjust the current time by the configured increment in minutes. Typing a time string in common formats (e.g. "2:30 PM", "14:30") is parsed on blur. Pressing the clear button returns focus to the input.',
   theming: {
     targets: [
       {className: 'xds-time-input', visualProps: ['size']},
     ],
   },
   usage: {
-    summary: 'Field formatted for users to input a time.',
-    content: `## When to use
-
-- When the user needs to input a time, such as in scheduling or form fields.`,
+    description:
+      'TimeInput is a time input field with free-text entry, text parsing, and arrow-key navigation. Use it when users need to input a time, such as in scheduling or form fields.',
+    features: [
+      'Accepts free-text time entry and parses common formats (e.g. "2:30 PM", "14:30")',
+      'Supports 12-hour and 24-hour display formats',
+      'Arrow-up / arrow-down adjust the time by a configurable minute increment',
+      'Optional seconds display via hasSeconds',
+      'Optional clear button via hasClear',
+      'Min / max range constraints reject out-of-range values',
+      'Async action support via onChangeAction with optimistic UI and loading spinner',
+    ],
+    accessibility: [
+      'The visible label is associated with the input via htmlFor / id.',
+      'isLabelHidden visually hides the label while keeping it in the accessibility tree.',
+      'description and status.message are linked to the input via aria-describedby.',
+      'aria-required is set when isRequired is true.',
+      'aria-invalid is set when status.type is "error".',
+      'aria-busy reflects the loading / optimistic-pending state.',
+      'The clear button has an explicit aria-label of "Clear time".',
+      'Keyboard: ArrowUp/ArrowDown adjust the current time by the configured increment in minutes; typing a time string in common formats is parsed on blur; pressing the clear button returns focus to the input.',
+    ],
   },
 };
 

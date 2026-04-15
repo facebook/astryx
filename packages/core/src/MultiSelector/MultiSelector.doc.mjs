@@ -2,29 +2,7 @@
 
 export const docs = {
   name: 'MultiSelector',
-  description:
-    'Multi-select dropdown with checkboxes for choosing multiple items from a list. For small, finite sets like column toggles or filter facets — not a replacement for XDSTokenizer.',  keywords: ['multiselect', 'checkbox', 'dropdown', 'multi', 'picker', 'checklist', 'facet', 'filter', 'select'],
-  features: [
-    'Checkbox-based multi-select — dropdown stays open on toggle',
-    'Supports string items, object items with optional icon and disabled state, dividers, and labeled sections',
-    'Optional select-all with indeterminate state',
-    'Optional search filtering',
-    'Three trigger display modes: count, labels, badges',
-    'Integrates with XDS field conventions: label, description, isRequired, isOptional, isLabelHidden, status',
-    'Size variants: sm, md, lg',
-    'Full keyboard navigation with typeahead support',
-    'Accessible — role="combobox" trigger, role="listbox" with aria-multiselectable, real checkbox inputs',
-  ],
-  keyboard:
-    '↑↓ navigate, Enter/Space toggle, Escape close, Home/End jump, A-Z typeahead (when search not shown).',
-  accessibility: [
-    'Uses role="combobox" on the trigger button.',
-    'Dropdown listbox uses aria-multiselectable="true".',
-    'Each option uses role="option" with aria-selected.',
-    'Real XDSCheckboxInput for each item — no fake checkboxes.',
-    'Select-all checkbox rendered outside role="listbox".',
-    'Search input uses role="searchbox" with aria-controls.',
-  ],
+  keywords: ['multiselect', 'checkbox', 'dropdown', 'multi', 'picker', 'checklist', 'facet', 'filter', 'select'],
   theming: {
     targets: [
       {className: 'xds-multi-selector', visualProps: ['size', 'status']},
@@ -162,11 +140,28 @@ export const docs = {
       ],    },
   ],
   usage: {
-    summary: 'Multi-select dropdown with checkboxes for choosing multiple items from a list.',
-    content: `## When to use
-
-- Users need to select multiple values from a dropdown list.
-- For small, finite sets of options use CheckboxList instead.`,
+    description:
+      'Multi-select dropdown with checkboxes for choosing multiple items from a list. Designed for small, finite sets like column toggles or filter facets — not a replacement for XDSTokenizer.',
+    features: [
+      'Checkbox-based multi-select — dropdown stays open on toggle',
+      'Supports string items, object items with optional icon and disabled state, dividers, and labeled sections',
+      'Optional select-all with indeterminate state',
+      'Optional search filtering',
+      'Three trigger display modes: count, labels, badges',
+      'Integrates with XDS field conventions: label, description, isRequired, isOptional, isLabelHidden, status',
+      'Size variants: sm, md, lg',
+      'Full keyboard navigation with typeahead support',
+      'Accessible — role="combobox" trigger, role="listbox" with aria-multiselectable, real checkbox inputs',
+    ],
+    accessibility: [
+      'Uses role="combobox" on the trigger button.',
+      'Dropdown listbox uses aria-multiselectable="true".',
+      'Each option uses role="option" with aria-selected.',
+      'Real XDSCheckboxInput for each item — no fake checkboxes.',
+      'Select-all checkbox rendered outside role="listbox".',
+      'Search input uses role="searchbox" with aria-controls.',
+      'Keyboard: ↑↓ navigate; Enter/Space toggle; Escape close; Home/End jump; A-Z typeahead (when search not shown).',
+    ],
   },
 };
 
