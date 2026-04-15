@@ -8,9 +8,9 @@ export default function TooltipUseXDSTooltipHook() {
   
 
   return (
-    <XDSButton ref={tooltip.ref} aria-describedby={tooltip.describedBy}>
-      Hover me
-    </XDSButton>
-    {tooltip.renderTooltip('Helpful tooltip text')}
+    <>
+      <XDSButton label="Hover me" ref={tooltip.ref} aria-describedby={tooltip.describedBy} />
+      {tooltip.renderTooltip('Helpful tooltip text')}
+    </>
   );
 }

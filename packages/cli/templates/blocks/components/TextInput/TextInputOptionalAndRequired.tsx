@@ -8,7 +8,9 @@ export default function TextInputOptionalAndRequired() {
   const [username, setUsername] = useState('');
 
   return (
-    <XDSTextInput label="Nickname" isOptional value={nickname} onChange={setNickname} />
-    <XDSTextInput label="Username" isRequired value={username} onChange={setUsername} />
+    <>
+      <XDSTextInput label="Nickname" isOptional value={nickname} onChange={setNickname} />
+      <XDSTextInput label="Username" isRequired value={username} onChange={setUsername} />
+    </>
   );
 }
