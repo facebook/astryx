@@ -15,3 +15,8 @@ export default function TreeListBasicTree() {
     />
   );
 }
+
+export const showcase = {
+  aspectRatio: 3 / 4,
+  render: TreeListBasicTree,
+};
