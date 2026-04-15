@@ -24,3 +24,8 @@ export default function AlertDialogDeleteConfirmation() {
     </>
   );
 }
+
+export const showcase = {
+  aspectRatio: 4 / 3,
+  render: AlertDialogDeleteConfirmation,
+};
