@@ -625,7 +625,7 @@ function DocsiteLandingTemplate() {
                 if (!open) setPreviewTarget(null);
               }}
               width="90vw"
-              maxHeight="none"
+              maxHeight="90vh"
               purpose="info"
               style={{padding: 0, overflow: 'visible'}}>
               <div
@@ -641,7 +641,7 @@ function DocsiteLandingTemplate() {
                   />
                 </XDSCard>
               </div>
-              <div ref={card4ScrollRef}>
+              <div ref={card4ScrollRef} style={{overflowY: 'auto'}}>
                 {/* Main content: image left + details right */}
                 <div style={{display: 'flex', minHeight: 0, padding: '0 24px'}}>
                   {/* Left — Preview image + thumbnails */}
