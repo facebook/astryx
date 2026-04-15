@@ -7,3 +7,8 @@ export default function TimestampRelativeFormat() {
     <XDSTimestamp value={Date.now() / 1000 - 3600} format="relative" />
   );
 }
+
+export const showcase = {
+  aspectRatio: 1,
+  render: TimestampRelativeFormat,
+};

@@ -7,3 +7,8 @@ export default function TimestampDateAndTime() {
     <XDSTimestamp value="2026-02-19T17:00:00Z" format="date_time" />
   );
 }
+
+export const showcase = {
+  aspectRatio: 1,
+  render: TimestampDateAndTime,
+};
