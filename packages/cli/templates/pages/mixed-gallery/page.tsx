@@ -177,11 +177,10 @@ export default function MixedGalleryTemplate() {
                 weight="bold"
                 as="p"
                 style={{fontSize: 'var(--font-size-2xl)'}}>
-                Curated Collection
+                Make every day a little more delightful, one small detail at a time.
               </XDSText>
               <XDSText type="body">
-                A handpicked selection of photography across nature,
-                architecture, and portraiture
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua ut enim ad minim excepteur sint occaecat cupidatat non proident.
               </XDSText>
             </XDSVStack>
 
