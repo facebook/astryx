@@ -12,3 +12,8 @@ export default function CalendarTwoMonths() {
     />
   );
 }
+
+export const showcase = {
+  aspectRatio: 3 / 4,
+  render: CalendarTwoMonths,
+};

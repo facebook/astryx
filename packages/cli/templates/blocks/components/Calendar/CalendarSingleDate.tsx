@@ -15,3 +15,8 @@ export default function CalendarSingleDate() {
     />
   );
 }
+
+export const showcase = {
+  aspectRatio: 3 / 4,
+  render: CalendarSingleDate,
+};
