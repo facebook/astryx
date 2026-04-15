@@ -15,3 +15,8 @@ export default function BannerWithContent() {
     </XDSBanner>
   );
 }
+
+export const showcase = {
+  aspectRatio: 16 / 4,
+  render: BannerWithContent,
+};
