@@ -83,6 +83,15 @@ jobs:
       - name: Build Storybook
         run: yarn workspace @xds/storybook build
 
+      - name: Cache Next.js build
+        uses: actions/cache@v4
+        with:
+          path: apps/sandbox/.next/cache
+          key: nextjs-sandbox-${{ hashFiles('yarn.lock') }}-${{ hashFiles('packages/core/dist/**') }}
+          restore-keys: |
+            nextjs-sandbox-${{ hashFiles('yarn.lock') }}-
+            nextjs-sandbox-
+
       - name: Build Sandbox
         run: yarn workspace @xds/sandbox build
         env:

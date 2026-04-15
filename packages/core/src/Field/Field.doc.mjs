@@ -4,6 +4,10 @@ export const docs = {
   name: 'Field',
   description:
     'A form field wrapper component that provides label, description, and optional/required indicators.',
+  showcase: {
+    aspectRatio: 4 / 3,
+    code: '<XDSField label="Name"><input /></XDSField>',
+  },
   keywords: ["field","formfield","formgroup","formcontrol","label","input","required","optional","helpertext","hint"],
   features: [
     'Label Support — required label for accessibility (can be visually hidden)',
@@ -14,61 +18,6 @@ export const docs = {
     'Status Messages — attached/detached validation feedback with role="status" and aria-live="polite"',
     'Accessible — label properly associated with input via htmlFor/id',
     'Styled with StyleX — uses XDS design tokens for consistent styling',
-  ],
-  examples: [
-    {
-      label: 'Basic usage',
-      code: `const id = useId();
-<XDSField label="Email" inputID={id}>
-  <input id={id} />
-</XDSField>`,
-    },
-    {
-      label: 'With description',
-      code: `const inputId = useId();
-const descId = useId();
-<XDSField
-  label="Email"
-  description="We'll never share your email"
-  inputID={inputId}
-  descriptionID={descId}>
-  <input id={inputId} aria-describedby={descId} />
-</XDSField>`,
-    },
-    {
-      label: 'Hidden label (screen readers only)',
-      code: `const searchId = useId();
-<XDSField label="Search" isLabelHidden inputID={searchId}>
-  <input id={searchId} placeholder="Search..." />
-</XDSField>`,
-    },
-    {
-      label: 'Optional field',
-      code: `const nicknameId = useId();
-<XDSField label="Nickname" isOptional inputID={nicknameId}>
-  <input id={nicknameId} placeholder="Enter your nickname" />
-</XDSField>`,
-    },
-    {
-      label: 'Required field',
-      code: `const usernameId = useId();
-<XDSField label="Username" isRequired inputID={usernameId}>
-  <input id={usernameId} placeholder="Enter your username" />
-</XDSField>`,
-    },
-    {
-      label: 'Description with optional indicator (shows bullet separator)',
-      code: `const bioId = useId();
-const bioDescId = useId();
-<XDSField
-  label="Bio"
-  description="Tell us about yourself"
-  isOptional
-  inputID={bioId}
-  descriptionID={bioDescId}>
-  <input id={bioId} aria-describedby={bioDescId} />
-</XDSField>`,
-    },
   ],
   theming: {
     targets: [
@@ -95,16 +44,7 @@ const bioDescId = useId();
     {
       name: 'XDSField',
       description:
-        'Form field wrapper that provides label, description, and optional/required indicators.',
-      examples: [
-        {
-          label: 'Basic',
-          code: `<XDSField label="Email" inputID={id}>
-  <input id={id} />
-</XDSField>`,
-        },
-      ],
-      props: [
+        'Form field wrapper that provides label, description, and optional/required indicators.',      props: [
         {
           name: 'label',
           type: 'string',
@@ -218,12 +158,6 @@ const bioDescId = useId();
       name: 'XDSFieldLabel',
       description:
         'Standalone label component with optional/required indicators and tooltip support.',
-      examples: [
-        {
-          label: 'Basic',
-          code: '<XDSFieldLabel label="Username" inputID={id} isRequired />',
-        },
-      ],
       props: [
         {
           name: 'label',
@@ -277,12 +211,6 @@ const bioDescId = useId();
       name: 'XDSFieldStatus',
       description:
         'Status message component for form field validation feedback.',
-      examples: [
-        {
-          label: 'Error',
-          code: '<XDSFieldStatus type="error" message="This field is required" />',
-        },
-      ],
       props: [
         {
           name: 'type',
@@ -334,61 +262,6 @@ export const docsZh = {
     '无障碍 - 通过 htmlFor/id 将标签与输入框正确关联',
     '使用 StyleX 样式 - 使用 XDS 设计令牌实现一致的样式',
   ],
-  examples: [
-    {
-      label: '基础用法',
-      code: `const id = useId();
-<XDSField label="Email" inputID={id}>
-  <input id={id} />
-</XDSField>`,
-    },
-    {
-      label: '带描述',
-      code: `const inputId = useId();
-const descId = useId();
-<XDSField
-  label="Email"
-  description="We'll never share your email"
-  inputID={inputId}
-  descriptionID={descId}>
-  <input id={inputId} aria-describedby={descId} />
-</XDSField>`,
-    },
-    {
-      label: '隐藏标签（仅屏幕阅读器可见）',
-      code: `const searchId = useId();
-<XDSField label="Search" isLabelHidden inputID={searchId}>
-  <input id={searchId} placeholder="Search..." />
-</XDSField>`,
-    },
-    {
-      label: '可选字段',
-      code: `const nicknameId = useId();
-<XDSField label="Nickname" isOptional inputID={nicknameId}>
-  <input id={nicknameId} placeholder="Enter your nickname" />
-</XDSField>`,
-    },
-    {
-      label: '必填字段',
-      code: `const usernameId = useId();
-<XDSField label="Username" isRequired inputID={usernameId}>
-  <input id={usernameId} placeholder="Enter your username" />
-</XDSField>`,
-    },
-    {
-      label: '带描述和可选指示器（显示圆点分隔符）',
-      code: `const bioId = useId();
-const bioDescId = useId();
-<XDSField
-  label="Bio"
-  description="Tell us about yourself"
-  isOptional
-  inputID={bioId}
-  descriptionID={bioDescId}>
-  <input id={bioId} aria-describedby={bioDescId} />
-</XDSField>`,
-    },
-  ],
   theming: {
     targets: [
       {className: 'xds-field'},
@@ -415,14 +288,6 @@ const bioDescId = useId();
       name: 'XDSField',
       description:
         '表单字段包装器，提供标签、描述以及可选/必填指示器。',
-      examples: [
-        {
-          label: '基础用法',
-          code: `<XDSField label="Email" inputID={id}>
-  <input id={id} />
-</XDSField>`,
-        },
-      ],
       props: [
         {
           name: 'label',
@@ -537,12 +402,6 @@ const bioDescId = useId();
       name: 'XDSFieldLabel',
       description:
         '独立的标签组件，支持可选/必填指示器和工具提示。',
-      examples: [
-        {
-          label: '基础用法',
-          code: '<XDSFieldLabel label="Username" inputID={id} isRequired />',
-        },
-      ],
       props: [
         {
           name: 'label',
@@ -596,12 +455,6 @@ const bioDescId = useId();
       name: 'XDSFieldStatus',
       description:
         '用于表单字段验证反馈的状态消息组件。',
-      examples: [
-        {
-          label: '错误状态',
-          code: '<XDSFieldStatus type="error" message="This field is required" />',
-        },
-      ],
       props: [
         {
           name: 'type',

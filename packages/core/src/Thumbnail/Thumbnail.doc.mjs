@@ -4,6 +4,10 @@ export const docs = {
   name: 'Thumbnail',
   description:
     'A square preview card for image attachments. Shows a skeleton shimmer while uploading, the image on success, or a placeholder icon when no source is provided.',
+  showcase: {
+    aspectRatio: 1,
+    code: '<XDSThumbnail src="https://via.placeholder.com/80" alt="Preview" />',
+  },
   keywords: ["thumbnail","attachment","preview","image","upload","dismiss","remove","loading"],
   features: [
     'Square 1:1 aspect ratio via CSS aspect-ratio',
@@ -75,18 +79,7 @@ export const docs = {
       type: 'string',
       description: 'Test selector for automated testing frameworks.',
     },
-  ],
-  examples: [
-    {
-      label: 'Image with remove',
-      code: '<XDSThumbnail src="/photo.jpg" alt="Vacation" label="vacation.jpg" onRemove={() => {}} />',
-    },
-    {
-      label: 'Clickable',
-      code: '<XDSThumbnail src="/preview.png" alt="Preview" onClick={openLightbox} />',
-    },
-  ],
-  theming: {
+  ],  theming: {
     targets: [
       {className: 'xds-thumbnail'},
     ],

@@ -4,6 +4,10 @@ export const docs = {
   name: 'MetadataList',
   description:
     'A read-only labeled list for displaying key-value metadata. Semantic equivalent of HTML <dl>/<dt>/<dd> with layout control, column modes, and consistent styling. Uses a composition model: XDSMetadataList wraps XDSMetadataListItem sub-components.',
+  showcase: {
+    aspectRatio: 4 / 3,
+    code: '<XDSMetadataList items={[{label: "Status", value: "Active"}]} />',
+  },
   keywords: ["metadata","description","definition","keyvalue","properties","details","attributes","summary"],
   features: [
     'Composition model — XDSMetadataList wraps XDSMetadataListItem sub-components',
@@ -14,42 +18,6 @@ export const docs = {
     'Optional title heading above the list',
     'Optional icon before label text',
     'Semantic <dl>/<dt>/<dd> HTML structure',
-  ],
-  examples: [
-    {
-      label: 'Basic',
-      code: `<XDSMetadataList>
-  <XDSMetadataListItem label="Name">XDSMetadataList</XDSMetadataListItem>
-  <XDSMetadataListItem label="Status">Active</XDSMetadataListItem>
-</XDSMetadataList>`,
-    },
-    {
-      label: 'Multi-column',
-      code: `<XDSMetadataList columns="multi">
-  <XDSMetadataListItem label="Name">XDSMetadataList</XDSMetadataListItem>
-  <XDSMetadataListItem label="Status">Active</XDSMetadataListItem>
-  <XDSMetadataListItem label="Owner">Joey</XDSMetadataListItem>
-  <XDSMetadataListItem label="Created">Jan 15, 2026</XDSMetadataListItem>
-</XDSMetadataList>`,
-    },
-    {
-      label: 'Horizontal',
-      code: `<XDSMetadataList orientation="horizontal">
-  <XDSMetadataListItem label="Status">Active</XDSMetadataListItem>
-  <XDSMetadataListItem label="Type">Premium</XDSMetadataListItem>
-  <XDSMetadataListItem label="Owner">Joey</XDSMetadataListItem>
-</XDSMetadataList>`,
-    },
-    {
-      label: 'With title and show more',
-      code: `<XDSMetadataList title={<XDSHeading type="header4">Details</XDSHeading>} maxNumOfItems={3}>
-  <XDSMetadataListItem label="Name">Value</XDSMetadataListItem>
-  <XDSMetadataListItem label="Status">Active</XDSMetadataListItem>
-  <XDSMetadataListItem label="Owner">Joey</XDSMetadataListItem>
-  <XDSMetadataListItem label="Created">Jan 2026</XDSMetadataListItem>
-  <XDSMetadataListItem label="Updated">Mar 2026</XDSMetadataListItem>
-</XDSMetadataList>`,
-    },
   ],
   accessibility: [
     'Semantic <dl> with <dt>/<dd> pairs',
@@ -69,17 +37,7 @@ export const docs = {
     {
       name: 'XDSMetadataList',
       description:
-        'Container for metadata items with column layout, orientation, and collapse support.',
-      examples: [
-        {
-          label: 'With title',
-          code: `<XDSMetadataList title={<strong>Details</strong>} columns="multi">
-  <XDSMetadataListItem label="Name">Value</XDSMetadataListItem>
-  <XDSMetadataListItem label="Status">Active</XDSMetadataListItem>
-</XDSMetadataList>`,
-        },
-      ],
-      props: [
+        'Container for metadata items with column layout, orientation, and collapse support.',      props: [
         {
           name: 'children',
           type: 'ReactNode',
@@ -128,14 +86,6 @@ export const docs = {
     {
       name: 'XDSMetadataListItem',
       description: 'A single labeled metadata value within an XDSMetadataList.',
-      examples: [
-        {
-          label: 'With icon',
-          code: `<XDSMetadataListItem label="Status" icon={<StatusIcon />}>
-  Active
-</XDSMetadataListItem>`,
-        },
-      ],
       props: [
         {
           name: 'children',

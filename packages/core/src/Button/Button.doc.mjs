@@ -4,6 +4,10 @@ export const docs = {
   name: 'Button',
   description:
     'XDSButton component with multiple variants, sizes, and isLoading state support.',
+  showcase: {
+    aspectRatio: 1,
+    code: '<XDSButton label="Click me" variant="primary" />',
+  },
 
   keywords: ["button","btn","cta","submit","action","loading","primary","secondary","ghost","destructive","danger"],
   features: [
@@ -114,50 +118,6 @@ export const docs = {
         'Async click handler. Shows loading state while the returned promise is pending.',
     },
   ],
-
-  examples: [
-    {
-      label: 'Basic',
-      code: '<XDSButton label="Click me" variant="primary" />',
-    },
-    {
-      label: 'With size',
-      code: '<XDSButton label="Large button" variant="primary" size="lg" />',
-    },
-    {
-      label: 'Loading state',
-      code: '<XDSButton label="Saving..." variant="primary" isLoading />',
-    },
-    {
-      label: 'Destructive action',
-      code: '<XDSButton label="Delete" variant="destructive" />',
-    },
-    {
-      label: 'Icon-only button',
-      code: '<XDSButton label="Settings" icon={<GearIcon />} variant="ghost" isIconOnly />',
-    },
-    {
-      label: 'Icon-only with emoji content',
-      code: '<XDSButton label="Select rocket emoji" icon={<span>🚀</span>} variant="ghost" size="sm" isIconOnly />',
-    },
-    {
-      label: 'Icon + visible label',
-      code: '<XDSButton label="Edit" icon={<PencilIcon />} />',
-    },
-    {
-      label: 'endContent — badge after label',
-      code: '<XDSButton label="Messages" endContent={<XDSBadge label={3} />} />',
-    },
-    {
-      label: 'endContent — icon, label, and badge',
-      code: '<XDSButton label="Edit" icon={<PencilIcon />} endContent={<XDSBadge label="New" />} />',
-    },
-    {
-      label: 'endContent — settings with badge',
-      code: '<XDSButton label="Settings" icon={<GearIcon />} endContent={<XDSBadge label="New" />} />',
-    },
-  ],
-
   accessibility: [
     'Renders a native <button> element for correct semantics and keyboard support',
     'Icon-only buttons (isIconOnly={true}) set aria-label from the label prop',
@@ -336,52 +296,6 @@ export const docsZh = {
       type: '(e: MouseEvent) => void | Promise<void>',
       description:
         '异步点击处理函数。返回的 Promise 处于 pending 状态时显示加载状态。',
-    },
-  ],
-
-  examples: [
-    {
-      label: '基础用法',
-      code: '<XDSButton label="Click me" variant="primary" />',
-    },
-    {
-      label: '指定尺寸',
-      code: '<XDSButton label="Large button" variant="primary" size="lg" />',
-    },
-    {
-      label: '加载状态',
-      code: '<XDSButton label="Saving..." variant="primary" isLoading />',
-    },
-    {
-      label: '危险操作',
-      code: '<XDSButton label="Delete" variant="destructive" />',
-    },
-    {
-      label: '纯图标按钮',
-      code: `// Pass \`icon\` without \`children\` — \`label\` becomes the aria-label
-<XDSButton label="Settings" icon={<GearIcon />} variant="ghost" />`,
-    },
-    {
-      label: '纯图标按钮（emoji 内容）',
-      code: '<XDSButton label="Select rocket emoji" icon={<span>🚀</span>} variant="ghost" size="sm" />',
-    },
-    {
-      label: '图标 + 可见标签',
-      code: '<XDSButton label="Edit" icon={<PencilIcon />}>Edit</XDSButton>',
-    },
-    {
-      label: 'endContent——标签后的徽章',
-      code: '<XDSButton label="Messages" endContent={<XDSBadge label={3} />} />',
-    },
-    {
-      label: 'endContent——图标、标签和徽章',
-      code: '<XDSButton label="Edit" icon={<PencilIcon />} endContent={<XDSBadge label="New" />}>Edit</XDSButton>',
-    },
-    {
-      label: 'endContent——带徽章的设置按钮',
-      code: `<XDSButton label="Settings" icon={<GearIcon />} endContent={<XDSBadge label="New" />}>
-  Settings
-</XDSButton>`,
     },
   ],
 

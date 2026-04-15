@@ -2,7 +2,7 @@
   "name": "@xds/lab",
   "version": "0.0.12",
   "private": true,
-  "description": "Experimental XDS components \u2014 not published, available in storybook and sandbox for testing",
+  "description": "Experimental XDS components — not published, available in storybook and sandbox for testing",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "sideEffects": false,
@@ -11,5 +11,15 @@
     "@xds/core": "*",
     "react": ">=19.0.0",
     "react-dom": ">=19.0.0"
+  },
+  "dependencies": {
+    "d3-array": "^3.2.4",
+    "d3-scale": "^4.0.2",
+    "d3-shape": "^3.2.0"
+  },
+  "devDependencies": {
+    "@types/d3-array": "^3.2.2",
+    "@types/d3-scale": "^4.0.9",
+    "@types/d3-shape": "^3.1.8"
   }
 }

@@ -4,6 +4,10 @@ export const docs = {
   name: 'NumberInput',
   description:
     'A number input component for collecting numeric user input with validation.',
+  showcase: {
+    aspectRatio: 4 / 3,
+    code: '<XDSNumberInput label="Amount" value={0} onChange={() => {}} />',
+  },
   keywords: ["numberinput","numberfield","stepper","spinner","counter","increment","decrement","quantity","numberpicker"],
   features: [
     'Label Support — required label for accessibility (can be visually hidden)',
@@ -21,64 +25,6 @@ export const docs = {
     'Integer Mode — option to restrict to integers only',
     'Native Controls — uses type="number" for browser step controls',
     'Event Callbacks — onFocus, onBlur, and onEnter handlers',
-  ],
-  examples: [
-    {
-      label: 'Basic',
-      code: '<XDSNumberInput label="Quantity" value={quantity} onChange={setQuantity} />',
-    },
-    {
-      label: 'With placeholder',
-      code: '<XDSNumberInput label="Age" value={age} onChange={setAge} placeholder="Enter your age" />',
-    },
-    {
-      label: 'With min/max constraints',
-      code: '<XDSNumberInput label="Rating" value={rating} onChange={setRating} min={1} max={5} />',
-    },
-    {
-      label: 'With step for decimals',
-      code: '<XDSNumberInput label="Price" value={price} onChange={setPrice} min={0} step={0.01} />',
-    },
-    {
-      label: 'With units display',
-      code: '<XDSNumberInput label="Discount" value={discount} onChange={setDiscount} units="%" />',
-    },
-    {
-      label: 'Integer only',
-      code: '<XDSNumberInput label="Count" value={count} onChange={setCount} isIntegerOnly />',
-    },
-    {
-      label: 'With description',
-      code: '<XDSNumberInput label="Quantity" description="Enter the number of items" value={qty} onChange={setQty} />',
-    },
-    {
-      label: 'Optional field',
-      code: '<XDSNumberInput label="Phone Extension" isOptional value={ext} onChange={setExt} />',
-    },
-    {
-      label: 'Required field',
-      code: '<XDSNumberInput label="Amount" isRequired value={amount} onChange={setAmount} />',
-    },
-    {
-      label: 'With validation status',
-      code: `<XDSNumberInput
-  label="Age"
-  value={age}
-  onChange={setAge}
-  status={{ type: 'error', message: 'Age must be between 18 and 120' }}
-/>`,
-    },
-    {
-      label: 'With event handlers',
-      code: `<XDSNumberInput
-  label="Search"
-  value={search}
-  onChange={setSearch}
-  onEnter={() => handleSearch()}
-  onFocus={() => console.log('focused')}
-  onBlur={() => console.log('blurred')}
-/>`,
-    },
   ],
   props: [
     {
@@ -284,64 +230,6 @@ export const docsZh = {
     '整数模式 - 可选择仅限整数输入',
     '原生控件 - 使用 type="number" 获取浏览器步进控件',
     '事件回调 - onFocus、onBlur 和 onEnter 处理器',
-  ],
-  examples: [
-    {
-      label: '基础用法',
-      code: '<XDSNumberInput label="Quantity" value={quantity} onChange={setQuantity} />',
-    },
-    {
-      label: '带占位符',
-      code: '<XDSNumberInput label="Age" value={age} onChange={setAge} placeholder="Enter your age" />',
-    },
-    {
-      label: '带最小/最大值约束',
-      code: '<XDSNumberInput label="Rating" value={rating} onChange={setRating} min={1} max={5} />',
-    },
-    {
-      label: '带小数步进',
-      code: '<XDSNumberInput label="Price" value={price} onChange={setPrice} min={0} step={0.01} />',
-    },
-    {
-      label: '带单位显示',
-      code: '<XDSNumberInput label="Discount" value={discount} onChange={setDiscount} units="%" />',
-    },
-    {
-      label: '仅限整数',
-      code: '<XDSNumberInput label="Count" value={count} onChange={setCount} isIntegerOnly />',
-    },
-    {
-      label: '带描述',
-      code: '<XDSNumberInput label="Quantity" description="Enter the number of items" value={qty} onChange={setQty} />',
-    },
-    {
-      label: '可选字段',
-      code: '<XDSNumberInput label="Phone Extension" isOptional value={ext} onChange={setExt} />',
-    },
-    {
-      label: '必填字段',
-      code: '<XDSNumberInput label="Amount" isRequired value={amount} onChange={setAmount} />',
-    },
-    {
-      label: '带验证状态',
-      code: `<XDSNumberInput
-  label="Age"
-  value={age}
-  onChange={setAge}
-  status={{ type: 'error', message: 'Age must be between 18 and 120' }}
-/>`,
-    },
-    {
-      label: '带事件处理器',
-      code: `<XDSNumberInput
-  label="Search"
-  value={search}
-  onChange={setSearch}
-  onEnter={() => handleSearch()}
-  onFocus={() => console.log('focused')}
-  onBlur={() => console.log('blurred')}
-/>`,
-    },
   ],
   props: [
     {

@@ -1,5 +1,7 @@
 'use client';
 
+import React from 'react';
+
 /**
  * @file XDSAppShell.tsx
  * @input Uses React, XDSLayout, XDSLayoutHeader, XDSLayoutPanel, XDSLayoutContent, StyleX
@@ -43,9 +45,21 @@ import {XDSSideNavRenderContext} from '../SideNav/XDSSideNavRenderContext';
 import {XDSTopNavRenderContext} from '../TopNav/XDSTopNavRenderContext';
 import {XDSTopNavMobileContentContext} from '../TopNav/XDSTopNavMobileContentContext';
 import {XDSAppShellMobileContext} from './XDSAppShellMobileContext';
+import {useXDSSlotPresence} from './XDSAppShellSlotPresence';
 import type {XDSAppShellMobileContextValue} from './XDSAppShellMobileContext';
 import type {SpacingStep} from '../utils/types';
 import {xdsClassName, mergeProps} from '../utils';
+
+const HasActivity = typeof React.Activity !== 'undefined';
+const ActivityWrapper = HasActivity
+  ? ({
+      mode,
+      children,
+    }: {
+      mode: 'visible' | 'hidden';
+      children: React.ReactNode;
+    }) => <React.Activity mode={mode}>{children}</React.Activity>
+  : ({children}: {mode: string; children: React.ReactNode}) => <>{children}</>;
 
 // =============================================================================
 // Constants
@@ -467,6 +481,18 @@ export function XDSAppShell({
   const mobileNavIsControlled = mobileNavConfig?.isOpen !== undefined;
 
   // =========================================================================
+  // Slot presence — checks whether slot containers have rendered DOM content.
+  // Refs are attached to wrapper divs around each slot; useLayoutEffect checks
+  // childNodes so presence is known before paint.
+  // =========================================================================
+  const {ref: topNavRef, hasContent: hasTopNavContent} = useXDSSlotPresence(
+    topNav != null,
+  );
+  const {ref: sideNavRef, hasContent: hasSideNavContent} = useXDSSlotPresence(
+    sideNav != null,
+  );
+
+  // =========================================================================
   // Mobile nav open state (controlled + uncontrolled)
   // =========================================================================
   const [isBelowBreakpoint, setIsBelowBreakpoint] = useState(false);
@@ -490,11 +516,11 @@ export function XDSAppShell({
 
   // Nav style derived values
   const hasBanner = banner != null;
+  // Mounting: props were passed — mount the container so children can register
   const hasTopNav = topNav != null;
   const hasSideNav = sideNav != null;
-  const hasNavContent = hasSideNav || hasTopNav;
-  // Mobile nav auto-management is enabled when not disabled, there's nav content,
-  // AND the user hasn't provided a ReactNode (full escape hatch = user owns everything)
+  // Visibility: children actually rendered — drives mobile nav decisions
+  const hasNavContent = hasSideNavContent || hasTopNavContent;
   const mobileNavEnabled =
     !mobileNavDisabled && hasNavContent && mobileNavReactNode == null;
   const navHasDividers = variant === 'section';
@@ -564,7 +590,7 @@ export function XDSAppShell({
   // efficient and does not over-trigger.
   // =========================================================================
   useEffect(() => {
-    if (sideNavBreakpoint === 'none' || !hasNavContent) return;
+    if (sideNavBreakpoint === 'none') return;
 
     const breakpointPx = BREAKPOINT_VALUES[sideNavBreakpoint];
     const mql = window.matchMedia(`(max-width: ${breakpointPx}px)`);
@@ -579,34 +605,25 @@ export function XDSAppShell({
 
     mql.addEventListener('change', handleChange);
     return () => mql.removeEventListener('change', handleChange);
-  }, [sideNavBreakpoint, hasNavContent]);
+  }, [sideNavBreakpoint]);
 
   // =========================================================================
   // Determine if sideNav should show as overlay (mobile) or inline
   // =========================================================================
   const showSideNavInline = hasSideNav && !isBelowBreakpoint;
-  // Three mobile nav rendering modes:
-  // 1. ReactNode shorthand — render the user's element as-is (they own the drawer)
+
+  // Mobile nav rendering modes:
+  // 1. ReactNode shorthand — user provided <XDSMobileNav> directly
   const shouldRenderMobileNavReactNode = mobileNavReactNode != null;
-  // 2. Config with custom content — render directly
+  // 2. Config with custom content
   const shouldRenderConfigContent =
     mobileNavEnabled && mobileNavConfigContent != null && isBelowBreakpoint;
-  // 3. Auto — render nav content in drawer mode
+  // 3. Auto — mount drawer structure when props exist, use presence for path selection
   const shouldRenderAutoMobileNav =
-    mobileNavEnabled &&
-    !mobileNavReactNode &&
+    !mobileNavDisabled &&
+    mobileNavReactNode == null &&
     !mobileNavConfigContent &&
-    isBelowBreakpoint &&
-    hasNavContent;
-  // TopNav-only auto mobile (no SideNav) — TopNav handles its own drawer
-  const shouldRenderTopNavDrawer =
-    shouldRenderAutoMobileNav && hasTopNav && !hasSideNav;
-  // TopNav + SideNav combined — TopNav owns drawer, SideNav content via context
-  const shouldRenderCombinedDrawer =
-    shouldRenderAutoMobileNav && hasTopNav && hasSideNav;
-  // SideNav-only auto mobile (no TopNav) — SideNav handles its own drawer
-  const shouldRenderSideNavDrawer =
-    shouldRenderAutoMobileNav && !hasTopNav && hasSideNav;
+    isBelowBreakpoint;
 
   // =========================================================================
   // Mobile context — shared with XDSMobileNavToggle and future TopNav mobile
@@ -634,17 +651,21 @@ export function XDSAppShell({
   // Wrap with mobile content context so TopNav knows there's SideNav content
   // in the drawer and shows the toggle even without its own collapsible items.
   const topNavContent = hasTopNav ? (
-    isBelowBreakpoint && mobileNavEnabled ? (
+    isBelowBreakpoint && !mobileNavDisabled && mobileNavReactNode == null ? (
       <XDSTopNavMobileContentContext
         value={
-          hasSideNav ? (
+          hasSideNavContent ? (
             <XDSSideNavRenderContext value="drawer-content">
-              {sideNav}
+              <div ref={sideNavRef} style={{display: 'contents'}}>
+                {sideNav}
+              </div>
             </XDSSideNavRenderContext>
           ) : null
         }>
         <XDSTopNavRenderContext value="mobile-bar">
-          {topNav}
+          <div ref={topNavRef} style={{display: 'contents'}}>
+            {topNav}
+          </div>
         </XDSTopNavRenderContext>
       </XDSTopNavMobileContentContext>
     ) : (
@@ -659,7 +680,11 @@ export function XDSAppShell({
         hasDivider={navHasDividers && hasTopNav}
         xstyle={navAreaStyle}>
         {hasBanner && <div {...stylex.props(styles.banner)}>{banner}</div>}
-        {topNavContent}
+        {hasTopNav && (
+          <div ref={topNavRef} style={{display: 'contents'}}>
+            {topNavContent}
+          </div>
+        )}
       </XDSLayoutHeader>
     ) : undefined;
 
@@ -689,7 +714,9 @@ export function XDSAppShell({
       hasDivider={navHasDividers}
       isScrollable={isFill}
       xstyle={[navAreaStyle, isAuto && styles.panelAutoFill]}>
-      {sideNav}
+      <div ref={sideNavRef} style={{display: 'contents'}}>
+        {sideNav}
+      </div>
     </XDSLayoutPanel>
   ) : undefined;
 
@@ -707,7 +734,8 @@ export function XDSAppShell({
   // =========================================================================
   // Build main content
   // =========================================================================
-  const shouldElevateWithCorner = isElevated && hasTopNav && showSideNavInline;
+  const shouldElevateWithCorner =
+    isElevated && hasTopNavContent && showSideNavInline;
 
   const mainInner = (
     <XDSLayoutContent
@@ -740,12 +768,12 @@ export function XDSAppShell({
   // Injected into the headerContent when mobileNav is enabled and hasToggle
   // =========================================================================
   const shouldShowAutoToggle =
-    mobileNavEnabled && mobileNavHasToggle && isBelowBreakpoint;
+    !mobileNavDisabled && mobileNavHasToggle && isBelowBreakpoint;
 
   // For sidenav-only layouts with no TopNav, render the sideNav in topbar
   // mode — it shows heading + footer icons horizontally, with the hamburger
   const autoMobileTopBar =
-    shouldShowAutoToggle && !hasTopNav && hasSideNav ? (
+    shouldShowAutoToggle && !hasTopNavContent && hasSideNav ? (
       <div
         {...stylex.props(
           isAuto && styles.headerSticky,
@@ -760,7 +788,9 @@ export function XDSAppShell({
             role="navigation"
             aria-label="Mobile navigation">
             <XDSSideNavRenderContext value="topbar">
-              {sideNav}
+              <div ref={sideNavRef} style={{display: 'contents'}}>
+                {sideNav}
+              </div>
             </XDSSideNavRenderContext>
             <XDSMobileNavToggle />
           </div>
@@ -811,35 +841,39 @@ export function XDSAppShell({
           content={mainContent}
         />
 
-        {/* Mobile nav — rendering modes:
-            1. ReactNode shorthand: render user's element as-is
-            2. Config content: render directly
-            3. TopNav-only: TopNav renders its own drawer
-            4. TopNav+SideNav: TopNav owns drawer, SideNav passed via context
-            5. SideNav-only: SideNav renders its own drawer */}
+        {/* Mobile nav — always mounted below breakpoint via Activity so DOM
+            presence detection works. Hidden until the drawer opens. */}
         {shouldRenderMobileNavReactNode && mobileNavReactNode}
         {shouldRenderConfigContent && mobileNavConfigContent}
-        {shouldRenderTopNavDrawer && (
-          <XDSTopNavRenderContext value="drawer">
-            {topNav}
-          </XDSTopNavRenderContext>
-        )}
-        {shouldRenderCombinedDrawer && (
-          <XDSTopNavMobileContentContext
-            value={
-              <XDSSideNavRenderContext value="drawer-content">
-                {sideNav}
-              </XDSSideNavRenderContext>
-            }>
-            <XDSTopNavRenderContext value="drawer">
-              {topNav}
-            </XDSTopNavRenderContext>
-          </XDSTopNavMobileContentContext>
-        )}
-        {shouldRenderSideNavDrawer && (
-          <XDSSideNavRenderContext value="drawer">
-            {sideNav}
-          </XDSSideNavRenderContext>
+        {shouldRenderAutoMobileNav && (
+          <ActivityWrapper mode={isMobileNavOpen ? 'visible' : 'hidden'}>
+            {/* SideNav detection — always mounted so presence is known.
+              Hidden when TopNav owns the drawer (combined mode renders
+              sideNav via TopNav's mobile content context instead). */}
+            {hasSideNav && (
+              <div
+                ref={sideNavRef}
+                style={{display: hasTopNavContent ? 'none' : 'contents'}}>
+                <XDSSideNavRenderContext value="drawer">
+                  {sideNav}
+                </XDSSideNavRenderContext>
+              </div>
+            )}
+            {hasTopNav && hasTopNavContent && (
+              <XDSTopNavMobileContentContext
+                value={
+                  hasSideNavContent ? (
+                    <XDSSideNavRenderContext value="drawer-content">
+                      {sideNav}
+                    </XDSSideNavRenderContext>
+                  ) : null
+                }>
+                <XDSTopNavRenderContext value="drawer">
+                  {topNav}
+                </XDSTopNavRenderContext>
+              </XDSTopNavMobileContentContext>
+            )}
+          </ActivityWrapper>
         )}
       </div>
     </XDSAppShellMobileContext.Provider>

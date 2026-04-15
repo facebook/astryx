@@ -4,6 +4,10 @@ export const docs = {
   name: 'TopNav',
   description:
     'Top navigation bar component for application headers with slot-based layout and companion nav item components.',
+  showcase: {
+    aspectRatio: 16 / 4,
+    code: '<XDSTopNav label="Navigation" />',
+  },
   keywords: ["topnav","navbar","appbar","header","toolbar","navigation","menubar","topbar"],
   features: [
     'Slot-based layout — heading, startContent, centerContent, and endContent slots for flexible organization',
@@ -12,113 +16,7 @@ export const docs = {
     'Accessible — uses role="navigation" with aria-label, aria-current="page" on selected items',
     'Themeable via className — target .xds-top-nav and sub-component classes',
     'Link customization — XDSTopNavItem accepts an as prop to swap the anchor element (e.g. for React Router)',
-  ],
-  examples: [
-    {
-      label: 'Basic nav with heading and items',
-      code: `<XDSTopNav
-  label="Main navigation"
-  heading={
-    <XDSTopNavHeading
-      heading="My App"
-      logo={<XDSNavIcon icon={<HomeIcon style={{width: 16, height: 16}} />} />}
-      href="/"
-    />
-  }
-  startContent={
-    <>
-      <XDSTopNavItem label="Dashboard" href="/dashboard" isSelected />
-      <XDSTopNavItem label="Products" href="/products" />
-      <XDSTopNavItem label="Reports" href="/reports" />
-    </>
-  }
-  endContent={
-    <>
-      <XDSButton
-        label="Notifications"
-        variant="ghost"
-        icon={<BellIcon style={{width: 16, height: 16}} />}
-      />
-      <XDSButton
-        label="Profile"
-        variant="ghost"
-        icon={<UserCircleIcon style={{width: 16, height: 16}} />}
-      />
-    </>
-  }
-/>`,
-    },
-    {
-      label: 'With centered content (three-column layout)',
-      code: `<XDSTopNav
-  label="Main navigation"
-  heading={<XDSTopNavHeading heading="My App" href="/" />}
-  startContent={<XDSTopNavItem label="Home" href="/" isSelected />}
-  centerContent={<SearchBar />}
-  endContent={<Avatar />}
-/>`,
-    },
-    {
-      label: 'With hover menu and mega menu',
-      code: `<XDSTopNav
-  label="Main navigation"
-  heading={<XDSTopNavHeading heading="My App" href="/" />}
-  startContent={
-    <>
-      <XDSTopNavItem label="Home" href="/" isSelected />
-      <XDSTopNavMenu
-        label="Products"
-        items={[
-          {title: 'Analytics', description: 'View metrics', href: '/analytics'},
-          {title: 'Reports', description: 'Generate reports', href: '/reports'},
-        ]}
-      />
-      <XDSTopNavMegaMenu
-        label="Solutions"
-        items={
-          <>
-            <XDSTopNavMegaMenuItem title="Enterprise" description="For large teams" icon={<BuildingIcon />} href="/enterprise" />
-            <XDSTopNavMegaMenuItem title="Startups" description="Move fast" icon={<RocketIcon />} href="/startups" />
-          </>
-        }
-        featured={
-          <XDSTopNavMegaMenuFeaturedCard
-            title="New: AI Features"
-            description="Explore our latest AI-powered tools."
-            linkLabel="Learn more"
-            linkHref="/ai"
-          />
-        }
-      />
-    </>
-  }
-/>`,
-    },
-    {
-      label: 'In XDSLayout header slot',
-      code: `<XDSLayout
-  header={
-    <XDSTopNav
-      label="Main navigation"
-      heading={<XDSTopNavHeading heading="My App" logo={<Logo />} href="/" />}
-      startContent={
-        <>
-          <XDSTopNavItem label="Home" href="/" isSelected />
-          <XDSTopNavItem label="Settings" href="/settings" />
-        </>
-      }
-      endContent={<Avatar />}
-    />
-  }
-  content={
-    <XDSLayoutContent role="main">
-      <MainContent />
-    </XDSLayoutContent>
-  }
-/>`,
-    },
-  ],
-  theming: {
+  ],  theming: {
     targets: [
       {className: 'xds-top-nav', states: ['mode']},
       {className: 'xds-top-nav-item', states: ['mode']},
@@ -190,28 +88,7 @@ export const docs = {
           description:
             'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
         },
-      ],
-      examples: [
-        {
-          label: 'Basic',
-          code: `<XDSTopNav
-  label="Main navigation"
-  heading={<XDSTopNavHeading heading="My App" href="/" />}
-  startContent={<XDSTopNavItem label="Dashboard" href="/dashboard" isSelected />}
-  endContent={<XDSButton label="Profile" variant="ghost" />}
-/>`,
-        },
-        {
-          label: 'With centered content',
-          code: `<XDSTopNav
-  label="Main navigation"
-  heading={<XDSTopNavHeading heading="My App" href="/" />}
-  centerContent={<SearchInput placeholder="Search..." />}
-  endContent={<Avatar />}
-/>`,
-        },
-      ],
-    },
+      ],    },
     {
       name: 'XDSTopNavHeading',
       description:
@@ -233,28 +110,6 @@ export const docs = {
           type: 'string',
           description:
             'URL to navigate to when clicked. When provided, renders as an anchor element.',
-        },
-      ],
-      examples: [
-        {
-          label: 'Logo with text link',
-          code: `<XDSTopNavHeading
-  heading="My App"
-  logo={<img src="/logo.svg" alt="" width={24} height={24} />}
-  href="/"
-/>`,
-        },
-        {
-          label: 'With XDSNavIcon',
-          code: `<XDSTopNavHeading
-  heading="Dashboard"
-  logo={<XDSNavIcon icon={<HomeIcon style={{width: 16, height: 16}} />} />}
-  href="/"
-/>`,
-        },
-        {
-          label: 'Logo only',
-          code: `<XDSTopNavHeading logo={<BrandLogo />} href="/" />`,
         },
       ],
     },
@@ -315,32 +170,6 @@ export const docs = {
             'Custom component to render instead of <a>. Overrides the provider-level default set by XDSLinkProvider. Must accept href, className, style, and children props.',
         },
       ],
-      examples: [
-        {
-          label: 'Basic nav items',
-          code: `<>
-  <XDSTopNavItem label="Home" href="/" isSelected />
-  <XDSTopNavItem label="Products" href="/products" />
-  <XDSTopNavItem label="Settings" href="/settings" isDisabled />
-</>`,
-        },
-        {
-          label: 'With icon',
-          code: `<XDSTopNavItem
-  label="Settings"
-  href="/settings"
-  icon={<GearIcon style={{width: 16, height: 16}} />}
-/>`,
-        },
-        {
-          label: 'Icon only',
-          code: `<XDSTopNavItem
-  label="Notifications"
-  href="/notifications"
-  icon={<BellIcon style={{width: 16, height: 16}} />}
-/>`,
-        },
-      ],
     },
     {
       name: 'XDSTopNavMenu',
@@ -372,38 +201,6 @@ export const docs = {
           description:
             'Delay in milliseconds before hiding the menu after the mouse leaves.',
           default: '200',
-        },
-      ],
-      examples: [
-        {
-          label: 'Basic hover menu',
-          code: `<XDSTopNavMenu
-  label="Products"
-  items={[
-    {title: 'Analytics', description: 'View metrics', href: '/analytics'},
-    {title: 'Reports', description: 'Generate reports', href: '/reports'},
-  ]}
-/>`,
-        },
-        {
-          label: 'With icons and click handlers',
-          code: `<XDSTopNavMenu
-  label="Tools"
-  items={[
-    {
-      title: 'Analytics',
-      description: 'Track and analyze user behavior',
-      icon: <ChartBarIcon />,
-      href: '/analytics',
-    },
-    {
-      title: 'Export',
-      description: 'Download your data',
-      icon: <ArrowDownTrayIcon />,
-      onClick: () => openExportDialog(),
-    },
-  ]}
-/>`,
         },
       ],
     },
@@ -449,40 +246,6 @@ export const docs = {
             'Callback fired when the mega menu opens or closes. Useful for coordinating wrapper styles.',
         },
       ],
-      examples: [
-        {
-          label: 'With featured content',
-          code: `<XDSTopNavMegaMenu
-  label="Solutions"
-  items={
-    <>
-      <XDSTopNavMegaMenuItem title="Enterprise" description="For large teams" icon={<BuildingIcon />} href="/enterprise" />
-      <XDSTopNavMegaMenuItem title="Startups" description="Move fast" icon={<RocketIcon />} href="/startups" />
-    </>
-  }
-  featured={
-    <XDSTopNavMegaMenuFeaturedCard
-      title="New: AI Features"
-      description="Explore our latest AI-powered tools."
-      linkLabel="Learn more"
-      linkHref="/ai"
-    />
-  }
-/>`,
-        },
-        {
-          label: 'Without featured content',
-          code: `<XDSTopNavMegaMenu
-  label="Products"
-  items={
-    <>
-      <XDSTopNavMegaMenuItem title="Analytics" description="Track behavior" icon={<ChartIcon />} href="/analytics" />
-      <XDSTopNavMegaMenuItem title="Messaging" description="Real-time comms" icon={<ChatIcon />} href="/messaging" />
-    </>
-  }
-/>`,
-        },
-      ],
     },
     {
       name: 'XDSTopNavMegaMenuItem',
@@ -520,12 +283,6 @@ export const docs = {
           type: 'XDSLinkComponentType',
           description:
             'Custom component to render instead of <a> for link items. Overrides the provider-level default set by XDSLinkProvider.',
-        },
-      ],
-      examples: [
-        {
-          label: 'Basic item with icon',
-          code: `<XDSTopNavMegaMenuItem title="Enterprise" description="For large teams" icon={<BuildingIcon />} href="/enterprise" />`,
         },
       ],
     },
@@ -571,19 +328,6 @@ export const docs = {
           description: 'Custom content rendered below the standard body.',
         },
       ],
-      examples: [
-        {
-          label: 'With image and CTA',
-          code: `<XDSTopNavMegaMenuFeaturedCard
-  title="New: AI Features"
-  description="Explore our latest AI-powered tools."
-  image="/promo.jpg"
-  imageAlt="AI features promotion"
-  linkLabel="Learn more"
-  linkHref="/ai"
-/>`,
-        },
-      ],
     },
   ],
   usage: {
@@ -621,111 +365,6 @@ export const docsZh = {
     '无障碍 — 使用 role="navigation" 和 aria-label，选中项设置 aria-current="page"',
     '通过 className 支持主题化 — 可定位 .xds-top-nav 和子组件类',
     '链接自定义 — XDSTopNavItem 接受 as 属性来替换锚点元素（例如用于 React Router）',
-  ],
-  examples: [
-    {
-      label: '带标题和导航项的基础导航',
-      code: `<XDSTopNav
-  label="Main navigation"
-  heading={
-    <XDSTopNavHeading
-      heading="My App"
-      logo={<XDSNavIcon icon={<HomeIcon style={{width: 16, height: 16}} />} />}
-      href="/"
-    />
-  }
-  startContent={
-    <>
-      <XDSTopNavItem label="Dashboard" href="/dashboard" isSelected />
-      <XDSTopNavItem label="Products" href="/products" />
-      <XDSTopNavItem label="Reports" href="/reports" />
-    </>
-  }
-  endContent={
-    <>
-      <XDSButton
-        label="Notifications"
-        variant="ghost"
-        icon={<BellIcon style={{width: 16, height: 16}} />}
-      />
-      <XDSButton
-        label="Profile"
-        variant="ghost"
-        icon={<UserCircleIcon style={{width: 16, height: 16}} />}
-      />
-    </>
-  }
-/>`,
-    },
-    {
-      label: '带居中内容（三列布局）',
-      code: `<XDSTopNav
-  label="Main navigation"
-  heading={<XDSTopNavHeading heading="My App" href="/" />}
-  startContent={<XDSTopNavItem label="Home" href="/" isSelected />}
-  centerContent={<SearchBar />}
-  endContent={<Avatar />}
-/>`,
-    },
-    {
-      label: '带悬停菜单和超级菜单',
-      code: `<XDSTopNav
-  label="Main navigation"
-  heading={<XDSTopNavHeading heading="My App" href="/" />}
-  startContent={
-    <>
-      <XDSTopNavItem label="Home" href="/" isSelected />
-      <XDSTopNavMenu
-        label="Products"
-        items={[
-          {title: 'Analytics', description: 'View metrics', href: '/analytics'},
-          {title: 'Reports', description: 'Generate reports', href: '/reports'},
-        ]}
-      />
-      <XDSTopNavMegaMenu
-        label="Solutions"
-        items={
-          <>
-            <XDSTopNavMegaMenuItem title="Enterprise" description="大型团队解决方案" icon={<BuildingIcon />} href="/enterprise" />
-            <XDSTopNavMegaMenuItem title="Startups" description="快速启动" icon={<RocketIcon />} href="/startups" />
-          </>
-        }
-        featured={
-          <XDSTopNavMegaMenuFeaturedCard
-            title="新功能：AI 特性"
-            description="探索我们最新的 AI 驱动工具。"
-            linkLabel="了解更多"
-            linkHref="/ai"
-          />
-        }
-      />
-    </>
-  }
-/>`,
-    },
-    {
-      label: '在 XDSLayout 头部插槽中',
-      code: `<XDSLayout
-  header={
-    <XDSTopNav
-      label="Main navigation"
-      heading={<XDSTopNavHeading heading="My App" logo={<Logo />} href="/" />}
-      startContent={
-        <>
-          <XDSTopNavItem label="Home" href="/" isSelected />
-          <XDSTopNavItem label="Settings" href="/settings" />
-        </>
-      }
-      endContent={<Avatar />}
-    />
-  }
-  content={
-    <XDSLayoutContent role="main">
-      <MainContent />
-    </XDSLayoutContent>
-  }
-/>`,
-    },
   ],
   theming: {
     targets: [
@@ -800,26 +439,6 @@ export const docsZh = {
             '用于布局自定义的 StyleX 样式（外边距、定位、尺寸）。必须是 stylex.create() 的值 — 不能是内联样式对象如 style={{}}。',
         },
       ],
-      examples: [
-        {
-          label: '基础用法',
-          code: `<XDSTopNav
-  label="Main navigation"
-  heading={<XDSTopNavHeading heading="My App" href="/" />}
-  startContent={<XDSTopNavItem label="Dashboard" href="/dashboard" isSelected />}
-  endContent={<XDSButton label="Profile" variant="ghost" />}
-/>`,
-        },
-        {
-          label: '带居中内容',
-          code: `<XDSTopNav
-  label="Main navigation"
-  heading={<XDSTopNavHeading heading="My App" href="/" />}
-  centerContent={<SearchInput placeholder="Search..." />}
-  endContent={<Avatar />}
-/>`,
-        },
-      ],
     },
     {
       name: 'XDSTopNavHeading',
@@ -842,28 +461,6 @@ export const docsZh = {
           type: 'string',
           description:
             '点击时导航到的 URL。提供时渲染为锚点元素。',
-        },
-      ],
-      examples: [
-        {
-          label: '带文本链接的标志',
-          code: `<XDSTopNavHeading
-  heading="My App"
-  logo={<img src="/logo.svg" alt="" width={24} height={24} />}
-  href="/"
-/>`,
-        },
-        {
-          label: '使用 XDSNavIcon',
-          code: `<XDSTopNavHeading
-  heading="Dashboard"
-  logo={<XDSNavIcon icon={<HomeIcon style={{width: 16, height: 16}} />} />}
-  href="/"
-/>`,
-        },
-        {
-          label: '仅标志',
-          code: `<XDSTopNavHeading logo={<BrandLogo />} href="/" />`,
         },
       ],
     },
@@ -917,32 +514,6 @@ export const docsZh = {
             '替代 <a> 渲染的自定义组件。覆盖 XDSLinkProvider 设置的提供者级别默认值。必须接受 href、className、style 和 children 属性。',
         },
       ],
-      examples: [
-        {
-          label: '基础导航项',
-          code: `<>
-  <XDSTopNavItem label="Home" href="/" isSelected />
-  <XDSTopNavItem label="Products" href="/products" />
-  <XDSTopNavItem label="Settings" href="/settings" isDisabled />
-</>`,
-        },
-        {
-          label: '带图标',
-          code: `<XDSTopNavItem
-  label="Settings"
-  href="/settings"
-  icon={<GearIcon style={{width: 16, height: 16}} />}
-/>`,
-        },
-        {
-          label: '仅图标',
-          code: `<XDSTopNavItem
-  label="Notifications"
-  href="/notifications"
-  icon={<BellIcon style={{width: 16, height: 16}} />}
-/>`,
-        },
-      ],
     },
     {
       name: 'XDSTopNavMenu',
@@ -974,38 +545,6 @@ export const docsZh = {
           description:
             '鼠标离开后隐藏菜单的延迟（毫秒）。',
           default: '200',
-        },
-      ],
-      examples: [
-        {
-          label: '基础悬停菜单',
-          code: `<XDSTopNavMenu
-  label="Products"
-  items={[
-    {title: 'Analytics', description: 'View metrics', href: '/analytics'},
-    {title: 'Reports', description: 'Generate reports', href: '/reports'},
-  ]}
-/>`,
-        },
-        {
-          label: '带图标和点击处理',
-          code: `<XDSTopNavMenu
-  label="Tools"
-  items={[
-    {
-      title: 'Analytics',
-      description: 'Track and analyze user behavior',
-      icon: <ChartBarIcon />,
-      href: '/analytics',
-    },
-    {
-      title: 'Export',
-      description: 'Download your data',
-      icon: <ArrowDownTrayIcon />,
-      onClick: () => openExportDialog(),
-    },
-  ]}
-/>`,
         },
       ],
     },
@@ -1051,40 +590,6 @@ export const docsZh = {
             '超级菜单打开或关闭时触发的回调。用于协调包装器样式。',
         },
       ],
-      examples: [
-        {
-          label: '带特色内容',
-          code: `<XDSTopNavMegaMenu
-  label="Solutions"
-  items={
-    <>
-      <XDSTopNavMegaMenuItem title="Enterprise" description="大型团队" icon={<BuildingIcon />} href="/enterprise" />
-      <XDSTopNavMegaMenuItem title="Startups" description="快速启动" icon={<RocketIcon />} href="/startups" />
-    </>
-  }
-  featured={
-    <XDSTopNavMegaMenuFeaturedCard
-      title="新功能：AI 特性"
-      description="探索我们最新的 AI 驱动工具。"
-      linkLabel="了解更多"
-      linkHref="/ai"
-    />
-  }
-/>`,
-        },
-        {
-          label: '无特色内容',
-          code: `<XDSTopNavMegaMenu
-  label="Products"
-  items={
-    <>
-      <XDSTopNavMegaMenuItem title="Analytics" description="Track behavior" icon={<ChartIcon />} href="/analytics" />
-      <XDSTopNavMegaMenuItem title="Messaging" description="Real-time comms" icon={<ChatIcon />} href="/messaging" />
-    </>
-  }
-/>`,
-        },
-      ],
     },
     {
       name: 'XDSTopNavMegaMenuItem',
@@ -1122,12 +627,6 @@ export const docsZh = {
           type: 'XDSLinkComponentType',
           description:
             '用于替代 <a> 的自定义链接组件。覆盖 XDSLinkProvider 设置的默认组件。',
-        },
-      ],
-      examples: [
-        {
-          label: '带图标的基本项目',
-          code: `<XDSTopNavMegaMenuItem title="Enterprise" description="大型团队" icon={<BuildingIcon />} href="/enterprise" />`,
         },
       ],
     },
@@ -1171,19 +670,6 @@ export const docsZh = {
           name: 'children',
           type: 'ReactNode',
           description: '标准正文下方渲染的自定义内容。',
-        },
-      ],
-      examples: [
-        {
-          label: '带图片和 CTA',
-          code: `<XDSTopNavMegaMenuFeaturedCard
-  title="新功能：AI 特性"
-  description="探索我们最新的 AI 驱动工具。"
-  image="/promo.jpg"
-  imageAlt="AI 功能推广"
-  linkLabel="了解更多"
-  linkHref="/ai"
-/>`,
         },
       ],
     },

@@ -4,6 +4,10 @@ export const docs = {
   name: 'Icon',
   description:
     'Renders icons with XDS design system colors and sizes. Supports both direct SVG icon components and semantic icon names that adapt to the active theme.',
+  showcase: {
+    aspectRatio: 1,
+    code: '<XDSIcon name="star" />',
+  },
   keywords: ["icon","svg","glyph","symbol","pictogram","graphic","vector"],
   features: [
     "Semantic Icon Names: Use names like 'close' or 'chevronDown' — resolved from the theme's icon registry",
@@ -32,44 +36,6 @@ export const docs = {
       type: "'xsm' | 'sm' | 'md' | 'lg'",
       description: 'Icon size.',
       default: "'md'",
-    },
-  ],
-  examples: [
-    {
-      label: 'Semantic icon names (theme-adaptable)',
-      code: `import { XDSIcon } from '@xds/core/Icon';
-
-// Semantic name — adapts to theme
-<XDSIcon icon="close" />
-<XDSIcon icon="chevronDown" size="sm" color="inherit" />
-<XDSIcon icon="checkCircle" color="positive" />
-
-// Great for building theme-adaptable UI
-<XDSIcon icon="info" size="sm" color="secondary" />`,
-    },
-    {
-      label: 'Direct icon components',
-      code: `import { XDSIcon } from '@xds/core/Icon';
-import { HomeIcon } from '@heroicons/react/24/outline';
-import { HeartIcon } from '@heroicons/react/24/solid';
-
-// Direct component
-<XDSIcon icon={HomeIcon} />
-<XDSIcon icon={HomeIcon} color="accent" size="lg" />
-<XDSIcon icon={HeartIcon} color="negative" />
-
-// Accessible icon with label
-<XDSIcon icon={HomeIcon} aria-hidden={false} aria-label="Home" role="img" />`,
-    },
-    {
-      label: 'Icon sources',
-      code: `// Heroicons
-import {HomeIcon} from '@heroicons/react/24/outline';
-
-// Lucide
-import {Home} from 'lucide-react';
-
-// Any component matching ComponentType<SVGProps<SVGSVGElement>>`,
     },
   ],
   theming: {
@@ -128,44 +94,6 @@ export const docsZh = {
       type: "'xsm' | 'sm' | 'md' | 'lg'",
       description: '图标尺寸。',
       default: "'md'",
-    },
-  ],
-  examples: [
-    {
-      label: '语义图标名称（主题适配）',
-      code: `import { XDSIcon } from '@xds/core/Icon';
-
-// Semantic name — adapts to theme
-<XDSIcon icon="close" />
-<XDSIcon icon="chevronDown" size="sm" color="inherit" />
-<XDSIcon icon="checkCircle" color="positive" />
-
-// Great for building theme-adaptable UI
-<XDSIcon icon="info" size="sm" color="secondary" />`,
-    },
-    {
-      label: '直接图标组件',
-      code: `import { XDSIcon } from '@xds/core/Icon';
-import { HomeIcon } from '@heroicons/react/24/outline';
-import { HeartIcon } from '@heroicons/react/24/solid';
-
-// Direct component
-<XDSIcon icon={HomeIcon} />
-<XDSIcon icon={HomeIcon} color="accent" size="lg" />
-<XDSIcon icon={HeartIcon} color="negative" />
-
-// Accessible icon with label
-<XDSIcon icon={HomeIcon} aria-hidden={false} aria-label="Home" role="img" />`,
-    },
-    {
-      label: '图标来源',
-      code: `// Heroicons
-import {HomeIcon} from '@heroicons/react/24/outline';
-
-// Lucide
-import {Home} from 'lucide-react';
-
-// Any component matching ComponentType<SVGProps<SVGSVGElement>>`,
     },
   ],
   theming: {

@@ -1,8 +1,7 @@
 'use client';
 
 import React, {useState} from 'react';
-import {XDSButton} from '@xds/core/Button';
-import {PlusIcon, SendIcon} from './docsite-icons';
+import {XDSChatComposer, XDSChatComposerInput} from '@xds/core/Chat';
 
 export function AIComposer() {
   const [prompt, setPrompt] = useState('');
@@ -32,72 +31,13 @@ export function AIComposer() {
           maxWidth: 'calc(100% - 48px)',
           zIndex: 100,
         }}>
-        <div
-          style={{
-            borderRadius: 20,
-            backgroundColor: 'var(--color-background-card)',
-            border: '1px solid var(--color-divider)',
-            boxShadow: 'var(--shadow-high)',
-            overflow: 'hidden',
-            padding: 8,
-            display: 'flex',
-            flexDirection: 'column' as const,
-            gap: 8,
-          }}>
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column' as const,
-              alignItems: 'flex-end',
-            }}>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                width: '100%',
-                padding: 8,
-              }}>
-              <input
-                style={{
-                  flex: 1,
-                  border: 'none',
-                  outline: 'none',
-                  backgroundColor: 'transparent',
-                  fontFamily: 'inherit',
-                  fontSize: 14,
-                }}
-                placeholder="What should we build?"
-                value={prompt}
-                onChange={e => setPrompt(e.target.value)}
-              />
-            </div>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                width: '100%',
-                paddingInlineStart: 4,
-                paddingTop: 4,
-              }}>
-              <XDSButton
-                label="Attach"
-                variant="ghost"
-                size="sm"
-                isIconOnly
-                icon={<PlusIcon />}
-              />
-              <XDSButton
-                label="Send"
-                variant="primary"
-                size="sm"
-                isIconOnly
-                icon={<SendIcon />}
-                style={{borderRadius: 9999}}
-              />
-            </div>
-          </div>
-        </div>
+        <XDSChatComposer
+          onSubmit={() => setPrompt('')}
+          value={prompt}
+          onChange={setPrompt}
+          placeholder="What should we build?"
+          input={<XDSChatComposerInput placeholder="What should we build?" />}
+        />
       </div>
     </>
   );

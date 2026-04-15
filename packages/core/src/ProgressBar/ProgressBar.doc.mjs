@@ -4,6 +4,10 @@ export const docs = {
   name: 'ProgressBar',
   description:
     'A progress bar for displaying determinate or indeterminate progress.',
+  showcase: {
+    aspectRatio: 16 / 4,
+    code: '<XDSProgressBar label="Loading" value={60} />',
+  },
   keywords: ["progressbar","progress","loader","loading","linear","determinate","indeterminate","meter"],
   features: [
     'Determinate mode uses role="meter" with aria-valuenow, aria-valuemin, and aria-valuemax',
@@ -70,55 +74,6 @@ export const docs = {
       type: 'StyleXStyles',
       description:
         'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
-    },
-  ],
-  examples: [
-    {
-      label: 'Determinate progress bar',
-      code: `<XDSProgressBar value={75} label="Upload progress" />`,
-    },
-    {
-      label: 'With visible value label',
-      code: `<XDSProgressBar value={75} label="Storage used" hasValueLabel />`,
-    },
-    {
-      label: 'Custom value label formatter',
-      code: `<XDSProgressBar
-  value={3.2}
-  max={5}
-  label="Disk usage"
-  hasValueLabel
-  formatValueLabel={(value, max) => \`\${value} GB / \${max} GB\`}
-/>`,
-    },
-    {
-      label: 'Indeterminate loading',
-      code: `<XDSProgressBar isIndeterminate label="Loading..." />`,
-    },
-    {
-      label: 'Semantic variant',
-      code: `<XDSProgressBar value={92} label="Disk" variant="negative" />`,
-    },
-    {
-      label: 'Hidden label (accessible but not visible)',
-      code: `<XDSProgressBar value={50} label="Loading" isLabelHidden />`,
-    },
-    {
-      label: 'Composed with external description',
-      code: `<div>
-  <XDSProgressBar value={40} max={100} label="Download progress" hasValueLabel />
-  <XDSText color="secondary" size="sm">40 MB / 100 MB downloaded</XDSText>
-</div>`,
-    },
-    {
-      label: 'Composed with status icon',
-      code: `<XDSLayout direction="column" gap="1">
-  <XDSProgressBar value={100} label="Upload complete" variant="positive" hasValueLabel />
-  <XDSLayout direction="row" gap="1" align="center">
-    <XDSIcon icon={CheckCircleIcon} color="positive" size="sm" />
-    <XDSText color="secondary" size="sm">Upload complete</XDSText>
-  </XDSLayout>
-</XDSLayout>`,
     },
   ],
   theming: {
@@ -216,38 +171,6 @@ export const docsZh = {
       type: 'StyleXStyles',
       description:
         '用于布局自定义的 StyleX 样式（边距、定位、尺寸）。必须是 stylex.create() 的值，而非内联样式对象如 style={{}}。',
-    },
-  ],
-  examples: [
-    {
-      label: '确定进度条',
-      code: `<XDSProgressBar value={75} label="Upload progress" />`,
-    },
-    {
-      label: '带可见值标签',
-      code: `<XDSProgressBar value={75} label="Storage used" hasValueLabel />`,
-    },
-    {
-      label: '自定义值标签格式化器',
-      code: `<XDSProgressBar
-  value={3.2}
-  max={5}
-  label="Disk usage"
-  hasValueLabel
-  formatValueLabel={(value, max) => \`\${value} GB / \${max} GB\`}
-/>`,
-    },
-    {
-      label: '不确定加载',
-      code: `<XDSProgressBar isIndeterminate label="Loading..." />`,
-    },
-    {
-      label: '变体和尺寸',
-      code: `<XDSProgressBar value={92} label="Disk" variant="negative" />`,
-    },
-    {
-      label: '隐藏标签（无障碍可访问但不可见）',
-      code: `<XDSProgressBar value={50} label="Loading" isLabelHidden />`,
     },
   ],
   theming: {

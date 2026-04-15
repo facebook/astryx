@@ -4,6 +4,10 @@ export const docs = {
   name: 'List',
   description:
     'Vertical list component for rendering collections of items with consistent spacing, dividers, and marker styles. Uses a composition model: XDSList wraps XDSListItem sub-components.',
+  showcase: {
+    aspectRatio: 3 / 4,
+    code: '<XDSList><XDSListItem>Item 1</XDSListItem></XDSList>',
+  },
   keywords: ["list","listitem","listbox","menu","collection","items","ul","navlist"],
   features: [
     'Composition model — XDSList wraps XDSListItem sub-components',
@@ -13,44 +17,6 @@ export const docs = {
     'List marker styles: none, disc, decimal (renders <ol>), circle',
     'Interactive items via invisible button or anchor pattern',
     'Start and end content slots (icon, avatar, badge, chevron)',
-  ],
-  examples: [
-    {
-      label: 'Basic list',
-      code: `<XDSList>
-  <XDSListItem label="Notifications" description="Manage your alerts" />
-  <XDSListItem label="Privacy" description="Control your data" />
-</XDSList>`,
-    },
-    {
-      label: 'With dividers and header',
-      code: `<XDSList hasDividers header={<strong>Team Members</strong>}>
-  <XDSListItem
-    label="Alice Johnson"
-    description="Engineering"
-    startContent={<XDSIcon icon={UserIcon} />}
-  />
-  <XDSListItem
-    label="Bob Smith"
-    description="Design"
-    startContent={<XDSIcon icon={UserIcon} />}
-  />
-</XDSList>`,
-    },
-    {
-      label: 'Interactive items',
-      code: `<XDSList>
-  <XDSListItem label="Settings" onClick={() => navigate('/settings')} />
-  <XDSListItem label="Docs" href="/docs" target="_blank" />
-</XDSList>`,
-    },
-    {
-      label: 'Ordered list',
-      code: `<XDSList listStyle="decimal">
-  <XDSListItem label="First step" />
-  <XDSListItem label="Second step" />
-</XDSList>`,
-    },
   ],
   accessibility: [
     'Semantic <ul> / <ol> with <li> elements',
@@ -74,17 +40,7 @@ export const docs = {
   components: [
     {
       name: 'XDSList',
-      description: 'List container with density, dividers, and header support.',
-      examples: [
-        {
-          label: 'With dividers and header',
-          code: `<XDSList hasDividers header={<strong>Team Members</strong>}>
-  <XDSListItem label="Alice" description="Engineering" />
-  <XDSListItem label="Bob" description="Design" />
-</XDSList>`,
-        },
-      ],
-      props: [
+      description: 'List container with density, dividers, and header support.',      props: [
         {
           name: 'children',
           type: 'ReactNode',
@@ -127,17 +83,6 @@ export const docs = {
       name: 'XDSListItem',
       description:
         'List item with label, description, start/end content slots, and interactive patterns.',
-      examples: [
-        {
-          label: 'With icon and click handler',
-          code: `<XDSListItem
-  label="Settings"
-  description="Manage your preferences"
-  startContent={<XDSIcon icon={CogIcon} />}
-  onClick={() => navigate('/settings')}
-/>`,
-        },
-      ],
       props: [
         {
           name: 'label',
@@ -227,44 +172,6 @@ export const docsZh = {
     '通过隐形按钮或锚点模式实现可交互项目',
     '起始和结束内容插槽（图标、头像、徽章、箭头）',
   ],
-  examples: [
-    {
-      label: '基础列表',
-      code: `<XDSList>
-  <XDSListItem label="Notifications" description="Manage your alerts" />
-  <XDSListItem label="Privacy" description="Control your data" />
-</XDSList>`,
-    },
-    {
-      label: '带分割线和标题',
-      code: `<XDSList hasDividers header={<strong>Team Members</strong>}>
-  <XDSListItem
-    label="Alice Johnson"
-    description="Engineering"
-    startContent={<XDSIcon icon={UserIcon} />}
-  />
-  <XDSListItem
-    label="Bob Smith"
-    description="Design"
-    startContent={<XDSIcon icon={UserIcon} />}
-  />
-</XDSList>`,
-    },
-    {
-      label: '可交互项目',
-      code: `<XDSList>
-  <XDSListItem label="Settings" onClick={() => navigate('/settings')} />
-  <XDSListItem label="Docs" href="/docs" target="_blank" />
-</XDSList>`,
-    },
-    {
-      label: '有序列表',
-      code: `<XDSList listStyle="decimal">
-  <XDSListItem label="First step" />
-  <XDSListItem label="Second step" />
-</XDSList>`,
-    },
-  ],
   accessibility: [
     '语义化 <ul> / <ol> 配合 <li> 元素',
     '当 listStyle=\'none\' 时添加 role="list"（Safari 修复：CSS list-style:none 会移除列表语义）',
@@ -288,15 +195,6 @@ export const docsZh = {
     {
       name: 'XDSList',
       description: '列表容器，支持密度、分割线和标题。',
-      examples: [
-        {
-          label: '带分割线和标题',
-          code: `<XDSList hasDividers header={<strong>Team Members</strong>}>
-  <XDSListItem label="Alice" description="Engineering" />
-  <XDSListItem label="Bob" description="Design" />
-</XDSList>`,
-        },
-      ],
       props: [
         {
           name: 'children',
@@ -340,17 +238,6 @@ export const docsZh = {
       name: 'XDSListItem',
       description:
         '列表项，包含标签、描述、起始/结束内容插槽和交互模式。',
-      examples: [
-        {
-          label: '带图标和点击处理',
-          code: `<XDSListItem
-  label="Settings"
-  description="Manage your preferences"
-  startContent={<XDSIcon icon={CogIcon} />}
-  onClick={() => navigate('/settings')}
-/>`,
-        },
-      ],
       props: [
         {
           name: 'label',

@@ -4,6 +4,10 @@ export const docs = {
   name: 'MoreMenu',
   description:
     'Overflow menu with a three-dot icon trigger. A convenience wrapper that composes an icon-only XDSButton with a dropdown menu, eliminating the boilerplate of wiring up state management, positioning, and accessibility attributes.',
+  showcase: {
+    aspectRatio: 4 / 3,
+    code: '<XDSMoreMenu items={[{label: "Edit"}]} />',
+  },
   keywords: ["moremenu","overflow","kebab","dotmenu","threedot","ellipsis","dropdown","contextmenu","actionmenu"],
   props: [
     {
@@ -55,81 +59,6 @@ export const docs = {
       type: 'StyleXStyles',
       description:
         'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
-    },
-  ],
-  examples: [
-    {
-      label: 'Minimal actions',
-      code: `<XDSMoreMenu
-  items={[
-    { label: 'Edit', onClick: handleEdit },
-    { label: 'Delete', onClick: handleDelete },
-  ]}
-/>`,
-    },
-    {
-      label: 'Table row actions with icons',
-      code: `<XDSMoreMenu
-  label="Row actions"
-  size="sm"
-  items={[
-    { label: 'Edit', icon: PencilIcon, onClick: () => handleEdit(row) },
-    { type: 'divider' },
-    { label: 'Delete', icon: TrashIcon, onClick: () => handleDelete(row) },
-  ]}
-/>`,
-    },
-    {
-      label: 'With sections',
-      code: `<XDSMoreMenu
-  label="Document actions"
-  items={[
-    {
-      type: 'section',
-      title: 'Actions',
-      items: [
-        { label: 'Edit', onClick: handleEdit },
-        { label: 'Duplicate', onClick: handleDuplicate },
-      ],
-    },
-    {
-      type: 'section',
-      title: 'Danger zone',
-      items: [
-        { label: 'Delete', onClick: handleDelete },
-      ],
-    },
-  ]}
-/>`,
-    },
-    {
-      label: 'Card header with overflow menu',
-      code: `<XDSHStack align="center" justify="between">
-  <XDSHeading level={3}>Card Title</XDSHeading>
-  <XDSMoreMenu
-    items={[
-      { label: 'Edit', onClick: handleEdit },
-      { label: 'Duplicate', onClick: handleDuplicate },
-      { type: 'divider' },
-      { label: 'Delete', onClick: handleDelete },
-    ]}
-  />
-</XDSHStack>`,
-    },
-    {
-      label: 'Custom item rendering',
-      code: `<XDSMoreMenu
-  label="User actions"
-  items={actions}
->
-  {item => (
-    <XDSDropdownMenuItem
-      icon={item.icon}
-      label={item.label}
-      description={item.description}
-    />
-  )}
-</XDSMoreMenu>`,
     },
   ],
   features: [
@@ -220,81 +149,6 @@ export const docsZh = {
       type: 'StyleXStyles',
       description:
         '用于布局自定义的 StyleX 样式（边距、定位、尺寸）。必须是 stylex.create() 的值，不能是内联样式对象如 style={{}}。',
-    },
-  ],
-  examples: [
-    {
-      label: '最简操作',
-      code: `<XDSMoreMenu
-  items={[
-    { label: 'Edit', onClick: handleEdit },
-    { label: 'Delete', onClick: handleDelete },
-  ]}
-/>`,
-    },
-    {
-      label: '带图标的表格行操作',
-      code: `<XDSMoreMenu
-  label="Row actions"
-  size="sm"
-  items={[
-    { label: 'Edit', icon: PencilIcon, onClick: () => handleEdit(row) },
-    { type: 'divider' },
-    { label: 'Delete', icon: TrashIcon, onClick: () => handleDelete(row) },
-  ]}
-/>`,
-    },
-    {
-      label: '带分组',
-      code: `<XDSMoreMenu
-  label="Document actions"
-  items={[
-    {
-      type: 'section',
-      title: 'Actions',
-      items: [
-        { label: 'Edit', onClick: handleEdit },
-        { label: 'Duplicate', onClick: handleDuplicate },
-      ],
-    },
-    {
-      type: 'section',
-      title: 'Danger zone',
-      items: [
-        { label: 'Delete', onClick: handleDelete },
-      ],
-    },
-  ]}
-/>`,
-    },
-    {
-      label: '卡片标题中的溢出菜单',
-      code: `<XDSHStack align="center" justify="between">
-  <XDSHeading level={3}>Card Title</XDSHeading>
-  <XDSMoreMenu
-    items={[
-      { label: 'Edit', onClick: handleEdit },
-      { label: 'Duplicate', onClick: handleDuplicate },
-      { type: 'divider' },
-      { label: 'Delete', onClick: handleDelete },
-    ]}
-  />
-</XDSHStack>`,
-    },
-    {
-      label: '自定义项目渲染',
-      code: `<XDSMoreMenu
-  label="User actions"
-  items={actions}
->
-  {item => (
-    <XDSDropdownMenuItem
-      icon={item.icon}
-      label={item.label}
-      description={item.description}
-    />
-  )}
-</XDSMoreMenu>`,
     },
   ],
   features: [

@@ -3,6 +3,10 @@
 export const docs = {
   name: 'Collapsible',
   description: 'Collapsible content primitive and group coordination.',
+  showcase: {
+    aspectRatio: 4 / 3,
+    code: '<XDSCollapsible trigger="Details">Hidden content</XDSCollapsible>',
+  },
   keywords: ["accordion","collapse","expandable","disclosure","toggle","panel","foldable","expander","expand"],
   features: [
     'XDSCollapsible makes any content collapsible — a trigger toggles visibility of the content area',
@@ -28,79 +32,6 @@ export const docs = {
     'When nested inside an XDSCollapsibleGroup with a matching value prop, it defers to the group context',
     'XDSCollapsibleGroup provides context with isOpen(value) and toggle(value) methods',
     'The group renders no wrapper DOM — layout is the responsibility of the consumer (e.g. XDSVStack)',
-  ],
-  examples: [
-    {
-      label: 'Standalone collapsible',
-      code: `// Inside a card
-<XDSCard>
-  <XDSCollapsible trigger="Details">
-    <p>This content can be collapsed</p>
-  </XDSCollapsible>
-</XDSCard>
-
-// Starts collapsed
-<XDSCard>
-  <XDSCollapsible trigger="Advanced" defaultIsOpen={false}>
-    <p>Hidden by default</p>
-  </XDSCollapsible>
-</XDSCard>
-
-// Controlled
-<XDSCard>
-  <XDSCollapsible trigger="Settings" isOpen={open} onOpenChange={setOpen}>
-    <p>Controlled externally</p>
-  </XDSCollapsible>
-</XDSCard>
-
-// Without a card — works anywhere
-<XDSCollapsible trigger="Show more">
-  <p>Expandable content</p>
-</XDSCollapsible>`,
-    },
-    {
-      label: 'Coordinated group — single mode (accordion)',
-      code: `// Single mode — only one open at a time (FAQ, settings panels)
-<XDSCollapsibleGroup type="single" defaultValue="general">
-  <XDSVStack gap={2}>
-    <XDSCard>
-      <XDSCollapsible trigger="General Settings" value="general">
-        <GeneralContent />
-      </XDSCollapsible>
-    </XDSCard>
-    <XDSCard>
-      <XDSCollapsible trigger="Advanced Settings" value="advanced">
-        <AdvancedContent />
-      </XDSCollapsible>
-    </XDSCard>
-  </XDSVStack>
-</XDSCollapsibleGroup>`,
-    },
-    {
-      label: 'Coordinated group — multiple mode',
-      code: `// Multiple mode — any number open
-<XDSCollapsibleGroup type="multiple" defaultValue={["s1", "s2"]}>
-  <XDSVStack gap={2}>
-    <XDSCard>
-      <XDSCollapsible trigger="Section 1" value="s1">...</XDSCollapsible>
-    </XDSCard>
-    <XDSCard>
-      <XDSCollapsible trigger="Section 2" value="s2">...</XDSCollapsible>
-    </XDSCard>
-  </XDSVStack>
-</XDSCollapsibleGroup>`,
-    },
-    {
-      label: 'With Layout (structured header)',
-      code: `<XDSCard>
-  <XDSCollapsible trigger="Report Details" value="report">
-    <XDSLayout
-      content={<XDSLayoutContent>Report body</XDSLayoutContent>}
-      footer={<XDSLayoutFooter hasDivider>Actions</XDSLayoutFooter>}
-    />
-  </XDSCollapsible>
-</XDSCard>`,
-    },
   ],
   components: [
     {
@@ -141,28 +72,7 @@ export const docs = {
           description:
             'Identifier used for group coordination. Required when placed inside an XDSCollapsibleGroup.',
         },
-      ],
-      examples: [
-        {
-          label: 'Basic',
-          code: `<XDSCollapsible trigger="Details">
-  <p>This content can be collapsed</p>
-</XDSCollapsible>`,
-        },
-        {
-          label: 'Starts collapsed',
-          code: `<XDSCollapsible trigger="Advanced" defaultIsOpen={false}>
-  <p>Hidden by default</p>
-</XDSCollapsible>`,
-        },
-        {
-          label: 'Controlled',
-          code: `<XDSCollapsible trigger="Settings" isOpen={open} onOpenChange={setOpen}>
-  <p>Controlled externally</p>
-</XDSCollapsible>`,
-        },
-      ],
-    },
+      ],    },
     {
       name: 'XDSCollapsibleGroup',
       description:
@@ -195,26 +105,6 @@ export const docs = {
           type: 'ReactNode',
           description: 'XDSCollapsible instances to coordinate.',
           required: true,
-        },
-      ],
-      examples: [
-        {
-          label: 'Single mode (accordion)',
-          code: `<XDSCollapsibleGroup type="single" defaultValue="general">
-  <XDSCollapsible trigger="General" value="general">
-    <p>General settings</p>
-  </XDSCollapsible>
-  <XDSCollapsible trigger="Advanced" value="advanced">
-    <p>Advanced settings</p>
-  </XDSCollapsible>
-</XDSCollapsibleGroup>`,
-        },
-        {
-          label: 'Multiple mode',
-          code: `<XDSCollapsibleGroup type="multiple" defaultValue={["s1", "s2"]}>
-  <XDSCollapsible trigger="Section 1" value="s1">...</XDSCollapsible>
-  <XDSCollapsible trigger="Section 2" value="s2">...</XDSCollapsible>
-</XDSCollapsibleGroup>`,
         },
       ],
     },
@@ -257,79 +147,6 @@ export const docsZh = {
     'XDSCollapsibleGroup 通过 isOpen(value) 和 toggle(value) 方法提供上下文',
     '分组不渲染包裹 DOM——布局由使用者负责（如 XDSVStack）',
   ],
-  examples: [
-    {
-      label: '独立可折叠',
-      code: `// Inside a card
-<XDSCard>
-  <XDSCollapsible trigger="Details">
-    <p>This content can be collapsed</p>
-  </XDSCollapsible>
-</XDSCard>
-
-// Starts collapsed
-<XDSCard>
-  <XDSCollapsible trigger="Advanced" defaultIsOpen={false}>
-    <p>Hidden by default</p>
-  </XDSCollapsible>
-</XDSCard>
-
-// Controlled
-<XDSCard>
-  <XDSCollapsible trigger="Settings" isOpen={open} onOpenChange={setOpen}>
-    <p>Controlled externally</p>
-  </XDSCollapsible>
-</XDSCard>
-
-// Without a card — works anywhere
-<XDSCollapsible trigger="Show more">
-  <p>Expandable content</p>
-</XDSCollapsible>`,
-    },
-    {
-      label: '协调分组——single 模式（手风琴）',
-      code: `// Single mode — only one open at a time (FAQ, settings panels)
-<XDSCollapsibleGroup type="single" defaultValue="general">
-  <XDSVStack gap={2}>
-    <XDSCard>
-      <XDSCollapsible trigger="General Settings" value="general">
-        <GeneralContent />
-      </XDSCollapsible>
-    </XDSCard>
-    <XDSCard>
-      <XDSCollapsible trigger="Advanced Settings" value="advanced">
-        <AdvancedContent />
-      </XDSCollapsible>
-    </XDSCard>
-  </XDSVStack>
-</XDSCollapsibleGroup>`,
-    },
-    {
-      label: '协调分组——multiple 模式',
-      code: `// Multiple mode — any number open
-<XDSCollapsibleGroup type="multiple" defaultValue={["s1", "s2"]}>
-  <XDSVStack gap={2}>
-    <XDSCard>
-      <XDSCollapsible trigger="Section 1" value="s1">...</XDSCollapsible>
-    </XDSCard>
-    <XDSCard>
-      <XDSCollapsible trigger="Section 2" value="s2">...</XDSCollapsible>
-    </XDSCard>
-  </XDSVStack>
-</XDSCollapsibleGroup>`,
-    },
-    {
-      label: '配合 Layout（结构化头部）',
-      code: `<XDSCard>
-  <XDSCollapsible trigger="Report Details" value="report">
-    <XDSLayout
-      content={<XDSLayoutContent>Report body</XDSLayoutContent>}
-      footer={<XDSLayoutFooter hasDivider>Actions</XDSLayoutFooter>}
-    />
-  </XDSCollapsible>
-</XDSCard>`,
-    },
-  ],
   components: [
     {
       name: 'XDSCollapsible',
@@ -370,26 +187,6 @@ export const docsZh = {
             '用于分组协调的标识符。放置在 XDSCollapsibleGroup 内时为必填。',
         },
       ],
-      examples: [
-        {
-          label: '基础用法',
-          code: `<XDSCollapsible trigger="Details">
-  <p>This content can be collapsed</p>
-</XDSCollapsible>`,
-        },
-        {
-          label: '默认收起',
-          code: `<XDSCollapsible trigger="Advanced" defaultIsOpen={false}>
-  <p>Hidden by default</p>
-</XDSCollapsible>`,
-        },
-        {
-          label: '受控模式',
-          code: `<XDSCollapsible trigger="Settings" isOpen={open} onOpenChange={setOpen}>
-  <p>Controlled externally</p>
-</XDSCollapsible>`,
-        },
-      ],
     },
     {
       name: 'XDSCollapsibleGroup',
@@ -423,26 +220,6 @@ export const docsZh = {
           type: 'ReactNode',
           description: '需要协调的 XDSCollapsible 实例。',
           required: true,
-        },
-      ],
-      examples: [
-        {
-          label: 'Single 模式（手风琴）',
-          code: `<XDSCollapsibleGroup type="single" defaultValue="general">
-  <XDSCollapsible trigger="General" value="general">
-    <p>General settings</p>
-  </XDSCollapsible>
-  <XDSCollapsible trigger="Advanced" value="advanced">
-    <p>Advanced settings</p>
-  </XDSCollapsible>
-</XDSCollapsibleGroup>`,
-        },
-        {
-          label: 'Multiple 模式',
-          code: `<XDSCollapsibleGroup type="multiple" defaultValue={["s1", "s2"]}>
-  <XDSCollapsible trigger="Section 1" value="s1">...</XDSCollapsible>
-  <XDSCollapsible trigger="Section 2" value="s2">...</XDSCollapsible>
-</XDSCollapsibleGroup>`,
         },
       ],
     },

@@ -4,6 +4,10 @@ export const docs = {
   name: 'Link',
   description:
     'XDSLink component for styled anchor links with multiple variants and features, plus polymorphic link infrastructure for rendering custom link components (Next.js Link, React Router Link, etc.).',
+  showcase: {
+    aspectRatio: 1,
+    code: '<XDSLink href="#">Link text</XDSLink>',
+  },
   keywords: ["link","anchor","href","hyperlink","navigation","url","external","textlink"],
   features: [
     "Color control: Uses XDSText color prop ('active' default, 'secondary', 'inherit', etc.)",
@@ -15,64 +19,6 @@ export const docs = {
     'Disabled state: Visual and interaction disabled',
     'Focus visible: Accessible focus outline',
     'Polymorphic link: Render as a custom component via `as` prop or XDSLinkProvider',
-  ],
-  examples: [
-    {
-      label: 'Basic link',
-      code: '<XDSLink label="Documentation" href="/docs">Documentation</XDSLink>',
-    },
-    {
-      label: 'External link (opens in new tab with icon)',
-      code: '<XDSLink label="GitHub" href="https://github.com" isExternalLink>GitHub</XDSLink>',
-    },
-    {
-      label: 'Link with tooltip',
-      code: `<XDSLink label="Settings" href="/settings" tooltip="Configure your preferences">
-  Settings
-</XDSLink>`,
-    },
-    {
-      label: 'Always underlined link',
-      code: '<XDSLink label="Privacy Policy" href="/privacy" hasUnderline>Privacy Policy</XDSLink>',
-    },
-    {
-      label: 'Inline within text (inherits parent font styles)',
-      code: '<XDSText>Read the <XDSLink label="docs" href="/docs">documentation</XDSLink> for more info.</XDSText>',
-    },
-    {
-      label: 'Standalone link',
-      code: '<XDSLink label="Settings" href="/settings" isStandalone>Settings</XDSLink>',
-    },
-    {
-      label: 'Disabled link',
-      code: '<XDSLink label="Disabled" href="/disabled" isDisabled>Disabled Link</XDSLink>',
-    },
-    {
-      label: 'Provider (global default) — Next.js',
-      code: `import Link from 'next/link';
-import {XDSLinkProvider} from '@xds/core/Link';
-
-<XDSLinkProvider component={Link}>
-  <App />
-</XDSLinkProvider>`,
-    },
-    {
-      label: 'Per-component override (as prop)',
-      code: `import {Link as RouterLink} from 'react-router-dom';
-
-<XDSLink label="Docs" href="/docs" as={RouterLink}>
-  Docs
-</XDSLink>`,
-    },
-    {
-      label: 'Hook: useXDSLinkComponent',
-      code: `import {useXDSLinkComponent} from '@xds/core/Link';
-
-function MyComponent({as}: {as?: XDSLinkComponentType}) {
-  const LinkComponent = useXDSLinkComponent(as);
-  return <LinkComponent href="/foo">Click me</LinkComponent>;
-}`,
-    },
   ],
   theming: {
     targets: [
@@ -158,30 +104,7 @@ function MyComponent({as}: {as?: XDSLinkComponentType}) {
           description: 'Link content',
           required: true,
         },
-      ],
-      examples: [
-        {
-          label: 'Basic',
-          code: '<XDSLink label="Documentation" href="/docs">Documentation</XDSLink>',
-        },
-        {
-          label: 'External link',
-          code: '<XDSLink label="GitHub" href="https://github.com" isExternalLink>GitHub</XDSLink>',
-        },
-        {
-          label: 'With tooltip',
-          code: `<XDSLink label="Settings" href="/settings" tooltip="Configure your preferences">
-  Settings
-</XDSLink>`,
-        },
-        {
-          label: 'With custom component (as prop)',
-          code: `<XDSLink label="Docs" href="/docs" as={RouterLink}>
-  Docs
-</XDSLink>`,
-        },
-      ],
-    },
+      ],    },
     {
       name: 'XDSLinkProvider',
       description:
@@ -198,17 +121,6 @@ function MyComponent({as}: {as?: XDSLinkComponentType}) {
           type: 'ReactNode',
           description: 'Subtree',
           required: true,
-        },
-      ],
-      examples: [
-        {
-          label: 'With Next.js Link',
-          code: `import Link from 'next/link';
-import {XDSLinkProvider} from '@xds/core/Link';
-
-<XDSLinkProvider component={Link}>
-  <App />
-</XDSLinkProvider>`,
         },
       ],
     },
@@ -253,64 +165,6 @@ export const docsZh = {
     '禁用状态：视觉和交互均被禁用',
     '焦点可见：无障碍焦点轮廓',
     '多态链接：通过 `as` 属性或 XDSLinkProvider 渲染为自定义组件',
-  ],
-  examples: [
-    {
-      label: '基础链接',
-      code: '<XDSLink label="Documentation" href="/docs">Documentation</XDSLink>',
-    },
-    {
-      label: '外部链接（在新标签页中打开，带图标）',
-      code: '<XDSLink label="GitHub" href="https://github.com" isExternalLink>GitHub</XDSLink>',
-    },
-    {
-      label: '带工具提示的链接',
-      code: `<XDSLink label="Settings" href="/settings" tooltip="Configure your preferences">
-  Settings
-</XDSLink>`,
-    },
-    {
-      label: '始终带下划线的链接',
-      code: '<XDSLink label="Privacy Policy" href="/privacy" hasUnderline>Privacy Policy</XDSLink>',
-    },
-    {
-      label: '文本内联（继承父级字体样式）',
-      code: '<XDSText>Read the <XDSLink label="docs" href="/docs">documentation</XDSLink> for more info.</XDSText>',
-    },
-    {
-      label: '独立链接',
-      code: '<XDSLink label="Settings" href="/settings" isStandalone>Settings</XDSLink>',
-    },
-    {
-      label: '禁用链接',
-      code: '<XDSLink label="Disabled" href="/disabled" isDisabled>Disabled Link</XDSLink>',
-    },
-    {
-      label: 'Provider（全局默认）— Next.js',
-      code: `import Link from 'next/link';
-import {XDSLinkProvider} from '@xds/core/Link';
-
-<XDSLinkProvider component={Link}>
-  <App />
-</XDSLinkProvider>`,
-    },
-    {
-      label: '单组件覆盖（as 属性）',
-      code: `import {Link as RouterLink} from 'react-router-dom';
-
-<XDSLink label="Docs" href="/docs" as={RouterLink}>
-  Docs
-</XDSLink>`,
-    },
-    {
-      label: 'Hook：useXDSLinkComponent',
-      code: `import {useXDSLinkComponent} from '@xds/core/Link';
-
-function MyComponent({as}: {as?: XDSLinkComponentType}) {
-  const LinkComponent = useXDSLinkComponent(as);
-  return <LinkComponent href="/foo">Click me</LinkComponent>;
-}`,
-    },
   ],
   theming: {
     targets: [
@@ -397,28 +251,6 @@ function MyComponent({as}: {as?: XDSLinkComponentType}) {
           required: true,
         },
       ],
-      examples: [
-        {
-          label: '基础',
-          code: '<XDSLink label="Documentation" href="/docs">Documentation</XDSLink>',
-        },
-        {
-          label: '外部链接',
-          code: '<XDSLink label="GitHub" href="https://github.com" isExternalLink>GitHub</XDSLink>',
-        },
-        {
-          label: '带工具提示',
-          code: `<XDSLink label="Settings" href="/settings" tooltip="Configure your preferences">
-  Settings
-</XDSLink>`,
-        },
-        {
-          label: '使用自定义组件（as 属性）',
-          code: `<XDSLink label="Docs" href="/docs" as={RouterLink}>
-  Docs
-</XDSLink>`,
-        },
-      ],
     },
     {
       name: 'XDSLinkProvider',
@@ -436,17 +268,6 @@ function MyComponent({as}: {as?: XDSLinkComponentType}) {
           type: 'ReactNode',
           description: '子树',
           required: true,
-        },
-      ],
-      examples: [
-        {
-          label: '搭配 Next.js Link',
-          code: `import Link from 'next/link';
-import {XDSLinkProvider} from '@xds/core/Link';
-
-<XDSLinkProvider component={Link}>
-  <App />
-</XDSLinkProvider>`,
         },
       ],
     },

@@ -8,6 +8,7 @@
   },
   "include": [
     "templates/**/template.doc.mjs",
+    "templates/**/*.doc.mjs",
     "../core/src/docs-types.ts"
   ]
 }

@@ -1,7 +1,12 @@
+'use client';
+
 /**
  * @file XDSDropdownMenuItem.tsx
- * @output Exports XDSDropdownMenuItem component for custom item rendering
- * @position Sub-component; used by XDSDropdownMenu and consumers for custom items
+ * @output Exports XDSDropdownMenuItem component
+ * @position Sub-component; used inside XDSDropdownMenu
+ *
+ * Interactive menu item with role="menuitem". Keyboard navigation
+ * is handled by useListFocus on the parent menu container.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/DropdownMenu/DropdownMenu.doc.mjs
@@ -10,22 +15,42 @@
  * - /apps/storybook/stories/DropdownMenu.stories.tsx
  */
 
-import type {ReactNode} from 'react';
+import {useCallback, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {XDSIcon} from '../Icon';
 import type {XDSIconType} from '../Icon';
 import {XDSText} from '../Text';
-import {spacingVars} from '../theme/tokens.stylex';
+import {
+  colorVars,
+  spacingVars,
+  typographyVars,
+  typeScaleVars,
+} from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
+import {useXDSDropdownMenuContext} from './XDSDropdownMenuContext';
 
 const styles = stylex.create({
   root: {
+    boxSizing: 'border-box',
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
-    flex: 1,
-    minWidth: 0,
+    width: '100%',
+    padding: spacingVars['--spacing-2'],
+    borderRadius: `max(0px, calc(var(--dropdown-radius, ${spacingVars['--spacing-2']}) - var(--dropdown-padding, ${spacingVars['--spacing-1']})))`,
+    fontFamily: typographyVars['--font-family-body'],
+    fontSize: typeScaleVars['--text-label-size'],
+    color: colorVars['--color-text-primary'],
+    backgroundColor: {
+      default: 'transparent',
+      ':focus': colorVars['--color-overlay-hover'],
+      ':hover': colorVars['--color-overlay-hover'],
+    },
+    border: 'none',
+    cursor: 'pointer',
+    textAlign: 'left',
+    outline: 'none',
   },
   content: {
     display: 'flex',
@@ -33,70 +58,53 @@ const styles = stylex.create({
     flex: 1,
     minWidth: 0,
   },
+  disabled: {
+    opacity: 0.5,
+    cursor: 'not-allowed',
+  },
+});
+
+const itemSizeStyles = stylex.create({
+  sm: {
+    paddingBlock: spacingVars['--spacing-1'],
+    paddingInline: spacingVars['--spacing-2'],
+  },
+  md: {},
+  lg: {},
 });
 
 export interface XDSDropdownMenuItemProps {
-  /**
-   * Icon to display before the label.
-   */
+  /** Icon to display before the label. */
   icon?: XDSIconType;
-
-  /**
-   * Primary label text.
-   */
+  /** Primary label text. */
   label: ReactNode;
-
-  /**
-   * Secondary description text displayed below the label.
-   */
+  /** Secondary description text displayed below the label. */
   description?: ReactNode;
-
-  /**
-   * Additional content to render after the label/description.
-   */
+  /** Callback when the item is selected. */
+  onClick?: () => void;
+  /** Whether the item is disabled. @default false */
+  isDisabled?: boolean;
+  /** Additional content to render after the label/description. */
   children?: ReactNode;
-
-  /**
-   * StyleX styles created via `stylex.create()`. Merged with the component's
-   * base styles inside a single `stylex.props()` call for optimal deduplication.
-   *
-   * @example
-   * ```
-   * const overrides = stylex.create({ root: { marginBottom: 8 } });
-   * <Component xstyle={overrides.root} />
-   * ```
-   */
+  /** StyleX styles merged with the component's base styles. */
   xstyle?: StyleXStyles;
-  /**
-   * CSS class name(s) appended to the root element.
-   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
-   */
+  /** CSS class name(s) appended to the root element. */
   className?: string;
-  /**
-   * Inline styles to apply to the root element. Spread after StyleX
-   * inline styles, so these values take priority.
-   */
+  /** Inline styles applied to the root element. */
   style?: React.CSSProperties;
 }
 
 /**
- * A helper component for rendering custom dropdown menu items with consistent styling.
+ * An interactive dropdown menu item with icon, label, and optional description.
  *
- * Use this inside the `children` render prop of XDSDropdownMenu to create
- * custom item layouts while maintaining design system consistency.
+ * Must be used inside XDSDropdownMenu. Keyboard navigation is provided
+ * automatically by the parent via useListFocus.
  *
  * @example
  * ```
- * <XDSDropdownMenu
- *   button={{ label: 'Actions' }}
- *   items={actions}>
- *   {item => (
- *     <XDSDropdownMenuItem
- *       icon={item.icon}
- *       label={item.label}
- *       description={item.description}
- *     />
- *   )}
+ * <XDSDropdownMenu button={{ label: 'Actions' }}>
+ *   <XDSDropdownMenuItem icon={PencilIcon} label="Edit" onClick={handleEdit} />
+ *   <XDSDropdownMenuItem label="Delete" onClick={handleDelete} isDisabled />
  * </XDSDropdownMenu>
  * ```
  */
@@ -104,16 +112,36 @@ export function XDSDropdownMenuItem({
   icon,
   label,
   description,
+  onClick,
+  isDisabled = false,
   children,
   xstyle,
   className,
   style,
 }: XDSDropdownMenuItemProps) {
+  const ctx = useXDSDropdownMenuContext();
+  const menuSize = ctx?.menuSize ?? 'md';
+
+  const handleClick = useCallback(() => {
+    if (isDisabled || !onClick) return;
+    onClick();
+    ctx?.closeMenu();
+  }, [isDisabled, onClick, ctx]);
+
   return (
-    <span
+    <div
+      role="menuitem"
+      tabIndex={isDisabled ? undefined : -1}
+      aria-disabled={isDisabled || undefined}
+      onClick={handleClick}
       {...mergeProps(
-        xdsClassName('dropdown-menu-item'),
-        stylex.props(styles.root, xstyle),
+        xdsClassName('dropdown-menu-item', {size: menuSize}),
+        stylex.props(
+          styles.root,
+          itemSizeStyles[menuSize],
+          isDisabled && styles.disabled,
+          xstyle,
+        ),
         className,
         style,
       )}>
@@ -133,7 +161,7 @@ export function XDSDropdownMenuItem({
         )}
       </span>
       {children}
-    </span>
+    </div>
   );
 }
 

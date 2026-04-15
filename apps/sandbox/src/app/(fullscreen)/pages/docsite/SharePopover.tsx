@@ -5,51 +5,33 @@ import {XDSHeading, XDSText} from '@xds/core/Text';
 import {XDSCard} from '@xds/core/Card';
 import {XDSCodeBlock} from '@xds/core/CodeBlock';
 import {XDSList, XDSListItem} from '@xds/core/List';
+import {XDSStack} from '@xds/core/Layout';
 import {ClaudeIcon, VSCodeIcon, CursorAIIcon} from './docsite-icons';
 
-export function SharePopover({
+export function SharePopoverContent({
   cliCommand,
-  position,
   onClose,
 }: {
   cliCommand: string;
-  position: {top: number; left: number};
   onClose: () => void;
 }) {
   return (
-    <div
-      data-share-popover
-      style={{
-        position: 'fixed' as const,
-        left: position.left,
-        top: position.top,
-        zIndex: 100,
-        width: 340,
-        backgroundColor: 'var(--color-background-card, #fff)',
-        borderRadius: 12,
-        boxShadow:
-          '0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08)',
-        padding: 16,
-      }}>
-      <XDSHeading level={3}>Add to your project</XDSHeading>
-      <div style={{marginTop: 0}}>
+    <XDSStack direction="vertical" gap={4}>
+      <XDSStack direction="vertical" gap={0}>
+        <XDSHeading level={3}>Add to your project</XDSHeading>
         <XDSText type="body" color="secondary">
           Copy this snippet and paste it in your terminal to get started.
         </XDSText>
-      </div>
+      </XDSStack>
 
-      <div style={{marginTop: 16}}>
-        <XDSCard padding={0}>
-          <XDSCodeBlock code={cliCommand} language="bash" />
-        </XDSCard>
-      </div>
+      <XDSCard padding={0}>
+        <XDSCodeBlock code={cliCommand} language="bash" />
+      </XDSCard>
 
-      <div style={{marginTop: 16, marginBottom: 16}}>
-        <XDSText type="label" color="secondary">
-          Or open in
-        </XDSText>
-      </div>
-      <XDSList style={{margin: '-8px -8px -8px -8px'}}>
+      <XDSText type="label" color="secondary">
+        Or open in
+      </XDSText>
+      <XDSList style={{margin: '-8px'}}>
         <XDSListItem
           label="Claude Code"
           startContent={
@@ -72,6 +54,6 @@ export function SharePopover({
           onClick={onClose}
         />
       </XDSList>
-    </div>
+    </XDSStack>
   );
 }

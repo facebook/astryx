@@ -178,9 +178,11 @@ export function XDSTopNav({
   const hasMobileDrawerContent = hasCollapsibleContent || mobileContent != null;
 
   // =========================================================================
-  // Mobile bar mode — heading + endContent + toggle, hide nav items
+  // Mobile bar mode — heading + endContent + toggle, hide nav items.
+  // Falls through to default when there's no drawer content — no reason
+  // to strip down the TopNav if there's nothing to put in the drawer.
   // =========================================================================
-  if (renderMode === 'mobile-bar') {
+  if (renderMode === 'mobile-bar' && hasMobileDrawerContent) {
     return (
       <nav
         ref={ref}
@@ -196,7 +198,7 @@ export function XDSTopNav({
         {heading && <div {...stylex.props(styles.heading)}>{heading}</div>}
         <div {...stylex.props(styles.mobileBarEnd)}>
           {endContent}
-          {hasMobileDrawerContent && <XDSMobileNavToggle />}
+          <XDSMobileNavToggle />
         </div>
       </nav>
     );

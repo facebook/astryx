@@ -70,11 +70,11 @@ export default defineConfig({
       '@xds/core': path.resolve(repoRoot, 'packages/core/src'),
       '@xds/theme-default': path.resolve(
         repoRoot,
-        'packages/themes/default/src',
+        'packages/themes/default/src/source.ts',
       ),
       '@xds/theme/default': path.resolve(
         repoRoot,
-        'packages/themes/default/src',
+        'packages/themes/default/src/source.ts',
       ),
       '@xds/theme-neutral': path.resolve(
         repoRoot,

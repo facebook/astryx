@@ -4,6 +4,10 @@ export const docs = {
   name: 'Pagination',
   description:
     'Standalone pagination controls for navigating through pages of content. Supports multiple display variants and works with known totals or cursor-based pagination.',
+  showcase: {
+    aspectRatio: 16 / 4,
+    code: '<XDSPagination totalPages={10} currentPage={1} onPageChange={() => {}} />',
+  },
   keywords: ["pagination","pager","paginator","pagenavigation","paging","paginate","pages","pagecontrol"],
   props: [
     {
@@ -97,45 +101,6 @@ export const docs = {
       type: 'StyleXStyles',
       description:
         'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
-    },
-  ],
-  examples: [
-    {
-      label: 'Page number buttons (default)',
-      code: `<XDSPagination
-  page={page}
-  onChange={setPage}
-  totalItems={200}
-  pageSize={20}
-/>`,
-    },
-    {
-      label: 'Count display with page size selector',
-      code: `<XDSPagination
-  page={page}
-  onChange={setPage}
-  totalItems={200}
-  variant="count"
-  pageSizeOptions={[10, 20, 50]}
-  onPageSizeChange={setPageSize}
-/>`,
-    },
-    {
-      label: 'Cursor-based (no total known)',
-      code: `<XDSPagination
-  page={page}
-  onChange={setPage}
-  hasMore={data.hasNextPage}
-/>`,
-    },
-    {
-      label: 'Carousel dots',
-      code: `<XDSPagination
-  page={slideIndex}
-  onChange={setSlideIndex}
-  totalPages={slides.length}
-  variant="dots"
-/>`,
     },
   ],
   features: [
@@ -273,45 +238,6 @@ export const docsZh = {
       type: 'StyleXStyles',
       description:
         '用于布局自定义（外边距、定位、尺寸）的 StyleX 样式。必须是 stylex.create() 的值，而非内联样式对象如 style={{}}。',
-    },
-  ],
-  examples: [
-    {
-      label: '页码按钮（默认）',
-      code: `<XDSPagination
-  page={page}
-  onChange={setPage}
-  totalItems={200}
-  pageSize={20}
-/>`,
-    },
-    {
-      label: '带每页大小选择器的计数显示',
-      code: `<XDSPagination
-  page={page}
-  onChange={setPage}
-  totalItems={200}
-  variant="count"
-  pageSizeOptions={[10, 20, 50]}
-  onPageSizeChange={setPageSize}
-/>`,
-    },
-    {
-      label: '基于游标的分页（总数未知）',
-      code: `<XDSPagination
-  page={page}
-  onChange={setPage}
-  hasMore={data.hasNextPage}
-/>`,
-    },
-    {
-      label: '轮播点',
-      code: `<XDSPagination
-  page={slideIndex}
-  onChange={setSlideIndex}
-  totalPages={slides.length}
-  variant="dots"
-/>`,
     },
   ],
   features: [

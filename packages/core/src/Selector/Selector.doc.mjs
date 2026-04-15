@@ -4,6 +4,10 @@ export const docs = {
   name: 'Selector',
   description:
     'Dropdown selector for choosing from a list of options. Follows XDS input conventions with label, status, and field props.',
+  showcase: {
+    aspectRatio: 4 / 3,
+    code: '<XDSSelector label="Choose" items={["Option A", "Option B"]} />',
+  },
   keywords: ["selector","select","dropdown","combobox","picker","listbox","chooser","autocomplete","option","selectmenu"],
   features: [
     'Supports string items (auto-converted to {value, label}), object items with optional icon and disabled state, dividers, and labeled sections',
@@ -27,66 +31,6 @@ export const docs = {
       {className: 'xds-selector-option'},
     ],
   },
-  examples: [
-    {
-      label: 'Basic',
-      code: `<XDSSelector
-  label="Fruit"
-  options={['Apple', 'Banana', 'Orange']}
-  value={value}
-  onChange={setValue}
-/>`,
-    },
-    {
-      label: 'With object items (icon, disabled)',
-      code: `<XDSSelector
-  label="Settings"
-  options={[
-    {value: 'profile', label: 'Profile', icon: UserIcon},
-    {value: 'settings', label: 'Settings', icon: CogIcon, disabled: true},
-  ]}
-  value={value}
-  onChange={setValue}
-/>`,
-    },
-    {
-      label: 'Sections',
-      code: `<XDSSelector
-  label="Fruit"
-  options={[
-    {value: 'apple', label: 'Apple'},
-    {type: 'section', title: 'Citrus', items: [
-      {value: 'orange', label: 'Orange'},
-    ]},
-  ]}
-  value={value}
-  onChange={setValue}
-/>`,
-    },
-    {
-      label: 'Custom rendering with XDSSelectorItem',
-      code: `<XDSSelector label="User" options={users} value={value} onChange={setValue}>
-  {user => (
-    <XDSSelectorItem
-      icon={UserIcon}
-      label={user.label}
-      description={user.email}
-    />
-  )}
-</XDSSelector>`,
-    },
-    {
-      label: 'With status and field props',
-      code: `<XDSSelector
-  label="Fruit"
-  isRequired
-  status={{type: 'error', message: 'Required'}}
-  options={['Apple', 'Banana']}
-  value={value}
-  onChange={setValue}
-/>`,
-    },
-  ],
   components: [
     {
       name: 'XDSSelector',
@@ -176,29 +120,6 @@ export const docs = {
             'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
         },
       ],
-      examples: [
-        {
-          label: 'Basic',
-          code: `<XDSSelector
-  label="Fruit"
-  options={['Apple', 'Banana', 'Orange']}
-  value={value}
-  onChange={setValue}
-/>`,
-        },
-        {
-          label: 'With object items',
-          code: `<XDSSelector
-  label="Settings"
-  options={[
-    {value: 'profile', label: 'Profile', icon: UserIcon},
-    {value: 'settings', label: 'Settings', icon: CogIcon, disabled: true},
-  ]}
-  value={value}
-  onChange={setValue}
-/>`,
-        },
-      ],
     },
     {
       name: 'XDSSelectorItem',
@@ -220,20 +141,6 @@ export const docs = {
           name: 'description',
           type: 'ReactNode',
           description: 'Secondary description text displayed below the label.',
-        },
-      ],
-      examples: [
-        {
-          label: 'Custom item rendering',
-          code: `<XDSSelector label="User" options={users} value={value} onChange={setValue}>
-  {user => (
-    <XDSSelectorItem
-      icon={UserIcon}
-      label={user.label}
-      description={user.email}
-    />
-  )}
-</XDSSelector>`,
         },
       ],
     },
@@ -294,66 +201,6 @@ export const docsZh = {
       {className: 'xds-selector-option'},
     ],
   },
-  examples: [
-    {
-      label: '基础用法',
-      code: `<XDSSelector
-  label="Fruit"
-  options={['Apple', 'Banana', 'Orange']}
-  value={value}
-  onChange={setValue}
-/>`,
-    },
-    {
-      label: '对象选项（图标、禁用）',
-      code: `<XDSSelector
-  label="Settings"
-  options={[
-    {value: 'profile', label: 'Profile', icon: UserIcon},
-    {value: 'settings', label: 'Settings', icon: CogIcon, disabled: true},
-  ]}
-  value={value}
-  onChange={setValue}
-/>`,
-    },
-    {
-      label: '分组',
-      code: `<XDSSelector
-  label="Fruit"
-  options={[
-    {value: 'apple', label: 'Apple'},
-    {type: 'section', title: 'Citrus', items: [
-      {value: 'orange', label: 'Orange'},
-    ]},
-  ]}
-  value={value}
-  onChange={setValue}
-/>`,
-    },
-    {
-      label: '使用 XDSSelectorItem 自定义渲染',
-      code: `<XDSSelector label="User" options={users} value={value} onChange={setValue}>
-  {user => (
-    <XDSSelectorItem
-      icon={UserIcon}
-      label={user.label}
-      description={user.email}
-    />
-  )}
-</XDSSelector>`,
-    },
-    {
-      label: '带状态和字段属性',
-      code: `<XDSSelector
-  label="Fruit"
-  isRequired
-  status={{type: 'error', message: 'Required'}}
-  options={['Apple', 'Banana']}
-  value={value}
-  onChange={setValue}
-/>`,
-    },
-  ],
   components: [
     {
       name: 'XDSSelector',
@@ -442,29 +289,6 @@ export const docsZh = {
             '用于布局自定义的 StyleX 样式（边距、定位、尺寸）。必须是 stylex.create() 的值，而非内联样式对象如 style={{}}。',
         },
       ],
-      examples: [
-        {
-          label: '基础用法',
-          code: `<XDSSelector
-  label="Fruit"
-  options={['Apple', 'Banana', 'Orange']}
-  value={value}
-  onChange={setValue}
-/>`,
-        },
-        {
-          label: '对象选项',
-          code: `<XDSSelector
-  label="Settings"
-  options={[
-    {value: 'profile', label: 'Profile', icon: UserIcon},
-    {value: 'settings', label: 'Settings', icon: CogIcon, disabled: true},
-  ]}
-  value={value}
-  onChange={setValue}
-/>`,
-        },
-      ],
     },
     {
       name: 'XDSSelectorItem',
@@ -486,20 +310,6 @@ export const docsZh = {
           name: 'description',
           type: 'ReactNode',
           description: '显示在标签下方的次要描述文本。',
-        },
-      ],
-      examples: [
-        {
-          label: '自定义选项渲染',
-          code: `<XDSSelector label="User" options={users} value={value} onChange={setValue}>
-  {user => (
-    <XDSSelectorItem
-      icon={UserIcon}
-      label={user.label}
-      description={user.email}
-    />
-  )}
-</XDSSelector>`,
         },
       ],
     },

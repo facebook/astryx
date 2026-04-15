@@ -4,6 +4,10 @@ export const docs = {
   name: 'IconButton',
   description:
     'An icon-only button. Thin wrapper around XDSButton with isIconOnly always true.',
+  showcase: {
+    aspectRatio: 1,
+    code: '<XDSIconButton label="Settings" icon="gear" />',
+  },
 
   keywords: ['icon-button', 'icon', 'button', 'toolbar', 'action', 'compact'],
   features: [
@@ -66,25 +70,6 @@ export const docs = {
       name: 'onClickAction',
       type: '(e: MouseEvent) => void | Promise<void>',
       description: 'Async click handler with automatic loading state.',
-    },
-  ],
-
-  examples: [
-    {
-      label: 'Ghost icon button',
-      code: '<XDSIconButton label="Settings" icon={<GearIcon />} variant="ghost" />',
-    },
-    {
-      label: 'Destructive icon button',
-      code: '<XDSIconButton label="Delete" icon={<TrashIcon />} variant="destructive" />',
-    },
-    {
-      label: 'Small emoji icon button',
-      code: '<XDSIconButton label="Emoji" icon={<span>🚀</span>} variant="ghost" size="sm" />',
-    },
-    {
-      label: 'Primary icon button with tooltip',
-      code: '<XDSIconButton label="Add item" icon={<PlusIcon />} variant="primary" tooltip="Add a new item" />',
     },
   ],
 

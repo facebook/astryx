@@ -212,9 +212,9 @@ export function Report() {
                   variant="secondary"
                   onClick={() =>
                     setThemeMode(m => (m === 'light' ? 'dark' : 'light'))
-                  }>
-                  {themeMode === 'light' ? '🌙 Dark' : '☀️ Light'}
-                </XDSButton>
+                  }
+                  label={themeMode === 'light' ? '🌙 Dark' : '☀️ Light'}
+                />
               </XDSHStack>
             </div>
 

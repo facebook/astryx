@@ -4,6 +4,10 @@ export const docs = {
   name: 'Switch',
   description:
     'A toggle switch component for boolean values with integrated label support.',
+  showcase: {
+    aspectRatio: 4 / 3,
+    code: '<XDSSwitch label="Dark mode" />',
+  },
   keywords: ["switch","toggle","onoff","flipswitch","boolean","toggleswitch"],
   features: [
     'Boolean toggle — fixed 40x24px track with animated 16px (off) / 20px (on) thumb',
@@ -16,67 +20,7 @@ export const docs = {
     'Async action support — onChangeAction with optimistic UI and built-in loading spinner',
     'Accessibility — native checkbox with role="switch", aria-describedby, aria-invalid, aria-busy',
     'Reduced motion — respects prefers-reduced-motion for track and thumb transitions',
-  ],
-  examples: [
-    {
-      label: 'Basic',
-      code: `<XDSSwitch
-  label="Enable notifications"
-  value={enabled}
-  onChange={setEnabled}
-/>`,
-    },
-    {
-      label: 'With description',
-      code: `<XDSSwitch
-  label="Dark mode"
-  description="Switch to a darker color scheme"
-  value={darkMode}
-  onChange={setDarkMode}
-/>`,
-    },
-    {
-      label: 'With label icon and tooltip',
-      code: `<XDSSwitch
-  label="Auto-save"
-  labelIcon={CloudArrowUpIcon}
-  labelTooltip="Automatically save changes"
-  value={autoSave}
-  onChange={setAutoSave}
-/>`,
-    },
-    {
-      label: 'Settings panel style (label start, spread spacing)',
-      code: `<XDSSwitch
-  label="Enable notifications"
-  value={enabled}
-  onChange={setEnabled}
-  labelPosition="start"
-  labelSpacing="spread"
-/>`,
-    },
-    {
-      label: 'With async action and optimistic UI',
-      code: `<XDSSwitch
-  label="Sync to cloud"
-  value={syncEnabled}
-  onChange={setSyncEnabled}
-  onChangeAction={async (checked) => {
-    await updateSetting('sync', checked);
-  }}
-/>`,
-    },
-    {
-      label: 'With error status',
-      code: `<XDSSwitch
-  label="Two-factor authentication"
-  value={twoFactor}
-  onChange={setTwoFactor}
-  status={{type: 'error', message: 'Failed to save setting'}}
-/>`,
-    },
-  ],
-  props: [
+  ],  props: [
     {
       name: 'ref',
       type: 'React.Ref<HTMLInputElement>',
@@ -239,65 +183,6 @@ export const docsZh = {
     '状态消息 — 开关下方的错误、警告、成功或信息消息框',
     '异步操作支持 — onChangeAction 支持乐观 UI 和内置加载旋转器',
     '无障碍 — 原生复选框，具有 role="switch"、aria-describedby、aria-invalid、aria-busy',
-  ],
-  examples: [
-    {
-      label: '基础用法',
-      code: `<XDSSwitch
-  label="Enable notifications"
-  value={enabled}
-  onChange={setEnabled}
-/>`,
-    },
-    {
-      label: '带描述',
-      code: `<XDSSwitch
-  label="Dark mode"
-  description="Switch to a darker color scheme"
-  value={darkMode}
-  onChange={setDarkMode}
-/>`,
-    },
-    {
-      label: '带标签图标和工具提示',
-      code: `<XDSSwitch
-  label="Auto-save"
-  labelIcon={CloudArrowUpIcon}
-  labelTooltip="Automatically save changes"
-  value={autoSave}
-  onChange={setAutoSave}
-/>`,
-    },
-    {
-      label: '设置面板样式（标签在前，分散间距）',
-      code: `<XDSSwitch
-  label="Enable notifications"
-  value={enabled}
-  onChange={setEnabled}
-  labelPosition="start"
-  labelSpacing="spread"
-/>`,
-    },
-    {
-      label: '带异步操作和乐观 UI',
-      code: `<XDSSwitch
-  label="Sync to cloud"
-  value={syncEnabled}
-  onChange={setSyncEnabled}
-  onChangeAction={async (checked) => {
-    await updateSetting('sync', checked);
-  }}
-/>`,
-    },
-    {
-      label: '带错误状态',
-      code: `<XDSSwitch
-  label="Two-factor authentication"
-  value={twoFactor}
-  onChange={setTwoFactor}
-  status={{type: 'error', message: 'Failed to save setting'}}
-/>`,
-    },
   ],
   props: [
     {

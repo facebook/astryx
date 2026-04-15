@@ -1,12 +1,12 @@
 /**
  * @file tokenizer.ts
  * @input Code string and language identifier
- * @output Array of tokens with type, start, and end positions
+ * @output Array of per-line token arrays with line-relative offsets
  * @position Shared utility; consumed by XDSCodeBlock and XDSCodeEditor
  *
  * SYNC: When modified, update:
- * - /packages/lab/src/CodeBlock/XDSCodeBlock.tsx
- * - /packages/lab/src/CodeEditor/XDSCodeEditor.tsx
+ * - /packages/core/src/CodeBlock/XDSCodeBlock.tsx
+ * - /packages/core/src/CodeBlock/highlightRanges.ts
  */
 
 /**
@@ -17,12 +17,20 @@ declare const scheduler: {yield?: () => Promise<void>} | undefined;
 
 export type Token = {type: string; start: number; end: number};
 
+/**
+ * Per-line token structure. Each line stores its own tokens with
+ * line-relative start/end offsets (0 = start of line).
+ */
+export type TokenLine = Token[];
+
 // ---------------------------------------------------------------------------
 // Language definitions
 // ---------------------------------------------------------------------------
 
 type LangDef = {
   patterns: Array<{type: string; regex: RegExp; anchored: RegExp}>;
+  /** Token type that matches the element's default text color (skipped in output). */
+  defaultType: string;
 };
 
 /** Cache compiled language definitions to avoid re-creating regexes. */
@@ -58,9 +66,8 @@ function buildLanguageUncached(lang: string): LangDef | null {
   const raw = buildLanguagePatterns(lang);
   if (!raw) return null;
   return {
+    defaultType: raw.defaultType,
     patterns: raw.patterns.map(p => {
-      // Use sticky flag (y) to anchor match at lastIndex position.
-      // This avoids code.slice() on every attempt — much faster.
       const flags = p.regex.flags.replace(/[gy]/g, '') + 'y';
       return {...p, anchored: new RegExp(p.regex.source, flags)};
     }),
@@ -69,7 +76,7 @@ function buildLanguageUncached(lang: string): LangDef | null {
 
 function buildLanguagePatterns(
   lang: string,
-): {patterns: Array<{type: string; regex: RegExp}>} | null {
+): {patterns: Array<{type: string; regex: RegExp}>; defaultType: string} | null {
   switch (lang) {
     case 'typescript':
     case 'javascript':
@@ -78,6 +85,7 @@ function buildLanguagePatterns(
     case 'ts':
     case 'js':
       return {
+        defaultType: 'variable',
         patterns: [
           {type: 'comment', regex: /\/\*[\s\S]*?\*\//},
           {type: 'comment', regex: /\/\/[^\n]*/},
@@ -101,6 +109,7 @@ function buildLanguagePatterns(
 
     case 'json':
       return {
+        defaultType: 'punctuation',
         patterns: [
           {type: 'property', regex: /"(?:[^"\\]|\\.)*"(?=\s*:)/},
           {type: 'string', regex: /"(?:[^"\\]|\\.)*"/},
@@ -115,6 +124,7 @@ function buildLanguagePatterns(
     case 'xml':
     case 'svg':
       return {
+        defaultType: 'variable',
         patterns: [
           {type: 'comment', regex: /<!--[\s\S]*?-->/},
           {type: 'keyword', regex: /<!DOCTYPE[^>]*>/i},
@@ -132,6 +142,7 @@ function buildLanguagePatterns(
     case 'scss':
     case 'less':
       return {
+        defaultType: 'variable',
         patterns: [
           {type: 'comment', regex: /\/\*[\s\S]*?\*\//},
           {type: 'comment', regex: /\/\/[^\n]*/},
@@ -159,6 +170,7 @@ function buildLanguagePatterns(
     case 'python':
     case 'py':
       return {
+        defaultType: 'variable',
         patterns: [
           {type: 'string', regex: /"""[\s\S]*?"""/},
           {type: 'string', regex: /'''[\s\S]*?'''/},
@@ -187,6 +199,7 @@ function buildLanguagePatterns(
     case 'zsh':
     case 'shell':
       return {
+        defaultType: 'variable',
         patterns: [
           {type: 'comment', regex: /#[^\n]*/},
           {type: 'string', regex: /"(?:[^"\\]|\\.)*"/},
@@ -205,6 +218,7 @@ function buildLanguagePatterns(
 
     case 'php':
       return {
+        defaultType: 'variable',
         patterns: [
           {type: 'comment', regex: /\/\*[\s\S]*?\*\//},
           {type: 'comment', regex: /\/\/[^\n]*/},
@@ -226,6 +240,7 @@ function buildLanguagePatterns(
 
     case 'hack':
       return {
+        defaultType: 'variable',
         patterns: [
           {type: 'comment', regex: /\/\*[\s\S]*?\*\//},
           {type: 'comment', regex: /\/\/[^\n]*/},
@@ -248,6 +263,7 @@ function buildLanguagePatterns(
     case 'yaml':
     case 'yml':
       return {
+        defaultType: 'variable',
         patterns: [
           {type: 'comment', regex: /#[^\n]*/},
           {type: 'string', regex: /"(?:[^"\\]|\\.)*"/},
@@ -269,6 +285,7 @@ function buildLanguagePatterns(
     case 'markdown':
     case 'md':
       return {
+        defaultType: 'variable',
         patterns: [
           {type: 'keyword', regex: /^```[\w]*$/m},
           {type: 'keyword', regex: /^#{1,6}\s+.*/m},
@@ -297,7 +314,7 @@ function buildLanguagePatterns(
 export const SYNC_TOKENIZE_THRESHOLD = 2000;
 
 /** Characters to process per chunk in async tokenization. */
-const ASYNC_CHUNK_SIZE = 5000;
+const ASYNC_CHUNK_SIZE = 800;
 
 /**
  * Yield to the main thread. Uses `scheduler.yield()` when available,
@@ -314,19 +331,19 @@ function yieldToMain(): Promise<void> {
 }
 
 /**
- * Internal tokenization loop. Processes from `startPos` up to `endPos`
- * (or end of string), pushing tokens into the provided array.
- * Returns the final position.
+ * Tokenize a single line. Tokens whose type matches `defaultType`
+ * are omitted — the element's base color handles them.
+ * Returns tokens with line-relative offsets (0 = start of line).
  */
-function tokenizeRange(
+function tokenizeLine(
   code: string,
   langDef: LangDef,
-  tokens: Token[],
-  startPos: number,
-  endPos: number,
-): number {
-  let pos = startPos;
-  const limit = Math.min(endPos, code.length);
+  lineStart: number,
+  lineEnd: number,
+): Token[] {
+  const tokens: Token[] = [];
+  let pos = lineStart;
+  const limit = Math.min(lineEnd, code.length);
 
   while (pos < limit) {
     let matched = false;
@@ -336,11 +353,13 @@ function tokenizeRange(
       const match = pattern.anchored.exec(code);
 
       if (match && match.index === pos && match[0].length > 0) {
-        tokens.push({
-          type: pattern.type,
-          start: pos,
-          end: pos + match[0].length,
-        });
+        if (pattern.type !== langDef.defaultType) {
+          tokens.push({
+            type: pattern.type,
+            start: pos - lineStart,
+            end: pos - lineStart + match[0].length,
+          });
+        }
         pos += match[0].length;
         matched = true;
         break;
@@ -352,67 +371,144 @@ function tokenizeRange(
     }
   }
 
-  return pos;
-}
-
-/**
- * Tokenizes a code string into an array of typed tokens with character offsets.
- *
- * Uses a greedy first-match strategy: at each position, try all patterns in
- * order and emit the first match. Skips characters that don't match any pattern.
- *
- * Best for small code strings (< 2000 chars). For large code, use
- * `tokenizeAsync()` which yields to the main thread between chunks.
- *
- * @param code - The source code string to tokenize
- * @param language - Language identifier (e.g. 'typescript', 'python')
- * @returns Array of tokens sorted by start position
- */
-export function tokenize(code: string, language: string): Token[] {
-  const langDef = buildLanguage(language);
-  if (!langDef) return [];
-
-  const tokens: Token[] = [];
-  tokenizeRange(code, langDef, tokens, 0, code.length);
   return tokens;
 }
 
 /**
- * Async streaming tokenizer that yields to the main thread between chunks.
+ * Tokenizes a code string into per-line token arrays.
  *
- * Processes ~5000 characters at a time, then yields via `scheduler.yield()`
- * (or `setTimeout`) to avoid blocking the main thread on large files.
- *
- * Supports cancellation via AbortSignal — returns tokens accumulated so far
- * if aborted (callers should discard the result).
+ * Each line's tokens use line-relative offsets. Tokens matching the
+ * language's default color type are omitted (~30% reduction).
  *
  * @param code - The source code string to tokenize
  * @param language - Language identifier (e.g. 'typescript', 'python')
- * @param signal - Optional AbortSignal for cancellation
- * @returns Promise resolving to array of tokens sorted by start position
+ * @returns Array of token arrays, one per line
+ */
+export function tokenize(code: string, language: string): TokenLine[] {
+  const langDef = buildLanguage(language);
+  if (!langDef) return [];
+
+  const result: TokenLine[] = [];
+  let lineStart = 0;
+
+  for (let i = 0; i <= code.length; i++) {
+    if (i === code.length || code[i] === '\n') {
+      result.push(tokenizeLine(code, langDef, lineStart, i));
+      lineStart = i + 1;
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Async tokenizer that yields to the main thread between batches
+ * of lines (~800 chars per batch).
  */
 export async function tokenizeAsync(
   code: string,
   language: string,
   signal?: AbortSignal,
-): Promise<Token[]> {
+): Promise<TokenLine[]> {
   const langDef = buildLanguage(language);
   if (!langDef) return [];
 
-  const tokens: Token[] = [];
-  let pos = 0;
+  const result: TokenLine[] = [];
+  let lineStart = 0;
+  let charsInChunk = 0;
 
-  while (pos < code.length) {
-    if (signal?.aborted) return tokens;
+  for (let i = 0; i <= code.length; i++) {
+    if (i === code.length || code[i] === '\n') {
+      result.push(tokenizeLine(code, langDef, lineStart, i));
+      charsInChunk += i - lineStart + 1;
+      lineStart = i + 1;
 
-    // Process one chunk
-    pos = tokenizeRange(code, langDef, tokens, pos, pos + ASYNC_CHUNK_SIZE);
-
-    // Yield to main thread if there's more to process
-    if (pos < code.length) {
-      await yieldToMain();
+      if (charsInChunk >= ASYNC_CHUNK_SIZE && i < code.length) {
+        if (signal?.aborted) return result;
+        charsInChunk = 0;
+        await yieldToMain();
+      }
     }
   }
 
-  return tokens;
+  return result;
+}
+
+/**
+ * Streaming tokenizer with per-batch callback. Tokenizes lines in
+ * batches and invokes `onBatch` after each so consumers can apply
+ * highlights progressively.
+ */
+export async function tokenizeStreaming(
+  code: string,
+  language: string,
+  onBatch: (lines: TokenLine[], startLine: number) => void,
+  signal?: AbortSignal,
+): Promise<void> {
+  const langDef = buildLanguage(language);
+  if (!langDef) return;
+
+  let lineStart = 0;
+  let lineIndex = 0;
+  let charsInChunk = 0;
+  let batch: TokenLine[] = [];
+  let batchStartLine = 0;
+
+  for (let i = 0; i <= code.length; i++) {
+    if (i === code.length || code[i] === '\n') {
+      batch.push(tokenizeLine(code, langDef, lineStart, i));
+      charsInChunk += i - lineStart + 1;
+      lineIndex++;
+      lineStart = i + 1;
+
+      if (charsInChunk >= ASYNC_CHUNK_SIZE && i < code.length) {
+        if (signal?.aborted) return;
+        onBatch(batch, batchStartLine);
+        batch = [];
+        batchStartLine = lineIndex;
+        charsInChunk = 0;
+        await yieldToMain();
+      }
+    }
+  }
+
+  if (batch.length > 0) {
+    onBatch(batch, batchStartLine);
+  }
+}
+
+/**
+ * Convert legacy flat tokens (absolute offsets) to per-line tokens
+ * (line-relative offsets). For backwards compatibility with custom
+ * tokenizers that return the old format.
+ */
+export function flatTokensToLines(
+  tokens: Array<{type: string; start: number; end: number}>,
+  code: string,
+): TokenLine[] {
+  const lineStarts: number[] = [0];
+  for (let i = 0; i < code.length; i++) {
+    if (code[i] === '\n') lineStarts.push(i + 1);
+  }
+
+  const result: TokenLine[] = Array.from({length: lineStarts.length}, () => []);
+  let lineIdx = 0;
+
+  for (const token of tokens) {
+    while (
+      lineIdx < lineStarts.length - 1 &&
+      token.start >= lineStarts[lineIdx + 1]
+    ) {
+      lineIdx++;
+    }
+
+    const lineStart = lineStarts[lineIdx];
+    result[lineIdx].push({
+      type: token.type,
+      start: token.start - lineStart,
+      end: token.end - lineStart,
+    });
+  }
+
+  return result;
 }

@@ -3,6 +3,10 @@
 export const docs = {
   name: 'Card',
   description: 'Card container component with shadow and themed styling.',
+  showcase: {
+    aspectRatio: 4 / 3,
+    code: '<XDSCard>Card content</XDSCard>',
+  },
   keywords: ["card","surface","panel","container","elevated","shadow","box","paper","tile","well"],
   features: [
     'Top-level container for elevated content',
@@ -50,61 +54,6 @@ export const docs = {
       description:
         'Background color variant. `default` uses the standard card background. `muted` uses the wash background for de-emphasised cards. The non-semantic variants use the corresponding `--color-<name>-background` token.',
       default: "'default'",
-    },
-  ],
-  examples: [
-    {
-      label: 'Basic card with layout',
-      code: `<XDSCard width={400} height={300}>
-  <XDSLayout
-    header={<XDSLayoutHeader hasDivider>Title</XDSLayoutHeader>}
-    content={<XDSLayoutContent>Content</XDSLayoutContent>}
-    footer={<XDSLayoutFooter hasDivider>Actions</XDSLayoutFooter>}
-  />
-</XDSCard>`,
-    },
-    {
-      label: 'Simple content',
-      code: `<XDSCard>
-  <p>Card content with default padding</p>
-</XDSCard>`,
-    },
-    {
-      label: 'Muted background',
-      code: `<XDSCard variant="muted" width={300}>
-  <p>De-emphasised card with wash background</p>
-</XDSCard>`,
-    },
-    {
-      label: 'Color variant',
-      code: `<XDSCard variant="blue" width={300}>
-  <p>Blue tinted card</p>
-</XDSCard>`,
-    },
-    {
-      label: 'Collapsible card',
-      code: `<XDSCard>
-  <XDSCollapsible trigger="Details">
-    <p>This content can be collapsed</p>
-  </XDSCollapsible>
-</XDSCard>`,
-    },
-    {
-      label: 'Accordion of cards',
-      code: `<XDSCollapsibleGroup type="single" defaultValue="general">
-  <XDSVStack gap={2}>
-    <XDSCard>
-      <XDSCollapsible trigger="General" value="general">
-        <GeneralSettings />
-      </XDSCollapsible>
-    </XDSCard>
-    <XDSCard>
-      <XDSCollapsible trigger="Advanced" value="advanced">
-        <AdvancedSettings />
-      </XDSCollapsible>
-    </XDSCard>
-  </XDSVStack>
-</XDSCollapsibleGroup>`,
     },
   ],
   theming: {
@@ -189,49 +138,6 @@ export const docsZh = {
       type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
       description: '使用间距比例的内边距。',
       default: '4',
-    },
-  ],
-  examples: [
-    {
-      label: '带布局的基本卡片',
-      code: `<XDSCard width={400} height={300}>
-  <XDSLayout
-    header={<XDSLayoutHeader hasDivider>Title</XDSLayoutHeader>}
-    content={<XDSLayoutContent>Content</XDSLayoutContent>}
-    footer={<XDSLayoutFooter hasDivider>Actions</XDSLayoutFooter>}
-  />
-</XDSCard>`,
-    },
-    {
-      label: '简单内容',
-      code: `<XDSCard>
-  <p>Card content with default padding</p>
-</XDSCard>`,
-    },
-    {
-      label: '可折叠卡片',
-      code: `<XDSCard>
-  <XDSCollapsible trigger="Details">
-    <p>This content can be collapsed</p>
-  </XDSCollapsible>
-</XDSCard>`,
-    },
-    {
-      label: '手风琴卡片',
-      code: `<XDSCollapsibleGroup type="single" defaultValue="general">
-  <XDSVStack gap={2}>
-    <XDSCard>
-      <XDSCollapsible trigger="General" value="general">
-        <GeneralSettings />
-      </XDSCollapsible>
-    </XDSCard>
-    <XDSCard>
-      <XDSCollapsible trigger="Advanced" value="advanced">
-        <AdvancedSettings />
-      </XDSCollapsible>
-    </XDSCard>
-  </XDSVStack>
-</XDSCollapsibleGroup>`,
     },
   ],
   theming: {

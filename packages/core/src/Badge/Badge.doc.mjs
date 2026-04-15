@@ -4,6 +4,10 @@ export const docs = {
   name: 'Badge',
   description:
     'A badge component for displaying status indicators, counts, or labels.',
+  showcase: {
+    aspectRatio: 1,
+    code: '<XDSBadge label="New" />',
+  },
   keywords: ["badge","tag","chip","label","status","indicator","count","counter","pill","notification","marker"],
   props: [
     {
@@ -22,29 +26,6 @@ export const docs = {
       name: 'icon',
       type: 'ReactNode',
       description: 'Optional leading icon.',
-    },
-  ],
-  examples: [
-    {
-      label: 'Text badge',
-      code: '<XDSBadge label="Default" />',
-    },
-    {
-      label: 'Status variants',
-      code: `<XDSBadge variant="success" label="Active" />
-<XDSBadge variant="error" label="Failed" />
-<XDSBadge variant="warning" label="Pending" />`,
-    },
-    {
-      label: 'Count badge',
-      code: '<XDSBadge variant="info" label={42} />',
-    },
-    {
-      label: 'Non-semantic color variants',
-      code: `<XDSBadge variant="blue" label="Design" />
-<XDSBadge variant="purple" label="Engineering" />
-<XDSBadge variant="teal" label="Research" />
-<XDSBadge variant="orange" label="Urgent" />`,
     },
   ],
   theming: {
@@ -120,29 +101,6 @@ export const docsZh = {
       name: 'icon',
       type: 'ReactNode',
       description: '可选的前置图标。',
-    },
-  ],
-  examples: [
-    {
-      label: '文本徽章',
-      code: '<XDSBadge label="Default" />',
-    },
-    {
-      label: '状态变体',
-      code: `<XDSBadge variant="success" label="Active" />
-<XDSBadge variant="error" label="Failed" />
-<XDSBadge variant="warning" label="Pending" />`,
-    },
-    {
-      label: '计数徽章',
-      code: '<XDSBadge variant="info" label={42} />',
-    },
-    {
-      label: '非语义颜色变体',
-      code: `<XDSBadge variant="blue" label="Design" />
-<XDSBadge variant="purple" label="Engineering" />
-<XDSBadge variant="teal" label="Research" />
-<XDSBadge variant="orange" label="Urgent" />`,
     },
   ],
   theming: {
