@@ -22,3 +22,8 @@ export default function CollapsibleMultipleMode() {
     </XDSCollapsibleGroup>
   );
 }
+
+export const showcase = {
+  aspectRatio: 4 / 3,
+  render: CollapsibleMultipleMode,
+};

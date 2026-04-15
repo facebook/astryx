@@ -15,3 +15,8 @@ export default function CollapsibleStandalone() {
     </XDSCard>
   );
 }
+
+export const showcase = {
+  aspectRatio: 4 / 3,
+  render: CollapsibleStandalone,
+};
