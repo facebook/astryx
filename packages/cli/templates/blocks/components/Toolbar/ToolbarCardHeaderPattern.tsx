@@ -31,3 +31,8 @@ export default function ToolbarCardHeaderPattern() {
     </XDSCard>
   );
 }
+
+export const showcase = {
+  aspectRatio: 16 / 4,
+  render: ToolbarCardHeaderPattern,
+};

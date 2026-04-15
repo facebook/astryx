@@ -18,3 +18,8 @@ export default function ToolbarCompactDensity() {
     />
   );
 }
+
+export const showcase = {
+  aspectRatio: 16 / 4,
+  render: ToolbarCompactDensity,
+};
