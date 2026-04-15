@@ -15,3 +15,8 @@ export default function SwitchWithDescription() {
     />
   );
 }
+
+export const showcase = {
+  aspectRatio: 4 / 3,
+  render: SwitchWithDescription,
+};

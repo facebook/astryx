@@ -14,3 +14,8 @@ export default function SwitchBasic() {
     />
   );
 }
+
+export const showcase = {
+  aspectRatio: 4 / 3,
+  render: SwitchBasic,
+};
