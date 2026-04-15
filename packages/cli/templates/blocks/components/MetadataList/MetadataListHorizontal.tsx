@@ -11,3 +11,8 @@ export default function MetadataListHorizontal() {
     </XDSMetadataList>
   );
 }
+
+export const showcase = {
+  aspectRatio: 4 / 3,
+  render: MetadataListHorizontal,
+};

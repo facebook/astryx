@@ -17,3 +17,8 @@ export default function MetadataListWithTitleAndShowMore() {
     </XDSMetadataList>
   );
 }
+
+export const showcase = {
+  aspectRatio: 4 / 3,
+  render: MetadataListWithTitleAndShowMore,
+};
