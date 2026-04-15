@@ -19,12 +19,20 @@ import {createContext, useContext} from 'react';
 export type XDSTabListSize = 'sm' | 'md' | 'lg';
 
 /**
- * Context for communicating value/onChange/size from XDSTabList to children.
+ * Layout mode for tab sizing.
+ * - `'hug'`: each tab hugs its content width.
+ * - `'fill'`: tabs stretch equally to fill the container width.
+ */
+export type XDSTabListLayout = 'hug' | 'fill';
+
+/**
+ * Context for communicating value/onChange/size/layout from XDSTabList to children.
  */
 export interface XDSTabListContextValue {
   value: string;
   onChange: (value: string) => void;
   size: XDSTabListSize;
+  layout: XDSTabListLayout;
 }
 
 export const XDSTabListContext = createContext<XDSTabListContextValue | null>(
