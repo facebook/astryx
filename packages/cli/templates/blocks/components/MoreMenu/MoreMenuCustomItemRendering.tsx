@@ -2,6 +2,7 @@
 
 import {XDSMoreMenu} from '@xds/core/MoreMenu';
 import {XDSDropdownMenuItem} from '@xds/core/DropdownMenu';
+import type {XDSDropdownMenuItemData} from '@xds/core/DropdownMenu';
 
 function PencilIcon() {
   return (
@@ -20,19 +21,15 @@ function TrashIcon() {
 }
 
 const actions = [
-  {label: 'Edit', icon: PencilIcon, description: 'Modify this item', onClick: () => {}},
-  {label: 'Delete', icon: TrashIcon, description: 'Remove permanently', onClick: () => {}},
+  {label: 'Edit', icon: PencilIcon, onClick: () => {}},
+  {label: 'Delete', icon: TrashIcon, onClick: () => {}},
 ];
 
 export default function MoreMenuCustomItemRendering() {
   return (
     <XDSMoreMenu label="User actions" items={actions}>
-      {(item: (typeof actions)[number]) => (
-        <XDSDropdownMenuItem
-          icon={item.icon}
-          label={item.label}
-          description={item.description}
-        />
+      {(item: XDSDropdownMenuItemData) => (
+        <XDSDropdownMenuItem icon={item.icon} label={item.label} />
       )}
     </XDSMoreMenu>
   );

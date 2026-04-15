@@ -1,6 +1,7 @@
 'use client';
 
 import {XDSDropdownMenu, XDSDropdownMenuItem} from '@xds/core/DropdownMenu';
+import type {XDSDropdownMenuItemData} from '@xds/core/DropdownMenu';
 
 function UserIcon() {
   return (
@@ -18,20 +19,16 @@ function UserIcon() {
 }
 
 const users = [
-  {label: 'Alice Johnson', email: 'alice@example.com', icon: UserIcon},
-  {label: 'Bob Smith', email: 'bob@example.com', icon: UserIcon},
-  {label: 'Carol Lee', email: 'carol@example.com', icon: UserIcon},
+  {label: 'Alice Johnson', icon: UserIcon},
+  {label: 'Bob Smith', icon: UserIcon},
+  {label: 'Carol Lee', icon: UserIcon},
 ];
 
 export default function DropdownMenuCustomItemRendering() {
   return (
     <XDSDropdownMenu button={{label: 'Users'}} items={users}>
-      {(item: (typeof users)[number]) => (
-        <XDSDropdownMenuItem
-          icon={item.icon}
-          label={item.label}
-          description={item.email}
-        />
+      {(item: XDSDropdownMenuItemData) => (
+        <XDSDropdownMenuItem icon={item.icon} label={item.label} />
       )}
     </XDSDropdownMenu>
   );
