@@ -57,81 +57,6 @@ export const docs = {
         'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
     },
   ],
-  examples: [
-    {
-      label: 'Minimal actions',
-      code: `<XDSMoreMenu
-  items={[
-    { label: 'Edit', onClick: handleEdit },
-    { label: 'Delete', onClick: handleDelete },
-  ]}
-/>`,
-    },
-    {
-      label: 'Table row actions with icons',
-      code: `<XDSMoreMenu
-  label="Row actions"
-  size="sm"
-  items={[
-    { label: 'Edit', icon: PencilIcon, onClick: () => handleEdit(row) },
-    { type: 'divider' },
-    { label: 'Delete', icon: TrashIcon, onClick: () => handleDelete(row) },
-  ]}
-/>`,
-    },
-    {
-      label: 'With sections',
-      code: `<XDSMoreMenu
-  label="Document actions"
-  items={[
-    {
-      type: 'section',
-      title: 'Actions',
-      items: [
-        { label: 'Edit', onClick: handleEdit },
-        { label: 'Duplicate', onClick: handleDuplicate },
-      ],
-    },
-    {
-      type: 'section',
-      title: 'Danger zone',
-      items: [
-        { label: 'Delete', onClick: handleDelete },
-      ],
-    },
-  ]}
-/>`,
-    },
-    {
-      label: 'Card header with overflow menu',
-      code: `<XDSHStack align="center" justify="between">
-  <XDSHeading level={3}>Card Title</XDSHeading>
-  <XDSMoreMenu
-    items={[
-      { label: 'Edit', onClick: handleEdit },
-      { label: 'Duplicate', onClick: handleDuplicate },
-      { type: 'divider' },
-      { label: 'Delete', onClick: handleDelete },
-    ]}
-  />
-</XDSHStack>`,
-    },
-    {
-      label: 'Custom item rendering',
-      code: `<XDSMoreMenu
-  label="User actions"
-  items={actions}
->
-  {item => (
-    <XDSDropdownMenuItem
-      icon={item.icon}
-      label={item.label}
-      description={item.description}
-    />
-  )}
-</XDSMoreMenu>`,
-    },
-  ],
   features: [
     "Zero-config defaults: three-dot icon, 'More options' label, ghost variant — just pass items",
     'Data-driven items: same items prop as XDSDropdownMenu (items, dividers, sections)',
@@ -222,40 +147,6 @@ export const docsZh = {
         '用于布局自定义的 StyleX 样式（边距、定位、尺寸）。必须是 stylex.create() 的值，不能是内联样式对象如 style={{}}。',
     },
   ],
-  examples: [
-    {
-      label: '最简操作',
-      code: `<XDSMoreMenu
-  items={[
-    { label: 'Edit', onClick: handleEdit },
-    { label: 'Delete', onClick: handleDelete },
-  ]}
-/>`,
-    },
-    {
-      label: '带图标的表格行操作',
-      code: `<XDSMoreMenu
-  label="Row actions"
-  size="sm"
-  items={[
-    { label: 'Edit', icon: PencilIcon, onClick: () => handleEdit(row) },
-    { type: 'divider' },
-    { label: 'Delete', icon: TrashIcon, onClick: () => handleDelete(row) },
-  ]}
-/>`,
-    },
-    {
-      label: '带分组',
-      code: `<XDSMoreMenu
-  label="Document actions"
-  items={[
-    {
-      type: 'section',
-      title: 'Actions',
-      items: [
-        { label: 'Edit', onClick: handleEdit },
-        { label: 'Duplicate', onClick: handleDuplicate },
-      ],
     },
     {
       type: 'section',
