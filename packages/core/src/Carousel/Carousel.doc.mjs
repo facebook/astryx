@@ -26,32 +26,6 @@ export const docs = {
     {name: 'style', type: 'CSSProperties', description: 'Inline styles for the root element. Prefer xstyle.'},
     {name: 'data-testid', type: 'string', description: 'Test selector for automated testing frameworks.'},
   ],
-  examples: [
-    {
-      label: 'Basic',
-      code: `<XDSCarousel gap={1}>
-  <XDSThumbnail src="/a.jpg" alt="A" />
-  <XDSThumbnail src="/b.jpg" alt="B" />
-  <XDSThumbnail src="/c.jpg" alt="C" />
-</XDSCarousel>`,
-    },
-    {
-      label: 'With snap and wider gap',
-      code: `<XDSCarousel gap={2} hasSnap>
-  <XDSCard>Item 1</XDSCard>
-  <XDSCard>Item 2</XDSCard>
-  <XDSCard>Item 3</XDSCard>
-  <XDSCard>Item 4</XDSCard>
-</XDSCarousel>`,
-    },
-    {
-      label: 'Without navigation buttons',
-      code: `<XDSCarousel hasButtons={false} aria-label="Photo gallery">
-  <img src="/photo1.jpg" alt="Photo 1" />
-  <img src="/photo2.jpg" alt="Photo 2" />
-</XDSCarousel>`,
-    },
-  ],
   theming: {
     targets: [
       {className: 'xds-carousel'},
