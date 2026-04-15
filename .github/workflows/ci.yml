@@ -69,7 +69,7 @@ jobs:
       - run: yarn test
 
   # Build core packages, verify, typecheck, analyze.
-  # Uploads core dist for parallel Storybook + Sandbox builds.
+  # Storybook and Sandbox build in parallel after this (separate jobs).
   build:
     runs-on: ubuntu-latest
     outputs:
@@ -137,17 +137,6 @@ jobs:
           path: analysis.json
           retention-days: 1
 
-      - name: Upload build artifact
-        if: github.event_name == 'pull_request'
-        uses: actions/upload-artifact@v7
-        with:
-          name: core-build
-          path: |
-            packages/core/dist/
-            packages/vega/dist/
-            packages/themes/*/dist/
-          retention-days: 1
-
   # Build Storybook (parallel with Sandbox after core build)
   build-storybook:
     if: github.event_name == 'pull_request'
@@ -166,10 +155,8 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
-      - name: Download core build
-        uses: actions/download-artifact@v8
-        with:
-          name: core-build
+      - name: Build core package
+        run: yarn build
 
       - name: Build Storybook
         run: yarn workspace @xds/storybook build
@@ -199,10 +186,8 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
-      - name: Download core build
-        uses: actions/download-artifact@v8
-        with:
-          name: core-build
+      - name: Build core package
+        run: yarn build
 
       - name: Build Sandbox
         run: yarn workspace @xds/sandbox build
