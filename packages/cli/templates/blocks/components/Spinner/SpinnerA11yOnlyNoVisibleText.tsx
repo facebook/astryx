@@ -7,3 +7,8 @@ export default function SpinnerA11yOnlyNoVisibleText() {
     <XDSSpinner aria-label="Loading data" />
   );
 }
+
+export const showcase = {
+  aspectRatio: 1,
+  render: SpinnerA11yOnlyNoVisibleText,
+};

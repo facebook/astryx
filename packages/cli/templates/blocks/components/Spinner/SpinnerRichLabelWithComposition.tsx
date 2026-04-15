@@ -18,3 +18,8 @@ export default function SpinnerRichLabelWithComposition() {
     />
   );
 }
+
+export const showcase = {
+  aspectRatio: 1,
+  render: SpinnerRichLabelWithComposition,
+};
