@@ -14,43 +14,7 @@ export const docs = {
     'Start and end content slots (icon, avatar, badge)',
     'Optional header associated via aria-labelledby',
     'No context for positional data — computed at render time',
-  ],
-  examples: [
-    {
-      label: 'Basic tree',
-      code: `<XDSTreeList
-  items={[
-    { id: 'src', label: 'src', isExpanded: true, children: [
-      { id: 'app', label: 'App.tsx' },
-      { id: 'index', label: 'index.tsx' },
-    ]},
-    { id: 'pkg', label: 'package.json' },
-  ]}
-/>`,
-    },
-    {
-      label: 'With icons and header',
-      code: `<XDSTreeList
-  header={<strong>Project Files</strong>}
-  density="compact"
-  items={[
-    { id: 'src', label: 'src', isExpanded: true, startContent: <FolderIcon />, children: [
-      { id: 'app', label: 'App.tsx', startContent: <FileIcon /> },
-    ]},
-  ]}
-/>`,
-    },
-    {
-      label: 'Interactive items',
-      code: `<XDSTreeList
-  items={[
-    { id: 'settings', label: 'Settings', onClick: () => navigate('/settings') },
-    { id: 'docs', label: 'Docs', href: '/docs', target: '_blank' },
-  ]}
-/>`,
-    },
-  ],
-  accessibility: [
+  ],  accessibility: [
     'Semantic <ul role="tree"> with <li role="treeitem"> elements',
     '<ul role="group"> for nested children',
     'aria-expanded on items with children',
@@ -75,21 +39,7 @@ export const docs = {
     {
       name: 'XDSTreeList',
       description:
-        'Tree list container. Accepts items data and rendering configuration. Expansion state is managed internally.',
-      examples: [
-        {
-          label: 'Basic tree',
-          code: `<XDSTreeList
-  items={[
-    { id: 'src', label: 'src', isExpanded: true, children: [
-      { id: 'app', label: 'App.tsx' },
-    ]},
-    { id: 'pkg', label: 'package.json' },
-  ]}
-/>`,
-        },
-      ],
-      props: [
+        'Tree list container. Accepts items data and rendering configuration. Expansion state is managed internally.',      props: [
         {
           name: 'items',
           type: 'XDSTreeListItemData[]',
@@ -149,41 +99,6 @@ export const docsZh = {
     '可选标题，通过 aria-labelledby 关联',
     '无需位置数据上下文 — 渲染时计算',
   ],
-  examples: [
-    {
-      label: '基本树',
-      code: `<XDSTreeList
-  items={[
-    { id: 'src', label: 'src', isExpanded: true, children: [
-      { id: 'app', label: 'App.tsx' },
-      { id: 'index', label: 'index.tsx' },
-    ]},
-    { id: 'pkg', label: 'package.json' },
-  ]}
-/>`,
-    },
-    {
-      label: '带图标和标题',
-      code: `<XDSTreeList
-  header={<strong>Project Files</strong>}
-  density="compact"
-  items={[
-    { id: 'src', label: 'src', isExpanded: true, startContent: <FolderIcon />, children: [
-      { id: 'app', label: 'App.tsx', startContent: <FileIcon /> },
-    ]},
-  ]}
-/>`,
-    },
-    {
-      label: '交互式项目',
-      code: `<XDSTreeList
-  items={[
-    { id: 'settings', label: 'Settings', onClick: () => navigate('/settings') },
-    { id: 'docs', label: 'Docs', href: '/docs', target: '_blank' },
-  ]}
-/>`,
-    },
-  ],
   accessibility: [
     '语义化 <ul role="tree"> 配合 <li role="treeitem"> 元素',
     '嵌套子项使用 <ul role="group">',
@@ -210,19 +125,6 @@ export const docsZh = {
       name: 'XDSTreeList',
       description:
         '树列表容器。接受 items 数据和渲染配置。展开状态在内部管理。',
-      examples: [
-        {
-          label: '基本树',
-          code: `<XDSTreeList
-  items={[
-    { id: 'src', label: 'src', isExpanded: true, children: [
-      { id: 'app', label: 'App.tsx' },
-    ]},
-    { id: 'pkg', label: 'package.json' },
-  ]}
-/>`,
-        },
-      ],
       props: [
         {
           name: 'items',
