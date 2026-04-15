@@ -19,3 +19,8 @@ function PencilIcon() {
 export default function ButtonWithIcon() {
   return <XDSButton label="Edit" icon={<PencilIcon />} />;
 }
+
+export const showcase = {
+  aspectRatio: 1,
+  render: ButtonWithIcon,
+};
