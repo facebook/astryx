@@ -470,7 +470,7 @@ export interface ReferenceTranslationDoc {
  *
  * The CLI and sandbox import these for discovery and display.
  */
-export interface TemplateDoc {
+interface BaseTemplateDoc {
   /** Display name shown in the sandbox gallery and CLI.
    *  e.g. "Dashboard", "Login (Card)", "Settings (Sidebar)" */
   name: string;
@@ -482,3 +482,17 @@ export interface TemplateDoc {
    *  isReady: false show as "(WIP)" in the gallery and CLI. */
   isReady: boolean;
 }
+
+export interface PageTemplateDoc extends BaseTemplateDoc {
+  type: 'page';
+}
+
+export interface BlockTemplateDoc extends BaseTemplateDoc {
+  type: 'block';
+  /** Width-to-height ratio for preview containers (e.g. 16/9, 1, 3/4). */
+  aspectRatio: number;
+  /** Component names this block uses, for cross-referencing. */
+  componentsUsed: string[];
+}
+
+export type TemplateDoc = PageTemplateDoc | BlockTemplateDoc;
