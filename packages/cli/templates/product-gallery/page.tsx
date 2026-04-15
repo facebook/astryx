@@ -145,7 +145,7 @@ export default function ProductGalleryTemplate() {
       <div style={{maxWidth: 1200, width: '100%', padding: '32px 24px 64px'}}>
         <XDSVStack gap={6}>
           {/* Header — XDSGrid handles responsive stacking */}
-          <XDSGrid minChildWidth={280} columns={2} gap={4} align="start">
+          <XDSGrid minChildWidth={280} gap={4} align="start">
             <XDSText
               type="large"
               weight="bold"
