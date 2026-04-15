@@ -11,6 +11,8 @@ import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {XDSDropdownMenu} from './XDSDropdownMenu';
+import {XDSDropdownMenuItem} from './XDSDropdownMenuItem';
+import {XDSDivider} from '../Divider';
 
 // Mock showPopover and hidePopover methods since they're not implemented in jsdom
 beforeEach(() => {
@@ -334,23 +336,6 @@ describe('XDSDropdownMenu button customization', () => {
   });
 });
 
-describe('XDSDropdownMenu custom render', () => {
-  it('supports custom item rendering via children prop', () => {
-    render(
-      <XDSDropdownMenu
-        button={{label: 'Actions'}}
-        items={[{label: 'Edit'}, {label: 'Delete'}]}>
-        {item => (
-          <span data-testid={`custom-${item.label}`}>{item.label}!</span>
-        )}
-      </XDSDropdownMenu>,
-    );
-
-    expect(screen.getByTestId('custom-Edit')).toBeInTheDocument();
-    expect(screen.getByTestId('custom-Delete')).toBeInTheDocument();
-  });
-});
-
 describe('XDSDropdownMenu icon-only mode', () => {
   it('renders icon-only button when icon is set without children', () => {
     render(
@@ -401,5 +386,100 @@ describe('XDSDropdownMenu hasChevron', () => {
     const button = screen.getByRole('button', {name: /Sort by/});
     const endContentWrapper = button.querySelector('[class*="endContent"]');
     expect(endContentWrapper).toBeNull();
+  });
+});
+
+describe('XDSDropdownMenu compound mode', () => {
+  it('renders JSX children as menu items', () => {
+    render(
+      <XDSDropdownMenu button={{label: 'Actions'}}>
+        <XDSDropdownMenuItem label="Edit" onClick={() => {}} />
+        <XDSDropdownMenuItem label="Delete" onClick={() => {}} />
+      </XDSDropdownMenu>,
+    );
+    expect(
+      screen.getByRole('menuitem', {name: 'Edit', hidden: true}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('menuitem', {name: 'Delete', hidden: true}),
+    ).toBeInTheDocument();
+  });
+
+  it('calls onClick when compound item is clicked', async () => {
+    const user = userEvent.setup();
+    const handleClick = vi.fn();
+    render(
+      <XDSDropdownMenu button={{label: 'Actions'}}>
+        <XDSDropdownMenuItem label="Edit" onClick={handleClick} />
+      </XDSDropdownMenu>,
+    );
+
+    await user.click(
+      screen.getByRole('menuitem', {name: 'Edit', hidden: true}),
+    );
+    expect(handleClick).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not call onClick when compound item is disabled', async () => {
+    const user = userEvent.setup();
+    const handleClick = vi.fn();
+    render(
+      <XDSDropdownMenu button={{label: 'Actions'}}>
+        <XDSDropdownMenuItem label="Edit" onClick={handleClick} isDisabled />
+      </XDSDropdownMenu>,
+    );
+
+    await user.click(
+      screen.getByRole('menuitem', {name: 'Edit', hidden: true}),
+    );
+    expect(handleClick).not.toHaveBeenCalled();
+  });
+
+  it('renders dividers between compound items', () => {
+    render(
+      <XDSDropdownMenu button={{label: 'Actions'}}>
+        <XDSDropdownMenuItem label="Edit" onClick={() => {}} />
+        <XDSDivider />
+        <XDSDropdownMenuItem label="Delete" onClick={() => {}} />
+      </XDSDropdownMenu>,
+    );
+
+    expect(
+      screen.getByRole('menuitem', {name: 'Edit', hidden: true}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('menuitem', {name: 'Delete', hidden: true}),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('separator', {hidden: true})).toBeInTheDocument();
+  });
+
+  it('has aria-disabled on disabled compound items', () => {
+    render(
+      <XDSDropdownMenu button={{label: 'Actions'}}>
+        <XDSDropdownMenuItem label="Edit" onClick={() => {}} isDisabled />
+      </XDSDropdownMenu>,
+    );
+    expect(
+      screen.getByRole('menuitem', {name: 'Edit', hidden: true}),
+    ).toHaveAttribute('aria-disabled', 'true');
+  });
+
+  it('supports mixed static and dynamic compound children', () => {
+    const showExtra = true;
+    render(
+      <XDSDropdownMenu button={{label: 'Actions'}}>
+        <XDSDropdownMenuItem label="Always" onClick={() => {}} />
+        {showExtra && (
+          <XDSDropdownMenuItem label="Conditional" onClick={() => {}} />
+        )}
+      </XDSDropdownMenu>,
+    );
+
+    expect(
+      screen.getByRole('menuitem', {name: 'Always', hidden: true}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('menuitem', {name: 'Conditional', hidden: true}),
+    ).toBeInTheDocument();
   });
 });
