@@ -12,54 +12,7 @@ export const docs = {
     'Combobox ARIA pattern for full accessibility',
     'Debounced search with configurable delay (default 150ms, set to 0 for synchronous sources)',
     'Two-layer architecture: XDSBaseTypeahead provides the engine, XDSTypeahead adds field chrome',
-  ],
-  examples: [
-    {
-      label: 'Basic typeahead',
-      code: `const source = {
-  search: query => fruits.filter(f => f.label.includes(query)),
-  bootstrap: () => fruits.slice(0, 5),
-};
-
-<XDSTypeahead
-  label="Fruit"
-  searchSource={source}
-  value={selected}
-  onChange={setSelected}
-  placeholder="Search fruits..."
-/>`,
-    },
-    {
-      label: 'With custom item rendering',
-      code: `<XDSTypeahead
-  label="Assignee"
-  searchSource={userSource}
-  value={assignee}
-  onChange={setAssignee}
-  placeholder="Search users..."
-  hasEntriesOnFocus
-  renderItem={(item) => (
-    <XDSTypeaheadItem
-      item={item}
-      icon={<XDSAvatar src={item.auxiliaryData.avatar} size="sm" />}
-      description={item.auxiliaryData.role}
-    />
-  )}
-/>`,
-    },
-    {
-      label: 'With validation status',
-      code: `<XDSTypeahead
-  label="Manager"
-  searchSource={managerSource}
-  value={manager}
-  onChange={setManager}
-  isRequired
-  status={{ type: 'error', message: 'A manager is required' }}
-/>`,
-    },
-  ],
-  components: [
+  ],  components: [
     {
       name: 'XDSTypeahead',
       description:
@@ -201,31 +154,7 @@ export const docs = {
           description:
             'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
         },
-      ],
-      examples: [
-        {
-          label: 'Basic',
-          code: `<XDSTypeahead
-  label="Assignee"
-  searchSource={userSource}
-  value={assignee}
-  onChange={setAssignee}
-  placeholder="Search users..."
-/>`,
-        },
-        {
-          label: 'With bootstrap on focus',
-          code: `<XDSTypeahead
-  label="Project"
-  searchSource={projectSource}
-  value={project}
-  onChange={setProject}
-  hasEntriesOnFocus
-  placeholder="Select a project..."
-/>`,
-        },
-      ],
-    },
+      ],    },
     {
       name: 'XDSBaseTypeahead',
       description:
@@ -335,18 +264,6 @@ export const docs = {
           description: 'Additional aria-describedby IDs.',
         },
       ],
-      examples: [
-        {
-          label: 'With custom wrapper',
-          code: `<XDSBaseTypeahead
-  searchSource={source}
-  value={selected}
-  onChange={setSelected}
-  anchorRef={wrapperRef}
-  placeholder="Search..."
-/>`,
-        },
-      ],
     },
     {
       name: 'XDSTypeaheadItem',
@@ -379,16 +296,6 @@ export const docs = {
           name: 'group',
           type: 'string',
           description: 'Group label for grouping items visually.',
-        },
-      ],
-      examples: [
-        {
-          label: 'Custom renderItem with icon and description',
-          code: `<XDSTypeaheadItem
-  item={user}
-  icon={<XDSAvatar src={user.auxiliaryData.avatar} size="sm" />}
-  description={user.auxiliaryData.role}
-/>`,
         },
       ],
     },
@@ -442,52 +349,6 @@ export const docsZh = {
     '组合框 ARIA 模式，实现完整的无障碍支持',
     '防抖搜索，延迟可配置（默认 150ms，同步数据源设置为 0）',
     '双层架构：XDSBaseTypeahead 提供引擎，XDSTypeahead 添加字段外观',
-  ],
-  examples: [
-    {
-      label: '基础预输入',
-      code: `const source = {
-  search: query => fruits.filter(f => f.label.includes(query)),
-  bootstrap: () => fruits.slice(0, 5),
-};
-
-<XDSTypeahead
-  label="Fruit"
-  searchSource={source}
-  value={selected}
-  onChange={setSelected}
-  placeholder="Search fruits..."
-/>`,
-    },
-    {
-      label: '自定义项目渲染',
-      code: `<XDSTypeahead
-  label="Assignee"
-  searchSource={userSource}
-  value={assignee}
-  onChange={setAssignee}
-  placeholder="Search users..."
-  hasEntriesOnFocus
-  renderItem={(item) => (
-    <XDSTypeaheadItem
-      item={item}
-      icon={<XDSAvatar src={item.auxiliaryData.avatar} size="sm" />}
-      description={item.auxiliaryData.role}
-    />
-  )}
-/>`,
-    },
-    {
-      label: '带验证状态',
-      code: `<XDSTypeahead
-  label="Manager"
-  searchSource={managerSource}
-  value={manager}
-  onChange={setManager}
-  isRequired
-  status={{ type: 'error', message: 'A manager is required' }}
-/>`,
-    },
   ],
   components: [
     {
@@ -632,29 +493,6 @@ export const docsZh = {
             '用于布局自定义的 StyleX 样式（外边距、定位、尺寸）。必须是 stylex.create() 的值 — 不能是内联样式对象如 style={{}}。',
         },
       ],
-      examples: [
-        {
-          label: '基础用法',
-          code: `<XDSTypeahead
-  label="Assignee"
-  searchSource={userSource}
-  value={assignee}
-  onChange={setAssignee}
-  placeholder="Search users..."
-/>`,
-        },
-        {
-          label: '聚焦时显示引导结果',
-          code: `<XDSTypeahead
-  label="Project"
-  searchSource={projectSource}
-  value={project}
-  onChange={setProject}
-  hasEntriesOnFocus
-  placeholder="Select a project..."
-/>`,
-        },
-      ],
     },
     {
       name: 'XDSBaseTypeahead',
@@ -765,18 +603,6 @@ export const docsZh = {
           description: '附加的 aria-describedby ID。',
         },
       ],
-      examples: [
-        {
-          label: '使用自定义包装器',
-          code: `<XDSBaseTypeahead
-  searchSource={source}
-  value={selected}
-  onChange={setSelected}
-  anchorRef={wrapperRef}
-  placeholder="Search..."
-/>`,
-        },
-      ],
     },
     {
       name: 'XDSTypeaheadItem',
@@ -809,16 +635,6 @@ export const docsZh = {
           name: 'group',
           type: 'string',
           description: '用于视觉分组的分组标签。',
-        },
-      ],
-      examples: [
-        {
-          label: '带图标和描述的自定义 renderItem',
-          code: `<XDSTypeaheadItem
-  item={user}
-  icon={<XDSAvatar src={user.auxiliaryData.avatar} size="sm" />}
-  description={user.auxiliaryData.role}
-/>`,
         },
       ],
     },
