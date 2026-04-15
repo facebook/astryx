@@ -36,3 +36,8 @@ export default function TabListWithOverflowMenu() {
     </XDSTabList>
   );
 }
+
+export const showcase = {
+  aspectRatio: 16 / 4,
+  render: TabListWithOverflowMenu,
+};

@@ -13,3 +13,8 @@ export default function TabListWithBottomDivider() {
     </XDSTabList>
   );
 }
+
+export const showcase = {
+  aspectRatio: 16 / 4,
+  render: TabListWithBottomDivider,
+};
