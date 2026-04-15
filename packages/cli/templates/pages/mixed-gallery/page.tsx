@@ -59,20 +59,13 @@ export default function MixedGalleryTemplate() {
               style={{
                 display: 'grid',
                 gridTemplateColumns: '1fr 1fr',
-                gridTemplateRows: 'auto auto',
                 gap,
               }}>
-              {/* ── Top row ── */}
-              <div style={{display: 'grid', gridTemplateRows: '1fr', aspectRatio: '1 / 1'}}>
-                <img src={IMAGES[0]} alt="" style={imgStyle} />
-              </div>
+              {/* ── Top row: left square, right column ── */}
+              <img src={IMAGES[0]} alt="" style={{...imgStyle, aspectRatio: '1 / 1'}} />
 
               <div style={{display: 'grid', gridTemplateRows: '1fr 1fr', gap}}>
-                {/* Top rectangle */}
-                <div>
-                  <img src={IMAGES[1]} alt="" style={imgStyle} />
-                </div>
-                {/* Two bottom squares */}
+                <img src={IMAGES[1]} alt="" style={imgStyle} />
                 <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap}}>
                   <img src={IMAGES[2]} alt="" style={imgStyle} />
                   <img src={IMAGES[3]} alt="" style={imgStyle} />
