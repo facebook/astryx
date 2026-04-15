@@ -12,3 +12,8 @@ export default function CardCollapsible() {
     </XDSCard>
   );
 }
+
+export const showcase = {
+  aspectRatio: 4 / 3,
+  render: CardCollapsible,
+};

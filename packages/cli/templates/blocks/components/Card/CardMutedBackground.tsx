@@ -9,3 +9,8 @@ export default function CardMutedBackground() {
     </XDSCard>
   );
 }
+
+export const showcase = {
+  aspectRatio: 4 / 3,
+  render: CardMutedBackground,
+};
