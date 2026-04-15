@@ -14,3 +14,8 @@ export default function SliderRangeSlider() {
     />
   );
 }
+
+export const showcase = {
+  aspectRatio: 4 / 3,
+  render: SliderRangeSlider,
+};
