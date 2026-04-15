@@ -4,6 +4,10 @@ export const docs = {
   name: 'AlertDialog',
   description:
     'Confirmation dialog for destructive or irreversible actions. Uses role="alertdialog" with required title, description, and cancel/action buttons.',
+  showcase: {
+    aspectRatio: 4 / 3,
+    code: '<XDSAlertDialog title="Confirm" description="Are you sure?" />',
+  },
   keywords: [
     'alert',
     'alertdialog',
@@ -21,50 +25,6 @@ export const docs = {
     'Built-in buttons: Ghost cancel and configurable action button rendered internally',
     'Action does not auto-close: Supports async operations with loading states',
     'Imperative API: useXDSImperativeAlertDialog for fire-and-forget usage',
-  ],
-  examples: [
-    {
-      label: 'Delete confirmation',
-      code: `import {XDSAlertDialog} from '@xds/core/AlertDialog';
-import {XDSButton} from '@xds/core/Button';
-import {useState} from 'react';
-
-function Example() {
-  const [isOpen, setIsOpen] = useState(false);
-  return (
-    <>
-      <XDSButton label="Delete" variant="danger" onClick={() => setIsOpen(true)} />
-      <XDSAlertDialog
-        isOpen={isOpen}
-        onOpenChange={setIsOpen}
-        title="Delete item?"
-        description="This action cannot be undone."
-        actionLabel="Delete"
-        onAction={() => setIsOpen(false)}
-      />
-    </>
-  );
-}`,
-    },
-    {
-      label: 'Imperative',
-      code: `import {useXDSImperativeAlertDialog} from '@xds/core/AlertDialog';
-
-function Example() {
-  const alert = useXDSImperativeAlertDialog();
-  return (
-    <>
-      <button onClick={() => alert.show({
-        title: 'Delete?',
-        description: 'This cannot be undone.',
-        actionLabel: 'Delete',
-        onAction: () => alert.hide(),
-      })}>Delete</button>
-      {alert.element}
-    </>
-  );
-}`,
-    },
   ],
   props: [
     {name: 'isOpen', type: 'boolean', required: true, description: 'Whether the dialog is open.'},

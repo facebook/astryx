@@ -4,6 +4,10 @@ export const docs = {
   name: 'Toast',
   description:
     'Toast notification system with auto-dismiss, stacking, deduplication, and smooth animations. Uses XDSMediaTheme for inverted surface theming.',
+  showcase: {
+    aspectRatio: 4 / 3,
+    code: '<XDSToast message="Saved successfully" />',
+  },
 
   keywords: ["toast","notification","snackbar","alert","message","feedback","status"],
   features: [
@@ -64,23 +68,7 @@ export const docs = {
       type: '(reason: "auto" | "manual") => void',
       description: 'Callback fired when the toast is removed.',
     },
-  ],
-
-  examples: [
-    {
-      label: 'Basic',
-      code: `const toast = useXDSToast();\ntoast({ body: "Changes saved" });`,
-    },
-    {
-      label: 'Error',
-      code: `toast({ body: "Failed to save", type: "error" });`,
-    },
-    {
-      label: 'With action',
-      code: `toast({\n  body: "Item deleted",\n  isAutoHide: false,\n  endContent: <XDSButton label="Undo" variant="secondary" size="sm" onClick={undo} />,\n});`,
-    },
-  ],
-  theming: {
+  ],  theming: {
     targets: [
       {className: 'xds-toast', visualProps: ['type']},
     ],

@@ -4,6 +4,10 @@ export const docs = {
   name: 'ToggleButton',
   description:
     'A button that toggles between pressed and unpressed states, with optional icon swap and group integration for single or multi-select behavior.',
+  showcase: {
+    aspectRatio: 1,
+    code: '<XDSToggleButton label="Bold" isIconOnly />',
+  },
   keywords: ["toggle","togglebutton","pressed","toolbar","formatting","segmented","button-group","exclusive","multi-select"],
   features: [
     'Controlled toggle via isPressed/onPressedChange',
@@ -24,50 +28,7 @@ export const docs = {
     'Uses aria-pressed on the toggle button for screen reader state announcement.',
     'Group uses role="group" with aria-label from the label prop.',
   ],
-  keyboard: 'Space/Enter toggles pressed state; Tab moves between buttons in a group',
-  examples: [
-    {
-      label: 'Icon-only toggle',
-      code: `const [isBold, setIsBold] = useState(false);
-<XDSToggleButton
-  label="Bold"
-  icon={<BoldIcon />}
-  isPressed={isBold}
-  onPressedChange={setIsBold}
-/>`,
-    },
-    {
-      label: 'Icon swap on press',
-      code: `<XDSToggleButton
-  label="Favorite"
-  icon={<StarIcon />}
-  pressedIcon={<StarIconSolid />}
-  isPressed={isFavorited}
-  onPressedChange={setIsFavorited}
-/>`,
-    },
-    {
-      label: 'Single-select group',
-      code: `const [view, setView] = useState<string | null>('grid');
-<XDSToggleButtonGroup value={view} onChange={setView} label="View mode">
-  <XDSToggleButton value="list" label="List" icon={<ListIcon />} />
-  <XDSToggleButton value="grid" label="Grid" icon={<GridIcon />} />
-</XDSToggleButtonGroup>`,
-    },
-    {
-      label: 'Multi-select group',
-      code: `const [formats, setFormats] = useState<string[]>([]);
-<XDSToggleButtonGroup
-  type="multiple"
-  value={formats}
-  onChange={setFormats}
-  label="Formatting">
-  <XDSToggleButton value="bold" label="Bold" icon={<BoldIcon />} />
-  <XDSToggleButton value="italic" label="Italic" icon={<ItalicIcon />} />
-</XDSToggleButtonGroup>`,
-    },
-  ],
-  components: [
+  keyboard: 'Space/Enter toggles pressed state; Tab moves between buttons in a group',  components: [
     {
       name: 'XDSToggleButton',
       description: 'A button that toggles between pressed and unpressed states. Thin wrapper over XDSButton with controlled toggle pattern, icon swap, and font weight emphasis.',
@@ -85,19 +46,7 @@ export const docs = {
         {name: 'tooltip', type: 'string', description: 'Tooltip text shown on hover.'},
         {name: 'value', type: 'string', description: 'Value identifier when used inside XDSToggleButtonGroup. Required in groups.'},
         {name: 'data-testid', type: 'string', description: 'Test selector for automated testing frameworks.'},
-      ],
-      examples: [
-        {
-          label: 'Basic toggle',
-          code: `<XDSToggleButton
-  label="Bold"
-  icon={<BoldIcon />}
-  isPressed={isBold}
-  onPressedChange={setIsBold}
-/>`,
-        },
-      ],
-    },
+      ],    },
     {
       name: 'XDSToggleButtonGroup',
       description: 'Groups toggle buttons for exclusive (single) or multi-select behavior. Uses discriminated union on type for type-safe value/onChange.',
@@ -112,15 +61,6 @@ export const docs = {
         {name: 'isDisabled', type: 'boolean', description: 'Whether all buttons in the group are disabled.', default: 'false'},
         {name: 'xstyle', type: 'StyleXStyles', description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value.'},
         {name: 'data-testid', type: 'string', description: 'Test selector for automated testing frameworks.'},
-      ],
-      examples: [
-        {
-          label: 'Single-select',
-          code: `<XDSToggleButtonGroup value={view} onChange={setView} label="View mode">
-  <XDSToggleButton value="list" label="List" icon={<ListIcon />} />
-  <XDSToggleButton value="grid" label="Grid" icon={<GridIcon />} />
-</XDSToggleButtonGroup>`,
-        },
       ],
     },
   ],

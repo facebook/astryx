@@ -4,6 +4,10 @@ export const docs = {
   name: 'RadioList',
   description:
     'A radio group component for single-value selection from a list of options.',
+  showcase: {
+    aspectRatio: 4 / 3,
+    code: '<XDSRadioList label="Choice" items={[{label: "A", value: "a"}]} />',
+  },
   keywords: ["radiolist","radio","radiogroup","radiobutton","optionlist","singlechoice","choicelist"],
   features: [
     'Accessible — uses native <input type="radio"> with proper role="radiogroup" and ARIA attributes',
@@ -13,77 +17,6 @@ export const docs = {
     'Custom content — startContent and endContent slots on each item',
     'Disabled state — supports disabling the entire group or individual items',
     'Field integration — uses XDSField for label, description, required/optional, and status messaging',
-  ],
-  examples: [
-    {
-      label: 'Basic',
-      code: `<XDSRadioList
-  label="Notification preference"
-  value={selected}
-  onChange={setSelected}
->
-  <XDSRadioListItem label="Email" value="email" />
-  <XDSRadioListItem label="SMS" value="sms" />
-  <XDSRadioListItem label="Push" value="push" />
-</XDSRadioList>`,
-    },
-    {
-      label: 'With descriptions',
-      code: `<XDSRadioList
-  label="Plan"
-  value={plan}
-  onChange={setPlan}
->
-  <XDSRadioListItem
-    label="Free"
-    value="free"
-    description="Basic features, limited usage"
-  />
-  <XDSRadioListItem
-    label="Pro"
-    value="pro"
-    description="All features, unlimited usage"
-  />
-</XDSRadioList>`,
-    },
-    {
-      label: 'Horizontal layout',
-      code: `<XDSRadioList
-  label="Size"
-  value={size}
-  onChange={setSize}
-  orientation="horizontal"
->
-  <XDSRadioListItem label="Small" value="sm" />
-  <XDSRadioListItem label="Medium" value="md" />
-  <XDSRadioListItem label="Large" value="lg" />
-</XDSRadioList>`,
-    },
-    {
-      label: 'With status',
-      code: `<XDSRadioList
-  label="Required choice"
-  value={choice}
-  onChange={setChoice}
-  isRequired
-  status={{ type: 'error', message: 'Please select an option' }}
->
-  <XDSRadioListItem label="Option A" value="a" />
-  <XDSRadioListItem label="Option B" value="b" />
-</XDSRadioList>`,
-    },
-    {
-      label: 'Disabled group',
-      code: `<XDSRadioList
-  label="Locked selection"
-  value="locked"
-  onChange={() => {}}
-  isDisabled
->
-  <XDSRadioListItem label="Locked" value="locked" />
-  <XDSRadioListItem label="Unavailable" value="unavailable" />
-</XDSRadioList>`,
-    },
   ],
   theming: {
     targets: [
@@ -105,17 +38,7 @@ export const docs = {
     {
       name: 'XDSRadioList',
       description:
-        'Radio group container with field integration for label, description, and status.',
-      examples: [
-        {
-          label: 'Basic',
-          code: `<XDSRadioList label="Notification preference" value={selected} onChange={setSelected}>
-  <XDSRadioListItem label="Email" value="email" />
-  <XDSRadioListItem label="SMS" value="sms" />
-</XDSRadioList>`,
-        },
-      ],
-      props: [
+        'Radio group container with field integration for label, description, and status.',      props: [
         {
           name: 'label',
           type: 'string',
@@ -205,16 +128,6 @@ export const docs = {
       name: 'XDSRadioListItem',
       description:
         'Individual radio item with label, description, and content slots.',
-      examples: [
-        {
-          label: 'With description',
-          code: `<XDSRadioListItem
-  label="Pro"
-  value="pro"
-  description="All features, unlimited usage"
-/>`,
-        },
-      ],
       props: [
         {
           name: 'label',
@@ -290,77 +203,6 @@ export const docsZh = {
     '禁用状态 - 支持禁用整个组或单个选项',
     '字段集成 - 使用 XDSField 提供标签、描述、必填/可选和状态消息',
   ],
-  examples: [
-    {
-      label: '基础用法',
-      code: `<XDSRadioList
-  label="Notification preference"
-  value={selected}
-  onChange={setSelected}
->
-  <XDSRadioListItem label="Email" value="email" />
-  <XDSRadioListItem label="SMS" value="sms" />
-  <XDSRadioListItem label="Push" value="push" />
-</XDSRadioList>`,
-    },
-    {
-      label: '带描述',
-      code: `<XDSRadioList
-  label="Plan"
-  value={plan}
-  onChange={setPlan}
->
-  <XDSRadioListItem
-    label="Free"
-    value="free"
-    description="Basic features, limited usage"
-  />
-  <XDSRadioListItem
-    label="Pro"
-    value="pro"
-    description="All features, unlimited usage"
-  />
-</XDSRadioList>`,
-    },
-    {
-      label: '水平布局',
-      code: `<XDSRadioList
-  label="Size"
-  value={size}
-  onChange={setSize}
-  orientation="horizontal"
->
-  <XDSRadioListItem label="Small" value="sm" />
-  <XDSRadioListItem label="Medium" value="md" />
-  <XDSRadioListItem label="Large" value="lg" />
-</XDSRadioList>`,
-    },
-    {
-      label: '带状态',
-      code: `<XDSRadioList
-  label="Required choice"
-  value={choice}
-  onChange={setChoice}
-  isRequired
-  status={{ type: 'error', message: 'Please select an option' }}
->
-  <XDSRadioListItem label="Option A" value="a" />
-  <XDSRadioListItem label="Option B" value="b" />
-</XDSRadioList>`,
-    },
-    {
-      label: '禁用组',
-      code: `<XDSRadioList
-  label="Locked selection"
-  value="locked"
-  onChange={() => {}}
-  isDisabled
->
-  <XDSRadioListItem label="Locked" value="locked" />
-  <XDSRadioListItem label="Unavailable" value="unavailable" />
-</XDSRadioList>`,
-    },
-  ],
   theming: {
     targets: [
       {className: 'xds-radio-list', visualProps: ['orientation', 'size']},
@@ -382,15 +224,6 @@ export const docsZh = {
       name: 'XDSRadioList',
       description:
         '单选按钮组容器，集成字段功能，支持标签、描述和状态。',
-      examples: [
-        {
-          label: '基础用法',
-          code: `<XDSRadioList label="Notification preference" value={selected} onChange={setSelected}>
-  <XDSRadioListItem label="Email" value="email" />
-  <XDSRadioListItem label="SMS" value="sms" />
-</XDSRadioList>`,
-        },
-      ],
       props: [
         {
           name: 'label',
@@ -481,16 +314,6 @@ export const docsZh = {
       name: 'XDSRadioListItem',
       description:
         '单个单选选项，包含标签、描述和内容插槽。',
-      examples: [
-        {
-          label: '带描述',
-          code: `<XDSRadioListItem
-  label="Pro"
-  value="pro"
-  description="All features, unlimited usage"
-/>`,
-        },
-      ],
       props: [
         {
           name: 'label',

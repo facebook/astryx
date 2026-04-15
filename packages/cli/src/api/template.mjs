@@ -9,9 +9,10 @@ import {XDSError} from './error.mjs';
 import {loadConfig} from '../lib/config.mjs';
 
 const TEMPLATES_DIR = path.join(CLI_ROOT, 'templates');
+const PAGES_DIR = path.join(TEMPLATES_DIR, 'pages');
+const BLOCKS_DIR = path.join(TEMPLATES_DIR, 'blocks');
 
-async function loadTemplateDoc(templateDir) {
-  const docPath = path.join(templateDir, 'template.doc.mjs');
+async function loadDocModule(docPath) {
   if (!fs.existsSync(docPath)) return null;
   const docModule = await import(`file://${docPath}`);
   return docModule.doc;
@@ -20,32 +21,91 @@ async function loadTemplateDoc(templateDir) {
 export {discoverAll as discoverTemplates};
 
 export function listTemplates() {
-  if (!fs.existsSync(TEMPLATES_DIR)) return [];
-  return fs
-    .readdirSync(TEMPLATES_DIR, {withFileTypes: true})
-    .filter(e => e.isDirectory())
-    .map(e => e.name)
-    .sort();
+  const all = [];
+  if (fs.existsSync(PAGES_DIR)) {
+    all.push(...fs.readdirSync(PAGES_DIR, {withFileTypes: true})
+      .filter(e => e.isDirectory())
+      .map(e => e.name));
+  }
+  return all.sort();
 }
 
-async function discoverAll() {
-  if (!fs.existsSync(TEMPLATES_DIR)) return [];
-  const dirs = fs
-    .readdirSync(TEMPLATES_DIR, {withFileTypes: true})
-    .filter(e => e.isDirectory())
-    .sort((a, b) => a.name.localeCompare(b.name));
+function findDocFiles(dir, pattern) {
+  const results = [];
+  if (!fs.existsSync(dir)) return results;
+  for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      results.push(...findDocFiles(full, pattern));
+    } else if (pattern.test(entry.name)) {
+      results.push(full);
+    }
+  }
+  return results;
+}
+
+async function discoverPages() {
+  if (!fs.existsSync(PAGES_DIR)) return [];
+  const dirs = fs.readdirSync(PAGES_DIR, {withFileTypes: true})
+    .filter(e => e.isDirectory());
 
   const templates = [];
   for (const dir of dirs) {
-    const doc = await loadTemplateDoc(path.join(TEMPLATES_DIR, dir.name));
+    const dirPath = path.join(PAGES_DIR, dir.name);
+    const doc = await loadDocModule(path.join(dirPath, 'template.doc.mjs'));
     templates.push({
+      type: 'page',
       dirName: dir.name,
       name: doc?.name || dir.name,
       description: doc?.description || '',
       isReady: doc?.isReady ?? true,
+      filePath: path.join(dirPath, 'page.tsx'),
+      docPath: path.join(dirPath, 'template.doc.mjs'),
     });
   }
   return templates;
+}
+
+async function discoverBlocks() {
+  const docFiles = findDocFiles(BLOCKS_DIR, /\.doc\.mjs$/);
+  const blocks = [];
+  for (const docPath of docFiles) {
+    const basename = path.basename(docPath, '.doc.mjs');
+    const tsxPath = path.join(path.dirname(docPath), basename + '.tsx');
+    if (!fs.existsSync(tsxPath)) continue;
+    const doc = await loadDocModule(docPath);
+    const relPath = path.relative(BLOCKS_DIR, path.dirname(docPath));
+    blocks.push({
+      type: 'block',
+      dirName: basename,
+      name: doc?.name || basename,
+      description: doc?.description || '',
+      isReady: doc?.isReady ?? true,
+      aspectRatio: doc?.aspectRatio ?? 1,
+      componentsUsed: doc?.componentsUsed ?? [],
+      filePath: tsxPath,
+      docPath,
+      category: relPath,
+    });
+  }
+  return blocks;
+}
+
+async function discoverAll() {
+  const [pages, blocks] = await Promise.all([
+    discoverPages(),
+    discoverBlocks(),
+  ]);
+  return [...pages, ...blocks].sort((a, b) => a.name.localeCompare(b.name));
+}
+
+export async function findRelatedBlocks(componentName) {
+  const blocks = await discoverBlocks();
+  return blocks.filter(b =>
+    b.componentsUsed.some(c =>
+      c.toLowerCase() === componentName.toLowerCase(),
+    ),
+  );
 }
 
 const UBIQUITOUS = new Set([
@@ -233,81 +293,81 @@ export async function getTemplateById(id, options = {}) {
  * @returns {Promise<{type: string, data: unknown}>}
  */
 export async function template(name, options = {}) {
-  const {list = false, skeleton = false, show = false, targetPath, cwd = process.cwd()} = options;
+  const {list = false, skeleton = false, show = false, targetPath, type, cwd = process.cwd()} = options;
   const templates = await discoverAll();
-  const templateNames = templates.map(t => t.dirName);
 
   if (list || (!name && !skeleton)) {
+    let filtered = templates;
+    if (type) filtered = templates.filter(t => t.type === type);
     return {
       type: 'template.list',
-      data: templates.map(t => ({
+      data: filtered.map(t => ({
         name: t.dirName,
+        displayName: t.name,
         description: t.description,
         isReady: t.isReady,
+        type: t.type,
       })),
     };
   }
 
-  if (name && !templateNames.includes(name)) {
+  const match = templates.find(t => t.dirName === name);
+  if (name && !match) {
     throw new XDSError(
       `Unknown template "${name}"`,
-      templateNames.map(n => ({name: n, reason: 'available template'})),
+      templates.map(t => ({name: t.dirName, reason: `${t.type} template`})),
     );
   }
 
   if (skeleton) {
-    if (!name) {
+    if (!match) {
       throw new XDSError(
         'Specify a template name for --skeleton',
-        templateNames.map(n => ({name: n, reason: 'available template'})),
+        templates.map(t => ({name: t.dirName, reason: `${t.type} template`})),
       );
     }
-    const pagePath = path.join(TEMPLATES_DIR, name, 'page.tsx');
-    if (!fs.existsSync(pagePath)) {
-      throw new XDSError(`No page.tsx found for template "${name}"`);
+    if (!fs.existsSync(match.filePath)) {
+      throw new XDSError(`No source file found for template "${name}"`);
     }
-    const src = fs.readFileSync(pagePath, 'utf-8');
-    const doc = await loadTemplateDoc(path.join(TEMPLATES_DIR, name));
+    const src = fs.readFileSync(match.filePath, 'utf-8');
     return {
       type: 'template.skeleton',
       data: {
         template: name,
-        description: doc?.description || '',
-        components: extractComponents(pagePath),
+        description: match.description,
+        components: extractComponents(match.filePath),
         skeleton: extractSkeleton(src),
       },
     };
   }
 
-  const templateDir = path.join(TEMPLATES_DIR, name);
-  const pagePath = path.join(templateDir, 'page.tsx');
-  const doc = await loadTemplateDoc(templateDir);
-
-  if (!fs.existsSync(pagePath)) {
-    throw new XDSError(`No page.tsx found for template "${name}"`);
+  if (!fs.existsSync(match.filePath)) {
+    throw new XDSError(`No source file found for template "${name}"`);
   }
 
-  // Show mode: return page.tsx content without writing to disk
   if (show || !targetPath) {
     return {
       type: 'template.show',
       data: {
         template: name,
-        description: doc?.description || '',
-        components: extractComponents(pagePath),
-        source: fs.readFileSync(pagePath, 'utf-8'),
+        description: match.description,
+        type: match.type,
+        components: extractComponents(match.filePath),
+        source: fs.readFileSync(match.filePath, 'utf-8'),
       },
     };
   }
 
-  // Copy mode: write page.tsx to disk
   const outputDir = path.resolve(cwd, targetPath);
+  const outputFileName = match.type === 'block'
+    ? path.basename(match.filePath)
+    : 'page.tsx';
   fs.mkdirSync(outputDir, {recursive: true});
-  fs.copyFileSync(pagePath, path.join(outputDir, 'page.tsx'));
+  fs.copyFileSync(match.filePath, path.join(outputDir, outputFileName));
 
   const relOutput = path.relative(cwd, outputDir);
   return {
     type: 'template.copy',
-    data: {template: name, outputDir: relOutput, filesCopied: 1},
+    data: {template: name, outputDir: relOutput, fileName: outputFileName, filesCopied: 1},
   };
 }

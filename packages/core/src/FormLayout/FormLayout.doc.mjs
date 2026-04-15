@@ -4,6 +4,10 @@ export const docs = {
   name: 'FormLayout',
   description:
     'A spatial layout container for arranging form fields with consistent spacing and direction.',
+  showcase: {
+    aspectRatio: 4 / 3,
+    code: '<XDSFormLayout>Form fields</XDSFormLayout>',
+  },
   keywords: ["formlayout","form","fieldset","formgroup","formcontainer","fields","vertical","horizontal"],
   props: [
     {
@@ -24,52 +28,6 @@ export const docs = {
       type: 'StyleXStyles',
       description:
         'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
-    },
-  ],
-  examples: [
-    {
-      label: 'Vertical layout (default)',
-      code: `<XDSFormLayout>
-  <XDSTextInput label="Name" value={name} onChange={setName} />
-  <XDSTextInput label="Email" value={email} onChange={setEmail} />
-</XDSFormLayout>`,
-    },
-    {
-      label: 'Horizontal layout for related fields',
-      code: `<XDSFormLayout direction="horizontal">
-  <XDSTextInput label="First Name" value={first} onChange={setFirst} />
-  <XDSTextInput label="Last Name" value={last} onChange={setLast} />
-</XDSFormLayout>`,
-    },
-    {
-      label: 'Horizontal labels for settings panels',
-      code: `<XDSFormLayout direction="horizontal-labels">
-  <XDSTextInput label="Display Name" value={name} onChange={setName} />
-  <XDSSelector label="Timezone" value={tz} onChange={setTz} options={tzs} />
-</XDSFormLayout>`,
-    },
-    {
-      label: 'Nested layouts',
-      code: `<XDSFormLayout direction="vertical">
-  <XDSFormLayout direction="horizontal">
-    <XDSTextInput label="First Name" value={first} onChange={setFirst} />
-    <XDSTextInput label="Last Name" value={last} onChange={setLast} />
-  </XDSFormLayout>
-  <XDSTextInput label="Email" value={email} onChange={setEmail} />
-</XDSFormLayout>`,
-    },
-    {
-      label: 'Dialog composition via HTML form attribute',
-      code: `<XDSDialog>
-  <form id="edit-form" onSubmit={handleSubmit}>
-    <XDSFormLayout>
-      <XDSTextInput label="Name" value={name} onChange={setName} />
-    </XDSFormLayout>
-  </form>
-  <XDSDialogFooter>
-    <XDSButton label="Save" type="submit" form="edit-form" />
-  </XDSDialogFooter>
-</XDSDialog>`,
     },
   ],
   features: [
@@ -147,52 +105,6 @@ export const docsZh = {
       type: 'StyleXStyles',
       description:
         '用于布局自定义（外边距、定位、尺寸）的 StyleX 样式。必须是 stylex.create() 的值，而非内联样式对象如 style={{}}。',
-    },
-  ],
-  examples: [
-    {
-      label: '垂直布局（默认）',
-      code: `<XDSFormLayout>
-  <XDSTextInput label="Name" value={name} onChange={setName} />
-  <XDSTextInput label="Email" value={email} onChange={setEmail} />
-</XDSFormLayout>`,
-    },
-    {
-      label: '相关字段的水平布局',
-      code: `<XDSFormLayout direction="horizontal">
-  <XDSTextInput label="First Name" value={first} onChange={setFirst} />
-  <XDSTextInput label="Last Name" value={last} onChange={setLast} />
-</XDSFormLayout>`,
-    },
-    {
-      label: '设置面板的水平标签',
-      code: `<XDSFormLayout direction="horizontal-labels">
-  <XDSTextInput label="Display Name" value={name} onChange={setName} />
-  <XDSSelector label="Timezone" value={tz} onChange={setTz} options={tzs} />
-</XDSFormLayout>`,
-    },
-    {
-      label: '嵌套布局',
-      code: `<XDSFormLayout direction="vertical">
-  <XDSFormLayout direction="horizontal">
-    <XDSTextInput label="First Name" value={first} onChange={setFirst} />
-    <XDSTextInput label="Last Name" value={last} onChange={setLast} />
-  </XDSFormLayout>
-  <XDSTextInput label="Email" value={email} onChange={setEmail} />
-</XDSFormLayout>`,
-    },
-    {
-      label: '通过 HTML form 属性组合对话框',
-      code: `<XDSDialog>
-  <form id="edit-form" onSubmit={handleSubmit}>
-    <XDSFormLayout>
-      <XDSTextInput label="Name" value={name} onChange={setName} />
-    </XDSFormLayout>
-  </form>
-  <XDSDialogFooter>
-    <XDSButton label="Save" type="submit" form="edit-form" />
-  </XDSDialogFooter>
-</XDSDialog>`,
     },
   ],
   features: [

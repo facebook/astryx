@@ -4,6 +4,10 @@ export const docs = {
   name: 'Tooltip',
   description:
     'A hover/focus triggered tooltip for displaying short, non-interactive text anchored to a trigger element.',
+  showcase: {
+    aspectRatio: 1,
+    code: '<XDSTooltip content="Help text"><button>Hover</button></XDSTooltip>',
+  },
   keywords: ["tooltip","hint","infotip","title","hover","flyout","balloon","helpertext"],
   features: [
     'CSS Anchor Positioning for automatic placement relative to trigger elements',
@@ -27,42 +31,11 @@ export const docs = {
     'When composing multiple aria-describedby sources, merge them with a utility.',
   ],
   keyboard:
-    'Focus on the trigger shows the tooltip. Blur hides it.',
-  examples: [
-    {
-      label: 'XDSTooltip — basic',
-      code: `<XDSTooltip content="Save your changes" placement="above">
-  <XDSButton label="Save" variant="primary" />
-</XDSTooltip>`,
-    },
-    {
-      label: 'useXDSTooltip hook',
-      code: `const tooltip = useXDSTooltip({ placement: 'above' });
-
-<XDSButton ref={tooltip.ref} aria-describedby={tooltip.describedBy}>
-  Hover me
-</XDSButton>
-{tooltip.renderTooltip('Helpful tooltip text')}`,
-    },
-  ],
-  components: [
+    'Focus on the trigger shows the tooltip. Blur hides it.',  components: [
     {
       name: 'XDSTooltip',
       description:
-        'Component wrapper for tooltip display triggered on hover or focus.',
-      examples: [
-        {
-          label: 'Basic',
-          code: `<XDSTooltip content="Save your changes" placement="above">
-  <XDSButton label="Save" variant="primary" />
-</XDSTooltip>`,
-        },
-        {
-          label: 'Sibling mode',
-          code: `<XDSTooltip anchorRef={buttonRef} content="Save your changes" placement="above" />`,
-        },
-      ],
-      props: [
+        'Component wrapper for tooltip display triggered on hover or focus.',      props: [
         {
           name: 'children',
           type: 'ReactNode',
@@ -132,17 +105,6 @@ export const docs = {
       name: 'useXDSTooltip',
       description:
         'Hook for tooltip behavior with hover/focus triggers. Builds on useXDSLayer.',
-      examples: [
-        {
-          label: 'Basic hook usage',
-          code: `const tooltip = useXDSTooltip({ placement: 'above' });
-
-<XDSButton ref={tooltip.ref} aria-describedby={tooltip.describedBy}>
-  Hover me
-</XDSButton>
-{tooltip.renderTooltip('Helpful tooltip text')}`,
-        },
-      ],
       props: [
         {
           name: 'placement',
@@ -246,40 +208,11 @@ export const docsZh = {
   ],
   keyboard:
     '聚焦触发器显示工具提示。失焦隐藏工具提示。',
-  examples: [
-    {
-      label: 'XDSTooltip — 基础用法',
-      code: `<XDSTooltip content="Save your changes" placement="above">
-  <XDSButton label="Save" variant="primary" />
-</XDSTooltip>`,
-    },
-    {
-      label: 'useXDSTooltip 钩子',
-      code: `const tooltip = useXDSTooltip({ placement: 'above' });
-
-<XDSButton ref={tooltip.ref} aria-describedby={tooltip.describedBy}>
-  Hover me
-</XDSButton>
-{tooltip.renderTooltip('Helpful tooltip text')}`,
-    },
-  ],
   components: [
     {
       name: 'XDSTooltip',
       description:
         '工具提示显示的组件包装器，通过悬停或聚焦触发。',
-      examples: [
-        {
-          label: '基础用法',
-          code: `<XDSTooltip content="Save your changes" placement="above">
-  <XDSButton label="Save" variant="primary" />
-</XDSTooltip>`,
-        },
-        {
-          label: '兄弟模式',
-          code: `<XDSTooltip anchorRef={buttonRef} content="Save your changes" placement="above" />`,
-        },
-      ],
       props: [
         {
           name: 'children',
@@ -350,17 +283,6 @@ export const docsZh = {
       name: 'useXDSTooltip',
       description:
         '用于悬停/聚焦触发的工具提示行为的钩子。基于 useXDSLayer 构建。',
-      examples: [
-        {
-          label: '基础钩子用法',
-          code: `const tooltip = useXDSTooltip({ placement: 'above' });
-
-<XDSButton ref={tooltip.ref} aria-describedby={tooltip.describedBy}>
-  Hover me
-</XDSButton>
-{tooltip.renderTooltip('Helpful tooltip text')}`,
-        },
-      ],
       props: [
         {
           name: 'placement',

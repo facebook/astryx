@@ -4,6 +4,10 @@ export const docs = {
   name: 'MobileNav',
   description:
     'Slide-out drawer overlay for mobile navigation. The mobile counterpart to XDSSideNav — accepts the same children (XDSSideNavSection, XDSSideNavItem, or any ReactNode).',
+  showcase: {
+    aspectRatio: 3 / 4,
+    code: '<XDSMobileNav>Nav items</XDSMobileNav>',
+  },
   keywords: ["mobilenav","drawer","sidebar","navigation","hamburger","menu","offcanvas","slideout","navdrawer"],
   props: [
     {
@@ -44,84 +48,6 @@ export const docs = {
       description:
         'Which side the drawer slides from. Start is left in LTR, right in RTL.',
       default: "'start'",
-    },
-  ],
-  examples: [
-    {
-      label: 'Basic hamburger menu',
-      code: `const [isOpen, setIsOpen] = useState(false);
-
-<XDSButton
-  label="Menu"
-  icon={<MenuIcon />}
-  variant="ghost"
-  onClick={() => setIsOpen(true)}
-/>
-
-<XDSMobileNav
-  isOpen={isOpen}
-  onOpenChange={() => setIsOpen(false)}
-  title="Navigation"
->
-  <XDSSideNavSection title="Main">
-    <XDSSideNavItem label="Dashboard" href="/dashboard" isSelected />
-    <XDSSideNavItem label="Analytics" href="/analytics" />
-    <XDSSideNavItem label="Settings" href="/settings" />
-  </XDSSideNavSection>
-</XDSMobileNav>`,
-    },
-    {
-      label: 'Responsive sidebar/drawer pattern',
-      code: `const isMobile = useMediaQuery('(max-width: 768px)');
-const [drawerOpen, setDrawerOpen] = useState(false);
-
-const navSections = (
-  <>
-    <XDSSideNavSection title="Main">
-      <XDSSideNavItem label="Dashboard" href="/" isSelected />
-      <XDSSideNavItem label="Projects" href="/projects" />
-    </XDSSideNavSection>
-    <XDSSideNavSection title="Settings">
-      <XDSSideNavItem label="General" href="/settings" />
-      <XDSSideNavItem label="Security" href="/security" />
-    </XDSSideNavSection>
-  </>
-);
-
-{isMobile ? (
-  <>
-    <XDSButton
-      label="Menu"
-      icon={<MenuIcon />}
-      variant="ghost"
-      onClick={() => setDrawerOpen(true)}
-    />
-    <XDSMobileNav
-      isOpen={drawerOpen}
-      onOpenChange={() => setDrawerOpen(false)}
-      title="My App"
-    >
-      {navSections}
-    </XDSMobileNav>
-  </>
-) : (
-  <XDSSideNav>{navSections}</XDSSideNav>
-)}`,
-    },
-    {
-      label: 'Shared children with XDSSideNav',
-      code: `const sections = (
-  <XDSSideNavSection title="Main">
-    <XDSSideNavItem label="Home" href="/" />
-    <XDSSideNavItem label="Settings" href="/settings" />
-  </XDSSideNavSection>
-);
-
-// Desktop: sidebar
-<XDSSideNav>{sections}</XDSSideNav>
-
-// Mobile: drawer
-<XDSMobileNav isOpen={open} onOpenChange={close}>{sections}</XDSMobileNav>`,
     },
   ],
   features: [
@@ -197,84 +123,6 @@ export const docsZh = {
       description:
         '抽屉滑出的方向。在 LTR 布局中 start 为左侧，在 RTL 布局中为右侧。',
       default: "'start'",
-    },
-  ],
-  examples: [
-    {
-      label: '基础汉堡菜单',
-      code: `const [isOpen, setIsOpen] = useState(false);
-
-<XDSButton
-  label="Menu"
-  icon={<MenuIcon />}
-  variant="ghost"
-  onClick={() => setIsOpen(true)}
-/>
-
-<XDSMobileNav
-  isOpen={isOpen}
-  onOpenChange={() => setIsOpen(false)}
-  title="Navigation"
->
-  <XDSSideNavSection title="Main">
-    <XDSSideNavItem label="Dashboard" href="/dashboard" isSelected />
-    <XDSSideNavItem label="Analytics" href="/analytics" />
-    <XDSSideNavItem label="Settings" href="/settings" />
-  </XDSSideNavSection>
-</XDSMobileNav>`,
-    },
-    {
-      label: '响应式侧边栏/抽屉模式',
-      code: `const isMobile = useMediaQuery('(max-width: 768px)');
-const [drawerOpen, setDrawerOpen] = useState(false);
-
-const navSections = (
-  <>
-    <XDSSideNavSection title="Main">
-      <XDSSideNavItem label="Dashboard" href="/" isSelected />
-      <XDSSideNavItem label="Projects" href="/projects" />
-    </XDSSideNavSection>
-    <XDSSideNavSection title="Settings">
-      <XDSSideNavItem label="General" href="/settings" />
-      <XDSSideNavItem label="Security" href="/security" />
-    </XDSSideNavSection>
-  </>
-);
-
-{isMobile ? (
-  <>
-    <XDSButton
-      label="Menu"
-      icon={<MenuIcon />}
-      variant="ghost"
-      onClick={() => setDrawerOpen(true)}
-    />
-    <XDSMobileNav
-      isOpen={drawerOpen}
-      onOpenChange={() => setDrawerOpen(false)}
-      title="My App"
-    >
-      {navSections}
-    </XDSMobileNav>
-  </>
-) : (
-  <XDSSideNav>{navSections}</XDSSideNav>
-)}`,
-    },
-    {
-      label: '与 XDSSideNav 共享子元素',
-      code: `const sections = (
-  <XDSSideNavSection title="Main">
-    <XDSSideNavItem label="Home" href="/" />
-    <XDSSideNavItem label="Settings" href="/settings" />
-  </XDSSideNavSection>
-);
-
-// Desktop: sidebar
-<XDSSideNav>{sections}</XDSSideNav>
-
-// Mobile: drawer
-<XDSMobileNav isOpen={open} onOpenChange={close}>{sections}</XDSMobileNav>`,
     },
   ],
   features: [

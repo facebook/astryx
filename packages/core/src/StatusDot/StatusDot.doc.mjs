@@ -4,6 +4,10 @@ export const docs = {
   name: 'StatusDot',
   description:
     'A small colored dot indicator for status display (online/offline, severity, etc).',
+  showcase: {
+    aspectRatio: 1,
+    code: '<XDSStatusDot variant="positive" label="Online" />',
+  },
   keywords: ["statusdot","dot","indicator","status","signal","presence","availability","online","pip"],
   features: [
     'Five semantic color variants: positive, warning, negative, info, neutral',
@@ -38,24 +42,7 @@ export const docs = {
       description:
         'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
     },
-  ],
-  examples: [
-    {
-      label: 'Basic status indicators',
-      code: `<XDSStatusDot variant="positive" label="Online" />
-<XDSStatusDot variant="negative" label="Offline" />
-<XDSStatusDot variant="warning" label="Away" />`,
-    },
-    {
-      label: 'With pulse',
-      code: `<XDSStatusDot variant="positive" label="Active" isPulsing />`,
-    },
-    {
-      label: 'Pulsing animation',
-      code: `<XDSStatusDot variant="positive" label="Live" isPulsing />`,
-    },
-  ],
-  theming: {
+  ],  theming: {
     targets: [
       {className: 'xds-statusdot', visualProps: ['variant']},
     ],
@@ -116,22 +103,6 @@ export const docsZh = {
       type: 'StyleXStyles',
       description:
         '用于布局自定义的 StyleX 样式（外边距、定位、尺寸）。必须是 stylex.create() 的值，而非内联样式对象如 style={{}}。',
-    },
-  ],
-  examples: [
-    {
-      label: '基础状态指示器',
-      code: `<XDSStatusDot variant="positive" label="Online" />
-<XDSStatusDot variant="negative" label="Offline" />
-<XDSStatusDot variant="warning" label="Away" />`,
-    },
-    {
-      label: '小尺寸',
-      code: `<XDSStatusDot variant="positive" label="Active" isPulsing />`,
-    },
-    {
-      label: '脉冲动画',
-      code: `<XDSStatusDot variant="positive" label="Live" isPulsing />`,
     },
   ],
   theming: {

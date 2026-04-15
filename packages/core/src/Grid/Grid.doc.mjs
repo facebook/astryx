@@ -3,6 +3,10 @@
 export const docs = {
   name: 'Grid',
   description: 'CSS Grid-based layout with responsive auto-fit support.',
+  showcase: {
+    aspectRatio: 4 / 3,
+    code: '<XDSGrid columns={3}><div>1</div><div>2</div><div>3</div></XDSGrid>',
+  },
   keywords: ["grid","columns","responsive","auto-fit","masonry","tiles","row","col","simplegrid"],
   features: [
     'Fixed-column grids via the `columns` prop',
@@ -12,45 +16,6 @@ export const docs = {
     'Vertical and horizontal item alignment via `align` and `justify`',
     'XDSGridSpan lets individual items span multiple columns or rows',
     'Theming support — override root styles via the `grid` component key',
-  ],
-  examples: [
-    {
-      label: 'Fixed 3-column grid',
-      code: `<XDSGrid columns={3} gap={4}>
-  <Item />
-  <Item />
-  <Item />
-</XDSGrid>`,
-    },
-    {
-      label: 'Responsive auto-fit',
-      code: `<XDSGrid minChildWidth={200} gap={4}>
-  <Card />
-  <Card />
-  <Card />
-</XDSGrid>`,
-    },
-    {
-      label: 'Auto-fit with max columns cap',
-      code: `<XDSGrid minChildWidth={200} columns={4} gap={4}>
-  <Card />
-</XDSGrid>`,
-    },
-    {
-      label: 'Grid item spanning multiple columns',
-      code: `<XDSGrid columns={3} gap={4}>
-  <XDSGridSpan columns={2}>Wide item</XDSGridSpan>
-  <div>Normal item</div>
-</XDSGrid>`,
-    },
-    {
-      label: 'Dense grid (e.g. color swatches, icon grids, compact controls)',
-      code: `<XDSGrid columns={6} gap={2}>
-  {items.map(item => (
-    <XDSButton key={item.id} label={item.label} icon={item.icon} variant="ghost" size="sm" />
-  ))}
-</XDSGrid>`,
-    },
   ],
   theming: {
     targets: [
@@ -125,18 +90,7 @@ export const docs = {
           description:
             'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
         },
-      ],
-      examples: [
-        {
-          label: 'Basic',
-          code: `<XDSGrid columns={3} gap={4}>
-  <Item />
-  <Item />
-  <Item />
-</XDSGrid>`,
-        },
-      ],
-    },
+      ],    },
     {
       name: 'XDSGridSpan',
       description: 'Grid item that spans multiple columns or rows.',
@@ -155,15 +109,6 @@ export const docs = {
           name: 'children',
           type: 'ReactNode',
           description: 'Content.',
-        },
-      ],
-      examples: [
-        {
-          label: 'Spanning two columns',
-          code: `<XDSGrid columns={3} gap={4}>
-  <XDSGridSpan columns={2}>Wide item</XDSGridSpan>
-  <div>Normal item</div>
-</XDSGrid>`,
         },
       ],
     },
@@ -185,45 +130,6 @@ export const docsZh = {
     '通过 `align` 和 `justify` 实现垂直和水平项对齐',
     'XDSGridSpan 允许单个项跨越多列或多行',
     '主题支持 - 通过 `grid` 组件键覆盖根样式',
-  ],
-  examples: [
-    {
-      label: '固定 3 列网格',
-      code: `<XDSGrid columns={3} gap={4}>
-  <Item />
-  <Item />
-  <Item />
-</XDSGrid>`,
-    },
-    {
-      label: '响应式自动适配',
-      code: `<XDSGrid minChildWidth={200} gap={4}>
-  <Card />
-  <Card />
-  <Card />
-</XDSGrid>`,
-    },
-    {
-      label: '带最大列数限制的自动适配',
-      code: `<XDSGrid minChildWidth={200} columns={4} gap={4}>
-  <Card />
-</XDSGrid>`,
-    },
-    {
-      label: '跨越多列的网格项',
-      code: `<XDSGrid columns={3} gap={4}>
-  <XDSGridSpan columns={2}>Wide item</XDSGridSpan>
-  <div>Normal item</div>
-</XDSGrid>`,
-    },
-    {
-      label: '密集网格（例如色板、图标网格、紧凑控件）',
-      code: `<XDSGrid columns={6} gap={2}>
-  {items.map(item => (
-    <XDSButton key={item.id} label={item.label} icon={item.icon} variant="ghost" size="sm" />
-  ))}
-</XDSGrid>`,
-    },
   ],
   theming: {
     targets: [
@@ -299,16 +205,6 @@ export const docsZh = {
             '用于布局自定义（外边距、定位、尺寸）的 StyleX 样式。必须是 stylex.create() 的值，而非内联样式对象如 style={{}}。',
         },
       ],
-      examples: [
-        {
-          label: '基础用法',
-          code: `<XDSGrid columns={3} gap={4}>
-  <Item />
-  <Item />
-  <Item />
-</XDSGrid>`,
-        },
-      ],
     },
     {
       name: 'XDSGridSpan',
@@ -328,15 +224,6 @@ export const docsZh = {
           name: 'children',
           type: 'ReactNode',
           description: '内容。',
-        },
-      ],
-      examples: [
-        {
-          label: '跨越两列',
-          code: `<XDSGrid columns={3} gap={4}>
-  <XDSGridSpan columns={2}>Wide item</XDSGridSpan>
-  <div>Normal item</div>
-</XDSGrid>`,
         },
       ],
     },

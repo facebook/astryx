@@ -4,6 +4,10 @@ export const docs = {
   name: 'TextArea',
   description:
     'A multi-line text input component for collecting longer user input.',
+  showcase: {
+    aspectRatio: 4 / 3,
+    code: '<XDSTextArea label="Description" value="" onChange={() => {}} />',
+  },
   keywords: ["textarea","textfield","multiline","comment","message","autoresize","autosize","charlimit"],
   features: [
     'Label support — required label for accessibility, can be visually hidden',
@@ -20,44 +24,7 @@ export const docs = {
     'Resizable — vertical resize enabled by default',
     'Spell check — browser spell checking enabled by default, configurable',
     'Reduced motion — respects prefers-reduced-motion for input wrapper transitions',
-  ],
-  examples: [
-    {
-      label: 'Basic',
-      code: '<XDSTextArea label="Description" value={description} onChange={setDescription} />',
-    },
-    {
-      label: 'With placeholder and custom rows',
-      code: '<XDSTextArea label="Notes" rows={5} value={notes} onChange={setNotes} placeholder="Enter your notes..." />',
-    },
-    {
-      label: 'Hidden label',
-      code: '<XDSTextArea label="Comments" isLabelHidden value={comments} onChange={setComments} placeholder="Add a comment..." />',
-    },
-    {
-      label: 'With description and optional indicator',
-      code: '<XDSTextArea label="Bio" description="Tell us about yourself" isOptional value={bio} onChange={setBio} />',
-    },
-    {
-      label: 'Error status with message',
-      code: `<XDSTextArea
-  label="Feedback"
-  isRequired
-  value={feedback}
-  onChange={setFeedback}
-  status={{type: 'error', message: 'Feedback is required'}}
-/>`,
-    },
-    {
-      label: 'With character counter',
-      code: '<XDSTextArea label="Summary" maxLength={280} value={summary} onChange={setSummary} />',
-    },
-    {
-      label: 'Disabled',
-      code: '<XDSTextArea label="Read-only notes" isDisabled value="Cannot edit this" onChange={() => {}} />',
-    },
-  ],
-  props: [
+  ],  props: [
     {
       name: 'ref',
       type: 'React.Ref<HTMLTextAreaElement>',
@@ -258,42 +225,6 @@ export const docsZh = {
     '可调整大小 — 默认启用垂直调整大小',
     '拼写检查 — 默认启用浏览器拼写检查，可配置',
     '减少动画 — 尊重 prefers-reduced-motion 输入包装过渡',
-  ],
-  examples: [
-    {
-      label: '基础用法',
-      code: '<XDSTextArea label="Description" value={description} onChange={setDescription} />',
-    },
-    {
-      label: '带占位符和自定义行数',
-      code: '<XDSTextArea label="Notes" rows={5} value={notes} onChange={setNotes} placeholder="Enter your notes..." />',
-    },
-    {
-      label: '隐藏标签',
-      code: '<XDSTextArea label="Comments" isLabelHidden value={comments} onChange={setComments} placeholder="Add a comment..." />',
-    },
-    {
-      label: '带描述和可选指示器',
-      code: '<XDSTextArea label="Bio" description="Tell us about yourself" isOptional value={bio} onChange={setBio} />',
-    },
-    {
-      label: '带消息的错误状态',
-      code: `<XDSTextArea
-  label="Feedback"
-  isRequired
-  value={feedback}
-  onChange={setFeedback}
-  status={{type: 'error', message: 'Feedback is required'}}
-/>`,
-    },
-    {
-      label: '带字符计数器',
-      code: '<XDSTextArea label="Summary" maxLength={280} value={summary} onChange={setSummary} />',
-    },
-    {
-      label: '禁用状态',
-      code: '<XDSTextArea label="Read-only notes" isDisabled value="Cannot edit this" onChange={() => {}} />',
-    },
   ],
   props: [
     {

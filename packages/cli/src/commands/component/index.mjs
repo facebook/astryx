@@ -23,6 +23,7 @@ import {resolveTheme} from '../../lib/resolve-theme.mjs';
 import {getRunPrefix} from '../../utils/package-manager.mjs';
 import {jsonOut, jsonError} from '../../lib/json.mjs';
 import {component as componentApi} from '../../api/component.mjs';
+import {findRelatedBlocks} from '../../api/template.mjs';
 
 export function registerComponent(program) {
   program
@@ -119,6 +120,16 @@ export function registerComponent(program) {
             console.log(formatCompact(result.data, resolvedName, importHint));
           } else {
             console.log(formatFull(result.data, {themeData}));
+          }
+          const compName = (name || '').replace(/^XDS/, '');
+          const related = await findRelatedBlocks(compName);
+          if (related.length > 0) {
+            console.log('\nRelated block templates:\n');
+            for (const b of related) {
+              console.log(`  ${b.dirName}`);
+              if (b.description) console.log(`    ${b.description}`);
+            }
+            console.log('');
           }
           break;
         }

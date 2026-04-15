@@ -4,6 +4,10 @@ export const docs = {
   name: 'Stack',
   description:
     'Stack layout primitives for arranging items in horizontal or vertical sequences using flexbox-based layout with themed spacing tokens.',
+  showcase: {
+    aspectRatio: 4 / 3,
+    code: '<XDSVStack gap={2}><div>Item 1</div><div>Item 2</div></XDSVStack>',
+  },
   keywords: ["stack","hstack","vstack","flexbox","flex","spacing","gap","horizontal","vertical","row","column"],
   features: [
     'Horizontal (XDSHStack) and vertical (XDSVStack) stacking',
@@ -11,66 +15,7 @@ export const docs = {
     'Individual item control via XDSStackItem',
     'Polymorphic rendering support via the element prop',
     'Low-level StyleX utilities (stack, stackItem) for advanced use cases',
-  ],
-  examples: [
-    {
-      label: 'Header layout',
-      code: `<XDSHStack element="header" gap={2}>
-  <XDSStackItem size="static">
-    <Logo />
-  </XDSStackItem>
-  <XDSStackItem size="fill">
-    <Navigation />
-  </XDSStackItem>
-  <XDSStackItem size="static">
-    <UserMenu />
-  </XDSStackItem>
-</XDSHStack>`,
-    },
-    {
-      label: 'Sidebar layout',
-      code: `<XDSHStack gap={4}>
-  <XDSStackItem size="static">
-    <Sidebar />
-  </XDSStackItem>
-  <XDSStackItem size="fill">
-    <MainContent />
-  </XDSStackItem>
-</XDSHStack>`,
-    },
-    {
-      label: 'Page layout',
-      code: `<XDSVStack element="main" gap={6}>
-  <XDSStackItem size="static">
-    <PageHeader />
-  </XDSStackItem>
-  <XDSStackItem size="fill">
-    <PageContent />
-  </XDSStackItem>
-  <XDSStackItem size="static">
-    <PageFooter />
-  </XDSStackItem>
-</XDSVStack>`,
-    },
-    {
-      label: 'Override alignment per item',
-      code: `<XDSHStack vAlign="start">
-  <XDSStackItem crossAlignSelf="center">Centered</XDSStackItem>
-  <XDSStackItem>Top-aligned</XDSStackItem>
-</XDSHStack>`,
-    },
-    {
-      label: 'StyleX utility — advanced use',
-      code: `import {stack} from '@xds/core/Layout';
-import * as stylex from '@stylexjs/stylex';
-
-<div {...stylex.props(...stack({direction: 'horizontal', gap: 2}))}>
-  <Child />
-  <Child />
-</div>`,
-    },
-  ],
-  theming: {
+  ],  theming: {
     targets: [
       {className: 'xds-stack', visualProps: ['direction', 'gap', 'wrap']},
       {className: 'xds-stack-item', visualProps: ['size']},
@@ -122,31 +67,7 @@ import * as stylex from '@stylexjs/stylex';
           description:
             'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
         },
-      ],
-      examples: [
-        {
-          label: 'Basic horizontal stack',
-          code: `<XDSHStack gap={2}>
-  <Item />
-  <Item />
-</XDSHStack>`,
-        },
-        {
-          label: 'With vertical alignment',
-          code: `<XDSHStack gap={4} vAlign="center">
-  <Item />
-  <Item />
-</XDSHStack>`,
-        },
-        {
-          label: 'Polymorphic rendering',
-          code: `<XDSHStack element="nav" gap={2}>
-  <Link />
-  <Link />
-</XDSHStack>`,
-        },
-      ],
-    },
+      ],    },
     {
       name: 'XDSVStack',
       description:
@@ -182,29 +103,6 @@ import * as stylex from '@stylexjs/stylex';
           description: 'Stack content.',
         },
       ],
-      examples: [
-        {
-          label: 'Basic vertical stack',
-          code: `<XDSVStack gap={2}>
-  <Item />
-  <Item />
-</XDSVStack>`,
-        },
-        {
-          label: 'With horizontal alignment',
-          code: `<XDSVStack gap={4} hAlign="center">
-  <Item />
-  <Item />
-</XDSVStack>`,
-        },
-        {
-          label: 'Polymorphic rendering',
-          code: `<XDSVStack element="main" gap={4}>
-  <Header />
-  <Content />
-</XDSVStack>`,
-        },
-      ],
     },
     {
       name: 'XDSStackItem',
@@ -234,29 +132,6 @@ import * as stylex from '@stylexjs/stylex';
           name: 'children',
           type: 'ReactNode',
           description: 'Item content.',
-        },
-      ],
-      examples: [
-        {
-          label: 'Static and fill sizing',
-          code: `<XDSHStack gap={2}>
-  <XDSStackItem size="static">Logo</XDSStackItem>
-  <XDSStackItem size="fill">Content</XDSStackItem>
-  <XDSStackItem size="static">Actions</XDSStackItem>
-</XDSHStack>`,
-        },
-        {
-          label: 'Override alignment per item',
-          code: `<XDSHStack vAlign="start">
-  <XDSStackItem crossAlignSelf="center">Centered</XDSStackItem>
-  <XDSStackItem>Top-aligned</XDSStackItem>
-</XDSHStack>`,
-        },
-        {
-          label: 'Polymorphic rendering',
-          code: `<XDSStackItem element="section" size="fill">
-  Section content
-</XDSStackItem>`,
         },
       ],
     },
@@ -289,18 +164,6 @@ import * as stylex from '@stylexjs/stylex';
           default: "'nowrap'",
         },
       ],
-      examples: [
-        {
-          label: 'StyleX horizontal container',
-          code: `import {stack} from '@xds/core/Layout';
-import * as stylex from '@stylexjs/stylex';
-
-<div {...stylex.props(...stack({direction: 'horizontal', gap: 2}))}>
-  <Child />
-  <Child />
-</div>`,
-        },
-      ],
     },
     {
       name: 'stackItem',
@@ -321,15 +184,6 @@ import * as stylex from '@stylexjs/stylex';
             'Override the cross-axis alignment for this individual item.',
         },
       ],
-      examples: [
-        {
-          label: 'StyleX fill item',
-          code: `import {stackItem} from '@xds/core/Layout';
-import * as stylex from '@stylexjs/stylex';
-
-<div {...stylex.props(...stackItem({size: 'fill'}))}>Content</div>`,
-        },
-      ],
     },
   ],
   usage: {
@@ -348,64 +202,6 @@ export const docsZh = {
     '通过 XDSStackItem 实现单个元素的控制',
     '通过 element 属性支持多态渲染',
     '底层 StyleX 工具函数（stack、stackItem）用于高级用例',
-  ],
-  examples: [
-    {
-      label: '头部布局',
-      code: `<XDSHStack element="header" gap={2}>
-  <XDSStackItem size="static">
-    <Logo />
-  </XDSStackItem>
-  <XDSStackItem size="fill">
-    <Navigation />
-  </XDSStackItem>
-  <XDSStackItem size="static">
-    <UserMenu />
-  </XDSStackItem>
-</XDSHStack>`,
-    },
-    {
-      label: '侧边栏布局',
-      code: `<XDSHStack gap={4}>
-  <XDSStackItem size="static">
-    <Sidebar />
-  </XDSStackItem>
-  <XDSStackItem size="fill">
-    <MainContent />
-  </XDSStackItem>
-</XDSHStack>`,
-    },
-    {
-      label: '页面布局',
-      code: `<XDSVStack element="main" gap={6}>
-  <XDSStackItem size="static">
-    <PageHeader />
-  </XDSStackItem>
-  <XDSStackItem size="fill">
-    <PageContent />
-  </XDSStackItem>
-  <XDSStackItem size="static">
-    <PageFooter />
-  </XDSStackItem>
-</XDSVStack>`,
-    },
-    {
-      label: '按元素覆盖对齐方式',
-      code: `<XDSHStack vAlign="start">
-  <XDSStackItem crossAlignSelf="center">Centered</XDSStackItem>
-  <XDSStackItem>Top-aligned</XDSStackItem>
-</XDSHStack>`,
-    },
-    {
-      label: 'StyleX 工具函数 — 高级用法',
-      code: `import {stack} from '@xds/core/Layout';
-import * as stylex from '@stylexjs/stylex';
-
-<div {...stylex.props(...stack({direction: 'horizontal', gap: 2}))}>
-  <Child />
-  <Child />
-</div>`,
-    },
   ],
   theming: {
     targets: [
@@ -460,29 +256,6 @@ import * as stylex from '@stylexjs/stylex';
             '用于布局自定义的 StyleX 样式（外边距、定位、尺寸）。必须是 stylex.create() 的值，而非内联样式对象如 style={{}}。',
         },
       ],
-      examples: [
-        {
-          label: '基础水平堆叠',
-          code: `<XDSHStack gap={2}>
-  <Item />
-  <Item />
-</XDSHStack>`,
-        },
-        {
-          label: '带垂直对齐',
-          code: `<XDSHStack gap={4} vAlign="center">
-  <Item />
-  <Item />
-</XDSHStack>`,
-        },
-        {
-          label: '多态渲染',
-          code: `<XDSHStack element="nav" gap={2}>
-  <Link />
-  <Link />
-</XDSHStack>`,
-        },
-      ],
     },
     {
       name: 'XDSVStack',
@@ -519,29 +292,6 @@ import * as stylex from '@stylexjs/stylex';
           description: '堆叠内容。',
         },
       ],
-      examples: [
-        {
-          label: '基础垂直堆叠',
-          code: `<XDSVStack gap={2}>
-  <Item />
-  <Item />
-</XDSVStack>`,
-        },
-        {
-          label: '带水平对齐',
-          code: `<XDSVStack gap={4} hAlign="center">
-  <Item />
-  <Item />
-</XDSVStack>`,
-        },
-        {
-          label: '多态渲染',
-          code: `<XDSVStack element="main" gap={4}>
-  <Header />
-  <Content />
-</XDSVStack>`,
-        },
-      ],
     },
     {
       name: 'XDSStackItem',
@@ -571,29 +321,6 @@ import * as stylex from '@stylexjs/stylex';
           name: 'children',
           type: 'ReactNode',
           description: '子元素内容。',
-        },
-      ],
-      examples: [
-        {
-          label: '静态和填充尺寸',
-          code: `<XDSHStack gap={2}>
-  <XDSStackItem size="static">Logo</XDSStackItem>
-  <XDSStackItem size="fill">Content</XDSStackItem>
-  <XDSStackItem size="static">Actions</XDSStackItem>
-</XDSHStack>`,
-        },
-        {
-          label: '按元素覆盖对齐方式',
-          code: `<XDSHStack vAlign="start">
-  <XDSStackItem crossAlignSelf="center">Centered</XDSStackItem>
-  <XDSStackItem>Top-aligned</XDSStackItem>
-</XDSHStack>`,
-        },
-        {
-          label: '多态渲染',
-          code: `<XDSStackItem element="section" size="fill">
-  Section content
-</XDSStackItem>`,
         },
       ],
     },
@@ -626,18 +353,6 @@ import * as stylex from '@stylexjs/stylex';
           default: "'nowrap'",
         },
       ],
-      examples: [
-        {
-          label: 'StyleX 水平容器',
-          code: `import {stack} from '@xds/core/Layout';
-import * as stylex from '@stylexjs/stylex';
-
-<div {...stylex.props(...stack({direction: 'horizontal', gap: 2}))}>
-  <Child />
-  <Child />
-</div>`,
-        },
-      ],
     },
     {
       name: 'stackItem',
@@ -656,15 +371,6 @@ import * as stylex from '@stylexjs/stylex';
           type: "'start' | 'center' | 'end' | 'stretch'",
           description:
             '覆盖此元素的交叉轴对齐方式。',
-        },
-      ],
-      examples: [
-        {
-          label: 'StyleX 填充子元素',
-          code: `import {stackItem} from '@xds/core/Layout';
-import * as stylex from '@stylexjs/stylex';
-
-<div {...stylex.props(...stackItem({size: 'fill'}))}>Content</div>`,
         },
       ],
     },

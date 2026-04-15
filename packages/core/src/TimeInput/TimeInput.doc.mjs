@@ -4,6 +4,10 @@ export const docs = {
   name: 'TimeInput',
   description:
     'Time input with free-text entry, text parsing, and arrow-key navigation.',
+  showcase: {
+    aspectRatio: 4 / 3,
+    code: '<XDSTimeInput label="Time" />',
+  },
   keywords: ["timeinput","timepicker","time","clock","hour","minute","ampm","timeselect","timefield"],
   features: [
     'Accepts free-text time entry and parses common formats (e.g. "2:30 PM", "14:30")',
@@ -14,59 +18,7 @@ export const docs = {
     'Min / max range constraints reject out-of-range values',
     'Async action support via onChangeAction with optimistic UI and loading spinner',
     'Accessible — label, description, and status message are wired to aria-describedby; aria-required and aria-invalid reflect field state',
-  ],
-  examples: [
-    {
-      label: 'Basic',
-      code: `<XDSTimeInput
-  label="Start time"
-  value={time}
-  onChange={setTime}
-/>`,
-    },
-    {
-      label: '24-hour format with clear button',
-      code: `<XDSTimeInput
-  label="Meeting time"
-  value={time}
-  onChange={setTime}
-  hourFormat="24h"
-  hasClear
-/>`,
-    },
-    {
-      label: 'Min / max constraints',
-      code: `<XDSTimeInput
-  label="Business hours"
-  value={time}
-  onChange={setTime}
-  min="09:00"
-  max="17:00"
-/>`,
-    },
-    {
-      label: 'With seconds and error status',
-      code: `<XDSTimeInput
-  label="Precise time"
-  value={time}
-  onChange={setTime}
-  hasSeconds
-  status={{type: 'error', message: 'Invalid time'}}
-/>`,
-    },
-    {
-      label: 'Async action with optimistic update',
-      code: `<XDSTimeInput
-  label="Scheduled time"
-  value={time}
-  onChange={setTime}
-  onChangeAction={async (value) => {
-    await saveTime(value);
-  }}
-/>`,
-    },
-  ],
-  props: [
+  ],  props: [
     {
       name: 'label',
       type: 'string',
@@ -237,57 +189,6 @@ export const docsZh = {
     '最小/最大范围约束拒绝超出范围的值',
     '通过 onChangeAction 支持异步操作，带乐观 UI 和加载旋转器',
     '无障碍 — 标签、描述和状态消息通过 aria-describedby 关联；aria-required 和 aria-invalid 反映字段状态',
-  ],
-  examples: [
-    {
-      label: '基础用法',
-      code: `<XDSTimeInput
-  label="Start time"
-  value={time}
-  onChange={setTime}
-/>`,
-    },
-    {
-      label: '24 小时格式带清除按钮',
-      code: `<XDSTimeInput
-  label="Meeting time"
-  value={time}
-  onChange={setTime}
-  hourFormat="24h"
-  hasClear
-/>`,
-    },
-    {
-      label: '最小/最大约束',
-      code: `<XDSTimeInput
-  label="Business hours"
-  value={time}
-  onChange={setTime}
-  min="09:00"
-  max="17:00"
-/>`,
-    },
-    {
-      label: '带秒和错误状态',
-      code: `<XDSTimeInput
-  label="Precise time"
-  value={time}
-  onChange={setTime}
-  hasSeconds
-  status={{type: 'error', message: 'Invalid time'}}
-/>`,
-    },
-    {
-      label: '带乐观更新的异步操作',
-      code: `<XDSTimeInput
-  label="Scheduled time"
-  value={time}
-  onChange={setTime}
-  onChangeAction={async (value) => {
-    await saveTime(value);
-  }}
-/>`,
-    },
   ],
   props: [
     {

@@ -4,6 +4,10 @@ export const docs = {
   name: 'Popover',
   description:
     'A click-triggered popover for displaying interactive content anchored to a trigger element, implementing the button + dialog ARIA pattern.',
+  showcase: {
+    aspectRatio: 4 / 3,
+    code: '<XDSPopover trigger={<button>Open</button>}>Content</XDSPopover>',
+  },
   keywords: ["popover","popup","dropdown","tooltip","overlay","flyout","callout","popper","anchor","floating","bubble"],
   features: [
     'CSS Anchor Positioning for automatic placement relative to trigger elements',
@@ -28,71 +32,11 @@ export const docs = {
   ],
   keyboard:
     'Escape closes the popover. Enter/Space open the popover when the trigger has focus. Focus is trapped inside an open popover.',
-  examples: [
-    {
-      label: 'XDSPopover — basic',
-      code: `<XDSPopover label="Settings" content={<SettingsPanel />} placement="below">
-  <XDSButton label="Settings" />
-</XDSPopover>`,
-    },
-    {
-      label: 'XDSPopover — controlled',
-      code: `<XDSPopover
-  isOpen={isOpen}
-  onOpenChange={setIsOpen}
-  label="Filter"
-  content={<FilterForm />}
->
-  <XDSButton label="Filter" />
-</XDSPopover>`,
-    },
-    {
-      label: 'XDSPopover — sibling mode with anchorRef',
-      code: `<XDSPopover
-  anchorRef={myButtonRef}
-  label="Actions"
-  content={<ActionMenu />}
-  placement="below"
-/>`,
-    },
-    {
-      label: 'useXDSPopover hook',
-      code: `const popover = useXDSPopover({
-  onHide: () => inputRef.current?.focus(),
-  closeButtonLabel: 'Close calendar',
-});
-
-<button ref={popover.triggerRef} onClick={popover.toggle} {...popover.triggerProps}>
-  Open Calendar
-</button>
-{popover.render(<Calendar />, { placement: 'below', alignment: 'start' })}`,
-    },
-  ],
   components: [
     {
       name: 'XDSPopover',
       description:
-        'A click-triggered popover for displaying interactive content anchored to a trigger element.',
-      examples: [
-        {
-          label: 'Basic',
-          code: `<XDSPopover label="Settings" content={<SettingsPanel />} placement="below">
-  <XDSButton label="Settings" />
-</XDSPopover>`,
-        },
-        {
-          label: 'Controlled',
-          code: `<XDSPopover
-  isOpen={isOpen}
-  onOpenChange={setIsOpen}
-  label="Filter"
-  content={<FilterForm />}
->
-  <XDSButton label="Filter" />
-</XDSPopover>`,
-        },
-      ],
-      props: [
+        'A click-triggered popover for displaying interactive content anchored to a trigger element.',      props: [
         {
           name: 'children',
           type: 'ReactNode',
@@ -173,19 +117,6 @@ export const docs = {
       name: 'useXDSPopover',
       description:
         'Hook for creating popover dialogs with focus trapping. Combines useXDSLayer with useFocusTrap.',
-      examples: [
-        {
-          label: 'Basic hook usage',
-          code: `const popover = useXDSPopover({
-  onHide: () => inputRef.current?.focus(),
-});
-
-<button ref={popover.triggerRef} onClick={popover.toggle} {...popover.triggerProps}>
-  Open
-</button>
-{popover.render(<MyContent />, { placement: 'below', alignment: 'start' })}`,
-        },
-      ],
       props: [
         {
           name: 'onShow',
@@ -294,70 +225,11 @@ export const docsZh = {
   ],
   keyboard:
     'Escape 关闭弹出框。当触发器获得焦点时，Enter/Space 打开弹出框。焦点被捕获在打开的弹出框内。',
-  examples: [
-    {
-      label: 'XDSPopover — 基本用法',
-      code: `<XDSPopover label="Settings" content={<SettingsPanel />} placement="below">
-  <XDSButton label="Settings" />
-</XDSPopover>`,
-    },
-    {
-      label: 'XDSPopover — 受控模式',
-      code: `<XDSPopover
-  isOpen={isOpen}
-  onOpenChange={setIsOpen}
-  label="Filter"
-  content={<FilterForm />}
->
-  <XDSButton label="Filter" />
-</XDSPopover>`,
-    },
-    {
-      label: 'XDSPopover — 使用 anchorRef 的兄弟模式',
-      code: `<XDSPopover
-  anchorRef={myButtonRef}
-  label="Actions"
-  content={<ActionMenu />}
-  placement="below"
-/>`,
-    },
-    {
-      label: 'useXDSPopover 钩子',
-      code: `const popover = useXDSPopover({
-  onHide: () => inputRef.current?.focus(),
-  closeButtonLabel: 'Close calendar',
-});
-
-<button ref={popover.triggerRef} onClick={popover.toggle} {...popover.triggerProps}>
-  Open Calendar
-</button>
-{popover.render(<Calendar />, { placement: 'below', alignment: 'start' })}`,
-    },
-  ],
   components: [
     {
       name: 'XDSPopover',
       description:
         '一个点击触发的弹出框，用于显示锚定到触发元素的交互式内容。',
-      examples: [
-        {
-          label: '基本用法',
-          code: `<XDSPopover label="Settings" content={<SettingsPanel />} placement="below">
-  <XDSButton label="Settings" />
-</XDSPopover>`,
-        },
-        {
-          label: '受控模式',
-          code: `<XDSPopover
-  isOpen={isOpen}
-  onOpenChange={setIsOpen}
-  label="Filter"
-  content={<FilterForm />}
->
-  <XDSButton label="Filter" />
-</XDSPopover>`,
-        },
-      ],
       props: [
         {
           name: 'children',
@@ -434,19 +306,6 @@ export const docsZh = {
       name: 'useXDSPopover',
       description:
         '用于创建带焦点捕获的弹出框对话框的钩子。将 useXDSLayer 与 useFocusTrap 结合使用。',
-      examples: [
-        {
-          label: '基本钩子用法',
-          code: `const popover = useXDSPopover({
-  onHide: () => inputRef.current?.focus(),
-});
-
-<button ref={popover.triggerRef} onClick={popover.toggle} {...popover.triggerProps}>
-  Open
-</button>
-{popover.render(<MyContent />, { placement: 'below', alignment: 'start' })}`,
-        },
-      ],
       props: [
         {
           name: 'onShow',

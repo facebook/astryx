@@ -3,6 +3,10 @@
 export const docs = {
   name: 'CheckboxInput',
   description: 'A checkbox input component for toggling boolean values.',
+  showcase: {
+    aspectRatio: 4 / 3,
+    code: '<XDSCheckboxInput label="Accept terms" />',
+  },
   keywords: ["checkbox","check","toggle","tick","indeterminate","boolean","tristate"],
   features: [
     'Accessible — always includes a label (can be visually hidden)',
@@ -109,81 +113,6 @@ export const docs = {
       type: "{ type: 'error' | 'warning' | 'success', message: string }",
       description:
         'Status indicator. Displays a colored message box below the checkbox and sets aria-invalid for errors.',
-    },
-  ],
-  examples: [
-    {
-      label: 'Basic',
-      code: `<XDSCheckboxInput
-  label="Accept terms and conditions"
-  value={accepted}
-  onChange={setAccepted}
-/>`,
-    },
-    {
-      label: 'With description',
-      code: `<XDSCheckboxInput
-  label="Subscribe to newsletter"
-  description="Receive weekly updates about new features"
-  value={subscribed}
-  onChange={setSubscribed}
-/>`,
-    },
-    {
-      label: 'Indeterminate state',
-      code: `<XDSCheckboxInput
-  label="Select all items"
-  value="indeterminate"
-  onChange={setSelectAll}
-/>`,
-    },
-    {
-      label: 'Hidden label',
-      code: `<XDSCheckboxInput
-  label="Select row"
-  isLabelHidden
-  value={selected}
-  onChange={setSelected}
-/>`,
-    },
-    {
-      label: 'Disabled',
-      code: `<XDSCheckboxInput
-  label="Premium feature"
-  description="Upgrade to enable this option"
-  value={false}
-  onChange={() => {}}
-  isDisabled
-/>`,
-    },
-    {
-      label: 'Small size',
-      code: `<XDSCheckboxInput
-  label="Compact checkbox"
-  value={checked}
-  onChange={setChecked}
-  size="sm"
-/>`,
-    },
-    {
-      label: 'With error status',
-      code: `<XDSCheckboxInput
-  label="Accept terms"
-  value={false}
-  onChange={setAccepted}
-  status={{ type: 'error', message: 'You must accept the terms to continue' }}
-/>`,
-    },
-    {
-      label: 'Async action',
-      code: `<XDSCheckboxInput
-  label="Enable feature"
-  value={enabled}
-  onChange={setEnabled}
-  onChangeAction={async (checked) => {
-    await savePreference(checked);
-  }}
-/>`,
     },
   ],
   theming: {
@@ -312,81 +241,6 @@ export const docsZh = {
       name: 'status',
       type: "{ type: 'error' | 'warning' | 'success', message: string }",
       description: '状态指示器。在复选框下方显示彩色消息框，错误时设置 aria-invalid。',
-    },
-  ],
-  examples: [
-    {
-      label: '基础用法',
-      code: `<XDSCheckboxInput
-  label="Accept terms and conditions"
-  value={accepted}
-  onChange={setAccepted}
-/>`,
-    },
-    {
-      label: '带描述',
-      code: `<XDSCheckboxInput
-  label="Subscribe to newsletter"
-  description="Receive weekly updates about new features"
-  value={subscribed}
-  onChange={setSubscribed}
-/>`,
-    },
-    {
-      label: '不确定状态',
-      code: `<XDSCheckboxInput
-  label="Select all items"
-  value="indeterminate"
-  onChange={setSelectAll}
-/>`,
-    },
-    {
-      label: '隐藏标签',
-      code: `<XDSCheckboxInput
-  label="Select row"
-  isLabelHidden
-  value={selected}
-  onChange={setSelected}
-/>`,
-    },
-    {
-      label: '禁用状态',
-      code: `<XDSCheckboxInput
-  label="Premium feature"
-  description="Upgrade to enable this option"
-  value={false}
-  onChange={() => {}}
-  isDisabled
-/>`,
-    },
-    {
-      label: '紧凑尺寸',
-      code: `<XDSCheckboxInput
-  label="Compact checkbox"
-  value={checked}
-  onChange={setChecked}
-  size="sm"
-/>`,
-    },
-    {
-      label: '错误状态',
-      code: `<XDSCheckboxInput
-  label="Accept terms"
-  value={false}
-  onChange={setAccepted}
-  status={{ type: 'error', message: 'You must accept the terms to continue' }}
-/>`,
-    },
-    {
-      label: '异步操作',
-      code: `<XDSCheckboxInput
-  label="Enable feature"
-  value={enabled}
-  onChange={setEnabled}
-  onChangeAction={async (checked) => {
-    await savePreference(checked);
-  }}
-/>`,
     },
   ],
   theming: {

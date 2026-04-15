@@ -4,6 +4,10 @@ export const docs = {
   name: 'TabList',
   description:
     'Tab navigation components with overflow menu support, rendering as a semantic nav landmark with button or anchor tab items.',
+  showcase: {
+    aspectRatio: 16 / 4,
+    code: '<XDSTabList tabs={[{label: "Tab 1"}, {label: "Tab 2"}]} />',
+  },
   keywords: ["tabs","tabbar","tabstrip","navigation","tabpanel","tabgroup","segmented","navtabs","tab"],
   features: [
     'Context-based communication: XDSTabListContext passes value/onChange/size from XDSTabList to children',
@@ -15,52 +19,7 @@ export const docs = {
     'Keyboard navigation: Tab between items, ArrowUp/Down in menu, Home/End, Escape closes menu (via useListFocus)',
     'Hover state: unselected tabs show a gray underline on hover; no background hover overlay',
     'Accessibility: nav landmark, aria-current="page" on selected tabs, role="menu" + aria-label on dropdown, aria-controls connecting trigger to menu, role="menuitem" for items, role="separator" for heading divider',
-  ],
-  examples: [
-    {
-      label: 'Basic',
-      code: `<XDSTabList value={activeTab} onChange={setActiveTab}>
-  <XDSTab value="home" label="Home" />
-  <XDSTab value="settings" label="Settings" />
-</XDSTabList>`,
-    },
-    {
-      label: 'With links',
-      code: `<XDSTabList value={activeTab} onChange={setActiveTab}>
-  <XDSTab value="home" label="Home" href="/home" />
-  <XDSTab value="settings" label="Settings" href="/settings" />
-</XDSTabList>`,
-    },
-    {
-      label: 'With icons',
-      code: `<XDSTabList value={activeTab} onChange={setActiveTab}>
-  <XDSTab value="home" label="Home" icon={<HomeIcon />} selectedIcon={<HomeFilledIcon />} />
-  <XDSTab value="settings" label="Settings" icon={<CogIcon />} />
-</XDSTabList>`,
-    },
-    {
-      label: 'With bottom divider',
-      code: `<XDSTabList value={activeTab} onChange={setActiveTab} hasDivider>
-  <XDSTab value="home" label="Home" />
-  <XDSTab value="settings" label="Settings" />
-</XDSTabList>`,
-    },
-    {
-      label: 'With overflow menu',
-      code: `<XDSTabList value={activeTab} onChange={setActiveTab}>
-  <XDSTab value="home" label="Home" />
-  <XDSTab value="settings" label="Settings" />
-  <XDSTabMenu
-    label="More"
-    options={[
-      {value: 'analytics', label: 'Analytics', icon: ChartBarIcon},
-      {value: 'reports', label: 'Reports', icon: DocumentTextIcon},
-    ]}
-  />
-</XDSTabList>`,
-    },
-  ],
-  theming: {
+  ],  theming: {
     targets: [
       {className: 'xds-tab-list', visualProps: ['size']},
       {className: 'xds-tab', states: ['selected']},
@@ -134,24 +93,7 @@ export const docs = {
           description:
             'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
         },
-      ],
-      examples: [
-        {
-          label: 'Basic',
-          code: `<XDSTabList value={activeTab} onChange={setActiveTab}>
-  <XDSTab value="home" label="Home" />
-  <XDSTab value="settings" label="Settings" />
-</XDSTabList>`,
-        },
-        {
-          label: 'With divider',
-          code: `<XDSTabList value={activeTab} onChange={setActiveTab} hasDivider size="sm">
-  <XDSTab value="home" label="Home" />
-  <XDSTab value="settings" label="Settings" />
-</XDSTabList>`,
-        },
-      ],
-    },
+      ],    },
     {
       name: 'XDSTab',
       description:
@@ -200,16 +142,6 @@ export const docs = {
             'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
         },
       ],
-      examples: [
-        {
-          label: 'Button tab',
-          code: '<XDSTab value="home" label="Home" />',
-        },
-        {
-          label: 'Link tab with icons',
-          code: '<XDSTab value="home" label="Home" href="/home" icon={<HomeIcon />} selectedIcon={<HomeFilledIcon />} />',
-        },
-      ],
     },
     {
       name: 'XDSTabMenu',
@@ -228,28 +160,6 @@ export const docs = {
           type: 'XDSTabMenuOption[]',
           description: 'Array of menu options rendered in the dropdown.',
           required: true,
-        },
-      ],
-      examples: [
-        {
-          label: 'With icons',
-          code: `<XDSTabMenu
-  label="More"
-  options={[
-    {value: 'analytics', label: 'Analytics', icon: ChartBarIcon},
-    {value: 'reports', label: 'Reports', icon: DocumentTextIcon},
-  ]}
-/>`,
-        },
-        {
-          label: 'Text only',
-          code: `<XDSTabMenu
-  label="More"
-  options={[
-    {value: 'analytics', label: 'Analytics'},
-    {value: 'reports', label: 'Reports'},
-  ]}
-/>`,
         },
       ],
     },
@@ -287,50 +197,6 @@ export const docsZh = {
     '键盘导航：Tab 键在项目间移动焦点，ArrowUp/ArrowDown 在菜单中导航，Home/End 跳转，Escape 关闭菜单（通过 useListFocus 实现）',
     '悬停状态：未选中的标签在悬停时显示灰色下划线；无背景悬停遮罩',
     '无障碍：nav 地标元素，选中标签上的 aria-current="page"，下拉菜单的 role="menu" + aria-label，aria-controls 连接触发器与菜单，菜单项的 role="menuitem"，标题分隔线的 role="separator"',
-  ],
-  examples: [
-    {
-      label: '基础用法',
-      code: `<XDSTabList value={activeTab} onChange={setActiveTab}>
-  <XDSTab value="home" label="Home" />
-  <XDSTab value="settings" label="Settings" />
-</XDSTabList>`,
-    },
-    {
-      label: '带链接',
-      code: `<XDSTabList value={activeTab} onChange={setActiveTab}>
-  <XDSTab value="home" label="Home" href="/home" />
-  <XDSTab value="settings" label="Settings" href="/settings" />
-</XDSTabList>`,
-    },
-    {
-      label: '带图标',
-      code: `<XDSTabList value={activeTab} onChange={setActiveTab}>
-  <XDSTab value="home" label="Home" icon={<HomeIcon />} selectedIcon={<HomeFilledIcon />} />
-  <XDSTab value="settings" label="Settings" icon={<CogIcon />} />
-</XDSTabList>`,
-    },
-    {
-      label: '带底部分隔线',
-      code: `<XDSTabList value={activeTab} onChange={setActiveTab} hasDivider>
-  <XDSTab value="home" label="Home" />
-  <XDSTab value="settings" label="Settings" />
-</XDSTabList>`,
-    },
-    {
-      label: '带溢出菜单',
-      code: `<XDSTabList value={activeTab} onChange={setActiveTab}>
-  <XDSTab value="home" label="Home" />
-  <XDSTab value="settings" label="Settings" />
-  <XDSTabMenu
-    label="More"
-    options={[
-      {value: 'analytics', label: 'Analytics', icon: ChartBarIcon},
-      {value: 'reports', label: 'Reports', icon: DocumentTextIcon},
-    ]}
-  />
-</XDSTabList>`,
-    },
   ],
   theming: {
     targets: [
@@ -407,22 +273,6 @@ export const docsZh = {
             'StyleX 样式，用于布局自定义（边距、定位、尺寸）。必须是 stylex.create() 的值，而非内联样式对象如 style={{}}。',
         },
       ],
-      examples: [
-        {
-          label: '基础用法',
-          code: `<XDSTabList value={activeTab} onChange={setActiveTab}>
-  <XDSTab value="home" label="Home" />
-  <XDSTab value="settings" label="Settings" />
-</XDSTabList>`,
-        },
-        {
-          label: '带分隔线',
-          code: `<XDSTabList value={activeTab} onChange={setActiveTab} hasDivider size="sm">
-  <XDSTab value="home" label="Home" />
-  <XDSTab value="settings" label="Settings" />
-</XDSTabList>`,
-        },
-      ],
     },
     {
       name: 'XDSTab',
@@ -472,16 +322,6 @@ export const docsZh = {
             'StyleX 样式，用于布局自定义（边距、定位、尺寸）。必须是 stylex.create() 的值，而非内联样式对象如 style={{}}。',
         },
       ],
-      examples: [
-        {
-          label: '按钮标签',
-          code: '<XDSTab value="home" label="Home" />',
-        },
-        {
-          label: '带图标的链接标签',
-          code: '<XDSTab value="home" label="Home" href="/home" icon={<HomeIcon />} selectedIcon={<HomeFilledIcon />} />',
-        },
-      ],
     },
     {
       name: 'XDSTabMenu',
@@ -500,28 +340,6 @@ export const docsZh = {
           type: 'XDSTabMenuOption[]',
           description: '在下拉菜单中渲染的菜单选项数组。',
           required: true,
-        },
-      ],
-      examples: [
-        {
-          label: '带图标',
-          code: `<XDSTabMenu
-  label="More"
-  options={[
-    {value: 'analytics', label: 'Analytics', icon: ChartBarIcon},
-    {value: 'reports', label: 'Reports', icon: DocumentTextIcon},
-  ]}
-/>`,
-        },
-        {
-          label: '纯文本',
-          code: `<XDSTabMenu
-  label="More"
-  options={[
-    {value: 'analytics', label: 'Analytics'},
-    {value: 'reports', label: 'Reports'},
-  ]}
-/>`,
         },
       ],
     },

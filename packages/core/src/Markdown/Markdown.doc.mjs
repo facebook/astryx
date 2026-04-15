@@ -4,6 +4,10 @@ export const docs = {
   name: 'Markdown',
   description:
     'Renders a markdown string as XDS components. Supports headings, paragraphs, bold, italic, code, lists, tables, links, images, blockquotes, horizontal rules, and task lists. Handles streaming text with a smooth fade-in animation.',
+  showcase: {
+    aspectRatio: 4 / 3,
+    code: '<XDSMarkdown content="# Hello" />',
+  },
   keywords: [
     'markdown',
     'rich text',
@@ -108,26 +112,6 @@ export const docs = {
       name: 'data-testid',
       type: 'string',
       description: 'Test selector for automated testing frameworks.',
-    },
-  ],
-  examples: [
-    {
-      label: 'Basic usage',
-      code: `<XDSMarkdown>
-  {'# Hello\\n\\nThis is **bold** and _italic_ text.\\n\\n- Item one\\n- Item two'}
-</XDSMarkdown>`,
-    },
-    {
-      label: 'Streaming mode',
-      code: `<XDSMarkdown isStreaming={isStreaming}>
-  {streamedText}
-</XDSMarkdown>`,
-    },
-    {
-      label: 'Nested under a heading',
-      code: `<XDSMarkdown headingLevelStart={3}>
-  {'# Section\\n\\nThis renders as an h3.'}
-</XDSMarkdown>`,
     },
   ],
   theming: {
@@ -241,20 +225,6 @@ export const docsZh = {
       name: 'data-testid',
       type: 'string',
       description: '用于自动化测试框架的测试选择器。',
-    },
-  ],
-  examples: [
-    {
-      label: '基本用法',
-      code: `<XDSMarkdown>
-  {'# Hello\\n\\nThis is **bold** text.'}
-</XDSMarkdown>`,
-    },
-    {
-      label: '流式模式',
-      code: `<XDSMarkdown isStreaming={isStreaming}>
-  {streamedText}
-</XDSMarkdown>`,
     },
   ],
   theming: {

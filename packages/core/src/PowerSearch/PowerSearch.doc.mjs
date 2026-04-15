@@ -4,6 +4,10 @@ export const docs = {
   name: 'PowerSearch',
   description:
     'Structured filter bar where each token represents a filter (field + operator + value). Users select fields from a typeahead dropdown, configure operators and values in an edit popover, and manage filters as removable tokens.',
+  showcase: {
+    aspectRatio: 4 / 3,
+    code: '<XDSPowerSearch config={{name: "search", fields: []}} />',
+  },
   keywords: ["powersearch","search","searchbar","filter","filterbar","faceted","querybuilder","structured","omnibar"],
   props: [
     {
@@ -115,109 +119,6 @@ export const docs = {
       type: 'StyleXStyles',
       description:
         'StyleX styles for layout customization. Must be a stylex.create() value.',
-    },
-  ],
-  examples: [
-    {
-      label: 'Basic usage with enum filters',
-      code: `const config = {
-  name: 'TaskSearch',
-  fields: [
-    {
-      key: 'status',
-      label: 'Status',
-      operators: [
-        {
-          key: 'is',
-          label: 'is',
-          value: {
-            type: 'enum',
-            values: [
-              { value: 'open', label: 'Open' },
-              { value: 'closed', label: 'Closed' },
-            ],
-          },
-        },
-      ],
-    },
-    {
-      key: 'title',
-      label: 'Title',
-      operators: [
-        {
-          key: 'contains',
-          label: 'contains',
-          value: { type: 'string' },
-        },
-      ],
-    },
-  ],
-};
-
-const [filters, setFilters] = useState([]);
-<XDSPowerSearch
-  config={config}
-  filters={filters}
-  onChange={(newFilters) => setFilters(newFilters)}
-/>`,
-    },
-    {
-      label: 'With initial filters',
-      code: `const [filters, setFilters] = useState([
-  { field: 'status', operator: 'is', value: { type: 'enum', value: 'open' } },
-]);
-
-<XDSPowerSearch
-  config={config}
-  filters={filters}
-  onChange={(newFilters, changeType, index) => {
-    setFilters(newFilters);
-    console.log(changeType, 'at index', index);
-  }}
-  placeholder="Add filters..."
-/>`,
-    },
-    {
-      label: 'With contentSearchFieldKey for free-text search',
-      code: `const config = {
-  name: 'IssueSearch',
-  contentSearchFieldKey: 'title',
-  fields: [
-    {
-      key: 'title',
-      label: 'Title',
-      operators: [
-        { key: 'contains', label: 'contains', value: { type: 'string' } },
-        { key: 'is', label: 'is', value: { type: 'string' } },
-      ],
-    },
-    {
-      key: 'status',
-      label: 'Status',
-      operators: [
-        {
-          key: 'is',
-          label: 'is',
-          value: {
-            type: 'enum',
-            values: [
-              { value: 'open', label: 'Open' },
-              { value: 'closed', label: 'Closed' },
-            ],
-          },
-        },
-      ],
-    },
-  ],
-};
-
-const [filters, setFilters] = useState([]);
-<XDSPowerSearch
-  config={config}
-  filters={filters}
-  onChange={(newFilters) => setFilters(newFilters)}
-  placeholder="Search issues..."
-/>`,
     },
   ],
   features: [
@@ -364,109 +265,6 @@ export const docsZh = {
       name: 'xstyle',
       type: 'StyleXStyles',
       description: '用于布局自定义的 StyleX 样式。必须是 stylex.create() 值。',
-    },
-  ],
-  examples: [
-    {
-      label: '枚举过滤器的基本用法',
-      code: `const config = {
-  name: 'TaskSearch',
-  fields: [
-    {
-      key: 'status',
-      label: 'Status',
-      operators: [
-        {
-          key: 'is',
-          label: 'is',
-          value: {
-            type: 'enum',
-            values: [
-              { value: 'open', label: 'Open' },
-              { value: 'closed', label: 'Closed' },
-            ],
-          },
-        },
-      ],
-    },
-    {
-      key: 'title',
-      label: 'Title',
-      operators: [
-        {
-          key: 'contains',
-          label: 'contains',
-          value: { type: 'string' },
-        },
-      ],
-    },
-  ],
-};
-
-const [filters, setFilters] = useState([]);
-<XDSPowerSearch
-  config={config}
-  filters={filters}
-  onChange={(newFilters) => setFilters(newFilters)}
-/>`,
-    },
-    {
-      label: '带初始过滤器',
-      code: `const [filters, setFilters] = useState([
-  { field: 'status', operator: 'is', value: { type: 'enum', value: 'open' } },
-]);
-
-<XDSPowerSearch
-  config={config}
-  filters={filters}
-  onChange={(newFilters, changeType, index) => {
-    setFilters(newFilters);
-    console.log(changeType, 'at index', index);
-  }}
-  placeholder="Add filters..."
-/>`,
-    },
-    {
-      label: '使用 contentSearchFieldKey 进行自由文本搜索',
-      code: `const config = {
-  name: 'IssueSearch',
-  contentSearchFieldKey: 'title',
-  fields: [
-    {
-      key: 'title',
-      label: 'Title',
-      operators: [
-        { key: 'contains', label: 'contains', value: { type: 'string' } },
-        { key: 'is', label: 'is', value: { type: 'string' } },
-      ],
-    },
-    {
-      key: 'status',
-      label: 'Status',
-      operators: [
-        {
-          key: 'is',
-          label: 'is',
-          value: {
-            type: 'enum',
-            values: [
-              { value: 'open', label: 'Open' },
-              { value: 'closed', label: 'Closed' },
-            ],
-          },
-        },
-      ],
-    },
-  ],
-};
-
-const [filters, setFilters] = useState([]);
-<XDSPowerSearch
-  config={config}
-  filters={filters}
-  onChange={(newFilters) => setFilters(newFilters)}
-  placeholder="Search issues..."
-/>`,
     },
   ],
   features: [

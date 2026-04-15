@@ -4,28 +4,16 @@ export const docs = {
   name: 'Kbd',
   description:
     'Displays a keyboard shortcut as styled <kbd> elements. Use in tooltips, menus, and documentation to show key combinations.',
+  showcase: {
+    aspectRatio: 1,
+    code: '<XDSKbd>⌘K</XDSKbd>',
+  },
   keywords: ["kbd","keyboard","shortcut","hotkey","keybinding","keystroke","keycombo","modifier","accelerator"],
   features: [
     'Key parsing — splits "mod+k" into individual styled <kbd> elements',
     'Modifier symbols — maps mod/ctrl/alt/shift/enter/backspace/escape/arrows to platform symbols',
     'Inline display — renders as inline-flex for use inside text, tooltips, and menus',
     'Accessible — aria-hidden="true" since shortcuts are supplementary to visible labels',
-  ],
-  examples: [
-    {
-      label: 'Single shortcut',
-      code: '<XDSKbd keys="mod+k" />',
-    },
-    {
-      label: 'Multi-key shortcut',
-      code: '<XDSKbd keys="mod+shift+p" />',
-    },
-    {
-      label: 'In a tooltip or label',
-      code: `<span>
-  Search <XDSKbd keys="mod+k" />
-</span>`,
-    },
   ],
   props: [
     {
@@ -85,22 +73,6 @@ export const docsZh = {
     '修饰符符号 — 将 mod/ctrl/alt/shift/enter/backspace/escape/箭头键映射为平台符号',
     '内联显示 — 以 inline-flex 方式渲染，适用于文本、工具提示和菜单中',
     '无障碍 — 使用 aria-hidden="true"，因为快捷键是可见标签的补充信息',
-  ],
-  examples: [
-    {
-      label: '单个快捷键',
-      code: '<XDSKbd keys="mod+k" />',
-    },
-    {
-      label: '多键快捷键',
-      code: '<XDSKbd keys="mod+shift+p" />',
-    },
-    {
-      label: '在工具提示或标签中使用',
-      code: `<span>
-  Search <XDSKbd keys="mod+k" />
-</span>`,
-    },
   ],
   props: [
     {
