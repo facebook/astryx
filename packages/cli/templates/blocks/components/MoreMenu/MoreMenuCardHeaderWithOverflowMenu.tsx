@@ -20,3 +20,8 @@ export default function MoreMenuCardHeaderWithOverflowMenu() {
     </XDSHStack>
   );
 }
+
+export const showcase = {
+  aspectRatio: 4 / 3,
+  render: MoreMenuCardHeaderWithOverflowMenu,
+};
