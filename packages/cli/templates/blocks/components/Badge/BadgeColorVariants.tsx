@@ -12,3 +12,8 @@ export default function BadgeColorVariants() {
     </div>
   );
 }
+
+export const showcase = {
+  aspectRatio: 1,
+  render: BadgeColorVariants,
+};
