@@ -12,7 +12,11 @@ import {XDSLink} from '@xds/core/Link';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSCard} from '@xds/core/Card';
 import {XDSSelector} from '@xds/core/Selector';
-import {colorVars, spacingVars, radiusVars} from '@xds/core/theme/tokens.stylex';
+import {
+  colorVars,
+  spacingVars,
+  radiusVars,
+} from '@xds/core/theme/tokens.stylex';
 
 const ILLUSTRATION_URL =
   'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&q=80';
@@ -176,10 +180,8 @@ export default function FormTwoColumnPage() {
   return (
     <div {...stylex.props(styles.page)}>
       <div {...stylex.props(styles.inner)}>
-
         {/* ── Top: two-column ── */}
         <div {...stylex.props(styles.topGrid)}>
-
           {/* Left: headline + description + illustration */}
           <XDSVStack gap={6}>
             <XDSVStack gap={3}>
@@ -210,7 +212,11 @@ export default function FormTwoColumnPage() {
                 placeholder="Full name*"
                 value={fullName}
                 onChange={setFullName}
-                status={errors.fullName ? {type: 'error', message: errors.fullName} : undefined}
+                status={
+                  errors.fullName
+                    ? {type: 'error', message: errors.fullName}
+                    : undefined
+                }
               />
               <div {...stylex.props(styles.inlineGrid)}>
                 <XDSTextInput
@@ -219,7 +225,11 @@ export default function FormTwoColumnPage() {
                   placeholder="Email*"
                   value={email}
                   onChange={setEmail}
-                  status={errors.email ? {type: 'error', message: errors.email} : undefined}
+                  status={
+                    errors.email
+                      ? {type: 'error', message: errors.email}
+                      : undefined
+                  }
                 />
                 <XDSTextInput
                   label="Company name"
@@ -276,7 +286,11 @@ export default function FormTwoColumnPage() {
                 placeholder="Project details*"
                 value={details}
                 onChange={setDetails}
-                status={errors.details ? {type: 'error', message: errors.details} : undefined}
+                status={
+                  errors.details
+                    ? {type: 'error', message: errors.details}
+                    : undefined
+                }
               />
               <XDSButton
                 label="Let's connect"
@@ -308,7 +322,6 @@ export default function FormTwoColumnPage() {
             ))}
           </div>
         </div>
-
       </div>
     </div>
   );

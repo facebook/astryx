@@ -13,7 +13,11 @@ import {XDSToken} from '@xds/core/Token';
 import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
 import {XDSTextArea} from '@xds/core/TextArea';
 import {XDSDivider} from '@xds/core/Divider';
-import {colorVars, typeScaleVars, fontWeightVars} from '@xds/core/theme/tokens.stylex';
+import {
+  colorVars,
+  typeScaleVars,
+  fontWeightVars,
+} from '@xds/core/theme/tokens.stylex';
 
 const BANNER_URL =
   'https://images.unsplash.com/photo-1557683316-973673baf926?w=1600&q=80';
@@ -146,7 +150,12 @@ export default function FormSimplePage() {
         <img
           src={BANNER_URL}
           alt="Decorative banner"
-          style={{width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center'}}
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            objectPosition: 'center',
+          }}
         />
       </div>
 
@@ -161,10 +170,19 @@ export default function FormSimplePage() {
           paddingRight: 24,
         }}>
         <XDSVStack gap={6}>
-
           {/* Header */}
           <XDSVStack gap={2} hAlign="center">
-            <div style={{fontSize: 64, fontWeight: 700, lineHeight: 1.05, letterSpacing: '-0.03em', margin: 0, textAlign: 'center'}}>Let's work together</div>
+            <div
+              style={{
+                fontSize: 64,
+                fontWeight: 700,
+                lineHeight: 1.05,
+                letterSpacing: '-0.03em',
+                margin: 0,
+                textAlign: 'center',
+              }}>
+              Let's work together
+            </div>
             <XDSText type="body" color="secondary">
               Tell us a bit about what you're working on — we'd love to help.
             </XDSText>
@@ -172,64 +190,104 @@ export default function FormSimplePage() {
 
           {/* Why work with us */}
           <div style={{paddingTop: '5%', paddingBottom: '5%'}}>
-          <XDSVStack gap={5}>
-            <div style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16}}>
-              {WHY_US.map(item => (
-                <XDSVStack key={item.title} gap={3}>
-                  <img
-                    src={item.image}
-                    alt={item.title}
-                    style={{width: '100%', height: 'auto', objectFit: 'cover', borderRadius: 8}}
-                  />
-                  <XDSVStack gap={1}>
-                    <XDSText type="body" weight="bold">{item.title}</XDSText>
-                    <XDSText type="supporting" color="secondary">
-                      {item.description}
-                    </XDSText>
+            <XDSVStack gap={5}>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(3, 1fr)',
+                  gap: 16,
+                }}>
+                {WHY_US.map(item => (
+                  <XDSVStack key={item.title} gap={3}>
+                    <img
+                      src={item.image}
+                      alt={item.title}
+                      style={{
+                        width: '100%',
+                        height: 'auto',
+                        objectFit: 'cover',
+                        borderRadius: 8,
+                      }}
+                    />
+                    <XDSVStack gap={1}>
+                      <XDSText type="body" weight="bold">
+                        {item.title}
+                      </XDSText>
+                      <XDSText type="supporting" color="secondary">
+                        {item.description}
+                      </XDSText>
+                    </XDSVStack>
                   </XDSVStack>
-                </XDSVStack>
-              ))}
-            </div>
-          </XDSVStack>
+                ))}
+              </div>
+            </XDSVStack>
           </div>
 
           {/* Your details */}
           <XDSVStack gap={5}>
-            <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16}}>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: 16,
+              }}>
               <XDSTextInput
                 label="Full Name"
                 placeholder="Full Name"
                 value={fullName}
                 onChange={setFullName}
-                status={errors.fullName ? {type: 'error', message: errors.fullName} : undefined}
+                status={
+                  errors.fullName
+                    ? {type: 'error', message: errors.fullName}
+                    : undefined
+                }
               />
               <XDSTextInput
                 label="Email"
                 placeholder="you@company.com"
                 value={email}
                 onChange={setEmail}
-                status={errors.email ? {type: 'error', message: errors.email} : undefined}
+                status={
+                  errors.email
+                    ? {type: 'error', message: errors.email}
+                    : undefined
+                }
               />
             </div>
-            <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16}}>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: 16,
+              }}>
               <XDSTextInput
                 label="Company"
                 placeholder="Company"
                 value={company}
                 onChange={setCompany}
-                status={errors.company ? {type: 'error', message: errors.company} : undefined}
+                status={
+                  errors.company
+                    ? {type: 'error', message: errors.company}
+                    : undefined
+                }
               />
               <XDSTextInput
                 label="Phone"
                 placeholder="Phone number"
                 value={phone}
                 onChange={setPhone}
-                status={errors.phone ? {type: 'error', message: errors.phone} : undefined}
+                status={
+                  errors.phone
+                    ? {type: 'error', message: errors.phone}
+                    : undefined
+                }
               />
             </div>
           </XDSVStack>
 
-          <div style={{paddingTop: 10, paddingBottom: 10}}><XDSDivider /></div>
+          <div style={{paddingTop: 10, paddingBottom: 10}}>
+            <XDSDivider />
+          </div>
 
           {/* Your project */}
           <XDSVStack gap={5}>
@@ -256,7 +314,11 @@ export default function FormSimplePage() {
               options={LAUNCH_OPTIONS}
               value={timeline}
               onChange={setTimeline}
-              status={errors.timeline ? {type: 'error', message: errors.timeline} : undefined}
+              status={
+                errors.timeline
+                  ? {type: 'error', message: errors.timeline}
+                  : undefined
+              }
             />
 
             <XDSSelector
@@ -265,7 +327,11 @@ export default function FormSimplePage() {
               options={BUDGET_OPTIONS}
               value={budget}
               onChange={setBudget}
-              status={errors.budget ? {type: 'error', message: errors.budget} : undefined}
+              status={
+                errors.budget
+                  ? {type: 'error', message: errors.budget}
+                  : undefined
+              }
             />
 
             <XDSRadioList
@@ -312,7 +378,6 @@ export default function FormSimplePage() {
               </XDSText>
             </XDSHStack>
           </XDSVStack>
-
         </XDSVStack>
       </div>
     </div>

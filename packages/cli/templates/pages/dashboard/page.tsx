@@ -231,17 +231,45 @@ const sparklines = [
 
 // Demographics
 const regionData = [
-  {label: 'NORAM', value: 38, color: 'var(--color-data-categorical-blue, #0171E3)'},
-  {label: 'EMEA', value: 28, color: 'var(--color-data-categorical-orange, #EB6E00)'},
-  {label: 'APAC', value: 22, color: 'var(--color-data-categorical-green, #0B991F)'},
-  {label: 'LATAM', value: 8, color: 'var(--color-data-categorical-purple, #6B1EFD)'},
+  {
+    label: 'NORAM',
+    value: 38,
+    color: 'var(--color-data-categorical-blue, #0171E3)',
+  },
+  {
+    label: 'EMEA',
+    value: 28,
+    color: 'var(--color-data-categorical-orange, #EB6E00)',
+  },
+  {
+    label: 'APAC',
+    value: 22,
+    color: 'var(--color-data-categorical-green, #0B991F)',
+  },
+  {
+    label: 'LATAM',
+    value: 8,
+    color: 'var(--color-data-categorical-purple, #6B1EFD)',
+  },
   {label: 'Other', value: 4, color: 'var(--color-data-neutral, #8494A3)'},
 ];
 
 const roleData = [
-  {label: 'Engineer', value: 45, color: 'var(--color-data-categorical-blue, #0171E3)'},
-  {label: 'Manager', value: 20, color: 'var(--color-data-categorical-orange, #EB6E00)'},
-  {label: 'Designer', value: 15, color: 'var(--color-data-categorical-green, #0B991F)'},
+  {
+    label: 'Engineer',
+    value: 45,
+    color: 'var(--color-data-categorical-blue, #0171E3)',
+  },
+  {
+    label: 'Manager',
+    value: 20,
+    color: 'var(--color-data-categorical-orange, #EB6E00)',
+  },
+  {
+    label: 'Designer',
+    value: 15,
+    color: 'var(--color-data-categorical-green, #0B991F)',
+  },
   {
     label: 'Data Scientist',
     value: 12,
@@ -767,7 +795,9 @@ function DashboardSideNav() {
       header={
         <XDSSideNavHeading
           icon={
-            <XDSNavIcon icon={<ChartBarIconSolid style={{width: 16, height: 16}} />} />
+            <XDSNavIcon
+              icon={<ChartBarIconSolid style={{width: 16, height: 16}} />}
+            />
           }
           heading="Analytics"
           headingHref="/"
