@@ -22,7 +22,7 @@ import {useCallback, useState, type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
-import {borderVars, colorVars, spacingVars} from '../theme/tokens.stylex';
+import {borderVars, colorVars, durationVars, easeVars, spacingVars} from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 import {XDSSideNavCollapseContext} from './XDSSideNavCollapseContext';
 import {XDSSideNavCollapseButton} from './XDSSideNavCollapseButton';
@@ -154,7 +154,9 @@ const styles = stylex.create({
     zIndex: 2,
     // Invisible by default; visible on hover
     backgroundColor: 'transparent',
-    transition: 'background-color 0.15s ease',
+    transitionProperty: 'background-color',
+    transitionDuration: durationVars['--duration-fast'],
+    transitionTimingFunction: easeVars['--ease-standard'],
     touchAction: 'none',
   },
   dragHandleHover: {

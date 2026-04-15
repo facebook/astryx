@@ -12,7 +12,7 @@
 
 import {createContext, useContext} from 'react';
 
-export interface SideNavCollapseState {
+export interface XDSSideNavCollapseState {
   /** Whether the sidenav is currently collapsed */
   isCollapsed: boolean;
   /** Toggle collapse state */
@@ -21,17 +21,23 @@ export interface SideNavCollapseState {
   isCollapsible: boolean;
 }
 
-export const XDSSideNavCollapseContext = createContext<SideNavCollapseState>({
-  isCollapsed: false,
-  toggle: () => {},
-  isCollapsible: false,
-});
+/**
+ * @deprecated Use XDSSideNavCollapseState instead.
+ */
+export type SideNavCollapseState = XDSSideNavCollapseState;
+
+export const XDSSideNavCollapseContext =
+  createContext<XDSSideNavCollapseState>({
+    isCollapsed: false,
+    toggle: () => {},
+    isCollapsible: false,
+  });
 
 /**
  * Read the sidenav collapse state from context.
  * Returns { isCollapsed, toggle, isCollapsible }.
  * When used outside a sidenav with isCollapsible, isCollapsible is false.
  */
-export function useXDSSideNavCollapse(): SideNavCollapseState {
+export function useXDSSideNavCollapse(): XDSSideNavCollapseState {
   return useContext(XDSSideNavCollapseContext);
 }
