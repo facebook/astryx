@@ -23,189 +23,7 @@ export const docs = {
     'Body rows memoized with custom comparison — only changed rows re-render',
     'Auto-generated columns from data object keys when columns prop is omitted',
     'Themeable via className — target .xds-base-table, .xds-table-row, .xds-table-cell, .xds-table-header-cell',
-  ],
-  examples: [
-    {
-      label: 'Basic data-driven table',
-      code: `<XDSTable
-  data={users}
-  columns={[
-    {
-      key: 'name',
-      header: 'Name',
-      renderCell: user => (
-        <XDSHStack gap={2} align="center">
-          <XDSAvatar name={user.name} size="small" />
-          <XDSVStack gap={1}>
-            <XDSText type="body" weight="semibold">
-              {user.name}
-            </XDSText>
-            <XDSText type="supporting" color="secondary">
-              {user.email}
-            </XDSText>
-          </XDSVStack>
-        </XDSHStack>
-      ),
-    },
-    {
-      key: 'status',
-      header: 'Status',
-      width: pixel(140),
-      renderCell: user => (
-        <XDSHStack gap={2} align="center">
-          <XDSStatusDot status={user.isActive ? 'positive' : 'negative'} />
-          <XDSBadge variant={user.isActive ? 'success' : 'error'} label={user.isActive ? 'Active' : 'Inactive'} />
-        </XDSHStack>
-      ),
-    },
-    {
-      key: 'role',
-      header: 'Role',
-      renderCell: user => (
-        <XDSText type="label" color="secondary">
-          {user.role}
-        </XDSText>
-      ),
-    },
-  ]}
-  density="balanced"
-  dividers="rows"
-  hasHover
-/>`,
-    },
-    {
-      label: 'Auto-generated columns',
-      code: `// Columns auto-generated from data keys with capitalized headers
-<XDSTable data={users} isStriped />`,
-    },
-    {
-      label: 'Column alignment and vertical alignment',
-      code: `<XDSTable
-  data={transactions}
-  columns={[
-    { key: 'description', header: 'Description' },
-    { key: 'quantity', header: 'Qty', align: 'center', width: pixel(80) },
-    { key: 'amount', header: 'Amount', align: 'end', width: pixel(120) },
-  ]}
-  verticalAlign="top"
-  density="balanced"
-/>`,
-    },
-    {
-      label: 'Rich cell content with renderCell',
-      code: `<XDSTable
-  data={transactions}
-  columns={[
-    {
-      key: 'description',
-      header: 'Transaction',
-      renderCell: tx => (
-        <XDSVStack gap={1}>
-          <XDSText weight="semibold">{tx.description}</XDSText>
-          <XDSText type="supporting" color="secondary">
-            {tx.date}
-          </XDSText>
-        </XDSVStack>
-      ),
-    },
-    {
-      key: 'amount',
-      header: 'Amount',
-      renderCell: tx => (
-        <XDSText
-          weight="semibold"
-          color={tx.amount > 0 ? 'positive' : 'negative'}>
-          {tx.amount > 0 ? '+' : ''}
-          {tx.amount.toFixed(2)}
-        </XDSText>
-      ),
-    },
-    {
-      key: 'status',
-      header: 'Status',
-      renderCell: tx => (
-        <XDSBadge
-          variant={
-            tx.status === 'completed'
-              ? 'success'
-              : tx.status === 'pending'
-                ? 'warning'
-                : 'error'
-          }
-          label={tx.status}
-        />
-      ),
-    },
-  ]}
-  density="balanced"
-  dividers="rows"
-  hasHover
-/>`,
-    },
-    {
-      label: 'Children mode',
-      code: `<XDSTable density="balanced" dividers="rows" isStriped hasHover>
-  <XDSTableRow>
-    <XDSTableCell>
-      <XDSHStack gap={2} align="center">
-        <XDSAvatar name="Alice" size="small" />
-        <XDSText weight="semibold">Alice</XDSText>
-      </XDSHStack>
-    </XDSTableCell>
-    <XDSTableCell>
-      <XDSBadge variant="success" label="Active" />
-    </XDSTableCell>
-  </XDSTableRow>
-</XDSTable>`,
-    },
-    {
-      label: 'Selection plugin',
-      code: `const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
-
-const {selectionConfig} = useXDSTableSelectionState<User>({
-  data: users,
-  idKey: 'id',
-  selectedKeys,
-  setSelectedKeys,
-});
-const selectionPlugin = useXDSTableSelection<User>(selectionConfig);
-
-<XDSTable
-  data={users}
-  columns={columns}
-  plugins={{selection: selectionPlugin}}
-/>`,
-    },
-    {
-      label: 'Custom plugin',
-      code: `const highlightPlugin: TablePlugin<User> = {
-  transformBodyRow(props, item) {
-    if (item.isActive) {
-      return {...props, styles: [...props.styles, activeRowStyle]};
-    }
-    return props;
-  },
-};
-
-<XDSTable data={users} plugins={{highlight: highlightPlugin}} />`,
-    },
-    {
-      label: 'Column resize plugin',
-      code: `const [columnWidths, setColumnWidths] = useState({});
-const resizePlugin = useXDSTableColumnResize({
-  columnWidths,
-  columns,
-  onColumnResizeEnd: updates => setColumnWidths(prev => ({...prev, ...updates})),
-});
-<XDSTable
-  data={users}
-  columns={columns}
-  idKey="id"
-  plugins={{columnResize: resizePlugin}}
-/>`,
-    },
-  ],
-  theming: {
+  ],  theming: {
     targets: [
       {className: 'xds-base-table'},
       {className: 'xds-table-row'},
@@ -295,33 +113,7 @@ const resizePlugin = useXDSTableColumnResize({
           description:
             'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
         },
-      ],
-      examples: [
-        {
-          label: 'Data-driven',
-          code: `<XDSTable
-  data={users}
-  columns={[
-    {key: 'name', header: 'Name'},
-    {key: 'email', header: 'Email', width: proportional(2)},
-  ]}
-  density="compact"
-  dividers="grid"
-  isStriped
-  hasHover
-/>`,
-        },
-        {
-          label: 'Children mode',
-          code: `<XDSTable density="balanced" dividers="rows">
-  <XDSTableRow>
-    <XDSTableCell>Alice</XDSTableCell>
-    <XDSTableCell>30</XDSTableCell>
-  </XDSTableRow>
-</XDSTable>`,
-        },
-      ],
-    },
+      ],    },
     {
       name: 'XDSBaseTable',
       description:
@@ -369,17 +161,6 @@ const resizePlugin = useXDSTableColumnResize({
             'Additional HTML attributes passed directly to the root <table> element.',
         },
       ],
-      examples: [
-        {
-          label: 'With styled components',
-          code: `<XDSBaseTable
-  data={items}
-  columns={columns}
-  plugins={[myPlugin]}
-  components={{Row: XDSTableRow, Cell: XDSTableCell, HeaderCell: XDSTableHeaderCell}}
-/>`,
-        },
-      ],
     },
     {
       name: 'XDSTableRow',
@@ -391,14 +172,6 @@ const resizePlugin = useXDSTableColumnResize({
           type: 'ReactNode',
           description: 'Row cell elements.',
           required: true,
-        },
-      ],
-      examples: [
-        {
-          code: `<XDSTableRow>
-  <XDSTableCell>Alice</XDSTableCell>
-  <XDSTableCell>30</XDSTableCell>
-</XDSTableRow>`,
         },
       ],
     },
@@ -413,11 +186,6 @@ const resizePlugin = useXDSTableColumnResize({
           description: 'Cell content.',
         },
       ],
-      examples: [
-        {
-          code: `<XDSTableCell>Cell content</XDSTableCell>`,
-        },
-      ],
     },
     {
       name: 'XDSTableHeaderCell',
@@ -428,11 +196,6 @@ const resizePlugin = useXDSTableColumnResize({
           name: 'children',
           type: 'ReactNode',
           description: 'Header cell content.',
-        },
-      ],
-      examples: [
-        {
-          code: `<XDSTableHeaderCell>Name</XDSTableHeaderCell>`,
         },
       ],
     },
@@ -488,26 +251,6 @@ const resizePlugin = useXDSTableColumnResize({
           default: '() => true',
         },
       ],
-      examples: [
-        {
-          label: 'Basic selection',
-          code: `const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
-
-const {selectionConfig} = useXDSTableSelectionState<User>({
-  data: users,
-  idKey: 'id',
-  selectedKeys,
-  setSelectedKeys,
-});
-const selectionPlugin = useXDSTableSelection<User>(selectionConfig);
-
-<XDSTable
-  data={users}
-  columns={columns}
-  plugins={{selection: selectionPlugin}}
-/>`,
-        },
-      ],
     },
     {
       name: 'useXDSTableSelectionState',
@@ -554,29 +297,6 @@ const selectionPlugin = useXDSTableSelection<User>(selectionConfig);
           default: '() => true',
         },
       ],
-      examples: [
-        {
-          label: 'With disabled rows',
-          code: `const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
-
-const {selectionConfig} = useXDSTableSelectionState<User>({
-  data: users,
-  idKey: 'id',
-  selectedKeys,
-  setSelectedKeys,
-  getIsItemEnabled: item => !item.isLocked,
-});
-const selectionPlugin = useXDSTableSelection<User>(selectionConfig);
-
-// Select-all skips locked rows. A locked row that was
-// previously selected stays selected (frozen).
-<XDSTable
-  data={users}
-  columns={columns}
-  plugins={{selection: selectionPlugin}}
-/>`,
-        },
-      ],
     },
     {
       name: 'useXDSTableSortable',
@@ -610,25 +330,6 @@ const selectionPlugin = useXDSTableSelection<User>(selectionConfig);
           description:
             'Enable multi-sort via Shift+click. Regular click still replaces the entire sort state.',
           default: 'false',
-        },
-      ],
-      examples: [
-        {
-          label: 'Single-column sort',
-          code: `const [sort, setSort] = useState<XDSTableSortState>([
-  { sortKey: 'name', direction: 'ascending' },
-]);
-
-const sortPlugin = useXDSTableSortable({
-  sort,
-  onSortChange: setSort,
-});
-
-<XDSTable
-  data={users}
-  columns={columns}
-  plugins={{ sort: sortPlugin }}
-/>`,
         },
       ],
     },
@@ -706,25 +407,6 @@ const sortPlugin = useXDSTableSortable({
           default: "'center'",
         },
       ],
-      examples: [
-        {
-          label: 'Client-side pagination',
-          code: `const [page, setPage] = useState(1);
-
-const pagination = useXDSTablePagination({
-  page,
-  onPageChange: setPage,
-  totalItems: data.length,
-  pageSize: 20,
-});
-
-<XDSTable
-  data={pagination.paginatedData(data)}
-  columns={columns}
-  plugins={{ pagination: pagination.plugin }}
-/>`,
-        },
-      ],
     },
     {
       name: 'useXDSTableColumnSettings',
@@ -757,36 +439,6 @@ const pagination = useXDSTablePagination({
           type: 'string[]',
           description:
             'Default column set for "Reset to default". When omitted, reset shows all columns.',
-        },
-      ],
-      examples: [
-        {
-          label: 'Column visibility with MultiSelector',
-          code: `const [activeKeys, setActiveKeys] = useState(['name', 'email', 'role']);
-
-const columnSettings = useXDSTableColumnSettings({
-  columns: [
-    { key: 'name', label: 'Name', isAlwaysVisible: true },
-    { key: 'email', label: 'Email' },
-    { key: 'role', label: 'Role' },
-    { key: 'status', label: 'Status' },
-  ],
-  activeColumnKeys: activeKeys,
-  onChangeActiveColumnKeys: setActiveKeys,
-});
-
-<XDSMultiSelector
-  label="Columns"
-  options={columnSettings.columnOptions}
-  value={[...columnSettings.activeColumnKeys]}
-  onChange={columnSettings.setActiveColumnKeys}
-  hasSelectAll
-/>
-
-<XDSTable
-  data={data}
-  columns={columnSettings.activeColumns(allColumns)}
-/>`,
         },
       ],
     },
@@ -841,174 +493,6 @@ export const docsZh = {
     '主体行使用自定义比较进行记忆化 — 仅重新渲染更改的行',
     '省略 columns 属性时，自动从数据对象键生成列',
     '通过 className 实现主题化 — 目标选择器：.xds-base-table、.xds-table-row、.xds-table-cell、.xds-table-header-cell',
-  ],
-  examples: [
-    {
-      label: '基础数据驱动表格',
-      code: `<XDSTable
-  data={users}
-  columns={[
-    {
-      key: 'name',
-      header: 'Name',
-      renderCell: user => (
-        <XDSHStack gap={2} align="center">
-          <XDSAvatar name={user.name} size="small" />
-          <XDSVStack gap={1}>
-            <XDSText type="body" weight="semibold">
-              {user.name}
-            </XDSText>
-            <XDSText type="supporting" color="secondary">
-              {user.email}
-            </XDSText>
-          </XDSVStack>
-        </XDSHStack>
-      ),
-    },
-    {
-      key: 'status',
-      header: 'Status',
-      width: pixel(140),
-      renderCell: user => (
-        <XDSHStack gap={2} align="center">
-          <XDSStatusDot status={user.isActive ? 'positive' : 'negative'} />
-          <XDSBadge variant={user.isActive ? 'success' : 'error'} label={user.isActive ? 'Active' : 'Inactive'} />
-        </XDSHStack>
-      ),
-    },
-    {
-      key: 'role',
-      header: 'Role',
-      renderCell: user => (
-        <XDSText type="label" color="secondary">
-          {user.role}
-        </XDSText>
-      ),
-    },
-  ]}
-  density="balanced"
-  dividers="rows"
-  hasHover
-/>`,
-    },
-    {
-      label: '自动生成列',
-      code: `// Columns auto-generated from data keys with capitalized headers
-<XDSTable data={users} isStriped />`,
-    },
-    {
-      label: '通过 renderCell 实现丰富的单元格内容',
-      code: `<XDSTable
-  data={transactions}
-  columns={[
-    {
-      key: 'description',
-      header: 'Transaction',
-      renderCell: tx => (
-        <XDSVStack gap={1}>
-          <XDSText weight="semibold">{tx.description}</XDSText>
-          <XDSText type="supporting" color="secondary">
-            {tx.date}
-          </XDSText>
-        </XDSVStack>
-      ),
-    },
-    {
-      key: 'amount',
-      header: 'Amount',
-      renderCell: tx => (
-        <XDSText
-          weight="semibold"
-          color={tx.amount > 0 ? 'positive' : 'negative'}>
-          {tx.amount > 0 ? '+' : ''}
-          {tx.amount.toFixed(2)}
-        </XDSText>
-      ),
-    },
-    {
-      key: 'status',
-      header: 'Status',
-      renderCell: tx => (
-        <XDSBadge
-          variant={
-            tx.status === 'completed'
-              ? 'success'
-              : tx.status === 'pending'
-                ? 'warning'
-                : 'error'
-          }
-          label={tx.status}
-        />
-      ),
-    },
-  ]}
-  density="balanced"
-  dividers="rows"
-  hasHover
-/>`,
-    },
-    {
-      label: '子元素模式',
-      code: `<XDSTable density="balanced" dividers="rows" isStriped hasHover>
-  <XDSTableRow>
-    <XDSTableCell>
-      <XDSHStack gap={2} align="center">
-        <XDSAvatar name="Alice" size="small" />
-        <XDSText weight="semibold">Alice</XDSText>
-      </XDSHStack>
-    </XDSTableCell>
-    <XDSTableCell>
-      <XDSBadge variant="success" label="Active" />
-    </XDSTableCell>
-  </XDSTableRow>
-</XDSTable>`,
-    },
-    {
-      label: '选择插件',
-      code: `const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
-
-const {selectionConfig} = useXDSTableSelectionState<User>({
-  data: users,
-  idKey: 'id',
-  selectedKeys,
-  setSelectedKeys,
-});
-const selectionPlugin = useXDSTableSelection<User>(selectionConfig);
-
-<XDSTable
-  data={users}
-  columns={columns}
-  plugins={{selection: selectionPlugin}}
-/>`,
-    },
-    {
-      label: '自定义插件',
-      code: `const highlightPlugin: TablePlugin<User> = {
-  transformBodyRow(props, item) {
-    if (item.isActive) {
-      return {...props, styles: [...props.styles, activeRowStyle]};
-    }
-    return props;
-  },
-};
-
-<XDSTable data={users} plugins={{highlight: highlightPlugin}} />`,
-    },
-    {
-      label: '列调整宽度插件',
-      code: `const [columnWidths, setColumnWidths] = useState({});
-const resizePlugin = useXDSTableColumnResize({
-  columnWidths,
-  columns,
-  onColumnResizeEnd: updates => setColumnWidths(prev => ({...prev, ...updates})),
-});
-<XDSTable
-  data={users}
-  columns={columns}
-  idKey="id"
-  plugins={{columnResize: resizePlugin}}
-/>`,
-    },
   ],
   theming: {
     targets: [
@@ -1101,31 +585,6 @@ const resizePlugin = useXDSTableColumnResize({
             '用于布局自定义的 StyleX 样式（外边距、定位、尺寸）。必须是 stylex.create() 的值，而非内联样式对象如 style={{}}。',
         },
       ],
-      examples: [
-        {
-          label: '数据驱动',
-          code: `<XDSTable
-  data={users}
-  columns={[
-    {key: 'name', header: 'Name'},
-    {key: 'email', header: 'Email', width: proportional(2)},
-  ]}
-  density="compact"
-  dividers="grid"
-  isStriped
-  hasHover
-/>`,
-        },
-        {
-          label: '子元素模式',
-          code: `<XDSTable density="balanced" dividers="rows">
-  <XDSTableRow>
-    <XDSTableCell>Alice</XDSTableCell>
-    <XDSTableCell>30</XDSTableCell>
-  </XDSTableRow>
-</XDSTable>`,
-        },
-      ],
     },
     {
       name: 'XDSBaseTable',
@@ -1174,17 +633,6 @@ const resizePlugin = useXDSTableColumnResize({
             '直接传递给根 <table> 元素的额外 HTML 属性。',
         },
       ],
-      examples: [
-        {
-          label: '使用带样式的组件',
-          code: `<XDSBaseTable
-  data={items}
-  columns={columns}
-  plugins={[myPlugin]}
-  components={{Row: XDSTableRow, Cell: XDSTableCell, HeaderCell: XDSTableHeaderCell}}
-/>`,
-        },
-      ],
     },
     {
       name: 'XDSTableRow',
@@ -1196,14 +644,6 @@ const resizePlugin = useXDSTableColumnResize({
           type: 'ReactNode',
           description: '行单元格元素。',
           required: true,
-        },
-      ],
-      examples: [
-        {
-          code: `<XDSTableRow>
-  <XDSTableCell>Alice</XDSTableCell>
-  <XDSTableCell>30</XDSTableCell>
-</XDSTableRow>`,
         },
       ],
     },
@@ -1218,11 +658,6 @@ const resizePlugin = useXDSTableColumnResize({
           description: '单元格内容。',
         },
       ],
-      examples: [
-        {
-          code: `<XDSTableCell>Cell content</XDSTableCell>`,
-        },
-      ],
     },
     {
       name: 'XDSTableHeaderCell',
@@ -1233,11 +668,6 @@ const resizePlugin = useXDSTableColumnResize({
           name: 'children',
           type: 'ReactNode',
           description: '表头单元格内容。',
-        },
-      ],
-      examples: [
-        {
-          code: `<XDSTableHeaderCell>Name</XDSTableHeaderCell>`,
         },
       ],
     },
@@ -1293,26 +723,6 @@ const resizePlugin = useXDSTableColumnResize({
           default: '() => true',
         },
       ],
-      examples: [
-        {
-          label: '基础选择',
-          code: `const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
-
-const {selectionConfig} = useXDSTableSelectionState<User>({
-  data: users,
-  idKey: 'id',
-  selectedKeys,
-  setSelectedKeys,
-});
-const selectionPlugin = useXDSTableSelection<User>(selectionConfig);
-
-<XDSTable
-  data={users}
-  columns={columns}
-  plugins={{selection: selectionPlugin}}
-/>`,
-        },
-      ],
     },
     {
       name: 'useXDSTableSortable',
@@ -1346,25 +756,6 @@ const selectionPlugin = useXDSTableSelection<User>(selectionConfig);
           description:
             '通过 Shift+点击启用多列排序。普通点击仍替换整个排序状态。',
           default: 'false',
-        },
-      ],
-      examples: [
-        {
-          label: '单列排序',
-          code: `const [sort, setSort] = useState<XDSTableSortState>([
-  { sortKey: 'name', direction: 'ascending' },
-]);
-
-const sortPlugin = useXDSTableSortable({
-  sort,
-  onSortChange: setSort,
-});
-
-<XDSTable
-  data={users}
-  columns={columns}
-  plugins={{ sort: sortPlugin }}
-/>`,
         },
       ],
     },
@@ -1410,25 +801,6 @@ const sortPlugin = useXDSTableSortable({
           default: "'below'",
         },
       ],
-      examples: [
-        {
-          label: '客户端分页',
-          code: `const [page, setPage] = useState(1);
-
-const pagination = useXDSTablePagination({
-  page,
-  onPageChange: setPage,
-  totalItems: data.length,
-  pageSize: 20,
-});
-
-<XDSTable
-  data={pagination.paginatedData(data)}
-  columns={columns}
-  plugins={{ pagination: pagination.plugin }}
-/>`,
-        },
-      ],
     },
     {
       name: 'useXDSTableColumnSettings',
@@ -1454,27 +826,6 @@ const pagination = useXDSTablePagination({
           type: '(keys: string[]) => void',
           description: '活动列更改时调用。',
           required: true,
-        },
-      ],
-      examples: [
-        {
-          label: '列可见性与 MultiSelector',
-          code: `const [activeKeys, setActiveKeys] = useState(['name', 'email']);
-
-const columnSettings = useXDSTableColumnSettings({
-  columns: [
-    { key: 'name', label: 'Name', isAlwaysVisible: true },
-    { key: 'email', label: 'Email' },
-    { key: 'role', label: 'Role' },
-  ],
-  activeColumnKeys: activeKeys,
-  onChangeActiveColumnKeys: setActiveKeys,
-});
-
-<XDSTable
-  data={data}
-  columns={columnSettings.activeColumns(allColumns)}
-/>`,
         },
       ],
     },
