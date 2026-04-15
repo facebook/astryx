@@ -4,7 +4,6 @@ import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSCenter} from '@xds/core/Center';
 import {XDSText} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
-
 import {XDSGrid} from '@xds/core/Grid';
 import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import {XDSIcon} from '@xds/core/Icon';
@@ -145,74 +144,39 @@ export default function ProductGalleryTemplate() {
     <XDSCenter axis="horizontal">
       <div style={{maxWidth: 1200, width: '100%', padding: '32px 24px 64px'}}>
         <XDSVStack gap={6}>
-          {/* Header — side-by-side on desktop, stacked on mobile */}
-          <div className="product-gallery-header">
-            <div className="product-gallery-header-title">
-              <XDSText
-                type="large"
-                weight="bold"
-                as="p"
-                style={{fontSize: 'var(--font-size-2xl)'}}>
-                Make every day a little more delightful, one small detail at a
-                time.
+          {/* Header */}
+          <XDSGrid minChildWidth={280} columns={2} gap={4}>
+            <XDSText
+              type="large"
+              weight="bold"
+              as="p"
+              style={{fontSize: 'var(--font-size-2xl)'}}>
+              Make every day a little more delightful, one small detail at a
+              time.
+            </XDSText>
+            <XDSVStack gap={3}>
+              <XDSText type="body">
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
+                eiusmod tempor incididunt ut labore et dolore magna aliqua ut
+                enim ad minim exercitation.
               </XDSText>
-            </div>
-            <div className="product-gallery-header-body">
-              <XDSVStack gap={3}>
-                <XDSText type="body">
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed
-                  do eiusmod tempor incididunt ut labore et dolore magna aliqua
-                  ut enim ad minim exercitation.
-                </XDSText>
-                <div>
-                  <XDSButton
-                    label="Get started"
-                    variant="primary"
-                    endContent={
-                      <XDSIcon icon={ArrowRightIcon} color="inherit" />
-                    }
-                  />
-                </div>
-              </XDSVStack>
-            </div>
-          </div>
+              <div>
+                <XDSButton
+                  label="Get started"
+                  variant="primary"
+                  endContent={<XDSIcon icon={ArrowRightIcon} color="inherit" />}
+                />
+              </div>
+            </XDSVStack>
+          </XDSGrid>
 
-          {/* Product Grid — 3 cols desktop, 2 cols mobile */}
-          <div className="product-gallery-grid">
-            <XDSGrid columns={3} gap={6}>
-              {PRODUCTS.map(product => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </XDSGrid>
-          </div>
+          {/* Product Grid — responsive: 3→2→1 cols */}
+          <XDSGrid minChildWidth={280} columns={3} gap={6}>
+            {PRODUCTS.map(product => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </XDSGrid>
         </XDSVStack>
-
-        {/* Responsive styles */}
-        <style>{`
-          .product-gallery-header {
-            display: flex;
-            gap: 16px;
-            align-items: flex-start;
-          }
-          .product-gallery-header-title,
-          .product-gallery-header-body {
-            flex: 1 1 0%;
-            min-width: 0;
-          }
-          @media (max-width: 640px) {
-            .product-gallery-header {
-              flex-direction: column;
-            }
-            .product-gallery-grid .xds-grid {
-              grid-template-columns: repeat(2, 1fr);
-            }
-          }
-          @media (max-width: 420px) {
-            .product-gallery-grid .xds-grid {
-              grid-template-columns: 1fr;
-            }
-          }
-        `}</style>
       </div>
     </XDSCenter>
   );
