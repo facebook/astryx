@@ -27,10 +27,12 @@ const actions = [
 
 export default function MoreMenuCustomItemRendering() {
   return (
-    <XDSMoreMenu label="User actions" items={actions}>
-      {(item: XDSDropdownMenuItemData) => (
+    <XDSMoreMenu
+      label="User actions"
+      items={actions}
+      children={(item: XDSDropdownMenuItemData) => (
         <XDSDropdownMenuItem icon={item.icon} label={item.label} />
       )}
-    </XDSMoreMenu>
+    />
   );
 }

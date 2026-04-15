@@ -26,10 +26,12 @@ const users = [
 
 export default function DropdownMenuCustomItemRendering() {
   return (
-    <XDSDropdownMenu button={{label: 'Users'}} items={users}>
-      {(item: XDSDropdownMenuItemData) => (
+    <XDSDropdownMenu
+      button={{label: 'Users'}}
+      items={users}
+      children={(item: XDSDropdownMenuItemData) => (
         <XDSDropdownMenuItem icon={item.icon} label={item.label} />
       )}
-    </XDSDropdownMenu>
+    />
   );
 }
