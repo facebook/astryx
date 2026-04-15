@@ -19,3 +19,8 @@ export default function PaginationCountDisplayWithPageSizeSelector() {
     />
   );
 }
+
+export const showcase = {
+  aspectRatio: 1,
+  render: PaginationCountDisplayWithPageSizeSelector,
+};

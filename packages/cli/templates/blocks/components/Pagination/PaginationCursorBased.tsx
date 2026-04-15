@@ -14,3 +14,8 @@ export default function PaginationCursorBased() {
     />
   );
 }
+
+export const showcase = {
+  aspectRatio: 1,
+  render: PaginationCursorBased,
+};
