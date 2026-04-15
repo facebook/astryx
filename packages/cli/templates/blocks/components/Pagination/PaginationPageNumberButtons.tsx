@@ -1,0 +1,17 @@
+'use client';
+
+import {useState} from 'react';
+import {XDSPagination} from '@xds/core/Pagination';
+
+export default function PaginationPageNumberButtons() {
+  const [page, setPage] = useState(1);
+
+  return (
+    <XDSPagination
+      page={page}
+      onChange={setPage}
+      totalItems={200}
+      pageSize={20}
+    />
+  );
+}
