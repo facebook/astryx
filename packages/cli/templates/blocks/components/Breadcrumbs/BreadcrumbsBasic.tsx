@@ -11,3 +11,8 @@ export default function BreadcrumbsBasic() {
     </XDSBreadcrumbs>
   );
 }
+
+export const showcase = {
+  aspectRatio: 16 / 4,
+  render: BreadcrumbsBasic,
+};

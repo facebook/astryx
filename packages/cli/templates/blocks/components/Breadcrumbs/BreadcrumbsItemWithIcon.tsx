@@ -28,3 +28,8 @@ export default function BreadcrumbsItemWithIcon() {
     </XDSBreadcrumbs>
   );
 }
+
+export const showcase = {
+  aspectRatio: 16 / 4,
+  render: BreadcrumbsItemWithIcon,
+};
