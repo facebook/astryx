@@ -593,6 +593,47 @@ export function DialogTitle({className, children, ...props}: any) { return <h2 c
 export function DialogDescription({className, children, ...props}: any) { return <p className={cn('text-sm text-gray-500', className)} {...props}>{children}</p>; }
 export function DialogFooter({className, children, ...props}: any) { return <div className={cn('flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2', className)} {...props}>{children}</div>; }
 `,
+    tooltip: `import React, {useState, useRef, useEffect} from 'react';
+import {cn} from '@/lib/utils';
+export function TooltipProvider({children}: any) { return <>{children}</>; }
+export function Tooltip({children, open, onOpenChange, delayDuration}: any) { return <>{children}</>; }
+export function TooltipTrigger({children, asChild, ...props}: any) { return <>{children}</>; }
+export function TooltipContent({className, children, side, sideOffset, ...props}: any) {
+  return <div className={cn('z-50 overflow-hidden rounded-md border bg-popover px-3 py-1.5 text-sm text-popover-foreground shadow-md', className)} {...props}>{children}</div>;
+}
+`,
+    command: `import React, {useState, createContext, useContext} from 'react';
+import {cn} from '@/lib/utils';
+const CmdCtx = createContext<{search: string; setSearch: (s: string) => void}>({search: '', setSearch: () => {}});
+export function Command({className, children, ...props}: any) {
+  const [search, setSearch] = useState('');
+  return <CmdCtx.Provider value={{search, setSearch}}><div className={cn('flex h-full w-full flex-col overflow-hidden rounded-md bg-popover text-popover-foreground', className)} {...props}>{children}</div></CmdCtx.Provider>;
+}
+export function CommandInput({className, placeholder, value, onValueChange, ...props}: any) {
+  const ctx = useContext(CmdCtx);
+  return <input className={cn('flex h-11 w-full rounded-md bg-transparent py-3 px-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50 border-b', className)} placeholder={placeholder} value={value ?? ctx.search} onChange={e => { ctx.setSearch(e.target.value); onValueChange?.(e.target.value); }} {...props} />;
+}
+export function CommandList({className, children, ...props}: any) { return <div className={cn('max-h-[300px] overflow-y-auto overflow-x-hidden', className)} {...props}>{children}</div>; }
+export function CommandEmpty({children, ...props}: any) { const ctx = useContext(CmdCtx); return <div className="py-6 text-center text-sm" {...props}>{children}</div>; }
+export function CommandGroup({className, heading, children, ...props}: any) { return <div className={cn('overflow-hidden p-1 text-foreground', className)} {...props}>{heading && <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">{heading}</div>}{children}</div>; }
+export function CommandItem({className, children, onSelect, value, ...props}: any) { return <div className={cn('relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground', className)} onClick={() => onSelect?.(value)} {...props}>{children}</div>; }
+export function CommandSeparator({className, ...props}: any) { return <div className={cn('-mx-1 h-px bg-border', className)} {...props} />; }
+`,
+    'scroll-area': `import React from 'react';
+import {cn} from '@/lib/utils';
+export function ScrollArea({className, children, ...props}: any) {
+  return <div className={cn('relative overflow-auto', className)} {...props}>{children}</div>;
+}
+export function ScrollBar({orientation, ...props}: any) { return null; }
+`,
+    popover: `import React, {useState} from 'react';
+import {cn} from '@/lib/utils';
+export function Popover({children, open, onOpenChange}: any) { return <div className="relative inline-block">{children}</div>; }
+export function PopoverTrigger({children, asChild, ...props}: any) { return <>{children}</>; }
+export function PopoverContent({className, children, align, sideOffset, ...props}: any) {
+  return <div className={cn('z-50 w-72 rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-none', className)} {...props}>{children}</div>;
+}
+`,
   };
 
   for (const [name, content] of Object.entries(components)) {
