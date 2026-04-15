@@ -17,3 +17,8 @@ export default function OverflowListBasicWithOverflowButton() {
     </XDSOverflowList>
   );
 }
+
+export const showcase = {
+  aspectRatio: 16 / 4,
+  render: OverflowListBasicWithOverflowButton,
+};
