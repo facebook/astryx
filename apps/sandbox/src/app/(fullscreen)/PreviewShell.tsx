@@ -222,6 +222,7 @@ function MoonIcon(props: React.SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
+
 function SidebarIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
@@ -633,6 +634,12 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
 
   const navTree = useMemo(() => buildNavTree(pathname), [pathname]);
 
+  const blockEntry = useMemo(
+    () => blocksByHref.get(pathname.replace(/\/$/, '')) ?? null,
+    [pathname],
+  );
+  const isBlock = blockEntry != null;
+
   useEffect(() => {
     const saved = localStorage.getItem('sandbox-toolbar-hidden');
     if (saved === 'true') setToolbarHidden(true);
@@ -652,11 +659,6 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
-
-  const blockEntry = useMemo(
-    () => blocksByHref.get(pathname.replace(/\/$/, '')) ?? null,
-    [pathname],
-  );
 
   // Find current page name from the registry
   const currentPage = useMemo(() => {
@@ -815,7 +817,7 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
           />
         </XDSSegmentedControl>
 
-        {view === 'preview' && blockEntry == null && (
+        {view === 'preview' && !isBlock && (
           <XDSSegmentedControl
             value={viewport}
             onChange={v => setViewport(v as ViewportSize)}
@@ -906,59 +908,8 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
 
         {/* Content */}
         {view === 'preview' ? (
-          blockEntry != null ? (
-            <div
-              style={{
-                flex: 1,
-                overflow: 'auto',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: 24,
-                backgroundColor: 'var(--color-background-wash)',
-              }}>
-              <div style={{width: '100%', maxWidth: 600}}>
-                <div
-                  style={{
-                    width: '100%',
-                    aspectRatio: String(blockEntry.aspectRatio),
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    border: '1px solid var(--color-border)',
-                    borderRadius: 12,
-                    backgroundColor: 'var(--color-background-card)',
-                    padding: 24,
-                  }}>
-                  {children}
-                </div>
-                <div
-                  style={{
-                    marginTop: 8,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 2,
-                    textAlign: 'center',
-                  }}>
-                  <XDSText type="supporting" color="secondary">
-                    aspect-ratio:{' '}
-                    {blockEntry.aspectRatio === 1
-                      ? '1'
-                      : blockEntry.aspectRatio === 4 / 3
-                        ? '4/3'
-                        : blockEntry.aspectRatio === 16 / 9
-                          ? '16/9'
-                          : String(
-                              Math.round(blockEntry.aspectRatio * 1000) / 1000,
-                            )}
-                  </XDSText>
-                  <XDSText type="supporting" color="secondary" size="xsm">
-                    Tweak aspectRatio in the .doc.mjs file so the component fits
-                    nicely in this box.
-                  </XDSText>
-                </div>
-              </div>
-            </div>
+          isBlock ? (
+            children
           ) : viewport !== 'desktop' ? (
             <div
               style={{

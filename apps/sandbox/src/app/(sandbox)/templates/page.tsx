@@ -1,6 +1,6 @@
 'use client';
 
-import {useState, useCallback, useMemo} from 'react';
+import {useState, useCallback, useMemo, Suspense} from 'react';
 import Link from 'next/link';
 import {useSearchParams, useRouter} from 'next/navigation';
 import {XDSHeading} from '@xds/core/Text';
@@ -232,6 +232,14 @@ const columns: XDSTableColumn<TemplateRow>[] = [
 ];
 
 export default function TemplatesPage() {
+  return (
+    <Suspense>
+      <TemplatesPageInner />
+    </Suspense>
+  );
+}
+
+function TemplatesPageInner() {
   const {sort, onSortChange, filters, onFilterChange} = useTableSearchParams();
 
   const {config, applyFilters} = usePowerSearchConfig(fieldDefs);
