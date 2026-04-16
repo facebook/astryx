@@ -33,6 +33,7 @@ export function registerComponent(program) {
     .option('--category <category>', 'List components in a specific category')
     .option('--props', 'Print only the props table')
     .option('--source', 'Print component source code')
+    .option('--showcase', 'Print showcase source code')
     .action(async (name, options) => {
       const run = getRunPrefix();
       const zh = program.opts().zh || false;
@@ -57,6 +58,7 @@ export function registerComponent(program) {
           category: options.category,
           props: options.props,
           source: options.source,
+          showcase: options.showcase,
           detail,
           lang, zh, dense,
         });
@@ -141,6 +143,11 @@ export function registerComponent(program) {
         }
 
         case 'component.detail.source': {
+          console.log(result.data.source);
+          break;
+        }
+
+        case 'component.detail.showcase': {
           console.log(result.data.source);
           break;
         }

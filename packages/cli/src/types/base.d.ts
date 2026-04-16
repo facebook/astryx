@@ -12,6 +12,7 @@ import type {
   ComponentDetailResponse,
   ComponentDetailPropsResponse,
   ComponentDetailSourceResponse,
+  ComponentDetailShowcaseResponse,
 } from './component';
 import type {
   DiscoverListResponse,
@@ -60,6 +61,7 @@ export type CLIAnyResponse =
   | ComponentDetailResponse
   | ComponentDetailPropsResponse
   | ComponentDetailSourceResponse
+  | ComponentDetailShowcaseResponse
   | DiscoverListResponse
   | DiscoverDetailResponse
   | DiscoverDetailDocResponse

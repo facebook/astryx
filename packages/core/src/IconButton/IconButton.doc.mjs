@@ -2,21 +2,7 @@
 
 export const docs = {
   name: 'IconButton',
-  description:
-    'An icon-only button. Thin wrapper around XDSButton with isIconOnly always true.',
-  showcase: {
-    aspectRatio: 1,
-    code: '<XDSIconButton label="Settings" icon="gear" />',
-  },
-
   keywords: ['icon-button', 'icon', 'button', 'toolbar', 'action', 'compact'],
-  features: [
-    'Composition wrapper — delegates all behavior to XDSButton with isIconOnly=true',
-    'Explicit component name — greppable, codemod-safe, import-level detection',
-    'Same variants, sizes, and states as XDSButton',
-    'label prop becomes aria-label for accessibility',
-    'icon prop is required (enforced by TypeScript)',
-  ],
 
   props: [
     {
@@ -73,15 +59,24 @@ export const docs = {
     },
   ],
 
-  notes: [
-    'Prefer XDSIconButton over <XDSButton isIconOnly> for explicit intent',
-    'The label prop is always used as aria-label — required for accessibility',
-    'children and endContent are not accepted (omitted from props type)',
-    'All other XDSButton props (variant, size, onClick, etc.) are forwarded',
-  ],
-
-  accessibility: [
-    'Uses aria-label from the label prop for screen reader accessibility',
-    'Same keyboard and screen reader behavior as XDSButton with isIconOnly',
-  ],
+  usage: {
+    description:
+      'An icon-only button that wraps XDSButton with isIconOnly always true. Use when an action can be clearly represented by a single icon without visible text.',
+    features: [
+      'Composition wrapper — delegates all behavior to XDSButton with isIconOnly=true',
+      'Same variants, sizes, and states as XDSButton',
+      'label prop becomes aria-label for accessibility',
+      'icon prop is required (enforced by TypeScript)',
+    ],
+    accessibility: [
+      'Uses aria-label from the label prop for screen reader accessibility.',
+      'Same keyboard and screen reader behavior as XDSButton with isIconOnly.',
+    ],
+    notes: [
+      'Prefer XDSIconButton over <XDSButton isIconOnly> for explicit intent.',
+      'Explicit component name — greppable, codemod-safe, import-level detection.',
+      'children and endContent are not accepted (omitted from props type).',
+      'All other XDSButton props (variant, size, onClick, etc.) are forwarded.',
+    ],
+  },
 };

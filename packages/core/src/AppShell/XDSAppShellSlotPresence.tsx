@@ -63,6 +63,11 @@ export function useXDSSlotPresence(initialValue = false) {
 
     elementRef.current = node;
 
+    if (!node) {
+      setHasContent(false);
+      return;
+    }
+
     if (node) {
       // Check immediately
       setHasContent(hasChildContent(node));

@@ -2,22 +2,7 @@
 
 export const docs = {
   name: 'Layout',
-  description:
-    'Composable utilities and components for building structured layouts with a container/content separation pattern.',
-  showcase: {
-    aspectRatio: 16 / 9,
-    code: '<XDSLayout>Layout content</XDSLayout>',
-  },
   keywords: ["layout","container","content","flex","box","wrapper","scaffold","page","shell"],
-  features: [
-    'Primitive + higher-order architecture — XDSLayoutContainer is a primitive; XDSCard, XDSSection are higher-order',
-    'Directional padding via CSS variables — inner/outer, horizontal/vertical padding control',
-    'Context-aware defaults — components detect their slot and self-adjust',
-    'Automatic RTL support — uses CSS logical properties',
-    'XDSLayout provides a page shell with header, sidebar(s), content, and footer slots',
-    'XDSHStack and XDSVStack for simple stacking layouts',
-    'XDSStackItem for fill/alignment control within stacks',
-  ],
   theming: {
     targets: [
       {className: 'xds-layout', visualProps: ['height']},
@@ -27,12 +12,6 @@ export const docs = {
       {className: 'xds-layout-panel'},
     ],
   },
-  notes: [
-    'Use XDSLayout for page shells and app layouts — any UI with a header bar, sidebar navigation, scrollable content area, or action footer. Do not use for simple stacking (use XDSVStack/XDSHStack instead).',
-    'XDSLayoutContainer sets CSS variables that child components read: --layout-padding-outer-x (outer horizontal padding), --layout-padding-outer-y (outer vertical padding), --layout-padding-inner-x (inner horizontal padding used by Header, Footer, Content, Panel), --layout-padding-inner-y (inner vertical padding used by Header, Footer, Content, Panel).',
-    'Architecture layers from top to bottom: Higher-Order Components (XDSCard, XDSSection), Layout Structure (XDSLayout + XDSLayoutHeader/Footer/Content/Panel), Primitive (XDSLayoutContainer sets CSS variables), Layout Utilities (XDSHStack, XDSVStack, stack(), stackItem()).',
-    'All layout utilities and components are exported from @xds/core/Layout.',
-  ],
   components: [
     {
       name: 'XDSLayout',
@@ -232,24 +211,28 @@ export const docs = {
     },
   ],
   usage: {
-    summary: 'Composable utilities for building structured layouts with container and content separation.',
+    description:
+      'Composable utilities and components for building structured layouts with a container/content separation pattern. Use XDSLayout for page shells with header, sidebar(s), content, and footer slots — for simple stacking, use XDSHStack/XDSVStack instead.',
+    features: [
+      'Primitive + higher-order architecture — XDSLayoutContainer is a primitive; XDSCard, XDSSection are higher-order',
+      'Directional padding via CSS variables — inner/outer, horizontal/vertical padding control',
+      'Context-aware defaults — components detect their slot and self-adjust',
+      'Automatic RTL support — uses CSS logical properties',
+      'XDSLayout provides a page shell with header, sidebar(s), content, and footer slots',
+      'XDSHStack and XDSVStack for simple stacking layouts',
+      'XDSStackItem for fill/alignment control within stacks',
+    ],
+    notes: [
+      'XDSLayoutContainer sets CSS variables that child components read: --layout-padding-outer-x (outer horizontal padding), --layout-padding-outer-y (outer vertical padding), --layout-padding-inner-x (inner horizontal padding used by Header, Footer, Content, Panel), --layout-padding-inner-y (inner vertical padding used by Header, Footer, Content, Panel).',
+      'Architecture layers from top to bottom: Higher-Order Components (XDSCard, XDSSection), Layout Structure (XDSLayout + XDSLayoutHeader/Footer/Content/Panel), Primitive (XDSLayoutContainer sets CSS variables), Layout Utilities (XDSHStack, XDSVStack, stack(), stackItem()).',
+      'All layout utilities and components are exported from @xds/core/Layout.',
+    ],
   },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Layout',
-  description:
-    '用于构建结构化布局的可组合工具和组件，采用容器/内容分离模式。',
-  features: [
-    '基础 + 高阶架构：XDSLayoutContainer 是基础组件；XDSCard、XDSSection 是高阶组件',
-    '通过 CSS 变量实现方向性内边距控制：内/外、水平/垂直内边距',
-    '上下文感知默认值：组件检测其所在插槽并自动调整',
-    '自动 RTL 支持：使用 CSS 逻辑属性',
-    'XDSLayout 提供带有页眉、侧边栏、内容和页脚插槽的页面外壳',
-    'XDSHStack 和 XDSVStack 用于简单的堆叠布局',
-    'XDSStackItem 用于堆叠中的填充/对齐控制',
-  ],
   theming: {
     targets: [
       {className: 'xds-layout', visualProps: ['height']},
@@ -259,12 +242,6 @@ export const docsZh = {
       {className: 'xds-layout-panel'},
     ],
   },
-  notes: [
-    '使用 XDSLayout 构建页面外壳和应用布局，适用于任何带有页眉栏、侧边栏导航、可滚动内容区域或操作页脚的 UI。不要用于简单堆叠（请改用 XDSVStack/XDSHStack）。',
-    'XDSLayoutContainer 设置子组件读取的 CSS 变量：--layout-padding-outer-x（外部水平内边距）、--layout-padding-outer-y（外部垂直内边距）、--layout-padding-inner-x（Header、Footer、Content、Panel 使用的内部水平内边距）、--layout-padding-inner-y（Header、Footer、Content、Panel 使用的内部垂直内边距）。',
-    '从上到下的架构层级：高阶组件（XDSCard、XDSSection）、布局结构（XDSLayout + XDSLayoutHeader/Footer/Content/Panel）、基础层（XDSLayoutContainer 设置 CSS 变量）、布局工具（XDSHStack、XDSVStack、stack()、stackItem()）。',
-    '所有布局工具和组件均从 @xds/core/Layout 导出。',
-  ],
   components: [
     {
       name: 'XDSLayout',
@@ -464,6 +441,25 @@ export const docsZh = {
       props: [],
     },
   ],
+  usage: {
+    description:
+      '用于构建结构化布局的可组合工具和组件，采用容器/内容分离模式。',
+    features: [
+      '基础 + 高阶架构：XDSLayoutContainer 是基础组件；XDSCard、XDSSection 是高阶组件',
+      '通过 CSS 变量实现方向性内边距控制：内/外、水平/垂直内边距',
+      '上下文感知默认值：组件检测其所在插槽并自动调整',
+      '自动 RTL 支持：使用 CSS 逻辑属性',
+      'XDSLayout 提供带有页眉、侧边栏、内容和页脚插槽的页面外壳',
+      'XDSHStack 和 XDSVStack 用于简单的堆叠布局',
+      'XDSStackItem 用于堆叠中的填充/对齐控制',
+    ],
+    notes: [
+      '使用 XDSLayout 构建页面外壳和应用布局，适用于任何带有页眉栏、侧边栏导航、可滚动内容区域或操作页脚的 UI。不要用于简单堆叠（请改用 XDSVStack/XDSHStack）。',
+      'XDSLayoutContainer 设置子组件读取的 CSS 变量：--layout-padding-outer-x（外部水平内边距）、--layout-padding-outer-y（外部垂直内边距）、--layout-padding-inner-x（Header、Footer、Content、Panel 使用的内部水平内边距）、--layout-padding-inner-y（Header、Footer、Content、Panel 使用的内部垂直内边距）。',
+      '从上到下的架构层级：高阶组件（XDSCard、XDSSection）、布局结构（XDSLayout + XDSLayoutHeader/Footer/Content/Panel）、基础层（XDSLayoutContainer 设置 CSS 变量）、布局工具（XDSHStack、XDSVStack、stack()、stackItem()）。',
+      '所有布局工具和组件均从 @xds/core/Layout 导出。',
+    ],
+  },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */

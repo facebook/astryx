@@ -2,12 +2,6 @@
 
 export const docs = {
   name: 'PowerSearch',
-  description:
-    'Structured filter bar where each token represents a filter (field + operator + value). Users select fields from a typeahead dropdown, configure operators and values in an edit popover, and manage filters as removable tokens.',
-  showcase: {
-    aspectRatio: 4 / 3,
-    code: '<XDSPowerSearch config={{name: "search", fields: []}} />',
-  },
   keywords: ["powersearch","search","searchbar","filter","filterbar","faceted","querybuilder","structured","omnibar"],
   props: [
     {
@@ -121,32 +115,24 @@ export const docs = {
         'StyleX styles for layout customization. Must be a stylex.create() value.',
     },
   ],
-  features: [
-    'Typeahead field selection with search and aliases',
-    'Edit popover with field, operator, and value selectors',
-    'Support for 13 value types: string, integer, float, enum, date, time, and more',
-    'Token-based display with click-to-edit and remove',
-    'Imperative API for focus/blur control via ref',
-    'Read-only mode for displaying filters without editing',
-  ],
-  accessibility: [
-    'Built on XDSTokenizer which provides combobox pattern with aria-expanded and aria-autocomplete.',
-    'Filter tokens have accessible labels with field name, operator, and value.',
-    'Edit popover uses XDSPopover with focus trapping and light dismiss.',
-    'Clear all button has accessible label.',
-  ],
-  keyboard:
-    'Type to search fields; Enter to select; Click token to edit; Backspace on empty input removes last filter; Escape closes popover',
   usage: {
-    summary: 'Structured filter bar where each token represents a filter with field, operator, and value.',
-    content: `## When to use
-
-- Complex filtering across multiple dimensions.
-- Users need to build and combine filter criteria.
-
-## When NOT to use
-
-- Simple single-field search (use a text input instead).`,
+    description:
+      'Structured filter bar where each token represents a filter (field + operator + value). Users select fields from a typeahead dropdown, configure operators and values in an edit popover, and manage filters as removable tokens. Use for complex multi-dimensional filtering; for simple single-field search, use a text input instead.',
+    features: [
+      'Typeahead field selection with search and aliases',
+      'Edit popover with field, operator, and value selectors',
+      'Support for 13 value types: string, integer, float, enum, date, time, and more',
+      'Token-based display with click-to-edit and remove',
+      'Imperative API for focus/blur control via ref',
+      'Read-only mode for displaying filters without editing',
+    ],
+    accessibility: [
+      'Built on XDSTokenizer which provides combobox pattern with aria-expanded and aria-autocomplete.',
+      'Filter tokens have accessible labels with field name, operator, and value.',
+      'Edit popover uses XDSPopover with focus trapping and light dismiss.',
+      'Clear all button has accessible label.',
+      'Keyboard: Type to search fields; Enter to select; Click token to edit; Backspace on empty input removes last filter; Escape closes popover.',
+    ],
   },
 };
 
@@ -159,8 +145,6 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'PowerSearch',
-  description:
-    '结构化过滤栏，每个令牌代表一个过滤器（字段 + 运算符 + 值）。用户从预输入下拉菜单中选择字段，在编辑弹出窗口中配置运算符和值，并将过滤器作为可移除的令牌进行管理。',
   props: [
     {
       name: 'config',
@@ -267,22 +251,25 @@ export const docsZh = {
       description: '用于布局自定义的 StyleX 样式。必须是 stylex.create() 值。',
     },
   ],
-  features: [
-    '预输入字段选择，支持搜索和别名',
-    '编辑弹出窗口，包含字段、运算符和值选择器',
-    '支持 13 种值类型：字符串、整数、浮点数、枚举、日期、时间等',
-    '令牌式显示，支持点击编辑和移除',
-    '通过 ref 提供命令式 API 控制聚焦/失焦',
-    '只读模式，显示过滤器但不允许编辑',
-  ],
-  accessibility: [
-    '基于 XDSTokenizer 构建，提供 combobox 模式，包含 aria-expanded 和 aria-autocomplete。',
-    '过滤器令牌具有包含字段名、运算符和值的无障碍标签。',
-    '编辑弹出窗口使用 XDSPopover，支持焦点捕获和轻量关闭。',
-    '清除全部按钮具有无障碍标签。',
-  ],
-  keyboard:
-    '输入搜索字段；回车选择；点击令牌编辑；空输入时退格删除最后一个过滤器；Escape 关闭弹出窗口',
+  usage: {
+    description:
+      '结构化过滤栏，每个令牌代表一个过滤器（字段 + 运算符 + 值）。用户从预输入下拉菜单中选择字段，在编辑弹出窗口中配置运算符和值，并将过滤器作为可移除的令牌进行管理。',
+    features: [
+      '预输入字段选择，支持搜索和别名',
+      '编辑弹出窗口，包含字段、运算符和值选择器',
+      '支持 13 种值类型：字符串、整数、浮点数、枚举、日期、时间等',
+      '令牌式显示，支持点击编辑和移除',
+      '通过 ref 提供命令式 API 控制聚焦/失焦',
+      '只读模式，显示过滤器但不允许编辑',
+    ],
+    accessibility: [
+      '基于 XDSTokenizer 构建，提供 combobox 模式，包含 aria-expanded 和 aria-autocomplete。',
+      '过滤器令牌具有包含字段名、运算符和值的无障碍标签。',
+      '编辑弹出窗口使用 XDSPopover，支持焦点捕获和轻量关闭。',
+      '清除全部按钮具有无障碍标签。',
+      'Keyboard: 输入搜索字段；回车选择；点击令牌编辑；空输入时退格删除最后一个过滤器；Escape 关闭弹出窗口',
+    ],
+  },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */

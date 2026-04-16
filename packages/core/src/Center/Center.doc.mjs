@@ -2,17 +2,7 @@
 
 export const docs = {
   name: 'Center',
-  description: 'Centers children horizontally and/or vertically using flexbox.',
-  showcase: {
-    aspectRatio: 1,
-    code: '<XDSCenter>Centered</XDSCenter>',
-  },
   keywords: ["center","centered","centering","align","alignment","justify","flexbox","middle"],
-  features: [
-    'Supports centering on both axes, horizontal only, or vertical only',
-    'Inline-flex mode for centering inline content such as text and icons',
-    'Accepts explicit width and height to size the container',
-  ],
   props: [
     {
       name: 'axis',
@@ -54,47 +44,32 @@ export const docs = {
     ],
   },
   usage: {
-    summary: 'Centers children horizontally and/or vertically using flexbox.',
+    description: 'Centers children horizontally and/or vertically using flexbox.',
+    features: [
+      'Supports centering on both axes, horizontal only, or vertical only',
+      'Inline-flex mode for centering inline content such as text and icons',
+      'Accepts explicit width and height to size the container',
+    ],
   },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Center',
-  description: '使用 flexbox 将子元素水平和/或垂直居中。',
-  features: [
-    '支持双轴居中、仅水平居中或仅垂直居中',
-    '内联 flex 模式，用于居中文本和图标等内联内容',
-    '接受显式的宽度和高度来设置容器尺寸',
-  ],
+  usage: {
+    description: '使用 flexbox 将子元素水平和/或垂直居中。',
+    features: [
+      '支持双轴居中、仅水平居中或仅垂直居中',
+      '内联 flex 模式，用于居中文本和图标等内联内容',
+      '接受显式的宽度和高度来设置容器尺寸',
+    ],
+  },
   props: [
-    {
-      name: 'axis',
-      type: "'both' | 'horizontal' | 'vertical'",
-      description: '居中的方向。',
-      default: "'both'",
-    },
-    {
-      name: 'width',
-      type: 'number | string',
-      description: '容器宽度（px 或 CSS 值）。',
-    },
-    {
-      name: 'height',
-      type: 'number | string',
-      description: '容器高度（px 或 CSS 值）。',
-    },
-    {
-      name: 'isInline',
-      type: 'boolean',
-      description: '使用 inline-flex（适用于文本/图标）。',
-      default: 'false',
-    },
-    {
-      name: 'children',
-      type: 'ReactNode',
-      description: '要居中的内容。',
-    },
+    {name: 'axis', type: "'both' | 'horizontal' | 'vertical'", description: '居中的方向。', default: "'both'"},
+    {name: 'width', type: 'number | string', description: '容器宽度（px 或 CSS 值）。'},
+    {name: 'height', type: 'number | string', description: '容器高度（px 或 CSS 值）。'},
+    {name: 'isInline', type: 'boolean', description: '使用 inline-flex（适用于文本/图标）。', default: 'false'},
+    {name: 'children', type: 'ReactNode', description: '要居中的内容。'},
     {
       name: 'xstyle',
       type: 'StyleXStyles',
@@ -104,7 +79,12 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'xds-center', visualProps: ['axis']},
+      {
+        className: 'xds-center',
+        visualProps: [
+          'axis',
+        ],
+      },
     ],
   },
 };

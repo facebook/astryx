@@ -55,13 +55,11 @@ export {
   starterIcons,
 } from './SVGIcon';
 
-// Chart colors — palette accessor for data visualization
-export {XDSChartColors, type SequentialHue} from './ChartColors';
-
 // Chart components — composable d3-based data visualization
 export {
   XDSChart,
   type XDSChartProps,
+  type YBaseline,
   XDSChartAxis,
   type XDSChartAxisProps,
   XDSChartGrid,
@@ -70,8 +68,23 @@ export {
   type XDSChartBarProps,
   XDSChartLine,
   type XDSChartLineProps,
+  XDSChartArea,
+  type XDSChartAreaProps,
+  XDSChartErrorBar,
+  type XDSChartErrorBarProps,
+  XDSChartCandlestick,
+  type XDSChartCandlestickProps,
   XDSChartDot,
   type XDSChartDotProps,
+  XDSChartDotGL,
+  type XDSChartDotGLProps,
+  XDSChartDotGLInteractive,
+  type XDSChartDotGLInteractiveProps,
+  XDSChartHeatmapGL,
+  type XDSChartHeatmapGLProps,
+  XDSChartStreamGL,
+  type XDSChartStreamGLProps,
+  type XDSChartStreamGLHandle,
   XDSChartTooltip,
   type XDSChartTooltipProps,
   XDSChartLegend,
@@ -81,4 +94,12 @@ export {
   type ChartContext,
   type ChartMargin,
   type ChartScale,
+  m4Reduce,
+  type M4Point,
+  useXDSChartColors,
+  getXDSChartColors,
+  getXDSChartColorsFromResolver,
+  type XDSChartColorsAPI,
+  type SequentialHue,
+  type TokenResolver,
 } from './Chart';

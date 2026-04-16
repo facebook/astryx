@@ -2,12 +2,6 @@
 
 export const docs = {
   name: 'Tokenizer',
-  description:
-    'Multi-select typeahead with token chips for selected items. Composes XDSBaseTypeahead for search and XDSToken for chips.',
-  showcase: {
-    aspectRatio: 4 / 3,
-    code: '<XDSTokenizer label="Tags" items={[]} />',
-  },
   keywords: ["tokenizer","multiselect","multi-select","chips","tags","combobox","autocomplete","taginput","chipinput"],
   props: [
     {
@@ -167,48 +161,38 @@ export const docs = {
       description:
         'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
     },
-  ],  features: [
-    'Token chips for each selected item with remove buttons',
-    'Filtered search that automatically excludes already-selected items',
-    'Max entries to limit number of selections — input hides when limit is reached',
-    'Clear all button for bulk removal of all tokens',
-    'Custom token and item rendering via renderToken and renderItem',
-    'Backspace on empty input removes the last token',
-    "Change metadata: onChange receives a second argument with type ('add' | 'create' | 'remove' | 'reorder')",
-    'Free-text token creation via hasCreate prop — shows a "Create" option in the dropdown for new values',
   ],
   theming: {
     targets: [
       {className: 'xds-tokenizer', visualProps: ['size']},
     ],
   },
-  accessibility: [
-    'Wrapped in XDSField for label, description, and status message association.',
-    'Token container has role="group" with aria-label.',
-    'Clear all button has aria-label="Clear all".',
-    'Combobox pattern provided by XDSBaseTypeahead with aria-expanded and aria-autocomplete.',
-  ],
-  keyboard:
-    'Backspace on empty input removes last token; Arrow keys navigate dropdown; Enter selects highlighted item; Escape closes dropdown',
   usage: {
-    summary: 'Converts text into tokens, enabling users to filter content and make selections.',
-    content: `## When to use
-
-- Convert plain text into tokens for metadata.
-- Predict entries from a data source.
-- Allow users to create custom entries.
-
-## Best practices
-
-- Don't: Apply colored backgrounds to tokens within a tokenizer.`,
+    description:
+      'Tokenizer is a multi-select typeahead that converts text into token chips for selected items, enabling users to filter content and make selections from a data source. It composes XDSBaseTypeahead for search and XDSToken for chips. Avoid applying colored backgrounds to tokens within a tokenizer.',
+    features: [
+      'Token chips for each selected item with remove buttons',
+      'Filtered search that automatically excludes already-selected items',
+      'Max entries to limit number of selections — input hides when limit is reached',
+      'Clear all button for bulk removal of all tokens',
+      'Custom token and item rendering via renderToken and renderItem',
+      'Backspace on empty input removes the last token',
+      "Change metadata: onChange receives a second argument with type ('add' | 'create' | 'remove' | 'reorder')",
+      'Free-text token creation via hasCreate prop — shows a "Create" option in the dropdown for new values',
+    ],
+    accessibility: [
+      'Wrapped in XDSField for label, description, and status message association.',
+      'Token container has role="group" with aria-label.',
+      'Clear all button has aria-label="Clear all".',
+      'Combobox pattern provided by XDSBaseTypeahead with aria-expanded and aria-autocomplete.',
+      'Keyboard: Backspace on empty input removes last token; Arrow keys navigate dropdown; Enter selects highlighted item; Escape closes dropdown.',
+    ],
   },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Tokenizer',
-  description:
-    '带有标记芯片的多选预输入组件，用于显示已选项目。组合使用 XDSBaseTypeahead 进行搜索和 XDSToken 显示芯片。',
   props: [
     {
       name: 'label',
@@ -361,29 +345,32 @@ export const docsZh = {
         '用于布局自定义的 StyleX 样式（外边距、定位、尺寸）。必须是 stylex.create() 的值 — 不能是内联样式对象如 style={{}}。',
     },
   ],
-  features: [
-    '每个已选项目显示带移除按钮的标记芯片',
-    '过滤搜索自动排除已选项目',
-    '最大条目数限制选择数量 — 达到限制时输入框隐藏',
-    '全部清除按钮用于批量移除所有标记',
-    '通过 renderToken 和 renderItem 自定义标记和项目渲染',
-    '在空输入框上按退格键移除最后一个标记',
-    "变更元数据：onChange 接收第二个参数，包含类型（'add' | 'create' | 'remove' | 'reorder'）",
-    '通过 hasCreate 属性支持自由文本令牌创建 — 在下拉列表中为新值显示 "Create" 选项',
-  ],
   theming: {
     targets: [
       {className: 'xds-tokenizer', visualProps: ['size']},
     ],
   },
-  accessibility: [
-    '包裹在 XDSField 中，用于标签、描述和状态消息的关联。',
-    '标记容器具有 role="group" 和 aria-label。',
-    '全部清除按钮具有 aria-label="Clear all"。',
-    'XDSBaseTypeahead 提供组合框模式，包含 aria-expanded 和 aria-autocomplete。',
-  ],
-  keyboard:
-    '在空输入框上按退格键移除最后一个标记；方向键导航下拉列表；Enter 选择高亮项目；Escape 关闭下拉列表',
+  usage: {
+    description:
+      '带有标记芯片的多选预输入组件，用于显示已选项目。组合使用 XDSBaseTypeahead 进行搜索和 XDSToken 显示芯片。',
+    features: [
+      '每个已选项目显示带移除按钮的标记芯片',
+      '过滤搜索自动排除已选项目',
+      '最大条目数限制选择数量 — 达到限制时输入框隐藏',
+      '全部清除按钮用于批量移除所有标记',
+      '通过 renderToken 和 renderItem 自定义标记和项目渲染',
+      '在空输入框上按退格键移除最后一个标记',
+      "变更元数据：onChange 接收第二个参数，包含类型（'add' | 'create' | 'remove' | 'reorder'）",
+      '通过 hasCreate 属性支持自由文本令牌创建 — 在下拉列表中为新值显示 "Create" 选项',
+    ],
+    accessibility: [
+      '包裹在 XDSField 中，用于标签、描述和状态消息的关联。',
+      '标记容器具有 role="group" 和 aria-label。',
+      '全部清除按钮具有 aria-label="Clear all"。',
+      'XDSBaseTypeahead 提供组合框模式，包含 aria-expanded 和 aria-autocomplete。',
+      'Keyboard: 在空输入框上按退格键移除最后一个标记；方向键导航下拉列表；Enter 选择高亮项目；Escape 关闭下拉列表',
+    ],
+  },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */

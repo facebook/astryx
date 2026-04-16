@@ -2,17 +2,16 @@
 
 export const docs = {
   name: 'AspectRatio',
-  description: 'Maintains a specific aspect ratio for its children.',
-  showcase: {
-    aspectRatio: 16 / 9,
-    code: '<XDSAspectRatio ratio={16/9}><div style={{background: "#eee", height: "100%"}} /></XDSAspectRatio>',
-  },
   keywords: ["aspect-ratio","ratio","proportion","responsive","embed","container","widescreen","thumbnail","letterbox","crop"],
-  features: [
-    'Accepts any numeric ratio expressed as width/height (e.g. 16/9, 4/3, 1)',
-    'Children are positioned absolutely to fill the container',
-    'Supports theming via the aspectRatio component key',
-  ],
+  usage: {
+    description:
+      'Maintains a specific aspect ratio for its children, useful for responsive media containers like embedded videos and images.',
+    features: [
+      'Accepts any numeric ratio expressed as width/height (e.g. 16/9, 4/3, 1)',
+      'Children are positioned absolutely to fill the container',
+      'Supports theming via the aspectRatio component key',
+    ],
+  },
   props: [
     {
       name: 'ratio',
@@ -38,33 +37,22 @@ export const docs = {
       {className: 'xds-aspect-ratio'},
     ],
   },
-  usage: {
-    summary: 'Maintains a specific aspect ratio for its children, useful for responsive media containers.',
-  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'AspectRatio',
-  description: '为子元素保持特定的宽高比。',
-  features: [
-    '接受任何以宽/高表示的数字比例（例如 16/9、4/3、1）',
-    '子元素通过绝对定位填充容器',
-    '通过 aspectRatio 组件键支持主题定制',
-  ],
+  usage: {
+    description: '为子元素保持特定的宽高比。',
+    features: [
+      '接受任何以宽/高表示的数字比例（例如 16/9、4/3、1）',
+      '子元素通过绝对定位填充容器',
+      '通过 aspectRatio 组件键支持主题定制',
+    ],
+  },
   props: [
-    {
-      name: 'ratio',
-      type: 'number',
-      description: '宽高比，以宽/高表示（例如 16/9、1）。',
-      required: true,
-    },
-    {
-      name: 'children',
-      type: 'ReactNode',
-      description: '通过绝对定位填充容器的内容。',
-      required: true,
-    },
+    {name: 'ratio', type: 'number', description: '宽高比，以宽/高表示（例如 16/9、1）。', required: true},
+    {name: 'children', type: 'ReactNode', description: '通过绝对定位填充容器的内容。', required: true},
     {
       name: 'xstyle',
       type: 'StyleXStyles',

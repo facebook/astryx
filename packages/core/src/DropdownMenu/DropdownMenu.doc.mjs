@@ -2,23 +2,7 @@
 
 export const docs = {
   name: 'DropdownMenu',
-  description:
-    'A dropdown menu component for displaying actionable items in a popup menu.',
-  showcase: {
-    aspectRatio: 4 / 3,
-    code: '<XDSDropdownMenu trigger={<button>Menu</button>} items={[{label: "Edit"}]} />',
-  },
   keywords: ["dropdown","menu","popover","select","actions","contextmenu","overflow","kebab","menubutton"],
-  features: [
-    'Button customization: Customize the trigger button via the `button` prop (supports all XDSButton props)',
-    'Data-driven items: Pass items via the `items` prop with support for sections and dividers',
-    'Controlled/Uncontrolled: Supports both controlled (`isMenuOpen`/`onOpenChange`) and uncontrolled modes',
-    'Custom menu width: Override default width (matches button) via `menuWidth` prop',
-    'Sections: Group related items with optional headers using `XDSDropdownMenuSection`',
-    'Keyboard navigation: Full keyboard support (Arrow keys, Home, End, Enter, Space, Escape)',
-    'Accessibility: Proper ARIA roles (menu, menuitem) and attributes',
-    'Custom rendering: Optional `children` render function with `XDSDropdownMenuItem` helper',
-  ],
   theming: {
     targets: [
       {className: 'xds-dropdown-menu'},
@@ -29,19 +13,6 @@ export const docs = {
       {name: '--dropdown-padding', description: 'Inner padding of the menu popup', default: 'var(--spacing-1)'},
     ],
   },
-  keyboard:
-    'Arrow keys navigate items, Home/End jump to first/last, Enter/Space select, Escape closes the menu',
-  accessibility: [
-    'Uses proper ARIA roles: `menu` on the popup container, `menuitem` on each item',
-    'Focus returns to the trigger button when the menu closes',
-    'Keyboard navigation automatically skips disabled items',
-  ],
-  notes: [
-    'Uses `useXDSLayer` with `mode: "context"` for CSS anchor positioning',
-    'Uses `XDSButton` internally — chevron is passed via `endContent` and auto-hidden when `isIconOnly` is true',
-    'Items are tracked via the `items` prop to enable keyboard navigation',
-    'Light dismiss is enabled by default (clicking outside closes menu)',
-  ],
   components: [
     {
       name: 'XDSDropdownMenu',
@@ -200,29 +171,35 @@ export const docs = {
     },
   ],
   usage: {
-    summary: 'Shows options for actions in a dropdown list.',
-    content: `## When to use
-
-- To present different action options as a next step in a process.
-- As sub-navigation to guide users to a next destination.`,
+    description: 'A dropdown menu for displaying actionable items in a popup. Use to present action options as a next step in a process or as sub-navigation to guide users to a destination.',
+    features: [
+      'Button customization: Customize the trigger button via the `button` prop (supports all XDSButton props)',
+      'Data-driven items: Pass items via the `items` prop with support for sections and dividers',
+      'Controlled/Uncontrolled: Supports both controlled (`isMenuOpen`/`onOpenChange`) and uncontrolled modes',
+      'Custom menu width: Override default width (matches button) via `menuWidth` prop',
+      'Sections: Group related items with optional headers using `XDSDropdownMenuSection`',
+      'Keyboard navigation: Full keyboard support (Arrow keys, Home, End, Enter, Space, Escape)',
+      'Accessibility: Proper ARIA roles (menu, menuitem) and attributes',
+      'Custom rendering: Optional `children` render function with `XDSDropdownMenuItem` helper',
+    ],
+    accessibility: [
+      'Uses proper ARIA roles: `menu` on the popup container, `menuitem` on each item',
+      'Focus returns to the trigger button when the menu closes',
+      'Keyboard navigation automatically skips disabled items',
+      'Keyboard: Arrow keys navigate items, Home/End jump to first/last, Enter/Space select, Escape closes the menu',
+    ],
+    notes: [
+      'Uses `useXDSLayer` with `mode: "context"` for CSS anchor positioning',
+      'Uses `XDSButton` internally — chevron is passed via `endContent` and auto-hidden when `isIconOnly` is true',
+      'Items are tracked via the `items` prop to enable keyboard navigation',
+      'Light dismiss is enabled by default (clicking outside closes menu)',
+    ],
   },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'DropdownMenu',
-  description:
-    '用于在弹出菜单中显示可操作项的下拉菜单组件。',
-  features: [
-    '按钮自定义：通过 `button` 属性自定义触发按钮（支持所有 XDSButton 属性）',
-    '数据驱动项：通过 `items` 属性传递菜单项，支持分组和分隔线',
-    '受控/非受控：同时支持受控（`isMenuOpen`/`onOpenChange`）和非受控模式',
-    '自定义菜单宽度：通过 `menuWidth` 属性覆盖默认宽度（默认与按钮同宽）',
-    '分组：使用 `XDSDropdownMenuSection` 将相关项分组并显示可选标题',
-    '键盘导航：完整的键盘支持（方向键、Home、End、Enter、Space、Escape）',
-    '无障碍：正确的 ARIA 角色（menu、menuitem）和属性',
-    '自定义渲染：可选的 `children` 渲染函数，配合 `XDSDropdownMenuItem` 辅助组件',
-  ],
   theming: {
     targets: [
       {className: 'xds-dropdown-menu'},
@@ -233,19 +210,6 @@ export const docsZh = {
       {name: '--dropdown-padding', description: 'Inner padding of the menu popup', default: 'var(--spacing-1)'},
     ],
   },
-  keyboard:
-    '方向键导航菜单项，Home/End 跳转到首项/末项，Enter/Space 选择，Escape 关闭菜单',
-  accessibility: [
-    '使用正确的 ARIA 角色：弹出容器上使用 `menu`，每个菜单项使用 `menuitem`',
-    '菜单关闭时焦点返回到触发按钮',
-    '键盘导航自动跳过禁用的菜单项',
-  ],
-  notes: [
-    '使用 `useXDSLayer` 配合 `mode: "context"` 进行 CSS 锚点定位',
-    '内部使用 `XDSButton`——chevron 通过 `endContent` 传递，图标按钮自动隐藏',
-    '通过 `items` 属性跟踪菜单项以启用键盘导航',
-    '默认启用轻量关闭（点击外部关闭菜单）',
-  ],
   components: [
     {
       name: 'XDSDropdownMenu',
@@ -404,6 +368,32 @@ export const docsZh = {
       ],
     },
   ],
+  usage: {
+    description:
+      '用于在弹出菜单中显示可操作项的下拉菜单组件。',
+    features: [
+      '按钮自定义：通过 `button` 属性自定义触发按钮（支持所有 XDSButton 属性）',
+      '数据驱动项：通过 `items` 属性传递菜单项，支持分组和分隔线',
+      '受控/非受控：同时支持受控（`isMenuOpen`/`onOpenChange`）和非受控模式',
+      '自定义菜单宽度：通过 `menuWidth` 属性覆盖默认宽度（默认与按钮同宽）',
+      '分组：使用 `XDSDropdownMenuSection` 将相关项分组并显示可选标题',
+      '键盘导航：完整的键盘支持（方向键、Home、End、Enter、Space、Escape）',
+      '无障碍：正确的 ARIA 角色（menu、menuitem）和属性',
+      '自定义渲染：可选的 `children` 渲染函数，配合 `XDSDropdownMenuItem` 辅助组件',
+    ],
+    accessibility: [
+      '使用正确的 ARIA 角色：弹出容器上使用 `menu`，每个菜单项使用 `menuitem`',
+      '菜单关闭时焦点返回到触发按钮',
+      '键盘导航自动跳过禁用的菜单项',
+      'Keyboard: 方向键导航菜单项，Home/End 跳转到首项/末项，Enter/Space 选择，Escape 关闭菜单',
+    ],
+    notes: [
+      '使用 `useXDSLayer` 配合 `mode: "context"` 进行 CSS 锚点定位',
+      '内部使用 `XDSButton`——chevron 通过 `endContent` 传递，图标按钮自动隐藏',
+      '通过 `items` 属性跟踪菜单项以启用键盘导航',
+      '默认启用轻量关闭（点击外部关闭菜单）',
+    ],
+  },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */

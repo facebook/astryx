@@ -2,20 +2,7 @@
 
 export const docs = {
   name: 'Section',
-  description:
-    'Container with background variants for creating visually distinct regions that automatically escape parent container padding for edge-to-edge fills.',
-  showcase: {
-    aspectRatio: 4 / 3,
-    code: '<XDSSection title="Section">Content</XDSSection>',
-  },
   keywords: ["section","panel","container","group","fieldset","region","block"],
-  features: [
-    'Background variants: section, transparent, and wash',
-    'Automatically escapes parent container padding for edge-to-edge fills',
-    'Supports divider borders on any combination of sides (top, bottom, start, end)',
-    'Flexible sizing via SizeValue for width, height, maxWidth, and minHeight',
-    'Supports `padding={0}` for edge-to-edge content',
-  ],
   props: [
     {
       name: 'variant',
@@ -82,26 +69,21 @@ export const docs = {
     ],
   },
   usage: {
-    summary: 'Container for creating visually distinct regions on a page.',
-    content: `## When to use
-
-- Chunking information into groups using whitespace, dividers, or type scale.
-- Prefer sections over cards as the default page structure; use cards only when stronger visual distinction is needed.`,
+    description:
+      'Container with background variants for creating visually distinct regions on a page. Automatically escapes parent container padding for edge-to-edge fills. Prefer sections over cards as the default page structure; use cards only when stronger visual distinction is needed.',
+    features: [
+      'Background variants: section, transparent, and wash',
+      'Automatically escapes parent container padding for edge-to-edge fills',
+      'Supports divider borders on any combination of sides (top, bottom, start, end)',
+      'Flexible sizing via SizeValue for width, height, maxWidth, and minHeight',
+      'Supports `padding={0}` for edge-to-edge content',
+    ],
   },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Section',
-  description:
-    '带有背景变体的容器，用于创建视觉上可区分的区域，自动突破父容器内边距实现全宽填充。',
-  features: [
-    '背景变体：section、transparent 和 wash',
-    '自动突破父容器内边距实现全宽填充',
-    '支持在任意边的组合上设置分隔线边框（top、bottom、start、end）',
-    '通过 SizeValue 灵活设置宽度、高度、最大宽度和最小高度',
-    '支持 `padding={0}` 实现全宽内容',
-  ],
   props: [
     {
       name: 'variant',
@@ -165,6 +147,17 @@ export const docsZh = {
           "Controls Section container padding. Accepts standard CSS padding shorthand (e.g. '16px 20px'). Automatically mapped to container tokens for layout integration. Supports paddingBlock/paddingInline for axis-specific control.",
         default: 'var(--spacing-4)',
       },
+    ],
+  },
+  usage: {
+    description:
+      '带有背景变体的容器，用于创建视觉上可区分的区域，自动突破父容器内边距实现全宽填充。',
+    features: [
+      '背景变体：section、transparent 和 wash',
+      '自动突破父容器内边距实现全宽填充',
+      '支持在任意边的组合上设置分隔线边框（top、bottom、start、end）',
+      '通过 SizeValue 灵活设置宽度、高度、最大宽度和最小高度',
+      '支持 `padding={0}` 实现全宽内容',
     ],
   },
 };

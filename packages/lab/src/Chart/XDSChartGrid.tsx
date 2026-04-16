@@ -6,17 +6,14 @@
 
 import {useMemo} from 'react';
 import {useChart} from './ChartContext';
-import type {ScaleBand, ScaleLinear, ScaleTime} from 'd3-scale';
+import {isBandScale} from './utils';
+import type {ScaleLinear, ScaleTime} from 'd3-scale';
 
 export interface XDSChartGridProps {
   /** Show horizontal grid lines (default: true) */
   horizontal?: boolean;
   /** Show vertical grid lines */
   vertical?: boolean;
-}
-
-function isBandScale(scale: unknown): scale is ScaleBand<string> {
-  return typeof scale === 'function' && 'bandwidth' in scale;
 }
 
 /**

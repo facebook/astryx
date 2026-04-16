@@ -2,18 +2,7 @@
 
 export const docs = {
   name: 'NavIcon',
-  description:
-    'Circular icon container with accent background for navigation headers.',
-  showcase: {
-    aspectRatio: 16 / 4,
-    code: '<XDSNavIcon label="Home" />',
-  },
   keywords: ["navicon","iconbutton","toolbar icon","appbar icon","nav button"],
-  features: [
-    'Shared — used in both XDSTopNavHeading and XDSPageNavHeader',
-    'Accent background — uses --color-accent with --color-on-accent contrast',
-    'Fixed size — renders at the medium (--size-element-md) design token size',
-  ],
   props: [
     {
       name: 'icon',
@@ -29,20 +18,19 @@ export const docs = {
     ],
   },
   usage: {
-    summary: 'Circular icon container with accent background for navigation headers.',
+    description:
+      'Circular icon container with accent background for navigation headers.',
+    features: [
+      'Shared — used in both XDSTopNavHeading and XDSPageNavHeader',
+      'Accent background — uses --color-accent with --color-on-accent contrast',
+      'Fixed size — renders at the medium (--size-element-md) design token size',
+    ],
   },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'NavIcon',
-  description:
-    '用于导航头部的带强调色背景的圆形图标容器。',
-  features: [
-    '共享 — 同时用于 XDSTopNavHeading 和 XDSPageNavHeader',
-    '强调色背景 — 使用 --color-accent 配合 --color-on-accent 对比色',
-    '固定尺寸 — 以中等尺寸 (--size-element-md) 设计令牌渲染',
-  ],
   props: [
     {
       name: 'icon',
@@ -55,6 +43,15 @@ export const docsZh = {
   theming: {
     targets: [
       {className: 'xds-navicon'},
+    ],
+  },
+  usage: {
+    description:
+      '用于导航头部的带强调色背景的圆形图标容器。',
+    features: [
+      '共享 — 同时用于 XDSTopNavHeading 和 XDSPageNavHeader',
+      '强调色背景 — 使用 --color-accent 配合 --color-on-accent 对比色',
+      '固定尺寸 — 以中等尺寸 (--size-element-md) 设计令牌渲染',
     ],
   },
 };

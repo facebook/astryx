@@ -6,7 +6,7 @@
 
 import {useState, useCallback, type ReactNode} from 'react';
 import {useChart} from './ChartContext';
-import type {ScaleBand} from 'd3-scale';
+import {isBandScale, xPixel} from './utils';
 
 export interface XDSChartTooltipProps {
   /**
@@ -15,10 +15,6 @@ export interface XDSChartTooltipProps {
    * Default: renders all yKeys as "key: value" lines.
    */
   render?: (datum: Record<string, unknown>, index: number) => ReactNode;
-}
-
-function isBandScale(scale: unknown): scale is ScaleBand<string> {
-  return typeof scale === 'function' && 'bandwidth' in scale;
 }
 
 /**
@@ -32,7 +28,7 @@ function isBandScale(scale: unknown): scale is ScaleBand<string> {
  * ```
  */
 export function XDSChartTooltip({render}: XDSChartTooltipProps) {
-  const {data, xScale, yScale, width, height} = useChart();
+  const {data, xKey, xScale, yScale, width, height} = useChart();
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
 
   const handleMouseMove = useCallback(
@@ -61,8 +57,7 @@ export function XDSChartTooltip({render}: XDSChartTooltipProps) {
         let closest = 0;
         let minDist = Infinity;
         data.forEach((d, i) => {
-          const xVal = Object.values(d)[0] as number;
-          const dist = Math.abs(linearScale(xVal) - cursor.x);
+          const dist = Math.abs(xPixel(d, xKey, xScale) - cursor.x);
           if (dist < minDist) {
             minDist = dist;
             closest = i;
@@ -83,12 +78,9 @@ export function XDSChartTooltip({render}: XDSChartTooltipProps) {
   let tooltipY = 0;
   if (datum && hoverIndex !== null) {
     if (isBandScale(xScale)) {
-      tooltipX =
-        (xScale(String(Object.values(datum)[0])) ?? 0) + xScale.bandwidth() / 2;
+      tooltipX = xPixel(datum, xKey, xScale);
     } else {
-      tooltipX = (xScale as (v: number) => number)(
-        Object.values(datum)[0] as number,
-      );
+      tooltipX = xPixel(datum, xKey, xScale);
     }
     // Find the max y value across all numeric keys for positioning
     const yVals = Object.values(datum).filter(

@@ -2,30 +2,28 @@
 
 export const docs = {
   name: 'Grid',
-  description: 'CSS Grid-based layout with responsive auto-fit support.',
-  showcase: {
-    aspectRatio: 4 / 3,
-    code: '<XDSGrid columns={3}><div>1</div><div>2</div><div>3</div></XDSGrid>',
-  },
   keywords: ["grid","columns","responsive","auto-fit","masonry","tiles","row","col","simplegrid"],
-  features: [
-    'Fixed-column grids via the `columns` prop',
-    'Responsive auto-fit columns via `minChildWidth` — items wrap based on available space',
-    'Combine `minChildWidth` and `columns` to cap the maximum number of columns',
-    'Gap tokens via `SpacingScale` values for `gap`, `rowGap`, and `columnGap`',
-    'Vertical and horizontal item alignment via `align` and `justify`',
-    'XDSGridSpan lets individual items span multiple columns or rows',
-    'Theming support — override root styles via the `grid` component key',
-  ],
+  usage: {
+    description:
+      'CSS Grid-based layout with responsive auto-fit support. Use for any grid layout instead of manual CSS grid — it handles gap tokens and works with any column count.',
+    features: [
+      'Fixed-column grids via the `columns` prop',
+      'Responsive auto-fit columns via `minChildWidth` — items wrap based on available space',
+      'Combine `minChildWidth` and `columns` to cap the maximum number of columns',
+      'Gap tokens via `SpacingScale` values for `gap`, `rowGap`, and `columnGap`',
+      'Vertical and horizontal item alignment via `align` and `justify`',
+      'XDSGridSpan lets individual items span multiple columns or rows',
+    ],
+    notes: [
+      'Use XDSGrid for any grid layout instead of manual CSS grid (`display: "grid"`, `gridTemplateColumns`). It handles gap tokens and works with any column count.',
+    ],
+  },
   theming: {
     targets: [
       {className: 'xds-grid', visualProps: ['align', 'columns', 'gap', 'justify']},
       {className: 'xds-grid-span'},
     ],
   },
-  notes: [
-    'Use XDSGrid for any grid layout instead of manual CSS grid (`display: "grid"`, `gridTemplateColumns`). It handles gap tokens and works with any column count.',
-  ],
   components: [
     {
       name: 'XDSGrid',
@@ -113,33 +111,17 @@ export const docs = {
       ],
     },
   ],
-  usage: {
-    summary: 'CSS Grid-based layout with responsive auto-fit support.',
-  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Grid',
-  description: '基于 CSS Grid 的布局组件，支持响应式自动适配。',
-  features: [
-    '通过 `columns` 属性实现固定列网格',
-    '通过 `minChildWidth` 实现响应式自动适配列 - 项目根据可用空间自动换行',
-    '组合 `minChildWidth` 和 `columns` 来限制最大列数',
-    '通过 `SpacingScale` 值为 `gap`、`rowGap` 和 `columnGap` 设置间距令牌',
-    '通过 `align` 和 `justify` 实现垂直和水平项对齐',
-    'XDSGridSpan 允许单个项跨越多列或多行',
-    '主题支持 - 通过 `grid` 组件键覆盖根样式',
-  ],
   theming: {
     targets: [
       {className: 'xds-grid', visualProps: ['align', 'columns', 'gap', 'justify']},
       {className: 'xds-grid-span'},
     ],
   },
-  notes: [
-    '对于任何网格布局，请使用 XDSGrid 代替手动 CSS grid（`display: "grid"`、`gridTemplateColumns`）。它处理间距令牌并支持任意列数。',
-  ],
   components: [
     {
       name: 'XDSGrid',
@@ -228,6 +210,21 @@ export const docsZh = {
       ],
     },
   ],
+  usage: {
+    description: '基于 CSS Grid 的布局组件，支持响应式自动适配。',
+    features: [
+      '通过 `columns` 属性实现固定列网格',
+      '通过 `minChildWidth` 实现响应式自动适配列 - 项目根据可用空间自动换行',
+      '组合 `minChildWidth` 和 `columns` 来限制最大列数',
+      '通过 `SpacingScale` 值为 `gap`、`rowGap` 和 `columnGap` 设置间距令牌',
+      '通过 `align` 和 `justify` 实现垂直和水平项对齐',
+      'XDSGridSpan 允许单个项跨越多列或多行',
+      '主题支持 - 通过 `grid` 组件键覆盖根样式',
+    ],
+    notes: [
+      '对于任何网格布局，请使用 XDSGrid 代替手动 CSS grid（`display: "grid"`、`gridTemplateColumns`）。它处理间距令牌并支持任意列数。',
+    ],
+  },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */

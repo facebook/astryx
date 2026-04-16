@@ -130,7 +130,7 @@ interface ShellConfig {
   isResizable: boolean;
   collapseToggleLocation: 'sidenav' | 'topnav';
   mobileNavMode: 'auto' | 'customContent' | 'customToggle' | 'disabled';
-  mobileNavSide: 'start' | 'end';
+  mobileNavSide: 'auto' | 'start' | 'end';
   topNavAlignment: 'none' | 'start' | 'center' | 'end';
   topNavStyle: 'items' | 'menus' | 'mega';
   showTopNavHeading: boolean;
@@ -159,7 +159,7 @@ const DEFAULT_CONFIG: ShellConfig = {
   isResizable: false,
   collapseToggleLocation: 'sidenav',
   mobileNavMode: 'auto',
-  mobileNavSide: 'start',
+  mobileNavSide: 'auto',
   topNavAlignment: 'start',
   topNavStyle: 'items',
   showTopNavHeading: true,
@@ -462,8 +462,11 @@ function ConfigPanel({
             <SelectorRow
               label="Side"
               value={config.mobileNavSide}
-              onChange={v => onChange({mobileNavSide: v as 'start' | 'end'})}
+              onChange={v =>
+                onChange({mobileNavSide: v as 'auto' | 'start' | 'end'})
+              }
               options={[
+                {value: 'auto', label: 'Auto'},
                 {value: 'start', label: 'Start'},
                 {value: 'end', label: 'End'},
               ]}

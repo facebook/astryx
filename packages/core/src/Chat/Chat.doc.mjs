@@ -2,33 +2,7 @@
 
 export const docs = {
   name: 'Chat',
-  description:
-    'Chat components for AI chat interfaces. Layout (MessageList, Message, Bubble, SystemMessage) + Composer (Composer, ComposerInput with trigger menus, ComposerAttachments).',
-  showcase: {
-    aspectRatio: 4 / 3,
-    code: '<XDSChatMessageList><XDSChatMessage sender="user"><XDSChatBubble>Hello</XDSChatBubble></XDSChatMessage></XDSChatMessageList>',
-  },
   keywords: ['chat', 'message', 'bubble', 'conversation', 'ai', 'assistant', 'thread', 'system-message', 'composer', 'mention', 'trigger', 'typeahead', 'token', 'imperative', 'tokenized-text'],
-  features: [
-    'Composition model — MessageList > Message > Bubble',
-    'Sender-aware styling (user, assistant, system) via context',
-    'Auto-scroll with "New messages" indicator',
-    'Infinite scroll via onScrollToTopAction with useTransition',
-    'Density variants: compact, balanced, spacious (flows via context)',
-    'System messages with optional divider variant for date separators',
-    'Free-form children — not all content needs a bubble',
-    'Timestamp display: hover or header',
-    'Message status indicators (sending, sent, delivered, read, error)',
-    'role="log" with aria-live="polite" for accessibility',
-    'Composer layout shell with named semantic slots',
-    'ContentEditable input with @ mention and / command trigger menus',
-    'Imperative handle on ComposerInput for programmatic token/text insertion',
-    'Tokenized text rendering in message bubbles via XDSChatTokenizedText',
-    'XDSSearchSource integration — reuses Typeahead search sources',
-    'Concentric radius — inner elements follow outer shell curvature',
-    'Themeable via --composer-radius and --composer-padding CSS vars',
-    'Extractable send/stop button (XDSChatSendButton) with automatic composer context',
-  ],
   theming: {
     targets: [
       {className: 'xds-chat-layout', visualProps: ['density']},
@@ -188,7 +162,27 @@ export const docs = {
     },
   ],
   usage: {
-    summary: 'Chat components for building AI chat interfaces, including message lists, message bubbles, a composer, and a layout shell.',
+    description: 'Chat components for building AI chat interfaces. Provides layout primitives (MessageList, Message, Bubble, SystemMessage) and a composer with trigger menus and attachments for constructing full chat experiences.',
+    features: [
+      'Composition model — MessageList > Message > Bubble',
+      'Sender-aware styling (user, assistant, system) via context',
+      'Auto-scroll with "New messages" indicator',
+      'Infinite scroll via onScrollToTopAction with useTransition',
+      'Density variants: compact, balanced, spacious (flows via context)',
+      'System messages with optional divider variant for date separators',
+      'Free-form children — not all content needs a bubble',
+      'Timestamp display: hover or header',
+      'Message status indicators (sending, sent, delivered, read, error)',
+      'role="log" with aria-live="polite" for accessibility',
+      'Composer layout shell with named semantic slots',
+      'ContentEditable input with @ mention and / command trigger menus',
+      'Imperative handle on ComposerInput for programmatic token/text insertion',
+      'Tokenized text rendering in message bubbles via XDSChatTokenizedText',
+      'XDSSearchSource integration — reuses Typeahead search sources',
+      'Concentric radius — inner elements follow outer shell curvature',
+      'Themeable via --composer-radius and --composer-padding CSS vars',
+      'Extractable send/stop button (XDSChatSendButton) with automatic composer context',
+    ],
   },
 };
 
@@ -219,28 +213,30 @@ docs.components.push(chatLayoutScrollButtonComponent);
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsZh = {
-  description:
-    'AI 聊天界面组件。布局（MessageList、Message、Bubble、SystemMessage）+ 编写器（Composer、ComposerInput 触发菜单、ComposerAttachments）。',
-  features: [
-    '组合模型 — MessageList > Message > Bubble',
-    '根据发送者自动调整样式（user、assistant、system），通过上下文传递',
-    '自动滚动，带有"新消息"指示器',
-    '通过 onScrollToTopAction 和 useTransition 实现无限滚动',
-    '密度变体：compact、balanced、spacious（通过上下文传递）',
-    '系统消息，可选分割线变体用于日期分隔',
-    '自由子元素 — 并非所有内容都需要气泡包裹',
-    '时间戳显示：悬停或标题',
-    '消息状态指示器（sending、sent、delivered、read、error）',
-    'role="log" 配合 aria-live="polite" 实现无障碍访问',
-    '编写器布局外壳，具有命名语义插槽',
-    'ContentEditable 输入框，支持 @ 提及和 / 命令触发菜单',
-    'ComposerInput 命令式句柄，支持编程式插入标记/文本',
-    '通过 XDSChatTokenizedText 在消息气泡中渲染标记文本',
-    'XDSSearchSource 集成 — 复用 Typeahead 搜索源',
-    '同心圆角 — 内部元素跟随外部外壳曲率',
-    '通过 --composer-radius 和 --composer-padding CSS 变量实现主题化',
-    '可提取的发送/停止按钮（XDSChatSendButton），自动读取编写器上下文',
-  ],
+  usage: {
+    description:
+      'AI 聊天界面组件。布局（MessageList、Message、Bubble、SystemMessage）+ 编写器（Composer、ComposerInput 触发菜单、ComposerAttachments）。',
+    features: [
+      '组合模型 — MessageList > Message > Bubble',
+      '根据发送者自动调整样式（user、assistant、system），通过上下文传递',
+      '自动滚动，带有"新消息"指示器',
+      '通过 onScrollToTopAction 和 useTransition 实现无限滚动',
+      '密度变体：compact、balanced、spacious（通过上下文传递）',
+      '系统消息，可选分割线变体用于日期分隔',
+      '自由子元素 — 并非所有内容都需要气泡包裹',
+      '时间戳显示：悬停或标题',
+      '消息状态指示器（sending、sent、delivered、read、error）',
+      'role="log" 配合 aria-live="polite" 实现无障碍访问',
+      '编写器布局外壳，具有命名语义插槽',
+      'ContentEditable 输入框，支持 @ 提及和 / 命令触发菜单',
+      'ComposerInput 命令式句柄，支持编程式插入标记/文本',
+      '通过 XDSChatTokenizedText 在消息气泡中渲染标记文本',
+      'XDSSearchSource 集成 — 复用 Typeahead 搜索源',
+      '同心圆角 — 内部元素跟随外部外壳曲率',
+      '通过 --composer-radius 和 --composer-padding CSS 变量实现主题化',
+      '可提取的发送/停止按钮（XDSChatSendButton），自动读取编写器上下文',
+    ],
+  },
   components: [
     {
       name: 'XDSChatMessageList',
@@ -278,20 +274,12 @@ export const docsZh = {
     {
       name: 'XDSChatMessageMetadata',
       description: '可组合的消息元数据行。渲染时间戳、页脚内容和发送状态。用户消息方向反转。',
-      propDescriptions: {
-        timestamp: '时间戳内容 — 字符串或 XDSTimestamp 组件。',
-        footer: '页脚内容 — 模型信息、反应按钮、复制按钮。',
-        status: '消息发送状态。显示图标和标签。',
-      },
+      propDescriptions: {timestamp: '时间戳内容 — 字符串或 XDSTimestamp 组件。', footer: '页脚内容 — 模型信息、反应按钮、复制按钮。', status: '消息发送状态。显示图标和标签。'},
     },
     {
       name: 'XDSChatSystemMessage',
       description: '居中的系统/通知消息，用于日期分隔、状态更新和非发送者内容。',
-      propDescriptions: {
-        children: '系统消息内容。',
-        variant: '视觉变体。divider 在两侧添加水平线（内部使用 XDSDivider）。',
-        icon: '文本前渲染的图标。通常是 XDSIcon。',
-      },
+      propDescriptions: {children: '系统消息内容。', variant: '视觉变体。divider 在两侧添加水平线（内部使用 XDSDivider）。', icon: '文本前渲染的图标。通常是 XDSIcon。'},
     },
     {
       name: 'XDSChatComposer',
@@ -318,7 +306,8 @@ export const docsZh = {
     },
     {
       name: 'XDSChatComposerInput',
-      description: '基于 ContentEditable 的富文本输入，支持触发菜单（@ 提及、/ 命令）、内联标记、序列化、消息历史和粘贴/拖放文件处理。提供命令式句柄用于编程式控制。',
+      description:
+        '基于 ContentEditable 的富文本输入，支持触发菜单（@ 提及、/ 命令）、内联标记、序列化、消息历史和粘贴/拖放文件处理。提供命令式句柄用于编程式控制。',
       propDescriptions: {
         ref: '命令式句柄引用，暴露 insertToken、insertText、focus 和 getValue。',
         value: '受控值。',
@@ -338,14 +327,12 @@ export const docsZh = {
     {
       name: 'XDSChatComposerAttachments',
       description: '编写器内附件项目的弹性换行容器。',
-      propDescriptions: {
-        children: '要渲染的附件项目。',
-        count: '附件总数。超过可见子元素时显示折叠/展开切换。',
-      },
+      propDescriptions: {children: '要渲染的附件项目。', count: '附件总数。超过可见子元素时显示折叠/展开切换。'},
     },
     {
       name: 'XDSChatSendButton',
-      description: '编写器的圆形发送/停止切换按钮。默认从 XDSChatComposerContext 读取状态，在 XDSChatComposer 内自动工作。所有上下文值均可通过 props 覆盖以用于独立使用。',
+      description:
+        '编写器的圆形发送/停止切换按钮。默认从 XDSChatComposerContext 读取状态，在 XDSChatComposer 内自动工作。所有上下文值均可通过 props 覆盖以用于独立使用。',
       propDescriptions: {
         isStreaming: '助手是否正在流式响应。默认使用上下文值。',
         isDisabled: '发送按钮是否禁用。默认使用上下文的 !canSend。',
@@ -359,9 +346,11 @@ export const docsZh = {
     },
     {
       name: 'XDSChatToolCalls',
-      description: '显示 LLM 响应中的工具/函数调用。接受与 LLM API 返回形状匹配的 calls 数组。单个调用内联渲染；多个调用显示可折叠摘要。',
+      description:
+        '显示 LLM 响应中的工具/函数调用。接受与 LLM API 返回形状匹配的 calls 数组。单个调用内联渲染；多个调用显示可折叠摘要。',
       propDescriptions: {
-        calls: '工具调用数据数组。每项包含 name、status、target、duration、node、additions、deletions、stats、resultDetail。',
+        calls:
+          '工具调用数据数组。每项包含 name、status、target、duration、node、additions、deletions、stats、resultDetail。',
         label: '组的自定义摘要标签。省略时从数量自动生成。',
         isExpanded: '受控展开状态。',
         defaultIsExpanded: '默认展开状态（非受控）。',
@@ -369,12 +358,10 @@ export const docsZh = {
       },
     },
     {
-name: 'XDSChatTokenizedText',
-      description: '渲染带有标记模式的文本，将匹配的模式替换为内联 XDSBadge 组件。在 XDSChatMessageBubble 内使用，以徽章样式显示 @提及或其他标记。',
-      propDescriptions: {
-        children: '包含标记模式的消息文本。',
-        tokens: '标记定义。每个包含 pattern（匹配字符串）、label（显示文本）和可选 variant。',
-      },
+      name: 'XDSChatTokenizedText',
+      description:
+        '渲染带有标记模式的文本，将匹配的模式替换为内联 XDSBadge 组件。在 XDSChatMessageBubble 内使用，以徽章样式显示 @提及或其他标记。',
+      propDescriptions: {children: '包含标记模式的消息文本。', tokens: '标记定义。每个包含 pattern（匹配字符串）、label（显示文本）和可选 variant。'},
     },
     {
       name: 'XDSChatLayout',
@@ -390,11 +377,7 @@ name: 'XDSChatTokenizedText',
     {
       name: 'XDSChatLayoutScrollButton',
       description: '可组合的滚动到底部按钮。可见时淡入，提供标签时展开。',
-      propDescriptions: {
-        isVisible: '按钮是否可见。',
-        label: '可选标签 — 展开按钮（如"新消息"）。',
-        onClick: '点击处理器。',
-      },
+      propDescriptions: {isVisible: '按钮是否可见。', label: '可选标签 — 展开按钮（如"新消息"）。', onClick: '点击处理器。'},
     },
   ],
 };

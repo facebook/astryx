@@ -11,6 +11,7 @@ import {loadConfig} from '../lib/config.mjs';
 const TEMPLATES_DIR = path.join(CLI_ROOT, 'templates');
 const PAGES_DIR = path.join(TEMPLATES_DIR, 'pages');
 const BLOCKS_DIR = path.join(TEMPLATES_DIR, 'blocks');
+const SHOWCASE_DIR = path.join(TEMPLATES_DIR, 'showcase');
 
 async function loadDocModule(docPath) {
   if (!fs.existsSync(docPath)) return null;
@@ -106,6 +107,33 @@ export async function findRelatedBlocks(componentName) {
       c.toLowerCase() === componentName.toLowerCase(),
     ),
   );
+}
+
+async function discoverShowcases() {
+  if (!fs.existsSync(SHOWCASE_DIR)) return [];
+  const docFiles = fs.readdirSync(SHOWCASE_DIR).filter(f => f.endsWith('.doc.mjs'));
+  const showcases = [];
+  for (const docFile of docFiles) {
+    const basename = path.basename(docFile, '.doc.mjs');
+    const tsxPath = path.join(SHOWCASE_DIR, basename + '.tsx');
+    if (!fs.existsSync(tsxPath)) continue;
+    const docPath = path.join(SHOWCASE_DIR, docFile);
+    const doc = await loadDocModule(docPath);
+    showcases.push({
+      name: doc?.name || basename,
+      aspectRatio: doc?.aspectRatio ?? 1,
+      filePath: tsxPath,
+      docPath,
+    });
+  }
+  return showcases;
+}
+
+export async function findShowcase(componentName) {
+  const showcases = await discoverShowcases();
+  return showcases.find(s =>
+    s.name.toLowerCase() === componentName.toLowerCase(),
+  ) ?? null;
 }
 
 const UBIQUITOUS = new Set([
