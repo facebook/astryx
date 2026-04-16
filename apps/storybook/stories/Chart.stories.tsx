@@ -1,4 +1,5 @@
 import type {Meta, StoryObj} from '@storybook/react';
+import {useMemo} from 'react';
 import {
   XDSChart,
   XDSChartAxis,
@@ -7,307 +8,286 @@ import {
   XDSChartLine,
   XDSChartDot,
   XDSChartArea,
-  XDSChartErrorBar,
-  XDSChartCandlestick,
   XDSChartTooltip,
   XDSChartLegend,
+  XDSChartDotGL,
+  XDSChartHeatmapGL,
   useXDSChartColors,
 } from '@xds/lab';
+import {XDSStack, XDSText} from '@xds/core';
+import {useDataset} from './useDataset';
 
 /**
- * `XDSChart` is the root container for all chart components. It computes
- * scales from data and provides them to children via React context.
+ * `XDSChart` — composable chart system built on d3. All marks share a single
+ * coordinate space via React context.
  *
- * Colors come from `useXDSChartColors()` — theme-aware, always resolved
- * for the current light/dark mode.
- *
- * ## Composition
- *
- * ```tsx
- * const colors = useXDSChartColors();
- * <XDSChart data={data} xKey="month" yKeys={['revenue']}>
- *   <XDSChartGrid horizontal />
- *   <XDSChartAxis position="bottom" />
- *   <XDSChartAxis position="left" />
- *   <XDSChartBar dataKey="revenue" color={colors.categorical(1)[0]} />
- *   <XDSChartTooltip />
- * </XDSChart>
- * ```
+ * Datasets from [vega-datasets](https://github.com/vega/vega-datasets) (CDN).
  */
 const meta: Meta<typeof XDSChart> = {
   title: 'Lab/XDSChart',
   component: XDSChart,
   tags: ['autodocs'],
-  argTypes: {
-    height: {control: {type: 'number', min: 100, max: 600, step: 50}},
-    yBaseline: {control: 'select', options: ['auto', 'zero', 'data']},
-  },
 };
 
 export default meta;
 
-const monthlyData = [
-  {month: 'Jan', revenue: 4200, expenses: 2800, trend: 3800},
-  {month: 'Feb', revenue: 3800, expenses: 2600, trend: 3900},
-  {month: 'Mar', revenue: 5100, expenses: 3200, trend: 4200},
-  {month: 'Apr', revenue: 4600, expenses: 2900, trend: 4400},
-  {month: 'May', revenue: 5400, expenses: 3100, trend: 4600},
-  {month: 'Jun', revenue: 6200, expenses: 3400, trend: 5000},
-];
+type Barley = {yield: number; variety: string; year: number; site: string};
+type Stock = {symbol: string; date: string; price: number};
+type Car = {Horsepower: number; Miles_per_Gallon: number};
+type Flight = {delay: number; distance: number};
+type Weather = {date: string; temp_max: number; temp_min: number};
+type Gapminder = {country: string; year: number; life_expect: number};
 
-function BarChartDemo() {
-  const colors = useXDSChartColors();
-  return (
-    <XDSChart data={monthlyData} xKey="month" yKeys={['revenue']} height={300}>
-      <XDSChartGrid horizontal />
-      <XDSChartAxis position="bottom" />
-      <XDSChartAxis position="left" />
-      <XDSChartBar dataKey="revenue" color={colors.categorical(1)[0]} />
-      <XDSChartTooltip />
-    </XDSChart>
-  );
-}
-
-export const BarChart: StoryObj = {render: () => <BarChartDemo />};
-
-function LineChartDemo() {
-  const colors = useXDSChartColors();
-  const c = colors.categorical(2);
-  return (
-    <XDSChart
-      data={monthlyData}
-      xKey="month"
-      yKeys={['revenue', 'expenses']}
-      height={300}>
-      <XDSChartGrid horizontal />
-      <XDSChartAxis position="bottom" />
-      <XDSChartAxis position="left" />
-      <XDSChartLine dataKey="revenue" color={c[0]} dots />
-      <XDSChartLine dataKey="expenses" color={c[1]} dots />
-      <XDSChartLegend
-        items={[
-          {label: 'Revenue', color: c[0]},
-          {label: 'Expenses', color: c[1]},
-        ]}
-      />
-      <XDSChartTooltip />
-    </XDSChart>
-  );
-}
-
-export const LineChart: StoryObj = {render: () => <LineChartDemo />};
-
-function MixedChartDemo() {
-  const colors = useXDSChartColors();
-  const c = colors.categorical(3);
-  return (
-    <XDSChart
-      data={monthlyData}
-      xKey="month"
-      yKeys={['revenue', 'trend']}
-      height={300}>
-      <XDSChartGrid horizontal />
-      <XDSChartAxis position="bottom" />
-      <XDSChartAxis position="left" />
-      <XDSChartBar dataKey="revenue" color={c[0]} />
-      <XDSChartLine dataKey="trend" color={c[2]} dots />
-      <XDSChartLegend
-        items={[
-          {label: 'Revenue', color: c[0]},
-          {label: 'Trend', color: c[2]},
-        ]}
-      />
-      <XDSChartTooltip />
-    </XDSChart>
-  );
-}
-
-export const MixedChart: StoryObj = {render: () => <MixedChartDemo />};
-
-function ScatterPlotDemo() {
-  const colors = useXDSChartColors();
-  const c = colors.categorical(2);
-  return (
-    <XDSChart
-      data={monthlyData}
-      xKey="month"
-      yKeys={['revenue', 'expenses']}
-      height={300}>
-      <XDSChartGrid horizontal vertical />
-      <XDSChartAxis position="bottom" />
-      <XDSChartAxis position="left" />
-      <XDSChartDot dataKey="revenue" color={c[0]} radius={5} />
-      <XDSChartDot dataKey="expenses" color={c[1]} radius={5} />
-      <XDSChartLegend
-        items={[
-          {label: 'Revenue', color: c[0]},
-          {label: 'Expenses', color: c[1]},
-        ]}
-      />
-      <XDSChartTooltip />
-    </XDSChart>
-  );
-}
-
-export const ScatterPlot: StoryObj = {render: () => <ScatterPlotDemo />};
-
-const ciData = [
-  {month: 'Jan', mean: 42, upper95: 52, lower95: 32},
-  {month: 'Feb', mean: 38, upper95: 50, lower95: 26},
-  {month: 'Mar', mean: 51, upper95: 62, lower95: 40},
-  {month: 'Apr', mean: 46, upper95: 58, lower95: 34},
-  {month: 'May', mean: 54, upper95: 66, lower95: 42},
-  {month: 'Jun', mean: 62, upper95: 74, lower95: 50},
-];
-
-function ConfidenceBandDemo() {
-  const colors = useXDSChartColors();
-  const c = colors.categorical(1);
-  return (
-    <XDSChart
-      data={ciData}
-      xKey="month"
-      yKeys={['upper95', 'lower95']}
-      height={300}>
-      <XDSChartGrid horizontal />
-      <XDSChartAxis position="bottom" />
-      <XDSChartAxis position="left" />
-      <XDSChartArea
-        yUpper="upper95"
-        yLower="lower95"
-        color={c[0]}
-        opacity={0.15}
-      />
-      <XDSChartLine dataKey="mean" color={c[0]} dots />
-      <XDSChartTooltip />
-    </XDSChart>
-  );
-}
-
-export const ConfidenceBand: StoryObj = {render: () => <ConfidenceBandDemo />};
-
-const errorData = [
-  {cat: 'A', value: 45, upper: 52, lower: 38},
-  {cat: 'B', value: 62, upper: 70, lower: 54},
-  {cat: 'C', value: 38, upper: 48, lower: 28},
-  {cat: 'D', value: 55, upper: 60, lower: 50},
-];
-
-function ErrorBarDemo() {
-  const colors = useXDSChartColors();
-  return (
-    <XDSChart
-      data={errorData}
-      xKey="cat"
-      yKeys={['upper', 'lower']}
-      height={300}>
-      <XDSChartGrid horizontal />
-      <XDSChartAxis position="bottom" />
-      <XDSChartAxis position="left" />
-      <XDSChartBar dataKey="value" color={colors.categorical(1)[0]} />
-      <XDSChartErrorBar yUpper="upper" yLower="lower" />
-    </XDSChart>
-  );
-}
-
-export const WithErrorBars: StoryObj = {render: () => <ErrorBarDemo />};
-
-const ohlcData = [
-  {day: 'Mon', open: 100, close: 108, high: 112, low: 98},
-  {day: 'Tue', open: 108, close: 103, high: 110, low: 101},
-  {day: 'Wed', open: 103, close: 110, high: 115, low: 100},
-  {day: 'Thu', open: 110, close: 106, high: 113, low: 104},
-  {day: 'Fri', open: 106, close: 114, high: 118, low: 105},
-];
-
-export const Candlestick: StoryObj = {
-  render: () => (
-    <XDSChart
-      data={ohlcData}
-      xKey="day"
-      yKeys={['high', 'low']}
-      yBaseline="data"
-      height={300}>
-      <XDSChartGrid horizontal />
-      <XDSChartAxis position="bottom" />
-      <XDSChartAxis position="left" />
-      <XDSChartCandlestick high="high" low="low" open="open" close="close" />
-    </XDSChart>
-  ),
+/** Iowa barley yields — average by variety (barley.json) */
+export const BarChart: StoryObj = {
+  render: () => {
+    const colors = useXDSChartColors();
+    const [raw, loading] = useDataset<Barley>('barley.json');
+    const data = useMemo(() => {
+      if (!raw.length) return [];
+      const byVariety = new Map<string, {sum: number; count: number}>();
+      for (const d of raw) {
+        const e = byVariety.get(d.variety) ?? {sum: 0, count: 0};
+        e.sum += d.yield;
+        e.count += 1;
+        byVariety.set(d.variety, e);
+      }
+      return [...byVariety.entries()]
+        .map(([variety, {sum, count}]) => ({
+          variety,
+          avgYield: Math.round((sum / count) * 10) / 10,
+        }))
+        .sort((a, b) => b.avgYield - a.avgYield)
+        .slice(0, 10);
+    }, [raw]);
+    if (loading) return <XDSText type="supporting">Loading…</XDSText>;
+    return (
+      <XDSChart data={data} xKey="variety" yKeys={['avgYield']} height={300}>
+        <XDSChartGrid horizontal />
+        <XDSChartAxis position="bottom" />
+        <XDSChartAxis position="left" />
+        <XDSChartBar dataKey="avgYield" color={colors.categorical(1)[0]} />
+        <XDSChartTooltip />
+      </XDSChart>
+    );
+  },
 };
 
-function CandlestickBarDemo() {
-  const colors = useXDSChartColors();
-  return (
-    <XDSChart
-      data={ohlcData}
-      xKey="day"
-      yKeys={['high', 'low']}
-      yBaseline="data"
-      height={300}>
-      <XDSChartGrid horizontal />
-      <XDSChartAxis position="bottom" />
-      <XDSChartAxis position="left" />
-      <XDSChartCandlestick
-        variant="bar"
-        high="high"
-        low="low"
-        open="open"
-        close="close"
-        color={colors.categorical(1)[0]}
-      />
-    </XDSChart>
-  );
-}
+/** AAPL vs GOOG monthly prices (stocks.csv) */
+export const LineChart: StoryObj = {
+  render: () => {
+    const colors = useXDSChartColors();
+    const [raw, loading] = useDataset<Stock>('stocks.csv');
+    const data = useMemo(() => {
+      if (!raw.length) return [];
+      const filtered = raw.filter(
+        d => d.symbol === 'AAPL' || d.symbol === 'GOOG',
+      );
+      const byDate = new Map<string, Record<string, unknown>>();
+      for (const d of filtered) {
+        const e = byDate.get(d.date) ?? {date: d.date};
+        e[d.symbol] = d.price;
+        byDate.set(d.date, e);
+      }
+      return [...byDate.values()]
+        .filter(d => d.AAPL != null && d.GOOG != null)
+        .slice(-12);
+    }, [raw]);
+    if (loading) return <XDSText type="supporting">Loading…</XDSText>;
+    const c = colors.categorical(2);
+    return (
+      <XDSChart
+        data={data}
+        xKey="date"
+        yKeys={['AAPL', 'GOOG']}
+        yBaseline="data"
+        height={300}>
+        <XDSChartGrid horizontal />
+        <XDSChartAxis position="bottom" />
+        <XDSChartAxis position="left" />
+        <XDSChartLine dataKey="AAPL" color={c[0]} dots />
+        <XDSChartLine dataKey="GOOG" color={c[1]} dots />
+        <XDSChartLegend
+          items={[
+            {label: 'AAPL', color: c[0]},
+            {label: 'GOOG', color: c[1]},
+          ]}
+        />
+        <XDSChartTooltip />
+      </XDSChart>
+    );
+  },
+};
 
-export const CandlestickBar: StoryObj = {render: () => <CandlestickBarDemo />};
+/** Horsepower vs MPG — 406 cars (cars.json) */
+export const ScatterPlot: StoryObj = {
+  render: () => {
+    const colors = useXDSChartColors();
+    const [raw, loading] = useDataset<Car>('cars.json');
+    const data = useMemo(() => {
+      return raw
+        .filter(d => d.Horsepower != null && d.Miles_per_Gallon != null)
+        .map(d => ({hp: d.Horsepower, mpg: d.Miles_per_Gallon}));
+    }, [raw]);
+    if (loading) return <XDSText type="supporting">Loading…</XDSText>;
+    return (
+      <XDSChart
+        data={data}
+        xKey="hp"
+        yKeys={['mpg']}
+        yBaseline="data"
+        height={350}>
+        <XDSChartGrid horizontal vertical />
+        <XDSChartAxis position="bottom" />
+        <XDSChartAxis position="left" />
+        <XDSChartDot
+          dataKey="mpg"
+          color={colors.categorical(1)[0]}
+          radius={3}
+        />
+        <XDSChartTooltip />
+      </XDSChart>
+    );
+  },
+};
 
-const plData = [
-  {month: 'Jan', profit: 12},
-  {month: 'Feb', profit: -8},
-  {month: 'Mar', profit: 22},
-  {month: 'Apr', profit: -15},
-  {month: 'May', profit: 5},
-  {month: 'Jun', profit: -3},
-];
+/** Flight delay vs distance — 10k points via WebGL (flights-10k.json) */
+export const WebGLScatter: StoryObj = {
+  render: () => {
+    const colors = useXDSChartColors();
+    const [raw, loading] = useDataset<Flight>('flights-10k.json');
+    const data = useMemo(() => {
+      return raw
+        .filter(d => d.delay != null && d.distance != null)
+        .map(d => ({distance: d.distance, delay: d.delay}));
+    }, [raw]);
+    if (loading)
+      return <XDSText type="supporting">Loading 10k flights…</XDSText>;
+    return (
+      <XDSStack direction="vertical" gap={2}>
+        <XDSText type="supporting" color="secondary">
+          {data.length.toLocaleString()} flights
+        </XDSText>
+        <XDSChart
+          data={data}
+          xKey="distance"
+          yKeys={['delay']}
+          yBaseline="zero"
+          height={400}>
+          <XDSChartGrid horizontal />
+          <XDSChartAxis position="bottom" />
+          <XDSChartAxis position="left" />
+          <XDSChartDotGL
+            dataKey="delay"
+            color={colors.categorical(1)[0]}
+            size={3}
+            opacity={0.3}
+          />
+        </XDSChart>
+      </XDSStack>
+    );
+  },
+};
 
-function ZeroCenteredDemo() {
-  const colors = useXDSChartColors();
-  return (
-    <XDSChart
-      data={plData}
-      xKey="month"
-      yKeys={['profit']}
-      yBaseline="zero"
-      height={300}>
-      <XDSChartGrid horizontal />
-      <XDSChartAxis position="bottom" />
-      <XDSChartAxis position="left" />
-      <XDSChartBar dataKey="profit" color={colors.categorical(1)[0]} />
-    </XDSChart>
-  );
-}
+/** Seattle temperature range — monthly avg min/max band (seattle-weather.csv) */
+export const ConfidenceBand: StoryObj = {
+  render: () => {
+    const colors = useXDSChartColors();
+    const [raw, loading] = useDataset<Weather>('seattle-weather.csv');
+    const data = useMemo(() => {
+      if (!raw.length) return [];
+      const byMonth = new Map<
+        string,
+        {maxSum: number; minSum: number; count: number}
+      >();
+      for (const d of raw) {
+        const month = String(d.date).slice(0, 7);
+        const e = byMonth.get(month) ?? {maxSum: 0, minSum: 0, count: 0};
+        e.maxSum += d.temp_max;
+        e.minSum += d.temp_min;
+        e.count += 1;
+        byMonth.set(month, e);
+      }
+      return [...byMonth.entries()]
+        .map(([month, {maxSum, minSum, count}]) => ({
+          month,
+          avgMax: Math.round((maxSum / count) * 10) / 10,
+          avgMin: Math.round((minSum / count) * 10) / 10,
+          avgMid: Math.round(((maxSum + minSum) / (count * 2)) * 10) / 10,
+        }))
+        .sort((a, b) => a.month.localeCompare(b.month))
+        .slice(-24);
+    }, [raw]);
+    if (loading) return <XDSText type="supporting">Loading…</XDSText>;
+    return (
+      <XDSChart
+        data={data}
+        xKey="month"
+        yKeys={['avgMax', 'avgMin']}
+        yBaseline="data"
+        height={300}>
+        <XDSChartGrid horizontal />
+        <XDSChartAxis position="bottom" />
+        <XDSChartAxis position="left" />
+        <XDSChartArea
+          yUpper="avgMax"
+          yLower="avgMin"
+          color={colors.categorical(1)[0]}
+          opacity={0.15}
+        />
+        <XDSChartLine dataKey="avgMid" color={colors.categorical(1)[0]} dots />
+        <XDSChartTooltip />
+      </XDSChart>
+    );
+  },
+};
 
-export const ZeroCentered: StoryObj = {render: () => <ZeroCenteredDemo />};
-
-function GradientLegendDemo() {
-  const colors = useXDSChartColors();
-  return (
-    <XDSChart
-      data={[
-        {x: 0, v: 0},
-        {x: 1, v: 100},
-      ]}
-      xKey="x"
-      yKeys={['v']}
-      height={80}>
-      <XDSChartLegend
-        gradient={colors.sequential.blue(5)}
-        domain={[0, 100]}
-        label="Temperature"
-      />
-    </XDSChart>
-  );
-}
-
-export const GradientLegend: StoryObj = {render: () => <GradientLegendDemo />};
+/** Life expectancy by country × decade (gapminder.json) */
+export const Heatmap: StoryObj = {
+  render: () => {
+    const colors = useXDSChartColors();
+    const [raw, loading] = useDataset<Gapminder>('gapminder.json');
+    const data = useMemo(() => {
+      if (!raw.length) return [];
+      const countries = [
+        'United States',
+        'China',
+        'India',
+        'Brazil',
+        'Japan',
+        'Germany',
+        'Nigeria',
+        'Russia',
+      ];
+      return raw
+        .filter(
+          d =>
+            countries.includes(d.country) &&
+            d.year >= 1960 &&
+            d.year % 10 === 0,
+        )
+        .map(d => ({
+          country: d.country,
+          year: String(d.year),
+          lifeExp: Math.round(d.life_expect),
+        }));
+    }, [raw]);
+    if (loading) return <XDSText type="supporting">Loading…</XDSText>;
+    return (
+      <XDSChart data={data} xKey="year" yKeys={['lifeExp']} height={300}>
+        <XDSChartAxis position="bottom" />
+        <XDSChartHeatmapGL
+          xKey="year"
+          yKey="country"
+          valueKey="lifeExp"
+          colorRange={colors.sequential.blue(5)}
+        />
+        <XDSChartLegend
+          gradient={colors.sequential.blue(5)}
+          domain={[30, 85]}
+          label="Life Expectancy"
+        />
+      </XDSChart>
+    );
+  },
+};
