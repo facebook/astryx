@@ -67,22 +67,11 @@ export const docs = {
   },
   usage: {
     description:
-      'A progress bar for displaying determinate or indeterminate progress of a process. Use for showing completion progress of known-length operations or indicating indeterminate loading states with a known container size.',
-    features: [
-      'Supports four semantic color variants: accent, positive, warning, negative',
-      'Supports custom value label formatter via formatValueLabel',
-    ],
-    accessibility: [
-      'Determinate: uses role="meter" with aria-valuenow, aria-valuemin, aria-valuemax',
-      'Indeterminate: uses role="progressbar" without value attributes',
-      'Label is always connected via aria-labelledby',
-      'aria-valuetext provides human-readable value description (determinate only)',
-      'Indeterminate animation respects prefers-reduced-motion',
-    ],
-    notes: [
-      'ProgressBar is intentionally minimal — it handles the meter/track and an optional value label. For additional context like descriptions, status icons, or custom label placements, compose them alongside the bar using layout components.',
-      'Do not add props for label placement, progress descriptions, or embedded icons. These are composition concerns, not meter concerns.',
-      'Single track height: 8px',
+      'ProgressBar displays the completion progress of a process as a horizontal bar. Use it for determinate operations where the duration is known, or as an indeterminate indicator when progress cannot be calculated.',
+    bestPractices: [
+      { guidance: true, description: 'Use a determinate bar when the total amount of work is known, and switch to indeterminate only when it is not.' },
+      { guidance: true, description: 'Choose a semantic color variant that reflects the nature of the process — accent for neutral, positive for success, warning or negative for alerts.' },
+      { guidance: false, description: 'Add custom label placements or status icons inside the bar — compose them alongside using layout components.' },
     ],
   },
 };
@@ -154,23 +143,11 @@ export const docsZh = {
   },
   usage: {
     description:
-      '用于显示确定或不确定进度的进度条组件。',
-    features: [
-      '确定模式使用 role="meter"，配合 aria-valuenow、aria-valuemin 和 aria-valuemax',
-      '不确定模式使用 role="progressbar"，不包含值属性',
-      '标签始终通过 aria-labelledby 关联',
-      'aria-valuetext 提供人类可读的值描述（仅限确定模式）',
-      '不确定动画遵循 prefers-reduced-motion 偏好设置',
-      '支持四种语义颜色变体：accent、positive、warning、negative',
-      '单一轨道高度：8px',
-      '支持通过 formatValueLabel 自定义值标签格式化器',
-    ],
-    accessibility: [
-      '确定模式：使用 role="meter"，配合 aria-valuenow、aria-valuemin、aria-valuemax',
-      '不确定模式：使用 role="progressbar"，不包含值属性',
-      '标签始终通过 aria-labelledby 关联',
-      'aria-valuetext 提供人类可读的值描述（仅限确定模式）',
-      '不确定动画遵循 prefers-reduced-motion 偏好设置',
+      'ProgressBar displays the completion progress of a process as a horizontal bar. Use it for determinate operations where the duration is known, or as an indeterminate indicator when progress cannot be calculated.',
+    bestPractices: [
+      { guidance: true, description: 'Use a determinate bar when the total amount of work is known, and switch to indeterminate only when it is not.' },
+      { guidance: true, description: 'Choose a semantic color variant that reflects the nature of the process — accent for neutral, positive for success, warning or negative for alerts.' },
+      { guidance: false, description: 'Add custom label placements or status icons inside the bar — compose them alongside using layout components.' },
     ],
   },
 };
@@ -179,23 +156,15 @@ export const docsZh = {
 export const docsDense = {
   description:
     'Progress bar for displaying determinate or indeterminate progress.',
-  features: [
-    'Determinate mode uses role="meter" w/ aria-valuenow, aria-valuemin, aria-valuemax',
-    'Indeterminate mode uses role="progressbar" w/o value attributes',
-    'Label always connected via aria-labelledby',
-    'aria-valuetext provides human-readable value description (determinate only)',
-    'Indeterminate animation respects prefers-reduced-motion',
-    'Supports four semantic color variants: accent, positive, warning, negative',
-    'Single track height: 8px',
-    'Supports custom value label formatter via formatValueLabel',
-  ],
-  accessibility: [
-    'Determinate: uses role="meter" w/ aria-valuenow, aria-valuemin, aria-valuemax',
-    'Indeterminate: uses role="progressbar" w/o value attributes',
-    'Label always connected via aria-labelledby',
-    'aria-valuetext provides human-readable value description (determinate only)',
-    'Indeterminate animation respects prefers-reduced-motion',
-  ],
+  usage: {
+    description:
+      'ProgressBar displays the completion progress of a process as a horizontal bar. Use it for determinate operations where the duration is known, or as an indeterminate indicator when progress cannot be calculated.',
+    bestPractices: [
+      { guidance: true, description: 'Use a determinate bar when the total amount of work is known, and switch to indeterminate only when it is not.' },
+      { guidance: true, description: 'Choose a semantic color variant that reflects the nature of the process — accent for neutral, positive for success, warning or negative for alerts.' },
+      { guidance: false, description: 'Add custom label placements or status icons inside the bar — compose them alongside using layout components.' },
+    ],
+  },
   propDescriptions: {
     label: 'Accessible label (required).',
     value: 'Current value (ignored when indeterminate).',

@@ -30,18 +30,11 @@ export const docs = {
     ],
   },
   usage: {
-    description: 'A spatial layout container for arranging form fields with consistent spacing and direction. Wraps input components to collect structured user input with validation and confirmation. Best suited for sign-in flows, creating or editing objects, and settings — prefer single column layouts with top-aligned labels for step-by-step flows.',
-    features: [
-      "Three layout modes: 'vertical' (default), 'horizontal', and 'horizontal-labels'",
-      'Direction context via XDSFormLayoutContext — children can read the current layout direction',
-      'Responsive: horizontal-labels collapses to vertical on narrow viewports (<=480px)',
-      'Nestable: inner FormLayout overrides context for its children',
-      'Purely spatial: does not manage form state or render <form> — form submission is separate',
-    ],
-    notes: [
-      'Renders a <div>, not a <form>. Use a separate <form> element and connect submit buttons via the HTML form attribute.',
-      'XDSFormLayoutContext provides { direction } to children. Import from @xds/core/FormLayout to read layout direction in custom components.',
-      'Also accepts standard HTML div attributes (id, role, aria-*, etc.) via rest props.',
+    description: 'A spatial layout container for arranging form fields with consistent spacing and direction. Use FormLayout to structure sign-in flows, settings pages, and object creation or editing forms. Prefer single-column layouts with top-aligned labels for step-by-step flows.',
+    bestPractices: [
+      { guidance: true, description: 'Use vertical direction for most forms — it provides the clearest reading flow for step-by-step input.' },
+      { guidance: true, description: 'Group related fields together and separate logical sections with headings or spacing.' },
+      { guidance: false, description: 'Use FormLayout to manage form state or submission — it handles only visual arrangement. Pair it with a separate <form> element.' },
     ],
     anatomy: [
       {name: 'Form title', required: false, description: 'Heading that describes the purpose of the form.'},
@@ -81,19 +74,16 @@ export const docsZh = {
     ],
   },
   usage: {
-    description:
-      '用于以一致的间距和方向排列表单字段的空间布局容器。',
-    features: [
-      '三种布局模式：\'vertical\'（默认）、\'horizontal\' 和 \'horizontal-labels\'',
-      '通过 XDSFormLayoutContext 提供方向上下文 - 子组件可以读取当前布局方向',
-      '响应式：horizontal-labels 在窄视口（<=480px）时折叠为垂直布局',
-      '可嵌套：内部 FormLayout 会为其子组件覆盖上下文',
-      '纯空间布局：不管理表单状态或渲染 <form> - 表单提交是独立的',
+    description: 'A spatial layout container for arranging form fields with consistent spacing and direction. Use FormLayout to structure sign-in flows, settings pages, and object creation or editing forms. Prefer single-column layouts with top-aligned labels for step-by-step flows.',
+    bestPractices: [
+      { guidance: true, description: 'Use vertical direction for most forms — it provides the clearest reading flow for step-by-step input.' },
+      { guidance: true, description: 'Group related fields together and separate logical sections with headings or spacing.' },
+      { guidance: false, description: 'Use FormLayout to manage form state or submission — it handles only visual arrangement. Pair it with a separate <form> element.' },
     ],
-    notes: [
-      '渲染 <div> 而非 <form>。使用单独的 <form> 元素，并通过 HTML form 属性连接提交按钮。',
-      'XDSFormLayoutContext 向子组件提供 { direction }。从 @xds/core/FormLayout 导入以在自定义组件中读取布局方向。',
-      '还通过 rest props 接受标准 HTML div 属性（id、role、aria-* 等）。',
+    anatomy: [
+      {name: 'Form title', required: false, description: 'Heading that describes the purpose of the form.'},
+      {name: 'Fields', required: true, description: 'Input components with labels for collecting user data.'},
+      {name: 'Footer', required: false, description: 'Contains confirmation buttons such as Submit or Cancel.'},
     ],
   },
 };
@@ -102,18 +92,19 @@ export const docsZh = {
 export const docsDense = {
   description:
     'Spatial layout container for arranging form fields w/ consistent spacing + direction.',
-  features: [
-    "Three layout modes: 'vertical' (default), 'horizontal', 'horizontal-labels'",
-    'Direction context via XDSFormLayoutContext; children read current layout direction',
-    'Responsive: horizontal-labels collapses to vertical on narrow viewports (<=480px)',
-    'Nestable: inner FormLayout overrides context for children',
-    'Purely spatial: no form state management or <form> rendering',
-  ],
-  notes: [
-    'Renders <div> not <form>. Use separate <form> + HTML form attribute for submit buttons.',
-    'XDSFormLayoutContext provides { direction } to children. Import from @xds/core/FormLayout.',
-    'Accepts standard HTML div attributes (id, role, aria-*) via rest props.',
-  ],
+  usage: {
+    description: 'A spatial layout container for arranging form fields with consistent spacing and direction. Use FormLayout to structure sign-in flows, settings pages, and object creation or editing forms. Prefer single-column layouts with top-aligned labels for step-by-step flows.',
+    bestPractices: [
+      { guidance: true, description: 'Use vertical direction for most forms — it provides the clearest reading flow for step-by-step input.' },
+      { guidance: true, description: 'Group related fields together and separate logical sections with headings or spacing.' },
+      { guidance: false, description: 'Use FormLayout to manage form state or submission — it handles only visual arrangement. Pair it with a separate <form> element.' },
+    ],
+    anatomy: [
+      {name: 'Form title', required: false, description: 'Heading that describes the purpose of the form.'},
+      {name: 'Fields', required: true, description: 'Input components with labels for collecting user data.'},
+      {name: 'Footer', required: false, description: 'Contains confirmation buttons such as Submit or Cancel.'},
+    ],
+  },
   propDescriptions: {
     direction: 'Field arrangement. Vertical stacks top-to-bottom, horizontal arranges left-to-right w/ equal flex-grow, horizontal-labels uses CSS Grid w/ labels left of inputs (collapses <=480px).',
     children: 'Form fields to arrange. Accepts XDS inputs + XDSField-wrapped custom controls.',

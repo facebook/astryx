@@ -57,20 +57,12 @@ export const docs = {
 
   usage: {
     description:
-      'Toast is a transient notification that appears briefly to confirm actions or surface non-critical information, such as save confirmations or undo opportunities. It provides auto-dismiss, stacking, deduplication, and smooth animations with inverted surface theming via XDSMediaTheme. For critical information requiring user action or persistent messages, use Banner instead.',
-    features: [
-      "Types: 'info' (default), 'error'",
-      'Auto-dismiss: info toasts dismiss after 5s, error toasts persist',
-      'Pause on hover/focus: timer pauses during interaction',
-      'Stacking: multiple toasts stack with smooth enter/exit animations',
-      'Deduplication: uniqueID with ignore or overwrite collision behavior',
-      'Programmatic dismiss: show() returns a dismiss function',
-      'End content slot: trailing actions (buttons, links)',
-      'Fallback viewport: works without a provider via document.body fallback',
-      'Inverted surface: uses XDSMediaTheme for correct colors on dark/light backgrounds',
-    ],
-    accessibility: [
-      'Uses role=status for info toasts and role=alert for error toasts, with aria-live=polite and aria-live=assertive respectively.',
+      'Toast is a transient notification that appears briefly to confirm an action or surface non-critical information. Use it for save confirmations, undo opportunities, or status updates that do not require user interaction.',
+    bestPractices: [
+      { guidance: true, description: 'Keep toast messages short and actionable so users can read them before they auto-dismiss.' },
+      { guidance: true, description: 'Include an undo action in the endContent slot for reversible operations.' },
+      { guidance: false, description: 'Use a toast for critical errors or information that requires user acknowledgment — use Banner instead.' },
+      { guidance: false, description: 'Stack multiple toasts for the same event — use uniqueID to deduplicate.' },
     ],
   },
 };
@@ -95,20 +87,12 @@ export const docsZh = {
   },
   usage: {
     description:
-      '短暂通知，出现片刻以确认操作或显示非关键信息（如保存确认或撤销机会）。支持自动关闭、堆叠、去重和平滑动画，使用 XDSMediaTheme 进行反转表面主题。对于需要用户操作的关键信息或持久性消息，请使用 Banner。',
-    features: [
-      "类型：'info'（默认）、'error'",
-      '自动关闭：info toast 5秒后关闭，error toast 持续显示',
-      '悬停/聚焦暂停：交互时计时器暂停',
-      '堆叠：多个 toast 以平滑进出动画堆叠',
-      '去重：uniqueID 支持 ignore 或 overwrite 碰撞行为',
-      '程序化关闭：show() 返回关闭函数',
-      '尾部内容插槽：尾随操作（按钮、链接）',
-      '回退视口：无需 provider，通过 document.body 回退',
-      '反转表面：使用 XDSMediaTheme 在深色/浅色背景上显示正确颜色',
-    ],
-    accessibility: [
-      'info toast 使用 role=status 和 aria-live=polite，error toast 使用 role=alert 和 aria-live=assertive。',
+      'Toast is a transient notification that appears briefly to confirm an action or surface non-critical information. Use it for save confirmations, undo opportunities, or status updates that do not require user interaction.',
+    bestPractices: [
+      { guidance: true, description: 'Keep toast messages short and actionable so users can read them before they auto-dismiss.' },
+      { guidance: true, description: 'Include an undo action in the endContent slot for reversible operations.' },
+      { guidance: false, description: 'Use a toast for critical errors or information that requires user acknowledgment — use Banner instead.' },
+      { guidance: false, description: 'Stack multiple toasts for the same event — use uniqueID to deduplicate.' },
     ],
   },
 };
@@ -117,18 +101,16 @@ export const docsZh = {
 export const docsDense = {
   description:
     'toast notification w/ auto-dismiss, stacking, dedup, smooth animations; XDSMediaTheme inverted surface',
-  features: [
-    "types: info (default), error",
-    'auto-dismiss: info 5s, error persists',
-    'pause on hover/focus',
-    'stacking w/ smooth enter/exit animations',
-    'dedup: uniqueID w/ ignore|overwrite collision',
-    'programmatic dismiss: show() returns dismiss fn',
-    'end content slot: trailing actions',
-    'fallback viewport: works w/o provider via document.body',
-    'inverted surface: XDSMediaTheme for dark/light bg colors',
-    'a11y: role=status/alert, aria-live=polite/assertive',
-  ],
+  usage: {
+    description:
+      'Toast is a transient notification that appears briefly to confirm an action or surface non-critical information. Use it for save confirmations, undo opportunities, or status updates that do not require user interaction.',
+    bestPractices: [
+      { guidance: true, description: 'Keep toast messages short and actionable so users can read them before they auto-dismiss.' },
+      { guidance: true, description: 'Include an undo action in the endContent slot for reversible operations.' },
+      { guidance: false, description: 'Use a toast for critical errors or information that requires user acknowledgment — use Banner instead.' },
+      { guidance: false, description: 'Stack multiple toasts for the same event — use uniqueID to deduplicate.' },
+    ],
+  },
   propDescriptions: {
     body: 'primary message content',
     type: 'toast type; controls bg color; error persists until dismissed',
@@ -138,19 +120,5 @@ export const docsDense = {
     uniqueID: 'unique id for dedup',
     collisionBehavior: 'behavior when matching uniqueID exists',
     onHide: 'callback when toast removed',
-  },
-  usage: {
-    summary: 'transient notification confirming action or surfacing non-critical info',
-    content: `## When to use
-
-- confirm completed action
-- non-critical time-sensitive info
-- undo opportunities for reversible actions
-
-## When NOT to use
-
-- critical info requiring action (use Banner)
-- persistent messages (use Banner)
-- form field validation errors (use Field status)`,
   },
 };

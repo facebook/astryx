@@ -123,34 +123,12 @@ export const docs = {
   },
   usage: {
     description:
-      'A toggle switch component for boolean values with integrated label support that conveys an on/off state taking effect immediately. Use for settings that apply instantly upon toggling; for changes requiring a separate submit step, use a checkbox instead.',
-    features: [
-      'Boolean toggle with animated thumb for visual on/off states',
-      'Label integration — uses XDSFieldLabel for accessible labels with optional tooltip and icon',
-      'Label position — label can appear before or after the switch via labelPosition',
-      'Label spacing — supports spread layout to push label and switch to opposite ends',
-      'Description — optional description text displayed below the label',
-      'Optional/required indicators — visual markers for field status',
-      'Status messages — error, warning, success, or info message boxes below the switch',
-      'Async action support — onChangeAction with optimistic UI and built-in loading spinner',
-      'Reduced motion — respects prefers-reduced-motion for track and thumb transitions',
-    ],
-    accessibility: [
-      'Renders a native <input type="checkbox" role="switch"> for correct switch semantics',
-      'Label is always associated via htmlFor/id even when visually hidden',
-      'Description text is linked via aria-describedby on the input element',
-      'Status messages are linked via aria-describedby; aria-invalid is set when status type is "error"',
-      'aria-busy is set during async onChangeAction execution',
-      'Keyboard: Space toggles the switch; Tab/Shift+Tab moves focus in and out',
-    ],
-    notes: [
-      'Fixed dimensions: 40px width, 24px height, 16px thumb (off), 20px thumb (on)',
-      'Track and thumb use CSS transitions for background-color, transform, width, and height',
-      'Hover tints are applied via stylex.when.ancestor with a @media (hover: hover) guard',
-      'onChangeAction uses React useTransition and useOptimistic for seamless async toggling',
-      'Follows the same patterns as XDSCheckboxInput for structural consistency',
-      'Interaction is blocked during busy state (loading or pending async action) to prevent double-toggling',
-      'Track and thumb transitions respect prefers-reduced-motion (0s duration when reduced motion preferred)',
+      'Switch is a toggle control for boolean on/off states that take effect immediately. Use it for settings or preferences that apply instantly upon toggling. For changes requiring a separate submit step, use a checkbox instead.',
+    bestPractices: [
+      { guidance: true, description: 'Use for settings that apply immediately — the toggle should take effect without a separate save action.' },
+      { guidance: true, description: 'Pair with a clear, concise label that describes the setting being controlled.' },
+      { guidance: false, description: 'Use a switch for options that require a form submission to take effect — use a checkbox instead.' },
+      { guidance: false, description: 'Hide the label without providing accessible text — use isLabelHidden only when context makes the purpose obvious.' },
     ],
   },
 };
@@ -278,33 +256,12 @@ export const docsZh = {
   },
   usage: {
     description:
-      '用于布尔值的开关切换组件，集成标签支持。',
-    features: [
-      '布尔值切换 — 固定 40x24px 轨道，带动画效果的 16px（关闭）/ 20px（开启）滑块',
-      '标签集成 — 使用 XDSFieldLabel 实现无障碍标签，支持可选的工具提示和图标',
-      '标签位置 — 通过 labelPosition 可将标签放置在开关前面或后面',
-      '标签间距 — 支持分散布局，将标签和开关推到容器两端',
-      '描述 — 可选的描述文本，显示在标签下方',
-      '可选/必填指示器 — 字段状态的可视标记',
-      '状态消息 — 开关下方的错误、警告、成功或信息消息框',
-      '异步操作支持 — onChangeAction 支持乐观 UI 和内置加载旋转器',
-      '无障碍 — 原生复选框，具有 role="switch"、aria-describedby、aria-invalid、aria-busy',
-    ],
-    accessibility: [
-      '渲染原生 <input type="checkbox" role="switch"> 以确保正确的开关语义',
-      '标签始终通过 htmlFor/id 关联，即使视觉上被隐藏',
-      '描述文本通过输入元素上的 aria-describedby 关联',
-      '状态消息通过 aria-describedby 关联；当状态类型为 "error" 时设置 aria-invalid',
-      '异步 onChangeAction 执行期间设置 aria-busy',
-      'Keyboard: 空格键切换开关；Tab/Shift+Tab 移入和移出焦点',
-    ],
-    notes: [
-      '固定尺寸：40px 宽，24px 高，16px 滑块（关闭），20px 滑块（开启）',
-      '轨道和滑块使用 CSS 过渡实现 background-color、transform、width 和 height 的动画',
-      '悬停色调通过 stylex.when.ancestor 应用，带有 @media (hover: hover) 守卫',
-      'onChangeAction 使用 React useTransition 和 useOptimistic 实现无缝异步切换',
-      'labelPosition="start" 配合 labelSpacing="spread" 生成设置面板样式的布局',
-      '遵循与 XDSCheckboxInput 相同的模式以保持结构一致性',
+      'Switch is a toggle control for boolean on/off states that take effect immediately. Use it for settings or preferences that apply instantly upon toggling. For changes requiring a separate submit step, use a checkbox instead.',
+    bestPractices: [
+      { guidance: true, description: 'Use for settings that apply immediately — the toggle should take effect without a separate save action.' },
+      { guidance: true, description: 'Pair with a clear, concise label that describes the setting being controlled.' },
+      { guidance: false, description: 'Use a switch for options that require a form submission to take effect — use a checkbox instead.' },
+      { guidance: false, description: 'Hide the label without providing accessible text — use isLabelHidden only when context makes the purpose obvious.' },
     ],
   },
 };
@@ -312,33 +269,16 @@ export const docsZh = {
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   description: 'Toggle switch for boolean values w/ integrated label support.',
-  features: [
-    'Boolean toggle; fixed 40x24px track w/ animated 16px (off) / 20px (on) thumb',
-    'Label integration; uses XDSFieldLabel for accessible labels w/ optional tooltip + icon',
-    'Label position; label before or after switch via labelPosition',
-    'Label spacing; spread layout pushes label + switch to opposite ends',
-    'Description; optional text below label',
-    'Optional/required indicators; visual markers for field status',
-    'Status messages; error, warning, success, or info boxes below switch',
-    'Async action support; onChangeAction w/ optimistic UI + built-in loading spinner',
-    'Accessible; native checkbox w/ role="switch", aria-describedby, aria-invalid, aria-busy',
-  ],
-  notes: [
-    'Fixed dimensions: 40px wide, 24px high, 16px thumb (off), 20px thumb (on).',
-    'Track + thumb use CSS transitions for background-color, transform, width, height.',
-    'Hover tints via stylex.when.ancestor w/ @media (hover: hover) guard.',
-    'onChangeAction uses React useTransition + useOptimistic for seamless async toggling.',
-    'labelPosition="start" + labelSpacing="spread" produces settings panel layout.',
-    'Follows same patterns as XDSCheckboxInput for structural consistency.',
-  ],
-  accessibility: [
-    'Native <input type="checkbox" role="switch"> for correct semantics.',
-    'Label always associated via htmlFor/id even when visually hidden.',
-    'Description linked via aria-describedby on input element.',
-    'Status messages linked via aria-describedby; aria-invalid set on error type.',
-    'aria-busy set during async onChangeAction execution.',
-  ],
-  keyboard: 'Space=toggle; Tab/Shift+Tab=move focus in/out.',
+  usage: {
+    description:
+      'Switch is a toggle control for boolean on/off states that take effect immediately. Use it for settings or preferences that apply instantly upon toggling. For changes requiring a separate submit step, use a checkbox instead.',
+    bestPractices: [
+      { guidance: true, description: 'Use for settings that apply immediately — the toggle should take effect without a separate save action.' },
+      { guidance: true, description: 'Pair with a clear, concise label that describes the setting being controlled.' },
+      { guidance: false, description: 'Use a switch for options that require a form submission to take effect — use a checkbox instead.' },
+      { guidance: false, description: 'Hide the label without providing accessible text — use isLabelHidden only when context makes the purpose obvious.' },
+    ],
+  },
   propDescriptions: {
     ref: 'ref forwarded to underlying <input>',
     label: 'Label text (always rendered for a11y).',

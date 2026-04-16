@@ -132,21 +132,12 @@ export const docs = {
     ],
   },
   usage: {
-    description: 'A date input field combining a text input with a calendar popover for date selection. Use when users need to input a date, such as scheduling events or form submissions.',
-    features: [
-      'Text Input — manual date entry with flexible parsing (supports various formats)',
-      'Calendar Popover — click icon or use keyboard to open calendar picker',
-      'Date Constraints — min, max, and custom dateConstraints functions',
-      'Status Indicators — error, warning, and success states with messages',
-      'Accessibility — full keyboard navigation, focus trapping, screen reader support',
-      'Field Integration — built on XDSField for consistent label, description, and validation states',
-    ],
-    accessibility: [
-      'Keyboard: Tab moves between input and calendar icon button; Enter/Space on icon opens/closes the calendar; Escape closes the calendar popover; Arrow keys navigate between days; Page Up/Down navigate between months',
-    ],
-    notes: [
-      'The text input accepts multiple date formats: ISO (2026-01-28), US (01/28/2026, 1/28/2026), and written (Jan 28, 2026 / January 28 2026).',
-      'Invalid input reverts to the previous valid value on blur.',
+    description: 'A date input field that combines a text input with a calendar popover for selecting dates. Use when users need to enter a specific date, such as scheduling events, setting deadlines, or completing form submissions.',
+    bestPractices: [
+      { guidance: true, description: 'Provide clear labels and descriptions so users understand what date is expected.' },
+      { guidance: true, description: 'Use min, max, and dateConstraints to restrict selectable dates to valid ranges.' },
+      { guidance: false, description: 'Use a DateInput for free-form text that does not represent a calendar date.' },
+      { guidance: false, description: 'Hide the label without surrounding context that makes the field purpose obvious.' },
     ],
   },
 };
@@ -155,21 +146,12 @@ export const docs = {
 export const docsZh = {
   name: 'DateInput',
   usage: {
-    description: 'XDSDateInput 日期输入组件，将文本输入与日历弹出层结合用于日期选择。',
-    features: [
-      '文本输入——手动输入日期，支持灵活的格式解析（支持多种格式）',
-      '日历弹出层——点击图标或使用键盘打开日历选择器',
-      '日期约束——min、max 和自定义 dateConstraints 函数',
-      '状态指示器——错误、警告和成功状态及消息',
-      '无障碍——完整的键盘导航、焦点捕获、屏幕阅读器支持',
-      '字段集成——基于 XDSField 构建，提供一致的标签、描述和验证状态',
-    ],
-    accessibility: [
-      'Keyboard: Tab 在输入框和日历图标按钮间移动；Enter/Space 点击图标打开/关闭日历；Escape 关闭日历弹出层；方向键在日期间导航；Page Up/Down 在月份间导航。',
-    ],
-    notes: [
-      '文本输入接受多种日期格式：ISO（2026-01-28）、美式（01/28/2026、1/28/2026）和书面格式（Jan 28, 2026 / January 28 2026）。',
-      '无效输入在失焦时恢复为上一个有效值。',
+    description: 'A date input field that combines a text input with a calendar popover for selecting dates. Use when users need to enter a specific date, such as scheduling events, setting deadlines, or completing form submissions.',
+    bestPractices: [
+      { guidance: true, description: 'Provide clear labels and descriptions so users understand what date is expected.' },
+      { guidance: true, description: 'Use min, max, and dateConstraints to restrict selectable dates to valid ranges.' },
+      { guidance: false, description: 'Use a DateInput for free-form text that does not represent a calendar date.' },
+      { guidance: false, description: 'Hide the label without surrounding context that makes the field purpose obvious.' },
     ],
   },
   props: [
@@ -217,19 +199,15 @@ export const docsZh = {
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   description: 'text input w/ calendar popover for date selection',
-  features: [
-    'manual date entry w/ flexible parsing (various formats)',
-    'calendar popover via icon click or keyboard',
-    'date constraints: min, max, custom dateConstraints fns',
-    'error, warning, success status indicators w/ messages',
-    'full keyboard nav, focus trapping, screen reader support',
-    'built on XDSField for consistent label, description, validation',
-  ],
-  keyboard: 'Tab=move between input+calendar icon; Enter/Space on icon=open/close calendar; Escape=close; Arrow keys=navigate days; PageUp/Down=navigate months',
-  notes: [
-    'accepts multiple date formats: ISO (2026-01-28), US (01/28/2026, 1/28/2026), written (Jan 28, 2026 / January 28 2026)',
-    'invalid input reverts to previous valid value on blur',
-  ],
+  usage: {
+    description: 'A date input field that combines a text input with a calendar popover for selecting dates. Use when users need to enter a specific date, such as scheduling events, setting deadlines, or completing form submissions.',
+    bestPractices: [
+      { guidance: true, description: 'Provide clear labels and descriptions so users understand what date is expected.' },
+      { guidance: true, description: 'Use min, max, and dateConstraints to restrict selectable dates to valid ranges.' },
+      { guidance: false, description: 'Use a DateInput for free-form text that does not represent a calendar date.' },
+      { guidance: false, description: 'Hide the label without surrounding context that makes the field purpose obvious.' },
+    ],
+  },
   propDescriptions: {
     label: 'label text',
     isLabelHidden: 'visually hide label',

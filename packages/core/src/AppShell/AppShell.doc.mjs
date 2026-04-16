@@ -5,28 +5,12 @@ export const docs = {
   keywords: ["appshell","layout","scaffold","sidebar","sidenav","topnav","header","navigation","dashboard","shell","page","frame"],
   usage: {
     description:
-      'Application-level layout shell providing header, side navigation, and main content area. Composes XDSLayout internally and replaces the XDSPage + XDSPageLayout pattern.',
-    features: [
-      'Two navigation slots: topNav (horizontal bar) and sideNav (vertical sidebar)',
-      'Two height modes: fill (viewport-height, independent scroll containers) and auto (page-scroll with sticky nav)',
-      'Controlled and uncontrolled sideNav collapse with responsive auto-collapse via mobileNav breakpoint',
-      'Mobile: collapsed sideNav renders as an overlay with backdrop',
-      'Composes XDSLayout internally for automatic padding collapse, scroll containment, and slot awareness',
-    ],
-    accessibility: [
-      'Semantic HTML via XDSLayout slots — each slot maps to a proper landmark element.',
-      '<main> content area has role="main" for landmark navigation.',
-      'SideNav has role="navigation" with aria-label="Application navigation".',
-      'Skip-to-content link is visually hidden but shown on focus for keyboard users.',
-      'Keyboard: Escape key closes the mobile sideNav overlay.',
-    ],
-    notes: [
-      'When a TopNav is present, omit XDSSideNavHeading from the SideNav — the TopNav already provides app identity. Adding both would double the identity.',
-      'When there is no TopNav, include XDSSideNavHeading inside the SideNav so the app name and logo are present.',
-      'XDSAppShell composes XDSLayout internally: topNav + banner map to XDSLayoutHeader, sideNav maps to XDSLayoutPanel, and children map to XDSLayoutContent.',
-      'SideNav collapse animations currently snap open/closed; ViewTransitions support is planned.',
-      'In "auto" height mode, TopNav gets position: sticky; top: 0 and SideNav gets position: sticky; top: <header-height>.',
-      'In "fill" height mode, the shell fills 100dvh, TopNav is pinned at the top, and both the SideNav and content area have independent scroll containers.',
+      'AppShell is an application-level layout providing header, side navigation, and main content areas. Use it to scaffold the top-level structure of a dashboard or admin interface with consistent navigation patterns.',
+    bestPractices: [
+      {guidance: true, description: 'Choose the height mode that matches your content — use "fill" for dashboards with independent scroll regions and "auto" for content-driven pages.'},
+      {guidance: true, description: 'When a TopNav is present, omit SideNavHeading from the SideNav to avoid duplicating the app identity.'},
+      {guidance: false, description: 'Nest an AppShell inside another AppShell or use it for sub-page layouts — it is intended as the outermost layout frame.'},
+      {guidance: false, description: 'Mix multiple navigation patterns within the same shell — pick either topNav, sideNav, or both and use them consistently.'},
     ],
   },
   props: [
@@ -114,30 +98,12 @@ export const docsZh = {
   name: 'AppShell',
   usage: {
     description:
-      '应用级布局外壳，提供顶部导航栏、侧边导航栏和主内容区域——内部组合使用 XDSLayout，替代 XDSPage + XDSPageLayout 模式。',
-    features: [
-      '两个导航插槽：topNav（水平导航栏）和 sideNav（垂直侧边栏）',
-      '两种高度模式：fill（视口高度，独立滚动容器）和 auto（页面滚动，导航栏吸顶）',
-      '受控和非受控的 sideNav 折叠，通过 mobileNav breakpoint 支持响应式自动折叠',
-      '移动端：折叠的 sideNav 以带遮罩层的浮层形式展示',
-      '内部组合使用 XDSLayout，自动处理内边距折叠、滚动容器和插槽感知',
-      '语义化 HTML：<main> 带 role="main"，SideNav 带 role="navigation"，跳转到内容链接',
-      'Escape 键关闭移动端 sideNav 浮层',
-    ],
-    accessibility: [
-      '通过 XDSLayout 插槽实现语义化 HTML——每个插槽对应一个合适的地标元素。',
-      '<main> 内容区域具有 role="main"，用于地标导航。',
-      'SideNav 具有 role="navigation" 和 aria-label="Application navigation"。',
-      '跳转到内容链接在视觉上隐藏，但在键盘聚焦时显示，方便键盘用户使用。',
-      'Escape 键关闭移动端 sideNav 浮层。',
-    ],
-    notes: [
-      '当存在 TopNav 时，请勿在 SideNav 中使用 XDSSideNavHeading——TopNav 已提供了应用标识。同时使用两者会导致标识重复。',
-      '当没有 TopNav 时，请在 SideNav 中添加 XDSSideNavHeading，以确保应用名称和图标可见。',
-      'XDSAppShell 内部组合使用 XDSLayout：topNav + banner 映射到 XDSLayoutHeader，sideNav 映射到 XDSLayoutPanel，children 映射到 XDSLayoutContent。',
-      'SideNav 折叠动画目前为瞬间切换；计划支持 ViewTransitions。',
-      '在 "auto" 高度模式下，TopNav 使用 position: sticky; top: 0，SideNav 使用 position: sticky; top: <header-height>。',
-      '在 "fill" 高度模式下，外壳填满 100dvh，TopNav 固定在顶部，SideNav 和内容区域各有独立的滚动容器。',
+      'AppShell is an application-level layout providing header, side navigation, and main content areas. Use it to scaffold the top-level structure of a dashboard or admin interface with consistent navigation patterns.',
+    bestPractices: [
+      {guidance: true, description: 'Choose the height mode that matches your content — use "fill" for dashboards with independent scroll regions and "auto" for content-driven pages.'},
+      {guidance: true, description: 'When a TopNav is present, omit SideNavHeading from the SideNav to avoid duplicating the app identity.'},
+      {guidance: false, description: 'Nest an AppShell inside another AppShell or use it for sub-page layouts — it is intended as the outermost layout frame.'},
+      {guidance: false, description: 'Mix multiple navigation patterns within the same shell — pick either topNav, sideNav, or both and use them consistently.'},
     ],
   },
   props: [
@@ -201,30 +167,16 @@ export const docsZh = {
 export const docsDense = {
   description:
     'app-level layout shell w/ header, side nav, main content; composes XDSLayout internally, replaces XDSPage+XDSPageLayout',
-  features: [
-    'two nav slots: topNav (horizontal bar) + sideNav (vertical sidebar)',
-    'two height modes: fill (viewport 100dvh, independent scroll) + auto (page-scroll w/ sticky nav)',
-    'controlled+uncontrolled sideNav collapse w/ responsive auto-collapse via mobileNav breakpoint',
-    'mobile: collapsed sideNav renders as overlay w/ backdrop',
-    'composes XDSLayout internally for auto padding collapse, scroll containment, slot awareness',
-    'semantic HTML: <main> role="main", SideNav role="navigation", skip-to-content link',
-    'Escape closes mobile sideNav overlay',
-  ],
-  notes: [
-    'w/ TopNav, omit SideNavHeading from SideNav to avoid double identity',
-    'w/o TopNav, include SideNavHeading for app name+logo',
-    'composes XDSLayout: topNav+banner map to XDSLayoutHeader, sideNav to XDSLayoutPanel, children to XDSLayoutContent',
-    'collapse animations snap open/closed; ViewTransitions planned',
-    '"auto" height: TopNav sticky top:0, SideNav sticky top:<header-height>',
-    '"fill" height: 100dvh, TopNav pinned, SideNav+content have independent scroll',
-  ],
-  accessibility: [
-    'semantic HTML via XDSLayout slots, each slot maps to landmark element',
-    '<main> has role="main" for landmark nav',
-    'SideNav has role="navigation" w/ aria-label="Application navigation"',
-    'skip-to-content link visually hidden, shown on focus for keyboard users',
-    'Escape closes mobile sideNav overlay',
-  ],
+  usage: {
+    description:
+      'AppShell is an application-level layout providing header, side navigation, and main content areas. Use it to scaffold the top-level structure of a dashboard or admin interface with consistent navigation patterns.',
+    bestPractices: [
+      {guidance: true, description: 'Choose the height mode that matches your content — use "fill" for dashboards with independent scroll regions and "auto" for content-driven pages.'},
+      {guidance: true, description: 'When a TopNav is present, omit SideNavHeading from the SideNav to avoid duplicating the app identity.'},
+      {guidance: false, description: 'Nest an AppShell inside another AppShell or use it for sub-page layouts — it is intended as the outermost layout frame.'},
+      {guidance: false, description: 'Mix multiple navigation patterns within the same shell — pick either topNav, sideNav, or both and use them consistently.'},
+    ],
+  },
   propDescriptions: {
     children: 'main content area, rendered inside <main>',
     topNav: 'top nav slot, typically XDSTopNav',

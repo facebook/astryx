@@ -71,32 +71,11 @@ export const docs = {
   ],
   usage: {
     description:
-      'Toolbar is a general-purpose container with start, center, and end content slots for grouping related actions or controls in a horizontal bar. Built on XDSSection with roving tabindex keyboard navigation, it is ideal for providing contextual actions above content areas like tables or editors.',
-    features: [
-      'Slot-based layout — startContent, centerContent, and endContent for flexible organization',
-      'Three-column centering — centerContent switches to CSS grid (1fr auto 1fr) for true centering',
-      'Roving tabindex — arrow key navigation via useListFocus with orientation support',
-      'Density variants — default (40px) and compact (32px) minimum heights',
-      'Configurable gap — spacing scale gap between items within each slot',
-      'Built on XDSSection — inherits variant, theming, and nesting behavior',
-      'Composable overflow — use XDSOverflowList within slots for responsive collapsing',
-    ],
-    accessibility: [
-      'Inner element renders role="toolbar" with aria-label from label prop.',
-      'aria-orientation reflects the orientation prop (horizontal or vertical).',
-      'Roving tabindex via useListFocus — arrow keys move focus between focusable items (buttons, inputs, [tabindex="0"]).',
-      'Home/End keys jump to first/last focusable item.',
-      'Keyboard: ArrowLeft/ArrowRight (horizontal) or ArrowUp/ArrowDown (vertical) to move between items; Home/End for first/last item.',
-    ],
-    notes: [
-      'Built on XDSSection — variant prop controls background (default: transparent)',
-      'Two-slot layout (no centerContent): flex row with space-between',
-      'Three-slot layout (with centerContent): CSS grid 1fr auto 1fr for true centering',
-      'startContent only: fills width; endContent only: aligns to end',
-      'centerContent has min-width:0 and overflow:hidden for graceful truncation',
-      'No built-in overflow — compose with XDSOverflowList for responsive collapsing',
-      'Density controls minimum height — compact: 32px, default: 40px',
-      'Gap prop controls spacing between items within slots (default: --spacing-2 / 8px)',
+      'Toolbar is a horizontal container for grouping related actions and controls using start, center, and end content slots. Use Toolbar to provide contextual actions above content areas like tables, editors, or detail panels.',
+    bestPractices: [
+      {guidance: true, description: 'Group related actions together in the same slot for a clear visual hierarchy.'},
+      {guidance: true, description: 'Use the compact density variant when space is limited or the toolbar is secondary to the main content.'},
+      {guidance: false, description: 'Avoid overloading the toolbar with too many actions — use an overflow menu for less common items.'},
     ],
   },
 };
@@ -122,33 +101,11 @@ export const docsZh = {
   ],
   usage: {
     description:
-      '通用工具栏，提供起始、居中和结束内容插槽。基于 XDSSection 构建，支持循环 Tab 键盘导航。',
-    features: [
-      '插槽式布局 — startContent、centerContent 和 endContent 灵活组织',
-      '三列居中 — centerContent 切换为 CSS grid（1fr auto 1fr）实现真正居中',
-      '循环 Tab — 通过 useListFocus 实现方向键导航',
-      '密度变体 — default（40px）和 compact（32px）最小高度',
-      '可配置间距 — 使用间距尺度设置插槽内项目间距',
-      '基于 XDSSection — 继承变体、主题化和嵌套行为',
-      '可组合溢出 — 在插槽中使用 XDSOverflowList 实现响应式折叠',
-    ],
-    accessibility: [
-      '内部元素渲染 role="toolbar"，从 label 属性设置 aria-label',
-      'aria-orientation 反映 orientation 属性（horizontal 或 vertical）',
-      '通过 useListFocus 实现循环 Tab — 方向键在可聚焦项之间移动焦点',
-      'Home/End 键跳转到第一个/最后一个可聚焦项',
-      '水平方向：ArrowLeft/ArrowRight 导航；垂直方向：ArrowUp/ArrowDown 导航',
-      'Keyboard: ArrowLeft/ArrowRight（水平）或 ArrowUp/ArrowDown（垂直）移动项目；Home/End 跳转首/末项',
-    ],
-    notes: [
-      '基于 XDSSection — variant 属性控制背景（默认：transparent）',
-      '两插槽布局（无 centerContent）：flex 行 + space-between',
-      '三插槽布局（有 centerContent）：CSS grid 1fr auto 1fr 实现真正居中',
-      'startContent 独占：填充宽度；endContent 独占：靠右对齐',
-      'centerContent 设置 min-width:0 和 overflow:hidden 以优雅截断',
-      '无内置溢出 — 组合 XDSOverflowList 实现响应式折叠',
-      '密度控制最小高度 — compact: 32px，default: 40px',
-      'gap 属性控制插槽内项目间距（默认：--spacing-2 / 8px）',
+      'Toolbar is a horizontal container for grouping related actions and controls using start, center, and end content slots. Use Toolbar to provide contextual actions above content areas like tables, editors, or detail panels.',
+    bestPractices: [
+      {guidance: true, description: 'Group related actions together in the same slot for a clear visual hierarchy.'},
+      {guidance: true, description: 'Use the compact density variant when space is limited or the toolbar is secondary to the main content.'},
+      {guidance: false, description: 'Avoid overloading the toolbar with too many actions — use an overflow menu for less common items.'},
     ],
   },
 };
@@ -156,33 +113,15 @@ export const docsZh = {
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   description: 'General-purpose toolbar w/ start/center/end slots. Built on XDSSection w/ roving tabindex.',
-  features: [
-    'Slot-based layout; startContent, centerContent, endContent',
-    'Three-column centering; centerContent switches to CSS grid (1fr auto 1fr)',
-    'Roving tabindex; arrow key nav via useListFocus w/ orientation',
-    'Density variants; default (40px) + compact (32px) min-height',
-    'Configurable gap; spacing scale gap between slot items',
-    'Built on XDSSection; inherits variant, theming, nesting',
-    'Composable overflow; use XDSOverflowList for responsive collapsing',
-  ],
-  accessibility: [
-    'role="toolbar" w/ aria-label from label prop.',
-    'aria-orientation reflects orientation prop.',
-    'Roving tabindex via useListFocus; arrows move focus between items.',
-    'Home/End jump to first/last item.',
-    'Horizontal: Left/Right; Vertical: Up/Down.',
-  ],
-  keyboard: 'Left/Right (horiz) or Up/Down (vert) between items; Home/End for first/last.',
-  notes: [
-    'Built on XDSSection; variant controls bg (default: transparent).',
-    'Two-slot (no center): flex row w/ space-between.',
-    'Three-slot (w/ center): CSS grid 1fr auto 1fr.',
-    'startOnly fills width; endOnly aligns right.',
-    'centerContent: min-width:0 + overflow:hidden for truncation.',
-    'No built-in overflow; compose w/ XDSOverflowList.',
-    'Density: compact=32px, default=40px min-height.',
-    'Gap: spacing between slot items (default: --spacing-2/8px).',
-  ],
+  usage: {
+    description:
+      'Toolbar is a horizontal container for grouping related actions and controls using start, center, and end content slots. Use Toolbar to provide contextual actions above content areas like tables, editors, or detail panels.',
+    bestPractices: [
+      {guidance: true, description: 'Group related actions together in the same slot for a clear visual hierarchy.'},
+      {guidance: true, description: 'Use the compact density variant when space is limited or the toolbar is secondary to the main content.'},
+      {guidance: false, description: 'Avoid overloading the toolbar with too many actions — use an overflow menu for less common items.'},
+    ],
+  },
   components: [
     {
       name: 'XDSToolbar',

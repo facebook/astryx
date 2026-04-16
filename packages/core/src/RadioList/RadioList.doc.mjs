@@ -144,25 +144,12 @@ export const docs = {
   ],
   usage: {
     description:
-      'A radio group component for single-value selection from a list of options. Use when presenting a limited set of mutually exclusive choices where only one can be selected. For multiple selections use CheckboxList; for long option lists consider Selector.',
-    features: [
-      'Supports vertical and horizontal layouts',
-      'Size variants: sm (18px radio, 20px wrapper) and md (22px radio, 24px wrapper)',
-      'Optional description text per item',
-      'startContent and endContent slots on each item',
-      'Supports disabling the entire group or individual items',
-      'Field integration via XDSField for label, description, required/optional, and status messaging',
-    ],
-    accessibility: [
-      'Uses native <input type="radio"> with proper role="radiogroup" and ARIA attributes',
-    ],
-    notes: [
-      'XDSRadioList creates a RadioListContext that provides name, value, onChange, isDisabled, isRequired, size, and status to child items',
-      'XDSRadioListItem must be used within an XDSRadioList — throws if context is missing',
-      'Uses a hidden native <input type="radio"> with a custom visual overlay for consistent styling',
-      'Focus outline uses the standard XDS focus outline token with 2px offset',
-      'Hover states use color-mix() for consistent overlay tinting',
-      'Size variants match CheckboxInput dimensions for visual consistency',
+      'RadioList presents a group of mutually exclusive options for single-value selection. Use it when users must choose exactly one option from a small, visible set. For multiple selections use CheckboxList; for long option lists consider Selector.',
+    bestPractices: [
+      { guidance: true, description: 'Keep the number of options small enough to display without scrolling — typically 2 to 7 choices.' },
+      { guidance: true, description: 'Use clear, concise labels that differentiate each option at a glance.' },
+      { guidance: false, description: 'Use a RadioList when more than one selection is needed — switch to CheckboxList for multi-select scenarios.' },
+      { guidance: false, description: 'Use a RadioList for very long lists of options — use a Selector or Combobox for discoverability.' },
     ],
     anatomy: [
       {name: 'Header', required: false, description: 'Optional heading above the radio list.'},
@@ -317,23 +304,17 @@ export const docsZh = {
   ],
   usage: {
     description:
-      '用于从选项列表中进行单值选择的单选按钮组组件。',
-    features: [
-      '无障碍 - 使用原生 <input type="radio">，配合正确的 role="radiogroup" 和 ARIA 属性',
-      '方向 - 支持垂直和水平布局',
-      '尺寸 - sm（18px 单选按钮，20px 容器）和 md（22px 单选按钮，24px 容器）',
-      '描述 - 每个选项可选的描述文本',
-      '自定义内容 - 每个选项上的 startContent 和 endContent 插槽',
-      '禁用状态 - 支持禁用整个组或单个选项',
-      '字段集成 - 使用 XDSField 提供标签、描述、必填/可选和状态消息',
+      'RadioList presents a group of mutually exclusive options for single-value selection. Use it when users must choose exactly one option from a small, visible set. For multiple selections use CheckboxList; for long option lists consider Selector.',
+    bestPractices: [
+      { guidance: true, description: 'Keep the number of options small enough to display without scrolling — typically 2 to 7 choices.' },
+      { guidance: true, description: 'Use clear, concise labels that differentiate each option at a glance.' },
+      { guidance: false, description: 'Use a RadioList when more than one selection is needed — switch to CheckboxList for multi-select scenarios.' },
+      { guidance: false, description: 'Use a RadioList for very long lists of options — use a Selector or Combobox for discoverability.' },
     ],
-    notes: [
-      'XDSRadioList 创建一个 RadioListContext，向子项提供 name、value、onChange、isDisabled、isRequired、size 和 status',
-      'XDSRadioListItem 必须在 XDSRadioList 内部使用——如果缺少上下文会抛出错误',
-      '使用隐藏的原生 <input type="radio"> 配合自定义视觉覆盖层以保持样式一致性',
-      '焦点轮廓使用标准 XDS 焦点轮廓令牌，偏移量为 2px',
-      '悬停状态使用 color-mix() 实现一致的覆盖层着色',
-      '尺寸变体与 CheckboxInput 的尺寸匹配，保持视觉一致性',
+    anatomy: [
+      {name: 'Header', required: false, description: 'Optional heading above the radio list.'},
+      {name: 'Children', required: true, description: 'The radio list items rendered as selectable options.'},
+      {name: 'Label/Value', required: true, description: 'The text label and associated value for each radio item.'},
     ],
   },
 };
@@ -342,23 +323,21 @@ export const docsZh = {
 export const docsDense = {
   description:
     'Radio group component for single-value selection from list of options.',
-  features: [
-    'Accessible; uses native <input type="radio"> w/ proper role="radiogroup" + ARIA attributes',
-    'Orientation; supports vertical + horizontal layouts',
-    'Sizes; sm (18px radio, 20px wrapper) + md (22px radio, 24px wrapper)',
-    'Descriptions; optional description text per item',
-    'Custom content; startContent + endContent slots on each item',
-    'Disabled state; supports disabling entire group or individual items',
-    'Field integration; uses XDSField for label, description, required/optional, status messaging',
-  ],
-  notes: [
-    'XDSRadioList creates RadioListContext providing name, value, onChange, isDisabled, isRequired, size, status to child items',
-    'XDSRadioListItem must be within XDSRadioList; throws if context missing',
-    'Uses hidden native <input type="radio"> w/ custom visual overlay for consistent styling',
-    'Focus outline uses standard XDS focus outline token w/ 2px offset',
-    'Hover states use color-mix() for consistent overlay tinting',
-    'Size variants match CheckboxInput dimensions for visual consistency',
-  ],
+  usage: {
+    description:
+      'RadioList presents a group of mutually exclusive options for single-value selection. Use it when users must choose exactly one option from a small, visible set. For multiple selections use CheckboxList; for long option lists consider Selector.',
+    bestPractices: [
+      { guidance: true, description: 'Keep the number of options small enough to display without scrolling — typically 2 to 7 choices.' },
+      { guidance: true, description: 'Use clear, concise labels that differentiate each option at a glance.' },
+      { guidance: false, description: 'Use a RadioList when more than one selection is needed — switch to CheckboxList for multi-select scenarios.' },
+      { guidance: false, description: 'Use a RadioList for very long lists of options — use a Selector or Combobox for discoverability.' },
+    ],
+    anatomy: [
+      {name: 'Header', required: false, description: 'Optional heading above the radio list.'},
+      {name: 'Children', required: true, description: 'The radio list items rendered as selectable options.'},
+      {name: 'Label/Value', required: true, description: 'The text label and associated value for each radio item.'},
+    ],
+  },
   components: [
     {
       name: 'XDSRadioList',

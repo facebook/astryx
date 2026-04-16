@@ -171,18 +171,12 @@ export const docs = {
   ],
   usage: {
     description:
-      'Stack provides layout primitives for arranging items in horizontal or vertical sequences. It uses flexbox-based layout with themed spacing tokens from the design system.',
-    features: [
-      'Horizontal (XDSHStack) and vertical (XDSVStack) stacking',
-      'Themed spacing via gap tokens from the design system spacing scale',
-      'Individual item control via XDSStackItem',
-      'Polymorphic rendering support via the element prop',
-      'Low-level StyleX utilities (stack, stackItem) for advanced use cases',
-    ],
-    notes: [
-      "Import from '@xds/core/Layout': XDSHStack, XDSVStack, XDSStackItem, stack, stackItem.",
-      'The gap prop accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.',
-      'stack and stackItem are low-level StyleX utilities for advanced cases where the component API is insufficient.',
+      'Stack provides layout primitives for arranging items in horizontal or vertical sequences with consistent spacing. Use XDSHStack for row layouts and XDSVStack for column layouts when distributing child elements with uniform gaps from the design system spacing scale.',
+    bestPractices: [
+      { guidance: true, description: 'Use the gap prop with design system spacing tokens to maintain consistent spacing between stack children.' },
+      { guidance: true, description: 'Wrap individual items in XDSStackItem with size="fill" when an item should expand to consume remaining space.' },
+      { guidance: false, description: 'Apply custom margins between stack children — use the gap prop instead for uniform spacing.' },
+      { guidance: false, description: 'Nest stacks deeply when a single stack with wrap enabled could achieve the same layout.' },
     ],
   },
 };
@@ -359,18 +353,12 @@ export const docsZh = {
   ],
   usage: {
     description:
-      '堆叠布局原语，使用基于 flexbox 的布局和主题化间距令牌，将元素排列为水平或垂直序列。',
-    features: [
-      '水平（XDSHStack）和垂直（XDSVStack）堆叠',
-      '通过设计系统间距比例中的 gap 令牌实现主题化间距',
-      '通过 XDSStackItem 实现单个元素的控制',
-      '通过 element 属性支持多态渲染',
-      '底层 StyleX 工具函数（stack、stackItem）用于高级用例',
-    ],
-    notes: [
-      "从 '@xds/core/Layout' 导入：XDSHStack、XDSVStack、XDSStackItem、stack、stackItem。",
-      'gap 属性接受数值间距步进：0、0.5、1、1.5、2、3、4、5、6、8、10。',
-      'stack 和 stackItem 是底层 StyleX 工具函数，用于组件 API 无法满足需求的高级场景。',
+      'Stack provides layout primitives for arranging items in horizontal or vertical sequences with consistent spacing. Use XDSHStack for row layouts and XDSVStack for column layouts when distributing child elements with uniform gaps from the design system spacing scale.',
+    bestPractices: [
+      { guidance: true, description: 'Use the gap prop with design system spacing tokens to maintain consistent spacing between stack children.' },
+      { guidance: true, description: 'Wrap individual items in XDSStackItem with size="fill" when an item should expand to consume remaining space.' },
+      { guidance: false, description: 'Apply custom margins between stack children — use the gap prop instead for uniform spacing.' },
+      { guidance: false, description: 'Nest stacks deeply when a single stack with wrap enabled could achieve the same layout.' },
     ],
   },
 };
@@ -378,18 +366,16 @@ export const docsZh = {
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   description: 'Stack layout primitives for horizontal/vertical sequences using flexbox w/ themed spacing tokens.',
-  features: [
-    'Horizontal (XDSHStack) + vertical (XDSVStack) stacking',
-    'Themed spacing via gap tokens from design system spacing scale',
-    'Individual item control via XDSStackItem',
-    'Polymorphic rendering via element prop',
-    'Low-level StyleX utilities (stack, stackItem) for advanced use',
-  ],
-  notes: [
-    "Import from '@xds/core/Layout': XDSHStack, XDSVStack, XDSStackItem, stack, stackItem.",
-    'gap accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.',
-    'stack + stackItem are low-level StyleX utilities for cases where component API is insufficient.',
-  ],
+  usage: {
+    description:
+      'Stack provides layout primitives for arranging items in horizontal or vertical sequences with consistent spacing. Use XDSHStack for row layouts and XDSVStack for column layouts when distributing child elements with uniform gaps from the design system spacing scale.',
+    bestPractices: [
+      { guidance: true, description: 'Use the gap prop with design system spacing tokens to maintain consistent spacing between stack children.' },
+      { guidance: true, description: 'Wrap individual items in XDSStackItem with size="fill" when an item should expand to consume remaining space.' },
+      { guidance: false, description: 'Apply custom margins between stack children — use the gap prop instead for uniform spacing.' },
+      { guidance: false, description: 'Nest stacks deeply when a single stack with wrap enabled could achieve the same layout.' },
+    ],
+  },
   components: [
     {
       name: 'XDSHStack',

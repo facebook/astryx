@@ -14,7 +14,7 @@ function validateDocs(docs) {
   if (!docs.usage || typeof docs.usage.description !== 'string') return 'docs.usage.description is missing or not a string';
   if (docs.props && !Array.isArray(docs.props)) return 'docs.props must be an array';
   if (docs.components && !Array.isArray(docs.components)) return 'docs.components must be an array';
-  if (docs.usage?.features && !Array.isArray(docs.usage.features)) return 'docs.usage.features must be an array';
+  if (docs.usage?.bestPractices && !Array.isArray(docs.usage.bestPractices)) return 'docs.usage.bestPractices must be an array';
   return null;
 }
 

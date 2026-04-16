@@ -105,25 +105,12 @@ export const docs = {
     ],
   },
   usage: {
-    description: 'A checkbox input for toggling boolean values. Use for toggling a single boolean setting, or select multiple options from a set with CheckboxList for groups.',
-    features: [
-      'Accessible — always includes a label (can be visually hidden)',
-      'Indeterminate state — supports indeterminate for "select all" patterns',
-      'Descriptions — optional description text below the label',
-      'Sizes — sm (compact) and md (default)',
-      'Async actions — onChangeAction with optimistic updates and loading spinner',
-      'Status messages — error, warning, success validation feedback',
-      'Optional/required indicators — label suffix with field state',
-      'Label icons — optional icon before label text',
-      'Disabled state — full support for disabled state styling',
-      'Reduced motion — respects prefers-reduced-motion',
-    ],
-    notes: [
-      'Uses a hidden native <input type="checkbox"> for accessibility with a custom visual checkbox overlay.',
-      'The visual checkbox responds to hover, focus, and checked states via ancestor selectors (stylex.when.ancestor).',
-      'Label is clickable and properly associated with the input via htmlFor/id.',
-      'Focus outline uses the standard XDS focus ring token.',
-      'Interaction is blocked during busy state (loading or pending async action) to prevent double-toggling.',
+    description: 'CheckboxInput is a form control for toggling a single boolean value. Use it for standalone on/off settings, terms acceptance, or as a building block inside CheckboxList for multi-select groups.',
+    bestPractices: [
+      { guidance: true, description: 'Always provide a visible label for context. Use isLabelHidden only when surrounding UI already makes the purpose clear.' },
+      { guidance: true, description: 'Use the indeterminate state for "select all" checkboxes that represent a partial selection.' },
+      { guidance: false, description: 'Use a checkbox for mutually exclusive choices — use RadioList or a toggle switch instead.' },
+      { guidance: false, description: 'Hide the label without an equivalent accessible alternative nearby.' },
     ],
   },
 };
@@ -132,25 +119,12 @@ export const docs = {
 export const docsZh = {
   name: 'CheckboxInput',
   usage: {
-    description: '复选框输入组件，用于切换布尔值。',
-    features: [
-      '无障碍——始终包含标签（可视觉隐藏）',
-      '不确定状态——支持"全选"模式的不确定状态',
-      '描述——标签下方可选的描述文本',
-      '尺寸——sm（紧凑）和 md（默认）',
-      '异步操作——onChangeAction 带乐观更新和加载旋转器',
-      '状态消息——错误、警告、成功验证反馈',
-      '可选/必填指示器——带字段状态的标签后缀',
-      '标签图标——标签文本前可选图标',
-      '禁用状态——完整支持禁用状态样式',
-      '减少动画——尊重 prefers-reduced-motion',
-    ],
-    notes: [
-      '使用隐藏的原生 <input type="checkbox"> 确保无障碍性，并覆盖自定义视觉复选框。',
-      '视觉复选框通过祖先选择器（stylex.when.ancestor）响应悬停、焦点和选中状态。',
-      '标签可点击，并通过 htmlFor/id 与输入框正确关联。',
-      '焦点轮廓使用标准的 XDS 焦点环令牌。',
-      '忙碌状态（加载中或异步操作等待中）期间阻止交互，防止重复切换。',
+    description: 'CheckboxInput is a form control for toggling a single boolean value. Use it for standalone on/off settings, terms acceptance, or as a building block inside CheckboxList for multi-select groups.',
+    bestPractices: [
+      { guidance: true, description: 'Always provide a visible label for context. Use isLabelHidden only when surrounding UI already makes the purpose clear.' },
+      { guidance: true, description: 'Use the indeterminate state for "select all" checkboxes that represent a partial selection.' },
+      { guidance: false, description: 'Use a checkbox for mutually exclusive choices — use RadioList or a toggle switch instead.' },
+      { guidance: false, description: 'Hide the label without an equivalent accessible alternative nearby.' },
     ],
   },
   props: [
@@ -196,25 +170,15 @@ export const docsZh = {
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   description: 'checkbox for toggling boolean values',
-  features: [
-    'accessible; always includes label (can be visually hidden)',
-    'indeterminate state for "select all" patterns',
-    'optional description text below label',
-    'sizes: sm (compact), md (default)',
-    'async actions w/ onChangeAction, optimistic updates, loading spinner',
-    'status messages: error/warning/success validation',
-    'optional/required field indicators',
-    'label icons',
-    'full disabled state styling',
-    'respects prefers-reduced-motion',
-  ],
-  notes: [
-    'hidden native <input type="checkbox"> w/ custom visual overlay',
-    'visual checkbox responds to hover, focus, checked via ancestor selectors (stylex.when.ancestor)',
-    'label clickable + associated via htmlFor/id',
-    'focus outline uses XDS focus ring token',
-    'interaction blocked during busy state to prevent double-toggling',
-  ],
+  usage: {
+    description: 'CheckboxInput is a form control for toggling a single boolean value. Use it for standalone on/off settings, terms acceptance, or as a building block inside CheckboxList for multi-select groups.',
+    bestPractices: [
+      { guidance: true, description: 'Always provide a visible label for context. Use isLabelHidden only when surrounding UI already makes the purpose clear.' },
+      { guidance: true, description: 'Use the indeterminate state for "select all" checkboxes that represent a partial selection.' },
+      { guidance: false, description: 'Use a checkbox for mutually exclusive choices — use RadioList or a toggle switch instead.' },
+      { guidance: false, description: 'Hide the label without an equivalent accessible alternative nearby.' },
+    ],
+  },
   propDescriptions: {
     ref: 'ref forwarded to underlying <input>',
     label: 'label text; always rendered for a11y',

@@ -103,25 +103,11 @@ export const docs = {
   },
   usage: {
     description:
-      'Renders a markdown string as XDS-styled components, supporting headings, paragraphs, bold, italic, code, lists, tables, links, images, blockquotes, horizontal rules, and task lists. Handles streaming text delivery with a smooth fade-in animation.',
-    features: [
-      'Zero dependencies — built-in markdown parser, no external library',
-      'Streaming mode — smooth fade-in animation for chunk-by-chunk text delivery',
-      'XDS integration — uses XDSList, XDSCodeBlock, XDSCode, and XDSCheckboxList for semantic output',
-      'Heading level shift — headingLevelStart maps # to any h1-h6 level for page hierarchy',
-      'Link interception — onLinkClick handler can intercept or prevent link navigation',
-      'Density — default and compact spacing modes',
-      'Task lists — GitHub Flavored Markdown checkboxes rendered via XDSCheckboxList in isReadOnly mode',
-      'Tables — rendered as accessible HTML tables with XDS typography',
-      'Citation chips — sources prop renders [id] and 【id】 markers as linked chips with label or number style',
-      'Content width — contentWidth constrains prose to a readable width while tables and code blocks expand to the full container',
-    ],
-    accessibility: [
-      'Root element uses role="document" to establish a document landmark for screen readers.',
-      'Lists are rendered as semantic <ul>/<ol> elements.',
-      'Tables include proper <thead>/<tbody> with alignment attributes.',
-      'Task list checkboxes are rendered via XDSCheckboxList with isReadOnly.',
-      'Code blocks use XDSCodeBlock with appropriate ARIA attributes.',
+      'Markdown renders a markdown string as XDS-styled components with support for headings, lists, tables, code blocks, and more. Use it for displaying user-generated or AI-streamed content with consistent design-system styling.',
+    bestPractices: [
+      { guidance: true, description: 'Set headingLevelStart to fit the surrounding page hierarchy when embedding markdown within a section.' },
+      { guidance: true, description: 'Use contentWidth to constrain prose to a readable line length in wide layouts.' },
+      { guidance: false, description: 'Use Markdown for hand-authored rich text layouts — use XDSText and heading components directly instead.' },
     ],
   },
 };
@@ -215,25 +201,11 @@ export const docsZh = {
   },
   usage: {
     description:
-      '将 Markdown 字符串渲染为 XDS 组件。支持标题、段落、粗体、斜体、代码、列表、表格、链接、图片、引用块、水平线和任务列表。支持流式文本的逐字符淡入动画。',
-    features: [
-      '零依赖 — 内置 Markdown 解析器，无需外部库',
-      '流式模式 — 逐块文本渲染时平滑淡入动画',
-      'XDS 集成 — 使用 XDSList、XDSCodeBlock、XDSCode 和 XDSCheckboxList 输出语义内容',
-      '标题级别偏移 — headingLevelStart 将 # 映射到任意 h1-h6 级别',
-      '链接拦截 — onLinkClick 可拦截或阻止链接导航',
-      '密度 — 默认和紧凑间距模式',
-      '任务列表 — GitHub 风格 Markdown 复选框通过 XDSCheckboxList 以只读模式渲染',
-      '表格 — 渲染为带 XDS 排版的语义 HTML 表格',
-      '引用标签 — sources 属性将 [id] 和 【id】 标记渲染为带链接的标签或编号徽章',
-      '内容宽度 — contentWidth 将正文限制在可读宽度内，表格和代码块扩展到完整容器宽度',
-    ],
-    accessibility: [
-      '根元素使用 role="document" 为屏幕阅读器建立文档地标。',
-      '列表渲染为语义化 <ul>/<ol> 元素。',
-      '表格包含带对齐属性的 <thead>/<tbody>。',
-      '任务列表复选框通过 XDSCheckboxList 以 isReadOnly 模式渲染。',
-      '代码块使用 XDSCodeBlock 并附带适当的 ARIA 属性。',
+      'Markdown renders a markdown string as XDS-styled components with support for headings, lists, tables, code blocks, and more. Use it for displaying user-generated or AI-streamed content with consistent design-system styling.',
+    bestPractices: [
+      { guidance: true, description: 'Set headingLevelStart to fit the surrounding page hierarchy when embedding markdown within a section.' },
+      { guidance: true, description: 'Use contentWidth to constrain prose to a readable line length in wide layouts.' },
+      { guidance: false, description: 'Use Markdown for hand-authored rich text layouts — use XDSText and heading components directly instead.' },
     ],
   },
 };
@@ -242,15 +214,15 @@ export const docsDense = {
   n: 'Markdown',
   d: 'Renders markdown string as XDS components. Headings, bold, italic, code, lists, tables, links, blockquotes, task lists. Streaming with fade-in animation.',
   kw: ['markdown', 'rich text', 'prose', 'renderer', 'streaming', 'markup', 'md'],
-  f: [
-    'Zero-dep parser. Streaming fade-in. XDSList/XDSCodeBlock/XDSCheckboxList integration.',
-    'headingLevelStart: maps # to any h1-h6. Clamped at h6.',
-    'onLinkClick: intercept/prevent link nav. Return false to cancel.',
-    'density: default/compact block spacing.',
-    'Task lists via XDSCheckboxList isReadOnly. Tables as semantic HTML.',
-    'Citation chips: sources prop + [id]/【id】 markers. label or number style.',
-    'contentWidth constrains prose; tables/code expand to full width.',
-  ],
+  usage: {
+    description:
+      'Markdown renders a markdown string as XDS-styled components with support for headings, lists, tables, code blocks, and more. Use it for displaying user-generated or AI-streamed content with consistent design-system styling.',
+    bestPractices: [
+      { guidance: true, description: 'Set headingLevelStart to fit the surrounding page hierarchy when embedding markdown within a section.' },
+      { guidance: true, description: 'Use contentWidth to constrain prose to a readable line length in wide layouts.' },
+      { guidance: false, description: 'Use Markdown for hand-authored rich text layouts — use XDSText and heading components directly instead.' },
+    ],
+  },
   p: {
     children: 'Markdown string. Required.',
     density: "Block spacing. 'default'|'compact'. Default: 'default'.",

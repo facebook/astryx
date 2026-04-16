@@ -5,11 +5,11 @@ export const docs = {
   keywords: ["aspect-ratio","ratio","proportion","responsive","embed","container","widescreen","thumbnail","letterbox","crop"],
   usage: {
     description:
-      'Maintains a specific aspect ratio for its children, useful for responsive media containers like embedded videos and images.',
-    features: [
-      'Accepts any numeric ratio expressed as width/height (e.g. 16/9, 4/3, 1)',
-      'Children are positioned absolutely to fill the container',
-      'Supports theming via the aspectRatio component key',
+      'AspectRatio maintains a specific width-to-height ratio for its children. Use it for responsive media containers like embedded videos, images, or thumbnails that need consistent proportions.',
+    bestPractices: [
+      {guidance: true, description: 'Express the ratio as a width/height fraction such as 16/9 or 4/3 for readability.'},
+      {guidance: true, description: 'Use for media containers like videos and images where consistent proportions are critical across screen sizes.'},
+      {guidance: false, description: 'Use AspectRatio for general layout containers that don\'t require a fixed proportion — use standard layout components instead.'},
     ],
   },
   props: [
@@ -43,11 +43,12 @@ export const docs = {
 export const docsZh = {
   name: 'AspectRatio',
   usage: {
-    description: '为子元素保持特定的宽高比。',
-    features: [
-      '接受任何以宽/高表示的数字比例（例如 16/9、4/3、1）',
-      '子元素通过绝对定位填充容器',
-      '通过 aspectRatio 组件键支持主题定制',
+    description:
+      'AspectRatio maintains a specific width-to-height ratio for its children. Use it for responsive media containers like embedded videos, images, or thumbnails that need consistent proportions.',
+    bestPractices: [
+      {guidance: true, description: 'Express the ratio as a width/height fraction such as 16/9 or 4/3 for readability.'},
+      {guidance: true, description: 'Use for media containers like videos and images where consistent proportions are critical across screen sizes.'},
+      {guidance: false, description: 'Use AspectRatio for general layout containers that don\'t require a fixed proportion — use standard layout components instead.'},
     ],
   },
   props: [
@@ -70,11 +71,15 @@ export const docsZh = {
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   description: 'maintains specific aspect ratio for children',
-  features: [
-    'any numeric ratio as width/height (e.g. 16/9, 4/3, 1)',
-    'children positioned absolutely to fill container',
-    'themeable via aspectRatio component key',
-  ],
+  usage: {
+    description:
+      'AspectRatio maintains a specific width-to-height ratio for its children. Use it for responsive media containers like embedded videos, images, or thumbnails that need consistent proportions.',
+    bestPractices: [
+      {guidance: true, description: 'Express the ratio as a width/height fraction such as 16/9 or 4/3 for readability.'},
+      {guidance: true, description: 'Use for media containers like videos and images where consistent proportions are critical across screen sizes.'},
+      {guidance: false, description: 'Use AspectRatio for general layout containers that don\'t require a fixed proportion — use standard layout components instead.'},
+    ],
+  },
   propDescriptions: {
     ratio: 'width/height ratio (e.g. 16/9, 1)',
     children: 'content positioned absolutely to fill container',

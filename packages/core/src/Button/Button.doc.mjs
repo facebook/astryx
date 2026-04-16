@@ -7,37 +7,12 @@ export const docs = {
 
   usage: {
     description:
-      'Buttons provide visual cues for actions and events, allowing users to commit actions and navigate a page flow. XDSButton supports primary, secondary, ghost, and destructive variants across three sizes, with built-in loading states and async action handling. Use secondary for most actions, reserve primary for a single emphasized action per layout, and destructive for deletion with confirmation.',
-    features: [
-      "Variants: 'primary', 'secondary', 'ghost', 'destructive'",
-      'Sizes: sm (28px), md (32px), lg (36px)',
-      'Loading state: Shows spinner, disables interaction, announces via live region',
-      'Focus visible: Accessible focus outline with variant-specific colors',
-      'Reduced motion: Respects prefers-reduced-motion for transitions',
-      'Tooltip + disabled: Uses aria-disabled instead of native disabled so the button stays focusable for keyboard tooltip access',
-      'Form integration: type, name, value, form props for native form submission',
-      'Async actions: onClickAction with automatic loading state via useTransition',
-    ],
-    accessibility: [
-      'Renders a native <button> element for correct semantics and keyboard support',
-      'Icon-only buttons (isIconOnly={true}) set aria-label from the label prop',
-      'Loading state sets aria-busy and announces "Loading" via a role="status" live region',
-      'Content is hidden from assistive tech during loading via aria-hidden',
-      'When tooltip is present and button is disabled, uses aria-disabled instead of native disabled to keep the button focusable for keyboard tooltip access',
-      'Warns in development when icon-only buttons have an empty label (WCAG 4.1.2)',
-      'aria-label, aria-busy, and aria-disabled are placed after ...props spread to prevent clobbering',
-      'Keyboard: Enter/Space activates the button; Tab/Shift+Tab moves focus in and out',
-    ],
-    notes: [
-      'XDSButtonVariant type is derived from the variants StyleX object using keyof typeof variants.',
-      'Hover/active states use backgroundImage with linear-gradient to layer overlay colors on top of the base background.',
-      'Destructive variant uses colorTokens.negative for its focus outline color.',
-      'endContent is wrapped in a <span> with color: inherit so icons/badges match the button text color across all variants.',
-      'When isIconOnly is true, the button renders as a perfect square (aspectRatio: 1/1), and label is used as aria-label (not rendered visually). Works with any ReactNode as the icon — SVG components, emoji, or text.',
-      'endContent is ignored when isIconOnly is true to preserve the square aspect ratio.',
-      'onClick fires before onClickAction; calling preventDefault in onClick prevents onClickAction from running.',
-      'type defaults to "button" (not "submit") to prevent accidental form submission.',
-      'Disabled background gradient is cleared (backgroundImage: none) to prevent hover tint leaking through opacity.',
+      'Buttons provide visual cues for actions and events. These fundamental components allow users to commit actions and navigate a page flow. Use a Button when a user needs to submit a form, start a new task or action, or trigger a new UI element to appear on the page.',
+    bestPractices: [
+      {guidance: true, description: 'Use secondary for most actions and reserve primary for a single emphasized action per layout.'},
+      {guidance: true, description: 'Include a clear, concise label that describes the action the button performs.'},
+      {guidance: false, description: 'Place more than one primary button in the same view — this dilutes the visual hierarchy.'},
+      {guidance: false, description: 'Use the destructive variant without a confirmation step for irreversible actions.'},
     ],
     anatomy: [
       {name: 'Icon', required: false, description: 'A leading icon that visually represents the meaning of the button label.'},
@@ -161,40 +136,19 @@ export const docs = {
 export const docsZh = {
   name: 'Button',
   usage: {
-    description: 'XDSButton 组件，支持多种变体、尺寸和加载状态。',
-    features: [
-      "变体：'primary'、'secondary'、'ghost'、'destructive'",
-      '尺寸：sm（28px）、md（32px）、lg（36px）',
-      '加载状态：显示加载旋转器，禁用交互，通过实时区域播报',
-      '焦点可见：带有变体特定颜色的无障碍焦点轮廓',
-      '悬停/激活状态：通过 backgroundImage 使用叠加颜色，实现一致的层级效果',
-      '减少动画：尊重 prefers-reduced-motion',
-      '工具提示 + 禁用：使用 aria-disabled 代替原生 disabled，使按钮保持可聚焦以供键盘访问工具提示',
-      '表单集成：type、name、value、form 属性支持原生表单提交',
-      '异步操作：onClickAction 通过 useTransition 自动显示加载状态',
+    description:
+      'Buttons provide visual cues for actions and events. These fundamental components allow users to commit actions and navigate a page flow. Use a Button when a user needs to submit a form, start a new task or action, or trigger a new UI element to appear on the page.',
+    bestPractices: [
+      {guidance: true, description: 'Use secondary for most actions and reserve primary for a single emphasized action per layout.'},
+      {guidance: true, description: 'Include a clear, concise label that describes the action the button performs.'},
+      {guidance: false, description: 'Place more than one primary button in the same view — this dilutes the visual hierarchy.'},
+      {guidance: false, description: 'Use the destructive variant without a confirmation step for irreversible actions.'},
     ],
-    accessibility: [
-      '渲染原生 <button> 元素以确保正确的语义和键盘支持',
-      '纯图标按钮（icon 无 children）从 label 属性设置 aria-label',
-      '加载状态设置 aria-busy 并通过 role="status" 实时区域播报"Loading"',
-      '加载期间通过 aria-hidden 对辅助技术隐藏内容',
-      '当存在工具提示且按钮禁用时，使用 aria-disabled 代替原生 disabled 以保持键盘可聚焦',
-      '开发环境下，纯图标按钮标签为空时发出警告（WCAG 4.1.2）',
-      'aria-label、aria-busy、aria-disabled 放置在 ...props 展开之后以防止覆盖',
-      'Keyboard: Enter/Space 激活按钮；Tab/Shift+Tab 移入和移出焦点',
-    ],
-    notes: [
-      'XDSButtonVariant 类型通过 keyof typeof variants 从 variants StyleX 对象派生。',
-      '悬停/激活状态使用 backgroundImage 和 linear-gradient 在基础背景上叠加覆盖颜色。',
-      'destructive 变体使用 colorTokens.negative 作为焦点轮廓颜色。',
-      'endContent 包裹在带有 color: inherit 的 <span> 中，使图标/徽章在所有变体中匹配按钮文本颜色。',
-      '仅提供 icon 而不提供 children 时，按钮变为纯图标模式：渲染为正方形（aspectRatio: 1/1），label 用作 aria-label（不可视渲染）。支持任何 ReactNode 作为图标——SVG 组件、emoji 或文本。',
-      '纯图标按钮（提供 icon 但不提供 children 时）会忽略 endContent，以保持正方形的宽高比。',
-      '为了无障碍性，优先使用 XDSButton 而非 <div onClick> 或 <span onClick>——它提供键盘导航、焦点管理和屏幕阅读器支持。',
-      '纯图标按钮适用于工具栏、操作网格和紧凑控件。',
-      'onClick 在 onClickAction 之前触发；在 onClick 中调用 preventDefault 会阻止 onClickAction 运行。',
-      'type 默认为 "button"（非 "submit"）以防止意外的表单提交。',
-      '禁用状态清除背景渐变（backgroundImage: none）以防止悬停色调通过不透明度泄漏。',
+    anatomy: [
+      {name: 'Icon', required: false, description: 'A leading icon that visually represents the meaning of the button label.'},
+      {name: 'Label', required: true, description: 'A text label describing the button action. Required for accessibility.'},
+      {name: 'End content', required: false, description: 'Trailing content that provides affordance to the type of action performed. Recommended when the expected action is non-obvious.'},
+      {name: 'Spinner', required: false, description: 'Indicates a loading state when the button action is not immediate.'},
     ],
   },
   props: [
@@ -256,40 +210,22 @@ export const docsZh = {
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   description: 'button w/ multiple variants, sizes, loading state',
-  features: [
-    "variants: primary, secondary, ghost, destructive",
-    'sizes: sm(28px), md(32px), lg(36px)',
-    'loading state: shows spinner+disables interaction, announces via live region',
-    'focus visible: accessible focus outline w/ variant-specific colors',
-    'hover/active: overlay colors via backgroundImage for consistent layering',
-    'reduced motion: respects prefers-reduced-motion',
-    'tooltip+disabled: aria-disabled keeps button focusable for keyboard tooltip',
-    'form integration: type, name, value, form props',
-    'async actions: onClickAction w/ automatic loading via useTransition',
-  ],
-  accessibility: [
-    'Native <button> for correct semantics + keyboard support.',
-    'Icon-only buttons (isIconOnly) set aria-label from label prop.',
-    'Loading sets aria-busy + announces via role="status" live region.',
-    'Content hidden from AT during loading via aria-hidden.',
-    'Tooltip+disabled uses aria-disabled to stay focusable.',
-    'Dev warning on empty label for icon-only (WCAG 4.1.2).',
-    'aria-label, aria-busy, aria-disabled after ...props spread to prevent clobbering.',
-  ],
-  keyboard: 'Enter/Space=activate; Tab/Shift+Tab=move focus in/out.',
-  notes: [
-    'XDSButtonVariant derived from keyof typeof variants StyleX object',
-    'hover/active use backgroundImage linear-gradient overlay on base bg',
-    'destructive variant uses colorTokens.negative for focus outline',
-    'endContent wrapped in <span> w/ color:inherit, matches button text across variants',
-    'isIconOnly=true: square (aspectRatio:1/1), label=aria-label, any ReactNode as icon',
-    'endContent ignored when isIconOnly to preserve square ratio',
-    'prefer XDSButton over <div onClick> for a11y: keyboard nav, focus management, screen reader',
-    'icon-only suits toolbars, action grids, compact controls',
-    'onClick fires before onClickAction; preventDefault in onClick stops onClickAction',
-    'type defaults to "button" (not "submit") to prevent accidental form submission',
-    'disabled clears backgroundImage:none to prevent hover tint leaking through opacity',
-  ],
+  usage: {
+    description:
+      'Buttons provide visual cues for actions and events. These fundamental components allow users to commit actions and navigate a page flow. Use a Button when a user needs to submit a form, start a new task or action, or trigger a new UI element to appear on the page.',
+    bestPractices: [
+      {guidance: true, description: 'Use secondary for most actions and reserve primary for a single emphasized action per layout.'},
+      {guidance: true, description: 'Include a clear, concise label that describes the action the button performs.'},
+      {guidance: false, description: 'Place more than one primary button in the same view — this dilutes the visual hierarchy.'},
+      {guidance: false, description: 'Use the destructive variant without a confirmation step for irreversible actions.'},
+    ],
+    anatomy: [
+      {name: 'Icon', required: false, description: 'A leading icon that visually represents the meaning of the button label.'},
+      {name: 'Label', required: true, description: 'A text label describing the button action. Required for accessibility.'},
+      {name: 'End content', required: false, description: 'Trailing content that provides affordance to the type of action performed. Recommended when the expected action is non-obvious.'},
+      {name: 'Spinner', required: false, description: 'Indicates a loading state when the button action is not immediate.'},
+    ],
+  },
   propDescriptions: {
     label: 'accessible label; visible text by default, aria-label when isIconOnly',
     variant: 'visual style variant',
