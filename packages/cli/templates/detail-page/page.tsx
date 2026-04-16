@@ -3,7 +3,14 @@
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSAppShell} from '@xds/core/AppShell';
-import {XDSSideNav, XDSSideNavItem, XDSSideNavSection} from '@xds/core/SideNav';
+import {XDSNavIcon} from '@xds/core/NavIcon';
+import {
+  XDSSideNav,
+  XDSSideNavCollapseButton,
+  XDSSideNavHeading,
+  XDSSideNavItem,
+  XDSSideNavSection,
+} from '@xds/core/SideNav';
 import {
   XDSLayout,
   XDSLayoutHeader,
@@ -18,7 +25,7 @@ import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSAvatar} from '@xds/core/Avatar';
 import {XDSButton} from '@xds/core/Button';
-import {XDSNavIcon} from '@xds/core/NavIcon';
+
 import {XDSTabList, XDSTab} from '@xds/core/TabList';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSLink} from '@xds/core/Link';
@@ -183,14 +190,9 @@ const EditIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 const ShopIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-    <polyline points="9 22 9 12 15 12 15 22" />
+  <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
+    <path d="M11.47 3.841a.75.75 0 0 1 1.06 0l8.69 8.69a.75.75 0 1 0 1.06-1.061l-8.689-8.69a2.25 2.25 0 0 0-3.182 0l-8.69 8.69a.75.75 0 1 0 1.061 1.06l8.69-8.689Z" />
+    <path d="m12 5.432 8.159 8.159c.03.03.06.058.091.086v6.198c0 1.035-.84 1.875-1.875 1.875H15a.75.75 0 0 1-.75-.75v-4.5a.75.75 0 0 0-.75-.75h-3a.75.75 0 0 0-.75.75V21a.75.75 0 0 1-.75.75H5.625a1.875 1.875 0 0 1-1.875-1.875v-6.198a2.29 2.29 0 0 0 .091-.086L12 5.432Z" />
   </svg>
 );
 const ArrowLeftIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -353,10 +355,15 @@ function ShopSideNav() {
     <XDSSideNav
       collapsible
       header={
-        <XDSHStack gap={2} vAlign="center" style={{padding: '8px 12px'}}>
-          <XDSNavIcon icon={<XDSIcon icon={ShopIcon} size="sm" />} />
-          <XDSHeading level={4}>Kiln & Table</XDSHeading>
-        </XDSHStack>
+        <XDSSideNavHeading
+          icon={
+            <XDSNavIcon
+              icon={<XDSIcon icon={ShopIcon} size="sm" color="inherit" />}
+            />
+          }
+          heading="Kiln & Table"
+          headingHref="/"
+        />
       }
       footer={
         <XDSVStack gap={0} style={{padding: '8px 0'}}>
@@ -373,7 +380,8 @@ function ShopSideNav() {
             onClick={() => setActive('help')}
           />
         </XDSVStack>
-      }>
+      }
+      footerIcons={<XDSSideNavCollapseButton />}>
       <XDSSideNavSection title="Main" isHeaderHidden>
         <XDSSideNavItem
           label="Home"
@@ -438,92 +446,84 @@ function PageHeader({
   return (
     <XDSLayoutHeader hasDivider padding={4}>
       <XDSCenter axis="horizontal">
-        <XDSHStack
-          gap={4}
-          style={{
-            width: '100%',
-            justifyContent: 'space-between',
-            alignItems: 'stretch',
-          }}>
-          <XDSVStack gap={0} style={{flex: 1, minWidth: 0}}>
-            {/* Back link */}
-            <XDSLink href="#" label="All orders" color="secondary">
-              <XDSHStack gap={1} vAlign="center">
-                <XDSIcon icon={ArrowLeftIcon} size="sm" color="inherit" />
-                All orders
-              </XDSHStack>
-            </XDSLink>
-            {/* Title + metadata */}
-            <XDSVStack gap={0}>
-              <XDSHeading level={1}>#1001</XDSHeading>
-              {/* Metadata row */}
-              <XDSHStack
-                gap={1}
-                vAlign="center"
-                style={{overflow: 'hidden', whiteSpace: 'nowrap'}}>
-                <XDSText type="body" style={{flexShrink: 0}}>
-                  {PRODUCTS.length} ordered items
-                </XDSText>
-                <Bullet />
-                <XDSHStack gap={1} vAlign="center" style={{flexShrink: 0}}>
-                  <XDSAvatar name="Jane Doe" size="xsmall" />
-                  <XDSText type="body">Jane Doe</XDSText>
+        <XDSVStack gap={0} style={{width: '100%'}}>
+          <XDSHStack
+            gap={4}
+            vAlign="start"
+            style={{justifyContent: 'space-between'}}>
+            <XDSVStack gap={0} style={{flex: 1, minWidth: 0}}>
+              {/* Back link */}
+              <XDSLink href="#" label="All orders" color="secondary">
+                <XDSHStack gap={1} vAlign="center">
+                  <XDSIcon icon={ArrowLeftIcon} size="sm" color="inherit" />
+                  All orders
                 </XDSHStack>
-                <Bullet />
-                <span style={{flexShrink: 0}}>
-                  <XDSBadge variant="warning" label="Unfulfilled" />
-                </span>
-                <Bullet />
-                <XDSHStack gap={1} vAlign="center" style={{flexShrink: 0}}>
-                  <XDSIcon icon={CalendarIcon} size="sm" color="secondary" />
-                  <XDSText type="body">02/23/2026</XDSText>
+              </XDSLink>
+              {/* Title + metadata */}
+              <XDSVStack gap={0}>
+                <XDSHeading level={1}>#1001</XDSHeading>
+                {/* Metadata row */}
+                <XDSHStack
+                  gap={1}
+                  vAlign="center"
+                  style={{overflow: 'hidden', whiteSpace: 'nowrap'}}>
+                  <XDSText type="body" style={{flexShrink: 0}}>
+                    {PRODUCTS.length} ordered items
+                  </XDSText>
+                  <Bullet />
+                  <XDSHStack gap={1} vAlign="center" style={{flexShrink: 0}}>
+                    <XDSAvatar name="Jane Doe" size="xsmall" />
+                    <XDSText type="body">Jane Doe</XDSText>
+                  </XDSHStack>
+                  <Bullet />
+                  <span style={{flexShrink: 0}}>
+                    <XDSBadge variant="warning" label="Unfulfilled" />
+                  </span>
+                  <Bullet />
+                  <XDSHStack gap={1} vAlign="center" style={{flexShrink: 0}}>
+                    <XDSIcon icon={CalendarIcon} size="sm" color="secondary" />
+                    <XDSText type="body">02/23/2026</XDSText>
+                  </XDSHStack>
+                  <Bullet />
+                  <XDSHStack gap={1} vAlign="center" style={{flexShrink: 0}}>
+                    <XDSIcon icon={FlagIcon} size="sm" color="secondary" />
+                    <XDSText type="body">Needs attention</XDSText>
+                  </XDSHStack>
+                  <Bullet />
+                  <XDSLink
+                    href="#"
+                    label="See all"
+                    color="secondary"
+                    style={{flexShrink: 0}}>
+                    See all
+                  </XDSLink>
                 </XDSHStack>
-                <Bullet />
-                <XDSHStack gap={1} vAlign="center" style={{flexShrink: 0}}>
-                  <XDSIcon icon={FlagIcon} size="sm" color="secondary" />
-                  <XDSText type="body">Needs attention</XDSText>
-                </XDSHStack>
-                <Bullet />
-                <XDSLink
-                  href="#"
-                  label="See all"
-                  color="secondary"
-                  style={{flexShrink: 0}}>
-                  See all
-                </XDSLink>
-              </XDSHStack>
+              </XDSVStack>
             </XDSVStack>
 
-            {/* Tabs */}
-            <XDSHStack
-              vAlign="center"
-              style={{
-                justifyContent: 'space-between',
-                marginInline: -12,
-                marginBottom: -16,
-                marginTop: 12,
-              }}>
-              <XDSTabList value={activeTab} onChange={onTabChange} size="lg">
-                <XDSTab value="details" label="Details" />
-                <XDSTab value="invoices" label="Invoices" />
-                <XDSTab value="timeline" label="Timeline" />
-                <XDSTab value="customer" label="Customer" />
-                <XDSTab value="analysis" label="Analysis" />
-              </XDSTabList>
-            </XDSHStack>
-          </XDSVStack>
-
-          {/* Actions — top-aligned */}
-          <XDSVStack
-            style={{
-              flexShrink: 0,
-              justifyContent: 'space-between',
-              alignItems: 'flex-end',
-            }}>
-            <XDSHStack gap={2}>
+            {/* Actions — top-aligned */}
+            <XDSHStack gap={2} style={{flexShrink: 0}}>
               <XDSButton label="Restock" variant="secondary" />
               <XDSButton label="Edit" variant="secondary" />
             </XDSHStack>
+          </XDSHStack>
+
+          {/* Tabs — full width */}
+          <XDSHStack
+            vAlign="center"
+            style={{
+              justifyContent: 'space-between',
+              marginInline: -12,
+              marginBottom: -16,
+              marginTop: 12,
+            }}>
+            <XDSTabList value={activeTab} onChange={onTabChange} size="lg">
+              <XDSTab value="details" label="Details" />
+              <XDSTab value="invoices" label="Invoices" />
+              <XDSTab value="timeline" label="Timeline" />
+              <XDSTab value="customer" label="Customer" />
+              <XDSTab value="analysis" label="Analysis" />
+            </XDSTabList>
             <XDSButton
               label={isPanelOpen ? 'Hide panel' : 'Show panel'}
               variant="ghost"
@@ -534,8 +534,8 @@ function PageHeader({
               isIconOnly
               onClick={onTogglePanel}
             />
-          </XDSVStack>
-        </XDSHStack>
+          </XDSHStack>
+        </XDSVStack>
       </XDSCenter>
     </XDSLayoutHeader>
   );
@@ -738,70 +738,91 @@ function TimelineSection() {
 }
 
 // ─── Right Panel ────────────────────────────────────────────────────────────
-function RightPanel() {
+function RightPanel({isOpen}: {isOpen: boolean}) {
   return (
-    <XDSLayoutPanel hasDivider width={320} padding={0} role="complementary">
-      <XDSVStack gap={4}>
-        {/* Notes */}
-        <div
-          {...stylex.props(pageStyles.panelSection)}
-          style={{padding: '8px 16px'}}>
-          <XDSCollapsible trigger={<XDSHeading level={4}>Notes</XDSHeading>}>
-            <XDSText type="body">
-              Customer is a repeat buyer — 3rd order this quarter. Prefers snow
-              and oat glazes. Requested gift wrapping for the mug set. Ships to
-              a residential address in CA.{' '}
-              <XDSLink href="#" label="Show more" color="secondary">
-                Show more
-              </XDSLink>
-            </XDSText>
-          </XDSCollapsible>
-        </div>
-
-        {/* Customer */}
-        <div
-          {...stylex.props(pageStyles.panelSection)}
-          style={{padding: '8px 16px'}}>
-          <XDSCollapsible trigger={<XDSHeading level={4}>Customer</XDSHeading>}>
-            <XDSMetadataList>
-              <XDSMetadataListItem label="Name">Jane Doe</XDSMetadataListItem>
-              <XDSMetadataListItem label="Address">
-                321 Smith Road, CA 38238
-              </XDSMetadataListItem>
-              <XDSMetadataListItem label="Phone">234-</XDSMetadataListItem>
-              <XDSMetadataListItem label="Email">
-                janedoe@email.com
-              </XDSMetadataListItem>
-              <XDSMetadataListItem label="Billing Address">
-                Same as shipping address
-              </XDSMetadataListItem>
-            </XDSMetadataList>
-          </XDSCollapsible>
-        </div>
-
-        {/* Fraud Analysis */}
-        <div
-          {...stylex.props(pageStyles.panelSection)}
-          style={{padding: '8px 16px'}}>
-          <XDSCollapsible
-            trigger={<XDSHeading level={4}>Fraud Analysis</XDSHeading>}>
-            <XDSVStack gap={1}>
-              <XDSProgressBar
-                label="Risk level"
-                value={15}
-                variant="positive"
-                isLabelHidden
-              />
-              <XDSText type="body">Recommendation: Fulfill order</XDSText>
+    <div
+      style={{
+        width: isOpen ? 320 : 0,
+        minWidth: isOpen ? 320 : 0,
+        overflow: 'hidden',
+        transition:
+          'width var(--duration-medium, 410ms) var(--ease-standard, cubic-bezier(0.24, 1, 0.4, 1)), min-width var(--duration-medium, 410ms) var(--ease-standard, cubic-bezier(0.24, 1, 0.4, 1))',
+        flexShrink: 0,
+      }}>
+      <XDSLayoutPanel
+        hasDivider
+        width={320}
+        padding={0}
+        role="complementary"
+        style={{
+          opacity: isOpen ? 1 : 0,
+          transition:
+            'opacity var(--duration-fast, 175ms) var(--ease-standard, cubic-bezier(0.24, 1, 0.4, 1))',
+          transitionDelay: isOpen ? 'var(--duration-fast, 175ms)' : '0ms',
+        }}>
+        <XDSVStack gap={4}>
+          {/* Notes */}
+          <div
+            {...stylex.props(pageStyles.panelSection)}
+            style={{padding: '8px 16px'}}>
+            <XDSCollapsible trigger={<XDSHeading level={4}>Notes</XDSHeading>}>
               <XDSText type="body">
-                There is a low chance that you will receive a chargeback on this
-                order.
+                Customer is a repeat buyer — 3rd order this quarter. Prefers
+                snow and oat glazes. Requested gift wrapping for the mug set.
+                Ships to a residential address in CA.{' '}
+                <XDSLink href="#" label="Show more" color="secondary">
+                  Show more
+                </XDSLink>
               </XDSText>
-            </XDSVStack>
-          </XDSCollapsible>
-        </div>
-      </XDSVStack>
-    </XDSLayoutPanel>
+            </XDSCollapsible>
+          </div>
+
+          {/* Customer */}
+          <div
+            {...stylex.props(pageStyles.panelSection)}
+            style={{padding: '8px 16px'}}>
+            <XDSCollapsible
+              trigger={<XDSHeading level={4}>Customer</XDSHeading>}>
+              <XDSMetadataList>
+                <XDSMetadataListItem label="Name">Jane Doe</XDSMetadataListItem>
+                <XDSMetadataListItem label="Address">
+                  321 Smith Road, CA 38238
+                </XDSMetadataListItem>
+                <XDSMetadataListItem label="Phone">234-</XDSMetadataListItem>
+                <XDSMetadataListItem label="Email">
+                  janedoe@email.com
+                </XDSMetadataListItem>
+                <XDSMetadataListItem label="Billing Address">
+                  Same as shipping address
+                </XDSMetadataListItem>
+              </XDSMetadataList>
+            </XDSCollapsible>
+          </div>
+
+          {/* Fraud Analysis */}
+          <div
+            {...stylex.props(pageStyles.panelSection)}
+            style={{padding: '8px 16px'}}>
+            <XDSCollapsible
+              trigger={<XDSHeading level={4}>Fraud Analysis</XDSHeading>}>
+              <XDSVStack gap={1}>
+                <XDSProgressBar
+                  label="Risk level"
+                  value={15}
+                  variant="positive"
+                  isLabelHidden
+                />
+                <XDSText type="body">Recommendation: Fulfill order</XDSText>
+                <XDSText type="body">
+                  There is a low chance that you will receive a chargeback on
+                  this order.
+                </XDSText>
+              </XDSVStack>
+            </XDSCollapsible>
+          </div>
+        </XDSVStack>
+      </XDSLayoutPanel>
+    </div>
   );
 }
 
@@ -836,7 +857,7 @@ export default function DetailPage2Template() {
             </XDSVStack>
           </XDSLayoutContent>
         }
-        end={isPanelOpen ? <RightPanel /> : undefined}
+        end={<RightPanel isOpen={isPanelOpen} />}
       />
     </XDSAppShell>
   );
