@@ -507,6 +507,12 @@ export default function AIChatTemplate() {
                             description={item.auxiliaryData?.role}
                             onClick={() => {
                               composerInputRef.current?.focus();
+                              // Move cursor to end so token is appended
+                              const sel = window.getSelection();
+                              if (sel && document.activeElement) {
+                                sel.selectAllChildren(document.activeElement);
+                                sel.collapseToEnd();
+                              }
                               composerInputRef.current?.insertToken({
                                 value: `@${item.id}`,
                                 label: item.label,
@@ -752,6 +758,12 @@ export default function AIChatTemplate() {
                     description={item.auxiliaryData?.role}
                     onClick={() => {
                       composerInputRef.current?.focus();
+                      // Move cursor to end so token is appended
+                      const sel = window.getSelection();
+                      if (sel && document.activeElement) {
+                        sel.selectAllChildren(document.activeElement);
+                        sel.collapseToEnd();
+                      }
                       composerInputRef.current?.insertToken({
                         value: `@${item.id}`,
                         label: item.label,
