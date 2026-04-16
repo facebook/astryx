@@ -1,13 +1,11 @@
 import type {Metadata} from 'next';
-import '@xds/core/reset.css';
-import '@xds/theme-default/theme.css';
 import './globals.css';
 import {Providers} from './providers';
 
 export const metadata: Metadata = {
-  title: 'XDS Example — Next.js',
+  title: 'XDS Example — Next.js (Dist)',
   description:
-    'Reference example for consuming @xds/core as a source distribution',
+    'Reference example for consuming @xds/core as a pre-built dist package',
 };
 
 export default function RootLayout({children}: {children: React.ReactNode}) {

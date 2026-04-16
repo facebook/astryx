@@ -1,7 +1,5 @@
 'use client';
 
-import {useState} from 'react';
-import * as stylex from '@stylexjs/stylex';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSButton} from '@xds/core/Button';
 import {XDSText, XDSHeading} from '@xds/core/Text';
@@ -9,36 +7,28 @@ import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSDivider} from '@xds/core';
 
-const styles = stylex.create({
-  main: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: '100vh',
-    padding: '2rem',
-  },
-  container: {
-    maxWidth: 640,
-    width: '100%',
-  },
-});
-
 export default function Home() {
-  const [email, setEmail] = useState('');
-
   return (
-    <main {...stylex.props(styles.main)}>
-      <div {...stylex.props(styles.container)}>
+    <main
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '100vh',
+        padding: '2rem',
+      }}>
+      <div style={{maxWidth: 640, width: '100%'}}>
         <XDSVStack gap={6}>
           <XDSVStack gap={2}>
-            <XDSHeading level={1}>XDS Example — Next.js</XDSHeading>
+            <XDSHeading level={1}>XDS Example — Next.js (Dist)</XDSHeading>
             <XDSText type="body" color="secondary">
-              This is a reference example for consuming{' '}
+              This example consumes{' '}
               <XDSText type="body" weight="bold">
                 @xds/core
               </XDSText>{' '}
-              as a source distribution in a Next.js application. Components are
-              compiled from raw TypeScript source using StyleX at build time.
+              as a pre-built dist package — no StyleX build plugin needed. Plain
+              inline styles handle layout. XDS handles components, theming, and
+              design tokens.
             </XDSText>
           </XDSVStack>
 
@@ -72,12 +62,7 @@ export default function Home() {
           {/* Text Input */}
           <XDSVStack gap={3}>
             <XDSHeading level={2}>Text Input</XDSHeading>
-            <XDSTextInput
-              label="Email address"
-              placeholder="you@example.com"
-              value={email}
-              onChange={setEmail}
-            />
+            <XDSTextInput label="Email address" placeholder="you@example.com" />
           </XDSVStack>
 
           <XDSDivider />
