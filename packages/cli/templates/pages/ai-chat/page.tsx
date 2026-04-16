@@ -499,30 +499,25 @@ export default function AIChatTemplate() {
                           isIconOnly: true,
                         }}
                         hasChevron={false}
-                        menuWidth={240}
-                        items={MENTION_ITEMS.map(item => ({
-                          label: item.label,
-                          onClick: () => {
-                            composerInputRef.current?.focus();
-                            composerInputRef.current?.insertToken({
-                              value: `@${item.id}`,
-                              label: item.label,
-                              variant: 'blue',
-                            });
-                            document.activeElement?.dispatchEvent(
-                              new Event('input', {bubbles: true}),
-                            );
-                          },
-                        }))}>
-                        {item => (
+                        menuWidth={240}>
+                        {MENTION_ITEMS.map(item => (
                           <XDSDropdownMenuItem
+                            key={item.id}
                             label={item.label}
-                            description={
-                              MENTION_ITEMS.find(m => m.label === item.label)
-                                ?.auxiliaryData?.role
-                            }
+                            description={item.auxiliaryData?.role}
+                            onClick={() => {
+                              composerInputRef.current?.focus();
+                              composerInputRef.current?.insertToken({
+                                value: `@${item.id}`,
+                                label: item.label,
+                                variant: 'blue',
+                              });
+                              document.activeElement?.dispatchEvent(
+                                new Event('input', {bubbles: true}),
+                              );
+                            }}
                           />
-                        )}
+                        ))}
                       </XDSDropdownMenu>
                       <XDSButton
                         label="Attach"
@@ -749,30 +744,25 @@ export default function AIChatTemplate() {
                   isIconOnly: true,
                 }}
                 hasChevron={false}
-                menuWidth={240}
-                items={MENTION_ITEMS.map(item => ({
-                  label: item.label,
-                  onClick: () => {
-                    composerInputRef.current?.focus();
-                    composerInputRef.current?.insertToken({
-                      value: `@${item.id}`,
-                      label: item.label,
-                      variant: 'blue',
-                    });
-                    document.activeElement?.dispatchEvent(
-                      new Event('input', {bubbles: true}),
-                    );
-                  },
-                }))}>
-                {item => (
+                menuWidth={240}>
+                {MENTION_ITEMS.map(item => (
                   <XDSDropdownMenuItem
+                    key={item.id}
                     label={item.label}
-                    description={
-                      MENTION_ITEMS.find(m => m.label === item.label)
-                        ?.auxiliaryData?.role
-                    }
+                    description={item.auxiliaryData?.role}
+                    onClick={() => {
+                      composerInputRef.current?.focus();
+                      composerInputRef.current?.insertToken({
+                        value: `@${item.id}`,
+                        label: item.label,
+                        variant: 'blue',
+                      });
+                      document.activeElement?.dispatchEvent(
+                        new Event('input', {bubbles: true}),
+                      );
+                    }}
                   />
-                )}
+                ))}
               </XDSDropdownMenu>
               <XDSButton
                 label="Attach"
