@@ -9,10 +9,9 @@ module.exports = {
     '@stylexjs/postcss-plugin': {
       include: [
         'src/**/*.{js,jsx,ts,tsx}',
-        path.join(rootDir, 'packages/core/src/**/*.{ts,tsx}'),
+        // Core and theme CSS is pre-compiled (xds.css, theme.css) and imported
+        // in layout.tsx — no need to re-extract from source here.
         path.join(rootDir, 'packages/cli/templates/**/*.{ts,tsx}'),
-        path.join(rootDir, 'packages/themes/default/src/**/*.{ts,tsx}'),
-        path.join(rootDir, 'packages/themes/neutral/src/**/*.{ts,tsx}'),
       ],
       babelConfig: {
         babelrc: false,

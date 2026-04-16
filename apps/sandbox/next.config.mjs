@@ -34,7 +34,8 @@ const nextConfig = {
     unoptimized: true,
   },
   typescript: {
-    ignoreBuildErrors: false,
+    // In CI the dedicated typecheck job handles this — skip during next build.
+    ignoreBuildErrors: !!process.env.CI,
   },
   webpack: useSource
     ? (config) => {

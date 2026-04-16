@@ -16,7 +16,6 @@ import {XDSTreeList} from '@xds/core/TreeList';
 import type {XDSTreeListItemData} from '@xds/core/TreeList';
 import {categories} from '../sandboxPages';
 import {useThemeControls} from '../providers';
-import {sourceRegistry} from '../../generated/sourceRegistry';
 import {templates} from '../../generated/templateRegistry';
 import {blocks} from '../../generated/blockRegistry';
 import {gitVersions} from '../../generated/versionRegistry';
@@ -696,9 +695,21 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
     return createStaticSource(items);
   }, []);
 
+  const [sourceRegistry, setSourceRegistry] = useState<Record<
+    string,
+    string
+  > | null>(null);
+  useEffect(() => {
+    const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+    fetch(`${basePath}/sourceRegistry.json`)
+      .then(r => r.json())
+      .then(setSourceRegistry)
+      .catch(() => {});
+  }, []);
+
   const resolvedSource =
-    sourceRegistry[pathname] ??
-    sourceRegistry[pathname.replace(/\/$/, '') + '/'] ??
+    sourceRegistry?.[pathname] ??
+    sourceRegistry?.[pathname.replace(/\/$/, '') + '/'] ??
     null;
 
   const handleViewChange = useCallback((v: string) => {

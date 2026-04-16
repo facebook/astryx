@@ -208,6 +208,10 @@ async function main() {
 
   fs.mkdirSync(GENERATED_DIR, {recursive: true});
 
+  // Clean up legacy sourceRegistry.ts (now generated as public/sourceRegistry.json)
+  const legacySourceRegistry = path.join(GENERATED_DIR, 'sourceRegistry.ts');
+  if (fs.existsSync(legacySourceRegistry)) fs.rmSync(legacySourceRegistry);
+
   if (fs.existsSync(ROUTES_DIR)) fs.rmSync(ROUTES_DIR, {recursive: true});
 
   const registryPath = path.join(GENERATED_DIR, 'templateRegistry.ts');
