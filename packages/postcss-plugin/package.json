@@ -1,7 +1,7 @@
 {
   "name": "@xds/postcss-plugin",
   "version": "0.0.1",
-  "description": "PostCSS plugin for XDS source builds \u2014 splits StyleX output into library and product CSS layers",
+  "description": "PostCSS plugin for XDS source builds — splits StyleX output into library and product CSS layers",
   "license": "MIT",
   "main": "src/index.js",
   "exports": {
