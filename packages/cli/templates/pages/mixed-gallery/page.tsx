@@ -63,7 +63,7 @@ export default function MixedGalleryTemplate() {
                 gridTemplateColumns: '1fr 1.2fr 1fr',
                 gridTemplateRows: '2fr 3fr',
                 gap: 'var(--spacing-4, 16px)',
-                height: 'calc(100vh - 280px)',
+                height: 'calc(100vh - 380px)',
               }}>
               {/* Left column: short top, tall bottom */}
               <img
