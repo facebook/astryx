@@ -9,7 +9,7 @@
  */
 
 import {useChart} from './ChartContext';
-import type {ScaleBand} from 'd3-scale';
+import {isBandScale} from './utils';
 
 export interface XDSChartCandlestickProps {
   /** Data key for the high/max value (top of whisker) */
@@ -40,10 +40,6 @@ export interface XDSChartCandlestickProps {
   radius?: number;
   /** Dot radius (unused in bar variant, kept for future variants) */
   dotRadius?: number;
-}
-
-function isBandScale(scale: unknown): scale is ScaleBand<string> {
-  return typeof scale === 'function' && 'bandwidth' in scale;
 }
 
 /**
@@ -80,7 +76,7 @@ export function XDSChartCandlestick({
   radius = 2,
   dotRadius = 3,
 }: XDSChartCandlestickProps) {
-  const {data, xScale, yScale} = useChart();
+  const {data, xKey, xScale, yScale} = useChart();
 
   if (!isBandScale(xScale)) return null;
   const bw = xScale.bandwidth();
@@ -88,7 +84,7 @@ export function XDSChartCandlestick({
   return (
     <g>
       {data.map((d, i) => {
-        const xVal = xScale(String(Object.values(d)[0]));
+        const xVal = xScale(String(d[xKey]));
         if (xVal == null) return null;
 
         const hVal = typeof d[high] === 'number' ? (d[high] as number) : 0;

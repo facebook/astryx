@@ -17,7 +17,7 @@ import {
   type ReactNode,
 } from 'react';
 import {useChart} from './ChartContext';
-import type {ScaleBand} from 'd3-scale';
+import {xPixel} from './utils';
 
 export interface XDSChartDotGLInteractiveProps {
   /** Which data key for the y values */
@@ -33,10 +33,6 @@ export interface XDSChartDotGLInteractiveProps {
    * If omitted, a default tooltip is rendered.
    */
   renderTooltip?: (datum: Record<string, unknown>, index: number) => ReactNode;
-}
-
-function isBandScale(scale: unknown): scale is ScaleBand<string> {
-  return typeof scale === 'function' && 'bandwidth' in scale;
 }
 
 function hexToGL(hex: string): [number, number, number] {
@@ -166,7 +162,7 @@ export function XDSChartDotGLInteractive({
   opacity = 0.8,
   renderTooltip,
 }: XDSChartDotGLInteractiveProps) {
-  const {data, xScale, yScale, width, height} = useChart();
+  const {data, xKey, xScale, yScale, width, height} = useChart();
   const visCanvasRef = useRef<HTMLCanvasElement>(null);
   const pickCanvasRef = useRef<HTMLCanvasElement>(null);
   const [hoverIndex, setHoverIndex] = useState<number>(-1);
@@ -188,17 +184,12 @@ export function XDSChartDotGLInteractive({
   const positions = useMemo(() => {
     const pos: number[] = [];
     for (const d of data) {
-      let x: number;
-      if (isBandScale(xScale)) {
-        x = (xScale(String(Object.values(d)[0])) ?? 0) + xScale.bandwidth() / 2;
-      } else {
-        x = (xScale as (v: number) => number)(Object.values(d)[0] as number);
-      }
+      const x = xPixel(d, xKey, xScale);
       const yVal = typeof d[dataKey] === 'number' ? (d[dataKey] as number) : 0;
       pos.push(x, yScale(yVal));
     }
     return new Float32Array(pos);
-  }, [data, dataKey, xScale, yScale]);
+  }, [data, xKey, dataKey, xScale, yScale]);
 
   // Pick colors — one unique color per point
   const pickColors = useMemo(() => {

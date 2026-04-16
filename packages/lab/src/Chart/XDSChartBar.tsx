@@ -5,7 +5,7 @@
  */
 
 import {useChart} from './ChartContext';
-import type {ScaleBand} from 'd3-scale';
+import {isBandScale} from './utils';
 
 export interface XDSChartBarProps {
   /** Which data key to visualize */
@@ -16,12 +16,9 @@ export interface XDSChartBarProps {
   radius?: number;
 }
 
-function isBandScale(scale: unknown): scale is ScaleBand<string> {
-  return typeof scale === 'function' && 'bandwidth' in scale;
-}
-
 /**
  * Bar marks. Requires a band xScale (categorical x-axis).
+ * Bars grow from the zero line — handles both positive and negative values.
  *
  * @example
  * ```
@@ -29,20 +26,26 @@ function isBandScale(scale: unknown): scale is ScaleBand<string> {
  * ```
  */
 export function XDSChartBar({dataKey, color, radius = 4}: XDSChartBarProps) {
-  const {data, xScale, yScale, height} = useChart();
+  const {data, xKey, xScale, yScale} = useChart();
 
   if (!isBandScale(xScale)) return null;
+
+  // Zero line position — bars grow from here
+  const zeroY = yScale(0);
 
   return (
     <g>
       {data.map((d, i) => {
-        const xVal = xScale(String(Object.values(d)[0]));
+        const xVal = xScale(String(d[xKey]));
         if (xVal == null) return null;
 
         const yVal =
           typeof d[dataKey] === 'number' ? (d[dataKey] as number) : 0;
-        const barHeight = height - yScale(yVal);
-        const barY = yScale(yVal);
+        const yPos = yScale(yVal);
+
+        // Bar grows from zero line toward the value
+        const barY = Math.min(yPos, zeroY);
+        const barHeight = Math.abs(yPos - zeroY);
 
         return (
           <rect

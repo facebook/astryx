@@ -5,7 +5,7 @@
  */
 
 import {useChart} from './ChartContext';
-import type {ScaleBand} from 'd3-scale';
+import {xPixel} from './utils';
 
 export interface XDSChartErrorBarProps {
   /** Data key for the upper bound */
@@ -18,10 +18,6 @@ export interface XDSChartErrorBarProps {
   strokeWidth?: number;
   /** Width of the whisker caps in pixels */
   capWidth?: number;
-}
-
-function isBandScale(scale: unknown): scale is ScaleBand<string> {
-  return typeof scale === 'function' && 'bandwidth' in scale;
 }
 
 /**
@@ -40,19 +36,12 @@ export function XDSChartErrorBar({
   strokeWidth = 1.5,
   capWidth = 8,
 }: XDSChartErrorBarProps) {
-  const {data, xScale, yScale} = useChart();
+  const {data, xKey, xScale, yScale} = useChart();
 
   return (
     <g>
       {data.map((d, i) => {
-        let x: number;
-        if (isBandScale(xScale)) {
-          x =
-            (xScale(String(Object.values(d)[0])) ?? 0) + xScale.bandwidth() / 2;
-        } else {
-          x = (xScale as (v: number) => number)(Object.values(d)[0] as number);
-        }
-
+        const x = xPixel(d, xKey, xScale);
         const upper = typeof d[yUpper] === 'number' ? (d[yUpper] as number) : 0;
         const lower = typeof d[yLower] === 'number' ? (d[yLower] as number) : 0;
         const yTop = yScale(upper);
@@ -61,7 +50,6 @@ export function XDSChartErrorBar({
 
         return (
           <g key={i}>
-            {/* Vertical stem */}
             <line
               x1={x}
               x2={x}
@@ -70,7 +58,6 @@ export function XDSChartErrorBar({
               stroke={color}
               strokeWidth={strokeWidth}
             />
-            {/* Top cap */}
             <line
               x1={x - half}
               x2={x + half}
@@ -79,7 +66,6 @@ export function XDSChartErrorBar({
               stroke={color}
               strokeWidth={strokeWidth}
             />
-            {/* Bottom cap */}
             <line
               x1={x - half}
               x2={x + half}
