@@ -244,17 +244,39 @@ export function XDSCarousel({
     (direction: -1 | 1) => {
       const el = scrollElRef.current;
       if (!el) return;
-      const firstChild = el.firstElementChild as HTMLElement | null;
-      const itemWidth = firstChild ? firstChild.offsetWidth : 0;
-      const gap = parseFloat(getComputedStyle(el).gap) || 0;
-      const amount =
-        scrollStep === 'item'
-          ? itemWidth + gap
-          : el.clientWidth - itemWidth * 0.5;
-      el.scrollBy({
-        left: direction * Math.max(amount, itemWidth),
-        behavior: 'smooth',
-      });
+      const children = Array.from(el.children) as HTMLElement[];
+      if (children.length === 0) return;
+
+      if (scrollStep === 'item') {
+        // Find the first visible child, then move one in the direction
+        const scrollLeft = el.scrollLeft;
+        const gap = parseFloat(getComputedStyle(el).gap) || 0;
+        let targetIndex = 0;
+
+        for (let i = 0; i < children.length; i++) {
+          if (children[i].offsetLeft >= scrollLeft - 1) {
+            targetIndex = i;
+            break;
+          }
+        }
+
+        const nextIndex = Math.max(
+          0,
+          Math.min(children.length - 1, targetIndex + direction),
+        );
+        el.scrollTo({
+          left: children[nextIndex].offsetLeft,
+          behavior: 'smooth',
+        });
+      } else {
+        const firstChild = children[0];
+        const itemWidth = firstChild ? firstChild.offsetWidth : 0;
+        const amount = el.clientWidth - itemWidth * 0.5;
+        el.scrollBy({
+          left: direction * Math.max(amount, itemWidth),
+          behavior: 'smooth',
+        });
+      }
     },
     [scrollStep],
   );
