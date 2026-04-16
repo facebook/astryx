@@ -11,6 +11,7 @@
 import {useRef, useEffect, useMemo} from 'react';
 import {scaleBand} from 'd3-scale';
 import {useChart} from './ChartContext';
+import {isBandScale} from './utils';
 import type {ScaleBand} from 'd3-scale';
 
 export interface XDSChartHeatmapGLProps {
@@ -29,10 +30,6 @@ export interface XDSChartHeatmapGLProps {
   domain?: [number, number];
   /** Gap between cells in pixels (default: 1) */
   cellGap?: number;
-}
-
-function isBandScale(scale: unknown): scale is ScaleBand<string> {
-  return typeof scale === 'function' && 'bandwidth' in scale;
 }
 
 function hexToGL(hex: string): [number, number, number] {

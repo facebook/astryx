@@ -157,11 +157,12 @@ export function XDSChart({
       width: innerWidth,
       height: innerHeight,
       margin,
+      xKey,
       data,
       xScale,
       yScale,
     }),
-    [innerWidth, innerHeight, margin, data, xScale, yScale],
+    [innerWidth, innerHeight, margin, xKey, data, xScale, yScale],
   );
 
   return (

@@ -6,7 +6,8 @@
 
 import {useMemo} from 'react';
 import {useChart} from './ChartContext';
-import type {ScaleBand, ScaleLinear, ScaleTime} from 'd3-scale';
+import {isBandScale} from './utils';
+import type {ScaleLinear, ScaleTime} from 'd3-scale';
 
 export interface XDSChartAxisProps {
   /** Which edge to render the axis on */
@@ -15,10 +16,6 @@ export interface XDSChartAxisProps {
   tickCount?: number;
   /** Custom tick formatter */
   tickFormat?: (value: unknown) => string;
-}
-
-function isBandScale(scale: unknown): scale is ScaleBand<string> {
-  return typeof scale === 'function' && 'bandwidth' in scale;
 }
 
 /**

@@ -33,6 +33,7 @@ export {
 export {useChart} from './ChartContext';
 export type {ChartContext, ChartMargin, ChartScale} from './types';
 export {m4Reduce, type M4Point} from './m4';
+export {isBandScale, xPixel} from './utils';
 export {useXDSChartColors} from './useXDSChartColors';
 export {
   getXDSChartColors,
