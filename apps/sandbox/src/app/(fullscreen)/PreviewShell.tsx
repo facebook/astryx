@@ -952,7 +952,7 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
                               Math.round(blockEntry.aspectRatio * 1000) / 1000,
                             )}
                   </XDSText>
-                  <XDSText type="supporting" color="tertiary" size="xs">
+                  <XDSText type="supporting" color="secondary" size="xs">
                     Tweak aspectRatio in the .doc.mjs file so the component fits
                     nicely in this box.
                   </XDSText>
