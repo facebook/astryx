@@ -1,5 +1,7 @@
 # PR CI: test, build, analyze, a11y audit, and comment
-# Everything runs in parallel where possible
+# Build is split into parallel jobs after core-build completes.
+# Tests are sharded across 2 runners.
+# Gate jobs ("build" and "test") maintain required check names.
 #
 # Merge queue: test + build also run on merge_group events so the
 # merge queue can gate on them before landing a PR.
@@ -42,27 +44,10 @@ jobs:
           CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- packages/core/src/ | grep -v -E '(hooks|theme|utils)/' | head -1)
           echo "has_components=$( [ -n "$CHANGED" ] && echo true || echo false )" >> $GITHUB_OUTPUT
 
-  # Run tests (parallel with build)
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 20
-          cache: 'yarn'
-
-      - run: yarn install --frozen-lockfile
-
-      - name: Check package.json exports are in sync
-        run: node scripts/sync-exports.js --check
-
-      - run: yarn test
-
-  # Build storybook + analyze components (parallel with test)
-  # Uploads storybook preview and analysis artifacts for downstream jobs
-  build:
+  # ─── Phase 1: Build core packages ──────────────────────────────
+  # Builds core, vega, and all themes (themes in parallel).
+  # Uploads dist artifacts for downstream jobs.
+  core-build:
     runs-on: ubuntu-latest
     outputs:
       storybook_url: ${{ steps.urls.outputs.storybook_url }}
@@ -73,10 +58,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Fetch base branch for PR analysis
-        if: github.event_name == 'pull_request'
-        run: git fetch origin ${{ github.base_ref }} --depth=1
-
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
@@ -86,30 +67,26 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
-      - name: Build core package
-        run: yarn build
+      - name: Check package.json exports are in sync
+        run: node scripts/sync-exports.js --check
+
+      - name: Build core and vega
+        run: |
+          yarn workspace @xds/core build
+          yarn workspace @xds/vega build
+
+      - name: Build themes (parallel)
+        run: |
+          yarn workspace @xds/theme-default build &
+          yarn workspace @xds/theme-neutral build &
+          yarn workspace @xds/theme-brutalist build &
+          yarn workspace @xds/theme-daily build &
+          yarn workspace @xds/theme-whatsapp build &
+          yarn workspace @xds/theme-meta build &
+          wait
 
       - name: Verify package exports
         run: node scripts/verify-exports.mjs
-
-      - name: Typecheck component docs
-        run: yarn workspace @xds/core typecheck:docs
-
-      - name: Typecheck template docs
-        run: yarn workspace @xds/cli typecheck:template-docs
-
-      - name: Cache Next.js build
-        if: github.event_name == 'pull_request'
-        uses: actions/cache@v4
-        with:
-          path: apps/sandbox/.next/cache
-          key: nextjs-sandbox-${{ hashFiles('yarn.lock') }}-${{ hashFiles('packages/core/dist/**') }}
-          restore-keys: |
-            nextjs-sandbox-${{ hashFiles('yarn.lock') }}-
-            nextjs-sandbox-
-
-      - name: Build Storybook
-        run: yarn workspace @xds/storybook build
 
       - name: Compute PR preview path
         if: github.event_name == 'pull_request'
@@ -126,30 +103,145 @@ jobs:
           echo "storybook_url=https://${REPO_OWNER}.github.io/${REPO_NAME}/pr/${PR_NUMBER}/" >> $GITHUB_OUTPUT
           echo "sandbox_url=https://${REPO_OWNER}.github.io/${REPO_NAME}/pr/${PR_NUMBER}/sandbox/" >> $GITHUB_OUTPUT
 
-      - name: Build Sandbox
-        if: github.event_name == 'pull_request'
-        run: yarn workspace @xds/sandbox build
-        env:
-          SANDBOX_BASE_PATH: /pr/${{ steps.urls.outputs.pr_number }}/sandbox
+      - name: Upload dist artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: core-dist
+          path: |
+            packages/core/dist/
+            packages/vega/dist/
+            packages/themes/default/dist/
+            packages/themes/neutral/dist/
+            packages/themes/brutalist/dist/
+            packages/themes/daily/dist/
+            packages/themes/whatsapp/dist/
+            packages/themes/meta/dist/
+          retention-days: 1
+
+  # ─── Phase 2: Parallel jobs after core-build ────────────────────
+
+  typecheck:
+    needs: [core-build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Download dist artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: core-dist
+          path: .
+
+      - name: Typecheck component docs
+        run: yarn workspace @xds/core typecheck:docs
+
+      - name: Typecheck template docs
+        run: yarn workspace @xds/cli typecheck:template-docs
+
+  build-storybook:
+    needs: [core-build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Download dist artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: core-dist
+          path: .
+
+      - name: Build Storybook
+        run: yarn workspace @xds/storybook build
 
       - name: Upload Storybook artifact
         if: github.event_name == 'pull_request'
         uses: actions/upload-artifact@v7
         with:
-          name: storybook-${{ steps.urls.outputs.short_hash }}
+          name: storybook-${{ needs.core-build.outputs.short_hash }}
           path: apps/storybook/dist/
           retention-days: 30
 
+  build-sandbox:
+    needs: [core-build]
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Download dist artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: core-dist
+          path: .
+
+      - name: Cache Next.js build
+        uses: actions/cache@v4
+        with:
+          path: apps/sandbox/.next/cache
+          key: nextjs-sandbox-${{ hashFiles('yarn.lock') }}-${{ hashFiles('packages/core/dist/**') }}
+          restore-keys: |
+            nextjs-sandbox-${{ hashFiles('yarn.lock') }}-
+            nextjs-sandbox-
+
+      - name: Build Sandbox
+        run: yarn workspace @xds/sandbox build
+        env:
+          SANDBOX_BASE_PATH: /pr/${{ needs.core-build.outputs.pr_number }}/sandbox
+
       - name: Upload Sandbox artifact
-        if: github.event_name == 'pull_request'
         uses: actions/upload-artifact@v7
         with:
-          name: sandbox-${{ steps.urls.outputs.short_hash }}
+          name: sandbox-${{ needs.core-build.outputs.short_hash }}
           path: apps/sandbox/out/
           retention-days: 30
 
+  # Analyze runs independently — only needs git + node, no install or build
+  analyze:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Fetch base branch
+        run: git fetch origin ${{ github.base_ref }} --depth=1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+
       - name: Analyze components
-        if: github.event_name == 'pull_request'
         run: |
           node .github/scripts/analyze-pr.js \
             --base origin/${{ github.base_ref }} \
@@ -157,41 +249,87 @@ jobs:
             --output analysis.json
 
       - name: Upload analysis artifact
-        if: github.event_name == 'pull_request'
         uses: actions/upload-artifact@v7
         with:
           name: pr-analysis
           path: analysis.json
           retention-days: 1
 
-  # Deploy PR preview to GitHub Pages.
-  # Uses a per-PR concurrency group so multiple PRs deploy in parallel.
-  # Instead of peaceiris/actions-gh-pages (which can conflict with main's
-  # force-push), we do a manual git push with retry-on-conflict.
+  # ─── Gate: maintains "build" as the required status check ───────
+  build:
+    needs: [core-build, typecheck, build-storybook, build-sandbox, analyze]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check results
+        run: |
+          echo "core-build: ${{ needs.core-build.result }}"
+          echo "typecheck: ${{ needs.typecheck.result }}"
+          echo "build-storybook: ${{ needs.build-storybook.result }}"
+          echo "build-sandbox: ${{ needs.build-sandbox.result }}"
+          echo "analyze: ${{ needs.analyze.result }}"
+
+          [[ "${{ needs.core-build.result }}" == "success" ]]
+          [[ "${{ needs.typecheck.result }}" == "success" ]]
+          [[ "${{ needs.build-storybook.result }}" == "success" ]]
+          # sandbox + analyze are PR-only — skipped for merge_group
+          [[ "${{ needs.build-sandbox.result }}" =~ ^(success|skipped)$ ]]
+          [[ "${{ needs.analyze.result }}" =~ ^(success|skipped)$ ]]
+
+  # ─── Tests: sharded across 2 runners ───────────────────────────
+  test-shard:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: 'yarn'
+
+      - run: yarn install --frozen-lockfile
+
+      - run: yarn test -- --shard=${{ matrix.shard }}/2
+
+  # Gate: maintains "test" as the required status check
+  test:
+    needs: [test-shard]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check results
+        run: |
+          [[ "${{ needs.test-shard.result }}" == "success" ]]
+
+  # ─── Deploy PR preview to GitHub Pages ─────────────────────────
   deploy-preview:
     if: github.event_name == 'pull_request'
-    needs: [build]
+    needs: [core-build, build-storybook, build-sandbox]
     runs-on: ubuntu-latest
     concurrency:
-      group: "pr-preview-${{ needs.build.outputs.pr_number }}"
+      group: "pr-preview-${{ needs.core-build.outputs.pr_number }}"
       cancel-in-progress: true
     steps:
       - name: Download Storybook artifact
         uses: actions/download-artifact@v8
         with:
-          name: storybook-${{ needs.build.outputs.short_hash }}
+          name: storybook-${{ needs.core-build.outputs.short_hash }}
           path: storybook-dist
 
       - name: Download Sandbox artifact
         uses: actions/download-artifact@v8
         with:
-          name: sandbox-${{ needs.build.outputs.short_hash }}
+          name: sandbox-${{ needs.core-build.outputs.short_hash }}
           path: sandbox-dist
 
       - name: Deploy PR preview to GitHub Pages
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_NUMBER: ${{ needs.build.outputs.pr_number }}
+          PR_NUMBER: ${{ needs.core-build.outputs.pr_number }}
         run: |
           REPO_URL="https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git"
           MAX_ATTEMPTS=5
@@ -231,11 +369,10 @@ jobs:
           echo "::error::Failed to deploy PR preview after $MAX_ATTEMPTS attempts"
           exit 1
 
-  # Post PR comment with preview links + analysis as soon as build finishes
-  # Does NOT wait for test or a11y — those update the comment later
+  # Post PR comment with preview links + analysis as soon as possible
   pr-comment:
     if: github.event_name == 'pull_request'
-    needs: [build]
+    needs: [core-build, analyze]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -260,8 +397,8 @@ jobs:
           COMMENT_BODY=$(node .github/scripts/generate-pr-comment.js \
             --analysis analysis.json \
             --a11y a11y-report.json \
-            --storybook-url "${{ needs.build.outputs.storybook_url }}" \
-            --sandbox-url "${{ needs.build.outputs.sandbox_url }}" \
+            --storybook-url "${{ needs.core-build.outputs.storybook_url }}" \
+            --sandbox-url "${{ needs.core-build.outputs.sandbox_url }}" \
             --run-url "$RUN_URL" \
             --pr-number "${{ github.event.pull_request.number }}" \
             --pending)
@@ -303,10 +440,9 @@ jobs:
               });
             }
 
-  # Accessibility audit
-  # Skipped when no components changed.
+  # Accessibility audit (skipped when no components changed)
   pr-a11y:
-    needs: [build, check-components]
+    needs: [core-build, build-storybook, check-components, analyze]
     if: github.event_name == 'pull_request' && needs.check-components.outputs.has_components == 'true'
     runs-on: ubuntu-latest
     steps:
@@ -327,7 +463,7 @@ jobs:
       - name: Download Storybook artifact
         uses: actions/download-artifact@v8
         with:
-          name: storybook-${{ needs.build.outputs.short_hash }}
+          name: storybook-${{ needs.core-build.outputs.short_hash }}
           path: apps/storybook/dist
 
       - name: Install Playwright
@@ -350,8 +486,8 @@ jobs:
 
   # Update PR comment with a11y results once they're ready
   pr-comment-update:
-    needs: [build, check-components, pr-a11y]
-    if: always() && github.event_name == 'pull_request' && needs.build.result == 'success' && needs.check-components.outputs.has_components == 'true'
+    needs: [core-build, check-components, pr-a11y]
+    if: always() && github.event_name == 'pull_request' && needs.core-build.result == 'success' && needs.check-components.outputs.has_components == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -384,8 +520,8 @@ jobs:
           COMMENT_BODY=$(node .github/scripts/generate-pr-comment.js \
             --analysis analysis.json \
             --a11y a11y-report.json \
-            --storybook-url "${{ needs.build.outputs.storybook_url }}" \
-            --sandbox-url "${{ needs.build.outputs.sandbox_url }}" \
+            --storybook-url "${{ needs.core-build.outputs.storybook_url }}" \
+            --sandbox-url "${{ needs.core-build.outputs.sandbox_url }}" \
             --run-url "$RUN_URL" \
             --pr-number "${{ github.event.pull_request.number }}")
 
