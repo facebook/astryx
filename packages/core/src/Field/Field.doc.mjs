@@ -213,27 +213,12 @@ export const docs = {
     },
   ],
   usage: {
-    description: 'A form field wrapper that provides label, description, and optional/required indicators around an input. Use to wrap input components in forms for consistent labels, descriptions, and validation states.',
-    features: [
-      'Label Support — required label for accessibility (can be visually hidden)',
-      'Description — optional description text displayed between the label and input',
-      'Optional/Required Indicators — display "Optional" or "Required" text with bullet separator',
-      'Label Tooltip — optional info icon with tooltip at end of label',
-      'Disabled State — propagates disabled styling to label',
-      'Status Messages — attached/detached validation feedback with role="status" and aria-live="polite"',
-      'Accessible — label properly associated with input via htmlFor/id',
-      'Styled with StyleX — uses XDS design tokens for consistent styling',
-    ],
-    notes: [
-      'Parent components are responsible for generating IDs (using the useId hook).',
-      'Label is always rendered for accessibility; use isLabelHidden to hide visually.',
-      'Hidden label uses a CSS technique that remains accessible to screen readers.',
-      'Description is rendered when provided; if descriptionID is also provided, the description element gets that ID for aria-describedby association.',
-      'isOptional and isRequired are mutually exclusive; setting both will show "Optional" (dev warning emitted).',
-      'Optional/Required text appears on the same line as the label.',
-      'Status messages use role="status" and aria-live="polite" for screen reader announcements.',
-      'Use statusVariant="attached" (default) for bordered inputs; "detached" for checkboxes, switches, sliders.',
-      'isDisabled propagates disabled styling to the label (color + cursor).',
+    description: 'A form field wrapper that provides consistent labels, descriptions, and validation states around input controls. Use to wrap any input component in a form to ensure accessible labeling, optional/required indicators, and inline status feedback.',
+    bestPractices: [
+      { guidance: true, description: 'Always provide a label for accessibility, even if visually hidden with isLabelHidden.' },
+      { guidance: true, description: 'Use the status prop with clear messages to provide inline validation feedback.' },
+      { guidance: false, description: 'Set both isOptional and isRequired on the same field.' },
+      { guidance: false, description: 'Use the detached status variant on bordered inputs — reserve it for checkboxes, switches, and sliders.' },
     ],
   },
 };
@@ -452,28 +437,12 @@ export const docsZh = {
     },
   ],
   usage: {
-    description:
-      '表单字段包装组件，提供标签、描述以及可选/必填指示器。',
-    features: [
-      '标签支持 - 必需的标签用于无障碍访问（可视觉隐藏）',
-      '描述 - 可选的描述文本，显示在标签和输入框之间',
-      '可选/必填指示器 - 显示"Optional"或"Required"文本，带圆点分隔符',
-      '标签工具提示 - 可选的信息图标，在标签末尾显示工具提示',
-      '禁用状态 - 将禁用样式传递给标签',
-      '状态消息 - attached/detached 验证反馈，带 role="status" 和 aria-live="polite"',
-      '无障碍 - 通过 htmlFor/id 将标签与输入框正确关联',
-      '使用 StyleX 样式 - 使用 XDS 设计令牌实现一致的样式',
-    ],
-    notes: [
-      '父组件负责生成 ID（使用 useId hook）。',
-      '标签始终渲染以确保无障碍访问；使用 isLabelHidden 进行视觉隐藏。',
-      '隐藏标签使用 CSS 技术，屏幕阅读器仍可访问。',
-      '提供 description 时会渲染描述文本；如果同时提供 descriptionID，描述元素会获得该 ID 用于 aria-describedby 关联。',
-      'isOptional 和 isRequired 互斥；同时设置两者将显示"Optional"（开发模式下发出警告）。',
-      '可选/必填文本与标签显示在同一行。',
-      '状态消息使用 role="status" 和 aria-live="polite" 进行屏幕阅读器播报。',
-      '使用 statusVariant="attached"（默认）用于带边框的输入框；"detached" 用于复选框、开关、滑块。',
-      'isDisabled 将禁用样式传递给标签（颜色 + 光标）。',
+    description: 'A form field wrapper that provides consistent labels, descriptions, and validation states around input controls. Use to wrap any input component in a form to ensure accessible labeling, optional/required indicators, and inline status feedback.',
+    bestPractices: [
+      { guidance: true, description: 'Always provide a label for accessibility, even if visually hidden with isLabelHidden.' },
+      { guidance: true, description: 'Use the status prop with clear messages to provide inline validation feedback.' },
+      { guidance: false, description: 'Set both isOptional and isRequired on the same field.' },
+      { guidance: false, description: 'Use the detached status variant on bordered inputs — reserve it for checkboxes, switches, and sliders.' },
     ],
   },
 };
@@ -482,27 +451,15 @@ export const docsZh = {
 export const docsDense = {
   description:
     'Form field wrapper providing label, description + optional/required indicators.',
-  features: [
-    'Label support; required for a11y (can be visually hidden)',
-    'Optional description text between label + input',
-    'Optional/Required indicators w/ bullet separator',
-    'Label tooltip; optional info icon w/ tooltip at end of label',
-    'Disabled state; propagates disabled styling to label',
-    'Status messages; attached/detached validation feedback w/ role="status" + aria-live="polite"',
-    'Label properly associated w/ input via htmlFor/id',
-    'Styled w/ StyleX; uses XDS design tokens for consistent styling',
-  ],
-  notes: [
-    'Parent components generate IDs (useId hook).',
-    'Label always rendered for a11y; use isLabelHidden to hide visually.',
-    'Hidden label uses CSS technique accessible to screen readers.',
-    'Description rendered when provided; descriptionID sets element ID for aria-describedby.',
-    'isOptional + isRequired mutually exclusive; both set shows "Optional" (dev warning).',
-    'Optional/Required text on same line as label.',
-    'Status messages use role="status" + aria-live="polite" for screen reader announcements.',
-    'statusVariant="attached" (default) for bordered inputs; "detached" for checkboxes/switches/sliders.',
-    'isDisabled propagates disabled styling to label (color + cursor).',
-  ],
+  usage: {
+    description: 'A form field wrapper that provides consistent labels, descriptions, and validation states around input controls. Use to wrap any input component in a form to ensure accessible labeling, optional/required indicators, and inline status feedback.',
+    bestPractices: [
+      { guidance: true, description: 'Always provide a label for accessibility, even if visually hidden with isLabelHidden.' },
+      { guidance: true, description: 'Use the status prop with clear messages to provide inline validation feedback.' },
+      { guidance: false, description: 'Set both isOptional and isRequired on the same field.' },
+      { guidance: false, description: 'Use the detached status variant on bordered inputs — reserve it for checkboxes, switches, and sliders.' },
+    ],
+  },
   components: [
     {
       name: 'XDSField',

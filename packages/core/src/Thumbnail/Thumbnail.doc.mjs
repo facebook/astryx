@@ -68,25 +68,11 @@ export const docs = {
   },
   usage: {
     description:
-      'Thumbnail is a square preview card for image attachments. It shows a skeleton shimmer while uploading, the image on success, or a placeholder icon when no source is provided.',
-    features: [
-      'Square 1:1 aspect ratio via CSS aspect-ratio',
-      'Skeleton shimmer during upload (isLoading)',
-      'Upload overlay with spinner when isLoading + src',
-      'Image preview with object-fit: cover',
-      'Hover shadow on interactive thumbnails (onClick)',
-      'Label shown as tooltip on hover, used as aria-label',
-      'Placeholder icon when no src',
-      'Disabled state blocks all interactions and reduces opacity',
-    ],
-    accessibility: [
-      'label prop provides aria-label for the thumbnail and its remove button.',
-      'onClick renders as a button for keyboard and screen reader access.',
-      'Remove button uses aria-label derived from the label prop.',
-    ],
-    notes: [
-      'APCA-based luminance detection for adaptive remove button contrast.',
-      'Concentric radius: button radius derived from container radius minus inset.',
+      'Thumbnail is a square preview card for image attachments, showing a loading skeleton during upload and the image on success. Use it to represent uploaded files, image previews, or media attachments in compact layouts.',
+    bestPractices: [
+      { guidance: true, description: 'Provide a descriptive label prop so the thumbnail and its remove button are accessible to screen readers.' },
+      { guidance: true, description: 'Use the isLoading state to show upload progress rather than displaying a broken or missing image.' },
+      { guidance: false, description: 'Use Thumbnail for non-image file types — use a file attachment component with an appropriate icon instead.' },
     ],
   },
 };
@@ -108,23 +94,11 @@ export const docsZh = {
   },
   usage: {
     description:
-      '图片附件的方形预览卡片。上传时显示骨架屏动画，成功时显示图片，无图片源时显示占位图标。',
-    features: [
-      '通过 CSS aspect-ratio 实现 1:1 正方形比例',
-      '上传时骨架屏闪烁效果（isLoading）',
-      'isLoading + src 时显示上传覆盖层和加载指示器',
-      '通过 object-fit: cover 预览图片',
-      '基于 APCA 亮度检测的自适应移除按钮对比度',
-      '同心圆角：按钮圆角由容器圆角减去内边距推导',
-      '可交互缩略图（onClick）的悬停阴影',
-      '标签作为悬停提示工具和 aria-label 显示',
-      '无 src 时显示占位图标',
-      '禁用状态阻止所有交互并降低不透明度',
-    ],
-    accessibility: [
-      'label 属性为缩略图及其移除按钮提供 aria-label。',
-      'onClick 渲染为按钮以支持键盘和屏幕阅读器访问。',
-      '移除按钮使用从 label 属性推导的 aria-label。',
+      'Thumbnail is a square preview card for image attachments, showing a loading skeleton during upload and the image on success. Use it to represent uploaded files, image previews, or media attachments in compact layouts.',
+    bestPractices: [
+      { guidance: true, description: 'Provide a descriptive label prop so the thumbnail and its remove button are accessible to screen readers.' },
+      { guidance: true, description: 'Use the isLoading state to show upload progress rather than displaying a broken or missing image.' },
+      { guidance: false, description: 'Use Thumbnail for non-image file types — use a file attachment component with an appropriate icon instead.' },
     ],
   },
 };
@@ -133,12 +107,15 @@ export const docsDense = {
   n: 'Thumbnail',
   d: 'Square preview card for image attachments. Skeleton shimmer on upload, image on success, placeholder when no src.',
   kw: ['thumbnail', 'attachment', 'preview', 'image', 'upload', 'dismiss', 'remove', 'loading'],
-  f: [
-    '1:1 aspect-ratio. Skeleton shimmer (isLoading). Upload overlay w/ spinner.',
-    'APCA luminance for adaptive remove button contrast. Concentric radius.',
-    'Hover shadow on onClick. Tooltip from label. Placeholder icon when no src.',
-    'Disabled state blocks interactions, reduces opacity.',
-  ],
+  usage: {
+    description:
+      'Thumbnail is a square preview card for image attachments, showing a loading skeleton during upload and the image on success. Use it to represent uploaded files, image previews, or media attachments in compact layouts.',
+    bestPractices: [
+      { guidance: true, description: 'Provide a descriptive label prop so the thumbnail and its remove button are accessible to screen readers.' },
+      { guidance: true, description: 'Use the isLoading state to show upload progress rather than displaying a broken or missing image.' },
+      { guidance: false, description: 'Use Thumbnail for non-image file types — use a file attachment component with an appropriate icon instead.' },
+    ],
+  },
   p: {
     src: 'Image source URL.',
     alt: 'Alt text for image.',

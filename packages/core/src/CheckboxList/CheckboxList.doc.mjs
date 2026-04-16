@@ -130,29 +130,12 @@ export const docs = {
     },
   ],
   usage: {
-    description: 'A checkbox group for multi-value selection from a list of options. Use when users need to select multiple visible options from a set. For single selection use RadioList; for long option lists consider MultiSelector.',
-    features: [
-      'Accessible — uses native <input type="checkbox"> with proper ARIA attributes',
-      'Collection mode — parent manages selected values as string[], items derive checked state',
-      'Standalone mode — individual items use isChecked/onCheck for independent control',
-      'Density — compact, balanced, spacious via XDSList integration',
-      'Dividers — optional border dividers between items',
-      'Indeterminate — supports three-state checkbox (true, false, indeterminate) in standalone mode',
-      'Descriptions — optional secondary text per item',
-      'End content — slot for badges, actions, or other content after the label',
-      'Disabled state — supports disabling the entire group or individual items',
-      'Async actions — onChangeAction with optimistic updates and busy state',
-      'Full-row click — clicking anywhere on the row toggles the checkbox',
-      'Field integration — uses XDSField for label, description, and status messaging',
-    ],
-    notes: [
-      'XDSCheckboxList composes XDSField (label, description, status) and XDSList (density, dividers)',
-      'XDSCheckboxListItem can be used inside XDSCheckboxList (collection mode) or XDSList (standalone mode)',
-      'In collection mode, XDSCheckboxListItem requires a `value` prop — throws if missing',
-      'Uses XDSCheckboxInput internally with isLabelHidden for the checkbox visual',
-      'Full-row click target with guard against interactive endContent children',
-      'Async actions use useOptimistic + useTransition for immediate visual feedback',
-      'Density maps to checkbox size: compact → sm, balanced/spacious → md',
+    description: 'CheckboxList is a grouped set of checkboxes for selecting multiple options from a visible list. Use it when users need to pick several items at once. For single selection use RadioList; for long option sets consider MultiSelector.',
+    bestPractices: [
+      { guidance: true, description: 'Provide a clear group label that describes what the options represent.' },
+      { guidance: true, description: 'Use collection mode (value/onChange on the group) to let the parent manage selected state as a string array.' },
+      { guidance: false, description: 'Use CheckboxList when only one option can be selected — use RadioList instead.' },
+      { guidance: false, description: 'Place interactive elements in endContent that conflict with the full-row click target.' },
     ],
   },
 };
@@ -161,29 +144,12 @@ export const docs = {
 export const docsZh = {
   name: 'CheckboxList',
   usage: {
-    description: '用于从选项列表中进行多值选择的复选框组组件。支持集合模式（父组件管理状态）和独立模式（逐项状态）。',
-    features: [
-      '无障碍 - 使用原生 <input type="checkbox">，配合正确的 ARIA 属性',
-      '集合模式 - 父组件将选中值管理为 string[]，子项派生选中状态',
-      '独立模式 - 各项使用 isChecked/onCheck 进行独立控制',
-      '密度 - 通过 XDSList 集成支持紧凑、平衡、宽敞三种密度',
-      '分隔线 - 列表项之间的可选边框分隔线',
-      '不确定状态 - 独立模式下支持三态复选框（true、false、indeterminate）',
-      '描述 - 每个选项可选的辅助文本',
-      '尾部内容 - 标签后的徽章、操作或其他内容插槽',
-      '禁用状态 - 支持禁用整个组或单个选项',
-      '异步操作 - onChangeAction 配合乐观更新和忙碌状态',
-      '全行点击 - 点击行中任意位置均可切换复选框',
-      '字段集成 - 使用 XDSField 提供标签、描述和状态消息',
-    ],
-    notes: [
-      'XDSCheckboxList 组合 XDSField（标签、描述、状态）和 XDSList（密度、分隔线）',
-      'XDSCheckboxListItem 可在 XDSCheckboxList（集合模式）或 XDSList（独立模式）内使用',
-      '在集合模式下，XDSCheckboxListItem 需要 `value` 属性——缺失时会抛出错误',
-      '内部使用带 isLabelHidden 的 XDSCheckboxInput 作为复选框视觉元素',
-      '全行点击目标，带有对交互式尾部内容子元素的防护',
-      '异步操作使用 useOptimistic + useTransition 实现即时视觉反馈',
-      '密度映射到复选框尺寸：compact → sm，balanced/spacious → md',
+    description: 'CheckboxList is a grouped set of checkboxes for selecting multiple options from a visible list. Use it when users need to pick several items at once. For single selection use RadioList; for long option sets consider MultiSelector.',
+    bestPractices: [
+      { guidance: true, description: 'Provide a clear group label that describes what the options represent.' },
+      { guidance: true, description: 'Use collection mode (value/onChange on the group) to let the parent manage selected state as a string array.' },
+      { guidance: false, description: 'Use CheckboxList when only one option can be selected — use RadioList instead.' },
+      { guidance: false, description: 'Place interactive elements in endContent that conflict with the full-row click target.' },
     ],
   },
   components: [
@@ -226,28 +192,15 @@ export const docsZh = {
 export const docsDense = {
   description:
     'Checkbox group component for multi-value selection. Collection mode (parent state) + standalone mode (per-item state).',
-  features: [
-    'Accessible; uses native <input type="checkbox"> w/ proper ARIA attributes',
-    'Collection mode; parent manages selected values as string[]',
-    'Standalone mode; items use isChecked/onCheck independently',
-    'Density; compact, balanced, spacious via XDSList',
-    'Dividers; optional border dividers between items',
-    'Indeterminate; three-state checkbox in standalone mode',
-    'End content; slot for badges/actions after label',
-    'Disabled state; group-level or individual',
-    'Async actions; onChangeAction w/ optimistic updates + busy state',
-    'Full-row click; toggles checkbox, guards interactive endContent',
-    'Field integration; XDSField for label, description, status',
-  ],
-  notes: [
-    'XDSCheckboxList composes XDSField (label, description, status) + XDSList (density, dividers)',
-    'XDSCheckboxListItem works inside XDSCheckboxList (collection) or XDSList (standalone)',
-    'Collection mode requires `value` prop on items; throws if missing',
-    'Uses XDSCheckboxInput w/ isLabelHidden for checkbox visual',
-    'Full-row click target w/ guard against interactive endContent children',
-    'Async uses useOptimistic + useTransition for immediate feedback',
-    'Density maps to checkbox size: compact → sm, balanced/spacious → md',
-  ],
+  usage: {
+    description: 'CheckboxList is a grouped set of checkboxes for selecting multiple options from a visible list. Use it when users need to pick several items at once. For single selection use RadioList; for long option sets consider MultiSelector.',
+    bestPractices: [
+      { guidance: true, description: 'Provide a clear group label that describes what the options represent.' },
+      { guidance: true, description: 'Use collection mode (value/onChange on the group) to let the parent manage selected state as a string array.' },
+      { guidance: false, description: 'Use CheckboxList when only one option can be selected — use RadioList instead.' },
+      { guidance: false, description: 'Place interactive elements in endContent that conflict with the full-row click target.' },
+    ],
+  },
   components: [
     {
       name: 'XDSCheckboxList',

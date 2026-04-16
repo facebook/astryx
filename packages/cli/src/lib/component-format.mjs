@@ -120,10 +120,13 @@ export function formatFull(docs, options = {}) {
     sections.push('');
   }
 
-  const features = docs.usage?.features || docs.features;
-  if (features?.length) {
-    sections.push('## Features\n');
-    sections.push(features.map(f => `- ${f}`).join('\n') + '\n');
+  if (docs.usage?.bestPractices?.length) {
+    sections.push('## Best Practices\n');
+    for (const bp of docs.usage.bestPractices) {
+      const badge = bp.guidance ? '**Do:**' : '**Don\'t:**';
+      sections.push(`- ${badge} ${bp.description}`);
+    }
+    sections.push('');
   }
 
   // Single component props
@@ -244,24 +247,13 @@ export function formatFull(docs, options = {}) {
     }
   }
 
-  const a11y = docs.usage?.accessibility || docs.accessibility;
-  if (a11y?.length) {
-    sections.push('## Accessibility\n');
-    sections.push(a11y.map(a => `- ${a}`).join('\n') + '\n');
-  }
-
-  const notes = docs.usage?.notes || docs.notes;
-  if (notes?.length) {
-    sections.push('## Notes\n');
-    sections.push(notes.map(n => `- ${n}`).join('\n') + '\n');
-  }
 
   return sections.join('\n');
 }
 
 /**
  * Format compact docs for LLM consumption (replaces extractCompact + ensureImportStatement).
- * Includes: import, features, props, keyboard, notes.
+ * Includes: import, best practices, props, theming.
  */
 export function formatCompact(docs, componentName, importHint) {
   const displayName = componentName.startsWith('XDS')
@@ -286,10 +278,13 @@ export function formatCompact(docs, componentName, importHint) {
     sections.push(`\`\`\`tsx\nimport { ${displayName} } from '${importHint}';\n\`\`\`\n`);
   }
 
-  const features = docs.usage?.features || docs.features;
-  if (features?.length) {
-    sections.push('## Features\n');
-    sections.push(features.map(f => `- ${f}`).join('\n') + '\n');
+  if (docs.usage?.bestPractices?.length) {
+    sections.push('## Best Practices\n');
+    for (const bp of docs.usage.bestPractices) {
+      const badge = bp.guidance ? '**Do:**' : '**Don\'t:**';
+      sections.push(`- ${badge} ${bp.description}`);
+    }
+    sections.push('');
   }
 
   // Props
@@ -314,12 +309,6 @@ export function formatCompact(docs, componentName, importHint) {
       if (ex.label) sections.push(`### ${ex.label}\n`);
       sections.push('```tsx\n' + ex.code + '\n```\n');
     }
-  }
-
-  const compactNotes = docs.usage?.notes || docs.notes;
-  if (compactNotes?.length) {
-    sections.push('## Notes\n');
-    sections.push(compactNotes.map(n => `- ${n}`).join('\n') + '\n');
   }
 
   // CSS custom properties (compact includes these for theme consumers)

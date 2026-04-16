@@ -44,11 +44,12 @@ export const docs = {
     ],
   },
   usage: {
-    description: 'Centers children horizontally and/or vertically using flexbox.',
-    features: [
-      'Supports centering on both axes, horizontal only, or vertical only',
-      'Inline-flex mode for centering inline content such as text and icons',
-      'Accepts explicit width and height to size the container',
+    description:
+      'Center is a layout primitive that centers its children horizontally and/or vertically using flexbox. Use it to quickly align content within a container without writing custom centering styles.',
+    bestPractices: [
+      {guidance: true, description: 'Use the axis prop to center only in the direction you need — avoid unnecessary centering on both axes.'},
+      {guidance: true, description: 'Set isInline when centering small inline content like icons or text within a line.'},
+      {guidance: false, description: 'Wrap large page sections in Center — use XDSLayout for page-level structure instead.'},
     ],
   },
 };
@@ -57,11 +58,12 @@ export const docs = {
 export const docsZh = {
   name: 'Center',
   usage: {
-    description: '使用 flexbox 将子元素水平和/或垂直居中。',
-    features: [
-      '支持双轴居中、仅水平居中或仅垂直居中',
-      '内联 flex 模式，用于居中文本和图标等内联内容',
-      '接受显式的宽度和高度来设置容器尺寸',
+    description:
+      'Center is a layout primitive that centers its children horizontally and/or vertically using flexbox. Use it to quickly align content within a container without writing custom centering styles.',
+    bestPractices: [
+      {guidance: true, description: 'Use the axis prop to center only in the direction you need — avoid unnecessary centering on both axes.'},
+      {guidance: true, description: 'Set isInline when centering small inline content like icons or text within a line.'},
+      {guidance: false, description: 'Wrap large page sections in Center — use XDSLayout for page-level structure instead.'},
     ],
   },
   props: [
@@ -92,11 +94,15 @@ export const docsZh = {
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   description: 'centers children horizontally+vertically via flexbox',
-  features: [
-    'centering on both axes, horizontal only, or vertical only',
-    'inline-flex mode for inline content like text+icons',
-    'accepts explicit width+height to size container',
-  ],
+  usage: {
+    description:
+      'Center is a layout primitive that centers its children horizontally and/or vertically using flexbox. Use it to quickly align content within a container without writing custom centering styles.',
+    bestPractices: [
+      {guidance: true, description: 'Use the axis prop to center only in the direction you need — avoid unnecessary centering on both axes.'},
+      {guidance: true, description: 'Set isInline when centering small inline content like icons or text within a line.'},
+      {guidance: false, description: 'Wrap large page sections in Center — use XDSLayout for page-level structure instead.'},
+    ],
+  },
   propDescriptions: {
     axis: 'centering direction(s)',
     width: 'container width (px or CSS)',

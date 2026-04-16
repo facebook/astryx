@@ -160,32 +160,63 @@ export interface AnatomyElement {
 }
 
 /**
- * Unified documentation for a component — what it is, what it can do,
- * accessibility, implementation notes, and visual anatomy.
+ * A single do/don't best practice for a component.
+ * Rendered as a table row with a colored "Do" or "Don't" badge
+ * in the Guidance column and the description in the Practices column.
  *
- * All prose about a component lives here. The only fields that stay on
- * BaseDoc are `name`, `keywords`, and `theming` (identity/discovery/styling).
+ * @example
+ * ```
+ * {guidance: true, description: 'Convey clear action hierarchy. Each surface should only have 1 primary button.'}
+ * {guidance: false, description: 'Overuse primary or special buttons. Overusing colored buttons creates visual confusion.'}
+ * ```
+ */
+export interface BestPractice {
+  /** `true` renders a green "Do" badge; `false` renders a red "Don't" badge.  */
+  guidance: boolean;
+  /** 1-2 short sentences of design guidance. Focus on how a designer
+   *  would USE the component, not how it's built.
+   *
+   *  NEVER start with "Do" or "Don't" — the badge handles that.
+   *
+   *  Good: `"Convey clear action hierarchy. Each surface should only have 1 primary button."`
+   *  Bad:  `"Do use clear action hierarchy."` */
+  description: string;
+}
+
+/**
+ * Component usage documentation — a concise summary, design guidance
+ * best practices, and optional visual anatomy.
+ *
+ * ## description
+ * Exactly 2-3 short sentences:
+ * - Sentence 1: What the component is and does.
+ * - Sentence 2-3: When to use it, or what context it belongs in.
+ *
+ * Reference tone: "Buttons provide visual cues for actions and events.
+ * These fundamental components allow users to commit actions and navigate
+ * a page flow. Use a Button when a user needs to submit a form, start a
+ * new task or action, or trigger a new UI element to appear on the page."
+ *
+ * ## bestPractices
+ * Array of 3-4 items. Usually 2 Do items, then 1-2 Don't items.
+ * Each item is design guidance — not implementation details.
+ * Never start the description with "Do" or "Don't".
  */
 export interface UsageDoc {
-  /** What the component is and when to use it. 1-3 sentences combining
-   *  the developer summary with design guidance.
-   *  e.g. `"Buttons provide visual cues for actions and events. XDSButton
-   *  supports primary, secondary, ghost, and destructive variants with
-   *  built-in loading states. Use secondary for most actions, reserve
-   *  primary for a single emphasized action per layout."` */
+  /** What the component is and when to use it. 2-3 short sentences.
+   *
+   *  Sentence 1: What the component is and does.
+   *  Sentence 2-3: When to use it, or what context it belongs in.
+   *
+   *  e.g. `"Buttons provide visual cues for actions and events. These
+   *  fundamental components allow users to commit actions and navigate
+   *  a page flow. Use a Button when a user needs to submit a form,
+   *  start a new task or action, or trigger a new UI element to appear
+   *  on the page."` */
   description: string;
-  /** Key capabilities as short bullet points. Each string is one feature.
-   *  Focus on what the component CAN DO, not how it's implemented.
-   *  e.g. `"Variants: 'primary', 'secondary', 'ghost', 'destructive'"` */
-  features?: string[];
-  /** Accessibility notes including keyboard interaction. Each string is
-   *  one self-contained note. Keyboard bindings use the format
-   *  `"Keyboard: Enter/Space activates; Tab/Shift+Tab moves focus"`.
-   *  e.g. `"Uses native <dialog> with showModal() for correct ARIA modal semantics."` */
-  accessibility?: string[];
-  /** Technical implementation notes — architecture decisions, performance
-   *  considerations, caveats. Only internal details, not usage guidance. */
-  notes?: string[];
+  /** 3-4 do/don't design guidance items. Usually 2 Do's then 1-2 Don'ts.
+   *  Focus on how a designer would USE the component, not how it's built. */
+  bestPractices?: BestPractice[];
   /** Structural/visual anatomy of the component. Each entry describes one
    *  element that makes up the component (icon slot, label, container, etc.).
    *  Order entries in the visual reading order (leading → trailing, top → bottom). */
@@ -226,8 +257,8 @@ interface BaseDoc {
      *  internal variables must not be listed here. */
     cssProperties?: CSSPropertyDoc[];
   };
-  /** All component documentation — description, features, accessibility,
-   *  implementation notes, and visual anatomy. */
+  /** Component usage documentation — concise summary, best practices,
+   *  and optional visual anatomy. */
   usage: UsageDoc;
 }
 
@@ -276,39 +307,17 @@ export type ComponentDoc = SingleComponentDoc | MultiComponentDoc;
  * types, defaults, and code all come from `docs`.
  *
  * Used by both `docsZh` (Chinese translation) and `docsDense` (compressed format).
- *
- * @example
- * ```
- * export const docsDense = {
- *   description: 'multi-variant btn w/ loading',
- *   features: ['4 variants: primary secondary ghost destructive'],
- *   propDescriptions: { label: 'a11y label; aria-label for icon-only' },
- *   notes: ['prefer over div onClick for a11y'],
- * };
- * ```
  */
 export interface TranslationDoc {
-  /** Compressed/translated component description.
-   *  Can also be provided via usage.description. */
+  /** Compressed/translated component description. */
   description?: string;
-  /** Compressed/translated feature strings. Must match docs.features length and order. */
-  features?: string[];
-  /** Compressed/translated note strings. Must match docs.notes length and order. */
-  notes?: string[];
-  /** Compressed/translated accessibility strings. Must match docs.accessibility length and order. */
-  accessibility?: string[];
-  /** Compressed/translated keyboard string. */
-  keyboard?: string;
   /** Prop descriptions keyed by prop name. Only include props that have descriptions. */
   propDescriptions?: Record<string, string>;
   /** Translated/compressed usage overlay. Mirrors UsageDoc fields. */
   usage?: {
     description?: string;
-    features?: string[];
-    accessibility?: string[];
-    notes?: string[];
-    summary?: string;
-    content?: string;
+    bestPractices?: BestPractice[];
+    anatomy?: AnatomyElement[];
   };
   /** Sub-component translations. Must match docs.components length and order (if present). */
   components?: Array<{
