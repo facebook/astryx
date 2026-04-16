@@ -23,7 +23,7 @@ import {XDSBadge} from '@xds/core/Badge';
 import {templates} from '../../../generated/templateRegistry';
 import {blocks} from '../../../generated/blockRegistry';
 
-interface TemplateRow {
+type TemplateRow = {
   id: string;
   name: string;
   description: string;
@@ -33,7 +33,7 @@ interface TemplateRow {
   codePath: string;
   docPath: string;
   isReady: boolean;
-}
+};
 
 const rows: TemplateRow[] = [
   ...templates.map(t => ({
@@ -147,6 +147,7 @@ function useTableSearchParams() {
 function CopyPath({path}: {path: string}) {
   return (
     <XDSLink
+      label={`Copy path: ${path}`}
       onClick={() => navigator.clipboard.writeText(path)}
       style={{cursor: 'pointer'}}>
       Copy Path
@@ -199,7 +200,7 @@ const columns: XDSTableColumn<TemplateRow>[] = [
     filter: 'name',
     width: pixel(250),
     renderCell: (row: TemplateRow) => (
-      <XDSLink href={row.href} as={Link} target="_blank">
+      <XDSLink label={row.name} href={row.href} as={Link} target="_blank">
         {row.name}
       </XDSLink>
     ),
@@ -245,17 +246,17 @@ export default function TemplatesPage() {
     rows,
   );
 
-  const {sortedData, ...sortConfig} = useXDSTableSortableState({
+  const {sortedData, sortConfig} = useXDSTableSortableState({
     data: filteredData,
     sort,
     onSortChange,
   });
-  const sortPlugin = useXDSTableSortable(sortConfig);
+  const sortPlugin = useXDSTableSortable<TemplateRow>(sortConfig);
 
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>({});
-  const resizePlugin = useXDSTableColumnResize({
+  const resizePlugin = useXDSTableColumnResize<TemplateRow>({
     columnWidths,
-    columns,
+    columns: columns as XDSTableColumn<Record<string, unknown>>[],
     onColumnResizeEnd: updates =>
       setColumnWidths(prev => ({...prev, ...updates})),
   });
