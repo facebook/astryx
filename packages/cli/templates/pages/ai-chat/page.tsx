@@ -26,8 +26,14 @@ import {
   XDSChatSystemMessage,
   useXDSChatDictation,
   type XDSChatComposerInputHandle,
+  type XDSChatComposerTrigger,
 } from '@xds/core/Chat';
 import {XDSMarkdown} from '@xds/core/Markdown';
+import {
+  createStaticSource,
+  XDSTypeaheadItem,
+  type XDSSearchableItem,
+} from '@xds/core/Typeahead';
 import {XDSTimestamp} from '@xds/core/Timestamp';
 import {XDSToggleButton, XDSToggleButtonGroup} from '@xds/core/ToggleButton';
 import {XDSButton} from '@xds/core/Button';
@@ -172,6 +178,86 @@ const MODE_OPTIONS = [
   {key: 'sensitive', label: 'Sensitive', icon: LockClosedIcon},
   {key: 'deep', label: 'Deep Mode', icon: ClockIcon},
 ] as const;
+
+// ============= TRIGGER DATA =============
+
+const MENTION_ITEMS: XDSSearchableItem<{role: string}>[] = [
+  {id: 'cindy', label: 'Cindy Zhang', auxiliaryData: {role: 'Design Systems'}},
+  {id: 'alex', label: 'Alex Johnson', auxiliaryData: {role: 'Frontend'}},
+  {id: 'sam', label: 'Sam Rivera', auxiliaryData: {role: 'Backend'}},
+  {id: 'jordan', label: 'Jordan Lee', auxiliaryData: {role: 'Product'}},
+  {id: 'taylor', label: 'Taylor Kim', auxiliaryData: {role: 'Design'}},
+  {
+    id: 'morgan',
+    label: 'Morgan Chen',
+    auxiliaryData: {role: 'Infrastructure'},
+  },
+];
+
+const COMMAND_ITEMS: XDSSearchableItem<{description: string}>[] = [
+  {
+    id: 'summarize',
+    label: 'summarize',
+    auxiliaryData: {description: 'Summarize the conversation'},
+  },
+  {
+    id: 'translate',
+    label: 'translate',
+    auxiliaryData: {description: 'Translate text to another language'},
+  },
+  {
+    id: 'search',
+    label: 'search',
+    auxiliaryData: {description: 'Search the web or documents'},
+  },
+  {
+    id: 'code',
+    label: 'code',
+    auxiliaryData: {description: 'Generate or explain code'},
+  },
+  {
+    id: 'help',
+    label: 'help',
+    auxiliaryData: {description: 'Show available commands'},
+  },
+];
+
+const mentionSource = createStaticSource(MENTION_ITEMS);
+const commandSource = createStaticSource(COMMAND_ITEMS);
+
+const mentionTrigger: XDSChatComposerTrigger = {
+  character: '@',
+  searchSource: mentionSource,
+  renderItem: item => (
+    <XDSTypeaheadItem
+      item={item}
+      description={(item.auxiliaryData as {role: string})?.role}
+    />
+  ),
+  onSelect: item => ({
+    value: `@${item.id}`,
+    label: item.label,
+    variant: 'blue' as const,
+  }),
+};
+
+const commandTrigger: XDSChatComposerTrigger = {
+  character: '/',
+  searchSource: commandSource,
+  renderItem: item => (
+    <XDSTypeaheadItem
+      item={item}
+      description={(item.auxiliaryData as {description: string})?.description}
+    />
+  ),
+  onSelect: item => ({
+    value: `/${item.label}`,
+    label: `/${item.label}`,
+    variant: 'yellow' as const,
+  }),
+};
+
+const composerTriggers = [mentionTrigger, commandTrigger];
 
 // ============= MESSAGE TYPES =============
 
@@ -379,6 +465,7 @@ export default function AIChatTemplate() {
                   input={
                     <XDSChatComposerInput
                       ref={composerInputRef}
+                      triggers={composerTriggers}
                       style={{minHeight: '44px'}}
                     />
                   }
@@ -615,6 +702,7 @@ export default function AIChatTemplate() {
           input={
             <XDSChatComposerInput
               ref={composerInputRef}
+              triggers={composerTriggers}
               style={{minHeight: '44px'}}
             />
           }
