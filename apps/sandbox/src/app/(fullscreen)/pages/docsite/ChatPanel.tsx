@@ -19,8 +19,8 @@ import {ShimmerText} from './ShimmerText';
 import {MOCK_CODE} from './constants';
 
 const composerStyles = stylex.create({
-  noShadow: {
-    boxShadow: 'none',
+  borderInsteadOfShadow: {
+    border: '1px solid var(--color-border)',
   },
 });
 
@@ -146,7 +146,7 @@ export function ChatPanel({
               value={prompt}
               onChange={setPrompt}
               placeholder="Ask for changes"
-              xstyle={composerStyles.noShadow}
+              xstyle={composerStyles.borderInsteadOfShadow}
               input={<XDSChatComposerInput placeholder="Ask for changes" />}
             />
           </div>

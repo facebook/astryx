@@ -326,7 +326,8 @@ function DocsiteLandingTemplate() {
   const [_editorViewport, _setEditorViewport] = useState('desktop');
   const [fullPreview, setFullPreview] = useState(false);
 
-  const scrollContainerRef = useRef(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
   const [card4SelectedOption, setCard4SelectedOption] = useState('default');
   const [card4ThemeBrowse, setCard4ThemeBrowse] = useState(false);
   const [card4Bookmarked, setCard4Bookmarked] = useState(false);
@@ -422,6 +423,14 @@ function DocsiteLandingTemplate() {
       mobileMql.removeEventListener('change', mobileHandler);
       tabletMql.removeEventListener('change', tabletHandler);
     };
+  }, []);
+
+  useEffect(() => {
+    const el = document.getElementById('docsite-scroll');
+    if (!el) return;
+    const onScroll = () => setIsHeaderCollapsed(el.scrollTop > 170);
+    el.addEventListener('scroll', onScroll, {passive: true});
+    return () => el.removeEventListener('scroll', onScroll);
   }, []);
 
   const handleMoreLikeThis = useCallback(
@@ -676,6 +685,8 @@ function DocsiteLandingTemplate() {
             flexDirection: 'column' as const,
             minWidth: 0,
             overflow: 'visible',
+            marginLeft: -16,
+            paddingLeft: 16,
           }}>
           <TemplatePreview
             templateName={t.name}
@@ -741,7 +752,7 @@ function DocsiteLandingTemplate() {
       <div
         style={{
           display: 'flex',
-          flex: 1,
+          height: '100%',
           overflow: 'hidden',
         }}>
         {/* Chat panel */}
@@ -775,11 +786,12 @@ function DocsiteLandingTemplate() {
           }}>
           <div style={{display: 'flex', flex: 1, overflow: 'hidden'}}>
             <div
+              id="docsite-scroll"
               ref={scrollContainerRef}
               style={{
                 flex: 1,
                 overflow: 'auto',
-                padding: '16px 24px 140px',
+                padding: '0 24px 140px',
               }}>
               <style>{`
                 @keyframes craftShimmer {
@@ -804,6 +816,7 @@ function DocsiteLandingTemplate() {
                   style={{
                     maxWidth: 2000,
                     margin: '0 auto 16px',
+                    paddingTop: 16,
                     display: 'flex',
                     alignItems: 'center',
                     gap: 12,
@@ -1034,19 +1047,21 @@ function DocsiteLandingTemplate() {
                   style={{
                     maxWidth: 2000,
                     margin: '0 auto',
-                    paddingBlock: 32,
+                    paddingTop: 48,
+                    paddingBottom: 32,
                     textAlign: 'center',
                   }}>
                   <XDSText type="display-1">Craft what you imagine.</XDSText>
                 </div>
               )}
 
-              {/* Tab filters + sort */}
+              {/* Tab row — scrolls away, AppTopNav takes over */}
               {!craftTitle && (
                 <div
                   style={{
                     maxWidth: 2000,
-                    margin: '0 auto 24px',
+                    margin: '0 auto',
+                    paddingBottom: 24,
                     display: 'grid',
                     gridTemplateColumns: '1fr auto 1fr',
                     alignItems: 'center',
@@ -1100,67 +1115,75 @@ function DocsiteLandingTemplate() {
                 </div>
               )}
 
-              {/* Filter panel — slides open/closed below tabs */}
-              {!craftTitle && (
+              {/* Filter panel — sticky, independent of tab row */}
+              {!craftTitle && isFilterOpen && (
                 <div
                   style={{
-                    maxWidth: 2000,
-                    margin: '0 auto',
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(4, 1fr)',
-                    gap: isFilterOpen ? 24 : 0,
-                    padding: isFilterOpen ? '24px 0' : '0',
-                    maxHeight: isFilterOpen ? 600 : 0,
-                    opacity: isFilterOpen ? 1 : 0,
-                    overflow: 'visible',
-                    transition:
-                      'max-height var(--duration-medium, 410ms) var(--ease-standard, cubic-bezier(0.24, 1, 0.4, 1)), opacity var(--duration-fast, 175ms) var(--ease-standard, cubic-bezier(0.24, 1, 0.4, 1)), padding var(--duration-medium, 410ms) var(--ease-standard, cubic-bezier(0.24, 1, 0.4, 1)), gap var(--duration-medium, 410ms) var(--ease-standard, cubic-bezier(0.24, 1, 0.4, 1))',
+                    position: 'sticky',
+                    top: 0,
+                    zIndex: 9,
+                    backgroundColor: 'var(--color-background-surface, #fff)',
+                    marginInline: -24,
+                    paddingInline: 24,
+                    boxShadow: isHeaderCollapsed
+                      ? '0 1px 3px rgba(0,0,0,0.08)'
+                      : 'none',
+                    transition: 'box-shadow 200ms ease',
                   }}>
-                  {/* Source filter */}
-                  <div>
-                    <XDSText
-                      type="supporting"
-                      color="secondary"
-                      style={{marginBottom: 12, display: 'block'}}>
-                      Source
-                    </XDSText>
-                    <div style={{marginLeft: -8, marginRight: -8}}>
-                      <XDSList density="compact">
-                        <XDSListItem
-                          label="All"
-                          isSelected={templateFilter === 'all'}
-                          onClick={() => setTemplateFilter('all')}
-                        />
-                        <XDSListItem
-                          label="XDS Official"
-                          isSelected={templateFilter === 'official'}
-                          onClick={() => setTemplateFilter('official')}
-                        />
-                      </XDSList>
-                    </div>
-                  </div>
-                  {FILTER_COLUMNS.map(col => (
-                    <div key={col.heading}>
+                  <div
+                    style={{
+                      maxWidth: 2000,
+                      margin: '0 auto',
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(4, 1fr)',
+                      gap: 24,
+                      padding: '24px 8px',
+                    }}>
+                    <div>
                       <XDSText
                         type="supporting"
                         color="secondary"
                         style={{marginBottom: 12, display: 'block'}}>
-                        {col.heading}
+                        Author
                       </XDSText>
                       <div style={{marginLeft: -8, marginRight: -8}}>
                         <XDSList density="compact">
-                          {col.items.map(item => (
-                            <XDSListItem
-                              key={item}
-                              label={item}
-                              isSelected={activeFilters.has(item)}
-                              onClick={() => handleToggleFilter(item)}
-                            />
-                          ))}
+                          <XDSListItem
+                            label="All"
+                            isSelected={templateFilter === 'all'}
+                            onClick={() => setTemplateFilter('all')}
+                          />
+                          <XDSListItem
+                            label="XDS Official"
+                            isSelected={templateFilter === 'official'}
+                            onClick={() => setTemplateFilter('official')}
+                          />
                         </XDSList>
                       </div>
                     </div>
-                  ))}
+                    {FILTER_COLUMNS.map(col => (
+                      <div key={col.heading}>
+                        <XDSText
+                          type="supporting"
+                          color="secondary"
+                          style={{marginBottom: 12, display: 'block'}}>
+                          {col.heading}
+                        </XDSText>
+                        <div style={{marginLeft: -8, marginRight: -8}}>
+                          <XDSList density="compact">
+                            {col.items.map(item => (
+                              <XDSListItem
+                                key={item}
+                                label={item}
+                                isSelected={activeFilters.has(item)}
+                                onClick={() => handleToggleFilter(item)}
+                              />
+                            ))}
+                          </XDSList>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 

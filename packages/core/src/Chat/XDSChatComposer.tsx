@@ -35,9 +35,6 @@ import {
   colorVars,
   spacingVars,
   radiusVars,
-  shadowVars,
-  durationVars,
-  easeVars,
   typeScaleVars,
   typographyVars,
 } from '../theme/tokens.stylex';
@@ -135,15 +132,10 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-2'],
     borderRadius: 'var(--composer-radius)',
     backgroundColor: colorVars['--color-background-popover'],
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: colorVars['--color-border'],
     cursor: 'text',
-    boxShadow: {
-      default: shadowVars['--shadow-low'],
-      ':hover': {'@media (hover: hover)': shadowVars['--shadow-med']},
-    },
-    transition: `box-shadow ${durationVars['--duration-fast']} ${easeVars['--ease-standard']}`,
-    ':focus-within': {
-      boxShadow: shadowVars['--shadow-med'],
-    },
   },
   header: {
     display: 'flex',
@@ -361,7 +353,7 @@ export function XDSChatComposer(props: XDSChatComposerProps) {
       <div
         {...mergeProps(
           xdsClassName('chat-composer', {density}),
-          stylex.props(styles.root, isDisabled && styles.rootDisabled, xstyle),
+          stylex.props(styles.root, isDisabled && styles.rootDisabled),
           className,
           style,
         )}
@@ -375,6 +367,7 @@ export function XDSChatComposer(props: XDSChatComposerProps) {
           {...stylex.props(
             styles.body,
             density === 'compact' && styles.compact,
+            xstyle,
           )}>
           {(headerActions || headerContext) && (
             <div {...stylex.props(styles.header)}>
