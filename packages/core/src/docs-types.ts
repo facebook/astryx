@@ -450,6 +450,8 @@ export interface BlockTemplateDoc extends BaseTemplateDoc {
   type: 'block';
   /** Width-to-height ratio for preview containers (e.g. 16/9, 1, 3/4). */
   aspectRatio: number;
+  /** Scale factor for the block preview (default 1). */
+  scale?: number;
   /** Component names this block uses, for cross-referencing. */
   componentsUsed: string[];
 }
