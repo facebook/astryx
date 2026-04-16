@@ -124,7 +124,7 @@ function DocsiteLandingTemplate() {
   const [selected, setSelected] = useState(new Set());
   const [activeTab, setActiveTab] = useState('all');
   const [isMobile, setIsMobile] = useState(false);
-  const [_isTablet, setIsTablet] = useState(false);
+  const [isTablet, setIsTablet] = useState(false);
   const [generatingSource, setGeneratingSource] = useState(
     null as number | null,
   );
@@ -220,7 +220,7 @@ function DocsiteLandingTemplate() {
   useEffect(() => {
     const mobileMql = window.matchMedia('(max-width: 768px)');
     const tabletMql = window.matchMedia(
-      '(min-width: 769px) and (max-width: 1024px)',
+      '(min-width: 769px) and (max-width: 1280px)',
     );
     setIsMobile(mobileMql.matches);
     setIsTablet(tabletMql.matches);
@@ -553,7 +553,11 @@ function DocsiteLandingTemplate() {
                   maxWidth: 2000,
                   margin: '0 auto',
                   display: 'grid',
-                  gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)',
+                  gridTemplateColumns: isMobile
+                    ? '1fr'
+                    : isTablet
+                      ? 'repeat(2, 1fr)'
+                      : 'repeat(3, 1fr)',
                   gap: 16,
                   gridAutoRows: '1fr',
                 }}>
@@ -612,7 +616,7 @@ function DocsiteLandingTemplate() {
               width="90vw"
               maxHeight="90vh"
               purpose="info"
-              style={{padding: 0, overflow: 'visible'}}>
+              style={{padding: 0, overflow: 'visible', maxWidth: 1200}}>
               <div
                 style={{position: 'absolute', top: 0, right: -40, zIndex: 1}}>
                 <XDSCard padding={0} style={{borderRadius: '50%'}}>
@@ -637,7 +641,7 @@ function DocsiteLandingTemplate() {
                     <div
                       style={{
                         flex: 1,
-                        aspectRatio: '16 / 10',
+                        height: 'clamp(300px, 50vh, 600px)',
                         backgroundColor:
                           'var(--color-background-muted, #f9f9f9)',
                         borderRadius: 12,
