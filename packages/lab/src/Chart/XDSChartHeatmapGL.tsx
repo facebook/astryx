@@ -234,6 +234,7 @@ export function XDSChartHeatmapGL({
     gl.enableVertexAttribArray(aCol);
     gl.vertexAttribPointer(aCol, 3, gl.FLOAT, false, 0, 0);
 
+    // Logical pixels — positions are in logical space, viewport handles DPR
     gl.uniform2f(gl.getUniformLocation(program, 'u_resolution'), width, height);
     gl.drawArrays(gl.TRIANGLES, 0, positions.length / 2);
 

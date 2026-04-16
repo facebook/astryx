@@ -38,12 +38,10 @@ export interface XDSChartCandlestickProps {
   strokeWidth?: number;
   /** Corner radius on body (default variant only) */
   radius?: number;
-  /** Dot radius (unused in bar variant, kept for future variants) */
-  dotRadius?: number;
 }
 
 /**
- * Candlestick / box-whisker marks with optional Tufte variant.
+ * Candlestick / box-whisker marks.
  *
  * @example
  * ```
@@ -54,7 +52,7 @@ export interface XDSChartCandlestickProps {
  *   downColor={useXDSChartColors().semantic.negative}
  * />
  *
- * // Tufte range-bar
+ * // OHLC bar
  * <XDSChartCandlestick
  *   variant="bar"
  *   high="max" low="min" open="q1" close="median"
@@ -68,13 +66,12 @@ export function XDSChartCandlestick({
   open,
   close,
   variant = 'default',
-  upColor = '#0B991F',
-  downColor = '#F5394F',
+  upColor,
+  downColor,
   color,
   bodyWidth = 0.6,
   strokeWidth = 1.5,
   radius = 2,
-  dotRadius = 3,
 }: XDSChartCandlestickProps) {
   const {data, xKey, xScale, yScale} = useChart();
 
@@ -93,7 +90,11 @@ export function XDSChartCandlestick({
         const cVal = typeof d[close] === 'number' ? (d[close] as number) : 0;
 
         const isUp = cVal >= oVal;
-        const fill = color ?? (isUp ? upColor : downColor);
+        const fill =
+          color ??
+          (isUp
+            ? (upColor ?? 'var(--color-data-categorical-green)')
+            : (downColor ?? 'var(--color-data-categorical-red)'));
         const centerX = xVal + bw / 2;
 
         const yHigh = yScale(hVal);

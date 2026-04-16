@@ -2,6 +2,8 @@
  * @file XDSChartAxis.tsx
  * @output Renders an axis (top, right, bottom, left) using the chart's scales
  * @position Child of XDSChart; reads scales from context
+ *
+ * Ticks use CSS transitions for smooth sliding during streaming updates.
  */
 
 import {useMemo} from 'react';
@@ -16,10 +18,13 @@ export interface XDSChartAxisProps {
   tickCount?: number;
   /** Custom tick formatter */
   tickFormat?: (value: unknown) => string;
+  /** Enable smooth transitions for streaming (default: true) */
+  animated?: boolean;
 }
 
 /**
  * Chart axis. Renders tick marks and labels for the x or y dimension.
+ * Ticks transition smoothly when the scale domain shifts (e.g. streaming).
  *
  * @example
  * ```
@@ -31,6 +36,7 @@ export function XDSChartAxis({
   position,
   tickCount = 5,
   tickFormat,
+  animated = true,
 }: XDSChartAxisProps) {
   const {width, height, xScale, yScale} = useChart();
 
@@ -57,11 +63,16 @@ export function XDSChartAxis({
     position === 'bottom'
       ? `translate(0,${height})`
       : position === 'right'
-      ? `translate(${width},0)`
-      : undefined;
+        ? `translate(${width},0)`
+        : undefined;
 
   const format = tickFormat ?? String;
   const tickSize = 6;
+
+  // Transition style for smooth tick movement during streaming
+  const tickTransition = animated
+    ? 'transform 150ms linear, opacity 150ms ease'
+    : undefined;
 
   return (
     <g transform={transform}>
@@ -76,10 +87,21 @@ export function XDSChartAxis({
       />
       {ticks.map(({value, offset}) => {
         const label = format(value);
+        // Clip ticks that are outside the visible area
+        const isVisible = isHorizontal
+          ? offset >= -10 && offset <= width + 10
+          : offset >= -10 && offset <= height + 10;
+
         if (isHorizontal) {
           const y = position === 'bottom' ? tickSize : -tickSize;
           return (
-            <g key={label} transform={`translate(${offset},0)`}>
+            <g
+              key={label}
+              style={{
+                transform: `translateX(${offset}px)`,
+                transition: tickTransition,
+                opacity: isVisible ? 1 : 0,
+              }}>
               <line y2={y} stroke="var(--color-border)" strokeWidth={1} />
               <text
                 y={position === 'bottom' ? tickSize + 12 : -(tickSize + 4)}
@@ -94,7 +116,13 @@ export function XDSChartAxis({
         // Vertical axis
         const x = position === 'left' ? -tickSize : tickSize;
         return (
-          <g key={label} transform={`translate(0,${offset})`}>
+          <g
+            key={label}
+            style={{
+              transform: `translateY(${offset}px)`,
+              transition: tickTransition,
+              opacity: isVisible ? 1 : 0,
+            }}>
             <line x2={x} stroke="var(--color-border)" strokeWidth={1} />
             <text
               x={position === 'left' ? -(tickSize + 4) : tickSize + 4}
