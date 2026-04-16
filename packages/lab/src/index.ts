@@ -97,6 +97,9 @@ export {
   m4Reduce,
   type M4Point,
   useXDSChartColors,
+  getXDSChartColors,
+  getXDSChartColorsFromResolver,
   type XDSChartColorsAPI,
   type SequentialHue,
+  type TokenResolver,
 } from './Chart';
