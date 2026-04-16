@@ -197,9 +197,14 @@ export function getXDSChartColors(
     const raw = theme.tokens?.[name] ?? '';
     if (!raw) return '';
     // Resolve light-dark() for the given mode
-    const match = raw.match(/light-dark\(\s*([^,]+),\s*([^)]+)\)/);
-    if (match) {
-      return (mode === 'light' ? match[1] : match[2]).trim();
+    if (raw.startsWith('light-dark(') && raw.endsWith(')')) {
+      const inner = raw.slice(11, -1);
+      const commaIdx = inner.indexOf(',');
+      if (commaIdx !== -1) {
+        const light = inner.slice(0, commaIdx).trim();
+        const dark = inner.slice(commaIdx + 1).trim();
+        return mode === 'light' ? light : dark;
+      }
     }
     return raw;
   };
