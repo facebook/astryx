@@ -52,11 +52,18 @@ export interface XDSChartProps {
    */
   yBaseline?: YBaseline;
   /**
-   * Explicit y-axis domain [min, max]. Overrides auto-computation from data.
-   * Use for streaming charts where you want a stable axis range.
-   * Data that exceeds this range will still expand the domain.
+   * Explicit y-axis domain [min, max].
+   * When provided, this is the y-axis range. Data outside it is not clipped
+   * visually but will extend beyond the chart area.
    */
   yDomain?: [number, number];
+  /**
+   * Explicit x-axis domain [min, max] for linear/time scales.
+   * When provided, this is the x-axis range — the chart renders exactly
+   * this window. Use for streaming charts where the range shifts over time.
+   * Ignored for band (categorical) scales.
+   */
+  xDomain?: [number, number];
   /** Chart contents — axes, marks, tooltips */
   children: ReactNode;
 }
@@ -83,6 +90,7 @@ export function XDSChart({
   margin: marginOverride,
   yBaseline = 'auto',
   yDomain: yDomainProp,
+  xDomain: xDomainProp,
   children,
 }: XDSChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -111,25 +119,46 @@ export function XDSChart({
     const isNumeric = xValues.every(v => typeof v === 'number');
 
     if (isNumeric) {
+      if (xDomainProp) {
+        // Explicit domain is authoritative — use as-is
+        return scaleLinear().domain(xDomainProp).range([0, innerWidth]);
+      }
+      // Auto-compute from data
       const nums = xValues as number[];
-      return scaleLinear()
-        .domain([Math.min(...nums), Math.max(...nums)])
-        .range([0, innerWidth])
-        .nice();
+      let min = Infinity;
+      let max = -Infinity;
+      for (const n of nums) {
+        if (n < min) min = n;
+        if (n > max) max = n;
+      }
+      return scaleLinear().domain([min, max]).range([0, innerWidth]).nice();
     }
 
+    // Categorical — xDomain doesn't apply to band scales
     return scaleBand<string>()
       .domain(xValues.map(String))
       .range([0, innerWidth])
       .padding(0.2);
-  }, [data, xKey, innerWidth]);
+  }, [data, xKey, innerWidth, xDomainProp]);
 
   const yScale = useMemo((): ScaleLinear<number, number> => {
-    // Start from explicit domain or compute from data
-    let min = yDomainProp ? yDomainProp[0] : Infinity;
-    let max = yDomainProp ? yDomainProp[1] : -Infinity;
+    if (yDomainProp) {
+      // Explicit domain is authoritative — apply baseline logic but don't expand from data
+      let [min, max] = yDomainProp;
+      if (yBaseline === 'zero') {
+        const abs = Math.max(Math.abs(min), Math.abs(max));
+        min = -abs;
+        max = abs;
+      } else if (yBaseline === 'auto') {
+        if (min > 0) min = 0;
+        if (max < 0) max = 0;
+      }
+      return scaleLinear().domain([min, max]).range([innerHeight, 0]).nice();
+    }
 
-    // Always scan data — expand beyond yDomainProp if data exceeds it
+    // Auto-compute from data
+    let min = Infinity;
+    let max = -Infinity;
     for (const d of data) {
       for (const key of yKeys) {
         const v = d[key];
