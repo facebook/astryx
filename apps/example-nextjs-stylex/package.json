@@ -1,5 +1,5 @@
 {
-  "name": "@xds/example-nextjs",
+  "name": "@xds/example-nextjs-stylex",
   "version": "0.0.1",
   "private": true,
   "scripts": {
@@ -8,6 +8,7 @@
     "start": "next start"
   },
   "dependencies": {
+    "@stylexjs/stylex": "^0.18.2",
     "@xds/core": "*",
     "@xds/theme-default": "*",
     "next": "^15.5.15",
@@ -15,8 +16,15 @@
     "react-dom": "^19.2.5"
   },
   "devDependencies": {
+    "@stylexjs/babel-plugin": "^0.18.2",
+    "@stylexjs/postcss-plugin": "^0.18.2",
+    "@babel/preset-react": "^7.25.0",
+    "@babel/preset-typescript": "^7.25.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "typescript": "^5.7.0"
-  }
+  },
+  "browserslist": [
+    "last 1 Chrome version"
+  ]
 }

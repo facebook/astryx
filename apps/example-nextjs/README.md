@@ -13,19 +13,7 @@ npm install @xds/core @xds/theme-default next react react-dom
 npm install --save-dev @types/react @types/react-dom typescript
 ```
 
-### 2. Browserslist
-
-Add a `browserslist` to `package.json` so that Next.js (and its internal lightningcss) targets modern browsers. Without this, lightningcss may lower `light-dark()` into polyfill variables that break XDS theming:
-
-```json
-{
-  "browserslist": ["last 1 Chrome version"]
-}
-```
-
-> For internal tools targeting latest Chrome, `"last 1 Chrome version"` is sufficient. For broader browser support, use targets that include Chrome 123+ / Firefox 120+ / Safari 17.5+ (when `light-dark()` shipped).
-
-### 3. CSS imports
+### 2. CSS imports
 
 `src/app/globals.css` — import the reset, component styles, and theme:
 
@@ -38,8 +26,8 @@ Add a `browserslist` to `package.json` so that Next.js (and its internal lightni
 The CSS import order matters:
 
 1. `reset.css` — baseline resets (`@layer reset`)
-2. `xds.css` — all component styles (`@layer xds`)
-3. `theme.css` — theme token overrides (`@layer xds.theme`)
+2. `xds.css` — all component styles (`@layer xds-base`)
+3. `theme.css` — theme token overrides (`@layer xds-theme`)
 
 Import the CSS file in your root layout:
 
@@ -47,7 +35,7 @@ Import the CSS file in your root layout:
 import './globals.css';
 ```
 
-### 4. Theme + Link provider (client boundary)
+### 3. Theme + Link provider (client boundary)
 
 ```tsx
 // src/app/providers.tsx
@@ -70,11 +58,10 @@ export function Providers({children}) {
 
 ## Gotchas
 
-| Issue                         | Symptom                                     | Fix                                                               |
-| ----------------------------- | ------------------------------------------- | ----------------------------------------------------------------- |
-| Missing `browserslist`        | Colors broken — `light-dark()` gets lowered | Add `"browserslist": ["last 1 Chrome version"]` to `package.json` |
-| Wrong CSS import order        | Missing theme tokens or broken layers       | Import reset → xds → theme in that order                          |
-| No `'use client'` on provider | Server component error from `createContext` | Mark the provider file with `'use client'`                        |
+| Issue                         | Symptom                                     | Fix                                        |
+| ----------------------------- | ------------------------------------------- | ------------------------------------------ |
+| Wrong CSS import order        | Missing theme tokens or broken layers       | Import reset → xds → theme in that order   |
+| No `'use client'` on provider | Server component error from `createContext` | Mark the provider file with `'use client'` |
 
 ## Testing outside the monorepo
 
