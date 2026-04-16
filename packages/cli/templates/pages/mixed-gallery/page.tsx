@@ -113,11 +113,7 @@ function GalleryCard({image}: {image: GalleryImage}) {
           e.currentTarget.style.opacity = '0';
         }}>
         <XDSVStack gap={2} style={{color: 'white'}}>
-          <XDSText
-            type="body"
-            weight="bold"
-            color="inherit"
-            style={{fontSize: 'var(--font-size-xl)'}}>
+          <XDSText type="body" weight="bold" color="inherit" size="xl">
             {image.title}
           </XDSText>
           <XDSText type="body" color="inherit">
@@ -147,19 +143,19 @@ export default function MixedGalleryTemplate() {
   return (
     <XDSAppShell height="fill" contentPadding={6} variant="surface">
       <XDSCenter axis="horizontal" height="100%">
-        <div
+        <XDSSection
+          variant="transparent"
+          maxWidth={1400}
+          width="100%"
+          height="100%"
           className="gallery-container"
-          style={{maxWidth: 1400, width: '100%', height: '100%'}}>
-          <XDSVStack gap={6} style={{height: '100%'}}>
+          padding={0}>
+          <XDSVStack gap={6} xstyle={{height: '100%'}}>
             {/* Header — capped with XDSSection maxWidth */}
             <XDSCenter axis="horizontal">
               <XDSSection variant="transparent" maxWidth={680}>
-                <XDSVStack gap={2} style={{textAlign: 'center'}}>
-                  <XDSText
-                    type="large"
-                    weight="bold"
-                    as="p"
-                    style={{fontSize: 'var(--font-size-2xl)'}}>
+                <XDSVStack gap={2} xstyle={{textAlign: 'center'}}>
+                  <XDSText type="large" weight="bold" as="p" size="2xl">
                     Make every day a little more delightful, one detail at a
                     time.
                   </XDSText>
@@ -179,7 +175,7 @@ export default function MixedGalleryTemplate() {
             <XDSStackItem size="fill">
               <div className="gallery-desktop" style={{height: '100%'}}>
                 <XDSGrid columns={3} gap={4} height="100%">
-                  <XDSVStack gap={4} style={{minHeight: 0}}>
+                  <XDSVStack gap={4} xstyle={{minHeight: 0}}>
                     <XDSStackItem size="fill">
                       <GalleryCard image={IMAGES[0]} />
                     </XDSStackItem>
@@ -190,7 +186,7 @@ export default function MixedGalleryTemplate() {
 
                   <GalleryCard image={IMAGES[2]} />
 
-                  <XDSVStack gap={4} style={{minHeight: 0}}>
+                  <XDSVStack gap={4} xstyle={{minHeight: 0}}>
                     <XDSStackItem size="fill">
                       <GalleryCard image={IMAGES[3]} />
                     </XDSStackItem>
@@ -225,7 +221,7 @@ export default function MixedGalleryTemplate() {
               }}
             />
           </XDSVStack>
-        </div>
+        </XDSSection>
       </XDSCenter>
     </XDSAppShell>
   );
