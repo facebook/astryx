@@ -1,7 +1,8 @@
 'use client';
 
+import {XDSAppShell} from '@xds/core/AppShell';
+import {XDSTopNav, XDSTopNavHeading, XDSTopNavItem} from '@xds/core/TopNav';
 import {XDSVStack} from '@xds/core/Layout';
-import {XDSCenter} from '@xds/core/Center';
 import {XDSSection} from '@xds/core/Section';
 import {XDSText} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
@@ -145,7 +146,24 @@ function ProductCard({product}: {product: Product}) {
 
 export default function ProductGalleryTemplate() {
   return (
-    <XDSCenter axis="horizontal">
+    <XDSAppShell
+      topNav={
+        <XDSTopNav
+          label="Store navigation"
+          heading={<XDSTopNavHeading heading="Store" href="#" />}
+          centerContent={
+            <>
+              <XDSTopNavItem label="New" href="#" />
+              <XDSTopNavItem label="Shop" href="#" isSelected />
+              <XDSTopNavItem label="Collections" href="#" />
+              <XDSTopNavItem label="About" href="#" />
+            </>
+          }
+        />
+      }
+      height="auto"
+      contentPadding={0}
+      variant="surface">
       <XDSSection maxWidth={1200} padding={6} variant="transparent">
         <XDSVStack gap={6}>
           {/* Header — XDSGrid handles responsive stacking */}
@@ -180,6 +198,6 @@ export default function ProductGalleryTemplate() {
           </XDSGrid>
         </XDSVStack>
       </XDSSection>
-    </XDSCenter>
+    </XDSAppShell>
   );
 }
