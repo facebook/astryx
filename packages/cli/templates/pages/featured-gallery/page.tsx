@@ -1,353 +1,265 @@
 'use client';
 
-import {useState} from 'react';
-import {XDSAppShell} from '@xds/core/AppShell';
-import {XDSTopNav, XDSTopNavHeading, XDSTopNavItem} from '@xds/core/TopNav';
+import {useState, useRef} from 'react';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSCenter} from '@xds/core/Center';
-import {XDSText, XDSHeading} from '@xds/core/Text';
+import {XDSSection} from '@xds/core/Section';
+import {XDSText} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
-import {XDSCard} from '@xds/core/Card';
-import {XDSNavIcon} from '@xds/core/NavIcon';
-import {XDSGrid, XDSGridSpan} from '@xds/core/Grid';
+import {XDSBadge} from '@xds/core/Badge';
 import {XDSAspectRatio} from '@xds/core/AspectRatio';
+import {XDSIcon} from '@xds/core/Icon';
 
 // ─── Icons ──────────────────────────────────────────────────────────────────
-const CameraIcon = (props: React.SVGProps<SVGSVGElement>) => (
+
+const ArrowLeftIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth={1.5}
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
     {...props}>
-    <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
-    <circle cx="12" cy="13" r="4" />
+    <path d="M19 12H5M12 19l-7-7 7-7" />
   </svg>
 );
 
-const SearchIcon = (props: React.SVGProps<SVGSVGElement>) => (
+const ArrowRightIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth={1.5}
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
     {...props}>
-    <circle cx="11" cy="11" r="8" />
-    <path d="M21 21l-4.35-4.35" />
-  </svg>
-);
-
-const HeartIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
-  </svg>
-);
-
-const GridIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <rect x="3" y="3" width="7" height="7" />
-    <rect x="14" y="3" width="7" height="7" />
-    <rect x="3" y="14" width="7" height="7" />
-    <rect x="14" y="14" width="7" height="7" />
-  </svg>
-);
-
-const ShareIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <circle cx="18" cy="5" r="3" />
-    <circle cx="6" cy="12" r="3" />
-    <circle cx="18" cy="19" r="3" />
-    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
-    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-  </svg>
-);
-
-const DownloadIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-    <polyline points="7 10 12 15 17 10" />
-    <line x1="12" y1="15" x2="12" y2="3" />
+    <path d="M5 12h14M12 5l7 7-7 7" />
   </svg>
 );
 
 // ─── Gallery Data ───────────────────────────────────────────────────────────
-const GALLERY_ITEMS = [
+
+interface GalleryItem {
+  id: number;
+  title: string;
+  description: string;
+  image: string;
+}
+
+const GALLERY_ITEMS: GalleryItem[] = [
   {
-    src: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=900&q=80',
-    title: 'Golden Hour Portrait',
-    photographer: 'Elena Marquez',
+    id: 1,
+    title: 'Going places',
+    description:
+      'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt.',
+    image:
+      'https://scontent.xx.fbcdn.net/v/t39.6806-6/670836735_2461791954280697_1048571955964692895_n.jpg?_nc_cat=105&ccb=1-7&_nc_sid=56bbc2&_nc_ohc=b9DqIpmzyeAQ7kNvwEuVNYV&_nc_oc=Adqx7M8RaKihjC8dSQUH_YjYNSkC7dv34yH96ndekQT74zfo2M6_DMfY-HyXDGEgXYHKMGTPSBWROmTm7oSKCaPg&_nc_zt=14&_nc_ht=scontent.xx&_nc_gid=JpoMwvOmI8EiEnZqKv1pTA&_nc_ss=7a30f&oh=00_Af2OVKepznOQZ3IX-zLvEo2kLnuG7__tVGUrZjjgcrbRgA&oe=69E5E16B',
   },
   {
-    src: 'https://images.unsplash.com/photo-1547891654-e66ed7ebb968?w=900&q=80',
-    title: 'Abstract Geometry',
-    photographer: 'Marcus Chen',
+    id: 2,
+    title: 'Meeting people',
+    description:
+      'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt.',
+    image:
+      'https://scontent.xx.fbcdn.net/v/t39.6806-6/672442902_1640784437230723_4677249872577324579_n.jpg?_nc_cat=111&ccb=1-7&_nc_sid=56bbc2&_nc_ohc=FTogKwiBg4oQ7kNvwG66g5l&_nc_oc=AdohfcFkqsXQ69dg4wisn1PklAF79fF9Nj8yv2VzbjdQCjdzvseKVPSke0RP0IjpniAdOiiK9NJv4Q1c85oXpxiK&_nc_zt=14&_nc_ht=scontent.xx&_nc_gid=J_KnD2I4RCz2o8AuLodUDQ&_nc_ss=7a30f&oh=00_Af28cM8LnHy_7WY3GWshof2Lb0LUOYTYGWcs6WJLZtn3Mw&oe=69E5DCC2',
   },
   {
-    src: 'https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=900&q=80',
-    title: 'Vivid Brushstrokes',
-    photographer: 'Sophie Laurent',
+    id: 3,
+    title: 'Seeing things',
+    description:
+      'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt.',
+    image:
+      'https://scontent.xx.fbcdn.net/v/t39.6806-6/670491006_1228594285764183_1722506701323274836_n.jpg?_nc_cat=100&ccb=1-7&_nc_sid=56bbc2&_nc_ohc=unkJDFgu-GIQ7kNvwHLBAsx&_nc_oc=AdriBiJflVanSL6euivARP6MqUkFisc5WqVoVdfnRLLC53mlQfqwIy13-ln2C-WURNmWQVwPWOS208aVNzXS-J03&_nc_zt=14&_nc_ht=scontent.xx&_nc_gid=PQDl1TKYJb3bDU1ul7KbxA&_nc_ss=7a30f&oh=00_Af3_j3JztXbZajrbUT0DvW6pDWu9ROyhHtoaYUewnVcirA&oe=69E5D9EE',
   },
   {
-    src: 'https://images.unsplash.com/photo-1518998053901-5348d3961a04?w=900&q=80',
-    title: 'Color Fields',
-    photographer: 'James Okafor',
+    id: 4,
+    title: 'Sharing ideas',
+    description:
+      'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt.',
+    image:
+      'https://scontent.xx.fbcdn.net/v/t39.6806-6/670453426_1629772308172392_7338648760044721206_n.jpg?_nc_cat=104&ccb=1-7&_nc_sid=56bbc2&_nc_ohc=w119t9ZcjqYQ7kNvwE2Tf7P&_nc_oc=AdojAepj9rmCVIeFNbEdopGIZbjSHlIf5nbxtyXI2GaOf5Nz8Gj23ajgGK--vzCyDLpCBHvRoGSNE2ioGSs11DTR&_nc_zt=14&_nc_ht=scontent.xx&_nc_gid=mUz5o8bLcOK-Q6fv8PeCIQ&_nc_ss=7a30f&oh=00_Af2_T8BE3gFLoT-wOHJ3ZC0Zafkan4APWs5SDWDmW2fQwQ&oe=69E5F2BC',
   },
   {
-    src: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=900&q=80',
-    title: 'Gallery Wall',
-    photographer: 'Anna Petrov',
+    id: 5,
+    title: 'Making memories',
+    description:
+      'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt.',
+    image:
+      'https://scontent.xx.fbcdn.net/v/t39.6806-6/670440654_2425466027902111_441009769495615664_n.jpg?_nc_cat=100&ccb=1-7&_nc_sid=56bbc2&_nc_ohc=sEujXUMcS0AQ7kNvwGotqx9&_nc_oc=AdoICPhh8wzKOuVjHhY4bDHG1GenjycImIsts9g2YwfUJfRhfqGiQ_v5I3l-HB7blzgW0OaXVo6R9Wy0O17WTrcR&_nc_zt=14&_nc_ht=scontent.xx&_nc_gid=gsRqlN0CNh8pEJrGowBt2A&_nc_ss=7a30f&oh=00_Af36QSneAf3QMV7wSsWXsheMX3vnv33kwsu79LnL0v5d0Q&oe=69E5EF77',
   },
   {
-    src: 'https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=900&q=80',
-    title: 'Sculpted Light',
-    photographer: 'David Kim',
-  },
-  {
-    src: 'https://images.unsplash.com/photo-1482160549825-59d1b23cb208?w=900&q=80',
-    title: 'Urban Layers',
-    photographer: 'Lena Fischer',
-  },
-  {
-    src: 'https://images.unsplash.com/photo-1561214115-f2f134cc4912?w=900&q=80',
-    title: 'Spectrum Study',
-    photographer: 'Tomás Rivera',
+    id: 6,
+    title: 'Being free',
+    description:
+      'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt.',
+    image:
+      'https://scontent.xx.fbcdn.net/v/t39.6806-6/673819168_896838673380430_7926069171483718115_n.jpg?_nc_cat=102&ccb=1-7&_nc_sid=56bbc2&_nc_ohc=rhw65II8BL4Q7kNvwEQ_jcH&_nc_oc=AdpJgUbr24uDH4r8oWwxa54NQJ3z5y51tdL-gxZLR6UL9NAerKcrB4M6gl2qiXpe0H3yPqazZkot7IHWfyXqWdq4&_nc_zt=14&_nc_ht=scontent.xx&_nc_gid=SpweIC6Bhmp65LIJsM5o0g&_nc_ss=7a30f&oh=00_Af0umasO4WHA_M84DFsegtIr3laVMxdz3t-TRVTBHoy-6A&oe=69E5DFB7',
   },
 ];
 
-// ─── Main Page ──────────────────────────────────────────────────────────────
-export default function FeaturedGalleryTemplate() {
-  const [selectedIndex, setSelectedIndex] = useState(0);
-  const featured = GALLERY_ITEMS[selectedIndex];
+// ─── Gallery Card ───────────────────────────────────────────────────────────
 
-  // Thumbnails are all items except the currently featured one
-  const thumbnails = GALLERY_ITEMS.filter((_, i) => i !== selectedIndex).slice(
-    0,
-    4,
+function GalleryCard({item}: {item: GalleryItem}) {
+  return (
+    <div
+      style={{
+        position: 'relative',
+        borderRadius: 'var(--radius-container)',
+        overflow: 'clip',
+        flexShrink: 0,
+        width: 'calc((100vw - 96px) / 3)',
+        maxWidth: 480,
+        minWidth: 320,
+      }}>
+      <XDSAspectRatio ratio={3 / 4}>
+        <img
+          src={item.image}
+          alt={item.title}
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            objectPosition: 'center',
+            display: 'block',
+          }}
+        />
+      </XDSAspectRatio>
+
+      {/* Gradient overlay + content at bottom */}
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background:
+            'linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.3) 40%, transparent 65%)',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'flex-end',
+          padding: 'var(--spacing-6)',
+        }}>
+        <XDSVStack gap={2}>
+          <XDSText
+            type="body"
+            weight="bold"
+            style={{
+              color: '#fff',
+              fontSize: 'var(--font-size-xl)',
+            }}>
+            {item.title}
+          </XDSText>
+          <XDSText
+            type="body"
+            maxLines={2}
+            style={{color: 'rgba(255,255,255,0.85)'}}>
+            {item.description}
+          </XDSText>
+          <div style={{paddingTop: 'var(--spacing-1)'}}>
+            <XDSButton
+              label="Read more"
+              variant="secondary"
+              endContent={<XDSIcon icon={ArrowRightIcon} color="inherit" />}
+            />
+          </div>
+        </XDSVStack>
+      </div>
+    </div>
   );
+}
+
+// ─── Main Page ──────────────────────────────────────────────────────────────
+
+export default function FeaturedGalleryTemplate() {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const scroll = (direction: 'left' | 'right') => {
+    if (!scrollRef.current) return;
+    const cardWidth = scrollRef.current.firstElementChild
+      ? (scrollRef.current.firstElementChild as HTMLElement).offsetWidth
+      : 400;
+    const scrollAmount = cardWidth + 24; // card width + gap
+    scrollRef.current.scrollBy({
+      left: direction === 'left' ? -scrollAmount : scrollAmount,
+      behavior: 'smooth',
+    });
+  };
 
   return (
-    <XDSAppShell
-      topNav={
-        <XDSTopNav
-          label="Gallery navigation"
-          heading={
-            <XDSTopNavHeading
-              heading="Showroom"
-              logo={
-                <XDSNavIcon
-                  icon={<CameraIcon style={{width: 16, height: 16}} />}
-                />
-              }
-              href="#"
-            />
-          }
-          centerContent={
-            <>
-              <XDSTopNavItem label="Featured" href="#" isSelected />
-              <XDSTopNavItem label="Collections" href="#" />
-              <XDSTopNavItem label="Artists" href="#" />
-              <XDSTopNavItem label="Exhibitions" href="#" />
-            </>
-          }
-          endContent={
-            <>
-              <XDSButton
-                label="Search"
-                variant="ghost"
-                icon={<SearchIcon style={{width: 16, height: 16}} />}
-                isIconOnly
-              />
-              <XDSButton
-                label="Favorites"
-                variant="ghost"
-                icon={<HeartIcon style={{width: 16, height: 16}} />}
-                isIconOnly
-              />
-              <XDSButton
-                label="Grid view"
-                variant="ghost"
-                icon={<GridIcon style={{width: 16, height: 16}} />}
-                isIconOnly
-              />
-            </>
-          }
-        />
-      }
-      height="auto"
-      contentPadding={0}
-      variant="surface">
+    <XDSVStack gap={0}>
+      {/* Header section — centered, constrained width */}
       <XDSCenter axis="horizontal">
-        <div style={{maxWidth: 1200, width: '100%', padding: '32px 24px 64px'}}>
-          {/* Featured + Thumbnails Grid */}
-          <XDSGrid columns={3} gap={4}>
-            {/* Featured image — spans 2 columns and 2 rows */}
-            <XDSGridSpan columns={2} rows={2}>
-              <XDSCard padding={0}>
-                <XDSAspectRatio ratio={4 / 5}>
-                  <img
-                    src={featured.src}
-                    alt={featured.title}
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover',
-                    }}
-                  />
-                </XDSAspectRatio>
-              </XDSCard>
-            </XDSGridSpan>
-
-            {/* Thumbnails in right column — stacked vertically */}
-            <XDSGridSpan rows={2}>
-              <XDSVStack gap={4}>
-                {thumbnails.map((item, i) => {
-                  const realIndex = GALLERY_ITEMS.indexOf(item);
-                  return (
-                    <div
-                      key={realIndex}
-                      role="button"
-                      tabIndex={0}
-                      aria-label={`View ${item.title}`}
-                      onClick={() => setSelectedIndex(realIndex)}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          setSelectedIndex(realIndex);
-                        }
-                      }}
-                      style={{cursor: 'pointer'}}>
-                      <XDSCard
-                        padding={0}
-                        style={{
-                          outline:
-                            selectedIndex === realIndex
-                              ? '2.5px solid var(--color-accent, #0866ff)'
-                              : '2.5px solid transparent',
-                          outlineOffset: 2,
-                        }}>
-                        <XDSAspectRatio ratio={4 / 3}>
-                          <img
-                            src={item.src}
-                            alt={item.title}
-                            style={{
-                              width: '100%',
-                              height: '100%',
-                              objectFit: 'cover',
-                              opacity: selectedIndex === realIndex ? 1 : 0.75,
-                            }}
-                          />
-                        </XDSAspectRatio>
-                      </XDSCard>
-                    </div>
-                  );
-                })}
-              </XDSVStack>
-            </XDSGridSpan>
-          </XDSGrid>
-
-          {/* Caption below gallery */}
-          <XDSVStack gap={1} style={{marginTop: 16}}>
-            <XDSHStack gap={3} vAlign="center">
-              <XDSVStack gap={0}>
-                <XDSHeading level={2}>{featured.title}</XDSHeading>
-                <XDSText type="body" color="secondary">
-                  Photographed by {featured.photographer}
-                </XDSText>
-              </XDSVStack>
-              <XDSHStack gap={1}>
-                <XDSButton
-                  label="Save to favorites"
-                  variant="ghost"
-                  icon={<HeartIcon style={{width: 16, height: 16}} />}
-                  isIconOnly
-                />
-                <XDSButton
-                  label="Share"
-                  variant="ghost"
-                  icon={<ShareIcon style={{width: 16, height: 16}} />}
-                  isIconOnly
-                />
-                <XDSButton
-                  label="Download"
-                  variant="ghost"
-                  icon={<DownloadIcon style={{width: 16, height: 16}} />}
-                  isIconOnly
-                />
-              </XDSHStack>
+        <XDSSection maxWidth={1200} padding={6} variant="transparent">
+          <XDSVStack gap={3} hAlign="center">
+            <XDSHStack gap={2}>
+              <XDSBadge label="Green badge" variant="green" />
+              <XDSBadge label="Yellow badge" variant="yellow" />
+              <XDSBadge label="Blue badge" variant="blue" />
             </XDSHStack>
+            <XDSText
+              type="large"
+              weight="bold"
+              as="p"
+              style={{
+                fontSize: 'var(--font-size-3xl)',
+                textAlign: 'center',
+                maxWidth: 640,
+              }}>
+              Make every day a little more delightful, one detail at a time.
+            </XDSText>
+            <XDSText
+              type="body"
+              color="secondary"
+              style={{textAlign: 'center', maxWidth: 640}}>
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
+              eiusmod tempor incididunt ut labore et dolore magna aliqua ut enim
+              ad minim excepteur sint occaecat cupidatat non proident.
+            </XDSText>
           </XDSVStack>
+        </XDSSection>
+      </XDSCenter>
 
-          {/* All images row */}
-          <XDSVStack gap={4} style={{marginTop: 40}}>
-            <XDSHeading level={3}>All in this collection</XDSHeading>
-            <XDSGrid columns={4} gap={4}>
-              {GALLERY_ITEMS.map((item, i) => (
-                <div
-                  key={i}
-                  role="button"
-                  tabIndex={0}
-                  aria-label={`View ${item.title}`}
-                  onClick={() => setSelectedIndex(i)}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      setSelectedIndex(i);
-                    }
-                  }}
-                  style={{cursor: 'pointer'}}>
-                  <XDSCard
-                    padding={0}
-                    style={{
-                      outline:
-                        selectedIndex === i
-                          ? '2.5px solid var(--color-accent, #0866ff)'
-                          : '2.5px solid transparent',
-                      outlineOffset: 2,
-                    }}>
-                    <XDSAspectRatio ratio={1}>
-                      <img
-                        src={item.src}
-                        alt={item.title}
-                        style={{
-                          width: '100%',
-                          height: '100%',
-                          objectFit: 'cover',
-                        }}
-                      />
-                    </XDSAspectRatio>
-                  </XDSCard>
-                  <XDSVStack gap={0} style={{marginTop: 8}}>
-                    <XDSText type="label">{item.title}</XDSText>
-                    <XDSText type="supporting" color="secondary">
-                      {item.photographer}
-                    </XDSText>
-                  </XDSVStack>
-                </div>
-              ))}
-            </XDSGrid>
-          </XDSVStack>
+      {/* Navigation arrows — right-aligned within max-width */}
+      <XDSCenter axis="horizontal">
+        <div style={{maxWidth: 1200, width: '100%', padding: '0 24px'}}>
+          <XDSHStack gap={2} hAlign="end">
+            <XDSButton
+              label="Previous"
+              variant="secondary"
+              icon={<XDSIcon icon={ArrowLeftIcon} color="inherit" />}
+              isIconOnly
+              onClick={() => scroll('left')}
+            />
+            <XDSButton
+              label="Next"
+              variant="secondary"
+              icon={<XDSIcon icon={ArrowRightIcon} color="inherit" />}
+              isIconOnly
+              onClick={() => scroll('right')}
+            />
+          </XDSHStack>
         </div>
       </XDSCenter>
-    </XDSAppShell>
+
+      {/* Carousel — full-bleed horizontal scroll */}
+      <div
+        ref={scrollRef}
+        style={{
+          display: 'flex',
+          gap: 24,
+          overflowX: 'auto',
+          scrollSnapType: 'x mandatory',
+          paddingLeft: 'max(24px, calc((100vw - 1200px) / 2 + 24px))',
+          paddingRight: 24,
+          paddingTop: 24,
+          paddingBottom: 48,
+          scrollbarWidth: 'none',
+        }}>
+        {GALLERY_ITEMS.map(item => (
+          <div key={item.id} style={{scrollSnapAlign: 'start'}}>
+            <GalleryCard item={item} />
+          </div>
+        ))}
+      </div>
+    </XDSVStack>
   );
 }
