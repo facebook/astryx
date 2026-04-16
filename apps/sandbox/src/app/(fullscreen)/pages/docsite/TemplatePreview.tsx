@@ -382,7 +382,7 @@ export function TemplatePreview({
           <div
             style={{
               position: 'relative',
-              width: viewportSize === 'phone' ? 375 : '100%',
+              width: viewportSize === 'phone' ? 390 : '100%',
               borderRadius:
                 viewportSize === 'phone'
                   ? 36
@@ -404,8 +404,8 @@ export function TemplatePreview({
               style={{
                 display: 'block',
                 width: '100%',
-                aspectRatio: viewportSize === 'phone' ? '9 / 19.5' : undefined,
-                objectFit: viewportSize === 'phone' ? 'cover' : undefined,
+                aspectRatio: undefined,
+                objectFit: undefined,
                 opacity: isGenerating ? 0 : 1,
                 transition: 'opacity 600ms ease',
               }}

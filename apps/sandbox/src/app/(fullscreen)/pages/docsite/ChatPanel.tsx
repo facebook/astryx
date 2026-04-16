@@ -20,7 +20,16 @@ import {MOCK_CODE} from './constants';
 
 const composerStyles = stylex.create({
   borderInsteadOfShadow: {
-    border: '1px solid var(--color-border)',
+    boxShadow: {
+      default: 'none',
+      ':hover': {'@media (hover: hover)': 'none'},
+    },
+    ':focus-within': {
+      boxShadow: 'none',
+    },
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: 'var(--color-border)',
   },
 });
 
@@ -73,7 +82,7 @@ export function ChatPanel({
             display: 'flex',
             alignItems: 'center',
             padding: '0 8px 0 16px',
-            borderBottom: '1px solid var(--color-divider, #e0e0e0)',
+            borderBottom: 'none',
             flexShrink: 0,
           }}>
           {onBack && (
