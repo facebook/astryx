@@ -141,10 +141,10 @@ function GalleryCard({item}: {item: (typeof GALLERY_ITEMS)[number]}) {
 
 export default function FeaturedGalleryTemplate() {
   return (
-    <XDSCenter axis="horizontal">
-      <XDSSection maxWidth={1200} padding={6} variant="transparent">
-        <XDSVStack gap={6}>
-          {/* Header */}
+    <XDSVStack gap={6}>
+      {/* Header — constrained */}
+      <XDSCenter axis="horizontal">
+        <XDSSection maxWidth={1200} padding={6} variant="transparent">
           <XDSVStack gap={3} hAlign="center">
             <XDSHStack gap={2}>
               <XDSBadge label="Green badge" variant="green" />
@@ -171,15 +171,15 @@ export default function FeaturedGalleryTemplate() {
               ad minim excepteur sint occaecat cupidatat non proident.
             </XDSText>
           </XDSVStack>
+        </XDSSection>
+      </XDSCenter>
 
-          {/* Carousel with built-in XDS nav buttons */}
-          <XDSCarousel gap={4} hasSnap hasButtons>
-            {GALLERY_ITEMS.map(item => (
-              <GalleryCard key={item.id} item={item} />
-            ))}
-          </XDSCarousel>
-        </XDSVStack>
-      </XDSSection>
-    </XDSCenter>
+      {/* Carousel — full width */}
+      <XDSCarousel gap={4} hasSnap hasButtons>
+        {GALLERY_ITEMS.map(item => (
+          <GalleryCard key={item.id} item={item} />
+        ))}
+      </XDSCarousel>
+    </XDSVStack>
   );
 }
