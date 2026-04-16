@@ -155,7 +155,11 @@ export default function MixedGalleryTemplate() {
             <XDSCenter axis="horizontal">
               <XDSSection variant="transparent" maxWidth={680}>
                 <XDSVStack gap={2} style={{textAlign: 'center'}}>
-                  <XDSText type="large" weight="bold" as="p" size="2xl">
+                  <XDSText
+                    type="large"
+                    weight="bold"
+                    as="p"
+                    style={{fontSize: 'var(--font-size-2xl)'}}>
                     Make every day a little more delightful, one detail at a
                     time.
                   </XDSText>
