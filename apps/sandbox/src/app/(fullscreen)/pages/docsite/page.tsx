@@ -1386,7 +1386,6 @@ function DocsiteLandingTemplate() {
                       ? 'repeat(2, 1fr)'
                       : 'repeat(3, 1fr)',
                   gap: 16,
-                  gridAutoRows: '1fr',
                 }}>
                 {filteredTemplates.map((template, i) => (
                   <div
@@ -1459,7 +1458,7 @@ function DocsiteLandingTemplate() {
               width="90vw"
               maxHeight="90vh"
               purpose="info"
-              style={{padding: 0, overflow: 'visible', maxWidth: 1200}}>
+              style={{padding: 0, overflow: 'visible', maxWidth: 1600, '--xds-dialog-padding': '0px'}}>
               <div
                 style={{position: 'absolute', top: 0, right: -40, zIndex: 1}}>
                 <XDSCard padding={0} style={{borderRadius: '50%'}}>
@@ -1475,16 +1474,16 @@ function DocsiteLandingTemplate() {
               </div>
               <div ref={card4ScrollRef} style={{overflowY: 'auto'}}>
                 {/* Main content: image left + details right */}
-                <div style={{display: 'flex', minHeight: 0, padding: '0 24px'}}>
+                <div style={{display: 'flex', minHeight: 0, padding: '0 32px'}}>
                   {/* Left — Preview image + thumbnails */}
                   <XDSStack
                     direction="vertical"
                     gap={3}
-                    style={{flex: 1, minWidth: 0, padding: '24px 24px 24px 0'}}>
+                    style={{flex: 1, minWidth: 0, padding: '32px 32px 32px 0'}}>
                     <div
                       style={{
                         flex: 1,
-                        height: 'clamp(300px, 50vh, 600px)',
+                        aspectRatio: '16 / 10',
                         backgroundColor:
                           'var(--color-background-muted, #f9f9f9)',
                         borderRadius: 12,
@@ -1513,7 +1512,7 @@ function DocsiteLandingTemplate() {
                   {/* Right — Details panel */}
                   <XDSStack
                     direction="vertical"
-                    style={{width: 360, flexShrink: 0, padding: '24px 0'}}>
+                    style={{width: 360, flexShrink: 0, padding: '32px 0'}}>
                     <div
                       style={{
                         opacity: previewTransitioning ? 0 : 1,
@@ -1564,7 +1563,7 @@ function DocsiteLandingTemplate() {
                     <XDSStack
                       direction="vertical"
                       gap={2}
-                      style={{marginTop: 16, position: 'relative'}}>
+                      style={{marginTop: 32, position: 'relative'}}>
                       <XDSButton
                         variant="primary"
                         label="Start crafting"
@@ -1958,7 +1957,7 @@ function DocsiteLandingTemplate() {
                 </div>
 
                 {/* More like this */}
-                <div style={{padding: '0 24px'}}>
+                <div style={{padding: '0 32px'}}>
                   <XDSHeading level={3}>More like this</XDSHeading>
                   <div
                     style={{
@@ -2007,7 +2006,7 @@ function DocsiteLandingTemplate() {
                 </div>
 
                 {/* Explore more */}
-                <div style={{padding: '24px 24px 0'}}>
+                <div style={{padding: '32px 32px 0'}}>
                   <XDSHeading level={3}>Explore more</XDSHeading>
                   <div
                     style={{
@@ -2047,7 +2046,7 @@ function DocsiteLandingTemplate() {
                 </div>
 
                 {/* Component used */}
-                <div style={{padding: '24px 24px 24px'}}>
+                <div style={{padding: '32px 32px 32px'}}>
                   <XDSHeading level={3}>Component used</XDSHeading>
                   <div
                     style={{
