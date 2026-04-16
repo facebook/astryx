@@ -84,7 +84,7 @@ const GALLERY_ITEMS = [
 
 function GalleryCard({item}: {item: (typeof GALLERY_ITEMS)[number]}) {
   return (
-    <XDSCard padding={0} style={{width: 380, flexShrink: 0}}>
+    <XDSCard padding={0} width={480}>
       <div style={{position: 'relative'}}>
         <XDSAspectRatio ratio={3 / 4}>
           <img
@@ -99,7 +99,7 @@ function GalleryCard({item}: {item: (typeof GALLERY_ITEMS)[number]}) {
           />
         </XDSAspectRatio>
 
-        {/* Gradient overlay — only custom element needed */}
+        {/* Gradient overlay for text legibility */}
         <div
           style={{
             position: 'absolute',
@@ -172,7 +172,7 @@ export default function FeaturedGalleryTemplate() {
             </XDSText>
           </XDSVStack>
 
-          {/* Carousel — XDS handles scroll, snap, nav buttons, fade edges */}
+          {/* Carousel with built-in XDS nav buttons */}
           <XDSCarousel gap={4} hasSnap hasButtons>
             {GALLERY_ITEMS.map(item => (
               <GalleryCard key={item.id} item={item} />
