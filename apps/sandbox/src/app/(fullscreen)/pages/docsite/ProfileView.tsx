@@ -37,6 +37,7 @@ function CraftCard({src}: {src: string}) {
       overflow: 'hidden',
       aspectRatio: '4 / 3',
       backgroundColor: 'var(--color-background-muted, #f0f0f0)',
+      border: '1px solid var(--color-border-emphasized, #e0e0e0)',
     }}>
       <img
         src={src}
@@ -165,7 +166,7 @@ export function ProfileView({activeView, setActiveView}: {activeView: 'craft' | 
                     animation: `craftCardFadeIn 400ms ${i * 60}ms cubic-bezier(0.16, 1, 0.3, 1) both`,
                   }}>
                   <CraftCard src={item.img} />
-                  <div style={{marginTop: 8, paddingInline: 2, paddingTop: 8, borderTop: '1px solid var(--color-border-emphasized, #e0e0e0)'}}>
+                  <div style={{marginTop: 8, paddingInline: 2}}>
                     <XDSText type="body" style={{fontWeight: 700}}>{item.name}</XDSText>
                     <XDSText type="supporting" color="secondary" display="block" style={{marginTop: 2}}>
                       {item.used} {item.used === 1 ? 'Use' : 'Uses'}{'  '}{timeAgo(item.lastUpdated)}
