@@ -56,8 +56,6 @@ jobs:
 
       - run: yarn test
 
-      - run: yarn build
-
   deploy:
     needs: test
     if: always() && !cancelled() && needs.test.result == 'success'
@@ -80,9 +78,6 @@ jobs:
       - name: Build core package
         run: yarn build
 
-      - name: Build Storybook
-        run: yarn workspace @xds/storybook build
-
       - name: Cache Next.js build
         uses: actions/cache@v4
         with:
@@ -92,10 +87,16 @@ jobs:
             nextjs-sandbox-${{ hashFiles('yarn.lock') }}-
             nextjs-sandbox-
 
-      - name: Build Sandbox
-        run: yarn workspace @xds/sandbox build
+      - name: Build Storybook + Sandbox in parallel
         env:
           SANDBOX_BASE_PATH: /sandbox
+        run: |
+          yarn workspace @xds/storybook build &
+          PID_SB=$!
+          yarn workspace @xds/sandbox build &
+          PID_SAND=$!
+          wait $PID_SB || exit 1
+          wait $PID_SAND || exit 1
 
       - name: Preserve PR previews and reports from gh-pages
         run: |

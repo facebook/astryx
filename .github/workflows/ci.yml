@@ -98,19 +98,6 @@ jobs:
       - name: Typecheck template docs
         run: yarn workspace @xds/cli typecheck:template-docs
 
-      - name: Cache Next.js build
-        if: github.event_name == 'pull_request'
-        uses: actions/cache@v4
-        with:
-          path: apps/sandbox/.next/cache
-          key: nextjs-sandbox-${{ hashFiles('yarn.lock') }}-${{ hashFiles('packages/core/dist/**') }}
-          restore-keys: |
-            nextjs-sandbox-${{ hashFiles('yarn.lock') }}-
-            nextjs-sandbox-
-
-      - name: Build Storybook
-        run: yarn workspace @xds/storybook build
-
       - name: Compute PR preview path
         if: github.event_name == 'pull_request'
         id: urls
@@ -126,11 +113,39 @@ jobs:
           echo "storybook_url=https://${REPO_OWNER}.github.io/${REPO_NAME}/pr/${PR_NUMBER}/" >> $GITHUB_OUTPUT
           echo "sandbox_url=https://${REPO_OWNER}.github.io/${REPO_NAME}/pr/${PR_NUMBER}/sandbox/" >> $GITHUB_OUTPUT
 
-      - name: Build Sandbox
+      - name: Cache Next.js build
         if: github.event_name == 'pull_request'
-        run: yarn workspace @xds/sandbox build
+        uses: actions/cache@v4
+        with:
+          path: apps/sandbox/.next/cache
+          key: nextjs-sandbox-${{ hashFiles('yarn.lock') }}-${{ hashFiles('packages/core/dist/**') }}
+          restore-keys: |
+            nextjs-sandbox-${{ hashFiles('yarn.lock') }}-
+            nextjs-sandbox-
+
+      - name: Build Storybook + Sandbox in parallel
+        if: github.event_name == 'pull_request'
         env:
           SANDBOX_BASE_PATH: /pr/${{ steps.urls.outputs.pr_number }}/sandbox
+        run: |
+          yarn workspace @xds/storybook build &
+          PID_SB=$!
+          yarn workspace @xds/sandbox build &
+          PID_SAND=$!
+          wait $PID_SB || exit 1
+          wait $PID_SAND || exit 1
+
+      - name: Build Storybook only (merge queue)
+        if: github.event_name != 'pull_request'
+        run: yarn workspace @xds/storybook build
+
+      - name: Analyze components
+        if: github.event_name == 'pull_request'
+        run: |
+          node .github/scripts/analyze-pr.js \
+            --base origin/${{ github.base_ref }} \
+            --head HEAD \
+            --output analysis.json
 
       - name: Upload Storybook artifact
         if: github.event_name == 'pull_request'
@@ -147,14 +162,6 @@ jobs:
           name: sandbox-${{ steps.urls.outputs.short_hash }}
           path: apps/sandbox/out/
           retention-days: 30
-
-      - name: Analyze components
-        if: github.event_name == 'pull_request'
-        run: |
-          node .github/scripts/analyze-pr.js \
-            --base origin/${{ github.base_ref }} \
-            --head HEAD \
-            --output analysis.json
 
       - name: Upload analysis artifact
         if: github.event_name == 'pull_request'

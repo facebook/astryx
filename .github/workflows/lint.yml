@@ -22,9 +22,5 @@ jobs:
 
       - run: yarn install --frozen-lockfile
 
-      # Clear ESLint cache to ensure fresh run
-      - name: Clear ESLint cache
-        run: rm -rf .eslintcache node_modules/.cache
-
       - name: Run ESLint
         run: yarn lint
