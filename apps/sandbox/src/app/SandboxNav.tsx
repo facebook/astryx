@@ -17,6 +17,7 @@ import {
   MoonIcon,
   BoxIcon,
   AppWindowIcon,
+  BlocksIcon,
 } from './icons';
 import {spacingVars, colorVars} from '@xds/core/theme/tokens.stylex';
 
@@ -26,6 +27,7 @@ const categoryIcons: Record<
 > = {
   'components-patterns': BoxIcon,
   templates: AppWindowIcon,
+  blocks: BlocksIcon,
   tools: WrenchIcon,
 };
 
