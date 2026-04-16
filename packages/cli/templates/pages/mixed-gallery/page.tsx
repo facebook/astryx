@@ -7,6 +7,8 @@ import {XDSText} from '@xds/core/Text';
 import {XDSSection} from '@xds/core/Section';
 import {XDSGrid} from '@xds/core/Grid';
 import {XDSButton} from '@xds/core/Button';
+import {XDSCard} from '@xds/core/Card';
+import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import {XDSIcon} from '@xds/core/Icon';
 
 // ─── Arrow Icon ─────────────────────────────────────────────────────────────
@@ -74,7 +76,6 @@ const imgStyle: React.CSSProperties = {
   width: '100%',
   height: '100%',
   objectFit: 'cover',
-  borderRadius: 'var(--radius-element, 8px)',
   display: 'block',
   minHeight: 0,
 };
@@ -83,13 +84,12 @@ const imgStyle: React.CSSProperties = {
 
 function GalleryCard({image}: {image: GalleryImage}) {
   return (
-    <div
+    <XDSCard
+      padding={0}
       style={{
         position: 'relative',
         width: '100%',
         height: '100%',
-        borderRadius: 'var(--radius-element, 8px)',
-        overflow: 'clip',
       }}>
       <img src={image.src} alt={image.title} style={imgStyle} />
       {/* Hover overlay */}
@@ -112,28 +112,26 @@ function GalleryCard({image}: {image: GalleryImage}) {
         onMouseLeave={e => {
           e.currentTarget.style.opacity = '0';
         }}>
-        <XDSVStack gap={2} style={{color: 'white'}}>
+        <XDSVStack gap={3} style={{color: 'white'}}>
           <XDSText type="body" weight="bold" color="inherit" size="2xl">
             {image.title}
           </XDSText>
           <XDSText type="body" color="inherit">
             {image.description}
           </XDSText>
-          <div style={{paddingTop: 'var(--spacing-1)'}}>
-            <XDSButton
-              label="Read more"
-              variant="secondary"
-              style={{
-                color: 'white',
-                borderColor: 'rgba(255,255,255,0.3)',
-                backgroundColor: 'rgba(255,255,255,0.15)',
-              }}
-              endContent={<XDSIcon icon={ArrowRightIcon} color="inherit" />}
-            />
-          </div>
+          <XDSButton
+            label="Read more"
+            variant="secondary"
+            style={{
+              color: 'white',
+              borderColor: 'rgba(255,255,255,0.3)',
+              backgroundColor: 'rgba(255,255,255,0.15)',
+            }}
+            endContent={<XDSIcon icon={ArrowRightIcon} color="inherit" />}
+          />
         </XDSVStack>
       </div>
-    </div>
+    </XDSCard>
   );
 }
 
@@ -158,11 +156,7 @@ export default function MixedGalleryTemplate() {
             <XDSCenter axis="horizontal">
               <XDSSection variant="transparent" maxWidth={680}>
                 <XDSVStack gap={2} style={{textAlign: 'center'}}>
-                  <XDSText
-                    type="large"
-                    weight="bold"
-                    as="p"
-                    style={{fontSize: 'var(--font-size-2xl)'}}>
+                  <XDSText type="body" weight="bold" as="p" size="2xl">
                     Make every day a little more delightful, one detail at a
                     time.
                   </XDSText>
@@ -209,9 +203,9 @@ export default function MixedGalleryTemplate() {
             <div className="gallery-mobile">
               <XDSVStack gap={4}>
                 {IMAGES.map((image, i) => (
-                  <div key={i} style={{height: 300}}>
+                  <XDSAspectRatio key={i} ratio={16 / 9}>
                     <GalleryCard image={image} />
-                  </div>
+                  </XDSAspectRatio>
                 ))}
               </XDSVStack>
             </div>
