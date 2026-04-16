@@ -1,4 +1,5 @@
-/* global module */
+/* global module, require */
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const babelConfig = require('./babel.config');
 
 module.exports = {
