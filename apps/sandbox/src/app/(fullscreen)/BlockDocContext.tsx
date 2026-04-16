@@ -69,7 +69,7 @@ export function BlockPreview({
                   : String(Math.round(ar * 1000) / 1000)}
             {' · '}scale: {scale}
           </XDSText>
-          <XDSText type="supporting" color="tertiary" size="xs">
+          <XDSText type="supporting" color="secondary" size="xs">
             Tweak aspectRatio and scale in the .doc.mjs file so the component
             fits nicely in this box.
           </XDSText>
