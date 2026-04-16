@@ -2,6 +2,7 @@
 
 import {XDSVStack} from '@xds/core/Layout';
 import {XDSCenter} from '@xds/core/Center';
+import {XDSSection} from '@xds/core/Section';
 import {XDSText} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
 import {XDSGrid} from '@xds/core/Grid';
@@ -144,7 +145,7 @@ function ProductCard({product}: {product: Product}) {
 export default function ProductGalleryTemplate() {
   return (
     <XDSCenter axis="horizontal">
-      <div style={{maxWidth: 1200, width: '100%', padding: '32px 24px 64px'}}>
+      <XDSSection maxWidth={1200} padding={6} variant="transparent">
         <XDSVStack gap={6}>
           {/* Header — XDSGrid handles responsive stacking */}
           <XDSGrid minChildWidth={280} gap={4} align="start">
@@ -179,7 +180,7 @@ export default function ProductGalleryTemplate() {
             ))}
           </XDSGrid>
         </XDSVStack>
-      </div>
+      </XDSSection>
     </XDSCenter>
   );
 }
