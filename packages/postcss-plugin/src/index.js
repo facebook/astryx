@@ -1,3 +1,5 @@
+"use strict";
+
 /**
  * @xds/postcss-plugin
  *
@@ -9,24 +11,17 @@
  *
  * Usage:
  *   // postcss.config.js
+ *   const babelConfig = require('./babel.config');
+ *
  *   module.exports = {
  *     plugins: {
  *       '@xds/postcss-plugin': {
- *         include: [
- *           'src/**\/*.{ts,tsx}',
- *           'node_modules/@xds/core/**\/*.{ts,tsx}',
- *         ],
- *         babelConfig: {
- *           babelrc: false,
- *           parserOpts: { plugins: ['typescript', 'jsx'] },
- *           plugins: require('./babel.config').plugins,
- *         },
+ *         appDir: 'src',
+ *         babelPlugins: babelConfig.plugins,
  *       },
  *     },
  *   };
  */
-
-'use strict';
 
 const path = require('node:path');
 const fs = require('node:fs');
@@ -38,6 +33,11 @@ const isGlob = require('is-glob');
 const globParent = require('glob-parent');
 
 const PLUGIN_NAME = '@xds/postcss-plugin';
+
+// XDS-specific defaults — the user shouldn't need to specify these
+const XDS_LIBRARY_GLOB = 'node_modules/@xds/**/*.{ts,tsx}';
+const XDS_LIBRARY_PATTERN = 'node_modules/@xds/';
+const STYLEX_IMPORT_SOURCE = '@stylexjs/stylex';
 
 function parseDependency(fileOrGlob, cwd) {
   if (fileOrGlob.startsWith('!')) return null;
@@ -66,19 +66,46 @@ function createPlugin() {
 
   const plugin = ({
     cwd = process.cwd(),
-    babelConfig = {},
-    include = [],
-    exclude = [],
-    importSources = ['@stylexjs/stylex'],
-    // Pattern to identify library files (vs product files)
-    libraryPattern = 'node_modules/@xds/',
-    // Layer names and ordering
+
+    // --- User-facing options ---
+
+    // Directory containing your app source (default: 'src')
+    appDir = 'src',
+
+    // StyleX babel plugins from your babel.config.js
+    babelPlugins = [],
+
+    // Layer names (override if you need different names)
     layers = {
       library: 'xds-base',
       product: 'product',
     },
+
+    // --- Advanced options (rarely needed) ---
+
+    // Additional include globs beyond appDir and @xds packages
+    extraInclude = [],
+
+    // Exclude globs
+    exclude = [],
   }) => {
+    // Build the include list: app code + all @xds packages
+    const include = [
+      `${appDir}/**/*.{js,jsx,ts,tsx}`,
+      XDS_LIBRARY_GLOB,
+      ...extraInclude,
+    ];
+
     const excludeWithDefaults = ['**/*.d.ts', '**/*.flow', ...exclude];
+
+    // Build babel config from the user's plugins
+    const babelConfig = {
+      babelrc: false,
+      parserOpts: {
+        plugins: ['typescript', 'jsx'],
+      },
+      plugins: babelPlugins,
+    };
 
     let shouldSkipTransformError = false;
 
@@ -147,11 +174,7 @@ function createPlugin() {
             const contents = fs.readFileSync(filePath, 'utf-8');
 
             // Quick check: does this file import stylex?
-            const hasStyleX = importSources.some((src) => {
-              const from = typeof src === 'string' ? src : src.from;
-              return contents.includes(from);
-            });
-            if (!hasStyleX) continue;
+            if (!contents.includes(STYLEX_IMPORT_SOURCE)) continue;
 
             transforms.push(
               babel
@@ -183,7 +206,7 @@ function createPlugin() {
           const libraryRules = [];
           const productRules = [];
           for (const [filePath, rules] of styleXRulesMap.entries()) {
-            if (filePath.includes(libraryPattern)) {
+            if (filePath.includes(XDS_LIBRARY_PATTERN)) {
               libraryRules.push(...rules);
             } else {
               productRules.push(...rules);
