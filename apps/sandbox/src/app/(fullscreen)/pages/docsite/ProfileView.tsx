@@ -1,485 +1,288 @@
 'use client';
 
-import React, {useState} from 'react';
-import {XDSAppShell} from '@xds/core/AppShell';
-import {XDSTopNav, XDSTopNavHeading} from '@xds/core/TopNav';
-import {XDSTabList, XDSTab} from '@xds/core/TabList';
-import {XDSHeading, XDSText} from '@xds/core/Text';
+import React, {useState, useMemo} from 'react';
+import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSCard} from '@xds/core/Card';
-import {XDSAvatar} from '@xds/core/Avatar';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSList, XDSListItem} from '@xds/core/List';
 import {XDSDialog, XDSDialogHeader} from '@xds/core/Dialog';
-import {XDSCommandPalette} from '@xds/core/CommandPalette';
-
-import {
-  PROFILE_USED_ITEMS,
-  PROFILE_LIKED_ITEMS,
-  PROFILE_COLLECTIONS,
-  DUMMY_IMAGE,
-  AVATAR_IMAGE,
-  SEARCH_COMMANDS,
-} from './constants';
-import {
-  SearchIcon,
-  ProfileIcon,
-  PlusIcon,
-  ChevronDownIcon,
-  FolderIcon,
-  DownloadIcon,
-} from './docsite-icons';
-
-const XDS_WORDMARK = (
-  <svg
-    width="46"
-    height="24"
-    viewBox="0 0 46 24"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg">
-    <path
-      d="M2.4239 15.8011C2.03945 16.3796 1.66972 16.9538 1.3147 17.524C0.707427 18.4992 1.42354 19.7348 2.57241 19.7348C3.13302 19.7348 3.64463 19.4209 3.91525 18.93C4.29391 18.243 4.71274 17.5352 5.17173 16.8066C5.38894 16.4618 5.60743 16.12 5.82721 15.7812C6.25251 15.1254 6.46516 14.7976 6.76252 14.68C6.99255 14.5891 7.27368 14.5899 7.50317 14.6822C7.79984 14.8014 8.00881 15.1278 8.42675 15.7804C8.64287 16.1179 8.85732 16.46 9.07008 16.8066C9.52175 17.534 9.93823 18.2339 10.3195 18.9063C10.6075 19.4141 11.1428 19.7348 11.7266 19.7348C12.9476 19.7348 13.7063 18.4203 13.0547 17.3877C12.7332 16.8781 12.3991 16.3639 12.0525 15.8453C11.3983 14.8527 10.7379 13.8906 10.0714 12.9592C9.81687 12.6036 9.68962 12.4258 9.64377 12.2384C9.60589 12.0836 9.60492 11.9307 9.64085 11.7754C9.68435 11.5874 9.80856 11.4091 10.057 11.0526C10.7093 10.1164 11.3596 9.15781 12.0078 8.1768C12.3869 7.60474 12.7521 7.03681 13.1035 6.47298C13.71 5.49987 12.9962 4.26519 11.8496 4.26519C11.2943 4.26519 10.7868 4.57405 10.5169 5.05923C10.1399 5.73688 9.72461 6.43721 9.27114 7.16022C9.06143 7.49458 8.8505 7.82569 8.63835 8.15358C8.21478 8.80819 8.003 9.1355 7.70554 9.25334C7.47561 9.34442 7.19397 9.34375 6.96448 9.25156C6.66759 9.13229 6.45853 8.80578 6.04043 8.15276C5.83116 7.82591 5.62351 7.49506 5.41747 7.16022C4.97918 6.44793 4.5738 5.76096 4.20132 5.0993C3.9136 4.58821 3.37617 4.26519 2.78967 4.26519C1.56624 4.26519 0.805692 5.58299 1.45419 6.62041C1.76588 7.11903 2.08912 7.6231 2.4239 8.1326C3.0752 9.10994 3.73263 10.059 4.3962 10.9796C4.65373 11.337 4.7825 11.5156 4.82882 11.7042C4.86709 11.86 4.86797 12.0139 4.83149 12.1702C4.78732 12.3593 4.66122 12.5385 4.40903 12.897C3.74526 13.8406 3.08355 14.8086 2.4239 15.8011Z"
-      fill="currentColor"
-    />
-    <path
-      fillRule="evenodd"
-      clipRule="evenodd"
-      d="M22.4734 4.26519C20.4471 4.26519 19.434 4.26519 18.6657 4.67201C18.0456 5.00031 17.5385 5.50739 17.2102 6.12744C16.8034 6.89579 16.8034 7.90892 16.8034 9.9352V14.0648C16.8034 16.0911 16.8034 17.1042 17.2102 17.8726C17.5385 18.4926 18.0456 18.9997 18.6657 19.328C19.434 19.7348 20.4471 19.7348 22.4734 19.7348H23.2039C24.8496 19.7348 26.2644 19.4033 27.4485 18.7403C28.6399 18.07 29.5559 17.1529 30.1963 15.989C30.8367 14.825 31.1569 13.4954 31.1569 12C31.1569 10.5046 30.8367 9.17495 30.1963 8.01105C29.5559 6.84714 28.6399 5.9337 27.4485 5.27072C26.2644 4.60037 24.8496 4.26519 23.2039 4.26519H22.4734ZM20.0092 8.74707C20.0092 8.16814 20.0092 7.87867 20.1255 7.65914C20.2193 7.48198 20.3641 7.33711 20.5413 7.24331C20.7608 7.12707 21.0503 7.12707 21.6292 7.12707H23.1927C24.6522 7.12707 25.7916 7.57274 26.6107 8.46409C27.4299 9.34807 27.8394 10.5267 27.8394 12C27.8394 13.4659 27.4299 14.6446 26.6107 15.5359C25.7916 16.4273 24.6522 16.8729 23.1927 16.8729H21.6292C21.0503 16.8729 20.7608 16.8729 20.5413 16.7567C20.3641 16.6629 20.2193 16.518 20.1255 16.3409C20.0092 16.1213 20.0092 15.8319 20.0092 15.2529V8.74707Z"
-      fill="currentColor"
-    />
-    <path
-      d="M35.4666 19.2376C36.6134 19.7459 37.9501 20 39.4767 20H39.8006C41.7144 20 43.2261 19.5801 44.3357 18.7403C45.4452 17.9006 46 16.7403 46 15.2597C46 14.3757 45.8213 13.6501 45.4638 13.0829C45.1064 12.5083 44.6559 12.0589 44.1123 11.7348C43.5761 11.4033 43.0325 11.1565 42.4814 10.9945C41.9304 10.8324 41.4575 10.7145 41.0628 10.6409L38.706 10.1878C38.0283 10.0552 37.4698 9.87477 37.0305 9.64641C36.5985 9.41068 36.3826 9.02762 36.3826 8.49724C36.3826 7.96685 36.6395 7.55064 37.1533 7.24862C37.6671 6.93923 38.3857 6.78453 39.3091 6.78453H39.6219C40.3964 6.78453 41.1224 6.93186 41.8001 7.22652C42.0982 7.35474 42.3899 7.5234 42.6754 7.73251C43.326 8.20923 44.2444 8.27802 44.8243 7.71734C45.34 7.21868 45.4053 6.39786 44.8761 5.91349C44.3498 5.43171 43.7638 5.03698 43.1181 4.72928C42.1054 4.24309 40.9511 4 39.6554 4H39.3315C38.0953 4 37.0156 4.19521 36.0922 4.58564C35.1762 4.97606 34.4613 5.52486 33.9475 6.23204C33.4411 6.93186 33.188 7.76059 33.188 8.71823C33.188 9.49171 33.3406 10.1436 33.6459 10.674C33.9587 11.2044 34.3571 11.6354 34.8411 11.9669C35.3326 12.2983 35.8539 12.5599 36.4049 12.7514C36.956 12.9355 37.4698 13.0718 37.9464 13.1602L40.3033 13.6243C40.6905 13.698 41.074 13.8011 41.4538 13.9337C41.841 14.0589 42.1612 14.2431 42.4144 14.4862C42.6676 14.7293 42.7942 15.0608 42.7942 15.4807C42.7942 16.6151 41.7814 17.1823 39.7559 17.1823H39.4432C38.49 17.1823 37.615 17.0055 36.8182 16.6519C36.4847 16.4994 36.1665 16.3134 35.8635 16.0938C35.17 15.5911 34.1857 15.5241 33.5784 16.1282C33.0651 16.6388 32.9912 17.4631 33.5198 17.9578C34.0797 18.4818 34.7287 18.9083 35.4666 19.2376Z"
-      fill="currentColor"
-    />
-  </svg>
-);
-
-// ---------------------------------------------------------------------------
-// Section Label Component (for DocsView sidebar)
-// ---------------------------------------------------------------------------
-
-export function SectionLabel({label}: {label: string}) {
-  return (
-    <div
-      style={{
-        textTransform: 'uppercase' as const,
-        letterSpacing: '0.05em',
-        padding: '12px 8px 4px',
-        margin: 0,
-      }}>
-      <XDSText type="supporting" weight="semibold" color="secondary">
-        {label}
-      </XDSText>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// DialogPreview — stateful dialog preview for component previews
-// ---------------------------------------------------------------------------
+import {XDSList, XDSListItem} from '@xds/core/List';
+import {XDSDivider} from '@xds/core/Divider';
+import {XDSCard} from '@xds/core/Card';
+import {XDSPopover} from '@xds/core/Popover';
+import {XDSTextInput} from '@xds/core/TextInput';
+import {XDSToolbar} from '@xds/core/Toolbar';
+import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
+import {XDSIcon} from '@xds/core/Icon';
+import {XDSToken} from '@xds/core/Token';
+import {XDSLink} from '@xds/core/Link';
+import {TEMPLATES, PROFILE_CRAFT_ITEMS, THEME_PICKER_ENTRIES, FILTER_COLUMNS} from './constants';
+import {TemplateCard} from './TemplateCard';
+import {SparklesIcon, SearchIcon, PaletteIcon, ContrastIcon, MoonIcon, VerifiedIcon} from './docsite-icons';
+import {AppTopNav} from './AppTopNav';
+import {BookmarkIcon, Cog6ToothIcon, ClockIcon} from '@heroicons/react/24/outline';
 
 export function DialogPreview() {
   const [isOpen, setIsOpen] = useState(false);
   return (
     <div>
-      <div style={{marginBottom: 16}}>
-        <XDSHeading level={3}>Dialog</XDSHeading>
-      </div>
-      <XDSButton
-        label="Open Dialog"
-        variant="primary"
-        onClick={() => setIsOpen(true)}
-      />
+      <div style={{marginBottom: 16}}><XDSHeading level={3}>Dialog</XDSHeading></div>
+      <XDSButton label="Open Dialog" variant="primary" onClick={() => setIsOpen(true)} />
       <XDSDialog isOpen={isOpen} onOpenChange={setIsOpen}>
         <XDSDialogHeader title="Example Dialog" onOpenChange={setIsOpen} />
         <div style={{padding: 16}}>
-          <XDSText type="body">
-            This is an example dialog. Dialogs are used to require user action
-            or display important information that needs acknowledgment.
-          </XDSText>
+          <XDSText type="body">This is an example dialog. Dialogs are used to require user action or display important information that needs acknowledgment.</XDSText>
         </div>
       </XDSDialog>
     </div>
   );
 }
 
-// ---------------------------------------------------------------------------
-// ProfileView — user profile page
-// ---------------------------------------------------------------------------
-
-export function ProfileView({
-  activeView: _activeView,
-  setActiveView,
-}: {
-  activeView: 'craft' | 'explore' | 'docs' | 'profile';
-  setActiveView: (v: 'craft' | 'explore' | 'docs' | 'profile') => void;
-}) {
-  const [profileTab, setProfileTab] = useState('used');
-  const [expandedCollection, setExpandedCollection] = useState(
-    null as string | null,
-  );
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-
-  const headingMenu = (
-    <XDSList density="spacious" style={{minWidth: 240}}>
-      <XDSListItem label="Craft" onClick={() => setActiveView('craft')} />
-      <XDSListItem label="Library" onClick={() => setActiveView('docs')} />
-    </XDSList>
-  );
-
+function SearchableFilterDropdown({label, items, selectedFilters, onToggle, verifiedItems}: {label: string; items: string[]; selectedFilters: Set<string>; onToggle: (item: string) => void; verifiedItems?: Set<string>}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const filtered = items.filter(item => item.toLowerCase().includes(search.toLowerCase()));
   return (
-    <>
-      <XDSAppShell
-        variant="surface"
-        height="fill"
-        topNav={
-          <XDSTopNav
-            label="XDS navigation"
-            heading={
-              <XDSTopNavHeading
-                logo={XDS_WORDMARK}
-                headingHref="/pages/docsite/"
-                menu={headingMenu}
-              />
-            }
-            endContent={
-              <XDSStack direction="horizontal" gap={2}>
-                <XDSButton
-                  label="Search"
-                  variant="ghost"
-                  isIconOnly
-                  icon={<SearchIcon />}
-                  onClick={() => setIsSearchOpen(true)}
-                />
-                <XDSButton
-                  label="Profile"
-                  variant="ghost"
-                  isIconOnly
-                  icon={<ProfileIcon />}
-                  onClick={() => setActiveView('profile')}
-                />
-              </XDSStack>
-            }
-          />
-        }>
-        <div
-          style={{
-            padding: '40px 48px 64px',
-          }}>
-          <div style={{maxWidth: 800, margin: '0 auto'}}>
-            {/* Profile Header */}
-            <XDSStack
-              direction="horizontal"
-              gap={5}
-              vAlign="center"
-              style={{marginBottom: 24}}>
-              <XDSAvatar name="Ruby Cheung" size="large" src={AVATAR_IMAGE} />
-              <div>
-                <XDSHeading level={1}>Ruby Cheung</XDSHeading>
-                <XDSText type="supporting" color="secondary">
-                  Design Systems Engineer
-                </XDSText>
-                <XDSText type="supporting" color="secondary">
-                  Joined March 2026
-                </XDSText>
-                <div style={{marginTop: 8}}>
-                  <XDSText type="supporting" color="secondary">
-                    12 used · 8 liked · 3 collections
-                  </XDSText>
-                </div>
-              </div>
-            </XDSStack>
-
-            {/* Tabs */}
-            <div style={{marginBottom: 24}}>
-              <XDSTabList value={profileTab} onChange={setProfileTab} size="sm">
-                <XDSTab value="used" label="Used" />
-                <XDSTab value="liked" label="Liked" />
-                <XDSTab value="bookmarks" label="Bookmarks" />
-                <XDSTab value="created" label="Created" />
-              </XDSTabList>
-            </div>
-
-            {/* Tab Content: Used */}
-            {profileTab === 'used' && (
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(4, 1fr)',
-                  gap: 16,
-                }}>
-                {PROFILE_USED_ITEMS.map(item => (
-                  <XDSCard key={item.name}>
-                    <div style={{padding: 0}}>
-                      <div
-                        style={{
-                          width: '100%',
-                          aspectRatio: '4/3',
-                          backgroundColor:
-                            'var(--color-background-body, #f1f4f7)',
-                          borderRadius: '8px 8px 0 0',
-                        }}
-                      />
-                      <div style={{padding: 12}}>
-                        <XDSText type="body">{item.name}</XDSText>
-                        <XDSText type="supporting" color="secondary">
-                          {item.lastUsed}
-                        </XDSText>
-                      </div>
-                    </div>
-                  </XDSCard>
+    <XDSPopover label={label} placement="below" alignment="start" width={280} isOpen={isOpen} onOpenChange={open => { setIsOpen(open); if (!open) setSearch(''); }}
+      content={
+        <div style={{display: 'flex', flexDirection: 'column', gap: 4}}>
+          <div tabIndex={0} style={{position: 'absolute', opacity: 0, width: 0, height: 0, overflow: 'hidden'}} />
+          <XDSTextInput label="Search" isLabelHidden placeholder={`Search ${label.toLowerCase()}...`} value={search} onChange={setSearch} size="lg" startIcon={SearchIcon} />
+          <div style={{maxHeight: 280, overflowY: 'auto', margin: '0 -8px'}}>
+            {filtered.length === 0 ? (
+              <div style={{padding: '12px 16px'}}><XDSText type="body" color="secondary">No results</XDSText></div>
+            ) : (
+              <XDSList density="spacious">
+                {filtered.map(item => (
+                  <XDSListItem key={item} label={item} isSelected={selectedFilters.has(item)} onClick={() => onToggle(item)}
+                    endContent={verifiedItems?.has(item) ? <XDSIcon icon={VerifiedIcon} size="sm" color="accent" /> : undefined} />
                 ))}
-              </div>
-            )}
-
-            {/* Tab Content: Liked */}
-            {profileTab === 'liked' && (
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(4, 1fr)',
-                  gap: 16,
-                }}>
-                {PROFILE_LIKED_ITEMS.map(item => (
-                  <XDSCard key={item.name}>
-                    <div style={{padding: 0}}>
-                      <div
-                        style={{
-                          width: '100%',
-                          aspectRatio: '4/3',
-                          backgroundColor:
-                            'var(--color-background-body, #f1f4f7)',
-                          borderRadius: '8px 8px 0 0',
-                        }}
-                      />
-                      <div style={{padding: 12}}>
-                        <XDSText type="body">{item.name}</XDSText>
-                        <XDSText type="supporting" color="secondary">
-                          {item.lastUsed}
-                        </XDSText>
-                      </div>
-                    </div>
-                  </XDSCard>
-                ))}
-              </div>
-            )}
-
-            {/* Tab Content: Bookmarks */}
-            {profileTab === 'bookmarks' && (
-              <div>
-                <div style={{marginBottom: 16}}>
-                  <XDSButton
-                    label="New collection"
-                    variant="secondary"
-                    icon={<PlusIcon />}>
-                    New collection
-                  </XDSButton>
-                </div>
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(3, 1fr)',
-                    gap: 16,
-                    marginBottom: 24,
-                  }}>
-                  {PROFILE_COLLECTIONS.map(collection => (
-                    <XDSCard key={collection.name}>
-                      <div style={{padding: 16}}>
-                        <XDSStack
-                          direction="horizontal"
-                          gap={2}
-                          vAlign="center"
-                          style={{marginBottom: 8}}>
-                          <FolderIcon width={20} height={20} />
-                          <XDSText type="body">{collection.name}</XDSText>
-                        </XDSStack>
-                        <XDSText type="supporting" color="secondary">
-                          {collection.count} items
-                        </XDSText>
-                        <div
-                          style={{
-                            display: 'grid',
-                            gridTemplateColumns: '1fr 1fr',
-                            gap: 4,
-                            marginTop: 12,
-                          }}>
-                          {[0, 1, 2, 3].map(i => (
-                            <div
-                              key={i}
-                              style={{
-                                aspectRatio: '1',
-                                backgroundColor:
-                                  'var(--color-background-body, #f1f4f7)',
-                                borderRadius: 4,
-                              }}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    </XDSCard>
-                  ))}
-                </div>
-
-                {/* Expandable list */}
-                {PROFILE_COLLECTIONS.map(collection => (
-                  <div key={collection.name} style={{marginBottom: 8}}>
-                    <XDSButton
-                      label={collection.name}
-                      variant="ghost"
-                      size="sm"
-                      icon={
-                        <ChevronDownIcon
-                          style={{
-                            transform:
-                              expandedCollection === collection.name
-                                ? 'rotate(180deg)'
-                                : 'rotate(0deg)',
-                            transition: 'transform 200ms',
-                          }}
-                        />
-                      }
-                      onClick={() =>
-                        setExpandedCollection(
-                          expandedCollection === collection.name
-                            ? null
-                            : collection.name,
-                        )
-                      }>
-                      {collection.name} ({collection.count})
-                    </XDSButton>
-                    {expandedCollection === collection.name && (
-                      <div style={{paddingLeft: 32, paddingTop: 8}}>
-                        {Array.from({length: collection.count}, (_, i) => (
-                          <div key={i} style={{padding: '4px 0'}}>
-                            <XDSText type="supporting" color="secondary">
-                              Item {i + 1}
-                            </XDSText>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Tab Content: Created */}
-            {profileTab === 'created' && (
-              <div>
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'flex-end',
-                    marginBottom: 16,
-                  }}>
-                  <XDSButton
-                    label="Create new"
-                    variant="secondary"
-                    size="sm"
-                    icon={<PlusIcon />}>
-                    Create new
-                  </XDSButton>
-                </div>
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(4, 1fr)',
-                    gap: 16,
-                  }}>
-                  {[
-                    {
-                      name: 'My Dashboard Theme',
-                      type: 'Theme',
-                      status: 'Published',
-                      downloads: '342',
-                      img: DUMMY_IMAGE,
-                    },
-                    {
-                      name: 'Custom Login Template',
-                      type: 'Template',
-                      status: 'Published',
-                      downloads: '128',
-                      img: DUMMY_IMAGE,
-                    },
-                    {
-                      name: 'Internal Tools Kit',
-                      type: 'Template',
-                      status: 'Draft',
-                      downloads: '0',
-                      img: DUMMY_IMAGE,
-                    },
-                  ].map((item, i) => (
-                    <XDSCard key={i} padding={0}>
-                      <img
-                        src={item.img}
-                        alt={item.name}
-                        style={{
-                          display: 'block',
-                          width: '100%',
-                          height: 140,
-                          objectFit: 'cover',
-                        }}
-                      />
-                      <div style={{padding: '12px 16px'}}>
-                        <XDSStack
-                          direction="horizontal"
-                          gap={2}
-                          vAlign="center"
-                          style={{marginBottom: 4}}>
-                          <XDSText type="body" weight="bold">
-                            {item.name}
-                          </XDSText>
-                        </XDSStack>
-                        <XDSStack
-                          direction="horizontal"
-                          gap={2}
-                          vAlign="center"
-                          style={{marginBottom: 4}}>
-                          <XDSBadge
-                            label={item.status}
-                            variant={
-                              item.status === 'Published'
-                                ? 'success'
-                                : 'neutral'
-                            }
-                          />
-                          <XDSText type="supporting" color="secondary">
-                            {item.type}
-                          </XDSText>
-                        </XDSStack>
-                        {item.status === 'Published' && (
-                          <XDSStack
-                            direction="horizontal"
-                            gap={1}
-                            vAlign="center"
-                            style={{marginTop: 4}}>
-                            <DownloadIcon
-                              width={14}
-                              height={14}
-                              style={{opacity: 0.4}}
-                            />
-                            <XDSText type="supporting" color="secondary">
-                              {item.downloads} downloads
-                            </XDSText>
-                          </XDSStack>
-                        )}
-                      </div>
-                    </XDSCard>
-                  ))}
-                </div>
-              </div>
+              </XDSList>
             )}
           </div>
         </div>
-      </XDSAppShell>
+      }>
+      <XDSButton label={label} variant="ghost" size="sm" endContent={<XDSIcon icon="chevronDown" size="sm" color="inherit" />} />
+    </XDSPopover>
+  );
+}
 
-      <XDSCommandPalette
-        isOpen={isSearchOpen}
-        onOpenChange={setIsSearchOpen}
-        searchSource={SEARCH_COMMANDS}
-        label="Search templates and components"
-      />
-    </>
+const NAV_ITEMS = [
+  {label: 'Crafted', icon: SparklesIcon},
+  {label: 'Used', icon: ClockIcon},
+  {label: 'Bookmarks', icon: BookmarkIcon},
+  {label: 'Settings', icon: Cog6ToothIcon},
+];
+const GRID_NAVS = ['Used', 'Bookmarks'] as const;
+
+export function ProfileView({activeView, setActiveView}: {activeView: 'craft' | 'explore' | 'docs' | 'profile'; setActiveView: (v: 'craft' | 'explore' | 'docs' | 'profile') => void}) {
+  const [activeNav, setActiveNav] = useState('Crafted');
+  const [craftTypeFilter, setCraftTypeFilter] = useState('all');
+  const [craftStatusFilter, setCraftStatusFilter] = useState('all');
+  const craftTypeCounts = useMemo(() => ({
+    template: PROFILE_CRAFT_ITEMS.filter(i => i.type === 'Template').length,
+    theme: PROFILE_CRAFT_ITEMS.filter(i => i.type === 'Theme').length,
+    component: PROFILE_CRAFT_ITEMS.filter(i => i.type === 'Component').length,
+  }), []);
+  const craftStatusCounts = useMemo(() => ({
+    published: PROFILE_CRAFT_ITEMS.filter(i => i.status === 'Published').length,
+    draft: PROFILE_CRAFT_ITEMS.filter(i => i.status === 'Draft').length,
+    review: PROFILE_CRAFT_ITEMS.filter(i => i.status === 'In Review').length,
+  }), []);
+  const filteredCraftItems = useMemo(() => {
+    let items = PROFILE_CRAFT_ITEMS;
+    if (craftTypeFilter !== 'all') items = items.filter(i => i.type === craftTypeFilter);
+    if (craftStatusFilter !== 'all') items = items.filter(i => i.status === craftStatusFilter);
+    return items;
+  }, [craftTypeFilter, craftStatusFilter]);
+
+  const [previewMode, setPreviewMode] = useState<'light' | 'dark'>('light');
+  const [previewTheme, setPreviewTheme] = useState('default');
+  const [sortOption, setSortOption] = useState('trending');
+  const [resultFilters, setResultFilters] = useState<Set<string>>(() => new Set());
+  const handleToggleResultFilter = (filter: string) => {
+    setResultFilters(prev => { const next = new Set(prev); if (next.has(filter)) next.delete(filter); else next.add(filter); return next; });
+  };
+  const previewImageFilter = useMemo(() => {
+    const filters: string[] = [];
+    if (previewMode === 'dark') filters.push('invert(0.88)', 'hue-rotate(180deg)');
+    const tf: Record<string, string> = {neutral: 'saturate(0.3)', brutalist: 'contrast(1.2) saturate(0.5)', meta: 'sepia(0.15) saturate(1.4) hue-rotate(200deg)', whatsapp: 'sepia(0.2) saturate(1.3) hue-rotate(100deg)'};
+    if (tf[previewTheme]) filters.push(tf[previewTheme]);
+    return filters.length > 0 ? filters.join(' ') : undefined;
+  }, [previewMode, previewTheme]);
+  const templateAuthors = useMemo(() => {
+    const authors = Array.from(new Set(TEMPLATES.map(t => t.author)));
+    return authors.sort((a, b) => { if (a === 'XDS Design') return -1; if (b === 'XDS Design') return 1; return a.localeCompare(b); });
+  }, []);
+  const filteredTemplates = useMemo(() => TEMPLATES.map((t, i) => ({...t, originalIndex: i})), []);
+  const [selectedTheme, setSelectedTheme] = useState('default');
+  const [sendTo, setSendTo] = useState('clipboard');
+
+  return (
+    <div style={{display: 'flex', flexDirection: 'column' as const, height: '100vh'}}>
+      <AppTopNav activeView={activeView} setActiveView={setActiveView} activeTab="all" onActiveTabChange={() => setActiveView('craft')} />
+      <div style={{flex: 1, display: 'flex', overflow: 'hidden'}}>
+        <nav style={{width: 280, flexShrink: 0, height: '100%', overflowY: 'auto' as const, marginLeft: 8, marginRight: 8}}>
+          <div style={{display: 'flex', flexDirection: 'column' as const}}>
+            <div style={{padding: 16}}><XDSHeading level={2}>Profile</XDSHeading></div>
+            <XDSList density="spacious">
+              {NAV_ITEMS.map(item => (
+                <XDSListItem key={item.label} label={item.label} startContent={<item.icon style={{width: 20, height: 20}} />} isSelected={activeNav === item.label} onClick={() => setActiveNav(item.label)} />
+              ))}
+            </XDSList>
+          </div>
+        </nav>
+        <div style={{flex: 1, overflowY: 'auto' as const, height: '100%', padding: '16px 24px 140px'}}>
+          <style>{`
+            @keyframes craftCardFadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+            @keyframes craftTitleSlideIn { from { opacity: 0; transform: translateX(-16px); } to { opacity: 1; transform: translateX(0); } }
+          `}</style>
+
+          {activeNav === 'Crafted' && (
+            <div style={{maxWidth: 2000, margin: '0 auto'}}>
+              <div style={{animation: 'craftTitleSlideIn 400ms cubic-bezier(0.16, 1, 0.3, 1)', marginBottom: 16}}>
+                <XDSText type="display-1">Crafted</XDSText>
+              </div>
+              <div style={{display: 'flex', gap: 6, flexWrap: 'wrap' as const, marginBottom: 8, animation: 'craftTitleSlideIn 400ms 100ms cubic-bezier(0.16, 1, 0.3, 1) both'}}>
+                {[{value: 'all', label: `All (${PROFILE_CRAFT_ITEMS.length})`}, {value: 'Template', label: `Templates (${craftTypeCounts.template})`}, {value: 'Theme', label: `Themes (${craftTypeCounts.theme})`}, {value: 'Component', label: `Components (${craftTypeCounts.component})`}].map(tab => (
+                  <XDSButton key={tab.value} label={tab.label} variant={craftTypeFilter === tab.value ? 'primary' : 'secondary'} size="sm" onClick={() => setCraftTypeFilter(tab.value)} />
+                ))}
+                <XDSDivider orientation="vertical" />
+                {[{value: 'all', label: 'All statuses'}, {value: 'Published', label: `Published (${craftStatusCounts.published})`}, {value: 'Draft', label: `Draft (${craftStatusCounts.draft})`}, {value: 'In Review', label: `In Review (${craftStatusCounts.review})`}].map(tab => (
+                  <XDSButton key={tab.value} label={tab.label} variant={craftStatusFilter === tab.value ? 'primary' : 'secondary'} size="sm" onClick={() => setCraftStatusFilter(tab.value)} />
+                ))}
+              </div>
+              <div style={{marginBottom: 16}}><XDSText type="supporting" color="secondary">{filteredCraftItems.length} of {PROFILE_CRAFT_ITEMS.length} items</XDSText></div>
+              <div style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16}}>
+                {filteredCraftItems.map((item, i) => (
+                  <XDSCard key={item.name} padding={0} style={{overflow: 'hidden', animation: `craftCardFadeIn 400ms ${i * 50}ms cubic-bezier(0.16, 1, 0.3, 1) both`}}>
+                    <div style={{aspectRatio: '16 / 9', overflow: 'hidden', backgroundColor: 'var(--color-background-muted, #f0f0f0)'}}>
+                      <img src={item.img} alt={item.name} style={{width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top', display: 'block'}} />
+                    </div>
+                    <div style={{padding: 16}}>
+                      <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8}}>
+                        <XDSText type="body" weight="bold">{item.name}</XDSText>
+                        <span style={{fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 9999, whiteSpace: 'nowrap' as const, flexShrink: 0,
+                          backgroundColor: item.status === 'Published' ? '#ECFDF3' : item.status === 'In Review' ? '#FFFAEB' : '#F2F4F7',
+                          color: item.status === 'Published' ? '#027A48' : item.status === 'In Review' ? '#B54708' : '#667085'}}>
+                          {item.status}
+                        </span>
+                      </div>
+                      <div style={{marginTop: 4}}><XDSText type="supporting" color="secondary">{item.description}</XDSText></div>
+                      <div style={{display: 'flex', alignItems: 'center', gap: 8, marginTop: 12}}>
+                        <span style={{fontSize: 11, fontWeight: 500, padding: '1px 6px', borderRadius: 4, backgroundColor: 'var(--color-background-muted, #f0f0f0)', color: 'var(--color-text-secondary, #666)'}}>{item.type}</span>
+                        <XDSText type="supporting" color="secondary">{item.used} uses</XDSText>
+                        <XDSText type="supporting" color="secondary">{item.views} views</XDSText>
+                        <div style={{marginLeft: 'auto'}}><XDSText type="supporting" color="secondary">{new Date(item.lastUpdated).toLocaleDateString('en-US', {month: 'short', day: 'numeric'})}</XDSText></div>
+                      </div>
+                    </div>
+                  </XDSCard>
+                ))}
+                {filteredCraftItems.length === 0 && <div style={{gridColumn: '1 / -1', padding: 32, textAlign: 'center' as const}}><XDSText type="body" color="secondary">No items match this filter.</XDSText></div>}
+              </div>
+            </div>
+          )}
+
+          {(GRID_NAVS as readonly string[]).includes(activeNav) && (
+            <div style={{maxWidth: 2000, margin: '0 auto'}}>
+              <div style={{animation: 'craftTitleSlideIn 400ms cubic-bezier(0.16, 1, 0.3, 1)', marginBottom: 16}}><XDSText type="display-1">{activeNav}</XDSText></div>
+              <div style={{display: 'flex', flexDirection: 'column' as const, gap: 4, marginBottom: 20, animation: 'craftTitleSlideIn 400ms 100ms cubic-bezier(0.16, 1, 0.3, 1) both'}}>
+                <div style={{display: 'flex', alignItems: 'center', gap: 4, marginLeft: -8, marginRight: -8}}>
+                  {FILTER_COLUMNS.map(col => <SearchableFilterDropdown key={col.heading} label={col.heading} items={col.items} selectedFilters={resultFilters} onToggle={handleToggleResultFilter} />)}
+                  <SearchableFilterDropdown label="Author" items={templateAuthors} selectedFilters={resultFilters} onToggle={handleToggleResultFilter} verifiedItems={new Set(['XDS Design'])} />
+                  <div style={{marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 16}}>
+                    <XDSText type="supporting" color="secondary" style={{whiteSpace: 'nowrap'}}>Showing {filteredTemplates.length} screens</XDSText>
+                    <XDSToolbar label="View controls" density="compact" startContent={<>
+                      <XDSButton label={previewMode === 'dark' ? 'Light mode' : 'Dark mode'} variant="ghost" size="sm" isIconOnly icon={previewMode === 'dark' ? <ContrastIcon /> : <MoonIcon />} onClick={() => setPreviewMode(previewMode === 'dark' ? 'light' : 'dark')} />
+                      <XDSDropdownMenu button={{label: 'Theme', variant: 'ghost', size: 'sm', isIconOnly: true, icon: <PaletteIcon />}} hasChevron={false} menuWidth={160}
+                        items={[{label: 'Default', onClick: () => setPreviewTheme('default')}, {label: 'Neutral', onClick: () => setPreviewTheme('neutral')}, {label: 'Brutalist', onClick: () => setPreviewTheme('brutalist')}, {label: 'Meta', onClick: () => setPreviewTheme('meta')}, {label: 'WhatsApp', onClick: () => setPreviewTheme('whatsapp')}]} />
+                    </>} />
+                    <XDSDropdownMenu button={{label: sortOption === 'trending' ? 'Trending' : sortOption === 'newest' ? 'Newest first' : 'Oldest first', variant: 'ghost', size: 'sm'}}
+                      items={[{label: 'Trending', onClick: () => setSortOption('trending')}, {label: 'Newest first', onClick: () => setSortOption('newest')}, {label: 'Oldest first', onClick: () => setSortOption('oldest')}]} />
+                  </div>
+                </div>
+                {resultFilters.size > 0 && (
+                  <div style={{display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap'}}>
+                    {Array.from(resultFilters).map(f => <XDSToken key={f} label={f} size="sm" onRemove={() => handleToggleResultFilter(f)} />)}
+                    <XDSText type="supporting"><XDSLink label="Clear all" color="secondary" onClick={() => setResultFilters(new Set())}>Clear all</XDSLink></XDSText>
+                  </div>
+                )}
+              </div>
+              <div style={{display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, gridAutoRows: '1fr'}}>
+                {filteredTemplates.map((template, i) => (
+                  <div key={`${template.name}-${template.originalIndex}`} style={{animation: `craftCardFadeIn 400ms ${i * 50}ms cubic-bezier(0.16, 1, 0.3, 1) both`, filter: previewImageFilter, transition: 'filter 300ms ease'}}>
+                    <TemplateCard src={template.src} name={template.name} isGenerating={false} cardSize={template.size} onUse={() => {}} onPreview={() => {}} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activeNav === 'Settings' && (
+            <div style={{maxWidth: 700, margin: '0 auto', display: 'flex', flexDirection: 'column' as const, gap: 24}}>
+              <XDSHeading level={2}>Settings</XDSHeading>
+              <div>
+                <XDSHeading level={3} style={{marginBottom: 16}}>Theme preference</XDSHeading>
+                {(['official', 'community'] as const).map(category => {
+                  const entries = THEME_PICKER_ENTRIES.filter(e => e.category === category);
+                  if (entries.length === 0) return null;
+                  return (
+                    <div key={category} style={{marginBottom: 20}}>
+                      <div style={{marginBottom: 8}}><XDSText type="supporting" color="secondary">{category.charAt(0).toUpperCase() + category.slice(1)}</XDSText></div>
+                      <div style={{display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12}}>
+                        {entries.map(entry => {
+                          const isSelected = selectedTheme === entry.key;
+                          const p = entry.preview;
+                          return (
+                            <div key={entry.key} onClick={() => setSelectedTheme(entry.key)} style={{borderRadius: 12, overflow: 'hidden', cursor: 'pointer', border: isSelected ? '2px solid var(--color-accent, #0066FF)' : '1px solid var(--color-border-emphasized, #e0e0e0)', transition: 'border-color 0.15s ease'}}>
+                              <div style={{height: 80, backgroundColor: p.bg, display: 'flex', flexDirection: 'column' as const, overflow: 'hidden'}}>
+                                <div style={{height: 14, backgroundColor: p.surface, borderBottom: `1px solid ${p.text}1A`, display: 'flex', alignItems: 'center', paddingInline: 8, gap: 4}}>
+                                  <div style={{width: 5, height: 5, borderRadius: '50%', backgroundColor: p.accent}} />
+                                  <div style={{width: 16, height: 2, borderRadius: 1, backgroundColor: p.text, opacity: 0.3}} />
+                                </div>
+                                <div style={{flex: 1, padding: 8, display: 'flex', flexDirection: 'column' as const, gap: 5}}>
+                                  <div style={{width: '65%', height: 4, borderRadius: 2, backgroundColor: p.text, opacity: 0.6}} />
+                                  <div style={{width: '45%', height: 3, borderRadius: 1.5, backgroundColor: p.text, opacity: 0.25}} />
+                                  <div style={{width: 28, height: 10, borderRadius: 4, backgroundColor: p.accent, marginTop: 'auto'}} />
+                                </div>
+                              </div>
+                              <div style={{padding: '8px 10px'}}>
+                                <XDSText type="supporting" style={{fontWeight: isSelected ? 600 : 400}}>{entry.name}</XDSText>
+                                {entry.description && <div style={{marginTop: 2}}><XDSText type="supporting" color="secondary">{entry.description}</XDSText></div>}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div>
+                <XDSHeading level={3} style={{marginBottom: 16}}>Send to</XDSHeading>
+                <XDSText type="supporting" color="secondary" display="block" style={{marginBottom: 12}}>Choose where templates and code are sent when you use them.</XDSText>
+                <div style={{display: 'flex', flexDirection: 'column' as const, gap: 0}}>
+                  {([
+                    {key: 'clipboard', label: 'Clipboard', description: 'Copy code to your clipboard'},
+                    {key: 'vscode', label: 'VS Code', description: 'Open directly in VS Code'},
+                    {key: 'github', label: 'GitHub', description: 'Create a new repo or gist'},
+                    {key: 'download', label: 'Download', description: 'Save as a file to your device'},
+                  ] as const).map((option, i, arr) => (
+                    <React.Fragment key={option.key}>
+                      <div onClick={() => setSendTo(option.key)} style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 0', cursor: 'pointer'}}>
+                        <div>
+                          <XDSText type="body" weight={sendTo === option.key ? 'semibold' : 'normal'} display="block">{option.label}</XDSText>
+                          <XDSText type="supporting" color="secondary" display="block">{option.description}</XDSText>
+                        </div>
+                        <div style={{width: 20, height: 20, borderRadius: '50%', border: sendTo === option.key ? '6px solid var(--color-accent, #0066FF)' : '2px solid var(--color-border-emphasized, #ccc)', transition: 'border 0.15s ease', flexShrink: 0}} />
+                      </div>
+                      {i < arr.length - 1 && <XDSDivider />}
+                    </React.Fragment>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }

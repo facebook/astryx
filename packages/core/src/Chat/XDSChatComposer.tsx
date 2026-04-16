@@ -361,7 +361,7 @@ export function XDSChatComposer(props: XDSChatComposerProps) {
       <div
         {...mergeProps(
           xdsClassName('chat-composer', {density}),
-          stylex.props(styles.root, isDisabled && styles.rootDisabled, xstyle),
+          stylex.props(styles.root, isDisabled && styles.rootDisabled),
           className,
           style,
         )}
@@ -375,6 +375,7 @@ export function XDSChatComposer(props: XDSChatComposerProps) {
           {...stylex.props(
             styles.body,
             density === 'compact' && styles.compact,
+            xstyle,
           )}>
           {(headerActions || headerContext) && (
             <div {...stylex.props(styles.header)}>

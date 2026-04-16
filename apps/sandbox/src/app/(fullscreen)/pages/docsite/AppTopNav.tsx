@@ -6,8 +6,9 @@ import {XDSTabList, XDSTab} from '@xds/core/TabList';
 import {XDSButton} from '@xds/core/Button';
 import {XDSStack} from '@xds/core/Layout';
 import {XDSList, XDSListItem} from '@xds/core/List';
+import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
 import {XDSCommandPalette} from '@xds/core/CommandPalette';
-import {SearchIcon, ProfileIcon} from './docsite-icons';
+import {SearchIcon, ProfileIcon, FilterIcon} from './docsite-icons';
 import {SEARCH_COMMANDS} from './constants';
 
 const XDS_WORDMARK = (
@@ -37,25 +38,45 @@ const XDS_WORDMARK = (
 export function AppTopNav({
   activeView: _activeView,
   setActiveView,
-  scrollContainerRef: _scrollContainerRef,
+  scrollContainerRef,
   activeTab,
   onActiveTabChange,
+  templateFilter,
+  onTemplateFilterChange,
+  templateAuthors,
+  activeFilters,
+  onToggleFilter,
+  onClearFilters,
+  sortOption,
+  onSortChange,
+  isFilterOpen,
+  onFilterOpenChange,
+  craftTitle,
 }: {
   activeView: 'craft' | 'explore' | 'docs' | 'profile';
   setActiveView: (view: 'craft' | 'explore' | 'docs' | 'profile') => void;
   scrollContainerRef?: React.RefObject<HTMLDivElement | null>;
   activeTab: string;
   onActiveTabChange: (tab: string) => void;
+  templateFilter?: 'all' | 'official' | string;
+  onTemplateFilterChange?: (filter: 'all' | 'official' | string) => void;
+  templateAuthors?: string[];
+  activeFilters?: Set<string>;
+  onToggleFilter?: (filter: string) => void;
+  onClearFilters?: () => void;
+  sortOption?: string;
+  onSortChange?: (option: string) => void;
+  isFilterOpen?: boolean;
+  onFilterOpenChange?: (open: boolean) => void;
+  craftTitle?: string | null;
 }) {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
-    const el = document.getElementById('xds-app-shell-main');
+    const el = document.getElementById('docsite-scroll');
     if (!el) return;
-    const handleScroll = () => {
-      setIsScrolled(el.scrollTop > 170);
-    };
+    const handleScroll = () => setIsScrolled(el.scrollTop > 170);
     el.addEventListener('scroll', handleScroll, {passive: true});
     handleScroll();
     return () => el.removeEventListener('scroll', handleScroll);
@@ -72,6 +93,14 @@ export function AppTopNav({
     <>
       <XDSTopNav
         label="XDS navigation"
+        style={{
+          paddingLeft: 16,
+          paddingRight: 24,
+          position: 'relative',
+          zIndex: 1,
+          boxShadow: isScrolled ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+          transition: 'box-shadow 200ms ease',
+        }}
         heading={
           <XDSTopNavHeading
             logo={XDS_WORDMARK}
@@ -80,7 +109,7 @@ export function AppTopNav({
           />
         }
         centerContent={
-          isScrolled ? (
+          isScrolled && !craftTitle ? (
             <XDSTabList
               value={activeTab}
               onChange={onActiveTabChange}
@@ -94,9 +123,49 @@ export function AppTopNav({
         }
         endContent={
           <XDSStack direction="horizontal" gap={2}>
+            {isScrolled && !craftTitle && (
+              <>
+                <XDSButton
+                  label="Filter"
+                  variant="ghost"
+                  size="sm"
+                  isIconOnly
+                  icon={<FilterIcon />}
+                  onClick={() => onFilterOpenChange?.(!isFilterOpen)}
+                />
+                <XDSDropdownMenu
+                  button={{
+                    label:
+                      sortOption === 'trending'
+                        ? 'Trending'
+                        : sortOption === 'newest'
+                          ? 'Newest first'
+                          : 'Oldest first',
+                    variant: 'ghost',
+                    size: 'sm',
+                    style: {marginRight: -8},
+                  }}
+                  items={[
+                    {
+                      label: 'Trending',
+                      onClick: () => onSortChange?.('trending'),
+                    },
+                    {
+                      label: 'Newest first',
+                      onClick: () => onSortChange?.('newest'),
+                    },
+                    {
+                      label: 'Oldest first',
+                      onClick: () => onSortChange?.('oldest'),
+                    },
+                  ]}
+                />
+              </>
+            )}
             <XDSButton
               label="Search"
               variant="ghost"
+              size="sm"
               isIconOnly
               icon={<SearchIcon />}
               onClick={() => setIsSearchOpen(true)}
@@ -104,6 +173,7 @@ export function AppTopNav({
             <XDSButton
               label="Profile"
               variant="ghost"
+              size="sm"
               isIconOnly
               icon={<ProfileIcon />}
               onClick={() => setActiveView('profile')}

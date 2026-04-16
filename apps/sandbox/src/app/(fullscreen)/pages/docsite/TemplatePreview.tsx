@@ -8,7 +8,7 @@ import {
   XDSSegmentedControlItem,
 } from '@xds/core/SegmentedControl';
 import {XDSSpinner} from '@xds/core/Spinner';
-import {XDSToolbar} from '@xds/core/Toolbar';
+
 import {XDSTooltip} from '@xds/core/Tooltip';
 
 import {
@@ -123,7 +123,7 @@ export function TemplatePreview({
       {!hideToolbar && (
         <div
           style={{
-            background: 'none',
+            background: 'var(--color-background-card, #fff)',
             position: 'absolute',
             top: 0,
             left: 0,
@@ -135,176 +135,169 @@ export function TemplatePreview({
           }}>
           <div
             style={{
-              backgroundColor: isScrolled
-                ? 'var(--color-background-card, #fff)'
-                : (previewBackground ?? 'var(--color-background-card, #fff)'),
-              borderRadius: 'var(--radius-container, 12px)',
               border: 'none',
-              display: 'inline-flex',
-              padding: '4px 0',
-              boxShadow: isScrolled ? '0 2px 8px rgba(0,0,0,0.12)' : 'none',
+              display: 'flex',
+              justifyContent: 'center',
+              width: '100%',
+              padding: '4px 0 12px 0',
+              boxShadow: 'none',
               transition: 'background-color 200ms ease, box-shadow 300ms ease',
             }}>
-            <XDSToolbar
-              label="Template actions"
-              padding={0}
-              centerContent={
-                isPublishing ? (
-                  <>
-                    <XDSSegmentedControl
-                      value={viewportSize}
-                      onChange={setViewportSize}
-                      label="Viewport size"
-                      size="sm">
-                      <XDSTooltip content="Desktop">
-                        <XDSSegmentedControlItem
-                          value="desktop"
-                          label="Desktop"
-                          isLabelHidden
-                          icon={<DesktopIcon />}
-                        />
-                      </XDSTooltip>
-                      <XDSTooltip content="Phone">
-                        <XDSSegmentedControlItem
-                          value="phone"
-                          label="Phone"
-                          isLabelHidden
-                          icon={<PhoneIcon />}
-                        />
-                      </XDSTooltip>
-                    </XDSSegmentedControl>
-                  </>
-                ) : (
-                  <>
-                    <XDSTooltip content="Point">
-                      <XDSButton
-                        label="Point"
-                        variant={isPointing ? 'secondary' : 'ghost'}
-                        isIconOnly
-                        icon={<CursorIcon />}
-                        onClick={() => onPointingChange?.(!isPointing)}
-                      />
-                    </XDSTooltip>
-                    <XDSTooltip content="Theme">
-                      <XDSDropdownMenu
-                        button={{
-                          label: 'Theme',
-                          variant: 'ghost',
-                          isIconOnly: true,
-                          icon: <PaletteIcon />,
-                        }}
-                        hasChevron={false}
-                        items={XDS_THEMES.map(t => ({
-                          label: t.label,
-                          onClick: () => {},
-                        }))}
-                      />
-                    </XDSTooltip>
-                    <XDSTooltip
-                      content={isDarkMode ? 'Dark mode' : 'Light mode'}>
-                      <XDSButton
-                        label={isDarkMode ? 'Dark mode' : 'Light mode'}
-                        variant="ghost"
-                        isIconOnly
-                        icon={isDarkMode ? <MoonIcon /> : <ContrastIcon />}
-                        onClick={() => setIsDarkMode(prev => !prev)}
-                      />
-                    </XDSTooltip>
-                    <XDSSegmentedControl
-                      value={viewportSize}
-                      onChange={setViewportSize}
-                      label="Viewport size"
-                      size="sm">
-                      <XDSTooltip content="Desktop">
-                        <XDSSegmentedControlItem
-                          value="desktop"
-                          label="Desktop"
-                          isLabelHidden
-                          icon={<DesktopIcon />}
-                        />
-                      </XDSTooltip>
-                      <XDSTooltip content="Phone">
-                        <XDSSegmentedControlItem
-                          value="phone"
-                          label="Phone"
-                          isLabelHidden
-                          icon={<PhoneIcon />}
-                        />
-                      </XDSTooltip>
-                    </XDSSegmentedControl>
-                    <XDSTooltip content="Preview">
-                      <XDSButton
-                        label="Preview"
-                        variant="ghost"
-                        isIconOnly
-                        icon={<FullscreenIcon />}
-                        onClick={() => onFullPreviewChange?.(true)}
-                      />
-                    </XDSTooltip>
-                    {saveState === 'saved' ? (
-                      <XDSTooltip
-                        content={linkCopied ? 'Copied!' : 'Copy link'}>
-                        <XDSButton
-                          label={linkCopied ? 'Copied' : 'Copy link'}
-                          variant="ghost"
-                          icon={
-                            linkCopied ? (
-                              <CheckIcon color="var(--color-icon-primary, #111)" />
-                            ) : (
-                              <LinkIcon />
-                            )
-                          }
-                          isIconOnly
-                          onClick={handleCopyLink}
-                        />
-                      </XDSTooltip>
-                    ) : saveState === 'saving' ? (
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          width: 32,
-                          height: 32,
-                        }}>
-                        <XDSSpinner size="sm" />
-                      </div>
-                    ) : (
-                      <XDSTooltip content="Save">
-                        <XDSButton
-                          label="Save"
-                          variant="ghost"
-                          icon={<SaveIcon />}
-                          isIconOnly
-                          onClick={handleSave}
-                        />
-                      </XDSTooltip>
-                    )}
+            <div
+              role="toolbar"
+              aria-label="Template actions"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                flex: 1,
+                padding: '0 32px 0 8px',
+                position: 'relative',
+              }}>
+              {!isPublishing && (
+                <div style={{display: 'flex', alignItems: 'center'}}>
+                  <XDSTooltip content="Point">
                     <XDSButton
-                      label="Submit"
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => onPublish?.()}
+                      label="Point"
+                      variant={isPointing ? 'secondary' : 'ghost'}
+                      isIconOnly
+                      icon={<CursorIcon />}
+                      onClick={() => onPointingChange?.(!isPointing)}
                     />
-                    <XDSPopover
-                      label="Add to project"
-                      isOpen={showSharePopover}
-                      onOpenChange={setShowSharePopover}
-                      placement="below"
-                      alignment="end"
-                      width={340}
-                      content={
-                        <SharePopoverContent
-                          cliCommand={shareCliCommand}
-                          onClose={() => setShowSharePopover(false)}
-                        />
-                      }>
-                      <XDSButton label="Use" variant="primary" size="sm" />
-                    </XDSPopover>
-                  </>
-                )
-              }
-            />
+                  </XDSTooltip>
+                  <XDSTooltip content="Theme">
+                    <XDSDropdownMenu
+                      button={{
+                        label: 'Theme',
+                        variant: 'ghost',
+                        isIconOnly: true,
+                        icon: <PaletteIcon />,
+                      }}
+                      hasChevron={false}
+                      items={XDS_THEMES.map(t => ({
+                        label: t.label,
+                        onClick: () => {},
+                      }))}
+                    />
+                  </XDSTooltip>
+                  <XDSTooltip
+                    content={isDarkMode ? 'Dark mode' : 'Light mode'}>
+                    <XDSButton
+                      label={isDarkMode ? 'Dark mode' : 'Light mode'}
+                      variant="ghost"
+                      isIconOnly
+                      icon={isDarkMode ? <MoonIcon /> : <ContrastIcon />}
+                      onClick={() => setIsDarkMode(prev => !prev)}
+                    />
+                  </XDSTooltip>
+                </div>
+              )}
+              <div style={{
+                position: 'absolute',
+                left: 16,
+                right: 32,
+                display: 'flex',
+                justifyContent: 'center',
+                pointerEvents: 'none',
+              }}>
+                <XDSSegmentedControl
+                  value={viewportSize}
+                  onChange={setViewportSize}
+                  label="Viewport size"
+                  size="sm"
+                  style={{pointerEvents: 'auto'}}>
+                  <XDSTooltip content="Desktop">
+                    <XDSSegmentedControlItem
+                      value="desktop"
+                      label="Desktop"
+                      isLabelHidden
+                      icon={<DesktopIcon />}
+                    />
+                  </XDSTooltip>
+                  <XDSTooltip content="Phone">
+                    <XDSSegmentedControlItem
+                      value="phone"
+                      label="Phone"
+                      isLabelHidden
+                      icon={<PhoneIcon />}
+                    />
+                  </XDSTooltip>
+                </XDSSegmentedControl>
+              </div>
+              <div style={{flex: 1}} />
+              {!isPublishing && (
+                <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
+                  <XDSTooltip content="Preview">
+                    <XDSButton
+                      label="Preview"
+                      variant="ghost"
+                      isIconOnly
+                      icon={<FullscreenIcon />}
+                      onClick={() => onFullPreviewChange?.(true)}
+                    />
+                  </XDSTooltip>
+                  {saveState === 'saved' ? (
+                    <XDSTooltip
+                      content={linkCopied ? 'Copied!' : 'Copy link'}>
+                      <XDSButton
+                        label={linkCopied ? 'Copied' : 'Copy link'}
+                        variant="ghost"
+                        icon={
+                          linkCopied ? (
+                            <CheckIcon color="var(--color-icon-primary, #111)" />
+                          ) : (
+                            <LinkIcon />
+                          )
+                        }
+                        isIconOnly
+                        onClick={handleCopyLink}
+                      />
+                    </XDSTooltip>
+                  ) : saveState === 'saving' ? (
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: 32,
+                        height: 32,
+                      }}>
+                      <XDSSpinner size="sm" />
+                    </div>
+                  ) : (
+                    <XDSTooltip content="Save">
+                      <XDSButton
+                        label="Save"
+                        variant="ghost"
+                        icon={<SaveIcon />}
+                        isIconOnly
+                        onClick={handleSave}
+                      />
+                    </XDSTooltip>
+                  )}
+                  <XDSButton
+                    label="Submit"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => onPublish?.()}
+                  />
+                  <XDSPopover
+                    label="Add to project"
+                    isOpen={showSharePopover}
+                    onOpenChange={setShowSharePopover}
+                    placement="below"
+                    alignment="end"
+                    width={340}
+                    content={
+                      <SharePopoverContent
+                        cliCommand={shareCliCommand}
+                        onClose={() => setShowSharePopover(false)}
+                      />
+                    }>
+                    <XDSButton label="Use" variant="primary" size="sm" />
+                  </XDSPopover>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -313,7 +306,7 @@ export function TemplatePreview({
       <div
         style={{
           flex: 1,
-          overflow: previewBackground ? 'visible' : 'hidden',
+          overflow: 'visible',
           padding: 0,
           display: 'flex',
           flexDirection: 'column' as const,
@@ -363,7 +356,7 @@ export function TemplatePreview({
                 ? 24
                 : previewBackground
                   ? '64px 16px 16px 16px'
-                  : '64px 16px 16px 0',
+                  : '64px 32px 16px 16px',
             cursor: isPointing ? 'crosshair' : undefined,
             transition: 'background-color 300ms ease, padding 300ms ease',
           }}
@@ -389,22 +382,17 @@ export function TemplatePreview({
           <div
             style={{
               position: 'relative',
-              width: viewportSize === 'phone' ? 375 : '100%',
+              width: viewportSize === 'phone' ? 390 : '100%',
               borderRadius:
                 viewportSize === 'phone'
                   ? 36
                   : isFullPreview
                     ? 0
                     : 'var(--radius-container, 12px)',
-              border: previewBackground
+              border: 'none',
+              boxShadow: isFullPreview
                 ? 'none'
-                : isFullPreview
-                  ? 'none'
-                  : '1px solid var(--color-divider, #e0e0e0)',
-              boxShadow:
-                previewBackground && !isFullPreview
-                  ? 'rgba(0, 0, 0, 0.08) 0px 1px 3px, rgba(0, 0, 0, 0.06) 0px 4px 12px'
-                  : 'none',
+                : 'rgba(0, 0, 0, 0.08) 0px 1px 3px, rgba(0, 0, 0, 0.06) 0px 4px 12px',
               overflow: 'hidden',
               flexShrink: 0,
               margin: isFullPreview ? 0 : 'auto 0',
@@ -416,8 +404,8 @@ export function TemplatePreview({
               style={{
                 display: 'block',
                 width: '100%',
-                aspectRatio: viewportSize === 'phone' ? '9 / 19.5' : undefined,
-                objectFit: viewportSize === 'phone' ? 'cover' : undefined,
+                aspectRatio: undefined,
+                objectFit: undefined,
                 opacity: isGenerating ? 0 : 1,
                 transition: 'opacity 600ms ease',
               }}
