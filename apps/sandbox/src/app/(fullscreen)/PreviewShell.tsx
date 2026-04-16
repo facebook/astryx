@@ -222,6 +222,41 @@ function MoonIcon(props: React.SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
+function ZoomInIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}>
+      <circle cx="11" cy="11" r="8" />
+      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+      <line x1="11" y1="8" x2="11" y2="14" />
+      <line x1="8" y1="11" x2="14" y2="11" />
+    </svg>
+  );
+}
+
+function ZoomOutIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}>
+      <circle cx="11" cy="11" r="8" />
+      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+      <line x1="8" y1="11" x2="14" y2="11" />
+    </svg>
+  );
+}
+
 function SidebarIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
@@ -633,6 +668,17 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
 
   const navTree = useMemo(() => buildNavTree(pathname), [pathname]);
 
+  const blockEntry = useMemo(
+    () => blocksByHref.get(pathname.replace(/\/$/, '')) ?? null,
+    [pathname],
+  );
+
+  const [zoom, setZoom] = useState<number | null>(null);
+  useEffect(() => {
+    setZoom(null);
+  }, [pathname]);
+  const effectiveScale = zoom ?? blockEntry?.scale ?? 1;
+
   useEffect(() => {
     const saved = localStorage.getItem('sandbox-toolbar-hidden');
     if (saved === 'true') setToolbarHidden(true);
@@ -652,11 +698,6 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
-
-  const blockEntry = useMemo(
-    () => blocksByHref.get(pathname.replace(/\/$/, '')) ?? null,
-    [pathname],
-  );
 
   // Find current page name from the registry
   const currentPage = useMemo(() => {
@@ -842,6 +883,56 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
           </XDSSegmentedControl>
         )}
 
+        {view === 'preview' && blockEntry != null && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              fontSize: 12,
+              color: 'var(--color-text-secondary)',
+            }}>
+            <XDSButton
+              variant="ghost"
+              size="sm"
+              label="Zoom out"
+              isIconOnly
+              icon={<ZoomOutIcon width={14} height={14} />}
+              onClick={() =>
+                setZoom(prev =>
+                  Math.max(0.25, (prev ?? blockEntry.scale) - 0.25),
+                )
+              }
+            />
+            <span
+              style={{
+                minWidth: 36,
+                textAlign: 'center',
+                fontVariantNumeric: 'tabular-nums',
+              }}>
+              {Math.round(effectiveScale * 100)}%
+            </span>
+            <XDSButton
+              variant="ghost"
+              size="sm"
+              label="Zoom in"
+              isIconOnly
+              icon={<ZoomInIcon width={14} height={14} />}
+              onClick={() =>
+                setZoom(prev => Math.min(4, (prev ?? blockEntry.scale) + 0.25))
+              }
+            />
+            {zoom != null && (
+              <XDSButton
+                variant="ghost"
+                size="sm"
+                label="Reset zoom"
+                onClick={() => setZoom(null)}
+              />
+            )}
+          </div>
+        )}
+
         <XDSDropdownMenu
           button={{
             label: themeName.charAt(0).toUpperCase() + themeName.slice(1),
@@ -929,8 +1020,18 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
                     borderRadius: 12,
                     backgroundColor: 'var(--color-background-card)',
                     padding: 24,
+                    overflow: 'hidden',
                   }}>
-                  {children}
+                  <div
+                    style={{
+                      transform:
+                        effectiveScale !== 1
+                          ? `scale(${effectiveScale})`
+                          : undefined,
+                      transformOrigin: 'center center',
+                    }}>
+                    {children}
+                  </div>
                 </div>
                 <div
                   style={{

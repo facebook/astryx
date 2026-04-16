@@ -99,6 +99,7 @@ async function discoverBlocks() {
       isReady: doc.isReady ?? false,
       component: componentFolder,
       aspectRatio: doc.aspectRatio ?? 4 / 3,
+      scale: doc.scale ?? 1,
       sourceDir: path.dirname(tsxPath),
       sourceFile: basename + '.tsx',
       relPath: path.relative(BLOCKS_DIR, path.dirname(tsxPath)),
@@ -215,7 +216,7 @@ async function main() {
   console.log(`  wrote ${path.relative(ROOT, registryPath)}`);
 
   const blockRegistryPath = path.join(GENERATED_DIR, 'blockRegistry.ts');
-  fs.writeFileSync(blockRegistryPath, generateRegistry(blocks, 'blocks', 'BlockEntry', ['component', 'aspectRatio']));
+  fs.writeFileSync(blockRegistryPath, generateRegistry(blocks, 'blocks', 'BlockEntry', ['component', 'aspectRatio', 'scale']));
   console.log(`  wrote ${path.relative(ROOT, blockRegistryPath)}`);
 
   const sourceRegistryPath = path.join(GENERATED_DIR, 'sourceRegistry.ts');
