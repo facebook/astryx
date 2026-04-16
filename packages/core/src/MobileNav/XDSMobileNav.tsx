@@ -40,6 +40,25 @@ import {xdsClassName, mergeProps} from '../utils';
 import {XDSBaseProps} from '../XDSBaseProps';
 
 // =============================================================================
+// Animations
+// =============================================================================
+
+const enterFromStart = stylex.keyframes({
+  from: {transform: 'translateX(-100%)'},
+  to: {transform: 'translateX(0)'},
+});
+
+const enterFromEnd = stylex.keyframes({
+  from: {transform: 'translateX(100%)'},
+  to: {transform: 'translateX(0)'},
+});
+
+const fadeIn = stylex.keyframes({
+  from: {opacity: 0},
+  to: {opacity: 1},
+});
+
+// =============================================================================
 // Styles
 // =============================================================================
 
@@ -76,6 +95,7 @@ const styles = stylex.create({
       backgroundColor: colorVars['--color-overlay'],
       backdropFilter: 'blur(2px)',
       opacity: 0,
+      // Transition for close, animation for open
       transitionProperty: 'opacity',
       transitionDuration: durationVars['--duration-medium'],
       transitionTimingFunction: easeVars['--ease-standard'],
@@ -89,6 +109,10 @@ const styles = stylex.create({
   backdropOpen: {
     '::backdrop': {
       opacity: 1,
+      animationName: fadeIn,
+      animationDuration: durationVars['--duration-medium'],
+      animationTimingFunction: easeVars['--ease-standard'],
+      animationFillMode: 'backwards' as const,
     },
   },
   drawer: {
@@ -100,12 +124,14 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-background-surface'],
     boxSizing: 'border-box',
     overflow: 'hidden',
+    // Transition handles close animation, keyframes handle open
     transitionProperty: 'transform',
     transitionDuration: durationVars['--duration-medium'],
     transitionTimingFunction: easeVars['--ease-standard'],
     outline: 'none',
     '@media (prefers-reduced-motion: reduce)': {
       transitionDuration: '0.01s',
+      animationDuration: '0.01s',
     },
   },
   drawerStart: {
@@ -120,6 +146,10 @@ const styles = stylex.create({
   },
   drawerStartOpen: {
     transform: 'translateX(0)',
+    animationName: enterFromStart,
+    animationDuration: durationVars['--duration-medium'],
+    animationTimingFunction: easeVars['--ease-standard'],
+    animationFillMode: 'backwards' as const,
   },
   drawerEnd: {
     insetInlineEnd: 0,
@@ -133,6 +163,10 @@ const styles = stylex.create({
   },
   drawerEndOpen: {
     transform: 'translateX(0)',
+    animationName: enterFromEnd,
+    animationDuration: durationVars['--duration-medium'],
+    animationTimingFunction: easeVars['--ease-standard'],
+    animationFillMode: 'backwards' as const,
   },
   header: {
     display: 'flex',
