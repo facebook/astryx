@@ -1,30 +1,18 @@
 'use client';
 
-import {useRef} from 'react';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSCenter} from '@xds/core/Center';
 import {XDSSection} from '@xds/core/Section';
 import {XDSText} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
 import {XDSBadge} from '@xds/core/Badge';
+import {XDSCard} from '@xds/core/Card';
 import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import {XDSIcon} from '@xds/core/Icon';
+import {XDSCarousel} from '@xds/core/Carousel';
 import {XDSMediaTheme} from '@xds/core/theme';
 
 // ─── Icons ──────────────────────────────────────────────────────────────────
-
-const ArrowLeftIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    {...props}>
-    <path d="M19 12H5M12 19l-7-7 7-7" />
-  </svg>
-);
 
 const ArrowRightIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
@@ -41,14 +29,7 @@ const ArrowRightIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 // ─── Gallery Data ───────────────────────────────────────────────────────────
 
-interface GalleryItem {
-  id: number;
-  title: string;
-  description: string;
-  image: string;
-}
-
-const GALLERY_ITEMS: GalleryItem[] = [
+const GALLERY_ITEMS = [
   {
     id: 1,
     title: 'Going places',
@@ -101,154 +82,104 @@ const GALLERY_ITEMS: GalleryItem[] = [
 
 // ─── Gallery Card ───────────────────────────────────────────────────────────
 
-function GalleryCard({item}: {item: GalleryItem}) {
+function GalleryCard({item}: {item: (typeof GALLERY_ITEMS)[number]}) {
   return (
-    <div
-      style={{
-        position: 'relative',
-        borderRadius: 'var(--radius-container)',
-        overflow: 'clip',
-        flexShrink: 0,
-        width: 380,
-      }}>
-      <XDSAspectRatio ratio={3 / 4}>
-        <img
-          src={item.image}
-          alt={item.title}
-          style={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            objectPosition: 'center',
-            display: 'block',
-          }}
-        />
-      </XDSAspectRatio>
+    <XDSCard padding={0} style={{width: 380, flexShrink: 0}}>
+      <div style={{position: 'relative'}}>
+        <XDSAspectRatio ratio={3 / 4}>
+          <img
+            src={item.image}
+            alt={item.title}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              display: 'block',
+            }}
+          />
+        </XDSAspectRatio>
 
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          background:
-            'linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.25) 35%, transparent 60%)',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'flex-end',
-          padding: 'var(--spacing-6)',
-          color: 'var(--color-on-dark, #fff)',
-        }}>
-        <XDSMediaTheme mode="dark">
-          <XDSVStack gap={2}>
-            <XDSText
-              type="body"
-              weight="bold"
-              style={{fontSize: 'var(--font-size-xl)'}}>
-              {item.title}
-            </XDSText>
-            <XDSText type="body" maxLines={2}>
-              {item.description}
-            </XDSText>
-            <div style={{paddingTop: 'var(--spacing-1)'}}>
-              <XDSButton
-                label="Read more"
-                variant="secondary"
-                endContent={<XDSIcon icon={ArrowRightIcon} color="inherit" />}
-              />
-            </div>
-          </XDSVStack>
-        </XDSMediaTheme>
+        {/* Gradient overlay — only custom element needed */}
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background:
+              'linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.25) 35%, transparent 60%)',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'flex-end',
+            padding: 'var(--spacing-6)',
+          }}>
+          <XDSMediaTheme mode="dark">
+            <XDSVStack gap={2}>
+              <XDSText
+                type="body"
+                weight="bold"
+                style={{fontSize: 'var(--font-size-xl)'}}>
+                {item.title}
+              </XDSText>
+              <XDSText type="body" maxLines={2}>
+                {item.description}
+              </XDSText>
+              <div style={{paddingTop: 'var(--spacing-1)'}}>
+                <XDSButton
+                  label="Read more"
+                  variant="secondary"
+                  endContent={<XDSIcon icon={ArrowRightIcon} color="inherit" />}
+                />
+              </div>
+            </XDSVStack>
+          </XDSMediaTheme>
+        </div>
       </div>
-    </div>
+    </XDSCard>
   );
 }
 
 // ─── Main Page ──────────────────────────────────────────────────────────────
 
 export default function FeaturedGalleryTemplate() {
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  const scroll = (direction: 'left' | 'right') => {
-    if (!scrollRef.current) return;
-    const card = scrollRef.current.querySelector(
-      '[data-card]',
-    ) as HTMLElement | null;
-    const scrollAmount = (card?.offsetWidth ?? 560) + 24;
-    scrollRef.current.scrollBy({
-      left: direction === 'left' ? -scrollAmount : scrollAmount,
-      behavior: 'smooth',
-    });
-  };
-
   return (
-    <div>
-      {/* Header + arrows */}
-      <XDSCenter axis="horizontal">
-        <XDSSection maxWidth={1200} padding={6} variant="transparent">
-          <XDSVStack gap={6}>
-            <XDSVStack gap={3} hAlign="center">
-              <XDSHStack gap={2}>
-                <XDSBadge label="Green badge" variant="green" />
-                <XDSBadge label="Yellow badge" variant="yellow" />
-                <XDSBadge label="Blue badge" variant="blue" />
-              </XDSHStack>
-              <XDSText
-                type="large"
-                weight="bold"
-                as="p"
-                style={{
-                  fontSize: 'var(--font-size-3xl)',
-                  textAlign: 'center',
-                  maxWidth: 640,
-                }}>
-                Make every day a little more delightful, one detail at a time.
-              </XDSText>
-              <XDSText
-                type="body"
-                color="secondary"
-                style={{textAlign: 'center', maxWidth: 640}}>
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-                eiusmod tempor incididunt ut labore et dolore magna aliqua ut
-                enim ad minim excepteur sint occaecat cupidatat non proident.
-              </XDSText>
-            </XDSVStack>
-
-            <XDSHStack gap={2} hAlign="end">
-              <XDSButton
-                label="Previous"
-                variant="secondary"
-                icon={<XDSIcon icon={ArrowLeftIcon} color="inherit" />}
-                isIconOnly
-                onClick={() => scroll('left')}
-              />
-              <XDSButton
-                label="Next"
-                variant="secondary"
-                icon={<XDSIcon icon={ArrowRightIcon} color="inherit" />}
-                isIconOnly
-                onClick={() => scroll('right')}
-              />
+    <XDSCenter axis="horizontal">
+      <XDSSection maxWidth={1200} padding={6} variant="transparent">
+        <XDSVStack gap={6}>
+          {/* Header */}
+          <XDSVStack gap={3} hAlign="center">
+            <XDSHStack gap={2}>
+              <XDSBadge label="Green badge" variant="green" />
+              <XDSBadge label="Yellow badge" variant="yellow" />
+              <XDSBadge label="Blue badge" variant="blue" />
             </XDSHStack>
+            <XDSText
+              type="large"
+              weight="bold"
+              as="p"
+              style={{
+                fontSize: 'var(--font-size-3xl)',
+                textAlign: 'center',
+                maxWidth: 640,
+              }}>
+              Make every day a little more delightful, one detail at a time.
+            </XDSText>
+            <XDSText
+              type="body"
+              color="secondary"
+              style={{textAlign: 'center', maxWidth: 640}}>
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
+              eiusmod tempor incididunt ut labore et dolore magna aliqua ut enim
+              ad minim excepteur sint occaecat cupidatat non proident.
+            </XDSText>
           </XDSVStack>
-        </XDSSection>
-      </XDSCenter>
 
-      {/* Full-bleed carousel */}
-      <div
-        ref={scrollRef}
-        style={{
-          display: 'flex',
-          gap: 24,
-          overflowX: 'auto',
-          scrollSnapType: 'x mandatory',
-          padding: '24px 24px 48px',
-          scrollbarWidth: 'none',
-        }}>
-        {GALLERY_ITEMS.map(item => (
-          <div key={item.id} data-card style={{scrollSnapAlign: 'start'}}>
-            <GalleryCard item={item} />
-          </div>
-        ))}
-      </div>
-    </div>
+          {/* Carousel — XDS handles scroll, snap, nav buttons, fade edges */}
+          <XDSCarousel gap={4} hasSnap hasButtons>
+            {GALLERY_ITEMS.map(item => (
+              <GalleryCard key={item.id} item={item} />
+            ))}
+          </XDSCarousel>
+        </XDSVStack>
+      </XDSSection>
+    </XDSCenter>
   );
 }
