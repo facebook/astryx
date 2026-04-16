@@ -6,7 +6,7 @@
 
 import {useRef, useEffect, useCallback} from 'react';
 import {useChart} from './ChartContext';
-import type {ScaleBand} from 'd3-scale';
+import {xPixel} from './utils';
 
 export interface XDSChartDotGLProps {
   /** Which data key for the y values */
@@ -17,10 +17,6 @@ export interface XDSChartDotGLProps {
   size?: number;
   /** Opacity 0-1 */
   opacity?: number;
-}
-
-function isBandScale(scale: unknown): scale is ScaleBand<string> {
-  return typeof scale === 'function' && 'bandwidth' in scale;
 }
 
 /** Parse hex color to [r, g, b] floats 0-1 */
@@ -102,7 +98,7 @@ export function XDSChartDotGL({
   size = 6,
   opacity = 0.8,
 }: XDSChartDotGLProps) {
-  const {data, xScale, yScale, width, height} = useChart();
+  const {data, xKey, xScale, yScale, width, height} = useChart();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const glRef = useRef<WebGLRenderingContext | null>(null);
   const programRef = useRef<WebGLProgram | null>(null);
@@ -111,18 +107,12 @@ export function XDSChartDotGL({
   const getPositions = useCallback((): Float32Array => {
     const positions: number[] = [];
     for (const d of data) {
-      let x: number;
-      if (isBandScale(xScale)) {
-        x = (xScale(String(Object.values(d)[0])) ?? 0) + xScale.bandwidth() / 2;
-      } else {
-        const xVal = Object.values(d)[0];
-        x = (xScale as (v: number) => number)(xVal as number);
-      }
+      const x = xPixel(d, xKey, xScale);
       const yVal = typeof d[dataKey] === 'number' ? (d[dataKey] as number) : 0;
       positions.push(x, yScale(yVal));
     }
     return new Float32Array(positions);
-  }, [data, dataKey, xScale, yScale]);
+  }, [data, xKey, dataKey, xScale, yScale]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
