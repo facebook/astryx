@@ -1,5 +1,6 @@
 'use client';
 
+import {XDSAppShell} from '@xds/core/AppShell';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSCenter} from '@xds/core/Center';
 import {XDSSection} from '@xds/core/Section';
@@ -84,7 +85,7 @@ const GALLERY_ITEMS = [
 function GalleryCard({item}: {item: (typeof GALLERY_ITEMS)[number]}) {
   return (
     <XDSCard padding={0} width={480}>
-      <div style={{position: 'relative', height: '100%'}}>
+      <div style={{position: 'relative'}}>
         <XDSAspectRatio ratio={3 / 4}>
           <img
             src={item.image}
@@ -98,7 +99,7 @@ function GalleryCard({item}: {item: (typeof GALLERY_ITEMS)[number]}) {
           />
         </XDSAspectRatio>
 
-        {/* Gradient overlay */}
+        {/* Gradient overlay for text legibility */}
         <div
           style={{
             position: 'absolute',
@@ -144,47 +145,51 @@ function GalleryCard({item}: {item: (typeof GALLERY_ITEMS)[number]}) {
 
 export default function FeaturedGalleryTemplate() {
   return (
-    <XDSVStack gap={6}>
-      {/* Header — constrained */}
-      <XDSCenter axis="horizontal">
-        <XDSSection maxWidth={1200} padding={6} variant="transparent">
-          <XDSVStack gap={3} hAlign="center">
-            <XDSHStack gap={2}>
-              <XDSBadge label="Green badge" variant="green" />
-              <XDSBadge label="Yellow badge" variant="yellow" />
-              <XDSBadge label="Blue badge" variant="blue" />
-            </XDSHStack>
-            <XDSText
-              type="large"
-              weight="bold"
-              as="p"
-              style={{
-                fontSize: 'var(--font-size-3xl)',
-                textAlign: 'center',
-                maxWidth: 640,
-              }}>
-              Make every day a little more delightful, one detail at a time.
-            </XDSText>
-            <XDSText
-              type="body"
-              color="secondary"
-              style={{textAlign: 'center', maxWidth: 640}}>
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-              eiusmod tempor incididunt ut labore et dolore magna aliqua ut enim
-              ad minim excepteur sint occaecat cupidatat non proident.
-            </XDSText>
-          </XDSVStack>
-        </XDSSection>
-      </XDSCenter>
+    <XDSAppShell height="auto" contentPadding={0} variant="surface">
+      <XDSVStack gap={6}>
+        {/* Header */}
+        <XDSCenter axis="horizontal">
+          <XDSSection maxWidth={1200} padding={6} variant="transparent">
+            <XDSVStack gap={3} hAlign="center">
+              <XDSHStack gap={2}>
+                <XDSBadge label="Green badge" variant="green" />
+                <XDSBadge label="Yellow badge" variant="yellow" />
+                <XDSBadge label="Blue badge" variant="blue" />
+              </XDSHStack>
+              <XDSText
+                type="large"
+                weight="bold"
+                as="p"
+                style={{
+                  fontSize: 'var(--font-size-3xl)',
+                  textAlign: 'center',
+                  maxWidth: 640,
+                }}>
+                Make every day a little more delightful, one detail at a time.
+              </XDSText>
+              <XDSText
+                type="body"
+                color="secondary"
+                style={{textAlign: 'center', maxWidth: 640}}>
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
+                eiusmod tempor incididunt ut labore et dolore magna aliqua ut
+                enim ad minim excepteur sint occaecat cupidatat non proident.
+              </XDSText>
+            </XDSVStack>
+          </XDSSection>
+        </XDSCenter>
 
-      {/* Carousel — full width with side padding */}
-      <div style={{padding: '0 var(--spacing-6)'}}>
-        <XDSCarousel gap={4} hasSnap hasButtons scrollStep="item">
-          {GALLERY_ITEMS.map(item => (
-            <GalleryCard key={item.id} item={item} />
-          ))}
-        </XDSCarousel>
-      </div>
-    </XDSVStack>
+        {/* Carousel */}
+        <XDSCenter axis="horizontal">
+          <XDSSection maxWidth={1600} padding={6} variant="transparent">
+            <XDSCarousel gap={4} hasSnap hasButtons scrollStep="item">
+              {GALLERY_ITEMS.map(item => (
+                <GalleryCard key={item.id} item={item} />
+              ))}
+            </XDSCarousel>
+          </XDSSection>
+        </XDSCenter>
+      </XDSVStack>
+    </XDSAppShell>
   );
 }
