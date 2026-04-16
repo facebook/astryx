@@ -451,15 +451,19 @@ export const metaTheme = defineTheme({
     // =========================================================================
     radio: {
       base: {
-        borderWidth: '1.5px !important',
+        borderWidth: '2.5px !important',
         '--color-border-emphasized': '#8F9296',
+      },
+      checked: {
+        backgroundColor: 'var(--color-background-surface) !important',
+        borderColor: 'var(--color-accent) !important',
       },
     },
     'radio-dot': {
       base: {
         backgroundColor: 'var(--color-accent) !important',
-        width: '14px !important',
-        height: '14px !important',
+        width: '12px !important',
+        height: '12px !important',
       },
     },
 
