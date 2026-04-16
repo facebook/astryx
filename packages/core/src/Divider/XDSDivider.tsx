@@ -137,7 +137,6 @@ const labelStyles = stylex.create({
   label: {
     flexShrink: 0,
     paddingInline: spacingVars['--spacing-3'],
-    backgroundColor: colorVars['--color-background-surface'],
     // Small secondary text styling
     fontSize: typeScaleVars['--text-supporting-size'],
     lineHeight: typeScaleVars['--text-supporting-leading'],
