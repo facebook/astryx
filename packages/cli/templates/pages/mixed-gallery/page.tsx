@@ -147,82 +147,85 @@ export default function MixedGalleryTemplate() {
   return (
     <XDSAppShell height="fill" contentPadding={6} variant="surface">
       <XDSCenter axis="horizontal" height="100%">
-        <XDSVStack
-          gap={6}
+        <div
+          className="gallery-container"
           style={{maxWidth: 1400, width: '100%', height: '100%'}}>
-          {/* Header — capped with XDSSection maxWidth */}
-          <XDSCenter axis="horizontal">
-            <XDSSection variant="transparent" maxWidth={680}>
-              <XDSVStack gap={2} style={{textAlign: 'center'}}>
-                <XDSText
-                  type="large"
-                  weight="bold"
-                  as="p"
-                  style={{fontSize: 'var(--font-size-2xl)'}}>
-                  Make every day a little more delightful, one detail at a time.
-                </XDSText>
-                <XDSText type="body">
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed
-                  do eiusmod tempor incididunt ut labore et dolore magna aliqua
-                  ut enim ad minim excepteur sint occaecat cupidatat non
-                  proident.
-                </XDSText>
+          <XDSVStack gap={6} style={{height: '100%'}}>
+            {/* Header — capped with XDSSection maxWidth */}
+            <XDSCenter axis="horizontal">
+              <XDSSection variant="transparent" maxWidth={680}>
+                <XDSVStack gap={2} style={{textAlign: 'center'}}>
+                  <XDSText
+                    type="large"
+                    weight="bold"
+                    as="p"
+                    style={{fontSize: 'var(--font-size-2xl)'}}>
+                    Make every day a little more delightful, one detail at a
+                    time.
+                  </XDSText>
+                  <XDSText type="body">
+                    Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed
+                    do eiusmod tempor incididunt ut labore et dolore magna
+                    aliqua ut enim ad minim excepteur sint occaecat cupidatat
+                    non proident.
+                  </XDSText>
+                </XDSVStack>
+              </XDSSection>
+            </XDSCenter>
+
+            {/* Gallery — desktop: 3-col masonry, mobile: single column */}
+
+            {/* Desktop layout (hidden on mobile) */}
+            <XDSStackItem size="fill">
+              <div className="gallery-desktop" style={{height: '100%'}}>
+                <XDSGrid columns={3} gap={4} height="100%">
+                  <XDSVStack gap={4} style={{minHeight: 0}}>
+                    <XDSStackItem size="fill">
+                      <GalleryCard image={IMAGES[0]} />
+                    </XDSStackItem>
+                    <XDSStackItem size="fill">
+                      <GalleryCard image={IMAGES[1]} />
+                    </XDSStackItem>
+                  </XDSVStack>
+
+                  <GalleryCard image={IMAGES[2]} />
+
+                  <XDSVStack gap={4} style={{minHeight: 0}}>
+                    <XDSStackItem size="fill">
+                      <GalleryCard image={IMAGES[3]} />
+                    </XDSStackItem>
+                    <XDSStackItem size="fill">
+                      <GalleryCard image={IMAGES[4]} />
+                    </XDSStackItem>
+                  </XDSVStack>
+                </XDSGrid>
+              </div>
+            </XDSStackItem>
+
+            {/* Mobile layout (hidden on desktop) */}
+            <div className="gallery-mobile">
+              <XDSVStack gap={4}>
+                {IMAGES.map((image, i) => (
+                  <div key={i} style={{height: 300}}>
+                    <GalleryCard image={image} />
+                  </div>
+                ))}
               </XDSVStack>
-            </XDSSection>
-          </XDSCenter>
-
-          {/* Gallery — desktop: 3-col masonry, mobile: single column */}
-
-          {/* Desktop layout (hidden on mobile) */}
-          <XDSStackItem size="fill">
-            <div className="gallery-desktop" style={{height: '100%'}}>
-              <XDSGrid columns={3} gap={4} height="100%">
-                <XDSVStack gap={4} style={{minHeight: 0}}>
-                  <XDSStackItem size="fill">
-                    <GalleryCard image={IMAGES[0]} />
-                  </XDSStackItem>
-                  <XDSStackItem size="fill">
-                    <GalleryCard image={IMAGES[1]} />
-                  </XDSStackItem>
-                </XDSVStack>
-
-                <GalleryCard image={IMAGES[2]} />
-
-                <XDSVStack gap={4} style={{minHeight: 0}}>
-                  <XDSStackItem size="fill">
-                    <GalleryCard image={IMAGES[3]} />
-                  </XDSStackItem>
-                  <XDSStackItem size="fill">
-                    <GalleryCard image={IMAGES[4]} />
-                  </XDSStackItem>
-                </XDSVStack>
-              </XDSGrid>
             </div>
-          </XDSStackItem>
 
-          {/* Mobile layout (hidden on desktop) */}
-          <div className="gallery-mobile">
-            <XDSVStack gap={4}>
-              {IMAGES.map((image, i) => (
-                <div key={i} style={{height: 300}}>
-                  <GalleryCard image={image} />
-                </div>
-              ))}
-            </XDSVStack>
-          </div>
-
-          <style
-            dangerouslySetInnerHTML={{
-              __html: `
+            <style
+              dangerouslySetInnerHTML={{
+                __html: `
             .gallery-mobile { display: none; }
             @media (max-width: 767px) {
               .gallery-desktop { display: none !important; }
               .gallery-mobile { display: block; }
             }
           `,
-            }}
-          />
-        </XDSVStack>
+              }}
+            />
+          </XDSVStack>
+        </div>
       </XDSCenter>
     </XDSAppShell>
   );

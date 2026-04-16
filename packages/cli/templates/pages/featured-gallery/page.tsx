@@ -10,7 +10,6 @@ import {XDSCard} from '@xds/core/Card';
 import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSCarousel} from '@xds/core/Carousel';
-import {XDSMediaTheme} from '@xds/core/theme';
 
 // ─── Icons ──────────────────────────────────────────────────────────────────
 
@@ -84,8 +83,8 @@ const GALLERY_ITEMS = [
 
 function GalleryCard({item}: {item: (typeof GALLERY_ITEMS)[number]}) {
   return (
-    <XDSCard padding={0} width={480}>
-      <div style={{position: 'relative'}}>
+    <XDSCard padding={0} width={480} height="100%">
+      <div style={{position: 'relative', height: '100%'}}>
         <XDSAspectRatio ratio={3 / 4}>
           <img
             src={item.image}
@@ -99,7 +98,7 @@ function GalleryCard({item}: {item: (typeof GALLERY_ITEMS)[number]}) {
           />
         </XDSAspectRatio>
 
-        {/* Gradient overlay for text legibility */}
+        {/* Gradient overlay */}
         <div
           style={{
             position: 'absolute',
@@ -111,26 +110,30 @@ function GalleryCard({item}: {item: (typeof GALLERY_ITEMS)[number]}) {
             justifyContent: 'flex-end',
             padding: 'var(--spacing-6)',
           }}>
-          <XDSMediaTheme mode="dark">
-            <XDSVStack gap={2}>
-              <XDSText
-                type="body"
-                weight="bold"
-                style={{fontSize: 'var(--font-size-xl)'}}>
-                {item.title}
-              </XDSText>
-              <XDSText type="body" maxLines={2}>
-                {item.description}
-              </XDSText>
-              <div style={{paddingTop: 'var(--spacing-1)'}}>
-                <XDSButton
-                  label="Read more"
-                  variant="secondary"
-                  endContent={<XDSIcon icon={ArrowRightIcon} color="inherit" />}
-                />
-              </div>
-            </XDSVStack>
-          </XDSMediaTheme>
+          <XDSVStack gap={2} style={{color: 'white'}}>
+            <XDSText
+              type="body"
+              weight="bold"
+              color="inherit"
+              style={{fontSize: 'var(--font-size-xl)'}}>
+              {item.title}
+            </XDSText>
+            <XDSText type="body" color="inherit" maxLines={2}>
+              {item.description}
+            </XDSText>
+            <div style={{paddingTop: 'var(--spacing-1)'}}>
+              <XDSButton
+                label="Read more"
+                variant="secondary"
+                style={{
+                  color: 'white',
+                  borderColor: 'rgba(255,255,255,0.3)',
+                  backgroundColor: 'rgba(255,255,255,0.15)',
+                }}
+                endContent={<XDSIcon icon={ArrowRightIcon} color="inherit" />}
+              />
+            </div>
+          </XDSVStack>
         </div>
       </div>
     </XDSCard>
