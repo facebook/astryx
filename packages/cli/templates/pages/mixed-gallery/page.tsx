@@ -159,8 +159,7 @@ export default function MixedGalleryTemplate() {
                   weight="bold"
                   as="p"
                   style={{fontSize: 'var(--font-size-2xl)'}}>
-                  Make every day a little more delightful, one small detail at a
-                  time.
+                  Make every day a little more delightful, one detail at a time.
                 </XDSText>
                 <XDSText type="body">
                   Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed
