@@ -41,7 +41,7 @@ import {XDSToken} from '@xds/core/Token';
 import {XDSCard} from '@xds/core/Card';
 import {XDSGrid} from '@xds/core/Grid';
 
-import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
+import {XDSDropdownMenu, XDSDropdownMenuItem} from '@xds/core/DropdownMenu';
 import {
   ChatBubbleOvalLeftIcon,
   FolderIcon,
@@ -488,27 +488,42 @@ export default function AIChatTemplate() {
                   }
                   headerActions={
                     <>
-                      <XDSButton
-                        label="Reference"
-                        variant="ghost"
-                        size="sm"
-                        icon={<AtSymbolIcon style={{width: 16, height: 16}} />}
-                        isIconOnly
-                        onClick={() => {
-                          const input = composerInputRef.current;
-                          if (!input) return;
-                          input.focus();
-                          const sel = window.getSelection();
-                          if (sel) {
-                            sel.selectAllChildren(document.activeElement!);
-                            sel.collapseToEnd();
-                          }
-                          input.insertText('@');
-                          document.activeElement?.dispatchEvent(
-                            new Event('input', {bubbles: true}),
-                          );
+                      <XDSDropdownMenu
+                        button={{
+                          label: 'Reference',
+                          variant: 'ghost',
+                          size: 'sm',
+                          icon: (
+                            <AtSymbolIcon style={{width: 16, height: 16}} />
+                          ),
+                          isIconOnly: true,
                         }}
-                      />
+                        hasChevron={false}
+                        menuWidth={240}
+                        items={MENTION_ITEMS.map(item => ({
+                          label: item.label,
+                          onClick: () => {
+                            composerInputRef.current?.focus();
+                            composerInputRef.current?.insertToken({
+                              value: `@${item.id}`,
+                              label: item.label,
+                              variant: 'blue',
+                            });
+                            document.activeElement?.dispatchEvent(
+                              new Event('input', {bubbles: true}),
+                            );
+                          },
+                        }))}>
+                        {item => (
+                          <XDSDropdownMenuItem
+                            label={item.label}
+                            description={
+                              MENTION_ITEMS.find(m => m.label === item.label)
+                                ?.auxiliaryData?.role
+                            }
+                          />
+                        )}
+                      </XDSDropdownMenu>
                       <XDSButton
                         label="Attach"
                         variant="ghost"
@@ -725,27 +740,40 @@ export default function AIChatTemplate() {
           }
           headerActions={
             <>
-              <XDSButton
-                label="Reference"
-                variant="ghost"
-                size="sm"
-                icon={<AtSymbolIcon style={{width: 16, height: 16}} />}
-                isIconOnly
-                onClick={() => {
-                  const input = composerInputRef.current;
-                  if (!input) return;
-                  input.focus();
-                  const sel = window.getSelection();
-                  if (sel) {
-                    sel.selectAllChildren(document.activeElement!);
-                    sel.collapseToEnd();
-                  }
-                  input.insertText('@');
-                  document.activeElement?.dispatchEvent(
-                    new Event('input', {bubbles: true}),
-                  );
+              <XDSDropdownMenu
+                button={{
+                  label: 'Reference',
+                  variant: 'ghost',
+                  size: 'sm',
+                  icon: <AtSymbolIcon style={{width: 16, height: 16}} />,
+                  isIconOnly: true,
                 }}
-              />
+                hasChevron={false}
+                menuWidth={240}
+                items={MENTION_ITEMS.map(item => ({
+                  label: item.label,
+                  onClick: () => {
+                    composerInputRef.current?.focus();
+                    composerInputRef.current?.insertToken({
+                      value: `@${item.id}`,
+                      label: item.label,
+                      variant: 'blue',
+                    });
+                    document.activeElement?.dispatchEvent(
+                      new Event('input', {bubbles: true}),
+                    );
+                  },
+                }))}>
+                {item => (
+                  <XDSDropdownMenuItem
+                    label={item.label}
+                    description={
+                      MENTION_ITEMS.find(m => m.label === item.label)
+                        ?.auxiliaryData?.role
+                    }
+                  />
+                )}
+              </XDSDropdownMenu>
               <XDSButton
                 label="Attach"
                 variant="ghost"
