@@ -139,7 +139,7 @@ function GalleryCard({item}: {item: GalleryItem}) {
           justifyContent: 'flex-end',
           padding: 'var(--spacing-6)',
         }}>
-        <div style={{color: 'white'}}>
+        <XDSMediaTheme mode="dark">
           <XDSVStack gap={2}>
             <XDSText
               type="body"
@@ -147,7 +147,7 @@ function GalleryCard({item}: {item: GalleryItem}) {
               style={{fontSize: 'var(--font-size-xl)'}}>
               {item.title}
             </XDSText>
-            <XDSText type="body" color="secondary" maxLines={2}>
+            <XDSText type="body" maxLines={2}>
               {item.description}
             </XDSText>
             <div style={{paddingTop: 'var(--spacing-1)'}}>
@@ -158,7 +158,7 @@ function GalleryCard({item}: {item: GalleryItem}) {
               />
             </div>
           </XDSVStack>
-        </div>
+        </XDSMediaTheme>
       </div>
     </div>
   );
@@ -171,10 +171,10 @@ export default function FeaturedGalleryTemplate() {
 
   const scroll = (direction: 'left' | 'right') => {
     if (!scrollRef.current) return;
-    const cardWidth = scrollRef.current.firstElementChild
-      ? (scrollRef.current.firstElementChild as HTMLElement).offsetWidth
+    const cardWidth = scrollRef.current.querySelector('[data-card]')
+      ? (scrollRef.current.querySelector('[data-card]') as HTMLElement).offsetWidth
       : 400;
-    const scrollAmount = cardWidth + 24; // card width + gap
+    const scrollAmount = cardWidth + 24;
     scrollRef.current.scrollBy({
       left: direction === 'left' ? -scrollAmount : scrollAmount,
       behavior: 'smooth',
@@ -183,7 +183,7 @@ export default function FeaturedGalleryTemplate() {
 
   return (
     <XDSVStack gap={0}>
-      {/* Header section — centered, constrained width */}
+      {/* Header section */}
       <XDSCenter axis="horizontal">
         <XDSSection maxWidth={1200} padding={6} variant="transparent">
           <XDSVStack gap={3} hAlign="center">
@@ -215,7 +215,7 @@ export default function FeaturedGalleryTemplate() {
         </XDSSection>
       </XDSCenter>
 
-      {/* Navigation arrows — right-aligned within max-width */}
+      {/* Navigation arrows */}
       <XDSCenter axis="horizontal">
         <div style={{maxWidth: 1200, width: '100%', padding: '0 24px'}}>
           <XDSHStack gap={2} hAlign="end">
@@ -237,26 +237,28 @@ export default function FeaturedGalleryTemplate() {
         </div>
       </XDSCenter>
 
-      {/* Carousel — full-bleed horizontal scroll */}
-      <div
-        ref={scrollRef}
-        style={{
-          display: 'flex',
-          gap: 24,
-          overflowX: 'auto',
-          scrollSnapType: 'x mandatory',
-          paddingLeft: 24,
-          paddingRight: 24,
-          paddingTop: 24,
-          paddingBottom: 48,
-          scrollbarWidth: 'none',
-        }}>
-        {GALLERY_ITEMS.map(item => (
-          <div key={item.id} style={{scrollSnapAlign: 'start'}}>
-            <GalleryCard item={item} />
+      {/* Carousel */}
+      <XDSCenter axis="horizontal">
+        <div style={{maxWidth: 1200, width: '100%', padding: '0 24px'}}>
+          <div
+            ref={scrollRef}
+            style={{
+              display: 'flex',
+              gap: 24,
+              overflowX: 'auto',
+              scrollSnapType: 'x mandatory',
+              paddingTop: 24,
+              paddingBottom: 48,
+              scrollbarWidth: 'none',
+            }}>
+            {GALLERY_ITEMS.map(item => (
+              <div key={item.id} data-card style={{scrollSnapAlign: 'start'}}>
+                <GalleryCard item={item} />
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </div>
+      </XDSCenter>
     </XDSVStack>
   );
 }
