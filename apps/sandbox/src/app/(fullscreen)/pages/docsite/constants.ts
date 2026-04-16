@@ -242,21 +242,29 @@ export const PROFILE_USED_ITEMS: {
 
 export const PROFILE_LIKED_ITEMS: {
   name: string;
-  type: string;
-  lastUsed: string;
+  type: 'Template' | 'Theme' | 'Component';
+  bookmarkedAt: string;
+  description: string;
+  img: string;
 }[] = [
-  {name: 'Meta Theme', type: 'Theme', lastUsed: '2026-04-13T08:00:00Z'},
-  {name: 'Brutalist Theme', type: 'Theme', lastUsed: '2026-04-11T10:30:00Z'},
-  {name: 'Admin Dashboard', type: 'Template', lastUsed: '2026-04-10T14:20:00Z'},
-  {name: 'Product Detail', type: 'Template', lastUsed: '2026-04-07T09:00:00Z'},
+  {name: 'Meta Theme', type: 'Theme', bookmarkedAt: '2026-04-13T08:00:00Z', description: 'Meta brand colors with Figtree typography.', img: FIRST_CARD_IMAGE},
+  {name: 'Brutalist Theme', type: 'Theme', bookmarkedAt: '2026-04-11T10:30:00Z', description: 'Bold, raw aesthetic with heavy borders and sharp angles.', img: SHOPPING_DETAILS_IMAGE},
+  {name: 'Admin Dashboard', type: 'Template', bookmarkedAt: '2026-04-10T14:20:00Z', description: 'Full admin panel with sidebar nav, KPI cards, and data tables.', img: SCREENSHOT_3_IMAGE},
+  {name: 'Product Detail', type: 'Template', bookmarkedAt: '2026-04-07T09:00:00Z', description: 'E-commerce product page with image gallery and reviews.', img: `${basePath}/templates/card4-preview.png`},
+  {name: 'Toast Notification', type: 'Component', bookmarkedAt: '2026-04-05T11:00:00Z', description: 'Stackable toast with auto-dismiss and action support.', img: DUMMY_IMAGE},
+  {name: 'Kanban Board', type: 'Template', bookmarkedAt: '2026-04-02T16:30:00Z', description: 'Drag-and-drop board with swimlanes and card detail drawers.', img: DUMMY_IMAGE},
 ];
 
-export const PROFILE_COLLECTIONS = [
-  {name: 'Work Projects', count: 4},
-  {name: 'Design Inspiration', count: 6},
-  {name: 'Client Templates', count: 3},
-  {name: 'Dashboard Ideas', count: 5},
-  {name: 'Landing Pages', count: 8},
+export const PROFILE_COLLECTIONS: {
+  name: string;
+  count: number;
+  color: string;
+}[] = [
+  {name: 'Work Projects', count: 4, color: '#3B82F6'},
+  {name: 'Design Inspiration', count: 6, color: '#8B5CF6'},
+  {name: 'Client Templates', count: 3, color: '#F59E0B'},
+  {name: 'Dashboard Ideas', count: 5, color: '#10B981'},
+  {name: 'Landing Pages', count: 8, color: '#EF4444'},
 ];
 
 export const PROFILE_CRAFT_ITEMS: {
