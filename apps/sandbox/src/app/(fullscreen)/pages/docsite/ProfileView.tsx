@@ -116,7 +116,7 @@ export function ProfileView({activeView, setActiveView}: {activeView: 'craft' | 
   const [selectedTheme, setSelectedTheme] = useState('default');
 
   return (
-    <div style={{display: 'flex', flexDirection: 'column' as const, height: '100vh', backgroundColor: 'var(--color-background-surface, #fafafa)'}}>
+    <div style={{display: 'flex', flexDirection: 'column' as const, height: '100vh'}}>
       <AppTopNav activeView={activeView} setActiveView={setActiveView} activeTab="all" onActiveTabChange={() => setActiveView('craft')} />
       <div style={{flex: 1, display: 'flex', overflow: 'hidden'}}>
         <nav style={{width: 280, flexShrink: 0, height: '100%', overflowY: 'auto' as const, backgroundColor: 'var(--color-background-body, #fff)'}}>
