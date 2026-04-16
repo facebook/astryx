@@ -262,7 +262,27 @@ async function main() {
   console.log('Done.');
 }
 
-main().catch(err => {
-  console.error(err);
-  process.exit(1);
-});
+main()
+  .then(() => {
+    if (process.argv.includes('--watch')) {
+      const chokidar = require('chokidar');
+      const watchPaths = [
+        path.join(PAGES_DIR, '**', 'template.doc.mjs'),
+        path.join(BLOCKS_DIR, '**', '*.doc.mjs'),
+      ];
+      let debounce = null;
+      const rerun = () => {
+        if (debounce) clearTimeout(debounce);
+        debounce = setTimeout(() => {
+          console.log('\n  .doc.mjs changed — re-syncing...');
+          main().catch(console.error);
+        }, 300);
+      };
+      chokidar.watch(watchPaths, {ignoreInitial: true}).on('all', rerun);
+      console.log('  Watching .doc.mjs files for changes...');
+    }
+  })
+  .catch(err => {
+    console.error(err);
+    process.exit(1);
+  });
