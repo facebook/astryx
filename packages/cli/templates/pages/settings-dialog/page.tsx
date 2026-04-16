@@ -22,6 +22,7 @@ import {XDSSwitch} from '@xds/core/Switch';
 import {XDSLink} from '@xds/core/Link';
 import {XDSTabList, XDSTab} from '@xds/core/TabList';
 import {XDSBadge} from '@xds/core/Badge';
+import {XDSIcon} from '@xds/core/Icon';
 import {colorVars} from '@xds/core/theme/tokens.stylex';
 import {
   UserIcon,
@@ -133,26 +134,20 @@ function ExpandableRow({
   return (
     <>
       {isExpanded ? (
-        <div style={{padding: '16px 0'}}>
-          <div style={{marginBottom: 12}}>
+        <div {...stylex.props(styles.rowPadding)}>
+          <div {...stylex.props(styles.marginBottom12)}>
             <XDSText type="body" weight="semibold" display="block">
               {label}
             </XDSText>
           </div>
-          <div style={{marginBottom: 16}}>{children}</div>
+          <div {...stylex.props(styles.marginBottom16)}>{children}</div>
           <XDSHStack gap={2}>
             <XDSButton label="Save" variant="primary" onClick={onSave} />
             <XDSButton label="Cancel" variant="ghost" onClick={onCancel} />
           </XDSHStack>
         </div>
       ) : (
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-start',
-            padding: '16px 0',
-          }}>
+        <XDSHStack hAlign="justify" vAlign="start" xstyle={styles.rowPadding}>
           <div>
             <XDSText type="body" weight="semibold" display="block">
               {label}
@@ -170,7 +165,7 @@ function ExpandableRow({
             }}>
             Edit
           </XDSLink>
-        </div>
+        </XDSHStack>
       )}
       <XDSDivider />
     </>
@@ -188,13 +183,7 @@ function InfoRowItem({
 }) {
   return (
     <>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-          padding: '16px 0',
-        }}>
+      <XDSHStack hAlign="justify" vAlign="start" xstyle={styles.rowPadding}>
         <div>
           <XDSText type="body" weight="semibold" display="block">
             {label}
@@ -208,7 +197,7 @@ function InfoRowItem({
             {action}
           </XDSLink>
         )}
-      </div>
+      </XDSHStack>
       <XDSDivider />
     </>
   );
@@ -222,6 +211,88 @@ const styles = stylex.create({
   pageBg: {backgroundColor: colorVars['--color-background-body']},
   cardBg: {backgroundColor: colorVars['--color-background-card']},
   noBorder: {borderWidth: 0},
+  pageCenter: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'fixed',
+    inset: 0,
+  },
+  dialogInner: {
+    height: '100%',
+    minHeight: 'calc(85vh - 2px)',
+    maxHeight: 'calc(85vh - 2px)',
+    position: 'relative',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    zIndex: 1,
+  },
+  navHeadingPadding: {
+    paddingLeft: 16,
+    paddingRight: 16,
+  },
+  contentPadding: {
+    padding: '16px 32px',
+    maxWidth: 680,
+  },
+  rowPadding: {
+    padding: '16px 0',
+  },
+  rowPaddingTop: {
+    paddingTop: 16,
+    paddingBottom: 0,
+  },
+  rowPaddingBottom: {
+    paddingTop: 0,
+    paddingBottom: 16,
+  },
+  marginBottom12: {
+    marginBottom: 12,
+  },
+  marginBottom16: {
+    marginBottom: 16,
+  },
+  marginTop8: {
+    marginTop: 8,
+  },
+  marginTop16: {
+    marginTop: 16,
+  },
+  cardMarginTop: {
+    marginTop: 16,
+  },
+  tabOffset: {
+    marginLeft: -12,
+    overflow: 'hidden',
+  },
+  iconBox: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  iconBoxMuted: {
+    backgroundColor: colorVars['--color-background-muted'],
+  },
+  iconBoxSurface: {
+    backgroundColor: colorVars['--color-background-surface'],
+  },
+  flex1: {
+    flex: 1,
+  },
+  flexShrink0MarginTop2: {
+    flexShrink: 0,
+    marginTop: 2,
+  },
+  paddingTop16: {
+    paddingTop: 16,
+  },
 });
 
 // ---------------------------------------------------------------------------
@@ -254,15 +325,7 @@ export default function SettingsDialogTemplate() {
   const handleSave = () => setExpandedRow(null);
 
   return (
-    <div
-      {...stylex.props(styles.pageBg)}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        position: 'fixed',
-        inset: 0,
-      }}>
+    <div {...stylex.props(styles.pageBg, styles.pageCenter)}>
       <XDSButton
         label="Open settings"
         variant="primary"
@@ -275,15 +338,9 @@ export default function SettingsDialogTemplate() {
         maxHeight="85vh"
         padding={0}
         purpose="form">
-        <div
-          style={{
-            height: '100%',
-            minHeight: 'calc(85vh - 2px)',
-            maxHeight: 'calc(85vh - 2px)',
-            position: 'relative',
-          }}>
+        <div {...stylex.props(styles.dialogInner)}>
           {/* Close button — top right, no header bar */}
-          <div style={{position: 'absolute', top: 12, right: 12, zIndex: 1}}>
+          <div {...stylex.props(styles.closeButton)}>
             <XDSButton
               label="Close"
               icon={<XMarkIcon width={20} height={20} />}
@@ -304,7 +361,7 @@ export default function SettingsDialogTemplate() {
                 padding={3}
                 xstyle={styles.cardBg}>
                 <XDSVStack gap={4}>
-                  <div style={{paddingLeft: 16, paddingRight: 16}}>
+                  <div {...stylex.props(styles.navHeadingPadding)}>
                     <XDSHeading level={2}>Account settings</XDSHeading>
                   </div>
                   <XDSList density="spacious">
@@ -336,7 +393,7 @@ export default function SettingsDialogTemplate() {
             }
             content={
               <XDSLayoutContent>
-                <div style={{padding: '16px 32px', maxWidth: 680}}>
+                <div {...stylex.props(styles.contentPadding)}>
                   {activeNav === 'Personal information' && (
                     <XDSVStack gap={6}>
                       <XDSHeading level={2}>Personal info</XDSHeading>
@@ -383,23 +440,12 @@ export default function SettingsDialogTemplate() {
                         />
                       </XDSVStack>
 
-                      <XDSCard padding={4} style={{marginTop: 16}}>
+                      <XDSCard padding={4} xstyle={styles.cardMarginTop}>
                         <XDSVStack gap={0}>
-                          <div style={{paddingTop: 0, paddingBottom: 16}}>
+                          <div {...stylex.props(styles.rowPaddingBottom)}>
                             <XDSHStack gap={3} vAlign="start">
-                              <div
-                                style={{
-                                  width: 48,
-                                  height: 48,
-                                  borderRadius: 12,
-                                  backgroundColor:
-                                    'var(--xds-color-background-muted, #f5f5f5)',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  flexShrink: 0,
-                                }}>
-                                <LockClosedIcon width={24} height={24} />
+                              <div {...stylex.props(styles.iconBox, styles.iconBoxMuted)}>
+                                <XDSIcon icon={LockClosedIcon} size="lg" />
                               </div>
                               <XDSVStack gap={0}>
                                 <XDSText
@@ -419,21 +465,10 @@ export default function SettingsDialogTemplate() {
                             </XDSHStack>
                           </div>
                           <XDSDivider />
-                          <div style={{padding: '16px 0'}}>
+                          <div {...stylex.props(styles.rowPadding)}>
                             <XDSHStack gap={3} vAlign="start">
-                              <div
-                                style={{
-                                  width: 48,
-                                  height: 48,
-                                  borderRadius: 12,
-                                  backgroundColor:
-                                    'var(--xds-color-background-muted, #f5f5f5)',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  flexShrink: 0,
-                                }}>
-                                <PencilSquareIcon width={24} height={24} />
+                              <div {...stylex.props(styles.iconBox, styles.iconBoxMuted)}>
+                                <XDSIcon icon={PencilSquareIcon} size="lg" />
                               </div>
                               <XDSVStack gap={0}>
                                 <XDSText
@@ -456,21 +491,10 @@ export default function SettingsDialogTemplate() {
                             </XDSHStack>
                           </div>
                           <XDSDivider />
-                          <div style={{paddingTop: 16, paddingBottom: 0}}>
+                          <div {...stylex.props(styles.rowPaddingTop)}>
                             <XDSHStack gap={3} vAlign="start">
-                              <div
-                                style={{
-                                  width: 48,
-                                  height: 48,
-                                  borderRadius: 12,
-                                  backgroundColor:
-                                    'var(--xds-color-background-muted, #f5f5f5)',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  flexShrink: 0,
-                                }}>
-                                <ShareIcon width={24} height={24} />
+                              <div {...stylex.props(styles.iconBox, styles.iconBoxMuted)}>
+                                <XDSIcon icon={ShareIcon} size="lg" />
                               </div>
                               <XDSVStack gap={0}>
                                 <XDSText
@@ -498,7 +522,7 @@ export default function SettingsDialogTemplate() {
                     <XDSVStack gap={6}>
                       <XDSHeading level={2}>Login &amp; security</XDSHeading>
 
-                      <div style={{marginLeft: -12, overflow: 'hidden'}}>
+                      <div {...stylex.props(styles.tabOffset)}>
                         <XDSTabList
                           value={activeTab}
                           onChange={setActiveTab}
@@ -513,7 +537,7 @@ export default function SettingsDialogTemplate() {
                           {/* Login */}
                           <XDSVStack gap={0}>
                             <XDSHeading level={3}>Login</XDSHeading>
-                            <div style={{marginTop: 8}}>
+                            <div {...stylex.props(styles.marginTop8)}>
                               <XDSDivider />
                             </div>
                             {LOGIN_ROWS.map(row => (
@@ -524,7 +548,7 @@ export default function SettingsDialogTemplate() {
                           {/* Social accounts */}
                           <XDSVStack gap={0}>
                             <XDSHeading level={3}>Social accounts</XDSHeading>
-                            <div style={{marginTop: 8}}>
+                            <div {...stylex.props(styles.marginTop8)}>
                               <XDSDivider />
                             </div>
                             {SOCIAL_ROWS.map(row => (
@@ -535,41 +559,24 @@ export default function SettingsDialogTemplate() {
                           {/* Device history */}
                           <XDSVStack gap={0}>
                             <XDSHeading level={3}>Device history</XDSHeading>
-                            <div style={{marginTop: 8}}>
+                            <div {...stylex.props(styles.marginTop8)}>
                               <XDSDivider />
                             </div>
                             {DEVICE_ROWS.map((device, i) => (
                               <div key={i}>
-                                <div
-                                  style={{
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'flex-start',
-                                    padding: '16px 0',
-                                    gap: 12,
-                                  }}>
-                                  <ComputerDesktopIcon
-                                    width={32}
-                                    height={32}
-                                    style={{
-                                      flexShrink: 0,
-                                      marginTop: 2,
-                                    }}
-                                  />
-                                  <div style={{flex: 1}}>
-                                    <div
-                                      style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 8,
-                                      }}>
+                                <XDSHStack hAlign="justify" vAlign="start" gap={3} xstyle={styles.rowPadding}>
+                                  <div {...stylex.props(styles.flexShrink0MarginTop2)}>
+                                    <XDSIcon icon={ComputerDesktopIcon} size="lg" />
+                                  </div>
+                                  <div {...stylex.props(styles.flex1)}>
+                                    <XDSHStack vAlign="center" gap={2}>
                                       <XDSText type="body" weight="semibold">
                                         {device.label}
                                       </XDSText>
                                       {device.badge && (
                                         <XDSBadge label={device.badge} />
                                       )}
-                                    </div>
+                                    </XDSHStack>
                                     <XDSText
                                       type="supporting"
                                       color="secondary">
@@ -581,7 +588,7 @@ export default function SettingsDialogTemplate() {
                                       {device.action}
                                     </XDSLink>
                                   )}
-                                </div>
+                                </XDSHStack>
                                 <XDSDivider />
                               </div>
                             ))}
@@ -590,16 +597,10 @@ export default function SettingsDialogTemplate() {
                           {/* Account */}
                           <XDSVStack gap={0}>
                             <XDSHeading level={3}>Account</XDSHeading>
-                            <div style={{marginTop: 8}}>
+                            <div {...stylex.props(styles.marginTop8)}>
                               <XDSDivider />
                             </div>
-                            <div
-                              style={{
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'flex-start',
-                                padding: '16px 0',
-                              }}>
+                            <XDSHStack hAlign="justify" vAlign="start" xstyle={styles.rowPadding}>
                               <div>
                                 <XDSText
                                   type="body"
@@ -617,7 +618,7 @@ export default function SettingsDialogTemplate() {
                               <XDSLink label="Deactivate" href="#">
                                 Deactivate
                               </XDSLink>
-                            </div>
+                            </XDSHStack>
                             <XDSDivider />
                           </XDSVStack>
                         </XDSVStack>
@@ -627,10 +628,10 @@ export default function SettingsDialogTemplate() {
                         <XDSVStack gap={8}>
                           <XDSVStack gap={0}>
                             <XDSHeading level={3}>Shared access</XDSHeading>
-                            <div style={{marginTop: 8}}>
+                            <div {...stylex.props(styles.marginTop8)}>
                               <XDSDivider />
                             </div>
-                            <div style={{paddingTop: 16}}>
+                            <div {...stylex.props(styles.paddingTop16)}>
                               <XDSText type="body" color="secondary">
                                 Review each request carefully before approving
                                 access. We&apos;ll email your employee or
@@ -642,25 +643,9 @@ export default function SettingsDialogTemplate() {
 
                           <XDSCard>
                             <XDSSection variant="wash">
-                              <div
-                                style={{
-                                  display: 'flex',
-                                  gap: 16,
-                                  alignItems: 'flex-start',
-                                }}>
-                                <div
-                                  style={{
-                                    width: 48,
-                                    height: 48,
-                                    borderRadius: 12,
-                                    backgroundColor:
-                                      'var(--xds-color-background-surface, #fff)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    flexShrink: 0,
-                                  }}>
-                                  <LockClosedIcon width={24} height={24} />
+                              <XDSHStack gap={4} vAlign="start">
+                                <div {...stylex.props(styles.iconBox, styles.iconBoxSurface)}>
+                                  <XDSIcon icon={LockClosedIcon} size="lg" />
                                 </div>
                                 <XDSVStack gap={1}>
                                   <XDSText type="body" weight="bold">
@@ -673,7 +658,7 @@ export default function SettingsDialogTemplate() {
                                     and send messages on your behalf.
                                   </XDSText>
                                 </XDSVStack>
-                              </div>
+                              </XDSHStack>
                             </XDSSection>
                           </XDSCard>
                         </XDSVStack>
@@ -756,7 +741,7 @@ export default function SettingsDialogTemplate() {
                         {/* Messages */}
                         <XDSVStack gap={0}>
                           <XDSHeading level={3}>Messages</XDSHeading>
-                          <div style={{marginTop: 16}}>
+                          <div {...stylex.props(styles.marginTop16)}>
                             <XDSSwitch
                               label="Show people when I've read their messages."
                               value={readReceipts}
@@ -765,20 +750,15 @@ export default function SettingsDialogTemplate() {
                               labelSpacing="spread"
                             />
                           </div>
-                          <div style={{padding: '16px 0'}}>
-                            <div
-                              style={{
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                              }}>
+                          <div {...stylex.props(styles.rowPadding)}>
+                            <XDSHStack hAlign="justify" vAlign="center">
                               <XDSText type="body" weight="semibold">
                                 Blocked people
                               </XDSText>
                               <XDSLink label="View" href="#">
                                 View
                               </XDSLink>
-                            </div>
+                            </XDSHStack>
                           </div>
                           <XDSDivider />
                         </XDSVStack>
@@ -786,7 +766,7 @@ export default function SettingsDialogTemplate() {
                         {/* Listings */}
                         <XDSVStack gap={0}>
                           <XDSHeading level={3}>Listings</XDSHeading>
-                          <div style={{marginTop: 16}}>
+                          <div {...stylex.props(styles.marginTop16)}>
                             <XDSSwitch
                               label="Include my listing(s) in search engines"
                               description="Turning this on means search engines, like Google, will display your listing page(s) in search results."
@@ -796,7 +776,7 @@ export default function SettingsDialogTemplate() {
                               labelSpacing="spread"
                             />
                           </div>
-                          <div style={{marginTop: 8}}>
+                          <div {...stylex.props(styles.marginTop8)}>
                             <XDSDivider />
                           </div>
                         </XDSVStack>
@@ -815,7 +795,7 @@ export default function SettingsDialogTemplate() {
                               </XDSLink>
                             </XDSText>
                           </div>
-                          <div style={{marginTop: 16}}>
+                          <div {...stylex.props(styles.marginTop16)}>
                             <XDSVStack gap={4}>
                               <XDSSwitch
                                 label="Show my home city and country"
@@ -851,7 +831,7 @@ export default function SettingsDialogTemplate() {
                               />
                             </XDSVStack>
                           </div>
-                          <div style={{marginTop: 16}}>
+                          <div {...stylex.props(styles.marginTop16)}>
                             <XDSDivider />
                           </div>
                         </XDSVStack>
@@ -860,19 +840,14 @@ export default function SettingsDialogTemplate() {
                         <XDSVStack gap={4}>
                           <XDSHeading level={3}>Data privacy</XDSHeading>
                           <XDSCard padding={4}>
-                            <div
-                              style={{
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                              }}>
+                            <XDSHStack hAlign="justify" vAlign="center">
                               <XDSText type="body">
                                 Request my personal data
                               </XDSText>
                               <XDSLink label="Request" href="#">
                                 Request
                               </XDSLink>
-                            </div>
+                            </XDSHStack>
                           </XDSCard>
                           <XDSSwitch
                             label="Help improve AI-powered features"
@@ -883,39 +858,18 @@ export default function SettingsDialogTemplate() {
                             labelSpacing="spread"
                           />
                           <XDSCard padding={4}>
-                            <div
-                              style={{
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                              }}>
+                            <XDSHStack hAlign="justify" vAlign="center">
                               <XDSText type="body">Delete my account</XDSText>
                               <XDSLink label="Delete" href="#">
                                 Delete
                               </XDSLink>
-                            </div>
+                            </XDSHStack>
                           </XDSCard>
                           <XDSCard>
                             <XDSSection variant="wash">
-                              <div
-                                style={{
-                                  display: 'flex',
-                                  gap: 16,
-                                  alignItems: 'flex-start',
-                                }}>
-                                <div
-                                  style={{
-                                    width: 48,
-                                    height: 48,
-                                    borderRadius: 12,
-                                    backgroundColor:
-                                      'var(--xds-color-background-surface, #fff)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    flexShrink: 0,
-                                  }}>
-                                  <ShieldCheckIcon width={24} height={24} />
+                              <XDSHStack gap={4} vAlign="start">
+                                <div {...stylex.props(styles.iconBox, styles.iconBoxSurface)}>
+                                  <XDSIcon icon={ShieldCheckIcon} size="lg" />
                                 </div>
                                 <XDSVStack gap={1}>
                                   <XDSText type="body" weight="bold">
@@ -933,7 +887,7 @@ export default function SettingsDialogTemplate() {
                                     .
                                   </XDSText>
                                 </XDSVStack>
-                              </div>
+                              </XDSHStack>
                             </XDSSection>
                           </XDSCard>
                         </XDSVStack>
