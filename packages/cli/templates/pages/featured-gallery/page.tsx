@@ -9,6 +9,7 @@ import {XDSButton} from '@xds/core/Button';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import {XDSIcon} from '@xds/core/Icon';
+import {XDSMediaTheme} from '@xds/core/theme/XDSMediaTheme';
 
 // ─── Icons ──────────────────────────────────────────────────────────────────
 
@@ -138,35 +139,26 @@ function GalleryCard({item}: {item: GalleryItem}) {
           justifyContent: 'flex-end',
           padding: 'var(--spacing-6)',
         }}>
-        <XDSVStack gap={2}>
-          <XDSText
-            type="body"
-            weight="bold"
-            style={{
-              color: '#fff',
-              fontSize: 'var(--font-size-xl)',
-            }}>
-            {item.title}
-          </XDSText>
-          <XDSText
-            type="body"
-            maxLines={2}
-            style={{color: 'rgba(255,255,255,0.85)'}}>
-            {item.description}
-          </XDSText>
-          <div style={{paddingTop: 'var(--spacing-1)'}}>
-            <XDSButton
-              label="Read more"
-              variant="secondary"
-              endContent={<XDSIcon icon={ArrowRightIcon} color="inherit" />}
-              style={{
-                color: '#fff',
-                borderColor: 'rgba(255,255,255,0.4)',
-                backgroundColor: 'rgba(255,255,255,0.1)',
-              }}
-            />
-          </div>
-        </XDSVStack>
+        <XDSMediaTheme mode="dark">
+          <XDSVStack gap={2}>
+            <XDSText
+              type="body"
+              weight="bold"
+              style={{fontSize: 'var(--font-size-xl)'}}>
+              {item.title}
+            </XDSText>
+            <XDSText type="body" color="secondary" maxLines={2}>
+              {item.description}
+            </XDSText>
+            <div style={{paddingTop: 'var(--spacing-1)'}}>
+              <XDSButton
+                label="Read more"
+                variant="secondary"
+                endContent={<XDSIcon icon={ArrowRightIcon} color="inherit" />}
+              />
+            </div>
+          </XDSVStack>
+        </XDSMediaTheme>
       </div>
     </div>
   );
