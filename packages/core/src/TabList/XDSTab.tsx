@@ -14,7 +14,6 @@
 
 import {useCallback, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
 import {
   colorVars,
   spacingVars,
@@ -25,6 +24,7 @@ import {
   fontWeightVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
+import {XDSBaseProps} from '../XDSBaseProps';
 import {useXDSTabListContext} from './XDSTabListContext';
 import type {XDSTabListSize} from './XDSTabListContext';
 import {tabScope} from './tab.markers.stylex';
@@ -32,7 +32,7 @@ import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import type {XDSLinkComponentType} from '../Link/types';
 import {xdsClassName, mergeProps} from '../utils';
 
-export interface XDSTabProps {
+export interface XDSTabProps extends XDSBaseProps<HTMLButtonElement> {
   /**
    * Custom component to render instead of `<a>` for link tabs.
    * Overrides the provider-level default set by XDSLinkProvider.
@@ -59,26 +59,6 @@ export interface XDSTabProps {
    * Icon element shown when tab is selected. Falls back to `icon` if not provided.
    */
   selectedIcon?: ReactNode;
-  /**
-   * StyleX styles created via `stylex.create()`. Merged with the component's
-   * base styles inside a single `stylex.props()` call for optimal deduplication.
-   *
-   * @example
-   * ```
-   * const overrides = stylex.create({ root: { paddingInline: 16 } });
-   * <XDSTab xstyle={overrides.root} ... />
-   * ```
-   */
-  xstyle?: StyleXStyles;
-  /**
-   * CSS class name(s) appended to the root element.
-   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
-   */
-  className?: string;
-  /**
-   * Inline styles to apply to the root element.
-   */
-  style?: React.CSSProperties;
 }
 
 // =============================================================================
@@ -227,6 +207,7 @@ export function XDSTab({
   xstyle,
   className,
   style,
+  ...restProps
 }: XDSTabProps) {
   const tabListCtx = useXDSTabListContext();
   const LinkComponent = useXDSLinkComponent(as);
@@ -247,6 +228,7 @@ export function XDSTab({
   ) : null;
 
   const sharedProps = {
+    ...restProps,
     'aria-current': isSelected ? ('page' as const) : undefined,
     ...mergeProps(
       xdsClassName('tab', {

@@ -14,13 +14,16 @@
 
 import {useMemo, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
 import {borderVars, colorVars, spacingVars} from '../theme/tokens.stylex';
+import {XDSBaseProps} from '../XDSBaseProps';
 import {XDSTabListContext} from './XDSTabListContext';
 import type {XDSTabListSize} from './XDSTabListContext';
 import {xdsClassName, mergeProps} from '../utils';
 
-export interface XDSTabListProps {
+export interface XDSTabListProps extends Omit<
+  XDSBaseProps<HTMLElement>,
+  'onChange'
+> {
   /**
    * The currently selected tab value.
    */
@@ -46,26 +49,6 @@ export interface XDSTabListProps {
    * @default false
    */
   hasDivider?: boolean;
-  /**
-   * StyleX styles created via `stylex.create()`. Merged with the component's
-   * base styles inside a single `stylex.props()` call for optimal deduplication.
-   *
-   * @example
-   * ```
-   * const overrides = stylex.create({ root: { marginBottom: 8 } });
-   * <XDSTabList xstyle={overrides.root} ... />
-   * ```
-   */
-  xstyle?: StyleXStyles;
-  /**
-   * CSS class name(s) appended to the root element.
-   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
-   */
-  className?: string;
-  /**
-   * Inline styles to apply to the root element.
-   */
-  style?: React.CSSProperties;
   /**
    * XDSTab and XDSTabMenu children.
    */
@@ -114,6 +97,7 @@ export function XDSTabList({
   className,
   style,
   children,
+  ...restProps
 }: XDSTabListProps) {
   const contextValue = useMemo(
     () => ({value, onChange, size, layout}),
@@ -124,6 +108,7 @@ export function XDSTabList({
     <XDSTabListContext.Provider value={contextValue}>
       <nav
         aria-label="Tabs"
+        {...restProps}
         {...mergeProps(
           xdsClassName('tab-list', {size}),
           stylex.props(

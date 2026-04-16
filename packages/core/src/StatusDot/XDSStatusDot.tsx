@@ -12,8 +12,8 @@
  */
 
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
+import {XDSBaseProps} from '../XDSBaseProps';
 import {xdsClassName, mergeProps} from '../utils';
 
 /**
@@ -97,7 +97,7 @@ export interface XDSStatusDotVariantMap {
  */
 export type XDSStatusDotVariant = keyof XDSStatusDotVariantMap;
 
-export interface XDSStatusDotProps {
+export interface XDSStatusDotProps extends XDSBaseProps<HTMLSpanElement> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLSpanElement>;
   /**
@@ -114,31 +114,6 @@ export interface XDSStatusDotProps {
    * @default false
    */
   isPulsing?: boolean;
-  /**
-   * StyleX styles created via `stylex.create()`. Merged with the component's
-   * base styles inside a single `stylex.props()` call for optimal deduplication.
-   *
-   * @example
-   * ```
-   * const overrides = stylex.create({ root: { marginBottom: 8 } });
-   * <Component xstyle={overrides.root} />
-   * ```
-   */
-  xstyle?: StyleXStyles;
-  /**
-   * CSS class name(s) appended to the root element.
-   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
-   */
-  className?: string;
-  /**
-   * Inline styles to apply to the root element. Spread after StyleX
-   * inline styles, so these values take priority.
-   */
-  style?: React.CSSProperties;
-  /**
-   * Optional test ID for testing.
-   */
-  'data-testid'?: string;
 }
 
 /**
