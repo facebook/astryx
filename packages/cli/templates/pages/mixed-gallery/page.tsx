@@ -78,24 +78,25 @@ export default function MixedGalleryTemplate() {
                     gridTemplateRows: '2fr 3fr',
                     gap: 'var(--spacing-4)',
                     height: '100%',
+                    overflow: 'hidden',
                   }}>
                   {/* Left column: short top, tall bottom */}
                   <img
                     src={IMAGES[0]}
                     alt=""
-                    style={{...imgStyle, gridRow: '1 / 2'}}
+                    style={{...imgStyle, gridRow: '1 / 2', minHeight: 0}}
                   />
                   <img
                     src={IMAGES[1]}
                     alt=""
-                    style={{...imgStyle, gridRow: '2 / 3'}}
+                    style={{...imgStyle, gridRow: '2 / 3', minHeight: 0}}
                   />
 
                   {/* Center column: one tall image spanning both rows */}
                   <img
                     src={IMAGES[2]}
                     alt=""
-                    style={{...imgStyle, gridRow: '1 / 3'}}
+                    style={{...imgStyle, gridRow: '1 / 3', minHeight: 0}}
                   />
 
                   {/* Right column: stacked — short, medium, short */}
@@ -105,6 +106,8 @@ export default function MixedGalleryTemplate() {
                       display: 'grid',
                       gridTemplateRows: '1fr 1.5fr 1fr',
                       gap: 'var(--spacing-4)',
+                      minHeight: 0,
+                      overflow: 'hidden',
                     }}>
                     <img src={IMAGES[3]} alt="" style={imgStyle} />
                     <img src={IMAGES[4]} alt="" style={imgStyle} />
