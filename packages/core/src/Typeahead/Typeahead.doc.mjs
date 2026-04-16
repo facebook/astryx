@@ -2,17 +2,8 @@
 
 export const docs = {
   name: 'Typeahead',
-  description:
-    'Searchable dropdown components for single-item selection with keyboard navigation. Supports async and sync search via a searchSource interface.',
   keywords: ["typeahead","autocomplete","combobox","searchbox","autosuggest","select","dropdown","lookup","searchable","suggestion","picker"],
-  features: [
-    'Async and sync search via a searchSource interface with search() and bootstrap() methods',
-    'Bootstrap results shown on focus before typing (via hasEntriesOnFocus)',
-    'Edit mode: clicking selected token enters edit mode with text pre-populated and selected',
-    'Combobox ARIA pattern for full accessibility',
-    'Debounced search with configurable delay (default 150ms, set to 0 for synchronous sources)',
-    'Two-layer architecture: XDSBaseTypeahead provides the engine, XDSTypeahead adds field chrome',
-  ],  components: [
+  components: [
     {
       name: 'XDSTypeahead',
       description:
@@ -300,16 +291,6 @@ export const docs = {
       ],
     },
   ],
-  accessibility: [
-    'Uses combobox ARIA pattern with role="combobox", aria-expanded, aria-autocomplete="list".',
-    'Dropdown uses role="listbox" with role="option" on each item.',
-    'aria-activedescendant tracks the highlighted option.',
-    'Selected item has aria-selected="true".',
-    'Loading state has role="status" with aria-label="Loading".',
-    'XDSTypeahead wraps in XDSField for label and description association.',
-  ],
-  keyboard:
-    'Arrow keys navigate dropdown items; Enter selects highlighted item; Escape closes dropdown or restores previous value in edit mode; Home/End jump to first/last item',
   theming: {
     targets: [
       {className: 'xds-typeahead', visualProps: ['status']},
@@ -317,39 +298,38 @@ export const docs = {
       {className: 'xds-typeahead-item'},
     ],
   },
-  notes: [
-    'XDSSearchSource requires items to implement XDSSearchableItem ({ id: string; label: string; [key: string]: unknown }).',
-    'Edit mode in XDSTypeahead: clicking the selected token removes it visually, populates the input with the label text, and selects all. Blurring without selecting restores the original token.',
-    'XDSBaseTypeahead renders only the <input> and dropdown popover — consumers provide their own wrapper.',
-    'If item has an element property, XDSTypeaheadItem renders it directly instead of the standard layout.',
-  ],
   usage: {
-    summary: 'Searchable dropdown for single-item selection with keyboard navigation and async data support.',
-    content: `## When to use
-
-- Selecting a single item from a large or dynamic dataset.
-- Users benefit from search-as-you-type to find options.
-
-## When NOT to use
-
-- A small, fixed list of options (use Selector instead).
-- Multiple selections needed (use Tokenizer instead).`,
+    description:
+      'Typeahead is a searchable dropdown for single-item selection with keyboard navigation and async/sync data support via a searchSource interface. Use when selecting from a large or dynamic dataset where search-as-you-type helps users find options. For small fixed lists, use Selector instead; for multiple selections, use Tokenizer.',
+    features: [
+      'Async and sync search via a searchSource interface with search() and bootstrap() methods',
+      'Bootstrap results shown on focus before typing (via hasEntriesOnFocus)',
+      'Edit mode: clicking selected token enters edit mode with text pre-populated and selected',
+      'Combobox ARIA pattern for full accessibility',
+      'Debounced search with configurable delay (default 150ms, set to 0 for synchronous sources)',
+      'Two-layer architecture: XDSBaseTypeahead provides the engine, XDSTypeahead adds field chrome',
+    ],
+    accessibility: [
+      'Uses combobox ARIA pattern with role="combobox", aria-expanded, aria-autocomplete="list".',
+      'Dropdown uses role="listbox" with role="option" on each item.',
+      'aria-activedescendant tracks the highlighted option.',
+      'Selected item has aria-selected="true".',
+      'Loading state has role="status" with aria-label="Loading".',
+      'XDSTypeahead wraps in XDSField for label and description association.',
+      'Keyboard: Arrow keys navigate dropdown items; Enter selects highlighted item; Escape closes dropdown or restores previous value in edit mode; Home/End jump to first/last item.',
+    ],
+    notes: [
+      'XDSSearchSource requires items to implement XDSSearchableItem ({ id: string; label: string; [key: string]: unknown }).',
+      'Edit mode in XDSTypeahead: clicking the selected token removes it visually, populates the input with the label text, and selects all. Blurring without selecting restores the original token.',
+      'XDSBaseTypeahead renders only the <input> and dropdown popover — consumers provide their own wrapper.',
+      'If item has an element property, XDSTypeaheadItem renders it directly instead of the standard layout.',
+    ],
   },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Typeahead',
-  description:
-    '可搜索的下拉组件，用于单项选择并支持键盘导航。通过 searchSource 接口支持异步和同步搜索。',
-  features: [
-    '通过 searchSource 接口支持异步和同步搜索，包含 search() 和 bootstrap() 方法',
-    '聚焦时在输入前显示引导结果（通过 hasEntriesOnFocus）',
-    '编辑模式：点击已选标记进入编辑模式，文本已预填并选中',
-    '组合框 ARIA 模式，实现完整的无障碍支持',
-    '防抖搜索，延迟可配置（默认 150ms，同步数据源设置为 0）',
-    '双层架构：XDSBaseTypeahead 提供引擎，XDSTypeahead 添加字段外观',
-  ],
   components: [
     {
       name: 'XDSTypeahead',
@@ -639,16 +619,6 @@ export const docsZh = {
       ],
     },
   ],
-  accessibility: [
-    '使用组合框 ARIA 模式，包含 role="combobox"、aria-expanded、aria-autocomplete="list"。',
-    '下拉列表使用 role="listbox"，每个项使用 role="option"。',
-    'aria-activedescendant 追踪高亮选项。',
-    '选中项具有 aria-selected="true"。',
-    '加载状态具有 role="status" 和 aria-label="Loading"。',
-    'XDSTypeahead 包裹在 XDSField 中，用于标签和描述的关联。',
-  ],
-  keyboard:
-    '方向键导航下拉列表项目；Enter 选择高亮项目；Escape 关闭下拉列表或在编辑模式中恢复之前的值；Home/End 跳转到第一个/最后一个项目',
   theming: {
     targets: [
       {className: 'xds-typeahead', visualProps: ['status']},
@@ -656,12 +626,33 @@ export const docsZh = {
       {className: 'xds-typeahead-item'},
     ],
   },
-  notes: [
-    'XDSSearchSource 要求项目实现 XDSSearchableItem（{ id: string; label: string; [key: string]: unknown }）。',
-    'XDSTypeahead 中的编辑模式：点击已选标记会视觉移除它，将标签文本填入输入框并全选。在未选择的情况下失焦会恢复原始标记。',
-    'XDSBaseTypeahead 仅渲染 <input> 和下拉弹出框 — 使用者需提供自己的包装器。',
-    '如果项目具有 element 属性，XDSTypeaheadItem 会直接渲染它而不是标准布局。',
-  ],
+  usage: {
+    description:
+      '可搜索的下拉组件，用于单项选择并支持键盘导航。通过 searchSource 接口支持异步和同步搜索。',
+    features: [
+      '通过 searchSource 接口支持异步和同步搜索，包含 search() 和 bootstrap() 方法',
+      '聚焦时在输入前显示引导结果（通过 hasEntriesOnFocus）',
+      '编辑模式：点击已选标记进入编辑模式，文本已预填并选中',
+      '组合框 ARIA 模式，实现完整的无障碍支持',
+      '防抖搜索，延迟可配置（默认 150ms，同步数据源设置为 0）',
+      '双层架构：XDSBaseTypeahead 提供引擎，XDSTypeahead 添加字段外观',
+    ],
+    accessibility: [
+      '使用组合框 ARIA 模式，包含 role="combobox"、aria-expanded、aria-autocomplete="list"。',
+      '下拉列表使用 role="listbox"，每个项使用 role="option"。',
+      'aria-activedescendant 追踪高亮选项。',
+      '选中项具有 aria-selected="true"。',
+      '加载状态具有 role="status" 和 aria-label="Loading"。',
+      'XDSTypeahead 包裹在 XDSField 中，用于标签和描述的关联。',
+      'Keyboard: 方向键导航下拉列表项目；Enter 选择高亮项目；Escape 关闭下拉列表或在编辑模式中恢复之前的值；Home/End 跳转到第一个/最后一个项目',
+    ],
+    notes: [
+      'XDSSearchSource 要求项目实现 XDSSearchableItem（{ id: string; label: string; [key: string]: unknown }）。',
+      'XDSTypeahead 中的编辑模式：点击已选标记会视觉移除它，将标签文本填入输入框并全选。在未选择的情况下失焦会恢复原始标记。',
+      'XDSBaseTypeahead 仅渲染 <input> 和下拉弹出框 — 使用者需提供自己的包装器。',
+      '如果项目具有 element 属性，XDSTypeaheadItem 会直接渲染它而不是标准布局。',
+    ],
+  },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */

@@ -8,11 +8,24 @@ function mergeTranslation(docs, translation) {
   if (!translation) return docs;
 
   const merged = {...docs};
-  if (translation.description) merged.description = translation.description;
-  if (translation.features) merged.features = translation.features;
-  if (translation.notes) merged.notes = translation.notes;
-  if (translation.accessibility) merged.accessibility = translation.accessibility;
-  if (translation.keyboard) merged.keyboard = translation.keyboard;
+
+  // Merge prose into usage (new unified format)
+  if (merged.usage) {
+    merged.usage = {...merged.usage};
+    if (translation.description) merged.usage.description = translation.description;
+    if (translation.features) merged.usage.features = translation.features;
+    if (translation.notes) merged.usage.notes = translation.notes;
+    if (translation.accessibility) merged.usage.accessibility = translation.accessibility;
+    if (translation.keyboard) {
+      merged.usage.accessibility = [
+        ...(merged.usage.accessibility || []).filter(a => !a.startsWith('Keyboard:')),
+        `Keyboard: ${translation.keyboard}`,
+      ];
+    }
+  }
+
+  // Legacy top-level fields (for docsZh that are full ComponentDoc clones)
+  if (translation.description && !merged.usage) merged.description = translation.description;
 
   // Merge prop descriptions for single-component docs
   if (translation.propDescriptions && merged.props) {

@@ -2,8 +2,6 @@
 
 export const docs = {
   name: 'Markdown',
-  description:
-    'Renders a markdown string as XDS components. Supports headings, paragraphs, bold, italic, code, lists, tables, links, images, blockquotes, horizontal rules, and task lists. Handles streaming text with a smooth fade-in animation.',
   keywords: [
     'markdown',
     'rich text',
@@ -14,18 +12,6 @@ export const docs = {
     'formatted text',
     'md',
     'markdown renderer',
-  ],
-  features: [
-    'Zero dependencies — built-in markdown parser, no external library',
-    'Streaming mode — smooth fade-in animation for chunk-by-chunk text delivery',
-    'XDS integration — uses XDSList, XDSCodeBlock, XDSCode, and XDSCheckboxList for semantic output',
-    'Heading level shift — headingLevelStart maps # to any h1-h6 level for page hierarchy',
-    'Link interception — onLinkClick handler can intercept or prevent link navigation',
-    "Density — default and compact spacing modes",
-    "Task lists — GitHub Flavored Markdown checkboxes rendered via XDSCheckboxList in isReadOnly mode",
-    'Tables — rendered as accessible HTML tables with XDS typography',
-    'Citation chips — sources prop renders [id] and 【id】 markers as linked chips with label or number style',
-    'Content width — contentWidth constrains prose to a readable width while tables and code blocks expand to the full container',
   ],
   props: [
     {
@@ -115,34 +101,33 @@ export const docs = {
       {className: 'xds-markdown', visualProps: ['density']},
     ],
   },
-  accessibility: [
-    'Root element uses role="document" to establish a document landmark for screen readers.',
-    'Lists are rendered as semantic <ul>/<ol> elements.',
-    'Tables include proper <thead>/<tbody> with alignment attributes.',
-    'Task list checkboxes are rendered via XDSCheckboxList with isReadOnly.',
-    'Code blocks use XDSCodeBlock with appropriate ARIA attributes.',
-  ],
   usage: {
-    summary: 'Renders a markdown string as XDS-styled components.',
+    description:
+      'Renders a markdown string as XDS-styled components, supporting headings, paragraphs, bold, italic, code, lists, tables, links, images, blockquotes, horizontal rules, and task lists. Handles streaming text delivery with a smooth fade-in animation.',
+    features: [
+      'Zero dependencies — built-in markdown parser, no external library',
+      'Streaming mode — smooth fade-in animation for chunk-by-chunk text delivery',
+      'XDS integration — uses XDSList, XDSCodeBlock, XDSCode, and XDSCheckboxList for semantic output',
+      'Heading level shift — headingLevelStart maps # to any h1-h6 level for page hierarchy',
+      'Link interception — onLinkClick handler can intercept or prevent link navigation',
+      'Density — default and compact spacing modes',
+      'Task lists — GitHub Flavored Markdown checkboxes rendered via XDSCheckboxList in isReadOnly mode',
+      'Tables — rendered as accessible HTML tables with XDS typography',
+      'Citation chips — sources prop renders [id] and 【id】 markers as linked chips with label or number style',
+      'Content width — contentWidth constrains prose to a readable width while tables and code blocks expand to the full container',
+    ],
+    accessibility: [
+      'Root element uses role="document" to establish a document landmark for screen readers.',
+      'Lists are rendered as semantic <ul>/<ol> elements.',
+      'Tables include proper <thead>/<tbody> with alignment attributes.',
+      'Task list checkboxes are rendered via XDSCheckboxList with isReadOnly.',
+      'Code blocks use XDSCodeBlock with appropriate ARIA attributes.',
+    ],
   },
 };
 
 export const docsZh = {
   name: 'Markdown',
-  description:
-    '将 Markdown 字符串渲染为 XDS 组件。支持标题、段落、粗体、斜体、代码、列表、表格、链接、图片、引用块、水平线和任务列表。支持流式文本的逐字符淡入动画。',
-  features: [
-    '零依赖 — 内置 Markdown 解析器，无需外部库',
-    '流式模式 — 逐块文本渲染时平滑淡入动画',
-    'XDS 集成 — 使用 XDSList、XDSCodeBlock、XDSCode 和 XDSCheckboxList 输出语义内容',
-    '标题级别偏移 — headingLevelStart 将 # 映射到任意 h1-h6 级别',
-    '链接拦截 — onLinkClick 可拦截或阻止链接导航',
-    '密度 — 默认和紧凑间距模式',
-    '任务列表 — GitHub 风格 Markdown 复选框通过 XDSCheckboxList 以只读模式渲染',
-    '表格 — 渲染为带 XDS 排版的语义 HTML 表格',
-    '引用标签 — sources 属性将 [id] 和 【id】 标记渲染为带链接的标签或编号徽章',
-    '内容宽度 — contentWidth 将正文限制在可读宽度内，表格和代码块扩展到完整容器宽度',
-  ],
   props: [
     {
       name: 'children',
@@ -228,13 +213,29 @@ export const docsZh = {
       {className: 'xds-markdown', visualProps: ['density']},
     ],
   },
-  accessibility: [
-    '根元素使用 role="document" 为屏幕阅读器建立文档地标。',
-    '列表渲染为语义化 <ul>/<ol> 元素。',
-    '表格包含带对齐属性的 <thead>/<tbody>。',
-    '任务列表复选框通过 XDSCheckboxList 以 isReadOnly 模式渲染。',
-    '代码块使用 XDSCodeBlock 并附带适当的 ARIA 属性。',
-  ],
+  usage: {
+    description:
+      '将 Markdown 字符串渲染为 XDS 组件。支持标题、段落、粗体、斜体、代码、列表、表格、链接、图片、引用块、水平线和任务列表。支持流式文本的逐字符淡入动画。',
+    features: [
+      '零依赖 — 内置 Markdown 解析器，无需外部库',
+      '流式模式 — 逐块文本渲染时平滑淡入动画',
+      'XDS 集成 — 使用 XDSList、XDSCodeBlock、XDSCode 和 XDSCheckboxList 输出语义内容',
+      '标题级别偏移 — headingLevelStart 将 # 映射到任意 h1-h6 级别',
+      '链接拦截 — onLinkClick 可拦截或阻止链接导航',
+      '密度 — 默认和紧凑间距模式',
+      '任务列表 — GitHub 风格 Markdown 复选框通过 XDSCheckboxList 以只读模式渲染',
+      '表格 — 渲染为带 XDS 排版的语义 HTML 表格',
+      '引用标签 — sources 属性将 [id] 和 【id】 标记渲染为带链接的标签或编号徽章',
+      '内容宽度 — contentWidth 将正文限制在可读宽度内，表格和代码块扩展到完整容器宽度',
+    ],
+    accessibility: [
+      '根元素使用 role="document" 为屏幕阅读器建立文档地标。',
+      '列表渲染为语义化 <ul>/<ol> 元素。',
+      '表格包含带对齐属性的 <thead>/<tbody>。',
+      '任务列表复选框通过 XDSCheckboxList 以 isReadOnly 模式渲染。',
+      '代码块使用 XDSCodeBlock 并附带适当的 ARIA 属性。',
+    ],
+  },
 };
 
 export const docsDense = {
