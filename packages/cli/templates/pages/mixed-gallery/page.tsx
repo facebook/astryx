@@ -4,8 +4,8 @@ import {XDSAppShell} from '@xds/core/AppShell';
 import {XDSVStack} from '@xds/core/Layout';
 import {XDSCenter} from '@xds/core/Center';
 import {XDSText} from '@xds/core/Text';
-
-// ─── Gallery Data ───────────────────────────────────────────────────────────
+import {XDSGrid} from '@xds/core/Grid';
+import {XDSAspectRatio} from '@xds/core/AspectRatio';
 
 const IMAGES = [
   'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80',
@@ -16,18 +16,13 @@ const IMAGES = [
   'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800&q=80',
 ];
 
-const radius = 'var(--radius-element, 8px)';
-const gap = 16;
-
 const imgStyle: React.CSSProperties = {
   width: '100%',
   height: '100%',
   objectFit: 'cover',
-  borderRadius: radius,
+  borderRadius: 'var(--radius-element, 8px)',
   display: 'block',
 };
-
-// ─── Main Page ──────────────────────────────────────────────────────────────
 
 export default function MixedGalleryTemplate() {
   return (
@@ -35,47 +30,50 @@ export default function MixedGalleryTemplate() {
       <XDSCenter axis="horizontal">
         <div style={{maxWidth: 1400, width: '100%', padding: '48px 24px 64px'}}>
           <XDSVStack gap={8}>
-            {/* Header */}
-            <XDSVStack
-              gap={2}
-              style={{alignItems: 'center', textAlign: 'center'}}>
-              <XDSText
-                type="large"
-                weight="bold"
-                as="p"
-                style={{fontSize: 'var(--font-size-2xl)'}}>
-                Make every day a little more delightful, one small detail at a
-                time.
-              </XDSText>
-              <XDSText type="body">
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-                eiusmod tempor incididunt ut labore et dolore magna aliqua ut
-                enim ad minim excepteur sint occaecat cupidatat non proident.
-              </XDSText>
-            </XDSVStack>
+            {/* Header — capped width, centered */}
+            <XDSCenter axis="horizontal">
+              <XDSVStack gap={2} style={{maxWidth: 680, textAlign: 'center'}}>
+                <XDSText type="large" weight="bold" as="p" style={{fontSize: 'var(--font-size-2xl)'}}>
+                  Make every day a little more delightful, one small detail at a time.
+                </XDSText>
+                <XDSText type="body">
+                  Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua ut enim ad minim excepteur sint occaecat cupidatat non proident.
+                </XDSText>
+              </XDSVStack>
+            </XDSCenter>
 
             {/* Gallery grid */}
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
-                gap,
-              }}>
-              {/* ── Top row: left square, right column ── */}
-              <img src={IMAGES[0]} alt="" style={{...imgStyle, aspectRatio: '1 / 1'}} />
+            <XDSVStack gap={4}>
+              {/* Top row: big square left + stacked right */}
+              <XDSGrid columns={2} gap={4}>
+                <XDSAspectRatio ratio={1}>
+                  <img src={IMAGES[0]} alt="" style={imgStyle} />
+                </XDSAspectRatio>
+                <XDSVStack gap={4}>
+                  <div style={{flex: 1}}>
+                    <img src={IMAGES[1]} alt="" style={{...imgStyle, height: '100%'}} />
+                  </div>
+                  <XDSGrid columns={2} gap={4}>
+                    <XDSAspectRatio ratio={1}>
+                      <img src={IMAGES[2]} alt="" style={imgStyle} />
+                    </XDSAspectRatio>
+                    <XDSAspectRatio ratio={1}>
+                      <img src={IMAGES[3]} alt="" style={imgStyle} />
+                    </XDSAspectRatio>
+                  </XDSGrid>
+                </XDSVStack>
+              </XDSGrid>
 
-              <div style={{display: 'grid', gridTemplateRows: '1fr 1fr', gap}}>
-                <img src={IMAGES[1]} alt="" style={imgStyle} />
-                <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap}}>
-                  <img src={IMAGES[2]} alt="" style={imgStyle} />
-                  <img src={IMAGES[3]} alt="" style={imgStyle} />
-                </div>
-              </div>
-
-              {/* ── Bottom row: two equal rectangles ── */}
-              <img src={IMAGES[4]} alt="" style={{...imgStyle, aspectRatio: '3 / 2'}} />
-              <img src={IMAGES[5]} alt="" style={{...imgStyle, aspectRatio: '3 / 2'}} />
-            </div>
+              {/* Bottom row: two equal rectangles */}
+              <XDSGrid columns={2} gap={4}>
+                <XDSAspectRatio ratio={3 / 2}>
+                  <img src={IMAGES[4]} alt="" style={imgStyle} />
+                </XDSAspectRatio>
+                <XDSAspectRatio ratio={3 / 2}>
+                  <img src={IMAGES[5]} alt="" style={imgStyle} />
+                </XDSAspectRatio>
+              </XDSGrid>
+            </XDSVStack>
           </XDSVStack>
         </div>
       </XDSCenter>
