@@ -37,6 +37,7 @@ export {
   SparklesIcon,
   StopIcon,
   StarIcon,
+  CheckBadgeIcon as VerifiedIcon,
 } from '@heroicons/react/24/outline';
 
 export {BookmarkIcon as BookmarkFilledIcon, HeartIcon as HeartFilledIcon, StarIcon as StarFilledIcon, CheckBadgeIcon as VerifiedIcon} from '@heroicons/react/24/solid';

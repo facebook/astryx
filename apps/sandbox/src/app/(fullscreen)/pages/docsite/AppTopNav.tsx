@@ -51,7 +51,6 @@ export function AppTopNav({
   onSortChange,
   isFilterOpen,
   onFilterOpenChange,
-  onProfileAction,
   craftTitle,
 }: {
   activeView: 'craft' | 'explore' | 'docs' | 'profile';
@@ -69,7 +68,6 @@ export function AppTopNav({
   onSortChange?: (option: string) => void;
   isFilterOpen?: boolean;
   onFilterOpenChange?: (open: boolean) => void;
-  onProfileAction?: (action: 'craft' | 'bookmarked' | 'used' | 'settings') => void;
   craftTitle?: string | null;
 }) {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -165,21 +163,13 @@ export function AppTopNav({
               icon={<SearchIcon />}
               onClick={() => setIsSearchOpen(true)}
             />
-            <XDSDropdownMenu
-              button={{
-                label: 'Profile',
-                variant: 'ghost',
-                size: 'sm',
-                isIconOnly: true,
-                icon: <ProfileIcon />,
-              }}
-              hasChevron={false}
-              items={[
-                {label: 'Craft', onClick: () => onProfileAction?.('craft')},
-                {label: 'Bookmarked', onClick: () => onProfileAction?.('bookmarked')},
-                {label: 'Used', onClick: () => onProfileAction?.('used')},
-                {label: 'Settings', onClick: () => onProfileAction?.('settings')},
-              ]}
+            <XDSButton
+              label="Profile"
+              variant="ghost"
+              size="sm"
+              isIconOnly
+              icon={<ProfileIcon />}
+              onClick={() => setActiveView('profile')}
             />
           </XDSStack>
         }

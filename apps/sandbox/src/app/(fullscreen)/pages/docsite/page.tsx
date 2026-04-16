@@ -407,7 +407,7 @@ function DocsiteLandingTemplate() {
   useEffect(() => {
     const mobileMql = window.matchMedia('(max-width: 768px)');
     const tabletMql = window.matchMedia(
-      '(min-width: 769px) and (max-width: 1024px)',
+      '(min-width: 769px) and (max-width: 1280px)',
     );
     setIsMobile(mobileMql.matches);
     setIsTablet(tabletMql.matches);
@@ -1204,7 +1204,7 @@ function DocsiteLandingTemplate() {
                       ? '1fr'
                       : isTablet
                         ? 'repeat(2, 1fr)'
-                        : 'repeat(4, 1fr)',
+                        : 'repeat(3, 1fr)',
                     gap: 16,
                   }}>
                   {Array.from({length: 8}).map((_, i) => (
@@ -1384,7 +1384,7 @@ function DocsiteLandingTemplate() {
                     ? '1fr'
                     : isTablet
                       ? 'repeat(2, 1fr)'
-                      : 'repeat(4, 1fr)',
+                      : 'repeat(3, 1fr)',
                   gap: 16,
                   gridAutoRows: '1fr',
                 }}>
@@ -1484,7 +1484,7 @@ function DocsiteLandingTemplate() {
                     <div
                       style={{
                         flex: 1,
-                        aspectRatio: '16 / 10',
+                        height: 'clamp(300px, 50vh, 600px)',
                         backgroundColor:
                           'var(--color-background-muted, #f9f9f9)',
                         borderRadius: 12,

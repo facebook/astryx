@@ -75,6 +75,7 @@ export const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
 export const DUMMY_IMAGE = `${basePath}/templates/dummy-placeholder.png`;
 export const AVATAR_IMAGE = `${basePath}/templates/avatar-profile.jpg`;
 export const XDS_DESIGN_AVATAR = `${basePath}/templates/xds-design-avatar.png`;
+export const XDS_DESIGN_AVATAR = `${basePath}/templates/xds-design-avatar.png`;
 export const FIRST_CARD_IMAGE = `${basePath}/templates/first-card.png`;
 export const SHOPPING_DETAILS_IMAGE = `${basePath}/templates/shopping-details.png`;
 export const SCREENSHOT_3_IMAGE = `${basePath}/templates/screenshot-3.png`;
@@ -261,19 +262,26 @@ export const PROFILE_COLLECTIONS = [
 
 export const PROFILE_CRAFT_ITEMS: {
   name: string;
-  type: string;
+  type: 'Template' | 'Theme' | 'Component';
   status: 'Published' | 'Draft' | 'In Review';
   used: number;
   views: number;
   img: string;
   lastUpdated: string;
+  description: string;
 }[] = [
-  {name: 'My Dashboard Theme', type: 'Theme', status: 'Published', used: 342, views: 1205, img: DUMMY_IMAGE, lastUpdated: '2026-03-01T10:00:00Z'},
-  {name: 'Custom Login Template', type: 'Template', status: 'Published', used: 128, views: 580, img: DUMMY_IMAGE, lastUpdated: '2026-03-15T14:30:00Z'},
-  {name: 'Data Visualization Kit', type: 'Template', status: 'Published', used: 89, views: 312, img: DUMMY_IMAGE, lastUpdated: '2026-04-02T11:00:00Z'},
-  {name: 'Analytics Dashboard', type: 'Template', status: 'In Review', used: 0, views: 45, img: DUMMY_IMAGE, lastUpdated: '2026-04-12T09:00:00Z'},
-  {name: 'Onboarding Flow', type: 'Template', status: 'Draft', used: 0, views: 12, img: DUMMY_IMAGE, lastUpdated: '2026-04-14T16:00:00Z'},
-  {name: 'Dark Mode Palette', type: 'Theme', status: 'Draft', used: 0, views: 8, img: DUMMY_IMAGE, lastUpdated: '2026-04-13T11:30:00Z'},
+  {name: 'My Dashboard Theme', type: 'Theme', status: 'Published', used: 342, views: 1205, img: FIRST_CARD_IMAGE, lastUpdated: '2026-03-01T10:00:00Z', description: 'Dark-mode friendly theme with custom color tokens and typography overrides.'},
+  {name: 'Custom Login Template', type: 'Template', status: 'Published', used: 128, views: 580, img: SHOPPING_DETAILS_IMAGE, lastUpdated: '2026-03-15T14:30:00Z', description: 'Branded login page with social auth buttons and form validation.'},
+  {name: 'Data Visualization Kit', type: 'Template', status: 'Published', used: 89, views: 312, img: SCREENSHOT_3_IMAGE, lastUpdated: '2026-04-02T11:00:00Z', description: 'Charts, graphs, and data table layouts for analytics dashboards.'},
+  {name: 'Settings Page', type: 'Template', status: 'Published', used: 67, views: 248, img: `${basePath}/templates/card4-preview.png`, lastUpdated: '2026-02-20T08:00:00Z', description: 'Sidebar settings layout with inline editing and expandable rows.'},
+  {name: 'Product Detail Page', type: 'Template', status: 'Published', used: 54, views: 190, img: DUMMY_IMAGE, lastUpdated: '2026-03-28T12:00:00Z', description: 'E-commerce product page with image gallery, reviews, and add-to-cart.'},
+  {name: 'Custom Notification Card', type: 'Component', status: 'Published', used: 203, views: 870, img: DUMMY_IMAGE, lastUpdated: '2026-01-15T09:00:00Z', description: 'Toast-style notification card with dismiss, action buttons, and auto-hide.'},
+  {name: 'Metric Summary Card', type: 'Component', status: 'Published', used: 156, views: 620, img: DUMMY_IMAGE, lastUpdated: '2026-02-10T14:00:00Z', description: 'KPI card with sparkline, trend indicator, and comparison period.'},
+  {name: 'Analytics Dashboard', type: 'Template', status: 'In Review', used: 0, views: 45, img: DUMMY_IMAGE, lastUpdated: '2026-04-12T09:00:00Z', description: 'Full-page analytics dashboard with filters, charts, and data tables.'},
+  {name: 'Team Directory', type: 'Template', status: 'In Review', used: 0, views: 32, img: DUMMY_IMAGE, lastUpdated: '2026-04-10T16:30:00Z', description: 'Searchable team roster with profile cards, org chart, and role filters.'},
+  {name: 'Onboarding Flow', type: 'Template', status: 'Draft', used: 0, views: 12, img: DUMMY_IMAGE, lastUpdated: '2026-04-14T16:00:00Z', description: 'Multi-step onboarding wizard with progress bar and skip logic.'},
+  {name: 'Dark Mode Palette', type: 'Theme', status: 'Draft', used: 0, views: 8, img: DUMMY_IMAGE, lastUpdated: '2026-04-13T11:30:00Z', description: 'High-contrast dark theme with WCAG AA compliant color ratios.'},
+  {name: 'File Upload Dropzone', type: 'Component', status: 'Draft', used: 0, views: 5, img: DUMMY_IMAGE, lastUpdated: '2026-04-15T10:00:00Z', description: 'Drag-and-drop file uploader with preview thumbnails and progress bars.'},
 ];
 
 // ---------------------------------------------------------------------------
