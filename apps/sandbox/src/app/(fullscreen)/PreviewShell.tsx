@@ -674,12 +674,6 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
   );
   const isBlock = blockEntry != null;
 
-  const [zoom, setZoom] = useState<number | null>(null);
-  useEffect(() => {
-    setZoom(null);
-  }, [pathname]);
-  const effectiveScale = zoom ?? blockEntry?.scale ?? 1;
-
   useEffect(() => {
     const saved = localStorage.getItem('sandbox-toolbar-hidden');
     if (saved === 'true') setToolbarHidden(true);
@@ -884,56 +878,6 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
           </XDSSegmentedControl>
         )}
 
-        {view === 'preview' && isBlock && (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              fontSize: 12,
-              color: 'var(--color-text-secondary)',
-            }}>
-            <XDSButton
-              variant="ghost"
-              size="sm"
-              label="Zoom out"
-              isIconOnly
-              icon={<ZoomOutIcon width={14} height={14} />}
-              onClick={() =>
-                setZoom(prev =>
-                  Math.max(0.25, (prev ?? blockEntry!.scale) - 0.25),
-                )
-              }
-            />
-            <span
-              style={{
-                minWidth: 36,
-                textAlign: 'center',
-                fontVariantNumeric: 'tabular-nums',
-              }}>
-              {Math.round(effectiveScale * 100)}%
-            </span>
-            <XDSButton
-              variant="ghost"
-              size="sm"
-              label="Zoom in"
-              isIconOnly
-              icon={<ZoomInIcon width={14} height={14} />}
-              onClick={() =>
-                setZoom(prev => Math.min(4, (prev ?? blockEntry!.scale) + 0.25))
-              }
-            />
-            {zoom != null && (
-              <XDSButton
-                variant="ghost"
-                size="sm"
-                label="Reset zoom"
-                onClick={() => setZoom(null)}
-              />
-            )}
-          </div>
-        )}
-
         <XDSDropdownMenu
           button={{
             label: themeName.charAt(0).toUpperCase() + themeName.slice(1),
@@ -999,68 +943,7 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
         {/* Content */}
         {view === 'preview' ? (
           isBlock ? (
-            <div
-              style={{
-                flex: 1,
-                overflow: 'auto',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: 24,
-                backgroundColor: 'var(--color-background-wash)',
-              }}>
-              <div style={{width: '100%', maxWidth: 600}}>
-                <div
-                  style={{
-                    width: '100%',
-                    aspectRatio: String(blockEntry!.aspectRatio),
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    border: '1px solid var(--color-border)',
-                    borderRadius: 12,
-                    backgroundColor: 'var(--color-background-card)',
-                    padding: 24,
-                    overflow: 'hidden',
-                  }}>
-                  <div
-                    style={{
-                      transform:
-                        effectiveScale !== 1
-                          ? `scale(${effectiveScale})`
-                          : undefined,
-                      transformOrigin: 'center center',
-                    }}>
-                    {children}
-                  </div>
-                </div>
-                <div
-                  style={{
-                    marginTop: 8,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 2,
-                    textAlign: 'center',
-                  }}>
-                  <XDSText type="supporting" color="secondary">
-                    aspect-ratio:{' '}
-                    {blockEntry!.aspectRatio === 1
-                      ? '1'
-                      : blockEntry!.aspectRatio === 4 / 3
-                        ? '4/3'
-                        : blockEntry!.aspectRatio === 16 / 9
-                          ? '16/9'
-                          : String(
-                              Math.round(blockEntry!.aspectRatio * 1000) / 1000,
-                            )}
-                  </XDSText>
-                  <XDSText type="supporting" color="secondary" size="xsm">
-                    Tweak aspectRatio in the .doc.mjs file so the component fits
-                    nicely in this box.
-                  </XDSText>
-                </div>
-              </div>
-            </div>
+            children
           ) : viewport !== 'desktop' ? (
             <div
               style={{

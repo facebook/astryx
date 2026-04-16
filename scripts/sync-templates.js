@@ -209,13 +209,13 @@ function generateBlockRouteWrapper(block) {
  */
 import Component from '${componentRel}';
 import {doc} from '${docRel}';
-import {BlockDocProvider} from '${contextRel}';
+import {BlockPreview} from '${contextRel}';
 
 export default function Page() {
   return (
-    <BlockDocProvider meta={{aspectRatio: doc.aspectRatio ?? 4 / 3, scale: doc.scale ?? 1}}>
+    <BlockPreview meta={{aspectRatio: doc.aspectRatio ?? 4 / 3, scale: doc.scale ?? 1}}>
       <Component />
-    </BlockDocProvider>
+    </BlockPreview>
   );
 }
 `;
@@ -267,8 +267,8 @@ main()
     if (process.argv.includes('--watch')) {
       const chokidar = require('chokidar');
       const watchPaths = [
-        path.join(PAGES_DIR, '**', 'template.doc.mjs'),
-        path.join(BLOCKS_DIR, '**', '*.doc.mjs'),
+        PAGES_DIR + '/**/template.doc.mjs',
+        BLOCKS_DIR + '/**/*.doc.mjs',
       ];
       let debounce = null;
       const rerun = () => {
