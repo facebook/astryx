@@ -8,7 +8,6 @@ import {XDSSection} from '@xds/core/Section';
 import {XDSGrid} from '@xds/core/Grid';
 import {XDSButton} from '@xds/core/Button';
 import {XDSIcon} from '@xds/core/Icon';
-import {XDSMediaTheme} from '@xds/core/theme';
 
 // ─── Arrow Icon ─────────────────────────────────────────────────────────────
 
@@ -113,24 +112,27 @@ function GalleryCard({image}: {image: GalleryImage}) {
         onMouseLeave={e => {
           e.currentTarget.style.opacity = '0';
         }}>
-        <XDSMediaTheme mode="dark">
-          <XDSVStack gap={2}>
-            <XDSText
-              type="body"
-              weight="bold"
-              style={{fontSize: 'var(--font-size-xl)'}}>
-              {image.title}
-            </XDSText>
-            <XDSText type="body">{image.description}</XDSText>
-            <div style={{paddingTop: 'var(--spacing-1)'}}>
-              <XDSButton
-                label="Read more"
-                variant="secondary"
-                endContent={<XDSIcon icon={ArrowRightIcon} color="inherit" />}
-              />
-            </div>
-          </XDSVStack>
-        </XDSMediaTheme>
+        <XDSVStack gap={2} style={{color: 'white'}}>
+          <XDSText
+            type="body"
+            weight="bold"
+            style={{fontSize: 'var(--font-size-xl)'}}>
+            {image.title}
+          </XDSText>
+          <XDSText type="body">{image.description}</XDSText>
+          <div style={{paddingTop: 'var(--spacing-1)'}}>
+            <XDSButton
+              label="Read more"
+              variant="secondary"
+              style={{
+                color: 'white',
+                borderColor: 'rgba(255,255,255,0.3)',
+                backgroundColor: 'rgba(255,255,255,0.15)',
+              }}
+              endContent={<XDSIcon icon={ArrowRightIcon} color="inherit" />}
+            />
+          </div>
+        </XDSVStack>
       </div>
     </div>
   );
