@@ -113,7 +113,7 @@ function GalleryCard({image}: {image: GalleryImage}) {
           e.currentTarget.style.opacity = '0';
         }}>
         <XDSVStack gap={2} style={{color: 'white'}}>
-          <XDSText type="body" weight="bold" color="inherit" size="xl">
+          <XDSText type="body" weight="bold" color="inherit" size="2xl">
             {image.title}
           </XDSText>
           <XDSText type="body" color="inherit">
