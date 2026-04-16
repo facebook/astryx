@@ -6,7 +6,7 @@
 #
 # Job graph (PR):
 #   check-components ──────────────────────────────────┐
-#   test ──────────────────────────────────────────────────────────────
+#   test (×3 shards) ─────────────────────────────────────────────────
 #   build-core ─┬─ build-storybook ─┬─ deploy-preview
 #               │                   ├─ pr-a11y ─ pr-comment-update
 #               ├─ build-sandbox ───┘
@@ -50,9 +50,13 @@ jobs:
           CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- packages/core/src/ | grep -v -E '(hooks|theme|utils)/' | head -1)
           echo "has_components=$( [ -n "$CHANGED" ] && echo true || echo false )" >> $GITHUB_OUTPUT
 
-  # Run tests (parallel with everything)
+  # Run tests sharded across runners (parallel with everything)
   test:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
     steps:
       - uses: actions/checkout@v6
 
@@ -64,9 +68,10 @@ jobs:
       - run: yarn install --frozen-lockfile
 
       - name: Check package.json exports are in sync
+        if: matrix.shard == 1
         run: node scripts/sync-exports.js --check
 
-      - run: yarn test
+      - run: yarn test --shard=${{ matrix.shard }}/3
 
   # Build core + vega + themes, verify exports, typecheck, analyze PR.
   # Uploads dist artifact for downstream storybook/sandbox jobs.
