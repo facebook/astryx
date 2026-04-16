@@ -19,17 +19,8 @@ import {ShimmerText} from './ShimmerText';
 import {MOCK_CODE} from './constants';
 
 const composerStyles = stylex.create({
-  borderInsteadOfShadow: {
-    boxShadow: {
-      default: 'none',
-      ':hover': {'@media (hover: hover)': 'none'},
-    },
-    ':focus-within': {
-      boxShadow: 'none',
-    },
-    borderWidth: 1,
-    borderStyle: 'solid',
-    borderColor: 'var(--color-border)',
+  border: {
+    border: '1px solid var(--color-border)',
   },
 });
 
@@ -145,8 +136,11 @@ export function ChatPanel({
 
           <div
             style={{
-              padding: templateName ? 12 : 12,
-            }}>
+              padding: 12,
+              // Override shadow tokens so the composer body inherits none
+              '--shadow-low': 'none',
+              '--shadow-med': 'none',
+            } as React.CSSProperties}>
             <XDSChatComposer
               onSubmit={() => {
                 onSend?.();
@@ -155,8 +149,12 @@ export function ChatPanel({
               value={prompt}
               onChange={setPrompt}
               placeholder="Ask for changes"
-              xstyle={composerStyles.borderInsteadOfShadow}
               input={<XDSChatComposerInput placeholder="Ask for changes" />}
+              xstyle={composerStyles.border}
+              style={{
+                '--shadow-low': 'none',
+                '--shadow-med': 'none',
+              } as React.CSSProperties}
             />
           </div>
         </>

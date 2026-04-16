@@ -38,7 +38,7 @@ const XDS_WORDMARK = (
 export function AppTopNav({
   activeView: _activeView,
   setActiveView,
-  scrollContainerRef: _scrollContainerRef,
+  scrollContainerRef,
   activeTab,
   onActiveTabChange,
   templateFilter,
@@ -74,11 +74,9 @@ export function AppTopNav({
   const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
-    const el = document.getElementById('xds-app-shell-main');
+    const el = document.getElementById('docsite-scroll');
     if (!el) return;
-    const handleScroll = () => {
-      setIsScrolled(el.scrollTop > 170);
-    };
+    const handleScroll = () => setIsScrolled(el.scrollTop > 170);
     el.addEventListener('scroll', handleScroll, {passive: true});
     handleScroll();
     return () => el.removeEventListener('scroll', handleScroll);
@@ -95,6 +93,14 @@ export function AppTopNav({
     <>
       <XDSTopNav
         label="XDS navigation"
+        style={{
+          paddingLeft: 16,
+          paddingRight: 24,
+          position: 'relative',
+          zIndex: 1,
+          boxShadow: isScrolled ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+          transition: 'box-shadow 200ms ease',
+        }}
         heading={
           <XDSTopNavHeading
             logo={XDS_WORDMARK}
@@ -117,7 +123,7 @@ export function AppTopNav({
         }
         endContent={
           <XDSStack direction="horizontal" gap={2}>
-            {isScrolled && (
+            {isScrolled && !craftTitle && (
               <>
                 <XDSButton
                   label="Filter"
@@ -137,6 +143,7 @@ export function AppTopNav({
                           : 'Oldest first',
                     variant: 'ghost',
                     size: 'sm',
+                    style: {marginRight: -8},
                   }}
                   items={[
                     {

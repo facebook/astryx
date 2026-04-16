@@ -81,6 +81,7 @@ export function DocsView({
         topNav={
           <XDSTopNav
             label="XDS navigation"
+            style={{paddingLeft: 16, paddingRight: 24}}
             heading={
               <XDSTopNavHeading
                 logo={XDS_WORDMARK}
@@ -109,7 +110,7 @@ export function DocsView({
           />
         }
         sideNav={
-          <XDSSideNav>
+          <XDSSideNav style={{paddingLeft: 8}}>
             <XDSSideNavSection title="Navigation" isHeaderHidden>
               <XDSSideNavItem
                 label="Overview"

@@ -3,7 +3,7 @@
 import React, {useState, useEffect} from 'react';
 import {XDSCard} from '@xds/core/Card';
 import {XDSButton} from '@xds/core/Button';
-import {XDSText} from '@xds/core/Text';
+import {XDSHeading, XDSText} from '@xds/core/Text';
 import {XDSStack} from '@xds/core/Layout';
 import {XDSPopover} from '@xds/core/Popover';
 import {BookmarkIcon, BookmarkFilledIcon} from './docsite-icons';
@@ -134,9 +134,9 @@ export function TemplateCard({
               }}>
               {/* Template info */}
               <XDSStack direction="vertical" gap={0}>
-                <XDSText type="body" weight="bold" style={{color: '#fff'}}>
+                <XDSHeading level={3} style={{color: '#fff'}}>
                   {name}
-                </XDSText>
+                </XDSHeading>
                 <XDSText
                   type="supporting"
                   style={{color: 'rgba(255,255,255,0.7)'}}>
