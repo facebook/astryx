@@ -266,7 +266,11 @@ export const metaTheme = defineTheme({
       },
       'variant:primary': {fontWeight: '500 !important'},
       'variant:secondary': {fontWeight: '500 !important'},
-      'variant:destructive': {fontWeight: '500 !important'},
+      'variant:destructive': {
+        backgroundColor: 'light-dark(#D31130, #DA2A3E) !important',
+        color: '#FFFFFF !important',
+        fontWeight: '500 !important',
+      },
       'variant:ghost': {fontWeight: '500 !important'},
       'variant:primary-muted': {
         backgroundColor: 'light-dark(#ECF5FF, #182849) !important',
