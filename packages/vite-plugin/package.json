@@ -1,7 +1,7 @@
 {
   "name": "@xds/vite-plugin",
   "version": "0.0.1",
-  "description": "Vite plugin for XDS source builds \u2014 wraps @stylexjs/unplugin and splits CSS into library and product layers",
+  "description": "Vite plugin for XDS source builds — wraps @stylexjs/unplugin and splits CSS into library and product layers",
   "license": "MIT",
   "type": "module",
   "main": "src/index.ts",
