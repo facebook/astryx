@@ -25,6 +25,15 @@ import {
   shadowVars,
 } from '../theme/tokens.stylex';
 import {container} from '../Layout/container.stylex';
+import type {SpacingToken} from '../Layout/container.stylex';
+import {
+  paddingStyles,
+  containerPaddingInlineVarStyles,
+  containerPaddingBlockStartVarStyles,
+  containerPaddingBlockEndVarStyles,
+  spacingStepToToken,
+} from '../Layout/padding.stylex';
+import type {SpacingStep} from '../utils/types';
 import {xdsClassName, mergeProps} from '../utils';
 
 /**
@@ -265,6 +274,13 @@ export interface XDSDialogProps extends XDSBaseProps<HTMLDialogElement> {
   purpose?: XDSDialogPurpose;
 
   /**
+   * Internal padding of the dialog using the spacing scale.
+   * Accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.
+   * When omitted, uses the theme default for dialogs.
+   */
+  padding?: SpacingStep;
+
+  /**
    * The content of the dialog.
    * Typically an XDSLayout with header, content, and footer slots.
    */
@@ -297,6 +313,7 @@ export function XDSDialog({
   position,
   variant = 'standard',
   purpose = 'info',
+  padding,
   children,
   xstyle,
   className,
@@ -414,6 +431,11 @@ export function XDSDialog({
     }
   };
 
+  // When no explicit padding prop, use theme default (--xds-dialog-padding)
+  const useThemeDefault = padding == null;
+  const effectivePadding = padding ?? 4;
+  const paddingToken = spacingStepToToken[effectivePadding] as SpacingToken;
+
   const isFullscreen = variant === 'fullscreen';
   const hasPosition = position != null && !isFullscreen;
 
@@ -451,14 +473,40 @@ export function XDSDialog({
       <div
         {...stylex.props(
           styles.inner,
-          ...container({
-            useThemeDefault: 'dialog',
-            maxHeight: isFullscreen
-              ? undefined
-              : typeof maxHeight === 'number'
-                ? `${maxHeight}px`
-                : maxHeight,
-          }),
+          ...container(
+            useThemeDefault
+              ? {
+                  useThemeDefault: 'dialog',
+                  maxHeight: isFullscreen
+                    ? undefined
+                    : typeof maxHeight === 'number'
+                      ? `${maxHeight}px`
+                      : maxHeight,
+                }
+              : {
+                  paddingInnerX: paddingToken,
+                  paddingInnerY: paddingToken,
+                  paddingOuterX: paddingToken,
+                  paddingOuterY: paddingToken,
+                  maxHeight: isFullscreen
+                    ? undefined
+                    : typeof maxHeight === 'number'
+                      ? `${maxHeight}px`
+                      : maxHeight,
+                },
+          ),
+          !useThemeDefault &&
+            effectivePadding !== 4 &&
+            paddingStyles[effectivePadding],
+          !useThemeDefault &&
+            effectivePadding !== 4 &&
+            containerPaddingInlineVarStyles[effectivePadding],
+          !useThemeDefault &&
+            effectivePadding !== 4 &&
+            containerPaddingBlockStartVarStyles[effectivePadding],
+          !useThemeDefault &&
+            effectivePadding !== 4 &&
+            containerPaddingBlockEndVarStyles[effectivePadding],
         )}>
         {children}
       </div>
