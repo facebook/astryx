@@ -240,6 +240,7 @@ export function XDSChartDotGLInteractive({
         gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
 
         const [r, g, b] = hexToGL(color);
+        // Logical pixels — positions from xPixel/yScale are logical
         gl.uniform2f(
           gl.getUniformLocation(prog, 'u_resolution'),
           width,

@@ -165,6 +165,9 @@ export function XDSChartDotGL({
 
     // Uniforms
     const [r, g, b] = hexToGL(color);
+    // Resolution in logical pixels — positions from xPixel/yScale are logical.
+    // The viewport is set to physical pixels (width*dpr) for sharp rendering,
+    // but the shader maps logical positions → clip space via u_resolution.
     gl.uniform2f(gl.getUniformLocation(program, 'u_resolution'), width, height);
     gl.uniform3f(gl.getUniformLocation(program, 'u_color'), r, g, b);
     gl.uniform1f(gl.getUniformLocation(program, 'u_size'), size * dpr);
