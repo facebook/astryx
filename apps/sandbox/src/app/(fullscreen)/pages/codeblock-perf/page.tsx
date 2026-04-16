@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import {useState, useCallback, useRef, useEffect} from 'react';
+import {useState, useCallback, useRef, useLayoutEffect} from 'react';
 import {XDSCodeBlock} from '@xds/core/CodeBlock';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSHStack, XDSVStack} from '@xds/core/Stack';
@@ -99,19 +99,23 @@ function usePerfMetrics() {
     scrollFrameDrops: 0,
   });
 
-  const mountStart = useRef(performance.now());
   const renderCount = useRef(0);
 
   renderCount.current += 1;
 
-  useEffect(() => {
-    const elapsed = performance.now() - mountStart.current;
-    setMetrics({
-      mountMs: elapsed,
-      renderCount: renderCount.current,
-      lastRenderMs: elapsed,
-      scrollFps: null,
-      scrollFrameDrops: 0,
+  useLayoutEffect(() => {
+    // Stamp after React commits our DOM — any prior-panel unmount has
+    // already happened, so this is a clean baseline.
+    const commitTime = performance.now();
+    requestAnimationFrame(() => {
+      const paintTime = performance.now();
+      setMetrics({
+        mountMs: paintTime - commitTime,
+        renderCount: renderCount.current,
+        lastRenderMs: paintTime - commitTime,
+        scrollFps: null,
+        scrollFrameDrops: 0,
+      });
     });
   }, []);
 
@@ -265,6 +269,22 @@ function MetricsBar({
 }
 
 // ---------------------------------------------------------------------------
+// Deferred mount — separates unmount and mount into different frames so
+// the old panel's teardown doesn't pollute the new panel's timing.
+// ---------------------------------------------------------------------------
+
+function DeferredMount({children}: {children: React.ReactNode}) {
+  const [ready, setReady] = useState(false);
+
+  useLayoutEffect(() => {
+    const id = requestAnimationFrame(() => setReady(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  return ready ? <>{children}</> : null;
+}
+
+// ---------------------------------------------------------------------------
 // Panel (one code block + its metrics)
 // ---------------------------------------------------------------------------
 
@@ -283,25 +303,27 @@ function PerfPanel({
   const {metrics, scrollRef, runScrollTest} = usePerfMetrics();
 
   return (
-    <XDSVStack gap={3}>
-      <XDSHStack gap={2} vAlign="center">
-        <XDSText type="label">{label}</XDSText>
-        <XDSBadge label={mode} />
-      </XDSHStack>
-      <XDSCard padding={3}>
-        <MetricsBar metrics={metrics} onScrollTest={runScrollTest} />
-      </XDSCard>
-      <div ref={scrollRef}>
-        <XDSCodeBlock
-          code={code}
-          language="typescript"
-          title={`${lineCount.toLocaleString()} lines`}
-          hasLineNumbers
-          maxHeight={maxHeight}
-          highlightMode={mode}
-        />
-      </div>
-    </XDSVStack>
+    <DeferredMount>
+      <XDSVStack gap={3}>
+        <XDSHStack gap={2} vAlign="center">
+          <XDSText type="label">{label}</XDSText>
+          <XDSBadge label={mode} />
+        </XDSHStack>
+        <XDSCard padding={3}>
+          <MetricsBar metrics={metrics} onScrollTest={runScrollTest} />
+        </XDSCard>
+        <div ref={scrollRef}>
+          <XDSCodeBlock
+            code={code}
+            language="typescript"
+            title={`${lineCount.toLocaleString()} lines`}
+            hasLineNumbers
+            maxHeight={maxHeight}
+            highlightMode={mode}
+          />
+        </div>
+      </XDSVStack>
+    </DeferredMount>
   );
 }
 
