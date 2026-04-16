@@ -109,7 +109,7 @@ function GalleryCard({item}: {item: GalleryItem}) {
         borderRadius: 'var(--radius-container)',
         overflow: 'clip',
         flexShrink: 0,
-        width: 560,
+        width: 380,
       }}>
       <XDSAspectRatio ratio={3 / 4}>
         <img

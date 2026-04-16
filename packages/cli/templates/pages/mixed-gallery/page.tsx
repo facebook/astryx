@@ -13,7 +13,6 @@ const IMAGES = [
   'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=800&q=80',
   'https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?w=800&q=80',
   'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=800&q=80',
-  'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800&q=80',
 ];
 
 const imgStyle: React.CSSProperties = {
@@ -76,14 +75,7 @@ export default function MixedGalleryTemplate() {
                   <img src={IMAGES[3]} alt="" style={imgStyle} />
                 </XDSStackItem>
                 <XDSStackItem size="fill">
-                  <img
-                    src={IMAGES[4]}
-                    alt=""
-                    style={{...imgStyle, flex: 1.5}}
-                  />
-                </XDSStackItem>
-                <XDSStackItem size="fill">
-                  <img src={IMAGES[5]} alt="" style={imgStyle} />
+                  <img src={IMAGES[4]} alt="" style={imgStyle} />
                 </XDSStackItem>
               </XDSVStack>
             </XDSGrid>
