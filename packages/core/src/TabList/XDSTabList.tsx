@@ -70,6 +70,8 @@ const styles = stylex.create({
     alignItems: 'stretch',
     gap: spacingVars['--spacing-0-5'],
     paddingBlock: spacingVars['--spacing-1'],
+    // Compensate for first/last tab's paddingInline so text aligns with surrounding content
+    marginInline: `calc(-1 * ${spacingVars['--spacing-3']})`,
   },
   fill: {
     width: '100%',
