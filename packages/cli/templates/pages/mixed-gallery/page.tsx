@@ -173,7 +173,7 @@ export default function MixedGalleryTemplate() {
 
           {/* Grid fills remaining space */}
           <XDSStackItem size="fill">
-            <XDSGrid columns={3} gap={4} height="100%">
+            <XDSGrid minChildWidth={300} columns={3} gap={4} height="100%">
               {/* Left column */}
               <XDSVStack gap={4} style={{minHeight: 0}}>
                 <XDSStackItem size="fill">
