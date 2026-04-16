@@ -12,10 +12,66 @@ import {
   XDSSegmentedControl,
   XDSSegmentedControlItem,
 } from '@xds/core/SegmentedControl';
+import {XDSTreeList} from '@xds/core/TreeList';
+import type {XDSTreeListItemData} from '@xds/core/TreeList';
 import {categories} from '../sandboxPages';
 import {useThemeControls} from '../providers';
 import {sourceRegistry} from '../../generated/sourceRegistry';
+import {templates} from '../../generated/templateRegistry';
+import {blocks} from '../../generated/blockRegistry';
 import {gitVersions} from '../../generated/versionRegistry';
+
+const blocksByHref = new Map(blocks.map(b => [b.href.replace(/\/$/, ''), b]));
+
+function buildNavTree(currentPath: string): XDSTreeListItemData[] {
+  const norm = currentPath.replace(/\/$/, '');
+
+  const pageItems: XDSTreeListItemData[] = templates.map(t => ({
+    id: t.href,
+    label: t.name,
+    href: t.href,
+    isSelected: t.href.replace(/\/$/, '') === norm,
+  }));
+
+  const componentMap = new Map<string, XDSTreeListItemData[]>();
+  for (const b of blocks) {
+    const group = b.component;
+    if (!componentMap.has(group)) componentMap.set(group, []);
+    const shortName = b.name.includes('—')
+      ? b.name.split('—').slice(1).join('—').trim()
+      : b.name;
+    componentMap.get(group)!.push({
+      id: b.href,
+      label: shortName,
+      href: b.href,
+      isSelected: b.href.replace(/\/$/, '') === norm,
+    });
+  }
+
+  const componentItems: XDSTreeListItemData[] = [...componentMap.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([name, items]) => ({
+      id: `component-${name}`,
+      label: name,
+      children: items,
+      isExpanded: items.some(i => i.isSelected),
+    }));
+
+  return [
+    {
+      id: 'pages',
+      label: 'Pages',
+      children: pageItems,
+      isExpanded: true,
+    },
+    {
+      id: 'components',
+      label: 'Components',
+      children: componentItems,
+      isExpanded: true,
+    },
+  ];
+}
 
 function EyeIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -166,6 +222,22 @@ function MoonIcon(props: React.SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
+function SidebarIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}>
+      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+      <line x1="9" y1="3" x2="9" y2="21" />
+    </svg>
+  );
+}
+
 function ChevronDownIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
@@ -547,11 +619,19 @@ const viewportWidths: Record<ViewportSize, string> = {
 export function PreviewShell({children}: {children: React.ReactNode}) {
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = new URLSearchParams(
+    typeof window !== 'undefined' ? window.location.search : '',
+  );
+  const isEmbed = searchParams.get('embed') === '1';
+  if (isEmbed) return <>{children}</>;
   const [view, setView] = useState<'preview' | 'code'>('preview');
   const [viewport, setViewport] = useState<ViewportSize>('desktop');
   const [copied, setCopied] = useState(false);
   const {themeName, setThemeName, mode, setMode} = useThemeControls();
   const [toolbarHidden, setToolbarHidden] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const navTree = useMemo(() => buildNavTree(pathname), [pathname]);
 
   useEffect(() => {
     const saved = localStorage.getItem('sandbox-toolbar-hidden');
@@ -572,6 +652,11 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  const blockEntry = useMemo(
+    () => blocksByHref.get(pathname.replace(/\/$/, '')) ?? null,
+    [pathname],
+  );
 
   // Find current page name from the registry
   const currentPage = useMemo(() => {
@@ -628,7 +713,13 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
   }, [resolvedSource]);
 
   return (
-    <div style={{display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'visible'}}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100vh',
+        overflow: 'visible',
+      }}>
       {/* Toolbar */}
       <div
         style={{
@@ -643,6 +734,14 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
           position: 'relative',
           overflow: 'visible',
         }}>
+        <XDSButton
+          variant="ghost"
+          size="sm"
+          label={sidebarOpen ? 'Hide sidebar' : 'Show sidebar'}
+          icon={<SidebarIcon width={14} height={14} />}
+          onClick={() => setSidebarOpen(prev => !prev)}
+          isIconOnly
+        />
         <div style={{flex: 1, minWidth: 0}}>
           <button
             onClick={() => setPaletteOpen(true)}
@@ -716,7 +815,7 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
           />
         </XDSSegmentedControl>
 
-        {view === 'preview' && (
+        {view === 'preview' && blockEntry == null && (
           <XDSSegmentedControl
             value={viewport}
             onChange={v => setViewport(v as ViewportSize)}
@@ -788,58 +887,135 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
           isIconOnly
         />
       </div>
-      {/* Content */}
-      {view === 'preview' ? (
-        <div
-          style={{
-            flex: 1,
-            overflow: 'auto',
-            display: 'flex',
-            justifyContent: 'center',
-            padding: viewport !== 'desktop' ? '24px 16px' : 0,
-            backgroundColor: viewport === 'desktop' ? 'transparent' : '#f0f0f0',
-          }}>
+      {/* Body: sidebar + content */}
+      <div style={{display: 'flex', flex: 1, overflow: 'hidden'}}>
+        {/* Sidebar */}
+        {sidebarOpen && (
           <div
             style={{
-              width: viewportWidths[viewport],
-              maxWidth: '100%',
-              height: viewport !== 'desktop' ? 'fit-content' : '100%',
-              minHeight: viewport !== 'desktop' ? '100%' : undefined,
-              overflow: 'auto',
-              border:
-                viewport !== 'desktop'
-                  ? '1px solid var(--color-border-emphasized)'
-                  : 'none',
-              borderRadius: viewport !== 'desktop' ? 8 : 0,
-              backgroundColor: 'var(--color-background-card)',
+              width: 260,
+              flexShrink: 0,
+              borderRight: '1px solid var(--color-border-emphasized)',
+              backgroundColor: 'var(--color-background-surface)',
+              overflowY: 'auto',
+              padding: '8px 0',
             }}>
-            {children}
+            <XDSTreeList items={navTree} density="compact" />
           </div>
-        </div>
-      ) : (
-        <div style={{flex: 1, overflow: 'auto'}}>
-          {resolvedSource ? (
-            <XDSCodeBlock
-              code={resolvedSource}
-              language="tsx"
-              hasLineNumbers
-              hasCopyButton
-            />
-          ) : (
+        )}
+
+        {/* Content */}
+        {view === 'preview' ? (
+          blockEntry != null ? (
             <div
               style={{
-                padding: 24,
+                flex: 1,
+                overflow: 'auto',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                padding: 24,
+                backgroundColor: 'var(--color-background-wash)',
               }}>
-              <XDSText type="body" color="secondary">
-                Source not available
-              </XDSText>
+              <div style={{width: '100%', maxWidth: 600}}>
+                <div
+                  style={{
+                    width: '100%',
+                    aspectRatio: String(blockEntry.aspectRatio),
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: '1px solid var(--color-border)',
+                    borderRadius: 12,
+                    backgroundColor: 'var(--color-background-card)',
+                    padding: 24,
+                  }}>
+                  {children}
+                </div>
+                <div
+                  style={{
+                    marginTop: 8,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 2,
+                    textAlign: 'center',
+                  }}>
+                  <XDSText type="supporting" color="secondary">
+                    aspect-ratio:{' '}
+                    {blockEntry.aspectRatio === 1
+                      ? '1'
+                      : blockEntry.aspectRatio === 4 / 3
+                        ? '4/3'
+                        : blockEntry.aspectRatio === 16 / 9
+                          ? '16/9'
+                          : String(
+                              Math.round(blockEntry.aspectRatio * 1000) / 1000,
+                            )}
+                  </XDSText>
+                  <XDSText type="supporting" color="secondary" size="xsm">
+                    Tweak aspectRatio in the .doc.mjs file so the component fits
+                    nicely in this box.
+                  </XDSText>
+                </div>
+              </div>
             </div>
-          )}
-        </div>
-      )}
+          ) : viewport !== 'desktop' ? (
+            <div
+              style={{
+                flex: 1,
+                overflow: 'auto',
+                display: 'flex',
+                justifyContent: 'center',
+                padding: '24px 16px',
+                backgroundColor: '#f0f0f0',
+              }}>
+              <iframe
+                src={`${pathname}?embed=1`}
+                title={`${pageName} — ${viewport}`}
+                style={{
+                  width: viewportWidths[viewport],
+                  maxWidth: '100%',
+                  height: '100%',
+                  border: '1px solid var(--color-border-emphasized)',
+                  borderRadius: 8,
+                  backgroundColor: '#fff',
+                }}
+              />
+            </div>
+          ) : (
+            <div
+              style={{
+                flex: 1,
+                overflow: 'auto',
+              }}>
+              {children}
+            </div>
+          )
+        ) : (
+          <div style={{flex: 1, overflow: 'auto'}}>
+            {resolvedSource ? (
+              <XDSCodeBlock
+                code={resolvedSource}
+                language="tsx"
+                hasLineNumbers
+                hasCopyButton
+              />
+            ) : (
+              <div
+                style={{
+                  padding: 24,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                <XDSText type="body" color="secondary">
+                  Source not available
+                </XDSText>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
