@@ -159,6 +159,11 @@ function GalleryCard({item}: {item: GalleryItem}) {
               label="Read more"
               variant="secondary"
               endContent={<XDSIcon icon={ArrowRightIcon} color="inherit" />}
+              style={{
+                color: '#fff',
+                borderColor: 'rgba(255,255,255,0.4)',
+                backgroundColor: 'rgba(255,255,255,0.1)',
+              }}
             />
           </div>
         </XDSVStack>
