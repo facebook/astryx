@@ -1,7 +1,8 @@
 'use client';
 
-import {useState} from 'react';
+import {useState, useCallback, useMemo} from 'react';
 import Link from 'next/link';
+import {useSearchParams, useRouter} from 'next/navigation';
 import {XDSHeading} from '@xds/core/Text';
 import {XDSLayout, XDSLayoutHeader, XDSLayoutContent} from '@xds/core/Layout';
 import {
@@ -10,11 +11,11 @@ import {
   useXDSTableSortable,
   useXDSTableColumnResize,
   useXDSTableFiltering,
-  useXDSTableFilterState,
   toSearchFilters,
   pixel,
 } from '@xds/core/Table';
-import type {XDSTableColumn} from '@xds/core/Table';
+import type {XDSTableColumn, XDSTableSortState} from '@xds/core/Table';
+import type {XDSTableFilterState, XDSTableFilterValue} from '@xds/core/Table';
 import {usePowerSearchConfig} from '@xds/core/PowerSearch';
 import type {PowerSearchFilter} from '@xds/core/PowerSearch';
 import {XDSLink} from '@xds/core/Link';
@@ -58,6 +59,90 @@ const rows: TemplateRow[] = [
     isReady: b.isReady,
   })),
 ];
+
+const FILTER_PREFIX = 'filter.';
+
+function parseSortFromParams(
+  params: URLSearchParams,
+): XDSTableSortState | undefined {
+  const raw = params.get('sort');
+  if (!raw) return undefined;
+  const [sortKey, dir] = raw.split(':');
+  if (!sortKey || (dir !== 'asc' && dir !== 'desc')) return undefined;
+  return [{sortKey, direction: dir === 'asc' ? 'ascending' : 'descending'}];
+}
+
+function serializeSort(sort: XDSTableSortState): string | null {
+  if (sort.length === 0) return null;
+  const {sortKey, direction} = sort[0];
+  return `${sortKey}:${direction === 'ascending' ? 'asc' : 'desc'}`;
+}
+
+function parseFiltersFromParams(params: URLSearchParams): XDSTableFilterState {
+  const filters: XDSTableFilterState = {};
+  params.forEach((value, key) => {
+    if (key.startsWith(FILTER_PREFIX)) {
+      filters[key.slice(FILTER_PREFIX.length)] = value;
+    }
+  });
+  return filters;
+}
+
+function buildSearchParams(
+  sort: XDSTableSortState,
+  filters: XDSTableFilterState,
+): string {
+  const params = new URLSearchParams();
+  const sortStr = serializeSort(sort);
+  if (sortStr) params.set('sort', sortStr);
+  for (const [key, value] of Object.entries(filters)) {
+    if (value != null) params.set(`${FILTER_PREFIX}${key}`, String(value));
+  }
+  const str = params.toString();
+  return str ? `?${str}` : '';
+}
+
+function useTableSearchParams() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  const sort = useMemo(
+    () =>
+      parseSortFromParams(searchParams) ?? [
+        {sortKey: 'name', direction: 'ascending' as const},
+      ],
+    [searchParams],
+  );
+
+  const filters = useMemo(
+    () => parseFiltersFromParams(searchParams),
+    [searchParams],
+  );
+
+  const updateURL = useCallback(
+    (newSort: XDSTableSortState, newFilters: XDSTableFilterState) => {
+      router.replace(buildSearchParams(newSort, newFilters), {scroll: false});
+    },
+    [router],
+  );
+
+  const onSortChange = useCallback(
+    (newSort: XDSTableSortState) => updateURL(newSort, filters),
+    [updateURL, filters],
+  );
+
+  const onFilterChange = useCallback(
+    (key: string, value: XDSTableFilterValue | null) => {
+      const next = {...filters};
+      if (value == null) delete next[key];
+      else next[key] = value;
+      updateURL(sort, next);
+    },
+    [updateURL, sort, filters],
+  );
+
+  return {sort, onSortChange, filters, onFilterChange};
+}
 
 function CopyPath({path}: {path: string}) {
   return (
@@ -146,8 +231,9 @@ const columns: XDSTableColumn<TemplateRow>[] = [
 ];
 
 export default function TemplatesPage() {
+  const {sort, onSortChange, filters, onFilterChange} = useTableSearchParams();
+
   const {config, applyFilters} = usePowerSearchConfig(fieldDefs);
-  const {filters, onFilterChange} = useXDSTableFilterState();
   const filterPlugin = useXDSTableFiltering<TemplateRow>({
     filters,
     onFilterChange,
@@ -161,7 +247,8 @@ export default function TemplatesPage() {
 
   const {sortedData, ...sortConfig} = useXDSTableSortableState({
     data: filteredData,
-    defaultSort: [{sortKey: 'name', direction: 'ascending'}],
+    sort,
+    onSortChange,
   });
   const sortPlugin = useXDSTableSortable(sortConfig);
 
