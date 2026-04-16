@@ -51,7 +51,7 @@ jobs:
           echo "has_components=$( [ -n "$CHANGED" ] && echo true || echo false )" >> $GITHUB_OUTPUT
 
   # Run tests sharded across runners (parallel with everything)
-  test:
+  test-shard:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -72,6 +72,34 @@ jobs:
         run: node scripts/sync-exports.js --check
 
       - run: yarn test --shard=${{ matrix.shard }}/3
+
+  # Required status check gate — branch protection expects a job named "test"
+  test:
+    needs: [test-shard]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          if [ "${{ needs.test-shard.result }}" != "success" ]; then
+            exit 1
+          fi
+
+  # Required status check gate — branch protection expects a job named "build"
+  build:
+    needs: [build-core, build-storybook, build-sandbox]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          if [ "${{ needs.build-core.result }}" != "success" ]; then
+            exit 1
+          fi
+          if [ "${{ needs.build-storybook.result }}" != "success" ]; then
+            exit 1
+          fi
+          if [ "${{ needs.build-sandbox.result }}" = "failure" ]; then
+            exit 1
+          fi
 
   # Build core + vega + themes, verify exports, typecheck, analyze PR.
   # Uploads dist artifact for downstream storybook/sandbox jobs.
