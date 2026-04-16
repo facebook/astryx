@@ -33,16 +33,13 @@ import {
   ClipboardDocumentIcon,
   WrenchScrewdriverIcon,
   MicrophoneIcon,
-} from '@heroicons/react/24/outline';
-
-import {
   CheckCircleIcon,
   XCircleIcon,
   ExclamationTriangleIcon,
   ArrowTopRightOnSquareIcon,
   StopIcon,
   StopCircleIcon,
-} from '@heroicons/react/24/solid';
+} from '@heroicons/react/24/outline';
 
 const iconProps = {
   width: '1em',

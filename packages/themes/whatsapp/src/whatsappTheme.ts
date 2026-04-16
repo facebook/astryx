@@ -47,14 +47,8 @@ export const whatsappTheme = defineTheme({
     },
   },
 
-  // Radius: WDS scale (0/4/8/12/28/9999) matches XDS defaults exactly.
-  //   borderRadiusNone=0 → --radius-none=0
-  //   borderRadiusHalf=4 → --radius-inner=4
-  //   borderRadiusSingle=8 → --radius-element=8 (inputs, cards)
-  //   borderRadiusSinglePlus=12 → --radius-container=12
-  //   borderRadiusTriplePlus=28 → --radius-page=28
-  //   borderRadiusCircle=9999 → --radius-full=9999 (buttons)
-  // No radius override needed — multiplier=1 (default) is correct.
+  // Radius: WhatsApp uses generously rounded surfaces — doubled radius scale.
+  radius: {base: 4, multiplier: 2},
 
   // Motion: WhatsApp feels snappy but not jarring.
   // Slightly faster than XDS default, with ease-out for natural deceleration.
@@ -297,17 +291,17 @@ export const whatsappTheme = defineTheme({
       //   - Size-specific padding: sm=16px, md=24px, lg=28px
       // =======================================================================
       base: {
-        borderRadius: '9999px',
-        fontWeight: '500',
-        paddingInline: '24px',
+        borderRadius: '9999px !important',
+        fontWeight: '500 !important',
+        paddingInline: '24px !important',
         transition:
-          'background-image 150ms cubic-bezier(0.175, 0.885, 0.32, 1.275), transform 150ms cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+          'background-image 150ms cubic-bezier(0.175, 0.885, 0.32, 1.275), transform 150ms cubic-bezier(0.175, 0.885, 0.32, 1.275) !important',
       },
       'size:sm': {
-        paddingInline: '16px',
+        paddingInline: '16px !important',
       },
       'size:lg': {
-        paddingInline: '28px',
+        paddingInline: '28px !important',
       },
 
       // =======================================================================
@@ -315,8 +309,8 @@ export const whatsappTheme = defineTheme({
       //   bg: accent, text: on-accent, scale hover/press
       // =======================================================================
       'variant:primary': {
-        ':hover': {transform: 'scale(1.04)'},
-        ':active': {transform: 'scale(0.97)'},
+        ':hover': {transform: 'scale(1.04) !important'},
+        ':active': {transform: 'scale(0.97) !important'},
       },
 
       // =======================================================================
@@ -325,8 +319,8 @@ export const whatsappTheme = defineTheme({
       //   text: accent-emphasized (green700/green100)
       // =======================================================================
       'variant:secondary': {
-        backgroundColor: 'light-dark(#D9FDD3, #103529)',
-        color: 'light-dark(#15603E, #D9FDD3)',
+        backgroundColor: 'light-dark(#D9FDD3, #103529) !important',
+        color: 'light-dark(#15603E, #D9FDD3) !important',
       },
 
       // =======================================================================
@@ -334,7 +328,7 @@ export const whatsappTheme = defineTheme({
       //   bg: transparent, text: content-action-emphasized (green600/green450)
       // =======================================================================
       'variant:ghost': {
-        color: 'light-dark(#1B8755, #21C063)',
+        color: 'light-dark(#1B8755, #21C063) !important',
       },
 
       // =======================================================================
@@ -342,8 +336,8 @@ export const whatsappTheme = defineTheme({
       //   bg: secondary-negative (red400/red300), text: on-accent, scale hover/press
       // =======================================================================
       'variant:destructive': {
-        ':hover': {transform: 'scale(1.04)'},
-        ':active': {transform: 'scale(0.97)'},
+        ':hover': {transform: 'scale(1.04) !important'},
+        ':active': {transform: 'scale(0.97) !important'},
       },
 
       // =======================================================================
@@ -352,11 +346,11 @@ export const whatsappTheme = defineTheme({
       //   text: content-action-emphasized (green600/green450)
       // =======================================================================
       'variant:outline': {
-        backgroundColor: 'transparent',
-        borderWidth: '1px',
-        borderStyle: 'solid',
-        borderColor: 'light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.1))',
-        color: 'light-dark(#1B8755, #21C063)',
+        backgroundColor: 'transparent !important',
+        borderWidth: '1px !important',
+        borderStyle: 'solid !important',
+        borderColor: 'light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.1)) !important',
+        color: 'light-dark(#1B8755, #21C063) !important',
       },
 
       // =======================================================================
@@ -365,8 +359,8 @@ export const whatsappTheme = defineTheme({
       //   text: secondary-negative-emphasized (red500/red200)
       // =======================================================================
       'variant:tonal-destructive': {
-        backgroundColor: 'light-dark(#FDE8EB, #321622)',
-        color: 'light-dark(#B80531, #FA99A4)',
+        backgroundColor: 'light-dark(#FDE8EB, #321622) !important',
+        color: 'light-dark(#B80531, #FA99A4) !important',
       },
 
       // =======================================================================
@@ -375,11 +369,11 @@ export const whatsappTheme = defineTheme({
       //   text: secondary-negative-emphasized (red500/red200)
       // =======================================================================
       'variant:outline-destructive': {
-        backgroundColor: 'transparent',
-        borderWidth: '1px',
-        borderStyle: 'solid',
-        borderColor: 'light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.1))',
-        color: 'light-dark(#B80531, #FA99A4)',
+        backgroundColor: 'transparent !important',
+        borderWidth: '1px !important',
+        borderStyle: 'solid !important',
+        borderColor: 'light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.1)) !important',
+        color: 'light-dark(#B80531, #FA99A4) !important',
       },
 
       // =======================================================================
@@ -387,8 +381,8 @@ export const whatsappTheme = defineTheme({
       //   bg: transparent, text: secondary-negative-emphasized (red500/red200)
       // =======================================================================
       'variant:ghost-destructive': {
-        backgroundColor: 'transparent',
-        color: 'light-dark(#B80531, #FA99A4)',
+        backgroundColor: 'transparent !important',
+        color: 'light-dark(#B80531, #FA99A4) !important',
       },
     },
 
@@ -397,7 +391,7 @@ export const whatsappTheme = defineTheme({
     // =========================================================================
     badge: {
       base: {
-        fontWeight: '500',
+        fontWeight: '500 !important',
       },
     },
 
@@ -407,7 +401,7 @@ export const whatsappTheme = defineTheme({
     card: {
       base: {
         borderColor:
-          'light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.06))',
+          'light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.06)) !important',
       },
     },
 
@@ -417,7 +411,7 @@ export const whatsappTheme = defineTheme({
     divider: {
       base: {
         borderTopColor:
-          'light-dark(rgba(0, 0, 0, 0.1), rgba(255, 255, 255, 0.1))',
+          'light-dark(rgba(0, 0, 0, 0.1), rgba(255, 255, 255, 0.1)) !important',
       },
     },
 
@@ -437,11 +431,11 @@ export const whatsappTheme = defineTheme({
     // =========================================================================
     'text-input': {
       base: {
-        borderColor: 'light-dark(#959393, #757778)',
-        paddingInline: '12px',
-        caretColor: 'light-dark(#1DAA61, #21C063)',
+        borderColor: 'light-dark(#959393, #757778) !important',
+        paddingInline: '12px !important',
+        caretColor: 'light-dark(#1DAA61, #21C063) !important',
         ':focus-within': {
-          outlineColor: 'light-dark(#1DAA61, #21C063)',
+          outlineColor: 'light-dark(#1DAA61, #21C063) !important',
         },
       },
     },

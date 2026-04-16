@@ -253,73 +253,73 @@ export const metaTheme = defineTheme({
     button: {
       base: {
         borderRadius: '9999px !important',
-        gap: '4px',
+        gap: '4px !important',
       },
       'size:sm': {
-        paddingInline: '12px',
+        paddingInline: '12px !important',
       },
       'size:md': {
-        paddingInline: '16px',
+        paddingInline: '16px !important',
       },
       'size:lg': {
-        paddingInline: '20px',
+        paddingInline: '20px !important',
       },
-      'variant:primary': {fontWeight: '500'},
-      'variant:secondary': {fontWeight: '500'},
-      'variant:destructive': {fontWeight: '500'},
-      'variant:ghost': {fontWeight: '500'},
+      'variant:primary': {fontWeight: '500 !important'},
+      'variant:secondary': {fontWeight: '500 !important'},
+      'variant:destructive': {fontWeight: '500 !important'},
+      'variant:ghost': {fontWeight: '500 !important'},
       'variant:primary-muted': {
-        backgroundColor: 'light-dark(#ECF5FF, #182849)',
-        color: 'light-dark(#0457CB, #78BEFF)',
-        fontWeight: '500',
-        ':hover': {opacity: '0.85'},
-        ':active': {opacity: '0.7'},
+        backgroundColor: 'light-dark(#ECF5FF, #182849) !important',
+        color: 'light-dark(#0457CB, #78BEFF) !important',
+        fontWeight: '500 !important',
+        ':hover': {opacity: '0.85 !important'},
+        ':active': {opacity: '0.7 !important'},
       },
       'variant:destructive-muted': {
-        backgroundColor: 'light-dark(#FFF0F2, #471B1A)',
-        color: 'light-dark(var(--color-error), #FE9DA6)',
-        fontWeight: '500',
-        ':hover': {opacity: '0.85'},
-        ':active': {opacity: '0.7'},
+        backgroundColor: 'light-dark(#FFF0F2, #471B1A) !important',
+        color: 'light-dark(var(--color-error), #FE9DA6) !important',
+        fontWeight: '500 !important',
+        ':hover': {opacity: '0.85 !important'},
+        ':active': {opacity: '0.7 !important'},
       },
       'variant:primary-outline': {
-        backgroundColor: 'transparent',
-        borderWidth: '1px',
-        borderStyle: 'solid',
-        borderColor: 'light-dark(var(--color-accent), #4BA9FE)',
-        color: 'light-dark(var(--color-accent), #4BA9FE)',
-        fontWeight: '500',
+        backgroundColor: 'transparent !important',
+        borderWidth: '1px !important',
+        borderStyle: 'solid !important',
+        borderColor: 'light-dark(var(--color-accent), #4BA9FE) !important',
+        color: 'light-dark(var(--color-accent), #4BA9FE) !important',
+        fontWeight: '500 !important',
         ':hover': {
           backgroundColor:
-            'light-dark(rgba(0,100,224,0.06), rgba(75,169,254,0.1))',
+            'light-dark(rgba(0,100,224,0.06), rgba(75,169,254,0.1)) !important',
         },
-        ':active': {opacity: '0.7'},
+        ':active': {opacity: '0.7 !important'},
       },
       'variant:secondary-outline': {
-        backgroundColor: 'transparent',
-        borderWidth: '1px',
-        borderStyle: 'solid',
-        borderColor: 'light-dark(var(--color-border), #525456)',
-        color: 'light-dark(var(--color-text-primary), #F3F4F5)',
-        fontWeight: '500',
+        backgroundColor: 'transparent !important',
+        borderWidth: '1px !important',
+        borderStyle: 'solid !important',
+        borderColor: 'light-dark(var(--color-border), #525456) !important',
+        color: 'light-dark(var(--color-text-primary), #F3F4F5) !important',
+        fontWeight: '500 !important',
         ':hover': {
           backgroundColor:
-            'light-dark(rgba(0,0,0,0.04), rgba(255,255,255,0.06))',
+            'light-dark(rgba(0,0,0,0.04), rgba(255,255,255,0.06)) !important',
         },
-        ':active': {opacity: '0.7'},
+        ':active': {opacity: '0.7 !important'},
       },
       'variant:destructive-outline': {
-        backgroundColor: 'transparent',
-        borderWidth: '1px',
-        borderStyle: 'solid',
-        borderColor: 'light-dark(var(--color-error), #FB7D87)',
-        color: 'light-dark(var(--color-error), #FB7D87)',
-        fontWeight: '500',
+        backgroundColor: 'transparent !important',
+        borderWidth: '1px !important',
+        borderStyle: 'solid !important',
+        borderColor: 'light-dark(var(--color-error), #FB7D87) !important',
+        color: 'light-dark(var(--color-error), #FB7D87) !important',
+        fontWeight: '500 !important',
         ':hover': {
           backgroundColor:
-            'light-dark(rgba(211,17,48,0.06), rgba(251,125,135,0.1))',
+            'light-dark(rgba(211,17,48,0.06), rgba(251,125,135,0.1)) !important',
         },
-        ':active': {opacity: '0.7'},
+        ':active': {opacity: '0.7 !important'},
       },
     },
 
@@ -345,12 +345,13 @@ export const metaTheme = defineTheme({
         borderRadius: '8px !important',
         paddingInline: '12px !important',
         paddingBlock: '12px !important',
-        minHeight: '44px',
-        borderColor: 'light-dark(#CCD3DB, #494D53)',
+        minHeight: '44px !important',
+        '--color-success': '#686A6E',
+        '--color-warning': '#686A6E',
       },
       'variant:search': {
-        backgroundColor: 'light-dark(#F3F4F5, #28292C)',
-        borderColor: 'transparent',
+        backgroundColor: 'light-dark(#F3F4F5, #28292C) !important',
+        borderColor: 'transparent !important',
         borderRadius: '9999px !important',
       },
     },
@@ -377,7 +378,7 @@ export const metaTheme = defineTheme({
         borderRadius: '8px !important',
         paddingInline: '12px !important',
         paddingBlock: '12px !important',
-        minHeight: '44px',
+        minHeight: '44px !important',
       },
     },
 
@@ -386,8 +387,8 @@ export const metaTheme = defineTheme({
     // =========================================================================
     'slider-track': {
       base: {
-        backgroundColor: '#8F9296',
-        height: '2px',
+        backgroundColor: '#8F9296 !important',
+        height: '2px !important',
       },
     },
 
@@ -398,13 +399,23 @@ export const metaTheme = defineTheme({
       base: {
         '--banner-radius': '16px',
       },
-      'status:info': {backgroundColor: 'var(--color-background-card)'},
-      'status:warning': {backgroundColor: 'var(--color-background-card)'},
-      'status:error': {backgroundColor: 'var(--color-background-card)'},
-      'status:success': {backgroundColor: 'var(--color-background-card)'},
+      'status:info': {backgroundColor: 'var(--color-background-card) !important'},
+      'status:warning': {backgroundColor: 'var(--color-background-card) !important'},
+      'status:error': {backgroundColor: 'var(--color-background-card) !important'},
+      'status:success': {backgroundColor: 'var(--color-background-card) !important'},
     },
     'banner-icon': {
-      base: {color: 'var(--color-icon-primary)'},
+      base: {color: 'var(--color-icon-primary) !important'},
+    },
+
+    // =========================================================================
+    // Icon — restore success/warning colors overridden on text-input
+    // =========================================================================
+    icon: {
+      base: {
+        '--color-success': 'light-dark(#147B29, #3CBC22)',
+        '--color-warning': 'light-dark(#965E03, #D69804)',
+      },
     },
 
     // =========================================================================
@@ -412,26 +423,26 @@ export const metaTheme = defineTheme({
     // =========================================================================
     badge: {
       base: {
-        fontWeight: '500',
-        borderRadius: '20px',
-        paddingInline: '8px',
-        paddingBlock: '6px',
+        fontWeight: '500 !important',
+        borderRadius: '20px !important',
+        paddingInline: '8px !important',
+        paddingBlock: '6px !important',
       },
       'variant:info': {
-        backgroundColor: 'light-dark(#DBECFF, #14367E)',
-        color: 'var(--color-text-primary)',
+        backgroundColor: 'light-dark(#DBECFF, #14367E) !important',
+        color: 'var(--color-text-primary) !important',
       },
       'variant:success': {
-        backgroundColor: 'light-dark(#DAF0D4, #154321)',
-        color: 'var(--color-text-primary)',
+        backgroundColor: 'light-dark(#DAF0D4, #154321) !important',
+        color: 'var(--color-text-primary) !important',
       },
       'variant:warning': {
-        backgroundColor: 'light-dark(#FAEBA4, #5B2F05)',
-        color: 'var(--color-text-primary)',
+        backgroundColor: 'light-dark(#FAEBA4, #5B2F05) !important',
+        color: 'var(--color-text-primary) !important',
       },
       'variant:error': {
-        backgroundColor: 'light-dark(#FEE4E6, #73161A)',
-        color: 'var(--color-text-primary)',
+        backgroundColor: 'light-dark(#FEE4E6, #73161A) !important',
+        color: 'var(--color-text-primary) !important',
       },
     },
 
@@ -440,15 +451,15 @@ export const metaTheme = defineTheme({
     // =========================================================================
     radio: {
       base: {
-        borderWidth: '1.5px',
+        borderWidth: '1.5px !important',
         '--color-border-emphasized': '#8F9296',
       },
     },
     'radio-dot': {
       base: {
-        backgroundColor: 'var(--color-accent)',
-        width: '14px',
-        height: '14px',
+        backgroundColor: 'var(--color-accent) !important',
+        width: '14px !important',
+        height: '14px !important',
       },
     },
 
@@ -457,8 +468,8 @@ export const metaTheme = defineTheme({
     // =========================================================================
     checkbox: {
       base: {
-        borderWidth: '2px',
-        borderRadius: '7px',
+        borderWidth: '2px !important',
+        borderRadius: '7px !important',
         '--color-border-emphasized': '#8F9296',
       },
     },
@@ -474,7 +485,7 @@ export const metaTheme = defineTheme({
     },
     'switch-thumb': {
       base: {
-        boxShadow: '0 1px 3px rgba(0,0,0,0.2), 0 1px 2px rgba(0,0,0,0.15)',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.2), 0 1px 2px rgba(0,0,0,0.15) !important',
       },
     },
 
@@ -483,7 +494,7 @@ export const metaTheme = defineTheme({
     // =========================================================================
     divider: {
       base: {
-        backgroundColor: 'light-dark(#DDE2E8, #3E4042)',
+        backgroundColor: 'light-dark(#DDE2E8, #3E4042) !important',
       },
     },
 
@@ -492,7 +503,7 @@ export const metaTheme = defineTheme({
     // =========================================================================
     tab: {
       base: {
-        paddingInline: '12px',
+        paddingInline: '12px !important',
       },
     },
 
@@ -500,14 +511,14 @@ export const metaTheme = defineTheme({
     // Calendar — selected date via state class (#763)
     // =========================================================================
     'calendar-day': {
-      selected: {backgroundColor: 'var(--color-accent)'},
+      selected: {backgroundColor: 'var(--color-accent) !important'},
     },
 
     // =========================================================================
     // Empty state — heading 1 size
     // =========================================================================
     'emptystate-title': {
-      base: {fontSize: '1.75rem'},
+      base: {fontSize: '1.75rem !important'},
     },
 
     // =========================================================================
@@ -515,7 +526,7 @@ export const metaTheme = defineTheme({
     // =========================================================================
     dialog: {
       base: {
-        backgroundColor: 'light-dark(var(--color-background-surface), #1F1F20)',
+        backgroundColor: 'light-dark(var(--color-background-surface), #1F1F20) !important',
         '--dialog-radius': '32px',
       },
     },
@@ -524,13 +535,13 @@ export const metaTheme = defineTheme({
     // Layout — dialog internals: no borders, no body padding
     // =========================================================================
     'layout-header': {
-      base: {borderBlockEndWidth: '0'},
+      base: {borderBlockEndWidth: '0 !important'},
     },
     'layout-content': {
-      base: {paddingBlockStart: '0', paddingBlockEnd: '0'},
+      base: {paddingBlockStart: '0 !important', paddingBlockEnd: '0 !important'},
     },
     'layout-footer': {
-      base: {borderBlockStartWidth: '0'},
+      base: {borderBlockStartWidth: '0 !important'},
     },
 
     // =========================================================================
@@ -538,7 +549,7 @@ export const metaTheme = defineTheme({
     // =========================================================================
     popover: {
       base: {
-        borderRadius: '16px',
+        borderRadius: '16px !important',
         padding: '16px !important',
       },
     },
@@ -551,12 +562,12 @@ export const metaTheme = defineTheme({
     },
     'more-menu': {
       base: {
-        borderRadius: '16px',
+        borderRadius: '16px !important',
         padding: '8px !important',
       },
     },
     tooltip: {
-      base: {borderRadius: '16px'},
+      base: {borderRadius: '16px !important'},
     },
   },
 
