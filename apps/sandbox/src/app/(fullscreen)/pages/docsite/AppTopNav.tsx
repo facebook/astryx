@@ -6,8 +6,9 @@ import {XDSTabList, XDSTab} from '@xds/core/TabList';
 import {XDSButton} from '@xds/core/Button';
 import {XDSStack} from '@xds/core/Layout';
 import {XDSList, XDSListItem} from '@xds/core/List';
+import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
 import {XDSCommandPalette} from '@xds/core/CommandPalette';
-import {SearchIcon, ProfileIcon} from './docsite-icons';
+import {SearchIcon, ProfileIcon, FilterIcon} from './docsite-icons';
 import {SEARCH_COMMANDS} from './constants';
 
 const XDS_WORDMARK = (
@@ -40,12 +41,36 @@ export function AppTopNav({
   scrollContainerRef: _scrollContainerRef,
   activeTab,
   onActiveTabChange,
+  templateFilter,
+  onTemplateFilterChange,
+  templateAuthors,
+  activeFilters,
+  onToggleFilter,
+  onClearFilters,
+  sortOption,
+  onSortChange,
+  isFilterOpen,
+  onFilterOpenChange,
+  onProfileAction,
+  craftTitle,
 }: {
   activeView: 'craft' | 'explore' | 'docs' | 'profile';
   setActiveView: (view: 'craft' | 'explore' | 'docs' | 'profile') => void;
   scrollContainerRef?: React.RefObject<HTMLDivElement | null>;
   activeTab: string;
   onActiveTabChange: (tab: string) => void;
+  templateFilter?: 'all' | 'official' | string;
+  onTemplateFilterChange?: (filter: 'all' | 'official' | string) => void;
+  templateAuthors?: string[];
+  activeFilters?: Set<string>;
+  onToggleFilter?: (filter: string) => void;
+  onClearFilters?: () => void;
+  sortOption?: string;
+  onSortChange?: (option: string) => void;
+  isFilterOpen?: boolean;
+  onFilterOpenChange?: (open: boolean) => void;
+  onProfileAction?: (action: 'craft' | 'bookmarked' | 'used' | 'settings') => void;
+  craftTitle?: string | null;
 }) {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -80,7 +105,7 @@ export function AppTopNav({
           />
         }
         centerContent={
-          isScrolled ? (
+          isScrolled && !craftTitle ? (
             <XDSTabList
               value={activeTab}
               onChange={onActiveTabChange}
@@ -94,19 +119,67 @@ export function AppTopNav({
         }
         endContent={
           <XDSStack direction="horizontal" gap={2}>
+            {isScrolled && (
+              <>
+                <XDSButton
+                  label="Filter"
+                  variant="ghost"
+                  size="sm"
+                  isIconOnly
+                  icon={<FilterIcon />}
+                  onClick={() => onFilterOpenChange?.(!isFilterOpen)}
+                />
+                <XDSDropdownMenu
+                  button={{
+                    label:
+                      sortOption === 'trending'
+                        ? 'Trending'
+                        : sortOption === 'newest'
+                          ? 'Newest first'
+                          : 'Oldest first',
+                    variant: 'ghost',
+                    size: 'sm',
+                  }}
+                  items={[
+                    {
+                      label: 'Trending',
+                      onClick: () => onSortChange?.('trending'),
+                    },
+                    {
+                      label: 'Newest first',
+                      onClick: () => onSortChange?.('newest'),
+                    },
+                    {
+                      label: 'Oldest first',
+                      onClick: () => onSortChange?.('oldest'),
+                    },
+                  ]}
+                />
+              </>
+            )}
             <XDSButton
               label="Search"
               variant="ghost"
+              size="sm"
               isIconOnly
               icon={<SearchIcon />}
               onClick={() => setIsSearchOpen(true)}
             />
-            <XDSButton
-              label="Profile"
-              variant="ghost"
-              isIconOnly
-              icon={<ProfileIcon />}
-              onClick={() => setActiveView('profile')}
+            <XDSDropdownMenu
+              button={{
+                label: 'Profile',
+                variant: 'ghost',
+                size: 'sm',
+                isIconOnly: true,
+                icon: <ProfileIcon />,
+              }}
+              hasChevron={false}
+              items={[
+                {label: 'Craft', onClick: () => onProfileAction?.('craft')},
+                {label: 'Bookmarked', onClick: () => onProfileAction?.('bookmarked')},
+                {label: 'Used', onClick: () => onProfileAction?.('used')},
+                {label: 'Settings', onClick: () => onProfileAction?.('settings')},
+              ]}
             />
           </XDSStack>
         }

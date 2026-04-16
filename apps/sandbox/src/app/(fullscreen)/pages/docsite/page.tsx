@@ -14,7 +14,10 @@ import {useSearchParams, useRouter} from 'next/navigation';
 import {
   TEMPLATES,
   AVATAR_IMAGE,
+  XDS_DESIGN_AVATAR,
   THEME_PICKER_ENTRIES,
+  FILTER_COLUMNS,
+  PROFILE_CRAFT_ITEMS,
   basePath,
 } from './constants';
 import {TemplateCard} from './TemplateCard';
@@ -37,9 +40,14 @@ import {XDSDivider} from '@xds/core/Divider';
 import {XDSHeading, XDSText} from '@xds/core/Text';
 import {XDSTabList, XDSTab} from '@xds/core/TabList';
 import {XDSToken} from '@xds/core/Token';
+import {XDSIcon} from '@xds/core/Icon';
+import {XDSLink} from '@xds/core/Link';
+import {XDSList, XDSListItem} from '@xds/core/List';
 import {XDSPopover} from '@xds/core/Popover';
 import {XDSTextInput} from '@xds/core/TextInput';
+import {XDSToolbar} from '@xds/core/Toolbar';
 import {XDSTooltip} from '@xds/core/Tooltip';
+import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
 import {
   ArrowLeftIcon,
   BookmarkIcon,
@@ -47,6 +55,10 @@ import {
   StarIcon,
   StarFilledIcon,
   SearchIcon,
+  PaletteIcon,
+  ContrastIcon,
+  MoonIcon,
+  VerifiedIcon,
   MetaLogo,
   WhatsAppLogo,
   ThreadsLogo,
@@ -54,6 +66,7 @@ import {
   DefaultThemeIcon,
   ForestThemeIcon,
   SunsetThemeIcon,
+  FilterIcon,
   MidnightThemeIcon,
 } from './docsite-icons';
 
@@ -89,7 +102,98 @@ const popoverStyles = stylex.create({
   themeBrowse: {
     padding: 16,
   },
+  filterDropdown: {
+    padding: 8,
+  },
 });
+
+function SearchableFilterDropdown({
+  label,
+  items,
+  selectedFilters,
+  onToggle,
+  verifiedItems,
+}: {
+  label: string;
+  items: string[];
+  selectedFilters: Set<string>;
+  onToggle: (item: string) => void;
+  verifiedItems?: Set<string>;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const filtered = items.filter(item =>
+    item.toLowerCase().includes(search.toLowerCase()),
+  );
+  return (
+    <XDSPopover
+      label={label}
+      placement="below"
+      alignment="start"
+      width={280}
+      isOpen={isOpen}
+      onOpenChange={open => {
+        setIsOpen(open);
+        if (!open) setSearch('');
+      }}
+      xstyle={popoverStyles.filterDropdown}
+      content={
+        <div style={{display: 'flex', flexDirection: 'column', gap: 4}}>
+          <div
+            tabIndex={0}
+            style={{
+              position: 'absolute',
+              opacity: 0,
+              width: 0,
+              height: 0,
+              overflow: 'hidden',
+            }}
+          />
+          <XDSTextInput
+            label="Search"
+            isLabelHidden
+            placeholder={`Search ${label.toLowerCase()}...`}
+            value={search}
+            onChange={setSearch}
+            size="lg"
+            startIcon={SearchIcon}
+          />
+          <div style={{maxHeight: 280, overflowY: 'auto', margin: '0 -8px'}}>
+            {filtered.length === 0 ? (
+              <div style={{padding: '12px 16px'}}>
+                <XDSText type="body" color="secondary">
+                  No results
+                </XDSText>
+              </div>
+            ) : (
+              <XDSList density="spacious">
+                {filtered.map(item => (
+                  <XDSListItem
+                    key={item}
+                    label={item}
+                    isSelected={selectedFilters.has(item)}
+                    onClick={() => onToggle(item)}
+                    endContent={
+                      verifiedItems?.has(item) ? (
+                        <XDSIcon icon={VerifiedIcon} size="sm" color="accent" />
+                      ) : undefined
+                    }
+                  />
+                ))}
+              </XDSList>
+            )}
+          </div>
+        </div>
+      }>
+      <XDSButton
+        label={label}
+        variant="ghost"
+        size="sm"
+        endContent={<XDSIcon icon="chevronDown" size="sm" color="inherit" />}
+      />
+    </XDSPopover>
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Page
@@ -106,25 +210,101 @@ export default function DocsiteLandingPage() {
 function DocsiteLandingTemplate() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const [previewMode, setPreviewMode] = useState<'light' | 'dark'>('light');
+  const [previewTheme, setPreviewTheme] = useState('default');
+
+  const previewImageFilter = useMemo(() => {
+    const filters: string[] = [];
+    if (previewMode === 'dark') {
+      filters.push('invert(0.88)', 'hue-rotate(180deg)');
+    }
+    const themeFilters: Record<string, string> = {
+      neutral: 'saturate(0.3)',
+      brutalist: 'contrast(1.2) saturate(0.5)',
+      meta: 'sepia(0.15) saturate(1.4) hue-rotate(200deg)',
+      whatsapp: 'sepia(0.2) saturate(1.3) hue-rotate(100deg)',
+    };
+    if (themeFilters[previewTheme]) {
+      filters.push(themeFilters[previewTheme]);
+    }
+    return filters.length > 0 ? filters.join(' ') : undefined;
+  }, [previewMode, previewTheme]);
 
   // Read initial state from URL params
   const initialView = useMemo(() => {
     const v = searchParams.get('view');
     const t = searchParams.get('template');
+    const q = searchParams.get('q');
     const templateIdx = t !== null ? parseInt(t, 10) : null;
     return {
       view: v,
       templateIdx: isNaN(templateIdx as number) ? null : templateIdx,
+      query: q,
     };
   }, [searchParams]);
 
   const [activeView, setActiveView] = useState(
     'craft' as 'craft' | 'explore' | 'docs' | 'profile',
   );
+  const [craftTitle, setCraftTitle] = useState<string | null>(
+    initialView.query,
+  );
+  const [isProfileResults, setIsProfileResults] = useState(false);
+  const [isCraftResults, setIsCraftResults] = useState(false);
+  const [craftStatusFilter, setCraftStatusFilter] = useState('all');
+  const [craftLoading, setCraftLoading] = useState(false);
+  const [craftExiting, setCraftExiting] = useState(false);
+  const [resultFilters, setResultFilters] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const handleToggleResultFilter = useCallback((filter: string) => {
+    setResultFilters(prev => {
+      const next = new Set(prev);
+      if (next.has(filter)) next.delete(filter);
+      else next.add(filter);
+      return next;
+    });
+  }, []);
+  const craftLoadingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleBackFromResults = useCallback(() => {
+    setCraftExiting(true);
+    setCraftLoading(true);
+    setResultFilters(new Set());
+    setIsProfileResults(false);
+    setIsCraftResults(false);
+    setCraftStatusFilter('all');
+    if (craftLoadingTimer.current) clearTimeout(craftLoadingTimer.current);
+    craftLoadingTimer.current = setTimeout(() => {
+      setCraftTitle(null);
+      setCraftLoading(false);
+      setCraftExiting(false);
+      craftLoadingTimer.current = null;
+    }, 600);
+  }, []);
+  const handleTokenClick = useCallback((label: string) => {
+    setPreviewTarget(null);
+    setCraftTitle(label);
+    setIsProfileResults(false);
+    setCraftLoading(true);
+    if (craftLoadingTimer.current) clearTimeout(craftLoadingTimer.current);
+    craftLoadingTimer.current = setTimeout(() => {
+      setCraftLoading(false);
+      craftLoadingTimer.current = null;
+    }, 900);
+  }, []);
   const [selected, setSelected] = useState(new Set());
+  const [templateFilter, setTemplateFilter] = useState<
+    'all' | 'official' | string
+  >('all');
+  const [activeFilters, setActiveFilters] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [sortOption, setSortOption] = useState('trending');
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
   const [isMobile, setIsMobile] = useState(false);
-  const [_isTablet, setIsTablet] = useState(false);
+  const [isTablet, setIsTablet] = useState(false);
   const [generatingSource, setGeneratingSource] = useState(
     null as number | null,
   );
@@ -136,6 +316,7 @@ function DocsiteLandingTemplate() {
     initialView.view === 'editor' ? initialView.templateIdx : null,
   );
   const [previewGenerating, setPreviewGenerating] = useState(false);
+  const [previewTransitioning, setPreviewTransitioning] = useState(false);
   const [showPublishCard1, setShowPublishCard1] = useState(false);
   const [panelTab, setPanelTab] = useState<PanelTab>('configure');
   const [isPointing, setIsPointing] = useState(false);
@@ -205,15 +386,21 @@ function DocsiteLandingTemplate() {
       path += '?view=preview&template=' + previewTarget;
     } else if (useTarget !== null) {
       path += '?view=editor&template=' + useTarget;
+    } else if (craftTitle) {
+      path += '?q=' + encodeURIComponent(craftTitle);
     }
     router.replace(path, {scroll: false});
-  }, [previewTarget, useTarget, router]);
+  }, [previewTarget, useTarget, craftTitle, router]);
 
-  // Reset preview/editor state when switching views
+  const prevViewRef = useRef(activeView);
   useEffect(() => {
+    if (prevViewRef.current === activeView) return;
+    prevViewRef.current = activeView;
     setPreviewTarget(null);
     setUseTarget(null);
     setChatOpen(false);
+    setCraftTitle(null);
+    setResultFilters(new Set());
   }, [activeView]);
   const timerRef = useRef(null as ReturnType<typeof setTimeout> | null);
   const previewTimerRef = useRef(null as ReturnType<typeof setTimeout> | null);
@@ -280,10 +467,82 @@ function DocsiteLandingTemplate() {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
       if (previewTimerRef.current) clearTimeout(previewTimerRef.current);
+      if (craftLoadingTimer.current) clearTimeout(craftLoadingTimer.current);
     };
   }, []);
 
   const isGenerating = generatingSource !== null;
+
+  const templateAuthors = useMemo(() => {
+    const authors = Array.from(new Set(TEMPLATES.map(t => t.author)));
+    return authors.sort((a, b) => {
+      if (a === 'XDS Design') return -1;
+      if (b === 'XDS Design') return 1;
+      return a.localeCompare(b);
+    });
+  }, []);
+
+  const handleToggleFilter = useCallback((filter: string) => {
+    setActiveFilters(prev => {
+      const next = new Set(prev);
+      if (next.has(filter)) next.delete(filter);
+      else next.add(filter);
+      return next;
+    });
+  }, []);
+
+  const handleClearFilters = useCallback(() => {
+    setActiveFilters(new Set());
+  }, []);
+
+  const handleProfileAction = useCallback((action: 'craft' | 'bookmarked' | 'used' | 'settings') => {
+    if (action === 'settings') {
+      setIsSettingsOpen(true);
+    } else if (action === 'craft') {
+      setPreviewTarget(null);
+      setCraftTitle('My Craft');
+      setIsCraftResults(true);
+      setIsProfileResults(true);
+      setCraftStatusFilter('all');
+      setCraftLoading(true);
+      if (craftLoadingTimer.current) clearTimeout(craftLoadingTimer.current);
+      craftLoadingTimer.current = setTimeout(() => {
+        setCraftLoading(false);
+        craftLoadingTimer.current = null;
+      }, 900);
+    } else {
+      const label = action === 'bookmarked' ? 'Bookmarked' : 'Used';
+      setPreviewTarget(null);
+      setCraftTitle(label);
+      setIsProfileResults(true);
+      setIsCraftResults(false);
+      setCraftLoading(true);
+      if (craftLoadingTimer.current) clearTimeout(craftLoadingTimer.current);
+      craftLoadingTimer.current = setTimeout(() => {
+        setCraftLoading(false);
+        craftLoadingTimer.current = null;
+      }, 900);
+    }
+  }, []);
+
+  const filteredTemplates = useMemo(() => {
+    return TEMPLATES.map((t, i) => ({...t, originalIndex: i})).filter(t => {
+      if (templateFilter === 'all') return true;
+      if (templateFilter === 'official') return t.isOfficial;
+      return t.author.toLowerCase().includes(templateFilter.toLowerCase());
+    });
+  }, [templateFilter]);
+
+  const craftStatusCounts = useMemo(() => ({
+    published: PROFILE_CRAFT_ITEMS.filter(i => i.status === 'Published').length,
+    draft: PROFILE_CRAFT_ITEMS.filter(i => i.status === 'Draft').length,
+    review: PROFILE_CRAFT_ITEMS.filter(i => i.status === 'In Review').length,
+  }), []);
+
+  const filteredCraftItems = useMemo(() => {
+    if (craftStatusFilter === 'all') return PROFILE_CRAFT_ITEMS;
+    return PROFILE_CRAFT_ITEMS.filter(item => item.status === craftStatusFilter);
+  }, [craftStatusFilter]);
 
   // Editor flow — same layout for all cards
   if (useTarget !== null && activeView === 'craft') {
@@ -294,10 +553,7 @@ function DocsiteLandingTemplate() {
           display: 'flex',
           height: '100vh',
           overflow: 'hidden',
-          backgroundColor:
-            useTarget !== 3
-              ? 'var(--color-background-body)'
-              : 'var(--color-background-surface, #fff)',
+          backgroundColor: 'var(--color-background-surface, #fff)',
         }}>
         <style>
           {'@keyframes slideInLeft { from { opacity: 0; transform: translateX(-40px); } to { opacity: 1; transform: translateX(0); } }' +
@@ -323,10 +579,7 @@ function DocsiteLandingTemplate() {
                 flex: 1,
                 backgroundColor: 'var(--color-background-card, #fff)',
                 borderRadius: 16,
-                border:
-                  useTarget !== 3
-                    ? 'none'
-                    : '1px solid var(--color-divider, #e0e0e0)',
+                border: '1px solid var(--color-divider, #e0e0e0)',
                 overflow: 'hidden',
                 display: 'flex',
                 flexDirection: 'column' as const,
@@ -401,7 +654,7 @@ function DocsiteLandingTemplate() {
               justifyContent: 'center',
               zIndex: 10,
               backgroundColor: 'transparent',
-              marginRight: useTarget !== 3 ? -16 : 0,
+              marginRight: 0,
             }}>
             <div
               className="xds-editor-resize-handle"
@@ -443,9 +696,7 @@ function DocsiteLandingTemplate() {
             isFullPreview={fullPreview}
             onFullPreviewChange={setFullPreview}
             hideToolbar={fullPreview}
-            previewBackground={
-              useTarget !== 3 ? 'var(--color-background-body)' : undefined
-            }
+            previewBackground={undefined}
           />
         </div>
       </div>
@@ -459,9 +710,7 @@ function DocsiteLandingTemplate() {
   }
 
   if (activeView === 'profile') {
-    return (
-      <ProfileView activeView={activeView} setActiveView={setActiveView} />
-    );
+    return <ProfileView activeView={activeView} setActiveView={setActiveView} />;
   }
 
   return (
@@ -475,6 +724,18 @@ function DocsiteLandingTemplate() {
           scrollContainerRef={scrollContainerRef}
           activeTab={activeTab}
           onActiveTabChange={setActiveTab}
+          templateFilter={templateFilter}
+          onTemplateFilterChange={setTemplateFilter}
+          templateAuthors={templateAuthors}
+          activeFilters={activeFilters}
+          onToggleFilter={handleToggleFilter}
+          onClearFilters={handleClearFilters}
+          sortOption={sortOption}
+          onSortChange={setSortOption}
+          isFilterOpen={isFilterOpen}
+          onFilterOpenChange={setIsFilterOpen}
+          onProfileAction={handleProfileAction}
+          craftTitle={craftTitle}
         />
       }>
       <div
@@ -518,71 +779,657 @@ function DocsiteLandingTemplate() {
               style={{
                 flex: 1,
                 overflow: 'auto',
-                padding: '16px 16px 140px',
+                padding: '16px 24px 140px',
               }}>
-              {/* Hero heading */}
-              <div
-                style={{
-                  maxWidth: 2000,
-                  margin: '0 auto',
-                  paddingBlock: 32,
-                  textAlign: 'center',
-                }}>
-                <XDSText type="display-1">Craft what you imagine.</XDSText>
-              </div>
+              <style>{`
+                @keyframes craftShimmer {
+                  0% { background-position: -400px 0; }
+                  100% { background-position: 400px 0; }
+                }
+                @keyframes craftCardFadeIn {
+                  from { opacity: 0; transform: translateY(12px); }
+                  to { opacity: 1; transform: translateY(0); }
+                }
+                @keyframes craftTitleSlideIn {
+                  from { opacity: 0; transform: translateX(-16px); }
+                  to { opacity: 1; transform: translateX(0); }
+                }
+                @keyframes previewFadeIn {
+                  from { opacity: 0; transform: translateY(8px); }
+                  to { opacity: 1; transform: translateY(0); }
+                }
+              `}</style>
+              {craftTitle && (
+                <div
+                  style={{
+                    maxWidth: 2000,
+                    margin: '0 auto 16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12,
+                    ...(craftExiting
+                      ? {
+                          opacity: 0,
+                          transform: 'translateX(-16px)',
+                          transition:
+                            'opacity 300ms ease, transform 300ms ease',
+                        }
+                      : {
+                          animation:
+                            'craftTitleSlideIn 400ms cubic-bezier(0.16, 1, 0.3, 1)',
+                        }),
+                  }}>
+                  {!isProfileResults && (
+                    <XDSButton
+                      label="Back"
+                      variant="ghost"
+                      size="lg"
+                      icon={<ArrowLeftIcon />}
+                      isIconOnly
+                      onClick={handleBackFromResults}
+                      style={{marginLeft: -8}}
+                    />
+                  )}
+                  <XDSText type="display-1">{craftTitle}</XDSText>
+                </div>
+              )}
+              {craftTitle && !craftLoading && isCraftResults && (
+                <div
+                  style={{
+                    maxWidth: 2000,
+                    margin: '0 auto 20px',
+                    display: 'flex',
+                    gap: 6,
+                    flexWrap: 'wrap' as const,
+                    animation:
+                      'craftTitleSlideIn 400ms 100ms cubic-bezier(0.16, 1, 0.3, 1) both',
+                  }}>
+                  {[
+                    {value: 'all', label: `All (${PROFILE_CRAFT_ITEMS.length})`},
+                    {value: 'Published', label: `Published (${craftStatusCounts.published})`},
+                    {value: 'Draft', label: `Draft (${craftStatusCounts.draft})`},
+                    {value: 'In Review', label: `In Review (${craftStatusCounts.review})`},
+                  ].map(tab => (
+                    <XDSButton
+                      key={tab.value}
+                      label={tab.label}
+                      variant={craftStatusFilter === tab.value ? 'primary' : 'secondary'}
+                      size="sm"
+                      onClick={() => setCraftStatusFilter(tab.value)}
+                    />
+                  ))}
+                </div>
+              )}
+              {craftTitle && !craftLoading && !isCraftResults && (
+                <div
+                  style={{
+                    maxWidth: 2000,
+                    margin: '0 auto 20px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 4,
+                    animation:
+                      'craftTitleSlideIn 400ms 100ms cubic-bezier(0.16, 1, 0.3, 1) both',
+                  }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      marginLeft: -8,
+                      marginRight: -8,
+                    }}>
+                    {FILTER_COLUMNS.map(col => (
+                      <SearchableFilterDropdown
+                        key={col.heading}
+                        label={col.heading}
+                        items={col.items}
+                        selectedFilters={resultFilters}
+                        onToggle={handleToggleResultFilter}
+                      />
+                    ))}
+                    <SearchableFilterDropdown
+                      label="Author"
+                      items={templateAuthors}
+                      selectedFilters={resultFilters}
+                      onToggle={handleToggleResultFilter}
+                      verifiedItems={new Set(['XDS Design'])}
+                    />
+                    <div
+                      style={{
+                        marginLeft: 'auto',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 16,
+                      }}>
+                      <XDSText
+                        type="supporting"
+                        color="secondary"
+                        style={{whiteSpace: 'nowrap'}}>
+                        Showing {filteredTemplates.length} screens
+                      </XDSText>
+                      <XDSToolbar
+                        label="View controls"
+                        density="compact"
+                        startContent={
+                          <>
+                            <XDSButton
+                              label={
+                                previewMode === 'dark'
+                                  ? 'Light mode'
+                                  : 'Dark mode'
+                              }
+                              variant="ghost"
+                              size="sm"
+                              isIconOnly
+                              icon={
+                                previewMode === 'dark' ? (
+                                  <ContrastIcon />
+                                ) : (
+                                  <MoonIcon />
+                                )
+                              }
+                              onClick={() =>
+                                setPreviewMode(
+                                  previewMode === 'dark' ? 'light' : 'dark',
+                                )
+                              }
+                            />
+                            <XDSDropdownMenu
+                              button={{
+                                label: 'Theme',
+                                variant: 'ghost',
+                                size: 'sm',
+                                isIconOnly: true,
+                                icon: <PaletteIcon />,
+                              }}
+                              hasChevron={false}
+                              menuWidth={160}
+                              items={[
+                                {
+                                  label: 'Default',
+                                  onClick: () => setPreviewTheme('default'),
+                                },
+                                {
+                                  label: 'Neutral',
+                                  onClick: () => setPreviewTheme('neutral'),
+                                },
+                                {
+                                  label: 'Brutalist',
+                                  onClick: () => setPreviewTheme('brutalist'),
+                                },
+                                {
+                                  label: 'Meta',
+                                  onClick: () => setPreviewTheme('meta'),
+                                },
+                                {
+                                  label: 'WhatsApp',
+                                  onClick: () => setPreviewTheme('whatsapp'),
+                                },
+                              ]}
+                            />
+                          </>
+                        }
+                      />
+                      <XDSDropdownMenu
+                        button={{
+                          label:
+                            sortOption === 'trending'
+                              ? 'Trending'
+                              : sortOption === 'newest'
+                                ? 'Newest first'
+                                : 'Oldest first',
+                          variant: 'ghost',
+                          size: 'sm',
+                        }}
+                        items={[
+                          {
+                            label: 'Trending',
+                            onClick: () => setSortOption('trending'),
+                          },
+                          {
+                            label: 'Newest first',
+                            onClick: () => setSortOption('newest'),
+                          },
+                          {
+                            label: 'Oldest first',
+                            onClick: () => setSortOption('oldest'),
+                          },
+                        ]}
+                      />
+                    </div>
+                  </div>
+                  {resultFilters.size > 0 && (
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        flexWrap: 'wrap',
+                      }}>
+                      {Array.from(resultFilters).map(f => (
+                        <XDSToken
+                          key={f}
+                          label={f}
+                          size="sm"
+                          onRemove={() => handleToggleResultFilter(f)}
+                        />
+                      ))}
+                      <XDSText type="supporting">
+                        <XDSLink
+                          label="Clear all"
+                          color="secondary"
+                          onClick={() => setResultFilters(new Set())}>
+                          Clear all
+                        </XDSLink>
+                      </XDSText>
+                    </div>
+                  )}
+                </div>
+              )}
 
-              {/* Tab filters */}
-              <div
-                style={{
-                  maxWidth: 2000,
-                  margin: '0 auto 24px',
-                  display: 'flex',
-                  justifyContent: 'center',
-                }}>
-                <XDSTabList value={activeTab} onChange={setActiveTab} size="sm">
-                  <XDSTab value="all" label="All" />
-                  <XDSTab value="templates" label="Templates" />
-                  <XDSTab value="theme" label="Theme" />
-                  <XDSTab value="components" label="Components" />
-                </XDSTabList>
-              </div>
+              {/* Hero heading */}
+              {!craftTitle && (
+                <div
+                  style={{
+                    maxWidth: 2000,
+                    margin: '0 auto',
+                    paddingBlock: 32,
+                    textAlign: 'center',
+                  }}>
+                  <XDSText type="display-1">Craft what you imagine.</XDSText>
+                </div>
+              )}
+
+              {/* Tab filters + sort */}
+              {!craftTitle && (
+                <div
+                  style={{
+                    maxWidth: 2000,
+                    margin: '0 auto 24px',
+                    display: 'grid',
+                    gridTemplateColumns: '1fr auto 1fr',
+                    alignItems: 'center',
+                  }}>
+                  <div />
+                  <XDSTabList
+                    value={activeTab}
+                    onChange={setActiveTab}
+                    size="sm">
+                    <XDSTab value="all" label="All" />
+                    <XDSTab value="templates" label="Templates" />
+                    <XDSTab value="theme" label="Theme" />
+                    <XDSTab value="components" label="Components" />
+                  </XDSTabList>
+                  <div style={{justifySelf: 'end', display: 'flex', gap: 4}}>
+                    <XDSButton
+                      label="Filter"
+                      variant="ghost"
+                      size="sm"
+                      isIconOnly
+                      icon={<FilterIcon />}
+                      onClick={() => setIsFilterOpen(!isFilterOpen)}
+                    />
+                    <XDSDropdownMenu
+                      button={{
+                        label:
+                          sortOption === 'trending'
+                            ? 'Trending'
+                            : sortOption === 'newest'
+                              ? 'Newest first'
+                              : 'Oldest first',
+                        variant: 'ghost',
+                        size: 'sm',
+                      }}
+                      items={[
+                        {
+                          label: 'Trending',
+                          onClick: () => setSortOption('trending'),
+                        },
+                        {
+                          label: 'Newest first',
+                          onClick: () => setSortOption('newest'),
+                        },
+                        {
+                          label: 'Oldest first',
+                          onClick: () => setSortOption('oldest'),
+                        },
+                      ]}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Filter panel — slides open/closed below tabs */}
+              {!craftTitle && (
+                <div
+                  style={{
+                    maxWidth: 2000,
+                    margin: '0 auto',
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(4, 1fr)',
+                    gap: isFilterOpen ? 24 : 0,
+                    padding: isFilterOpen ? '24px 0' : '0',
+                    maxHeight: isFilterOpen ? 600 : 0,
+                    opacity: isFilterOpen ? 1 : 0,
+                    overflow: 'visible',
+                    transition:
+                      'max-height var(--duration-medium, 410ms) var(--ease-standard, cubic-bezier(0.24, 1, 0.4, 1)), opacity var(--duration-fast, 175ms) var(--ease-standard, cubic-bezier(0.24, 1, 0.4, 1)), padding var(--duration-medium, 410ms) var(--ease-standard, cubic-bezier(0.24, 1, 0.4, 1)), gap var(--duration-medium, 410ms) var(--ease-standard, cubic-bezier(0.24, 1, 0.4, 1))',
+                  }}>
+                  {/* Source filter */}
+                  <div>
+                    <XDSText
+                      type="supporting"
+                      color="secondary"
+                      style={{marginBottom: 12, display: 'block'}}>
+                      Source
+                    </XDSText>
+                    <div style={{marginLeft: -8, marginRight: -8}}>
+                      <XDSList density="compact">
+                        <XDSListItem
+                          label="All"
+                          isSelected={templateFilter === 'all'}
+                          onClick={() => setTemplateFilter('all')}
+                        />
+                        <XDSListItem
+                          label="XDS Official"
+                          isSelected={templateFilter === 'official'}
+                          onClick={() => setTemplateFilter('official')}
+                        />
+                      </XDSList>
+                    </div>
+                  </div>
+                  {FILTER_COLUMNS.map(col => (
+                    <div key={col.heading}>
+                      <XDSText
+                        type="supporting"
+                        color="secondary"
+                        style={{marginBottom: 12, display: 'block'}}>
+                        {col.heading}
+                      </XDSText>
+                      <div style={{marginLeft: -8, marginRight: -8}}>
+                        <XDSList density="compact">
+                          {col.items.map(item => (
+                            <XDSListItem
+                              key={item}
+                              label={item}
+                              isSelected={activeFilters.has(item)}
+                              onClick={() => handleToggleFilter(item)}
+                            />
+                          ))}
+                        </XDSList>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Active filter chips */}
+              {!craftTitle && activeFilters.size > 0 && (
+                <div
+                  style={{
+                    maxWidth: 2000,
+                    margin: '0 auto 16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    flexWrap: 'wrap',
+                  }}>
+                  {Array.from(activeFilters).map(filter => (
+                    <XDSToken
+                      key={filter}
+                      label={filter}
+                      onRemove={() => handleToggleFilter(filter)}
+                    />
+                  ))}
+                  <XDSText type="supporting">
+                    <XDSLink
+                      label="Clear all"
+                      color="secondary"
+                      onClick={handleClearFilters}>
+                      Clear all
+                    </XDSLink>
+                  </XDSText>
+                </div>
+              )}
 
               {/* Template grid */}
+              {craftLoading ? (
+                <div
+                  style={{
+                    maxWidth: 2000,
+                    margin: '0 auto',
+                    display: 'grid',
+                    gridTemplateColumns: isMobile
+                      ? '1fr'
+                      : isTablet
+                        ? 'repeat(2, 1fr)'
+                        : 'repeat(4, 1fr)',
+                    gap: 16,
+                  }}>
+                  {Array.from({length: 8}).map((_, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        borderRadius: 16,
+                        overflow: 'hidden',
+                        animation: `craftCardFadeIn 400ms ${i * 60}ms cubic-bezier(0.16, 1, 0.3, 1) both`,
+                      }}>
+                      <div
+                        style={{
+                          aspectRatio: '4 / 3',
+                          background:
+                            'linear-gradient(90deg, var(--color-background-muted, #f0f0f0) 0%, var(--color-background-surface, #fafafa) 50%, var(--color-background-muted, #f0f0f0) 100%)',
+                          backgroundSize: '800px 100%',
+                          animation:
+                            'craftShimmer 1.6s ease-in-out infinite',
+                          borderRadius: '16px 16px 0 0',
+                        }}
+                      />
+                      <div
+                        style={{
+                          padding: 16,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 10,
+                        }}>
+                        <div
+                          style={{
+                            height: 14,
+                            width: '60%',
+                            borderRadius: 6,
+                            background:
+                              'linear-gradient(90deg, var(--color-background-muted, #f0f0f0) 0%, var(--color-background-surface, #fafafa) 50%, var(--color-background-muted, #f0f0f0) 100%)',
+                            backgroundSize: '800px 100%',
+                            animation:
+                              'craftShimmer 1.6s ease-in-out infinite',
+                          }}
+                        />
+                        <div
+                          style={{
+                            height: 10,
+                            width: '40%',
+                            borderRadius: 6,
+                            background:
+                              'linear-gradient(90deg, var(--color-background-muted, #f0f0f0) 0%, var(--color-background-surface, #fafafa) 50%, var(--color-background-muted, #f0f0f0) 100%)',
+                            backgroundSize: '800px 100%',
+                            animation:
+                              'craftShimmer 1.6s ease-in-out infinite',
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : isCraftResults ? (
+                <div
+                  style={{
+                    maxWidth: 2000,
+                    margin: '0 auto',
+                    display: 'grid',
+                    gridTemplateColumns: isMobile
+                      ? '1fr'
+                      : isTablet
+                        ? 'repeat(2, 1fr)'
+                        : 'repeat(3, 1fr)',
+                    gap: 16,
+                  }}>
+                  {filteredCraftItems.map((item, i) => (
+                    <XDSCard
+                      key={item.name}
+                      padding={0}
+                      style={{
+                        overflow: 'hidden',
+                        animation: `craftCardFadeIn 400ms ${i * 60}ms cubic-bezier(0.16, 1, 0.3, 1) both`,
+                      }}>
+                      <div
+                        style={{
+                          aspectRatio: '16 / 9',
+                          overflow: 'hidden',
+                          backgroundColor: 'var(--color-background-muted, #f0f0f0)',
+                        }}>
+                        <img
+                          src={item.img}
+                          alt={item.name}
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                            objectPosition: 'top',
+                            display: 'block',
+                          }}
+                        />
+                      </div>
+                      <div style={{padding: 16}}>
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: 8,
+                          }}>
+                          <XDSText type="body" weight="bold">
+                            {item.name}
+                          </XDSText>
+                          <span
+                            style={{
+                              fontSize: 11,
+                              fontWeight: 600,
+                              padding: '2px 8px',
+                              borderRadius: 9999,
+                              whiteSpace: 'nowrap' as const,
+                              flexShrink: 0,
+                              backgroundColor:
+                                item.status === 'Published'
+                                  ? '#ECFDF3'
+                                  : item.status === 'In Review'
+                                    ? '#FFFAEB'
+                                    : '#F2F4F7',
+                              color:
+                                item.status === 'Published'
+                                  ? '#027A48'
+                                  : item.status === 'In Review'
+                                    ? '#B54708'
+                                    : '#667085',
+                            }}>
+                            {item.status}
+                          </span>
+                        </div>
+                        <div style={{marginTop: 4}}>
+                          <XDSText type="supporting" color="secondary">
+                            {item.type}
+                          </XDSText>
+                        </div>
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 16,
+                            marginTop: 12,
+                          }}>
+                          <div>
+                            <XDSText type="supporting" color="secondary">
+                              {item.used} uses
+                            </XDSText>
+                          </div>
+                          <div>
+                            <XDSText type="supporting" color="secondary">
+                              {item.views} views
+                            </XDSText>
+                          </div>
+                          <div style={{marginLeft: 'auto'}}>
+                            <XDSText type="supporting" color="secondary">
+                              {new Date(item.lastUpdated).toLocaleDateString('en-US', {month: 'short', day: 'numeric'})}
+                            </XDSText>
+                          </div>
+                        </div>
+                      </div>
+                    </XDSCard>
+                  ))}
+                  {filteredCraftItems.length === 0 && (
+                    <div style={{gridColumn: '1 / -1', padding: 32, textAlign: 'center' as const}}>
+                      <XDSText type="body" color="secondary">
+                        No items match this filter.
+                      </XDSText>
+                    </div>
+                  )}
+                </div>
+              ) : (
               <div
                 style={{
                   maxWidth: 2000,
                   margin: '0 auto',
                   display: 'grid',
-                  gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)',
+                  gridTemplateColumns: isMobile
+                    ? '1fr'
+                    : isTablet
+                      ? 'repeat(2, 1fr)'
+                      : 'repeat(4, 1fr)',
                   gap: 16,
                   gridAutoRows: '1fr',
                 }}>
-                {TEMPLATES.map((template, i) => (
-                  <div key={`${template.name}-${i}`}>
+                {filteredTemplates.map((template, i) => (
+                  <div
+                    key={`${template.name}-${template.originalIndex}`}
+                    style={{
+                      ...(craftTitle
+                        ? {
+                            animation: `craftCardFadeIn 400ms ${i * 50}ms cubic-bezier(0.16, 1, 0.3, 1) both`,
+                          }
+                        : undefined),
+                      filter: previewImageFilter,
+                      transition: 'filter 300ms ease',
+                    }}>
                     <TemplateCard
                       src={template.src}
                       name={template.name}
-                      isSelected={selected.has(i)}
-                      isGenerating={isGenerating && generatingSource !== i}
+                      isSelected={selected.has(template.originalIndex)}
+                      isGenerating={
+                        isGenerating &&
+                        generatingSource !== template.originalIndex
+                      }
                       cardSize={template.size}
                       onSelect={() =>
                         setSelected(prev => {
                           const next = new Set(prev);
-                          if (next.has(i)) {
-                            next.delete(i);
+                          if (next.has(template.originalIndex)) {
+                            next.delete(template.originalIndex);
                           } else {
-                            next.add(i);
+                            next.add(template.originalIndex);
                           }
                           return next;
                         })
                       }
-                      onMoreLikeThis={() => handleMoreLikeThis(i)}
-                      onUse={() => handleUse(i)}
-                      onPreview={() => handlePreview(i)}
+                      onMoreLikeThis={() =>
+                        handleMoreLikeThis(template.originalIndex)
+                      }
+                      onUse={() => handleUse(template.originalIndex)}
+                      onPreview={() => handlePreview(template.originalIndex)}
                     />
                   </div>
                 ))}
               </div>
+              )}
             </div>
           </div>
         </div>
@@ -612,7 +1459,7 @@ function DocsiteLandingTemplate() {
               width="90vw"
               maxHeight="90vh"
               purpose="info"
-              style={{padding: 0, overflow: 'visible'}}>
+              style={{padding: 0, overflow: 'visible', maxWidth: 1200}}>
               <div
                 style={{position: 'absolute', top: 0, right: -40, zIndex: 1}}>
                 <XDSCard padding={0} style={{borderRadius: '50%'}}>
@@ -652,7 +1499,13 @@ function DocsiteLandingTemplate() {
                             : t.src
                         }
                         alt={t.name}
-                        style={{width: '100%', display: 'block'}}
+                        style={{
+                          width: '100%',
+                          display: 'block',
+                          opacity: previewTransitioning ? 0 : 1,
+                          transition: 'opacity 250ms ease',
+                          animation: previewTransitioning ? 'none' : 'previewFadeIn 300ms ease',
+                        }}
                       />
                     </div>
                   </XDSStack>
@@ -661,40 +1514,51 @@ function DocsiteLandingTemplate() {
                   <XDSStack
                     direction="vertical"
                     style={{width: 360, flexShrink: 0, padding: '24px 0'}}>
-                    {/* Title */}
-                    <XDSText type="display-2">{t.name}</XDSText>
+                    <div
+                      style={{
+                        opacity: previewTransitioning ? 0 : 1,
+                        transition: 'opacity 250ms ease',
+                        animation: previewTransitioning ? 'none' : 'previewFadeIn 300ms ease',
+                      }}>
+                      {/* Title */}
+                      <XDSText type="display-2">{t.name}</XDSText>
 
-                    {/* Description */}
-                    <div style={{marginTop: 8}}>
-                      <XDSText type="body" color="secondary">
-                        A ready-to-use {t.name.toLowerCase()} template built
-                        with XDS components. Customize it with your own content
-                        and theme to match your brand.
-                      </XDSText>
-                    </div>
+                      {/* Description */}
+                      <div style={{marginTop: 8}}>
+                        <XDSText type="body" color="secondary">
+                          A ready-to-use {t.name.toLowerCase()} template built
+                          with XDS components. Customize it with your own
+                          content and theme to match your brand.
+                        </XDSText>
+                      </div>
 
-                    {/* Author */}
-                    <XDSStack
-                      direction="horizontal"
-                      gap={3}
-                      vAlign="center"
-                      style={{marginTop: 16}}>
-                      <XDSAvatar
-                        name="Andrea Anderson"
-                        size={36}
-                        src={AVATAR_IMAGE}
-                      />
-                      <XDSStack direction="vertical">
-                        <XDSText type="supporting" color="secondary">
-                          Crafted by
-                        </XDSText>
-                        <XDSText
-                          type="body"
-                          style={{fontWeight: 600, fontSize: 16}}>
-                          Andrea Anderson
-                        </XDSText>
+                      {/* Author */}
+                      <XDSStack
+                        direction="horizontal"
+                        gap={3}
+                        vAlign="center"
+                        style={{marginTop: 16}}>
+                        <XDSAvatar
+                          name={t.author}
+                          size={36}
+                          src={
+                            t.author === 'XDS Design'
+                              ? XDS_DESIGN_AVATAR
+                              : AVATAR_IMAGE
+                          }
+                        />
+                        <XDSStack direction="vertical">
+                          <XDSText type="supporting" color="secondary">
+                            Crafted by
+                          </XDSText>
+                          <XDSText
+                            type="body"
+                            style={{fontWeight: 600, fontSize: 16}}>
+                            {t.author}
+                          </XDSText>
+                        </XDSStack>
                       </XDSStack>
-                    </XDSStack>
+                    </div>
 
                     {/* CTA buttons */}
                     <XDSStack
@@ -713,31 +1577,21 @@ function DocsiteLandingTemplate() {
                           setChatOpen(true);
                         }}
                       />
-                      <XDSStack
-                        direction="horizontal"
-                        gap={2}
-                        style={{width: '100%'}}>
-                        <XDSPopover
-                          label="Add to project"
-                          isOpen={card4ShowAddPopover}
-                          onOpenChange={setCard4ShowAddPopover}
-                          placement="below"
-                          alignment="start"
-                          width={340}
-                          style={{flex: 1, minWidth: 0}}
-                          content={
-                            <SharePopoverContent
-                              cliCommand={`npx xds template ${t.name.toLowerCase().replace(/\s+/g, '-')} ./my-project`}
-                              onClose={() => setCard4ShowAddPopover(false)}
-                            />
-                          }>
-                          <XDSButton
-                            variant="secondary"
-                            label="Use in your product"
-                            size="lg"
-                            style={{width: '100%'}}
-                          />
-                        </XDSPopover>
+                      <div
+                        style={{
+                          display: 'flex',
+                          gap: 8,
+                          width: '100%',
+                        }}>
+                        <XDSButton
+                          variant="secondary"
+                          label="Use in your product"
+                          size="lg"
+                          style={{flex: 1}}
+                          onClick={() =>
+                            setCard4ShowAddPopover(!card4ShowAddPopover)
+                          }
+                        />
                         <XDSTooltip content="Bookmark">
                           <XDSButton
                             label={card4Bookmarked ? '893' : '892'}
@@ -754,7 +1608,23 @@ function DocsiteLandingTemplate() {
                             onClick={() => setCard4Bookmarked(prev => !prev)}
                           />
                         </XDSTooltip>
-                      </XDSStack>
+                      </div>
+                      {card4ShowAddPopover && (
+                        <XDSCard
+                          style={{
+                            position: 'absolute',
+                            top: '100%',
+                            left: 0,
+                            right: 0,
+                            marginTop: 8,
+                            zIndex: 10,
+                          }}>
+                          <SharePopoverContent
+                            cliCommand={`npx xds template ${t.name.toLowerCase().replace(/\s+/g, '-')} ./my-project`}
+                            onClose={() => setCard4ShowAddPopover(false)}
+                          />
+                        </XDSCard>
+                      )}
                     </XDSStack>
 
                     {/* Themes — pinned grid */}
@@ -1102,11 +1972,15 @@ function DocsiteLandingTemplate() {
                         key={img.originalIndex}
                         padding={0}
                         onClick={() => {
-                          setPreviewTarget(img.originalIndex);
-                          card4ScrollRef.current?.scrollTo({
-                            top: 0,
-                            behavior: 'smooth',
-                          });
+                          setPreviewTransitioning(true);
+                          setTimeout(() => {
+                            setPreviewTarget(img.originalIndex);
+                            card4ScrollRef.current?.scrollTo({top: 0});
+                            setTimeout(
+                              () => setPreviewTransitioning(false),
+                              50,
+                            );
+                          }, 250);
                         }}
                         style={{
                           cursor: 'pointer',
@@ -1122,6 +1996,9 @@ function DocsiteLandingTemplate() {
                             objectFit: 'cover',
                             objectPosition: 'top',
                             display: 'block',
+                            opacity: previewTransitioning ? 0 : 1,
+                            transition: 'opacity 250ms ease',
+                            animation: previewTransitioning ? 'none' : 'previewFadeIn 300ms ease',
                           }}
                         />
                       </XDSCard>
@@ -1138,6 +2015,9 @@ function DocsiteLandingTemplate() {
                       flexWrap: 'wrap',
                       gap: 8,
                       marginTop: 16,
+                      opacity: previewTransitioning ? 0 : 1,
+                      transition: 'opacity 250ms ease',
+                      animation: previewTransitioning ? 'none' : 'previewFadeIn 300ms ease',
                     }}>
                     {[
                       'website',
@@ -1156,7 +2036,11 @@ function DocsiteLandingTemplate() {
                         key={tag}
                         label={tag}
                         xstyle={tokenStyles.pill}
-                        style={{backgroundColor: 'transparent'}}
+                        style={{
+                          backgroundColor: 'transparent',
+                          cursor: 'pointer',
+                        }}
+                        onClick={() => handleTokenClick(tag)}
                       />
                     ))}
                   </div>
@@ -1171,6 +2055,9 @@ function DocsiteLandingTemplate() {
                       flexWrap: 'wrap',
                       gap: 8,
                       marginTop: 16,
+                      opacity: previewTransitioning ? 0 : 1,
+                      transition: 'opacity 250ms ease',
+                      animation: previewTransitioning ? 'none' : 'previewFadeIn 300ms ease',
                     }}>
                     {[
                       'XDSAppShell',
@@ -1188,7 +2075,11 @@ function DocsiteLandingTemplate() {
                         key={c}
                         label={c}
                         xstyle={tokenStyles.outline}
-                        style={{backgroundColor: 'transparent'}}
+                        style={{
+                          backgroundColor: 'transparent',
+                          cursor: 'pointer',
+                        }}
+                        onClick={() => handleTokenClick(c)}
                       />
                     ))}
                   </div>
@@ -1197,6 +2088,65 @@ function DocsiteLandingTemplate() {
             </XDSDialog>
           );
         })()}
+
+      {/* Settings dialog */}
+      <XDSDialog
+        isOpen={isSettingsOpen}
+        onOpenChange={setIsSettingsOpen}
+        width={560}
+        purpose="action"
+        title="Settings">
+        <XDSStack direction="vertical" gap={4} style={{padding: '8px 0'}}>
+          <XDSStack direction="horizontal" hAlign="space-between" vAlign="center">
+            <XDSStack direction="vertical" gap={1}>
+              <XDSText type="body" style={{fontWeight: 600}}>Dark mode</XDSText>
+              <XDSText type="supporting" color="secondary">Switch between light and dark appearance</XDSText>
+            </XDSStack>
+            <XDSButton
+              label={previewMode === 'dark' ? 'On' : 'Off'}
+              variant="secondary"
+              size="sm"
+              onClick={() => setPreviewMode(previewMode === 'dark' ? 'light' : 'dark')}
+            />
+          </XDSStack>
+          <XDSDivider />
+          <XDSStack direction="horizontal" hAlign="space-between" vAlign="center">
+            <XDSStack direction="vertical" gap={1}>
+              <XDSText type="body" style={{fontWeight: 600}}>Theme</XDSText>
+              <XDSText type="supporting" color="secondary">Choose a visual theme for previews</XDSText>
+            </XDSStack>
+            <XDSDropdownMenu
+              button={{label: previewTheme.charAt(0).toUpperCase() + previewTheme.slice(1), variant: 'secondary', size: 'sm'}}
+              items={[
+                {label: 'Default', onClick: () => setPreviewTheme('default')},
+                {label: 'Neutral', onClick: () => setPreviewTheme('neutral')},
+                {label: 'Brutalist', onClick: () => setPreviewTheme('brutalist')},
+                {label: 'Meta', onClick: () => setPreviewTheme('meta')},
+                {label: 'WhatsApp', onClick: () => setPreviewTheme('whatsapp')},
+              ]}
+            />
+          </XDSStack>
+          <XDSDivider />
+          <XDSStack direction="horizontal" hAlign="space-between" vAlign="center">
+            <XDSStack direction="vertical" gap={1}>
+              <XDSText type="body" style={{fontWeight: 600}}>Default sort</XDSText>
+              <XDSText type="supporting" color="secondary">How templates are ordered by default</XDSText>
+            </XDSStack>
+            <XDSDropdownMenu
+              button={{
+                label: sortOption === 'trending' ? 'Trending' : sortOption === 'newest' ? 'Newest first' : 'Oldest first',
+                variant: 'secondary',
+                size: 'sm',
+              }}
+              items={[
+                {label: 'Trending', onClick: () => setSortOption('trending')},
+                {label: 'Newest first', onClick: () => setSortOption('newest')},
+                {label: 'Oldest first', onClick: () => setSortOption('oldest')},
+              ]}
+            />
+          </XDSStack>
+        </XDSStack>
+      </XDSDialog>
     </XDSAppShell>
   );
 }

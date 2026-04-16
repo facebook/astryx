@@ -224,28 +224,56 @@ export const FILTER_COLUMNS: {heading: string; items: string[]}[] = [
 // Profile data
 // ---------------------------------------------------------------------------
 
-export const PROFILE_USED_ITEMS = [
-  {name: 'AppShell', description: 'AppShell provides a foundational page layout with header, sidebar, and content regions.'},
-  {name: 'Avatar', description: 'Avatars represent a person or entity with an image, initials, or icon.'},
-  {name: 'Badge', description: 'Badges display small counts or status labels. They can be attached to icons, buttons, or list items.'},
-  {name: 'Banner', description: 'Banners show important, non-modal messages at the top of a page or section.'},
-  {name: 'Button', description: 'Buttons let people take action. They can be used in forms, dialogs, and toolbars.'},
-  {name: 'Calendar', description: 'Calendar provides a date-picking grid for selecting single dates or date ranges.'},
-  {name: 'Dialog', description: 'Dialogs are modal overlays that require user attention or action before continuing.'},
-  {name: 'DropdownMenu', description: 'DropdownMenu presents a list of actions or options in a floating overlay.'},
+export const PROFILE_USED_ITEMS: {
+  name: string;
+  description: string;
+  lastUsed: string;
+  usageCount: number;
+}[] = [
+  {name: 'AppShell', description: 'Foundational page layout with header, sidebar, and content regions.', lastUsed: '2026-04-14T10:30:00Z', usageCount: 12},
+  {name: 'Avatar', description: 'Represents a person or entity with an image, initials, or icon.', lastUsed: '2026-04-13T15:45:00Z', usageCount: 8},
+  {name: 'Badge', description: 'Displays small counts or status labels on icons, buttons, or list items.', lastUsed: '2026-04-12T09:20:00Z', usageCount: 15},
+  {name: 'Banner', description: 'Shows important, non-modal messages at the top of a page or section.', lastUsed: '2026-04-10T14:00:00Z', usageCount: 3},
+  {name: 'Button', description: 'Primary action element for forms, dialogs, and toolbars.', lastUsed: '2026-04-14T16:00:00Z', usageCount: 24},
+  {name: 'Calendar', description: 'Date-picking grid for selecting single dates or date ranges.', lastUsed: '2026-04-08T11:30:00Z', usageCount: 2},
+  {name: 'Dialog', description: 'Modal overlays that require user attention or action.', lastUsed: '2026-04-11T13:15:00Z', usageCount: 6},
+  {name: 'DropdownMenu', description: 'Presents actions or options in a floating overlay.', lastUsed: '2026-04-09T16:45:00Z', usageCount: 5},
 ];
 
-export const PROFILE_LIKED_ITEMS = [
-  {name: 'Meta Theme', lastUsed: 'Last used 2 days ago'},
-  {name: 'Brutalist Theme', lastUsed: 'Last used 2 days ago'},
-  {name: 'Admin Dashboard', lastUsed: 'Last used 2 days ago'},
-  {name: 'Product Detail', lastUsed: 'Last used 2 days ago'},
+export const PROFILE_LIKED_ITEMS: {
+  name: string;
+  type: string;
+  lastUsed: string;
+}[] = [
+  {name: 'Meta Theme', type: 'Theme', lastUsed: '2026-04-13T08:00:00Z'},
+  {name: 'Brutalist Theme', type: 'Theme', lastUsed: '2026-04-11T10:30:00Z'},
+  {name: 'Admin Dashboard', type: 'Template', lastUsed: '2026-04-10T14:20:00Z'},
+  {name: 'Product Detail', type: 'Template', lastUsed: '2026-04-07T09:00:00Z'},
 ];
 
 export const PROFILE_COLLECTIONS = [
   {name: 'Work Projects', count: 4},
   {name: 'Design Inspiration', count: 6},
   {name: 'Client Templates', count: 3},
+  {name: 'Dashboard Ideas', count: 5},
+  {name: 'Landing Pages', count: 8},
+];
+
+export const PROFILE_CRAFT_ITEMS: {
+  name: string;
+  type: string;
+  status: 'Published' | 'Draft' | 'In Review';
+  used: number;
+  views: number;
+  img: string;
+  lastUpdated: string;
+}[] = [
+  {name: 'My Dashboard Theme', type: 'Theme', status: 'Published', used: 342, views: 1205, img: DUMMY_IMAGE, lastUpdated: '2026-03-01T10:00:00Z'},
+  {name: 'Custom Login Template', type: 'Template', status: 'Published', used: 128, views: 580, img: DUMMY_IMAGE, lastUpdated: '2026-03-15T14:30:00Z'},
+  {name: 'Data Visualization Kit', type: 'Template', status: 'Published', used: 89, views: 312, img: DUMMY_IMAGE, lastUpdated: '2026-04-02T11:00:00Z'},
+  {name: 'Analytics Dashboard', type: 'Template', status: 'In Review', used: 0, views: 45, img: DUMMY_IMAGE, lastUpdated: '2026-04-12T09:00:00Z'},
+  {name: 'Onboarding Flow', type: 'Template', status: 'Draft', used: 0, views: 12, img: DUMMY_IMAGE, lastUpdated: '2026-04-14T16:00:00Z'},
+  {name: 'Dark Mode Palette', type: 'Theme', status: 'Draft', used: 0, views: 8, img: DUMMY_IMAGE, lastUpdated: '2026-04-13T11:30:00Z'},
 ];
 
 // ---------------------------------------------------------------------------
