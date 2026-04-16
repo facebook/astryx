@@ -11,10 +11,6 @@ module.exports = {
         parserOpts: {
           plugins: ['typescript', 'jsx'],
         },
-        presets: [
-          ['@babel/preset-react', {runtime: 'automatic'}],
-          '@babel/preset-typescript',
-        ],
         plugins: babelConfig.plugins,
       },
       useCSSLayers: {
@@ -23,5 +19,6 @@ module.exports = {
         before: ['reset', 'xds-base', 'xds-theme'],
       },
     },
+    autoprefixer: {},
   },
 };
