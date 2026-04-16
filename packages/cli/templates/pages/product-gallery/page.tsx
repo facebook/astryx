@@ -123,7 +123,7 @@ function ProductCard({product}: {product: Product}) {
           <XDSText
             type="body"
             weight="medium"
-            xstyle={{fontSize: 'var(--font-size-xl)'}}>
+            style={{fontSize: 'var(--font-size-xl)'}}>
             {product.name}
           </XDSText>
           <XDSText type="body" color="secondary" maxLines={2}>
@@ -132,7 +132,7 @@ function ProductCard({product}: {product: Product}) {
           <XDSText
             type="body"
             weight="bold"
-            xstyle={{fontSize: 'var(--font-size-xl)'}}>
+            style={{fontSize: 'var(--font-size-xl)'}}>
             {fmt(product.price)}
           </XDSText>
         </XDSVStack>
@@ -154,7 +154,7 @@ export default function ProductGalleryTemplate() {
               type="large"
               weight="bold"
               as="p"
-              xstyle={{fontSize: 'var(--font-size-2xl)'}}>
+              style={{fontSize: 'var(--font-size-2xl)'}}>
               Make every day a little more delightful, one small detail at a
               time.
             </XDSText>
