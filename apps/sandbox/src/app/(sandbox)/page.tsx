@@ -92,32 +92,19 @@ export default function Home() {
                 startIcon={SearchIcon}
                 size="lg"
               />
-              <XDSHStack vAlign="center" hAlign="between">
-                <div {...stylex.props(styles.hideOnSmall)}>
-                  <XDSToggleButtonGroup
-                    label="Filter by category"
-                    value={activeTab}
-                    onChange={v => setActiveTab(v ?? 'All')}>
-                    {CATEGORY_FILTERS.map(cat => (
-                      <XDSToggleButton
-                        key={cat}
-                        label={cat}
-                        value={cat}
-                        size="lg"
-                      />
-                    ))}
-                  </XDSToggleButtonGroup>
-                </div>
-                <div {...stylex.props(styles.hideOnLarge)}>
-                  <XDSDropdownMenu
-                    button={{label: activeTab, size: 'lg'}}
-                    items={CATEGORY_FILTERS.map(cat => ({
-                      label: cat,
-                      onClick: () => setActiveTab(cat),
-                    }))}
+              <XDSToggleButtonGroup
+                label="Filter by category"
+                value={activeTab}
+                onChange={v => setActiveTab(v ?? 'All')}>
+                {CATEGORY_FILTERS.map(cat => (
+                  <XDSToggleButton
+                    key={cat}
+                    label={cat}
+                    value={cat}
+                    size="lg"
                   />
-                </div>
-              </XDSHStack>
+                ))}
+              </XDSToggleButtonGroup>
             </XDSVStack>
 
             {filtered.length === 0 ? (
