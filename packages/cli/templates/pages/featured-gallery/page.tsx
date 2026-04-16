@@ -9,7 +9,7 @@ import {XDSButton} from '@xds/core/Button';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import {XDSIcon} from '@xds/core/Icon';
-import {XDSMediaTheme} from '@xds/core/theme/XDSMediaTheme';
+import {XDSMediaTheme} from '@xds/core/theme';
 
 // ─── Icons ──────────────────────────────────────────────────────────────────
 
