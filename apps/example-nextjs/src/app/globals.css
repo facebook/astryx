@@ -1,1 +1,3 @@
-@stylex;
+@import "@xds/core/reset.css";
+@import "@xds/core/xds.css";
+@import "@xds/theme-default/theme.css";

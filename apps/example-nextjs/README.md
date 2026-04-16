@@ -1,158 +1,75 @@
-# XDS Example — Next.js
+# XDS Example — Next.js (Dist)
 
-Reference application for consuming **@xds/core** as a source distribution in a Next.js project.
+Reference application for consuming **@xds/core** as a pre-built dist package in a Next.js project.
 
-XDS ships as raw TypeScript + StyleX source. Consumers compile it at the application level — there's no pre-built CSS or JS bundle. This example shows the complete setup.
+No StyleX build plugin needed — XDS ships pre-compiled CSS and JS. This is the simplest way to get started.
 
 ## Setup Steps
 
 ### 1. Install dependencies
 
 ```bash
-npm install @stylexjs/stylex @xds/core next react react-dom
-npm install --save-dev @stylexjs/babel-plugin @stylexjs/postcss-plugin \
-  @babel/preset-react @babel/preset-typescript typescript @types/react @types/react-dom
+npm install @xds/core @xds/theme-default next react react-dom
+npm install --save-dev @types/react @types/react-dom typescript
 ```
 
-### 2. Browserslist
+### 2. CSS imports
 
-Add a `browserslist` to `package.json` so that Next.js (and its internal lightningcss) targets modern browsers. Without this, lightningcss may lower `light-dark()` into polyfill variables that break XDS theming:
-
-```json
-{
-  "browserslist": ["last 1 Chrome version"]
-}
-```
-
-> For internal tools targeting latest Chrome, `"last 1 Chrome version"` is sufficient. For broader browser support, use targets that include Chrome 123+ / Firefox 120+ / Safari 17.5+ (when `light-dark()` shipped).
-
-### 3. Babel config
-
-`babel.config.js` — configure StyleX as a **plugin** (not a preset) with `next/babel`:
-
-```js
-const path = require('path');
-
-module.exports = {
-  presets: ['next/babel'],
-  plugins: [
-    [
-      '@stylexjs/babel-plugin',
-      {
-        dev: process.env.NODE_ENV === 'development',
-        runtimeInjection: false,
-        genConditionalClasses: true,
-        treeshakeCompensation: true,
-        aliases: {
-          '@xds/core/*': [path.join(__dirname, 'node_modules/@xds/core/*')],
-          '@xds/core': [path.join(__dirname, 'node_modules/@xds/core')],
-        },
-        unstable_moduleResolution: {
-          type: 'commonJS',
-          rootDir: __dirname,
-        },
-      },
-    ],
-  ],
-};
-```
-
-> **Important:** The `aliases` config is required for `stylex.createTheme` to resolve token definitions correctly. Without it, theme overrides silently fail.
-
-### 4. PostCSS config
-
-`postcss.config.js` — this is how Next.js extracts StyleX CSS:
-
-```js
-const babelConfig = require('./babel.config');
-
-module.exports = {
-  plugins: {
-    '@stylexjs/postcss-plugin': {
-      include: [
-        'src/**/*.{js,jsx,ts,tsx}',
-        'node_modules/@xds/core/**/*.{ts,tsx}',
-      ],
-      babelConfig: {
-        babelrc: false,
-        parserOpts: {plugins: ['typescript', 'jsx']},
-        presets: [
-          ['@babel/preset-react', {runtime: 'automatic'}],
-          '@babel/preset-typescript',
-        ],
-        plugins: babelConfig.plugins,
-      },
-      useCSSLayers: true,
-    },
-  },
-};
-```
-
-### 5. CSS entry point with `@stylex;` directive
-
-`src/app/globals.css`:
+`src/app/globals.css` — import the reset, component styles, and theme:
 
 ```css
-@stylex;
-```
-
-Import it in your root layout, along with the base reset and theme CSS:
-
-```tsx
-import '@xds/core/reset.css';
-import '@xds/theme-default/theme.css';
-import './globals.css';
+@import '@xds/core/reset.css';
+@import '@xds/core/xds.css';
+@import '@xds/theme-default/theme.css';
 ```
 
 The CSS import order matters:
 
 1. `reset.css` — baseline resets (`@layer reset`)
-2. `theme.css` — theme token overrides (`@layer xds.theme`)
-3. `globals.css` — StyleX extraction (`@stylex;` directive)
+2. `xds.css` — all component styles (`@layer xds-base`)
+3. `theme.css` — theme token overrides (`@layer xds-theme`)
 
-### 6. Next.js config
+Import the CSS file in your root layout:
 
-`next.config.mjs` — add `transpilePackages` so Next.js compiles XDS source:
-
-```js
-const nextConfig = {
-  transpilePackages: ['@xds/core', '@xds/theme-default'],
-};
-export default nextConfig;
+```tsx
+import './globals.css';
 ```
 
-### 7. Theme provider (client boundary)
+### 3. Theme + Link provider (client boundary)
 
 ```tsx
 // src/app/providers.tsx
 'use client';
+import Link from 'next/link';
 import {XDSTheme} from '@xds/core/theme';
-import {defaultTheme} from '@xds/theme-default';
+import {XDSLinkProvider} from '@xds/core/Link';
+import {defaultTheme} from '@xds/theme-default/built';
 
 export function Providers({children}) {
-  return <XDSTheme theme={defaultTheme}>{children}</XDSTheme>;
+  return (
+    <XDSTheme theme={defaultTheme}>
+      <XDSLinkProvider component={Link}>{children}</XDSLinkProvider>
+    </XDSTheme>
+  );
 }
 ```
 
+`XDSLinkProvider` wires up Next.js client-side navigation for all XDS link-based components (Link, Button with href, TopNav, SideNav, Breadcrumbs, TabList).
+
 ## Gotchas
 
-| Issue                               | Symptom                                     | Fix                                                               |
-| ----------------------------------- | ------------------------------------------- | ----------------------------------------------------------------- |
-| Missing `browserslist`              | Colors broken — `light-dark()` gets lowered | Add `"browserslist": ["last 1 Chrome version"]` to `package.json` |
-| Missing `@stylex;` directive        | PostCSS produces empty CSS with no error    | Add `@stylex;` to your CSS entry file                             |
-| PostCSS `include` doesn't cover XDS | XDS component styles are missing            | Add `node_modules/@xds/core/**/*.{ts,tsx}` to `include`           |
-| Missing `aliases` in babel config   | `createTheme` token overrides silently fail | Add `aliases` mapping for `@xds/core` and `@xds/core/*`           |
-| No `'use client'` on theme provider | Server component error from `createContext` | Mark the provider file with `'use client'`                        |
-| StyleX as preset instead of plugin  | Build errors or missing styles              | Use `plugins` array, not `presets`, for `@stylexjs/babel-plugin`  |
+| Issue                         | Symptom                                     | Fix                                        |
+| ----------------------------- | ------------------------------------------- | ------------------------------------------ |
+| Wrong CSS import order        | Missing theme tokens or broken layers       | Import reset → xds → theme in that order   |
+| No `'use client'` on provider | Server component error from `createContext` | Mark the provider file with `'use client'` |
 
 ## Testing outside the monorepo
 
-This example lives in the XDS monorepo for convenience, but it should be representative of a real app consuming `@xds/core` from npm. Monorepo workspace resolution can silently bypass issues that external consumers hit (missing dependencies, wrong include paths, different CSS pipeline behavior).
+This example lives in the XDS monorepo for convenience, but it should be representative of a real app consuming `@xds/core` from npm. Monorepo workspace resolution can silently bypass issues that external consumers hit.
 
 **Before merging changes to this example, test it as an external consumer** — see the [Testing Example Apps](https://github.com/facebookexperimental/xds/wiki/Testing-Example-Apps) wiki page for the full procedure.
 
 ## Related
 
 - [Issue #145 — Add example-nextjs project](https://github.com/facebookexperimental/xds/issues/145)
-- [StyleX examples](https://github.com/facebook/stylex/tree/main/examples)
-- [Working prototype (cixzhang/xds_sandbox)](https://github.com/cixzhang/xds_sandbox)
+- [XDS + Tailwind example](../example-nextjs-tailwind/) — same dist approach with Tailwind for custom layout styles
