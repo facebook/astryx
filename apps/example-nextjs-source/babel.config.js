@@ -1,4 +1,5 @@
-/* global module, process, __dirname */
+/* global module, process, __dirname, require */
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const path = require('path');
 
 const dev = process.env.NODE_ENV !== 'production';

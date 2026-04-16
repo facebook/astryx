@@ -1,54 +1,68 @@
-/* global module, require */
 /**
- * @file stylex-split-layers.js
+ * @xds/postcss-plugin
  *
- * Custom PostCSS plugin that compiles StyleX and splits the output CSS
- * into separate named layers based on source file path:
+ * PostCSS plugin for XDS source builds. Compiles StyleX from both
+ * XDS library source and product code, then splits the output into
+ * separate named CSS layers:
  *
  *   reset < xds-base (library styles) < xds-theme < product (app styles)
  *
- * This enables the source build path where both XDS components and
- * product code are compiled from StyleX source in a single pass, but
- * the resulting CSS respects the design system's cascade ordering.
+ * Usage:
+ *   // postcss.config.js
+ *   module.exports = {
+ *     plugins: {
+ *       '@xds/postcss-plugin': {
+ *         include: [
+ *           'src/**\/*.{ts,tsx}',
+ *           'node_modules/@xds/core/**\/*.{ts,tsx}',
+ *         ],
+ *         babelConfig: {
+ *           babelrc: false,
+ *           parserOpts: { plugins: ['typescript', 'jsx'] },
+ *           plugins: require('./babel.config').plugins,
+ *         },
+ *       },
+ *     },
+ *   };
  */
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+'use strict';
+
 const path = require('node:path');
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const fs = require('node:fs');
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const postcss = require('postcss');
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const babel = require('@babel/core');
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const stylexBabelPlugin = require('@stylexjs/babel-plugin');
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const {globSync} = require('fast-glob');
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const isGlob = require('is-glob');
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const globParent = require('glob-parent');
 
-const PLUGIN_NAME = 'stylex-split-layers';
+const PLUGIN_NAME = '@xds/postcss-plugin';
 
 function parseDependency(fileOrGlob, cwd) {
   if (fileOrGlob.startsWith('!')) return null;
-  const {normalize, resolve} = path;
   if (isGlob(fileOrGlob)) {
     const base = globParent(fileOrGlob);
     let glob = fileOrGlob.substring(base === '.' ? 0 : base.length);
     if (glob.charAt(0) === '/') glob = glob.substring(1);
-    return {type: 'dir-dependency', dir: normalize(resolve(cwd, base)), glob};
+    return {
+      type: 'dir-dependency',
+      dir: path.normalize(path.resolve(cwd, base)),
+      glob,
+    };
   }
-  return {type: 'dependency', file: normalize(resolve(cwd, fileOrGlob))};
+  return {
+    type: 'dependency',
+    file: path.normalize(path.resolve(cwd, fileOrGlob)),
+  };
 }
 
 function createPlugin() {
   const isDev = process.env.NODE_ENV === 'development';
 
-  // Internal state — persists across rebuilds for watch mode
-  const styleXRulesMap = new Map(); // filePath → stylex rules
-  const fileModifiedMap = new Map(); // filePath → mtime
+  // Persists across rebuilds for watch mode
+  const styleXRulesMap = new Map();
+  const fileModifiedMap = new Map();
 
   const plugin = ({
     cwd = process.cwd(),
@@ -56,17 +70,14 @@ function createPlugin() {
     include = [],
     exclude = [],
     importSources = ['@stylexjs/stylex'],
+    // Pattern to identify library files (vs product files)
     libraryPattern = 'node_modules/@xds/',
+    // Layer names and ordering
     layers = {
       library: 'xds-base',
       product: 'product',
-      order: ['reset', 'xds-base', 'xds-theme', 'product'],
     },
   }) => {
-    // Resolve babel config
-    const effectiveBabelConfig =
-      babelConfig.babelrc === false ? babelConfig : babelConfig;
-
     const excludeWithDefaults = ['**/*.d.ts', '**/*.flow', ...exclude];
 
     let shouldSkipTransformError = false;
@@ -103,7 +114,11 @@ function createPlugin() {
           for (const pattern of include) {
             const dep = parseDependency(pattern, cwd);
             if (dep) {
-              result.messages.push({plugin: PLUGIN_NAME, parent: fileName, ...dep});
+              result.messages.push({
+                plugin: PLUGIN_NAME,
+                parent: fileName,
+                ...dep,
+              });
             }
           }
 
@@ -121,7 +136,10 @@ function createPlugin() {
             const mtimeMs = fs.existsSync(filePath)
               ? fs.statSync(filePath).mtimeMs
               : -Infinity;
-            if (fileModifiedMap.has(filePath) && mtimeMs === fileModifiedMap.get(filePath)) {
+            if (
+              fileModifiedMap.has(filePath) &&
+              mtimeMs === fileModifiedMap.get(filePath)
+            ) {
               continue;
             }
             fileModifiedMap.set(filePath, mtimeMs);
@@ -140,7 +158,7 @@ function createPlugin() {
                 .transformAsync(contents, {
                   filename: filePath,
                   caller: {name: PLUGIN_NAME, platform: 'web', isDev},
-                  ...effectiveBabelConfig,
+                  ...babelConfig,
                 })
                 .then(({metadata}) => {
                   const stylex = metadata?.stylex;
@@ -150,7 +168,9 @@ function createPlugin() {
                 })
                 .catch((error) => {
                   if (shouldSkipTransformError) {
-                    console.warn(`[${PLUGIN_NAME}] Failed to transform "${filePath}": ${error.message}`);
+                    console.warn(
+                      `[${PLUGIN_NAME}] Failed to transform "${filePath}": ${error.message}`,
+                    );
                   } else {
                     throw error;
                   }
@@ -172,13 +192,17 @@ function createPlugin() {
 
           // Process each group separately
           const libraryCss = libraryRules.length
-            ? stylexBabelPlugin.processStylexRules(libraryRules, {useLayers: true})
+            ? stylexBabelPlugin.processStylexRules(libraryRules, {
+                useLayers: true,
+              })
             : '';
           const productCss = productRules.length
-            ? stylexBabelPlugin.processStylexRules(productRules, {useLayers: true})
+            ? stylexBabelPlugin.processStylexRules(productRules, {
+                useLayers: true,
+              })
             : '';
 
-          // Wrap in named layers with explicit ordering
+          // Wrap in named layers
           const parts = [];
           if (libraryCss) {
             parts.push(`@layer ${layers.library} {\n${libraryCss}\n}`);

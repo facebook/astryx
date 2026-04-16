@@ -34,7 +34,9 @@ export default tseslint.config(
       "**/*.test-violations.tsx",
       "apps/example-nextjs/*.js",
       "apps/example-nextjs/next-env.d.ts",
+      "apps/example-nextjs-source/*.js",
       "apps/sandbox/*.js",
+      "packages/postcss-plugin/**",
     ],
   },
   {
