@@ -176,7 +176,7 @@ export default function FeaturedGalleryTemplate() {
 
       {/* Carousel — full width with side padding */}
       <div style={{padding: '0 var(--spacing-6)'}}>
-        <XDSCarousel gap={4} hasSnap hasButtons>
+        <XDSCarousel gap={4} hasSnap hasButtons scrollStep="item">
           {GALLERY_ITEMS.map(item => (
             <GalleryCard key={item.id} item={item} />
           ))}

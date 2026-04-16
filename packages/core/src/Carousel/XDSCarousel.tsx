@@ -51,6 +51,13 @@ export interface XDSCarouselProps extends XDSBaseProps<HTMLDivElement> {
    */
   hasSnap?: boolean;
   /**
+   * How far to scroll when nav buttons are clicked.
+   * - `'page'`: scroll by roughly one viewport width (default)
+   * - `'item'`: scroll by one item at a time
+   * @default 'page'
+   */
+  scrollStep?: 'page' | 'item';
+  /**
    * Accessible label for the carousel region.
    * @default 'Carousel'
    */
@@ -201,6 +208,7 @@ export function XDSCarousel({
   gap = 1,
   hasButtons = true,
   hasSnap = false,
+  scrollStep = 'page',
   'aria-label': ariaLabel = 'Carousel',
   xstyle,
   className,
@@ -232,17 +240,24 @@ export function XDSCarousel({
     [scrollRef],
   );
 
-  const scrollBy = useCallback((direction: -1 | 1) => {
-    const el = scrollElRef.current;
-    if (!el) return;
-    const firstChild = el.firstElementChild as HTMLElement | null;
-    const itemWidth = firstChild ? firstChild.offsetWidth : 0;
-    const amount = el.clientWidth - itemWidth * 0.5;
-    el.scrollBy({
-      left: direction * Math.max(amount, itemWidth),
-      behavior: 'smooth',
-    });
-  }, []);
+  const scrollBy = useCallback(
+    (direction: -1 | 1) => {
+      const el = scrollElRef.current;
+      if (!el) return;
+      const firstChild = el.firstElementChild as HTMLElement | null;
+      const itemWidth = firstChild ? firstChild.offsetWidth : 0;
+      const gap = parseFloat(getComputedStyle(el).gap) || 0;
+      const amount =
+        scrollStep === 'item'
+          ? itemWidth + gap
+          : el.clientWidth - itemWidth * 0.5;
+      el.scrollBy({
+        left: direction * Math.max(amount, itemWidth),
+        behavior: 'smooth',
+      });
+    },
+    [scrollStep],
+  );
 
   const fadeStyle =
     overflowStart && overflowEnd
