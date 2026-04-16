@@ -114,12 +114,13 @@ export function ProfileView({activeView, setActiveView}: {activeView: 'craft' | 
   }, []);
   const filteredTemplates = useMemo(() => TEMPLATES.map((t, i) => ({...t, originalIndex: i})), []);
   const [selectedTheme, setSelectedTheme] = useState('default');
+  const [sendTo, setSendTo] = useState('clipboard');
 
   return (
     <div style={{display: 'flex', flexDirection: 'column' as const, height: '100vh'}}>
       <AppTopNav activeView={activeView} setActiveView={setActiveView} activeTab="all" onActiveTabChange={() => setActiveView('craft')} />
       <div style={{flex: 1, display: 'flex', overflow: 'hidden'}}>
-        <nav style={{width: 280, flexShrink: 0, height: '100%', overflowY: 'auto' as const, backgroundColor: 'var(--color-background-body, #fff)'}}>
+        <nav style={{width: 280, flexShrink: 0, height: '100%', overflowY: 'auto' as const, marginLeft: 8, marginRight: 8}}>
           <div style={{display: 'flex', flexDirection: 'column' as const}}>
             <div style={{padding: 16}}><XDSHeading level={2}>Profile</XDSHeading></div>
             <XDSList density="spacious">
@@ -218,20 +219,6 @@ export function ProfileView({activeView, setActiveView}: {activeView: 'craft' | 
           {activeNav === 'Settings' && (
             <div style={{maxWidth: 700, margin: '0 auto', display: 'flex', flexDirection: 'column' as const, gap: 24}}>
               <XDSHeading level={2}>Settings</XDSHeading>
-              <div style={{display: 'flex', flexDirection: 'column' as const, gap: 0}}>
-                {[{label: 'Display name', value: 'Alex Morgan', action: 'Edit'}, {label: 'Email', value: 'alex.morgan@example.com', action: 'Edit'}, {label: 'Username', value: '@alexmorgan', action: 'Edit'}, {label: 'Location', value: 'San Francisco', action: 'Edit'}].map(row => (
-                  <React.Fragment key={row.label}>
-                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '16px 0'}}>
-                      <div>
-                        <XDSText type="body" weight="semibold" display="block">{row.label}</XDSText>
-                        <XDSText type="supporting" color="secondary" display="block">{row.value}</XDSText>
-                      </div>
-                      <XDSButton label={row.action} variant="ghost" size="sm" />
-                    </div>
-                    <XDSDivider />
-                  </React.Fragment>
-                ))}
-              </div>
               <div>
                 <XDSHeading level={3} style={{marginBottom: 16}}>Theme preference</XDSHeading>
                 {(['official', 'community'] as const).map(category => {
@@ -268,6 +255,29 @@ export function ProfileView({activeView, setActiveView}: {activeView: 'craft' | 
                     </div>
                   );
                 })}
+              </div>
+              <div>
+                <XDSHeading level={3} style={{marginBottom: 16}}>Send to</XDSHeading>
+                <XDSText type="supporting" color="secondary" display="block" style={{marginBottom: 12}}>Choose where templates and code are sent when you use them.</XDSText>
+                <div style={{display: 'flex', flexDirection: 'column' as const, gap: 0}}>
+                  {([
+                    {key: 'clipboard', label: 'Clipboard', description: 'Copy code to your clipboard'},
+                    {key: 'vscode', label: 'VS Code', description: 'Open directly in VS Code'},
+                    {key: 'github', label: 'GitHub', description: 'Create a new repo or gist'},
+                    {key: 'download', label: 'Download', description: 'Save as a file to your device'},
+                  ] as const).map((option, i, arr) => (
+                    <React.Fragment key={option.key}>
+                      <div onClick={() => setSendTo(option.key)} style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 0', cursor: 'pointer'}}>
+                        <div>
+                          <XDSText type="body" weight={sendTo === option.key ? 'semibold' : 'normal'} display="block">{option.label}</XDSText>
+                          <XDSText type="supporting" color="secondary" display="block">{option.description}</XDSText>
+                        </div>
+                        <div style={{width: 20, height: 20, borderRadius: '50%', border: sendTo === option.key ? '6px solid var(--color-accent, #0066FF)' : '2px solid var(--color-border-emphasized, #ccc)', transition: 'border 0.15s ease', flexShrink: 0}} />
+                      </div>
+                      {i < arr.length - 1 && <XDSDivider />}
+                    </React.Fragment>
+                  ))}
+                </div>
               </div>
             </div>
           )}
