@@ -2,16 +2,7 @@
 
 export const docs = {
   name: 'StatusDot',
-  description:
-    'A small colored dot indicator for status display (online/offline, severity, etc).',
   keywords: ["statusdot","dot","indicator","status","signal","presence","availability","online","pip"],
-  features: [
-    'Five semantic color variants: positive, warning, negative, info, neutral',
-    'Single size: 8px',
-    'Optional pulse animation that respects prefers-reduced-motion',
-    'Accessible — renders as <span role="img" aria-label={label}> for screen reader support',
-    'Not focusable (decorative indicator)',
-  ],
   props: [
     {
       name: 'variant',
@@ -38,42 +29,31 @@ export const docs = {
       description:
         'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
     },
-  ],  theming: {
+  ],
+  theming: {
     targets: [
       {className: 'xds-statusdot', visualProps: ['variant']},
     ],
   },
-  accessibility: [
-    'Renders as <span role="img" aria-label={label}> for screen reader support.',
-    'Not focusable — intended as a decorative indicator only.',
-    'isPulsing animation respects prefers-reduced-motion: reduce.',
-  ],
   usage: {
-    summary: 'A small dot indicating status through semantic colors, often paired with a text label.',
-    content: `## When to use
-
-- Indicating status with semantic colors (e.g. active, inactive, warning, error).
-- Pairing with text labels to provide visual status cues.
-
-## Best practices
-
-- Do: Pair with a text label to ensure the status is accessible and clear.
-- Don't: Rely on color alone \u2014 always provide a text label for context.`,
+    description:
+      'StatusDot is a small colored dot indicator for displaying status through semantic colors such as online/offline or severity levels. Pair it with a text label to ensure the status is accessible, as color alone should not convey meaning.',
+    features: [
+      'Five semantic color variants: positive, warning, negative, info, neutral',
+      'Single size: 8px',
+      'Optional pulse animation that respects prefers-reduced-motion',
+    ],
+    accessibility: [
+      'Renders as <span role="img" aria-label={label}> for screen reader support.',
+      'Not focusable — intended as a decorative indicator only.',
+      'isPulsing animation respects prefers-reduced-motion: reduce.',
+    ],
   },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'StatusDot',
-  description:
-    '用于状态展示的小型彩色圆点指示器（在线/离线、严重程度等）。',
-  features: [
-    '五种语义颜色变体：positive（正面）、warning（警告）、negative（负面）、info（信息）、neutral（中性）',
-    '两种尺寸：sm（8px）和 md（10px）',
-    '可选的脉冲动画，尊重 prefers-reduced-motion 设置',
-    '无障碍支持 — 渲染为 <span role="img" aria-label={label}> 以支持屏幕阅读器',
-    '不可聚焦（装饰性指示器）',
-  ],
   props: [
     {
       name: 'variant',
@@ -106,11 +86,22 @@ export const docsZh = {
       {className: 'xds-statusdot', visualProps: ['variant']},
     ],
   },
-  accessibility: [
-    '渲染为 <span role="img" aria-label={label}> 以支持屏幕阅读器。',
-    '不可聚焦 — 仅作为装饰性指示器使用。',
-    'isPulsing 动画尊重 prefers-reduced-motion: reduce 设置。',
-  ],
+  usage: {
+    description:
+      '用于状态展示的小型彩色圆点指示器（在线/离线、严重程度等）。',
+    features: [
+      '五种语义颜色变体：positive（正面）、warning（警告）、negative（负面）、info（信息）、neutral（中性）',
+      '两种尺寸：sm（8px）和 md（10px）',
+      '可选的脉冲动画，尊重 prefers-reduced-motion 设置',
+      '无障碍支持 — 渲染为 <span role="img" aria-label={label}> 以支持屏幕阅读器',
+      '不可聚焦（装饰性指示器）',
+    ],
+    accessibility: [
+      '渲染为 <span role="img" aria-label={label}> 以支持屏幕阅读器。',
+      '不可聚焦 — 仅作为装饰性指示器使用。',
+      'isPulsing 动画尊重 prefers-reduced-motion: reduce 设置。',
+    ],
+  },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */

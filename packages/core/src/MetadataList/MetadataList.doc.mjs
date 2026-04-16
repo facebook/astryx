@@ -2,23 +2,7 @@
 
 export const docs = {
   name: 'MetadataList',
-  description:
-    'A read-only labeled list for displaying key-value metadata. Semantic equivalent of HTML <dl>/<dt>/<dd> with layout control, column modes, and consistent styling. Uses a composition model: XDSMetadataList wraps XDSMetadataListItem sub-components.',  keywords: ["metadata","description","definition","keyvalue","properties","details","attributes","summary"],
-  features: [
-    'Composition model — XDSMetadataList wraps XDSMetadataListItem sub-components',
-    'Column modes: single, multi (auto-fill), or fixed number',
-    'Label positioning: start (side-by-side) or top (stacked)',
-    'Horizontal orientation with flex-wrap',
-    'Show more / show less toggle when items exceed maxNumOfItems',
-    'Optional title heading above the list',
-    'Optional icon before label text',
-    'Semantic <dl>/<dt>/<dd> HTML structure',
-  ],
-  accessibility: [
-    'Semantic <dl> with <dt>/<dd> pairs',
-    'aria-controls links the show more/less button to the list',
-    'aria-expanded indicates whether the list is fully expanded',
-  ],
+  keywords: ["metadata","description","definition","keyvalue","properties","details","attributes","summary"],
   theming: {
     targets: [
       {
@@ -103,20 +87,23 @@ export const docs = {
     },
   ],
   usage: {
-    summary: 'An editable list of key-value pairs providing a comprehensive overview of an object\'s attributes.',
-    content: `## When to use
-
-- Display and edit key-value pairs for object attributes.
-- Use edit mode for inline editing.
-- Use disclosure to collapse/expand sections.
-
-## When NOT to use
-
-- For extensive form input, use forms instead.
-
-## Best practices
-
-- Default to collapsed state showing the top 6 items.`,
+    description:
+      'A labeled list for displaying key-value metadata, providing a comprehensive overview of an object\'s attributes. Uses semantic HTML <dl>/<dt>/<dd> with layout control, column modes, and consistent styling via a composition model of XDSMetadataList and XDSMetadataListItem sub-components.',
+    features: [
+      'Composition model — XDSMetadataList wraps XDSMetadataListItem sub-components',
+      'Column modes: single, multi (auto-fill), or fixed number',
+      'Label positioning: start (side-by-side) or top (stacked)',
+      'Horizontal orientation with flex-wrap',
+      'Show more / show less toggle when items exceed maxNumOfItems',
+      'Optional title heading above the list',
+      'Optional icon before label text',
+      'Semantic <dl>/<dt>/<dd> HTML structure',
+    ],
+    accessibility: [
+      'Semantic <dl> with <dt>/<dd> pairs',
+      'aria-controls links the show more/less button to the list',
+      'aria-expanded indicates whether the list is fully expanded',
+    ],
     anatomy: [
       {name: 'Title', required: false, description: 'Optional title for the metadata list.'},
       {name: 'Label', required: true, description: 'The key label for each metadata entry.'},
@@ -128,22 +115,6 @@ export const docs = {
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsZh = {
-  description: '以标签/值对显示组件元数据，支持列布局、折叠和方向变体。',
-  features: [
-    '组合模型——XDSMetadataList 包裹 XDSMetadataListItem 子组件',
-    '列模式：单列、多列（自动填充）或固定数量',
-    '标签位置：start（并排）或 top（堆叠）',
-    '水平方向，带 flex-wrap',
-    '当项目超出 maxNumOfItems 时显示更多/更少切换',
-    '可选标题插槽',
-    '标签文本前可选图标',
-    '语义化 HTML：带 <dt>/<dd> 对的 <dl>',
-  ],
-  accessibility: [
-    '语义化 <dl>，带 <dt>/<dd> 对',
-    'aria-controls 将显示更多/更少按钮链接到列表',
-    'aria-expanded 指示列表是否完全展开',
-  ],
   components: [
     {
       name: 'XDSMetadataList',
@@ -168,6 +139,24 @@ export const docsZh = {
       },
     },
   ],
+  usage: {
+    description: '以标签/值对显示组件元数据，支持列布局、折叠和方向变体。',
+    features: [
+      '组合模型——XDSMetadataList 包裹 XDSMetadataListItem 子组件',
+      '列模式：单列、多列（自动填充）或固定数量',
+      '标签位置：start（并排）或 top（堆叠）',
+      '水平方向，带 flex-wrap',
+      '当项目超出 maxNumOfItems 时显示更多/更少切换',
+      '可选标题插槽',
+      '标签文本前可选图标',
+      '语义化 HTML：带 <dt>/<dd> 对的 <dl>',
+    ],
+    accessibility: [
+      '语义化 <dl>，带 <dt>/<dd> 对',
+      'aria-controls 将显示更多/更少按钮链接到列表',
+      'aria-expanded 指示列表是否完全展开',
+    ],
+  },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */

@@ -2,33 +2,12 @@
 
 export const docs = {
   name: 'Collapsible',
-  description: 'Collapsible content primitive and group coordination.',
   keywords: ["accordion","collapse","expandable","disclosure","toggle","panel","foldable","expander","expand"],
-  features: [
-    'XDSCollapsible makes any content collapsible — a trigger toggles visibility of the content area',
-    'Handles state management, accessibility (aria-expanded, keyboard activation), and a chevron indicator',
-    'Supports uncontrolled (defaultIsOpen), controlled (isOpen / onOpenChange), and group-coordinated modes',
-    'XDSCollapsibleGroup coordinates multiple XDSCollapsible instances so only one (single mode) or multiple (multiple mode) can be open at a time',
-    'XDSCollapsibleGroup renders no wrapper DOM element',
-    'When inside a group, XDSCollapsible defers open/close state to the group context via the value prop',
-  ],
-  keyboard:
-    'Enter or Space activates the trigger button to toggle open/close state.',
-  accessibility: [
-    'Trigger renders as a <button> with aria-expanded reflecting the current open state',
-    'A chevron indicator provides a visual affordance for the expanded/collapsed state',
-  ],
   theming: {
     targets: [
       {className: 'xds-collapsible'},
     ],
   },
-  notes: [
-    'XDSCollapsible manages its own open/close state by default (uncontrolled)',
-    'When nested inside an XDSCollapsibleGroup with a matching value prop, it defers to the group context',
-    'XDSCollapsibleGroup provides context with isOpen(value) and toggle(value) methods',
-    'The group renders no wrapper DOM — layout is the responsibility of the consumer (e.g. XDSVStack)',
-  ],
   components: [
     {
       name: 'XDSCollapsible',
@@ -106,82 +85,71 @@ export const docs = {
     },
   ],
   usage: {
-    summary: 'Contains information that may need additional space to display.',
-    content: `## When to use
-
-- Presenting additional information for items in a list.
-- Content that can be hidden to save space and revealed on demand.`,
+    description: 'A collapsible content primitive for revealing and hiding content on demand. Use to present additional information in lists or to hide content that can be revealed when needed.',
+    features: [
+      'XDSCollapsible makes any content collapsible — a trigger toggles visibility of the content area',
+      'Handles state management, accessibility (aria-expanded, keyboard activation), and a chevron indicator',
+      'Supports uncontrolled (defaultIsOpen), controlled (isOpen / onOpenChange), and group-coordinated modes',
+      'XDSCollapsibleGroup coordinates multiple XDSCollapsible instances so only one (single mode) or multiple (multiple mode) can be open at a time',
+      'XDSCollapsibleGroup renders no wrapper DOM element',
+      'When inside a group, XDSCollapsible defers open/close state to the group context via the value prop',
+    ],
+    accessibility: [
+      'Trigger renders as a <button> with aria-expanded reflecting the current open state',
+      'A chevron indicator provides a visual affordance for the expanded/collapsed state',
+      'Keyboard: Enter or Space activates the trigger button to toggle open/close state',
+    ],
+    notes: [
+      'XDSCollapsible manages its own open/close state by default (uncontrolled)',
+      'When nested inside an XDSCollapsibleGroup with a matching value prop, it defers to the group context',
+      'XDSCollapsibleGroup provides context with isOpen(value) and toggle(value) methods',
+      'The group renders no wrapper DOM — layout is the responsibility of the consumer (e.g. XDSVStack)',
+    ],
   },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Collapsible',
-  description: '可折叠内容原语和分组协调。',
-  features: [
-    'XDSCollapsible 使任何内容可折叠——触发器切换内容区域的可见性',
-    '处理状态管理、无障碍（aria-expanded、键盘激活）和折叠指示器',
-    '支持非受控（defaultIsOpen）、受控（isOpen / onOpenChange）和分组协调模式',
-    'XDSCollapsibleGroup 协调多个 XDSCollapsible 实例，使同一时间只有一个（single 模式）或多个（multiple 模式）可以展开',
-    'XDSCollapsibleGroup 不渲染包裹 DOM 元素',
-    '在分组内时，XDSCollapsible 通过 value 属性将展开/收起状态委托给分组上下文',
-  ],
-  keyboard:
-    'Enter 或 Space 激活触发按钮以切换展开/收起状态。',
-  accessibility: [
-    '触发器渲染为带有 aria-expanded 的 <button>，反映当前展开状态',
-    '折叠指示器为展开/收起状态提供视觉提示',
-  ],
+  usage: {
+    description: '可折叠内容原语和分组协调。',
+    features: [
+      'XDSCollapsible 使任何内容可折叠——触发器切换内容区域的可见性',
+      '处理状态管理、无障碍（aria-expanded、键盘激活）和折叠指示器',
+      '支持非受控（defaultIsOpen）、受控（isOpen / onOpenChange）和分组协调模式',
+      'XDSCollapsibleGroup 协调多个 XDSCollapsible 实例，使同一时间只有一个（single 模式）或多个（multiple 模式）可以展开',
+      'XDSCollapsibleGroup 不渲染包裹 DOM 元素',
+      '在分组内时，XDSCollapsible 通过 value 属性将展开/收起状态委托给分组上下文',
+    ],
+    accessibility: [
+      '触发器渲染为带有 aria-expanded 的 <button>，反映当前展开状态',
+      '折叠指示器为展开/收起状态提供视觉提示',
+      'Keyboard: Enter 或 Space 激活触发按钮以切换展开/收起状态。',
+    ],
+    notes: [
+      'XDSCollapsible 默认自行管理展开/收起状态（非受控）',
+      '嵌套在具有匹配 value 属性的 XDSCollapsibleGroup 内时，委托给分组上下文',
+      'XDSCollapsibleGroup 通过 isOpen(value) 和 toggle(value) 方法提供上下文',
+      '分组不渲染包裹 DOM——布局由使用者负责（如 XDSVStack）',
+    ],
+  },
   theming: {
     targets: [
       {className: 'xds-collapsible'},
     ],
   },
-  notes: [
-    'XDSCollapsible 默认自行管理展开/收起状态（非受控）',
-    '嵌套在具有匹配 value 属性的 XDSCollapsibleGroup 内时，委托给分组上下文',
-    'XDSCollapsibleGroup 通过 isOpen(value) 和 toggle(value) 方法提供上下文',
-    '分组不渲染包裹 DOM——布局由使用者负责（如 XDSVStack）',
-  ],
   components: [
     {
       name: 'XDSCollapsible',
       description:
         '使任何内容可折叠的原语——触发按钮切换内容区域的可见性，自行管理状态或委托给父级 XDSCollapsibleGroup。',
       props: [
-        {
-          name: 'trigger',
-          type: 'ReactNode',
-          description: '触发区域中显示的内容（始终可见）。',
-          required: true,
-        },
-        {
-          name: 'children',
-          type: 'ReactNode',
-          description: '可折叠和展开的内容。',
-        },
-        {
-          name: 'defaultIsOpen',
-          type: 'boolean',
-          description: '默认展开状态（非受控）。',
-          default: 'true',
-        },
-        {
-          name: 'isOpen',
-          type: 'boolean',
-          description: '受控展开状态。',
-        },
-        {
-          name: 'onOpenChange',
-          type: '(isOpen: boolean) => void',
-          description: '展开状态变更时调用的回调。',
-        },
-        {
-          name: 'value',
-          type: 'string',
-          description:
-            '用于分组协调的标识符。放置在 XDSCollapsibleGroup 内时为必填。',
-        },
+        {name: 'trigger', type: 'ReactNode', description: '触发区域中显示的内容（始终可见）。', required: true},
+        {name: 'children', type: 'ReactNode', description: '可折叠和展开的内容。'},
+        {name: 'defaultIsOpen', type: 'boolean', description: '默认展开状态（非受控）。', default: 'true'},
+        {name: 'isOpen', type: 'boolean', description: '受控展开状态。'},
+        {name: 'onOpenChange', type: '(isOpen: boolean) => void', description: '展开状态变更时调用的回调。'},
+        {name: 'value', type: 'string', description: '用于分组协调的标识符。放置在 XDSCollapsibleGroup 内时为必填。'},
       ],
     },
     {
@@ -189,34 +157,11 @@ export const docsZh = {
       description:
         '协调多个 XDSCollapsible 实例，使同一时间只有一个（single 模式）或任意数量（multiple 模式）可以展开。不渲染包裹 DOM 元素。',
       props: [
-        {
-          name: 'type',
-          type: "'single' | 'multiple'",
-          description: '是否允许同时展开一个或多个项目。',
-          default: "'single'",
-        },
-        {
-          name: 'defaultValue',
-          type: 'string | string[]',
-          description:
-            '非受控模式下默认展开的项目。single 模式使用字符串，multiple 模式使用数组。',
-        },
-        {
-          name: 'value',
-          type: 'string | string[]',
-          description: '受控展开的项目。',
-        },
-        {
-          name: 'onChange',
-          type: '(value: string | string[]) => void',
-          description: '展开项目集合变更时调用的回调。',
-        },
-        {
-          name: 'children',
-          type: 'ReactNode',
-          description: '需要协调的 XDSCollapsible 实例。',
-          required: true,
-        },
+        {name: 'type', type: "'single' | 'multiple'", description: '是否允许同时展开一个或多个项目。', default: "'single'"},
+        {name: 'defaultValue', type: 'string | string[]', description: '非受控模式下默认展开的项目。single 模式使用字符串，multiple 模式使用数组。'},
+        {name: 'value', type: 'string | string[]', description: '受控展开的项目。'},
+        {name: 'onChange', type: '(value: string | string[]) => void', description: '展开项目集合变更时调用的回调。'},
+        {name: 'children', type: 'ReactNode', description: '需要协调的 XDSCollapsible 实例。', required: true},
       ],
     },
   ],

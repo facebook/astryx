@@ -2,19 +2,8 @@
 
 export const docs = {
   name: 'TimeInput',
-  description:
-    'Time input with free-text entry, text parsing, and arrow-key navigation.',
   keywords: ["timeinput","timepicker","time","clock","hour","minute","ampm","timeselect","timefield"],
-  features: [
-    'Accepts free-text time entry and parses common formats (e.g. "2:30 PM", "14:30")',
-    'Supports 12-hour and 24-hour display formats',
-    'Arrow-up / arrow-down adjust the time by a configurable minute increment',
-    'Optional seconds display via hasSeconds',
-    'Optional clear button via hasClear',
-    'Min / max range constraints reject out-of-range values',
-    'Async action support via onChangeAction with optimistic UI and loading spinner',
-    'Accessible — label, description, and status message are wired to aria-describedby; aria-required and aria-invalid reflect field state',
-  ],  props: [
+  props: [
     {
       name: 'label',
       type: 'string',
@@ -147,45 +136,39 @@ export const docs = {
         'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
     },
   ],
-  accessibility: [
-    'The visible label is associated with the input via htmlFor / id.',
-    'isLabelHidden visually hides the label while keeping it in the accessibility tree.',
-    'description and status.message are linked to the input via aria-describedby.',
-    'aria-required is set when isRequired is true.',
-    'aria-invalid is set when status.type is "error".',
-    'aria-busy reflects the loading / optimistic-pending state.',
-    'The clear button has an explicit aria-label of "Clear time".',
-  ],
-  keyboard:
-    'ArrowUp / ArrowDown adjust the current time by the configured increment in minutes. Typing a time string in common formats (e.g. "2:30 PM", "14:30") is parsed on blur. Pressing the clear button returns focus to the input.',
   theming: {
     targets: [
       {className: 'xds-time-input', visualProps: ['size']},
     ],
   },
   usage: {
-    summary: 'Field formatted for users to input a time.',
-    content: `## When to use
-
-- When the user needs to input a time, such as in scheduling or form fields.`,
+    description:
+      'TimeInput is a time input field with free-text entry, text parsing, and arrow-key navigation. Use it when users need to input a time, such as in scheduling or form fields.',
+    features: [
+      'Accepts free-text time entry and parses common formats (e.g. "2:30 PM", "14:30")',
+      'Supports 12-hour and 24-hour display formats',
+      'Arrow-up / arrow-down adjust the time by a configurable minute increment',
+      'Optional seconds display via hasSeconds',
+      'Optional clear button via hasClear',
+      'Min / max range constraints reject out-of-range values',
+      'Async action support via onChangeAction with optimistic UI and loading spinner',
+    ],
+    accessibility: [
+      'The visible label is associated with the input via htmlFor / id.',
+      'isLabelHidden visually hides the label while keeping it in the accessibility tree.',
+      'description and status.message are linked to the input via aria-describedby.',
+      'aria-required is set when isRequired is true.',
+      'aria-invalid is set when status.type is "error".',
+      'aria-busy reflects the loading / optimistic-pending state.',
+      'The clear button has an explicit aria-label of "Clear time".',
+      'Keyboard: ArrowUp/ArrowDown adjust the current time by the configured increment in minutes; typing a time string in common formats is parsed on blur; pressing the clear button returns focus to the input.',
+    ],
   },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'TimeInput',
-  description:
-    '支持自由文本输入、文本解析和方向键导航的时间输入组件。',
-  features: [
-    '接受自由文本时间输入并解析常见格式（例如 "2:30 PM"、"14:30"）',
-    '支持 12 小时和 24 小时显示格式',
-    '上/下方向键按可配置的分钟增量调整时间',
-    '通过 hasSeconds 可选显示秒',
-    '通过 hasClear 可选清除按钮',
-    '最小/最大范围约束拒绝超出范围的值',
-    '通过 onChangeAction 支持异步操作，带乐观 UI 和加载旋转器',
-    '无障碍 — 标签、描述和状态消息通过 aria-describedby 关联；aria-required 和 aria-invalid 反映字段状态',
-  ],
   props: [
     {
       name: 'label',
@@ -319,20 +302,33 @@ export const docsZh = {
         'StyleX 样式，用于布局自定义（边距、定位、尺寸）。必须是 stylex.create() 的值，而非内联样式对象如 style={{}}。',
     },
   ],
-  accessibility: [
-    '可见标签通过 htmlFor / id 与输入框关联。',
-    'isLabelHidden 视觉上隐藏标签，同时保持在无障碍树中。',
-    'description 和 status.message 通过 aria-describedby 与输入框关联。',
-    '当 isRequired 为 true 时设置 aria-required。',
-    '当 status.type 为 "error" 时设置 aria-invalid。',
-    'aria-busy 反映加载/乐观更新挂起状态。',
-    '清除按钮具有明确的 aria-label "Clear time"。',
-  ],
-  keyboard:
-    '上/下方向键按配置的分钟增量调整当前时间。以常见格式（例如 "2:30 PM"、"14:30"）输入时间字符串会在失焦时解析。按清除按钮将焦点返回到输入框。',
   theming: {
     targets: [
       {className: 'xds-time-input', visualProps: ['size']},
+    ],
+  },
+  usage: {
+    description:
+      '支持自由文本输入、文本解析和方向键导航的时间输入组件。',
+    features: [
+      '接受自由文本时间输入并解析常见格式（例如 "2:30 PM"、"14:30"）',
+      '支持 12 小时和 24 小时显示格式',
+      '上/下方向键按可配置的分钟增量调整时间',
+      '通过 hasSeconds 可选显示秒',
+      '通过 hasClear 可选清除按钮',
+      '最小/最大范围约束拒绝超出范围的值',
+      '通过 onChangeAction 支持异步操作，带乐观 UI 和加载旋转器',
+      '无障碍 — 标签、描述和状态消息通过 aria-describedby 关联；aria-required 和 aria-invalid 反映字段状态',
+    ],
+    accessibility: [
+      '可见标签通过 htmlFor / id 与输入框关联。',
+      'isLabelHidden 视觉上隐藏标签，同时保持在无障碍树中。',
+      'description 和 status.message 通过 aria-describedby 与输入框关联。',
+      '当 isRequired 为 true 时设置 aria-required。',
+      '当 status.type 为 "error" 时设置 aria-invalid。',
+      'aria-busy 反映加载/乐观更新挂起状态。',
+      '清除按钮具有明确的 aria-label "Clear time"。',
+      'Keyboard: 上/下方向键按配置的分钟增量调整当前时间。以常见格式（例如 "2:30 PM"、"14:30"）输入时间字符串会在失焦时解析。按清除按钮将焦点返回到输入框。',
     ],
   },
 };

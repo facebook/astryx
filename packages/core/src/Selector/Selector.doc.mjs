@@ -2,24 +2,7 @@
 
 export const docs = {
   name: 'Selector',
-  description:
-    'Dropdown selector for choosing from a list of options. Follows XDS input conventions with label, status, and field props.',  keywords: ["selector","select","dropdown","combobox","picker","listbox","chooser","autocomplete","option","selectmenu"],
-  features: [
-    'Supports string items (auto-converted to {value, label}), object items with optional icon and disabled state, dividers, and labeled sections',
-    'Custom item rendering via children render prop and XDSSelectorItem helper',
-    'Integrates with XDS field conventions: label, description, isRequired, isOptional, isLabelHidden, status',
-    'Size variants: sm, md, lg',
-    'Full keyboard navigation with typeahead support',
-    'Accessible — role="combobox" trigger, role="listbox" dropdown, role="group" for sections, aria-activedescendant for focus',
-  ],
-  keyboard:
-    '↑↓ navigate, Enter/Space select, Escape close, Home/End jump, A-Z typeahead.',
-  accessibility: [
-    'Uses role="combobox" on the trigger button.',
-    'Dropdown uses role="listbox".',
-    'Section groups use role="group".',
-    'aria-activedescendant tracks the focused option.',
-  ],
+  keywords: ["selector","select","dropdown","combobox","picker","listbox","chooser","autocomplete","option","selectmenu"],
   theming: {
     targets: [
       {className: 'xds-selector', visualProps: ['size', 'status']},
@@ -141,23 +124,21 @@ export const docs = {
     },
   ],
   usage: {
-    summary: 'Gives users a choice between multiple items within a dropdown list.',
-    content: `## When to use
-
-- Presenting 3\u201320 options in forms or settings.
-- Capturing or assigning a value from a predefined list.
-- For 20+ options, use a searchable Selector variant.
-
-## When NOT to use
-
-- Triggering actions (use Dropdown Menu instead).
-- Selecting with a default action (use Split Button instead).
-
-## Best practices
-
-- Do: Use to capture or assign values in forms, wizards, or settings.
-- Don't: Use for triggering actions \u2014 use Dropdown Menu instead.
-- Supports error, success, warning, and disabled states.`,
+    description:
+      'Dropdown selector for choosing from a list of options, following XDS input conventions with label, status, and field props. Use for presenting 3\u201320 options in forms or settings; for 20+ options, use a searchable variant. Do not use for triggering actions \u2014 use Dropdown Menu instead.',
+    features: [
+      'Supports string items (auto-converted to {value, label}), object items with optional icon and disabled state, dividers, and labeled sections',
+      'Custom item rendering via children render prop and XDSSelectorItem helper',
+      'Integrates with XDS field conventions: label, description, isRequired, isOptional, isLabelHidden, status',
+      'Size variants: sm, md, lg',
+    ],
+    accessibility: [
+      'Uses role="combobox" on the trigger button.',
+      'Dropdown uses role="listbox".',
+      'Section groups use role="group".',
+      'aria-activedescendant tracks the focused option.',
+      'Keyboard: \u2191\u2193 navigate, Enter/Space select, Escape close, Home/End jump, A-Z typeahead.',
+    ],
     anatomy: [
       {name: 'Label', required: false, description: 'Text label displayed above the selector.'},
       {name: 'Placeholder', required: false, description: 'Hint text shown when no value is selected.'},
@@ -172,24 +153,6 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Selector',
-  description:
-    '用于从选项列表中进行选择的下拉选择器。遵循 XDS 输入规范，支持标签、状态和字段属性。',
-  features: [
-    '支持字符串选项（自动转换为 {value, label}）、带可选图标和禁用状态的对象选项、分隔线和带标签的分组',
-    '通过 children 渲染函数和 XDSSelectorItem 辅助组件实现自定义选项渲染',
-    '集成 XDS 字段规范：label、description、isRequired、isOptional、isLabelHidden、status',
-    '尺寸变体：sm、md、lg',
-    '完整的键盘导航，支持输入快速定位',
-    '无障碍 - 触发器使用 role="combobox"，下拉菜单使用 role="listbox"，分组使用 role="group"，焦点追踪使用 aria-activedescendant',
-  ],
-  keyboard:
-    '↑↓ 导航，Enter/Space 选择，Escape 关闭，Home/End 跳转，A-Z 输入快速定位。',
-  accessibility: [
-    '触发按钮使用 role="combobox"。',
-    '下拉菜单使用 role="listbox"。',
-    '分组使用 role="group"。',
-    'aria-activedescendant 追踪当前聚焦的选项。',
-  ],
   theming: {
     targets: [
       {className: 'xds-selector', visualProps: ['size', 'status']},
@@ -309,6 +272,25 @@ export const docsZh = {
       ],
     },
   ],
+  usage: {
+    description:
+      '用于从选项列表中进行选择的下拉选择器。遵循 XDS 输入规范，支持标签、状态和字段属性。',
+    features: [
+      '支持字符串选项（自动转换为 {value, label}）、带可选图标和禁用状态的对象选项、分隔线和带标签的分组',
+      '通过 children 渲染函数和 XDSSelectorItem 辅助组件实现自定义选项渲染',
+      '集成 XDS 字段规范：label、description、isRequired、isOptional、isLabelHidden、status',
+      '尺寸变体：sm、md、lg',
+      '完整的键盘导航，支持输入快速定位',
+      '无障碍 - 触发器使用 role="combobox"，下拉菜单使用 role="listbox"，分组使用 role="group"，焦点追踪使用 aria-activedescendant',
+    ],
+    accessibility: [
+      '触发按钮使用 role="combobox"。',
+      '下拉菜单使用 role="listbox"。',
+      '分组使用 role="group"。',
+      'aria-activedescendant 追踪当前聚焦的选项。',
+      'Keyboard: ↑↓ 导航，Enter/Space 选择，Escape 关闭，Home/End 跳转，A-Z 输入快速定位。',
+    ],
+  },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */

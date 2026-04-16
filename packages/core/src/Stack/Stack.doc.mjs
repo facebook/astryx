@@ -2,25 +2,13 @@
 
 export const docs = {
   name: 'Stack',
-  description:
-    'Stack layout primitives for arranging items in horizontal or vertical sequences using flexbox-based layout with themed spacing tokens.',  keywords: ["stack","hstack","vstack","flexbox","flex","spacing","gap","horizontal","vertical","row","column"],
-  features: [
-    'Horizontal (XDSHStack) and vertical (XDSVStack) stacking',
-    'Themed spacing via gap tokens from the design system spacing scale',
-    'Individual item control via XDSStackItem',
-    'Polymorphic rendering support via the element prop',
-    'Low-level StyleX utilities (stack, stackItem) for advanced use cases',
-  ],  theming: {
+  keywords: ["stack","hstack","vstack","flexbox","flex","spacing","gap","horizontal","vertical","row","column"],
+  theming: {
     targets: [
       {className: 'xds-stack', visualProps: ['direction', 'gap', 'wrap']},
       {className: 'xds-stack-item', visualProps: ['size']},
     ],
   },
-  notes: [
-    "Import from '@xds/core/Layout': XDSHStack, XDSVStack, XDSStackItem, stack, stackItem.",
-    'The gap prop accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.',
-    'stack and stackItem are low-level StyleX utilities for advanced cases where the component API is insufficient.',
-  ],
   components: [
     {
       name: 'XDSHStack',
@@ -182,33 +170,32 @@ export const docs = {
     },
   ],
   usage: {
-    summary: 'Layout primitives for arranging items in horizontal or vertical sequences using flexbox.',
+    description:
+      'Stack provides layout primitives for arranging items in horizontal or vertical sequences. It uses flexbox-based layout with themed spacing tokens from the design system.',
+    features: [
+      'Horizontal (XDSHStack) and vertical (XDSVStack) stacking',
+      'Themed spacing via gap tokens from the design system spacing scale',
+      'Individual item control via XDSStackItem',
+      'Polymorphic rendering support via the element prop',
+      'Low-level StyleX utilities (stack, stackItem) for advanced use cases',
+    ],
+    notes: [
+      "Import from '@xds/core/Layout': XDSHStack, XDSVStack, XDSStackItem, stack, stackItem.",
+      'The gap prop accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.',
+      'stack and stackItem are low-level StyleX utilities for advanced cases where the component API is insufficient.',
+    ],
   },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Stack',
-  description:
-    '堆叠布局原语，使用基于 flexbox 的布局和主题化间距令牌，将元素排列为水平或垂直序列。',
-  features: [
-    '水平（XDSHStack）和垂直（XDSVStack）堆叠',
-    '通过设计系统间距比例中的 gap 令牌实现主题化间距',
-    '通过 XDSStackItem 实现单个元素的控制',
-    '通过 element 属性支持多态渲染',
-    '底层 StyleX 工具函数（stack、stackItem）用于高级用例',
-  ],
   theming: {
     targets: [
       {className: 'xds-stack', visualProps: ['direction', 'gap', 'wrap']},
       {className: 'xds-stack-item', visualProps: ['size']},
     ],
   },
-  notes: [
-    "从 '@xds/core/Layout' 导入：XDSHStack、XDSVStack、XDSStackItem、stack、stackItem。",
-    'gap 属性接受数值间距步进：0、0.5、1、1.5、2、3、4、5、6、8、10。',
-    'stack 和 stackItem 是底层 StyleX 工具函数，用于组件 API 无法满足需求的高级场景。',
-  ],
   components: [
     {
       name: 'XDSHStack',
@@ -370,6 +357,22 @@ export const docsZh = {
       ],
     },
   ],
+  usage: {
+    description:
+      '堆叠布局原语，使用基于 flexbox 的布局和主题化间距令牌，将元素排列为水平或垂直序列。',
+    features: [
+      '水平（XDSHStack）和垂直（XDSVStack）堆叠',
+      '通过设计系统间距比例中的 gap 令牌实现主题化间距',
+      '通过 XDSStackItem 实现单个元素的控制',
+      '通过 element 属性支持多态渲染',
+      '底层 StyleX 工具函数（stack、stackItem）用于高级用例',
+    ],
+    notes: [
+      "从 '@xds/core/Layout' 导入：XDSHStack、XDSVStack、XDSStackItem、stack、stackItem。",
+      'gap 属性接受数值间距步进：0、0.5、1、1.5、2、3、4、5、6、8、10。',
+      'stack 和 stackItem 是底层 StyleX 工具函数，用于组件 API 无法满足需求的高级场景。',
+    ],
+  },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */

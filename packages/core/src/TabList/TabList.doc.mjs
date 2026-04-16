@@ -2,19 +2,8 @@
 
 export const docs = {
   name: 'TabList',
-  description:
-    'Tab navigation components with overflow menu support, rendering as a semantic nav landmark with button or anchor tab items.',  keywords: ["tabs","tabbar","tabstrip","navigation","tabpanel","tabgroup","segmented","navtabs","tab"],
-  features: [
-    'Context-based communication: XDSTabListContext passes value/onChange/size from XDSTabList to children',
-    'Single-responsibility XDSTab: renders as <button> or <a> (when href is provided) in the nav',
-    'Overflow menu: XDSTabMenu accepts an options prop and renders menu items internally from the dropdown',
-    "Dynamic trigger label: menu trigger shows the selected option's label when one is active",
-    "Menu heading: dropdown includes an XDSDivider with the menu's label as a separator heading",
-    'Selection indicator: selected menu items show a checkmark icon (matching XDSSelector pattern)',
-    'Keyboard navigation: Tab between items, ArrowUp/Down in menu, Home/End, Escape closes menu (via useListFocus)',
-    'Hover state: unselected tabs show a gray underline on hover; no background hover overlay',
-    'Accessibility: nav landmark, aria-current="page" on selected tabs, role="menu" + aria-label on dropdown, aria-controls connecting trigger to menu, role="menuitem" for items, role="separator" for heading divider',
-  ],  theming: {
+  keywords: ["tabs","tabbar","tabstrip","navigation","tabpanel","tabgroup","segmented","navtabs","tab"],
+  theming: {
     targets: [
       {className: 'xds-tab-list', visualProps: ['size']},
       {className: 'xds-tab', states: ['selected']},
@@ -24,27 +13,6 @@ export const docs = {
       {className: 'xds-tab-menu-item'},
     ],
   },
-  accessibility: [
-    'XDSTabList renders as a <nav> landmark with aria-label="Tabs"',
-    'XDSTab renders as <button> or <a> — uses navigation pattern, not role="tab"',
-    'Selected XDSTab has aria-current="page"',
-    'XDSTabMenu trigger has aria-haspopup="menu", aria-expanded, and aria-controls pointing to the menu element',
-    'XDSTabMenu dropdown has role="menu" and aria-label matching the label prop',
-    'XDSTabMenu heading divider has role="separator"',
-    'XDSTabMenu items have role="menuitem" and aria-current="true" when selected',
-  ],
-  keyboard:
-    'Tab moves focus between tab items; within the XDSTabMenu dropdown: ArrowUp/ArrowDown navigate items (wrapping), Home/End jump to first/last item, Escape closes the menu.',
-  notes: [
-    'XDSTab renders as <button> by default and as <a> when href is provided',
-    'XDSTabMenu renders menu items internally from the options prop — no child composition',
-    'Trigger label derives from options.find(o => o.value === ctx.value)?.label ?? label',
-    'Menu trigger underline scopes to the label text span only, not the chevron icon',
-    'Icons on menu items render via XDSIcon with size="sm" and color="secondary"',
-    'Selected menu items show a CheckIcon checkmark (matching XDSSelector pattern)',
-    'hasDivider on XDSTabList controls the bottom border (default: off)',
-    'Size uses sizeVars tokens for tab heights (sm/md/lg)',
-  ],
   components: [
     {
       name: 'XDSTabList',
@@ -160,15 +128,37 @@ export const docs = {
     },
   ],
   usage: {
-    summary: 'Organizes content into tabbed sections for quick access to categorized information.',
-    content: `## When to use
-
-- To organize large amounts of content into categories accessible above the fold.
-
-## Best practices
-
-- Two styles are available: underlined tabs and header tabs.
-- Tab items overflow into a "more" menu when horizontal space is limited.`,
+    description:
+      'TabList provides tab navigation with overflow menu support, organizing content into tabbed sections for quick access to categorized information. It renders as a semantic nav landmark with button or anchor tab items, and overflows into a "more" menu when horizontal space is limited.',
+    features: [
+      'Single-responsibility XDSTab: renders as <button> or <a> (when href is provided) in the nav',
+      'Overflow menu: XDSTabMenu accepts an options prop and renders menu items internally from the dropdown',
+      "Dynamic trigger label: menu trigger shows the selected option's label when one is active",
+      "Menu heading: dropdown includes an XDSDivider with the menu's label as a separator heading",
+      'Selection indicator: selected menu items show a checkmark icon (matching XDSSelector pattern)',
+      'Hover state: unselected tabs show a gray underline on hover; no background hover overlay',
+    ],
+    accessibility: [
+      'XDSTabList renders as a <nav> landmark with aria-label="Tabs"',
+      'XDSTab renders as <button> or <a> — uses navigation pattern, not role="tab"',
+      'Selected XDSTab has aria-current="page"',
+      'XDSTabMenu trigger has aria-haspopup="menu", aria-expanded, and aria-controls pointing to the menu element',
+      'XDSTabMenu dropdown has role="menu" and aria-label matching the label prop',
+      'XDSTabMenu heading divider has role="separator"',
+      'XDSTabMenu items have role="menuitem" and aria-current="true" when selected',
+      'Keyboard: Tab moves focus between tab items; within XDSTabMenu dropdown: ArrowUp/ArrowDown navigate items (wrapping), Home/End jump to first/last item, Escape closes the menu',
+    ],
+    notes: [
+      'XDSTabListContext passes value/onChange/size from XDSTabList to children',
+      'XDSTab renders as <button> by default and as <a> when href is provided',
+      'XDSTabMenu renders menu items internally from the options prop — no child composition',
+      'Trigger label derives from options.find(o => o.value === ctx.value)?.label ?? label',
+      'Menu trigger underline scopes to the label text span only, not the chevron icon',
+      'Icons on menu items render via XDSIcon with size="sm" and color="secondary"',
+      'Selected menu items show a CheckIcon checkmark (matching XDSSelector pattern)',
+      'hasDivider on XDSTabList controls the bottom border (default: off)',
+      'Size uses sizeVars tokens for tab heights (sm/md/lg)',
+    ],
     anatomy: [
       {name: 'Left Content', required: false, description: 'Most important area; hugs content width.'},
       {name: 'Center-Fill Content', required: false, description: 'Stretches to fill available space.'},
@@ -180,19 +170,6 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'TabList',
-  description:
-    '支持溢出菜单的标签页导航组件，渲染为语义化的 nav 地标元素，包含按钮或锚点标签项。',
-  features: [
-    '基于上下文通信：XDSTabListContext 将 value/onChange/size 从 XDSTabList 传递给子组件',
-    '单一职责的 XDSTab：在 nav 中渲染为 <button> 或 <a>（当提供 href 时）',
-    '溢出菜单：XDSTabMenu 接受 options 属性，并从下拉菜单内部渲染菜单项',
-    '动态触发器标签：当某个选项处于选中状态时，菜单触发器显示该选项的标签',
-    '菜单标题：下拉菜单包含一个以菜单标签作为分隔标题的 XDSDivider',
-    '选中指示器：选中的菜单项显示勾选图标（与 XDSSelector 模式一致）',
-    '键盘导航：Tab 键在项目间移动焦点，ArrowUp/ArrowDown 在菜单中导航，Home/End 跳转，Escape 关闭菜单（通过 useListFocus 实现）',
-    '悬停状态：未选中的标签在悬停时显示灰色下划线；无背景悬停遮罩',
-    '无障碍：nav 地标元素，选中标签上的 aria-current="page"，下拉菜单的 role="menu" + aria-label，aria-controls 连接触发器与菜单，菜单项的 role="menuitem"，标题分隔线的 role="separator"',
-  ],
   theming: {
     targets: [
       {className: 'xds-tab-list', visualProps: ['size']},
@@ -203,27 +180,6 @@ export const docsZh = {
       {className: 'xds-tab-menu-item'},
     ],
   },
-  accessibility: [
-    'XDSTabList 渲染为带有 aria-label="Tabs" 的 <nav> 地标元素',
-    'XDSTab 渲染为 <button> 或 <a> — 使用导航模式，而非 role="tab"',
-    '选中的 XDSTab 具有 aria-current="page"',
-    'XDSTabMenu 触发器具有 aria-haspopup="menu"、aria-expanded 和指向菜单元素的 aria-controls',
-    'XDSTabMenu 下拉菜单具有 role="menu" 和与 label 属性匹配的 aria-label',
-    'XDSTabMenu 标题分隔线具有 role="separator"',
-    'XDSTabMenu 菜单项具有 role="menuitem"，选中时具有 aria-current="true"',
-  ],
-  keyboard:
-    'Tab 键在标签项之间移动焦点；在 XDSTabMenu 下拉菜单中：ArrowUp/ArrowDown 导航菜单项（循环），Home/End 跳转到第一项/最后一项，Escape 关闭菜单。',
-  notes: [
-    'XDSTab 默认渲染为 <button>，当提供 href 时渲染为 <a>',
-    'XDSTabMenu 通过 options 属性在内部渲染菜单项 — 不使用子组件组合',
-    '触发器标签来源于 options.find(o => o.value === ctx.value)?.label ?? label',
-    '菜单触发器下划线仅作用于标签文本范围，不包含箭头图标',
-    '菜单项上的图标通过 XDSIcon 渲染，尺寸为 "sm"，颜色为 "secondary"',
-    '选中的菜单项显示 CheckIcon 勾选标记（与 XDSSelector 模式一致）',
-    'XDSTabList 上的 hasDivider 控制底部边框（默认关闭）',
-    'Size 使用 sizeVars 令牌控制标签高度（sm/md/lg）',
-  ],
   components: [
     {
       name: 'XDSTabList',
@@ -339,6 +295,41 @@ export const docsZh = {
       ],
     },
   ],
+  usage: {
+    description:
+      '支持溢出菜单的标签页导航组件，渲染为语义化的 nav 地标元素，包含按钮或锚点标签项。',
+    features: [
+      '基于上下文通信：XDSTabListContext 将 value/onChange/size 从 XDSTabList 传递给子组件',
+      '单一职责的 XDSTab：在 nav 中渲染为 <button> 或 <a>（当提供 href 时）',
+      '溢出菜单：XDSTabMenu 接受 options 属性，并从下拉菜单内部渲染菜单项',
+      '动态触发器标签：当某个选项处于选中状态时，菜单触发器显示该选项的标签',
+      '菜单标题：下拉菜单包含一个以菜单标签作为分隔标题的 XDSDivider',
+      '选中指示器：选中的菜单项显示勾选图标（与 XDSSelector 模式一致）',
+      '键盘导航：Tab 键在项目间移动焦点，ArrowUp/ArrowDown 在菜单中导航，Home/End 跳转，Escape 关闭菜单（通过 useListFocus 实现）',
+      '悬停状态：未选中的标签在悬停时显示灰色下划线；无背景悬停遮罩',
+      '无障碍：nav 地标元素，选中标签上的 aria-current="page"，下拉菜单的 role="menu" + aria-label，aria-controls 连接触发器与菜单，菜单项的 role="menuitem"，标题分隔线的 role="separator"',
+    ],
+    accessibility: [
+      'XDSTabList 渲染为带有 aria-label="Tabs" 的 <nav> 地标元素',
+      'XDSTab 渲染为 <button> 或 <a> — 使用导航模式，而非 role="tab"',
+      '选中的 XDSTab 具有 aria-current="page"',
+      'XDSTabMenu 触发器具有 aria-haspopup="menu"、aria-expanded 和指向菜单元素的 aria-controls',
+      'XDSTabMenu 下拉菜单具有 role="menu" 和与 label 属性匹配的 aria-label',
+      'XDSTabMenu 标题分隔线具有 role="separator"',
+      'XDSTabMenu 菜单项具有 role="menuitem"，选中时具有 aria-current="true"',
+      'Keyboard: Tab 键在标签项之间移动焦点；在 XDSTabMenu 下拉菜单中：ArrowUp/ArrowDown 导航菜单项（循环），Home/End 跳转到第一项/最后一项，Escape 关闭菜单。',
+    ],
+    notes: [
+      'XDSTab 默认渲染为 <button>，当提供 href 时渲染为 <a>',
+      'XDSTabMenu 通过 options 属性在内部渲染菜单项 — 不使用子组件组合',
+      '触发器标签来源于 options.find(o => o.value === ctx.value)?.label ?? label',
+      '菜单触发器下划线仅作用于标签文本范围，不包含箭头图标',
+      '菜单项上的图标通过 XDSIcon 渲染，尺寸为 "sm"，颜色为 "secondary"',
+      '选中的菜单项显示 CheckIcon 勾选标记（与 XDSSelector 模式一致）',
+      'XDSTabList 上的 hasDivider 控制底部边框（默认关闭）',
+      'Size 使用 sizeVars 令牌控制标签高度（sm/md/lg）',
+    ],
+  },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */
