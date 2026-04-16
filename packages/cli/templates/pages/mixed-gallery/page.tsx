@@ -78,7 +78,6 @@ export default function MixedGalleryTemplate() {
                     gridTemplateRows: '2fr 3fr',
                     gap: 'var(--spacing-4)',
                     height: '100%',
-                    overflow: 'hidden',
                   }}>
                   {/* Left column: short top, tall bottom */}
                   <img
@@ -107,7 +106,6 @@ export default function MixedGalleryTemplate() {
                       gridTemplateRows: '1fr 1.5fr 1fr',
                       gap: 'var(--spacing-4)',
                       minHeight: 0,
-                      overflow: 'hidden',
                     }}>
                     <img src={IMAGES[3]} alt="" style={imgStyle} />
                     <img src={IMAGES[4]} alt="" style={imgStyle} />
