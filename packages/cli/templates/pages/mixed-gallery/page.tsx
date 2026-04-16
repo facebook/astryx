@@ -4,8 +4,6 @@ import {XDSAppShell} from '@xds/core/AppShell';
 import {XDSVStack} from '@xds/core/Layout';
 import {XDSCenter} from '@xds/core/Center';
 import {XDSText} from '@xds/core/Text';
-import {XDSGrid} from '@xds/core/Grid';
-import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import {XDSSection} from '@xds/core/Section';
 
 const IMAGES = [
@@ -15,6 +13,7 @@ const IMAGES = [
   'https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?w=800&q=80',
   'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=800&q=80',
   'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800&q=80',
+  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&q=80',
 ];
 
 const imgStyle: React.CSSProperties = {
@@ -35,7 +34,7 @@ export default function MixedGalleryTemplate() {
           width="100%"
           padding={6}>
           <XDSVStack gap={8}>
-            {/* Header — capped width, centered */}
+            {/* Header */}
             <XDSCenter axis="horizontal">
               <XDSCenter width={680}>
                 <XDSVStack gap={2} style={{textAlign: 'center'}}>
@@ -57,42 +56,47 @@ export default function MixedGalleryTemplate() {
               </XDSCenter>
             </XDSCenter>
 
-            {/* Gallery grid */}
-            <XDSVStack gap={4}>
-              {/* Top row: big square left + stacked right */}
-              <XDSGrid columns={2} gap={4}>
-                <XDSAspectRatio ratio={1}>
-                  <img src={IMAGES[0]} alt="" style={imgStyle} />
-                </XDSAspectRatio>
-                <XDSVStack gap={4}>
-                  <div style={{flex: 1}}>
-                    <img
-                      src={IMAGES[1]}
-                      alt=""
-                      style={{...imgStyle, height: '100%'}}
-                    />
-                  </div>
-                  <XDSGrid columns={2} gap={4}>
-                    <XDSAspectRatio ratio={1}>
-                      <img src={IMAGES[2]} alt="" style={imgStyle} />
-                    </XDSAspectRatio>
-                    <XDSAspectRatio ratio={1}>
-                      <img src={IMAGES[3]} alt="" style={imgStyle} />
-                    </XDSAspectRatio>
-                  </XDSGrid>
-                </XDSVStack>
-              </XDSGrid>
+            {/* Masonry grid — 3 columns, fits in one scroll */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1.2fr 1fr',
+                gridTemplateRows: '2fr 3fr',
+                gap: 'var(--spacing-4, 16px)',
+                height: 'calc(100vh - 220px)',
+              }}>
+              {/* Left column: short top, tall bottom */}
+              <img
+                src={IMAGES[0]}
+                alt=""
+                style={{...imgStyle, gridRow: '1 / 2'}}
+              />
+              <img
+                src={IMAGES[1]}
+                alt=""
+                style={{...imgStyle, gridRow: '2 / 3'}}
+              />
 
-              {/* Bottom row: two equal rectangles */}
-              <XDSGrid columns={2} gap={4}>
-                <XDSAspectRatio ratio={3 / 2}>
-                  <img src={IMAGES[4]} alt="" style={imgStyle} />
-                </XDSAspectRatio>
-                <XDSAspectRatio ratio={3 / 2}>
-                  <img src={IMAGES[5]} alt="" style={imgStyle} />
-                </XDSAspectRatio>
-              </XDSGrid>
-            </XDSVStack>
+              {/* Center column: one tall image spanning both rows */}
+              <img
+                src={IMAGES[2]}
+                alt=""
+                style={{...imgStyle, gridRow: '1 / 3'}}
+              />
+
+              {/* Right column: stacked — short, medium, short */}
+              <div
+                style={{
+                  gridRow: '1 / 3',
+                  display: 'grid',
+                  gridTemplateRows: '1fr 1.5fr 1fr',
+                  gap: 'var(--spacing-4, 16px)',
+                }}>
+                <img src={IMAGES[3]} alt="" style={imgStyle} />
+                <img src={IMAGES[4]} alt="" style={imgStyle} />
+                <img src={IMAGES[5]} alt="" style={imgStyle} />
+              </div>
+            </div>
           </XDSVStack>
         </XDSSection>
       </XDSCenter>
