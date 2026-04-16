@@ -119,7 +119,8 @@ const styles = stylex.create({
   },
   indicator: {
     position: 'absolute',
-    bottom: 0,
+    // Extend past the tab's bottom edge to reach the nav's bottom edge (accounting for nav paddingBlock)
+    bottom: `calc(-1 * ${spacingVars['--spacing-1']})`,
     left: spacingVars['--spacing-3'],
     right: spacingVars['--spacing-3'],
     height: '2px',

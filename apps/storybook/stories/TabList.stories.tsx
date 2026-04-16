@@ -12,10 +12,15 @@ const meta: Meta<typeof XDSTabList> = {
   component: XDSTabList,
   tags: ['autodocs'],
   argTypes: {
+    density: {
+      control: 'select',
+      options: ['compact', 'balanced', 'spacious'],
+      description: 'Density variant controlling vertical spacing',
+    },
     size: {
       control: 'select',
       options: ['sm', 'md', 'lg'],
-      description: 'Size variant for tabs',
+      description: '(Deprecated) Size variant — use density instead',
     },
   },
 };
@@ -25,12 +30,12 @@ type Story = StoryObj<typeof XDSTabList>;
 
 export const Default: Story = {
   args: {
-    size: 'md',
+    density: 'balanced',
   },
   render: args => {
     const [value, setValue] = useState('home');
     return (
-      <XDSTabList value={value} onChange={setValue} size={args.size}>
+      <XDSTabList value={value} onChange={setValue} density={args.density}>
         <XDSTab value="home" label="Home" />
         <XDSTab value="projects" label="Projects" />
         <XDSTab value="settings" label="Settings" />
@@ -41,12 +46,12 @@ export const Default: Story = {
 
 export const WithMenu: Story = {
   args: {
-    size: 'md',
+    density: 'balanced',
   },
   render: args => {
     const [value, setValue] = useState('home');
     return (
-      <XDSTabList value={value} onChange={setValue} size={args.size}>
+      <XDSTabList value={value} onChange={setValue} density={args.density}>
         <XDSTab value="home" label="Home" />
         <XDSTab value="projects" label="Projects" />
         <XDSTabMenu
@@ -64,12 +69,12 @@ export const WithMenu: Story = {
 
 export const MenuWithSelectedChild: Story = {
   args: {
-    size: 'md',
+    density: 'balanced',
   },
   render: args => {
     const [value, setValue] = useState('analytics');
     return (
-      <XDSTabList value={value} onChange={setValue} size={args.size}>
+      <XDSTabList value={value} onChange={setValue} density={args.density}>
         <XDSTab value="home" label="Home" />
         <XDSTab value="projects" label="Projects" />
         <XDSTabMenu
@@ -84,14 +89,65 @@ export const MenuWithSelectedChild: Story = {
   },
 };
 
-export const SizeVariants: Story = {
+export const DensityVariants: Story = {
   render: () => {
     const [value, setValue] = useState('home');
     return (
       <div style={{display: 'flex', flexDirection: 'column', gap: '24px'}}>
         <div>
           <div style={{marginBottom: '8px', fontSize: '12px', color: '#666'}}>
-            Small
+            Compact — sm hover target + 4px padding (36px total)
+          </div>
+          <div style={{border: '1px dashed #ccc'}}>
+            <XDSTabList value={value} onChange={setValue} density="compact">
+              <XDSTab value="home" label="Home" />
+              <XDSTab value="projects" label="Projects" />
+              <XDSTab value="settings" label="Settings" />
+            </XDSTabList>
+          </div>
+        </div>
+        <div>
+          <div style={{marginBottom: '8px', fontSize: '12px', color: '#666'}}>
+            Balanced — md hover target + 4px padding (40px total)
+          </div>
+          <div style={{border: '1px dashed #ccc'}}>
+            <XDSTabList value={value} onChange={setValue} density="balanced">
+              <XDSTab value="home" label="Home" />
+              <XDSTab value="projects" label="Projects" />
+              <XDSTab value="settings" label="Settings" />
+            </XDSTabList>
+          </div>
+        </div>
+        <div>
+          <div style={{marginBottom: '8px', fontSize: '12px', color: '#666'}}>
+            Spacious — lg hover target + 4px padding (44px total)
+          </div>
+          <div style={{border: '1px dashed #ccc'}}>
+            <XDSTabList value={value} onChange={setValue} density="spacious">
+              <XDSTab value="home" label="Home" />
+              <XDSTab value="projects" label="Projects" />
+              <XDSTab value="settings" label="Settings" />
+            </XDSTabList>
+          </div>
+        </div>
+      </div>
+    );
+  },
+};
+
+/**
+ * Backward compatibility: the old `size` prop still works and maps
+ * to the equivalent density (sm→compact, md→balanced, lg→spacious).
+ */
+export const SizeVariantsLegacy: Story = {
+  name: 'Size Variants (Legacy)',
+  render: () => {
+    const [value, setValue] = useState('home');
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', gap: '24px'}}>
+        <div>
+          <div style={{marginBottom: '8px', fontSize: '12px', color: '#666'}}>
+            size=\"sm\" (maps to compact)
           </div>
           <XDSTabList value={value} onChange={setValue} size="sm">
             <XDSTab value="home" label="Home" />
@@ -101,7 +157,7 @@ export const SizeVariants: Story = {
         </div>
         <div>
           <div style={{marginBottom: '8px', fontSize: '12px', color: '#666'}}>
-            Medium (default)
+            size=\"md\" (maps to balanced)
           </div>
           <XDSTabList value={value} onChange={setValue} size="md">
             <XDSTab value="home" label="Home" />
@@ -111,7 +167,7 @@ export const SizeVariants: Story = {
         </div>
         <div>
           <div style={{marginBottom: '8px', fontSize: '12px', color: '#666'}}>
-            Large
+            size=\"lg\" (maps to spacious)
           </div>
           <XDSTabList value={value} onChange={setValue} size="lg">
             <XDSTab value="home" label="Home" />
@@ -126,7 +182,7 @@ export const SizeVariants: Story = {
 
 export const WithIcons: Story = {
   args: {
-    size: 'md',
+    density: 'balanced',
   },
   render: args => {
     const [value, setValue] = useState('home');
@@ -148,7 +204,7 @@ export const WithIcons: Story = {
     );
 
     return (
-      <XDSTabList value={value} onChange={setValue} size={args.size}>
+      <XDSTabList value={value} onChange={setValue} density={args.density}>
         <XDSTab value="home" label="Home" icon={HomeIcon} />
         <XDSTab value="settings" label="Settings" icon={CogIcon} />
       </XDSTabList>
@@ -167,11 +223,21 @@ export const WithActions: Story = {
   render: () => {
     const [value, setValue] = useState('all');
     return (
-      <XDSTabList value={value} onChange={setValue} size="lg" hasDivider>
+      <XDSTabList
+        value={value}
+        onChange={setValue}
+        density="spacious"
+        hasDivider>
         <XDSTab value="all" label="All items" />
         <XDSTab value="active" label="Active" />
         <XDSTab value="archived" label="Archived" />
-        <div style={{marginInlineStart: 'auto', display: 'flex', alignItems: 'center', gap: '4px'}}>
+        <div
+          style={{
+            marginInlineStart: 'auto',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+          }}>
           <XDSButton
             label="Filter"
             variant="ghost"
@@ -201,6 +267,44 @@ export const FillLayout: Story = {
           <XDSTab value="projects" label="Projects" />
           <XDSTab value="settings" label="Settings" />
         </XDSTabList>
+      </div>
+    );
+  },
+};
+
+/**
+ * Side-by-side comparison of all three densities with a dashed border
+ * to visualize the total height of each tab strip.
+ */
+export const DensityComparison: Story = {
+  render: () => {
+    const [value, setValue] = useState('home');
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', gap: '32px'}}>
+        {(['compact', 'balanced', 'spacious'] as const).map(density => (
+          <div key={density}>
+            <div
+              style={{
+                marginBottom: '8px',
+                fontSize: '12px',
+                color: '#666',
+                fontFamily: 'monospace',
+              }}>
+              density=\"{density}\"
+            </div>
+            <div style={{border: '1px dashed #ccc', display: 'inline-flex'}}>
+              <XDSTabList
+                value={value}
+                onChange={setValue}
+                density={density}
+                hasDivider>
+                <XDSTab value="home" label="Home" />
+                <XDSTab value="projects" label="Projects" />
+                <XDSTab value="settings" label="Settings" />
+              </XDSTabList>
+            </div>
+          </div>
+        ))}
       </div>
     );
   },

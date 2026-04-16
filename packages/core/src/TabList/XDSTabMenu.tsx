@@ -112,7 +112,7 @@ const styles = stylex.create({
   },
   indicator: {
     position: 'absolute',
-    bottom: 0,
+    bottom: `calc(-1 * ${spacingVars['--spacing-1']})`,
     left: spacingVars['--spacing-3'],
     right: spacingVars['--spacing-3'],
     height: '2px',
