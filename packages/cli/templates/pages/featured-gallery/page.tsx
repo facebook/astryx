@@ -181,7 +181,7 @@ export default function FeaturedGalleryTemplate() {
 
         {/* Carousel */}
         <XDSCenter axis="horizontal">
-          <XDSSection maxWidth={1600} padding={6} variant="transparent">
+          <XDSSection maxWidth={1520} padding={6} variant="transparent">
             <XDSCarousel gap={4} hasSnap hasButtons scrollStep="item">
               {GALLERY_ITEMS.map(item => (
                 <GalleryCard key={item.id} item={item} />
