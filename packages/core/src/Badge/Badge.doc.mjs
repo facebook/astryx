@@ -29,7 +29,12 @@ export const docs = {
   },
   usage: {
     description:
-      'Badges display system or categorical information such as status indicators, counts, or labels. Use semantic color variants (neutral, info, success, warning, error) for system status and non-semantic colors for categorization. Always pair icons with labels and keep labels concise.',
+      'Badge displays system or categorical information such as status indicators, counts, or labels. Use semantic color variants for system status and non-semantic colors for categorization and tagging.',
+    bestPractices: [
+      {guidance: true, description: 'Use semantic variants (success, warning, error) to communicate system status and non-semantic colors for categorization.'},
+      {guidance: true, description: 'Keep badge labels concise — ideally one or two words — and always pair icons with a text label.'},
+      {guidance: false, description: 'Use badges as interactive elements — they are informational only and should not be clickable.'},
+    ],
     anatomy: [
       {name: 'Icon', required: false, description: 'A visual indicator that helps users identify the type of badge.'},
       {name: 'Label', required: true, description: 'A text or numerical label that provides additional context.'},
@@ -40,7 +45,19 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Badge',
-  usage: {description: '用于显示状态指示器、计数或标签的徽章组件。'},
+  usage: {
+    description:
+      'Badge displays system or categorical information such as status indicators, counts, or labels. Use semantic color variants for system status and non-semantic colors for categorization and tagging.',
+    bestPractices: [
+      {guidance: true, description: 'Use semantic variants (success, warning, error) to communicate system status and non-semantic colors for categorization.'},
+      {guidance: true, description: 'Keep badge labels concise — ideally one or two words — and always pair icons with a text label.'},
+      {guidance: false, description: 'Use badges as interactive elements — they are informational only and should not be clickable.'},
+    ],
+    anatomy: [
+      {name: 'Icon', required: false, description: 'A visual indicator that helps users identify the type of badge.'},
+      {name: 'Label', required: true, description: 'A text or numerical label that provides additional context.'},
+    ],
+  },
   props: [
     {
       name: 'variant',
@@ -67,6 +84,19 @@ export const docsZh = {
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   description: 'badge for status indicators, counts, or labels',
+  usage: {
+    description:
+      'Badge displays system or categorical information such as status indicators, counts, or labels. Use semantic color variants for system status and non-semantic colors for categorization and tagging.',
+    bestPractices: [
+      {guidance: true, description: 'Use semantic variants (success, warning, error) to communicate system status and non-semantic colors for categorization.'},
+      {guidance: true, description: 'Keep badge labels concise — ideally one or two words — and always pair icons with a text label.'},
+      {guidance: false, description: 'Use badges as interactive elements — they are informational only and should not be clickable.'},
+    ],
+    anatomy: [
+      {name: 'Icon', required: false, description: 'A visual indicator that helps users identify the type of badge.'},
+      {name: 'Label', required: true, description: 'A text or numerical label that provides additional context.'},
+    ],
+  },
   propDescriptions: {
     variant: 'visual style variant',
     label: 'badge text content',

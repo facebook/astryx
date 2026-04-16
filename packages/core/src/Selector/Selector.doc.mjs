@@ -125,19 +125,12 @@ export const docs = {
   ],
   usage: {
     description:
-      'Dropdown selector for choosing from a list of options, following XDS input conventions with label, status, and field props. Use for presenting 3\u201320 options in forms or settings; for 20+ options, use a searchable variant. Do not use for triggering actions \u2014 use Dropdown Menu instead.',
-    features: [
-      'Supports string items (auto-converted to {value, label}), object items with optional icon and disabled state, dividers, and labeled sections',
-      'Custom item rendering via children render prop and XDSSelectorItem helper',
-      'Integrates with XDS field conventions: label, description, isRequired, isOptional, isLabelHidden, status',
-      'Size variants: sm, md, lg',
-    ],
-    accessibility: [
-      'Uses role="combobox" on the trigger button.',
-      'Dropdown uses role="listbox".',
-      'Section groups use role="group".',
-      'aria-activedescendant tracks the focused option.',
-      'Keyboard: \u2191\u2193 navigate, Enter/Space select, Escape close, Home/End jump, A-Z typeahead.',
+      'A dropdown selector for choosing a single option from a list. Use Selector in forms or settings when presenting 3–20 options. For triggering actions instead of selecting values, use a Dropdown Menu.',
+    bestPractices: [
+      {guidance: true, description: 'Provide a visible label so users understand what they are selecting.'},
+      {guidance: true, description: 'Use sections and dividers to organize long lists of related options.'},
+      {guidance: false, description: 'Use for action menus — use Dropdown Menu for triggering commands or navigation.'},
+      {guidance: false, description: 'Use when there are only two options — use a SegmentedControl or radio buttons instead.'},
     ],
     anatomy: [
       {name: 'Label', required: false, description: 'Text label displayed above the selector.'},
@@ -274,45 +267,44 @@ export const docsZh = {
   ],
   usage: {
     description:
-      '用于从选项列表中进行选择的下拉选择器。遵循 XDS 输入规范，支持标签、状态和字段属性。',
-    features: [
-      '支持字符串选项（自动转换为 {value, label}）、带可选图标和禁用状态的对象选项、分隔线和带标签的分组',
-      '通过 children 渲染函数和 XDSSelectorItem 辅助组件实现自定义选项渲染',
-      '集成 XDS 字段规范：label、description、isRequired、isOptional、isLabelHidden、status',
-      '尺寸变体：sm、md、lg',
-      '完整的键盘导航，支持输入快速定位',
-      '无障碍 - 触发器使用 role="combobox"，下拉菜单使用 role="listbox"，分组使用 role="group"，焦点追踪使用 aria-activedescendant',
+      'A dropdown selector for choosing a single option from a list. Use Selector in forms or settings when presenting 3–20 options. For triggering actions instead of selecting values, use a Dropdown Menu.',
+    bestPractices: [
+      {guidance: true, description: 'Provide a visible label so users understand what they are selecting.'},
+      {guidance: true, description: 'Use sections and dividers to organize long lists of related options.'},
+      {guidance: false, description: 'Use for action menus — use Dropdown Menu for triggering commands or navigation.'},
+      {guidance: false, description: 'Use when there are only two options — use a SegmentedControl or radio buttons instead.'},
     ],
-    accessibility: [
-      '触发按钮使用 role="combobox"。',
-      '下拉菜单使用 role="listbox"。',
-      '分组使用 role="group"。',
-      'aria-activedescendant 追踪当前聚焦的选项。',
-      'Keyboard: ↑↓ 导航，Enter/Space 选择，Escape 关闭，Home/End 跳转，A-Z 输入快速定位。',
+    anatomy: [
+      {name: 'Label', required: false, description: 'Text label displayed above the selector.'},
+      {name: 'Placeholder', required: false, description: 'Hint text shown when no value is selected.'},
+      {name: 'Description', required: false, description: 'Helper text providing additional context.'},
+      {name: 'Left Icon', required: false, description: 'Icon displayed to the left of the selected value.'},
+      {name: 'Value', required: true, description: 'The currently selected item displayed in the selector.'},
+      {name: 'List', required: true, description: 'The dropdown list of selectable options.'},
     ],
   },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
-  description:
-    'Dropdown selector for choosing from list of options. Follows XDS input conventions w/ label, status, field props.',
-  features: [
-    'Supports string items (auto-converted to {value, label}), object items w/ optional icon + disabled state, dividers, labeled sections',
-    'Custom item rendering via children render prop + XDSSelectorItem helper',
-    'Integrates w/ XDS field conventions: label, description, isRequired, isOptional, isLabelHidden, status',
-    'Size variants: sm, md, lg',
-    'Full keyboard navigation w/ typeahead support',
-    'Accessible; role="combobox" trigger, role="listbox" dropdown, role="group" for sections, aria-activedescendant for focus',
-  ],
-  keyboard:
-    '\u2191\u2193 navigate, Enter/Space select, Escape close, Home/End jump, A-Z typeahead.',
-  accessibility: [
-    'Uses role="combobox" on trigger button.',
-    'Dropdown uses role="listbox".',
-    'Section groups use role="group".',
-    'aria-activedescendant tracks focused option.',
-  ],
+  usage: {
+    description:
+      'A dropdown selector for choosing a single option from a list. Use Selector in forms or settings when presenting 3–20 options. For triggering actions instead of selecting values, use a Dropdown Menu.',
+    bestPractices: [
+      {guidance: true, description: 'Provide a visible label so users understand what they are selecting.'},
+      {guidance: true, description: 'Use sections and dividers to organize long lists of related options.'},
+      {guidance: false, description: 'Use for action menus — use Dropdown Menu for triggering commands or navigation.'},
+      {guidance: false, description: 'Use when there are only two options — use a SegmentedControl or radio buttons instead.'},
+    ],
+    anatomy: [
+      {name: 'Label', required: false, description: 'Text label displayed above the selector.'},
+      {name: 'Placeholder', required: false, description: 'Hint text shown when no value is selected.'},
+      {name: 'Description', required: false, description: 'Helper text providing additional context.'},
+      {name: 'Left Icon', required: false, description: 'Icon displayed to the left of the selected value.'},
+      {name: 'Value', required: true, description: 'The currently selected item displayed in the selector.'},
+      {name: 'List', required: true, description: 'The dropdown list of selectable options.'},
+    ],
+  },
   components: [
     {
       name: 'XDSSelector',

@@ -14,16 +14,11 @@ export const docs = {
   ],
   usage: {
     description:
-      'Confirmation dialog for destructive or irreversible actions. Uses role="alertdialog" with required title, description, and cancel/action buttons.',
-    features: [
-      'No backdrop dismiss: Cannot be closed by clicking outside the dialog',
-      'Built-in buttons: Ghost cancel and configurable action button rendered internally',
-      'Action does not auto-close: Supports async operations with loading states',
-      'Imperative API: useXDSImperativeAlertDialog for fire-and-forget usage',
-    ],
-    accessibility: [
-      'Uses role="alertdialog" with aria-labelledby and aria-describedby',
-      'Keyboard: Escape triggers the cancel action',
+      'AlertDialog is a confirmation dialog for destructive or irreversible actions. Use it to require explicit user confirmation before proceeding with actions like deleting content or discarding changes.',
+    bestPractices: [
+      {guidance: true, description: 'Clearly describe the consequences of the action in the description text so users can make an informed decision.'},
+      {guidance: true, description: 'Keep the action button label specific and descriptive, such as "Delete project" rather than a generic "OK".'},
+      {guidance: false, description: 'Use AlertDialog for non-destructive actions or simple informational messages — use a standard Dialog instead.'},
     ],
   },
   props: [

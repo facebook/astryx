@@ -9,19 +9,12 @@ function mergeTranslation(docs, translation) {
 
   const merged = {...docs};
 
-  // Merge prose into usage (new unified format)
+  // Merge prose into usage
   if (merged.usage) {
     merged.usage = {...merged.usage};
-    if (translation.description) merged.usage.description = translation.description;
-    if (translation.features) merged.usage.features = translation.features;
-    if (translation.notes) merged.usage.notes = translation.notes;
-    if (translation.accessibility) merged.usage.accessibility = translation.accessibility;
-    if (translation.keyboard) {
-      merged.usage.accessibility = [
-        ...(merged.usage.accessibility || []).filter(a => !a.startsWith('Keyboard:')),
-        `Keyboard: ${translation.keyboard}`,
-      ];
-    }
+    if (translation.usage?.description) merged.usage.description = translation.usage.description;
+    else if (translation.description) merged.usage.description = translation.description;
+    if (translation.usage?.bestPractices) merged.usage.bestPractices = translation.usage.bestPractices;
   }
 
   // Legacy top-level fields (for docsZh that are full ComponentDoc clones)

@@ -162,26 +162,12 @@ export const docs = {
     },
   ],
   usage: {
-    description: 'Chat components for building AI chat interfaces. Provides layout primitives (MessageList, Message, Bubble, SystemMessage) and a composer with trigger menus and attachments for constructing full chat experiences.',
-    features: [
-      'Composition model — MessageList > Message > Bubble',
-      'Sender-aware styling (user, assistant, system) via context',
-      'Auto-scroll with "New messages" indicator',
-      'Infinite scroll via onScrollToTopAction with useTransition',
-      'Density variants: compact, balanced, spacious (flows via context)',
-      'System messages with optional divider variant for date separators',
-      'Free-form children — not all content needs a bubble',
-      'Timestamp display: hover or header',
-      'Message status indicators (sending, sent, delivered, read, error)',
-      'role="log" with aria-live="polite" for accessibility',
-      'Composer layout shell with named semantic slots',
-      'ContentEditable input with @ mention and / command trigger menus',
-      'Imperative handle on ComposerInput for programmatic token/text insertion',
-      'Tokenized text rendering in message bubbles via XDSChatTokenizedText',
-      'XDSSearchSource integration — reuses Typeahead search sources',
-      'Concentric radius — inner elements follow outer shell curvature',
-      'Themeable via --composer-radius and --composer-padding CSS vars',
-      'Extractable send/stop button (XDSChatSendButton) with automatic composer context',
+    description: 'Chat components provide layout primitives and a composer for building AI chat interfaces. Use Chat when building conversational UIs that need message display, sender-aware styling, and rich input with trigger menus and attachments.',
+    bestPractices: [
+      { guidance: true, description: 'Compose messages using MessageList > Message > Bubble for consistent sender-aware styling and density.' },
+      { guidance: true, description: 'Use the named slots on XDSChatComposer (attachments, headerActions, footerActions) to keep the input layout structured and extensible.' },
+      { guidance: false, description: 'Place metadata or names on both the bubble and the message wrapper — use one or the other based on whether the content has a bubble boundary.' },
+      { guidance: false, description: 'Bypass XDSChatLayout for full-page chat — it handles auto-scroll, density adaptation, and composer docking automatically.' },
     ],
   },
 };
@@ -214,27 +200,12 @@ docs.components.push(chatLayoutScrollButtonComponent);
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsZh = {
   usage: {
-    description:
-      'AI 聊天界面组件。布局（MessageList、Message、Bubble、SystemMessage）+ 编写器（Composer、ComposerInput 触发菜单、ComposerAttachments）。',
-    features: [
-      '组合模型 — MessageList > Message > Bubble',
-      '根据发送者自动调整样式（user、assistant、system），通过上下文传递',
-      '自动滚动，带有"新消息"指示器',
-      '通过 onScrollToTopAction 和 useTransition 实现无限滚动',
-      '密度变体：compact、balanced、spacious（通过上下文传递）',
-      '系统消息，可选分割线变体用于日期分隔',
-      '自由子元素 — 并非所有内容都需要气泡包裹',
-      '时间戳显示：悬停或标题',
-      '消息状态指示器（sending、sent、delivered、read、error）',
-      'role="log" 配合 aria-live="polite" 实现无障碍访问',
-      '编写器布局外壳，具有命名语义插槽',
-      'ContentEditable 输入框，支持 @ 提及和 / 命令触发菜单',
-      'ComposerInput 命令式句柄，支持编程式插入标记/文本',
-      '通过 XDSChatTokenizedText 在消息气泡中渲染标记文本',
-      'XDSSearchSource 集成 — 复用 Typeahead 搜索源',
-      '同心圆角 — 内部元素跟随外部外壳曲率',
-      '通过 --composer-radius 和 --composer-padding CSS 变量实现主题化',
-      '可提取的发送/停止按钮（XDSChatSendButton），自动读取编写器上下文',
+    description: 'Chat components provide layout primitives and a composer for building AI chat interfaces. Use Chat when building conversational UIs that need message display, sender-aware styling, and rich input with trigger menus and attachments.',
+    bestPractices: [
+      { guidance: true, description: 'Compose messages using MessageList > Message > Bubble for consistent sender-aware styling and density.' },
+      { guidance: true, description: 'Use the named slots on XDSChatComposer (attachments, headerActions, footerActions) to keep the input layout structured and extensible.' },
+      { guidance: false, description: 'Place metadata or names on both the bubble and the message wrapper — use one or the other based on whether the content has a bubble boundary.' },
+      { guidance: false, description: 'Bypass XDSChatLayout for full-page chat — it handles auto-scroll, density adaptation, and composer docking automatically.' },
     ],
   },
   components: [
@@ -385,26 +356,15 @@ export const docsZh = {
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   description: 'AI chat components. Layout (MessageList>Message>Bubble+SystemMessage) + Composer (shell w/ slots, ContentEditable input w/ trigger menus, attachments)',
-  features: [
-    'composition: MessageList > Message > Bubble',
-    'sender-aware styling (user/assistant/system) via context',
-    'auto-scroll w/ "New messages" indicator',
-    'infinite scroll via onScrollToTopAction w/ useTransition',
-    'density: compact/balanced/spacious (flows via context)',
-    'system msgs w/ optional divider variant for date separators',
-    'free-form children; not all content needs bubble',
-    'timestamp: hover or header display',
-    'msg status indicators (sending/sent/delivered/read/error)',
-    'role="log" + aria-live="polite" for a11y',
-    'composer layout shell w/ named semantic slots',
-    'ContentEditable input w/ @ mention + / command trigger menus',
-    'imperative handle on ComposerInput for programmatic token/text insert',
-    'tokenized text rendering in msg bubbles via XDSChatTokenizedText',
-    'XDSSearchSource integration; reuses Typeahead search sources',
-    'concentric radius; inner elements follow outer shell curvature',
-    'themeable via --composer-radius + --composer-padding CSS vars',
-    'extractable send/stop btn (XDSChatSendButton) w/ auto composer context',
-  ],
+  usage: {
+    description: 'Chat components provide layout primitives and a composer for building AI chat interfaces. Use Chat when building conversational UIs that need message display, sender-aware styling, and rich input with trigger menus and attachments.',
+    bestPractices: [
+      { guidance: true, description: 'Compose messages using MessageList > Message > Bubble for consistent sender-aware styling and density.' },
+      { guidance: true, description: 'Use the named slots on XDSChatComposer (attachments, headerActions, footerActions) to keep the input layout structured and extensible.' },
+      { guidance: false, description: 'Place metadata or names on both the bubble and the message wrapper — use one or the other based on whether the content has a bubble boundary.' },
+      { guidance: false, description: 'Bypass XDSChatLayout for full-page chat — it handles auto-scroll, density adaptation, and composer docking automatically.' },
+    ],
+  },
   components: [
     {
       name: 'XDSChatMessageList',

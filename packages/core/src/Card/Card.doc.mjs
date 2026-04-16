@@ -5,17 +5,11 @@ export const docs = {
   keywords: ["card","surface","panel","container","elevated","shadow","box","paper","tile","well"],
   usage: {
     description:
-      'Card container that groups related information inside elevated containers for visual organization. Use when explicit grouping is needed — prefer sections as the default and escalate to cards only when stronger visual distinction is required.',
-    features: [
-      'Top-level container for elevated content',
-      'Provides card-specific appearance: background, shadow, and border-radius',
-      'Supports `padding={0}` for edge-to-edge content',
-      'Composable with XDSLayout, XDSCollapsible, and XDSCollapsibleGroup',
-      'Background color variants: default, muted, and 10 non-semantic palette colors',
-    ],
-    notes: [
-      'Sets CSS variables for child layout components',
-      'Card elevation adapts automatically based on the background surface.',
+      'Card is an elevated container that groups related information for visual organization. Use cards when explicit grouping is needed and sections alone do not provide enough visual distinction.',
+    bestPractices: [
+      {guidance: true, description: 'Reserve cards for content that benefits from visual separation — default to sections first.'},
+      {guidance: true, description: 'Use a consistent padding value across sibling cards to maintain visual alignment.'},
+      {guidance: false, description: 'Nest cards inside other cards — flatten the hierarchy or use a different container.'},
     ],
     anatomy: [
       {name: 'Card Header', required: false, description: 'Displays a title and optional end content.'},
@@ -86,13 +80,17 @@ export const docs = {
 export const docsZh = {
   name: 'Card',
   usage: {
-    description: '具有阴影和主题样式的卡片容器组件。',
-    features: [
-      '用于承载内容的顶层容器',
-      '提供卡片特有的外观：背景、阴影和圆角',
-      '为子布局组件设置 CSS 变量',
-      '支持 `padding={0}` 实现边到边内容',
-      '可与 XDSLayout、XDSCollapsible 和 XDSCollapsibleGroup 组合使用',
+    description:
+      'Card is an elevated container that groups related information for visual organization. Use cards when explicit grouping is needed and sections alone do not provide enough visual distinction.',
+    bestPractices: [
+      {guidance: true, description: 'Reserve cards for content that benefits from visual separation — default to sections first.'},
+      {guidance: true, description: 'Use a consistent padding value across sibling cards to maintain visual alignment.'},
+      {guidance: false, description: 'Nest cards inside other cards — flatten the hierarchy or use a different container.'},
+    ],
+    anatomy: [
+      {name: 'Card Header', required: false, description: 'Displays a title and optional end content.'},
+      {name: 'Card Body', required: true, description: 'Accepts any content.'},
+      {name: 'Card Footer', required: false, description: 'Contains actions.'},
     ],
   },
   props: [
@@ -125,13 +123,20 @@ export const docsZh = {
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   description: 'elevated container w/ themed styling',
-  features: [
-    'top-level container for elevated content',
-    'card appearance: background, shadow, border-radius',
-    'sets CSS vars for child layout components',
-    'optional full-bleed mode removes padding for edge-to-edge content',
-    'composable w/ XDSLayout, XDSCollapsible, XDSCollapsibleGroup',
-  ],
+  usage: {
+    description:
+      'Card is an elevated container that groups related information for visual organization. Use cards when explicit grouping is needed and sections alone do not provide enough visual distinction.',
+    bestPractices: [
+      {guidance: true, description: 'Reserve cards for content that benefits from visual separation — default to sections first.'},
+      {guidance: true, description: 'Use a consistent padding value across sibling cards to maintain visual alignment.'},
+      {guidance: false, description: 'Nest cards inside other cards — flatten the hierarchy or use a different container.'},
+    ],
+    anatomy: [
+      {name: 'Card Header', required: false, description: 'Displays a title and optional end content.'},
+      {name: 'Card Body', required: true, description: 'Accepts any content.'},
+      {name: 'Card Footer', required: false, description: 'Contains actions.'},
+    ],
+  },
   propDescriptions: {
     width: 'card width (number=px, string=as-is)',
     height: 'card height (number=px, string=as-is)',

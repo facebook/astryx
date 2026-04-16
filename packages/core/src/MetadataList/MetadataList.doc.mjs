@@ -88,21 +88,12 @@ export const docs = {
   ],
   usage: {
     description:
-      'A labeled list for displaying key-value metadata, providing a comprehensive overview of an object\'s attributes. Uses semantic HTML <dl>/<dt>/<dd> with layout control, column modes, and consistent styling via a composition model of XDSMetadataList and XDSMetadataListItem sub-components.',
-    features: [
-      'Composition model — XDSMetadataList wraps XDSMetadataListItem sub-components',
-      'Column modes: single, multi (auto-fill), or fixed number',
-      'Label positioning: start (side-by-side) or top (stacked)',
-      'Horizontal orientation with flex-wrap',
-      'Show more / show less toggle when items exceed maxNumOfItems',
-      'Optional title heading above the list',
-      'Optional icon before label text',
-      'Semantic <dl>/<dt>/<dd> HTML structure',
-    ],
-    accessibility: [
-      'Semantic <dl> with <dt>/<dd> pairs',
-      'aria-controls links the show more/less button to the list',
-      'aria-expanded indicates whether the list is fully expanded',
+      'MetadataList displays key-value pairs of metadata using semantic definition list markup. Use it in detail panels, summary sections, or anywhere an object\'s attributes need a structured overview.',
+    bestPractices: [
+      { guidance: true, description: 'Choose label position based on content length — use \'start\' for short values and \'top\' for long or complex values.' },
+      { guidance: true, description: 'Use maxNumOfItems to collapse long lists and keep the page scannable.' },
+      { guidance: false, description: 'Use MetadataList for tabular data with multiple columns of values — use a table component instead.' },
+      { guidance: false, description: 'Mix unrelated metadata items within the same list — group related attributes together.' },
     ],
     anatomy: [
       {name: 'Title', required: false, description: 'Optional title for the metadata list.'},
@@ -140,21 +131,19 @@ export const docsZh = {
     },
   ],
   usage: {
-    description: '以标签/值对显示组件元数据，支持列布局、折叠和方向变体。',
-    features: [
-      '组合模型——XDSMetadataList 包裹 XDSMetadataListItem 子组件',
-      '列模式：单列、多列（自动填充）或固定数量',
-      '标签位置：start（并排）或 top（堆叠）',
-      '水平方向，带 flex-wrap',
-      '当项目超出 maxNumOfItems 时显示更多/更少切换',
-      '可选标题插槽',
-      '标签文本前可选图标',
-      '语义化 HTML：带 <dt>/<dd> 对的 <dl>',
+    description:
+      'MetadataList displays key-value pairs of metadata using semantic definition list markup. Use it in detail panels, summary sections, or anywhere an object\'s attributes need a structured overview.',
+    bestPractices: [
+      { guidance: true, description: 'Choose label position based on content length — use \'start\' for short values and \'top\' for long or complex values.' },
+      { guidance: true, description: 'Use maxNumOfItems to collapse long lists and keep the page scannable.' },
+      { guidance: false, description: 'Use MetadataList for tabular data with multiple columns of values — use a table component instead.' },
+      { guidance: false, description: 'Mix unrelated metadata items within the same list — group related attributes together.' },
     ],
-    accessibility: [
-      '语义化 <dl>，带 <dt>/<dd> 对',
-      'aria-controls 将显示更多/更少按钮链接到列表',
-      'aria-expanded 指示列表是否完全展开',
+    anatomy: [
+      {name: 'Title', required: false, description: 'Optional title for the metadata list.'},
+      {name: 'Label', required: true, description: 'The key label for each metadata entry.'},
+      {name: 'Metadata', required: true, description: 'The value displayed in various formats.'},
+      {name: 'Disclosure', required: false, description: 'Collapse/expand control for the list.'},
     ],
   },
 };
@@ -162,21 +151,22 @@ export const docsZh = {
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   description: 'label/value metadata display; column layout, collapse, orientation variants',
-  features: [
-    'composition: XDSMetadataList wraps XDSMetadataListItem',
-    'columns: single, multi (auto-fill), fixed count',
-    'label position: start (side-by-side) or top (stacked)',
-    'horizontal orientation w/ flex-wrap',
-    'show more/less toggle when items exceed maxNumOfItems',
-    'optional title slot',
-    'optional icon before label',
-    'semantic: <dl> w/ <dt>/<dd> pairs',
-  ],
-  accessibility: [
-    'semantic <dl> w/ <dt>/<dd>',
-    'aria-controls links show more/less to list',
-    'aria-expanded indicates expand state',
-  ],
+  usage: {
+    description:
+      'MetadataList displays key-value pairs of metadata using semantic definition list markup. Use it in detail panels, summary sections, or anywhere an object\'s attributes need a structured overview.',
+    bestPractices: [
+      { guidance: true, description: 'Choose label position based on content length — use \'start\' for short values and \'top\' for long or complex values.' },
+      { guidance: true, description: 'Use maxNumOfItems to collapse long lists and keep the page scannable.' },
+      { guidance: false, description: 'Use MetadataList for tabular data with multiple columns of values — use a table component instead.' },
+      { guidance: false, description: 'Mix unrelated metadata items within the same list — group related attributes together.' },
+    ],
+    anatomy: [
+      {name: 'Title', required: false, description: 'Optional title for the metadata list.'},
+      {name: 'Label', required: true, description: 'The key label for each metadata entry.'},
+      {name: 'Metadata', required: true, description: 'The value displayed in various formats.'},
+      {name: 'Disclosure', required: false, description: 'Collapse/expand control for the list.'},
+    ],
+  },
   components: [
     {
       name: 'XDSMetadataList',

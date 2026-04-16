@@ -85,25 +85,12 @@ export const docs = {
     },
   ],
   usage: {
-    description: 'A collapsible content primitive for revealing and hiding content on demand. Use to present additional information in lists or to hide content that can be revealed when needed.',
-    features: [
-      'XDSCollapsible makes any content collapsible — a trigger toggles visibility of the content area',
-      'Handles state management, accessibility (aria-expanded, keyboard activation), and a chevron indicator',
-      'Supports uncontrolled (defaultIsOpen), controlled (isOpen / onOpenChange), and group-coordinated modes',
-      'XDSCollapsibleGroup coordinates multiple XDSCollapsible instances so only one (single mode) or multiple (multiple mode) can be open at a time',
-      'XDSCollapsibleGroup renders no wrapper DOM element',
-      'When inside a group, XDSCollapsible defers open/close state to the group context via the value prop',
-    ],
-    accessibility: [
-      'Trigger renders as a <button> with aria-expanded reflecting the current open state',
-      'A chevron indicator provides a visual affordance for the expanded/collapsed state',
-      'Keyboard: Enter or Space activates the trigger button to toggle open/close state',
-    ],
-    notes: [
-      'XDSCollapsible manages its own open/close state by default (uncontrolled)',
-      'When nested inside an XDSCollapsibleGroup with a matching value prop, it defers to the group context',
-      'XDSCollapsibleGroup provides context with isOpen(value) and toggle(value) methods',
-      'The group renders no wrapper DOM — layout is the responsibility of the consumer (e.g. XDSVStack)',
+    description: 'Collapsible is a content primitive that reveals and hides content on demand via a trigger button. Use it to progressively disclose secondary information in lists, settings, or detail panels.',
+    bestPractices: [
+      { guidance: true, description: 'Use XDSCollapsibleGroup with type="single" for accordion-style patterns where only one section should be open at a time.' },
+      { guidance: true, description: 'Start sections open (defaultIsOpen) when the content is likely needed on first view.' },
+      { guidance: false, description: 'Hide critical or required content behind a collapsible — users may not discover it.' },
+      { guidance: false, description: 'Nest collapsibles deeply — more than two levels makes content hard to discover and navigate.' },
     ],
   },
 };
@@ -112,25 +99,12 @@ export const docs = {
 export const docsZh = {
   name: 'Collapsible',
   usage: {
-    description: '可折叠内容原语和分组协调。',
-    features: [
-      'XDSCollapsible 使任何内容可折叠——触发器切换内容区域的可见性',
-      '处理状态管理、无障碍（aria-expanded、键盘激活）和折叠指示器',
-      '支持非受控（defaultIsOpen）、受控（isOpen / onOpenChange）和分组协调模式',
-      'XDSCollapsibleGroup 协调多个 XDSCollapsible 实例，使同一时间只有一个（single 模式）或多个（multiple 模式）可以展开',
-      'XDSCollapsibleGroup 不渲染包裹 DOM 元素',
-      '在分组内时，XDSCollapsible 通过 value 属性将展开/收起状态委托给分组上下文',
-    ],
-    accessibility: [
-      '触发器渲染为带有 aria-expanded 的 <button>，反映当前展开状态',
-      '折叠指示器为展开/收起状态提供视觉提示',
-      'Keyboard: Enter 或 Space 激活触发按钮以切换展开/收起状态。',
-    ],
-    notes: [
-      'XDSCollapsible 默认自行管理展开/收起状态（非受控）',
-      '嵌套在具有匹配 value 属性的 XDSCollapsibleGroup 内时，委托给分组上下文',
-      'XDSCollapsibleGroup 通过 isOpen(value) 和 toggle(value) 方法提供上下文',
-      '分组不渲染包裹 DOM——布局由使用者负责（如 XDSVStack）',
+    description: 'Collapsible is a content primitive that reveals and hides content on demand via a trigger button. Use it to progressively disclose secondary information in lists, settings, or detail panels.',
+    bestPractices: [
+      { guidance: true, description: 'Use XDSCollapsibleGroup with type="single" for accordion-style patterns where only one section should be open at a time.' },
+      { guidance: true, description: 'Start sections open (defaultIsOpen) when the content is likely needed on first view.' },
+      { guidance: false, description: 'Hide critical or required content behind a collapsible — users may not discover it.' },
+      { guidance: false, description: 'Nest collapsibles deeply — more than two levels makes content hard to discover and navigate.' },
     ],
   },
   theming: {
@@ -170,25 +144,15 @@ export const docsZh = {
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   description: 'collapsible content primitive + group coordination',
-  features: [
-    'XDSCollapsible makes content collapsible; trigger toggles content visibility',
-    'handles state, a11y (aria-expanded, keyboard), chevron indicator',
-    'uncontrolled (defaultIsOpen), controlled (isOpen/onOpenChange), group-coordinated modes',
-    'XDSCollapsibleGroup coordinates multiple instances; single or multiple open at once',
-    'XDSCollapsibleGroup renders no wrapper DOM',
-    'inside group, defers open/close state to group context via value prop',
-  ],
-  keyboard: 'Enter/Space activates trigger to toggle open/close',
-  accessibility: [
-    'trigger renders as <button> w/ aria-expanded reflecting open state',
-    'chevron indicator shows expanded/collapsed visual affordance',
-  ],
-  notes: [
-    'manages own open/close state by default (uncontrolled)',
-    'nested in XDSCollapsibleGroup w/ matching value, defers to group context',
-    'group context exposes isOpen(value) + toggle(value) methods',
-    'group renders no wrapper DOM; layout is consumer responsibility (e.g. XDSVStack)',
-  ],
+  usage: {
+    description: 'Collapsible is a content primitive that reveals and hides content on demand via a trigger button. Use it to progressively disclose secondary information in lists, settings, or detail panels.',
+    bestPractices: [
+      { guidance: true, description: 'Use XDSCollapsibleGroup with type="single" for accordion-style patterns where only one section should be open at a time.' },
+      { guidance: true, description: 'Start sections open (defaultIsOpen) when the content is likely needed on first view.' },
+      { guidance: false, description: 'Hide critical or required content behind a collapsible — users may not discover it.' },
+      { guidance: false, description: 'Nest collapsibles deeply — more than two levels makes content hard to discover and navigate.' },
+    ],
+  },
   components: [
     {
       name: 'XDSCollapsible',

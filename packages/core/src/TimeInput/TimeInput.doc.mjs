@@ -143,25 +143,11 @@ export const docs = {
   },
   usage: {
     description:
-      'TimeInput is a time input field with free-text entry, text parsing, and arrow-key navigation. Use it when users need to input a time, such as in scheduling or form fields.',
-    features: [
-      'Accepts free-text time entry and parses common formats (e.g. "2:30 PM", "14:30")',
-      'Supports 12-hour and 24-hour display formats',
-      'Arrow-up / arrow-down adjust the time by a configurable minute increment',
-      'Optional seconds display via hasSeconds',
-      'Optional clear button via hasClear',
-      'Min / max range constraints reject out-of-range values',
-      'Async action support via onChangeAction with optimistic UI and loading spinner',
-    ],
-    accessibility: [
-      'The visible label is associated with the input via htmlFor / id.',
-      'isLabelHidden visually hides the label while keeping it in the accessibility tree.',
-      'description and status.message are linked to the input via aria-describedby.',
-      'aria-required is set when isRequired is true.',
-      'aria-invalid is set when status.type is "error".',
-      'aria-busy reflects the loading / optimistic-pending state.',
-      'The clear button has an explicit aria-label of "Clear time".',
-      'Keyboard: ArrowUp/ArrowDown adjust the current time by the configured increment in minutes; typing a time string in common formats is parsed on blur; pressing the clear button returns focus to the input.',
+      'TimeInput is a time entry field with free-text parsing and arrow-key navigation. Use it in forms, scheduling interfaces, or anywhere users need to specify a time of day.',
+    bestPractices: [
+      {guidance: true, description: 'Choose the hour format (12h or 24h) that matches your audience\'s locale and expectations.'},
+      {guidance: true, description: 'Set min and max constraints to prevent users from selecting invalid times for the context.'},
+      {guidance: false, description: 'Use TimeInput for date-and-time selection — pair it with DateInput for combined date-time fields.'},
     ],
   },
 };
@@ -309,26 +295,11 @@ export const docsZh = {
   },
   usage: {
     description:
-      '支持自由文本输入、文本解析和方向键导航的时间输入组件。',
-    features: [
-      '接受自由文本时间输入并解析常见格式（例如 "2:30 PM"、"14:30"）',
-      '支持 12 小时和 24 小时显示格式',
-      '上/下方向键按可配置的分钟增量调整时间',
-      '通过 hasSeconds 可选显示秒',
-      '通过 hasClear 可选清除按钮',
-      '最小/最大范围约束拒绝超出范围的值',
-      '通过 onChangeAction 支持异步操作，带乐观 UI 和加载旋转器',
-      '无障碍 — 标签、描述和状态消息通过 aria-describedby 关联；aria-required 和 aria-invalid 反映字段状态',
-    ],
-    accessibility: [
-      '可见标签通过 htmlFor / id 与输入框关联。',
-      'isLabelHidden 视觉上隐藏标签，同时保持在无障碍树中。',
-      'description 和 status.message 通过 aria-describedby 与输入框关联。',
-      '当 isRequired 为 true 时设置 aria-required。',
-      '当 status.type 为 "error" 时设置 aria-invalid。',
-      'aria-busy 反映加载/乐观更新挂起状态。',
-      '清除按钮具有明确的 aria-label "Clear time"。',
-      'Keyboard: 上/下方向键按配置的分钟增量调整当前时间。以常见格式（例如 "2:30 PM"、"14:30"）输入时间字符串会在失焦时解析。按清除按钮将焦点返回到输入框。',
+      'TimeInput is a time entry field with free-text parsing and arrow-key navigation. Use it in forms, scheduling interfaces, or anywhere users need to specify a time of day.',
+    bestPractices: [
+      {guidance: true, description: 'Choose the hour format (12h or 24h) that matches your audience\'s locale and expectations.'},
+      {guidance: true, description: 'Set min and max constraints to prevent users from selecting invalid times for the context.'},
+      {guidance: false, description: 'Use TimeInput for date-and-time selection — pair it with DateInput for combined date-time fields.'},
     ],
   },
 };
@@ -336,26 +307,15 @@ export const docsZh = {
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   description: 'Time input w/ free-text entry, text parsing, arrow-key navigation.',
-  features: [
-    'Accepts free-text time entry; parses common formats (e.g. "2:30 PM", "14:30")',
-    'Supports 12-hour+24-hour display formats',
-    'ArrowUp/ArrowDown adjust time by configurable minute increment',
-    'Optional seconds display via hasSeconds',
-    'Optional clear button via hasClear',
-    'Min/max range constraints reject out-of-range values',
-    'Async action support via onChangeAction w/ optimistic UI+loading spinner',
-    'Accessible; label, description, status message wired to aria-describedby; aria-required+aria-invalid reflect field state',
-  ],
-  accessibility: [
-    'Visible label associated w/ input via htmlFor/id.',
-    'isLabelHidden hides label visually; keeps in a11y tree.',
-    'description+status.message linked to input via aria-describedby.',
-    'aria-required set when isRequired is true.',
-    'aria-invalid set when status.type is "error".',
-    'aria-busy reflects loading/optimistic-pending state.',
-    'Clear button has aria-label "Clear time".',
-  ],
-  keyboard: 'ArrowUp/ArrowDown adjust time by configured increment in minutes. Typing common formats (e.g. "2:30 PM", "14:30") parsed on blur. Clear button press returns focus to input.',
+  usage: {
+    description:
+      'TimeInput is a time entry field with free-text parsing and arrow-key navigation. Use it in forms, scheduling interfaces, or anywhere users need to specify a time of day.',
+    bestPractices: [
+      {guidance: true, description: 'Choose the hour format (12h or 24h) that matches your audience\'s locale and expectations.'},
+      {guidance: true, description: 'Set min and max constraints to prevent users from selecting invalid times for the context.'},
+      {guidance: false, description: 'Use TimeInput for date-and-time selection — pair it with DateInput for combined date-time fields.'},
+    ],
+  },
   propDescriptions: {
     label: 'Label text (required for a11y).',
     isLabelHidden: 'Visually hides label; keeps screen reader access.',

@@ -200,19 +200,12 @@ export const docs = {
   ],
   usage: {
     description:
-      'Text provides typography components for the XDS design system, including semantic body text via XDSText, headings via XDSHeading, and a wrapper for applying typography styles to native HTML.',
-    features: [
-      'Semantic text types (body, large, label, supporting, code) driven by theme tokens',
-      'Headings use native h1–h6 elements with optional aria-level override for decoupled visual vs document hierarchy',
-      'Line-clamp truncation with automatic overflow-detecting tooltip',
-      'Optical alignment (text-box-trim / capsize) for precise vertical rhythm',
-      'Tabular number support for aligned numeric data',
-      'All typography driven by CSS custom properties — fully themeable per-component',
-    ],
-    accessibility: [
-      'XDSHeading renders the correct semantic h1–h6 element based on the `level` prop.',
-      'When `accessibilityLevel` differs from `level`, `aria-level` is set so screen readers announce the correct document outline position while preserving the visual style.',
-      'Truncated text sets a native `title` attribute as a fallback, and also lazily renders an XDSTooltip for sighted keyboard users.',
+      'Text provides typography primitives for the design system, including body text via XDSText and headings via XDSHeading. Use XDSText for all body copy with semantic type variants, and XDSHeading for section headings that render the correct h1–h6 element.',
+    bestPractices: [
+      { guidance: true, description: 'Use the type prop on XDSText to select a semantic text style rather than manually setting size and weight.' },
+      { guidance: true, description: 'Set accessibilityLevel on XDSHeading when the visual heading level differs from the document outline hierarchy.' },
+      { guidance: false, description: 'Override size and weight on XDSText when a semantic type already matches your use case.' },
+      { guidance: false, description: 'Skip heading levels in the document outline — maintain a logical h1 through h6 hierarchy for accessibility.' },
     ],
   },
 };
@@ -418,19 +411,12 @@ export const docsZh = {
   ],
   usage: {
     description:
-      'XDS 设计系统的排版组件，包括语义化正文文本、标题以及将排版样式应用于原生 HTML 的包装器。',
-    features: [
-      '语义化文本类型（body、large、label、supporting、code），由主题令牌驱动',
-      '标题使用原生 h1–h6 元素，支持可选的 aria-level 覆盖，实现视觉层级与文档层级的解耦',
-      '行截断，带自动溢出检测工具提示',
-      '光学对齐（text-box-trim / capsize），实现精确的垂直节奏',
-      '表格数字支持，用于对齐的数值数据',
-      '所有排版由 CSS 自定义属性驱动 — 每个组件均可完全主题化',
-    ],
-    accessibility: [
-      'XDSHeading 根据 `level` 属性渲染正确的语义化 h1–h6 元素。',
-      '当 `accessibilityLevel` 与 `level` 不同时，会设置 `aria-level`，使屏幕阅读器播报正确的文档大纲位置，同时保留视觉样式。',
-      '截断文本设置原生 `title` 属性作为后备方案，并为有视力的键盘用户延迟渲染 XDSTooltip。',
+      'Text provides typography primitives for the design system, including body text via XDSText and headings via XDSHeading. Use XDSText for all body copy with semantic type variants, and XDSHeading for section headings that render the correct h1–h6 element.',
+    bestPractices: [
+      { guidance: true, description: 'Use the type prop on XDSText to select a semantic text style rather than manually setting size and weight.' },
+      { guidance: true, description: 'Set accessibilityLevel on XDSHeading when the visual heading level differs from the document outline hierarchy.' },
+      { guidance: false, description: 'Override size and weight on XDSText when a semantic type already matches your use case.' },
+      { guidance: false, description: 'Skip heading levels in the document outline — maintain a logical h1 through h6 hierarchy for accessibility.' },
     ],
   },
 };
@@ -438,19 +424,16 @@ export const docsZh = {
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   description: 'Typography components: semantic body text, headings, wrapper for applying typography styles to native HTML.',
-  features: [
-    'Semantic text types (body, large, label, supporting, code) driven by theme tokens',
-    'Headings use native h1\u20136 w/ optional aria-level override for decoupled visual vs document hierarchy',
-    'Line-clamp truncation w/ automatic overflow-detecting tooltip',
-    'Optical alignment (text-box-trim / capsize) for precise vertical rhythm',
-    'Tabular number support for aligned numeric data',
-    'All typography driven by CSS custom properties; fully themeable per-component',
-  ],
-  accessibility: [
-    'XDSHeading renders correct semantic h1\u20136 based on level prop.',
-    'When accessibilityLevel differs from level, aria-level set for correct document outline.',
-    'Truncated text sets native title attr as fallback + lazily renders XDSTooltip for keyboard users.',
-  ],
+  usage: {
+    description:
+      'Text provides typography primitives for the design system, including body text via XDSText and headings via XDSHeading. Use XDSText for all body copy with semantic type variants, and XDSHeading for section headings that render the correct h1–h6 element.',
+    bestPractices: [
+      { guidance: true, description: 'Use the type prop on XDSText to select a semantic text style rather than manually setting size and weight.' },
+      { guidance: true, description: 'Set accessibilityLevel on XDSHeading when the visual heading level differs from the document outline hierarchy.' },
+      { guidance: false, description: 'Override size and weight on XDSText when a semantic type already matches your use case.' },
+      { guidance: false, description: 'Skip heading levels in the document outline — maintain a logical h1 through h6 hierarchy for accessibility.' },
+    ],
+  },
   components: [
     {
       name: 'XDSText',
