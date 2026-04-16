@@ -139,7 +139,7 @@ function GalleryCard({item}: {item: GalleryItem}) {
           justifyContent: 'flex-end',
           padding: 'var(--spacing-6)',
         }}>
-        <XDSMediaTheme mode="dark">
+        <div style={{color: 'white'}}>
           <XDSVStack gap={2}>
             <XDSText
               type="body"
@@ -158,7 +158,7 @@ function GalleryCard({item}: {item: GalleryItem}) {
               />
             </div>
           </XDSVStack>
-        </XDSMediaTheme>
+        </div>
       </div>
     </div>
   );
