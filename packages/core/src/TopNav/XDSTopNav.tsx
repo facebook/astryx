@@ -25,6 +25,7 @@ import {useXDSTopNavMobileContent} from './XDSTopNavMobileContentContext';
 import {XDSDivider} from '../Divider/XDSDivider';
 import {XDSMobileNav} from '../MobileNav/XDSMobileNav';
 import {XDSMobileNavToggle} from '../MobileNav/XDSMobileNavToggle';
+import {useXDSAppShellMobile} from '../AppShell/XDSAppShellMobileContext';
 
 /**
  * Base TopNav styles
@@ -172,6 +173,7 @@ export function XDSTopNav({
 }: XDSTopNavProps) {
   const renderMode = useXDSTopNavRenderMode();
   const mobileContent = useXDSTopNavMobileContent();
+  const {hasAutoToggle} = useXDSAppShellMobile();
   const hasCenterContent = centerContent != null;
   const hasCollapsibleContent = startContent != null || centerContent != null;
   // Show mobile toggle when there's ANY drawer content — own items OR SideNav via context
@@ -182,7 +184,7 @@ export function XDSTopNav({
   // Falls through to default when there's no drawer content — no reason
   // to strip down the TopNav if there's nothing to put in the drawer.
   // =========================================================================
-  if (renderMode === 'mobile-bar' && hasMobileDrawerContent) {
+  if (renderMode === 'mobile-bar') {
     return (
       <nav
         ref={ref}
@@ -198,7 +200,7 @@ export function XDSTopNav({
         {heading && <div {...stylex.props(styles.heading)}>{heading}</div>}
         <div {...stylex.props(styles.mobileBarEnd)}>
           {endContent}
-          <XDSMobileNavToggle />
+          {hasMobileDrawerContent && hasAutoToggle && <XDSMobileNavToggle />}
         </div>
       </nav>
     );

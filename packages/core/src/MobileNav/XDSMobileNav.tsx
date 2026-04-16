@@ -23,7 +23,7 @@
  * - /packages/core/src/MobileNav/index.ts (exports if types change)
  */
 
-import {useCallback, useEffect, useRef, type ReactNode} from 'react';
+import {useCallback, useEffect, useRef, useState, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   borderVars,
@@ -214,9 +214,14 @@ export interface XDSMobileNavProps extends Omit<XDSBaseProps, 'title'> {
 
   /**
    * Which side the drawer slides from.
-   * @default 'end'
+   * - `'start'` — slides from the inline-start edge (left in LTR)
+   * - `'end'` — slides from the inline-end edge (right in LTR)
+   * - `'auto'` — determined by the trigger element's position: if the
+   *   toggle is in the start half of the viewport the drawer opens from
+   *   start, otherwise from end.
+   * @default 'auto'
    */
-  side?: 'start' | 'end';
+  side?: 'start' | 'end' | 'auto';
 
   /**
    * Accessible label for the drawer. Falls back to header string, then 'Navigation'.
@@ -265,7 +270,7 @@ export function XDSMobileNav({
   children,
   header,
   width = 320,
-  side = 'end',
+  side = 'auto',
   label,
   'data-testid': testId,
   xstyle,
@@ -288,6 +293,10 @@ export function XDSMobileNav({
 
   const dialogRef = useRef<HTMLDialogElement>(null);
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
+  // Resolved side — computed from trigger position when side='auto'
+  const [resolvedSide, setResolvedSide] = useState<'start' | 'end'>(
+    side === 'auto' ? 'end' : side,
+  );
 
   // Merge refs
   const setRefs = useCallback(
@@ -315,6 +324,20 @@ export function XDSMobileNav({
     }
 
     if (isOpen) {
+      // Determine drawer side from trigger position when auto
+      if (side === 'auto') {
+        const trigger = document.activeElement as HTMLElement | null;
+        if (trigger && trigger !== document.body) {
+          const rect = trigger.getBoundingClientRect();
+          const triggerCenter = rect.left + rect.width / 2;
+          setResolvedSide(
+            triggerCenter < window.innerWidth / 2 ? 'start' : 'end',
+          );
+        }
+      } else {
+        setResolvedSide(side);
+      }
+
       if (!dialog.open) {
         dialog.showModal();
       }
@@ -363,7 +386,7 @@ export function XDSMobileNav({
     [onOpenChange],
   );
 
-  const isStart = side === 'start';
+  const isStart = resolvedSide === 'start';
 
   return (
     <dialog
@@ -373,7 +396,7 @@ export function XDSMobileNav({
       onClick={handleDialogClick}
       onCancel={handleCancel}
       {...mergeProps(
-        xdsClassName('mobile-nav', {side}),
+        xdsClassName('mobile-nav', {side: resolvedSide}),
         stylex.props(
           styles.dialog,
           styles.backdrop,
