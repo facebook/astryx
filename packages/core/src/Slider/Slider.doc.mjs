@@ -131,28 +131,12 @@ export const docs = {
   },
   usage: {
     description:
-      'A slider component for selecting numeric values or ranges with full keyboard and pointer support. Use to help users explore and select a number within a constrained range.',
-    features: [
-      'Single and range modes: pass a number for single thumb, [number, number] for range',
-      'Supports horizontal and vertical layouts',
-      'Value display: tooltip (default), inline text, or none',
-      'Tick marks at specified positions with optional labels',
-      'Custom value formatting via formatValue for display and aria-valuetext',
-      'Field integration via XDSField for label, description, required/optional, and status messaging',
-    ],
-    accessibility: [
-      'Uses `role="slider"` with `aria-valuenow`, `aria-valuemin`, `aria-valuemax`, and `aria-valuetext` on each thumb.',
-      'The label is always rendered in the DOM for accessibility even when `isLabelHidden` is true.',
-      'Tooltip display uses `XDSTooltip` with `delay={0}` and `focusTrigger="always"` so value is always visible on focus.',
-      'Keyboard: Arrow keys \u00b11 step, Page Up/Down \u00b110 steps, Home/End jump to min/max.',
-    ],
-    notes: [
-      'The ref is merged with an internal `trackRef` used for pointer position calculations.',
-      'Pointer capture is used during drag for smooth interaction even when the cursor leaves the track.',
-      '`snapToStep` rounds to the nearest valid step value; `clamp` enforces min/max bounds.',
-      'In range mode, the closest thumb to the click position is selected automatically.',
-      '`minStepsBetweenThumbs` enforces a minimum gap between range thumbs.',
-      'Vertical orientation inverts the Y axis so that bottom = min and top = max.',
+      'A slider component for selecting a numeric value or range within defined bounds. Use Slider when users need to explore and choose from a continuous range, such as volume, price, or percentage values.',
+    bestPractices: [
+      {guidance: true, description: 'Always provide a label, even if visually hidden, so the slider is accessible to screen readers.'},
+      {guidance: true, description: 'Use formatValue to display meaningful units such as "$50" or "75%" instead of raw numbers.'},
+      {guidance: false, description: 'Use for precise numeric entry — pair with a text input or use TextInput alone instead.'},
+      {guidance: false, description: 'Set a step size so large that only a few positions are possible — use SegmentedControl or radio buttons instead.'},
     ],
   },
 };
@@ -288,63 +272,28 @@ export const docsZh = {
   },
   usage: {
     description:
-      '用于选择数值或范围的滑块组件，支持完整的键盘和指针交互。',
-    features: [
-      '单值和范围模式：传入 `number` 用于单滑块，`[number, number]` 用于范围',
-      '方向：支持 `horizontal` 和 `vertical` 布局',
-      '值显示：工具提示（默认）、内联文本或无',
-      '刻度标记：在指定位置的可选标记，带标签',
-      '键盘导航：方向键、Page Up/Down、Home/End',
-      '拖拽交互：指针捕获实现平滑拖拽',
-      '自定义格式化：`formatValue` 函数用于显示和 `aria-valuetext`',
-      '字段集成：使用 `XDSField` 提供标签、描述、必填/可选和状态消息',
-      '无障碍：使用 `role="slider"` 配合完整的 ARIA 属性',
-    ],
-    accessibility: [
-      '每个滑块使用 `role="slider"`，配合 `aria-valuenow`、`aria-valuemin`、`aria-valuemax` 和 `aria-valuetext`。',
-      '即使 `isLabelHidden` 为 true，标签也始终在 DOM 中渲染以确保无障碍可访问性。',
-      '工具提示显示使用 `XDSTooltip`，配合 `delay={0}` 和 `focusTrigger="always"`，使值在聚焦时始终可见。',
-      'Keyboard: 方向键 ±1 步，Page Up/Down ±10 步，Home/End 跳转到最小值/最大值。',
-    ],
-    notes: [
-      'ref 与内部的 `trackRef` 合并，用于指针位置计算。',
-      '拖拽期间使用指针捕获，即使光标离开轨道也能平滑交互。',
-      '`snapToStep` 四舍五入到最近的有效步进值；`clamp` 强制执行最小/最大值边界。',
-      '在范围模式下，自动选择距离点击位置最近的滑块。',
-      '`minStepsBetweenThumbs` 强制范围滑块之间保持最小间距。',
-      '垂直方向反转 Y 轴，使底部为最小值，顶部为最大值。',
+      'A slider component for selecting a numeric value or range within defined bounds. Use Slider when users need to explore and choose from a continuous range, such as volume, price, or percentage values.',
+    bestPractices: [
+      {guidance: true, description: 'Always provide a label, even if visually hidden, so the slider is accessible to screen readers.'},
+      {guidance: true, description: 'Use formatValue to display meaningful units such as "$50" or "75%" instead of raw numbers.'},
+      {guidance: false, description: 'Use for precise numeric entry — pair with a text input or use TextInput alone instead.'},
+      {guidance: false, description: 'Set a step size so large that only a few positions are possible — use SegmentedControl or radio buttons instead.'},
     ],
   },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
-  description: 'Numeric value/range selector w/ full keyboard + pointer support.',
-  features: [
-    'Single + range modes: number for single thumb, [number, number] for range',
-    'Orientation: horizontal + vertical layouts',
-    'Value display: tooltip (default), inline text, or none',
-    'Tick marks: optional marks at specified positions w/ labels',
-    'Keyboard nav: Arrow keys, Page Up/Down, Home/End',
-    'Drag: pointer capture for smooth dragging',
-    'Custom formatting: formatValue fn for display + aria-valuetext',
-    'Field integration: uses XDSField for label, description, required/optional, status messaging',
-    'Accessible: role="slider" w/ full ARIA attributes',
-  ],
-  notes: [
-    'ref merged w/ internal trackRef for pointer position calc.',
-    'Pointer capture during drag for smooth interaction even when cursor leaves track.',
-    'snapToStep rounds to nearest valid step; clamp enforces min/max bounds.',
-    'Range mode auto-selects closest thumb to click position.',
-    'minStepsBetweenThumbs enforces min gap between range thumbs.',
-    'Vertical orientation inverts Y axis; bottom=min, top=max.',
-  ],
-  accessibility: [
-    'role="slider" w/ aria-valuenow, aria-valuemin, aria-valuemax, aria-valuetext on each thumb.',
-    'Label always in DOM for a11y even when isLabelHidden=true.',
-    'Tooltip uses XDSTooltip w/ delay={0} focusTrigger="always"; value visible on focus.',
-  ],
-  keyboard: 'Arrow=\u00b11 step; PageUp/PageDown=\u00b110 steps; Home/End=jump to min/max.',
+  usage: {
+    description:
+      'A slider component for selecting a numeric value or range within defined bounds. Use Slider when users need to explore and choose from a continuous range, such as volume, price, or percentage values.',
+    bestPractices: [
+      {guidance: true, description: 'Always provide a label, even if visually hidden, so the slider is accessible to screen readers.'},
+      {guidance: true, description: 'Use formatValue to display meaningful units such as "$50" or "75%" instead of raw numbers.'},
+      {guidance: false, description: 'Use for precise numeric entry — pair with a text input or use TextInput alone instead.'},
+      {guidance: false, description: 'Set a step size so large that only a few positions are possible — use SegmentedControl or radio buttons instead.'},
+    ],
+  },
   propDescriptions: {
     label: 'Label text (always rendered for a11y).',
     value: 'Current value; number for single thumb, [number, number] for range.',

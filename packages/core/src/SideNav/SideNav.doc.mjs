@@ -239,32 +239,12 @@ export const docs = {
   ],
   usage: {
     description:
-      'Sidebar navigation component for application pages, supporting sections, nested items, selected state, icons, and collapsible sidebar. Left nav is the default recommendation for 5+ navigation items or complex grouping. Do not use for filter-primary tools \u2014 use tabs or filter buttons instead.',
-    features: [
-      'Five-zone layout: header, topContent, children (scrollable), footer, footerIcons',
-      'Smart header interaction boundary logic \u2014 links and menu trigger coexist without overlap',
-      'Nested items via children on XDSSideNavItem',
-      'Selected state with optional alternate icon for filled/outline variants',
-      'Section grouping with optional title, subtitle, and end content',
-      'Collapsible sidebar via collapsible prop \u2014 collapses to icon-only toolbar, uncontrolled or controlled',
-      'Resizable sidebar via resizable prop \u2014 drag handle at inline-end edge, pointer-based resize with min/max constraints',
-      'Heading text overflow detection with tooltip \u2014 shows full text on hover when truncated',
-      'Header end content slot for badges, status indicators, or action buttons',
-    ],
-    accessibility: [
-      '<nav aria-label="Side navigation"> wraps the entire component',
-      'aria-current="page" is applied to the selected item',
-      'Sections use role="group" with aria-labelledby pointing to the section title',
-      'isHeaderHidden visually hides the section title while keeping it accessible to screen readers',
-      'Keyboard: Tab through items, Enter/Space to activate links',
-    ],
-    notes: [
-      'When used inside XDSAppShell alongside XDSTopNav, omit XDSSideNavHeading \u2014 the TopNav already provides app identity and including the header would duplicate it.',
-      'Without a TopNav, include XDSSideNavHeading to provide app identity.',
-      'Header interaction model: headingHref only \u2192 whole header is one link; headingHref + superheadingHref, no menu \u2192 each text is an independent link; menu only, no hrefs \u2192 whole header is the popover trigger; menu + hrefs \u2192 links are independent <a> elements, chevron/remaining area is the popover trigger.',
-      'Depends on useXDSPopover for the header menu popover and XDSIcon for rendering icon components in nav items.',
-      'XDSSideNavCollapseButton renders as an icon-only ghost button by default. Place it in footerIcons, header, or outside the sidenav (pass sideNavRef).',
-      'useXDSSideNavCollapse hook exposes { isCollapsed, toggle, isCollapsible } for custom collapse controls.',
+      'A sidebar navigation component for organizing application pages with sections, nested items, and icons. Use SideNav as the primary navigation when an app has 5 or more destinations or requires hierarchical grouping.',
+    bestPractices: [
+      {guidance: true, description: 'Use sections to group related navigation items and help users scan for their destination.'},
+      {guidance: true, description: 'Pair outline and filled icon variants so the selected state is visually distinct.'},
+      {guidance: false, description: 'Include a SideNavHeading when a TopNav is already providing app identity — this duplicates branding.'},
+      {guidance: false, description: 'Use for filtering content — use tabs or filter buttons instead.'},
     ],
     anatomy: [
       {name: 'Product icon and name', required: false, description: 'Branding area at the top of the nav.'},
@@ -514,64 +494,38 @@ export const docsZh = {
   ],
   usage: {
     description:
-      '应用页面的侧边栏导航组件。支持分组、嵌套项、选中状态、图标和可折叠侧边栏。',
-    features: [
-      '五区域布局：header、topContent、children（可滚动）、footer、footerIcons',
-      '智能头部交互边界逻辑——链接和菜单触发器共存而不重叠',
-      '通过 XDSSideNavItem 的 children 实现嵌套项',
-      '选中状态支持可选的替代图标，用于填充/轮廓变体',
-      '分组支持可选的标题、副标题和尾部内容',
-      '通过 collapsible 属性支持可折叠侧边栏——折叠为仅图标工具栏，支持非受控和受控模式',
-      '无障碍 - nav 地标、aria-current="page"、分组使用 role="group" 配合 aria-labelledby',
-      '键盘可导航 - Tab 切换项目，Enter/Space 激活',
+      'A sidebar navigation component for organizing application pages with sections, nested items, and icons. Use SideNav as the primary navigation when an app has 5 or more destinations or requires hierarchical grouping.',
+    bestPractices: [
+      {guidance: true, description: 'Use sections to group related navigation items and help users scan for their destination.'},
+      {guidance: true, description: 'Pair outline and filled icon variants so the selected state is visually distinct.'},
+      {guidance: false, description: 'Include a SideNavHeading when a TopNav is already providing app identity — this duplicates branding.'},
+      {guidance: false, description: 'Use for filtering content — use tabs or filter buttons instead.'},
     ],
-    accessibility: [
-      '<nav aria-label="Side navigation"> 包裹整个组件',
-      'aria-current="page" 应用于选中项',
-      '分组使用 role="group"，aria-labelledby 指向分组标题',
-      'isHeaderHidden 在视觉上隐藏分组标题，同时保持屏幕阅读器可访问',
-      'Keyboard: Tab 切换项目，Enter/Space 激活链接',
-    ],
-    notes: [
-      '在 XDSAppShell 中与 XDSTopNav 一起使用时，省略 XDSSideNavHeading——TopNav 已提供应用标识，包含头部会导致重复。',
-      '没有 TopNav 时，包含 XDSSideNavHeading 以提供应用标识。',
-      '头部交互模型：仅 headingHref → 整个头部是一个链接；headingHref + superheadingHref，无菜单 → 每段文本是独立链接；仅菜单，无 href → 整个头部是弹出框触发器；菜单 + href → 链接是独立的 <a> 元素，箭头/剩余区域是弹出框触发器。',
-      '依赖 useXDSPopover 实现头部菜单弹出框，依赖 XDSIcon 在导航项中渲染图标组件。',
-      'XDSSideNavCollapseButton 默认渲染为仅图标的 ghost 按钮。可放置在 footerIcons、header 中，或侧边栏外部（传入 sideNavRef）。',
-      'useXDSSideNavCollapse hook 暴露 { isCollapsed, toggle, isCollapsible }，用于自定义折叠控件。',
+    anatomy: [
+      {name: 'Product icon and name', required: false, description: 'Branding area at the top of the nav.'},
+      {name: 'Navigation items', required: true, description: 'Sections and groups of navigable links.'},
+      {name: 'Collapse/expand toggle', required: false, description: 'Toggle to collapse or expand the side nav.'},
     ],
   },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
-  description:
-    'Sidebar nav for app pages. Sections, nested items, selected state, icons, collapsible sidebar.',
-  features: [
-    'Five-zone layout: header, topContent, children (scrollable), footer, footerIcons',
-    'Smart header interaction boundary logic; links + menu trigger coexist w/o overlap',
-    'Nested items via children on XDSSideNavItem',
-    'Selected state w/ optional alternate icon for filled/outline variants',
-    'Section grouping w/ optional title, subtitle, end content',
-    'Collapsible sidebar via collapsible prop; collapses to icon-only toolbar, uncontrolled or controlled',
-    'Accessible; nav landmark, aria-current="page", role="group" w/ aria-labelledby on sections',
-    'Keyboard navigable; Tab through items, Enter/Space to activate',
-  ],
-  accessibility: [
-    '<nav aria-label="Side navigation"> wraps entire component',
-    'aria-current="page" applied to selected item',
-    'Sections use role="group" w/ aria-labelledby pointing to section title',
-    'isHeaderHidden visually hides section title while keeping accessible to screen readers',
-  ],
-  keyboard: 'Tab through items, Enter/Space to activate links',
-  notes: [
-    'W/ XDSAppShell alongside XDSTopNav, omit XDSSideNavHeading; TopNav already provides app identity.',
-    'W/o TopNav, include XDSSideNavHeading to provide app identity.',
-    'Header interaction model: headingHref only = whole header is one link; headingHref+superheadingHref no menu = each text independent link; menu only no hrefs = whole header is popover trigger; menu+hrefs = links are independent <a> elements, chevron/remaining is popover trigger.',
-    'Depends on useXDSPopover for header menu popover + XDSIcon for rendering icon components in nav items.',
-    'XDSSideNavCollapseButton renders as icon-only ghost button by default. Place in footerIcons, header, or outside sidenav (pass sideNavRef).',
-    'useXDSSideNavCollapse hook exposes { isCollapsed, toggle, isCollapsible } for custom collapse controls.',
-  ],
+  usage: {
+    description:
+      'A sidebar navigation component for organizing application pages with sections, nested items, and icons. Use SideNav as the primary navigation when an app has 5 or more destinations or requires hierarchical grouping.',
+    bestPractices: [
+      {guidance: true, description: 'Use sections to group related navigation items and help users scan for their destination.'},
+      {guidance: true, description: 'Pair outline and filled icon variants so the selected state is visually distinct.'},
+      {guidance: false, description: 'Include a SideNavHeading when a TopNav is already providing app identity — this duplicates branding.'},
+      {guidance: false, description: 'Use for filtering content — use tabs or filter buttons instead.'},
+    ],
+    anatomy: [
+      {name: 'Product icon and name', required: false, description: 'Branding area at the top of the nav.'},
+      {name: 'Navigation items', required: true, description: 'Sections and groups of navigable links.'},
+      {name: 'Collapse/expand toggle', required: false, description: 'Toggle to collapse or expand the side nav.'},
+    ],
+  },
   components: [
     {
       name: 'XDSSideNav',

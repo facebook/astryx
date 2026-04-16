@@ -43,13 +43,11 @@ export const docs = {
     ],
   },
   usage: {
-    description: 'A visual separator for dividing content sections. Use subtle dividers to demote sections, emphasized dividers for interactive element boundaries, and strong dividers for high-contrast separation.',
-    features: [
-      'Supports horizontal and vertical orientations',
-      'Optional label centered on the divider line',
-      'Subtle and strong visual weight variants',
-      'Full-bleed mode extends the divider to container edges via negative margins',
-      'Themeable via className — target .xds-divider with variant and orientation classes',
+    description: 'A visual separator that divides content into distinct sections. Use to create clear boundaries between groups of related content, or to demarcate interactive regions within a layout.',
+    bestPractices: [
+      { guidance: true, description: 'Use subtle dividers between related content sections and strong dividers for high-contrast boundaries.' },
+      { guidance: true, description: 'Add a label to the divider when sections need a visible category heading.' },
+      { guidance: false, description: 'Overuse dividers — rely on spacing and layout to separate content when possible.' },
     ],
   },
 };
@@ -94,13 +92,11 @@ export const docsZh = {
     ],
   },
   usage: {
-    description: '带有可选标签的视觉分隔线，使用 XDS 设计令牌。',
-    features: [
-      '支持水平和垂直方向',
-      '可选标签居中显示在分隔线上',
-      '柔和和加强两种视觉粗细变体',
-      '全出血模式通过负边距将分隔线延伸至容器边缘',
-      '可通过 className 进行主题定制 — 使用变体和方向类定位 .xds-divider',
+    description: 'A visual separator that divides content into distinct sections. Use to create clear boundaries between groups of related content, or to demarcate interactive regions within a layout.',
+    bestPractices: [
+      { guidance: true, description: 'Use subtle dividers between related content sections and strong dividers for high-contrast boundaries.' },
+      { guidance: true, description: 'Add a label to the divider when sections need a visible category heading.' },
+      { guidance: false, description: 'Overuse dividers — rely on spacing and layout to separate content when possible.' },
     ],
   },
 };
@@ -108,13 +104,14 @@ export const docsZh = {
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   description: 'visual separator w/ optional label, using XDS design tokens',
-  features: [
-    'horizontal+vertical orientations',
-    'optional centered label on divider line',
-    'subtle+strong visual weight variants',
-    'full-bleed mode extends to container edges via negative margins',
-    'themeable via className; target .xds-divider w/ variant+orientation classes',
-  ],
+  usage: {
+    description: 'A visual separator that divides content into distinct sections. Use to create clear boundaries between groups of related content, or to demarcate interactive regions within a layout.',
+    bestPractices: [
+      { guidance: true, description: 'Use subtle dividers between related content sections and strong dividers for high-contrast boundaries.' },
+      { guidance: true, description: 'Add a label to the divider when sections need a visible category heading.' },
+      { guidance: false, description: 'Overuse dividers — rely on spacing and layout to separate content when possible.' },
+    ],
+  },
   propDescriptions: {
     orientation: 'divider orientation',
     label: 'optional centered label on divider',

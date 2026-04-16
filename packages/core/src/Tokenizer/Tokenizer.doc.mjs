@@ -169,23 +169,12 @@ export const docs = {
   },
   usage: {
     description:
-      'Tokenizer is a multi-select typeahead that converts text into token chips for selected items, enabling users to filter content and make selections from a data source. It composes XDSBaseTypeahead for search and XDSToken for chips. Avoid applying colored backgrounds to tokens within a tokenizer.',
-    features: [
-      'Token chips for each selected item with remove buttons',
-      'Filtered search that automatically excludes already-selected items',
-      'Max entries to limit number of selections — input hides when limit is reached',
-      'Clear all button for bulk removal of all tokens',
-      'Custom token and item rendering via renderToken and renderItem',
-      'Backspace on empty input removes the last token',
-      "Change metadata: onChange receives a second argument with type ('add' | 'create' | 'remove' | 'reorder')",
-      'Free-text token creation via hasCreate prop — shows a "Create" option in the dropdown for new values',
-    ],
-    accessibility: [
-      'Wrapped in XDSField for label, description, and status message association.',
-      'Token container has role="group" with aria-label.',
-      'Clear all button has aria-label="Clear all".',
-      'Combobox pattern provided by XDSBaseTypeahead with aria-expanded and aria-autocomplete.',
-      'Keyboard: Backspace on empty input removes last token; Arrow keys navigate dropdown; Enter selects highlighted item; Escape closes dropdown.',
+      'Tokenizer is a multi-select input that lets users search and select multiple items displayed as removable token chips. Use Tokenizer when users need to build a set of selections from a searchable data source, such as adding recipients or applying multiple filters.',
+    bestPractices: [
+      {guidance: true, description: 'Provide a clear placeholder that communicates what users can search for.'},
+      {guidance: true, description: 'Set a maxEntries limit when the number of selections should be bounded.'},
+      {guidance: false, description: 'Avoid applying colored backgrounds to tokens within a Tokenizer — use the default color for consistency.'},
+      {guidance: false, description: 'Avoid using Tokenizer for single-item selection — use Typeahead instead.'},
     ],
   },
 };
@@ -352,23 +341,12 @@ export const docsZh = {
   },
   usage: {
     description:
-      '带有标记芯片的多选预输入组件，用于显示已选项目。组合使用 XDSBaseTypeahead 进行搜索和 XDSToken 显示芯片。',
-    features: [
-      '每个已选项目显示带移除按钮的标记芯片',
-      '过滤搜索自动排除已选项目',
-      '最大条目数限制选择数量 — 达到限制时输入框隐藏',
-      '全部清除按钮用于批量移除所有标记',
-      '通过 renderToken 和 renderItem 自定义标记和项目渲染',
-      '在空输入框上按退格键移除最后一个标记',
-      "变更元数据：onChange 接收第二个参数，包含类型（'add' | 'create' | 'remove' | 'reorder'）",
-      '通过 hasCreate 属性支持自由文本令牌创建 — 在下拉列表中为新值显示 "Create" 选项',
-    ],
-    accessibility: [
-      '包裹在 XDSField 中，用于标签、描述和状态消息的关联。',
-      '标记容器具有 role="group" 和 aria-label。',
-      '全部清除按钮具有 aria-label="Clear all"。',
-      'XDSBaseTypeahead 提供组合框模式，包含 aria-expanded 和 aria-autocomplete。',
-      'Keyboard: 在空输入框上按退格键移除最后一个标记；方向键导航下拉列表；Enter 选择高亮项目；Escape 关闭下拉列表',
+      'Tokenizer is a multi-select input that lets users search and select multiple items displayed as removable token chips. Use Tokenizer when users need to build a set of selections from a searchable data source, such as adding recipients or applying multiple filters.',
+    bestPractices: [
+      {guidance: true, description: 'Provide a clear placeholder that communicates what users can search for.'},
+      {guidance: true, description: 'Set a maxEntries limit when the number of selections should be bounded.'},
+      {guidance: false, description: 'Avoid applying colored backgrounds to tokens within a Tokenizer — use the default color for consistency.'},
+      {guidance: false, description: 'Avoid using Tokenizer for single-item selection — use Typeahead instead.'},
     ],
   },
 };
@@ -376,23 +354,16 @@ export const docsZh = {
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   description: 'Multi-select typeahead w/ token chips for selected items. Composes XDSBaseTypeahead for search+XDSToken for chips.',
-  features: [
-    'Token chips for each selected item w/ remove buttons',
-    'Filtered search auto-excludes already-selected items',
-    'Max entries limits selections; input hides at limit',
-    'Clear all button for bulk removal of all tokens',
-    'Custom token+item rendering via renderToken+renderItem',
-    'Backspace on empty input removes last token',
-    "Change metadata: onChange receives second arg w/ type ('add'|'create'|'remove'|'reorder')",
-    'Free-text token creation via hasCreate — "Create" option in dropdown for new values',
-  ],
-  accessibility: [
-    'Wrapped in XDSField for label, description, status message association.',
-    'Token container has role="group" w/ aria-label.',
-    'Clear all button has aria-label="Clear all".',
-    'Combobox pattern via XDSBaseTypeahead w/ aria-expanded+aria-autocomplete.',
-  ],
-  keyboard: 'Backspace on empty input removes last token. Arrow keys navigate dropdown. Enter selects highlighted item. Escape closes dropdown.',
+  usage: {
+    description:
+      'Tokenizer is a multi-select input that lets users search and select multiple items displayed as removable token chips. Use Tokenizer when users need to build a set of selections from a searchable data source, such as adding recipients or applying multiple filters.',
+    bestPractices: [
+      {guidance: true, description: 'Provide a clear placeholder that communicates what users can search for.'},
+      {guidance: true, description: 'Set a maxEntries limit when the number of selections should be bounded.'},
+      {guidance: false, description: 'Avoid applying colored backgrounds to tokens within a Tokenizer — use the default color for consistency.'},
+      {guidance: false, description: 'Avoid using Tokenizer for single-item selection — use Typeahead instead.'},
+    ],
+  },
   propDescriptions: {
     label: 'Accessible label for input.',
     searchSource: 'Data source w/ search+bootstrap methods for populating dropdown.',

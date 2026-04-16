@@ -141,28 +141,12 @@ export const docs = {
   },
   usage: {
     description:
-      'A click-triggered popover for displaying interactive content anchored to a trigger element, implementing the button + dialog ARIA pattern. Use for secondary actions or supplementary information that does not warrant a full dialog — for hover-triggered previews use HoverCard, and for brief helper text use Tooltip.',
-    features: [
-      'CSS Anchor Positioning for automatic placement relative to trigger elements',
-      'Popover API for top-layer rendering — no React portals needed',
-      'Controlled and uncontrolled modes',
-      'Light dismiss support (click outside or Escape to close)',
-      'Focus trap inside open popovers',
-      'ARIA button + dialog pattern applied automatically to trigger elements',
-      'Sibling mode via anchorRef for external trigger elements',
-      'Stable anchor wrapper immune to pressed-state transforms',
-    ],
-    accessibility: [
-      'Implements the button + dialog ARIA pattern: aria-haspopup, aria-expanded, and aria-controls are set on the trigger button automatically.',
-      'Traps focus inside the popover dialog while it is open.',
-      'Supports keyboard activation for role="button" elements (Enter and Space) in addition to native <button> click synthesis.',
-      'Keyboard: Escape closes the popover; Enter/Space open the popover when the trigger has focus; focus is trapped inside an open popover.',
-    ],
-    notes: [
-      'XDSPopover locates the trigger button inside children by searching for <button> or [role="button"] — the child tree must contain one. It applies click/keydown handlers and aria-haspopup, aria-expanded, aria-controls automatically.',
-      'XDSPopover uses an inline-flex anchor wrapper so that pressed-state transforms on the trigger (e.g. :active scale) do not shift the anchor position and cause popover jitter.',
-      'In sibling mode (anchorRef prop), XDSPopover attaches to an external ref rather than wrapping children — useful when the trigger and overlay are not parent/child.',
-      'LayerPlacement values: above | below | start | end. LayerAlignment values: start | center | end.',
+      'Popover displays interactive content anchored to a trigger element, activated on click. Use it for secondary actions or supplementary information that does not warrant a full dialog. For hover-triggered previews use HoverCard, and for brief helper text use Tooltip.',
+    bestPractices: [
+      { guidance: true, description: 'Keep popover content focused on a single task or piece of information.' },
+      { guidance: true, description: 'Provide a clear close affordance — light dismiss or an explicit close button — so users can easily return to the main content.' },
+      { guidance: false, description: 'Nest popovers inside other popovers, as it creates confusing focus and navigation patterns.' },
+      { guidance: false, description: 'Use a Popover for content that requires heavy user input — use a Dialog instead.' },
     ],
     anatomy: [
       {name: 'Header', required: true, description: 'Contains the title, optional subheader, and close button.'},
@@ -309,28 +293,17 @@ export const docsZh = {
   },
   usage: {
     description:
-      '一个点击触发的弹出框，用于显示锚定到触发元素的交互式内容，实现了按钮 + 对话框的 ARIA 模式。',
-    features: [
-      '使用 CSS 锚点定位，相对于触发元素自动放置',
-      '使用 Popover API 进行顶层渲染——无需 React 传送门',
-      '受控和非受控模式',
-      '轻量关闭支持（点击外部或按 Escape 关闭）',
-      '在打开的弹出框内捕获焦点',
-      'ARIA 按钮 + 对话框模式自动应用于触发元素',
-      '通过 anchorRef 实现兄弟模式，用于外部触发元素',
-      '稳定的锚点包装器，不受按压状态变换的影响',
+      'Popover displays interactive content anchored to a trigger element, activated on click. Use it for secondary actions or supplementary information that does not warrant a full dialog. For hover-triggered previews use HoverCard, and for brief helper text use Tooltip.',
+    bestPractices: [
+      { guidance: true, description: 'Keep popover content focused on a single task or piece of information.' },
+      { guidance: true, description: 'Provide a clear close affordance — light dismiss or an explicit close button — so users can easily return to the main content.' },
+      { guidance: false, description: 'Nest popovers inside other popovers, as it creates confusing focus and navigation patterns.' },
+      { guidance: false, description: 'Use a Popover for content that requires heavy user input — use a Dialog instead.' },
     ],
-    accessibility: [
-      '实现了按钮 + 对话框的 ARIA 模式：aria-haspopup、aria-expanded 和 aria-controls 会自动设置在触发按钮上。',
-      '在弹出框对话框打开时，焦点被捕获在其内部。',
-      '支持 role="button" 元素的键盘激活（Enter 和 Space），以及原生 <button> 的点击合成。',
-      'Keyboard: Escape 关闭弹出框。当触发器获得焦点时，Enter/Space 打开弹出框。焦点被捕获在打开的弹出框内。',
-    ],
-    notes: [
-      'XDSPopover 通过搜索 <button> 或 [role="button"] 来定位子元素中的触发按钮——子树中必须包含一个。它会自动应用 click/keydown 处理程序以及 aria-haspopup、aria-expanded、aria-controls 属性。',
-      'XDSPopover 使用 inline-flex 锚点包装器，以确保触发器上的按压状态变换（如 :active scale）不会偏移锚点位置并导致弹出框抖动。',
-      '在兄弟模式下（anchorRef 属性），XDSPopover 附加到外部 ref 而不是包裹子元素——适用于触发器和浮层不是父子关系的情况。',
-      'LayerPlacement 值：above | below | start | end。LayerAlignment 值：start | center | end。',
+    anatomy: [
+      {name: 'Header', required: true, description: 'Contains the title, optional subheader, and close button.'},
+      {name: 'Body', required: true, description: 'Main content area of the popover.'},
+      {name: 'Trigger Element', required: true, description: 'The button or link that toggles the popover open.'},
     ],
   },
 };
@@ -339,29 +312,21 @@ export const docsZh = {
 export const docsDense = {
   description:
     'Click-triggered popover displaying interactive content anchored to trigger element; implements button+dialog ARIA pattern.',
-  features: [
-    'CSS Anchor Positioning for auto placement relative to trigger',
-    'Popover API for top-layer rendering; no React portals needed',
-    'Controlled + uncontrolled modes',
-    'Light dismiss support (click outside or Escape to close)',
-    'Focus trap inside open popovers',
-    'ARIA button+dialog pattern auto-applied to trigger elements',
-    'Sibling mode via anchorRef for external trigger elements',
-    'Stable anchor wrapper immune to pressed-state transforms',
-  ],
-  notes: [
-    'XDSPopover finds trigger button in children by searching <button> or [role="button"]; child tree must contain one. Applies click/keydown handlers + aria-haspopup, aria-expanded, aria-controls automatically.',
-    'Uses inline-flex anchor wrapper so pressed-state transforms (e.g. :active scale) don\'t shift anchor position causing jitter.',
-    'Sibling mode (anchorRef prop) attaches to external ref instead of wrapping children; useful when trigger+overlay not parent/child.',
-    'LayerPlacement values: above | below | start | end. LayerAlignment values: start | center | end.',
-  ],
-  accessibility: [
-    'Implements button+dialog ARIA pattern: aria-haspopup, aria-expanded, aria-controls set on trigger button automatically.',
-    'Traps focus inside popover dialog while open.',
-    'Supports keyboard activation for role="button" elements (Enter+Space) plus native <button> click synthesis.',
-  ],
-  keyboard:
-    'Escape closes popover. Enter/Space open popover when trigger focused. Focus trapped inside open popover.',
+  usage: {
+    description:
+      'Popover displays interactive content anchored to a trigger element, activated on click. Use it for secondary actions or supplementary information that does not warrant a full dialog. For hover-triggered previews use HoverCard, and for brief helper text use Tooltip.',
+    bestPractices: [
+      { guidance: true, description: 'Keep popover content focused on a single task or piece of information.' },
+      { guidance: true, description: 'Provide a clear close affordance — light dismiss or an explicit close button — so users can easily return to the main content.' },
+      { guidance: false, description: 'Nest popovers inside other popovers, as it creates confusing focus and navigation patterns.' },
+      { guidance: false, description: 'Use a Popover for content that requires heavy user input — use a Dialog instead.' },
+    ],
+    anatomy: [
+      {name: 'Header', required: true, description: 'Contains the title, optional subheader, and close button.'},
+      {name: 'Body', required: true, description: 'Main content area of the popover.'},
+      {name: 'Trigger Element', required: true, description: 'The button or link that toggles the popover open.'},
+    ],
+  },
   components: [
     {
       name: 'XDSPopover',

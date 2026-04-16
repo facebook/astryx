@@ -62,24 +62,12 @@ export const docs = {
   },
   usage: {
     description:
-      'Overflow menu with a three-dot icon trigger for presenting secondary or overflow actions in a compact space. A convenience wrapper that composes an icon-only XDSButton with a dropdown menu, eliminating the boilerplate of wiring up state management, positioning, and accessibility attributes.',
-    features: [
-      "Zero-config defaults: three-dot icon, 'More options' label, ghost variant — just pass items",
-      'Data-driven items: same items prop as XDSDropdownMenu (items, dividers, sections)',
-      'Icon-only trigger: always renders as a square icon button with aria-label',
-      'Tooltip: shows label on hover, hidden when menu is open',
-      'Custom rendering: optional children render function for custom item content',
-    ],
-    accessibility: [
-      'Proper ARIA roles: menu and menuitem on dropdown elements.',
-      'Trigger button has aria-haspopup="menu" and aria-expanded.',
-      'aria-activedescendant tracks the highlighted menu item.',
-      'Disabled items have aria-disabled set.',
-      'Sections use role="group" with aria-label.',
-      'Keyboard: Arrow keys navigate items; Home/End jump to first/last; Enter/Space select highlighted item; Escape closes menu.',
-    ],
-    notes: [
-      'For full control over trigger rendering or menu content, compose XDSButton + useXDSLayer + XDSDropdownMenuItem directly.',
+      'MoreMenu is a compact overflow menu triggered by a three-dot icon button. Use it to present secondary or overflow actions in tight spaces such as table rows, card headers, or toolbars.',
+    bestPractices: [
+      { guidance: true, description: 'Use for secondary or overflow actions that do not need to be always visible.' },
+      { guidance: true, description: 'Provide a meaningful label to describe the menu context for screen reader users.' },
+      { guidance: false, description: 'Place primary actions inside a MoreMenu — primary actions should be directly visible.' },
+      { guidance: false, description: 'Use MoreMenu when you need a labeled trigger button with a chevron — use DropdownMenu instead.' },
     ],
   },
 };
@@ -145,25 +133,12 @@ export const docsZh = {
   },
   usage: {
     description:
-      '带有三点图标触发器的溢出菜单。一个便捷的包装组件，将仅图标的 XDSButton 与下拉菜单组合在一起，省去了手动连接状态管理、定位和无障碍属性的模板代码。',
-    features: [
-      "零配置默认值：三点图标、'More options' 标签、ghost 变体，只需传入 items",
-      '数据驱动的菜单项：与 XDSDropdownMenu 相同的 items 属性（项目、分割线、分组）',
-      '仅图标触发器：始终渲染为带 aria-label 的方形图标按钮',
-      '工具提示：悬停时显示标签，菜单打开时隐藏',
-      '自定义渲染：可选的 children 渲染函数用于自定义项目内容',
-    ],
-    accessibility: [
-      '正确的 ARIA 角色：下拉元素上设置 menu 和 menuitem。',
-      '触发按钮设置了 aria-haspopup="menu" 和 aria-expanded。',
-      'aria-activedescendant 跟踪高亮的菜单项。',
-      '禁用项目设置了 aria-disabled。',
-      '分组使用 role="group" 配合 aria-label。',
-      'Keyboard: 方向键导航项目；Home/End 跳转到第一项/最后一项；Enter/Space 选择高亮项目；Escape 关闭菜单',
-    ],
-    notes: [
-      '如需完全控制触发器渲染或菜单内容，请直接组合 XDSButton + useXDSLayer + XDSDropdownMenuItem。',
-      '在紧凑空间（表格行、卡片标题）中使用 XDSMoreMenu 作为仅图标的溢出操作。使用 XDSDropdownMenu 作为带标签和箭头的触发按钮。',
+      'MoreMenu is a compact overflow menu triggered by a three-dot icon button. Use it to present secondary or overflow actions in tight spaces such as table rows, card headers, or toolbars.',
+    bestPractices: [
+      { guidance: true, description: 'Use for secondary or overflow actions that do not need to be always visible.' },
+      { guidance: true, description: 'Provide a meaningful label to describe the menu context for screen reader users.' },
+      { guidance: false, description: 'Place primary actions inside a MoreMenu — primary actions should be directly visible.' },
+      { guidance: false, description: 'Use MoreMenu when you need a labeled trigger button with a chevron — use DropdownMenu instead.' },
     ],
   },
 };
@@ -172,26 +147,16 @@ export const docsZh = {
 export const docsDense = {
   description:
     'Overflow menu w/ three-dot icon trigger. Convenience wrapper composing icon-only XDSButton w/ dropdown menu, eliminating boilerplate for state management, positioning, accessibility.',
-  features: [
-    "Zero-config defaults: three-dot icon, 'More options' label, ghost variant; just pass items",
-    'Data-driven items: same items prop as XDSDropdownMenu (items, dividers, sections)',
-    'Icon-only trigger: always renders as square icon button w/ aria-label',
-    'Tooltip: shows label on hover, hidden when menu open',
-    'Custom rendering: optional children render function for custom item content',
-  ],
-  accessibility: [
-    'Proper ARIA roles: menu + menuitem on dropdown elements.',
-    'Trigger button has aria-haspopup="menu" + aria-expanded.',
-    'aria-activedescendant tracks highlighted menu item.',
-    'Disabled items have aria-disabled set.',
-    'Sections use role="group" w/ aria-label.',
-  ],
-  keyboard:
-    'Arrow keys navigate items; Home/End jump to first/last; Enter/Space select highlighted item; Escape closes menu',
-  notes: [
-    'For full control over trigger rendering or menu content, compose XDSButton + useXDSLayer + XDSDropdownMenuItem directly.',
-    'Use XDSMoreMenu for icon-only overflow actions in tight spaces (table rows, card headers). Use XDSDropdownMenu for labeled trigger buttons w/ chevrons.',
-  ],
+  usage: {
+    description:
+      'MoreMenu is a compact overflow menu triggered by a three-dot icon button. Use it to present secondary or overflow actions in tight spaces such as table rows, card headers, or toolbars.',
+    bestPractices: [
+      { guidance: true, description: 'Use for secondary or overflow actions that do not need to be always visible.' },
+      { guidance: true, description: 'Provide a meaningful label to describe the menu context for screen reader users.' },
+      { guidance: false, description: 'Place primary actions inside a MoreMenu — primary actions should be directly visible.' },
+      { guidance: false, description: 'Use MoreMenu when you need a labeled trigger button with a chevron — use DropdownMenu instead.' },
+    ],
+  },
   propDescriptions: {
     items: 'Menu items (actions, dividers, sections). Same type as XDSDropdownMenu items.',
     label: 'Accessible label (aria-label) + tooltip text.',

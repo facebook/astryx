@@ -5,19 +5,11 @@ export const docs = {
   keywords: ["breadcrumbs","breadcrumb","navigation","nav","crumbs","trail","path","hierarchy","wayfinding","steps"],
   usage: {
     description:
-      'A secondary navigation trail with semantic HTML that orients the user within a content hierarchy. Use to show the user\'s position relative to the product architecture and enable quick back-and-forth navigation.',
-    features: [
-      'Configurable separator between items (defaults to /)',
-      'Two visual variants: default and supporting (smaller, secondary text)',
-      'Supports icons before item labels via startIcon',
-      'Auto-detects the last child as the current page when no isCurrent is set',
-    ],
-    accessibility: [
-      'Container renders as a <nav aria-label> landmark; the label defaults to "Breadcrumb" and is customizable via the label prop',
-      'Items are placed inside an <ol> with individual <li> wrappers for correct list semantics',
-      'The current page item receives aria-current="page"',
-      'Separators are rendered with aria-hidden="true" so screen readers skip them',
-      'Auto-detects the last child as the current item when no isCurrent prop is explicitly set',
+      'Breadcrumbs display a secondary navigation trail that shows the user\'s position within a content hierarchy. Use to orient users and enable quick back-and-forth navigation across nested pages.',
+    bestPractices: [
+      {guidance: true, description: 'Place breadcrumbs near the top of the page, above the main heading, to establish hierarchy context.'},
+      {guidance: true, description: 'Keep breadcrumb labels short and match the titles of the pages they link to.'},
+      {guidance: false, description: 'Use breadcrumbs as the primary navigation — they supplement, not replace, a main nav.'},
     ],
   },
   theming: {
@@ -114,22 +106,12 @@ export const docs = {
 export const docsZh = {
   name: 'Breadcrumbs',
   usage: {
-    description: '带语义化 HTML 的导航面包屑路径。',
-    features: [
-      '渲染包含有序面包屑项列表的 <nav> 地标元素',
-      '可配置项目间的分隔符（默认为 /）',
-      '两种视觉变体：default 和 supporting（更小，次要文本样式）',
-      '当前页面项标记为 aria-current="page"',
-      '分隔符通过 aria-hidden 对辅助技术隐藏',
-      '通过 startIcon 支持在项目标签前显示图标',
-      '未设置 isCurrent 时自动检测最后一个子元素为当前页面',
-    ],
-    accessibility: [
-      '容器渲染为 <nav aria-label> 地标元素；标签默认为 "Breadcrumb"，可通过 label 属性自定义',
-      '项目放置在 <ol> 内，每个项目用 <li> 包裹以确保正确的列表语义',
-      '当前页面项接收 aria-current="page"',
-      '分隔符使用 aria-hidden="true" 渲染，屏幕阅读器会跳过它们',
-      '未显式设置 isCurrent 属性时，自动检测最后一个子元素为当前项',
+    description:
+      'Breadcrumbs display a secondary navigation trail that shows the user\'s position within a content hierarchy. Use to orient users and enable quick back-and-forth navigation across nested pages.',
+    bestPractices: [
+      {guidance: true, description: 'Place breadcrumbs near the top of the page, above the main heading, to establish hierarchy context.'},
+      {guidance: true, description: 'Keep breadcrumb labels short and match the titles of the pages they link to.'},
+      {guidance: false, description: 'Use breadcrumbs as the primary navigation — they supplement, not replace, a main nav.'},
     ],
   },
   theming: {
@@ -178,22 +160,15 @@ export const docsZh = {
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   description: 'navigation breadcrumb trail w/ semantic HTML',
-  features: [
-    'renders <nav> landmark w/ ordered breadcrumb list',
-    'configurable separator between items (default /)',
-    'two variants: default + supporting (smaller, secondary text)',
-    'current page marked w/ aria-current="page"',
-    'separators hidden from assistive tech via aria-hidden',
-    'startIcon before item labels',
-    'auto-detects last child as current page w/o isCurrent',
-  ],
-  accessibility: [
-    '<nav aria-label> landmark; label defaults to "Breadcrumb", customizable via label prop',
-    'items in <ol> w/ <li> wrappers for list semantics',
-    'current page gets aria-current="page"',
-    'separators aria-hidden="true" so screen readers skip',
-    'auto-detects last child as current w/o isCurrent set',
-  ],
+  usage: {
+    description:
+      'Breadcrumbs display a secondary navigation trail that shows the user\'s position within a content hierarchy. Use to orient users and enable quick back-and-forth navigation across nested pages.',
+    bestPractices: [
+      {guidance: true, description: 'Place breadcrumbs near the top of the page, above the main heading, to establish hierarchy context.'},
+      {guidance: true, description: 'Keep breadcrumb labels short and match the titles of the pages they link to.'},
+      {guidance: false, description: 'Use breadcrumbs as the primary navigation — they supplement, not replace, a main nav.'},
+    ],
+  },
   components: [
     {
       name: 'XDSBreadcrumbs',

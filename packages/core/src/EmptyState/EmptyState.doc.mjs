@@ -56,20 +56,12 @@ export const docs = {
     ],
   },
   usage: {
-    description: 'An empty state placeholder that provides guidance and context when there is no data to display. Use for null states, failed loading states, or when search and filter results return nothing. Be clear with messaging and offer a next step so users know how to proceed.',
-    features: [
-      'Uses role="status" so screen readers announce the empty state automatically',
-      'Icon slot renders as decorative (aria-hidden="true") — no extra labeling needed',
-      'Title renders as a heading element (h1-h6, default h3) for correct document outline',
-      'Actions are laid out horizontally by default and stack vertically in compact mode',
-      'Compact variant reduces spacing for constrained content areas',
-      'Accepts xstyle, className, and style props for custom container adjustments',
-      'Forwarded ref lands on the root <div> container',
-    ],
-    accessibility: [
-      'Container uses role="status" to announce the empty state content to screen readers.',
-      'Icon wrapper has aria-hidden="true" so decorative icons are ignored by assistive technology.',
-      'Title renders as a heading element (h1-h6 via headingLevel prop, default h3), keeping it in the document heading outline.',
+    description: 'An empty state placeholder that provides guidance when there is no data to display. Use for null states, failed loading states, or when search and filter results return nothing. Always include a clear message and a call to action so users know how to proceed.',
+    bestPractices: [
+      { guidance: true, description: 'Include a clear title and a call-to-action button so users know how to proceed.' },
+      { guidance: true, description: 'Use an illustration or icon that reinforces the context of the empty state.' },
+      { guidance: false, description: 'Leave an empty state without guidance — always explain what happened and what the user can do next.' },
+      { guidance: false, description: 'Use an EmptyState for error messages that require immediate action — use an alert instead.' },
     ],
     anatomy: [
       {name: 'Illustration', required: false, description: 'Visual cue that reinforces the empty state context.'},
@@ -136,21 +128,18 @@ export const docsZh = {
     ],
   },
   usage: {
-    description:
-      '用于无数据内容区域的空状态占位组件。显示图标或插图、标题、可选描述和操作按钮。',
-    features: [
-      '使用 role="status"，屏幕阅读器会自动播报空状态内容',
-      '图标插槽渲染为装饰性元素（aria-hidden="true"），无需额外标注',
-      '标题渲染为标题元素（h1-h6，默认 h3），保持正确的文档大纲',
-      '操作按钮默认水平排列，紧凑模式下垂直堆叠',
-      '紧凑变体减少间距，适用于空间受限的内容区域',
-      '接受 xstyle、className 和 style 属性用于自定义容器调整',
-      '转发的 ref 指向根 <div> 容器',
+    description: 'An empty state placeholder that provides guidance when there is no data to display. Use for null states, failed loading states, or when search and filter results return nothing. Always include a clear message and a call to action so users know how to proceed.',
+    bestPractices: [
+      { guidance: true, description: 'Include a clear title and a call-to-action button so users know how to proceed.' },
+      { guidance: true, description: 'Use an illustration or icon that reinforces the context of the empty state.' },
+      { guidance: false, description: 'Leave an empty state without guidance — always explain what happened and what the user can do next.' },
+      { guidance: false, description: 'Use an EmptyState for error messages that require immediate action — use an alert instead.' },
     ],
-    accessibility: [
-      '容器使用 role="status" 向屏幕阅读器播报空状态内容。',
-      '图标包装器具有 aria-hidden="true"，使装饰性图标被辅助技术忽略。',
-      '标题渲染为标题元素（通过 headingLevel 属性设置 h1-h6，默认 h3），保持在文档标题大纲中。',
+    anatomy: [
+      {name: 'Illustration', required: false, description: 'Visual cue that reinforces the empty state context.'},
+      {name: 'Title', required: true, description: 'Primary message explaining the empty state.'},
+      {name: 'Subtitle', required: false, description: 'Additional context or explanation.'},
+      {name: 'Call to action', required: false, description: 'Buttons guiding the user to a next step.'},
     ],
   },
 };
@@ -159,20 +148,21 @@ export const docsZh = {
 export const docsDense = {
   description:
     'Empty state placeholder for content areas w/ no data. Displays icon/illustration, title, optional description + action buttons.',
-  features: [
-    'role="status" so screen readers auto-announce empty state',
-    'Icon slot renders decorative (aria-hidden="true"); no extra labeling needed',
-    'Title renders as heading (h1-h6, default h3) for correct document outline',
-    'Actions horizontal by default; stack vertically in compact mode',
-    'Compact variant reduces spacing for constrained areas',
-    'Accepts xstyle, className, style for container adjustments',
-    'Forwarded ref on root <div> container',
-  ],
-  accessibility: [
-    'Container uses role="status" to announce empty state to screen readers.',
-    'Icon wrapper has aria-hidden="true"; decorative icons ignored by assistive tech.',
-    'Title renders as heading (h1-h6 via headingLevel, default h3) in document outline.',
-  ],
+  usage: {
+    description: 'An empty state placeholder that provides guidance when there is no data to display. Use for null states, failed loading states, or when search and filter results return nothing. Always include a clear message and a call to action so users know how to proceed.',
+    bestPractices: [
+      { guidance: true, description: 'Include a clear title and a call-to-action button so users know how to proceed.' },
+      { guidance: true, description: 'Use an illustration or icon that reinforces the context of the empty state.' },
+      { guidance: false, description: 'Leave an empty state without guidance — always explain what happened and what the user can do next.' },
+      { guidance: false, description: 'Use an EmptyState for error messages that require immediate action — use an alert instead.' },
+    ],
+    anatomy: [
+      {name: 'Illustration', required: false, description: 'Visual cue that reinforces the empty state context.'},
+      {name: 'Title', required: true, description: 'Primary message explaining the empty state.'},
+      {name: 'Subtitle', required: false, description: 'Additional context or explanation.'},
+      {name: 'Call to action', required: false, description: 'Buttons guiding the user to a next step.'},
+    ],
+  },
   propDescriptions: {
     title: 'Primary msg rendered as heading (h1-h6) inside empty state.',
     headingLevel: 'Controls HTML heading tag (h1-h6) for document outline.',

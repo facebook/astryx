@@ -5,33 +5,12 @@ export const docs = {
   keywords: ["calendar","datepicker","date picker","rangepicker","date range","monthview","daypicker"],
   usage: {
     description:
-      'A calendar component for date selection supporting single and range selection modes with customizable constraints and locale options.',
-    features: [
-      "Selection Modes: 'single' (default) and 'range'",
-      'Multi-Month Display: Show 1 or 2 months side by side',
-      'Date Constraints: min, max, and custom dateConstraints functions',
-      'Locale Options: weekStartsOn for configurable first day of week',
-      'Week Numbers: Optional ISO week number column',
-      'Controlled/Uncontrolled: Supports both patterns via value/defaultValue',
-      'Nav buttons auto-disable when min/max boundary is within the current month',
-    ],
-    accessibility: [
-      'Keyboard: Escape cancels in-progress range selection',
-      'Day name headers use role="columnheader", day buttons expose data-date attribute',
-      'Outside days are aria-disabled and not clickable even when visible',
-      'Selected date receives roving tabindex priority over today',
-      'Day cell transitions respect prefers-reduced-motion',
-    ],
-    notes: [
-      'ISODateString type: `${number}${number}${number}${number}-${number}${number}-${number}${number}`',
-      'DayOfWeek type: 0 | 1 | 2 | 3 | 4 | 5 | 6',
-      'DateRange interface: { start: ISODateString; end: ISODateString }',
-      'Day buttons render a data-date="YYYY-MM-DD" attribute for testing and scripting',
-      'Roving tabindex priority: selected date > today > first enabled day',
-      'In range mode, pressing Escape resets the pending start date without firing onChange',
-      'Previous/next month buttons become disabled when the current view contains the min or max date',
-      'Outside days (adjacent month) are rendered with aria-disabled="true" and ignore clicks',
-      'Day cell transitions are suppressed under @media (prefers-reduced-motion: reduce)',
+      'Calendar displays a month-view grid for selecting dates, supporting single and range selection modes. Use when users need to pick a specific date or date range within a constrained set of options.',
+    bestPractices: [
+      {guidance: true, description: 'Set min and max dates to constrain selection to a valid range for the task.'},
+      {guidance: true, description: 'Use range mode for start/end date scenarios like booking or scheduling.'},
+      {guidance: false, description: 'Use a calendar for selecting dates far in the past or future — prefer a date input for open-ended entry.'},
+      {guidance: false, description: 'Disable large blocks of dates without explaining why they are unavailable.'},
     ],
   },
   props: [
@@ -124,31 +103,13 @@ export const docs = {
 export const docsZh = {
   name: 'Calendar',
   usage: {
-    description: 'XDSCalendar 日历组件，支持单选和范围选择模式的日期选取。',
-    features: [
-      "选择模式：'single'（默认）和 'range'",
-      '多月显示：并排显示 1 或 2 个月份',
-      '日期约束：min、max 和自定义 dateConstraints 函数',
-      '区域选项：weekStartsOn 可配置每周的起始日',
-      '周数：可选的 ISO 周数列',
-      '受控/非受控：通过 value/defaultValue 支持两种模式',
-      '键盘：Escape 取消正在进行的范围选择',
-      '无障碍：星期名称使用 role="columnheader"，日期按钮暴露 data-date 属性',
-      '无障碍：外部日期设为 aria-disabled 且不可点击',
-      '无障碍：选中日期获得漫游 tabindex 优先级',
-      '导航按钮在 min/max 边界所在月份时自动禁用',
-      '动效：日期单元格过渡遵循 prefers-reduced-motion',
-    ],
-    notes: [
-      'ISODateString 类型：`${number}${number}${number}${number}-${number}${number}-${number}${number}`',
-      'DayOfWeek 类型：0 | 1 | 2 | 3 | 4 | 5 | 6',
-      'DateRange 接口：{ start: ISODateString; end: ISODateString }',
-      '日期按钮渲染 data-date="YYYY-MM-DD" 属性，用于测试和脚本',
-      '漫游 tabindex 优先级：选中日期 > 今天 > 第一个启用日期',
-      '范围模式下按 Escape 重置待选起始日期，不触发 onChange',
-      '上/下月按钮在当前视图包含 min 或 max 日期时禁用',
-      '外部日期（相邻月份）以 aria-disabled="true" 渲染且忽略点击',
-      '日期单元格过渡在 @media (prefers-reduced-motion: reduce) 下被抑制',
+    description:
+      'Calendar displays a month-view grid for selecting dates, supporting single and range selection modes. Use when users need to pick a specific date or date range within a constrained set of options.',
+    bestPractices: [
+      {guidance: true, description: 'Set min and max dates to constrain selection to a valid range for the task.'},
+      {guidance: true, description: 'Use range mode for start/end date scenarios like booking or scheduling.'},
+      {guidance: false, description: 'Use a calendar for selecting dates far in the past or future — prefer a date input for open-ended entry.'},
+      {guidance: false, description: 'Disable large blocks of dates without explaining why they are unavailable.'},
     ],
   },
   props: [
@@ -191,28 +152,16 @@ export const docsZh = {
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   description: 'calendar for date selection w/ single+range modes',
-  features: [
-    "selection modes: single (default) + range",
-    'multi-month: 1 or 2 side by side',
-    'date constraints: min, max, custom dateConstraints fns',
-    'weekStartsOn for configurable first day of week',
-    'optional ISO week number column',
-    'controlled/uncontrolled via value/defaultValue',
-    'Escape cancels in-progress range selection',
-    'a11y: columnheader on day names, data-date on buttons, outside days aria-disabled',
-    'selected date gets roving tabindex priority; nav buttons disable at min/max boundary',
-    'prefers-reduced-motion suppresses day cell transitions',
-  ],
-  notes: [
-    'ISODateString type: YYYY-MM-DD template literal',
-    'DayOfWeek type: 0|1|2|3|4|5|6',
-    'DateRange: { start: ISODateString; end: ISODateString }',
-    'data-date attr on day buttons for testing/scripting',
-    'tabindex priority: selected > today > first enabled',
-    'Escape in range mode resets start, no onChange fired',
-    'prev/next buttons disabled when view contains min/max',
-    'outside days: aria-disabled + click ignored',
-  ],
+  usage: {
+    description:
+      'Calendar displays a month-view grid for selecting dates, supporting single and range selection modes. Use when users need to pick a specific date or date range within a constrained set of options.',
+    bestPractices: [
+      {guidance: true, description: 'Set min and max dates to constrain selection to a valid range for the task.'},
+      {guidance: true, description: 'Use range mode for start/end date scenarios like booking or scheduling.'},
+      {guidance: false, description: 'Use a calendar for selecting dates far in the past or future — prefer a date input for open-ended entry.'},
+      {guidance: false, description: 'Disable large blocks of dates without explaining why they are unavailable.'},
+    ],
+  },
   propDescriptions: {
     mode: 'selection mode',
     value: 'controlled selected value',

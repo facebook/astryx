@@ -156,34 +156,12 @@ export const docs = {
   },
   usage: {
     description:
-      'A number input component for collecting and editing numeric values with validation support. Use within forms with support for min/max/step constraints, units display, and error/warning/success validation states.',
-    features: [
-      'Label Support — required label for accessibility (can be visually hidden)',
-      'Description — optional description text displayed between the label and input',
-      'Optional/Required Indicators — display "Optional" or "Required" text with bullet separator',
-      'Label Tooltip — optional info icon with tooltip at end of label',
-      'Label Icon — optional icon before the label text',
-      'Accessible — label properly associated with input via htmlFor/id',
-      'Size Variants — three sizes (sm, md, lg) for different contexts',
-      'Status Handling — error, warning, and success states with messages',
-      'Number Constraints — support for min, max, and step attributes',
-      'Validated onChange — only calls onChange when the entered value passes validation',
-      'Units Display — optional units suffix (e.g., "%" or "GB")',
-      'Integer Mode — option to restrict to integers only',
-      'Native Controls — uses type="number" for browser step controls',
-      'Event Callbacks — onFocus, onBlur, and onEnter handlers',
-    ],
-    accessibility: [
-      'Label is always rendered and associated with the input via htmlFor/id using the useId hook.',
-      'Use isLabelHidden to hide the label visually while keeping it accessible to screen readers via a CSS technique.',
-      'Wraps XDSField for consistent label, description, and optional/required indicator handling.',
-    ],
-    notes: [
-      'isOptional and isRequired are mutually exclusive; if both are set, "Optional" is shown.',
-      'Uses type="number" to enable native browser step controls (up/down arrows).',
-      'Validated onChange: only calls onChange when the entered value is a valid number that passes min/max/integer constraints.',
-      'Uses internal pending state to allow free-form typing while validating on commit.',
-      'Units are displayed as a lighter grey suffix after the input value.',
+      'NumberInput is a form input for collecting and editing numeric values with built-in validation. Use it when users need to enter quantities, measurements, or other constrained numeric data with optional min, max, and step controls.',
+    bestPractices: [
+      { guidance: true, description: 'Set appropriate min, max, and step constraints to guide users toward valid values.' },
+      { guidance: true, description: 'Display units (e.g. "%" or "GB") to clarify what the number represents.' },
+      { guidance: false, description: 'Use NumberInput for free-form text that happens to contain numbers — use TextInput instead.' },
+      { guidance: false, description: 'Set both isOptional and isRequired on the same field.' },
     ],
     anatomy: [
       {name: 'Label', required: true, description: 'The label for the number input.'},
@@ -350,35 +328,19 @@ export const docsZh = {
   },
   usage: {
     description:
-      '用于收集带验证的数字用户输入的数字输入组件。',
-    features: [
-      '标签支持 - 必需的标签用于无障碍访问（可视觉隐藏）',
-      '描述 - 可选的描述文本，显示在标签和输入框之间',
-      '可选/必填指示器 - 显示"Optional"或"Required"文本，带圆点分隔符',
-      '标签工具提示 - 可选的信息图标，在标签末尾显示工具提示',
-      '标签图标 - 可选的标签文本前图标',
-      '无障碍 - 通过 htmlFor/id 将标签与输入框正确关联',
-      '使用 StyleX 样式 - 使用 XDS 设计令牌实现一致的样式',
-      '尺寸变体 - 三种尺寸（sm、md、lg）适用于不同场景',
-      '状态处理 - 错误、警告和成功状态及消息',
-      '数值约束 - 支持 min、max 和 step 属性',
-      '验证性 onChange - 仅在输入值通过验证时调用 onChange',
-      '单位显示 - 可选的单位后缀（例如"%"或"GB"）',
-      '整数模式 - 可选择仅限整数输入',
-      '原生控件 - 使用 type="number" 获取浏览器步进控件',
-      '事件回调 - onFocus、onBlur 和 onEnter 处理器',
+      'NumberInput is a form input for collecting and editing numeric values with built-in validation. Use it when users need to enter quantities, measurements, or other constrained numeric data with optional min, max, and step controls.',
+    bestPractices: [
+      { guidance: true, description: 'Set appropriate min, max, and step constraints to guide users toward valid values.' },
+      { guidance: true, description: 'Display units (e.g. "%" or "GB") to clarify what the number represents.' },
+      { guidance: false, description: 'Use NumberInput for free-form text that happens to contain numbers — use TextInput instead.' },
+      { guidance: false, description: 'Set both isOptional and isRequired on the same field.' },
     ],
-    accessibility: [
-      '标签始终渲染，并通过 useId hook 使用 htmlFor/id 与输入框关联。',
-      '使用 isLabelHidden 视觉隐藏标签，同时通过 CSS 技术保持屏幕阅读器可访问。',
-      '包装 XDSField 以实现一致的标签、描述和可选/必填指示器处理。',
-    ],
-    notes: [
-      'isOptional 和 isRequired 互斥；同时设置两者将显示"Optional"。',
-      '使用 type="number" 启用浏览器原生步进控件（上/下箭头）。',
-      '验证性 onChange：仅在输入值为通过 min/max/整数约束的有效数字时调用 onChange。',
-      '使用内部待定状态以允许自由输入，同时在提交时进行验证。',
-      '单位以浅灰色后缀显示在输入值之后。',
+    anatomy: [
+      {name: 'Label', required: true, description: 'The label for the number input.'},
+      {name: 'Description', required: false, description: 'Additional description text below the label.'},
+      {name: 'Icon', required: false, description: 'An optional icon within the input.'},
+      {name: 'Placeholder', required: false, description: 'Placeholder text shown when the input is empty.'},
+      {name: 'Spinner', required: false, description: 'Increment and decrement controls for the value.'},
     ],
   },
 };
@@ -386,35 +348,23 @@ export const docsZh = {
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   description: 'Number input component for collecting numeric user input w/ validation.',
-  features: [
-    'Label support; required label for accessibility (can be visually hidden)',
-    'Description; optional text between label + input',
-    'Optional/Required indicators; display "Optional" or "Required" w/ bullet separator',
-    'Label tooltip; optional info icon w/ tooltip at label end',
-    'Label icon; optional icon before label text',
-    'Accessible; label associated w/ input via htmlFor/id',
-    'Styled w/ StyleX; uses XDS design tokens for consistent styling',
-    'Size variants; three sizes (sm, md, lg) for different contexts',
-    'Status handling; error, warning, success states w/ messages',
-    'Number constraints; support for min, max, step attributes',
-    'Validated onChange; only calls onChange when value passes validation',
-    'Units display; optional units suffix (e.g. "%" or "GB")',
-    'Integer mode; option to restrict to integers only',
-    'Native controls; uses type="number" for browser step controls',
-    'Event callbacks; onFocus, onBlur, onEnter handlers',
-  ],
-  accessibility: [
-    'Label always rendered + associated w/ input via htmlFor/id using useId hook.',
-    'Use isLabelHidden to hide label visually while keeping screen reader access via CSS.',
-    'Wraps XDSField for consistent label, description, optional/required indicator handling.',
-  ],
-  notes: [
-    'isOptional + isRequired mutually exclusive; both set shows "Optional".',
-    'Uses type="number" to enable native browser step controls (up/down arrows).',
-    'Validated onChange: only calls onChange when value is valid number passing min/max/integer constraints.',
-    'Uses internal pending state for free-form typing while validating on commit.',
-    'Units displayed as lighter grey suffix after input value.',
-  ],
+  usage: {
+    description:
+      'NumberInput is a form input for collecting and editing numeric values with built-in validation. Use it when users need to enter quantities, measurements, or other constrained numeric data with optional min, max, and step controls.',
+    bestPractices: [
+      { guidance: true, description: 'Set appropriate min, max, and step constraints to guide users toward valid values.' },
+      { guidance: true, description: 'Display units (e.g. "%" or "GB") to clarify what the number represents.' },
+      { guidance: false, description: 'Use NumberInput for free-form text that happens to contain numbers — use TextInput instead.' },
+      { guidance: false, description: 'Set both isOptional and isRequired on the same field.' },
+    ],
+    anatomy: [
+      {name: 'Label', required: true, description: 'The label for the number input.'},
+      {name: 'Description', required: false, description: 'Additional description text below the label.'},
+      {name: 'Icon', required: false, description: 'An optional icon within the input.'},
+      {name: 'Placeholder', required: false, description: 'Placeholder text shown when the input is empty.'},
+      {name: 'Spinner', required: false, description: 'Increment and decrement controls for the value.'},
+    ],
+  },
   propDescriptions: {
     label: 'Label text (always rendered for accessibility).',
     value: 'Current input value.',

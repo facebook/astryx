@@ -37,16 +37,12 @@ export const docs = {
   },
   usage: {
     description:
-      'StatusDot is a small colored dot indicator for displaying status through semantic colors such as online/offline or severity levels. Pair it with a text label to ensure the status is accessible, as color alone should not convey meaning.',
-    features: [
-      'Five semantic color variants: positive, warning, negative, info, neutral',
-      'Single size: 8px',
-      'Optional pulse animation that respects prefers-reduced-motion',
-    ],
-    accessibility: [
-      'Renders as <span role="img" aria-label={label}> for screen reader support.',
-      'Not focusable — intended as a decorative indicator only.',
-      'isPulsing animation respects prefers-reduced-motion: reduce.',
+      'StatusDot is a small colored dot indicator that communicates status through semantic color variants. Use it alongside text labels to convey states like online/offline presence or severity levels, as color alone should not carry meaning.',
+    bestPractices: [
+      { guidance: true, description: 'Always pair with a visible text label so status is not conveyed by color alone.' },
+      { guidance: true, description: 'Provide a descriptive label prop for screen reader accessibility.' },
+      { guidance: false, description: 'Use StatusDot as the sole indicator of status without an accompanying text label.' },
+      { guidance: false, description: 'Enable the pulse animation for purely decorative purposes — reserve it for states that require immediate attention.' },
     ],
   },
 };
@@ -88,18 +84,12 @@ export const docsZh = {
   },
   usage: {
     description:
-      '用于状态展示的小型彩色圆点指示器（在线/离线、严重程度等）。',
-    features: [
-      '五种语义颜色变体：positive（正面）、warning（警告）、negative（负面）、info（信息）、neutral（中性）',
-      '两种尺寸：sm（8px）和 md（10px）',
-      '可选的脉冲动画，尊重 prefers-reduced-motion 设置',
-      '无障碍支持 — 渲染为 <span role="img" aria-label={label}> 以支持屏幕阅读器',
-      '不可聚焦（装饰性指示器）',
-    ],
-    accessibility: [
-      '渲染为 <span role="img" aria-label={label}> 以支持屏幕阅读器。',
-      '不可聚焦 — 仅作为装饰性指示器使用。',
-      'isPulsing 动画尊重 prefers-reduced-motion: reduce 设置。',
+      'StatusDot is a small colored dot indicator that communicates status through semantic color variants. Use it alongside text labels to convey states like online/offline presence or severity levels, as color alone should not carry meaning.',
+    bestPractices: [
+      { guidance: true, description: 'Always pair with a visible text label so status is not conveyed by color alone.' },
+      { guidance: true, description: 'Provide a descriptive label prop for screen reader accessibility.' },
+      { guidance: false, description: 'Use StatusDot as the sole indicator of status without an accompanying text label.' },
+      { guidance: false, description: 'Enable the pulse animation for purely decorative purposes — reserve it for states that require immediate attention.' },
     ],
   },
 };
@@ -107,18 +97,16 @@ export const docsZh = {
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   description: 'Small colored dot indicator for status display (online/offline, severity, etc).',
-  features: [
-    'Five semantic color variants: positive, warning, negative, info, neutral',
-    'Single size: 8px',
-    'Optional pulse animation respecting prefers-reduced-motion',
-    'Accessible: <span role="img" aria-label={label}> for screen readers',
-    'Not focusable (decorative indicator)',
-  ],
-  accessibility: [
-    'Renders <span role="img" aria-label={label}> for screen readers.',
-    'Not focusable; decorative indicator only.',
-    'isPulsing animation respects prefers-reduced-motion: reduce.',
-  ],
+  usage: {
+    description:
+      'StatusDot is a small colored dot indicator that communicates status through semantic color variants. Use it alongside text labels to convey states like online/offline presence or severity levels, as color alone should not carry meaning.',
+    bestPractices: [
+      { guidance: true, description: 'Always pair with a visible text label so status is not conveyed by color alone.' },
+      { guidance: true, description: 'Provide a descriptive label prop for screen reader accessibility.' },
+      { guidance: false, description: 'Use StatusDot as the sole indicator of status without an accompanying text label.' },
+      { guidance: false, description: 'Enable the pulse animation for purely decorative purposes — reserve it for states that require immediate attention.' },
+    ],
+  },
   propDescriptions: {
     variant: 'Semantic color variant.',
     label: 'Accessible label via aria-label.',
