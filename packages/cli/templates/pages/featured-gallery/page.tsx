@@ -174,12 +174,14 @@ export default function FeaturedGalleryTemplate() {
         </XDSSection>
       </XDSCenter>
 
-      {/* Carousel — full width */}
-      <XDSCarousel gap={4} hasSnap hasButtons>
-        {GALLERY_ITEMS.map(item => (
-          <GalleryCard key={item.id} item={item} />
-        ))}
-      </XDSCarousel>
+      {/* Carousel — full width with side padding */}
+      <div style={{padding: '0 var(--spacing-6)'}}>
+        <XDSCarousel gap={4} hasSnap hasButtons>
+          {GALLERY_ITEMS.map(item => (
+            <GalleryCard key={item.id} item={item} />
+          ))}
+        </XDSCarousel>
+      </div>
     </XDSVStack>
   );
 }
