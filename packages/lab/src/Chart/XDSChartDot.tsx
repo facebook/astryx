@@ -25,7 +25,7 @@ function isBandScale(scale: unknown): scale is ScaleBand<string> {
  *
  * @example
  * ```
- * <XDSChartDot dataKey="outliers" color={XDSChartColors.categorical(3)[2]} />
+ * <XDSChartDot dataKey="outliers" color={useXDSChartColors().categorical(3)[2]} />
  * ```
  */
 export function XDSChartDot({dataKey, color, radius = 4}: XDSChartDotProps) {

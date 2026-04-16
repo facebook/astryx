@@ -25,7 +25,7 @@ function isBandScale(scale: unknown): scale is ScaleBand<string> {
  *
  * @example
  * ```
- * <XDSChartBar dataKey="revenue" color={XDSChartColors.categorical(1)[0]} />
+ * <XDSChartBar dataKey="revenue" color={useXDSChartColors().categorical(1)[0]} />
  * ```
  */
 export function XDSChartBar({dataKey, color, radius = 4}: XDSChartBarProps) {

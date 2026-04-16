@@ -31,7 +31,7 @@ function isBandScale(scale: unknown): scale is ScaleBand<string> {
  *
  * @example
  * ```
- * <XDSChartLine dataKey="trend" color={XDSChartColors.categorical(2)[1]} />
+ * <XDSChartLine dataKey="trend" color={useXDSChartColors().categorical(2)[1]} />
  * <XDSChartLine dataKey="trend" color="#0171E3" dots />
  * ```
  */
