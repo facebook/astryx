@@ -157,20 +157,16 @@ export default function FeaturedGalleryTemplate() {
                 <XDSBadge label="Blue badge" variant="blue" />
               </XDSHStack>
               <XDSText
-                type="large"
                 weight="bold"
                 as="p"
                 style={{
-                  fontSize: 'var(--font-size-3xl)',
+                  fontSize: 'var(--font-size-2xl)',
                   textAlign: 'center',
                   maxWidth: 640,
                 }}>
                 Make every day a little more delightful, one detail at a time.
               </XDSText>
-              <XDSText
-                type="body"
-                color="secondary"
-                style={{textAlign: 'center', maxWidth: 640}}>
+              <XDSText type="body" style={{textAlign: 'center', maxWidth: 640}}>
                 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
                 eiusmod tempor incididunt ut labore et dolore magna aliqua ut
                 enim ad minim excepteur sint occaecat cupidatat non proident.
