@@ -140,7 +140,7 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: core-dist
-          path: .
+          path: packages
 
       - name: Typecheck component docs
         run: yarn workspace @xds/core typecheck:docs
@@ -168,7 +168,7 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: core-dist
-          path: .
+          path: packages
 
       - name: Build Storybook
         run: yarn workspace @xds/storybook build
@@ -202,7 +202,7 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: core-dist
-          path: .
+          path: packages
 
       - name: Cache Next.js build
         uses: actions/cache@v4
