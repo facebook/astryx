@@ -150,7 +150,10 @@ export default function MixedGalleryTemplate() {
           height="100%"
           className="gallery-container"
           padding={0}>
-          <XDSVStack gap={6} style={{height: '100%'}}>
+          <XDSVStack
+            gap={6}
+            style={{height: '100%'}}
+            className="gallery-vstack">
             {/* Header — capped with XDSSection maxWidth */}
             <XDSCenter axis="horizontal">
               <XDSSection variant="transparent" maxWidth={680}>
@@ -220,6 +223,7 @@ export default function MixedGalleryTemplate() {
             @media (max-width: 767px) {
               .gallery-desktop { display: none !important; }
               .gallery-mobile { display: block; }
+              .gallery-container .gallery-vstack { gap: var(--spacing-3); }
             }
           `,
               }}
