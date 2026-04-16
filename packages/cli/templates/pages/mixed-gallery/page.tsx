@@ -1,11 +1,11 @@
 'use client';
 
 import {XDSAppShell} from '@xds/core/AppShell';
-import {XDSVStack} from '@xds/core/Layout';
+import {XDSVStack, XDSStackItem} from '@xds/core/Layout';
 import {XDSCenter} from '@xds/core/Center';
 import {XDSText} from '@xds/core/Text';
 import {XDSSection} from '@xds/core/Section';
-import {XDSLayout, XDSLayoutHeader, XDSLayoutContent} from '@xds/core/Layout';
+import {XDSGrid} from '@xds/core/Grid';
 
 const IMAGES = [
   'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80',
@@ -14,7 +14,6 @@ const IMAGES = [
   'https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?w=800&q=80',
   'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=800&q=80',
   'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800&q=80',
-  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&q=80',
 ];
 
 const imgStyle: React.CSSProperties = {
@@ -23,100 +22,74 @@ const imgStyle: React.CSSProperties = {
   objectFit: 'cover',
   borderRadius: 'var(--radius-element, 8px)',
   display: 'block',
+  minHeight: 0,
 };
 
 export default function MixedGalleryTemplate() {
   return (
-    <XDSAppShell height="fill" contentPadding={0} variant="surface">
-      <XDSLayout
-        height="fill"
-        header={
-          <XDSLayoutHeader>
-            <XDSCenter axis="horizontal">
-              <XDSSection
-                variant="transparent"
-                maxWidth={1400}
-                width="100%"
-                padding={6}>
-                <XDSCenter axis="horizontal">
-                  <XDSCenter width={680}>
-                    <XDSVStack gap={2} style={{textAlign: 'center'}}>
-                      <XDSText
-                        type="large"
-                        weight="bold"
-                        as="p"
-                        style={{fontSize: 'var(--font-size-2xl)'}}>
-                        Make every day a little more delightful, one small
-                        detail at a time.
-                      </XDSText>
-                      <XDSText type="body">
-                        Lorem ipsum dolor sit amet, consectetur adipiscing elit,
-                        sed do eiusmod tempor incididunt ut labore et dolore
-                        magna aliqua ut enim ad minim excepteur sint occaecat
-                        cupidatat non proident.
-                      </XDSText>
-                    </XDSVStack>
-                  </XDSCenter>
-                </XDSCenter>
-              </XDSSection>
+    <XDSAppShell height="fill" contentPadding={6} variant="surface">
+      <XDSCenter axis="horizontal" height="100%">
+        <XDSVStack
+          gap={6}
+          style={{maxWidth: 1400, width: '100%', height: '100%'}}>
+          {/* Header */}
+          <XDSCenter axis="horizontal">
+            <XDSCenter width={680}>
+              <XDSVStack gap={2} style={{textAlign: 'center'}}>
+                <XDSText
+                  type="large"
+                  weight="bold"
+                  as="p"
+                  style={{fontSize: 'var(--font-size-2xl)'}}>
+                  Make every day a little more delightful, one small detail at a
+                  time.
+                </XDSText>
+                <XDSText type="body">
+                  Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed
+                  do eiusmod tempor incididunt ut labore et dolore magna aliqua
+                  ut enim ad minim excepteur sint occaecat cupidatat non
+                  proident.
+                </XDSText>
+              </XDSVStack>
             </XDSCenter>
-          </XDSLayoutHeader>
-        }
-        content={
-          <XDSLayoutContent isScrollable={false}>
-            <XDSCenter axis="horizontal" height="100%">
-              <XDSSection
-                variant="transparent"
-                maxWidth={1400}
-                width="100%"
-                padding={6}
-                height="100%">
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: '1fr 1.2fr 1fr',
-                    gridTemplateRows: '2fr 3fr',
-                    gap: 'var(--spacing-4)',
-                    height: '100%',
-                  }}>
-                  {/* Left column: short top, tall bottom */}
-                  <img
-                    src={IMAGES[0]}
-                    alt=""
-                    style={{...imgStyle, gridRow: '1 / 2', minHeight: 0}}
-                  />
-                  <img
-                    src={IMAGES[1]}
-                    alt=""
-                    style={{...imgStyle, gridRow: '2 / 3', minHeight: 0}}
-                  />
+          </XDSCenter>
 
-                  {/* Center column: one tall image spanning both rows */}
-                  <img
-                    src={IMAGES[2]}
-                    alt=""
-                    style={{...imgStyle, gridRow: '1 / 3', minHeight: 0}}
-                  />
+          {/* Grid fills remaining space */}
+          <XDSStackItem size="fill">
+            <XDSGrid columns={3} gap={4} height="100%">
+              {/* Left column */}
+              <XDSVStack gap={4} style={{minHeight: 0}}>
+                <XDSStackItem size="fill">
+                  <img src={IMAGES[0]} alt="" style={imgStyle} />
+                </XDSStackItem>
+                <XDSStackItem size="fill">
+                  <img src={IMAGES[1]} alt="" style={{...imgStyle, flex: 2}} />
+                </XDSStackItem>
+              </XDSVStack>
 
-                  {/* Right column: stacked — short, medium, short */}
-                  <div
-                    style={{
-                      gridRow: '1 / 3',
-                      display: 'grid',
-                      gridTemplateRows: '1fr 1.5fr 1fr',
-                      gap: 'var(--spacing-4)',
-                      minHeight: 0,
-                    }}>
-                    <img src={IMAGES[3]} alt="" style={imgStyle} />
-                    <img src={IMAGES[4]} alt="" style={imgStyle} />
-                    <img src={IMAGES[5]} alt="" style={imgStyle} />
-                  </div>
-                </div>
-              </XDSSection>
-            </XDSCenter>
-          </XDSLayoutContent>
-        }
-      />
+              {/* Center column — single tall image */}
+              <img src={IMAGES[2]} alt="" style={imgStyle} />
+
+              {/* Right column */}
+              <XDSVStack gap={4} style={{minHeight: 0}}>
+                <XDSStackItem size="fill">
+                  <img src={IMAGES[3]} alt="" style={imgStyle} />
+                </XDSStackItem>
+                <XDSStackItem size="fill">
+                  <img
+                    src={IMAGES[4]}
+                    alt=""
+                    style={{...imgStyle, flex: 1.5}}
+                  />
+                </XDSStackItem>
+                <XDSStackItem size="fill">
+                  <img src={IMAGES[5]} alt="" style={imgStyle} />
+                </XDSStackItem>
+              </XDSVStack>
+            </XDSGrid>
+          </XDSStackItem>
+        </XDSVStack>
+      </XDSCenter>
     </XDSAppShell>
   );
 }
