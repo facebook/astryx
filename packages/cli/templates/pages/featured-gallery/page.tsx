@@ -1,6 +1,6 @@
 'use client';
 
-import {useState, useRef} from 'react';
+import {useRef} from 'react';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSCenter} from '@xds/core/Center';
 import {XDSSection} from '@xds/core/Section';
@@ -109,9 +109,7 @@ function GalleryCard({item}: {item: GalleryItem}) {
         borderRadius: 'var(--radius-container)',
         overflow: 'clip',
         flexShrink: 0,
-        width: 'calc((100vw - 96px) / 3)',
-        maxWidth: 480,
-        minWidth: 320,
+        width: 380,
       }}>
       <XDSAspectRatio ratio={3 / 4}>
         <img
@@ -127,7 +125,6 @@ function GalleryCard({item}: {item: GalleryItem}) {
         />
       </XDSAspectRatio>
 
-      {/* Gradient overlay + content at bottom */}
       <div
         style={{
           position: 'absolute',
@@ -154,7 +151,9 @@ function GalleryCard({item}: {item: GalleryItem}) {
               <XDSButton
                 label="Read more"
                 variant="secondary"
-                endContent={<XDSIcon icon={ArrowRightIcon} color="inherit" />}
+                endContent={
+                  <XDSIcon icon={ArrowRightIcon} color="inherit" />
+                }
               />
             </div>
           </XDSVStack>
@@ -171,10 +170,10 @@ export default function FeaturedGalleryTemplate() {
 
   const scroll = (direction: 'left' | 'right') => {
     if (!scrollRef.current) return;
-    const cardWidth = scrollRef.current.querySelector('[data-card]')
-      ? (scrollRef.current.querySelector('[data-card]') as HTMLElement).offsetWidth
-      : 400;
-    const scrollAmount = cardWidth + 24;
+    const card = scrollRef.current.querySelector(
+      '[data-card]',
+    ) as HTMLElement | null;
+    const scrollAmount = (card?.offsetWidth ?? 380) + 24;
     scrollRef.current.scrollBy({
       left: direction === 'left' ? -scrollAmount : scrollAmount,
       behavior: 'smooth',
@@ -182,10 +181,10 @@ export default function FeaturedGalleryTemplate() {
   };
 
   return (
-    <XDSVStack gap={0}>
-      {/* Header section */}
-      <XDSCenter axis="horizontal">
-        <XDSSection maxWidth={1200} padding={6} variant="transparent">
+    <XDSCenter axis="horizontal">
+      <XDSSection maxWidth={1200} padding={6} variant="transparent">
+        <XDSVStack gap={6}>
+          {/* Header */}
           <XDSVStack gap={3} hAlign="center">
             <XDSHStack gap={2}>
               <XDSBadge label="Green badge" variant="green" />
@@ -212,12 +211,8 @@ export default function FeaturedGalleryTemplate() {
               ad minim excepteur sint occaecat cupidatat non proident.
             </XDSText>
           </XDSVStack>
-        </XDSSection>
-      </XDSCenter>
 
-      {/* Navigation arrows */}
-      <XDSCenter axis="horizontal">
-        <div style={{maxWidth: 1200, width: '100%', padding: '0 24px'}}>
+          {/* Navigation arrows */}
           <XDSHStack gap={2} hAlign="end">
             <XDSButton
               label="Previous"
@@ -234,12 +229,8 @@ export default function FeaturedGalleryTemplate() {
               onClick={() => scroll('right')}
             />
           </XDSHStack>
-        </div>
-      </XDSCenter>
 
-      {/* Carousel */}
-      <XDSCenter axis="horizontal">
-        <div style={{maxWidth: 1200, width: '100%', padding: '0 24px'}}>
+          {/* Carousel */}
           <div
             ref={scrollRef}
             style={{
@@ -247,8 +238,7 @@ export default function FeaturedGalleryTemplate() {
               gap: 24,
               overflowX: 'auto',
               scrollSnapType: 'x mandatory',
-              paddingTop: 24,
-              paddingBottom: 48,
+              paddingBottom: 8,
               scrollbarWidth: 'none',
             }}>
             {GALLERY_ITEMS.map(item => (
@@ -257,8 +247,8 @@ export default function FeaturedGalleryTemplate() {
               </div>
             ))}
           </div>
-        </div>
-      </XDSCenter>
-    </XDSVStack>
+        </XDSVStack>
+      </XDSSection>
+    </XDSCenter>
   );
 }
