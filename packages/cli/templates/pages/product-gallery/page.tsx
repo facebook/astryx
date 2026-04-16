@@ -97,45 +97,45 @@ const fmt = (n: number) => `$${n.toFixed(2)}`;
 
 function ProductCard({product}: {product: Product}) {
   return (
-    <a href="#" onClick={e => e.preventDefault()} style={{textDecoration: 'none', color: 'inherit', cursor: 'pointer'}}>
+    <a
+      href="#"
+      onClick={e => e.preventDefault()}
+      style={{textDecoration: 'none', color: 'inherit', cursor: 'pointer'}}>
       <XDSVStack gap={3}>
-      <XDSAspectRatio
-        ratio={1}
-        style={{
-          borderRadius: 'var(--radius-container)',
-          overflow: 'clip',
-        }}>
-        <img
-          src={product.image}
-          alt={product.name}
-          style={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            objectPosition: 'center',
-            display: 'block',
-          }}
-        />
-      </XDSAspectRatio>
+        <XDSAspectRatio
+          ratio={1}
+          xstyle={{borderRadius: 'var(--radius-container)', overflow: 'clip'}}>
+          <img
+            src={product.image}
+            alt={product.name}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              objectPosition: 'center',
+              display: 'block',
+            }}
+          />
+        </XDSAspectRatio>
 
-      <XDSVStack gap={1}>
-        <XDSText
-          type="body"
-          weight="medium"
-          style={{fontSize: 'var(--font-size-xl)'}}>
-          {product.name}
-        </XDSText>
-        <XDSText type="body" color="secondary" maxLines={2}>
-          {product.description}
-        </XDSText>
-        <XDSText
-          type="body"
-          weight="bold"
-          style={{fontSize: 'var(--font-size-xl)'}}>
-          {fmt(product.price)}
-        </XDSText>
+        <XDSVStack gap={1}>
+          <XDSText
+            type="body"
+            weight="medium"
+            xstyle={{fontSize: 'var(--font-size-xl)'}}>
+            {product.name}
+          </XDSText>
+          <XDSText type="body" color="secondary" maxLines={2}>
+            {product.description}
+          </XDSText>
+          <XDSText
+            type="body"
+            weight="bold"
+            xstyle={{fontSize: 'var(--font-size-xl)'}}>
+            {fmt(product.price)}
+          </XDSText>
+        </XDSVStack>
       </XDSVStack>
-    </XDSVStack>
     </a>
   );
 }
@@ -153,23 +153,21 @@ export default function ProductGalleryTemplate() {
               type="large"
               weight="bold"
               as="p"
-              style={{fontSize: 'var(--font-size-2xl)'}}>
+              xstyle={{fontSize: 'var(--font-size-2xl)'}}>
               Make every day a little more delightful, one small detail at a
               time.
             </XDSText>
-            <XDSVStack gap={3}>
+            <XDSVStack gap={3} hAlign="start">
               <XDSText type="body">
                 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
                 eiusmod tempor incididunt ut labore et dolore magna aliqua ut
                 enim ad minim exercitation.
               </XDSText>
-              <div>
-                <XDSButton
-                  label="Get started"
-                  variant="primary"
-                  endContent={<XDSIcon icon={ArrowRightIcon} color="inherit" />}
-                />
-              </div>
+              <XDSButton
+                label="Get started"
+                variant="primary"
+                endContent={<XDSIcon icon={ArrowRightIcon} color="inherit" />}
+              />
             </XDSVStack>
           </XDSGrid>
 
