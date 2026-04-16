@@ -16,6 +16,7 @@ import {XDSTreeList} from '@xds/core/TreeList';
 import type {XDSTreeListItemData} from '@xds/core/TreeList';
 import {categories} from '../sandboxPages';
 import {useThemeControls} from '../providers';
+import {useBlockDoc} from './BlockDocContext';
 import {sourceRegistry} from '../../generated/sourceRegistry';
 import {templates} from '../../generated/templateRegistry';
 import {blocks} from '../../generated/blockRegistry';
@@ -668,16 +669,14 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
 
   const navTree = useMemo(() => buildNavTree(pathname), [pathname]);
 
-  const blockEntry = useMemo(
-    () => blocksByHref.get(pathname.replace(/\/$/, '')) ?? null,
-    [pathname],
-  );
+  const blockDoc = useBlockDoc();
+  const isBlock = blockDoc != null;
 
   const [zoom, setZoom] = useState<number | null>(null);
   useEffect(() => {
     setZoom(null);
   }, [pathname]);
-  const effectiveScale = zoom ?? blockEntry?.scale ?? 1;
+  const effectiveScale = zoom ?? blockDoc?.scale ?? 1;
 
   useEffect(() => {
     const saved = localStorage.getItem('sandbox-toolbar-hidden');
@@ -856,7 +855,7 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
           />
         </XDSSegmentedControl>
 
-        {view === 'preview' && blockEntry == null && (
+        {view === 'preview' && !isBlock && (
           <XDSSegmentedControl
             value={viewport}
             onChange={v => setViewport(v as ViewportSize)}
@@ -883,7 +882,7 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
           </XDSSegmentedControl>
         )}
 
-        {view === 'preview' && blockEntry != null && (
+        {view === 'preview' && isBlock && (
           <div
             style={{
               display: 'flex',
@@ -900,7 +899,7 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
               icon={<ZoomOutIcon width={14} height={14} />}
               onClick={() =>
                 setZoom(prev =>
-                  Math.max(0.25, (prev ?? blockEntry.scale) - 0.25),
+                  Math.max(0.25, (prev ?? blockDoc!.scale) - 0.25),
                 )
               }
             />
@@ -919,7 +918,7 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
               isIconOnly
               icon={<ZoomInIcon width={14} height={14} />}
               onClick={() =>
-                setZoom(prev => Math.min(4, (prev ?? blockEntry.scale) + 0.25))
+                setZoom(prev => Math.min(4, (prev ?? blockDoc!.scale) + 0.25))
               }
             />
             {zoom != null && (
@@ -997,7 +996,7 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
 
         {/* Content */}
         {view === 'preview' ? (
-          blockEntry != null ? (
+          isBlock ? (
             <div
               style={{
                 flex: 1,
@@ -1012,7 +1011,7 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
                 <div
                   style={{
                     width: '100%',
-                    aspectRatio: String(blockEntry.aspectRatio),
+                    aspectRatio: String(blockDoc!.aspectRatio),
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -1043,14 +1042,14 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
                   }}>
                   <XDSText type="supporting" color="secondary">
                     aspect-ratio:{' '}
-                    {blockEntry.aspectRatio === 1
+                    {blockDoc!.aspectRatio === 1
                       ? '1'
-                      : blockEntry.aspectRatio === 4 / 3
+                      : blockDoc!.aspectRatio === 4 / 3
                         ? '4/3'
-                        : blockEntry.aspectRatio === 16 / 9
+                        : blockDoc!.aspectRatio === 16 / 9
                           ? '16/9'
                           : String(
-                              Math.round(blockEntry.aspectRatio * 1000) / 1000,
+                              Math.round(blockDoc!.aspectRatio * 1000) / 1000,
                             )}
                   </XDSText>
                   <XDSText type="supporting" color="secondary" size="xsm">
