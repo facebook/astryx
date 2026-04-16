@@ -109,8 +109,7 @@ function GalleryCard({item}: {item: GalleryItem}) {
         borderRadius: 'var(--radius-container)',
         overflow: 'clip',
         flexShrink: 0,
-        width: 'calc(50vw - 48px)',
-        minWidth: 400,
+        width: 560,
       }}>
       <XDSAspectRatio ratio={3 / 4}>
         <img
@@ -136,6 +135,7 @@ function GalleryCard({item}: {item: GalleryItem}) {
           flexDirection: 'column',
           justifyContent: 'flex-end',
           padding: 'var(--spacing-6)',
+          color: 'var(--color-on-dark, #fff)',
         }}>
         <XDSMediaTheme mode="dark">
           <XDSVStack gap={2}>
@@ -172,7 +172,7 @@ export default function FeaturedGalleryTemplate() {
     const card = scrollRef.current.querySelector(
       '[data-card]',
     ) as HTMLElement | null;
-    const scrollAmount = (card?.offsetWidth ?? 500) + 24;
+    const scrollAmount = (card?.offsetWidth ?? 560) + 24;
     scrollRef.current.scrollBy({
       left: direction === 'left' ? -scrollAmount : scrollAmount,
       behavior: 'smooth',
@@ -181,7 +181,7 @@ export default function FeaturedGalleryTemplate() {
 
   return (
     <div>
-      {/* Header + arrows in constrained container */}
+      {/* Header + arrows */}
       <XDSCenter axis="horizontal">
         <XDSSection maxWidth={1200} padding={6} variant="transparent">
           <XDSVStack gap={6}>
