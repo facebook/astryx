@@ -382,7 +382,7 @@ function DocsiteLandingTemplate() {
 
   // Sync URL when view state changes
   useEffect(() => {
-    let path = '/pages/docsite/';
+    let path = `${basePath}/pages/docsite/`;
     if (previewTarget !== null) {
       path += '?view=preview&template=' + previewTarget;
     } else if (useTarget !== null) {
