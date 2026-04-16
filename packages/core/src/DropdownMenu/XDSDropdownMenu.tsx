@@ -149,7 +149,6 @@ export type XDSDropdownMenuProps =
  *
  * @example
  * ```
- * // Data-driven (great for static menus)
  * <XDSDropdownMenu
  *   button={{ label: 'Actions' }}
  *   items={[
@@ -157,15 +156,6 @@ export type XDSDropdownMenuProps =
  *     { label: 'Delete', onClick: () => handleDelete() },
  *   ]}
  * />
- *
- * // Compound-component (for dynamic/stateful items)
- * <XDSDropdownMenu button={{ label: 'Actions' }}>
- *   <XDSDropdownMenuItem icon={PencilIcon} label="Edit" onClick={handleEdit} />
- *   <XDSDivider />
- *   <Suspense fallback={<XDSSkeleton />}>
- *     <LazyLoadedItems />
- *   </Suspense>
- * </XDSDropdownMenu>
  * ```
  */
 export function XDSDropdownMenu({
