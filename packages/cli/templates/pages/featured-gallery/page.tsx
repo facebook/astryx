@@ -83,7 +83,9 @@ const GALLERY_ITEMS = [
 
 function GalleryCard({item}: {item: (typeof GALLERY_ITEMS)[number]}) {
   return (
-    <XDSCard padding={0} width={480} height="100%">
+    <XDSCard
+      padding={0}
+      style={{width: 'calc((100% - 32px) / 3)', flexShrink: 0}}>
       <div style={{position: 'relative', height: '100%'}}>
         <XDSAspectRatio ratio={3 / 4}>
           <img
