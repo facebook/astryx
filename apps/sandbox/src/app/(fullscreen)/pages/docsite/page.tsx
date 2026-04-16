@@ -504,35 +504,38 @@ function DocsiteLandingTemplate() {
     setActiveFilters(new Set());
   }, []);
 
-  const handleProfileAction = useCallback((action: 'craft' | 'bookmarked' | 'used' | 'settings') => {
-    if (action === 'settings') {
-      setIsSettingsOpen(true);
-    } else if (action === 'craft') {
-      setPreviewTarget(null);
-      setCraftTitle('My Craft');
-      setIsCraftResults(true);
-      setIsProfileResults(true);
-      setCraftStatusFilter('all');
-      setCraftLoading(true);
-      if (craftLoadingTimer.current) clearTimeout(craftLoadingTimer.current);
-      craftLoadingTimer.current = setTimeout(() => {
-        setCraftLoading(false);
-        craftLoadingTimer.current = null;
-      }, 900);
-    } else {
-      const label = action === 'bookmarked' ? 'Bookmarked' : 'Used';
-      setPreviewTarget(null);
-      setCraftTitle(label);
-      setIsProfileResults(true);
-      setIsCraftResults(false);
-      setCraftLoading(true);
-      if (craftLoadingTimer.current) clearTimeout(craftLoadingTimer.current);
-      craftLoadingTimer.current = setTimeout(() => {
-        setCraftLoading(false);
-        craftLoadingTimer.current = null;
-      }, 900);
-    }
-  }, []);
+  const handleProfileAction = useCallback(
+    (action: 'craft' | 'bookmarked' | 'used' | 'settings') => {
+      if (action === 'settings') {
+        setIsSettingsOpen(true);
+      } else if (action === 'craft') {
+        setPreviewTarget(null);
+        setCraftTitle('My Craft');
+        setIsCraftResults(true);
+        setIsProfileResults(true);
+        setCraftStatusFilter('all');
+        setCraftLoading(true);
+        if (craftLoadingTimer.current) clearTimeout(craftLoadingTimer.current);
+        craftLoadingTimer.current = setTimeout(() => {
+          setCraftLoading(false);
+          craftLoadingTimer.current = null;
+        }, 900);
+      } else {
+        const label = action === 'bookmarked' ? 'Bookmarked' : 'Used';
+        setPreviewTarget(null);
+        setCraftTitle(label);
+        setIsProfileResults(true);
+        setIsCraftResults(false);
+        setCraftLoading(true);
+        if (craftLoadingTimer.current) clearTimeout(craftLoadingTimer.current);
+        craftLoadingTimer.current = setTimeout(() => {
+          setCraftLoading(false);
+          craftLoadingTimer.current = null;
+        }, 900);
+      }
+    },
+    [],
+  );
 
   const filteredTemplates = useMemo(() => {
     return TEMPLATES.map((t, i) => ({...t, originalIndex: i})).filter(t => {
@@ -542,15 +545,21 @@ function DocsiteLandingTemplate() {
     });
   }, [templateFilter]);
 
-  const craftStatusCounts = useMemo(() => ({
-    published: PROFILE_CRAFT_ITEMS.filter(i => i.status === 'Published').length,
-    draft: PROFILE_CRAFT_ITEMS.filter(i => i.status === 'Draft').length,
-    review: PROFILE_CRAFT_ITEMS.filter(i => i.status === 'In Review').length,
-  }), []);
+  const craftStatusCounts = useMemo(
+    () => ({
+      published: PROFILE_CRAFT_ITEMS.filter(i => i.status === 'Published')
+        .length,
+      draft: PROFILE_CRAFT_ITEMS.filter(i => i.status === 'Draft').length,
+      review: PROFILE_CRAFT_ITEMS.filter(i => i.status === 'In Review').length,
+    }),
+    [],
+  );
 
   const filteredCraftItems = useMemo(() => {
     if (craftStatusFilter === 'all') return PROFILE_CRAFT_ITEMS;
-    return PROFILE_CRAFT_ITEMS.filter(item => item.status === craftStatusFilter);
+    return PROFILE_CRAFT_ITEMS.filter(
+      item => item.status === craftStatusFilter,
+    );
   }, [craftStatusFilter]);
 
   // Editor flow — same layout for all cards
@@ -721,7 +730,9 @@ function DocsiteLandingTemplate() {
   }
 
   if (activeView === 'profile') {
-    return <ProfileView activeView={activeView} setActiveView={setActiveView} />;
+    return (
+      <ProfileView activeView={activeView} setActiveView={setActiveView} />
+    );
   }
 
   return (
@@ -745,7 +756,6 @@ function DocsiteLandingTemplate() {
           onSortChange={setSortOption}
           isFilterOpen={isFilterOpen}
           onFilterOpenChange={setIsFilterOpen}
-          onProfileAction={handleProfileAction}
           craftTitle={craftTitle}
         />
       }>
@@ -858,15 +868,31 @@ function DocsiteLandingTemplate() {
                       'craftTitleSlideIn 400ms 100ms cubic-bezier(0.16, 1, 0.3, 1) both',
                   }}>
                   {[
-                    {value: 'all', label: `All (${PROFILE_CRAFT_ITEMS.length})`},
-                    {value: 'Published', label: `Published (${craftStatusCounts.published})`},
-                    {value: 'Draft', label: `Draft (${craftStatusCounts.draft})`},
-                    {value: 'In Review', label: `In Review (${craftStatusCounts.review})`},
+                    {
+                      value: 'all',
+                      label: `All (${PROFILE_CRAFT_ITEMS.length})`,
+                    },
+                    {
+                      value: 'Published',
+                      label: `Published (${craftStatusCounts.published})`,
+                    },
+                    {
+                      value: 'Draft',
+                      label: `Draft (${craftStatusCounts.draft})`,
+                    },
+                    {
+                      value: 'In Review',
+                      label: `In Review (${craftStatusCounts.review})`,
+                    },
                   ].map(tab => (
                     <XDSButton
                       key={tab.value}
                       label={tab.label}
-                      variant={craftStatusFilter === tab.value ? 'primary' : 'secondary'}
+                      variant={
+                        craftStatusFilter === tab.value
+                          ? 'primary'
+                          : 'secondary'
+                      }
                       size="sm"
                       onClick={() => setCraftStatusFilter(tab.value)}
                     />
@@ -1244,8 +1270,7 @@ function DocsiteLandingTemplate() {
                           background:
                             'linear-gradient(90deg, var(--color-background-muted, #f0f0f0) 0%, var(--color-background-surface, #fafafa) 50%, var(--color-background-muted, #f0f0f0) 100%)',
                           backgroundSize: '800px 100%',
-                          animation:
-                            'craftShimmer 1.6s ease-in-out infinite',
+                          animation: 'craftShimmer 1.6s ease-in-out infinite',
                           borderRadius: '16px 16px 0 0',
                         }}
                       />
@@ -1264,8 +1289,7 @@ function DocsiteLandingTemplate() {
                             background:
                               'linear-gradient(90deg, var(--color-background-muted, #f0f0f0) 0%, var(--color-background-surface, #fafafa) 50%, var(--color-background-muted, #f0f0f0) 100%)',
                             backgroundSize: '800px 100%',
-                            animation:
-                              'craftShimmer 1.6s ease-in-out infinite',
+                            animation: 'craftShimmer 1.6s ease-in-out infinite',
                           }}
                         />
                         <div
@@ -1276,8 +1300,7 @@ function DocsiteLandingTemplate() {
                             background:
                               'linear-gradient(90deg, var(--color-background-muted, #f0f0f0) 0%, var(--color-background-surface, #fafafa) 50%, var(--color-background-muted, #f0f0f0) 100%)',
                             backgroundSize: '800px 100%',
-                            animation:
-                              'craftShimmer 1.6s ease-in-out infinite',
+                            animation: 'craftShimmer 1.6s ease-in-out infinite',
                           }}
                         />
                       </div>
@@ -1309,7 +1332,8 @@ function DocsiteLandingTemplate() {
                         style={{
                           aspectRatio: '16 / 9',
                           overflow: 'hidden',
-                          backgroundColor: 'var(--color-background-muted, #f0f0f0)',
+                          backgroundColor:
+                            'var(--color-background-muted, #f0f0f0)',
                         }}>
                         <img
                           src={item.img}
@@ -1382,7 +1406,10 @@ function DocsiteLandingTemplate() {
                           </div>
                           <div style={{marginLeft: 'auto'}}>
                             <XDSText type="supporting" color="secondary">
-                              {new Date(item.lastUpdated).toLocaleDateString('en-US', {month: 'short', day: 'numeric'})}
+                              {new Date(item.lastUpdated).toLocaleDateString(
+                                'en-US',
+                                {month: 'short', day: 'numeric'},
+                              )}
                             </XDSText>
                           </div>
                         </div>
@@ -1390,7 +1417,12 @@ function DocsiteLandingTemplate() {
                     </XDSCard>
                   ))}
                   {filteredCraftItems.length === 0 && (
-                    <div style={{gridColumn: '1 / -1', padding: 32, textAlign: 'center' as const}}>
+                    <div
+                      style={{
+                        gridColumn: '1 / -1',
+                        padding: 32,
+                        textAlign: 'center' as const,
+                      }}>
                       <XDSText type="body" color="secondary">
                         No items match this filter.
                       </XDSText>
@@ -1398,59 +1430,59 @@ function DocsiteLandingTemplate() {
                   )}
                 </div>
               ) : (
-              <div
-                style={{
-                  maxWidth: 2000,
-                  margin: '0 auto',
-                  display: 'grid',
-                  gridTemplateColumns: isMobile
-                    ? '1fr'
-                    : isTablet
-                      ? 'repeat(2, 1fr)'
-                      : 'repeat(3, 1fr)',
-                  gap: 16,
-                }}>
-                {filteredTemplates.map((template, i) => (
-                  <div
-                    key={`${template.name}-${template.originalIndex}`}
-                    style={{
-                      ...(craftTitle
-                        ? {
-                            animation: `craftCardFadeIn 400ms ${i * 50}ms cubic-bezier(0.16, 1, 0.3, 1) both`,
-                          }
-                        : undefined),
-                      filter: previewImageFilter,
-                      transition: 'filter 300ms ease',
-                    }}>
-                    <TemplateCard
-                      src={template.src}
-                      name={template.name}
-                      isSelected={selected.has(template.originalIndex)}
-                      isGenerating={
-                        isGenerating &&
-                        generatingSource !== template.originalIndex
-                      }
-                      cardSize={template.size}
-                      onSelect={() =>
-                        setSelected(prev => {
-                          const next = new Set(prev);
-                          if (next.has(template.originalIndex)) {
-                            next.delete(template.originalIndex);
-                          } else {
-                            next.add(template.originalIndex);
-                          }
-                          return next;
-                        })
-                      }
-                      onMoreLikeThis={() =>
-                        handleMoreLikeThis(template.originalIndex)
-                      }
-                      onUse={() => handleUse(template.originalIndex)}
-                      onPreview={() => handlePreview(template.originalIndex)}
-                    />
-                  </div>
-                ))}
-              </div>
+                <div
+                  style={{
+                    maxWidth: 2000,
+                    margin: '0 auto',
+                    display: 'grid',
+                    gridTemplateColumns: isMobile
+                      ? '1fr'
+                      : isTablet
+                        ? 'repeat(2, 1fr)'
+                        : 'repeat(3, 1fr)',
+                    gap: 16,
+                  }}>
+                  {filteredTemplates.map((template, i) => (
+                    <div
+                      key={`${template.name}-${template.originalIndex}`}
+                      style={{
+                        ...(craftTitle
+                          ? {
+                              animation: `craftCardFadeIn 400ms ${i * 50}ms cubic-bezier(0.16, 1, 0.3, 1) both`,
+                            }
+                          : undefined),
+                        filter: previewImageFilter,
+                        transition: 'filter 300ms ease',
+                      }}>
+                      <TemplateCard
+                        src={template.src}
+                        name={template.name}
+                        isSelected={selected.has(template.originalIndex)}
+                        isGenerating={
+                          isGenerating &&
+                          generatingSource !== template.originalIndex
+                        }
+                        cardSize={template.size}
+                        onSelect={() =>
+                          setSelected(prev => {
+                            const next = new Set(prev);
+                            if (next.has(template.originalIndex)) {
+                              next.delete(template.originalIndex);
+                            } else {
+                              next.add(template.originalIndex);
+                            }
+                            return next;
+                          })
+                        }
+                        onMoreLikeThis={() =>
+                          handleMoreLikeThis(template.originalIndex)
+                        }
+                        onUse={() => handleUse(template.originalIndex)}
+                        onPreview={() => handlePreview(template.originalIndex)}
+                      />
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
           </div>
@@ -1481,7 +1513,14 @@ function DocsiteLandingTemplate() {
               width="90vw"
               maxHeight="90vh"
               purpose="info"
-              style={{padding: 0, overflow: 'visible', maxWidth: 1600, '--xds-dialog-padding': '0px'}}>
+              style={
+                {
+                  padding: 0,
+                  overflow: 'visible',
+                  maxWidth: 1600,
+                  '--xds-dialog-padding': '0px',
+                } as React.CSSProperties
+              }>
               <div
                 style={{position: 'absolute', top: 0, right: -40, zIndex: 1}}>
                 <XDSCard padding={0} style={{borderRadius: '50%'}}>
@@ -1526,7 +1565,9 @@ function DocsiteLandingTemplate() {
                           display: 'block',
                           opacity: previewTransitioning ? 0 : 1,
                           transition: 'opacity 250ms ease',
-                          animation: previewTransitioning ? 'none' : 'previewFadeIn 300ms ease',
+                          animation: previewTransitioning
+                            ? 'none'
+                            : 'previewFadeIn 300ms ease',
                         }}
                       />
                     </div>
@@ -1540,7 +1581,9 @@ function DocsiteLandingTemplate() {
                       style={{
                         opacity: previewTransitioning ? 0 : 1,
                         transition: 'opacity 250ms ease',
-                        animation: previewTransitioning ? 'none' : 'previewFadeIn 300ms ease',
+                        animation: previewTransitioning
+                          ? 'none'
+                          : 'previewFadeIn 300ms ease',
                       }}>
                       {/* Title */}
                       <XDSText type="display-2">{t.name}</XDSText>
@@ -2020,7 +2063,9 @@ function DocsiteLandingTemplate() {
                             display: 'block',
                             opacity: previewTransitioning ? 0 : 1,
                             transition: 'opacity 250ms ease',
-                            animation: previewTransitioning ? 'none' : 'previewFadeIn 300ms ease',
+                            animation: previewTransitioning
+                              ? 'none'
+                              : 'previewFadeIn 300ms ease',
                           }}
                         />
                       </XDSCard>
@@ -2039,7 +2084,9 @@ function DocsiteLandingTemplate() {
                       marginTop: 16,
                       opacity: previewTransitioning ? 0 : 1,
                       transition: 'opacity 250ms ease',
-                      animation: previewTransitioning ? 'none' : 'previewFadeIn 300ms ease',
+                      animation: previewTransitioning
+                        ? 'none'
+                        : 'previewFadeIn 300ms ease',
                     }}>
                     {[
                       'website',
@@ -2079,7 +2126,9 @@ function DocsiteLandingTemplate() {
                       marginTop: 16,
                       opacity: previewTransitioning ? 0 : 1,
                       transition: 'opacity 250ms ease',
-                      animation: previewTransitioning ? 'none' : 'previewFadeIn 300ms ease',
+                      animation: previewTransitioning
+                        ? 'none'
+                        : 'previewFadeIn 300ms ease',
                     }}>
                     {[
                       'XDSAppShell',
@@ -2116,47 +2165,74 @@ function DocsiteLandingTemplate() {
         isOpen={isSettingsOpen}
         onOpenChange={setIsSettingsOpen}
         width={560}
-        purpose="action"
+        purpose="form"
         title="Settings">
         <XDSStack direction="vertical" gap={4} style={{padding: '8px 0'}}>
-          <XDSStack direction="horizontal" hAlign="space-between" vAlign="center">
+          <XDSStack direction="horizontal" hAlign="between" vAlign="center">
             <XDSStack direction="vertical" gap={1}>
-              <XDSText type="body" style={{fontWeight: 600}}>Dark mode</XDSText>
-              <XDSText type="supporting" color="secondary">Switch between light and dark appearance</XDSText>
+              <XDSText type="body" style={{fontWeight: 600}}>
+                Dark mode
+              </XDSText>
+              <XDSText type="supporting" color="secondary">
+                Switch between light and dark appearance
+              </XDSText>
             </XDSStack>
             <XDSButton
               label={previewMode === 'dark' ? 'On' : 'Off'}
               variant="secondary"
               size="sm"
-              onClick={() => setPreviewMode(previewMode === 'dark' ? 'light' : 'dark')}
+              onClick={() =>
+                setPreviewMode(previewMode === 'dark' ? 'light' : 'dark')
+              }
             />
           </XDSStack>
           <XDSDivider />
-          <XDSStack direction="horizontal" hAlign="space-between" vAlign="center">
+          <XDSStack direction="horizontal" hAlign="between" vAlign="center">
             <XDSStack direction="vertical" gap={1}>
-              <XDSText type="body" style={{fontWeight: 600}}>Theme</XDSText>
-              <XDSText type="supporting" color="secondary">Choose a visual theme for previews</XDSText>
+              <XDSText type="body" style={{fontWeight: 600}}>
+                Theme
+              </XDSText>
+              <XDSText type="supporting" color="secondary">
+                Choose a visual theme for previews
+              </XDSText>
             </XDSStack>
             <XDSDropdownMenu
-              button={{label: previewTheme.charAt(0).toUpperCase() + previewTheme.slice(1), variant: 'secondary', size: 'sm'}}
+              button={{
+                label:
+                  previewTheme.charAt(0).toUpperCase() + previewTheme.slice(1),
+                variant: 'secondary',
+                size: 'sm',
+              }}
               items={[
                 {label: 'Default', onClick: () => setPreviewTheme('default')},
                 {label: 'Neutral', onClick: () => setPreviewTheme('neutral')},
-                {label: 'Brutalist', onClick: () => setPreviewTheme('brutalist')},
+                {
+                  label: 'Brutalist',
+                  onClick: () => setPreviewTheme('brutalist'),
+                },
                 {label: 'Meta', onClick: () => setPreviewTheme('meta')},
                 {label: 'WhatsApp', onClick: () => setPreviewTheme('whatsapp')},
               ]}
             />
           </XDSStack>
           <XDSDivider />
-          <XDSStack direction="horizontal" hAlign="space-between" vAlign="center">
+          <XDSStack direction="horizontal" hAlign="between" vAlign="center">
             <XDSStack direction="vertical" gap={1}>
-              <XDSText type="body" style={{fontWeight: 600}}>Default sort</XDSText>
-              <XDSText type="supporting" color="secondary">How templates are ordered by default</XDSText>
+              <XDSText type="body" style={{fontWeight: 600}}>
+                Default sort
+              </XDSText>
+              <XDSText type="supporting" color="secondary">
+                How templates are ordered by default
+              </XDSText>
             </XDSStack>
             <XDSDropdownMenu
               button={{
-                label: sortOption === 'trending' ? 'Trending' : sortOption === 'newest' ? 'Newest first' : 'Oldest first',
+                label:
+                  sortOption === 'trending'
+                    ? 'Trending'
+                    : sortOption === 'newest'
+                      ? 'Newest first'
+                      : 'Oldest first',
                 variant: 'secondary',
                 size: 'sm',
               }}
