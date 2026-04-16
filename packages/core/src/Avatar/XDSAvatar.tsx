@@ -11,6 +11,12 @@
  * - /packages/core/src/Avatar/XDSAvatar.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Avatar/index.ts (exports if types change)
  * - /apps/storybook/stories/Avatar.stories.tsx (storybook stories)
+ * - /packages/cli/templates/showcase/Avatar.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Avatar/AvatarInitialsFallback.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Avatar/AvatarStatusDotSizes.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Avatar/AvatarStatusDotVariants.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Avatar/AvatarWithImage.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Avatar/AvatarWithStatusIndicator.tsx (block template)
  */
 
 import {useState, type ReactNode} from 'react';

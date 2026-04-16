@@ -11,6 +11,11 @@
  * - /packages/core/src/List/XDSList.test.tsx
  * - /packages/core/src/List/index.ts
  * - /apps/storybook/stories/List.stories.tsx
+ * - /packages/cli/templates/showcase/List.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/List/ListBasic.tsx (block template)
+ * - /packages/cli/templates/blocks/components/List/ListInteractiveItems.tsx (block template)
+ * - /packages/cli/templates/blocks/components/List/ListOrdered.tsx (block template)
+ * - /packages/cli/templates/blocks/components/List/ListWithDividersAndHeader.tsx (block template)
  */
 
 import {useContext, type ReactNode} from 'react';

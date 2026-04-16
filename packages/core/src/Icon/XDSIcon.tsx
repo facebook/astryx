@@ -17,6 +17,10 @@
  * - /packages/core/src/Icon/XDSIcon.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Icon/index.ts (exports if types change)
  * - /apps/storybook/stories/Icon.stories.tsx (storybook stories)
+ * - /packages/cli/templates/showcase/Icon.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Icon/IconDirectComponents.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Icon/IconSemanticNames.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Icon/IconSources.tsx (block template)
  */
 
 import {type ComponentType, type SVGProps} from 'react';

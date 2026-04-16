@@ -9,6 +9,11 @@
  * - /packages/core/src/EmptyState/XDSEmptyState.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/EmptyState/index.ts (exports if types change)
  * - /apps/storybook/stories/EmptyState.stories.tsx (storybook stories)
+ * - /packages/cli/templates/showcase/EmptyState.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/EmptyState/EmptyStateCompactVariant.tsx (block template)
+ * - /packages/cli/templates/blocks/components/EmptyState/EmptyStateFullExample.tsx (block template)
+ * - /packages/cli/templates/blocks/components/EmptyState/EmptyStateMinimal.tsx (block template)
+ * - /packages/cli/templates/blocks/components/EmptyState/EmptyStateWithDescription.tsx (block template)
  */
 
 import {type ReactNode, createElement} from 'react';

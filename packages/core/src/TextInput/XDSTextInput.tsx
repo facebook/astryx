@@ -11,6 +11,16 @@
  * - /packages/core/src/TextInput/XDSTextInput.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/TextInput/index.ts (exports if types change)
  * - /apps/storybook/stories/TextInput.stories.tsx (storybook stories)
+ * - /packages/cli/templates/showcase/TextInput.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/TextInput/TextInputAsyncActionWithLoadingState.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TextInput/TextInputBasic.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TextInput/TextInputHiddenLabel.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TextInput/TextInputOptionalAndRequired.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TextInput/TextInputPasswordInput.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TextInput/TextInputValidationStatus.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TextInput/TextInputWithDescription.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TextInput/TextInputWithPlaceholder.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TextInput/TextInputWithStartIcon.tsx (block template)
  */
 
 import {

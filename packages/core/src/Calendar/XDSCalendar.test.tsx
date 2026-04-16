@@ -4,7 +4,11 @@
  * @output Test suite for XDSCalendar component
  * @position Tests for XDSCalendar.tsx
  *
- * SYNC: When XDSCalendar.tsx changes, update tests accordingly
+ *
+ * - /packages/cli/templates/showcase/Calendar.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Calendar/CalendarRangeSelection.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Calendar/CalendarSingleDate.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Calendar/CalendarTwoMonths.tsx (block template)SYNC: When XDSCalendar.tsx changes, update tests accordingly
  */
 
 import {describe, it, expect, vi} from 'vitest';

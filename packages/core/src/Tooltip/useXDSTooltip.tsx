@@ -8,6 +8,9 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Tooltip/index.ts
+ * - /packages/cli/templates/showcase/Tooltip.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Tooltip/TooltipUseXDSTooltipHook.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Tooltip/TooltipXDSTooltipBasic.tsx (block template)
  */
 
 import {

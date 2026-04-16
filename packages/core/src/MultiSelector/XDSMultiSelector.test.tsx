@@ -4,7 +4,12 @@
  * @output Unit tests for XDSMultiSelector
  * @position Tests; validates XDSMultiSelector behavior
  *
- * SYNC: When XDSMultiSelector.tsx API changes, update these tests.
+ *
+ * - /packages/cli/templates/showcase/MultiSelector.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/MultiSelector/MultiSelectorBadgesTriggerDisplay.tsx (block template)
+ * - /packages/cli/templates/blocks/components/MultiSelector/MultiSelectorBasic.tsx (block template)
+ * - /packages/cli/templates/blocks/components/MultiSelector/MultiSelectorSections.tsx (block template)
+ * - /packages/cli/templates/blocks/components/MultiSelector/MultiSelectorWithSelectAllAndSearch.tsx (block template)SYNC: When XDSMultiSelector.tsx API changes, update these tests.
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';

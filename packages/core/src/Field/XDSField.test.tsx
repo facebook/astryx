@@ -4,7 +4,14 @@
  * @output Unit tests for XDSField component behavior
  * @position Testing; validates XDSField.tsx implementation
  *
- * SYNC: When XDSField.tsx changes, update tests to match new behavior
+ *
+ * - /packages/cli/templates/showcase/Field.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Field/FieldBasicUsage.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Field/FieldDescriptionWithOptional.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Field/FieldHiddenLabel.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Field/FieldOptional.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Field/FieldRequired.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Field/FieldWithDescription.tsx (block template)SYNC: When XDSField.tsx changes, update tests to match new behavior
  */
 
 import {describe, it, expect, vi} from 'vitest';

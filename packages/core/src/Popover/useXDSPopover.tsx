@@ -11,6 +11,11 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Popover/index.ts
+ * - /packages/cli/templates/showcase/Popover.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Popover/PopoverBasic.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Popover/PopoverControlled.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Popover/PopoverSiblingModeWithAnchorRef.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Popover/PopoverUsePopoverHook.tsx (block template)
  */
 
 import React, {useCallback, useEffect, useRef, type ReactNode} from 'react';

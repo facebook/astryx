@@ -16,6 +16,9 @@
  * - /packages/core/src/Thumbnail/XDSThumbnail.test.tsx
  * - /packages/core/src/Thumbnail/index.ts
  * - /apps/storybook/stories/Thumbnail.stories.tsx
+ * - /packages/cli/templates/showcase/Thumbnail.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Thumbnail/ThumbnailClickable.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Thumbnail/ThumbnailImageWithRemove.tsx (block template)
  */
 
 import {type ReactNode} from 'react';
@@ -255,20 +258,14 @@ export function XDSThumbnail({
   const showPlaceholder = !isLoading && !hasSrc;
   const isInteractive = onClick != null && !isDisabled && !isLoading;
   const accessibleName =
-    label && alt ? `${label} — ${alt}` : label ?? alt ?? 'thumbnail';
+    label && alt ? `${label} — ${alt}` : (label ?? alt ?? 'thumbnail');
 
   const imageContent = (
     <>
       {showImage && (
-        <img
-          src={src}
-          alt={alt ?? ''}
-          {...stylex.props(styles.image)}
-        />
+        <img src={src} alt={alt ?? ''} {...stylex.props(styles.image)} />
       )}
-      {showSkeleton && (
-        <XDSSkeleton radius={2} />
-      )}
+      {showSkeleton && <XDSSkeleton radius={2} />}
       {showPlaceholder && (
         <div {...stylex.props(styles.placeholder)}>
           <ImagePlaceholder />
@@ -300,11 +297,7 @@ export function XDSThumbnail({
       aria-label={accessibleName}
       {...mergeProps(
         xdsClassName('thumbnail'),
-        stylex.props(
-          styles.root,
-          isDisabled && styles.disabled,
-          xstyle,
-        ),
+        stylex.props(styles.root, isDisabled && styles.disabled, xstyle),
         className,
         style,
       )}
@@ -332,9 +325,7 @@ export function XDSThumbnail({
           </div>
         )}
         {removeButtonEl != null && imageMode != null ? (
-          <XDSMediaTheme mode={imageMode}>
-            {removeButtonEl}
-          </XDSMediaTheme>
+          <XDSMediaTheme mode={imageMode}>{removeButtonEl}</XDSMediaTheme>
         ) : (
           removeButtonEl
         )}

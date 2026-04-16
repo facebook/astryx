@@ -4,7 +4,17 @@
  * @output Unit tests for XDSTextInput component behavior
  * @position Testing; validates XDSTextInput.tsx implementation
  *
- * SYNC: When XDSTextInput.tsx changes, update tests to match new behavior
+ *
+ * - /packages/cli/templates/showcase/TextInput.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/TextInput/TextInputAsyncActionWithLoadingState.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TextInput/TextInputBasic.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TextInput/TextInputHiddenLabel.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TextInput/TextInputOptionalAndRequired.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TextInput/TextInputPasswordInput.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TextInput/TextInputValidationStatus.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TextInput/TextInputWithDescription.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TextInput/TextInputWithPlaceholder.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TextInput/TextInputWithStartIcon.tsx (block template)SYNC: When XDSTextInput.tsx changes, update tests to match new behavior
  */
 
 import {describe, it, expect, vi} from 'vitest';

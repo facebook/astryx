@@ -4,7 +4,13 @@
  * @output Unit tests for XDSCheckboxList and XDSCheckboxListItem behavior
  * @position Testing; validates XDSCheckboxList.tsx and XDSCheckboxListItem.tsx implementation
  *
- * SYNC: When XDSCheckboxList.tsx or XDSCheckboxListItem.tsx changes, update tests to match new behavior
+ *
+ * - /packages/cli/templates/showcase/CheckboxList.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/CheckboxList/CheckboxListBasicCollectionMode.tsx (block template)
+ * - /packages/cli/templates/blocks/components/CheckboxList/CheckboxListDisabledGroup.tsx (block template)
+ * - /packages/cli/templates/blocks/components/CheckboxList/CheckboxListStandaloneMode.tsx (block template)
+ * - /packages/cli/templates/blocks/components/CheckboxList/CheckboxListWithDescriptions.tsx (block template)
+ * - /packages/cli/templates/blocks/components/CheckboxList/CheckboxListWithStatus.tsx (block template)SYNC: When XDSCheckboxList.tsx or XDSCheckboxListItem.tsx changes, update tests to match new behavior
  */
 
 import {describe, it, expect, vi} from 'vitest';

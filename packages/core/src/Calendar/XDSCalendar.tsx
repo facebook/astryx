@@ -11,6 +11,10 @@
  * - /packages/core/src/Calendar/XDSCalendar.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Calendar/index.ts (exports if types change)
  * - /apps/storybook/stories/Calendar.stories.tsx (storybook stories)
+ * - /packages/cli/templates/showcase/Calendar.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Calendar/CalendarRangeSelection.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Calendar/CalendarSingleDate.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Calendar/CalendarTwoMonths.tsx (block template)
  */
 
 import {

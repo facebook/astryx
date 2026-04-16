@@ -11,6 +11,11 @@
  * - /packages/core/src/MetadataList/XDSMetadataList.test.tsx
  * - /packages/core/src/MetadataList/index.ts
  * - /apps/storybook/stories/MetadataList.stories.tsx
+ * - /packages/cli/templates/showcase/MetadataList.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/MetadataList/MetadataListBasic.tsx (block template)
+ * - /packages/cli/templates/blocks/components/MetadataList/MetadataListHorizontal.tsx (block template)
+ * - /packages/cli/templates/blocks/components/MetadataList/MetadataListMultiColumn.tsx (block template)
+ * - /packages/cli/templates/blocks/components/MetadataList/MetadataListWithTitleAndShowMore.tsx (block template)
  */
 
 import {useContext, type ReactNode} from 'react';

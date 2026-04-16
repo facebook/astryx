@@ -16,6 +16,9 @@
  * - /packages/core/src/Chat/index.ts
  * - /apps/storybook/stories/ChatComposer.stories.tsx
  * - /apps/storybook/stories/ChatComposerTriggers.stories.tsx
+ * - /packages/cli/templates/showcase/Chat.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Chat/ChatBasicConversation.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Chat/ChatSystemMessageWithDivider.tsx (block template)
  */
 
 import {

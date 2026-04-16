@@ -4,7 +4,12 @@
  * @output Unit tests for XDSTokenizer component
  * @position Testing; validates XDSTokenizer.tsx
  *
- * SYNC: When XDSTokenizer.tsx changes, update tests to match
+ *
+ * - /packages/cli/templates/showcase/Tokenizer.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Tokenizer/TokenizerBasicMultiselect.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Tokenizer/TokenizerCustomTokenRendering.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Tokenizer/TokenizerFreetextTagsHasCreate.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Tokenizer/TokenizerWithMaxEntriesAndClearAll.tsx (block template)SYNC: When XDSTokenizer.tsx changes, update tests to match
  */
 
 import {describe, it, expect, vi, beforeAll, afterAll} from 'vitest';

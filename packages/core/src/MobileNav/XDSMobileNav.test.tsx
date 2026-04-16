@@ -4,7 +4,11 @@
  * @output Unit tests for XDSMobileNav component behavior
  * @position Testing; validates XDSMobileNav.tsx implementation
  *
- * SYNC: When XDSMobileNav.tsx changes, update tests to match new behavior
+ *
+ * - /packages/cli/templates/showcase/MobileNav.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/MobileNav/MobileNavBasicHamburgerMenu.tsx (block template)
+ * - /packages/cli/templates/blocks/components/MobileNav/MobileNavResponsiveSidebarDrawerPattern.tsx (block template)
+ * - /packages/cli/templates/blocks/components/MobileNav/MobileNavSharedChildrenWithSideNav.tsx (block template)SYNC: When XDSMobileNav.tsx changes, update tests to match new behavior
  */
 
 import {describe, it, expect, vi, beforeAll} from 'vitest';

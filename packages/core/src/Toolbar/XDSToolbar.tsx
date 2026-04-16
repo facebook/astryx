@@ -11,6 +11,12 @@
  * - /packages/core/src/Toolbar/XDSToolbar.test.tsx
  * - /packages/core/src/Toolbar/index.ts
  * - /apps/storybook/stories/Toolbar.stories.tsx
+ * - /packages/cli/templates/showcase/Toolbar.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Toolbar/ToolbarBasicToolbarWithStartAndEndActions.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Toolbar/ToolbarCardHeaderPattern.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Toolbar/ToolbarCompactDensity.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Toolbar/ToolbarThreeslotLayoutWithCenteredContent.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Toolbar/ToolbarWithXDSOverflowListForResponsiveCollapsing.tsx (block template)
  */
 
 import {type ReactNode} from 'react';

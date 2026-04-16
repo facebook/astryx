@@ -11,6 +11,15 @@
  * - /packages/core/src/ProgressBar/XDSProgressBar.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/ProgressBar/index.ts (exports if types change)
  * - /apps/storybook/stories/ProgressBar.stories.tsx (storybook stories)
+ * - /packages/cli/templates/showcase/ProgressBar.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/ProgressBar/ProgressBarComposedWithExternalDescription.tsx (block template)
+ * - /packages/cli/templates/blocks/components/ProgressBar/ProgressBarComposedWithStatusIcon.tsx (block template)
+ * - /packages/cli/templates/blocks/components/ProgressBar/ProgressBarCustomValueLabelFormatter.tsx (block template)
+ * - /packages/cli/templates/blocks/components/ProgressBar/ProgressBarDeterminate.tsx (block template)
+ * - /packages/cli/templates/blocks/components/ProgressBar/ProgressBarHiddenLabel.tsx (block template)
+ * - /packages/cli/templates/blocks/components/ProgressBar/ProgressBarIndeterminateLoading.tsx (block template)
+ * - /packages/cli/templates/blocks/components/ProgressBar/ProgressBarSemanticVariant.tsx (block template)
+ * - /packages/cli/templates/blocks/components/ProgressBar/ProgressBarWithVisibleValueLabel.tsx (block template)
  */
 
 import {useId} from 'react';

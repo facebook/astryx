@@ -4,7 +4,13 @@
  * @output Unit tests for XDSDialogHeader component behavior
  * @position Testing; validates XDSDialogHeader.tsx implementation
  *
- * SYNC: When XDSDialogHeader.tsx changes, update tests to match new behavior
+ *
+ * - /packages/cli/templates/showcase/Dialog.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Dialog/DialogBasicWithLayout.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Dialog/DialogFullscreenVariant.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Dialog/DialogHeaderWithCloseButton.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Dialog/DialogRequiredPurpose.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Dialog/DialogStaticPosition.tsx (block template)SYNC: When XDSDialogHeader.tsx changes, update tests to match new behavior
  */
 
 import {describe, it, expect, vi} from 'vitest';

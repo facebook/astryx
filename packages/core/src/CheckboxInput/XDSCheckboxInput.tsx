@@ -11,6 +11,15 @@
  * - /packages/core/src/CheckboxInput/XDSCheckboxInput.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/CheckboxInput/index.ts (exports if types change)
  * - /apps/storybook/stories/CheckboxInput.stories.tsx (storybook stories)
+ * - /packages/cli/templates/showcase/CheckboxInput.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/CheckboxInput/CheckboxInputAsyncAction.tsx (block template)
+ * - /packages/cli/templates/blocks/components/CheckboxInput/CheckboxInputBasic.tsx (block template)
+ * - /packages/cli/templates/blocks/components/CheckboxInput/CheckboxInputDisabled.tsx (block template)
+ * - /packages/cli/templates/blocks/components/CheckboxInput/CheckboxInputHiddenLabel.tsx (block template)
+ * - /packages/cli/templates/blocks/components/CheckboxInput/CheckboxInputIndeterminate.tsx (block template)
+ * - /packages/cli/templates/blocks/components/CheckboxInput/CheckboxInputSmallSize.tsx (block template)
+ * - /packages/cli/templates/blocks/components/CheckboxInput/CheckboxInputWithDescription.tsx (block template)
+ * - /packages/cli/templates/blocks/components/CheckboxInput/CheckboxInputWithError.tsx (block template)
  */
 
 import {

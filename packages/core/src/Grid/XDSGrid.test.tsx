@@ -4,7 +4,13 @@
  * @output Unit tests for XDSGrid and XDSGridSpan component behavior
  * @position Testing; validates XDSGrid.tsx and XDSGridSpan.tsx implementation
  *
- * SYNC: When XDSGrid.tsx or XDSGridSpan.tsx changes, update tests to match new behavior
+ *
+ * - /packages/cli/templates/showcase/Grid.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Grid/GridAutoFitMaxColumns.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Grid/GridDense.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Grid/GridFixedColumns.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Grid/GridResponsiveAutoFit.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Grid/GridSpanningColumns.tsx (block template)SYNC: When XDSGrid.tsx or XDSGridSpan.tsx changes, update tests to match new behavior
  */
 
 import {describe, it, expect, vi} from 'vitest';

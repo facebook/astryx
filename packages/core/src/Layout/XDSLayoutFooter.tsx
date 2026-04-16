@@ -10,6 +10,10 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Layout/Layout.doc.mjs
  * - /apps/storybook/stories/Layout.stories.tsx
+ * - /packages/cli/templates/showcase/Layout.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Layout/LayoutAppShellWithSidebar.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Layout/LayoutBasicPage.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Layout/LayoutCardLayout.tsx (block template)
  */
 
 import type {AriaRole, ReactNode} from 'react';

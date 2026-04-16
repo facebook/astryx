@@ -10,6 +10,9 @@
  * - /packages/core/src/AlertDialog/index.ts (exports)
  * - /packages/core/src/AlertDialog/AlertDialog.doc.mjs
  * - /apps/storybook/stories/AlertDialog.stories.tsx
+ * - /packages/cli/templates/showcase/AlertDialog.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/AlertDialog/AlertDialogDeleteConfirmation.tsx (block template)
+ * - /packages/cli/templates/blocks/components/AlertDialog/AlertDialogImperative.tsx (block template)
  */
 
 import {useState, useCallback, useMemo, type ReactNode} from 'react';

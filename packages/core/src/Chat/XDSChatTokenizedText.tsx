@@ -12,6 +12,9 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Chat/index.ts
+ * - /packages/cli/templates/showcase/Chat.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Chat/ChatBasicConversation.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Chat/ChatSystemMessageWithDivider.tsx (block template)
  */
 
 import type {ReactNode} from 'react';
@@ -86,11 +89,23 @@ export function XDSChatTokenizedText({
   tokens,
 }: XDSChatTokenizedTextProps) {
   if (!children || !tokens || tokens.length === 0) {
-    return <span className={xdsClassName('chat-tokenized-text')} {...stylex.props(styles.root)}>{children ?? ''}</span>;
+    return (
+      <span
+        className={xdsClassName('chat-tokenized-text')}
+        {...stylex.props(styles.root)}>
+        {children ?? ''}
+      </span>
+    );
   }
 
   const parts = renderTokens(children, tokens);
-  return <span className={xdsClassName('chat-tokenized-text')} {...stylex.props(styles.root)}>{parts}</span>;
+  return (
+    <span
+      className={xdsClassName('chat-tokenized-text')}
+      {...stylex.props(styles.root)}>
+      {parts}
+    </span>
+  );
 }
 
 XDSChatTokenizedText.displayName = 'XDSChatTokenizedText';

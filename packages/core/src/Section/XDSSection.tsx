@@ -10,6 +10,11 @@
  * - /packages/core/src/Section/Section.doc.mjs (props table, features)
  * - /packages/core/src/Section/index.ts (exports if types change)
  * - /apps/storybook/stories/Section.stories.tsx (storybook stories)
+ * - /packages/cli/templates/showcase/Section.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Section/SectionFullBleed.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Section/SectionTransparentVariant.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Section/SectionWashVariant.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Section/SectionWithDividers.tsx (block template)
  */
 
 import {type ReactNode} from 'react';

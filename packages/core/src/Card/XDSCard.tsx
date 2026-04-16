@@ -10,6 +10,13 @@
  * - /packages/core/src/Card/Card.doc.mjs (props table, features)
  * - /packages/core/src/Card/index.ts (exports if types change)
  * - /apps/storybook/stories/Card.stories.tsx (storybook stories)
+ * - /packages/cli/templates/showcase/Card.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Card/CardAccordion.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Card/CardBasicWithLayout.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Card/CardCollapsible.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Card/CardColorVariant.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Card/CardMutedBackground.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Card/CardSimpleContent.tsx (block template)
  */
 
 import {type ReactNode} from 'react';

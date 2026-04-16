@@ -17,6 +17,9 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Chat/index.ts (exports)
  * - /apps/storybook/stories/Chat.stories.tsx
+ * - /packages/cli/templates/showcase/Chat.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Chat/ChatBasicConversation.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Chat/ChatSystemMessageWithDivider.tsx (block template)
  */
 
 import {
@@ -30,7 +33,11 @@ import {
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
-import {XDSChatListContext, type XDSChatDensity, useXDSChatLayoutContext} from './XDSChatContext';
+import {
+  XDSChatListContext,
+  type XDSChatDensity,
+  useXDSChatLayoutContext,
+} from './XDSChatContext';
 import {xdsClassName, mergeProps} from '../utils';
 import {XDSSpinner} from '../Spinner';
 

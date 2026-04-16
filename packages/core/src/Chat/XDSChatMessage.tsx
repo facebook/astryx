@@ -14,6 +14,9 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Chat/index.ts (exports)
  * - /apps/storybook/stories/Chat.stories.tsx
+ * - /packages/cli/templates/showcase/Chat.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Chat/ChatBasicConversation.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Chat/ChatSystemMessageWithDivider.tsx (block template)
  */
 
 import {type ReactNode, useMemo, useId} from 'react';
@@ -235,7 +238,9 @@ export function XDSChatMessage({
 
         <div {...stylex.props(styles.contentColumn, columnAlignment)}>
           {hasName && (
-            <div id={nameId} {...stylex.props(styles.name)}>{name}</div>
+            <div id={nameId} {...stylex.props(styles.name)}>
+              {name}
+            </div>
           )}
 
           <div
@@ -247,9 +252,7 @@ export function XDSChatMessage({
             {children}
           </div>
 
-          {metadata != null && !isSystem && (
-            <div>{metadata}</div>
-          )}
+          {metadata != null && !isSystem && <div>{metadata}</div>}
         </div>
       </article>
     </XDSChatMessageContext.Provider>

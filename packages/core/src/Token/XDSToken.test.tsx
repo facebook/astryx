@@ -4,7 +4,14 @@
  * @output Unit tests for XDSToken component behavior
  * @position Testing; validates XDSToken.tsx implementation
  *
- * SYNC: When XDSToken.tsx changes, update tests to match new behavior
+ *
+ * - /packages/cli/templates/showcase/Token.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Token/TokenAsLink.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Token/TokenBasic.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Token/TokenClickable.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Token/TokenColored.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Token/TokenRemovable.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Token/TokenWithIconAndHiddenLabel.tsx (block template)SYNC: When XDSToken.tsx changes, update tests to match new behavior
  */
 
 import {describe, it, expect, vi} from 'vitest';

@@ -4,7 +4,11 @@
  * @output Unit tests for XDSCenter component behavior
  * @position Testing; validates XDSCenter.tsx implementation
  *
- * SYNC: When XDSCenter.tsx changes, update tests to match new behavior
+ *
+ * - /packages/cli/templates/showcase/Center.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Center/CenterBothAxes.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Center/CenterHorizontal.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Center/CenterInline.tsx (block template)SYNC: When XDSCenter.tsx changes, update tests to match new behavior
  */
 
 import {describe, it, expect, vi} from 'vitest';

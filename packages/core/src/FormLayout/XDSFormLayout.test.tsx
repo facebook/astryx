@@ -4,7 +4,13 @@
  * @output Unit tests for XDSFormLayout component behavior
  * @position Testing; validates XDSFormLayout.tsx implementation
  *
- * SYNC: When XDSFormLayout.tsx changes, update tests to match new behavior
+ *
+ * - /packages/cli/templates/showcase/FormLayout.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/FormLayout/FormLayoutDialogComposition.tsx (block template)
+ * - /packages/cli/templates/blocks/components/FormLayout/FormLayoutHorizontalLabels.tsx (block template)
+ * - /packages/cli/templates/blocks/components/FormLayout/FormLayoutHorizontalLayout.tsx (block template)
+ * - /packages/cli/templates/blocks/components/FormLayout/FormLayoutNestedLayouts.tsx (block template)
+ * - /packages/cli/templates/blocks/components/FormLayout/FormLayoutVerticalLayout.tsx (block template)SYNC: When XDSFormLayout.tsx changes, update tests to match new behavior
  */
 
 import {describe, it, expect} from 'vitest';

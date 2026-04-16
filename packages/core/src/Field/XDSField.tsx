@@ -11,6 +11,13 @@
  * - /packages/core/src/Field/XDSField.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Field/index.ts (exports if types change)
  * - /apps/storybook/stories/Field.stories.tsx (storybook stories)
+ * - /packages/cli/templates/showcase/Field.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Field/FieldBasicUsage.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Field/FieldDescriptionWithOptional.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Field/FieldHiddenLabel.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Field/FieldOptional.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Field/FieldRequired.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Field/FieldWithDescription.tsx (block template)
  */
 
 import {type HTMLAttributes, type ReactNode} from 'react';

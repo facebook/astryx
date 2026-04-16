@@ -11,6 +11,12 @@
  * - /packages/core/src/RadioList/XDSRadioList.test.tsx
  * - /packages/core/src/RadioList/index.ts
  * - /apps/storybook/stories/RadioList.stories.tsx
+ * - /packages/cli/templates/showcase/RadioList.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/RadioList/RadioListBasic.tsx (block template)
+ * - /packages/cli/templates/blocks/components/RadioList/RadioListDisabledGroup.tsx (block template)
+ * - /packages/cli/templates/blocks/components/RadioList/RadioListHorizontalLayout.tsx (block template)
+ * - /packages/cli/templates/blocks/components/RadioList/RadioListWithDescriptions.tsx (block template)
+ * - /packages/cli/templates/blocks/components/RadioList/RadioListWithStatus.tsx (block template)
  */
 
 import {createContext, useId, type ReactNode} from 'react';

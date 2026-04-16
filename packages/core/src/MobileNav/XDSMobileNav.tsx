@@ -21,6 +21,10 @@
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/MobileNav/index.ts (exports if types change)
+ * - /packages/cli/templates/showcase/MobileNav.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/MobileNav/MobileNavBasicHamburgerMenu.tsx (block template)
+ * - /packages/cli/templates/blocks/components/MobileNav/MobileNavResponsiveSidebarDrawerPattern.tsx (block template)
+ * - /packages/cli/templates/blocks/components/MobileNav/MobileNavSharedChildrenWithSideNav.tsx (block template)
  */
 
 import {useCallback, useEffect, useRef, type ReactNode} from 'react';

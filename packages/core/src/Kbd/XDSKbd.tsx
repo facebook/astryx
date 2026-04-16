@@ -9,6 +9,10 @@
  * SYNC: When modified, update:
  * - /packages/core/src/Kbd/README.md
  * - /packages/core/src/Kbd/index.ts
+ * - /packages/cli/templates/showcase/Kbd.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Kbd/KbdInLabel.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Kbd/KbdMultiKeyShortcut.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Kbd/KbdSingleShortcut.tsx (block template)
  */
 
 import {useState, useLayoutEffect} from 'react';

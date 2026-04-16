@@ -4,7 +4,11 @@
  * @output Unit tests for XDSTreeList component
  * @position Testing; validates XDSTreeList.tsx implementation
  *
- * SYNC: When modified, update this header
+ *
+ * - /packages/cli/templates/showcase/TreeList.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/TreeList/TreeListBasicTree.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TreeList/TreeListInteractiveItems.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TreeList/TreeListWithIconsAndHeader.tsx (block template)SYNC: When modified, update this header
  */
 
 import {describe, it, expect, vi} from 'vitest';

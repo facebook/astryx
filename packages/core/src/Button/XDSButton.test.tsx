@@ -4,7 +4,10 @@
  * @output Unit tests for XDSButton component behavior
  * @position Testing; validates XDSButton.tsx implementation
  *
- * SYNC: When XDSButton.tsx changes, update tests to match new behavior
+ *
+ * - /packages/cli/templates/showcase/Button.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Button/ButtonBasic.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Button/ButtonWithIcon.tsx (block template)SYNC: When XDSButton.tsx changes, update tests to match new behavior
  */
 
 import {describe, it, expect, vi} from 'vitest';

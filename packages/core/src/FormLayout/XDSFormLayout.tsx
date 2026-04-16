@@ -11,6 +11,12 @@
  * - /packages/core/src/FormLayout/XDSFormLayout.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/FormLayout/index.ts (exports if types change)
  * - /apps/storybook/stories/FormLayout.stories.tsx (storybook stories)
+ * - /packages/cli/templates/showcase/FormLayout.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/FormLayout/FormLayoutDialogComposition.tsx (block template)
+ * - /packages/cli/templates/blocks/components/FormLayout/FormLayoutHorizontalLabels.tsx (block template)
+ * - /packages/cli/templates/blocks/components/FormLayout/FormLayoutHorizontalLayout.tsx (block template)
+ * - /packages/cli/templates/blocks/components/FormLayout/FormLayoutNestedLayouts.tsx (block template)
+ * - /packages/cli/templates/blocks/components/FormLayout/FormLayoutVerticalLayout.tsx (block template)
  */
 
 import {useMemo, type ReactNode} from 'react';

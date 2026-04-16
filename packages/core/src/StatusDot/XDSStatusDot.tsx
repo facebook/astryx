@@ -9,6 +9,10 @@
  * - /packages/core/src/StatusDot/XDSStatusDot.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/StatusDot/index.ts (exports if types change)
  * - /apps/storybook/stories/StatusDot.stories.tsx (storybook stories)
+ * - /packages/cli/templates/showcase/StatusDot.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/StatusDot/StatusDotBasicStatusIndicators.tsx (block template)
+ * - /packages/cli/templates/blocks/components/StatusDot/StatusDotPulsingAnimation.tsx (block template)
+ * - /packages/cli/templates/blocks/components/StatusDot/StatusDotWithPulse.tsx (block template)
  */
 
 import * as stylex from '@stylexjs/stylex';

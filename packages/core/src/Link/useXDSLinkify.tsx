@@ -13,6 +13,17 @@
  * SYNC: When modified, update:
  * - /packages/core/src/Link/index.ts (exports)
  * - /packages/core/src/Link/useXDSLinkify.test.tsx (tests)
+ * - /packages/cli/templates/showcase/Link.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Link/LinkAsOverride.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Link/LinkBasic.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Link/LinkDisabled.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Link/LinkExternal.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Link/LinkInlineWithText.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Link/LinkProvider.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Link/LinkStandalone.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Link/LinkUnderlined.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Link/LinkUseHook.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Link/LinkWithTooltip.tsx (block template)
  */
 
 import {type ReactNode, useMemo} from 'react';
@@ -71,14 +82,14 @@ export interface UseXDSLinkifyOptions {
 // URL pattern: matches http(s) URLs
 const URL_PATTERN: LinkifyPattern = {
   pattern: /https?:\/\/[^\s<>'")\]},]+/g,
-  href: (match) => match[0],
+  href: match => match[0],
   isExternal: true,
 };
 
 // Email pattern: matches email addresses
 const EMAIL_PATTERN: LinkifyPattern = {
   pattern: /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g,
-  href: (match) => `mailto:${match[0]}`,
+  href: match => `mailto:${match[0]}`,
 };
 
 const BUILTIN_PATTERNS: LinkifyPattern[] = [URL_PATTERN, EMAIL_PATTERN];
@@ -199,8 +210,7 @@ export function useXDSLinkify(
           key={`linkify-${i}`}
           href={m.href}
           label={m.label}
-          isExternalLink={m.isExternal}
-        >
+          isExternalLink={m.isExternal}>
           {m.label}
         </XDSLink>,
       );

@@ -4,7 +4,11 @@
  * @output Unit tests for XDSIcon component behavior
  * @position Testing; validates XDSIcon.tsx implementation
  *
- * SYNC: When XDSIcon.tsx changes, update tests to match new behavior
+ *
+ * - /packages/cli/templates/showcase/Icon.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Icon/IconDirectComponents.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Icon/IconSemanticNames.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Icon/IconSources.tsx (block template)SYNC: When XDSIcon.tsx changes, update tests to match new behavior
  */
 
 import {describe, it, expect, vi} from 'vitest';

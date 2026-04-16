@@ -11,6 +11,9 @@
  * - /packages/core/src/AlertDialog/XDSAlertDialog.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/AlertDialog/index.ts (exports if types change)
  * - /apps/storybook/stories/AlertDialog.stories.tsx (storybook stories)
+ * - /packages/cli/templates/showcase/AlertDialog.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/AlertDialog/AlertDialogDeleteConfirmation.tsx (block template)
+ * - /packages/cli/templates/blocks/components/AlertDialog/AlertDialogImperative.tsx (block template)
  */
 
 import {useId, useCallback} from 'react';

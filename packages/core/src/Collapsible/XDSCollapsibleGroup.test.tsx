@@ -4,7 +4,12 @@
  * @output Unit tests for XDSCollapsible and XDSCollapsibleGroup
  * @position Testing; validates collapsible primitive and group coordination
  *
- * SYNC: When XDSCollapsible.tsx or XDSCollapsibleGroup.tsx changes, update tests
+ *
+ * - /packages/cli/templates/showcase/Collapsible.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Collapsible/CollapsibleMultipleMode.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Collapsible/CollapsibleSingleModeAccordion.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Collapsible/CollapsibleStandalone.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Collapsible/CollapsibleWithLayout.tsx (block template)SYNC: When XDSCollapsible.tsx or XDSCollapsibleGroup.tsx changes, update tests
  */
 
 import {describe, it, expect, vi} from 'vitest';

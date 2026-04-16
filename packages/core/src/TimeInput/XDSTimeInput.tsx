@@ -11,6 +11,12 @@
  * - /packages/core/src/TimeInput/XDSTimeInput.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/TimeInput/index.ts (exports if types change)
  * - /apps/storybook/stories/TimeInput.stories.tsx (storybook stories)
+ * - /packages/cli/templates/showcase/TimeInput.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/TimeInput/TimeInput24hourFormatWithClearButton.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TimeInput/TimeInputAsyncActionWithOptimisticUpdate.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TimeInput/TimeInputBasic.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TimeInput/TimeInputMinMaxConstraints.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TimeInput/TimeInputWithSecondsAndErrorStatus.tsx (block template)
  */
 
 import {

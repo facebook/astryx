@@ -9,6 +9,12 @@
  * SYNC: When modified, update:
  * - /packages/core/src/Selector/Selector.doc.mjs
  * - /packages/core/src/Selector/index.ts
+ * - /packages/cli/templates/showcase/Selector.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Selector/SelectorBasic.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Selector/SelectorCustomRendering.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Selector/SelectorSections.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Selector/SelectorWithObjectItems.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Selector/SelectorWithStatusAndFieldProps.tsx (block template)
  */
 
 import React, {

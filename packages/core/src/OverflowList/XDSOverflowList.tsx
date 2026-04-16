@@ -12,8 +12,10 @@
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/OverflowList/index.ts (exports if types change)
+ * - /packages/cli/templates/showcase/OverflowList.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/OverflowList/OverflowListBasicWithOverflowButton.tsx (block template)
+ * - /packages/cli/templates/blocks/components/OverflowList/OverflowListOverflowIntoDropdownMenu.tsx (block template)
  */
-
 
 import {type ReactNode, type ReactElement, Children} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';

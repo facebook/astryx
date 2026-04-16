@@ -17,6 +17,12 @@
  * - /packages/core/src/DropdownMenu/XDSDropdownMenu.test.tsx
  * - /packages/core/src/DropdownMenu/index.ts
  * - /apps/storybook/stories/DropdownMenu.stories.tsx
+ * - /packages/cli/templates/showcase/DropdownMenu.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/DropdownMenu/DropdownMenuBasicUsage.tsx (block template)
+ * - /packages/cli/templates/blocks/components/DropdownMenu/DropdownMenuControlledMode.tsx (block template)
+ * - /packages/cli/templates/blocks/components/DropdownMenu/DropdownMenuWithDividers.tsx (block template)
+ * - /packages/cli/templates/blocks/components/DropdownMenu/DropdownMenuWithIcons.tsx (block template)
+ * - /packages/cli/templates/blocks/components/DropdownMenu/DropdownMenuWithSections.tsx (block template)
  */
 
 import React, {

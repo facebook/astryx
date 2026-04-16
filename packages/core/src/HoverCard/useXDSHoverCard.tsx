@@ -8,6 +8,9 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/HoverCard/index.ts
+ * - /packages/cli/templates/showcase/HoverCard.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/HoverCard/HoverCardBasic.tsx (block template)
+ * - /packages/cli/templates/blocks/components/HoverCard/HoverCardHook.tsx (block template)
  */
 
 import {

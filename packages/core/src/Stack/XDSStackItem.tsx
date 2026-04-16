@@ -8,6 +8,12 @@
  * - /packages/core/src/Stack/Stack.doc.mjs
  * - /packages/core/src/Layout/Stack/XDSStackItem.test.tsx
  * - /apps/storybook/stories/StackItem.stories.tsx
+ * - /packages/cli/templates/showcase/Stack.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Stack/StackHeaderLayout.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Stack/StackOverrideAlignmentPerItem.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Stack/StackPageLayout.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Stack/StackSidebarLayout.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Stack/StackStyleXUtilityAdvancedUse.tsx (block template)
  */
 
 import {

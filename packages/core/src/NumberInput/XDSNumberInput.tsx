@@ -11,6 +11,18 @@
  * - /packages/core/src/NumberInput/XDSNumberInput.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/NumberInput/index.ts (exports if types change)
  * - /apps/storybook/stories/NumberInput.stories.tsx (storybook stories)
+ * - /packages/cli/templates/showcase/NumberInput.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/NumberInput/NumberInputBasic.tsx (block template)
+ * - /packages/cli/templates/blocks/components/NumberInput/NumberInputIntegerOnly.tsx (block template)
+ * - /packages/cli/templates/blocks/components/NumberInput/NumberInputOptionalField.tsx (block template)
+ * - /packages/cli/templates/blocks/components/NumberInput/NumberInputRequiredField.tsx (block template)
+ * - /packages/cli/templates/blocks/components/NumberInput/NumberInputWithDescription.tsx (block template)
+ * - /packages/cli/templates/blocks/components/NumberInput/NumberInputWithEventHandlers.tsx (block template)
+ * - /packages/cli/templates/blocks/components/NumberInput/NumberInputWithMinMaxConstraints.tsx (block template)
+ * - /packages/cli/templates/blocks/components/NumberInput/NumberInputWithPlaceholder.tsx (block template)
+ * - /packages/cli/templates/blocks/components/NumberInput/NumberInputWithStepForDecimals.tsx (block template)
+ * - /packages/cli/templates/blocks/components/NumberInput/NumberInputWithUnitsDisplay.tsx (block template)
+ * - /packages/cli/templates/blocks/components/NumberInput/NumberInputWithValidationStatus.tsx (block template)
  */
 
 import {

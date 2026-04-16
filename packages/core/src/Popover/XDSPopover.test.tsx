@@ -4,7 +4,12 @@
  * @output Unit tests for XDSPopover component behavior
  * @position Testing; validates XDSPopover.tsx implementation
  *
- * SYNC: When XDSPopover.tsx changes, update tests to match new behavior
+ *
+ * - /packages/cli/templates/showcase/Popover.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Popover/PopoverBasic.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Popover/PopoverControlled.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Popover/PopoverSiblingModeWithAnchorRef.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Popover/PopoverUsePopoverHook.tsx (block template)SYNC: When XDSPopover.tsx changes, update tests to match new behavior
  */
 
 import {describe, it, expect, vi, beforeAll, afterAll} from 'vitest';

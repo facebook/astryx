@@ -15,6 +15,11 @@
  * - /packages/core/src/TopNav/XDSTopNav.test.tsx
  * - /packages/core/src/TopNav/index.ts
  * - /apps/storybook/stories/TopNav.stories.tsx
+ * - /packages/cli/templates/showcase/TopNav.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/TopNav/TopNavBasicNavWithHeadingAndItems.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TopNav/TopNavInXDSLayoutHeaderSlot.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TopNav/TopNavWithCenteredContentThreecolumnLayout.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TopNav/TopNavWithHoverMenuAndMegaMenu.tsx (block template)
  */
 
 import {useCallback, useRef, type ReactNode} from 'react';

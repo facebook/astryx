@@ -7,6 +7,8 @@
  * SYNC: When modified, update:
  * - /packages/core/src/CommandPalette/README.md
  * - /packages/core/src/CommandPalette/index.ts
+ * - /packages/cli/templates/blocks/components/CommandPalette/CommandPaletteGroupedItems.tsx (block template)
+ * - /packages/cli/templates/blocks/components/CommandPalette/CommandPaletteStaticSource.tsx (block template)
  */
 
 'use client';

@@ -3,7 +3,12 @@
  * @input Uses vitest, @testing-library/react, XDSToggleButton, XDSToggleButtonGroup
  * @output Unit tests for XDSToggleButton and XDSToggleButtonGroup
  *
- * SYNC: When XDSToggleButton.tsx or XDSToggleButtonGroup.tsx changes, update tests
+ *
+ * - /packages/cli/templates/showcase/ToggleButton.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/ToggleButton/ToggleButtonIconSwapOnPress.tsx (block template)
+ * - /packages/cli/templates/blocks/components/ToggleButton/ToggleButtonIcononlyToggle.tsx (block template)
+ * - /packages/cli/templates/blocks/components/ToggleButton/ToggleButtonMultiselectGroup.tsx (block template)
+ * - /packages/cli/templates/blocks/components/ToggleButton/ToggleButtonSingleselectGroup.tsx (block template)SYNC: When XDSToggleButton.tsx or XDSToggleButtonGroup.tsx changes, update tests
  */
 
 import {describe, it, expect, vi} from 'vitest';

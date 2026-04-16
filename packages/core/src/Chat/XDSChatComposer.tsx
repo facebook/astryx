@@ -19,6 +19,9 @@
  * - /packages/core/src/Chat/Chat.doc.mjs
  * - /packages/core/src/Chat/README.md
  * - /apps/storybook/stories/ChatComposer.stories.tsx
+ * - /packages/cli/templates/showcase/Chat.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Chat/ChatBasicConversation.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Chat/ChatSystemMessageWithDivider.tsx (block template)
  */
 
 import {

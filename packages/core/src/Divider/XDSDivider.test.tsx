@@ -4,7 +4,13 @@
  * @output Unit tests for XDSDivider component behavior
  * @position Testing; validates XDSDivider.tsx implementation
  *
- * SYNC: When XDSDivider.tsx changes, update tests to match new behavior
+ *
+ * - /packages/cli/templates/showcase/Divider.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Divider/DividerBasic.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Divider/DividerFullBleed.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Divider/DividerStrongVariant.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Divider/DividerVertical.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Divider/DividerWithLabel.tsx (block template)SYNC: When XDSDivider.tsx changes, update tests to match new behavior
  */
 
 import {describe, it, expect, vi} from 'vitest';

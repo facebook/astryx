@@ -4,7 +4,13 @@
  * @output Unit tests for XDSTimeInput component behavior
  * @position Testing; validates XDSTimeInput.tsx implementation
  *
- * SYNC: When XDSTimeInput.tsx changes, update tests to match new behavior
+ *
+ * - /packages/cli/templates/showcase/TimeInput.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/TimeInput/TimeInput24hourFormatWithClearButton.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TimeInput/TimeInputAsyncActionWithOptimisticUpdate.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TimeInput/TimeInputBasic.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TimeInput/TimeInputMinMaxConstraints.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TimeInput/TimeInputWithSecondsAndErrorStatus.tsx (block template)SYNC: When XDSTimeInput.tsx changes, update tests to match new behavior
  */
 
 import {describe, it, expect, vi} from 'vitest';

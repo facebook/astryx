@@ -8,6 +8,10 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/PowerSearch/index.ts
+ * - /packages/cli/templates/showcase/PowerSearch.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/PowerSearch/PowerSearchBasicWithEnumFilters.tsx (block template)
+ * - /packages/cli/templates/blocks/components/PowerSearch/PowerSearchWithContentSearchFieldKey.tsx (block template)
+ * - /packages/cli/templates/blocks/components/PowerSearch/PowerSearchWithInitialFilters.tsx (block template)
  */
 
 import React, {useCallback, useMemo} from 'react';

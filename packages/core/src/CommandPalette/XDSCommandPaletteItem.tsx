@@ -7,6 +7,8 @@
  *
  * SYNC: When modified, update:
  * - /packages/lab/src/CommandPalette/README.md
+ * - /packages/cli/templates/blocks/components/CommandPalette/CommandPaletteGroupedItems.tsx (block template)
+ * - /packages/cli/templates/blocks/components/CommandPalette/CommandPaletteStaticSource.tsx (block template)
  */
 
 import {useCallback, useEffect, useMemo, useRef, type ReactNode} from 'react';

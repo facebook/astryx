@@ -9,6 +9,11 @@
  * SYNC: When modified, update:
  * - /packages/core/src/MultiSelector/MultiSelector.doc.mjs
  * - /packages/core/src/MultiSelector/index.ts
+ * - /packages/cli/templates/showcase/MultiSelector.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/MultiSelector/MultiSelectorBadgesTriggerDisplay.tsx (block template)
+ * - /packages/cli/templates/blocks/components/MultiSelector/MultiSelectorBasic.tsx (block template)
+ * - /packages/cli/templates/blocks/components/MultiSelector/MultiSelectorSections.tsx (block template)
+ * - /packages/cli/templates/blocks/components/MultiSelector/MultiSelectorWithSelectAllAndSearch.tsx (block template)
  */
 
 import React, {

@@ -9,6 +9,13 @@
  * - /packages/core/src/Token/XDSToken.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Token/index.ts (exports if types change)
  * - /apps/storybook/stories/Token.stories.tsx (storybook stories)
+ * - /packages/cli/templates/showcase/Token.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Token/TokenAsLink.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Token/TokenBasic.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Token/TokenClickable.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Token/TokenColored.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Token/TokenRemovable.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Token/TokenWithIconAndHiddenLabel.tsx (block template)
  */
 
 import {type ReactNode} from 'react';

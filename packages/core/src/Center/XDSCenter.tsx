@@ -10,8 +10,11 @@
  * - /packages/core/src/Center/Center.doc.mjs
  * - /packages/core/src/Center/XDSCenter.test.tsx
  * - /apps/storybook/stories/Center.stories.tsx
+ * - /packages/cli/templates/showcase/Center.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Center/CenterBothAxes.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Center/CenterHorizontal.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Center/CenterInline.tsx (block template)
  */
-
 
 import {type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';

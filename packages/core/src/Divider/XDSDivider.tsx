@@ -10,6 +10,12 @@
  * - /packages/core/src/Divider/Divider.doc.mjs
  * - /packages/core/src/Divider/XDSDivider.test.tsx
  * - /apps/storybook/stories/Divider.stories.tsx
+ * - /packages/cli/templates/showcase/Divider.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Divider/DividerBasic.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Divider/DividerFullBleed.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Divider/DividerStrongVariant.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Divider/DividerVertical.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Divider/DividerWithLabel.tsx (block template)
  */
 
 import {type HTMLAttributes, type ReactNode} from 'react';

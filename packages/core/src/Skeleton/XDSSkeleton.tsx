@@ -10,6 +10,11 @@
  * - /packages/core/src/Skeleton/Skeleton.doc.mjs
  * - /packages/core/src/Skeleton/index.ts
  * - /apps/storybook/stories/Skeleton.stories.tsx
+ * - /packages/cli/templates/showcase/Skeleton.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Skeleton/SkeletonBasicTextPlaceholder.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Skeleton/SkeletonCircularAvatarPlaceholder.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Skeleton/SkeletonFullwidthWithPercentage.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Skeleton/SkeletonStaggeredAnimationForMultipleSkeletons.tsx (block template)
  */
 
 import type {XDSBaseProps} from '../XDSBaseProps';

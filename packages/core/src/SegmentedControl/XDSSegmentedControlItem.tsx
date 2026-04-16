@@ -10,6 +10,11 @@
  * - /packages/core/src/SegmentedControl/SegmentedControl.doc.mjs
  * - /packages/core/src/SegmentedControl/index.ts
  * - /packages/core/src/SegmentedControl/XDSSegmentedControl.test.tsx
+ * - /packages/cli/templates/showcase/SegmentedControl.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/SegmentedControl/SegmentedControlBasic.tsx (block template)
+ * - /packages/cli/templates/blocks/components/SegmentedControl/SegmentedControlDisabled.tsx (block template)
+ * - /packages/cli/templates/blocks/components/SegmentedControl/SegmentedControlIconOnlyCompact.tsx (block template)
+ * - /packages/cli/templates/blocks/components/SegmentedControl/SegmentedControlWithIcons.tsx (block template)
  */
 
 import {useCallback, type ReactNode} from 'react';

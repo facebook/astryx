@@ -20,8 +20,18 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Link/index.ts
  * - /packages/core/src/Link/Link.doc.mjs
+ * - /packages/cli/templates/showcase/Link.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Link/LinkAsOverride.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Link/LinkBasic.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Link/LinkDisabled.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Link/LinkExternal.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Link/LinkInlineWithText.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Link/LinkProvider.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Link/LinkStandalone.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Link/LinkUnderlined.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Link/LinkUseHook.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Link/LinkWithTooltip.tsx (block template)
  */
-
 
 import {useMemo, type ReactNode} from 'react';
 import {XDSLinkContext} from './XDSLinkContext';

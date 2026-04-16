@@ -10,6 +10,12 @@
  * - /packages/core/src/TabList/TabList.doc.mjs
  * - /packages/core/src/TabList/index.ts
  * - /packages/core/src/TabList/XDSTabList.test.tsx
+ * - /packages/cli/templates/showcase/TabList.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/TabList/TabListBasic.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TabList/TabListWithBottomDivider.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TabList/TabListWithIcons.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TabList/TabListWithLinks.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TabList/TabListWithOverflowMenu.tsx (block template)
  */
 
 import {useCallback, type ReactNode} from 'react';

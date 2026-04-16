@@ -4,7 +4,12 @@
  * @output Unit tests for XDSSpinner component behavior
  * @position Testing; validates XDSSpinner.tsx implementation
  *
- * SYNC: When XDSSpinner.tsx changes, update tests to match new behavior
+ *
+ * - /packages/cli/templates/showcase/Spinner.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Spinner/SpinnerA11yOnlyNoVisibleText.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Spinner/SpinnerDefault.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Spinner/SpinnerRichLabelWithComposition.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Spinner/SpinnerWithLabel.tsx (block template)SYNC: When XDSSpinner.tsx changes, update tests to match new behavior
  */
 
 import {describe, it, expect} from 'vitest';

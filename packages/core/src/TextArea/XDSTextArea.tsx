@@ -11,6 +11,14 @@
  * - /packages/core/src/TextArea/XDSTextArea.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/TextArea/index.ts (exports if types change)
  * - /apps/storybook/stories/TextArea.stories.tsx (storybook stories)
+ * - /packages/cli/templates/showcase/TextArea.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/TextArea/TextAreaBasic.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TextArea/TextAreaDisabled.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TextArea/TextAreaErrorStatusWithMessage.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TextArea/TextAreaHiddenLabel.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TextArea/TextAreaWithCharacterCounter.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TextArea/TextAreaWithDescriptionAndOptionalIndicator.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TextArea/TextAreaWithPlaceholderAndCustomRows.tsx (block template)
  */
 
 import {

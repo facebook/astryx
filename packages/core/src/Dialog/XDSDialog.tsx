@@ -11,6 +11,12 @@
  * - /packages/core/src/Dialog/XDSDialog.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Dialog/index.ts (exports if types change)
  * - /apps/storybook/stories/Dialog.stories.tsx (storybook stories)
+ * - /packages/cli/templates/showcase/Dialog.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Dialog/DialogBasicWithLayout.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Dialog/DialogFullscreenVariant.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Dialog/DialogHeaderWithCloseButton.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Dialog/DialogRequiredPurpose.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Dialog/DialogStaticPosition.tsx (block template)
  */
 
 import {useEffect, useRef, type ReactNode} from 'react';

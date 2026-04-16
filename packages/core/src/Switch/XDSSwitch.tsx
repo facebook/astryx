@@ -11,6 +11,13 @@
  * - /packages/core/src/Switch/XDSSwitch.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Switch/index.ts (exports if types change)
  * - /apps/storybook/stories/Switch.stories.tsx (storybook stories)
+ * - /packages/cli/templates/showcase/Switch.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Switch/SwitchBasic.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Switch/SwitchSettingsPanelStyleLabelStartSpreadSpacing.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Switch/SwitchWithAsyncActionAndOptimisticUI.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Switch/SwitchWithDescription.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Switch/SwitchWithErrorStatus.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Switch/SwitchWithLabelIconAndTooltip.tsx (block template)
  */
 
 import {

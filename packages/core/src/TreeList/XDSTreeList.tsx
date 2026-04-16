@@ -10,6 +10,10 @@
  * - /packages/core/src/TreeList/TreeList.doc.mjs
  * - /packages/core/src/TreeList/index.ts
  * - /apps/storybook/stories/TreeList.stories.tsx
+ * - /packages/cli/templates/showcase/TreeList.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/TreeList/TreeListBasicTree.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TreeList/TreeListInteractiveItems.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TreeList/TreeListWithIconsAndHeader.tsx (block template)
  */
 
 import {useId, useState, useMemo, useCallback, type ReactNode} from 'react';

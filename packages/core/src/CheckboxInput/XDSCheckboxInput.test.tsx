@@ -4,7 +4,16 @@
  * @output Unit tests for XDSCheckboxInput component behavior
  * @position Testing; validates XDSCheckboxInput.tsx implementation
  *
- * SYNC: When XDSCheckboxInput.tsx changes, update tests to match new behavior
+ *
+ * - /packages/cli/templates/showcase/CheckboxInput.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/CheckboxInput/CheckboxInputAsyncAction.tsx (block template)
+ * - /packages/cli/templates/blocks/components/CheckboxInput/CheckboxInputBasic.tsx (block template)
+ * - /packages/cli/templates/blocks/components/CheckboxInput/CheckboxInputDisabled.tsx (block template)
+ * - /packages/cli/templates/blocks/components/CheckboxInput/CheckboxInputHiddenLabel.tsx (block template)
+ * - /packages/cli/templates/blocks/components/CheckboxInput/CheckboxInputIndeterminate.tsx (block template)
+ * - /packages/cli/templates/blocks/components/CheckboxInput/CheckboxInputSmallSize.tsx (block template)
+ * - /packages/cli/templates/blocks/components/CheckboxInput/CheckboxInputWithDescription.tsx (block template)
+ * - /packages/cli/templates/blocks/components/CheckboxInput/CheckboxInputWithError.tsx (block template)SYNC: When XDSCheckboxInput.tsx changes, update tests to match new behavior
  */
 
 import {describe, it, expect, vi} from 'vitest';

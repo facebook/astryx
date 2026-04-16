@@ -9,8 +9,12 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Collapsible/XDSCollapsibleGroup.tsx (provider)
  * - /packages/core/src/Collapsible/Collapsible.doc.mjs
+ * - /packages/cli/templates/showcase/Collapsible.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Collapsible/CollapsibleMultipleMode.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Collapsible/CollapsibleSingleModeAccordion.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Collapsible/CollapsibleStandalone.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Collapsible/CollapsibleWithLayout.tsx (block template)
  */
-
 
 import {createContext} from 'react';
 

@@ -8,6 +8,10 @@
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/TreeList/XDSTreeListItem.tsx
+ * - /packages/cli/templates/showcase/TreeList.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/TreeList/TreeListBasicTree.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TreeList/TreeListInteractiveItems.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TreeList/TreeListWithIconsAndHeader.tsx (block template)
  */
 
 import * as stylex from '@stylexjs/stylex';
@@ -42,8 +46,6 @@ const styles = stylex.create({
   verticalFull: {
     height: 'calc(100% + 1px)',
   },
-
-
 });
 
 // =============================================================================
@@ -96,15 +98,9 @@ export function XDSTreeListBranches({
           style={{
             left: `calc(${BRANCH_MARGIN} + ${nestedLevel - 1} * ${LEVEL_INDENT})`,
           }}>
-          <div
-            {...stylex.props(
-              styles.verticalLine,
-              styles.verticalFull,
-            )}
-          />
+          <div {...stylex.props(styles.verticalLine, styles.verticalFull)} />
         </div>
       )}
     </>
   );
 }
-

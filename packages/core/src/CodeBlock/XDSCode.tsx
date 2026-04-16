@@ -8,6 +8,8 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/CodeBlock/index.ts (exports if types change)
+ * - /packages/cli/templates/blocks/components/CodeBlock/CodeBlockInlineCodeInText.tsx (block template)
+ * - /packages/cli/templates/blocks/components/CodeBlock/CodeBlockTypeScriptWithLineNumbers.tsx (block template)
  */
 
 import {type ReactNode} from 'react';
@@ -81,8 +83,7 @@ export function XDSCode({
         className,
         style,
       )}
-      data-testid={props['data-testid']}
-    >
+      data-testid={props['data-testid']}>
       {children}
     </code>
   );

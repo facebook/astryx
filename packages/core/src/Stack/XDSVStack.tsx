@@ -7,6 +7,12 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Stack/Stack.doc.mjs
  * - /packages/core/src/Stack/XDSVStack.test.tsx
+ * - /packages/cli/templates/showcase/Stack.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Stack/StackHeaderLayout.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Stack/StackOverrideAlignmentPerItem.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Stack/StackPageLayout.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Stack/StackSidebarLayout.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Stack/StackStyleXUtilityAdvancedUse.tsx (block template)
  */
 
 import {XDSStack, type XDSStackProps} from './XDSStack';

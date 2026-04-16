@@ -12,6 +12,9 @@
  * - /packages/core/src/Button/index.ts (exports if types change)
  * - /apps/storybook/stories/Button.stories.tsx (storybook stories)
  *
+ * - /packages/cli/templates/showcase/Button.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Button/ButtonBasic.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Button/ButtonWithIcon.tsx (block template)
  * Last synced props: label, variant, size, isDisabled, isLoading, onClickAction, icon, isIconOnly, children, tooltip, endContent, href, as, target, rel
  */
 

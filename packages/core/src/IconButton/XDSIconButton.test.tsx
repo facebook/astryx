@@ -4,7 +4,12 @@
  * @output Unit tests for XDSIconButton component behavior
  * @position Testing; validates XDSIconButton.tsx implementation
  *
- * SYNC: When XDSIconButton.tsx changes, update tests to match new behavior
+ *
+ * - /packages/cli/templates/showcase/IconButton.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/IconButton/IconButtonDestructive.tsx (block template)
+ * - /packages/cli/templates/blocks/components/IconButton/IconButtonEmoji.tsx (block template)
+ * - /packages/cli/templates/blocks/components/IconButton/IconButtonGhost.tsx (block template)
+ * - /packages/cli/templates/blocks/components/IconButton/IconButtonPrimaryWithTooltip.tsx (block template)SYNC: When XDSIconButton.tsx changes, update tests to match new behavior
  */
 
 import {describe, it, expect, vi} from 'vitest';

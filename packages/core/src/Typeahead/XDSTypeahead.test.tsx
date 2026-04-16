@@ -4,7 +4,11 @@
  * @output Unit tests for Typeahead components
  * @position Testing; validates XDSTypeahead.tsx and XDSBaseTypeahead.tsx
  *
- * SYNC: When Typeahead components change, update tests to match
+ *
+ * - /packages/cli/templates/showcase/Typeahead.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Typeahead/TypeaheadBasicTypeahead.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Typeahead/TypeaheadWithCustomItemRendering.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Typeahead/TypeaheadWithValidationStatus.tsx (block template)SYNC: When Typeahead components change, update tests to match
  */
 
 import {describe, it, expect, vi, beforeAll, afterAll} from 'vitest';

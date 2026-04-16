@@ -11,6 +11,11 @@
  * - /packages/core/src/IconButton/XDSIconButton.test.tsx (tests)
  * - /packages/core/src/IconButton/index.ts (exports if types change)
  * - /apps/storybook/stories/IconButton.stories.tsx (storybook stories)
+ * - /packages/cli/templates/showcase/IconButton.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/IconButton/IconButtonDestructive.tsx (block template)
+ * - /packages/cli/templates/blocks/components/IconButton/IconButtonEmoji.tsx (block template)
+ * - /packages/cli/templates/blocks/components/IconButton/IconButtonGhost.tsx (block template)
+ * - /packages/cli/templates/blocks/components/IconButton/IconButtonPrimaryWithTooltip.tsx (block template)
  */
 
 import type {ReactNode} from 'react';

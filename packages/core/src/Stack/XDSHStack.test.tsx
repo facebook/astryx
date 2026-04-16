@@ -4,7 +4,13 @@
  * @output Unit tests for XDSHStack component behavior
  * @position Testing; validates XDSHStack.tsx implementation
  *
- * SYNC: When XDSHStack.tsx changes, update tests to match new behavior
+ *
+ * - /packages/cli/templates/showcase/Stack.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Stack/StackHeaderLayout.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Stack/StackOverrideAlignmentPerItem.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Stack/StackPageLayout.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Stack/StackSidebarLayout.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Stack/StackStyleXUtilityAdvancedUse.tsx (block template)SYNC: When XDSHStack.tsx changes, update tests to match new behavior
  */
 
 import {describe, it, expect, vi} from 'vitest';

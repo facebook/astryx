@@ -9,6 +9,9 @@
  * SYNC: When modified, update:
  * - /packages/core/src/Layer/Layer.doc.mjs
  * - /packages/core/src/Layer/index.ts
+ * - /packages/cli/templates/showcase/Layer.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Layer/LayerContextMode.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Layer/LayerFixedMode.tsx (block template)
  */
 
 import React, {

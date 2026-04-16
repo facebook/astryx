@@ -12,6 +12,11 @@
  * - /packages/core/src/Pagination/index.ts (exports if types change)
  * - /apps/storybook/stories/Pagination.stories.tsx (storybook stories)
  *
+ * - /packages/cli/templates/showcase/Pagination.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Pagination/PaginationCarouselDots.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Pagination/PaginationCountDisplayWithPageSizeSelector.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Pagination/PaginationCursorBased.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Pagination/PaginationPageNumberButtons.tsx (block template)
  * Last synced props: page, onChange, onChangeAction, totalItems, totalPages, hasMore,
  *   pageSize, pageSizeOptions, onPageSizeChange, variant, siblingCount, size, isDisabled,
  *   label, data-testid, xstyle

@@ -11,6 +11,11 @@
  * - /packages/core/src/Breadcrumbs/XDSBreadcrumbs.test.tsx
  * - /packages/core/src/Breadcrumbs/index.ts
  * - /apps/storybook/stories/Breadcrumbs.stories.tsx
+ * - /packages/cli/templates/showcase/Breadcrumbs.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Breadcrumbs/BreadcrumbsBasic.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Breadcrumbs/BreadcrumbsItemWithIcon.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Breadcrumbs/BreadcrumbsSupportingVariant.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Breadcrumbs/BreadcrumbsWithIcons.tsx (block template)
  */
 
 import {

@@ -10,6 +10,10 @@
  * - /packages/core/src/NavIcon/index.ts
  * - /apps/storybook/stories/TopNav.stories.tsx
  * - /apps/storybook/stories/PageNav.stories.tsx
+ * - /packages/cli/templates/showcase/NavIcon.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/NavIcon/NavIconInSideNavigation.tsx (block template)
+ * - /packages/cli/templates/blocks/components/NavIcon/NavIconInTopNavigation.tsx (block template)
+ * - /packages/cli/templates/blocks/components/NavIcon/NavIconWithHomeIcon.tsx (block template)
  */
 
 import {type ReactNode} from 'react';

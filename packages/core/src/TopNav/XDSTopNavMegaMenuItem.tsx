@@ -10,6 +10,11 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/TopNav/TopNav.doc.mjs
  * - /packages/core/src/TopNav/index.ts
+ * - /packages/cli/templates/showcase/TopNav.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/TopNav/TopNavBasicNavWithHeadingAndItems.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TopNav/TopNavInXDSLayoutHeaderSlot.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TopNav/TopNavWithCenteredContentThreecolumnLayout.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TopNav/TopNavWithHoverMenuAndMegaMenu.tsx (block template)
  */
 
 import {type ReactNode} from 'react';

@@ -4,7 +4,19 @@
  * @output Unit tests for XDSNumberInput component behavior
  * @position Testing; validates XDSNumberInput.tsx implementation
  *
- * SYNC: When XDSNumberInput.tsx changes, update tests to match new behavior
+ *
+ * - /packages/cli/templates/showcase/NumberInput.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/NumberInput/NumberInputBasic.tsx (block template)
+ * - /packages/cli/templates/blocks/components/NumberInput/NumberInputIntegerOnly.tsx (block template)
+ * - /packages/cli/templates/blocks/components/NumberInput/NumberInputOptionalField.tsx (block template)
+ * - /packages/cli/templates/blocks/components/NumberInput/NumberInputRequiredField.tsx (block template)
+ * - /packages/cli/templates/blocks/components/NumberInput/NumberInputWithDescription.tsx (block template)
+ * - /packages/cli/templates/blocks/components/NumberInput/NumberInputWithEventHandlers.tsx (block template)
+ * - /packages/cli/templates/blocks/components/NumberInput/NumberInputWithMinMaxConstraints.tsx (block template)
+ * - /packages/cli/templates/blocks/components/NumberInput/NumberInputWithPlaceholder.tsx (block template)
+ * - /packages/cli/templates/blocks/components/NumberInput/NumberInputWithStepForDecimals.tsx (block template)
+ * - /packages/cli/templates/blocks/components/NumberInput/NumberInputWithUnitsDisplay.tsx (block template)
+ * - /packages/cli/templates/blocks/components/NumberInput/NumberInputWithValidationStatus.tsx (block template)SYNC: When XDSNumberInput.tsx changes, update tests to match new behavior
  */
 
 import {describe, it, expect, vi} from 'vitest';

@@ -14,6 +14,10 @@
  * - /packages/core/src/SideNav/XDSSideNav.test.tsx
  * - /packages/core/src/SideNav/index.ts
  * - /apps/storybook/stories/SideNav.stories.tsx
+ * - /packages/cli/templates/showcase/SideNav.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/SideNav/SideNavCollapsibleSidebar.tsx (block template)
+ * - /packages/cli/templates/blocks/components/SideNav/SideNavStandaloneNoTopNav.tsx (block template)
+ * - /packages/cli/templates/blocks/components/SideNav/SideNavWithXDSAppShellTopNavNoHeader.tsx (block template)
  */
 
 import {useCallback, useRef, type ReactNode} from 'react';

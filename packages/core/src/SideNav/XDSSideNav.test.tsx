@@ -4,7 +4,11 @@
  * @output Unit tests for XDSSideNav component suite
  * @position Testing; validates SideNav implementations
  *
- * SYNC: When SideNav components change, update tests to match new behavior
+ *
+ * - /packages/cli/templates/showcase/SideNav.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/SideNav/SideNavCollapsibleSidebar.tsx (block template)
+ * - /packages/cli/templates/blocks/components/SideNav/SideNavStandaloneNoTopNav.tsx (block template)
+ * - /packages/cli/templates/blocks/components/SideNav/SideNavWithXDSAppShellTopNavNoHeader.tsx (block template)SYNC: When SideNav components change, update tests to match new behavior
  */
 
 import React from 'react';

@@ -12,6 +12,10 @@
  * SYNC: When modified, update:
  * - /packages/core/src/SideNav/SideNav.doc.mjs
  * - /packages/core/src/SideNav/index.ts
+ * - /packages/cli/templates/showcase/SideNav.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/SideNav/SideNavCollapsibleSidebar.tsx (block template)
+ * - /packages/cli/templates/blocks/components/SideNav/SideNavStandaloneNoTopNav.tsx (block template)
+ * - /packages/cli/templates/blocks/components/SideNav/SideNavWithXDSAppShellTopNavNoHeader.tsx (block template)
  */
 
 import {useCallback, type ReactNode} from 'react';

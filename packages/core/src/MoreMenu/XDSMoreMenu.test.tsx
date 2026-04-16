@@ -4,7 +4,12 @@
  * @output Unit tests for XDSMoreMenu component behavior
  * @position Testing; validates XDSMoreMenu.tsx implementation
  *
- * SYNC: When XDSMoreMenu.tsx changes, update tests to match new behavior
+ *
+ * - /packages/cli/templates/showcase/MoreMenu.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/MoreMenu/MoreMenuCardHeaderWithOverflowMenu.tsx (block template)
+ * - /packages/cli/templates/blocks/components/MoreMenu/MoreMenuMinimalActions.tsx (block template)
+ * - /packages/cli/templates/blocks/components/MoreMenu/MoreMenuTableRowActionsWithIcons.tsx (block template)
+ * - /packages/cli/templates/blocks/components/MoreMenu/MoreMenuWithSections.tsx (block template)SYNC: When XDSMoreMenu.tsx changes, update tests to match new behavior
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';

@@ -4,7 +4,13 @@
  * @output Unit tests for XDSToolbar component
  * @position Testing; validates XDSToolbar implementation
  *
- * SYNC: When Toolbar component changes, update tests to match new behavior
+ *
+ * - /packages/cli/templates/showcase/Toolbar.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Toolbar/ToolbarBasicToolbarWithStartAndEndActions.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Toolbar/ToolbarCardHeaderPattern.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Toolbar/ToolbarCompactDensity.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Toolbar/ToolbarThreeslotLayoutWithCenteredContent.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Toolbar/ToolbarWithXDSOverflowListForResponsiveCollapsing.tsx (block template)SYNC: When Toolbar component changes, update tests to match new behavior
  */
 
 import {describe, it, expect, vi} from 'vitest';

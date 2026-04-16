@@ -14,6 +14,11 @@
  * - /packages/core/src/MoreMenu/XDSMoreMenu.test.tsx
  * - /packages/core/src/MoreMenu/index.ts
  * - /apps/storybook/stories/MoreMenu.stories.tsx
+ * - /packages/cli/templates/showcase/MoreMenu.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/MoreMenu/MoreMenuCardHeaderWithOverflowMenu.tsx (block template)
+ * - /packages/cli/templates/blocks/components/MoreMenu/MoreMenuMinimalActions.tsx (block template)
+ * - /packages/cli/templates/blocks/components/MoreMenu/MoreMenuTableRowActionsWithIcons.tsx (block template)
+ * - /packages/cli/templates/blocks/components/MoreMenu/MoreMenuWithSections.tsx (block template)
  */
 
 import {type ReactNode} from 'react';

@@ -4,7 +4,13 @@
  * @output Unit tests for XDSDateInput component behavior
  * @position Testing; validates XDSDateInput.tsx implementation
  *
- * SYNC: When XDSDateInput.tsx changes, update tests to match new behavior
+ *
+ * - /packages/cli/templates/showcase/DateInput.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/DateInput/DateInputBasic.tsx (block template)
+ * - /packages/cli/templates/blocks/components/DateInput/DateInputTwoMonthCalendar.tsx (block template)
+ * - /packages/cli/templates/blocks/components/DateInput/DateInputWithConstraints.tsx (block template)
+ * - /packages/cli/templates/blocks/components/DateInput/DateInputWithDescriptionAndRequired.tsx (block template)
+ * - /packages/cli/templates/blocks/components/DateInput/DateInputWithErrorStatus.tsx (block template)SYNC: When XDSDateInput.tsx changes, update tests to match new behavior
  */
 
 import {describe, it, expect, vi} from 'vitest';

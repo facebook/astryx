@@ -10,8 +10,11 @@
  * - /packages/core/src/AspectRatio/AspectRatio.doc.mjs
  * - /packages/core/src/AspectRatio/XDSAspectRatio.test.tsx
  * - /apps/storybook/stories/AspectRatio.stories.tsx
+ * - /packages/cli/templates/showcase/AspectRatio.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/AspectRatio/AspectRatioSquare.tsx (block template)
+ * - /packages/cli/templates/blocks/components/AspectRatio/AspectRatioVideo.tsx (block template)
+ * - /packages/cli/templates/blocks/components/AspectRatio/AspectRatioWidescreen.tsx (block template)
  */
-
 
 import {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';

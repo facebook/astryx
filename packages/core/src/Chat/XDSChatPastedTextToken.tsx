@@ -11,6 +11,9 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Chat/index.ts (exports)
+ * - /packages/cli/templates/showcase/Chat.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Chat/ChatBasicConversation.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Chat/ChatSystemMessageWithDivider.tsx (block template)
  */
 
 import * as stylex from '@stylexjs/stylex';
@@ -75,12 +78,8 @@ const styles = stylex.create({
 function formatLabel(text: string): string {
   const lines = text.split('\n').length;
   const chars = text.length;
-  return lines > 1
-    ? `${lines} lines, ${chars} chars`
-    : `${chars} chars`;
+  return lines > 1 ? `${lines} lines, ${chars} chars` : `${chars} chars`;
 }
-
-
 
 // =============================================================================
 // Component
@@ -91,7 +90,6 @@ export function XDSChatPastedTextToken({
   onExpand,
 }: XDSChatPastedTextTokenProps) {
   const label = formatLabel(text);
-
 
   const cardContent = (
     <div {...stylex.props(styles.preview)}>

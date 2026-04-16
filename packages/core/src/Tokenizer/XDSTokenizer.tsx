@@ -10,6 +10,11 @@
  * - /packages/core/src/Tokenizer/README.md
  * - /packages/core/src/Tokenizer/index.ts
  * - /apps/storybook/stories/Tokenizer.stories.tsx
+ * - /packages/cli/templates/showcase/Tokenizer.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Tokenizer/TokenizerBasicMultiselect.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Tokenizer/TokenizerCustomTokenRendering.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Tokenizer/TokenizerFreetextTagsHasCreate.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Tokenizer/TokenizerWithMaxEntriesAndClearAll.tsx (block template)
  */
 
 import React, {

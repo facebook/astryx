@@ -4,7 +4,10 @@
  * @output Unit tests for XDSAlertDialog component behavior
  * @position Testing; validates XDSAlertDialog.tsx implementation
  *
- * SYNC: When XDSAlertDialog.tsx changes, update tests to match new behavior
+ *
+ * - /packages/cli/templates/showcase/AlertDialog.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/AlertDialog/AlertDialogDeleteConfirmation.tsx (block template)
+ * - /packages/cli/templates/blocks/components/AlertDialog/AlertDialogImperative.tsx (block template)SYNC: When XDSAlertDialog.tsx changes, update tests to match new behavior
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';

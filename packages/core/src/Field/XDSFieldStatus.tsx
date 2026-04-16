@@ -7,6 +7,13 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Field/Field.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/Field/index.ts (exports if types change)
+ * - /packages/cli/templates/showcase/Field.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Field/FieldBasicUsage.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Field/FieldDescriptionWithOptional.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Field/FieldHiddenLabel.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Field/FieldOptional.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Field/FieldRequired.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Field/FieldWithDescription.tsx (block template)
  */
 
 'use client';

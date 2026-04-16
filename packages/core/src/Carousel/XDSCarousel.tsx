@@ -10,6 +10,10 @@
  * SYNC: When modified, update:
  * - /packages/core/src/Carousel/index.ts (exports)
  * - /apps/storybook/stories/Carousel.stories.tsx
+ * - /packages/cli/templates/showcase/Carousel.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Carousel/CarouselBasic.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Carousel/CarouselNoButtons.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Carousel/CarouselWithSnap.tsx (block template)
  */
 
 import {type ReactNode, useRef, useCallback, useEffect, Children} from 'react';

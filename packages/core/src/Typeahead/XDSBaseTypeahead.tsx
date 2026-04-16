@@ -13,6 +13,10 @@
  * SYNC: When modified, update:
  * - /packages/core/src/Typeahead/README.md
  * - /packages/core/src/Typeahead/index.ts
+ * - /packages/cli/templates/showcase/Typeahead.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Typeahead/TypeaheadBasicTypeahead.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Typeahead/TypeaheadWithCustomItemRendering.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Typeahead/TypeaheadWithValidationStatus.tsx (block template)
  */
 
 import React, {

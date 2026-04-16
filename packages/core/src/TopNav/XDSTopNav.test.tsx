@@ -4,7 +4,12 @@
  * @output Unit tests for XDSTopNav component suite
  * @position Testing; validates TopNav implementations
  *
- * SYNC: When TopNav components change, update tests to match new behavior
+ *
+ * - /packages/cli/templates/showcase/TopNav.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/TopNav/TopNavBasicNavWithHeadingAndItems.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TopNav/TopNavInXDSLayoutHeaderSlot.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TopNav/TopNavWithCenteredContentThreecolumnLayout.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TopNav/TopNavWithHoverMenuAndMegaMenu.tsx (block template)SYNC: When TopNav components change, update tests to match new behavior
  */
 
 import {describe, it, expect, vi} from 'vitest';

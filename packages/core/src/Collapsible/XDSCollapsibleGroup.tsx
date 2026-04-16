@@ -18,8 +18,12 @@
  * - /packages/core/src/Collapsible/Collapsible.doc.mjs
  * - /packages/core/src/Collapsible/index.ts (exports)
  * - /apps/storybook/stories/Collapsible.stories.tsx
+ * - /packages/cli/templates/showcase/Collapsible.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Collapsible/CollapsibleMultipleMode.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Collapsible/CollapsibleSingleModeAccordion.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Collapsible/CollapsibleStandalone.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Collapsible/CollapsibleWithLayout.tsx (block template)
  */
-
 
 import {useCallback, useMemo, useState, type ReactNode} from 'react';
 import {CollapsibleGroupContext} from './XDSCollapsibleGroupContext';

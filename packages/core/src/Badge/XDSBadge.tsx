@@ -11,6 +11,11 @@
  * - /packages/core/src/Badge/XDSBadge.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Badge/index.ts (exports if types change)
  * - /apps/storybook/stories/Badge.stories.tsx (storybook stories)
+ * - /packages/cli/templates/showcase/Badge.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Badge/BadgeColorVariants.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Badge/BadgeCountBadge.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Badge/BadgeStatusVariants.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Badge/BadgeTextBadge.tsx (block template)
  */
 
 import {type ReactNode} from 'react';

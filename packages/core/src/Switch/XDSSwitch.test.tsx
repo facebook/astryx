@@ -4,7 +4,14 @@
  * @output Unit tests for XDSSwitch component behavior
  * @position Testing; validates XDSSwitch.tsx implementation
  *
- * SYNC: When XDSSwitch.tsx changes, update tests to match new behavior
+ *
+ * - /packages/cli/templates/showcase/Switch.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Switch/SwitchBasic.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Switch/SwitchSettingsPanelStyleLabelStartSpreadSpacing.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Switch/SwitchWithAsyncActionAndOptimisticUI.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Switch/SwitchWithDescription.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Switch/SwitchWithErrorStatus.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Switch/SwitchWithLabelIconAndTooltip.tsx (block template)SYNC: When XDSSwitch.tsx changes, update tests to match new behavior
  */
 
 import {describe, it, expect, vi} from 'vitest';
@@ -332,5 +339,4 @@ describe('XDSSwitch', () => {
     );
     expect(screen.getByRole('switch')).toBeRequired();
   });
-
 });

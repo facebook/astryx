@@ -13,6 +13,11 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/ToggleButton/index.ts
  * - /apps/storybook/stories/ToggleButton.stories.tsx
+ * - /packages/cli/templates/showcase/ToggleButton.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/ToggleButton/ToggleButtonIconSwapOnPress.tsx (block template)
+ * - /packages/cli/templates/blocks/components/ToggleButton/ToggleButtonIcononlyToggle.tsx (block template)
+ * - /packages/cli/templates/blocks/components/ToggleButton/ToggleButtonMultiselectGroup.tsx (block template)
+ * - /packages/cli/templates/blocks/components/ToggleButton/ToggleButtonSingleselectGroup.tsx (block template)
  */
 
 import {

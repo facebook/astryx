@@ -4,7 +4,12 @@
  * @output Unit tests for XDSPagination component behavior
  * @position Testing; validates XDSPagination.tsx implementation
  *
- * SYNC: When XDSPagination.tsx changes, update tests to match new behavior
+ *
+ * - /packages/cli/templates/showcase/Pagination.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Pagination/PaginationCarouselDots.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Pagination/PaginationCountDisplayWithPageSizeSelector.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Pagination/PaginationCursorBased.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Pagination/PaginationPageNumberButtons.tsx (block template)SYNC: When XDSPagination.tsx changes, update tests to match new behavior
  */
 
 import {describe, it, expect, vi} from 'vitest';

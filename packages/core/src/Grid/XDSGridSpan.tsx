@@ -8,6 +8,12 @@
  * - /packages/core/src/Grid/Grid.doc.mjs
  * - /packages/core/src/Grid/XDSGrid.test.tsx
  * - /apps/storybook/stories/Grid.stories.tsx
+ * - /packages/cli/templates/showcase/Grid.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Grid/GridAutoFitMaxColumns.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Grid/GridDense.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Grid/GridFixedColumns.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Grid/GridResponsiveAutoFit.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Grid/GridSpanningColumns.tsx (block template)
  */
 
 import {type ReactNode} from 'react';

@@ -4,7 +4,11 @@
  * @output Unit tests for XDSAspectRatio component behavior
  * @position Testing; validates XDSAspectRatio.tsx implementation
  *
- * SYNC: When XDSAspectRatio.tsx changes, update tests to match new behavior
+ *
+ * - /packages/cli/templates/showcase/AspectRatio.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/AspectRatio/AspectRatioSquare.tsx (block template)
+ * - /packages/cli/templates/blocks/components/AspectRatio/AspectRatioVideo.tsx (block template)
+ * - /packages/cli/templates/blocks/components/AspectRatio/AspectRatioWidescreen.tsx (block template)SYNC: When XDSAspectRatio.tsx changes, update tests to match new behavior
  */
 
 import {describe, it, expect, vi} from 'vitest';

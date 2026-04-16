@@ -11,6 +11,12 @@
  * - /packages/core/src/DateInput/XDSDateInput.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/DateInput/index.ts (exports if types change)
  * - /apps/storybook/stories/DateInput.stories.tsx (storybook stories)
+ * - /packages/cli/templates/showcase/DateInput.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/DateInput/DateInputBasic.tsx (block template)
+ * - /packages/cli/templates/blocks/components/DateInput/DateInputTwoMonthCalendar.tsx (block template)
+ * - /packages/cli/templates/blocks/components/DateInput/DateInputWithConstraints.tsx (block template)
+ * - /packages/cli/templates/blocks/components/DateInput/DateInputWithDescriptionAndRequired.tsx (block template)
+ * - /packages/cli/templates/blocks/components/DateInput/DateInputWithErrorStatus.tsx (block template)
  */
 
 import {

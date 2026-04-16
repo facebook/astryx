@@ -4,7 +4,10 @@
  * @output Unit tests for XDSHoverCard component behavior
  * @position Testing; validates XDSHoverCard.tsx implementation
  *
- * SYNC: When XDSHoverCard.tsx changes, update tests to match new behavior
+ *
+ * - /packages/cli/templates/showcase/HoverCard.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/HoverCard/HoverCardBasic.tsx (block template)
+ * - /packages/cli/templates/blocks/components/HoverCard/HoverCardHook.tsx (block template)SYNC: When XDSHoverCard.tsx changes, update tests to match new behavior
  */
 
 import {describe, it, expect, vi, beforeAll, afterAll} from 'vitest';

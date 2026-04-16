@@ -9,6 +9,10 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/TreeList/TreeList.doc.mjs
  * - /packages/core/src/TreeList/XDSTreeList.tsx
+ * - /packages/cli/templates/showcase/TreeList.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/TreeList/TreeListBasicTree.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TreeList/TreeListInteractiveItems.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TreeList/TreeListWithIconsAndHeader.tsx (block template)
  */
 
 import {useId, useMemo, type ReactNode} from 'react';

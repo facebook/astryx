@@ -4,7 +4,12 @@
  * @output Unit tests for XDSList and XDSListItem components
  * @position Testing; validates XDSList.tsx and XDSListItem.tsx implementation
  *
- * SYNC: When modified, update this header
+ *
+ * - /packages/cli/templates/showcase/List.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/List/ListBasic.tsx (block template)
+ * - /packages/cli/templates/blocks/components/List/ListInteractiveItems.tsx (block template)
+ * - /packages/cli/templates/blocks/components/List/ListOrdered.tsx (block template)
+ * - /packages/cli/templates/blocks/components/List/ListWithDividersAndHeader.tsx (block template)SYNC: When modified, update this header
  */
 
 import {describe, it, expect, vi} from 'vitest';

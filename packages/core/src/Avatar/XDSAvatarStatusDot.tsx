@@ -10,6 +10,12 @@
  * - /packages/core/src/Avatar/Avatar.doc.mjs (features, files table)
  * - /packages/core/src/Avatar/index.ts (exports)
  * - /apps/storybook/stories/Avatar.stories.tsx (storybook stories)
+ * - /packages/cli/templates/showcase/Avatar.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Avatar/AvatarInitialsFallback.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Avatar/AvatarStatusDotSizes.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Avatar/AvatarStatusDotVariants.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Avatar/AvatarWithImage.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Avatar/AvatarWithStatusIndicator.tsx (block template)
  */
 
 import {useContext, type ReactNode} from 'react';

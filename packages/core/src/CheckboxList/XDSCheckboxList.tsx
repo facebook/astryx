@@ -11,6 +11,12 @@
  * - /packages/core/src/CheckboxList/XDSCheckboxList.test.tsx
  * - /packages/core/src/CheckboxList/index.ts
  * - /apps/storybook/stories/CheckboxList.stories.tsx
+ * - /packages/cli/templates/showcase/CheckboxList.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/CheckboxList/CheckboxListBasicCollectionMode.tsx (block template)
+ * - /packages/cli/templates/blocks/components/CheckboxList/CheckboxListDisabledGroup.tsx (block template)
+ * - /packages/cli/templates/blocks/components/CheckboxList/CheckboxListStandaloneMode.tsx (block template)
+ * - /packages/cli/templates/blocks/components/CheckboxList/CheckboxListWithDescriptions.tsx (block template)
+ * - /packages/cli/templates/blocks/components/CheckboxList/CheckboxListWithStatus.tsx (block template)
  */
 
 import {useId, useOptimistic, useTransition, type ReactNode} from 'react';

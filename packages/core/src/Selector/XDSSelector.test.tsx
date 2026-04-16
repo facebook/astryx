@@ -4,7 +4,13 @@
  * @output Unit tests for XDSSelector
  * @position Tests; validates XDSSelector behavior
  *
- * SYNC: When XDSSelector.tsx API changes, update these tests.
+ *
+ * - /packages/cli/templates/showcase/Selector.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Selector/SelectorBasic.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Selector/SelectorCustomRendering.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Selector/SelectorSections.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Selector/SelectorWithObjectItems.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Selector/SelectorWithStatusAndFieldProps.tsx (block template)SYNC: When XDSSelector.tsx API changes, update these tests.
  */
 
 import {describe, it, expect, vi} from 'vitest';

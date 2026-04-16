@@ -15,6 +15,16 @@ import React from 'react';
  * - /packages/core/src/AppShell/index.ts
  * - /packages/core/src/AppShell/XDSAppShell.test.tsx
  * - /apps/storybook/stories/AppShell.stories.tsx
+ * - /packages/cli/templates/showcase/AppShell.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/AppShell/AppShellAutoHeight.tsx (block template)
+ * - /packages/cli/templates/blocks/components/AppShell/AppShellControlledCollapse.tsx (block template)
+ * - /packages/cli/templates/blocks/components/AppShell/AppShellFullBleedWithPadded.tsx (block template)
+ * - /packages/cli/templates/blocks/components/AppShell/AppShellPaddedContent.tsx (block template)
+ * - /packages/cli/templates/blocks/components/AppShell/AppShellPaddedWithFullBleed.tsx (block template)
+ * - /packages/cli/templates/blocks/components/AppShell/AppShellResponsiveMobileNav.tsx (block template)
+ * - /packages/cli/templates/blocks/components/AppShell/AppShellSideNavOnly.tsx (block template)
+ * - /packages/cli/templates/blocks/components/AppShell/AppShellTopNavOnly.tsx (block template)
+ * - /packages/cli/templates/blocks/components/AppShell/AppShellTopNavSideNav.tsx (block template)
  */
 
 import {

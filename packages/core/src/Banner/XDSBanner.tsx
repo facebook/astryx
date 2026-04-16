@@ -17,6 +17,10 @@
  * - /packages/core/src/Banner/XDSBanner.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Banner/index.ts (exports if types change)
  * - /apps/storybook/stories/Banner.stories.tsx (storybook stories)
+ * - /packages/cli/templates/showcase/Banner.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Banner/BannerDismissable.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Banner/BannerSimple.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Banner/BannerWithContent.tsx (block template)
  */
 
 import {useState, type ReactNode} from 'react';

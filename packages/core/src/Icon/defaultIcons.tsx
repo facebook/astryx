@@ -19,6 +19,10 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Icon/globalIconRegistry.tsx (XDSIconName type if names change)
  * - /packages/core/src/Icon/Icon.doc.mjs (fallback icon documentation)
+ * - /packages/cli/templates/showcase/Icon.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Icon/IconDirectComponents.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Icon/IconSemanticNames.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Icon/IconSources.tsx (block template)
  */
 
 import type {XDSIconRegistry} from './globalIconRegistry';

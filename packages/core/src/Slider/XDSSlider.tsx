@@ -11,6 +11,16 @@
  * - /packages/core/src/Slider/XDSSlider.test.tsx
  * - /packages/core/src/Slider/index.ts
  * - /apps/storybook/stories/Slider.stories.tsx
+ * - /packages/cli/templates/showcase/Slider.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Slider/SliderBasicSingleValue.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Slider/SliderDisabled.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Slider/SliderRangeSlider.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Slider/SliderRangeWithMinimumGap.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Slider/SliderTextValueDisplay.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Slider/SliderVerticalOrientation.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Slider/SliderWithCustomFormatting.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Slider/SliderWithOnChangeEndForCommittingValue.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Slider/SliderWithStepAndMarks.tsx (block template)
  */
 
 import {

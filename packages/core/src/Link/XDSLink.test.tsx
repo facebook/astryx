@@ -4,7 +4,18 @@
  * @output Unit tests for XDSLink component behavior
  * @position Testing; validates XDSLink.tsx implementation
  *
- * SYNC: When XDSLink.tsx changes, update tests to match new behavior
+ *
+ * - /packages/cli/templates/showcase/Link.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Link/LinkAsOverride.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Link/LinkBasic.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Link/LinkDisabled.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Link/LinkExternal.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Link/LinkInlineWithText.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Link/LinkProvider.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Link/LinkStandalone.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Link/LinkUnderlined.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Link/LinkUseHook.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Link/LinkWithTooltip.tsx (block template)SYNC: When XDSLink.tsx changes, update tests to match new behavior
  */
 
 import {describe, it, expect, vi} from 'vitest';

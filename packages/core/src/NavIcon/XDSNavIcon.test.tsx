@@ -4,7 +4,11 @@
  * @output Unit tests for XDSNavIcon component
  * @position Testing; validates XDSNavIcon implementation
  *
- * SYNC: When XDSNavIcon changes, update tests to match new behavior
+ *
+ * - /packages/cli/templates/showcase/NavIcon.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/NavIcon/NavIconInSideNavigation.tsx (block template)
+ * - /packages/cli/templates/blocks/components/NavIcon/NavIconInTopNavigation.tsx (block template)
+ * - /packages/cli/templates/blocks/components/NavIcon/NavIconWithHomeIcon.tsx (block template)SYNC: When XDSNavIcon changes, update tests to match new behavior
  */
 
 import {describe, it, expect, vi} from 'vitest';

@@ -11,6 +11,14 @@
  * - /packages/core/src/Timestamp/XDSTimestamp.test.tsx
  * - /packages/core/src/Timestamp/index.ts
  * - /apps/storybook/stories/Timestamp.stories.tsx
+ * - /packages/cli/templates/showcase/Timestamp.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Timestamp/TimestampAutoFormatDefault.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Timestamp/TimestampDateAndTime.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Timestamp/TimestampDateOnly.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Timestamp/TimestampLiveUpdating.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Timestamp/TimestampRelativeFormat.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Timestamp/TimestampSystemDatetime.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Timestamp/TimestampTimeOnly.tsx (block template)
  */
 
 import {useEffect, useRef, useState, lazy, Suspense} from 'react';

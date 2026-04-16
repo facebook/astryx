@@ -4,7 +4,11 @@
  * @output Unit tests for XDSBanner component behavior
  * @position Testing; validates XDSBanner.tsx implementation
  *
- * SYNC: When modified, update this header
+ *
+ * - /packages/cli/templates/showcase/Banner.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Banner/BannerDismissable.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Banner/BannerSimple.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Banner/BannerWithContent.tsx (block template)SYNC: When modified, update this header
  */
 
 import {describe, it, expect, vi, afterEach} from 'vitest';

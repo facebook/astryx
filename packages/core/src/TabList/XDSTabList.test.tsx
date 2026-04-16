@@ -4,7 +4,13 @@
  * @output Unit tests for XDSTabList, XDSTab, XDSTabMenu behavior
  * @position Testing; validates TabList component implementation
  *
- * SYNC: When TabList components change, update tests to match new behavior
+ *
+ * - /packages/cli/templates/showcase/TabList.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/TabList/TabListBasic.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TabList/TabListWithBottomDivider.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TabList/TabListWithIcons.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TabList/TabListWithLinks.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TabList/TabListWithOverflowMenu.tsx (block template)SYNC: When TabList components change, update tests to match new behavior
  */
 
 import {describe, it, expect, vi, beforeAll, afterAll} from 'vitest';

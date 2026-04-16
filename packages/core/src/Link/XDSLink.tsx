@@ -11,6 +11,17 @@
  * - /packages/core/src/Link/XDSLink.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Link/index.ts (exports if types change)
  * - /apps/storybook/stories/Link.stories.tsx (storybook stories)
+ * - /packages/cli/templates/showcase/Link.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Link/LinkAsOverride.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Link/LinkBasic.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Link/LinkDisabled.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Link/LinkExternal.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Link/LinkInlineWithText.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Link/LinkProvider.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Link/LinkStandalone.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Link/LinkUnderlined.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Link/LinkUseHook.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Link/LinkWithTooltip.tsx (block template)
  */
 
 import {type MouseEventHandler, type ReactNode} from 'react';

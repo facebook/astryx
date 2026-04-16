@@ -4,7 +4,13 @@
  * @output Unit tests for XDSRadioList and XDSRadioListItem behavior
  * @position Testing; validates XDSRadioList.tsx and XDSRadioListItem.tsx implementation
  *
- * SYNC: When XDSRadioList.tsx or XDSRadioListItem.tsx changes, update tests to match new behavior
+ *
+ * - /packages/cli/templates/showcase/RadioList.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/RadioList/RadioListBasic.tsx (block template)
+ * - /packages/cli/templates/blocks/components/RadioList/RadioListDisabledGroup.tsx (block template)
+ * - /packages/cli/templates/blocks/components/RadioList/RadioListHorizontalLayout.tsx (block template)
+ * - /packages/cli/templates/blocks/components/RadioList/RadioListWithDescriptions.tsx (block template)
+ * - /packages/cli/templates/blocks/components/RadioList/RadioListWithStatus.tsx (block template)SYNC: When XDSRadioList.tsx or XDSRadioListItem.tsx changes, update tests to match new behavior
  */
 
 import {describe, it, expect, vi} from 'vitest';

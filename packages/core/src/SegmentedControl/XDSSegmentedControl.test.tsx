@@ -4,7 +4,12 @@
  * @output Unit tests for XDSSegmentedControl and XDSSegmentedControlItem
  * @position Testing; validates SegmentedControl component implementation
  *
- * SYNC: When SegmentedControl components change, update tests to match new behavior
+ *
+ * - /packages/cli/templates/showcase/SegmentedControl.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/SegmentedControl/SegmentedControlBasic.tsx (block template)
+ * - /packages/cli/templates/blocks/components/SegmentedControl/SegmentedControlDisabled.tsx (block template)
+ * - /packages/cli/templates/blocks/components/SegmentedControl/SegmentedControlIconOnlyCompact.tsx (block template)
+ * - /packages/cli/templates/blocks/components/SegmentedControl/SegmentedControlWithIcons.tsx (block template)SYNC: When SegmentedControl components change, update tests to match new behavior
  */
 
 import {describe, it, expect, vi} from 'vitest';

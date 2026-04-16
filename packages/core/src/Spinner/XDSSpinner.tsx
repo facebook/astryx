@@ -11,6 +11,11 @@
  * - /packages/core/src/Spinner/XDSSpinner.test.tsx
  * - /packages/core/src/Spinner/index.ts
  * - /apps/storybook/stories/Spinner.stories.tsx
+ * - /packages/cli/templates/showcase/Spinner.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Spinner/SpinnerA11yOnlyNoVisibleText.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Spinner/SpinnerDefault.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Spinner/SpinnerRichLabelWithComposition.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Spinner/SpinnerWithLabel.tsx (block template)
  */
 
 import {useEffect, useRef, type ReactNode} from 'react';

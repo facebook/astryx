@@ -4,7 +4,15 @@
  * @output Unit tests for XDSTextArea component behavior
  * @position Testing; validates XDSTextArea.tsx implementation
  *
- * SYNC: When XDSTextArea.tsx changes, update tests to match new behavior
+ *
+ * - /packages/cli/templates/showcase/TextArea.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/TextArea/TextAreaBasic.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TextArea/TextAreaDisabled.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TextArea/TextAreaErrorStatusWithMessage.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TextArea/TextAreaHiddenLabel.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TextArea/TextAreaWithCharacterCounter.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TextArea/TextAreaWithDescriptionAndOptionalIndicator.tsx (block template)
+ * - /packages/cli/templates/blocks/components/TextArea/TextAreaWithPlaceholderAndCustomRows.tsx (block template)SYNC: When XDSTextArea.tsx changes, update tests to match new behavior
  */
 
 import React from 'react';

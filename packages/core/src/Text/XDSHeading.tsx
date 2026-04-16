@@ -11,8 +11,13 @@
  * - /packages/core/src/Text/XDSHeading.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Text/index.ts (exports if types change)
  * - /apps/storybook/stories/Text.stories.tsx (storybook stories)
+ * - /packages/cli/templates/showcase/Text.tsx (showcase preview)
+ * - /packages/cli/templates/blocks/components/Text/TextBodyText.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Text/TextFontWrapperForNativeHTML.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Text/TextHeading.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Text/TextSupportingText.tsx (block template)
+ * - /packages/cli/templates/blocks/components/Text/TextTruncatedTextWithTooltip.tsx (block template)
  */
-
 
 import {lazy, Suspense, useCallback, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
