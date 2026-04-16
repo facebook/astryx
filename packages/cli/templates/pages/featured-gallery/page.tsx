@@ -245,7 +245,7 @@ export default function FeaturedGalleryTemplate() {
           gap: 24,
           overflowX: 'auto',
           scrollSnapType: 'x mandatory',
-          paddingLeft: 'max(24px, calc((100vw - 1200px) / 2 + 24px))',
+          paddingLeft: 24,
           paddingRight: 24,
           paddingTop: 24,
           paddingBottom: 48,
