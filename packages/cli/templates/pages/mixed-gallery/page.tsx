@@ -116,10 +116,13 @@ function GalleryCard({image}: {image: GalleryImage}) {
           <XDSText
             type="body"
             weight="bold"
+            color="inherit"
             style={{fontSize: 'var(--font-size-xl)'}}>
             {image.title}
           </XDSText>
-          <XDSText type="body">{image.description}</XDSText>
+          <XDSText type="body" color="inherit">
+            {image.description}
+          </XDSText>
           <div style={{paddingTop: 'var(--spacing-1)'}}>
             <XDSButton
               label="Read more"
