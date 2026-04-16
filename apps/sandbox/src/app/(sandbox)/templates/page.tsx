@@ -199,7 +199,7 @@ const columns: XDSTableColumn<TemplateRow>[] = [
     filter: 'name',
     width: pixel(250),
     renderCell: (row: TemplateRow) => (
-      <XDSLink href={row.href} as={Link}>
+      <XDSLink href={row.href} as={Link} target="_blank">
         {row.name}
       </XDSLink>
     ),

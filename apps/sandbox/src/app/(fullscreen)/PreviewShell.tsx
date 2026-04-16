@@ -15,7 +15,10 @@ import {
 import {categories} from '../sandboxPages';
 import {useThemeControls} from '../providers';
 import {sourceRegistry} from '../../generated/sourceRegistry';
+import {blocks} from '../../generated/blockRegistry';
 import {gitVersions} from '../../generated/versionRegistry';
+
+const blocksByHref = new Map(blocks.map(b => [b.href.replace(/\/$/, ''), b]));
 
 function EyeIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -573,6 +576,11 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  const blockEntry = useMemo(
+    () => blocksByHref.get(pathname.replace(/\/$/, '')) ?? null,
+    [pathname],
+  );
+
   // Find current page name from the registry
   const currentPage = useMemo(() => {
     for (const cat of categories) {
@@ -628,7 +636,13 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
   }, [resolvedSource]);
 
   return (
-    <div style={{display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'visible'}}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100vh',
+        overflow: 'visible',
+      }}>
       {/* Toolbar */}
       <div
         style={{
@@ -716,7 +730,7 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
           />
         </XDSSegmentedControl>
 
-        {view === 'preview' && (
+        {view === 'preview' && blockEntry == null && (
           <XDSSegmentedControl
             value={viewport}
             onChange={v => setViewport(v as ViewportSize)}
@@ -790,32 +804,88 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
       </div>
       {/* Content */}
       {view === 'preview' ? (
-        <div
-          style={{
-            flex: 1,
-            overflow: 'auto',
-            display: 'flex',
-            justifyContent: 'center',
-            padding: viewport !== 'desktop' ? '24px 16px' : 0,
-            backgroundColor: viewport === 'desktop' ? 'transparent' : '#f0f0f0',
-          }}>
+        blockEntry != null ? (
           <div
             style={{
-              width: viewportWidths[viewport],
-              maxWidth: '100%',
-              height: viewport !== 'desktop' ? 'fit-content' : '100%',
-              minHeight: viewport !== 'desktop' ? '100%' : undefined,
+              flex: 1,
               overflow: 'auto',
-              border:
-                viewport !== 'desktop'
-                  ? '1px solid var(--color-border-emphasized)'
-                  : 'none',
-              borderRadius: viewport !== 'desktop' ? 8 : 0,
-              backgroundColor: 'var(--color-background-card)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 24,
+              backgroundColor: 'var(--color-background-wash)',
             }}>
-            {children}
+            <div style={{width: '100%', maxWidth: 600}}>
+              <div
+                style={{
+                  width: '100%',
+                  aspectRatio: String(blockEntry.aspectRatio),
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 12,
+                  backgroundColor: 'var(--color-background-card)',
+                  padding: 24,
+                }}>
+                {children}
+              </div>
+              <div
+                style={{
+                  marginTop: 8,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 2,
+                  textAlign: 'center',
+                }}>
+                <XDSText type="supporting" color="secondary">
+                  aspect-ratio:{' '}
+                  {blockEntry.aspectRatio === 1
+                    ? '1'
+                    : blockEntry.aspectRatio === 4 / 3
+                      ? '4/3'
+                      : blockEntry.aspectRatio === 16 / 9
+                        ? '16/9'
+                        : String(
+                            Math.round(blockEntry.aspectRatio * 1000) / 1000,
+                          )}
+                </XDSText>
+                <XDSText type="supporting" color="tertiary" size="xs">
+                  Tweak aspectRatio in the .doc.mjs file so the component fits
+                  nicely in this box.
+                </XDSText>
+              </div>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div
+            style={{
+              flex: 1,
+              overflow: 'auto',
+              display: 'flex',
+              justifyContent: 'center',
+              padding: viewport !== 'desktop' ? '24px 16px' : 0,
+              backgroundColor:
+                viewport === 'desktop' ? 'transparent' : '#f0f0f0',
+            }}>
+            <div
+              style={{
+                width: viewportWidths[viewport],
+                maxWidth: '100%',
+                height: viewport !== 'desktop' ? 'fit-content' : '100%',
+                minHeight: viewport !== 'desktop' ? '100%' : undefined,
+                overflow: 'auto',
+                border:
+                  viewport !== 'desktop'
+                    ? '1px solid var(--color-border-emphasized)'
+                    : 'none',
+                borderRadius: viewport !== 'desktop' ? 8 : 0,
+                backgroundColor: 'var(--color-background-card)',
+              }}>
+              {children}
+            </div>
+          </div>
+        )
       ) : (
         <div style={{flex: 1, overflow: 'auto'}}>
           {resolvedSource ? (
