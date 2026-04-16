@@ -33,6 +33,7 @@ import {getIcon} from '../Icon/globalIconRegistry';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import type {XDSLinkComponentType} from '../Link/types';
 import {xdsClassName, mergeProps} from '../utils';
+import {useMenuHoverIntent} from '../hooks/useMenuHoverIntent';
 
 // =============================================================================
 // Styles
@@ -324,6 +325,13 @@ export function XDSTopNavHeading({
     dialogLabel: 'Navigation menu',
   });
 
+  const {triggerHoverProps, contentHoverProps, menuRef} = useMenuHoverIntent({
+    show: popover.show,
+    hide: popover.hide,
+    isOpen: popover.isOpen,
+    isEnabled: !!menu,
+  });
+
   const setRef = useCallback(
     (el: HTMLElement | null) => {
       (rootRef as React.MutableRefObject<HTMLElement | null>).current = el;
@@ -467,6 +475,7 @@ export function XDSTopNavHeading({
         <div
           ref={setRef}
           data-testid={testId}
+          {...triggerHoverProps}
           {...mergeProps(
             xdsClassName('top-nav-heading'),
             stylex.props(styles.root, styles.menuTrigger, xstyle),
@@ -477,8 +486,8 @@ export function XDSTopNavHeading({
           {renderTextContent(
             <button
               type="button"
-              popoverTarget={popover.id}
               aria-label="Open menu"
+              onClick={triggerHoverProps.onClick}
               {...popover.triggerProps}
               {...stylex.props(styles.chevron, styles.interactive)}>
               {getIcon('chevronDown')}
@@ -487,7 +496,10 @@ export function XDSTopNavHeading({
           {headerEndContentElement}
         </div>
         {popover.render(
-          <div {...stylex.props(styles.popoverContent)}>
+          <div
+            ref={menuRef as React.RefObject<HTMLDivElement>}
+            {...stylex.props(styles.popoverContent)}
+            {...contentHoverProps}>
             {popoverHeadingContent}
             {menu}
           </div>,
@@ -508,6 +520,7 @@ export function XDSTopNavHeading({
         <div
           ref={setRef}
           data-testid={testId}
+          {...triggerHoverProps}
           {...mergeProps(
             xdsClassName('top-nav-heading'),
             stylex.props(styles.root, xstyle),
@@ -526,8 +539,8 @@ export function XDSTopNavHeading({
             showChevron ? (
               <button
                 type="button"
-                popoverTarget={popover.id}
                 aria-label="Open menu"
+                onClick={triggerHoverProps.onClick}
                 {...popover.triggerProps}
                 {...stylex.props(styles.chevron, styles.interactive)}>
                 {getIcon('chevronDown')}
@@ -537,7 +550,10 @@ export function XDSTopNavHeading({
           {headerEndContentElement}
         </div>
         {popover.render(
-          <div {...stylex.props(styles.popoverContent)}>
+          <div
+            ref={menuRef as React.RefObject<HTMLDivElement>}
+            {...stylex.props(styles.popoverContent)}
+            {...contentHoverProps}>
             {popoverHeadingContent}
             {menu}
           </div>,

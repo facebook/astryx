@@ -38,6 +38,7 @@ import {useXDSSideNavCollapse} from './XDSSideNavCollapseContext';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import type {XDSLinkComponentType} from '../Link/types';
 import {xdsClassName, mergeProps} from '../utils';
+import {useMenuHoverIntent} from '../hooks/useMenuHoverIntent';
 
 // =============================================================================
 // Styles
@@ -363,6 +364,13 @@ export function XDSSideNavHeading({
     dialogLabel: 'Navigation menu',
   });
 
+  const {triggerHoverProps, contentHoverProps, menuRef} = useMenuHoverIntent({
+    show: popover.show,
+    hide: popover.hide,
+    isOpen: popover.isOpen,
+    isEnabled: !!menu,
+  });
+
   const setRef = useCallback(
     (el: HTMLDivElement | null) => {
       (rootRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
@@ -420,10 +428,10 @@ export function XDSSideNavHeading({
           <button
             ref={collapsedSetRef as React.Ref<HTMLButtonElement>}
             type="button"
-            popoverTarget={popover.id}
             aria-label={heading}
             data-testid={testId}
             {...popover.triggerProps}
+            {...triggerHoverProps}
             {...mergeProps(
               xdsClassName('side-nav-heading'),
               stylex.props(
@@ -438,7 +446,10 @@ export function XDSSideNavHeading({
             {collapsedIcon}
           </button>
           {popover.render(
-            <div {...stylex.props(styles.popoverContent)}>
+            <div
+              ref={menuRef as React.RefObject<HTMLDivElement>}
+              {...stylex.props(styles.popoverContent)}
+              {...contentHoverProps}>
               <div
                 {...stylex.props(styles.popoverHeading)}
                 onClick={() => popover.hide()}
@@ -610,6 +621,7 @@ export function XDSSideNavHeading({
         <div
           ref={setRef}
           data-testid={testId}
+          {...triggerHoverProps}
           {...mergeProps(
             xdsClassName('side-nav-heading'),
             stylex.props(styles.root, styles.menuTrigger, xstyle),
@@ -620,8 +632,8 @@ export function XDSSideNavHeading({
           {renderTextContent(
             <button
               type="button"
-              popoverTarget={popover.id}
               aria-label="Open menu"
+              onClick={triggerHoverProps.onClick}
               {...popover.triggerProps}
               {...stylex.props(styles.chevron, styles.interactive)}>
               {getIcon('chevronDown')}
@@ -630,7 +642,10 @@ export function XDSSideNavHeading({
           {headerEndContentElement}
         </div>
         {popover.render(
-          <div {...stylex.props(styles.popoverContent)}>
+          <div
+            ref={menuRef as React.RefObject<HTMLDivElement>}
+            {...stylex.props(styles.popoverContent)}
+            {...contentHoverProps}>
             {popoverHeadingContent}
             {menu}
           </div>,
@@ -653,6 +668,7 @@ export function XDSSideNavHeading({
         <div
           ref={setRef}
           data-testid={testId}
+          {...triggerHoverProps}
           {...mergeProps(
             xdsClassName('side-nav-heading'),
             stylex.props(styles.root, xstyle),
@@ -671,8 +687,8 @@ export function XDSSideNavHeading({
             showChevron ? (
               <button
                 type="button"
-                popoverTarget={popover.id}
                 aria-label="Open menu"
+                onClick={triggerHoverProps.onClick}
                 {...popover.triggerProps}
                 {...stylex.props(styles.chevron, styles.interactive)}>
                 {getIcon('chevronDown')}
@@ -682,7 +698,10 @@ export function XDSSideNavHeading({
           {headerEndContentElement}
         </div>
         {popover.render(
-          <div {...stylex.props(styles.popoverContent)}>
+          <div
+            ref={menuRef as React.RefObject<HTMLDivElement>}
+            {...stylex.props(styles.popoverContent)}
+            {...contentHoverProps}>
             {popoverHeadingContent}
             {menu}
           </div>,
