@@ -102,21 +102,22 @@ function ProductCard({product}: {product: Product}) {
       onClick={e => e.preventDefault()}
       style={{textDecoration: 'none', color: 'inherit', cursor: 'pointer'}}>
       <XDSVStack gap={3}>
-        <XDSAspectRatio
-          ratio={1}
-          xstyle={{borderRadius: 'var(--radius-container)', overflow: 'clip'}}>
-          <img
-            src={product.image}
-            alt={product.name}
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              objectPosition: 'center',
-              display: 'block',
-            }}
-          />
-        </XDSAspectRatio>
+        <div
+          style={{borderRadius: 'var(--radius-container)', overflow: 'clip'}}>
+          <XDSAspectRatio ratio={1}>
+            <img
+              src={product.image}
+              alt={product.name}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                objectPosition: 'center',
+                display: 'block',
+              }}
+            />
+          </XDSAspectRatio>
+        </div>
 
         <XDSVStack gap={1}>
           <XDSText
