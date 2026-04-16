@@ -3,7 +3,9 @@ import {CategoryContent} from './CategoryContent';
 
 // Required for static export — pre-generate all category pages
 export function generateStaticParams() {
-  return categories.map(c => ({category: c.slug}));
+  return categories
+    .filter(c => c.slug !== 'templates')
+    .map(c => ({category: c.slug}));
 }
 
 export default async function CategoryPage({
