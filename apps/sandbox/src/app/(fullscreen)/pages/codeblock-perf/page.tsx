@@ -310,9 +310,22 @@ function PerfPanel({
 // ---------------------------------------------------------------------------
 
 const LINE_OPTIONS = ['100', '500', '1000', '2000', '5000'];
+const VIEW_OPTIONS = ['both', 'ranges', 'spans'] as const;
+type ViewMode = (typeof VIEW_OPTIONS)[number];
+
+const VIEW_LABELS: Record<ViewMode, string> = {
+  both: 'Side by Side',
+  ranges: 'CSS Highlight Only',
+  spans: 'Spans Only',
+};
 
 export default function CodeBlockPerfPage() {
   const [lineCount, setLineCount] = useState('1000');
+  const [viewMode, setViewMode] = useState<ViewMode>('both');
+
+  const showRanges = viewMode === 'both' || viewMode === 'ranges';
+  const showSpans = viewMode === 'both' || viewMode === 'spans';
+  const columns = viewMode === 'both' ? 2 : 1;
 
   return (
     <XDSAppShell contentPadding={4} height="fill">
@@ -321,41 +334,60 @@ export default function CodeBlockPerfPage() {
           <XDSHeading level={2}>CodeBlock Performance</XDSHeading>
           <XDSText type="body" color="secondary">
             Compare CSS Highlight API (ranges) vs span-based rendering side by
-            side.
+            side, or run each in isolation.
           </XDSText>
         </XDSVStack>
 
         <XDSSection variant="wash" padding={3} dividers={['bottom']}>
-          <XDSSegmentedControl
-            label="Line count"
-            value={lineCount}
-            onChange={setLineCount}
-            size="sm">
-            {LINE_OPTIONS.map(n => (
-              <XDSSegmentedControlItem
-                key={n}
-                value={n}
-                label={Number(n).toLocaleString()}
-              />
-            ))}
-          </XDSSegmentedControl>
+          <XDSHStack gap={4} vAlign="center" wrap="wrap">
+            <XDSSegmentedControl
+              label="Line count"
+              value={lineCount}
+              onChange={setLineCount}
+              size="sm">
+              {LINE_OPTIONS.map(n => (
+                <XDSSegmentedControlItem
+                  key={n}
+                  value={n}
+                  label={Number(n).toLocaleString()}
+                />
+              ))}
+            </XDSSegmentedControl>
+            <XDSSegmentedControl
+              label="View"
+              value={viewMode}
+              onChange={v => setViewMode(v as ViewMode)}
+              size="sm">
+              {VIEW_OPTIONS.map(v => (
+                <XDSSegmentedControlItem
+                  key={v}
+                  value={v}
+                  label={VIEW_LABELS[v]}
+                />
+              ))}
+            </XDSSegmentedControl>
+          </XDSHStack>
         </XDSSection>
 
-        <XDSGrid columns={2} gap={4}>
-          <PerfPanel
-            key={`ranges-${lineCount}`}
-            mode="ranges"
-            label="CSS Highlight API"
-            lineCount={Number(lineCount)}
-            maxHeight={500}
-          />
-          <PerfPanel
-            key={`spans-${lineCount}`}
-            mode="spans"
-            label="Span-based"
-            lineCount={Number(lineCount)}
-            maxHeight={500}
-          />
+        <XDSGrid columns={columns} gap={4}>
+          {showRanges && (
+            <PerfPanel
+              key={`ranges-${lineCount}`}
+              mode="ranges"
+              label="CSS Highlight API"
+              lineCount={Number(lineCount)}
+              maxHeight={500}
+            />
+          )}
+          {showSpans && (
+            <PerfPanel
+              key={`spans-${lineCount}`}
+              mode="spans"
+              label="Span-based"
+              lineCount={Number(lineCount)}
+              maxHeight={500}
+            />
+          )}
         </XDSGrid>
       </XDSVStack>
     </XDSAppShell>
