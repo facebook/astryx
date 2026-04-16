@@ -3,7 +3,7 @@
 /**
  * @file XDSGrid.tsx
  * @input Uses React, stylex, spacing tokens
- * @output Exports XDSGrid component and XDSGridProps
+ * @output Exports XDSGrid component, XDSGridProps, and XDSGridColumns
  * @position Grid component; provides CSS Grid-based layout
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -28,22 +28,42 @@ import {xdsClassName, mergeProps} from '../utils';
 
 export type GridAlignment = 'start' | 'center' | 'end' | 'stretch';
 
+/**
+ * Column configuration for XDSGrid.
+ *
+ * - `number` — fixed equal-width columns (e.g. `columns={3}`)
+ * - `object` — responsive columns based on minimum child width:
+ *   - `minWidth` — minimum width (px) for each column track
+ *   - `repeat` — `'fill'` (default) preserves empty tracks for consistent widths;
+ *     `'fit'` collapses empty tracks so items stretch to fill
+ *   - `max` — caps the maximum number of columns via max-width
+ */
+export type XDSGridColumns =
+  | number
+  | {
+      minWidth: number;
+      max?: number;
+      repeat?: 'fill' | 'fit';
+    };
+
 export interface XDSGridProps extends XDSBaseProps<HTMLDivElement> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLElement>;
   /**
-   * Maximum number of columns.
-   * - When only columns is set: creates fixed equal-width columns
-   * - When both columns and minChildWidth are set: caps the max columns
-   * - When neither is set with minChildWidth: unlimited columns
+   * Column configuration.
+   * - `number` — fixed equal-width columns
+   * - `{minWidth, max?, repeat?}` — responsive columns
+   *
+   * @see XDSGridColumns
    */
-  columns?: number;
+  columns?: XDSGridColumns;
 
   /**
    * Minimum width of each grid item in pixels.
-   * Enables auto-fit responsive behavior where columns automatically
-   * adjust based on available width.
-   * @default 0 (disabled - uses fixed columns)
+   * Enables responsive auto-fit behavior.
+   *
+   * @deprecated Use `columns={{minWidth: 280}}` instead.
+   * @default 0 (disabled)
    */
   minChildWidth?: number;
 
@@ -277,12 +297,12 @@ const spacingPixels: Record<SpacingStep, number> = {
 };
 
 /**
- * Calculate max-width when capping columns with minChildWidth.
- * maxWidth = columns * minChildWidth + (columns - 1) * gapPx
+ * Calculate max-width when capping columns.
+ * maxWidth = maxCols * minWidth + (maxCols - 1) * gapPx
  */
 function calculateMaxWidth(
-  columns: number,
-  minChildWidth: number,
+  maxCols: number,
+  minWidth: number,
   gap: SpacingStep | undefined,
   columnGap: SpacingStep | undefined,
 ): number {
@@ -292,17 +312,17 @@ function calculateMaxWidth(
       : gap != null
         ? spacingPixels[gap]
         : 0;
-  return columns * minChildWidth + (columns - 1) * gapPx;
+  return maxCols * minWidth + (maxCols - 1) * gapPx;
 }
 
 /**
  * Grid component for CSS Grid-based layouts.
  *
- * Supports both fixed-column and responsive auto-fit layouts.
- * The `columns` and `minChildWidth` props work together:
- * - columns only: Fixed equal-width columns
- * - minChildWidth only: Auto-fit responsive, unlimited columns
- * - Both: Auto-fit responsive, capped at max columns
+ * Supports fixed-column and responsive layouts via the `columns` prop:
+ * - `columns={3}` — fixed 3-column grid
+ * - `columns={{minWidth: 280}}` — responsive auto-fill (consistent widths)
+ * - `columns={{minWidth: 280, repeat: 'fit'}}` — responsive auto-fit (stretch)
+ * - `columns={{minWidth: 280, max: 4}}` — responsive, capped at 4 columns
  *
  * @example
  * ```
@@ -334,20 +354,33 @@ export function XDSGrid({
   let gridTemplateColumns: string;
   let calculatedMaxWidth: number | undefined;
 
-  if (minChildWidth > 0) {
-    // Auto-fit mode: responsive columns
+  if (typeof columns === 'object' && columns != null) {
+    // New responsive API: columns={{minWidth, max?, repeat?}}
+    const repeatMode = columns.repeat === 'fit' ? 'auto-fit' : 'auto-fill';
+    gridTemplateColumns = `repeat(${repeatMode}, minmax(${columns.minWidth}px, 1fr))`;
+
+    if (columns.max != null && columns.max > 0) {
+      calculatedMaxWidth = calculateMaxWidth(
+        columns.max,
+        columns.minWidth,
+        gap,
+        columnGap,
+      );
+    }
+  } else if (minChildWidth > 0) {
+    // Deprecated path: minChildWidth uses auto-fit for backward compat
     gridTemplateColumns = `repeat(auto-fit, minmax(${minChildWidth}px, 1fr))`;
 
-    // If columns is also set, cap the max columns via max-width
-    if (columns != null && columns > 0) {
+    const numColumns = typeof columns === 'number' ? columns : 0;
+    if (numColumns > 0) {
       calculatedMaxWidth = calculateMaxWidth(
-        columns,
+        numColumns,
         minChildWidth,
         gap,
         columnGap,
       );
     }
-  } else if (columns != null && columns > 0) {
+  } else if (typeof columns === 'number' && columns > 0) {
     // Fixed columns mode
     gridTemplateColumns = `repeat(${columns}, 1fr)`;
   } else {
@@ -367,11 +400,19 @@ export function XDSGrid({
     }),
   };
 
+  // For xdsClassName, extract numeric columns value for variant tracking
+  const columnsVariant =
+    typeof columns === 'number'
+      ? columns
+      : typeof columns === 'object'
+        ? undefined
+        : undefined;
+
   return (
     <div
       ref={ref as React.Ref<HTMLDivElement>}
       {...mergeProps(
-        xdsClassName('grid', {columns, gap, align, justify}),
+        xdsClassName('grid', {columns: columnsVariant, gap, align, justify}),
         stylex.props(
           baseStyles.grid,
           gap != null && gapStyles[gap],

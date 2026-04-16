@@ -4,6 +4,7 @@ import {XDSGrid, XDSGridSpan} from '@xds/core/Grid';
 import {XDSCard} from '@xds/core/Card';
 import {XDSSection} from '@xds/core/Section';
 import {XDSText} from '@xds/core/Text';
+import {XDSVStack} from '@xds/core/Stack';
 import {
   colorVars,
   spacingVars,
@@ -51,13 +52,9 @@ const meta: Meta<typeof XDSGrid> = {
   tags: ['autodocs'],
   argTypes: {
     columns: {
-      control: 'number',
-      description: 'Maximum number of columns',
-    },
-    minChildWidth: {
-      control: 'number',
+      control: 'object',
       description:
-        'Minimum width of each grid item in pixels (enables auto-fit)',
+        'Column configuration: number for fixed columns, or {minWidth, max?, repeat?} for responsive',
     },
     gap: {
       control: 'select',
@@ -154,21 +151,81 @@ export const FixedColumns: Story = {
   ),
 };
 
+/**
+ * auto-fit (repeat: 'fit') stretches items to fill when there are fewer
+ * items than available columns. Compare with auto-fill (default) which
+ * preserves consistent widths.
+ */
 export const ResponsiveAutoFit: Story = {
+  render: () => (
+    <XDSVStack gap={6}>
+      <div {...stylex.props(styles.container)}>
+        <XDSText type="supporting" xstyle={styles.sectionLabel}>
+          minChildWidth=200 with 2 items — cards stretch to fill (auto-fit)
+        </XDSText>
+        <XDSGrid minChildWidth={200} gap={4}>
+          <GridItem>Item 1</GridItem>
+          <GridItem>Item 2</GridItem>
+        </XDSGrid>
+      </div>
+      <div {...stylex.props(styles.container)}>
+        <XDSText type="supporting" xstyle={styles.sectionLabel}>
+          Same grid with 6 items — looks fine because items fill the tracks
+        </XDSText>
+        <XDSGrid minChildWidth={200} gap={4}>
+          <GridItem>Item 1</GridItem>
+          <GridItem>Item 2</GridItem>
+          <GridItem>Item 3</GridItem>
+          <GridItem>Item 4</GridItem>
+          <GridItem>Item 5</GridItem>
+          <GridItem>Item 6</GridItem>
+        </XDSGrid>
+      </div>
+    </XDSVStack>
+  ),
+};
+
+/** New API: responsive columns with auto-fill (consistent widths) */
+export const ResponsiveAutoFill: Story = {
   render: () => (
     <div {...stylex.props(styles.container)}>
       <XDSText type="supporting" xstyle={styles.sectionLabel}>
-        Resize the viewport - columns adjust automatically (min 200px per item)
+        Resize the viewport — columns auto-fill, empty tracks preserved (min
+        200px per item)
       </XDSText>
-      <XDSGrid minChildWidth={200} gap={4}>
+      <XDSGrid columns={{minWidth: 200}} gap={4}>
         <GridItem>Item 1</GridItem>
         <GridItem>Item 2</GridItem>
         <GridItem>Item 3</GridItem>
-        <GridItem>Item 4</GridItem>
-        <GridItem>Item 5</GridItem>
-        <GridItem>Item 6</GridItem>
       </XDSGrid>
     </div>
+  ),
+};
+
+/** Side-by-side comparison: auto-fill vs auto-fit with few items */
+export const FillVsFitComparison: Story = {
+  render: () => (
+    <XDSVStack gap={6}>
+      <div {...stylex.props(styles.container)}>
+        <XDSText type="supporting" xstyle={styles.sectionLabel}>
+          auto-fill (default) — items stay consistent width, empty tracks
+          preserved
+        </XDSText>
+        <XDSGrid columns={{minWidth: 250}} gap={4}>
+          <GridItem>Item 1</GridItem>
+          <GridItem>Item 2</GridItem>
+        </XDSGrid>
+      </div>
+      <div {...stylex.props(styles.container)}>
+        <XDSText type="supporting" xstyle={styles.sectionLabel}>
+          auto-fit — items stretch to fill all available space
+        </XDSText>
+        <XDSGrid columns={{minWidth: 250, repeat: 'fit'}} gap={4}>
+          <GridItem>Item 1</GridItem>
+          <GridItem>Item 2</GridItem>
+        </XDSGrid>
+      </div>
+    </XDSVStack>
   ),
 };
 
@@ -176,9 +233,10 @@ export const CappedResponsive: Story = {
   render: () => (
     <div {...stylex.props(styles.container)}>
       <XDSText type="supporting" xstyle={styles.sectionLabel}>
-        Auto-fit with max 3 columns (min 250px per item, capped via max-width)
+        Responsive with max 3 columns (min 250px per item, capped via
+        max-width)
       </XDSText>
-      <XDSGrid columns={3} minChildWidth={250} gap={4}>
+      <XDSGrid columns={{minWidth: 250, max: 3}} gap={4}>
         <GridItem>Item 1</GridItem>
         <GridItem>Item 2</GridItem>
         <GridItem>Item 3</GridItem>
@@ -239,9 +297,9 @@ export const GalleryExample: Story = {
   render: () => (
     <XDSSection variant="wash">
       <XDSText type="supporting" xstyle={styles.sectionLabel}>
-        Gallery/Card Grid - Responsive with min 280px cards
+        Gallery/Card Grid — Responsive with min 280px cards (auto-fill)
       </XDSText>
-      <XDSGrid minChildWidth={280} gap={5}>
+      <XDSGrid columns={{minWidth: 280}} gap={5}>
         {Array.from({length: 8}, (_, i) => (
           <XDSCard key={i}>
             <div {...stylex.props(styles.cardImage)} />
