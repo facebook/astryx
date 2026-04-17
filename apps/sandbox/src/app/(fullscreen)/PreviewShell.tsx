@@ -22,6 +22,7 @@ import {blocks} from '../../generated/blockRegistry';
 import {gitVersions} from '../../generated/versionRegistry';
 
 const blocksByHref = new Map(blocks.map(b => [b.href.replace(/\/$/, ''), b]));
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
 
 function buildNavTree(currentPath: string): XDSTreeListItemData[] {
   const norm = currentPath.replace(/\/$/, '');
@@ -29,7 +30,7 @@ function buildNavTree(currentPath: string): XDSTreeListItemData[] {
   const pageItems: XDSTreeListItemData[] = templates.map(t => ({
     id: t.href,
     label: t.name,
-    href: t.href,
+    href: basePath + t.href,
     isSelected: t.href.replace(/\/$/, '') === norm,
   }));
 
@@ -43,7 +44,7 @@ function buildNavTree(currentPath: string): XDSTreeListItemData[] {
     componentMap.get(group)!.push({
       id: b.href,
       label: shortName,
-      href: b.href,
+      href: basePath + b.href,
       isSelected: b.href.replace(/\/$/, '') === norm,
     });
   }
@@ -921,7 +922,7 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
                 backgroundColor: '#f0f0f0',
               }}>
               <iframe
-                src={`${pathname}?embed=1`}
+                src={`${basePath}${pathname}?embed=1`}
                 title={`${pageName} — ${viewport}`}
                 style={{
                   width: viewportWidths[viewport],
