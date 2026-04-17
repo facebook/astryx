@@ -15,7 +15,7 @@ export interface XDS3DScatterProps {
 export function XDS3DScatter({
   color,
   radius = 4,
-  opacity = 0.8,
+  opacity = 0.85,
 }: XDS3DScatterProps) {
   const {
     data,
@@ -44,7 +44,7 @@ export function XDS3DScatter({
   return (
     <g>
       {points.map(p => {
-        const depthFactor = 0.5 + (p.depth + 0.5) * 0.5; // 0.5-1.0
+        const depthFactor = 0.75 + (p.depth + 0.5) * 0.25; // 0.5-1.0
         return (
           <circle
             key={p.index}
