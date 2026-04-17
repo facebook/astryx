@@ -165,9 +165,10 @@ export default function ProductGalleryTemplate() {
               </XDSHeading>
               <XDSVStack gap={3}>
                 <XDSText type="body">
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed
-                  do eiusmod tempor incididunt ut labore et dolore magna aliqua
-                  ut enim ad minim exercitation.
+                  We believe the smallest details are the ones that matter most.
+                  A little color, a thoughtful touch, a moment that catches your
+                  eye and makes you pause; that&apos;s what turns an ordinary
+                  day into something worth remembering.
                 </XDSText>
                 <XDSButton
                   label="Get started"
