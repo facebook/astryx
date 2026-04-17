@@ -17,7 +17,6 @@ import {
   XDS_DESIGN_AVATAR,
   FILTER_COLUMNS,
   PROFILE_CRAFT_ITEMS,
-  basePath,
 } from './constants';
 import {TemplateCard} from './TemplateCard';
 import {AIComposer} from './AIComposer';
@@ -382,7 +381,7 @@ function DocsiteLandingTemplate() {
 
     const qs = params.toString();
     router.replace(
-      `${basePath}/pages/docsite/${qs ? '?' + qs : ''}`,
+      `/pages/docsite/${qs ? '?' + qs : ''}`,
       {scroll: false},
     );
   }, [
