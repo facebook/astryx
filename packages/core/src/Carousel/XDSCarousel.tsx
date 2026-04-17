@@ -235,11 +235,27 @@ export function XDSCarousel({
   const scrollBy = useCallback((direction: -1 | 1) => {
     const el = scrollElRef.current;
     if (!el) return;
-    const firstChild = el.firstElementChild as HTMLElement | null;
-    const itemWidth = firstChild ? firstChild.offsetWidth : 0;
-    const amount = el.clientWidth - itemWidth * 0.5;
-    el.scrollBy({
-      left: direction * Math.max(amount, itemWidth),
+    const children = Array.from(el.children) as HTMLElement[];
+    if (children.length === 0) return;
+
+    // Find the index of the first child whose left edge is at or past scrollLeft
+    const scrollLeft = el.scrollLeft;
+    let currentIndex = 0;
+    for (let i = 0; i < children.length; i++) {
+      if (children[i].offsetLeft >= scrollLeft - 2) {
+        currentIndex = i;
+        break;
+      }
+    }
+
+    const nextIndex = Math.max(
+      0,
+      Math.min(children.length - 1, currentIndex + direction),
+    );
+
+    // Scroll to exact child position; force 0 for first item to avoid drift
+    el.scrollTo({
+      left: nextIndex === 0 ? 0 : children[nextIndex].offsetLeft,
       behavior: 'smooth',
     });
   }, []);
