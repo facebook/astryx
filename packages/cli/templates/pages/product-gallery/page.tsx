@@ -163,7 +163,7 @@ export default function ProductGalleryTemplate() {
                 Make every day a little more delightful, one small detail at a
                 time.
               </XDSHeading>
-              <XDSVStack gap={3}>
+              <XDSVStack gap={3} hAlign="start">
                 <XDSText type="body">
                   We believe the smallest details are the ones that matter most.
                   A little color, a thoughtful touch, a moment that catches your
