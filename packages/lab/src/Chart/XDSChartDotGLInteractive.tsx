@@ -422,7 +422,12 @@ export function XDSChartDotGLInteractive({
   return (
     <g>
       {/* Visible WebGL canvas */}
-      <foreignObject x={0} y={0} width={width} height={height}>
+      <foreignObject
+        x={0}
+        y={0}
+        width={width}
+        height={height}
+        style={{overflow: 'hidden'}}>
         <canvas
           ref={visCanvasRef}
           style={{width, height, pointerEvents: 'none'}}
