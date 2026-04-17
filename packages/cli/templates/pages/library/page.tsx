@@ -427,7 +427,7 @@ function LibraryCard({item}: {item: LibraryItem}) {
       <XDSAspectRatio ratio={16 / 9} xstyle={styles.thumbnail}>
         <img
           {...stylex.props(styles.thumbnailImage)}
-          src={item.imageUrl ?? `${basePath}/templates/library/${item.image}`}
+          src={item.imageUrl}
           alt={item.name}
         />
       </XDSAspectRatio>
