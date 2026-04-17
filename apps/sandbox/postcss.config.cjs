@@ -1,4 +1,4 @@
-/* global module, __dirname */
+/* eslint-disable @typescript-eslint/no-require-imports, no-undef */
 const path = require('path');
 
 const rootDir = path.resolve(__dirname, '../..');
