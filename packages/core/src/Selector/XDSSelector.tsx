@@ -243,6 +243,21 @@ const sizeStyles = stylex.create({
   },
 });
 
+/**
+ * Size-specific overrides for dropdown list items.
+ * Matches the pattern used by XDSDropdownMenuItem so that
+ * an `sm` selector renders compact list items, `md`/`lg` use
+ * the base padding defined in `styles.item`.
+ */
+const itemSizeStyles = stylex.create({
+  sm: {
+    paddingBlock: spacingVars['--spacing-1'],
+    paddingInline: spacingVars['--spacing-2'],
+  },
+  md: {},
+  lg: {},
+});
+
 const STATUS_ICON_MAP: Record<XDSSelectorStatusType, XDSIconName> = {
   warning: 'warning',
   error: 'xCircle',
@@ -574,6 +589,7 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
           onMouseEnter={() => onItemMouseEnter(item, flatIndex)}
           {...stylex.props(
             styles.item,
+            itemSizeStyles[size],
             isHighlighted && styles.itemHighlighted,
             isSelected && styles.itemSelected,
             item.disabled && styles.itemDisabled,
@@ -588,6 +604,7 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
     [
       children,
       highlightedIndex,
+      size,
       value,
       getItemId,
       onItemSelect,
