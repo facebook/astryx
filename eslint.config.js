@@ -36,7 +36,7 @@ export default tseslint.config(
       "apps/example-nextjs/next-env.d.ts",
       "apps/example-nextjs-source/*.js",
       "apps/sandbox/*.js",
-      "packages/postcss-plugin/**",
+      "packages/build/**",
       "packages/vite-plugin/**",
     ],
   },

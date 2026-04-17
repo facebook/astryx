@@ -1,0 +1,44 @@
+{
+  "name": "@xds/build",
+  "version": "0.0.1",
+  "description": "Build plugins for XDS source builds — babel, PostCSS, and Vite integrations",
+  "license": "MIT",
+  "main": "./src/config.js",
+  "exports": {
+    ".": "./src/config.js",
+    "./babel": "./src/babel.js",
+    "./postcss": "./src/index.js",
+    "./vite": "./src/vite.ts",
+    "./next": "./src/next.js"
+  },
+  "files": [
+    "src"
+  ],
+  "keywords": [
+    "xds",
+    "postcss",
+    "stylex",
+    "css-layers",
+    "design-system"
+  ],
+  "peerDependencies": {
+    "@stylexjs/babel-plugin": ">=0.18.0",
+    "@babel/core": ">=7.0.0",
+    "@stylexjs/unplugin": ">=0.18.0",
+    "vite": ">=5.0.0"
+  },
+  "dependencies": {
+    "fast-glob": "^3.3.0",
+    "glob-parent": "^6.0.0",
+    "is-glob": "^4.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@stylexjs/unplugin": {
+      "optional": true
+    },
+    "vite": {
+      "optional": true
+    }
+  },
+  "private": true
+}
