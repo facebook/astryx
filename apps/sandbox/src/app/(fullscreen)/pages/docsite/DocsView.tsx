@@ -8,6 +8,7 @@ import {XDSHeading, XDSText} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
 import {XDSStack} from '@xds/core/Layout';
 import {XDSCard} from '@xds/core/Card';
+import {Link} from '../../../../Link';
 import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
 import {XDSList, XDSListItem} from '@xds/core/List';
 import {XDSTable} from '@xds/core/Table';
@@ -87,6 +88,7 @@ export function DocsView({
                 logo={XDS_WORDMARK}
                 headingHref="/pages/docsite/"
                 menu={headingMenu}
+                as={Link}
               />
             }
             endContent={
