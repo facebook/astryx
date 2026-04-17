@@ -313,7 +313,7 @@ export default meta;
 type Story = StoryObj<typeof XDSVegaChart>;
 
 export const StocksLineChart: Story = {
-  name: 'Stocks Line Chart',
+  name: 'Range: Category - Stocks Line Chart',
   render: () => (
     <div style={{width: '100%', maxWidth: 720}}>
       <ThemedVegaChart spec={stocksLineChartSpec} />
@@ -322,7 +322,7 @@ export const StocksLineChart: Story = {
 };
 
 export const ProgrammingLanguagesBumpChart: Story = {
-  name: 'Programming Languages Bump Chart',
+  name: 'Range: Ordinal - Programming Languages Bump Chart',
   render: () => (
     <div style={{width: '100%', maxWidth: 720}}>
       <ThemedVegaChart
