@@ -8,17 +8,13 @@ import {XDSButton} from '@xds/core/Button';
 import {XDSGrid} from '@xds/core/Grid';
 import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import {XDSIcon} from '@xds/core/Icon';
+import {XDSSection} from '@xds/core/Section';
 import {ArrowRightIcon} from '@heroicons/react/24/outline';
 import * as stylex from '@stylexjs/stylex';
 
 // ─── Styles ─────────────────────────────────────────────────────────────────
 
 const styles = stylex.create({
-  pageContainer: {
-    maxWidth: 1200,
-    width: '100%',
-    padding: 'var(--spacing-6)',
-  },
   link: {
     textDecoration: 'none',
     color: 'inherit',
@@ -141,7 +137,7 @@ export default function ProductGalleryTemplate() {
   return (
     <XDSAppShell height="auto" contentPadding={0} variant="surface">
       <XDSCenter axis="horizontal">
-        <div {...stylex.props(styles.pageContainer)}>
+        <XDSSection variant="transparent" maxWidth={1200} padding={6}>
           <XDSVStack gap={6}>
             {/* Header — XDSGrid handles responsive stacking */}
             <XDSGrid minChildWidth={280} gap={4} align="start">
@@ -171,7 +167,7 @@ export default function ProductGalleryTemplate() {
               ))}
             </XDSGrid>
           </XDSVStack>
-        </div>
+        </XDSSection>
       </XDSCenter>
     </XDSAppShell>
   );
