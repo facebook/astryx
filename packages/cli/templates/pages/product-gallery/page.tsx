@@ -1,5 +1,6 @@
 'use client';
 
+import {XDSAppShell} from '@xds/core/AppShell';
 import {XDSVStack} from '@xds/core/Layout';
 import {XDSCenter} from '@xds/core/Center';
 import {XDSText, XDSHeading} from '@xds/core/Text';
@@ -7,6 +8,7 @@ import {XDSButton} from '@xds/core/Button';
 import {XDSGrid} from '@xds/core/Grid';
 import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import {XDSIcon} from '@xds/core/Icon';
+import * as stylex from '@stylexjs/stylex';
 
 // ─── Icons ──────────────────────────────────────────────────────────────────
 
@@ -22,6 +24,32 @@ const ArrowRightIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <path d="M5 12h14M12 5l7 7-7 7" />
   </svg>
 );
+
+// ─── Styles ─────────────────────────────────────────────────────────────────
+
+const styles = stylex.create({
+  pageContainer: {
+    maxWidth: 1200,
+    width: '100%',
+    padding: 'var(--spacing-6)',
+  },
+  link: {
+    textDecoration: 'none',
+    color: 'inherit',
+    cursor: 'pointer',
+  },
+  imageWrapper: {
+    borderRadius: 'var(--radius-container)',
+    overflow: 'clip',
+  },
+  image: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+    objectPosition: 'center',
+    display: 'block',
+  },
+});
 
 // ─── Product Data ───────────────────────────────────────────────────────────
 
@@ -99,24 +127,13 @@ function ProductCard({product}: {product: Product}) {
     <a
       href="#"
       onClick={e => e.preventDefault()}
-      style={{textDecoration: 'none', color: 'inherit', cursor: 'pointer'}}>
+      {...stylex.props(styles.link)}>
       <XDSVStack gap={3}>
-        <XDSAspectRatio
-          ratio={1}
-          style={{
-            borderRadius: 'var(--radius-container)',
-            overflow: 'clip',
-          }}>
+        <XDSAspectRatio ratio={1} xstyle={styles.imageWrapper}>
           <img
             src={product.image}
             alt={product.name}
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              objectPosition: 'center',
-              display: 'block',
-            }}
+            {...stylex.props(styles.image)}
           />
         </XDSAspectRatio>
 
@@ -136,39 +153,39 @@ function ProductCard({product}: {product: Product}) {
 
 export default function ProductGalleryTemplate() {
   return (
-    <XDSCenter axis="horizontal">
-      <div style={{maxWidth: 1200, width: '100%', padding: '32px 24px 64px'}}>
-        <XDSVStack gap={6}>
-          {/* Header — XDSGrid handles responsive stacking */}
-          <XDSGrid minChildWidth={280} gap={4} align="start">
-            <XDSHeading level={1}>
-              Make every day a little more delightful, one small detail at a
-              time.
-            </XDSHeading>
-            <XDSVStack gap={3}>
-              <XDSText type="body">
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-                eiusmod tempor incididunt ut labore et dolore magna aliqua ut
-                enim ad minim exercitation.
-              </XDSText>
-              <div>
+    <XDSAppShell height="auto" contentPadding={0} variant="surface">
+      <XDSCenter axis="horizontal">
+        <div {...stylex.props(styles.pageContainer)}>
+          <XDSVStack gap={6}>
+            {/* Header — XDSGrid handles responsive stacking */}
+            <XDSGrid minChildWidth={280} gap={4} align="start">
+              <XDSHeading level={1}>
+                Make every day a little more delightful, one small detail at a
+                time.
+              </XDSHeading>
+              <XDSVStack gap={3}>
+                <XDSText type="body">
+                  Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed
+                  do eiusmod tempor incididunt ut labore et dolore magna aliqua
+                  ut enim ad minim exercitation.
+                </XDSText>
                 <XDSButton
                   label="Get started"
                   variant="primary"
                   endContent={<XDSIcon icon={ArrowRightIcon} color="inherit" />}
                 />
-              </div>
-            </XDSVStack>
-          </XDSGrid>
+              </XDSVStack>
+            </XDSGrid>
 
-          {/* Product Grid — 3 cols desktop, wraps to 2→1 on smaller screens */}
-          <XDSGrid minChildWidth={300} gap={6}>
-            {PRODUCTS.map(product => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </XDSGrid>
-        </XDSVStack>
-      </div>
-    </XDSCenter>
+            {/* Product Grid — 3 cols desktop, wraps to 2→1 on smaller screens */}
+            <XDSGrid minChildWidth={300} gap={6}>
+              {PRODUCTS.map(product => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </XDSGrid>
+          </XDSVStack>
+        </div>
+      </XDSCenter>
+    </XDSAppShell>
   );
 }
