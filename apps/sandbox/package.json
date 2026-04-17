@@ -8,7 +8,7 @@
     "predev": "node ../../scripts/sync-templates.js && yarn generate:versions",
     "dev": "node ../../scripts/sync-templates.js --watch & vite",
     "prebuild": "node ../../scripts/sync-templates.js && yarn generate:versions",
-    "build": "vite build && cp dist/index.html dist/404.html",
+    "build": "vite build && cp dist/index.html dist/404.html && node scripts/generate-spa-redirects.js",
     "preview": "vite preview",
     "postinstall": "xds agent-docs"
   },
