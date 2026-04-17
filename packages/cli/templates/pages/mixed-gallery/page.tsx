@@ -9,6 +9,7 @@ import {XDSGrid} from '@xds/core/Grid';
 import {XDSButton} from '@xds/core/Button';
 import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import {XDSIcon} from '@xds/core/Icon';
+import {XDSMediaTheme} from '@xds/core/theme';
 import * as stylex from '@stylexjs/stylex';
 
 // ─── Arrow Icon ─────────────────────────────────────────────────────────────
@@ -38,13 +39,6 @@ const layoutStyles = stylex.create({
   textCenter: {
     textAlign: 'center',
   },
-  cardWrapper: {
-    position: 'relative',
-    width: '100%',
-    height: '100%',
-    overflow: 'clip',
-    borderRadius: 'var(--radius-element)',
-  },
   desktopOnly: {
     display: {
       default: 'flex',
@@ -66,6 +60,13 @@ const layoutStyles = stylex.create({
 });
 
 const overlayStyles = stylex.create({
+  card: {
+    position: 'relative',
+    width: '100%',
+    height: '100%',
+    overflow: 'clip',
+    borderRadius: 'var(--radius-element)',
+  },
   overlay: {
     position: 'absolute',
     inset: 0,
@@ -140,28 +141,20 @@ const imgStyle: React.CSSProperties = {
 
 function GalleryCard({image}: {image: GalleryImage}) {
   return (
-    <div {...stylex.props(layoutStyles.cardWrapper)}>
+    <div {...stylex.props(overlayStyles.card)}>
       <img src={image.src} alt={image.title} style={imgStyle} />
-      {/* Hover overlay */}
       <div {...stylex.props(overlayStyles.overlay)}>
-        <XDSVStack gap={3} style={{color: 'white'}}>
-          <XDSHeading level={2} color="inherit">
-            {image.title}
-          </XDSHeading>
-          <XDSText type="body" color="inherit">
-            {image.description}
-          </XDSText>
-          <XDSButton
-            label="Read more"
-            variant="secondary"
-            style={{
-              color: 'white',
-              borderColor: 'rgba(255,255,255,0.3)',
-              backgroundColor: 'rgba(255,255,255,0.15)',
-            }}
-            endContent={<XDSIcon icon={ArrowRightIcon} color="inherit" />}
-          />
-        </XDSVStack>
+        <XDSMediaTheme mode="dark">
+          <XDSVStack gap={3}>
+            <XDSHeading level={2}>{image.title}</XDSHeading>
+            <XDSText type="body">{image.description}</XDSText>
+            <XDSButton
+              label="Read more"
+              variant="secondary"
+              endContent={<XDSIcon icon={ArrowRightIcon} />}
+            />
+          </XDSVStack>
+        </XDSMediaTheme>
       </div>
     </div>
   );

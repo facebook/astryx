@@ -7,6 +7,8 @@ import {XDSButton} from '@xds/core/Button';
 import {XDSGrid} from '@xds/core/Grid';
 import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import {XDSIcon} from '@xds/core/Icon';
+import {XDSMediaTheme} from '@xds/core/theme';
+import * as stylex from '@stylexjs/stylex';
 
 // ─── Icons ──────────────────────────────────────────────────────────────────
 
@@ -92,28 +94,53 @@ const PRODUCTS: Product[] = [
 
 const fmt = (n: number) => `$${n.toFixed(2)}`;
 
+// ─── Styles ─────────────────────────────────────────────────────────────────
+
+const cardStyles = stylex.create({
+  imageWrapper: {
+    position: 'relative',
+    borderRadius: 'var(--radius-container)',
+    overflow: 'clip',
+  },
+  overlay: {
+    position: 'absolute',
+    inset: 0,
+    backgroundColor: 'var(--color-overlay)',
+    opacity: {
+      default: 0,
+      ':hover': 1,
+    },
+    transition: 'opacity 0.2s ease',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});
+
 // ─── Product Card ───────────────────────────────────────────────────────────
 
 function ProductCard({product}: {product: Product}) {
   return (
     <XDSVStack gap={3}>
-      <XDSAspectRatio
-        ratio={1}
-        style={{
-          borderRadius: 'var(--radius-container)',
-          overflow: 'clip',
-        }}>
-        <img
-          src={product.image}
-          alt={product.name}
-          style={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            objectPosition: 'center',
-            display: 'block',
-          }}
-        />
+      <XDSAspectRatio ratio={1}>
+        <div {...stylex.props(cardStyles.imageWrapper)}>
+          <img
+            src={product.image}
+            alt={product.name}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              objectPosition: 'center',
+              display: 'block',
+            }}
+          />
+          <div {...stylex.props(cardStyles.overlay)}>
+            <XDSMediaTheme mode="dark">
+              <XDSButton label="Quick view" variant="secondary" />
+            </XDSMediaTheme>
+          </div>
+        </div>
       </XDSAspectRatio>
 
       <XDSVStack gap={1}>
