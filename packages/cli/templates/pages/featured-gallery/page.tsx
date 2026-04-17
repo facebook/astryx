@@ -157,7 +157,6 @@ export default function FeaturedGalleryTemplate() {
                 <XDSBadge label="Blue badge" variant="blue" />
               </XDSHStack>
               <XDSText
-                type="body"
                 weight="bold"
                 as="p"
                 style={{
@@ -176,14 +175,16 @@ export default function FeaturedGalleryTemplate() {
           </XDSSection>
         </XDSCenter>
 
-        {/* Carousel — no max-width constraint so it works at all sizes */}
-        <div style={{padding: '0 var(--spacing-6)'}}>
-          <XDSCarousel gap={4} hasSnap hasButtons scrollStep="item">
-            {GALLERY_ITEMS.map(item => (
-              <GalleryCard key={item.id} item={item} />
-            ))}
-          </XDSCarousel>
-        </div>
+        {/* Carousel */}
+        <XDSCenter axis="horizontal">
+          <XDSSection maxWidth={1520} padding={6} variant="transparent">
+            <XDSCarousel gap={4} hasSnap hasButtons scrollStep="item">
+              {GALLERY_ITEMS.map(item => (
+                <GalleryCard key={item.id} item={item} />
+              ))}
+            </XDSCarousel>
+          </XDSSection>
+        </XDSCenter>
       </XDSVStack>
     </XDSAppShell>
   );
