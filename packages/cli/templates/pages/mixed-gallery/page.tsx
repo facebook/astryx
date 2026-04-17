@@ -39,6 +39,11 @@ const layoutStyles = stylex.create({
   textCenter: {
     textAlign: 'center',
   },
+  cardWrapper: {
+    position: 'relative',
+    width: '100%',
+    height: '100%',
+  },
 });
 
 const overlayStyles = stylex.create({
@@ -116,13 +121,7 @@ const imgStyle: React.CSSProperties = {
 
 function GalleryCard({image}: {image: GalleryImage}) {
   return (
-    <XDSCard
-      padding={0}
-      style={{
-        position: 'relative',
-        width: '100%',
-        height: '100%',
-      }}>
+    <XDSCard padding={0} xstyle={layoutStyles.cardWrapper}>
       <img src={image.src} alt={image.title} style={imgStyle} />
       {/* Hover overlay */}
       <div {...stylex.props(overlayStyles.overlay)}>
