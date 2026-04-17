@@ -146,7 +146,7 @@ describe('XDSTextArea', () => {
     expect(screen.getByRole('textbox')).not.toBeDisabled();
   });
 
-  it('is disabled when isLoading is true (isBusy)', () => {
+  it('shows aria-busy when isLoading is true', () => {
     render(
       <XDSTextArea
         label="Description"
@@ -155,7 +155,8 @@ describe('XDSTextArea', () => {
         onChange={() => {}}
       />,
     );
-    expect(screen.getByRole('textbox')).toBeDisabled();
+    expect(screen.getByRole('textbox')).toHaveAttribute('aria-busy', 'true');
+    expect(screen.getByRole('textbox')).not.toBeDisabled();
   });
 
   it('does not call onChange when disabled', async () => {
