@@ -62,9 +62,6 @@ const popoverStyles = stylex.create({
   filterDropdown: {
     padding: 8,
   },
-  filterDropdown: {
-    padding: 8,
-  },
 });
 
 function SearchableFilterDropdown({
@@ -791,7 +788,6 @@ function DocsiteLandingTemplate() {
           onSortChange={setSortOption}
           isFilterOpen={isFilterOpen}
           onFilterOpenChange={setIsFilterOpen}
-          onProfileAction={handleProfileAction}
           craftTitle={craftTitle}
         />
       }>
@@ -1556,10 +1552,10 @@ function DocsiteLandingTemplate() {
         isOpen={isSettingsOpen}
         onOpenChange={setIsSettingsOpen}
         width={560}
-        purpose="action"
+        purpose="form"
         title="Settings">
         <XDSStack direction="vertical" gap={4} style={{padding: '8px 0'}}>
-          <XDSStack direction="horizontal" hAlign="space-between" vAlign="center">
+          <XDSStack direction="horizontal" hAlign="between" vAlign="center">
             <XDSStack direction="vertical" gap={1}>
               <XDSText type="body" style={{fontWeight: 600}}>Dark mode</XDSText>
               <XDSText type="supporting" color="secondary">Switch between light and dark appearance</XDSText>
@@ -1572,7 +1568,7 @@ function DocsiteLandingTemplate() {
             />
           </XDSStack>
           <XDSDivider />
-          <XDSStack direction="horizontal" hAlign="space-between" vAlign="center">
+          <XDSStack direction="horizontal" hAlign="between" vAlign="center">
             <XDSStack direction="vertical" gap={1}>
               <XDSText type="body" style={{fontWeight: 600}}>Theme</XDSText>
               <XDSText type="supporting" color="secondary">Choose a visual theme for previews</XDSText>
@@ -1589,7 +1585,7 @@ function DocsiteLandingTemplate() {
             />
           </XDSStack>
           <XDSDivider />
-          <XDSStack direction="horizontal" hAlign="space-between" vAlign="center">
+          <XDSStack direction="horizontal" hAlign="between" vAlign="center">
             <XDSStack direction="vertical" gap={1}>
               <XDSText type="body" style={{fontWeight: 600}}>Default sort</XDSText>
               <XDSText type="supporting" color="secondary">How templates are ordered by default</XDSText>

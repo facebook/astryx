@@ -27,7 +27,7 @@ import {
   PROFILE_COLLECTIONS,
   THEME_PICKER_ENTRIES,
 } from './constants';
-import {SearchIcon, BookmarkFilledIcon, FolderIcon} from './docsite-icons';
+import {SearchIcon, BookmarkIcon, BookmarkFilledIcon, FolderIcon} from './docsite-icons';
 
 
 import {TemplatePreviewModal} from './TemplatePreviewModal';
@@ -130,7 +130,7 @@ function timeAgo(dateStr: string): string {
 
 const STATUS_VARIANT: Record<string, 'success' | 'warning' | 'neutral' | 'error'> = {
   Published: 'success',
-  'In Review': 'blue',
+  'In Review': 'warning',
   Draft: 'neutral',
   'Needs Fixes': 'error',
 };
@@ -628,17 +628,17 @@ export function ProfileView({
   );
 
   // Crafted table sorting
-  const craftSortState = useXDSTableSortableState({
+  const craftSortState = useXDSTableSortableState<CraftItem, 'lastUpdated' | 'views' | 'used'>({
     data: [] as CraftItem[],
     defaultSort: [{sortKey: 'lastUpdated', direction: 'descending'}],
     comparators: {
-      views: (a, b) => (a as CraftItem).views - (b as CraftItem).views,
-      used: (a, b) => (a as CraftItem).used - (b as CraftItem).used,
+      views: (a, b) => a.views - b.views,
+      used: (a, b) => a.used - b.used,
       lastUpdated: (a, b) =>
-        new Date((a as CraftItem).lastUpdated).getTime() - new Date((b as CraftItem).lastUpdated).getTime(),
+        new Date(a.lastUpdated).getTime() - new Date(b.lastUpdated).getTime(),
     },
   });
-  const craftSortPlugin = useXDSTableSortable(craftSortState.sortConfig);
+  const craftSortPlugin = useXDSTableSortable<CraftItem, 'lastUpdated' | 'views' | 'used'>(craftSortState.sortConfig);
 
   // Used tab state
   const [usedSearch, setUsedSearch] = useState('');
@@ -675,16 +675,16 @@ export function ProfileView({
   );
 
   // Used table sorting
-  const usedSortState = useXDSTableSortableState({
+  const usedSortState = useXDSTableSortableState<UsedItem, 'lastUsed' | 'usageCount'>({
     data: [] as UsedItem[],
     defaultSort: [{sortKey: 'lastUsed', direction: 'descending'}],
     comparators: {
-      usageCount: (a, b) => (a as UsedItem).usageCount - (b as UsedItem).usageCount,
+      usageCount: (a, b) => a.usageCount - b.usageCount,
       lastUsed: (a, b) =>
-        new Date((a as UsedItem).lastUsed).getTime() - new Date((b as UsedItem).lastUsed).getTime(),
+        new Date(a.lastUsed).getTime() - new Date(b.lastUsed).getTime(),
     },
   });
-  const usedSortPlugin = useXDSTableSortable(usedSortState.sortConfig);
+  const usedSortPlugin = useXDSTableSortable<UsedItem, 'lastUsed' | 'usageCount'>(usedSortState.sortConfig);
 
   // Bookmarks tab state
   const [bookmarkSearch, setBookmarkSearch] = useState('');
@@ -1058,15 +1058,24 @@ export function ProfileView({
                             }}
                           />
                         ) : (
-                          <XDSHeading
-                            level={3}
+                          <div
+                            role="button"
+                            tabIndex={0}
                             style={{cursor: 'pointer'}}
                             onClick={() => {
                               setCollectionNameDraft(selectedCollection.name);
                               setEditingCollectionName(true);
+                            }}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                setCollectionNameDraft(selectedCollection.name);
+                                setEditingCollectionName(true);
+                              }
                             }}>
-                            {selectedCollection.name}
-                          </XDSHeading>
+                            <XDSHeading level={3}>
+                              {selectedCollection.name}
+                            </XDSHeading>
+                          </div>
                         )}
                         <XDSText type="supporting" color="secondary">
                           {collectionItems.length}{' '}
@@ -1440,12 +1449,17 @@ export function ProfileView({
                   <XDSListItem
                     label="Views"
                     startContent={<EyeIcon style={{width: 18, height: 18, color: 'var(--color-secondary)'}} />}
-                    endContent={<XDSText type="subtitle2">{previewItem.views.toLocaleString()}</XDSText>}
+                    endContent={<XDSText type="label">{previewItem.views.toLocaleString()}</XDSText>}
                   />
                   <XDSListItem
                     label="Uses"
                     startContent={<CursorArrowRaysIcon style={{width: 18, height: 18, color: 'var(--color-secondary)'}} />}
-                    endContent={<XDSText type="subtitle2">{previewItem.used.toLocaleString()}</XDSText>}
+                    endContent={<XDSText type="label">{previewItem.used.toLocaleString()}</XDSText>}
+                  />
+                  <XDSListItem
+                    label="Bookmarked"
+                    startContent={<BookmarkIcon style={{width: 18, height: 18, color: 'var(--color-secondary)'}} />}
+                    endContent={<XDSText type="label">{previewItem.bookmarks.toLocaleString()}</XDSText>}
                   />
                 </XDSList>
               </div>
@@ -1453,25 +1467,13 @@ export function ProfileView({
 
             <XDSVStack gap={2} style={{marginTop: 'auto', paddingTop: 32}}>
               {(previewItem.status === 'In Review' || previewItem.status === 'Needs Fixes') ? (
-                <>
-                  <XDSButton
-                    variant="primary"
-                    label="Resolve in Diffs"
-                    size="lg"
-                    style={{width: '100%'}}
-                    onClick={() => {
-                      setPreviewItem(null);
-                      setActiveView('docs');
-                    }}
-                  />
-                  <XDSButton
-                    variant="secondary"
-                    label="Edit"
-                    size="lg"
-                    style={{width: '100%'}}
-                    onClick={() => setPreviewItem(null)}
-                  />
-                </>
+                <XDSButton
+                  variant="secondary"
+                  label="Edit"
+                  size="lg"
+                  style={{width: '100%'}}
+                  onClick={() => setPreviewItem(null)}
+                />
               ) : (
                 <>
                   <XDSButton
@@ -1524,12 +1526,12 @@ export function ProfileView({
                 <XDSListItem
                   label="Times used"
                   startContent={<CursorArrowRaysIcon style={{width: 18, height: 18, color: 'var(--color-secondary)'}} />}
-                  endContent={<XDSText type="subtitle2">{previewUsedItem.usageCount}</XDSText>}
+                  endContent={<XDSText type="label">{previewUsedItem.usageCount}</XDSText>}
                 />
                 <XDSListItem
                   label="Last used"
                   startContent={<ClockIcon style={{width: 18, height: 18, color: 'var(--color-secondary)'}} />}
-                  endContent={<XDSText type="subtitle2">{timeAgo(previewUsedItem.lastUsed)}</XDSText>}
+                  endContent={<XDSText type="label">{timeAgo(previewUsedItem.lastUsed)}</XDSText>}
                 />
               </XDSList>
             </div>
