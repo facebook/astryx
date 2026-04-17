@@ -28,6 +28,7 @@ import {xdsClassName, mergeProps} from '../utils';
 import {navItemStyles} from '../NavItem/navItemStyles.stylex';
 import {useTopNavSlot} from './TopNavContext';
 import {useXDSTopNavRenderMode} from './XDSTopNavRenderContext';
+import {useXDSAppShellMobile} from '../AppShell/XDSAppShellMobileContext';
 import {
   colorVars,
   spacingVars,
@@ -317,6 +318,7 @@ export function XDSTopNavMenu({
   hideDelay = 200,
 }: XDSTopNavMenuProps) {
   const renderMode = useXDSTopNavRenderMode();
+  const {closeMobileNav} = useXDSAppShellMobile();
   const [drawerExpanded, setDrawerExpanded] = useState(false);
   const menuId = useId();
 
@@ -355,7 +357,10 @@ export function XDSTopNavMenu({
               <a
                 key={i}
                 href={item.href}
-                onClick={item.onClick}
+                onClick={e => {
+                  item.onClick?.();
+                  closeMobileNav();
+                }}
                 {...stylex.props(navItemStyles.item, drawerStyles.item)}>
                 {item.icon && (
                   <span {...stylex.props(drawerStyles.itemIcon)}>

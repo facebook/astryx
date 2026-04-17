@@ -30,6 +30,7 @@ import type {XDSLinkComponentType} from '../Link/types';
 import {useXDSTopNavRenderMode} from './XDSTopNavRenderContext';
 import {navItemStyles, type NavItemSize} from '../NavItem/navItemStyles.stylex';
 import {xdsClassName, mergeProps} from '../utils';
+import {useXDSAppShellMobile} from '../AppShell/XDSAppShellMobileContext';
 
 /**
  * NavItem styles with hover/selected states
@@ -188,11 +189,19 @@ export function XDSTopNavItem({
 }: XDSTopNavItemProps) {
   const LinkComponent = useXDSLinkComponent(as);
   const renderMode = useXDSTopNavRenderMode();
+  const {closeMobileNav} = useXDSAppShellMobile();
 
   // =========================================================================
   // Drawer mode — render as a SideNavItem-style vertical list element
   // =========================================================================
   if (renderMode === 'drawer') {
+    const handleDrawerClick = (e: React.MouseEvent) => {
+      if (isDisabled) return;
+      // Forward the original onClick if present
+      (props as {onClick?: (e: React.MouseEvent) => void}).onClick?.(e);
+      closeMobileNav();
+    };
+
     return (
       <LinkComponent
         ref={ref}
@@ -213,7 +222,8 @@ export function XDSTopNavItem({
           className,
           style,
         )}
-        {...props}>
+        {...props}
+        onClick={handleDrawerClick}>
         {icon}
         {!isIconOnly && (children ?? label)}
       </LinkComponent>
