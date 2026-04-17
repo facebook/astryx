@@ -2,7 +2,6 @@
 
 import {XDSVStack} from '@xds/core/Layout';
 import {XDSCenter} from '@xds/core/Center';
-import {XDSSection} from '@xds/core/Section';
 import {XDSText} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
 import {XDSGrid} from '@xds/core/Grid';
@@ -97,41 +96,44 @@ const fmt = (n: number) => `$${n.toFixed(2)}`;
 
 function ProductCard({product}: {product: Product}) {
   return (
-    <a
-      href="#"
-      onClick={e => e.preventDefault()}
-      style={{textDecoration: 'none', color: 'inherit', cursor: 'pointer'}}>
-      <XDSVStack gap={3}>
-        <div
-          style={{borderRadius: 'var(--radius-container)', overflow: 'clip'}}>
-          <XDSAspectRatio ratio={1}>
-            <img
-              src={product.image}
-              alt={product.name}
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                objectPosition: 'center',
-                display: 'block',
-              }}
-            />
-          </XDSAspectRatio>
-        </div>
+    <XDSVStack gap={3}>
+      <XDSAspectRatio
+        ratio={1}
+        style={{
+          borderRadius: 'var(--radius-container)',
+          overflow: 'clip',
+        }}>
+        <img
+          src={product.image}
+          alt={product.name}
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            objectPosition: 'center',
+            display: 'block',
+          }}
+        />
+      </XDSAspectRatio>
 
-        <XDSVStack gap={1}>
-          <XDSText type="body" size="xl" weight="medium">
-            {product.name}
-          </XDSText>
-          <XDSText type="body" color="secondary" maxLines={2}>
-            {product.description}
-          </XDSText>
-          <XDSText type="body" size="xl" weight="bold">
-            {fmt(product.price)}
-          </XDSText>
-        </XDSVStack>
+      <XDSVStack gap={1}>
+        <XDSText
+          type="body"
+          weight="medium"
+          style={{fontSize: 'var(--font-size-xl)'}}>
+          {product.name}
+        </XDSText>
+        <XDSText type="body" color="secondary" maxLines={2}>
+          {product.description}
+        </XDSText>
+        <XDSText
+          type="body"
+          weight="bold"
+          style={{fontSize: 'var(--font-size-xl)'}}>
+          {fmt(product.price)}
+        </XDSText>
       </XDSVStack>
-    </a>
+    </XDSVStack>
   );
 }
 
@@ -140,25 +142,31 @@ function ProductCard({product}: {product: Product}) {
 export default function ProductGalleryTemplate() {
   return (
     <XDSCenter axis="horizontal">
-      <XDSSection maxWidth={1200} padding={6} variant="transparent">
+      <div style={{maxWidth: 1200, width: '100%', padding: '32px 24px 64px'}}>
         <XDSVStack gap={6}>
           {/* Header — XDSGrid handles responsive stacking */}
           <XDSGrid minChildWidth={280} gap={4} align="start">
-            <XDSText type="large" size="2xl" weight="bold" as="p">
+            <XDSText
+              type="large"
+              weight="bold"
+              as="p"
+              style={{fontSize: 'var(--font-size-2xl)'}}>
               Make every day a little more delightful, one small detail at a
               time.
             </XDSText>
-            <XDSVStack gap={3} hAlign="start">
+            <XDSVStack gap={3}>
               <XDSText type="body">
                 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
                 eiusmod tempor incididunt ut labore et dolore magna aliqua ut
                 enim ad minim exercitation.
               </XDSText>
-              <XDSButton
-                label="Get started"
-                variant="primary"
-                endContent={<XDSIcon icon={ArrowRightIcon} color="inherit" />}
-              />
+              <div>
+                <XDSButton
+                  label="Get started"
+                  variant="primary"
+                  endContent={<XDSIcon icon={ArrowRightIcon} color="inherit" />}
+                />
+              </div>
             </XDSVStack>
           </XDSGrid>
 
@@ -169,7 +177,7 @@ export default function ProductGalleryTemplate() {
             ))}
           </XDSGrid>
         </XDSVStack>
-      </XDSSection>
+      </div>
     </XDSCenter>
   );
 }
