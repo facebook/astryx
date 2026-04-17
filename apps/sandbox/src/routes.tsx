@@ -1,5 +1,5 @@
 import {lazy, Suspense} from 'react';
-import {Routes, Route, Outlet, useParams} from 'react-router';
+import {Routes, Route, Outlet, useParams, Navigate} from 'react-router';
 import {SandboxShell} from './app/SandboxShell';
 import {PreviewShell} from './app/(fullscreen)/PreviewShell';
 
@@ -152,6 +152,9 @@ export function AppRoutes() {
 
       {/* Raw layout (no chrome) */}
       <Route path="pages/shell-lab" element={<ShellLabPage />} />
+
+      {/* Catch-all — redirect unknown paths to home */}
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
