@@ -73,8 +73,8 @@ export const SIM_COUNT = 350;
 
 export const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
 export const DUMMY_IMAGE = `${basePath}/templates/dummy-placeholder.png`;
-export const AVATAR_IMAGE = `${basePath}/templates/avatar-profile.jpg`;
-export const XDS_DESIGN_AVATAR = `${basePath}/templates/xds-design-avatar.png`;
+export const AVATAR_IMAGE = `${basePath}/avatars/avatar-profile.jpg`;
+export const XDS_DESIGN_AVATAR = `${basePath}/avatars/xds-design-avatar.png`;
 export const FIRST_CARD_IMAGE = `${basePath}/templates/first-card.png`;
 export const SHOPPING_DETAILS_IMAGE = `${basePath}/templates/shopping-details.png`;
 export const SCREENSHOT_3_IMAGE = `${basePath}/templates/screenshot-3.png`;

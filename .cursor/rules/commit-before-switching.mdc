@@ -1,0 +1,20 @@
+# Always Commit Before Switching Branches
+
+Uncommitted work gets lost when branches change. Follow these rules:
+
+## After making changes
+
+1. **Commit early and often.** Don't leave more than ~2 substantive edits uncommitted.
+2. After finishing a logical unit of work (even partial), immediately `git add` + `git commit`.
+3. If the pre-commit hook fails due to network issues (502, 503, ETIMEDOUT), use `--no-verify` — don't leave changes uncommitted.
+
+## Before switching branches
+
+1. **Never `git checkout` another branch with uncommitted changes.** Always commit or stash first.
+2. If you need to stash, tell the user what's stashed so they know to `git stash pop` later.
+3. After switching back to a branch, verify the working tree matches expectations with `git status` + `git diff --stat`.
+
+## After writing files
+
+1. After a `Write` or `StrReplace` call, verify the edit persisted by reading a key line back.
+2. If a file reverts unexpectedly, check `git status` — another process may have reset it. Re-apply and commit immediately.
