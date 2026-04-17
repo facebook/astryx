@@ -44,6 +44,24 @@ const layoutStyles = stylex.create({
     width: '100%',
     height: '100%',
   },
+  desktopOnly: {
+    display: {
+      default: 'flex',
+      '@media (max-width: 767px)': 'none',
+    },
+  },
+  mobileOnly: {
+    display: {
+      default: 'none',
+      '@media (max-width: 767px)': 'block',
+    },
+  },
+  mobileGap: {
+    gap: {
+      default: null,
+      '@media (max-width: 767px)': 'var(--spacing-3)',
+    },
+  },
 });
 
 const overlayStyles = stylex.create({
@@ -159,12 +177,10 @@ export default function MixedGalleryTemplate() {
           maxWidth={1400}
           width="100%"
           height="100%"
-          className="gallery-container"
           padding={0}>
           <XDSVStack
             gap={6}
-            xstyle={layoutStyles.fullHeight}
-            className="gallery-vstack">
+            xstyle={[layoutStyles.fullHeight, layoutStyles.mobileGap]}>
             {/* Header — capped with XDSSection maxWidth */}
             <XDSCenter axis="horizontal">
               <XDSSection variant="transparent" maxWidth={680}>
@@ -186,7 +202,7 @@ export default function MixedGalleryTemplate() {
             {/* Gallery — desktop: 3-col masonry, mobile: single column */}
 
             {/* Desktop layout (hidden on mobile) */}
-            <XDSStackItem size="fill" className="gallery-desktop">
+            <XDSStackItem size="fill" xstyle={layoutStyles.desktopOnly}>
               <XDSGrid columns={3} gap={4} height="100%">
                 <XDSVStack gap={4} xstyle={layoutStyles.minHeightZero}>
                   <XDSStackItem size="fill">
@@ -211,7 +227,7 @@ export default function MixedGalleryTemplate() {
             </XDSStackItem>
 
             {/* Mobile layout (hidden on desktop) */}
-            <div className="gallery-mobile">
+            <div {...stylex.props(layoutStyles.mobileOnly)}>
               <XDSVStack gap={4}>
                 {IMAGES.map((image, i) => (
                   <XDSAspectRatio key={i} ratio={16 / 9}>
@@ -220,19 +236,6 @@ export default function MixedGalleryTemplate() {
                 ))}
               </XDSVStack>
             </div>
-
-            <style
-              dangerouslySetInnerHTML={{
-                __html: `
-            .gallery-mobile { display: none; }
-            @media (max-width: 767px) {
-              .gallery-desktop { display: none !important; }
-              .gallery-mobile { display: block; }
-              .gallery-container .gallery-vstack { gap: var(--spacing-3); }
-            }
-          `,
-              }}
-            />
           </XDSVStack>
         </XDSSection>
       </XDSCenter>
