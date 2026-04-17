@@ -120,19 +120,13 @@ function ProductCard({product}: {product: Product}) {
         </div>
 
         <XDSVStack gap={1}>
-          <XDSText
-            type="body"
-            weight="medium"
-            style={{fontSize: 'var(--font-size-xl)'}}>
+          <XDSText type="body" size="xl" weight="medium">
             {product.name}
           </XDSText>
           <XDSText type="body" color="secondary" maxLines={2}>
             {product.description}
           </XDSText>
-          <XDSText
-            type="body"
-            weight="bold"
-            style={{fontSize: 'var(--font-size-xl)'}}>
+          <XDSText type="body" size="xl" weight="bold">
             {fmt(product.price)}
           </XDSText>
         </XDSVStack>
@@ -150,11 +144,7 @@ export default function ProductGalleryTemplate() {
         <XDSVStack gap={6}>
           {/* Header — XDSGrid handles responsive stacking */}
           <XDSGrid minChildWidth={280} gap={4} align="start">
-            <XDSText
-              type="large"
-              weight="bold"
-              as="p"
-              style={{fontSize: 'var(--font-size-2xl)'}}>
+            <XDSText type="large" size="2xl" weight="bold" as="p">
               Make every day a little more delightful, one small detail at a
               time.
             </XDSText>
