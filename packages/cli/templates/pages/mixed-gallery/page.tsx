@@ -10,6 +10,7 @@ import {XDSButton} from '@xds/core/Button';
 import {XDSCard} from '@xds/core/Card';
 import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import {XDSIcon} from '@xds/core/Icon';
+import * as stylex from '@stylexjs/stylex';
 
 // ─── Arrow Icon ─────────────────────────────────────────────────────────────
 
@@ -25,6 +26,25 @@ const ArrowRightIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <path d="M5 12h14M12 5l7 7-7 7" />
   </svg>
 );
+
+// ─── Styles ────────────────────────────────────────────────────────────────
+
+const overlayStyles = stylex.create({
+  overlay: {
+    position: 'absolute',
+    inset: 0,
+    backgroundColor: 'var(--color-overlay)',
+    opacity: {
+      default: 0,
+      ':hover': 1,
+    },
+    transition: 'opacity 0.2s ease',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'flex-end',
+    padding: 'var(--spacing-6)',
+  },
+});
 
 // ─── Gallery Data ───────────────────────────────────────────────────────────
 
@@ -93,24 +113,7 @@ function GalleryCard({image}: {image: GalleryImage}) {
       }}>
       <img src={image.src} alt={image.title} style={imgStyle} />
       {/* Hover overlay */}
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          background: 'var(--color-overlay)',
-          opacity: 0,
-          transition: 'opacity 0.2s ease',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'flex-end',
-          padding: 'var(--spacing-6)',
-        }}
-        onMouseEnter={e => {
-          e.currentTarget.style.opacity = '1';
-        }}
-        onMouseLeave={e => {
-          e.currentTarget.style.opacity = '0';
-        }}>
+      <div {...stylex.props(overlayStyles.overlay)}>
         <XDSVStack gap={3} style={{color: 'white'}}>
           <XDSHeading level={2} color="inherit">
             {image.title}
