@@ -74,6 +74,9 @@ export type {
   RadiusScaleTokens,
 } from './expandRadiusScale';
 
+export {expandColorScale} from './expandColorScale';
+export type {XDSColorScaleConfig, ColorScaleTokens} from './expandColorScale';
+
 export {expandMotionScale} from './expandMotionScale';
 export type {
   XDSMotionScaleConfig,
