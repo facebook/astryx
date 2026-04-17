@@ -2,7 +2,7 @@
 
 import {XDSVStack} from '@xds/core/Layout';
 import {XDSCenter} from '@xds/core/Center';
-import {XDSText} from '@xds/core/Text';
+import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
 import {XDSGrid} from '@xds/core/Grid';
 import {XDSAspectRatio} from '@xds/core/AspectRatio';
@@ -117,21 +117,11 @@ function ProductCard({product}: {product: Product}) {
       </XDSAspectRatio>
 
       <XDSVStack gap={1}>
-        <XDSText
-          type="body"
-          weight="medium"
-          style={{fontSize: 'var(--font-size-xl)'}}>
-          {product.name}
-        </XDSText>
+        <XDSHeading level={2}>{product.name}</XDSHeading>
         <XDSText type="body" color="secondary" maxLines={2}>
           {product.description}
         </XDSText>
-        <XDSText
-          type="body"
-          weight="bold"
-          style={{fontSize: 'var(--font-size-xl)'}}>
-          {fmt(product.price)}
-        </XDSText>
+        <XDSHeading level={2}>{fmt(product.price)}</XDSHeading>
       </XDSVStack>
     </XDSVStack>
   );
@@ -146,14 +136,10 @@ export default function ProductGalleryTemplate() {
         <XDSVStack gap={6}>
           {/* Header — XDSGrid handles responsive stacking */}
           <XDSGrid minChildWidth={280} gap={4} align="start">
-            <XDSText
-              type="large"
-              weight="bold"
-              as="p"
-              style={{fontSize: 'var(--font-size-2xl)'}}>
+            <XDSHeading level={1}>
               Make every day a little more delightful, one small detail at a
               time.
-            </XDSText>
+            </XDSHeading>
             <XDSVStack gap={3}>
               <XDSText type="body">
                 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
