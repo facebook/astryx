@@ -30,7 +30,12 @@
     "recharts": "^2.15.3"
   },
   "devDependencies": {
-    "@stylexjs/unplugin": "^0.18.2",
+    "@babel/preset-react": "^7.25.0",
+    "@babel/preset-typescript": "^7.25.0",
+    "@babel/preset-react": "^7.25.0",
+    "@babel/preset-typescript": "^7.25.0",
+    "@stylexjs/babel-plugin": "^0.18.2",
+    "@stylexjs/postcss-plugin": "^0.18.2",
     "@types/node": "^22.0.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",

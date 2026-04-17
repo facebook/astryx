@@ -62,25 +62,29 @@ const ShellLabPage = () =>
   lazyPage(() => import('./app/(raw)/pages/shell-lab/page'));
 
 // -- Dynamic category page --
+const LazyCategoryContent = lazy(() =>
+  import('./app/(sandbox)/[category]/CategoryContent').then(m => ({
+    default: m.CategoryContent,
+  })),
+);
 function CategoryPageWrapper() {
   const {category} = useParams<{category: string}>();
-  const CategoryContent = lazy(
-    () => import('./app/(sandbox)/[category]/CategoryContent'),
-  );
   return (
     <Suspense>
-      <CategoryContent slug={category!} />
+      <LazyCategoryContent slug={category!} />
     </Suspense>
   );
 }
 
 // -- Template preview (dynamic slug) --
+const LazyTemplateRoute = lazy(
+  () => import('./app/(fullscreen)/TemplateRoute'),
+);
 function TemplatePreviewWrapper() {
   const {slug} = useParams<{slug: string}>();
-  const TemplatePreview = lazy(() => import('./app/(fullscreen)/TemplateRoute'));
   return (
     <Suspense>
-      <TemplatePreview slug={slug!} />
+      <LazyTemplateRoute slug={slug!} />
     </Suspense>
   );
 }
