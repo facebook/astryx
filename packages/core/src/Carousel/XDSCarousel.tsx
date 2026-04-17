@@ -250,7 +250,6 @@ export function XDSCarousel({
       if (scrollStep === 'item') {
         // Find the first visible child, then move one in the direction
         const scrollLeft = el.scrollLeft;
-        const gap = parseFloat(getComputedStyle(el).gap) || 0;
         let targetIndex = 0;
 
         for (let i = 0; i < children.length; i++) {
@@ -265,7 +264,7 @@ export function XDSCarousel({
           Math.min(children.length - 1, targetIndex + direction),
         );
         el.scrollTo({
-          left: children[nextIndex].offsetLeft,
+          left: nextIndex === 0 ? 0 : children[nextIndex].offsetLeft,
           behavior: 'smooth',
         });
       } else {
