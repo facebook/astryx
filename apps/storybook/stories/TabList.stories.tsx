@@ -15,7 +15,7 @@ const meta: Meta<typeof XDSTabList> = {
     size: {
       control: 'select',
       options: ['sm', 'md', 'lg'],
-      description: 'Size variant for tabs',
+      description: 'Size of the tab hover targets',
     },
   },
 };
@@ -89,36 +89,26 @@ export const SizeVariants: Story = {
     const [value, setValue] = useState('home');
     return (
       <div style={{display: 'flex', flexDirection: 'column', gap: '24px'}}>
-        <div>
-          <div style={{marginBottom: '8px', fontSize: '12px', color: '#666'}}>
-            Small
+        {(['sm', 'md', 'lg'] as const).map(size => (
+          <div key={size}>
+            <div
+              style={{
+                marginBottom: '8px',
+                fontSize: '12px',
+                color: '#666',
+                fontFamily: 'monospace',
+              }}>
+              size=\"{size}\"
+            </div>
+            <div style={{border: '1px dashed #ccc', display: 'inline-flex'}}>
+              <XDSTabList value={value} onChange={setValue} size={size}>
+                <XDSTab value="home" label="Home" />
+                <XDSTab value="projects" label="Projects" />
+                <XDSTab value="settings" label="Settings" />
+              </XDSTabList>
+            </div>
           </div>
-          <XDSTabList value={value} onChange={setValue} size="sm">
-            <XDSTab value="home" label="Home" />
-            <XDSTab value="projects" label="Projects" />
-            <XDSTab value="settings" label="Settings" />
-          </XDSTabList>
-        </div>
-        <div>
-          <div style={{marginBottom: '8px', fontSize: '12px', color: '#666'}}>
-            Medium (default)
-          </div>
-          <XDSTabList value={value} onChange={setValue} size="md">
-            <XDSTab value="home" label="Home" />
-            <XDSTab value="projects" label="Projects" />
-            <XDSTab value="settings" label="Settings" />
-          </XDSTabList>
-        </div>
-        <div>
-          <div style={{marginBottom: '8px', fontSize: '12px', color: '#666'}}>
-            Large
-          </div>
-          <XDSTabList value={value} onChange={setValue} size="lg">
-            <XDSTab value="home" label="Home" />
-            <XDSTab value="projects" label="Projects" />
-            <XDSTab value="settings" label="Settings" />
-          </XDSTabList>
-        </div>
+        ))}
       </div>
     );
   },
@@ -159,9 +149,6 @@ export const WithIcons: Story = {
 /**
  * Demonstrates a common page header pattern: large tab list items on the left
  * with action buttons on the right, separated by a full-width divider underneath.
- *
- * Uses hasDivider on the TabList for a full-width divider that sits behind
- * the active tab's underline indicator.
  */
 export const WithActions: Story = {
   render: () => {
@@ -171,7 +158,13 @@ export const WithActions: Story = {
         <XDSTab value="all" label="All items" />
         <XDSTab value="active" label="Active" />
         <XDSTab value="archived" label="Archived" />
-        <div style={{marginInlineStart: 'auto', display: 'flex', alignItems: 'center', gap: '4px'}}>
+        <div
+          style={{
+            marginInlineStart: 'auto',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+          }}>
           <XDSButton
             label="Filter"
             variant="ghost"

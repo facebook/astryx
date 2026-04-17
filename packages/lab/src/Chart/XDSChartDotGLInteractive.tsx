@@ -240,6 +240,7 @@ export function XDSChartDotGLInteractive({
         gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
 
         const [r, g, b] = hexToGL(color);
+        // Logical pixels — positions from xPixel/yScale are logical
         gl.uniform2f(
           gl.getUniformLocation(prog, 'u_resolution'),
           width,
@@ -421,7 +422,12 @@ export function XDSChartDotGLInteractive({
   return (
     <g>
       {/* Visible WebGL canvas */}
-      <foreignObject x={0} y={0} width={width} height={height}>
+      <foreignObject
+        x={0}
+        y={0}
+        width={width}
+        height={height}
+        style={{overflow: 'hidden'}}>
         <canvas
           ref={visCanvasRef}
           style={{width, height, pointerEvents: 'none'}}

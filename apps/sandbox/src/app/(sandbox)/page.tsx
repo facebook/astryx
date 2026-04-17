@@ -92,32 +92,19 @@ export default function Home() {
                 startIcon={SearchIcon}
                 size="lg"
               />
-              <XDSHStack vAlign="center" hAlign="between">
-                <div {...stylex.props(styles.hideOnSmall)}>
-                  <XDSToggleButtonGroup
-                    label="Filter by category"
-                    value={activeTab}
-                    onChange={v => setActiveTab(v ?? 'All')}>
-                    {CATEGORY_FILTERS.map(cat => (
-                      <XDSToggleButton
-                        key={cat}
-                        label={cat}
-                        value={cat}
-                        size="lg"
-                      />
-                    ))}
-                  </XDSToggleButtonGroup>
-                </div>
-                <div {...stylex.props(styles.hideOnLarge)}>
-                  <XDSDropdownMenu
-                    button={{label: activeTab, size: 'lg'}}
-                    items={CATEGORY_FILTERS.map(cat => ({
-                      label: cat,
-                      onClick: () => setActiveTab(cat),
-                    }))}
+              <XDSToggleButtonGroup
+                label="Filter by category"
+                value={activeTab}
+                onChange={v => setActiveTab(v ?? 'All')}>
+                {CATEGORY_FILTERS.map(cat => (
+                  <XDSToggleButton
+                    key={cat}
+                    label={cat}
+                    value={cat}
+                    size="lg"
                   />
-                </div>
-              </XDSHStack>
+                ))}
+              </XDSToggleButtonGroup>
             </XDSVStack>
 
             {filtered.length === 0 ? (
@@ -132,7 +119,7 @@ export default function Home() {
                   <XDSDivider key={`d-${section.category}`} />,
                   <XDSVStack gap={6} key={section.category}>
                     <XDSHeading level={2}>{section.category}</XDSHeading>
-                    <XDSGrid minChildWidth={280} gap={4}>
+                    <XDSGrid columns={{minWidth: 320}} gap={4}>
                       {section.pages.map(page => (
                         <ProjectCard key={page.href} page={page} />
                       ))}
@@ -141,7 +128,7 @@ export default function Home() {
                 ])}
               </XDSVStack>
             ) : (
-              <XDSGrid minChildWidth={280} gap={4}>
+              <XDSGrid columns={{minWidth: 320}} gap={4}>
                 {filtered.map(page => (
                   <ProjectCard key={page.href} page={page} />
                 ))}

@@ -42,3 +42,8 @@ export {
   type SequentialHue,
   type TokenResolver,
 } from './getXDSChartColors';
+export {
+  useXDSChartRange,
+  type UseXDSChartRangeOptions,
+  type UseXDSChartRangeReturn,
+} from './useXDSChartRange';

@@ -708,6 +708,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
               debounceMs={debounceMs}
               onKeyDown={handleKeyDown}
               anchorRef={wrapperRef}
+              size={size}
               inputXStyle={
                 isAtMax || isTruncated
                   ? styles.inputAtMax

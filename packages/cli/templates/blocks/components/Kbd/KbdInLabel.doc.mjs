@@ -5,5 +5,6 @@ export const doc = {
   description: 'Keyboard shortcut used inline within a text label.',
   isReady: true,
   aspectRatio: 1,
+  
   componentsUsed: ['Kbd'],
 };

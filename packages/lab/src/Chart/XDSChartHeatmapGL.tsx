@@ -234,6 +234,7 @@ export function XDSChartHeatmapGL({
     gl.enableVertexAttribArray(aCol);
     gl.vertexAttribPointer(aCol, 3, gl.FLOAT, false, 0, 0);
 
+    // Logical pixels — positions are in logical space, viewport handles DPR
     gl.uniform2f(gl.getUniformLocation(program, 'u_resolution'), width, height);
     gl.drawArrays(gl.TRIANGLES, 0, positions.length / 2);
 
@@ -256,7 +257,12 @@ export function XDSChartHeatmapGL({
   if (width <= 0 || height <= 0) return null;
 
   return (
-    <foreignObject x={0} y={0} width={width} height={height}>
+    <foreignObject
+      x={0}
+      y={0}
+      width={width}
+      height={height}
+      style={{overflow: 'hidden'}}>
       <canvas ref={canvasRef} style={{width, height, pointerEvents: 'none'}} />
     </foreignObject>
   );

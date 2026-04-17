@@ -45,6 +45,13 @@ export interface XDSChartColorsAPI {
     warning: string;
     neutral: string;
   };
+  /** Structural colors for chart chrome — axes, grid, ticks, labels */
+  structural: {
+    axis: string;
+    grid: string;
+    tick: string;
+    label: string;
+  };
   alpha(hex: string, opacity: number): string;
 }
 
@@ -169,6 +176,13 @@ export function getXDSChartColorsFromResolver(
       negative: resolve('--color-data-categorical-red'),
       warning: resolve('--color-data-categorical-orange'),
       neutral: resolve('--color-data-neutral'),
+    },
+
+    structural: {
+      axis: resolve('--color-border-emphasized'),
+      grid: resolve('--color-border'),
+      tick: resolve('--color-border-emphasized'),
+      label: resolve('--color-text-secondary'),
     },
 
     alpha: hexAlpha,

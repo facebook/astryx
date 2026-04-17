@@ -97,9 +97,50 @@ export {
   m4Reduce,
   type M4Point,
   useXDSChartColors,
+  useXDSChartRange,
+  type UseXDSChartRangeOptions,
+  type UseXDSChartRangeReturn,
   getXDSChartColors,
   getXDSChartColorsFromResolver,
   type XDSChartColorsAPI,
   type SequentialHue,
   type TokenResolver,
 } from './Chart';
+
+// Radial charts — spider, pie, donut
+export {
+  XDSRadialChart,
+  type XDSRadialChartProps,
+  XDSRadialGrid,
+  type XDSRadialGridProps,
+  XDSRadialArea,
+  type XDSRadialAreaProps,
+  XDSRadialAxis,
+  type XDSRadialAxisProps,
+  XDSRadialSlice,
+  type XDSRadialSliceProps,
+  useRadial,
+  type RadialContext,
+  type RadialMode,
+} from './Radial';
+
+// 3D charts — projected SVG with interactive rotation
+export {
+  XDS3DChart,
+  type XDS3DChartProps,
+  XDS3DScatter,
+  type XDS3DScatterProps,
+  XDS3DBar,
+  type XDS3DBarProps,
+  XDS3DGrid,
+  type XDS3DGridProps,
+  XDS3DAxis,
+  type XDS3DAxisProps,
+  XDS3DSurface,
+  type XDS3DSurfaceProps,
+  use3D,
+  type ThreeDContext,
+  type Camera,
+  type Point3D,
+  type ProjectedPoint,
+} from './ThreeD';

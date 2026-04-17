@@ -4,8 +4,9 @@
  * @position Child of XDSChart; uses the chart's yScale for y-mapping
  *
  * The y-axis domain is controlled by XDSChart (via yDomain/yBaseline).
- * The x-axis is a sliding time window managed internally (newest point
- * at the right edge, oldest at the left).
+ * The x-axis domain is controlled by XDSChart (via xDomain).
+ * Both axes, grid, and stream data map through the same scales.
+ * For streaming, the parent should update xDomain as new data arrives.
  */
 
 import {
@@ -99,8 +100,11 @@ function createProgram(gl: WebGLRenderingContext): WebGLProgram | null {
  *
  * @example
  * ```
- * <XDSChart data={[]} xKey="t" yKeys={[]} yDomain={[0, 100]} height={200}>
+ * const [xDomain, setXDomain] = useState<[number, number]>([0, 100]);
+ *
+ * <XDSChart data={[]} xKey="t" yKeys={[]} yDomain={[0, 100]} xDomain={xDomain} height={200}>
  *   <XDSChartGrid horizontal />
+ *   <XDSChartAxis position="bottom" />
  *   <XDSChartAxis position="left" />
  *   <XDSChartStreamGL ref={streamRef} color="#0171E3" />
  * </XDSChart>
@@ -113,7 +117,7 @@ export const XDSChartStreamGL = forwardRef<
   {color, bufferSize = 500, lineWidth = 2, opacity = 1},
   ref,
 ) {
-  const {width, height, yScale} = useChart();
+  const {width, height, xScale, yScale} = useChart();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const glRef = useRef<WebGLRenderingContext | null>(null);
   const programRef = useRef<WebGLProgram | null>(null);
@@ -135,18 +139,12 @@ export const XDSChartStreamGL = forwardRef<
     const {data: ringData, head, count} = ring.current;
     if (count < 2) return;
 
-    // X domain: sliding window from oldest to newest visible point
-    const oldestIdx = ((head - count + bufferSize) % bufferSize) * 2;
-    const newestIdx = ((head - 1 + bufferSize) % bufferSize) * 2;
-    const xMin = ringData[oldestIdx];
-    const xMax = ringData[newestIdx];
-    const xRange = xMax - xMin || 1;
-
-    // Map to pixel space: x from sliding window, y from chart's yScale
+    // Map to pixel space: both x and y from chart's scales
+    const linearX = xScale as (v: number) => number;
     const drawBuf = new Float32Array(count * 2);
     for (let i = 0; i < count; i++) {
       const idx = ((head - count + i + bufferSize) % bufferSize) * 2;
-      drawBuf[i * 2] = ((ringData[idx] - xMin) / xRange) * width;
+      drawBuf[i * 2] = linearX(ringData[idx]);
       drawBuf[i * 2 + 1] = yScale(ringData[idx + 1]);
     }
 
@@ -166,13 +164,14 @@ export const XDSChartStreamGL = forwardRef<
     gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
 
     const [r, g, b] = hexToGL(color);
+    // Logical pixels — positions are in logical space, viewport handles DPR
     gl.uniform2f(gl.getUniformLocation(program, 'u_resolution'), width, height);
     gl.uniform3f(gl.getUniformLocation(program, 'u_color'), r, g, b);
     gl.uniform1f(gl.getUniformLocation(program, 'u_opacity'), opacity);
 
     gl.lineWidth(lineWidth);
     gl.drawArrays(gl.LINE_STRIP, 0, count);
-  }, [width, height, color, lineWidth, opacity, bufferSize, yScale]);
+  }, [width, height, color, lineWidth, opacity, bufferSize, xScale, yScale]);
 
   useImperativeHandle(
     ref,
@@ -231,7 +230,12 @@ export const XDSChartStreamGL = forwardRef<
   if (width <= 0 || height <= 0) return null;
 
   return (
-    <foreignObject x={0} y={0} width={width} height={height}>
+    <foreignObject
+      x={0}
+      y={0}
+      width={width}
+      height={height}
+      style={{overflow: 'hidden'}}>
       <canvas ref={canvasRef} style={{width, height, pointerEvents: 'none'}} />
     </foreignObject>
   );

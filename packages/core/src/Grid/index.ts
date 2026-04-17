@@ -10,7 +10,7 @@
  */
 
 export {XDSGrid} from './XDSGrid';
-export type {XDSGridProps, GridAlignment} from './XDSGrid';
+export type {XDSGridProps, XDSGridColumns, GridAlignment} from './XDSGrid';
 
 export {XDSGridSpan} from './XDSGridSpan';
 export type {XDSGridSpanProps} from './XDSGridSpan';

@@ -33,7 +33,8 @@ export interface XDSTabListProps extends Omit<
    */
   onChange: (value: string) => void;
   /**
-   * Size variant for all tabs.
+   * Size of the tab hover targets. Uses the same element size tokens
+   * as Button and TextInput (`sm` = 28px, `md` = 32px, `lg` = 36px).
    * @default 'md'
    */
   size?: XDSTabListSize;

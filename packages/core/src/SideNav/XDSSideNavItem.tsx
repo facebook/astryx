@@ -40,6 +40,8 @@ import {
   XDSSideNavCollapseContext,
 } from './XDSSideNavCollapseContext';
 import {getIcon} from '../Icon/globalIconRegistry';
+import {useXDSSideNavRenderMode} from './XDSSideNavRenderContext';
+import {useXDSAppShellMobile} from '../AppShell/XDSAppShellMobileContext';
 
 // =============================================================================
 // Styles
@@ -247,6 +249,9 @@ export function XDSSideNavItem({
   ref,
 }: XDSSideNavItemProps) {
   const {isCollapsed} = useXDSSideNavCollapse();
+  const renderMode = useXDSSideNavRenderMode();
+  const {closeMobileNav} = useXDSAppShellMobile();
+  const isInDrawer = renderMode === 'drawer' || renderMode === 'drawer-content';
   const id = useId();
   const hasChildren = !!children;
   const LinkComponent = useXDSLinkComponent(as);
@@ -294,6 +299,10 @@ export function XDSSideNavItem({
       return;
     }
     onClick?.(e);
+    // Close the mobile nav when a nav item is activated inside the drawer
+    if (isInDrawer) {
+      closeMobileNav();
+    }
   };
 
   // Hover handlers for collapsed popover (mirrors TopNavMenu pattern)
