@@ -7,7 +7,6 @@ import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSSection} from '@xds/core/Section';
 import {XDSGrid} from '@xds/core/Grid';
 import {XDSButton} from '@xds/core/Button';
-import {XDSCard} from '@xds/core/Card';
 import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import {XDSIcon} from '@xds/core/Icon';
 import * as stylex from '@stylexjs/stylex';
@@ -43,6 +42,8 @@ const layoutStyles = stylex.create({
     position: 'relative',
     width: '100%',
     height: '100%',
+    overflow: 'clip',
+    borderRadius: 'var(--radius-element)',
   },
   desktopOnly: {
     display: {
@@ -139,7 +140,7 @@ const imgStyle: React.CSSProperties = {
 
 function GalleryCard({image}: {image: GalleryImage}) {
   return (
-    <XDSCard padding={0} xstyle={layoutStyles.cardWrapper}>
+    <div {...stylex.props(layoutStyles.cardWrapper)}>
       <img src={image.src} alt={image.title} style={imgStyle} />
       {/* Hover overlay */}
       <div {...stylex.props(overlayStyles.overlay)}>
@@ -162,7 +163,7 @@ function GalleryCard({image}: {image: GalleryImage}) {
           />
         </XDSVStack>
       </div>
-    </XDSCard>
+    </div>
   );
 }
 
