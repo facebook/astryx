@@ -1,5 +1,7 @@
+import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSToolbar} from '@xds/core/Toolbar';
+import {XDSTabList, XDSTab} from '@xds/core/TabList';
 import {XDSButton} from '@xds/core/Button';
 import {XDSCard} from '@xds/core/Card';
 import {XDSSection} from '@xds/core/Section';
@@ -389,4 +391,46 @@ export const InsideLayout: Story = {
       />
     </div>
   ),
+};
+
+/** Toolbar with tab navigation on the left and action buttons on the right. Tests that tab hover targets align with buttons at each size. */
+export const WithTabNavigation: Story = {
+  name: 'Composition: Tab Navigation',
+  render: () => {
+    const [tab, setTab] = useState('overview');
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', gap: 24}}>
+        {(['sm', 'md', 'lg'] as const).map(size => (
+          <XDSCard key={size}>
+            <XDSToolbar
+              label={`Tab navigation (${size})`}
+              dividers={['bottom']}
+              startContent={
+                <XDSTabList value={tab} onChange={setTab} size={size}>
+                  <XDSTab value="overview" label="Overview" />
+                  <XDSTab value="analytics" label="Analytics" />
+                  <XDSTab value="settings" label="Settings" />
+                </XDSTabList>
+              }
+              endContent={
+                <>
+                  <XDSButton
+                    label="Export"
+                    variant="ghost"
+                    size={size}
+                    icon={<ArrowDownTrayIcon style={{width: 16, height: 16}} />}
+                    isIconOnly
+                  />
+                  <XDSButton label="New item" size={size} />
+                </>
+              }
+            />
+            <XDSSection>
+              <XDSText>Content for {size} size variant</XDSText>
+            </XDSSection>
+          </XDSCard>
+        ))}
+      </div>
+    );
+  },
 };
