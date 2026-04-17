@@ -52,6 +52,12 @@ describe('XDSTextInput', () => {
     expect(setValue).toHaveBeenCalledWith('A', expect.any(Object));
   });
 
+  it('renders empty string when value is undefined', () => {
+    // @ts-expect-error — testing runtime safety when value is omitted
+    render(<XDSTextInput label="Name" onChange={() => {}} />);
+    expect(screen.getByRole('textbox')).toHaveValue('');
+  });
+
   it('displays controlled value', () => {
     render(
       <XDSTextInput

@@ -241,7 +241,7 @@ export function XDSTextInput({
   onChange,
   onChangeAction,
   isLoading = false,
-  value,
+  value = '',
   placeholder,
   labelTooltip,
   hasClear = false,
