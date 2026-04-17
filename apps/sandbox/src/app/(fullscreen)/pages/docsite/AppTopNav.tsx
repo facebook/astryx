@@ -8,8 +8,9 @@ import {XDSStack} from '@xds/core/Layout';
 import {XDSList, XDSListItem} from '@xds/core/List';
 import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
 import {XDSCommandPalette} from '@xds/core/CommandPalette';
+import {XDSText} from '@xds/core/Text';
 import {SearchIcon, ProfileIcon, FilterIcon} from './docsite-icons';
-import {SEARCH_COMMANDS, basePath} from './constants';
+import {SEARCH_COMMANDS} from './constants';
 
 const XDS_WORDMARK = (
   <svg
@@ -53,8 +54,10 @@ export function AppTopNav({
   onFilterOpenChange,
   craftTitle,
 }: {
-  activeView: 'craft' | 'explore' | 'docs' | 'profile';
-  setActiveView: (view: 'craft' | 'explore' | 'docs' | 'profile') => void;
+  activeView: 'craft' | 'explore' | 'docs' | 'profile' | 'theme';
+  setActiveView: (
+    view: 'craft' | 'explore' | 'docs' | 'profile' | 'theme',
+  ) => void;
   scrollContainerRef?: React.RefObject<HTMLDivElement | null>;
   activeTab: string;
   onActiveTabChange: (tab: string) => void;
@@ -86,6 +89,15 @@ export function AppTopNav({
     <XDSList density="spacious" style={{minWidth: 240}}>
       <XDSListItem label="Craft" onClick={() => setActiveView('craft')} />
       <XDSListItem label="Library" onClick={() => setActiveView('docs')} />
+      <XDSListItem
+        label="Theme Editor"
+        onClick={() => setActiveView('theme')}
+        endContent={
+          <XDSText color="secondary" size="sm">
+            Temporary
+          </XDSText>
+        }
+      />
     </XDSList>
   );
 
@@ -104,7 +116,7 @@ export function AppTopNav({
         heading={
           <XDSTopNavHeading
             logo={XDS_WORDMARK}
-            headingHref={`${basePath}/pages/docsite/`}
+            headingHref="/pages/docsite/"
             menu={headingMenu}
           />
         }

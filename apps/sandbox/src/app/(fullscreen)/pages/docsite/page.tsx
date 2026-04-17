@@ -15,6 +15,7 @@ import {
   TEMPLATES,
   AVATAR_IMAGE,
   XDS_DESIGN_AVATAR,
+  THEME_PICKER_ENTRIES,
   FILTER_COLUMNS,
   PROFILE_CRAFT_ITEMS,
   basePath,
@@ -26,10 +27,10 @@ import type {PanelTab, PointedElement} from './ChatPanel';
 import {InlinePublishPanel} from './InlinePublishPanel';
 import {TemplatePreview} from './TemplatePreview';
 import {SharePopoverContent} from './SharePopover';
-import {TemplatePreviewModal} from './TemplatePreviewModal';
 import {AppTopNav} from './AppTopNav';
 import {DocsView} from './DocsView';
 import {ProfileView} from './ProfileView';
+import {ThemeEditorView} from './ThemeEditorView';
 import {XDSAppShell} from '@xds/core/AppShell';
 import {XDSAvatar} from '@xds/core/Avatar';
 import {XDSStack} from '@xds/core/Layout';
@@ -46,19 +47,62 @@ import {XDSList, XDSListItem} from '@xds/core/List';
 import {XDSPopover} from '@xds/core/Popover';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSToolbar} from '@xds/core/Toolbar';
-
+import {XDSTooltip} from '@xds/core/Tooltip';
 import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
 import {
   ArrowLeftIcon,
+  BookmarkIcon,
+  BookmarkFilledIcon,
+  StarIcon,
+  StarFilledIcon,
   SearchIcon,
   PaletteIcon,
   ContrastIcon,
   MoonIcon,
   VerifiedIcon,
+  MetaLogo,
+  WhatsAppLogo,
+  ThreadsLogo,
+  FacebookLogo,
+  DefaultThemeIcon,
+  ForestThemeIcon,
+  SunsetThemeIcon,
   FilterIcon,
+  MidnightThemeIcon,
 } from './docsite-icons';
 
+const BRAND_LOGOS: Record<
+  string,
+  React.ComponentType<React.SVGProps<SVGSVGElement>>
+> = {
+  default: DefaultThemeIcon,
+  meta: MetaLogo,
+  whatsapp: WhatsAppLogo,
+  threads: ThreadsLogo,
+  facebook: FacebookLogo,
+  forest: ForestThemeIcon,
+  sunset: SunsetThemeIcon,
+  midnight: MidnightThemeIcon,
+};
+
+const tokenStyles = stylex.create({
+  outline: {
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: 'var(--color-border-emphasized)',
+  },
+  pill: {
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: 'var(--color-border-emphasized)',
+    borderRadius: 9999,
+  },
+});
+
 const popoverStyles = stylex.create({
+  themeBrowse: {
+    padding: 16,
+  },
   filterDropdown: {
     padding: 8,
   },
@@ -192,47 +236,17 @@ function DocsiteLandingTemplate() {
     const v = searchParams.get('view');
     const t = searchParams.get('template');
     const q = searchParams.get('q');
-    const page = searchParams.get('page');
-    const tab = searchParams.get('tab');
-    const craft = searchParams.get('craft');
-    const used = searchParams.get('used');
-    const settings = searchParams.get('settings');
-    const collection = searchParams.get('collection');
     const templateIdx = t !== null ? parseInt(t, 10) : null;
     return {
       view: v,
       templateIdx: isNaN(templateIdx as number) ? null : templateIdx,
       query: q,
-      page: page as 'craft' | 'explore' | 'docs' | 'profile' | null,
-      tab:
-        tab && ['Crafted', 'Used', 'Bookmarks'].includes(tab)
-          ? (tab as 'Crafted' | 'Used' | 'Bookmarks')
-          : null,
-      craft,
-      used,
-      settings: settings === '1',
-      collection,
     };
   }, [searchParams]);
 
   const [activeView, setActiveView] = useState(
-    (initialView.page ?? 'craft') as 'craft' | 'explore' | 'docs' | 'profile',
+    'craft' as 'craft' | 'explore' | 'docs' | 'profile' | 'theme',
   );
-  const [profileTab, setProfileTab] = useState<
-    'Crafted' | 'Used' | 'Bookmarks'
-  >(initialView.tab ?? 'Crafted');
-  const [profileCraftName, setProfileCraftName] = useState<string | null>(
-    initialView.craft,
-  );
-  const [profileUsedName, setProfileUsedName] = useState<string | null>(
-    initialView.used,
-  );
-  const [profileSettingsOpen, setProfileSettingsOpen] = useState(
-    initialView.settings,
-  );
-  const [profileCollectionName, setProfileCollectionName] = useState<
-    string | null
-  >(initialView.collection);
   const [craftTitle, setCraftTitle] = useState<string | null>(
     initialView.query,
   );
@@ -303,6 +317,7 @@ function DocsiteLandingTemplate() {
     initialView.view === 'editor' ? initialView.templateIdx : null,
   );
   const [previewGenerating, setPreviewGenerating] = useState(false);
+  const [previewTransitioning, setPreviewTransitioning] = useState(false);
   const [showPublishCard1, setShowPublishCard1] = useState(false);
   const [panelTab, setPanelTab] = useState<PanelTab>('configure');
   const [isPointing, setIsPointing] = useState(false);
@@ -314,7 +329,26 @@ function DocsiteLandingTemplate() {
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
+  const [card4SelectedOption, setCard4SelectedOption] = useState('default');
+  const [card4ThemeBrowse, setCard4ThemeBrowse] = useState(false);
   const [card4Bookmarked, setCard4Bookmarked] = useState(false);
+  const [card4ShowAddPopover, setCard4ShowAddPopover] = useState(false);
+  const card4ScrollRef = useRef<HTMLDivElement>(null);
+  const [card4ThemeSearch, setCard4ThemeSearch] = useState('');
+  const [card4PinnedThemes, setCard4PinnedThemes] = useState(
+    () =>
+      new Set(
+        THEME_PICKER_ENTRIES.filter(t => t.isPinnedByDefault).map(t => t.key),
+      ),
+  );
+  const toggleCard4Pin = useCallback((key: string) => {
+    setCard4PinnedThemes(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }, []);
 
   const handleEditorResizeStart = useCallback(
     (e: React.MouseEvent) => {
@@ -349,64 +383,21 @@ function DocsiteLandingTemplate() {
 
   // Sync URL when view state changes
   useEffect(() => {
-    const params = new URLSearchParams();
-
+    let path = '/pages/docsite/';
     if (previewTarget !== null) {
-      params.set('view', 'preview');
-      params.set('template', String(previewTarget));
+      path += '?view=preview&template=' + previewTarget;
     } else if (useTarget !== null) {
-      params.set('view', 'editor');
-      params.set('template', String(useTarget));
+      path += '?view=editor&template=' + useTarget;
     } else if (craftTitle) {
-      params.set('q', craftTitle);
-    } else if (activeView !== 'craft') {
-      params.set('page', activeView);
-      if (activeView === 'profile') {
-        if (profileCraftName) {
-          params.set('tab', 'Crafted');
-          params.set('craft', profileCraftName);
-        } else if (profileUsedName) {
-          params.set('tab', 'Used');
-          params.set('used', profileUsedName);
-        } else if (profileCollectionName) {
-          params.set('tab', 'Bookmarks');
-          params.set('collection', profileCollectionName);
-        } else if (profileTab !== 'Crafted') {
-          params.set('tab', profileTab);
-        }
-        if (profileSettingsOpen) {
-          params.set('settings', '1');
-        }
-      }
+      path += '?q=' + encodeURIComponent(craftTitle);
     }
-
-    const qs = params.toString();
-    router.replace(
-      `${basePath}/pages/docsite/${qs ? '?' + qs : ''}`,
-      {scroll: false},
-    );
-  }, [
-    previewTarget,
-    useTarget,
-    craftTitle,
-    activeView,
-    profileTab,
-    profileCraftName,
-    profileUsedName,
-    profileSettingsOpen,
-    profileCollectionName,
-    router,
-  ]);
+    router.replace(path, {scroll: false});
+  }, [previewTarget, useTarget, craftTitle, router]);
 
   const prevViewRef = useRef(activeView);
-  const skipViewResetRef = useRef(false);
   useEffect(() => {
     if (prevViewRef.current === activeView) return;
     prevViewRef.current = activeView;
-    if (skipViewResetRef.current) {
-      skipViewResetRef.current = false;
-      return;
-    }
     setPreviewTarget(null);
     setUseTarget(null);
     setChatOpen(false);
@@ -457,23 +448,16 @@ function DocsiteLandingTemplate() {
   );
 
   const handleUse = useCallback((index: number) => {
-    viewBeforeEditorRef.current = activeView;
     setPreviewTarget(null);
     setUseTarget(index);
     setPanelTab('configure');
     setChatOpen(true);
-  }, [activeView]);
+  }, []);
 
-  const viewBeforeEditorRef = useRef<'craft' | 'explore' | 'docs' | 'profile'>('craft');
   const handleBackFromUse = useCallback(() => {
     setUseTarget(null);
     setChatOpen(false);
     setShowPublishCard1(false);
-    const returnTo = viewBeforeEditorRef.current;
-    if (returnTo !== 'craft') {
-      skipViewResetRef.current = true;
-      setActiveView(returnTo);
-    }
   }, []);
 
   const handlePreview = useCallback((index: number) => {
@@ -521,35 +505,38 @@ function DocsiteLandingTemplate() {
     setActiveFilters(new Set());
   }, []);
 
-  const handleProfileAction = useCallback((action: 'craft' | 'bookmarked' | 'used' | 'settings') => {
-    if (action === 'settings') {
-      setIsSettingsOpen(true);
-    } else if (action === 'craft') {
-      setPreviewTarget(null);
-      setCraftTitle('My Craft');
-      setIsCraftResults(true);
-      setIsProfileResults(true);
-      setCraftStatusFilter('all');
-      setCraftLoading(true);
-      if (craftLoadingTimer.current) clearTimeout(craftLoadingTimer.current);
-      craftLoadingTimer.current = setTimeout(() => {
-        setCraftLoading(false);
-        craftLoadingTimer.current = null;
-      }, 900);
-    } else {
-      const label = action === 'bookmarked' ? 'Bookmarked' : 'Used';
-      setPreviewTarget(null);
-      setCraftTitle(label);
-      setIsProfileResults(true);
-      setIsCraftResults(false);
-      setCraftLoading(true);
-      if (craftLoadingTimer.current) clearTimeout(craftLoadingTimer.current);
-      craftLoadingTimer.current = setTimeout(() => {
-        setCraftLoading(false);
-        craftLoadingTimer.current = null;
-      }, 900);
-    }
-  }, []);
+  const handleProfileAction = useCallback(
+    (action: 'craft' | 'bookmarked' | 'used' | 'settings') => {
+      if (action === 'settings') {
+        setIsSettingsOpen(true);
+      } else if (action === 'craft') {
+        setPreviewTarget(null);
+        setCraftTitle('My Craft');
+        setIsCraftResults(true);
+        setIsProfileResults(true);
+        setCraftStatusFilter('all');
+        setCraftLoading(true);
+        if (craftLoadingTimer.current) clearTimeout(craftLoadingTimer.current);
+        craftLoadingTimer.current = setTimeout(() => {
+          setCraftLoading(false);
+          craftLoadingTimer.current = null;
+        }, 900);
+      } else {
+        const label = action === 'bookmarked' ? 'Bookmarked' : 'Used';
+        setPreviewTarget(null);
+        setCraftTitle(label);
+        setIsProfileResults(true);
+        setIsCraftResults(false);
+        setCraftLoading(true);
+        if (craftLoadingTimer.current) clearTimeout(craftLoadingTimer.current);
+        craftLoadingTimer.current = setTimeout(() => {
+          setCraftLoading(false);
+          craftLoadingTimer.current = null;
+        }, 900);
+      }
+    },
+    [],
+  );
 
   const filteredTemplates = useMemo(() => {
     return TEMPLATES.map((t, i) => ({...t, originalIndex: i})).filter(t => {
@@ -559,23 +546,26 @@ function DocsiteLandingTemplate() {
     });
   }, [templateFilter]);
 
-  const craftStatusCounts = useMemo(() => ({
-    published: PROFILE_CRAFT_ITEMS.filter(i => i.status === 'Published').length,
-    draft: PROFILE_CRAFT_ITEMS.filter(i => i.status === 'Draft').length,
-    review: PROFILE_CRAFT_ITEMS.filter(i => i.status === 'In Review').length,
-  }), []);
+  const craftStatusCounts = useMemo(
+    () => ({
+      published: PROFILE_CRAFT_ITEMS.filter(i => i.status === 'Published')
+        .length,
+      draft: PROFILE_CRAFT_ITEMS.filter(i => i.status === 'Draft').length,
+      review: PROFILE_CRAFT_ITEMS.filter(i => i.status === 'In Review').length,
+    }),
+    [],
+  );
 
   const filteredCraftItems = useMemo(() => {
     if (craftStatusFilter === 'all') return PROFILE_CRAFT_ITEMS;
-    return PROFILE_CRAFT_ITEMS.filter(item => item.status === craftStatusFilter);
+    return PROFILE_CRAFT_ITEMS.filter(
+      item => item.status === craftStatusFilter,
+    );
   }, [craftStatusFilter]);
 
   // Editor flow — same layout for all cards
   if (useTarget !== null && activeView === 'craft') {
-    const isBlankCanvas = useTarget === -1;
-    const t = isBlankCanvas
-      ? {name: 'Untitled', src: '', size: 'medium' as const, author: '', isOfficial: false}
-      : TEMPLATES[useTarget % TEMPLATES.length];
+    const t = TEMPLATES[useTarget % TEMPLATES.length];
     return (
       <div
         style={{
@@ -742,28 +732,13 @@ function DocsiteLandingTemplate() {
 
   if (activeView === 'profile') {
     return (
-      <ProfileView
-        activeView={activeView}
-        setActiveView={setActiveView}
-        onStartCrafting={() => {
-          viewBeforeEditorRef.current = 'profile';
-          skipViewResetRef.current = true;
-          setActiveView('craft');
-          setUseTarget(-1);
-          setPanelTab('configure');
-          setChatOpen(true);
-        }}
-        profileTab={profileTab}
-        onTabChange={setProfileTab}
-        profileCraftName={profileCraftName}
-        onCraftPreviewChange={setProfileCraftName}
-        profileUsedName={profileUsedName}
-        onUsedPreviewChange={setProfileUsedName}
-        profileSettingsOpen={profileSettingsOpen}
-        onSettingsChange={setProfileSettingsOpen}
-        profileCollectionName={profileCollectionName}
-        onCollectionChange={setProfileCollectionName}
-      />
+      <ProfileView activeView={activeView} setActiveView={setActiveView} />
+    );
+  }
+
+  if (activeView === 'theme') {
+    return (
+      <ThemeEditorView activeView={activeView} setActiveView={setActiveView} />
     );
   }
 
@@ -900,15 +875,31 @@ function DocsiteLandingTemplate() {
                       'craftTitleSlideIn 400ms 100ms cubic-bezier(0.16, 1, 0.3, 1) both',
                   }}>
                   {[
-                    {value: 'all', label: `All (${PROFILE_CRAFT_ITEMS.length})`},
-                    {value: 'Published', label: `Published (${craftStatusCounts.published})`},
-                    {value: 'Draft', label: `Draft (${craftStatusCounts.draft})`},
-                    {value: 'In Review', label: `In Review (${craftStatusCounts.review})`},
+                    {
+                      value: 'all',
+                      label: `All (${PROFILE_CRAFT_ITEMS.length})`,
+                    },
+                    {
+                      value: 'Published',
+                      label: `Published (${craftStatusCounts.published})`,
+                    },
+                    {
+                      value: 'Draft',
+                      label: `Draft (${craftStatusCounts.draft})`,
+                    },
+                    {
+                      value: 'In Review',
+                      label: `In Review (${craftStatusCounts.review})`,
+                    },
                   ].map(tab => (
                     <XDSButton
                       key={tab.value}
                       label={tab.label}
-                      variant={craftStatusFilter === tab.value ? 'primary' : 'secondary'}
+                      variant={
+                        craftStatusFilter === tab.value
+                          ? 'primary'
+                          : 'secondary'
+                      }
                       size="sm"
                       onClick={() => setCraftStatusFilter(tab.value)}
                     />
@@ -1286,8 +1277,7 @@ function DocsiteLandingTemplate() {
                           background:
                             'linear-gradient(90deg, var(--color-background-muted, #f0f0f0) 0%, var(--color-background-surface, #fafafa) 50%, var(--color-background-muted, #f0f0f0) 100%)',
                           backgroundSize: '800px 100%',
-                          animation:
-                            'craftShimmer 1.6s ease-in-out infinite',
+                          animation: 'craftShimmer 1.6s ease-in-out infinite',
                           borderRadius: '16px 16px 0 0',
                         }}
                       />
@@ -1306,8 +1296,7 @@ function DocsiteLandingTemplate() {
                             background:
                               'linear-gradient(90deg, var(--color-background-muted, #f0f0f0) 0%, var(--color-background-surface, #fafafa) 50%, var(--color-background-muted, #f0f0f0) 100%)',
                             backgroundSize: '800px 100%',
-                            animation:
-                              'craftShimmer 1.6s ease-in-out infinite',
+                            animation: 'craftShimmer 1.6s ease-in-out infinite',
                           }}
                         />
                         <div
@@ -1318,8 +1307,7 @@ function DocsiteLandingTemplate() {
                             background:
                               'linear-gradient(90deg, var(--color-background-muted, #f0f0f0) 0%, var(--color-background-surface, #fafafa) 50%, var(--color-background-muted, #f0f0f0) 100%)',
                             backgroundSize: '800px 100%',
-                            animation:
-                              'craftShimmer 1.6s ease-in-out infinite',
+                            animation: 'craftShimmer 1.6s ease-in-out infinite',
                           }}
                         />
                       </div>
@@ -1351,7 +1339,8 @@ function DocsiteLandingTemplate() {
                         style={{
                           aspectRatio: '16 / 9',
                           overflow: 'hidden',
-                          backgroundColor: 'var(--color-background-muted, #f0f0f0)',
+                          backgroundColor:
+                            'var(--color-background-muted, #f0f0f0)',
                         }}>
                         <img
                           src={item.img}
@@ -1424,7 +1413,10 @@ function DocsiteLandingTemplate() {
                           </div>
                           <div style={{marginLeft: 'auto'}}>
                             <XDSText type="supporting" color="secondary">
-                              {new Date(item.lastUpdated).toLocaleDateString('en-US', {month: 'short', day: 'numeric'})}
+                              {new Date(item.lastUpdated).toLocaleDateString(
+                                'en-US',
+                                {month: 'short', day: 'numeric'},
+                              )}
                             </XDSText>
                           </div>
                         </div>
@@ -1432,7 +1424,12 @@ function DocsiteLandingTemplate() {
                     </XDSCard>
                   ))}
                   {filteredCraftItems.length === 0 && (
-                    <div style={{gridColumn: '1 / -1', padding: 32, textAlign: 'center' as const}}>
+                    <div
+                      style={{
+                        gridColumn: '1 / -1',
+                        padding: 32,
+                        textAlign: 'center' as const,
+                      }}>
                       <XDSText type="body" color="secondary">
                         No items match this filter.
                       </XDSText>
@@ -1440,59 +1437,59 @@ function DocsiteLandingTemplate() {
                   )}
                 </div>
               ) : (
-              <div
-                style={{
-                  maxWidth: 2000,
-                  margin: '0 auto',
-                  display: 'grid',
-                  gridTemplateColumns: isMobile
-                    ? '1fr'
-                    : isTablet
-                      ? 'repeat(2, 1fr)'
-                      : 'repeat(3, 1fr)',
-                  gap: 16,
-                }}>
-                {filteredTemplates.map((template, i) => (
-                  <div
-                    key={`${template.name}-${template.originalIndex}`}
-                    style={{
-                      ...(craftTitle
-                        ? {
-                            animation: `craftCardFadeIn 400ms ${i * 50}ms cubic-bezier(0.16, 1, 0.3, 1) both`,
-                          }
-                        : undefined),
-                      filter: previewImageFilter,
-                      transition: 'filter 300ms ease',
-                    }}>
-                    <TemplateCard
-                      src={template.src}
-                      name={template.name}
-                      isSelected={selected.has(template.originalIndex)}
-                      isGenerating={
-                        isGenerating &&
-                        generatingSource !== template.originalIndex
-                      }
-                      cardSize={template.size}
-                      onSelect={() =>
-                        setSelected(prev => {
-                          const next = new Set(prev);
-                          if (next.has(template.originalIndex)) {
-                            next.delete(template.originalIndex);
-                          } else {
-                            next.add(template.originalIndex);
-                          }
-                          return next;
-                        })
-                      }
-                      onMoreLikeThis={() =>
-                        handleMoreLikeThis(template.originalIndex)
-                      }
-                      onUse={() => handleUse(template.originalIndex)}
-                      onPreview={() => handlePreview(template.originalIndex)}
-                    />
-                  </div>
-                ))}
-              </div>
+                <div
+                  style={{
+                    maxWidth: 2000,
+                    margin: '0 auto',
+                    display: 'grid',
+                    gridTemplateColumns: isMobile
+                      ? '1fr'
+                      : isTablet
+                        ? 'repeat(2, 1fr)'
+                        : 'repeat(3, 1fr)',
+                    gap: 16,
+                  }}>
+                  {filteredTemplates.map((template, i) => (
+                    <div
+                      key={`${template.name}-${template.originalIndex}`}
+                      style={{
+                        ...(craftTitle
+                          ? {
+                              animation: `craftCardFadeIn 400ms ${i * 50}ms cubic-bezier(0.16, 1, 0.3, 1) both`,
+                            }
+                          : undefined),
+                        filter: previewImageFilter,
+                        transition: 'filter 300ms ease',
+                      }}>
+                      <TemplateCard
+                        src={template.src}
+                        name={template.name}
+                        isSelected={selected.has(template.originalIndex)}
+                        isGenerating={
+                          isGenerating &&
+                          generatingSource !== template.originalIndex
+                        }
+                        cardSize={template.size}
+                        onSelect={() =>
+                          setSelected(prev => {
+                            const next = new Set(prev);
+                            if (next.has(template.originalIndex)) {
+                              next.delete(template.originalIndex);
+                            } else {
+                              next.add(template.originalIndex);
+                            }
+                            return next;
+                          })
+                        }
+                        onMoreLikeThis={() =>
+                          handleMoreLikeThis(template.originalIndex)
+                        }
+                        onUse={() => handleUse(template.originalIndex)}
+                        onPreview={() => handlePreview(template.originalIndex)}
+                      />
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
           </div>
@@ -1505,45 +1502,668 @@ function DocsiteLandingTemplate() {
       {previewTarget !== null &&
         (() => {
           const t = TEMPLATES[previewTarget % TEMPLATES.length];
+          const isMeta = previewTarget === 3 && card4SelectedOption === 'meta';
           const moreLikeThisImages = TEMPLATES.map((tmpl, i) => ({
-            img: tmpl.src,
+            src: tmpl.src,
             name: tmpl.name,
-            key: i,
+            description: `${tmpl.name} template`,
+            originalIndex: i,
           }))
-            .filter(item => item.key !== previewTarget)
+            .filter(item => item.originalIndex !== previewTarget)
             .slice(0, 4);
           return (
-            <TemplatePreviewModal
+            <XDSDialog
               isOpen={true}
-              onClose={() => setPreviewTarget(null)}
-              item={{
-                name: t.name,
-                img: t.src,
-                author: t.author,
+              onOpenChange={open => {
+                if (!open) setPreviewTarget(null);
               }}
-              onStartCrafting={() => {
-                viewBeforeEditorRef.current = activeView;
-                setUseTarget(previewTarget);
-                setPanelTab('configure');
-                setChatOpen(true);
-              }}
-              isBookmarked={card4Bookmarked}
-              onBookmarkToggle={() => setCard4Bookmarked(prev => !prev)}
-              moreLikeThis={moreLikeThisImages}
-              onMoreLikeThisClick={(mlItem) => setPreviewTarget(mlItem.key as number)}
-              exploreTags={[
-                'website', 'dashboard', 'admin panel', 'settings',
-                'form layout', 'data table', 'sidebar nav', 'landing page',
-                'e-commerce', 'documentation', 'profile page',
-              ]}
-              onExploreTagClick={handleTokenClick}
-              componentTags={[
-                'XDSAppShell', 'XDSTopNav', 'XDSVStack', 'XDSHStack',
-                'XDSHeading', 'XDSText', 'XDSButton', 'XDSCard',
-                'XDSBadge', 'XDSAvatar',
-              ]}
-              onComponentTagClick={handleTokenClick}
-            />
+              width="90vw"
+              maxHeight="90vh"
+              purpose="info"
+              style={
+                {
+                  padding: 0,
+                  overflow: 'visible',
+                  maxWidth: 1600,
+                  '--xds-dialog-padding': '0px',
+                } as React.CSSProperties
+              }>
+              <div
+                style={{position: 'absolute', top: 0, right: -40, zIndex: 1}}>
+                <XDSCard padding={0} style={{borderRadius: '50%'}}>
+                  <XDSButton
+                    label="Close"
+                    variant="ghost"
+                    size="sm"
+                    isIconOnly
+                    icon={<span style={{fontSize: 16, lineHeight: 1}}>✕</span>}
+                    onClick={() => setPreviewTarget(null)}
+                  />
+                </XDSCard>
+              </div>
+              <div ref={card4ScrollRef} style={{overflowY: 'auto'}}>
+                {/* Main content: image left + details right */}
+                <div style={{display: 'flex', minHeight: 0, padding: '0 32px'}}>
+                  {/* Left — Preview image + thumbnails */}
+                  <XDSStack
+                    direction="vertical"
+                    gap={3}
+                    style={{flex: 1, minWidth: 0, padding: '32px 32px 32px 0'}}>
+                    <div
+                      style={{
+                        flex: 1,
+                        aspectRatio: '16 / 10',
+                        backgroundColor:
+                          'var(--color-background-muted, #f9f9f9)',
+                        borderRadius: 12,
+                        overflowY: 'auto',
+                        overflowX: 'hidden',
+                        border: '1px solid var(--color-border, #e0e0e0)',
+                      }}>
+                      <img
+                        src={
+                          isMeta
+                            ? `${basePath}/templates/card4-preview-meta.png`
+                            : t.src
+                        }
+                        alt={t.name}
+                        style={{
+                          width: '100%',
+                          display: 'block',
+                          opacity: previewTransitioning ? 0 : 1,
+                          transition: 'opacity 250ms ease',
+                          animation: previewTransitioning
+                            ? 'none'
+                            : 'previewFadeIn 300ms ease',
+                        }}
+                      />
+                    </div>
+                  </XDSStack>
+
+                  {/* Right — Details panel */}
+                  <XDSStack
+                    direction="vertical"
+                    style={{width: 360, flexShrink: 0, padding: '32px 0'}}>
+                    <div
+                      style={{
+                        opacity: previewTransitioning ? 0 : 1,
+                        transition: 'opacity 250ms ease',
+                        animation: previewTransitioning
+                          ? 'none'
+                          : 'previewFadeIn 300ms ease',
+                      }}>
+                      {/* Title */}
+                      <XDSText type="display-2">{t.name}</XDSText>
+
+                      {/* Description */}
+                      <div style={{marginTop: 8}}>
+                        <XDSText type="body" color="secondary">
+                          A ready-to-use {t.name.toLowerCase()} template built
+                          with XDS components. Customize it with your own
+                          content and theme to match your brand.
+                        </XDSText>
+                      </div>
+
+                      {/* Author */}
+                      <XDSStack
+                        direction="horizontal"
+                        gap={3}
+                        vAlign="center"
+                        style={{marginTop: 16}}>
+                        <XDSAvatar
+                          name={t.author}
+                          size={36}
+                          src={
+                            t.author === 'XDS Design'
+                              ? XDS_DESIGN_AVATAR
+                              : AVATAR_IMAGE
+                          }
+                        />
+                        <XDSStack direction="vertical">
+                          <XDSText type="supporting" color="secondary">
+                            Crafted by
+                          </XDSText>
+                          <XDSText
+                            type="body"
+                            style={{fontWeight: 600, fontSize: 16}}>
+                            {t.author}
+                          </XDSText>
+                        </XDSStack>
+                      </XDSStack>
+                    </div>
+
+                    {/* CTA buttons */}
+                    <XDSStack
+                      direction="vertical"
+                      gap={2}
+                      style={{marginTop: 32, position: 'relative'}}>
+                      <XDSButton
+                        variant="primary"
+                        label="Start crafting"
+                        size="lg"
+                        style={{width: '100%'}}
+                        onClick={() => {
+                          setUseTarget(previewTarget);
+                          setPreviewTarget(null);
+                          setPanelTab('configure');
+                          setChatOpen(true);
+                        }}
+                      />
+                      <div
+                        style={{
+                          display: 'flex',
+                          gap: 8,
+                          width: '100%',
+                        }}>
+                        <XDSButton
+                          variant="secondary"
+                          label="Use in your product"
+                          size="lg"
+                          style={{flex: 1}}
+                          onClick={() =>
+                            setCard4ShowAddPopover(!card4ShowAddPopover)
+                          }
+                        />
+                        <XDSTooltip content="Bookmark">
+                          <XDSButton
+                            label={card4Bookmarked ? '893' : '892'}
+                            variant="secondary"
+                            size="lg"
+                            isIconOnly
+                            icon={
+                              card4Bookmarked ? (
+                                <BookmarkFilledIcon />
+                              ) : (
+                                <BookmarkIcon />
+                              )
+                            }
+                            onClick={() => setCard4Bookmarked(prev => !prev)}
+                          />
+                        </XDSTooltip>
+                      </div>
+                      {card4ShowAddPopover && (
+                        <XDSCard
+                          style={{
+                            position: 'absolute',
+                            top: '100%',
+                            left: 0,
+                            right: 0,
+                            marginTop: 8,
+                            zIndex: 10,
+                          }}>
+                          <SharePopoverContent
+                            cliCommand={`npx xds template ${t.name.toLowerCase().replace(/\s+/g, '-')} ./my-project`}
+                            onClose={() => setCard4ShowAddPopover(false)}
+                          />
+                        </XDSCard>
+                      )}
+                    </XDSStack>
+
+                    {/* Themes — pinned grid */}
+                    <div style={{marginTop: 24}}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                        }}>
+                        <XDSText type="body" style={{fontWeight: 600}}>
+                          Apply your themes
+                        </XDSText>
+                        <XDSPopover
+                          label="Browse themes"
+                          placement="below"
+                          alignment="end"
+                          width={480}
+                          isOpen={card4ThemeBrowse}
+                          onOpenChange={open => {
+                            setCard4ThemeBrowse(open);
+                            if (!open) setCard4ThemeSearch('');
+                          }}
+                          xstyle={popoverStyles.themeBrowse}
+                          content={
+                            <div
+                              style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: 16,
+                              }}>
+                              <div
+                                tabIndex={0}
+                                style={{
+                                  position: 'absolute',
+                                  opacity: 0,
+                                  width: 0,
+                                  height: 0,
+                                  overflow: 'hidden',
+                                }}
+                              />
+                              <XDSTextInput
+                                label="Search"
+                                isLabelHidden
+                                placeholder="Search themes..."
+                                value={card4ThemeSearch}
+                                onChange={setCard4ThemeSearch}
+                                size="lg"
+                                startIcon={SearchIcon}
+                              />
+                              <div
+                                style={{
+                                  maxHeight: 560,
+                                  overflowY: 'auto',
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  gap: 16,
+                                }}>
+                                {(['official', 'community'] as const).map(
+                                  category => {
+                                    const entries = THEME_PICKER_ENTRIES.filter(
+                                      e =>
+                                        e.category === category &&
+                                        e.name
+                                          .toLowerCase()
+                                          .includes(
+                                            card4ThemeSearch.toLowerCase(),
+                                          ),
+                                    );
+                                    if (entries.length === 0) return null;
+                                    return (
+                                      <div key={category}>
+                                        <div style={{marginBottom: 8}}>
+                                          <XDSText
+                                            type="supporting"
+                                            color="secondary">
+                                            {category.charAt(0).toUpperCase() +
+                                              category.slice(1)}
+                                          </XDSText>
+                                        </div>
+                                        <div
+                                          style={{
+                                            display: 'grid',
+                                            gridTemplateColumns: '1fr 1fr 1fr',
+                                            gap: 8,
+                                          }}>
+                                          {entries.map(entry => {
+                                            const isSelected =
+                                              card4SelectedOption === entry.key;
+                                            const isPinned =
+                                              card4PinnedThemes.has(entry.key);
+                                            const p = entry.preview;
+                                            return (
+                                              <div
+                                                key={entry.key}
+                                                style={{
+                                                  borderRadius: 12,
+                                                  overflow: 'hidden',
+                                                  cursor: 'pointer',
+                                                  border: isSelected
+                                                    ? '1.5px solid var(--color-accent)'
+                                                    : '1px solid var(--color-border-emphasized)',
+                                                  transition:
+                                                    'border-color 0.15s ease',
+                                                }}>
+                                                <div
+                                                  onClick={() => {
+                                                    setCard4SelectedOption(
+                                                      entry.key,
+                                                    );
+                                                    setCard4ThemeBrowse(false);
+                                                    setCard4ThemeSearch('');
+                                                  }}
+                                                  style={{
+                                                    height: 100,
+                                                    backgroundColor: p.bg,
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    overflow: 'hidden',
+                                                  }}>
+                                                  <div
+                                                    style={{
+                                                      height: 14,
+                                                      backgroundColor:
+                                                        p.surface,
+                                                      borderBottom: `1px solid ${p.text}1A`,
+                                                      display: 'flex',
+                                                      alignItems: 'center',
+                                                      paddingInline: 8,
+                                                      gap: 4,
+                                                    }}>
+                                                    <div
+                                                      style={{
+                                                        width: 5,
+                                                        height: 5,
+                                                        borderRadius: '50%',
+                                                        backgroundColor:
+                                                          p.accent,
+                                                      }}
+                                                    />
+                                                    <div
+                                                      style={{
+                                                        width: 16,
+                                                        height: 2,
+                                                        borderRadius: 1,
+                                                        backgroundColor: p.text,
+                                                        opacity: 0.3,
+                                                      }}
+                                                    />
+                                                  </div>
+                                                  <div
+                                                    style={{
+                                                      flex: 1,
+                                                      padding: 8,
+                                                      display: 'flex',
+                                                      flexDirection: 'column',
+                                                      gap: 5,
+                                                    }}>
+                                                    <div
+                                                      style={{
+                                                        width: '65%',
+                                                        height: 4,
+                                                        borderRadius: 2,
+                                                        backgroundColor: p.text,
+                                                        opacity: 0.6,
+                                                      }}
+                                                    />
+                                                    <div
+                                                      style={{
+                                                        width: '45%',
+                                                        height: 3,
+                                                        borderRadius: 1.5,
+                                                        backgroundColor: p.text,
+                                                        opacity: 0.25,
+                                                      }}
+                                                    />
+                                                    <div
+                                                      style={{
+                                                        width: 28,
+                                                        height: 10,
+                                                        borderRadius: 4,
+                                                        backgroundColor:
+                                                          p.accent,
+                                                        marginTop: 'auto',
+                                                      }}
+                                                    />
+                                                  </div>
+                                                </div>
+                                                <div
+                                                  style={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent:
+                                                      'space-between',
+                                                    padding: '6px 8px',
+                                                    backgroundColor:
+                                                      'var(--color-surface, #f5f5f5)',
+                                                  }}>
+                                                  <div
+                                                    style={{
+                                                      display: 'flex',
+                                                      alignItems: 'center',
+                                                      gap: 6,
+                                                    }}>
+                                                    {(() => {
+                                                      const Logo =
+                                                        BRAND_LOGOS[entry.key];
+                                                      return Logo ? (
+                                                        <Logo
+                                                          width={14}
+                                                          height={14}
+                                                        />
+                                                      ) : (
+                                                        <div
+                                                          style={{
+                                                            width: 14,
+                                                            height: 14,
+                                                            borderRadius: '50%',
+                                                            backgroundColor:
+                                                              entry.accent,
+                                                          }}
+                                                        />
+                                                      );
+                                                    })()}
+                                                    <XDSText
+                                                      type="supporting"
+                                                      style={{
+                                                        fontWeight: isSelected
+                                                          ? 600
+                                                          : 400,
+                                                      }}>
+                                                      {entry.name}
+                                                    </XDSText>
+                                                  </div>
+                                                  <div
+                                                    onClick={e => {
+                                                      e.stopPropagation();
+                                                      toggleCard4Pin(entry.key);
+                                                    }}
+                                                    style={{
+                                                      cursor: 'pointer',
+                                                      display: 'flex',
+                                                      padding: 2,
+                                                    }}>
+                                                    {isPinned ? (
+                                                      <StarFilledIcon
+                                                        width={14}
+                                                        height={14}
+                                                        style={{
+                                                          color:
+                                                            'var(--color-text-primary, #111)',
+                                                        }}
+                                                      />
+                                                    ) : (
+                                                      <StarIcon
+                                                        width={14}
+                                                        height={14}
+                                                        style={{
+                                                          color:
+                                                            'var(--color-secondary, #999)',
+                                                        }}
+                                                      />
+                                                    )}
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            );
+                                          })}
+                                        </div>
+                                      </div>
+                                    );
+                                  },
+                                )}
+                              </div>
+                            </div>
+                          }>
+                          <XDSButton label="Browse" variant="ghost" size="sm" />
+                        </XDSPopover>
+                      </div>
+                      <div
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(auto-fill, 44px)',
+                          gap: 8,
+                          marginTop: 16,
+                        }}>
+                        {THEME_PICKER_ENTRIES.filter(e =>
+                          card4PinnedThemes.has(e.key),
+                        ).map(entry => {
+                          const isSelected = card4SelectedOption === entry.key;
+                          const BrandLogo = BRAND_LOGOS[entry.key];
+                          return (
+                            <XDSTooltip key={entry.key} content={entry.name}>
+                              <div
+                                onClick={() =>
+                                  setCard4SelectedOption(entry.key)
+                                }
+                                style={{
+                                  width: 44,
+                                  height: 44,
+                                  borderRadius: 10,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  cursor: 'pointer',
+                                  border: isSelected
+                                    ? '1.5px solid var(--color-accent)'
+                                    : '1px solid var(--color-border-emphasized)',
+                                  backgroundColor: '#fff',
+                                  transition: 'border-color 0.15s ease',
+                                }}>
+                                {BrandLogo ? (
+                                  <BrandLogo width={28} height={28} />
+                                ) : (
+                                  <div
+                                    style={{
+                                      width: 24,
+                                      height: 24,
+                                      borderRadius: '50%',
+                                      backgroundColor: entry.accent,
+                                    }}
+                                  />
+                                )}
+                              </div>
+                            </XDSTooltip>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </XDSStack>
+                </div>
+
+                {/* More like this */}
+                <div style={{padding: '0 32px'}}>
+                  <XDSHeading level={3}>More like this</XDSHeading>
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(4, 1fr)',
+                      gap: 12,
+                      marginTop: 16,
+                    }}>
+                    {moreLikeThisImages.map(img => (
+                      <XDSCard
+                        key={img.originalIndex}
+                        padding={0}
+                        onClick={() => {
+                          setPreviewTransitioning(true);
+                          setTimeout(() => {
+                            setPreviewTarget(img.originalIndex);
+                            card4ScrollRef.current?.scrollTo({top: 0});
+                            setTimeout(
+                              () => setPreviewTransitioning(false),
+                              50,
+                            );
+                          }, 250);
+                        }}
+                        style={{
+                          cursor: 'pointer',
+                          aspectRatio: '16/10',
+                          overflow: 'hidden',
+                        }}>
+                        <img
+                          src={img.src}
+                          alt={img.name}
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                            objectPosition: 'top',
+                            display: 'block',
+                            opacity: previewTransitioning ? 0 : 1,
+                            transition: 'opacity 250ms ease',
+                            animation: previewTransitioning
+                              ? 'none'
+                              : 'previewFadeIn 300ms ease',
+                          }}
+                        />
+                      </XDSCard>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Explore more */}
+                <div style={{padding: '32px 32px 0'}}>
+                  <XDSHeading level={3}>Explore more</XDSHeading>
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      gap: 8,
+                      marginTop: 16,
+                      opacity: previewTransitioning ? 0 : 1,
+                      transition: 'opacity 250ms ease',
+                      animation: previewTransitioning
+                        ? 'none'
+                        : 'previewFadeIn 300ms ease',
+                    }}>
+                    {[
+                      'website',
+                      'dashboard',
+                      'admin panel',
+                      'settings',
+                      'form layout',
+                      'data table',
+                      'sidebar nav',
+                      'landing page',
+                      'e-commerce',
+                      'documentation',
+                      'profile page',
+                    ].map(tag => (
+                      <XDSToken
+                        key={tag}
+                        label={tag}
+                        xstyle={tokenStyles.pill}
+                        style={{
+                          backgroundColor: 'transparent',
+                          cursor: 'pointer',
+                        }}
+                        onClick={() => handleTokenClick(tag)}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Component used */}
+                <div style={{padding: '32px 32px 32px'}}>
+                  <XDSHeading level={3}>Component used</XDSHeading>
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      gap: 8,
+                      marginTop: 16,
+                      opacity: previewTransitioning ? 0 : 1,
+                      transition: 'opacity 250ms ease',
+                      animation: previewTransitioning
+                        ? 'none'
+                        : 'previewFadeIn 300ms ease',
+                    }}>
+                    {[
+                      'XDSAppShell',
+                      'XDSTopNav',
+                      'XDSVStack',
+                      'XDSHStack',
+                      'XDSHeading',
+                      'XDSText',
+                      'XDSButton',
+                      'XDSCard',
+                      'XDSBadge',
+                      'XDSAvatar',
+                    ].map(c => (
+                      <XDSToken
+                        key={c}
+                        label={c}
+                        xstyle={tokenStyles.outline}
+                        style={{
+                          backgroundColor: 'transparent',
+                          cursor: 'pointer',
+                        }}
+                        onClick={() => handleTokenClick(c)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </XDSDialog>
           );
         })()}
 
@@ -1557,28 +2177,46 @@ function DocsiteLandingTemplate() {
         <XDSStack direction="vertical" gap={4} style={{padding: '8px 0'}}>
           <XDSStack direction="horizontal" hAlign="between" vAlign="center">
             <XDSStack direction="vertical" gap={1}>
-              <XDSText type="body" style={{fontWeight: 600}}>Dark mode</XDSText>
-              <XDSText type="supporting" color="secondary">Switch between light and dark appearance</XDSText>
+              <XDSText type="body" style={{fontWeight: 600}}>
+                Dark mode
+              </XDSText>
+              <XDSText type="supporting" color="secondary">
+                Switch between light and dark appearance
+              </XDSText>
             </XDSStack>
             <XDSButton
               label={previewMode === 'dark' ? 'On' : 'Off'}
               variant="secondary"
               size="sm"
-              onClick={() => setPreviewMode(previewMode === 'dark' ? 'light' : 'dark')}
+              onClick={() =>
+                setPreviewMode(previewMode === 'dark' ? 'light' : 'dark')
+              }
             />
           </XDSStack>
           <XDSDivider />
           <XDSStack direction="horizontal" hAlign="between" vAlign="center">
             <XDSStack direction="vertical" gap={1}>
-              <XDSText type="body" style={{fontWeight: 600}}>Theme</XDSText>
-              <XDSText type="supporting" color="secondary">Choose a visual theme for previews</XDSText>
+              <XDSText type="body" style={{fontWeight: 600}}>
+                Theme
+              </XDSText>
+              <XDSText type="supporting" color="secondary">
+                Choose a visual theme for previews
+              </XDSText>
             </XDSStack>
             <XDSDropdownMenu
-              button={{label: previewTheme.charAt(0).toUpperCase() + previewTheme.slice(1), variant: 'secondary', size: 'sm'}}
+              button={{
+                label:
+                  previewTheme.charAt(0).toUpperCase() + previewTheme.slice(1),
+                variant: 'secondary',
+                size: 'sm',
+              }}
               items={[
                 {label: 'Default', onClick: () => setPreviewTheme('default')},
                 {label: 'Neutral', onClick: () => setPreviewTheme('neutral')},
-                {label: 'Brutalist', onClick: () => setPreviewTheme('brutalist')},
+                {
+                  label: 'Brutalist',
+                  onClick: () => setPreviewTheme('brutalist'),
+                },
                 {label: 'Meta', onClick: () => setPreviewTheme('meta')},
                 {label: 'WhatsApp', onClick: () => setPreviewTheme('whatsapp')},
               ]}
@@ -1587,12 +2225,21 @@ function DocsiteLandingTemplate() {
           <XDSDivider />
           <XDSStack direction="horizontal" hAlign="between" vAlign="center">
             <XDSStack direction="vertical" gap={1}>
-              <XDSText type="body" style={{fontWeight: 600}}>Default sort</XDSText>
-              <XDSText type="supporting" color="secondary">How templates are ordered by default</XDSText>
+              <XDSText type="body" style={{fontWeight: 600}}>
+                Default sort
+              </XDSText>
+              <XDSText type="supporting" color="secondary">
+                How templates are ordered by default
+              </XDSText>
             </XDSStack>
             <XDSDropdownMenu
               button={{
-                label: sortOption === 'trending' ? 'Trending' : sortOption === 'newest' ? 'Newest first' : 'Oldest first',
+                label:
+                  sortOption === 'trending'
+                    ? 'Trending'
+                    : sortOption === 'newest'
+                      ? 'Newest first'
+                      : 'Oldest first',
                 variant: 'secondary',
                 size: 'sm',
               }}
