@@ -157,8 +157,8 @@ export default function FeaturedGalleryTemplate() {
                 <XDSBadge label="Blue badge" variant="blue" />
               </XDSHStack>
               <XDSText
-                type="body"
                 weight="bold"
+                type="body"
                 as="p"
                 style={{
                   fontSize: 'var(--font-size-2xl)',
@@ -179,7 +179,7 @@ export default function FeaturedGalleryTemplate() {
         {/* Carousel */}
         <XDSCenter axis="horizontal">
           <XDSSection maxWidth={1520} padding={6} variant="transparent">
-            <XDSCarousel gap={4} hasSnap hasButtons scrollStep="item">
+            <XDSCarousel gap={4} hasSnap hasButtons>
               {GALLERY_ITEMS.map(item => (
                 <GalleryCard key={item.id} item={item} />
               ))}

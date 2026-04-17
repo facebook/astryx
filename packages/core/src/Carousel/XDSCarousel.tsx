@@ -51,13 +51,6 @@ export interface XDSCarouselProps extends XDSBaseProps<HTMLDivElement> {
    */
   hasSnap?: boolean;
   /**
-   * How far to scroll when nav buttons are clicked.
-   * - `'page'`: scroll by roughly one viewport width (default)
-   * - `'item'`: scroll by one item at a time
-   * @default 'page'
-   */
-  scrollStep?: 'page' | 'item';
-  /**
    * Accessible label for the carousel region.
    * @default 'Carousel'
    */
@@ -208,7 +201,6 @@ export function XDSCarousel({
   gap = 1,
   hasButtons = true,
   hasSnap = false,
-  scrollStep = 'page',
   'aria-label': ariaLabel = 'Carousel',
   xstyle,
   className,
@@ -240,45 +232,17 @@ export function XDSCarousel({
     [scrollRef],
   );
 
-  const scrollBy = useCallback(
-    (direction: -1 | 1) => {
-      const el = scrollElRef.current;
-      if (!el) return;
-      const children = Array.from(el.children) as HTMLElement[];
-      if (children.length === 0) return;
-
-      if (scrollStep === 'item') {
-        // Find the first visible child, then move one in the direction
-        const scrollLeft = el.scrollLeft;
-        let targetIndex = 0;
-
-        for (let i = 0; i < children.length; i++) {
-          if (children[i].offsetLeft >= scrollLeft - 1) {
-            targetIndex = i;
-            break;
-          }
-        }
-
-        const nextIndex = Math.max(
-          0,
-          Math.min(children.length - 1, targetIndex + direction),
-        );
-        el.scrollTo({
-          left: nextIndex === 0 ? 0 : children[nextIndex].offsetLeft,
-          behavior: 'smooth',
-        });
-      } else {
-        const firstChild = children[0];
-        const itemWidth = firstChild ? firstChild.offsetWidth : 0;
-        const amount = el.clientWidth - itemWidth * 0.5;
-        el.scrollBy({
-          left: direction * Math.max(amount, itemWidth),
-          behavior: 'smooth',
-        });
-      }
-    },
-    [scrollStep],
-  );
+  const scrollBy = useCallback((direction: -1 | 1) => {
+    const el = scrollElRef.current;
+    if (!el) return;
+    const firstChild = el.firstElementChild as HTMLElement | null;
+    const itemWidth = firstChild ? firstChild.offsetWidth : 0;
+    const amount = el.clientWidth - itemWidth * 0.5;
+    el.scrollBy({
+      left: direction * Math.max(amount, itemWidth),
+      behavior: 'smooth',
+    });
+  }, []);
 
   const fadeStyle =
     overflowStart && overflowEnd
