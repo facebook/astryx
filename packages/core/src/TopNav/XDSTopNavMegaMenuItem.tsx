@@ -28,6 +28,7 @@ import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import type {XDSLinkComponentType} from '../Link/types';
 import {useXDSTopNavRenderMode} from './XDSTopNavRenderContext';
 import {xdsClassName, mergeProps} from '../utils';
+import {useXDSAppShellMobile} from '../AppShell/XDSAppShellMobileContext';
 
 // =============================================================================
 // Styles
@@ -196,6 +197,7 @@ export function XDSTopNavMegaMenuItem({
 }: XDSTopNavMegaMenuItemProps) {
   const renderMode = useXDSTopNavRenderMode();
   const LinkComponent = useXDSLinkComponent(as);
+  const {closeMobileNav} = useXDSAppShellMobile();
 
   // =========================================================================
   // Drawer mode — matches SideNavItem / TopNavMenu drawer appearance
@@ -203,10 +205,14 @@ export function XDSTopNavMegaMenuItem({
   if (renderMode === 'drawer') {
     const Element = href ? LinkComponent : 'button';
     const elementProps = Element === 'button' ? {type: 'button' as const} : {};
+    const handleDrawerClick = () => {
+      onClick?.();
+      closeMobileNav();
+    };
     return (
       <Element
         href={href}
-        onClick={onClick}
+        onClick={handleDrawerClick}
         {...elementProps}
         {...mergeProps(
           xdsClassName('top-nav-mega-menu-item', {mode: 'drawer'}),
