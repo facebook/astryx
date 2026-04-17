@@ -421,6 +421,7 @@ export function XDSTypeahead<T extends XDSSearchableItem>({
           anchorRef={wrapperRef}
           onKeyDown={handleKeyDown}
           inputXStyle={showToken ? styles.inputHidden : undefined}
+          size={size}
         />
         {hasClear && value && !isDisabled && isEditing && (
           <button
