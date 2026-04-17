@@ -20,7 +20,9 @@ import {MOCK_CODE} from './constants';
 
 const composerStyles = stylex.create({
   border: {
-    border: '1px solid var(--color-border)',
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: 'var(--color-border-emphasized, #CCD3DB)',
   },
 });
 

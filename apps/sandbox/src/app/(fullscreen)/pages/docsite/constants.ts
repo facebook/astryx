@@ -226,61 +226,80 @@ export const FILTER_COLUMNS: {heading: string; items: string[]}[] = [
 
 export const PROFILE_USED_ITEMS: {
   name: string;
+  type: 'Template' | 'Theme' | 'Component';
   description: string;
   lastUsed: string;
   usageCount: number;
+  img: string;
 }[] = [
-  {name: 'AppShell', description: 'Foundational page layout with header, sidebar, and content regions.', lastUsed: '2026-04-14T10:30:00Z', usageCount: 12},
-  {name: 'Avatar', description: 'Represents a person or entity with an image, initials, or icon.', lastUsed: '2026-04-13T15:45:00Z', usageCount: 8},
-  {name: 'Badge', description: 'Displays small counts or status labels on icons, buttons, or list items.', lastUsed: '2026-04-12T09:20:00Z', usageCount: 15},
-  {name: 'Banner', description: 'Shows important, non-modal messages at the top of a page or section.', lastUsed: '2026-04-10T14:00:00Z', usageCount: 3},
-  {name: 'Button', description: 'Primary action element for forms, dialogs, and toolbars.', lastUsed: '2026-04-14T16:00:00Z', usageCount: 24},
-  {name: 'Calendar', description: 'Date-picking grid for selecting single dates or date ranges.', lastUsed: '2026-04-08T11:30:00Z', usageCount: 2},
-  {name: 'Dialog', description: 'Modal overlays that require user attention or action.', lastUsed: '2026-04-11T13:15:00Z', usageCount: 6},
-  {name: 'DropdownMenu', description: 'Presents actions or options in a floating overlay.', lastUsed: '2026-04-09T16:45:00Z', usageCount: 5},
+  {name: 'Admin Dashboard', type: 'Template', description: 'Full admin panel with sidebar nav, KPI cards, and data tables.', lastUsed: '2026-04-15T09:00:00Z', usageCount: 7, img: SCREENSHOT_3_IMAGE},
+  {name: 'AppShell', type: 'Component', description: 'Foundational page layout with header, sidebar, and content regions.', lastUsed: '2026-04-14T10:30:00Z', usageCount: 12, img: FIRST_CARD_IMAGE},
+  {name: 'Meta Theme', type: 'Theme', description: 'Meta brand colors with Figtree typography and blue accents.', lastUsed: '2026-04-14T08:00:00Z', usageCount: 9, img: SHOPPING_DETAILS_IMAGE},
+  {name: 'Button', type: 'Component', description: 'Primary action element for forms, dialogs, and toolbars.', lastUsed: '2026-04-14T16:00:00Z', usageCount: 24, img: FIRST_CARD_IMAGE},
+  {name: 'Contact Form', type: 'Template', description: 'Responsive contact form with validation, file upload, and success state.', lastUsed: '2026-04-13T11:00:00Z', usageCount: 4, img: `${basePath}/templates/card4-preview.png`},
+  {name: 'Badge', type: 'Component', description: 'Displays small counts or status labels on icons, buttons, or list items.', lastUsed: '2026-04-12T09:20:00Z', usageCount: 15, img: SCREENSHOT_3_IMAGE},
+  {name: 'Dark Mode Palette', type: 'Theme', description: 'High-contrast dark theme with WCAG AA compliant color ratios.', lastUsed: '2026-04-11T18:30:00Z', usageCount: 3, img: DUMMY_IMAGE},
+  {name: 'Avatar', type: 'Component', description: 'Represents a person or entity with an image, initials, or icon.', lastUsed: '2026-04-13T15:45:00Z', usageCount: 8, img: SHOPPING_DETAILS_IMAGE},
+  {name: 'Settings Page', type: 'Template', description: 'Sidebar settings layout with inline editing and expandable rows.', lastUsed: '2026-04-10T14:00:00Z', usageCount: 5, img: `${basePath}/templates/card4-preview.png`},
+  {name: 'Dialog', type: 'Component', description: 'Modal overlays that require user attention or action.', lastUsed: '2026-04-11T13:15:00Z', usageCount: 6, img: DUMMY_IMAGE},
+  {name: 'WhatsApp Theme', type: 'Theme', description: 'WhatsApp brand greens and warm grays with rounded components.', lastUsed: '2026-04-09T10:00:00Z', usageCount: 2, img: DUMMY_IMAGE},
+  {name: 'DropdownMenu', type: 'Component', description: 'Presents actions or options in a floating overlay.', lastUsed: '2026-04-09T16:45:00Z', usageCount: 5, img: DUMMY_IMAGE},
 ];
 
 export const PROFILE_LIKED_ITEMS: {
   name: string;
-  type: string;
-  lastUsed: string;
+  type: 'Template' | 'Theme' | 'Component';
+  bookmarkedAt: string;
+  description: string;
+  img: string;
+  author: string;
 }[] = [
-  {name: 'Meta Theme', type: 'Theme', lastUsed: '2026-04-13T08:00:00Z'},
-  {name: 'Brutalist Theme', type: 'Theme', lastUsed: '2026-04-11T10:30:00Z'},
-  {name: 'Admin Dashboard', type: 'Template', lastUsed: '2026-04-10T14:20:00Z'},
-  {name: 'Product Detail', type: 'Template', lastUsed: '2026-04-07T09:00:00Z'},
+  {name: 'Meta Theme', type: 'Theme', bookmarkedAt: '2026-04-13T08:00:00Z', description: 'Meta brand colors with Figtree typography.', img: FIRST_CARD_IMAGE, author: 'XDS Design'},
+  {name: 'Brutalist Theme', type: 'Theme', bookmarkedAt: '2026-04-11T10:30:00Z', description: 'Bold, raw aesthetic with heavy borders and sharp angles.', img: SHOPPING_DETAILS_IMAGE, author: 'Andrea Anderson'},
+  {name: 'Admin Dashboard', type: 'Template', bookmarkedAt: '2026-04-10T14:20:00Z', description: 'Full admin panel with sidebar nav, KPI cards, and data tables.', img: SCREENSHOT_3_IMAGE, author: 'Andrea Anderson'},
+  {name: 'Product Detail', type: 'Template', bookmarkedAt: '2026-04-07T09:00:00Z', description: 'E-commerce product page with image gallery and reviews.', img: `${basePath}/templates/card4-preview.png`, author: 'XDS Design'},
+  {name: 'Toast Notification', type: 'Component', bookmarkedAt: '2026-04-05T11:00:00Z', description: 'Stackable toast with auto-dismiss and action support.', img: DUMMY_IMAGE, author: 'Andrea Anderson'},
+  {name: 'Kanban Board', type: 'Template', bookmarkedAt: '2026-04-02T16:30:00Z', description: 'Drag-and-drop board with swimlanes and card detail drawers.', img: DUMMY_IMAGE, author: 'XDS Design'},
 ];
 
-export const PROFILE_COLLECTIONS = [
-  {name: 'Work Projects', count: 4},
-  {name: 'Design Inspiration', count: 6},
-  {name: 'Client Templates', count: 3},
-  {name: 'Dashboard Ideas', count: 5},
-  {name: 'Landing Pages', count: 8},
+export const PROFILE_COLLECTIONS: {
+  name: string;
+  count: number;
+  color: string;
+  items: string[];
+}[] = [
+  {name: 'Work Projects', count: 4, color: '#3B82F6', items: ['Admin Dashboard', 'Meta Theme', 'Toast Notification', 'Kanban Board']},
+  {name: 'Design Inspiration', count: 6, color: '#8B5CF6', items: ['Meta Theme', 'Brutalist Theme', 'Admin Dashboard', 'Product Detail', 'Toast Notification', 'Kanban Board']},
+  {name: 'Client Templates', count: 3, color: '#F59E0B', items: ['Admin Dashboard', 'Product Detail', 'Kanban Board']},
+  {name: 'Dashboard Ideas', count: 5, color: '#10B981', items: ['Admin Dashboard', 'Meta Theme', 'Brutalist Theme', 'Product Detail', 'Kanban Board']},
+  {name: 'Landing Pages', count: 8, color: '#EF4444', items: ['Meta Theme', 'Brutalist Theme', 'Admin Dashboard', 'Product Detail', 'Toast Notification', 'Kanban Board', 'Meta Theme', 'Brutalist Theme']},
 ];
 
 export const PROFILE_CRAFT_ITEMS: {
   name: string;
   type: 'Template' | 'Theme' | 'Component';
-  status: 'Published' | 'Draft' | 'In Review';
+  status: 'Published' | 'Draft' | 'In Review' | 'Needs Fixes';
   used: number;
   views: number;
+  bookmarks: number;
   img: string;
   lastUpdated: string;
   description: string;
+  tags: string[];
 }[] = [
-  {name: 'My Dashboard Theme', type: 'Theme', status: 'Published', used: 342, views: 1205, img: FIRST_CARD_IMAGE, lastUpdated: '2026-03-01T10:00:00Z', description: 'Dark-mode friendly theme with custom color tokens and typography overrides.'},
-  {name: 'Custom Login Template', type: 'Template', status: 'Published', used: 128, views: 580, img: SHOPPING_DETAILS_IMAGE, lastUpdated: '2026-03-15T14:30:00Z', description: 'Branded login page with social auth buttons and form validation.'},
-  {name: 'Data Visualization Kit', type: 'Template', status: 'Published', used: 89, views: 312, img: SCREENSHOT_3_IMAGE, lastUpdated: '2026-04-02T11:00:00Z', description: 'Charts, graphs, and data table layouts for analytics dashboards.'},
-  {name: 'Settings Page', type: 'Template', status: 'Published', used: 67, views: 248, img: `${basePath}/templates/card4-preview.png`, lastUpdated: '2026-02-20T08:00:00Z', description: 'Sidebar settings layout with inline editing and expandable rows.'},
-  {name: 'Product Detail Page', type: 'Template', status: 'Published', used: 54, views: 190, img: DUMMY_IMAGE, lastUpdated: '2026-03-28T12:00:00Z', description: 'E-commerce product page with image gallery, reviews, and add-to-cart.'},
-  {name: 'Custom Notification Card', type: 'Component', status: 'Published', used: 203, views: 870, img: DUMMY_IMAGE, lastUpdated: '2026-01-15T09:00:00Z', description: 'Toast-style notification card with dismiss, action buttons, and auto-hide.'},
-  {name: 'Metric Summary Card', type: 'Component', status: 'Published', used: 156, views: 620, img: DUMMY_IMAGE, lastUpdated: '2026-02-10T14:00:00Z', description: 'KPI card with sparkline, trend indicator, and comparison period.'},
-  {name: 'Analytics Dashboard', type: 'Template', status: 'In Review', used: 0, views: 45, img: DUMMY_IMAGE, lastUpdated: '2026-04-12T09:00:00Z', description: 'Full-page analytics dashboard with filters, charts, and data tables.'},
-  {name: 'Team Directory', type: 'Template', status: 'In Review', used: 0, views: 32, img: DUMMY_IMAGE, lastUpdated: '2026-04-10T16:30:00Z', description: 'Searchable team roster with profile cards, org chart, and role filters.'},
-  {name: 'Onboarding Flow', type: 'Template', status: 'Draft', used: 0, views: 12, img: DUMMY_IMAGE, lastUpdated: '2026-04-14T16:00:00Z', description: 'Multi-step onboarding wizard with progress bar and skip logic.'},
-  {name: 'Dark Mode Palette', type: 'Theme', status: 'Draft', used: 0, views: 8, img: DUMMY_IMAGE, lastUpdated: '2026-04-13T11:30:00Z', description: 'High-contrast dark theme with WCAG AA compliant color ratios.'},
-  {name: 'File Upload Dropzone', type: 'Component', status: 'Draft', used: 0, views: 5, img: DUMMY_IMAGE, lastUpdated: '2026-04-15T10:00:00Z', description: 'Drag-and-drop file uploader with preview thumbnails and progress bars.'},
+  {name: 'My Dashboard Theme', type: 'Theme', status: 'Published', used: 342, views: 1205, bookmarks: 89, img: FIRST_CARD_IMAGE, lastUpdated: '2026-03-01T10:00:00Z', description: 'Dark-mode friendly theme with custom color tokens and typography overrides.', tags: ['Dashboard', 'Dark Mode', 'SaaS']},
+  {name: 'Custom Login Template', type: 'Template', status: 'Published', used: 128, views: 580, bookmarks: 34, img: SHOPPING_DETAILS_IMAGE, lastUpdated: '2026-03-15T14:30:00Z', description: 'Branded login page with social auth buttons and form validation.', tags: ['Login', 'Authentication', 'Form']},
+  {name: 'Data Visualization Kit', type: 'Template', status: 'Published', used: 89, views: 312, bookmarks: 27, img: SCREENSHOT_3_IMAGE, lastUpdated: '2026-04-02T11:00:00Z', description: 'Charts, graphs, and data table layouts for analytics dashboards.', tags: ['Dashboard', 'Charts', 'Analytics']},
+  {name: 'Settings Page', type: 'Template', status: 'Published', used: 67, views: 248, bookmarks: 18, img: `${basePath}/templates/card4-preview.png`, lastUpdated: '2026-02-20T08:00:00Z', description: 'Sidebar settings layout with inline editing and expandable rows.', tags: ['Settings', 'SaaS', 'Admin']},
+  {name: 'Product Detail Page', type: 'Template', status: 'Published', used: 54, views: 190, bookmarks: 15, img: DUMMY_IMAGE, lastUpdated: '2026-03-28T12:00:00Z', description: 'E-commerce product page with image gallery, reviews, and add-to-cart.', tags: ['E-commerce', 'Shopping', 'Product']},
+  {name: 'Custom Notification Card', type: 'Component', status: 'Published', used: 203, views: 870, bookmarks: 62, img: DUMMY_IMAGE, lastUpdated: '2026-01-15T09:00:00Z', description: 'Toast-style notification card with dismiss, action buttons, and auto-hide.', tags: ['Notification', 'Toast', 'Feedback']},
+  {name: 'Metric Summary Card', type: 'Component', status: 'Published', used: 156, views: 620, bookmarks: 41, img: DUMMY_IMAGE, lastUpdated: '2026-02-10T14:00:00Z', description: 'KPI card with sparkline, trend indicator, and comparison period.', tags: ['Dashboard', 'KPI', 'Analytics']},
+  {name: 'Analytics Dashboard', type: 'Template', status: 'In Review', used: 0, views: 45, bookmarks: 0, img: DUMMY_IMAGE, lastUpdated: '2026-04-12T09:00:00Z', description: 'Full-page analytics dashboard with filters, charts, and data tables.', tags: ['Dashboard', 'Analytics', 'Data Table']},
+  {name: 'Team Directory', type: 'Template', status: 'In Review', used: 0, views: 32, bookmarks: 0, img: DUMMY_IMAGE, lastUpdated: '2026-04-10T16:30:00Z', description: 'Searchable team roster with profile cards, org chart, and role filters.', tags: ['Directory', 'Team', 'Admin']},
+  {name: 'Checkout Flow', type: 'Template', status: 'Needs Fixes', used: 0, views: 18, bookmarks: 0, img: DUMMY_IMAGE, lastUpdated: '2026-04-11T14:00:00Z', description: 'Multi-step checkout with cart summary, address form, and payment integration.', tags: ['E-commerce', 'Checkout', 'Form']},
+  {name: 'Onboarding Flow', type: 'Template', status: 'Draft', used: 0, views: 12, bookmarks: 0, img: DUMMY_IMAGE, lastUpdated: '2026-04-14T16:00:00Z', description: 'Multi-step onboarding wizard with progress bar and skip logic.', tags: ['Onboarding', 'Wizard', 'Form']},
+  {name: 'Dark Mode Palette', type: 'Theme', status: 'Draft', used: 0, views: 8, bookmarks: 0, img: DUMMY_IMAGE, lastUpdated: '2026-04-13T11:30:00Z', description: 'High-contrast dark theme with WCAG AA compliant color ratios.', tags: ['Dark Mode', 'Accessibility', 'Theme']},
+  {name: 'File Upload Dropzone', type: 'Component', status: 'Draft', used: 0, views: 5, bookmarks: 0, img: DUMMY_IMAGE, lastUpdated: '2026-04-15T10:00:00Z', description: 'Drag-and-drop file uploader with preview thumbnails and progress bars.', tags: ['Upload', 'Form', 'File']},
 ];
 
 // ---------------------------------------------------------------------------

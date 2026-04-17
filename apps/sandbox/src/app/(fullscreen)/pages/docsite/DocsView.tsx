@@ -20,7 +20,7 @@ import {
   ProfileIcon,
 } from './docsite-icons';
 import {COMPONENT_PREVIEWS} from './ComponentPreviews';
-import {SEARCH_COMMANDS} from './constants';
+import {SEARCH_COMMANDS, basePath} from './constants';
 import {
   COMPONENT_CATEGORIES,
   getComponentName,
@@ -85,7 +85,7 @@ export function DocsView({
             heading={
               <XDSTopNavHeading
                 logo={XDS_WORDMARK}
-                headingHref="/pages/docsite/"
+                headingHref={`${basePath}/pages/docsite/`}
                 menu={headingMenu}
               />
             }
