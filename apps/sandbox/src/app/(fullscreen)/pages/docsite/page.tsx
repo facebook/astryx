@@ -201,6 +201,20 @@ function DocsiteLandingTemplate() {
     const used = searchParams.get('used');
     const settings = searchParams.get('settings');
     const collection = searchParams.get('collection');
+    const templateIdx = t !== null ? parseInt(t, 10) : null;
+    return {
+      view: v,
+      templateIdx: isNaN(templateIdx as number) ? null : templateIdx,
+      query: q,
+      page: page as 'craft' | 'explore' | 'docs' | 'profile' | null,
+      tab:
+        tab && ['Crafted', 'Used', 'Bookmarks'].includes(tab)
+          ? (tab as 'Crafted' | 'Used' | 'Bookmarks')
+          : null,
+      craft,
+      used,
+      settings: settings === '1',
+      collection,
     };
   }, [searchParams]);
 
@@ -697,6 +711,122 @@ function DocsiteLandingTemplate() {
           isFilterOpen={isFilterOpen}
           onFilterOpenChange={setIsFilterOpen}
           onProfileAction={handleProfileAction}
+          craftTitle={craftTitle}
+        />
+      }>
+      <div
+        style={{
+          display: 'flex',
+          height: '100%',
+          overflow: 'hidden',
+        }}>
+        {/* Chat panel */}
+        <div
+          style={{
+            width: chatOpen ? 400 : 0,
+            minWidth: chatOpen ? 400 : 0,
+            overflow: 'hidden',
+            transition:
+              'width var(--duration-medium, 410ms) var(--ease-standard, cubic-bezier(0.24, 1, 0.4, 1)), min-width var(--duration-medium, 410ms) var(--ease-standard, cubic-bezier(0.24, 1, 0.4, 1))',
+            borderRight: 'none',
+            backgroundColor: 'var(--color-background-surface, white)',
+          }}>
+          {chatOpen && (
+            <ChatPanel
+              isGenerating={isGenerating || previewGenerating}
+              onSend={undefined}
+              activeView={activeView}
+              setActiveView={setActiveView}
+            />
+          )}
+        </div>
+
+        {/* Main content area */}
+        <div
+          style={{
+            flex: 1,
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column' as const,
+          }}>
+          <div style={{display: 'flex', flex: 1, overflow: 'hidden'}}>
+            <div
+              id="docsite-scroll"
+              ref={scrollContainerRef}
+              style={{
+                flex: 1,
+                overflow: 'auto',
+                padding: '0 24px 140px',
+              }}>
+              <style>{`
+                @keyframes craftShimmer {
+                  0% { background-position: -400px 0; }
+                  100% { background-position: 400px 0; }
+                }
+                @keyframes craftCardFadeIn {
+                  from { opacity: 0; transform: translateY(12px); }
+                  to { opacity: 1; transform: translateY(0); }
+                }
+                @keyframes craftTitleSlideIn {
+                  from { opacity: 0; transform: translateX(-16px); }
+                  to { opacity: 1; transform: translateX(0); }
+                }
+                @keyframes previewFadeIn {
+                  from { opacity: 0; transform: translateY(8px); }
+                  to { opacity: 1; transform: translateY(0); }
+                }
+              `}</style>
+              {craftTitle && (
+                <div
+                  style={{
+                    maxWidth: 2000,
+                    margin: '0 auto 16px',
+                    paddingTop: 16,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12,
+                    ...(craftExiting
+                      ? {
+                          opacity: 0,
+                          transform: 'translateX(-16px)',
+                          transition:
+                            'opacity 300ms ease, transform 300ms ease',
+                        }
+                      : {
+                          animation:
+                            'craftTitleSlideIn 400ms cubic-bezier(0.16, 1, 0.3, 1)',
+                        }),
+                  }}>
+                  {!isProfileResults && (
+                    <XDSButton
+                      label="Back"
+                      variant="ghost"
+                      size="lg"
+                      icon={<ArrowLeftIcon />}
+                      isIconOnly
+                      onClick={handleBackFromResults}
+                      style={{marginLeft: -8}}
+                    />
+                  )}
+                  <XDSText type="display-1">{craftTitle}</XDSText>
+                </div>
+              )}
+              {craftTitle && !craftLoading && isCraftResults && (
+                <div
+                  style={{
+                    maxWidth: 2000,
+                    margin: '0 auto 20px',
+                    display: 'flex',
+                    gap: 6,
+                    flexWrap: 'wrap' as const,
+                    animation:
+                      'craftTitleSlideIn 400ms 100ms cubic-bezier(0.16, 1, 0.3, 1) both',
+                  }}>
+                  {[
+                    {value: 'all', label: `All (${PROFILE_CRAFT_ITEMS.length})`},
+                    {value: 'Published', label: `Published (${craftStatusCounts.published})`},
+                    {value: 'Draft', label: `Draft (${craftStatusCounts.draft})`},
+                    {value: 'In Review', label: `In Review (${craftStatusCounts.review})`},
                   ].map(tab => (
                     <XDSButton
                       key={tab.value}
