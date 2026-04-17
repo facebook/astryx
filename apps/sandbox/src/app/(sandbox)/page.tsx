@@ -119,7 +119,7 @@ export default function Home() {
                   <XDSDivider key={`d-${section.category}`} />,
                   <XDSVStack gap={6} key={section.category}>
                     <XDSHeading level={2}>{section.category}</XDSHeading>
-                    <XDSGrid minChildWidth={280} gap={4}>
+                    <XDSGrid columns={{minWidth: 320}} gap={4}>
                       {section.pages.map(page => (
                         <ProjectCard key={page.href} page={page} />
                       ))}
@@ -128,7 +128,7 @@ export default function Home() {
                 ])}
               </XDSVStack>
             ) : (
-              <XDSGrid minChildWidth={280} gap={4}>
+              <XDSGrid columns={{minWidth: 320}} gap={4}>
                 {filtered.map(page => (
                   <ProjectCard key={page.href} page={page} />
                 ))}

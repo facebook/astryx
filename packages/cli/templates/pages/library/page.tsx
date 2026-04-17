@@ -451,7 +451,7 @@ function LibrarySection({
   return (
     <XDSVStack gap={6}>
       <XDSHeading level={2}>{category}</XDSHeading>
-      <XDSGrid columns={{minWidth: 280}} gap={4}>
+      <XDSGrid columns={{minWidth: 320}} gap={4}>
         {items.map(item => (
           <LibraryCard key={item.id} item={item} />
         ))}
@@ -567,7 +567,7 @@ export default function LibraryPage() {
                   ])}
                 </XDSVStack>
               ) : (
-                <XDSGrid columns={{minWidth: 280}} gap={4} xstyle={styles.sectionTop}>
+                <XDSGrid columns={{minWidth: 320}} gap={4} xstyle={styles.sectionTop}>
                   {filtered.map(item => (
                     <LibraryCard key={item.id} item={item} />
                   ))}

@@ -80,7 +80,7 @@ export function CategoryContent({slug}: {slug: string}) {
                 </XDSText>
               </div>
             ) : (
-              <XDSGrid minChildWidth={280} gap={4}>
+              <XDSGrid columns={{minWidth: 320}} gap={4}>
                 {filtered.map(page => (
                   <ProjectCard key={page.href} page={page} />
                 ))}
