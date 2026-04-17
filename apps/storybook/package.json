@@ -27,6 +27,6 @@
     "@storybook/test": "^8.6.17",
     "@stylexjs/unplugin": "^0.18.2",
     "storybook": "^8.6.18",
-    "@xds/vite-plugin": "*"
+    "@xds/build": "*"
   }
 }
