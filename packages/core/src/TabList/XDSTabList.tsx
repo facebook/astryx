@@ -16,8 +16,8 @@ import {useMemo, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {borderVars, colorVars, spacingVars} from '../theme/tokens.stylex';
 import {XDSBaseProps} from '../XDSBaseProps';
-import {XDSTabListContext, DENSITY_TO_SIZE} from './XDSTabListContext';
-import type {XDSTabListSize, XDSTabListDensity} from './XDSTabListContext';
+import {XDSTabListContext} from './XDSTabListContext';
+import type {XDSTabListSize} from './XDSTabListContext';
 import {xdsClassName, mergeProps} from '../utils';
 
 export interface XDSTabListProps extends Omit<
@@ -33,16 +33,8 @@ export interface XDSTabListProps extends Omit<
    */
   onChange: (value: string) => void;
   /**
-   * Density variant controlling vertical spacing of the tab strip.
-   * - `'compact'`: sm hover target + 4px block padding (total 36px)
-   * - `'balanced'`: md hover target + 4px block padding (total 40px)
-   * - `'spacious'`: lg hover target + 4px block padding (total 44px)
-   * @default 'balanced'
-   */
-  density?: XDSTabListDensity;
-  /**
-   * Size variant for all tabs.
-   * @deprecated Use `density` instead. Maps: sm→compact, md→balanced, lg→spacious.
+   * Size of the tab hover targets. Uses the same element size tokens
+   * as Button and TextInput (`sm` = 28px, `md` = 32px, `lg` = 36px).
    * @default 'md'
    */
   size?: XDSTabListSize;
@@ -69,9 +61,6 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'stretch',
     gap: spacingVars['--spacing-0-5'],
-    paddingBlock: spacingVars['--spacing-1'],
-    // Compensate for first/last tab's paddingInline so text aligns with surrounding content
-    marginInline: `calc(-1 * ${spacingVars['--spacing-3']})`,
   },
   fill: {
     width: '100%',
@@ -102,8 +91,7 @@ const styles = stylex.create({
 export function XDSTabList({
   value,
   onChange,
-  density: densityProp,
-  size: sizeProp,
+  size = 'md',
   layout = 'hug',
   hasDivider = false,
   xstyle,
@@ -112,19 +100,9 @@ export function XDSTabList({
   children,
   ...restProps
 }: XDSTabListProps) {
-  // Resolve density: explicit density prop wins, then map size→density, then default
-  const SIZE_TO_DENSITY: Record<XDSTabListSize, XDSTabListDensity> = {
-    sm: 'compact',
-    md: 'balanced',
-    lg: 'spacious',
-  };
-  const density: XDSTabListDensity =
-    densityProp ?? (sizeProp ? SIZE_TO_DENSITY[sizeProp] : 'balanced');
-  const size: XDSTabListSize = DENSITY_TO_SIZE[density];
-
   const contextValue = useMemo(
-    () => ({value, onChange, size, density, layout}),
-    [value, onChange, size, density, layout],
+    () => ({value, onChange, size, layout}),
+    [value, onChange, size, layout],
   );
 
   return (
@@ -133,7 +111,7 @@ export function XDSTabList({
         aria-label="Tabs"
         {...restProps}
         {...mergeProps(
-          xdsClassName('tab-list', {density}),
+          xdsClassName('tab-list', {size}),
           stylex.props(
             styles.nav,
             layout === 'fill' && styles.fill,
