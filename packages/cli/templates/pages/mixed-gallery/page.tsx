@@ -3,7 +3,7 @@
 import {XDSAppShell} from '@xds/core/AppShell';
 import {XDSVStack, XDSStackItem} from '@xds/core/Layout';
 import {XDSCenter} from '@xds/core/Center';
-import {XDSText} from '@xds/core/Text';
+import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSSection} from '@xds/core/Section';
 import {XDSGrid} from '@xds/core/Grid';
 import {XDSButton} from '@xds/core/Button';
@@ -112,13 +112,9 @@ function GalleryCard({image}: {image: GalleryImage}) {
           e.currentTarget.style.opacity = '0';
         }}>
         <XDSVStack gap={3} style={{color: 'white'}}>
-          <XDSText
-            type="body"
-            weight="bold"
-            color="inherit"
-            style={{fontSize: 'var(--font-size-2xl)'}}>
+          <XDSHeading level={2} color="inherit">
             {image.title}
-          </XDSText>
+          </XDSHeading>
           <XDSText type="body" color="inherit">
             {image.description}
           </XDSText>
@@ -159,14 +155,10 @@ export default function MixedGalleryTemplate() {
             <XDSCenter axis="horizontal">
               <XDSSection variant="transparent" maxWidth={680}>
                 <XDSVStack gap={2} style={{textAlign: 'center'}}>
-                  <XDSText
-                    type="large"
-                    weight="bold"
-                    as="p"
-                    style={{fontSize: 'var(--font-size-3xl)'}}>
+                  <XDSHeading level={1}>
                     Make every day a little more delightful, one detail at a
                     time.
-                  </XDSText>
+                  </XDSHeading>
                   <XDSText type="body">
                     Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed
                     do eiusmod tempor incididunt ut labore et dolore magna
