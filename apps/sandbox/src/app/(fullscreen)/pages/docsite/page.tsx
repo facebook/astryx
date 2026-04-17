@@ -15,7 +15,6 @@ import {
   TEMPLATES,
   AVATAR_IMAGE,
   XDS_DESIGN_AVATAR,
-  THEME_PICKER_ENTRIES,
   FILTER_COLUMNS,
   PROFILE_CRAFT_ITEMS,
   basePath,
@@ -27,6 +26,7 @@ import type {PanelTab, PointedElement} from './ChatPanel';
 import {InlinePublishPanel} from './InlinePublishPanel';
 import {TemplatePreview} from './TemplatePreview';
 import {SharePopoverContent} from './SharePopover';
+import {TemplatePreviewModal} from './TemplatePreviewModal';
 import {AppTopNav} from './AppTopNav';
 import {DocsView} from './DocsView';
 import {ProfileView} from './ProfileView';
@@ -46,62 +46,19 @@ import {XDSList, XDSListItem} from '@xds/core/List';
 import {XDSPopover} from '@xds/core/Popover';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSToolbar} from '@xds/core/Toolbar';
-import {XDSTooltip} from '@xds/core/Tooltip';
+
 import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
 import {
   ArrowLeftIcon,
-  BookmarkIcon,
-  BookmarkFilledIcon,
-  StarIcon,
-  StarFilledIcon,
   SearchIcon,
   PaletteIcon,
   ContrastIcon,
   MoonIcon,
   VerifiedIcon,
-  MetaLogo,
-  WhatsAppLogo,
-  ThreadsLogo,
-  FacebookLogo,
-  DefaultThemeIcon,
-  ForestThemeIcon,
-  SunsetThemeIcon,
   FilterIcon,
-  MidnightThemeIcon,
 } from './docsite-icons';
 
-const BRAND_LOGOS: Record<
-  string,
-  React.ComponentType<React.SVGProps<SVGSVGElement>>
-> = {
-  default: DefaultThemeIcon,
-  meta: MetaLogo,
-  whatsapp: WhatsAppLogo,
-  threads: ThreadsLogo,
-  facebook: FacebookLogo,
-  forest: ForestThemeIcon,
-  sunset: SunsetThemeIcon,
-  midnight: MidnightThemeIcon,
-};
-
-const tokenStyles = stylex.create({
-  outline: {
-    borderWidth: 1,
-    borderStyle: 'solid',
-    borderColor: 'var(--color-border-emphasized)',
-  },
-  pill: {
-    borderWidth: 1,
-    borderStyle: 'solid',
-    borderColor: 'var(--color-border-emphasized)',
-    borderRadius: 9999,
-  },
-});
-
 const popoverStyles = stylex.create({
-  themeBrowse: {
-    padding: 16,
-  },
   filterDropdown: {
     padding: 8,
   },
@@ -346,7 +303,6 @@ function DocsiteLandingTemplate() {
     initialView.view === 'editor' ? initialView.templateIdx : null,
   );
   const [previewGenerating, setPreviewGenerating] = useState(false);
-  const [previewTransitioning, setPreviewTransitioning] = useState(false);
   const [showPublishCard1, setShowPublishCard1] = useState(false);
   const [panelTab, setPanelTab] = useState<PanelTab>('configure');
   const [isPointing, setIsPointing] = useState(false);
@@ -358,26 +314,7 @@ function DocsiteLandingTemplate() {
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
-  const [card4SelectedOption, setCard4SelectedOption] = useState('default');
-  const [card4ThemeBrowse, setCard4ThemeBrowse] = useState(false);
   const [card4Bookmarked, setCard4Bookmarked] = useState(false);
-  const [card4ShowAddPopover, setCard4ShowAddPopover] = useState(false);
-  const card4ScrollRef = useRef<HTMLDivElement>(null);
-  const [card4ThemeSearch, setCard4ThemeSearch] = useState('');
-  const [card4PinnedThemes, setCard4PinnedThemes] = useState(
-    () =>
-      new Set(
-        THEME_PICKER_ENTRIES.filter(t => t.isPinnedByDefault).map(t => t.key),
-      ),
-  );
-  const toggleCard4Pin = useCallback((key: string) => {
-    setCard4PinnedThemes(prev => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
-  }, []);
 
   const handleEditorResizeStart = useCallback(
     (e: React.MouseEvent) => {
@@ -1569,652 +1506,45 @@ function DocsiteLandingTemplate() {
       {previewTarget !== null &&
         (() => {
           const t = TEMPLATES[previewTarget % TEMPLATES.length];
-          const isMeta = previewTarget === 3 && card4SelectedOption === 'meta';
           const moreLikeThisImages = TEMPLATES.map((tmpl, i) => ({
-            src: tmpl.src,
+            img: tmpl.src,
             name: tmpl.name,
-            description: `${tmpl.name} template`,
-            originalIndex: i,
+            key: i,
           }))
-            .filter(item => item.originalIndex !== previewTarget)
+            .filter(item => item.key !== previewTarget)
             .slice(0, 4);
           return (
-            <XDSDialog
+            <TemplatePreviewModal
               isOpen={true}
-              onOpenChange={open => {
-                if (!open) setPreviewTarget(null);
+              onClose={() => setPreviewTarget(null)}
+              item={{
+                name: t.name,
+                img: t.src,
+                author: t.author,
               }}
-              width="90vw"
-              maxHeight="90vh"
-              purpose="info"
-              style={{padding: 0, overflow: 'visible', maxWidth: 1600, '--xds-dialog-padding': '0px'}}>
-              <div
-                style={{position: 'absolute', top: 0, right: -40, zIndex: 1}}>
-                <XDSCard padding={0} style={{borderRadius: '50%'}}>
-                  <XDSButton
-                    label="Close"
-                    variant="ghost"
-                    size="sm"
-                    isIconOnly
-                    icon={<span style={{fontSize: 16, lineHeight: 1}}>✕</span>}
-                    onClick={() => setPreviewTarget(null)}
-                  />
-                </XDSCard>
-              </div>
-              <div ref={card4ScrollRef} style={{overflowY: 'auto'}}>
-                {/* Main content: image left + details right */}
-                <div style={{display: 'flex', minHeight: 0, padding: '0 32px'}}>
-                  {/* Left — Preview image + thumbnails */}
-                  <XDSStack
-                    direction="vertical"
-                    gap={3}
-                    style={{flex: 1, minWidth: 0, padding: '32px 32px 32px 0'}}>
-                    <div
-                      style={{
-                        flex: 1,
-                        aspectRatio: '16 / 10',
-                        backgroundColor:
-                          'var(--color-background-muted, #f9f9f9)',
-                        borderRadius: 12,
-                        overflowY: 'auto',
-                        overflowX: 'hidden',
-                        border: '1px solid var(--color-border, #e0e0e0)',
-                      }}>
-                      <img
-                        src={
-                          isMeta
-                            ? `${basePath}/templates/card4-preview-meta.png`
-                            : t.src
-                        }
-                        alt={t.name}
-                        style={{
-                          width: '100%',
-                          display: 'block',
-                          opacity: previewTransitioning ? 0 : 1,
-                          transition: 'opacity 250ms ease',
-                          animation: previewTransitioning ? 'none' : 'previewFadeIn 300ms ease',
-                        }}
-                      />
-                    </div>
-                  </XDSStack>
-
-                  {/* Right — Details panel */}
-                  <XDSStack
-                    direction="vertical"
-                    style={{width: 360, flexShrink: 0, padding: '32px 0'}}>
-                    <div
-                      style={{
-                        opacity: previewTransitioning ? 0 : 1,
-                        transition: 'opacity 250ms ease',
-                        animation: previewTransitioning ? 'none' : 'previewFadeIn 300ms ease',
-                      }}>
-                      {/* Title */}
-                      <XDSText type="display-2">{t.name}</XDSText>
-
-                      {/* Description */}
-                      <div style={{marginTop: 8}}>
-                        <XDSText type="body" color="secondary">
-                          A ready-to-use {t.name.toLowerCase()} template built
-                          with XDS components. Customize it with your own
-                          content and theme to match your brand.
-                        </XDSText>
-                      </div>
-
-                      {/* Author */}
-                      <XDSStack
-                        direction="horizontal"
-                        gap={3}
-                        vAlign="center"
-                        style={{marginTop: 16}}>
-                        <XDSAvatar
-                          name={t.author}
-                          size={36}
-                          src={
-                            t.author === 'XDS Design'
-                              ? XDS_DESIGN_AVATAR
-                              : AVATAR_IMAGE
-                          }
-                        />
-                        <XDSStack direction="vertical">
-                          <XDSText type="supporting" color="secondary">
-                            Crafted by
-                          </XDSText>
-                          <XDSText
-                            type="body"
-                            style={{fontWeight: 600, fontSize: 16}}>
-                            {t.author}
-                          </XDSText>
-                        </XDSStack>
-                      </XDSStack>
-                    </div>
-
-                    {/* CTA buttons */}
-                    <XDSStack
-                      direction="vertical"
-                      gap={2}
-                      style={{marginTop: 32, position: 'relative'}}>
-                      <XDSButton
-                        variant="primary"
-                        label="Start crafting"
-                        size="lg"
-                        style={{width: '100%'}}
-                        onClick={() => {
-                          viewBeforeEditorRef.current = activeView;
-                          setUseTarget(previewTarget);
-                          setPreviewTarget(null);
-                          setPanelTab('configure');
-                          setChatOpen(true);
-                        }}
-                      />
-                      <div
-                        style={{
-                          display: 'flex',
-                          gap: 8,
-                          width: '100%',
-                        }}>
-                        <XDSButton
-                          variant="secondary"
-                          label="Use in your product"
-                          size="lg"
-                          style={{flex: 1}}
-                          onClick={() =>
-                            setCard4ShowAddPopover(!card4ShowAddPopover)
-                          }
-                        />
-                        <XDSTooltip content="Bookmark">
-                          <XDSButton
-                            label={card4Bookmarked ? '893' : '892'}
-                            variant="secondary"
-                            size="lg"
-                            isIconOnly
-                            icon={
-                              card4Bookmarked ? (
-                                <BookmarkFilledIcon />
-                              ) : (
-                                <BookmarkIcon />
-                              )
-                            }
-                            onClick={() => setCard4Bookmarked(prev => !prev)}
-                          />
-                        </XDSTooltip>
-                      </div>
-                      {card4ShowAddPopover && (
-                        <XDSCard
-                          style={{
-                            position: 'absolute',
-                            top: '100%',
-                            left: 0,
-                            right: 0,
-                            marginTop: 8,
-                            zIndex: 10,
-                          }}>
-                          <SharePopoverContent
-                            cliCommand={`npx xds template ${t.name.toLowerCase().replace(/\s+/g, '-')} ./my-project`}
-                            onClose={() => setCard4ShowAddPopover(false)}
-                          />
-                        </XDSCard>
-                      )}
-                    </XDSStack>
-
-                    {/* Themes — pinned grid */}
-                    <div style={{marginTop: 24}}>
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                        }}>
-                        <XDSText type="body" style={{fontWeight: 600}}>
-                          Apply your themes
-                        </XDSText>
-                        <XDSPopover
-                          label="Browse themes"
-                          placement="below"
-                          alignment="end"
-                          width={480}
-                          isOpen={card4ThemeBrowse}
-                          onOpenChange={open => {
-                            setCard4ThemeBrowse(open);
-                            if (!open) setCard4ThemeSearch('');
-                          }}
-                          xstyle={popoverStyles.themeBrowse}
-                          content={
-                            <div
-                              style={{
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: 16,
-                              }}>
-                              <div
-                                tabIndex={0}
-                                style={{
-                                  position: 'absolute',
-                                  opacity: 0,
-                                  width: 0,
-                                  height: 0,
-                                  overflow: 'hidden',
-                                }}
-                              />
-                              <XDSTextInput
-                                label="Search"
-                                isLabelHidden
-                                placeholder="Search themes..."
-                                value={card4ThemeSearch}
-                                onChange={setCard4ThemeSearch}
-                                size="lg"
-                                startIcon={SearchIcon}
-                              />
-                              <div
-                                style={{
-                                  maxHeight: 560,
-                                  overflowY: 'auto',
-                                  display: 'flex',
-                                  flexDirection: 'column',
-                                  gap: 16,
-                                }}>
-                                {(['official', 'community'] as const).map(
-                                  category => {
-                                    const entries = THEME_PICKER_ENTRIES.filter(
-                                      e =>
-                                        e.category === category &&
-                                        e.name
-                                          .toLowerCase()
-                                          .includes(
-                                            card4ThemeSearch.toLowerCase(),
-                                          ),
-                                    );
-                                    if (entries.length === 0) return null;
-                                    return (
-                                      <div key={category}>
-                                        <div style={{marginBottom: 8}}>
-                                          <XDSText
-                                            type="supporting"
-                                            color="secondary">
-                                            {category.charAt(0).toUpperCase() +
-                                              category.slice(1)}
-                                          </XDSText>
-                                        </div>
-                                        <div
-                                          style={{
-                                            display: 'grid',
-                                            gridTemplateColumns: '1fr 1fr 1fr',
-                                            gap: 8,
-                                          }}>
-                                          {entries.map(entry => {
-                                            const isSelected =
-                                              card4SelectedOption === entry.key;
-                                            const isPinned =
-                                              card4PinnedThemes.has(entry.key);
-                                            const p = entry.preview;
-                                            return (
-                                              <div
-                                                key={entry.key}
-                                                style={{
-                                                  borderRadius: 12,
-                                                  overflow: 'hidden',
-                                                  cursor: 'pointer',
-                                                  border: isSelected
-                                                    ? '1.5px solid var(--color-accent)'
-                                                    : '1px solid var(--color-border-emphasized)',
-                                                  transition:
-                                                    'border-color 0.15s ease',
-                                                }}>
-                                                <div
-                                                  onClick={() => {
-                                                    setCard4SelectedOption(
-                                                      entry.key,
-                                                    );
-                                                    setCard4ThemeBrowse(false);
-                                                    setCard4ThemeSearch('');
-                                                  }}
-                                                  style={{
-                                                    height: 100,
-                                                    backgroundColor: p.bg,
-                                                    display: 'flex',
-                                                    flexDirection: 'column',
-                                                    overflow: 'hidden',
-                                                  }}>
-                                                  <div
-                                                    style={{
-                                                      height: 14,
-                                                      backgroundColor:
-                                                        p.surface,
-                                                      borderBottom: `1px solid ${p.text}1A`,
-                                                      display: 'flex',
-                                                      alignItems: 'center',
-                                                      paddingInline: 8,
-                                                      gap: 4,
-                                                    }}>
-                                                    <div
-                                                      style={{
-                                                        width: 5,
-                                                        height: 5,
-                                                        borderRadius: '50%',
-                                                        backgroundColor:
-                                                          p.accent,
-                                                      }}
-                                                    />
-                                                    <div
-                                                      style={{
-                                                        width: 16,
-                                                        height: 2,
-                                                        borderRadius: 1,
-                                                        backgroundColor: p.text,
-                                                        opacity: 0.3,
-                                                      }}
-                                                    />
-                                                  </div>
-                                                  <div
-                                                    style={{
-                                                      flex: 1,
-                                                      padding: 8,
-                                                      display: 'flex',
-                                                      flexDirection: 'column',
-                                                      gap: 5,
-                                                    }}>
-                                                    <div
-                                                      style={{
-                                                        width: '65%',
-                                                        height: 4,
-                                                        borderRadius: 2,
-                                                        backgroundColor: p.text,
-                                                        opacity: 0.6,
-                                                      }}
-                                                    />
-                                                    <div
-                                                      style={{
-                                                        width: '45%',
-                                                        height: 3,
-                                                        borderRadius: 1.5,
-                                                        backgroundColor: p.text,
-                                                        opacity: 0.25,
-                                                      }}
-                                                    />
-                                                    <div
-                                                      style={{
-                                                        width: 28,
-                                                        height: 10,
-                                                        borderRadius: 4,
-                                                        backgroundColor:
-                                                          p.accent,
-                                                        marginTop: 'auto',
-                                                      }}
-                                                    />
-                                                  </div>
-                                                </div>
-                                                <div
-                                                  style={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent:
-                                                      'space-between',
-                                                    padding: '6px 8px',
-                                                    backgroundColor:
-                                                      'var(--color-surface, #f5f5f5)',
-                                                  }}>
-                                                  <div
-                                                    style={{
-                                                      display: 'flex',
-                                                      alignItems: 'center',
-                                                      gap: 6,
-                                                    }}>
-                                                    {(() => {
-                                                      const Logo =
-                                                        BRAND_LOGOS[entry.key];
-                                                      return Logo ? (
-                                                        <Logo
-                                                          width={14}
-                                                          height={14}
-                                                        />
-                                                      ) : (
-                                                        <div
-                                                          style={{
-                                                            width: 14,
-                                                            height: 14,
-                                                            borderRadius: '50%',
-                                                            backgroundColor:
-                                                              entry.accent,
-                                                          }}
-                                                        />
-                                                      );
-                                                    })()}
-                                                    <XDSText
-                                                      type="supporting"
-                                                      style={{
-                                                        fontWeight: isSelected
-                                                          ? 600
-                                                          : 400,
-                                                      }}>
-                                                      {entry.name}
-                                                    </XDSText>
-                                                  </div>
-                                                  <div
-                                                    onClick={e => {
-                                                      e.stopPropagation();
-                                                      toggleCard4Pin(entry.key);
-                                                    }}
-                                                    style={{
-                                                      cursor: 'pointer',
-                                                      display: 'flex',
-                                                      padding: 2,
-                                                    }}>
-                                                    {isPinned ? (
-                                                      <StarFilledIcon
-                                                        width={14}
-                                                        height={14}
-                                                        style={{
-                                                          color:
-                                                            'var(--color-text-primary, #111)',
-                                                        }}
-                                                      />
-                                                    ) : (
-                                                      <StarIcon
-                                                        width={14}
-                                                        height={14}
-                                                        style={{
-                                                          color:
-                                                            'var(--color-secondary, #999)',
-                                                        }}
-                                                      />
-                                                    )}
-                                                  </div>
-                                                </div>
-                                              </div>
-                                            );
-                                          })}
-                                        </div>
-                                      </div>
-                                    );
-                                  },
-                                )}
-                              </div>
-                            </div>
-                          }>
-                          <XDSButton label="Browse" variant="ghost" size="sm" />
-                        </XDSPopover>
-                      </div>
-                      <div
-                        style={{
-                          display: 'grid',
-                          gridTemplateColumns: 'repeat(auto-fill, 44px)',
-                          gap: 8,
-                          marginTop: 16,
-                        }}>
-                        {THEME_PICKER_ENTRIES.filter(e =>
-                          card4PinnedThemes.has(e.key),
-                        ).map(entry => {
-                          const isSelected = card4SelectedOption === entry.key;
-                          const BrandLogo = BRAND_LOGOS[entry.key];
-                          return (
-                            <XDSTooltip key={entry.key} content={entry.name}>
-                              <div
-                                onClick={() =>
-                                  setCard4SelectedOption(entry.key)
-                                }
-                                style={{
-                                  width: 44,
-                                  height: 44,
-                                  borderRadius: 10,
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  cursor: 'pointer',
-                                  border: isSelected
-                                    ? '1.5px solid var(--color-accent)'
-                                    : '1px solid var(--color-border-emphasized)',
-                                  backgroundColor: '#fff',
-                                  transition: 'border-color 0.15s ease',
-                                }}>
-                                {BrandLogo ? (
-                                  <BrandLogo width={28} height={28} />
-                                ) : (
-                                  <div
-                                    style={{
-                                      width: 24,
-                                      height: 24,
-                                      borderRadius: '50%',
-                                      backgroundColor: entry.accent,
-                                    }}
-                                  />
-                                )}
-                              </div>
-                            </XDSTooltip>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </XDSStack>
-                </div>
-
-                {/* More like this */}
-                <div style={{padding: '0 32px'}}>
-                  <XDSHeading level={3}>More like this</XDSHeading>
-                  <div
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(4, 1fr)',
-                      gap: 12,
-                      marginTop: 16,
-                    }}>
-                    {moreLikeThisImages.map(img => (
-                      <XDSCard
-                        key={img.originalIndex}
-                        padding={0}
-                        onClick={() => {
-                          setPreviewTransitioning(true);
-                          setTimeout(() => {
-                            setPreviewTarget(img.originalIndex);
-                            card4ScrollRef.current?.scrollTo({top: 0});
-                            setTimeout(
-                              () => setPreviewTransitioning(false),
-                              50,
-                            );
-                          }, 250);
-                        }}
-                        style={{
-                          cursor: 'pointer',
-                          aspectRatio: '16/10',
-                          overflow: 'hidden',
-                        }}>
-                        <img
-                          src={img.src}
-                          alt={img.name}
-                          style={{
-                            width: '100%',
-                            height: '100%',
-                            objectFit: 'cover',
-                            objectPosition: 'top',
-                            display: 'block',
-                            opacity: previewTransitioning ? 0 : 1,
-                            transition: 'opacity 250ms ease',
-                            animation: previewTransitioning ? 'none' : 'previewFadeIn 300ms ease',
-                          }}
-                        />
-                      </XDSCard>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Explore more */}
-                <div style={{padding: '32px 32px 0'}}>
-                  <XDSHeading level={3}>Explore more</XDSHeading>
-                  <div
-                    style={{
-                      display: 'flex',
-                      flexWrap: 'wrap',
-                      gap: 8,
-                      marginTop: 16,
-                      opacity: previewTransitioning ? 0 : 1,
-                      transition: 'opacity 250ms ease',
-                      animation: previewTransitioning ? 'none' : 'previewFadeIn 300ms ease',
-                    }}>
-                    {[
-                      'website',
-                      'dashboard',
-                      'admin panel',
-                      'settings',
-                      'form layout',
-                      'data table',
-                      'sidebar nav',
-                      'landing page',
-                      'e-commerce',
-                      'documentation',
-                      'profile page',
-                    ].map(tag => (
-                      <XDSToken
-                        key={tag}
-                        label={tag}
-                        xstyle={tokenStyles.pill}
-                        style={{
-                          backgroundColor: 'transparent',
-                          cursor: 'pointer',
-                        }}
-                        onClick={() => handleTokenClick(tag)}
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                {/* Component used */}
-                <div style={{padding: '32px 32px 32px'}}>
-                  <XDSHeading level={3}>Component used</XDSHeading>
-                  <div
-                    style={{
-                      display: 'flex',
-                      flexWrap: 'wrap',
-                      gap: 8,
-                      marginTop: 16,
-                      opacity: previewTransitioning ? 0 : 1,
-                      transition: 'opacity 250ms ease',
-                      animation: previewTransitioning ? 'none' : 'previewFadeIn 300ms ease',
-                    }}>
-                    {[
-                      'XDSAppShell',
-                      'XDSTopNav',
-                      'XDSVStack',
-                      'XDSHStack',
-                      'XDSHeading',
-                      'XDSText',
-                      'XDSButton',
-                      'XDSCard',
-                      'XDSBadge',
-                      'XDSAvatar',
-                    ].map(c => (
-                      <XDSToken
-                        key={c}
-                        label={c}
-                        xstyle={tokenStyles.outline}
-                        style={{
-                          backgroundColor: 'transparent',
-                          cursor: 'pointer',
-                        }}
-                        onClick={() => handleTokenClick(c)}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </XDSDialog>
+              onStartCrafting={() => {
+                viewBeforeEditorRef.current = activeView;
+                setUseTarget(previewTarget);
+                setPanelTab('configure');
+                setChatOpen(true);
+              }}
+              isBookmarked={card4Bookmarked}
+              onBookmarkToggle={() => setCard4Bookmarked(prev => !prev)}
+              moreLikeThis={moreLikeThisImages}
+              onMoreLikeThisClick={(mlItem) => setPreviewTarget(mlItem.key as number)}
+              exploreTags={[
+                'website', 'dashboard', 'admin panel', 'settings',
+                'form layout', 'data table', 'sidebar nav', 'landing page',
+                'e-commerce', 'documentation', 'profile page',
+              ]}
+              onExploreTagClick={handleTokenClick}
+              componentTags={[
+                'XDSAppShell', 'XDSTopNav', 'XDSVStack', 'XDSHStack',
+                'XDSHeading', 'XDSText', 'XDSButton', 'XDSCard',
+                'XDSBadge', 'XDSAvatar',
+              ]}
+              onComponentTagClick={handleTokenClick}
+            />
           );
         })()}
 

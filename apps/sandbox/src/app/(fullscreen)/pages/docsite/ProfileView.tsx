@@ -17,7 +17,7 @@ import {XDSLink} from '@xds/core/Link';
 import {XDSBanner} from '@xds/core/Banner';
 import {XDSList, XDSListItem} from '@xds/core/List';
 import {XDSSelector} from '@xds/core/Selector';
-import {XDSToken} from '@xds/core/Token';
+import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
 import {XDSTable, pixel, proportional, useXDSTableSortable, useXDSTableSortableState} from '@xds/core/Table';
 import type {XDSTableColumn} from '@xds/core/Table';
 import {
@@ -26,8 +26,24 @@ import {
   PROFILE_LIKED_ITEMS,
   PROFILE_COLLECTIONS,
   THEME_PICKER_ENTRIES,
+  AVATAR_IMAGE,
 } from './constants';
-import {SearchIcon, BookmarkFilledIcon, FolderIcon} from './docsite-icons';
+import {
+  SearchIcon,
+  BookmarkFilledIcon,
+  FolderIcon,
+  MetaLogo,
+  WhatsAppLogo,
+  ThreadsLogo,
+  FacebookLogo,
+  DefaultThemeIcon,
+  ForestThemeIcon,
+  SunsetThemeIcon,
+  MidnightThemeIcon,
+} from './docsite-icons';
+
+
+import {TemplatePreviewModal} from './TemplatePreviewModal';
 import {
   getComponentName,
   getComponentDocs,
@@ -42,7 +58,76 @@ import {
   TrashIcon,
   ArrowUpTrayIcon,
   ArrowLeftIcon,
+  EyeIcon,
+  CursorArrowRaysIcon,
+  ClockIcon,
+  PlusIcon,
 } from '@heroicons/react/24/outline';
+
+function seededRandom(seed: number) {
+  let s = seed;
+  return () => {
+    s = (s * 16807 + 0) % 2147483647;
+    return s / 2147483647;
+  };
+}
+
+function generateSparklineData(seed: number, length = 12): number[] {
+  const rng = seededRandom(seed);
+  const points: number[] = [rng() * 40 + 30];
+  for (let i = 1; i < length; i++) {
+    const prev = points[i - 1];
+    points.push(Math.max(5, Math.min(95, prev + (rng() - 0.4) * 20)));
+  }
+  return points;
+}
+
+function Sparkline({data, width = '100%', height = 40}: {data: number[]; width?: string | number; height?: number}) {
+  const viewW = 200;
+  const viewH = height;
+  const max = Math.max(...data);
+  const min = Math.min(...data);
+  const range = max - min || 1;
+  const stepX = viewW / (data.length - 1);
+
+  const points = data.map((v, i) => {
+    const x = i * stepX;
+    const y = viewH - ((v - min) / range) * (viewH * 0.8) - viewH * 0.1;
+    return `${x},${y}`;
+  });
+
+  const linePath = `M${points.join('L')}`;
+  const areaPath = `${linePath}L${viewW},${viewH}L0,${viewH}Z`;
+
+  return (
+    <svg viewBox={`0 0 ${viewW} ${viewH}`} width={width} height={height} preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="var(--color-positive)" stopOpacity="0.15" />
+          <stop offset="100%" stopColor="var(--color-positive)" stopOpacity="0.02" />
+        </linearGradient>
+      </defs>
+      <path d={areaPath} fill="url(#sparkFill)" />
+      <path d={linePath} fill="none" stroke="var(--color-positive)" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+    </svg>
+  );
+}
+
+function TrendIndicator({value}: {value: number}) {
+  const isPositive = value >= 0;
+  return (
+    <span style={{display: 'inline-flex', alignItems: 'center', gap: 4, color: 'var(--color-positive)'}}>
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        {isPositive ? (
+          <path d="M2 10C4 7 6 5 8 6C10 7 11 4 12 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        ) : (
+          <path d="M2 4C4 7 6 9 8 8C10 7 11 10 12 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        )}
+      </svg>
+      <span style={{fontSize: 13}}>{isPositive ? '+' : ''}{value}%</span>
+    </span>
+  );
+}
 
 function timeAgo(dateStr: string): string {
   const now = new Date();
@@ -376,6 +461,74 @@ function BookmarkCard({
   );
 }
 
+function PreviewDialogShell({
+  isOpen,
+  onClose,
+  imgSrc,
+  imgAlt,
+  children,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  imgSrc: string;
+  imgAlt: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <XDSDialog
+      isOpen={isOpen}
+      onOpenChange={(open) => { if (!open) onClose(); }}
+      width="90vw"
+      maxHeight="90vh"
+      purpose="info"
+      style={{padding: 0, overflow: 'visible', maxWidth: 1600, '--xds-dialog-padding': '0px'} as React.CSSProperties}>
+      {isOpen && (
+        <>
+          <div style={{position: 'absolute', top: 0, right: -40, zIndex: 1}}>
+            <XDSCard padding={0} style={{borderRadius: '50%'}}>
+              <XDSButton
+                label="Close"
+                variant="ghost"
+                size="sm"
+                isIconOnly
+                icon={<span style={{fontSize: 16, lineHeight: 1}}>✕</span>}
+                onClick={onClose}
+              />
+            </XDSCard>
+          </div>
+          <div style={{overflowY: 'auto', height: '100%'}}>
+            <div style={{display: 'flex', minHeight: '100%', padding: '0 32px'}}>
+              <XDSVStack
+                gap={3}
+                style={{flex: 1, minWidth: 0, padding: '32px 32px 32px 0'}}>
+                <div
+                  style={{
+                    flex: 1,
+                    aspectRatio: '16 / 10',
+                    backgroundColor: 'var(--color-background-muted, #f9f9f9)',
+                    borderRadius: 12,
+                    overflowY: 'auto',
+                    overflowX: 'hidden',
+                    border: '1px solid var(--color-border, #e0e0e0)',
+                  }}>
+                  <img
+                    src={imgSrc}
+                    alt={imgAlt}
+                    style={{width: '100%', display: 'block'}}
+                  />
+                </div>
+              </XDSVStack>
+              <XDSVStack style={{width: 360, flexShrink: 0, padding: '32px 0'}}>
+                {children}
+              </XDSVStack>
+            </div>
+          </div>
+        </>
+      )}
+    </XDSDialog>
+  );
+}
+
 export function DialogPreview() {
   const [isOpen, setIsOpen] = useState(false);
   return (
@@ -563,6 +716,11 @@ export function ProfileView({
   const [previewBookmarkItem, setPreviewBookmarkItem] = useState<
     (typeof PROFILE_LIKED_ITEMS)[number] | null
   >(null);
+  const [editingCollectionName, setEditingCollectionName] = useState(false);
+  const [collectionNameDraft, setCollectionNameDraft] = useState('');
+  const [editingCollectionItems, setEditingCollectionItems] = useState(false);
+  const [collectionItemsDraft, setCollectionItemsDraft] = useState<Set<string>>(() => new Set());
+  const [isNewCollection, setIsNewCollection] = useState(false);
 
   const handleBookmarkClick = useCallback(
     (item: (typeof PROFILE_LIKED_ITEMS)[number]) => {
@@ -575,11 +733,14 @@ export function ProfileView({
     [],
   );
   const selectedCollection = useMemo(() => {
+    if (isNewCollection) {
+      return {name: collectionNameDraft || 'Untitled', count: 0, color: '#6B7280', items: [] as string[]};
+    }
     if (!profileCollectionName) return null;
     return (
       PROFILE_COLLECTIONS.find(c => c.name === profileCollectionName) ?? null
     );
-  }, [profileCollectionName]);
+  }, [profileCollectionName, isNewCollection, collectionNameDraft]);
   const setSelectedCollection = useCallback(
     (col: (typeof PROFILE_COLLECTIONS)[number] | null) =>
       onCollectionChange(col ? col.name : null),
@@ -861,14 +1022,19 @@ export function ProfileView({
                 <>
                   {/* Collection detail view */}
                   <div style={{marginTop: 32, marginBottom: 32}}>
-                    <XDSHStack gap={2} vAlign="center">
+                    <XDSHStack gap={2} vAlign="center" style={{marginBottom: 4}}>
                       <XDSButton
                         label="Back to bookmarks"
                         variant="ghost"
                         size="sm"
                         isIconOnly
                         icon={<ArrowLeftIcon style={{width: 18, height: 18}} />}
-                        onClick={() => setSelectedCollection(null)}
+                        onClick={() => {
+                          setSelectedCollection(null);
+                          setIsNewCollection(false);
+                          setEditingCollectionName(false);
+                          setEditingCollectionItems(false);
+                        }}
                       />
                       <div
                         style={{
@@ -889,19 +1055,178 @@ export function ProfileView({
                           }}
                         />
                       </div>
-                      <XDSHeading level={3}>{selectedCollection.name}</XDSHeading>
-                      <XDSText type="supporting" color="secondary">
-                        {collectionItems.length}{' '}
-                        {collectionItems.length === 1 ? 'item' : 'items'}
-                      </XDSText>
+                      <XDSVStack gap={0}>
+                        {editingCollectionName ? (
+                          <input
+                            autoFocus
+                            value={collectionNameDraft}
+                            onChange={e => setCollectionNameDraft(e.target.value)}
+                            onBlur={() => setEditingCollectionName(false)}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter' || e.key === 'Escape') {
+                                setEditingCollectionName(false);
+                              }
+                            }}
+                            style={{
+                              font: 'inherit',
+                              fontSize: 20,
+                              fontWeight: 600,
+                              border: 'none',
+                              outline: 'none',
+                              padding: '2px 0',
+                              background: 'transparent',
+                              borderBottom: '2px solid var(--color-accent, #0066FF)',
+                              width: Math.max(120, collectionNameDraft.length * 11),
+                            }}
+                          />
+                        ) : (
+                          <XDSHeading
+                            level={3}
+                            style={{cursor: 'pointer'}}
+                            onClick={() => {
+                              setCollectionNameDraft(selectedCollection.name);
+                              setEditingCollectionName(true);
+                            }}>
+                            {selectedCollection.name}
+                          </XDSHeading>
+                        )}
+                        <XDSText type="supporting" color="secondary">
+                          {collectionItems.length}{' '}
+                          {collectionItems.length === 1 ? 'item' : 'items'}
+                        </XDSText>
+                      </XDSVStack>
+                      <XDSStackItem size="fill" />
+                      {editingCollectionItems ? (
+                        <XDSHStack gap={2}>
+                          <XDSButton
+                            label="Cancel"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setEditingCollectionItems(false)}
+                          />
+                          <XDSButton
+                            label="Save"
+                            variant="primary"
+                            size="sm"
+                            onClick={() => setEditingCollectionItems(false)}
+                          />
+                        </XDSHStack>
+                      ) : (
+                        <XDSButton
+                          label="Add item"
+                          variant="ghost"
+                          size="sm"
+                          isIconOnly
+                          icon={<PlusIcon style={{width: 20, height: 20}} />}
+                          onClick={() => {
+                            setCollectionItemsDraft(new Set(selectedCollection.items));
+                            setEditingCollectionItems(true);
+                          }}
+                        />
+                      )}
                     </XDSHStack>
                   </div>
 
-                  {collectionItems.length === 0 ? (
+                  {editingCollectionItems ? (
+                    <div
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(3, 1fr)',
+                        gap: 16,
+                      }}>
+                      {PROFILE_LIKED_ITEMS.filter(
+                        item => !removedBookmarks.has(item.name),
+                      ).map((item, i) => {
+                        const isInCollection = collectionItemsDraft.has(item.name);
+                        return (
+                          <div
+                            key={item.name}
+                            onClick={() => {
+                              setCollectionItemsDraft(prev => {
+                                const next = new Set(prev);
+                                if (next.has(item.name)) next.delete(item.name);
+                                else next.add(item.name);
+                                return next;
+                              });
+                            }}
+                            style={{
+                              animation: `craftCardFadeIn 400ms ${i * 60}ms cubic-bezier(0.16, 1, 0.3, 1) both`,
+                              cursor: 'pointer',
+                            }}>
+                            <XDSCard padding={0}>
+                              <div style={{position: 'relative', overflow: 'hidden'}}>
+                                <img
+                                  src={item.img}
+                                  alt={item.name}
+                                  style={{
+                                    display: 'block',
+                                    width: '100%',
+                                    aspectRatio: '1920 / 1205',
+                                    objectFit: 'cover',
+                                    objectPosition: 'top',
+                                    opacity: isInCollection ? 1 : 0.5,
+                                    transition: 'opacity 200ms ease',
+                                  }}
+                                />
+                                <div
+                                  style={{
+                                    position: 'absolute',
+                                    top: 12,
+                                    left: 12,
+                                  }}>
+                                  <XDSCheckboxInput
+                                    label={item.name}
+                                    isLabelHidden
+                                    value={isInCollection}
+                                    onChange={() => {
+                                      setCollectionItemsDraft(prev => {
+                                        const next = new Set(prev);
+                                        if (next.has(item.name)) next.delete(item.name);
+                                        else next.add(item.name);
+                                        return next;
+                                      });
+                                    }}
+                                  />
+                                </div>
+                                <div
+                                  style={{
+                                    position: 'absolute',
+                                    bottom: 0,
+                                    left: 0,
+                                    right: 0,
+                                    padding: '24px 12px 12px',
+                                    background: 'linear-gradient(to top, rgba(0,0,0,0.6), transparent)',
+                                  }}>
+                                  <div style={{display: 'flex', flexDirection: 'column', gap: 8}}>
+                                    <XDSText type="body" style={{color: '#fff', fontWeight: 600}}>
+                                      {item.name}
+                                    </XDSText>
+                                    <XDSText type="supporting" style={{color: 'rgba(255,255,255,0.7)'}}>
+                                      {item.type}
+                                    </XDSText>
+                                  </div>
+                                </div>
+                              </div>
+                            </XDSCard>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : collectionItems.length === 0 ? (
                     <div style={{marginTop: 48}}>
                       <XDSEmptyState
                         title="This collection is empty"
                         description="Bookmark items and add them to this collection."
+                        actions={
+                          <XDSButton
+                            label="Add items"
+                            variant="primary"
+                            onClick={() => {
+                              setCollectionItemsDraft(new Set(selectedCollection.items));
+                              setEditingCollectionItems(true);
+                            }}
+                          />
+                        }
                       />
                     </div>
                   ) : (
@@ -933,9 +1258,26 @@ export function ProfileView({
                 <>
                   {/* Collections */}
                   <div style={{marginTop: 32, marginBottom: 32}}>
-                    <XDSHeading level={2} style={{marginBottom: 12}}>
-                      Collections
-                    </XDSHeading>
+                    <XDSHStack vAlign="center" style={{marginBottom: 12}}>
+                      <XDSHeading level={2}>
+                        Collections
+                      </XDSHeading>
+                      <XDSStackItem size="fill" />
+                      <XDSButton
+                        label="Add collection"
+                        variant="ghost"
+                        size="sm"
+                        isIconOnly
+                        icon={<PlusIcon style={{width: 20, height: 20}} />}
+                        onClick={() => {
+                          setIsNewCollection(true);
+                          setCollectionNameDraft('Untitled');
+                          setEditingCollectionName(true);
+                          setEditingCollectionItems(false);
+                          setCollectionItemsDraft(new Set());
+                        }}
+                      />
+                    </XDSHStack>
                     <XDSGrid minChildWidth={180} gap={3}>
                       {PROFILE_COLLECTIONS.map((col, i) => (
                         <div
@@ -949,21 +1291,21 @@ export function ProfileView({
                             <XDSHStack gap={3} vAlign="center">
                               <div
                                 style={{
-                              width: 36,
-                              height: 36,
-                              borderRadius: 10,
-                              backgroundColor: 'var(--color-background-muted, #f0f0f0)',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              flexShrink: 0,
-                            }}>
-                            <FolderIcon
-                              style={{
-                                width: 18,
-                                height: 18,
-                                color: 'var(--color-text-secondary, #6b7280)',
-                              }}
+                                  width: 36,
+                                  height: 36,
+                                  borderRadius: 10,
+                                  backgroundColor: 'var(--color-background-muted, #f0f0f0)',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  flexShrink: 0,
+                                }}>
+                                <FolderIcon
+                                  style={{
+                                    width: 18,
+                                    height: 18,
+                                    color: 'var(--color-text-secondary, #6b7280)',
+                                  }}
                                 />
                               </div>
                               <XDSVStack gap={0}>
@@ -1058,289 +1400,191 @@ export function ProfileView({
         </div>
       </div>
 
-      {/* Preview dialog */}
-      <XDSDialog
+      {/* Craft preview dialog */}
+      <PreviewDialogShell
         isOpen={previewItem !== null}
-        onOpenChange={(open) => { if (!open) setPreviewItem(null); }}
-        width="90vw"
-        maxHeight="90vh"
-        purpose="info"
-        style={{padding: 0, overflow: 'visible', maxWidth: 1600, '--xds-dialog-padding': '0px'} as React.CSSProperties}>
+        onClose={() => setPreviewItem(null)}
+        imgSrc={previewItem?.img ?? ''}
+        imgAlt={previewItem?.name ?? ''}>
         {previewItem && (
           <>
-            <div
-              style={{position: 'absolute', top: 0, right: -40, zIndex: 1}}>
-              <XDSCard padding={0} style={{borderRadius: '50%'}}>
-                <XDSButton
-                  label="Close"
-                  variant="ghost"
-                  size="sm"
-                  isIconOnly
-                  icon={<span style={{fontSize: 16, lineHeight: 1}}>✕</span>}
-                  onClick={() => setPreviewItem(null)}
-                />
-              </XDSCard>
+            <XDSText type="display-2">{previewItem.name}</XDSText>
+
+            <div style={{marginTop: 8}}>
+              <XDSText type="body" color="secondary">
+                {previewItem.description}
+              </XDSText>
             </div>
-            <div style={{overflowY: 'auto'}}>
-              <div style={{display: 'flex', minHeight: 0, padding: '0 32px'}}>
-                {/* Left — Preview image */}
-                <XDSVStack
-                  gap={3}
-                  style={{flex: 1, minWidth: 0, padding: '32px 32px 32px 0'}}>
-                  <div
-                    style={{
-                      flex: 1,
-                      aspectRatio: '16 / 10',
-                      backgroundColor: 'var(--color-background-muted, #f9f9f9)',
-                      borderRadius: 12,
-                      overflowY: 'auto',
-                      overflowX: 'hidden',
-                      border: '1px solid var(--color-border, #e0e0e0)',
-                    }}>
-                    <img
-                      src={previewItem.img}
-                      alt={previewItem.name}
-                      style={{width: '100%', display: 'block'}}
-                    />
-                  </div>
-                </XDSVStack>
 
-                {/* Right — Details panel */}
-                <XDSVStack
-                  style={{width: 360, flexShrink: 0, padding: '32px 0'}}>
-                  <XDSText type="display-2">{previewItem.name}</XDSText>
+            <XDSHStack gap={2} vAlign="center" style={{marginTop: 16}}>
+              <XDSBadge
+                label={previewItem.status}
+                variant={STATUS_VARIANT[previewItem.status]}
+              />
+              <XDSText type="supporting" color="secondary">
+                {previewItem.type} · Updated {timeAgo(previewItem.lastUpdated)}
+              </XDSText>
+            </XDSHStack>
 
-                  <div style={{marginTop: 8}}>
-                    <XDSText type="body" color="secondary">
-                      {previewItem.description}
-                    </XDSText>
-                  </div>
-
-                  <XDSHStack gap={2} vAlign="center" style={{marginTop: 16}}>
-                    <XDSBadge
-                      label={previewItem.status}
-                      variant={STATUS_VARIANT[previewItem.status]}
-                    />
-                    <XDSBadge
-                      label={previewItem.type}
-                      variant={TYPE_VARIANT[previewItem.type]}
-                    />
-                  </XDSHStack>
-
-                  {(previewItem.status === 'In Review' || previewItem.status === 'Needs Fixes') && (
-                    <div style={{marginTop: 16}}>
-                      <XDSBanner
-                        status={previewItem.status === 'Needs Fixes' ? 'warning' : 'info'}
-                        title={previewItem.status === 'Needs Fixes' ? 'Changes requested' : 'In review'}
-                        description={
-                          <>
-                            {previewItem.status === 'Needs Fixes'
-                              ? 'Reviewers have left comments on your craft. Open the diffs tool to resolve them.'
-                              : 'Your craft is being reviewed by the XDS team. This usually takes 2–3 business days.'}{' '}
-                            <XDSText type="supporting">
-                              <XDSLink
-                                label="Learn more"
-                                href="#"
-                                color="secondary"
-                                hasUnderline
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  setPreviewItem(null);
-                                  setActiveView('docs');
-                                }}>
-                                Learn more
-                              </XDSLink>
-                            </XDSText>
-                          </>
-                        }
-                      />
-                    </div>
-                  )}
-
-                  <XDSHStack gap={4} vAlign="center" style={{marginTop: 16}}>
-                    <XDSVStack gap={0}>
-                      <XDSText type="body" style={{fontWeight: 700, fontSize: 18}}>
-                        {previewItem.views.toLocaleString()}
-                      </XDSText>
-                      <XDSText type="supporting" color="secondary">Views</XDSText>
-                    </XDSVStack>
-                    <XDSVStack gap={0}>
-                      <XDSText type="body" style={{fontWeight: 700, fontSize: 18}}>
-                        {previewItem.used.toLocaleString()}
-                      </XDSText>
-                      <XDSText type="supporting" color="secondary">Uses</XDSText>
-                    </XDSVStack>
-                    <XDSVStack gap={0}>
-                      <XDSText type="body" style={{fontWeight: 700, fontSize: 18}}>
-                        {timeAgo(previewItem.lastUpdated)}
-                      </XDSText>
-                      <XDSText type="supporting" color="secondary">Updated</XDSText>
-                    </XDSVStack>
-                  </XDSHStack>
-
-                  <XDSVStack gap={2} style={{marginTop: 32}}>
-                    {(previewItem.status === 'In Review' || previewItem.status === 'Needs Fixes') ? (
-                      <>
-                        <XDSButton
-                          variant="primary"
-                          label="Resolve in Diffs"
-                          size="lg"
-                          style={{width: '100%'}}
-                          onClick={() => {
+            {(previewItem.status === 'In Review' || previewItem.status === 'Needs Fixes') && (
+              <div style={{marginTop: 16}}>
+                <XDSBanner
+                  status={previewItem.status === 'Needs Fixes' ? 'warning' : 'info'}
+                  title={previewItem.status === 'Needs Fixes' ? 'Changes requested' : 'In review'}
+                  description={
+                    <>
+                      {previewItem.status === 'Needs Fixes'
+                        ? 'Reviewers have left comments on your craft. Open the diffs tool to resolve them.'
+                        : 'Your craft is being reviewed by the XDS team. This usually takes 2–3 business days.'}{' '}
+                      <XDSText type="supporting">
+                        <XDSLink
+                          label="Learn more"
+                          href="#"
+                          color="secondary"
+                          hasUnderline
+                          onClick={(e) => {
+                            e.preventDefault();
                             setPreviewItem(null);
                             setActiveView('docs');
-                          }}
-                        />
-                        <XDSButton
-                          variant="secondary"
-                          label="Edit"
-                          size="lg"
-                          style={{width: '100%'}}
-                          onClick={() => setPreviewItem(null)}
-                        />
-                      </>
-                    ) : (
-                      <>
-                        <XDSButton
-                          variant="primary"
-                          label="Edit"
-                          size="lg"
-                          style={{width: '100%'}}
-                          onClick={() => setPreviewItem(null)}
-                        />
-                        <XDSButton
-                          variant="secondary"
-                          label={previewItem.status === 'Published' ? 'Unpublish' : 'Publish'}
-                          size="lg"
-                          style={{width: '100%'}}
-                          onClick={() => setPreviewItem(null)}
-                        />
-                      </>
-                    )}
-                  </XDSVStack>
-
-                  {previewItem.tags.length > 0 && (
-                    <div style={{marginTop: 24}}>
-                      <XDSText
-                        type="supporting"
-                        color="secondary"
-                        style={{fontWeight: 600, marginBottom: 8, display: 'block'}}>
-                        Tags
+                          }}>
+                          Learn more
+                        </XDSLink>
                       </XDSText>
-                      <div style={{display: 'flex', flexWrap: 'wrap', gap: 6}}>
-                        {previewItem.tags.map(tag => (
-                          <XDSToken key={tag} label={tag} size="sm" />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </XDSVStack>
-              </div>
-            </div>
-          </>
-        )}
-      </XDSDialog>
-
-      {/* Used item preview dialog */}
-      <XDSDialog
-        isOpen={previewUsedItem !== null}
-        onOpenChange={(open) => { if (!open) setPreviewUsedItem(null); }}
-        width="90vw"
-        maxHeight="90vh"
-        purpose="info"
-        style={{padding: 0, overflow: 'visible', maxWidth: 1600, '--xds-dialog-padding': '0px'} as React.CSSProperties}>
-        {previewUsedItem && (
-          <>
-            <div
-              style={{position: 'absolute', top: 0, right: -40, zIndex: 1}}>
-              <XDSCard padding={0} style={{borderRadius: '50%'}}>
-                <XDSButton
-                  label="Close"
-                  variant="ghost"
-                  size="sm"
-                  isIconOnly
-                  icon={<span style={{fontSize: 16, lineHeight: 1}}>✕</span>}
-                  onClick={() => setPreviewUsedItem(null)}
+                    </>
+                  }
                 />
-              </XDSCard>
-            </div>
-            <div style={{overflowY: 'auto'}}>
-              <div style={{display: 'flex', minHeight: 0, padding: '0 32px'}}>
-                <XDSVStack
-                  gap={3}
-                  style={{flex: 1, minWidth: 0, padding: '32px 32px 32px 0'}}>
-                  <div
-                    style={{
-                      flex: 1,
-                      aspectRatio: '16 / 10',
-                      backgroundColor: 'var(--color-background-muted, #f9f9f9)',
-                      borderRadius: 12,
-                      overflowY: 'auto',
-                      overflowX: 'hidden',
-                      border: '1px solid var(--color-border, #e0e0e0)',
-                    }}>
-                    <img
-                      src={previewUsedItem.img}
-                      alt={previewUsedItem.name}
-                      style={{width: '100%', display: 'block'}}
-                    />
-                  </div>
-                </XDSVStack>
+              </div>
+            )}
 
-                <XDSVStack
-                  style={{width: 360, flexShrink: 0, padding: '32px 0'}}>
-                  <XDSText type="display-2">{previewUsedItem.name}</XDSText>
+            {previewItem.status === 'Published' && (
+              <div style={{marginTop: 12}}>
+                <XDSList hasDividers density="balanced">
+                  <XDSListItem
+                    label="Views"
+                    startContent={<EyeIcon style={{width: 18, height: 18, color: 'var(--color-secondary)'}} />}
+                    endContent={<XDSText type="subtitle2">{previewItem.views.toLocaleString()}</XDSText>}
+                  />
+                  <XDSListItem
+                    label="Uses"
+                    startContent={<CursorArrowRaysIcon style={{width: 18, height: 18, color: 'var(--color-secondary)'}} />}
+                    endContent={<XDSText type="subtitle2">{previewItem.used.toLocaleString()}</XDSText>}
+                  />
+                </XDSList>
+              </div>
+            )}
 
-                  <div style={{marginTop: 8}}>
-                    <XDSText type="body" color="secondary">
-                      {previewUsedItem.description}
-                    </XDSText>
-                  </div>
-
-                  <XDSHStack gap={2} vAlign="center" style={{marginTop: 16}}>
-                    <XDSBadge
-                      label={previewUsedItem.type}
-                      variant={TYPE_VARIANT[previewUsedItem.type]}
-                    />
-                  </XDSHStack>
-
-                  <XDSHStack gap={4} vAlign="center" style={{marginTop: 16}}>
-                    <XDSVStack gap={0}>
-                      <XDSText type="body" style={{fontWeight: 700, fontSize: 18}}>
-                        {previewUsedItem.usageCount}
-                      </XDSText>
-                      <XDSText type="supporting" color="secondary">Times used</XDSText>
-                    </XDSVStack>
-                    <XDSVStack gap={0}>
-                      <XDSText type="body" style={{fontWeight: 700, fontSize: 18}}>
-                        {timeAgo(previewUsedItem.lastUsed)}
-                      </XDSText>
-                      <XDSText type="supporting" color="secondary">Last used</XDSText>
-                    </XDSVStack>
-                  </XDSHStack>
-
-                  <XDSVStack gap={2} style={{marginTop: 32}}>
+            <XDSVStack gap={2} style={{marginTop: 'auto', paddingTop: 32}}>
+              {(previewItem.status === 'In Review' || previewItem.status === 'Needs Fixes') ? (
+                <>
+                  <XDSButton
+                    variant="primary"
+                    label="Resolve in Diffs"
+                    size="lg"
+                    style={{width: '100%'}}
+                    onClick={() => {
+                      setPreviewItem(null);
+                      setActiveView('docs');
+                    }}
+                  />
+                  <XDSButton
+                    variant="secondary"
+                    label="Edit"
+                    size="lg"
+                    style={{width: '100%'}}
+                    onClick={() => setPreviewItem(null)}
+                  />
+                </>
+              ) : (
+                <>
+                  <XDSButton
+                    variant="primary"
+                    label="Start crafting"
+                    size="lg"
+                    style={{width: '100%'}}
+                    onClick={() => setPreviewItem(null)}
+                  />
+                  <XDSHStack gap={2}>
                     <XDSButton
-                      variant="primary"
-                      label="Use again"
+                      variant="secondary"
+                      label="Use in your product"
                       size="lg"
-                      style={{width: '100%'}}
-                      onClick={() => setPreviewUsedItem(null)}
+                      style={{flex: 1}}
+                      onClick={() => setPreviewItem(null)}
                     />
                     <XDSButton
                       variant="secondary"
-                      label="View details"
+                      label="Bookmark"
                       size="lg"
-                      style={{width: '100%'}}
-                      onClick={() => setPreviewUsedItem(null)}
+                      isIconOnly
+                      icon={<BookmarkFilledIcon style={{width: 18, height: 18}} />}
+                      onClick={() => {}}
                     />
-                  </XDSVStack>
-                </XDSVStack>
-              </div>
-            </div>
+                  </XDSHStack>
+                </>
+              )}
+            </XDSVStack>
+
           </>
         )}
-      </XDSDialog>
+      </PreviewDialogShell>
+
+      {/* Used item preview dialog */}
+      <PreviewDialogShell
+        isOpen={previewUsedItem !== null}
+        onClose={() => setPreviewUsedItem(null)}
+        imgSrc={previewUsedItem?.img ?? ''}
+        imgAlt={previewUsedItem?.name ?? ''}>
+        {previewUsedItem && (
+          <>
+            <XDSText type="display-2">{previewUsedItem.name}</XDSText>
+
+            <div style={{marginTop: 8}}>
+              <XDSText type="body" color="secondary">
+                {previewUsedItem.description}
+              </XDSText>
+            </div>
+
+            <XDSHStack gap={2} vAlign="center" style={{marginTop: 16}}>
+              <XDSBadge
+                label={previewUsedItem.type}
+                variant={TYPE_VARIANT[previewUsedItem.type]}
+              />
+            </XDSHStack>
+
+            <div style={{marginTop: 12}}>
+              <XDSList hasDividers density="balanced">
+                <XDSListItem
+                  label="Times used"
+                  startContent={<CursorArrowRaysIcon style={{width: 18, height: 18, color: 'var(--color-secondary)'}} />}
+                  endContent={<XDSText type="subtitle2">{previewUsedItem.usageCount}</XDSText>}
+                />
+                <XDSListItem
+                  label="Last used"
+                  startContent={<ClockIcon style={{width: 18, height: 18, color: 'var(--color-secondary)'}} />}
+                  endContent={<XDSText type="subtitle2">{timeAgo(previewUsedItem.lastUsed)}</XDSText>}
+                />
+              </XDSList>
+            </div>
+
+            <XDSVStack gap={2} style={{marginTop: 'auto', paddingTop: 32}}>
+              <XDSButton
+                variant="primary"
+                label="Use again"
+                size="lg"
+                style={{width: '100%'}}
+                onClick={() => setPreviewUsedItem(null)}
+              />
+              <XDSButton
+                variant="secondary"
+                label="Start crafting"
+                size="lg"
+                style={{width: '100%'}}
+                onClick={() => setPreviewUsedItem(null)}
+              />
+            </XDSVStack>
+          </>
+        )}
+      </PreviewDialogShell>
 
       {/* Component docs drawer */}
       <XDSDialog
@@ -1479,106 +1723,32 @@ export function ProfileView({
         })()}
       </XDSDialog>
 
-      {/* Bookmark preview dialog */}
-      <XDSDialog
+      {/* Bookmark preview dialog — reuses the exact same modal as the home page */}
+      <TemplatePreviewModal
         isOpen={previewBookmarkItem !== null}
-        onOpenChange={(open) => { if (!open) setPreviewBookmarkItem(null); }}
-        width="90vw"
-        maxHeight="90vh"
-        purpose="info"
-        style={{padding: 0, overflow: 'visible', maxWidth: 1600, '--xds-dialog-padding': '0px'} as React.CSSProperties}>
-        {previewBookmarkItem && (
-          <>
-            <div style={{position: 'absolute', top: 0, right: -40, zIndex: 1}}>
-              <XDSCard padding={0} style={{borderRadius: '50%'}}>
-                <XDSButton
-                  label="Close"
-                  variant="ghost"
-                  size="sm"
-                  isIconOnly
-                  icon={<span style={{fontSize: 16, lineHeight: 1}}>✕</span>}
-                  onClick={() => setPreviewBookmarkItem(null)}
-                />
-              </XDSCard>
-            </div>
-            <div style={{overflowY: 'auto'}}>
-              <div style={{display: 'flex', minHeight: 0, padding: '0 32px'}}>
-                <XDSVStack
-                  gap={3}
-                  style={{flex: 1, minWidth: 0, padding: '32px 32px 32px 0'}}>
-                  <div
-                    style={{
-                      flex: 1,
-                      aspectRatio: '16 / 10',
-                      backgroundColor: 'var(--color-background-muted, #f9f9f9)',
-                      borderRadius: 12,
-                      overflowY: 'auto',
-                      overflowX: 'hidden',
-                      border: '1px solid var(--color-border, #e0e0e0)',
-                    }}>
-                    <img
-                      src={previewBookmarkItem.img}
-                      alt={previewBookmarkItem.name}
-                      style={{width: '100%', display: 'block'}}
-                    />
-                  </div>
-                </XDSVStack>
-
-                <XDSVStack
-                  style={{width: 360, flexShrink: 0, padding: '32px 0'}}>
-                  <XDSText type="display-2">{previewBookmarkItem.name}</XDSText>
-
-                  <div style={{marginTop: 8}}>
-                    <XDSText type="body" color="secondary">
-                      {previewBookmarkItem.description}
-                    </XDSText>
-                  </div>
-
-                  <XDSHStack gap={2} vAlign="center" style={{marginTop: 16}}>
-                    <XDSBadge
-                      label={previewBookmarkItem.type}
-                      variant={TYPE_VARIANT[previewBookmarkItem.type]}
-                    />
-                  </XDSHStack>
-
-                  <XDSHStack gap={4} vAlign="center" style={{marginTop: 16}}>
-                    <XDSVStack gap={0}>
-                      <XDSText type="body" style={{fontWeight: 700, fontSize: 18}}>
-                        {timeAgo(previewBookmarkItem.bookmarkedAt)}
-                      </XDSText>
-                      <XDSText type="supporting" color="secondary">Bookmarked</XDSText>
-                    </XDSVStack>
-                  </XDSHStack>
-
-                  <XDSVStack gap={2} style={{marginTop: 32}}>
-                    <XDSButton
-                      variant="primary"
-                      label="Use"
-                      size="lg"
-                      style={{width: '100%'}}
-                      onClick={() => setPreviewBookmarkItem(null)}
-                    />
-                    <XDSButton
-                      variant="secondary"
-                      label="Remove bookmark"
-                      size="lg"
-                      style={{width: '100%'}}
-                      onClick={() => {
-                        setRemovedBookmarks(prev => {
-                          const next = new Set(prev);
-                          next.add(previewBookmarkItem.name);
-                          return next;
-                        });
-                        setPreviewBookmarkItem(null);
-                      }}
-                    />
-                  </XDSVStack>
-                </XDSVStack>
-              </div>
-            </div>
-          </>
-        )}
-      </XDSDialog>
+        onClose={() => setPreviewBookmarkItem(null)}
+        item={previewBookmarkItem ? {
+          name: previewBookmarkItem.name,
+          img: previewBookmarkItem.img,
+          author: previewBookmarkItem.author,
+          description: previewBookmarkItem.description,
+        } : null}
+        onStartCrafting={() => {
+          setPreviewBookmarkItem(null);
+          onStartCrafting();
+        }}
+        isBookmarked={true}
+        onBookmarkToggle={() => {
+          if (previewBookmarkItem) {
+            setRemovedBookmarks(prev => {
+              const next = new Set(prev);
+              next.add(previewBookmarkItem.name);
+              return next;
+            });
+            setPreviewBookmarkItem(null);
+          }
+        }}
+      />
 
       {/* Settings dialog */}
       <XDSDialog isOpen={isSettingsOpen} onOpenChange={setIsSettingsOpen} width={720}>

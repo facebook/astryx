@@ -252,13 +252,14 @@ export const PROFILE_LIKED_ITEMS: {
   bookmarkedAt: string;
   description: string;
   img: string;
+  author: string;
 }[] = [
-  {name: 'Meta Theme', type: 'Theme', bookmarkedAt: '2026-04-13T08:00:00Z', description: 'Meta brand colors with Figtree typography.', img: FIRST_CARD_IMAGE},
-  {name: 'Brutalist Theme', type: 'Theme', bookmarkedAt: '2026-04-11T10:30:00Z', description: 'Bold, raw aesthetic with heavy borders and sharp angles.', img: SHOPPING_DETAILS_IMAGE},
-  {name: 'Admin Dashboard', type: 'Template', bookmarkedAt: '2026-04-10T14:20:00Z', description: 'Full admin panel with sidebar nav, KPI cards, and data tables.', img: SCREENSHOT_3_IMAGE},
-  {name: 'Product Detail', type: 'Template', bookmarkedAt: '2026-04-07T09:00:00Z', description: 'E-commerce product page with image gallery and reviews.', img: `${basePath}/templates/card4-preview.png`},
-  {name: 'Toast Notification', type: 'Component', bookmarkedAt: '2026-04-05T11:00:00Z', description: 'Stackable toast with auto-dismiss and action support.', img: DUMMY_IMAGE},
-  {name: 'Kanban Board', type: 'Template', bookmarkedAt: '2026-04-02T16:30:00Z', description: 'Drag-and-drop board with swimlanes and card detail drawers.', img: DUMMY_IMAGE},
+  {name: 'Meta Theme', type: 'Theme', bookmarkedAt: '2026-04-13T08:00:00Z', description: 'Meta brand colors with Figtree typography.', img: FIRST_CARD_IMAGE, author: 'XDS Design'},
+  {name: 'Brutalist Theme', type: 'Theme', bookmarkedAt: '2026-04-11T10:30:00Z', description: 'Bold, raw aesthetic with heavy borders and sharp angles.', img: SHOPPING_DETAILS_IMAGE, author: 'Andrea Anderson'},
+  {name: 'Admin Dashboard', type: 'Template', bookmarkedAt: '2026-04-10T14:20:00Z', description: 'Full admin panel with sidebar nav, KPI cards, and data tables.', img: SCREENSHOT_3_IMAGE, author: 'Andrea Anderson'},
+  {name: 'Product Detail', type: 'Template', bookmarkedAt: '2026-04-07T09:00:00Z', description: 'E-commerce product page with image gallery and reviews.', img: `${basePath}/templates/card4-preview.png`, author: 'XDS Design'},
+  {name: 'Toast Notification', type: 'Component', bookmarkedAt: '2026-04-05T11:00:00Z', description: 'Stackable toast with auto-dismiss and action support.', img: DUMMY_IMAGE, author: 'Andrea Anderson'},
+  {name: 'Kanban Board', type: 'Template', bookmarkedAt: '2026-04-02T16:30:00Z', description: 'Drag-and-drop board with swimlanes and card detail drawers.', img: DUMMY_IMAGE, author: 'XDS Design'},
 ];
 
 export const PROFILE_COLLECTIONS: {
