@@ -24,11 +24,13 @@ const _require = createRequire(import.meta.url);
 let _defineTheme = null;
 let _generateThemeRules = null;
 let _generateThemeRulesSplit = null;
+let _generateOnMediaCSS = null;
 try {
   const coreTheme = _require('@xds/core/theme');
   _defineTheme = coreTheme.defineTheme;
   _generateThemeRules = coreTheme.generateThemeRules;
   _generateThemeRulesSplit = coreTheme.generateThemeRulesSplit;
+  _generateOnMediaCSS = coreTheme.generateOnMediaCSS;
 } catch {
   // Core not available — fall back to legacy generation
 }
@@ -1002,6 +1004,13 @@ export function registerTheme(program) {
               : '';
             cssParts.push(`@layer xds-theme {\n${colorSchemeDecl}${componentScope}\n}`);
           }
+          // On-media rules (XDSMediaTheme dark/light surface overrides)
+          if (_generateOnMediaCSS) {
+            const onMediaCss = _generateOnMediaCSS(resolvedTheme);
+            if (onMediaCss) {
+              cssParts.push(`@layer xds-theme {\n${onMediaCss}\n}`);
+            }
+          }
           css = cssParts.join('\n\n') + '\n';
         } else {
           const rules = _generateThemeRules(resolvedTheme);
@@ -1015,6 +1024,13 @@ export function registerTheme(program) {
             ? '  :root { color-scheme: light dark; }\n\n'
             : '';
           css = `@layer xds-theme {\n${colorSchemeDecl}${scopeBlock}\n}\n`;
+          // On-media rules (legacy path)
+          if (_generateOnMediaCSS) {
+            const onMediaCss = _generateOnMediaCSS(resolvedTheme);
+            if (onMediaCss) {
+              css += `\n@layer xds-theme {\n${onMediaCss}\n}\n`;
+            }
+          }
         }
       } else {
         // Legacy fallback when core isn't built yet
