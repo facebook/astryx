@@ -3,11 +3,13 @@
   "version": "0.0.1",
   "description": "Build plugins for XDS source builds — babel, PostCSS, and Vite integrations",
   "license": "MIT",
-  "main": "./src/index.js",
+  "main": "./src/config.js",
   "exports": {
+    ".": "./src/config.js",
     "./babel": "./src/babel.js",
     "./postcss": "./src/index.js",
-    "./vite": "./src/vite.ts"
+    "./vite": "./src/vite.ts",
+    "./next": "./src/next.js"
   },
   "files": [
     "src"
