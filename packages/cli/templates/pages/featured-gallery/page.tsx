@@ -12,6 +12,26 @@ import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSCarousel} from '@xds/core/Carousel';
 
+// ─── Responsive Card Sizing ─────────────────────────────────────────────────
+// 3 cards on desktop, 2 on tablet, 1 on mobile
+// Card width = (container - gaps - padding) / visible count
+const responsiveStyles = `
+  .featured-gallery-card {
+    width: calc(100vw - 48px);
+  }
+  @media (min-width: 640px) {
+    .featured-gallery-card {
+      width: calc((100vw - 48px - 16px) / 2);
+    }
+  }
+  @media (min-width: 1024px) {
+    .featured-gallery-card {
+      width: calc((100vw - 48px - 32px) / 3);
+      max-width: 480px;
+    }
+  }
+`;
+
 // ─── Icons ──────────────────────────────────────────────────────────────────
 
 const ArrowRightIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -84,7 +104,7 @@ const GALLERY_ITEMS = [
 
 function GalleryCard({item}: {item: (typeof GALLERY_ITEMS)[number]}) {
   return (
-    <XDSCard padding={0} width={480}>
+    <XDSCard padding={0} className="featured-gallery-card">
       <div style={{position: 'relative'}}>
         <XDSAspectRatio ratio={3 / 4}>
           <img
@@ -146,6 +166,7 @@ function GalleryCard({item}: {item: (typeof GALLERY_ITEMS)[number]}) {
 export default function FeaturedGalleryTemplate() {
   return (
     <XDSAppShell height="auto" contentPadding={0} variant="surface">
+      <style>{responsiveStyles}</style>
       <XDSVStack gap={6}>
         {/* Header */}
         <XDSCenter axis="horizontal">
