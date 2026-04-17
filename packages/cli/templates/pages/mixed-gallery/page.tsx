@@ -29,6 +29,18 @@ const ArrowRightIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 // ─── Styles ────────────────────────────────────────────────────────────────
 
+const layoutStyles = stylex.create({
+  fullHeight: {
+    height: '100%',
+  },
+  minHeightZero: {
+    minHeight: 0,
+  },
+  textCenter: {
+    textAlign: 'center',
+  },
+});
+
 const overlayStyles = stylex.create({
   overlay: {
     position: 'absolute',
@@ -152,12 +164,12 @@ export default function MixedGalleryTemplate() {
           padding={0}>
           <XDSVStack
             gap={6}
-            style={{height: '100%'}}
+            xstyle={layoutStyles.fullHeight}
             className="gallery-vstack">
             {/* Header — capped with XDSSection maxWidth */}
             <XDSCenter axis="horizontal">
               <XDSSection variant="transparent" maxWidth={680}>
-                <XDSVStack gap={2} style={{textAlign: 'center'}}>
+                <XDSVStack gap={2} xstyle={layoutStyles.textCenter}>
                   <XDSHeading level={1}>
                     Make every day a little more delightful, one detail at a
                     time.
@@ -178,7 +190,7 @@ export default function MixedGalleryTemplate() {
             <XDSStackItem size="fill">
               <div className="gallery-desktop" style={{height: '100%'}}>
                 <XDSGrid columns={3} gap={4} height="100%">
-                  <XDSVStack gap={4} style={{minHeight: 0}}>
+                  <XDSVStack gap={4} xstyle={layoutStyles.minHeightZero}>
                     <XDSStackItem size="fill">
                       <GalleryCard image={IMAGES[0]} />
                     </XDSStackItem>
@@ -189,7 +201,7 @@ export default function MixedGalleryTemplate() {
 
                   <GalleryCard image={IMAGES[2]} />
 
-                  <XDSVStack gap={4} style={{minHeight: 0}}>
+                  <XDSVStack gap={4} xstyle={layoutStyles.minHeightZero}>
                     <XDSStackItem size="fill">
                       <GalleryCard image={IMAGES[3]} />
                     </XDSStackItem>
