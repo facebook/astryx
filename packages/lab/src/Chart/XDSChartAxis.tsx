@@ -82,7 +82,7 @@ export function XDSChartAxis({
         x2={isHorizontal ? width : 0}
         y1={isHorizontal ? 0 : 0}
         y2={isHorizontal ? 0 : height}
-        stroke="var(--color-border)"
+        stroke="var(--color-border-emphasized)"
         strokeWidth={1}
       />
       {ticks.map(({value, offset}) => {
@@ -102,7 +102,11 @@ export function XDSChartAxis({
                 transition: tickTransition,
                 opacity: isVisible ? 1 : 0,
               }}>
-              <line y2={y} stroke="var(--color-border)" strokeWidth={1} />
+              <line
+                y2={y}
+                stroke="var(--color-border-emphasized)"
+                strokeWidth={1}
+              />
               <text
                 y={position === 'bottom' ? tickSize + 12 : -(tickSize + 4)}
                 textAnchor="middle"
@@ -123,7 +127,11 @@ export function XDSChartAxis({
               transition: tickTransition,
               opacity: isVisible ? 1 : 0,
             }}>
-            <line x2={x} stroke="var(--color-border)" strokeWidth={1} />
+            <line
+              x2={x}
+              stroke="var(--color-border-emphasized)"
+              strokeWidth={1}
+            />
             <text
               x={position === 'left' ? -(tickSize + 4) : tickSize + 4}
               dy="0.32em"

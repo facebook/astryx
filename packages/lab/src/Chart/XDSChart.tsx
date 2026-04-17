@@ -198,6 +198,11 @@ export function XDSChart({
     <div ref={containerRef} style={{width: '100%'}}>
       {containerWidth > 0 && (
         <svg width={containerWidth} height={height}>
+          <defs>
+            <clipPath id="xds-chart-plot">
+              <rect x={0} y={0} width={innerWidth} height={innerHeight} />
+            </clipPath>
+          </defs>
           <g transform={`translate(${margin.left},${margin.top})`}>
             <ChartProvider value={ctx}>{children}</ChartProvider>
           </g>

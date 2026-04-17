@@ -230,7 +230,12 @@ export const XDSChartStreamGL = forwardRef<
   if (width <= 0 || height <= 0) return null;
 
   return (
-    <foreignObject x={0} y={0} width={width} height={height}>
+    <foreignObject
+      x={0}
+      y={0}
+      width={width}
+      height={height}
+      style={{overflow: 'hidden'}}>
       <canvas ref={canvasRef} style={{width, height, pointerEvents: 'none'}} />
     </foreignObject>
   );
