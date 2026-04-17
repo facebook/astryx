@@ -8,6 +8,8 @@ import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSDivider} from '@xds/core';
+import {XDSCard} from '@xds/core/Card';
+import {XDSSwitch} from '@xds/core/Switch';
 
 const styles = stylex.create({
   main: {
@@ -20,12 +22,6 @@ const styles = stylex.create({
   container: {
     maxWidth: 640,
     width: '100%',
-  },
-  card: {
-    borderRadius: 8,
-    border: '1px solid var(--color-border)',
-    padding: '1rem',
-    backgroundColor: 'var(--color-background-body)',
   },
   layerDemo: {
     padding: '1.5rem',
@@ -42,10 +38,25 @@ const styles = stylex.create({
     backgroundColor: 'mediumseagreen',
     color: 'white',
   },
+  card: {
+    borderRadius: 8,
+    border: '1px solid var(--color-border)',
+    padding: '1rem',
+    backgroundColor: 'var(--color-background-body)',
+  },
+  prefixDemo: {
+    fontFamily: 'monospace',
+    fontSize: '0.75rem',
+    padding: '0.5rem',
+    backgroundColor: 'var(--color-background-muted)',
+    borderRadius: 6,
+    overflowX: 'auto',
+  },
 });
 
 export default function Home() {
   const [email, setEmail] = useState('');
+  const [toggle, setToggle] = useState(false);
 
   return (
     <main {...stylex.props(styles.main)}>
@@ -58,9 +69,13 @@ export default function Home() {
               <XDSText type="body" weight="bold">
                 @xds/core
               </XDSText>{' '}
-              from raw TypeScript + StyleX source. Both XDS component styles and
-              product styles are compiled together at build time — fully
-              tree-shaken, zero unused CSS.
+              from raw TypeScript + StyleX source. The{' '}
+              <XDSText type="body" weight="bold">
+                @xds/build
+              </XDSText>{' '}
+              package provides a babel plugin and PostCSS plugin that compile
+              library and product code with separate class name prefixes,
+              enabling independent CSS layers.
             </XDSText>
           </XDSVStack>
 
@@ -70,27 +85,48 @@ export default function Home() {
           <XDSVStack gap={3}>
             <XDSHeading level={2}>Layer Demo</XDSHeading>
             <XDSText type="body" color="secondary">
-              Product StyleX styles override XDS component defaults via CSS
-              layer ordering. No <code>!important</code> needed — the{' '}
-              <code>product</code> layer sits above <code>xds-base</code> in the
-              cascade.
+              Four CSS layers in strict order. Product styles override theme,
+              theme overrides base, all without <code>!important</code>.
             </XDSText>
 
             <div {...stylex.props(styles.layerDemo)}>
-              <XDSVStack gap={3}>
+              <XDSVStack gap={4}>
+                {/* Base layer */}
                 <XDSVStack gap={1}>
                   <XDSText type="supporting" weight="bold">
-                    Default XDS buttons (xds-base layer)
+                    1. xds-base — default component styles
                   </XDSText>
                   <XDSHStack gap={3} vAlign="center">
-                    <XDSButton label="Default" variant="primary" />
-                    <XDSButton label="Default" variant="secondary" />
+                    <XDSButton label="Primary" variant="primary" />
+                    <XDSButton label="Secondary" variant="secondary" />
+                    <XDSButton label="Ghost" variant="ghost" />
                   </XDSHStack>
                 </XDSVStack>
 
+                {/* Theme layer */}
                 <XDSVStack gap={1}>
                   <XDSText type="supporting" weight="bold">
-                    Product-styled buttons (product layer overrides)
+                    2. xds-theme — theme overrides base
+                  </XDSText>
+                  <XDSText type="supporting" color="secondary">
+                    The secondary button background comes from the theme layer,
+                    overriding the base default.
+                  </XDSText>
+                  <XDSHStack gap={3} vAlign="center">
+                    <XDSButton label="Theme color" variant="secondary" />
+                    <XDSBadge variant="info" label="Themed" />
+                    <XDSBadge variant="success" label="Themed" />
+                  </XDSHStack>
+                </XDSVStack>
+
+                {/* Product layer overrides */}
+                <XDSVStack gap={1}>
+                  <XDSText type="supporting" weight="bold">
+                    3. product — product overrides theme
+                  </XDSText>
+                  <XDSText type="supporting" color="secondary">
+                    Product styles use a different class prefix (x vs xds) so
+                    they don't collide with library classes in the base layer.
                   </XDSText>
                   <XDSHStack gap={3} vAlign="center">
                     <XDSButton
@@ -99,84 +135,65 @@ export default function Home() {
                       xstyle={styles.customButton}
                     />
                     <XDSButton
-                      label="Pill shape"
-                      variant="secondary"
-                      xstyle={styles.customButton}
-                    />
-                  </XDSHStack>
-                </XDSVStack>
-
-                <XDSVStack gap={1}>
-                  <XDSText type="supporting" weight="bold">
-                    Three-layer cascade: base → theme → product
-                  </XDSText>
-                  <XDSText type="supporting" color="secondary">
-                    The secondary button's background goes through three layers:
-                    XDS base sets the default, the theme overrides it with a
-                    brand tint, and product code overrides again with green.
-                  </XDSText>
-                  <XDSHStack gap={3} vAlign="center">
-                    <XDSButton label="Theme color" variant="secondary" />
-                    <XDSButton
-                      label="Product override"
+                      label="Green override"
                       variant="secondary"
                       xstyle={styles.brandSecondary}
                     />
                   </XDSHStack>
                 </XDSVStack>
 
-                <XDSVStack gap={1}>
-                  <XDSText type="supporting" weight="bold">
-                    Full-width product override
-                  </XDSText>
-                  <XDSButton
-                    label="Full width button"
-                    variant="primary"
-                    xstyle={styles.wideButton}
-                  />
-                </XDSVStack>
+                {/* Full width */}
+                <XDSButton
+                  label="Full width product override"
+                  variant="primary"
+                  xstyle={styles.wideButton}
+                />
               </XDSVStack>
             </div>
           </XDSVStack>
 
           <XDSDivider />
 
-          {/* Standard components */}
+          {/* Class prefix verification */}
           <XDSVStack gap={3}>
-            <XDSHeading level={2}>Components</XDSHeading>
-            <XDSHStack gap={3} vAlign="center">
-              <XDSButton label="Primary" variant="primary" />
-              <XDSButton label="Secondary" variant="secondary" />
-              <XDSButton label="Ghost" variant="ghost" />
-            </XDSHStack>
+            <XDSHeading level={2}>Class Prefix Verification</XDSHeading>
+            <XDSText type="body" color="secondary">
+              Inspect these elements in devtools. XDS library classes start with{' '}
+              <code>xds</code>, product classes start with <code>x</code>.
+            </XDSText>
+            <XDSCard padding={4}>
+              <XDSVStack gap={2}>
+                <XDSText type="supporting" weight="bold">
+                  This card is an XDS component → xds-prefixed classes
+                </XDSText>
+                <div {...stylex.props(styles.prefixDemo)}>
+                  This div uses product StyleX → x-prefixed classes
+                </div>
+              </XDSVStack>
+            </XDSCard>
           </XDSVStack>
 
           <XDSDivider />
 
+          {/* Form components */}
           <XDSVStack gap={3}>
-            <XDSHeading level={2}>Badges</XDSHeading>
-            <XDSHStack gap={3} vAlign="center">
-              <XDSBadge variant="info" label="Info" />
-              <XDSBadge variant="success" label="Success" />
-              <XDSBadge variant="warning" label="Warning" />
-              <XDSBadge variant="error" label="Error" />
-            </XDSHStack>
-          </XDSVStack>
-
-          <XDSDivider />
-
-          <XDSVStack gap={3}>
-            <XDSHeading level={2}>Text Input</XDSHeading>
+            <XDSHeading level={2}>Form Components</XDSHeading>
             <XDSTextInput
               label="Email address"
               placeholder="you@example.com"
               value={email}
               onChange={setEmail}
             />
+            <XDSSwitch
+              label="Enable notifications"
+              isSelected={toggle}
+              onChange={setToggle}
+            />
           </XDSVStack>
 
           <XDSDivider />
 
+          {/* Typography */}
           <XDSVStack gap={3}>
             <XDSHeading level={2}>Typography</XDSHeading>
             <XDSText type="large" weight="bold">
@@ -190,16 +207,26 @@ export default function Home() {
 
           <XDSDivider />
 
+          {/* How it works */}
           <XDSVStack gap={3}>
-            <XDSHeading level={2}>Source Build</XDSHeading>
+            <XDSHeading level={2}>How It Works</XDSHeading>
             <div {...stylex.props(styles.card)}>
-              <XDSText type="body">
-                Open devtools → inspect the CSS. You'll see separate{' '}
-                <code>@layer xds-base</code> and <code>@layer product</code>{' '}
-                blocks. The layer order{' '}
-                <code>reset &lt; xds-base &lt; xds-theme &lt; product</code>{' '}
-                ensures product styles always win without specificity hacks.
-              </XDSText>
+              <XDSVStack gap={2}>
+                <XDSText type="body">
+                  <code>@xds/build/babel</code> wraps the StyleX babel plugin
+                  and routes files to two internal instances with different{' '}
+                  <code>classNamePrefix</code> values based on file path.
+                </XDSText>
+                <XDSText type="body">
+                  <code>@xds/build/postcss</code> does the same for CSS
+                  extraction, placing each group in its own <code>@layer</code>{' '}
+                  block.
+                </XDSText>
+                <XDSText type="body">
+                  Open devtools → CSS layers panel to see:{' '}
+                  <code>reset &lt; xds-base &lt; xds-theme &lt; product</code>
+                </XDSText>
+              </XDSVStack>
             </div>
           </XDSVStack>
         </XDSVStack>
