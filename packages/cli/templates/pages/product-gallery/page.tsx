@@ -7,8 +7,6 @@ import {XDSButton} from '@xds/core/Button';
 import {XDSGrid} from '@xds/core/Grid';
 import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import {XDSIcon} from '@xds/core/Icon';
-import {XDSMediaTheme} from '@xds/core/theme';
-import * as stylex from '@stylexjs/stylex';
 
 // ─── Icons ──────────────────────────────────────────────────────────────────
 
@@ -94,36 +92,21 @@ const PRODUCTS: Product[] = [
 
 const fmt = (n: number) => `$${n.toFixed(2)}`;
 
-// ─── Styles ─────────────────────────────────────────────────────────────────
-
-const cardStyles = stylex.create({
-  imageWrapper: {
-    position: 'relative',
-    borderRadius: 'var(--radius-container)',
-    overflow: 'clip',
-  },
-  overlay: {
-    position: 'absolute',
-    inset: 0,
-    backgroundColor: 'var(--color-overlay)',
-    opacity: {
-      default: 0,
-      ':hover': 1,
-    },
-    transition: 'opacity 0.2s ease',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
-
 // ─── Product Card ───────────────────────────────────────────────────────────
 
 function ProductCard({product}: {product: Product}) {
   return (
-    <XDSVStack gap={3}>
-      <XDSAspectRatio ratio={1}>
-        <div {...stylex.props(cardStyles.imageWrapper)}>
+    <a
+      href="#"
+      onClick={e => e.preventDefault()}
+      style={{textDecoration: 'none', color: 'inherit', cursor: 'pointer'}}>
+      <XDSVStack gap={3}>
+        <XDSAspectRatio
+          ratio={1}
+          style={{
+            borderRadius: 'var(--radius-container)',
+            overflow: 'clip',
+          }}>
           <img
             src={product.image}
             alt={product.name}
@@ -135,22 +118,17 @@ function ProductCard({product}: {product: Product}) {
               display: 'block',
             }}
           />
-          <div {...stylex.props(cardStyles.overlay)}>
-            <XDSMediaTheme mode="dark">
-              <XDSButton label="Quick view" variant="secondary" />
-            </XDSMediaTheme>
-          </div>
-        </div>
-      </XDSAspectRatio>
+        </XDSAspectRatio>
 
-      <XDSVStack gap={1}>
-        <XDSHeading level={2}>{product.name}</XDSHeading>
-        <XDSText type="body" color="secondary" maxLines={2}>
-          {product.description}
-        </XDSText>
-        <XDSHeading level={2}>{fmt(product.price)}</XDSHeading>
+        <XDSVStack gap={1}>
+          <XDSHeading level={2}>{product.name}</XDSHeading>
+          <XDSText type="body" color="secondary" maxLines={2}>
+            {product.description}
+          </XDSText>
+          <XDSHeading level={2}>{fmt(product.price)}</XDSHeading>
+        </XDSVStack>
       </XDSVStack>
-    </XDSVStack>
+    </a>
   );
 }
 
