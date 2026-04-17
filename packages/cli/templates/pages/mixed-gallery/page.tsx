@@ -187,30 +187,28 @@ export default function MixedGalleryTemplate() {
             {/* Gallery — desktop: 3-col masonry, mobile: single column */}
 
             {/* Desktop layout (hidden on mobile) */}
-            <XDSStackItem size="fill">
-              <div className="gallery-desktop" style={{height: '100%'}}>
-                <XDSGrid columns={3} gap={4} height="100%">
-                  <XDSVStack gap={4} xstyle={layoutStyles.minHeightZero}>
-                    <XDSStackItem size="fill">
-                      <GalleryCard image={IMAGES[0]} />
-                    </XDSStackItem>
-                    <XDSStackItem size="fill">
-                      <GalleryCard image={IMAGES[1]} />
-                    </XDSStackItem>
-                  </XDSVStack>
+            <XDSStackItem size="fill" className="gallery-desktop">
+              <XDSGrid columns={3} gap={4} height="100%">
+                <XDSVStack gap={4} xstyle={layoutStyles.minHeightZero}>
+                  <XDSStackItem size="fill">
+                    <GalleryCard image={IMAGES[0]} />
+                  </XDSStackItem>
+                  <XDSStackItem size="fill">
+                    <GalleryCard image={IMAGES[1]} />
+                  </XDSStackItem>
+                </XDSVStack>
 
-                  <GalleryCard image={IMAGES[2]} />
+                <GalleryCard image={IMAGES[2]} />
 
-                  <XDSVStack gap={4} xstyle={layoutStyles.minHeightZero}>
-                    <XDSStackItem size="fill">
-                      <GalleryCard image={IMAGES[3]} />
-                    </XDSStackItem>
-                    <XDSStackItem size="fill">
-                      <GalleryCard image={IMAGES[4]} />
-                    </XDSStackItem>
-                  </XDSVStack>
-                </XDSGrid>
-              </div>
+                <XDSVStack gap={4} xstyle={layoutStyles.minHeightZero}>
+                  <XDSStackItem size="fill">
+                    <GalleryCard image={IMAGES[3]} />
+                  </XDSStackItem>
+                  <XDSStackItem size="fill">
+                    <GalleryCard image={IMAGES[4]} />
+                  </XDSStackItem>
+                </XDSVStack>
+              </XDSGrid>
             </XDSStackItem>
 
             {/* Mobile layout (hidden on desktop) */}
