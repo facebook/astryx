@@ -97,8 +97,7 @@ function GalleryCard({image}: {image: GalleryImage}) {
         style={{
           position: 'absolute',
           inset: 0,
-          background:
-            'linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.3) 40%, transparent 65%)',
+          background: 'var(--color-overlay)',
           opacity: 0,
           transition: 'opacity 0.2s ease',
           display: 'flex',
