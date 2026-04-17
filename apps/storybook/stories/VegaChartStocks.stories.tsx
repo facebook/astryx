@@ -244,7 +244,7 @@ const programmingLanguagesSpec: AnySpec = {
     {
       mark: {type: 'point', size: 64, fill: 'white', strokeWidth: 2},
       encoding: {
-        y: {field: 'ranking', type: 'quantitative'},
+        y: {field: 'language', type: 'quantitative'},
         stroke: {field: 'language', legend: null},
         opacity: {
           condition: {param: 'hoveredPoint', value: 1, empty: false},
