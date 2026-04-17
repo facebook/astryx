@@ -1,6 +1,7 @@
 'use client';
 
 import {useState} from 'react';
+import {XDSAppShell} from '@xds/core/AppShell';
 import {XDSVStack} from '@xds/core/Layout';
 import {XDSCenter} from '@xds/core/Center';
 import {XDSText, XDSHeading} from '@xds/core/Text';
@@ -14,12 +15,6 @@ import * as stylex from '@stylexjs/stylex';
 // ─── Styles ─────────────────────────────────────────────────────────────────
 
 const styles = stylex.create({
-  outer: {
-    maxWidth: 1200,
-    width: '100%',
-    paddingInline: 'var(--spacing-6)',
-    paddingBlock: 'var(--spacing-8)',
-  },
   imageWrapper: {
     borderRadius: 'var(--radius-container)',
     overflow: 'clip',
@@ -109,54 +104,56 @@ export default function ClassicGalleryTemplate() {
       : GALLERY_IMAGES.filter(img => img.category === filter);
 
   return (
-    <XDSCenter axis="horizontal">
-      <div {...stylex.props(styles.outer)}>
-        <XDSVStack gap={8}>
-          {/* Header */}
-          <XDSCenter axis="horizontal">
-            <XDSSection variant="transparent" maxWidth={680} padding={0}>
-              <XDSVStack gap={4} hAlign="center" xstyle={styles.textCenter}>
-                <XDSVStack gap={2} hAlign="center">
-                  <XDSHeading level={1}>
-                    Make every day a little more delightful, one detail at a
-                    time.
-                  </XDSHeading>
-                  <XDSText type="body" color="secondary">
-                    Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed
-                    do eiusmod tempor incididunt ut labore et dolore magna
-                    aliqua ut enim ad minim excepteur sint occaecat cupidatat
-                    non proident.
-                  </XDSText>
+    <XDSAppShell height="auto" contentPadding={0} variant="surface">
+      <XDSCenter axis="horizontal">
+        <XDSSection variant="transparent" maxWidth={1200} padding={6}>
+          <XDSVStack gap={8}>
+            {/* Header */}
+            <XDSCenter axis="horizontal">
+              <XDSSection variant="transparent" maxWidth={680} padding={0}>
+                <XDSVStack gap={4} hAlign="center" xstyle={styles.textCenter}>
+                  <XDSVStack gap={2} hAlign="center">
+                    <XDSHeading level={1}>
+                      Make every day a little more delightful, one detail at a
+                      time.
+                    </XDSHeading>
+                    <XDSText type="body" color="secondary">
+                      We believe the smallest details are the ones that matter
+                      most. A little color, a thoughtful touch, a moment that
+                      catches your eye and makes you pause; that&apos;s what
+                      turns an ordinary day into something worth remembering.
+                    </XDSText>
+                  </XDSVStack>
+
+                  <XDSTabList
+                    value={filter}
+                    onChange={v => setFilter(v as Category)}>
+                    <XDSTab value="all" label="All" />
+                    <XDSTab value="lifestyle" label="Lifestyle" />
+                    <XDSTab value="scene" label="Scenery" />
+                    <XDSTab value="home" label="Home" />
+                  </XDSTabList>
                 </XDSVStack>
+              </XDSSection>
+            </XDSCenter>
 
-                <XDSTabList
-                  value={filter}
-                  onChange={v => setFilter(v as Category)}>
-                  <XDSTab value="all" label="All" />
-                  <XDSTab value="lifestyle" label="Lifestyle" />
-                  <XDSTab value="scene" label="Scenery" />
-                  <XDSTab value="home" label="Home" />
-                </XDSTabList>
-              </XDSVStack>
-            </XDSSection>
-          </XDSCenter>
-
-          {/* Gallery Grid */}
-          <XDSGrid minChildWidth={400} gap={4}>
-            {filteredImages.map((image, i) => (
-              <a key={i} href="#">
-                <XDSAspectRatio ratio={3 / 2} xstyle={styles.imageWrapper}>
-                  <img
-                    src={image.src}
-                    alt={image.alt}
-                    {...stylex.props(styles.imgFill)}
-                  />
-                </XDSAspectRatio>
-              </a>
-            ))}
-          </XDSGrid>
-        </XDSVStack>
-      </div>
-    </XDSCenter>
+            {/* Gallery Grid */}
+            <XDSGrid minChildWidth={400} gap={4}>
+              {filteredImages.map((image, i) => (
+                <a key={i} href="#">
+                  <XDSAspectRatio ratio={3 / 2} xstyle={styles.imageWrapper}>
+                    <img
+                      src={image.src}
+                      alt={image.alt}
+                      {...stylex.props(styles.imgFill)}
+                    />
+                  </XDSAspectRatio>
+                </a>
+              ))}
+            </XDSGrid>
+          </XDSVStack>
+        </XDSSection>
+      </XDSCenter>
+    </XDSAppShell>
   );
 }
