@@ -459,8 +459,10 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
     xstyle,
     className,
     style,
-  } = props;
-  const hasClear = 'hasClear' in props && props.hasClear === true;
+    hasClear: hasClearProp,
+    ...rest
+  } = props as XDSSelectorPropsClearable<T>;
+  const hasClear = hasClearProp === true;
 
   // Normalize null to undefined for internal use (null is the clear sentinel)
   const normalizedValue = value === null ? undefined : value;
@@ -684,6 +686,7 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
         id={triggerId}
         type="button"
         role="combobox"
+        {...rest}
         aria-haspopup="listbox"
         aria-expanded={popover.isOpen}
         aria-controls={listboxId}
