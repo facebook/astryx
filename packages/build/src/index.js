@@ -4,23 +4,13 @@
  * @xds/postcss-plugin
  *
  * PostCSS plugin for XDS source builds. Compiles StyleX from both
- * XDS library source and product code, then splits the output into
- * separate named CSS layers:
+ * XDS library source and product code in two separate passes with
+ * different class name prefixes, then outputs them in separate layers:
  *
- *   reset < xds-base (library styles) < xds-theme < product (app styles)
+ *   reset < xds-base (library, prefix: 'xds') < xds-theme < product (prefix: 'x')
  *
- * Usage:
- *   // postcss.config.js
- *   const babelConfig = require('./babel.config');
- *
- *   module.exports = {
- *     plugins: {
- *       '@xds/postcss-plugin': {
- *         appDir: 'src',
- *         babelPlugins: babelConfig.plugins,
- *       },
- *     },
- *   };
+ * The separate prefixes ensure atomic classes don't collide between
+ * layers, which would break theme overrides.
  */
 
 const path = require('node:path');
@@ -34,9 +24,8 @@ const globParent = require('glob-parent');
 
 const PLUGIN_NAME = '@xds/postcss-plugin';
 
-// XDS-specific defaults — the user shouldn't need to specify these
 const XDS_LIBRARY_GLOB = 'node_modules/@xds/**/*.{ts,tsx}';
-const XDS_LIBRARY_PATTERN = 'node_modules/@xds/';
+const XDS_LIBRARY_PATTERNS = ['node_modules/@xds/', 'packages/core/', 'packages/themes/'];
 const STYLEX_IMPORT_SOURCE = '@stylexjs/stylex';
 
 function parseDependency(fileOrGlob, cwd) {
@@ -57,39 +46,45 @@ function parseDependency(fileOrGlob, cwd) {
   };
 }
 
+/**
+ * Clone a babel plugins array, overriding the classNamePrefix on the
+ * StyleX babel plugin entry.
+ */
+function withClassNamePrefix(plugins, prefix) {
+  return plugins.map(p => {
+    if (!Array.isArray(p)) return p;
+    const [pluginPath, opts] = p;
+    // Match @stylexjs/babel-plugin by name
+    const name = typeof pluginPath === 'string' ? pluginPath : '';
+    if (name.includes('@stylexjs/babel-plugin') || name.includes('stylex')) {
+      return [pluginPath, {...opts, classNamePrefix: prefix}];
+    }
+    return p;
+  });
+}
+
 function createPlugin() {
   const isDev = process.env.NODE_ENV === 'development';
 
-  // Persists across rebuilds for watch mode
-  const styleXRulesMap = new Map();
+  // Separate rule maps for library and product
+  const libraryRulesMap = new Map();
+  const productRulesMap = new Map();
   const fileModifiedMap = new Map();
 
   const plugin = ({
     cwd = process.cwd(),
-
-    // --- User-facing options ---
-
-    // Directory containing your app source (default: 'src')
     appDir = 'src',
-
-    // StyleX babel plugins from your babel.config.js
     babelPlugins = [],
-
-    // Layer names (override if you need different names)
     layers = {
       library: 'xds-base',
       product: 'product',
     },
-
-    // --- Advanced options (rarely needed) ---
-
-    // Additional include globs beyond appDir and @xds packages
+    // Class name prefix for library styles (product keeps default 'x')
+    libraryPrefix = 'xds',
     extraInclude = [],
-
-    // Exclude globs
+    libraryPatterns = XDS_LIBRARY_PATTERNS,
     exclude = [],
   }) => {
-    // Build the include list: app code + all @xds packages
     const include = [
       `${appDir}/**/*.{js,jsx,ts,tsx}`,
       XDS_LIBRARY_GLOB,
@@ -98,13 +93,17 @@ function createPlugin() {
 
     const excludeWithDefaults = ['**/*.d.ts', '**/*.flow', ...exclude];
 
-    // Build babel config from the user's plugins
-    const babelConfig = {
+    // Two babel configs — different classNamePrefix
+    const libraryBabelConfig = {
       babelrc: false,
-      parserOpts: {
-        plugins: ['typescript', 'jsx'],
-      },
-      plugins: babelPlugins,
+      parserOpts: {plugins: ['typescript', 'jsx']},
+      plugins: withClassNamePrefix(babelPlugins, libraryPrefix),
+    };
+
+    const productBabelConfig = {
+      babelrc: false,
+      parserOpts: {plugins: ['typescript', 'jsx']},
+      plugins: babelPlugins, // keeps default 'x' prefix
     };
 
     let shouldSkipTransformError = false;
@@ -115,7 +114,6 @@ function createPlugin() {
         async function (root, result) {
           const fileName = result.opts.from;
 
-          // Find @stylex at-rule
           let styleXAtRule = null;
           root.walkAtRules((atRule) => {
             if (atRule.name === 'stylex' && !atRule.params) {
@@ -153,11 +151,13 @@ function createPlugin() {
           for (const f of fileModifiedMap.keys()) {
             if (!files.has(f)) {
               fileModifiedMap.delete(f);
-              styleXRulesMap.delete(f);
+              libraryRulesMap.delete(f);
+              productRulesMap.delete(f);
             }
           }
 
-          // Transform changed files
+          // Partition files into library vs product, then compile
+          // each group with its own babel config (different prefix)
           const transforms = [];
           for (const filePath of files) {
             const mtimeMs = fs.existsSync(filePath)
@@ -172,21 +172,23 @@ function createPlugin() {
             fileModifiedMap.set(filePath, mtimeMs);
 
             const contents = fs.readFileSync(filePath, 'utf-8');
-
-            // Quick check: does this file import stylex?
             if (!contents.includes(STYLEX_IMPORT_SOURCE)) continue;
+
+            const isLibrary = libraryPatterns.some(p => filePath.includes(p));
+            const config = isLibrary ? libraryBabelConfig : productBabelConfig;
+            const rulesMap = isLibrary ? libraryRulesMap : productRulesMap;
 
             transforms.push(
               babel
                 .transformAsync(contents, {
                   filename: filePath,
                   caller: {name: PLUGIN_NAME, platform: 'web', isDev},
-                  ...babelConfig,
+                  ...config,
                 })
                 .then(({metadata}) => {
                   const stylex = metadata?.stylex;
                   if (stylex != null && stylex.length > 0) {
-                    styleXRulesMap.set(filePath, stylex);
+                    rulesMap.set(filePath, stylex);
                   }
                 })
                 .catch((error) => {
@@ -202,16 +204,9 @@ function createPlugin() {
           }
           await Promise.all(transforms);
 
-          // Partition rules by source path
-          const libraryRules = [];
-          const productRules = [];
-          for (const [filePath, rules] of styleXRulesMap.entries()) {
-            if (filePath.includes(XDS_LIBRARY_PATTERN)) {
-              libraryRules.push(...rules);
-            } else {
-              productRules.push(...rules);
-            }
-          }
+          // Collect rules from each map
+          const libraryRules = Array.from(libraryRulesMap.values()).flat();
+          const productRules = Array.from(productRulesMap.values()).flat();
 
           // Process each group separately
           const libraryCss = libraryRules.length
