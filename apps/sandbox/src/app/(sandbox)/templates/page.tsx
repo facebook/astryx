@@ -200,7 +200,7 @@ const columns: XDSTableColumn<TemplateRow>[] = [
     filter: 'name',
     width: pixel(250),
     renderCell: (row: TemplateRow) => (
-      <XDSLink label={row.name} href={row.href} as={Link} target="_blank">
+      <XDSLink label={row.name} href={import.meta.env.BASE_URL.replace(/\/$/, '') + row.href} target="_blank">
         {row.name}
       </XDSLink>
     ),

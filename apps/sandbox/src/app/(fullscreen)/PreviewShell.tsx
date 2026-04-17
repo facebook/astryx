@@ -921,7 +921,7 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
                 backgroundColor: '#f0f0f0',
               }}>
               <iframe
-                src={`${pathname}?embed=1`}
+                src={`${import.meta.env.BASE_URL.replace(/\/$/, '')}${pathname}?embed=1`}
                 title={`${pageName} — ${viewport}`}
                 style={{
                   width: viewportWidths[viewport],
