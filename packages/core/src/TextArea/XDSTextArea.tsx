@@ -264,7 +264,7 @@ export function XDSTextArea({
   onChange,
   onChangeAction,
   isLoading = false,
-  value,
+  value = '',
   placeholder,
   rows = 3,
   isDisabled = false,
