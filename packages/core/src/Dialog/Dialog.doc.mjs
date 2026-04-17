@@ -2,22 +2,7 @@
 
 export const docs = {
   name: 'Dialog',
-  description:
-    'Modal dialog using the native <dialog> element with automatic focus trapping, backdrop, and purpose-based dismissal control.',
-  showcase: {
-    aspectRatio: 4 / 3,
-    code: '<XDSDialog isOpen={true} onOpenChange={() => {}}>Dialog content</XDSDialog>',
-  },
   keywords: ["dialog","modal","popup","overlay","lightbox","alert","confirm","prompt","backdrop","focus trap"],
-  features: [
-    "Native <dialog>: Uses the browser's built-in modal behavior via showModal()",
-    'Automatic focus trap: Focus is trapped within the dialog when open (browser-native)',
-    'Backdrop: Native ::backdrop pseudo-element with blur effect',
-    'Variants: standard (configurable dimensions) and fullscreen (full viewport)',
-    'Purpose-based dismissal: required, form, and info control Escape key and backdrop-click behavior',
-    'Custom positioning: Static position support via the position prop',
-    'Accessible: Proper ARIA attributes and keyboard navigation',
-  ],
   theming: {
     container: true,
     targets: [
@@ -35,20 +20,6 @@ export const docs = {
       },
     ],
   },
-  keyboard:
-    'Escape closes the dialog (unless purpose="required"); focus is trapped inside the dialog while open.',
-  accessibility: [
-    'Uses the native <dialog> element with showModal() for correct ARIA modal semantics.',
-    'Focus is automatically trapped by the browser when using showModal().',
-    'XDSDialogHeader title receives focus when the dialog opens.',
-  ],
-  notes: [
-    'Height is unset (grows with content) and constrained by the maxHeight prop.',
-    'When variant="fullscreen", the width, maxHeight, and position props are ignored.',
-    'For form purpose, backdrop click is only allowed before the user has interacted with the dialog.',
-    'Purpose=required disables both Escape key and backdrop click; purpose=form disables backdrop click after interaction; purpose=info (default) allows both.',
-    'XDSDialog is designed to be used with XDSLayout as its child.',
-  ],
   components: [
     {
       name: 'XDSDialog',
@@ -148,23 +119,13 @@ export const docs = {
     },
   ],
   usage: {
-    summary: 'A top-level dialog that communicates important information and pauses the user\'s workflow.',
-    content: `## When to use
-
-- Pause a user's workflow to communicate top-level information.
-- Guide users through multi-step workflows.
-- Surface information that requires acknowledgement.
-- Present confirmations before destructive actions.
-
-## Best practices
-
-- Do: Include a back arrow for two-view dialogs.
-- Do: Include a step count indicator for dialogs with 3 or more views.
-- Don't: Remove all dismissal behaviors.
-- Use sentence case for dialog content.
-- Match the call-to-action label to the dialog headline.
-- Number steps in multi-step dialogs.
-- Dismissal types: informational (all exit methods), form (disable click-outside), required (only footer buttons).`,
+    description: 'A modal dialog that interrupts the user workflow to communicate important information or request a decision. Use for confirmations before destructive actions, multi-step workflows, or content that requires acknowledgement before proceeding.',
+    bestPractices: [
+      { guidance: true, description: 'Choose the right purpose (required, form, info) to match the importance of the content.' },
+      { guidance: true, description: 'Include a clear title in the header so users immediately understand the dialog context.' },
+      { guidance: false, description: 'Use a dialog for simple messages that could be shown inline or as a toast notification.' },
+      { guidance: false, description: 'Nest dialogs inside other dialogs — restructure the flow into steps within a single dialog instead.' },
+    ],
     anatomy: [
       {name: 'Body', required: true, description: 'The main content area of the dialog.'},
       {name: 'Header', required: true, description: 'Contains the title, actions, and close button.'},
@@ -178,17 +139,6 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Dialog',
-  description:
-    '使用原生 <dialog> 元素的模态对话框，支持自动焦点捕获、遮罩层和基于用途的关闭控制。',
-  features: [
-    '原生 <dialog>：通过 showModal() 使用浏览器内置的模态行为',
-    '自动焦点捕获：对话框打开时焦点被限制在内部（浏览器原生支持）',
-    '遮罩层：原生 ::backdrop 伪元素，带模糊效果',
-    '变体：standard（可配置尺寸）和 fullscreen（全视口）',
-    '基于用途的关闭控制：required、form 和 info 控制 Escape 键和遮罩层点击行为',
-    '自定义定位：通过 position 属性支持静态定位',
-    '无障碍：正确的 ARIA 属性和键盘导航',
-  ],
   theming: {
     container: true,
     targets: [
@@ -206,20 +156,6 @@ export const docsZh = {
       },
     ],
   },
-  keyboard:
-    'Escape 关闭对话框（purpose="required" 时除外）；对话框打开时焦点被限制在内部。',
-  accessibility: [
-    '使用原生 <dialog> 元素配合 showModal() 以获得正确的 ARIA 模态语义。',
-    '使用 showModal() 时，浏览器会自动捕获焦点。',
-    '对话框打开时，XDSDialogHeader 的标题会获得焦点。',
-  ],
-  notes: [
-    '高度未设置（随内容增长），受 maxHeight 属性约束。',
-    '当 variant="fullscreen" 时，width、maxHeight 和 position 属性会被忽略。',
-    '对于 form 用途，仅在用户与对话框交互之前允许点击遮罩层关闭。',
-    'purpose=required 禁用 Escape 键和遮罩层点击；purpose=form 在交互后禁用遮罩层点击；purpose=info（默认）两者都允许。',
-    'XDSDialog 设计为与 XDSLayout 配合使用作为其子组件。',
-  ],
   components: [
     {
       name: 'XDSDialog',
@@ -319,33 +255,43 @@ export const docsZh = {
       ],
     },
   ],
+  usage: {
+    description: 'A modal dialog that interrupts the user workflow to communicate important information or request a decision. Use for confirmations before destructive actions, multi-step workflows, or content that requires acknowledgement before proceeding.',
+    bestPractices: [
+      { guidance: true, description: 'Choose the right purpose (required, form, info) to match the importance of the content.' },
+      { guidance: true, description: 'Include a clear title in the header so users immediately understand the dialog context.' },
+      { guidance: false, description: 'Use a dialog for simple messages that could be shown inline or as a toast notification.' },
+      { guidance: false, description: 'Nest dialogs inside other dialogs — restructure the flow into steps within a single dialog instead.' },
+    ],
+    anatomy: [
+      {name: 'Body', required: true, description: 'The main content area of the dialog.'},
+      {name: 'Header', required: true, description: 'Contains the title, actions, and close button.'},
+      {name: 'Footer', required: true, description: 'Contains action buttons, links, and page count.'},
+      {name: 'Left Panel', required: false, description: 'Used for navigation or completion stages.'},
+      {name: 'Right Panel', required: false, description: 'Used for supplementary information.'},
+    ],
+  },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   description: 'modal dialog using native <dialog> w/ auto focus trapping, backdrop, purpose-based dismissal',
-  features: [
-    'native <dialog>: browser built-in modal via showModal()',
-    'auto focus trap inside dialog (browser-native)',
-    'native ::backdrop pseudo-element w/ blur',
-    'variants: standard (configurable dims) + fullscreen (full viewport)',
-    'purpose-based dismissal: required, form, info control Escape+backdrop-click',
-    'static position via position prop',
-    'proper ARIA attrs + keyboard nav',
-  ],
-  keyboard: 'Escape closes dialog (unless purpose="required"); focus trapped inside while open',
-  accessibility: [
-    'native <dialog> w/ showModal() for correct ARIA modal semantics',
-    'focus auto-trapped by browser via showModal()',
-    'XDSDialogHeader title receives focus on open',
-  ],
-  notes: [
-    'height unset (grows w/ content), constrained by maxHeight',
-    'variant="fullscreen" ignores width, maxHeight, position',
-    'form purpose: backdrop click only allowed before user interaction',
-    'required=no Escape+no backdrop click; form=no backdrop click after interaction; info=both allowed',
-    'designed for use w/ XDSLayout as child',
-  ],
+  usage: {
+    description: 'A modal dialog that interrupts the user workflow to communicate important information or request a decision. Use for confirmations before destructive actions, multi-step workflows, or content that requires acknowledgement before proceeding.',
+    bestPractices: [
+      { guidance: true, description: 'Choose the right purpose (required, form, info) to match the importance of the content.' },
+      { guidance: true, description: 'Include a clear title in the header so users immediately understand the dialog context.' },
+      { guidance: false, description: 'Use a dialog for simple messages that could be shown inline or as a toast notification.' },
+      { guidance: false, description: 'Nest dialogs inside other dialogs — restructure the flow into steps within a single dialog instead.' },
+    ],
+    anatomy: [
+      {name: 'Body', required: true, description: 'The main content area of the dialog.'},
+      {name: 'Header', required: true, description: 'Contains the title, actions, and close button.'},
+      {name: 'Footer', required: true, description: 'Contains action buttons, links, and page count.'},
+      {name: 'Left Panel', required: false, description: 'Used for navigation or completion stages.'},
+      {name: 'Right Panel', required: false, description: 'Used for supplementary information.'},
+    ],
+  },
   components: [
     {
       name: 'XDSDialog',

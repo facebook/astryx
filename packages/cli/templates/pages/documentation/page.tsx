@@ -1,6 +1,7 @@
 'use client';
 
 import {useState} from 'react';
+import * as stylex from '@stylexjs/stylex';
 import {XDSHeading, XDSText} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
 import {XDSCard} from '@xds/core/Card';
@@ -11,10 +12,102 @@ import {XDSToken} from '@xds/core/Token';
 import {XDSList, XDSListItem} from '@xds/core/List';
 import {XDSBanner} from '@xds/core/Banner';
 import {XDSCodeBlock} from '@xds/core/CodeBlock';
+import {XDSTabList, XDSTab} from '@xds/core/TabList';
+import {XDSHStack} from '@xds/core/Stack';
 import {XDSDialog, XDSDialogHeader} from '@xds/core/Dialog';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSTooltip} from '@xds/core/Tooltip';
-import {XDSTable} from '@xds/core/Table';
+import {XDSTable, pixel} from '@xds/core/Table';
+import {
+  borderVars,
+  colorVars,
+  spacingVars,
+} from '@xds/core/theme/tokens.stylex';
+
+const cellStyles = stylex.create({
+  wrap: {
+    whiteSpace: 'normal',
+  },
+  tabListFlush: {
+    marginLeft: `calc(-1 * ${spacingVars['--spacing-3']})`,
+  },
+  mutedCardBorder: {
+    borderWidth: borderVars['--border-width'],
+    borderStyle: 'solid',
+    borderColor: colorVars['--color-border-emphasized'],
+  },
+  dividerSpacing: {
+    paddingBottom: spacingVars['--spacing-12'],
+  },
+  sectionSpacing: {
+    marginBottom: spacingVars['--spacing-12'],
+  },
+  tabsContainer: {
+    backgroundColor: colorVars['--color-background-muted'],
+    borderTopWidth: borderVars['--border-width'],
+    borderTopStyle: 'solid',
+    borderTopColor: colorVars['--color-border'],
+    paddingInline: spacingVars['--spacing-4'],
+    paddingTop: spacingVars['--spacing-2'],
+    paddingBottom: spacingVars['--spacing-4'],
+  },
+  tabContent: {
+    paddingTop: spacingVars['--spacing-3'],
+  },
+  previewArea: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: '280px',
+    paddingBlock: spacingVars['--spacing-8'],
+    paddingInline: spacingVars['--spacing-8'],
+  },
+  heroPreview: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: '360px',
+  },
+  cardHeader: {
+    paddingInline: spacingVars['--spacing-4'],
+    paddingBlock: spacingVars['--spacing-3'],
+  },
+  narrowContent: {
+    maxWidth: '640px',
+    marginInline: 'auto',
+  },
+  wideContent: {
+    maxWidth: '960px',
+    marginInline: 'auto',
+  },
+  headerSpacing: {
+    marginBottom: spacingVars['--spacing-2'],
+  },
+  subheaderSpacing: {
+    marginBottom: spacingVars['--spacing-8'],
+  },
+  usageTextSpacing: {
+    marginTop: spacingVars['--spacing-3'],
+  },
+  bestPracticesSpacing: {
+    marginTop: spacingVars['--spacing-6'],
+  },
+  tableSpacing: {
+    marginTop: spacingVars['--spacing-4'],
+  },
+  examplesTextSpacing: {
+    marginTop: spacingVars['--spacing-2'],
+  },
+  exampleCardsContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacingVars['--spacing-8'],
+    marginTop: spacingVars['--spacing-6'],
+  },
+  flexGrow: {
+    flexGrow: 1,
+  },
+});
 
 // ---------------------------------------------------------------------------
 // Icons (Lucide-style inline SVGs)
@@ -32,27 +125,6 @@ const ExternalLinkIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
     <polyline points="15 3 21 3 21 9" />
     <line x1="10" y1="14" x2="21" y2="3" />
-  </svg>
-);
-
-const SunIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    {...props}>
-    <circle cx="12" cy="12" r="4" />
-    <path d="M12 2v2" />
-    <path d="M12 20v2" />
-    <path d="m4.93 4.93 1.41 1.41" />
-    <path d="m17.66 17.66 1.41 1.41" />
-    <path d="M2 12h2" />
-    <path d="M20 12h2" />
-    <path d="m6.34 17.66-1.41 1.41" />
-    <path d="m19.07 4.93-1.41 1.41" />
   </svg>
 );
 
@@ -100,6 +172,20 @@ const CopyIcon = (props: React.SVGProps<SVGSVGElement>) => (
     {...props}>
     <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
     <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+  </svg>
+);
+
+const PlusIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}>
+    <path d="M12 5v14" />
+    <path d="M5 12h14" />
   </svg>
 );
 
@@ -570,50 +656,50 @@ const COMPONENT_CATEGORIES = [
 const COMPONENT_DOCS: Record<
   string,
   {
-    tagline: string;
-    description: string;
-    whenToUse: string[];
-    whenNotToUse: string[];
-    anatomy: {element: string; required: string; description: string}[];
+    usage: string;
+    bestPractices: {type: 'do' | 'dont'; text: string}[];
+    examples: {
+      title: string;
+      description: string;
+      code: string;
+    }[];
   }
 > = {
   button: {
-    tagline: 'Trigger actions and navigate',
-    description:
-      'Buttons communicate the action that will occur when the user touches them. They can be placed in dialogs, forms, cards, and toolbars. The primary variant is used for the most important action on a page, while secondary and ghost variants provide visual hierarchy.',
-    whenToUse: [
-      'To trigger an action such as submitting a form or opening a dialog',
-      'As a call-to-action in marketing or onboarding surfaces',
-      'In toolbars and action bars for contextual operations',
+    usage:
+      'Buttons provide visual cues for actions and events. These fundamental components allow users to commit actions and navigate a page flow. Use a Button when a user needs to submit a form, start a new task or action, or trigger a new UI element to appear on the page.',
+    bestPractices: [
+      {
+        type: 'do',
+        text: 'Convey clear action hierarchy: Each surface should only have 1 primary button. A majority of buttons should be in default or flat style.',
+      },
+      {
+        type: 'do',
+        text: 'Promote clarity: Consider labels alongside icons where appropriate.',
+      },
+      {
+        type: 'dont',
+        text: 'Overuse primary or special buttons: Overusing colored buttons will result in a page with less intentionality, create visual confusion and a lack of page hierarchy.',
+      },
     ],
-    whenNotToUse: [
-      'For navigation to another page — use Link instead',
-      'To toggle a state on/off — use ToggleButton or Switch instead',
-      'When the action is part of a menu — use DropdownMenu instead',
-    ],
-    anatomy: [
+    examples: [
       {
-        element: 'Root',
-        required: 'Yes',
+        title: 'Semantics',
         description:
-          'The outer <button> element that handles click events and focus state',
+          'We have four semantic buttons types: flat, default, primary, and destructive. Flat buttons are used to limit visual prominence, whereas primary emphasizes a single action. Use destructive for deletions that trigger dialog confirmations.',
+        code: `<XDSButton label="Flat" variant="ghost" />
+<XDSButton label="Default" variant="secondary" />
+<XDSButton label="Primary" variant="primary" />
+<XDSButton label="Destructive" variant="destructive" />`,
       },
       {
-        element: 'Label',
-        required: 'Yes',
-        description: 'Text content describing the action the button performs',
-      },
-      {
-        element: 'Icon',
-        required: 'No',
+        title: 'Default button with badge',
         description:
-          'Optional leading or trailing icon for visual reinforcement',
-      },
-      {
-        element: 'Spinner',
-        required: 'No',
-        description:
-          'Shown when the button is in a loading state, replaces the icon slot',
+          'Buttons can include a badge to highlight new or updated actions.',
+        code: `<XDSButton
+  label="Button"
+  variant="default"
+/>`,
       },
     ],
   },
@@ -640,26 +726,26 @@ function getComponentDocs(key: string) {
   const name = getComponentName(key);
   const desc = getComponentDesc(key);
   return {
-    tagline: desc.split('.')[0] + '.',
-    description: desc,
-    whenToUse: [
-      `Use ${name} when you need the functionality it provides`,
-      'Integrate it into forms, pages, or panels as appropriate',
-    ],
-    whenNotToUse: [
-      'When a simpler alternative achieves the same goal',
-      'If the use case falls outside the intended scope of this component',
-    ],
-    anatomy: [
+    usage: desc,
+    bestPractices: [
       {
-        element: 'Root',
-        required: 'Yes',
-        description: `The outermost container element for ${name}`,
+        type: 'do' as const,
+        text: `Use ${name} in the appropriate context to provide the functionality described above.`,
       },
       {
-        element: 'Content',
-        required: 'Yes',
-        description: 'The primary content area',
+        type: 'do' as const,
+        text: `Pair ${name} with related components to create cohesive, accessible interfaces.`,
+      },
+      {
+        type: 'dont' as const,
+        text: `Use ${name} when a simpler alternative achieves the same goal with less complexity.`,
+      },
+    ],
+    examples: [
+      {
+        title: `Basic ${name}`,
+        description: `A simple example of the ${name} component with default settings.`,
+        code: `<XDS${name} />`,
       },
     ],
   };
@@ -674,212 +760,58 @@ export default function DocumentationPage() {
   const [selectedComponent, setSelectedComponent] = useState<string | null>(
     null,
   );
+  const [exampleTabs, setExampleTabs] = useState<Record<string, string>>({});
+
+  const EXAMPLE_PREVIEWS: Record<string, React.ReactNode[]> = {
+    button: [
+      // Semantics
+      <XDSHStack key="semantics" gap={3} vAlign="center">
+        <XDSButton label="Flat" variant="ghost" />
+        <XDSButton label="Default" variant="secondary" />
+        <XDSButton label="Primary" variant="primary" />
+        <XDSButton label="Destructive" variant="destructive" />
+      </XDSHStack>,
+      // Default button with badge
+      <XDSButton key="badge" label="Button" variant="secondary" />,
+    ],
+  };
 
   const COMPONENT_PREVIEWS: Record<string, React.ReactNode> = {
     button: (
-      <div>
-        <div style={{marginBottom: 16}}>
-          <XDSHeading level={3}>Variants</XDSHeading>
-        </div>
-        <div
-          style={{
-            display: 'flex',
-            gap: 12,
-            flexWrap: 'wrap' as const,
-            marginBottom: 32,
-          }}>
-          <XDSButton label="Primary" variant="primary" />
-          <XDSButton label="Secondary" variant="secondary" />
-          <XDSButton label="Ghost" variant="ghost" />
-        </div>
-        <div style={{marginBottom: 16}}>
-          <XDSHeading level={3}>Sizes</XDSHeading>
-        </div>
-        <div
-          style={{
-            display: 'flex',
-            gap: 12,
-            alignItems: 'center',
-            flexWrap: 'wrap' as const,
-          }}>
-          <XDSButton label="Small" variant="primary" size="sm" />
-          <XDSButton label="Medium" variant="primary" size="md" />
-          <XDSButton label="Large" variant="primary" size="lg" />
-        </div>
-      </div>
+      <XDSButton
+        label="Button"
+        variant="secondary"
+        icon={<PlusIcon />}
+        endContent={<XDSBadge label="New" variant="info" />}
+      />
     ),
-    avatar: (
-      <div>
-        <div style={{marginBottom: 16}}>
-          <XDSHeading level={3}>Sizes</XDSHeading>
-        </div>
-        <div
-          style={{
-            display: 'flex',
-            gap: 16,
-            alignItems: 'center',
-            flexWrap: 'wrap' as const,
-          }}>
-          <XDSAvatar name="Alice" size="small" />
-          <XDSAvatar name="Bob" size="medium" />
-          <XDSAvatar name="Charlie" size="large" />
-        </div>
-      </div>
-    ),
-    badge: (
-      <div>
-        <div style={{marginBottom: 16}}>
-          <XDSHeading level={3}>Variants</XDSHeading>
-        </div>
-        <div
-          style={{
-            display: 'flex',
-            gap: 12,
-            flexWrap: 'wrap' as const,
-          }}>
-          <XDSBadge label="Default" />
-          <XDSBadge label="Info" variant="info" />
-          <XDSBadge label="Success" variant="success" />
-          <XDSBadge label="Warning" variant="warning" />
-          <XDSBadge label="Error" variant="error" />
-        </div>
-      </div>
-    ),
+    avatar: <XDSAvatar name="Alice" size="medium" />,
+    badge: <XDSBadge label="Success" variant="success" />,
     card: (
-      <div>
-        <div style={{marginBottom: 16}}>
-          <XDSHeading level={3}>Card</XDSHeading>
+      <XDSCard>
+        <div style={{padding: 16}}>
+          <XDSHeading level={4}>Card Title</XDSHeading>
+          <div style={{marginTop: 8}}>
+            <XDSText type="body" color="secondary">
+              Cards group related content and actions.
+            </XDSText>
+          </div>
         </div>
-        <div style={{maxWidth: 400}}>
-          <XDSCard>
-            <div style={{padding: 16}}>
-              <XDSHeading level={4}>Card Title</XDSHeading>
-              <div style={{marginTop: 8}}>
-                <XDSText type="body" color="secondary">
-                  Cards are containers for grouping related content and actions.
-                  They provide a flexible surface for displaying information.
-                </XDSText>
-              </div>
-            </div>
-          </XDSCard>
-        </div>
-      </div>
+      </XDSCard>
     ),
     banner: (
-      <div>
-        <div style={{marginBottom: 16}}>
-          <XDSHeading level={3}>Status Variants</XDSHeading>
-        </div>
-        <div
-          style={{display: 'flex', flexDirection: 'column' as const, gap: 12}}>
-          <XDSBanner status="info" title="Information">
-            <XDSText type="body">
-              This is an informational banner message.
-            </XDSText>
-          </XDSBanner>
-          <XDSBanner status="success" title="Success">
-            <XDSText type="body">Operation completed successfully.</XDSText>
-          </XDSBanner>
-          <XDSBanner status="warning" title="Warning">
-            <XDSText type="body">Please review before continuing.</XDSText>
-          </XDSBanner>
-        </div>
-      </div>
+      <XDSBanner status="info" title="Information">
+        <XDSText type="body">This is an informational banner message.</XDSText>
+      </XDSBanner>
     ),
     dialog: <DialogPreview />,
-    text: (
-      <div>
-        <div style={{marginBottom: 16}}>
-          <XDSHeading level={3}>Typography Scale</XDSHeading>
-        </div>
-        <div
-          style={{display: 'flex', flexDirection: 'column' as const, gap: 12}}>
-          <XDSText type="display-1">Display 1</XDSText>
-          <XDSText type="display-2">Display 2</XDSText>
-          <XDSText type="display-3">Display 3</XDSText>
-          <XDSHeading level={1}>Heading 1</XDSHeading>
-          <XDSHeading level={2}>Heading 2</XDSHeading>
-          <XDSHeading level={3}>Heading 3</XDSHeading>
-          <XDSHeading level={4}>Heading 4</XDSHeading>
-          <XDSText type="body">Body text</XDSText>
-          <XDSText type="supporting">Supporting text</XDSText>
-        </div>
-      </div>
-    ),
-    divider: (
-      <div>
-        <div style={{marginBottom: 16}}>
-          <XDSHeading level={3}>Divider</XDSHeading>
-        </div>
-        <div
-          style={{display: 'flex', flexDirection: 'column' as const, gap: 24}}>
-          <div>
-            <XDSText type="supporting" color="secondary">
-              Subtle (default)
-            </XDSText>
-            <div style={{marginTop: 8}}>
-              <XDSDivider />
-            </div>
-          </div>
-          <div>
-            <XDSText type="supporting" color="secondary">
-              Strong
-            </XDSText>
-            <div style={{marginTop: 8}}>
-              <XDSDivider variant="strong" />
-            </div>
-          </div>
-          <div>
-            <XDSText type="supporting" color="secondary">
-              With label
-            </XDSText>
-            <div style={{marginTop: 8}}>
-              <XDSDivider label="Section" />
-            </div>
-          </div>
-        </div>
-      </div>
-    ),
-    token: (
-      <div>
-        <div style={{marginBottom: 16}}>
-          <XDSHeading level={3}>Tokens</XDSHeading>
-        </div>
-        <div
-          style={{
-            display: 'flex',
-            gap: 8,
-            flexWrap: 'wrap' as const,
-          }}>
-          <XDSToken label="Design" />
-          <XDSToken label="Engineering" />
-          <XDSToken label="Product" />
-          <XDSToken label="Research" />
-        </div>
-      </div>
-    ),
+    text: <XDSText type="body">Body text</XDSText>,
+    divider: <XDSDivider />,
+    token: <XDSToken label="Design" />,
     tooltip: (
-      <div>
-        <div style={{marginBottom: 16}}>
-          <XDSHeading level={3}>Tooltip</XDSHeading>
-        </div>
-        <div
-          style={{
-            display: 'flex',
-            gap: 12,
-            flexWrap: 'wrap' as const,
-          }}>
-          <XDSTooltip content="Primary action">
-            <XDSButton label="Hover me" variant="primary" />
-          </XDSTooltip>
-          <XDSTooltip content="Secondary action">
-            <XDSButton label="Or me" variant="secondary" />
-          </XDSTooltip>
-          <XDSTooltip content="Ghost action">
-            <XDSButton label="Or me" variant="ghost" />
-          </XDSTooltip>
-        </div>
-      </div>
+      <XDSTooltip content="Primary action">
+        <XDSButton label="Hover me" variant="primary" />
+      </XDSTooltip>
     ),
   };
 
@@ -889,7 +821,7 @@ export default function DocumentationPage() {
       <div
         style={{
           display: 'flex',
-          height: '100vh',
+          height: '100%',
           backgroundColor: 'var(--color-background-surface, #ffffff)',
           fontFamily: 'system-ui, -apple-system, sans-serif',
         }}>
@@ -898,7 +830,7 @@ export default function DocumentationPage() {
           style={{
             width: 240,
             minWidth: 240,
-            height: '100vh',
+            height: '100%',
             display: 'flex',
             flexDirection: 'column' as const,
             backgroundColor: 'var(--color-background-surface, #ffffff)',
@@ -1454,166 +1386,199 @@ export default function App({ children }) {
             </div>
           ) : (
             /* ============ COMPONENT DETAIL ============ */
-            <div style={{maxWidth: 840, margin: '0 auto'}}>
+            <div {...stylex.props(cellStyles.wideContent)}>
               {/* Header */}
-              <div style={{marginBottom: 8}}>
+              <div
+                {...stylex.props(
+                  cellStyles.narrowContent,
+                  cellStyles.headerSpacing,
+                )}>
                 <XDSText type="display-1">
                   {getComponentName(activeNav)}
                 </XDSText>
               </div>
-              <div style={{marginBottom: 32}}>
+              <div
+                {...stylex.props(
+                  cellStyles.narrowContent,
+                  cellStyles.subheaderSpacing,
+                )}>
                 <XDSText type="supporting" color="secondary">
                   March 30, 2026 · Updated 5:40 p.m. PST
                 </XDSText>
               </div>
 
+              <div {...stylex.props(cellStyles.dividerSpacing)}>
+                <XDSDivider />
+              </div>
+
               {/* Live Preview Card */}
-              <div
-                style={{
-                  border: '1px solid var(--color-divider, rgba(0,0,0,0.1))',
-                  borderRadius: 12,
-                  overflow: 'hidden',
-                  marginBottom: 48,
-                }}>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '8px 12px',
-                    borderBottom:
-                      '1px solid var(--color-divider, rgba(0,0,0,0.08))',
-                    backgroundColor: 'var(--color-background-surface, #ffffff)',
-                  }}>
-                  <XDSText
-                    type="supporting"
-                    weight="semibold"
-                    color="secondary">
-                    Live preview
-                  </XDSText>
-                  <div style={{display: 'flex', alignItems: 'center', gap: 4}}>
-                    <XDSButton
-                      label="Open in Craft"
-                      variant="ghost"
-                      size="sm"
-                      icon={<ExternalLinkIcon />}
-                    />
-                    <XDSDropdownMenu
-                      button={{
-                        label: 'Variants',
-                        variant: 'ghost',
-                        size: 'sm',
-                      }}
-                      hasChevron={false}
-                      items={[
-                        {label: 'Primary', onClick: () => {}},
-                        {label: 'Secondary', onClick: () => {}},
-                        {label: 'Ghost', onClick: () => {}},
-                      ]}
-                    />
-                    <XDSButton
-                      label="Toggle theme"
-                      variant="ghost"
-                      size="sm"
-                      isIconOnly
-                      icon={<SunIcon />}
-                    />
-                    <XDSButton
-                      label="Fullscreen"
-                      variant="ghost"
-                      size="sm"
-                      isIconOnly
-                      icon={<MaximizeIcon />}
-                    />
-                  </div>
-                </div>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    height: 280,
-                    backgroundColor: 'var(--color-background-muted, #f5f5f5)',
-                  }}>
+              <XDSCard
+                variant="muted"
+                padding={0}
+                xstyle={cellStyles.mutedCardBorder}>
+                {/* Preview */}
+                <div {...stylex.props(cellStyles.heroPreview)}>
                   {COMPONENT_PREVIEWS[activeNav] ?? (
                     <XDSText type="supporting" color="secondary">
                       Preview coming soon
                     </XDSText>
                   )}
                 </div>
-              </div>
+              </XDSCard>
+              <div {...stylex.props(cellStyles.sectionSpacing)} />
 
-              {/* Description */}
+              {/* Usage & Best Practices */}
               {(() => {
                 const docs = getComponentDocs(activeNav);
                 return (
-                  <div style={{marginBottom: 48}}>
-                    <XDSHeading level={3}>{docs.tagline}</XDSHeading>
-                    <div style={{marginTop: 12}}>
-                      <XDSText type="body">{docs.description}</XDSText>
-                    </div>
-                    <div style={{marginTop: 24}}>
-                      <XDSHeading level={4}>When to use</XDSHeading>
-                      <div style={{marginTop: 8}}>
-                        <XDSList density="compact" listStyle="disc">
-                          {docs.whenToUse.map((item, i) => (
-                            <XDSListItem key={i} label={item} />
-                          ))}
-                        </XDSList>
+                  <>
+                    <div
+                      {...stylex.props(
+                        cellStyles.narrowContent,
+                        cellStyles.sectionSpacing,
+                      )}>
+                      <XDSHeading level={2}>Usage</XDSHeading>
+                      <div {...stylex.props(cellStyles.usageTextSpacing)}>
+                        <XDSText type="large" weight="normal">
+                          {docs.usage}
+                        </XDSText>
+                      </div>
+                      <div {...stylex.props(cellStyles.bestPracticesSpacing)}>
+                        <XDSHeading level={3}>Best practices</XDSHeading>
+                      </div>
+                      <div {...stylex.props(cellStyles.tableSpacing)}>
+                        <XDSTable
+                          data={docs.bestPractices as Record<string, unknown>[]}
+                          columns={[
+                            {
+                              key: 'type',
+                              header: 'Guidance',
+                              width: pixel(125),
+                              renderCell: (item: Record<string, unknown>) => (
+                                <XDSBadge
+                                  label={item.type === 'do' ? 'Do' : 'Dont'}
+                                  variant={
+                                    item.type === 'do' ? 'success' : 'error'
+                                  }
+                                />
+                              ),
+                            },
+                            {
+                              key: 'text',
+                              header: 'Practices',
+                              renderCell: (item: Record<string, unknown>) => (
+                                <XDSText type="body" xstyle={cellStyles.wrap}>
+                                  {item.text as string}
+                                </XDSText>
+                              ),
+                            },
+                          ]}
+                          density="spacious"
+                          dividers="rows"
+                        />
                       </div>
                     </div>
-                    <div style={{marginTop: 24}}>
-                      <XDSHeading level={4}>When NOT to use</XDSHeading>
-                      <div style={{marginTop: 8}}>
-                        <XDSList density="compact" listStyle="disc">
-                          {docs.whenNotToUse.map((item, i) => (
-                            <XDSListItem key={i} label={item} />
-                          ))}
-                        </XDSList>
-                      </div>
-                    </div>
-                  </div>
+                  </>
                 );
               })()}
 
-              {/* Anatomy */}
+              <div {...stylex.props(cellStyles.dividerSpacing)}>
+                <XDSDivider />
+              </div>
+
+              {/* Examples */}
               {(() => {
                 const docs = getComponentDocs(activeNav);
+                const previews = EXAMPLE_PREVIEWS[activeNav] ?? [];
                 return (
-                  <div style={{marginBottom: 48}}>
-                    <XDSHeading level={2}>Anatomy</XDSHeading>
-                    <div
-                      style={{
-                        marginTop: 16,
-                        height: 320,
-                        backgroundColor:
-                          'var(--color-background-muted, #f5f5f5)',
-                        borderRadius: 12,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}>
-                      <XDSText type="supporting" color="secondary">
-                        Anatomy diagram
-                      </XDSText>
+                  <div {...stylex.props(cellStyles.sectionSpacing)}>
+                    <div {...stylex.props(cellStyles.narrowContent)}>
+                      <XDSHeading level={2}>Examples</XDSHeading>
+                      <div {...stylex.props(cellStyles.examplesTextSpacing)}>
+                        <XDSText type="large" weight="normal">
+                          Explore common configurations, variations, and states
+                          for this component.
+                        </XDSText>
+                      </div>
                     </div>
-                    <div style={{marginTop: 16}}>
-                      <XDSText type="body">
-                        The {getComponentName(activeNav)} is composed of the
-                        following elements. Required elements must always be
-                        present, while optional elements can be included as
-                        needed.
-                      </XDSText>
-                    </div>
-                    <div style={{marginTop: 16}}>
-                      <XDSTable
-                        data={docs.anatomy as Record<string, unknown>[]}
-                        columns={[
-                          {key: 'element', header: 'Element'},
-                          {key: 'required', header: 'Required'},
-                          {key: 'description', header: 'Description'},
-                        ]}
-                      />
+                    <div {...stylex.props(cellStyles.exampleCardsContainer)}>
+                      {docs.examples.map((example, i) => {
+                        const tabKey = `${activeNav}-${i}`;
+                        const activeTab = exampleTabs[tabKey] ?? 'description';
+                        return (
+                          <XDSCard key={i} padding={0}>
+                            {/* Header */}
+                            <div {...stylex.props(cellStyles.cardHeader)}>
+                              <XDSHStack gap={3} vAlign="center">
+                                <div {...stylex.props(cellStyles.flexGrow)}>
+                                  <XDSText type="body" weight="medium">
+                                    {example.title}
+                                  </XDSText>
+                                </div>
+                                <XDSHStack gap={1} vAlign="center">
+                                  <XDSButton
+                                    label="Open in Craft"
+                                    variant="ghost"
+                                    size="sm"
+                                    icon={<ExternalLinkIcon />}
+                                  />
+                                  <XDSButton
+                                    label="Send to CLI"
+                                    variant="ghost"
+                                    size="sm"
+                                  />
+                                  <XDSButton
+                                    label="Fullscreen"
+                                    variant="ghost"
+                                    size="sm"
+                                    isIconOnly
+                                    icon={<MaximizeIcon />}
+                                  />
+                                </XDSHStack>
+                              </XDSHStack>
+                            </div>
+                            {/* Preview */}
+                            <div {...stylex.props(cellStyles.previewArea)}>
+                              {previews[i] ?? (
+                                <XDSText type="supporting" color="secondary">
+                                  Preview coming soon
+                                </XDSText>
+                              )}
+                            </div>
+                            {/* Tabs + content */}
+                            <div {...stylex.props(cellStyles.tabsContainer)}>
+                              <XDSTabList
+                                value={activeTab}
+                                onChange={value =>
+                                  setExampleTabs(prev => ({
+                                    ...prev,
+                                    [tabKey]: value,
+                                  }))
+                                }
+                                size="sm"
+                                xstyle={cellStyles.tabListFlush}>
+                                <XDSTab
+                                  value="description"
+                                  label="Description"
+                                />
+                                <XDSTab value="code" label="Code" />
+                              </XDSTabList>
+                              <div {...stylex.props(cellStyles.tabContent)}>
+                                {activeTab === 'description' ? (
+                                  <XDSText type="body">
+                                    {example.description}
+                                  </XDSText>
+                                ) : (
+                                  <XDSCodeBlock
+                                    code={example.code}
+                                    language="tsx"
+                                  />
+                                )}
+                              </div>
+                            </div>
+                          </XDSCard>
+                        );
+                      })}
                     </div>
                   </div>
                 );

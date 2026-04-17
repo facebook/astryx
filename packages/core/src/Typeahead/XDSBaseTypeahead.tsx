@@ -144,6 +144,13 @@ export interface XDSBaseTypeaheadProps<T extends XDSSearchableItem> {
    * If the handler calls `e.preventDefault()`, internal handling is skipped.
    */
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+
+  /**
+   * Size of the typeahead, used to scale dropdown item padding.
+   * When 'sm', items get compact padding to match the trigger size.
+   * @default 'md'
+   */
+  size?: 'sm' | 'md';
 }
 
 // =============================================================================
@@ -222,6 +229,19 @@ const styles = stylex.create({
   },
 });
 
+/**
+ * Size-specific overrides for dropdown list items.
+ * Matches the pattern used by XDSDropdownMenuItem / XDSSelector so that
+ * an `sm` typeahead renders compact list items.
+ */
+const itemSizeStyles = stylex.create({
+  sm: {
+    paddingBlock: spacingVars['--spacing-1'],
+    paddingInline: spacingVars['--spacing-2'],
+  },
+  md: {},
+});
+
 // =============================================================================
 // Component
 // =============================================================================
@@ -266,6 +286,7 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
   anchorRef,
   onKeyDown: externalOnKeyDown,
   debounceMs = 150,
+  size = 'md',
   ref,
 }: XDSBaseTypeaheadProps<T> & {ref?: React.Ref<HTMLInputElement>}) {
   const generatedId = useId();
@@ -629,6 +650,7 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
                 onMouseEnter={() => setHighlightedIndex(index)}
                 {...stylex.props(
                   styles.item,
+                  itemSizeStyles[size],
                   index === highlightedIndex && styles.itemHighlighted,
                   value?.id === item.id && styles.itemSelected,
                 )}>

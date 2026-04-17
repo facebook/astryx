@@ -2,36 +2,8 @@
 
 export const docs = {
   name: 'Tooltip',
-  description:
-    'A hover/focus triggered tooltip for displaying short, non-interactive text anchored to a trigger element.',
-  showcase: {
-    aspectRatio: 1,
-    code: '<XDSTooltip content="Help text"><button>Hover</button></XDSTooltip>',
-  },
   keywords: ["tooltip","hint","infotip","title","hover","flyout","balloon","helpertext"],
-  features: [
-    'CSS Anchor Positioning for automatic placement relative to trigger elements',
-    'Popover API for top-layer rendering — no React portals needed',
-    'Hover triggers with configurable show and hide delays',
-    'Focus triggers with auto-detection for focusable elements',
-    'Inverted color palette (dark background, light text) for high contrast',
-    'display:contents wrapper preserves children refs',
-    'Hover indication (dashed underline) for text-only triggers',
-    'Sibling mode via anchorRef for external trigger elements',
-  ],
-  notes: [
-    'Unlike HoverCard, tooltips don\'t stay open when hovering the tooltip content.',
-    'Tooltips have shorter delays and use inverted colors for high contrast.',
-    'Tooltips are for short, non-interactive text. For interactive content, use XDSHoverCard or XDSPopover.',
-    'In sibling mode (anchorRef prop), XDSTooltip attaches to an external ref rather than wrapping children.',
-    'LayerPlacement values: above | below | start | end. LayerAlignment values: start | center | end.',
-  ],
-  accessibility: [
-    'Links the tooltip content to the trigger via aria-describedby.',
-    'When composing multiple aria-describedby sources, merge them with a utility.',
-  ],
-  keyboard:
-    'Focus on the trigger shows the tooltip. Blur hides it.',  components: [
+  components: [
     {
       name: 'XDSTooltip',
       description:
@@ -161,53 +133,20 @@ export const docs = {
     ],
   },
   usage: {
-    summary: 'Non-interactive hints that provide additional information in the context of a specific UI element.',
-    content: `## When to use
-
-- Progressive disclosure of non-interactive content.
-- Non-interruptive education.
-- Show full text for truncated labels.
-
-## When NOT to use
-
-- For interactive content, use HoverCard instead.
-
-## Best practices
-
-- Limit tooltip content to approximately 140 characters.
-- Place tooltip 8px from the context element.
-- Supported placements: above, below, left, right.`,
+    description:
+      'Tooltip displays a short, non-interactive text hint anchored to a trigger element on hover or focus. Use Tooltip for progressive disclosure of supplementary information, such as describing an icon-only button or showing the full text of a truncated label.',
+    bestPractices: [
+      {guidance: true, description: 'Keep tooltip content concise — aim for under 140 characters of plain text.'},
+      {guidance: true, description: 'Add a tooltip to icon-only buttons and controls that lack a visible label.'},
+      {guidance: false, description: 'Avoid placing interactive elements like links or buttons inside a tooltip — use HoverCard or Popover instead.'},
+      {guidance: false, description: 'Avoid using tooltips for essential information that users must see to complete a task.'},
+    ],
   },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Tooltip',
-  description:
-    '悬停/聚焦触发的工具提示，用于显示锚定在触发元素上的简短、非交互式文本。',
-  features: [
-    'CSS 锚点定位，自动相对于触发元素放置',
-    'Popover API 实现顶层渲染 — 无需 React 传送门',
-    '悬停触发，支持可配置的显示和隐藏延迟',
-    '聚焦触发，自动检测可聚焦元素',
-    '反转色调（深色背景、浅色文字）以实现高对比度',
-    'display:contents 包装器保留子元素引用',
-    '悬停指示（虚线下划线）用于纯文本触发器',
-    '通过 anchorRef 的兄弟模式用于外部触发元素',
-  ],
-  notes: [
-    '与 HoverCard 不同，悬停工具提示内容时工具提示不会保持打开状态。',
-    '工具提示具有更短的延迟，并使用反转颜色以实现高对比度。',
-    '工具提示用于简短的非交互式文本。对于交互式内容，请使用 XDSHoverCard 或 XDSPopover。',
-    '在兄弟模式下（anchorRef 属性），XDSTooltip 附加到外部引用而不是包裹子元素。',
-    'LayerPlacement 值：above | below | start | end。LayerAlignment 值：start | center | end。',
-  ],
-  accessibility: [
-    '通过 aria-describedby 将工具提示内容链接到触发器。',
-    '当组合多个 aria-describedby 来源时，使用工具函数合并它们。',
-  ],
-  keyboard:
-    '聚焦触发器显示工具提示。失焦隐藏工具提示。',
   components: [
     {
       name: 'XDSTooltip',
@@ -338,33 +277,31 @@ export const docsZh = {
       {className: 'xds-tooltip'},
     ],
   },
+  usage: {
+    description:
+      'Tooltip displays a short, non-interactive text hint anchored to a trigger element on hover or focus. Use Tooltip for progressive disclosure of supplementary information, such as describing an icon-only button or showing the full text of a truncated label.',
+    bestPractices: [
+      {guidance: true, description: 'Keep tooltip content concise — aim for under 140 characters of plain text.'},
+      {guidance: true, description: 'Add a tooltip to icon-only buttons and controls that lack a visible label.'},
+      {guidance: false, description: 'Avoid placing interactive elements like links or buttons inside a tooltip — use HoverCard or Popover instead.'},
+      {guidance: false, description: 'Avoid using tooltips for essential information that users must see to complete a task.'},
+    ],
+  },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   description: 'Hover/focus triggered tooltip for displaying short, non-interactive text anchored to trigger element.',
-  features: [
-    'CSS Anchor Positioning for automatic placement relative to trigger',
-    'Popover API for top-layer rendering; no React portals needed',
-    'Hover triggers w/ configurable show+hide delays',
-    'Focus triggers w/ auto-detection for focusable elements',
-    'Inverted color palette (dark bg, light text) for high contrast',
-    'display:contents wrapper preserves children refs',
-    'Hover indication (dashed underline) for text-only triggers',
-    'Sibling mode via anchorRef for external trigger elements',
-  ],
-  notes: [
-    "Unlike HoverCard, tooltips don't stay open when hovering tooltip content.",
-    'Shorter delays+inverted colors for high contrast.',
-    'For interactive content use XDSHoverCard or XDSPopover.',
-    'Sibling mode (anchorRef) attaches to external ref instead of wrapping children.',
-    'LayerPlacement: above|below|start|end. LayerAlignment: start|center|end.',
-  ],
-  accessibility: [
-    'Links tooltip content to trigger via aria-describedby.',
-    'When composing multiple aria-describedby sources, merge w/ utility.',
-  ],
-  keyboard: 'Focus on trigger shows tooltip. Blur hides it.',
+  usage: {
+    description:
+      'Tooltip displays a short, non-interactive text hint anchored to a trigger element on hover or focus. Use Tooltip for progressive disclosure of supplementary information, such as describing an icon-only button or showing the full text of a truncated label.',
+    bestPractices: [
+      {guidance: true, description: 'Keep tooltip content concise — aim for under 140 characters of plain text.'},
+      {guidance: true, description: 'Add a tooltip to icon-only buttons and controls that lack a visible label.'},
+      {guidance: false, description: 'Avoid placing interactive elements like links or buttons inside a tooltip — use HoverCard or Popover instead.'},
+      {guidance: false, description: 'Avoid using tooltips for essential information that users must see to complete a task.'},
+    ],
+  },
   components: [
     {
       name: 'XDSTooltip',

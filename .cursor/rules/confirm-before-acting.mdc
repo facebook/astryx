@@ -1,0 +1,16 @@
+---
+description: Present diagnosis before acting to avoid wrong-approach spiraling
+alwaysApply: true
+---
+
+# Confirm Before Acting on Ambiguous Problems
+
+When diagnosing a bug or unexpected behavior:
+
+1. **State your theory first** — explain what you think is wrong and why, before making changes.
+2. **Wait for confirmation** if the fix is non-trivial or could go multiple directions.
+3. **Never try more than 2 approaches** without checking in with the user.
+
+This prevents wasting turns on wrong fixes (e.g., removing image URLs when the real fix is downloading them locally, or replacing components when a prop change suffices).
+
+If you've tried one approach and it didn't work, stop and say: "That didn't work. Here's what I think is happening now — should I try X instead?"

@@ -21,7 +21,6 @@
  */
 
 import {templates as autoDiscoveredTemplates} from '../generated/templateRegistry';
-import {blocks as autoDiscoveredBlocks} from '../generated/blockRegistry';
 
 export interface SandboxPage {
   /** Display name shown on the card */
@@ -104,20 +103,6 @@ export const categories: SandboxCategory[] = [
           name: t.name,
           href: t.href,
           description: t.description,
-        })),
-    ],
-  },
-  {
-    label: 'Blocks',
-    slug: 'blocks',
-    description:
-      'Smaller UI patterns and component examples — drop into any page.',
-    pages: [
-      ...autoDiscoveredBlocks
-        .map(b => ({
-          name: b.name,
-          href: b.href,
-          description: b.description,
         })),
     ],
   },

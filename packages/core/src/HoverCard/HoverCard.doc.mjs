@@ -2,34 +2,7 @@
 
 export const docs = {
   name: 'HoverCard',
-  description:
-    'A hover/focus triggered overlay for displaying rich, interactive content anchored to a trigger element.',
-  showcase: {
-    aspectRatio: 1,
-    code: '<XDSHoverCard trigger={<span>Hover</span>}>Details</XDSHoverCard>',
-  },
   keywords: ["hovercard","hover card","popover","tooltip","preview card","flyout","overlay","hover popup"],
-  features: [
-    'CSS Anchor Positioning for automatic placement relative to trigger elements',
-    'Popover API for top-layer rendering — no React portals needed',
-    'Hover triggers with configurable show and hide delays',
-    'Focus triggers with auto-detection for focusable elements',
-    'Stay-open behavior when mouse/focus moves into the hover card',
-    'display:contents wrapper preserves children refs',
-    'Hover indication (dashed underline) for text-only triggers',
-  ],
-  notes: [
-    'useXDSHoverCard returns a describedBy id — pass it as aria-describedby on the trigger for screen reader support.',
-    'When composing multiple aria-describedby sources, merge them with a utility: ids.filter(Boolean).join(" ") || undefined.',
-    'LayerPlacement values: above | below | start | end. LayerAlignment values: start | center | end.',
-  ],
-  accessibility: [
-    'Links the hover card content to the trigger via aria-describedby.',
-    'When composing multiple aria-describedby sources, merge them with a utility.',
-    'Escape key dismisses the hover card and returns focus to the trigger.',
-  ],
-  keyboard:
-    'Escape closes the hover card. Focus triggers show/hide based on the focusTrigger option.',
   theming: {
     targets: [
       {className: 'xds-hovercard'},
@@ -159,26 +132,13 @@ export const docs = {
     },
   ],
   usage: {
-    summary: 'Interactive cards providing additional information on hover.',
-    content: `## When to use
-
-- Non-critical supplementary information.
-- Progressive disclosure of details.
-- Non-interruptive education or onboarding.
-- Rich content with media (images, icons, text pairings).
-
-## When NOT to use
-
-- Plain text hints \u2014 use Tooltip instead.
-- Dropdown menus \u2014 use Popover instead.
-- Page content grouping \u2014 use Card instead.
-- Arbitrary or frequently changing content.
-
-## Best practices
-
-- Do: Use thoughtfully and situationally.
-- Don't: Use on arbitrary or frequently changing content.
-- Place hover card 4px from the context element.`,
+    description: 'A hover or focus-triggered overlay for displaying rich, interactive content anchored to a trigger element. Use HoverCard for non-critical supplementary information and progressive disclosure. For plain text hints use Tooltip, and for menus use Popover.',
+    bestPractices: [
+      { guidance: true, description: 'Keep content supplementary — hover cards should enhance understanding without blocking the primary workflow.' },
+      { guidance: true, description: 'Provide a dashed underline on text triggers so users know the element is hoverable.' },
+      { guidance: false, description: 'Place critical actions or required information inside a hover card — users may miss content that only appears on hover.' },
+      { guidance: false, description: 'Use a hover card when a simple Tooltip or Popover would suffice.' },
+    ],
     anatomy: [
       {name: 'Header', required: false, description: 'Eyebrow header with optional copy and close buttons.'},
       {name: 'Body', required: true, description: 'Text pairings, icons, and media content.'},
@@ -190,29 +150,6 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'HoverCard',
-  description:
-    '悬停/聚焦触发的浮层，用于显示锚定到触发元素的富交互内容。',
-  features: [
-    'CSS 锚点定位：相对于触发元素自动放置',
-    'Popover API 实现顶层渲染，无需 React 传送门',
-    '悬停触发：可配置显示和隐藏延迟',
-    '聚焦触发：自动检测可聚焦元素',
-    '鼠标/焦点移入悬浮卡片时保持打开',
-    'display:contents 包装器保留子元素 ref',
-    '悬停指示（虚线下划线）用于纯文本触发器',
-  ],
-  notes: [
-    'useXDSHoverCard 返回一个 describedBy id，将其作为 aria-describedby 传递给触发器以支持屏幕阅读器。',
-    '当组合多个 aria-describedby 来源时，使用工具函数合并：ids.filter(Boolean).join(" ") || undefined。',
-    'LayerPlacement 值：above | below | start | end。LayerAlignment 值：start | center | end。',
-  ],
-  accessibility: [
-    '通过 aria-describedby 将悬浮卡片内容关联到触发器。',
-    '当组合多个 aria-describedby 来源时，使用工具函数合并。',
-    '按 Escape 键关闭悬浮卡片并将焦点返回到触发器。',
-  ],
-  keyboard:
-    'Escape 关闭悬浮卡片。焦点触发器根据 focusTrigger 选项控制显示/隐藏。',
   theming: {
     targets: [
       {className: 'xds-hovercard'},
@@ -342,32 +279,40 @@ export const docsZh = {
       ],
     },
   ],
+  usage: {
+    description: 'A hover or focus-triggered overlay for displaying rich, interactive content anchored to a trigger element. Use HoverCard for non-critical supplementary information and progressive disclosure. For plain text hints use Tooltip, and for menus use Popover.',
+    bestPractices: [
+      { guidance: true, description: 'Keep content supplementary — hover cards should enhance understanding without blocking the primary workflow.' },
+      { guidance: true, description: 'Provide a dashed underline on text triggers so users know the element is hoverable.' },
+      { guidance: false, description: 'Place critical actions or required information inside a hover card — users may miss content that only appears on hover.' },
+      { guidance: false, description: 'Use a hover card when a simple Tooltip or Popover would suffice.' },
+    ],
+    anatomy: [
+      {name: 'Header', required: false, description: 'Eyebrow header with optional copy and close buttons.'},
+      {name: 'Body', required: true, description: 'Text pairings, icons, and media content.'},
+      {name: 'Call to Action', required: false, description: 'Button for follow-up actions.'},
+    ],
+  },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   description:
     'Hover/focus triggered overlay for displaying rich, interactive content anchored to trigger element.',
-  features: [
-    'CSS Anchor Positioning for auto-placement relative to triggers',
-    'Popover API for top-layer rendering; no React portals needed',
-    'Hover triggers w/ configurable show + hide delays',
-    'Focus triggers w/ auto-detection for focusable elements',
-    'Stay-open when mouse/focus moves into hover card',
-    'display:contents wrapper preserves children refs',
-    'Hover indication (dashed underline) for text-only triggers',
-  ],
-  notes: [
-    'useXDSHoverCard returns describedBy id; pass as aria-describedby on trigger for screen reader support.',
-    'Merge multiple aria-describedby sources w/ ids.filter(Boolean).join(" ") || undefined.',
-    'LayerPlacement: above | below | start | end. LayerAlignment: start | center | end.',
-  ],
-  accessibility: [
-    'Links hover card content to trigger via aria-describedby.',
-    'Merge multiple aria-describedby sources w/ utility.',
-    'Escape dismisses hover card + returns focus to trigger.',
-  ],
-  keyboard: 'Escape closes hover card. Focus triggers show/hide based on focusTrigger option.',
+  usage: {
+    description: 'A hover or focus-triggered overlay for displaying rich, interactive content anchored to a trigger element. Use HoverCard for non-critical supplementary information and progressive disclosure. For plain text hints use Tooltip, and for menus use Popover.',
+    bestPractices: [
+      { guidance: true, description: 'Keep content supplementary — hover cards should enhance understanding without blocking the primary workflow.' },
+      { guidance: true, description: 'Provide a dashed underline on text triggers so users know the element is hoverable.' },
+      { guidance: false, description: 'Place critical actions or required information inside a hover card — users may miss content that only appears on hover.' },
+      { guidance: false, description: 'Use a hover card when a simple Tooltip or Popover would suffice.' },
+    ],
+    anatomy: [
+      {name: 'Header', required: false, description: 'Eyebrow header with optional copy and close buttons.'},
+      {name: 'Body', required: true, description: 'Text pairings, icons, and media content.'},
+      {name: 'Call to Action', required: false, description: 'Button for follow-up actions.'},
+    ],
+  },
   components: [
     {
       name: 'XDSHoverCard',

@@ -1,0 +1,29 @@
+{
+  "name": "@xds/postcss-plugin",
+  "version": "0.0.1",
+  "description": "PostCSS plugin for XDS source builds — splits StyleX output into library and product CSS layers",
+  "license": "MIT",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "files": [
+    "src"
+  ],
+  "keywords": [
+    "xds",
+    "postcss",
+    "stylex",
+    "css-layers",
+    "design-system"
+  ],
+  "peerDependencies": {
+    "@stylexjs/babel-plugin": ">=0.18.0",
+    "@babel/core": ">=7.0.0"
+  },
+  "dependencies": {
+    "fast-glob": "^3.3.0",
+    "glob-parent": "^6.0.0",
+    "is-glob": "^4.0.0"
+  }
+}

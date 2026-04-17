@@ -618,12 +618,6 @@ export function XDSAppShell({
   // 2. Config with custom content
   const shouldRenderConfigContent =
     mobileNavEnabled && mobileNavConfigContent != null && isBelowBreakpoint;
-  // 3. Auto — mount drawer structure when props exist, use presence for path selection
-  const shouldRenderAutoMobileNav =
-    !mobileNavDisabled &&
-    mobileNavReactNode == null &&
-    !mobileNavConfigContent &&
-    isBelowBreakpoint;
 
   // =========================================================================
   // Mobile context — shared with XDSMobileNavToggle and future TopNav mobile
@@ -632,10 +626,12 @@ export function XDSAppShell({
     () => ({
       isMobile: isBelowBreakpoint,
       isMobileNavOpen,
-      toggleMobileNav: () => setMobileNavOpen(!isMobileNavOpen),
-      openMobileNav: () => setMobileNavOpen(true),
+      toggleMobileNav: () =>
+        mobileNavEnabled && setMobileNavOpen(!isMobileNavOpen),
+      openMobileNav: () => mobileNavEnabled && setMobileNavOpen(true),
       closeMobileNav: () => setMobileNavOpen(false),
       isMobileNavEnabled: mobileNavEnabled,
+      hasAutoToggle: mobileNavHasToggle,
     }),
     [isBelowBreakpoint, isMobileNavOpen, setMobileNavOpen, mobileNavEnabled],
   );
@@ -654,7 +650,7 @@ export function XDSAppShell({
     isBelowBreakpoint && !mobileNavDisabled && mobileNavReactNode == null ? (
       <XDSTopNavMobileContentContext
         value={
-          hasSideNavContent ? (
+          hasSideNavContent && mobileNavHasToggle ? (
             <XDSSideNavRenderContext value="drawer-content">
               <div ref={sideNavRef} style={{display: 'contents'}}>
                 {sideNav}
@@ -845,36 +841,39 @@ export function XDSAppShell({
             presence detection works. Hidden until the drawer opens. */}
         {shouldRenderMobileNavReactNode && mobileNavReactNode}
         {shouldRenderConfigContent && mobileNavConfigContent}
-        {shouldRenderAutoMobileNav && (
-          <ActivityWrapper mode={isMobileNavOpen ? 'visible' : 'hidden'}>
-            {/* SideNav detection — always mounted so presence is known.
-              Hidden when TopNav owns the drawer (combined mode renders
-              sideNav via TopNav's mobile content context instead). */}
-            {hasSideNav && (
-              <div
-                ref={sideNavRef}
-                style={{display: hasTopNavContent ? 'none' : 'contents'}}>
-                <XDSSideNavRenderContext value="drawer">
-                  {sideNav}
-                </XDSSideNavRenderContext>
-              </div>
-            )}
-            {hasTopNav && hasTopNavContent && (
-              <XDSTopNavMobileContentContext
-                value={
-                  hasSideNavContent ? (
-                    <XDSSideNavRenderContext value="drawer-content">
-                      {sideNav}
-                    </XDSSideNavRenderContext>
-                  ) : null
-                }>
-                <XDSTopNavRenderContext value="drawer">
-                  {topNav}
-                </XDSTopNavRenderContext>
-              </XDSTopNavMobileContentContext>
-            )}
-          </ActivityWrapper>
-        )}
+        {isBelowBreakpoint &&
+          !mobileNavDisabled &&
+          mobileNavReactNode == null &&
+          !mobileNavConfigContent && (
+            <ActivityWrapper mode={isMobileNavOpen ? 'visible' : 'hidden'}>
+              {/* SideNav drawer — always mounted so presence detection works.
+                Hidden when TopNav owns the drawer (combined mode passes
+                sideNav via TopNav's mobile content context instead). */}
+              {hasSideNav && (
+                <div
+                  ref={sideNavRef}
+                  style={{display: hasTopNavContent ? 'none' : 'contents'}}>
+                  <XDSSideNavRenderContext value="drawer">
+                    {sideNav}
+                  </XDSSideNavRenderContext>
+                </div>
+              )}
+              {hasTopNav && hasTopNavContent && (
+                <XDSTopNavMobileContentContext
+                  value={
+                    hasSideNavContent ? (
+                      <XDSSideNavRenderContext value="drawer-content">
+                        {sideNav}
+                      </XDSSideNavRenderContext>
+                    ) : null
+                  }>
+                  <XDSTopNavRenderContext value="drawer">
+                    {topNav}
+                  </XDSTopNavRenderContext>
+                </XDSTopNavMobileContentContext>
+              )}
+            </ActivityWrapper>
+          )}
       </div>
     </XDSAppShellMobileContext.Provider>
   );

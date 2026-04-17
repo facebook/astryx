@@ -2,18 +2,7 @@
 
 export const docs = {
   name: 'NavIcon',
-  description:
-    'Circular icon container with accent background for navigation headers.',
-  showcase: {
-    aspectRatio: 16 / 4,
-    code: '<XDSNavIcon label="Home" />',
-  },
   keywords: ["navicon","iconbutton","toolbar icon","appbar icon","nav button"],
-  features: [
-    'Shared — used in both XDSTopNavHeading and XDSPageNavHeader',
-    'Accent background — uses --color-accent with --color-on-accent contrast',
-    'Fixed size — renders at the medium (--size-element-md) design token size',
-  ],
   props: [
     {
       name: 'icon',
@@ -29,20 +18,19 @@ export const docs = {
     ],
   },
   usage: {
-    summary: 'Circular icon container with accent background for navigation headers.',
+    description:
+      'NavIcon is a circular icon container with an accent-colored background. Use it in navigation headers such as TopNavHeading and PageNavHeader to visually identify a section or application.',
+    bestPractices: [
+      { guidance: true, description: 'Use in navigation headers to provide a recognizable visual anchor for the section.' },
+      { guidance: true, description: 'Pass an XDSIcon or similarly sized icon component to ensure proper proportions.' },
+      { guidance: false, description: 'Use NavIcon for interactive purposes — it is a display-only container, not a button.' },
+    ],
   },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'NavIcon',
-  description:
-    '用于导航头部的带强调色背景的圆形图标容器。',
-  features: [
-    '共享 — 同时用于 XDSTopNavHeading 和 XDSPageNavHeader',
-    '强调色背景 — 使用 --color-accent 配合 --color-on-accent 对比色',
-    '固定尺寸 — 以中等尺寸 (--size-element-md) 设计令牌渲染',
-  ],
   props: [
     {
       name: 'icon',
@@ -57,17 +45,30 @@ export const docsZh = {
       {className: 'xds-navicon'},
     ],
   },
+  usage: {
+    description:
+      'NavIcon is a circular icon container with an accent-colored background. Use it in navigation headers such as TopNavHeading and PageNavHeader to visually identify a section or application.',
+    bestPractices: [
+      { guidance: true, description: 'Use in navigation headers to provide a recognizable visual anchor for the section.' },
+      { guidance: true, description: 'Pass an XDSIcon or similarly sized icon component to ensure proper proportions.' },
+      { guidance: false, description: 'Use NavIcon for interactive purposes — it is a display-only container, not a button.' },
+    ],
+  },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   description:
     'Circular icon container w/ accent background for navigation headers.',
-  features: [
-    'Shared; used in both XDSTopNavHeading + XDSPageNavHeader',
-    'Accent background; uses --color-accent w/ --color-on-accent contrast',
-    'Fixed size; renders at medium (--size-element-md) design token size',
-  ],
+  usage: {
+    description:
+      'NavIcon is a circular icon container with an accent-colored background. Use it in navigation headers such as TopNavHeading and PageNavHeader to visually identify a section or application.',
+    bestPractices: [
+      { guidance: true, description: 'Use in navigation headers to provide a recognizable visual anchor for the section.' },
+      { guidance: true, description: 'Pass an XDSIcon or similarly sized icon component to ensure proper proportions.' },
+      { guidance: false, description: 'Use NavIcon for interactive purposes — it is a display-only container, not a button.' },
+    ],
+  },
   propDescriptions: {
     icon: 'Icon element inside circular background. Should be XDSIcon or similar.',
   },

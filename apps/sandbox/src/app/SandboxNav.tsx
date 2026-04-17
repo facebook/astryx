@@ -17,6 +17,7 @@ import {
   MoonIcon,
   BoxIcon,
   AppWindowIcon,
+  BlocksIcon,
 } from './icons';
 import {spacingVars, colorVars} from '@xds/core/theme/tokens.stylex';
 
@@ -26,6 +27,7 @@ const categoryIcons: Record<
 > = {
   'components-patterns': BoxIcon,
   templates: AppWindowIcon,
+  blocks: BlocksIcon,
   tools: WrenchIcon,
 };
 
@@ -132,22 +134,31 @@ export function SandboxNav() {
           as={Link}
           icon={HomeIcon}
         />
+        <XDSSideNavItem
+          label="Official Templates"
+          href="/templates/"
+          isSelected={pathname === '/templates/'}
+          as={Link}
+          icon={AppWindowIcon}
+        />
       </XDSSideNavSection>
       <XDSSideNavSection title="Projects">
-        {categories.map(category => {
-          const isActive = pathname === `/${category.slug}/`;
-          const IconComponent = categoryIcons[category.slug];
-          return (
-            <XDSSideNavItem
-              key={category.slug}
-              label={category.label}
-              href={`/${category.slug}/`}
-              isSelected={isActive}
-              as={Link}
-              icon={IconComponent}
-            />
-          );
-        })}
+        {categories
+          .filter(c => c.slug !== 'templates')
+          .map(category => {
+            const isActive = pathname === `/${category.slug}/`;
+            const IconComponent = categoryIcons[category.slug];
+            return (
+              <XDSSideNavItem
+                key={category.slug}
+                label={category.label}
+                href={`/${category.slug}/`}
+                isSelected={isActive}
+                as={Link}
+                icon={IconComponent}
+              />
+            );
+          })}
       </XDSSideNavSection>
     </XDSSideNav>
   );

@@ -11,11 +11,10 @@ import {XDSError} from './error.mjs';
 function validateDocs(docs) {
   if (!docs || typeof docs !== 'object') return 'docs export is missing or not an object';
   if (typeof docs.name !== 'string' || !docs.name) return 'docs.name is missing or not a string';
-  if (typeof docs.description !== 'string') return 'docs.description is missing or not a string';
+  if (!docs.usage || typeof docs.usage.description !== 'string') return 'docs.usage.description is missing or not a string';
   if (docs.props && !Array.isArray(docs.props)) return 'docs.props must be an array';
   if (docs.components && !Array.isArray(docs.components)) return 'docs.components must be an array';
-  if (docs.examples && !Array.isArray(docs.examples)) return 'docs.examples must be an array';
-  if (docs.features && !Array.isArray(docs.features)) return 'docs.features must be an array';
+  if (docs.usage?.bestPractices && !Array.isArray(docs.usage.bestPractices)) return 'docs.usage.bestPractices must be an array';
   return null;
 }
 

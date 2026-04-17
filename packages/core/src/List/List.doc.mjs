@@ -2,41 +2,13 @@
 
 export const docs = {
   name: 'List',
-  description:
-    'Vertical list component for rendering collections of items with consistent spacing, dividers, and marker styles. Uses a composition model: XDSList wraps XDSListItem sub-components.',
-  showcase: {
-    aspectRatio: 3 / 4,
-    code: '<XDSList><XDSListItem>Item 1</XDSListItem></XDSList>',
-  },
   keywords: ["list","listitem","listbox","menu","collection","items","ul","navlist"],
-  features: [
-    'Composition model — XDSList wraps XDSListItem sub-components',
-    'Density variants: compact, balanced, spacious',
-    'Optional dividers between items',
-    'Optional header associated via aria-labelledby',
-    'List marker styles: none, disc, decimal (renders <ol>), circle',
-    'Interactive items via invisible button or anchor pattern',
-    'Start and end content slots (icon, avatar, badge, chevron)',
-  ],
-  accessibility: [
-    'Semantic <ul> / <ol> with <li> elements',
-    'role="list" added when listStyle=\'none\' (Safari fix for list semantics removed by CSS list-style:none)',
-    'aria-labelledby links the header element to the list',
-    'aria-selected on selected items',
-    'aria-disabled on disabled items',
-    'Dividers are aria-hidden="true"',
-    'Interactive items are keyboard-focusable via Tab',
-  ],
   theming: {
     targets: [
       {className: 'xds-list', visualProps: ['density', 'listStyle']},
       {className: 'xds-list-item'},
     ],
   },
-  notes: [
-    'Invisible button pattern: when onClick is provided, an invisible <button> wraps the label + description for accessibility. The <li> is the visual container with hover/press styles. startContent and endContent are siblings to the button (not inside it). Container click fires onClick unless the click originated from an interactive child. :focus-within on the container shows the focus outline.',
-    'When href is provided instead of onClick, the same invisible pattern uses an <a> element.',
-  ],
   components: [
     {
       name: 'XDSList',
@@ -140,16 +112,14 @@ export const docs = {
     },
   ],
   usage: {
-    summary: 'Organizes information or interactive elements.',
-    content: `## When to use
-
-- To organize text, media, charts, or actions.
-- To create subgroups of parallel information.
-- When items need add, edit, delete, or expand operations.
-
-## Best practices
-
-- Do: Place lists within a container such as a card or dialog.`,
+    description:
+      'List renders a vertical collection of items with consistent spacing, dividers, and optional marker styles. Use it to display ordered or unordered groups of related content within cards, dialogs, or panels.',
+    bestPractices: [
+      { guidance: true, description: 'Provide a header to label the list and give context to screen readers via aria-labelledby.' },
+      { guidance: true, description: 'Use startContent and endContent slots to add visual context like icons, avatars, or badges to each item.' },
+      { guidance: false, description: 'Place interactive elements inside an interactive list item — it creates nested click targets and confusing focus behavior.' },
+      { guidance: false, description: 'Use a list for a single item or for laying out unrelated content — lists imply a meaningful collection.' },
+    ],
     anatomy: [
       {name: 'List title', required: true, description: 'Heading that labels the list.'},
       {name: 'Description', required: false, description: 'Supplementary text below the title.'},
@@ -161,36 +131,12 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'List',
-  description:
-    '用于渲染项目集合的垂直列表组件，提供一致的间距、分割线和标记样式。采用组合模式：XDSList 包裹 XDSListItem 子组件。',
-  features: [
-    '组合模式 — XDSList 包裹 XDSListItem 子组件',
-    '密度变体：紧凑、均衡、宽松',
-    '可选的项目间分割线',
-    '可选的标题，通过 aria-labelledby 关联',
-    '列表标记样式：无、实心圆点、数字（渲染 <ol>）、空心圆',
-    '通过隐形按钮或锚点模式实现可交互项目',
-    '起始和结束内容插槽（图标、头像、徽章、箭头）',
-  ],
-  accessibility: [
-    '语义化 <ul> / <ol> 配合 <li> 元素',
-    '当 listStyle=\'none\' 时添加 role="list"（Safari 修复：CSS list-style:none 会移除列表语义）',
-    'aria-labelledby 将标题元素与列表关联',
-    '选中项目上设置 aria-selected',
-    '禁用项目上设置 aria-disabled',
-    '分割线设置 aria-hidden="true"',
-    '可交互项目通过 Tab 键可获取焦点',
-  ],
   theming: {
     targets: [
       {className: 'xds-list', visualProps: ['density', 'listStyle']},
       {className: 'xds-list-item'},
     ],
   },
-  notes: [
-    '隐形按钮模式：当提供 onClick 时，一个不可见的 <button> 包裹标签和描述以确保无障碍访问。<li> 作为带有悬停/按下样式的视觉容器。startContent 和 endContent 是按钮的兄弟元素（不在按钮内部）。容器点击触发 onClick，除非点击来源于可交互子元素。容器上的 :focus-within 显示焦点轮廓。',
-    '当提供 href 而非 onClick 时，相同的隐形模式使用 <a> 元素。',
-  ],
   components: [
     {
       name: 'XDSList',
@@ -294,34 +240,44 @@ export const docsZh = {
       ],
     },
   ],
+  usage: {
+    description:
+      'List renders a vertical collection of items with consistent spacing, dividers, and optional marker styles. Use it to display ordered or unordered groups of related content within cards, dialogs, or panels.',
+    bestPractices: [
+      { guidance: true, description: 'Provide a header to label the list and give context to screen readers via aria-labelledby.' },
+      { guidance: true, description: 'Use startContent and endContent slots to add visual context like icons, avatars, or badges to each item.' },
+      { guidance: false, description: 'Place interactive elements inside an interactive list item — it creates nested click targets and confusing focus behavior.' },
+      { guidance: false, description: 'Use a list for a single item or for laying out unrelated content — lists imply a meaningful collection.' },
+    ],
+    anatomy: [
+      {name: 'List title', required: true, description: 'Heading that labels the list.'},
+      {name: 'Description', required: false, description: 'Supplementary text below the title.'},
+      {name: 'List items', required: true, description: 'Individual entries, which may include icons or images.'},
+      {name: 'Item description', required: false, description: 'Additional detail for an individual list item.'},
+    ],
+  },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   description:
     'Vertical list for rendering item collections w/ consistent spacing, dividers, marker styles. Composition model: XDSList wraps XDSListItem sub-components.',
-  features: [
-    'Composition model; XDSList wraps XDSListItem sub-components',
-    'Density variants: compact, balanced, spacious',
-    'Optional dividers between items',
-    'Optional header associated via aria-labelledby',
-    'List marker styles: none, disc, decimal (renders <ol>), circle',
-    'Interactive items via invisible button or anchor pattern',
-    'Start + end content slots (icon, avatar, badge, chevron)',
-  ],
-  accessibility: [
-    'Semantic <ul> / <ol> w/ <li> elements',
-    "role=\"list\" added when listStyle='none' (Safari fix for list semantics removed by CSS list-style:none)",
-    'aria-labelledby links header element to list',
-    'aria-selected on selected items',
-    'aria-disabled on disabled items',
-    'Dividers are aria-hidden="true"',
-    'Interactive items keyboard-focusable via Tab',
-  ],
-  notes: [
-    'Invisible button pattern: onClick wraps label+description in invisible <button> for accessibility. <li> is visual container w/ hover/press styles. startContent + endContent siblings to button (not inside). Container click fires onClick unless from interactive child. :focus-within shows focus outline.',
-    'When href provided instead of onClick, same invisible pattern uses <a> element.',
-  ],
+  usage: {
+    description:
+      'List renders a vertical collection of items with consistent spacing, dividers, and optional marker styles. Use it to display ordered or unordered groups of related content within cards, dialogs, or panels.',
+    bestPractices: [
+      { guidance: true, description: 'Provide a header to label the list and give context to screen readers via aria-labelledby.' },
+      { guidance: true, description: 'Use startContent and endContent slots to add visual context like icons, avatars, or badges to each item.' },
+      { guidance: false, description: 'Place interactive elements inside an interactive list item — it creates nested click targets and confusing focus behavior.' },
+      { guidance: false, description: 'Use a list for a single item or for laying out unrelated content — lists imply a meaningful collection.' },
+    ],
+    anatomy: [
+      {name: 'List title', required: true, description: 'Heading that labels the list.'},
+      {name: 'Description', required: false, description: 'Supplementary text below the title.'},
+      {name: 'List items', required: true, description: 'Individual entries, which may include icons or images.'},
+      {name: 'Item description', required: false, description: 'Additional detail for an individual list item.'},
+    ],
+  },
   components: [
     {
       name: 'XDSList',

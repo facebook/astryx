@@ -48,28 +48,6 @@ export interface PropDoc {
 }
 
 /**
- * A usage example showing the component in JSX. Examples should progress
- * from basic to advanced. Include 2-5 examples per component (complex
- * components like Table or Layer may justify more).
- *
- * @example
- * ```
- * {label: 'Basic', code: '<XDSButton variant="primary">Save</XDSButton>'}
- * {label: 'With icon', code: '<XDSButton icon={PlusIcon} variant="secondary">Add</XDSButton>'}
- * ```
- */
-export interface Example {
-  /** Short descriptive title in sentence case, 2-8 words.
-   *  e.g. `"Basic"`, `"With icon"`, `"Rich cell content with renderCell"`.
-   *  Omit only for trivial single-example sub-components. */
-  label?: string;
-  /** JSX code string. Use regular strings for single-line snippets and
-   *  template literals for multi-line code. Prefer realistic variable names
-   *  (`users`, `transactions`) over generic ones (`data`, `value1`). */
-  code: string;
-}
-
-/**
  * A theming target — a stable CSS class name that `defineTheme` can target
  * via `@scope` selectors. Each component renders one or more class names
  * via `xdsClassName()`, and themes can override styles for each.
@@ -159,8 +137,6 @@ export interface ComponentEntry {
   description: string;
   /** All public props for this component. */
   props: PropDoc[];
-  /** Usage examples for this component. */
-  examples?: Example[];
 }
 
 /**
@@ -184,31 +160,63 @@ export interface AnatomyElement {
 }
 
 /**
- * Usage guidance for a component — when to use it, when not to,
- * and the visual anatomy of its parts.
+ * A single do/don't best practice for a component.
+ * Rendered as a table row with a colored "Do" or "Don't" badge
+ * in the Guidance column and the description in the Practices column.
  *
- * `summary` is a design-oriented overview (vs. the developer-focused `description`).
- * `content` is freeform markdown for usage guidance — authors can structure it
- * however they like (when to use, when not to, do/don't, migration notes, etc.).
- * `anatomy` is a structured breakdown of the component's visual elements.
+ * @example
+ * ```
+ * {guidance: true, description: 'Convey clear action hierarchy. Each surface should only have 1 primary button.'}
+ * {guidance: false, description: 'Overuse primary or special buttons. Overusing colored buttons creates visual confusion.'}
+ * ```
+ */
+export interface BestPractice {
+  /** `true` renders a green "Do" badge; `false` renders a red "Don't" badge.  */
+  guidance: boolean;
+  /** 1-2 short sentences of design guidance. Focus on how a designer
+   *  would USE the component, not how it's built.
+   *
+   *  NEVER start with "Do" or "Don't" — the badge handles that.
+   *
+   *  Good: `"Convey clear action hierarchy. Each surface should only have 1 primary button."`
+   *  Bad:  `"Do use clear action hierarchy."` */
+  description: string;
+}
+
+/**
+ * Component usage documentation — a concise summary, design guidance
+ * best practices, and optional visual anatomy.
+ *
+ * ## description
+ * Exactly 2-3 short sentences:
+ * - Sentence 1: What the component is and does.
+ * - Sentence 2-3: When to use it, or what context it belongs in.
+ *
+ * Reference tone: "Buttons provide visual cues for actions and events.
+ * These fundamental components allow users to commit actions and navigate
+ * a page flow. Use a Button when a user needs to submit a form, start a
+ * new task or action, or trigger a new UI element to appear on the page."
+ *
+ * ## bestPractices
+ * Array of 3-4 items. Usually 2 Do items, then 1-2 Don't items.
+ * Each item is design guidance — not implementation details.
+ * Never start the description with "Do" or "Don't".
  */
 export interface UsageDoc {
-  /** Design-oriented summary of the component's purpose and role in the UI.
-   *  More conceptual than `description` — explains *what problem* the component
-   *  solves rather than *what API* it exposes.
-   *  e.g. `"Buttons communicate calls to action and allow users to interact
-   *  with pages in a variety of ways."` */
-  summary?: string;
-  /** Freeform markdown covering usage guidance. Use markdown headers and lists
-   *  to organize content. Common sections include "When to use", "When NOT to use",
-   *  but authors are free to structure this however makes sense.
+  /** What the component is and when to use it. 2-3 short sentences.
    *
-   *  @example
-   *  ```
-   *  `## When to use\n- To trigger an action\n- To navigate when the action is primary\n\n## When NOT to use\n- For navigation — use Link instead`
-   *  ```
-   */
-  content?: string;
+   *  Sentence 1: What the component is and does.
+   *  Sentence 2-3: When to use it, or what context it belongs in.
+   *
+   *  e.g. `"Buttons provide visual cues for actions and events. These
+   *  fundamental components allow users to commit actions and navigate
+   *  a page flow. Use a Button when a user needs to submit a form,
+   *  start a new task or action, or trigger a new UI element to appear
+   *  on the page."` */
+  description: string;
+  /** 3-4 do/don't design guidance items. Usually 2 Do's then 1-2 Don'ts.
+   *  Focus on how a designer would USE the component, not how it's built. */
+  bestPractices?: BestPractice[];
   /** Structural/visual anatomy of the component. Each entry describes one
    *  element that makes up the component (icon slot, label, container, etc.).
    *  Order entries in the visual reading order (leading → trailing, top → bottom). */
@@ -223,36 +231,12 @@ interface BaseDoc {
   /** Directory name without the XDS prefix, PascalCase.
    *  e.g. `"Button"`, `"Table"`, `"TextInput"`, `"AppShell"` */
   name: string;
-  /** One-sentence summary of the component or component group.
-   *  Be specific enough to differentiate from similar components.
-   *  e.g. `"Data-driven table with rich cell content via renderCell."` */
-  description: string;
-  /** Top-level usage examples showing the component in real scenarios.
-   *  For multi-component dirs, these show how the components work together.
-   *  Start with the most common usage pattern, then progress to advanced.
-   *  Include 2-5 examples (complex components may justify more). */
-  examples?: Example[];
-  /** Minimal JSX code string showing the component in its simplest valid
-   *  form. Used as the live preview "cover image" in gallery views.
-   *  e.g. `'<XDSButton label="Click" variant="primary" />'` */
-  showcase?: {
-    /** Width-to-height ratio for the preview container. */
-    aspectRatio: number;
-    /** JSX code string of the component in minimal form. */
-    code: string;
-  };
   /** Search keywords for CLI discovery. Terms a developer might type when
    *  looking for this component: synonyms, related UI concepts, and common
    *  names from other design systems (MUI, Chakra, Radix, shadcn).
    *  Lowercase only. Used by `xds component <term>` for fuzzy matching.
    *  e.g. `['accordion', 'expand', 'toggle', 'disclosure']` for Collapsible */
   keywords?: string[];
-  /** Key capabilities as short bullet points. Each string is one feature.
-   *  Strongly recommended even though optional — all existing components
-   *  include this field. Use "Category: details" format.
-   *  e.g. `"Variants: 'primary', 'secondary', 'ghost', 'destructive'"`,
-   *  `"Single & range modes: pass a number or [number, number]"` */
-  features?: string[];
   /** Theming configuration. Documents the stable CSS class names
    *  rendered by this component that themes can target via `@scope`
    *  selectors in `defineTheme`. */
@@ -273,25 +257,9 @@ interface BaseDoc {
      *  internal variables must not be listed here. */
     cssProperties?: CSSPropertyDoc[];
   };
-  /** Accessibility notes — ARIA patterns, screen reader behavior.
-   *  Each string is one self-contained, declarative note.
-   *  e.g. `"Uses native <dialog> with showModal() for correct ARIA modal semantics."`,
-   *  `"Selection plugin sets aria-selected on selected body rows"` */
-  accessibility?: string[];
-  /** Keyboard interaction summary as a single string. Separate bindings
-   *  with semicolons or commas. Use key names like `Arrow keys`, `Enter/Space`,
-   *  `Escape`, `Tab/Shift+Tab`, `Home/End`.
-   *  e.g. `"Space toggles the switch; Tab/Shift+Tab moves focus in and out"` */
-  keyboard?: string;
-  /** Additional technical notes — architecture decisions, performance
-   *  considerations, implementation details, caveats. Each string is one
-   *  self-contained note. Do not duplicate information from `features`,
-   *  `accessibility`, or `keyboard`. */
-  notes?: string[];
-  /** Design-oriented usage guidance: when to use this component, when not to,
-   *  and the visual anatomy of its parts. Complements the developer-focused
-   *  fields (`description`, `features`, `props`). */
-  usage?: UsageDoc;
+  /** Component usage documentation — concise summary, best practices,
+   *  and optional visual anatomy. */
+  usage: UsageDoc;
 }
 
 /**
@@ -335,39 +303,21 @@ export type ComponentDoc = SingleComponentDoc | MultiComponentDoc;
  * Translation overlay for component documentation.
  *
  * Contains only the prose fields that change between languages/formats.
- * The CLI merges this onto the base `docs` at read time — props, examples,
+ * The CLI merges this onto the base `docs` at read time — props,
  * types, defaults, and code all come from `docs`.
  *
  * Used by both `docsZh` (Chinese translation) and `docsDense` (compressed format).
- *
- * @example
- * ```
- * export const docsDense = {
- *   description: 'multi-variant btn w/ loading',
- *   features: ['4 variants: primary secondary ghost destructive'],
- *   propDescriptions: { label: 'a11y label; aria-label for icon-only' },
- *   notes: ['prefer over div onClick for a11y'],
- * };
- * ```
  */
 export interface TranslationDoc {
   /** Compressed/translated component description. */
-  description: string;
-  /** Compressed/translated feature strings. Must match docs.features length and order. */
-  features?: string[];
-  /** Compressed/translated note strings. Must match docs.notes length and order. */
-  notes?: string[];
-  /** Compressed/translated accessibility strings. Must match docs.accessibility length and order. */
-  accessibility?: string[];
-  /** Compressed/translated keyboard string. */
-  keyboard?: string;
+  description?: string;
   /** Prop descriptions keyed by prop name. Only include props that have descriptions. */
   propDescriptions?: Record<string, string>;
-  /** Translated/compressed usage overlay. Only summary and content are translated;
-   *  anatomy element names are stable identifiers and stay as-is from the base doc. */
+  /** Translated/compressed usage overlay. Mirrors UsageDoc fields. */
   usage?: {
-    summary?: string;
-    content?: string;
+    description?: string;
+    bestPractices?: BestPractice[];
+    anatomy?: AnatomyElement[];
   };
   /** Sub-component translations. Must match docs.components length and order (if present). */
   components?: Array<{
@@ -500,8 +450,28 @@ export interface BlockTemplateDoc extends BaseTemplateDoc {
   type: 'block';
   /** Width-to-height ratio for preview containers (e.g. 16/9, 1, 3/4). */
   aspectRatio: number;
+  /** Scale factor for the block preview (default 1). */
+  scale?: number;
   /** Component names this block uses, for cross-referencing. */
   componentsUsed: string[];
 }
 
 export type TemplateDoc = PageTemplateDoc | BlockTemplateDoc;
+
+/**
+ * Showcase metadata for a component.
+ *
+ * Each component can have a showcase file in `packages/cli/templates/showcase/`
+ * consisting of a `{Name}.doc.mjs` (this type) and a `{Name}.tsx` (the component).
+ *
+ *   /\*\* \@type \{import('@xds/core').ComponentShowcaseDoc\} *\/
+ *   export const doc = \{ name: 'Button', aspectRatio: 1 \};
+ */
+export interface ComponentShowcaseDoc {
+  /** Component name (matches the directory name).
+   *  e.g. `"Button"`, `"Layout"`, `"Dialog"` */
+  name: string;
+  /** Width-to-height ratio for the preview container.
+   *  e.g. `1`, `16 / 9`, `4 / 3` */
+  aspectRatio: number;
+}

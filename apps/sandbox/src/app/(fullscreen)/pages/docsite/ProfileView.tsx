@@ -520,21 +520,12 @@ export function DialogPreview() {
   const [isOpen, setIsOpen] = useState(false);
   return (
     <div>
-      <div style={{marginBottom: 16}}>
-        <XDSHeading level={3}>Dialog</XDSHeading>
-      </div>
-      <XDSButton
-        label="Open Dialog"
-        variant="primary"
-        onClick={() => setIsOpen(true)}
-      />
+      <div style={{marginBottom: 16}}><XDSHeading level={3}>Dialog</XDSHeading></div>
+      <XDSButton label="Open Dialog" variant="primary" onClick={() => setIsOpen(true)} />
       <XDSDialog isOpen={isOpen} onOpenChange={setIsOpen}>
         <XDSDialogHeader title="Example Dialog" onOpenChange={setIsOpen} />
         <div style={{padding: 16}}>
-          <XDSText type="body">
-            This is an example dialog. Dialogs are used to require user action
-            or display important information that needs acknowledgment.
-          </XDSText>
+          <XDSText type="body">This is an example dialog. Dialogs are used to require user action or display important information that needs acknowledgment.</XDSText>
         </div>
       </XDSDialog>
     </div>

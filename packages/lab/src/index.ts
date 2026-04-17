@@ -55,13 +55,11 @@ export {
   starterIcons,
 } from './SVGIcon';
 
-// Chart colors — palette accessor for data visualization
-export {XDSChartColors, type SequentialHue} from './ChartColors';
-
 // Chart components — composable d3-based data visualization
 export {
   XDSChart,
   type XDSChartProps,
+  type YBaseline,
   XDSChartAxis,
   type XDSChartAxisProps,
   XDSChartGrid,
@@ -70,8 +68,23 @@ export {
   type XDSChartBarProps,
   XDSChartLine,
   type XDSChartLineProps,
+  XDSChartArea,
+  type XDSChartAreaProps,
+  XDSChartErrorBar,
+  type XDSChartErrorBarProps,
+  XDSChartCandlestick,
+  type XDSChartCandlestickProps,
   XDSChartDot,
   type XDSChartDotProps,
+  XDSChartDotGL,
+  type XDSChartDotGLProps,
+  XDSChartDotGLInteractive,
+  type XDSChartDotGLInteractiveProps,
+  XDSChartHeatmapGL,
+  type XDSChartHeatmapGLProps,
+  XDSChartStreamGL,
+  type XDSChartStreamGLProps,
+  type XDSChartStreamGLHandle,
   XDSChartTooltip,
   type XDSChartTooltipProps,
   XDSChartLegend,
@@ -81,4 +94,53 @@ export {
   type ChartContext,
   type ChartMargin,
   type ChartScale,
+  m4Reduce,
+  type M4Point,
+  useXDSChartColors,
+  useXDSChartRange,
+  type UseXDSChartRangeOptions,
+  type UseXDSChartRangeReturn,
+  getXDSChartColors,
+  getXDSChartColorsFromResolver,
+  type XDSChartColorsAPI,
+  type SequentialHue,
+  type TokenResolver,
 } from './Chart';
+
+// Radial charts — spider, pie, donut
+export {
+  XDSRadialChart,
+  type XDSRadialChartProps,
+  XDSRadialGrid,
+  type XDSRadialGridProps,
+  XDSRadialArea,
+  type XDSRadialAreaProps,
+  XDSRadialAxis,
+  type XDSRadialAxisProps,
+  XDSRadialSlice,
+  type XDSRadialSliceProps,
+  useRadial,
+  type RadialContext,
+  type RadialMode,
+} from './Radial';
+
+// 3D charts — projected SVG with interactive rotation
+export {
+  XDS3DChart,
+  type XDS3DChartProps,
+  XDS3DScatter,
+  type XDS3DScatterProps,
+  XDS3DBar,
+  type XDS3DBarProps,
+  XDS3DGrid,
+  type XDS3DGridProps,
+  XDS3DAxis,
+  type XDS3DAxisProps,
+  XDS3DSurface,
+  type XDS3DSurfaceProps,
+  use3D,
+  type ThreeDContext,
+  type Camera,
+  type Point3D,
+  type ProjectedPoint,
+} from './ThreeD';

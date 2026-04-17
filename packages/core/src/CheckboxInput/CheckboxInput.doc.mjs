@@ -2,24 +2,7 @@
 
 export const docs = {
   name: 'CheckboxInput',
-  description: 'A checkbox input component for toggling boolean values.',
-  showcase: {
-    aspectRatio: 4 / 3,
-    code: '<XDSCheckboxInput label="Accept terms" />',
-  },
   keywords: ["checkbox","check","toggle","tick","indeterminate","boolean","tristate"],
-  features: [
-    'Accessible — always includes a label (can be visually hidden)',
-    'Indeterminate state — supports indeterminate for "select all" patterns',
-    'Descriptions — optional description text below the label',
-    'Sizes — sm (compact) and md (default)',
-    'Async actions — onChangeAction with optimistic updates and loading spinner',
-    'Status messages — error, warning, success validation feedback',
-    'Optional/required indicators — label suffix with field state',
-    'Label icons — optional icon before label text',
-    'Disabled state — full support for disabled state styling',
-    'Reduced motion — respects prefers-reduced-motion',
-  ],
   props: [
     {
       name: 'ref',
@@ -121,122 +104,50 @@ export const docs = {
       {className: 'xds-checkbox'},
     ],
   },
-  notes: [
-    'Uses a hidden native <input type="checkbox"> for accessibility with a custom visual checkbox overlay.',
-    'The visual checkbox responds to hover, focus, and checked states via ancestor selectors (stylex.when.ancestor).',
-    'Label is clickable and properly associated with the input via htmlFor/id.',
-    'Focus outline uses the standard XDS focus ring token.',
-    'Interaction is blocked during busy state (loading or pending async action) to prevent double-toggling.',
-  ],
   usage: {
-    summary: 'A checkbox input for toggling boolean values.',
-    content: `## When to use
-
-- Toggling a single boolean setting.
-- Selecting multiple options from a set (use CheckboxList for groups).`,
+    description: 'CheckboxInput is a form control for toggling a single boolean value. Use it for standalone on/off settings, terms acceptance, or as a building block inside CheckboxList for multi-select groups.',
+    bestPractices: [
+      { guidance: true, description: 'Always provide a visible label for context. Use isLabelHidden only when surrounding UI already makes the purpose clear.' },
+      { guidance: true, description: 'Use the indeterminate state for "select all" checkboxes that represent a partial selection.' },
+      { guidance: false, description: 'Use a checkbox for mutually exclusive choices — use RadioList or a toggle switch instead.' },
+      { guidance: false, description: 'Hide the label without an equivalent accessible alternative nearby.' },
+    ],
   },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'CheckboxInput',
-  description: '复选框输入组件，用于切换布尔值。',
-  features: [
-    '无障碍——始终包含标签（可视觉隐藏）',
-    '不确定状态——支持"全选"模式的不确定状态',
-    '描述——标签下方可选的描述文本',
-    '尺寸——sm（紧凑）和 md（默认）',
-    '异步操作——onChangeAction 带乐观更新和加载旋转器',
-    '状态消息——错误、警告、成功验证反馈',
-    '可选/必填指示器——带字段状态的标签后缀',
-    '标签图标——标签文本前可选图标',
-    '禁用状态——完整支持禁用状态样式',
-    '减少动画——尊重 prefers-reduced-motion',
-  ],
+  usage: {
+    description: 'CheckboxInput is a form control for toggling a single boolean value. Use it for standalone on/off settings, terms acceptance, or as a building block inside CheckboxList for multi-select groups.',
+    bestPractices: [
+      { guidance: true, description: 'Always provide a visible label for context. Use isLabelHidden only when surrounding UI already makes the purpose clear.' },
+      { guidance: true, description: 'Use the indeterminate state for "select all" checkboxes that represent a partial selection.' },
+      { guidance: false, description: 'Use a checkbox for mutually exclusive choices — use RadioList or a toggle switch instead.' },
+      { guidance: false, description: 'Hide the label without an equivalent accessible alternative nearby.' },
+    ],
+  },
   props: [
-    {
-      name: 'ref',
-      type: 'React.Ref<HTMLInputElement>',
-      description: '转发至底层 <input> 元素的 ref。',
-    },
-    {
-      name: 'label',
-      type: 'string',
-      description: '复选框的标签文本（始终为无障碍性而渲染）。',
-      required: true,
-    },
-    {
-      name: 'isLabelHidden',
-      type: 'boolean',
-      description: '是否视觉隐藏标签（屏幕阅读器仍可访问）。',
-      default: 'false',
-    },
-    {
-      name: 'description',
-      type: 'string',
-      description: '显示在标签下方的描述文本。',
-    },
-    {
-      name: 'value',
-      type: "boolean | 'indeterminate'",
-      description: '复选框是否为选中、未选中或不确定状态。',
-      required: true,
-    },
-    {
-      name: 'onChange',
-      type: '(checked: boolean, e: ChangeEvent<HTMLInputElement>) => void',
-      description: '复选框状态变更时触发的回调。',
-    },
+    {name: 'ref', type: 'React.Ref<HTMLInputElement>', description: '转发至底层 <input> 元素的 ref。'},
+    {name: 'label', type: 'string', description: '复选框的标签文本（始终为无障碍性而渲染）。', required: true},
+    {name: 'isLabelHidden', type: 'boolean', description: '是否视觉隐藏标签（屏幕阅读器仍可访问）。', default: 'false'},
+    {name: 'description', type: 'string', description: '显示在标签下方的描述文本。'},
+    {name: 'value', type: "boolean | 'indeterminate'", description: '复选框是否为选中、未选中或不确定状态。', required: true},
+    {name: 'onChange', type: '(checked: boolean, e: ChangeEvent<HTMLInputElement>) => void', description: '复选框状态变更时触发的回调。'},
     {
       name: 'onChangeAction',
-      type: '(checked: boolean, e: ChangeEvent<HTMLInputElement>) => void | Promise<void>',
+      type:
+        '(checked: boolean, e: ChangeEvent<HTMLInputElement>) => void | Promise<void>',
       description: '异步变更操作。在 onChange 之后触发（未被阻止时）。等待期间显示加载旋转器。',
     },
-    {
-      name: 'isLoading',
-      type: 'boolean',
-      description: '复选框是否处于加载状态。显示旋转器并阻止交互。',
-      default: 'false',
-    },
-    {
-      name: 'isDisabled',
-      type: 'boolean',
-      description: '复选框是否禁用。',
-      default: 'false',
-    },
-    {
-      name: 'isOptional',
-      type: 'boolean',
-      description: '字段是否可选。与 isRequired 互斥。',
-      default: 'false',
-    },
-    {
-      name: 'isRequired',
-      type: 'boolean',
-      description: '复选框是否必填。与 isOptional 互斥。',
-      default: 'false',
-    },
-    {
-      name: 'size',
-      type: "'sm' | 'md'",
-      description: '复选框尺寸。sm 用于紧凑布局，md 为默认。',
-      default: "'md'",
-    },
-    {
-      name: 'onFocus',
-      type: '(e: FocusEvent<HTMLInputElement>) => void',
-      description: '复选框获得焦点时触发的回调。',
-    },
-    {
-      name: 'onBlur',
-      type: '(e: FocusEvent<HTMLInputElement>) => void',
-      description: '复选框失去焦点时触发的回调。',
-    },
-    {
-      name: 'labelIcon',
-      type: 'XDSIconType',
-      description: '标签文本前显示的图标。',
-    },
+    {name: 'isLoading', type: 'boolean', description: '复选框是否处于加载状态。显示旋转器并阻止交互。', default: 'false'},
+    {name: 'isDisabled', type: 'boolean', description: '复选框是否禁用。', default: 'false'},
+    {name: 'isOptional', type: 'boolean', description: '字段是否可选。与 isRequired 互斥。', default: 'false'},
+    {name: 'isRequired', type: 'boolean', description: '复选框是否必填。与 isOptional 互斥。', default: 'false'},
+    {name: 'size', type: "'sm' | 'md'", description: '复选框尺寸。sm 用于紧凑布局，md 为默认。', default: "'md'"},
+    {name: 'onFocus', type: '(e: FocusEvent<HTMLInputElement>) => void', description: '复选框获得焦点时触发的回调。'},
+    {name: 'onBlur', type: '(e: FocusEvent<HTMLInputElement>) => void', description: '复选框失去焦点时触发的回调。'},
+    {name: 'labelIcon', type: 'XDSIconType', description: '标签文本前显示的图标。'},
     {
       name: 'status',
       type: "{ type: 'error' | 'warning' | 'success', message: string }",
@@ -245,41 +156,29 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'xds-checkbox-input', visualProps: ['size']},
+      {
+        className: 'xds-checkbox-input',
+        visualProps: [
+          'size',
+        ],
+      },
       {className: 'xds-checkbox'},
     ],
   },
-  notes: [
-    '使用隐藏的原生 <input type="checkbox"> 确保无障碍性，并覆盖自定义视觉复选框。',
-    '视觉复选框通过祖先选择器（stylex.when.ancestor）响应悬停、焦点和选中状态。',
-    '标签可点击，并通过 htmlFor/id 与输入框正确关联。',
-    '焦点轮廓使用标准的 XDS 焦点环令牌。',
-    '忙碌状态（加载中或异步操作等待中）期间阻止交互，防止重复切换。',
-  ],
 };
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   description: 'checkbox for toggling boolean values',
-  features: [
-    'accessible; always includes label (can be visually hidden)',
-    'indeterminate state for "select all" patterns',
-    'optional description text below label',
-    'sizes: sm (compact), md (default)',
-    'async actions w/ onChangeAction, optimistic updates, loading spinner',
-    'status messages: error/warning/success validation',
-    'optional/required field indicators',
-    'label icons',
-    'full disabled state styling',
-    'respects prefers-reduced-motion',
-  ],
-  notes: [
-    'hidden native <input type="checkbox"> w/ custom visual overlay',
-    'visual checkbox responds to hover, focus, checked via ancestor selectors (stylex.when.ancestor)',
-    'label clickable + associated via htmlFor/id',
-    'focus outline uses XDS focus ring token',
-    'interaction blocked during busy state to prevent double-toggling',
-  ],
+  usage: {
+    description: 'CheckboxInput is a form control for toggling a single boolean value. Use it for standalone on/off settings, terms acceptance, or as a building block inside CheckboxList for multi-select groups.',
+    bestPractices: [
+      { guidance: true, description: 'Always provide a visible label for context. Use isLabelHidden only when surrounding UI already makes the purpose clear.' },
+      { guidance: true, description: 'Use the indeterminate state for "select all" checkboxes that represent a partial selection.' },
+      { guidance: false, description: 'Use a checkbox for mutually exclusive choices — use RadioList or a toggle switch instead.' },
+      { guidance: false, description: 'Hide the label without an equivalent accessible alternative nearby.' },
+    ],
+  },
   propDescriptions: {
     ref: 'ref forwarded to underlying <input>',
     label: 'label text; always rendered for a11y',

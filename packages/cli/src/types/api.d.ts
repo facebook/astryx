@@ -11,6 +11,7 @@ import type {
   ComponentDetailResponse,
   ComponentDetailPropsResponse,
   ComponentDetailSourceResponse,
+  ComponentDetailShowcaseResponse,
 } from './component';
 import type {
   DocsListResponse,
@@ -48,6 +49,7 @@ export interface ComponentOptions {
   category?: string;
   props?: boolean;
   source?: boolean;
+  showcase?: boolean;
   detail?: 'full' | 'compact' | 'brief';
   lang?: string;
   zh?: boolean;
@@ -59,7 +61,8 @@ type ComponentResult =
   | ComponentBriefResponse
   | ComponentDetailResponse
   | ComponentDetailPropsResponse
-  | ComponentDetailSourceResponse;
+  | ComponentDetailSourceResponse
+  | ComponentDetailShowcaseResponse;
 
 export declare function component(
   name?: string,

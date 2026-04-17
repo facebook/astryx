@@ -264,7 +264,7 @@ export function XDSTextArea({
   onChange,
   onChangeAction,
   isLoading = false,
-  value,
+  value = '',
   placeholder,
   rows = 3,
   isDisabled = false,
@@ -378,7 +378,7 @@ export function XDSTextArea({
           onBlur={onBlur}
           placeholder={placeholder}
           rows={rows}
-          disabled={effectivelyDisabled}
+          disabled={isDisabled}
           spellCheck={hasSpellCheck}
           autoFocus={hasAutoFocus}
           data-autofocus={hasAutoFocus || undefined}

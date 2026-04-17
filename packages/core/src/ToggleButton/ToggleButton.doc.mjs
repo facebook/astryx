@@ -2,33 +2,13 @@
 
 export const docs = {
   name: 'ToggleButton',
-  description:
-    'A button that toggles between pressed and unpressed states, with optional icon swap and group integration for single or multi-select behavior.',
-  showcase: {
-    aspectRatio: 1,
-    code: '<XDSToggleButton label="Bold" isIconOnly />',
-  },
   keywords: ["toggle","togglebutton","pressed","toolbar","formatting","segmented","button-group","exclusive","multi-select"],
-  features: [
-    'Controlled toggle via isPressed/onPressedChange',
-    'Icon swap between pressed and unpressed states via pressedIcon',
-    'Font weight emphasis on press with width reservation to prevent layout shift',
-    'Async action support via onPressedChangeAction with loading spinner',
-    'Group integration via XDSToggleButtonGroup for single or multi-select',
-    'Discriminated union on type: single (string | null) or multiple (string[])',
-    'Horizontal and vertical group orientation',
-    'Built on XDSButton with all its size, disabled, and tooltip support',
-  ],
   theming: {
     targets: [
       {className: 'xds-toggle-button-group'},
     ],
   },
-  accessibility: [
-    'Uses aria-pressed on the toggle button for screen reader state announcement.',
-    'Group uses role="group" with aria-label from the label prop.',
-  ],
-  keyboard: 'Space/Enter toggles pressed state; Tab moves between buttons in a group',  components: [
+  components: [
     {
       name: 'XDSToggleButton',
       description: 'A button that toggles between pressed and unpressed states. Thin wrapper over XDSButton with controlled toggle pattern, icon swap, and font weight emphasis.',
@@ -65,39 +45,19 @@ export const docs = {
     },
   ],
   usage: {
-    summary: 'A button that switches between two persistent states, typically active and inactive.',
-    content: `## When to use
-
-- When an action has two persistent states and can be undone.
-- Use a group of toggle buttons for multiple independent two-state actions.
-- Use a toggle button group for 3 or more mutually exclusive states.
-
-## Best practices
-
-- Do: Convey state through color change, bolded text, or a filled icon.
-- Do: Keep the label the same between states.`,
+    description:
+      'ToggleButton is a button that switches between pressed and unpressed states to represent a persistent on/off choice. Use it standalone for binary actions like bold or mute, or within a ToggleButtonGroup for single-select or multi-select toolbar options.',
+    bestPractices: [
+      { guidance: true, description: 'Convey the pressed state through a filled icon, bold text, or color change so users can see the current state at a glance.' },
+      { guidance: true, description: 'Keep the label the same between pressed and unpressed states — let the visual treatment communicate the change.' },
+      { guidance: false, description: 'Use a ToggleButton for actions that navigate to another page or trigger a one-time event — use Button instead.' },
+      { guidance: false, description: 'Mix ToggleButtons with regular Buttons in the same group.' },
+    ],
   },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsZh = {
-  description:
-    '在按下和未按下状态之间切换的按钮，支持图标切换和分组集成，用于单选或多选行为。',
-  features: [
-    '通过 isPressed/onPressedChange 实现受控切换',
-    '通过 pressedIcon 在按下和未按下状态之间切换图标',
-    '按下时字重加粗，并预留宽度防止布局偏移',
-    '通过 onPressedChangeAction 支持异步操作，显示加载动画',
-    '通过 XDSToggleButtonGroup 实现分组集成，支持单选或多选',
-    'type 判别联合类型：single (string | null) 或 multiple (string[])',
-    '支持水平和垂直方向的分组布局',
-    '基于 XDSButton 构建，继承其尺寸、禁用和提示功能',
-  ],
-  accessibility: [
-    '使用 aria-pressed 向屏幕阅读器宣告切换按钮状态。',
-    '分组使用 role="group" 并通过 label 属性设置 aria-label。',
-  ],
-  keyboard: 'Space/Enter 切换按下状态；Tab 在分组中的按钮间移动焦点',
   components: [
     {
       name: 'XDSToggleButton',
@@ -135,26 +95,31 @@ export const docsZh = {
       },
     },
   ],
+  usage: {
+    description:
+      'ToggleButton is a button that switches between pressed and unpressed states to represent a persistent on/off choice. Use it standalone for binary actions like bold or mute, or within a ToggleButtonGroup for single-select or multi-select toolbar options.',
+    bestPractices: [
+      { guidance: true, description: 'Convey the pressed state through a filled icon, bold text, or color change so users can see the current state at a glance.' },
+      { guidance: true, description: 'Keep the label the same between pressed and unpressed states — let the visual treatment communicate the change.' },
+      { guidance: false, description: 'Use a ToggleButton for actions that navigate to another page or trigger a one-time event — use Button instead.' },
+      { guidance: false, description: 'Mix ToggleButtons with regular Buttons in the same group.' },
+    ],
+  },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   description: 'toggle btn w/ pressed/unpressed states, icon swap, group integration for single/multi-select',
-  features: [
-    'controlled toggle via isPressed/onPressedChange',
-    'icon swap pressed/unpressed via pressedIcon',
-    'font weight emphasis on press w/ width reservation (no layout shift)',
-    'async action via onPressedChangeAction w/ loading spinner',
-    'group integration via XDSToggleButtonGroup for single/multi-select',
-    'discriminated union on type: single (string|null) or multiple (string[])',
-    'horizontal+vertical group orientation',
-    'built on XDSButton w/ size, disabled, tooltip support',
-  ],
-  accessibility: [
-    'aria-pressed on toggle btn for screen reader state',
-    'group uses role="group" w/ aria-label from label prop',
-  ],
-  keyboard: 'Space/Enter toggles; Tab moves between btns in group',
+  usage: {
+    description:
+      'ToggleButton is a button that switches between pressed and unpressed states to represent a persistent on/off choice. Use it standalone for binary actions like bold or mute, or within a ToggleButtonGroup for single-select or multi-select toolbar options.',
+    bestPractices: [
+      { guidance: true, description: 'Convey the pressed state through a filled icon, bold text, or color change so users can see the current state at a glance.' },
+      { guidance: true, description: 'Keep the label the same between pressed and unpressed states — let the visual treatment communicate the change.' },
+      { guidance: false, description: 'Use a ToggleButton for actions that navigate to another page or trigger a one-time event — use Button instead.' },
+      { guidance: false, description: 'Mix ToggleButtons with regular Buttons in the same group.' },
+    ],
+  },
   components: [
     {
       name: 'XDSToggleButton',

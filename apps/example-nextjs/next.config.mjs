@@ -1,6 +1,4 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {
-  transpilePackages: ['@xds/core', '@xds/theme-default'],
-};
+const nextConfig = {};
 
 export default nextConfig;

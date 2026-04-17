@@ -2,21 +2,7 @@
 
 export const docs = {
   name: 'IconButton',
-  description:
-    'An icon-only button. Thin wrapper around XDSButton with isIconOnly always true.',
-  showcase: {
-    aspectRatio: 1,
-    code: '<XDSIconButton label="Settings" icon="gear" />',
-  },
-
   keywords: ['icon-button', 'icon', 'button', 'toolbar', 'action', 'compact'],
-  features: [
-    'Composition wrapper — delegates all behavior to XDSButton with isIconOnly=true',
-    'Explicit component name — greppable, codemod-safe, import-level detection',
-    'Same variants, sizes, and states as XDSButton',
-    'label prop becomes aria-label for accessibility',
-    'icon prop is required (enforced by TypeScript)',
-  ],
 
   props: [
     {
@@ -73,15 +59,12 @@ export const docs = {
     },
   ],
 
-  notes: [
-    'Prefer XDSIconButton over <XDSButton isIconOnly> for explicit intent',
-    'The label prop is always used as aria-label — required for accessibility',
-    'children and endContent are not accepted (omitted from props type)',
-    'All other XDSButton props (variant, size, onClick, etc.) are forwarded',
-  ],
-
-  accessibility: [
-    'Uses aria-label from the label prop for screen reader accessibility',
-    'Same keyboard and screen reader behavior as XDSButton with isIconOnly',
-  ],
+  usage: {
+    description: 'An icon-only button for compact actions that can be clearly represented by a single icon. Use IconButton in toolbars, table rows, and dense UI areas where space is limited and the icon meaning is universally understood.',
+    bestPractices: [
+      { guidance: true, description: 'Always provide a descriptive label prop — it becomes the aria-label for screen reader users.' },
+      { guidance: true, description: 'Add a tooltip to clarify the action for sighted users who may not recognize the icon.' },
+      { guidance: false, description: 'Use an icon-only button when the action is ambiguous — add visible text or use a standard Button instead.' },
+    ],
+  },
 };

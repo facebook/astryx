@@ -26,22 +26,22 @@ describe('XDSGrid', () => {
     expect(grid.style.gridTemplateColumns).toBe('repeat(3, 1fr)');
   });
 
-  it('renders with minChildWidth (auto-fit)', () => {
+  it('renders with columns object (auto-fill default)', () => {
     render(
-      <XDSGrid minChildWidth={250} data-testid="grid">
+      <XDSGrid columns={{minWidth: 250}} data-testid="grid">
         <div>Item 1</div>
         <div>Item 2</div>
       </XDSGrid>,
     );
     const grid = screen.getByTestId('grid');
     expect(grid.style.gridTemplateColumns).toBe(
-      'repeat(auto-fit, minmax(250px, 1fr))',
+      'repeat(auto-fill, minmax(250px, 1fr))',
     );
   });
 
-  it('renders with both columns and minChildWidth (capped)', () => {
+  it('renders with columns object max (capped)', () => {
     render(
-      <XDSGrid columns={3} minChildWidth={250} gap={4} data-testid="grid">
+      <XDSGrid columns={{minWidth: 250, max: 3}} gap={4} data-testid="grid">
         <div>Item 1</div>
         <div>Item 2</div>
         <div>Item 3</div>
@@ -49,15 +49,15 @@ describe('XDSGrid', () => {
     );
     const grid = screen.getByTestId('grid');
     expect(grid.style.gridTemplateColumns).toBe(
-      'repeat(auto-fit, minmax(250px, 1fr))',
+      'repeat(auto-fill, minmax(250px, 1fr))',
     );
     // maxWidth = 3 * 250 + 2 * 16 = 750 + 32 = 782px
     expect(grid.style.maxWidth).toBe('782px');
   });
 
-  it('renders with columns and minChildWidth using columnGap', () => {
+  it('renders with columns object max using columnGap', () => {
     render(
-      <XDSGrid columns={4} minChildWidth={200} columnGap={6} data-testid="grid">
+      <XDSGrid columns={{minWidth: 200, max: 4}} columnGap={6} data-testid="grid">
         <div>Item 1</div>
         <div>Item 2</div>
       </XDSGrid>,
@@ -136,16 +136,15 @@ describe('XDSGrid', () => {
     expect(grid.style.gridTemplateColumns).toBe('1fr');
   });
 
-  it('uses auto-fit without maxWidth cap when columns={0} with minChildWidth', () => {
+  it('uses auto-fill without maxWidth cap when no max specified', () => {
     render(
-      <XDSGrid columns={0} minChildWidth={200} data-testid="grid">
+      <XDSGrid columns={{minWidth: 200}} data-testid="grid">
         <div>Item</div>
       </XDSGrid>,
     );
     const grid = screen.getByTestId('grid');
-    // minChildWidth drives auto-fit; columns={0} should not set a maxWidth cap
     expect(grid.style.gridTemplateColumns).toBe(
-      'repeat(auto-fit, minmax(200px, 1fr))',
+      'repeat(auto-fill, minmax(200px, 1fr))',
     );
     expect(grid.style.maxWidth).toBe('');
   });
@@ -192,13 +191,12 @@ describe('XDSGrid', () => {
     expect(grid.style.height).toBe('50vh');
   });
 
-  // --- P2: minChildWidth + columnGap interaction (hardening #719) ---
+  // --- P2: columns object + columnGap interaction (hardening #719) ---
 
   it('calculates maxWidth using columnGap when both columnGap and gap are set', () => {
     render(
       <XDSGrid
-        columns={3}
-        minChildWidth={200}
+        columns={{minWidth: 200, max: 3}}
         gap={2}
         columnGap={6}
         data-testid="grid">
@@ -213,7 +211,7 @@ describe('XDSGrid', () => {
 
   it('calculates maxWidth using gap when columnGap is not set', () => {
     render(
-      <XDSGrid columns={2} minChildWidth={150} gap={3} data-testid="grid">
+      <XDSGrid columns={{minWidth: 150, max: 2}} gap={3} data-testid="grid">
         <div>Item</div>
       </XDSGrid>,
     );
@@ -224,7 +222,7 @@ describe('XDSGrid', () => {
 
   it('calculates maxWidth with zero gap when neither gap nor columnGap is set', () => {
     render(
-      <XDSGrid columns={3} minChildWidth={100} data-testid="grid">
+      <XDSGrid columns={{minWidth: 100, max: 3}} data-testid="grid">
         <div>Item</div>
       </XDSGrid>,
     );
@@ -265,6 +263,81 @@ describe('XDSGrid', () => {
     expect(screen.getByText('Item 2')).toBeInTheDocument();
     expect(screen.getByText('Item 3')).toBeInTheDocument();
   });
+
+  // --- columns object API ---
+
+  it('renders with columns={{minWidth}} using auto-fill', () => {
+    render(
+      <XDSGrid columns={{minWidth: 280}} data-testid="grid">
+        <div>Item 1</div>
+        <div>Item 2</div>
+      </XDSGrid>,
+    );
+    const grid = screen.getByTestId('grid');
+    expect(grid.style.gridTemplateColumns).toBe(
+      'repeat(auto-fill, minmax(280px, 1fr))',
+    );
+  });
+
+  it('renders with columns={{minWidth, repeat: "fit"}} using auto-fit', () => {
+    render(
+      <XDSGrid columns={{minWidth: 280, repeat: 'fit'}} data-testid="grid">
+        <div>Item 1</div>
+        <div>Item 2</div>
+      </XDSGrid>,
+    );
+    const grid = screen.getByTestId('grid');
+    expect(grid.style.gridTemplateColumns).toBe(
+      'repeat(auto-fit, minmax(280px, 1fr))',
+    );
+  });
+
+  it('renders with columns={{minWidth, repeat: "fill"}} using auto-fill', () => {
+    render(
+      <XDSGrid columns={{minWidth: 280, repeat: 'fill'}} data-testid="grid">
+        <div>Item 1</div>
+        <div>Item 2</div>
+      </XDSGrid>,
+    );
+    const grid = screen.getByTestId('grid');
+    expect(grid.style.gridTemplateColumns).toBe(
+      'repeat(auto-fill, minmax(280px, 1fr))',
+    );
+  });
+
+  it('renders with columns={{minWidth, max}} capping via maxWidth', () => {
+    render(
+      <XDSGrid columns={{minWidth: 280, max: 3}} gap={4} data-testid="grid">
+        <div>Item 1</div>
+        <div>Item 2</div>
+      </XDSGrid>,
+    );
+    const grid = screen.getByTestId('grid');
+    expect(grid.style.gridTemplateColumns).toBe(
+      'repeat(auto-fill, minmax(280px, 1fr))',
+    );
+    // maxWidth = 3 * 280 + 2 * 16 = 840 + 32 = 872px
+    expect(grid.style.maxWidth).toBe('872px');
+  });
+
+  it('renders with columns={{minWidth, max, repeat: "fit"}} using auto-fit + maxWidth', () => {
+    render(
+      <XDSGrid
+        columns={{minWidth: 280, max: 3, repeat: 'fit'}}
+        gap={4}
+        data-testid="grid">
+        <div>Item 1</div>
+        <div>Item 2</div>
+      </XDSGrid>,
+    );
+    const grid = screen.getByTestId('grid');
+    expect(grid.style.gridTemplateColumns).toBe(
+      'repeat(auto-fit, minmax(280px, 1fr))',
+    );
+    // maxWidth = 3 * 280 + 2 * 16 = 840 + 32 = 872px
+    expect(grid.style.maxWidth).toBe('872px');
+  });
+
 });
 
 describe('XDSGridSpan', () => {

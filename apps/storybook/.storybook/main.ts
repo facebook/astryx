@@ -1,5 +1,5 @@
 import type {StorybookConfig} from '@storybook/react-vite';
-import stylex from '@stylexjs/unplugin';
+import {xdsStylex} from '@xds/vite-plugin';
 import path from 'path';
 
 const rootDir = path.resolve(__dirname, '../../..');
@@ -63,22 +63,10 @@ const config: StorybookConfig = {
     return {
       ...config,
       plugins: [
-        // Declare CSS layer order before StyleX injects its virtual CSS.
-        // In Vite dev mode the StyleX unplugin's transformIndexHtml injects
-        // a <link> for /virtual:stylex.css before preview.tsx CSS imports
-        // are processed, which would otherwise cause priority1-9 layers to
-        // be declared first (lowest priority) and the reset layer last
-        // (highest priority) — the reverse of what we need.
         {
-          name: 'xds-css-layer-order',
+          name: 'xds-color-scheme',
           transformIndexHtml() {
             return [
-              {
-                tag: 'style',
-                children:
-                  '@layer reset, priority1, priority2, priority3, priority4, priority5, priority6, priority7, priority8, priority9, xds-theme;',
-                injectTo: 'head-prepend',
-              },
               {
                 tag: 'style',
                 children: ':root { color-scheme: light; }',
@@ -88,39 +76,30 @@ const config: StorybookConfig = {
           },
         },
         ...filteredPlugins,
-        stylex.vite({
-          // Use production mode with CSS extraction
-          dev: false,
-          useCSSLayers: true,
-          styleResolution: 'application-order',
-          aliases: {
-            '@xds/core/*': [path.join(rootDir, 'packages/core/src/*')],
-            '@xds/core': [path.join(rootDir, 'packages/core/src')],
-            '@xds/theme-default/*': [
-              path.join(rootDir, 'packages/themes/default/src/*'),
-            ],
-            '@xds/theme-neutral/*': [
-              path.join(rootDir, 'packages/themes/neutral/src/*'),
-            ],
-            '@xds/theme-brutalist/*': [
-              path.join(rootDir, 'packages/themes/brutalist/src/*'),
-            ],
-          },
-          unstable_moduleResolution: {
-            type: 'commonJS',
-            rootDir: rootDir,
-          },
-          // The StyleX unplugin runs its own internal lightningcss transform
-          // with default targets of browserslist('>= 1%') which includes
-          // Chrome 112 — a browser that doesn't support light-dark().
-          // This causes light-dark() token values to be lowered into
-          // --lightningcss-light/--lightningcss-dark polyfill variables,
-          // which only work when a StyleX color-scheme class is applied.
-          // Without XDSTheme (e.g. "none" theme in Storybook, or consumers
-          // using @xds/core without a theme), the polyfill vars are undefined
-          // and colors break. Setting targets here keeps light-dark() native.
-          lightningcssOptions: {
-            targets: lightningcssTargets,
+        ...xdsStylex({
+          stylexOptions: {
+            dev: false,
+            styleResolution: 'application-order',
+            aliases: {
+              '@xds/core/*': [path.join(rootDir, 'packages/core/src/*')],
+              '@xds/core': [path.join(rootDir, 'packages/core/src')],
+              '@xds/theme-default/*': [
+                path.join(rootDir, 'packages/themes/default/src/*'),
+              ],
+              '@xds/theme-neutral/*': [
+                path.join(rootDir, 'packages/themes/neutral/src/*'),
+              ],
+              '@xds/theme-brutalist/*': [
+                path.join(rootDir, 'packages/themes/brutalist/src/*'),
+              ],
+            },
+            unstable_moduleResolution: {
+              type: 'commonJS',
+              rootDir: rootDir,
+            },
+            lightningcssOptions: {
+              targets: lightningcssTargets,
+            },
           },
         }),
       ],
@@ -135,8 +114,6 @@ const config: StorybookConfig = {
         },
       },
       css: {
-        // Also set Vite's own CSS transformer targets to match, so any
-        // non-StyleX CSS (e.g. manual .css imports) also preserves light-dark().
         transformer: 'lightningcss',
         lightningcss: {
           targets: lightningcssTargets,

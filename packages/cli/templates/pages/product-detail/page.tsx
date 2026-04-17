@@ -5,9 +5,11 @@ import {XDSAppShell} from '@xds/core/AppShell';
 import {XDSTopNav, XDSTopNavHeading, XDSTopNavItem} from '@xds/core/TopNav';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSCenter} from '@xds/core/Center';
+import {XDSGrid} from '@xds/core/Grid';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
 import {XDSNumberInput} from '@xds/core/NumberInput';
+import {XDSIcon} from '@xds/core/Icon';
 import {
   XDSSegmentedControl,
   XDSSegmentedControlItem,
@@ -153,44 +155,45 @@ function StarRating({rating, count}: {rating: number; count: number}) {
 }
 
 // ─── Image URLs ─────────────────────────────────────────────────────────────
-// Main hero: B&W living room (unsplash pqyu59ZcbLU)
-// Thumbnails: B&W interiors of similar tone
+// Light product photography from the xds_oss asset set (ceramics collection)
+// Source: meta assets.file list -s xds_oss -g light-product-{1..5}
+// IMAGES[0] = fallback hero; IMAGES[1..6] = thumbnails (first is selected by default)
 const IMAGES = [
-  'https://images.unsplash.com/photo-1567016432779-094069958ea5?w=800&q=80',
-  'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400&q=80',
-  'https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?w=400&q=80',
-  'https://images.unsplash.com/photo-1560448204-603b3fc33ddc?w=400&q=80',
-  'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=400&q=80',
-  'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&q=80',
-  'https://images.unsplash.com/photo-1489171078254-c3365d6e359f?w=400&q=80',
+  'https://scontent.xx.fbcdn.net/v/t39.6806-6/671222955_2145727732941085_520241325832272863_n.png?_nc_cat=102&ccb=1-7&_nc_sid=56bbc2&_nc_ohc=nPid9vxWiAAQ7kNvwEn9zAk&_nc_oc=Adpvs8c0_OPaD3OBM2-RuvQhsq_ZIQCuI4MIYJDHog2g0wbDnnKsQY18ujPRPRsUsCQaE3gnHXhybHYdgHyTPGcy&_nc_zt=14&_nc_ht=scontent.xx&_nc_gid=ydKBqwA5klQRsF7pHyaL9Q&_nc_ss=7a30f&oh=00_Af1MWCNR4BSpKvDiJrg4I7hrhPhvwUkpwRMPpGkexhKxpg&oe=69E5F2F2',
+  'https://scontent.xx.fbcdn.net/v/t39.6806-6/671222955_2145727732941085_520241325832272863_n.png?_nc_cat=102&ccb=1-7&_nc_sid=56bbc2&_nc_ohc=nPid9vxWiAAQ7kNvwEn9zAk&_nc_oc=Adpvs8c0_OPaD3OBM2-RuvQhsq_ZIQCuI4MIYJDHog2g0wbDnnKsQY18ujPRPRsUsCQaE3gnHXhybHYdgHyTPGcy&_nc_zt=14&_nc_ht=scontent.xx&_nc_gid=ydKBqwA5klQRsF7pHyaL9Q&_nc_ss=7a30f&oh=00_Af1MWCNR4BSpKvDiJrg4I7hrhPhvwUkpwRMPpGkexhKxpg&oe=69E5F2F2',
+  'https://scontent.xx.fbcdn.net/v/t39.6806-6/673826432_1199625442080268_2235614826141527510_n.png?_nc_cat=101&ccb=1-7&_nc_sid=56bbc2&_nc_ohc=7sfupHwtMWoQ7kNvwHq-oll&_nc_oc=AdorjEzWeonV_cTC82CQcP_97bhPEFri4gRyJuRCTm5tm4RrSHqZHinwq3cpLIVwwDqJGdLCeaezQOL1pCTdEurA&_nc_zt=14&_nc_ht=scontent.xx&_nc_gid=dhQMbNPZ6a4O8tvuG-zaQQ&_nc_ss=7a30f&oh=00_Af0jFaeYAmFWPUXPDLAx1wHlwVkoTPaVfUQircvONREAew&oe=69E5DFF1',
+  'https://scontent.xx.fbcdn.net/v/t39.6806-6/672681263_1894137684571541_8624778644609428792_n.png?_nc_cat=109&ccb=1-7&_nc_sid=56bbc2&_nc_ohc=O9FpOzmcuhIQ7kNvwHJc_5e&_nc_oc=AdohCQROsW1HA9oyV_P08xW-PZ7aRBaxKQDouJQeLqWBRg4s_diiKocTCXKFW6MrH29i-qmdKX4F1XacD-ZBr1aI&_nc_zt=14&_nc_ht=scontent.xx&_nc_gid=4Ho2VwbJyUMPRPg1_pYYXQ&_nc_ss=7a30f&oh=00_Af3rTWfTt78ZVlhHCjbjcvEMAmyt_Y5UApS2ezLwTSVDdw&oe=69E5F643',
+  'https://scontent.xx.fbcdn.net/v/t39.6806-6/670399674_3883527348446559_364118105607949641_n.png?_nc_cat=103&ccb=1-7&_nc_sid=56bbc2&_nc_ohc=qjhrCslvBhEQ7kNvwGIRrYU&_nc_oc=AdqjfEPZizLmq2xSVhncfdeilisr9iS4xyW6xvESla6s72ctRLyjAdz_aUhs0_7GlT2wLRjFqotzo6mCRpj_zoev&_nc_zt=14&_nc_ht=scontent.xx&_nc_gid=p5rjWn-ZxsbEF4l-xiDkoA&_nc_ss=7a30f&oh=00_Af0dfW78AWBoDni-ydDYmjYYnu6TcBty9hI97oewb6OFfw&oe=69E5EB2D',
+  'https://scontent.xx.fbcdn.net/v/t39.6806-6/671457944_4516505268571219_6833232903201599778_n.png?_nc_cat=101&ccb=1-7&_nc_sid=56bbc2&_nc_ohc=2LiO931mC78Q7kNvwEClCGO&_nc_oc=AdoxCLopOX1C45nJksLqWaffKTeqizJ7joW-P2gbmknrVE5KqvaVXRzof8YTOZNW0OMuPUSnUEX0aQ32RhRv6xeF&_nc_zt=14&_nc_ht=scontent.xx&_nc_gid=AXiNN0rtQ-RZnfzDQS5AjA&_nc_ss=7a30f&oh=00_Af3DYuG7fKdv_a6uNNcfTO5iIV16d_65o0-9FZnZp4jQfg&oe=69E5E555',
+  'https://scontent.xx.fbcdn.net/v/t39.6806-6/673826432_1199625442080268_2235614826141527510_n.png?_nc_cat=101&ccb=1-7&_nc_sid=56bbc2&_nc_ohc=7sfupHwtMWoQ7kNvwHq-oll&_nc_oc=AdorjEzWeonV_cTC82CQcP_97bhPEFri4gRyJuRCTm5tm4RrSHqZHinwq3cpLIVwwDqJGdLCeaezQOL1pCTdEurA&_nc_zt=14&_nc_ht=scontent.xx&_nc_gid=dhQMbNPZ6a4O8tvuG-zaQQ&_nc_ss=7a30f&oh=00_Af0jFaeYAmFWPUXPDLAx1wHlwVkoTPaVfUQircvONREAew&oe=69E5DFF1',
 ];
 
 // ─── Product Data ───────────────────────────────────────────────────────────
 const PRODUCT = {
-  name: 'Arc Floor Lamp',
-  price: 249.0,
-  originalPrice: 329.0,
+  name: 'Solstice Mug & Plate Set',
+  price: 89.0,
+  originalPrice: 119.0,
   description:
-    'A sculptural arc floor lamp that balances bold geometry with warm ambient light. The adjustable arm extends up to 72 inches, casting a wide pool of light over a reading nook, sofa, or desk. The weighted marble base keeps it stable without a bulky footprint. A built-in dimmer on the cord lets you shift from bright task lighting to a soft evening glow. Pairs beautifully with mid-century and minimalist interiors alike.',
+    'A hand-thrown mug and plate set that brings quiet warmth to every meal. The mug sits easy in the hand with a generous 12 oz capacity, while the 8-inch plate works for everything from toast to tapas. Each piece is kiln-fired at 2,300°F for a finish that resists chips and stains. Subtle variations in the reactive glaze mean no two sets are exactly alike. Dishwasher and microwave safe.',
   composition:
-    'Powder-coated steel arm with a brushed brass finish at the joints. Natural Carrara marble base (each piece has unique veining). Linen drum shade lined in white for even light diffusion. UL-listed for dry locations. Uses one standard E26 bulb (LED recommended, up to 100W equivalent).',
+    'High-fire stoneware clay, wheel-thrown and trimmed by hand. Reactive glaze applied by dipping — color pools and breaks naturally over the clay body. Lead-free and food-safe. Unglazed foot ring reveals the raw clay underneath. Each piece is bisque-fired, glazed, then fired again to cone 10 in a gas reduction kiln.',
   deliveryReturns:
-    'Free white-glove delivery on all lighting orders. Professional assembly included. Returns accepted within 14 days — item must be unassembled in original packaging. Replacement shades available separately.',
+    'Free shipping on all ceramics orders over $75. Each piece is individually wrapped in recycled kraft paper and cushioned for transit. Returns accepted within 30 days — items must be unused and in original packaging. Replacement pieces available individually.',
   dimensions:
-    'Overall height: 183 cm / 72 in (adjustable). Base diameter: 30 cm / 12 in. Shade diameter: 36 cm / 14 in. Shade height: 25 cm / 10 in. Arm reach: 100 cm / 39 in.',
+    'Mug height: 9.5 cm / 3.75 in. Mug diameter: 8.5 cm / 3.35 in. Capacity: 350 ml / 12 oz. Plate diameter: 20 cm / 8 in. Plate height: 2 cm / 0.75 in. Weight: 680 g / 1.5 lb (set).',
 };
 
 const COLORS = [
-  {value: 'matte-black', label: 'Matte Black'},
-  {value: 'brass', label: 'Brass'},
-  {value: 'white', label: 'White'},
-  {value: 'walnut', label: 'Walnut'},
+  {value: 'snow', label: 'Snow'},
+  {value: 'oat', label: 'Oat'},
+  {value: 'sage', label: 'Sage'},
+  {value: 'charcoal', label: 'Charcoal'},
 ];
 
 const FINISHES = [
-  {value: 'linen', label: 'Linen'},
-  {value: 'frosted', label: 'Frosted Glass'},
-  {value: 'rattan', label: 'Rattan'},
+  {value: 'matte', label: 'Matte'},
+  {value: 'satin', label: 'Satin'},
+  {value: 'speckled', label: 'Speckled'},
 ];
 
 const fmt = (n: number) => `$${n.toFixed(2)}`;
@@ -202,9 +205,9 @@ function StoreTopNav() {
       label="Store navigation"
       heading={
         <XDSTopNavHeading
-          heading="Haus Studio"
+          heading="Kiln & Table"
           logo={
-            <XDSNavIcon icon={<BagIcon style={{width: 16, height: 16}} />} />
+            <XDSNavIcon icon={<XDSIcon icon={BagIcon} size="sm" />} />
           }
           href="#"
         />
@@ -212,9 +215,9 @@ function StoreTopNav() {
       centerContent={
         <>
           <XDSTopNavItem label="New Arrivals" href="#" />
-          <XDSTopNavItem label="Lighting" href="#" isSelected />
-          <XDSTopNavItem label="Furniture" href="#" />
-          <XDSTopNavItem label="Decor" href="#" />
+          <XDSTopNavItem label="Mugs" href="#" isSelected />
+          <XDSTopNavItem label="Plates & Bowls" href="#" />
+          <XDSTopNavItem label="Serveware" href="#" />
           <XDSTopNavItem label="About" href="#" />
         </>
       }
@@ -223,25 +226,25 @@ function StoreTopNav() {
           <XDSButton
             label="Search"
             variant="ghost"
-            icon={<SearchIcon style={{width: 16, height: 16}} />}
+            icon={<XDSIcon icon={SearchIcon} size="sm" />}
             isIconOnly
           />
           <XDSButton
             label="Wishlist"
             variant="ghost"
-            icon={<HeartIcon style={{width: 16, height: 16}} />}
+            icon={<XDSIcon icon={HeartIcon} size="sm" />}
             isIconOnly
           />
           <XDSButton
             label="Account"
             variant="ghost"
-            icon={<UserIcon style={{width: 16, height: 16}} />}
+            icon={<XDSIcon icon={UserIcon} size="sm" />}
             isIconOnly
           />
           <XDSButton
             label="Cart"
             variant="ghost"
-            icon={<BagIcon style={{width: 16, height: 16}} />}
+            icon={<XDSIcon icon={BagIcon} size="sm" />}
             isIconOnly
           />
         </>
@@ -272,16 +275,11 @@ function ImageGallery({
           aspectRatio: '4 / 5',
           objectFit: 'cover',
           borderRadius: 'var(--radius-container, 12px)',
-          backgroundColor: '#e8e8e8',
+          backgroundColor: 'var(--color-surface-secondary)',
         }}
       />
       {/* Thumbnail grid */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: 8,
-        }}>
+      <XDSGrid columns={3} gap={2}>
         {thumbnails.map((src, i) => (
           <img
             key={i}
@@ -310,15 +308,15 @@ function ImageGallery({
             }}
           />
         ))}
-      </div>
+      </XDSGrid>
     </div>
   );
 }
 
 // ─── Product Info ───────────────────────────────────────────────────────────
 function ProductInfo() {
-  const [color, setColor] = useState('matte-black');
-  const [finish, setFinish] = useState('linen');
+  const [color, setColor] = useState('snow');
+  const [finish, setFinish] = useState('matte');
   const [quantity, setQuantity] = useState<number | null>(1);
 
   const decrement = () => setQuantity(q => Math.max(1, (q ?? 1) - 1));
@@ -328,15 +326,7 @@ function ProductInfo() {
     <XDSVStack gap={5}>
       {/* Title & Rating */}
       <XDSVStack gap={2}>
-        <p
-          style={{
-            fontSize: 'var(--font-size-4xl, 2.25rem)',
-            lineHeight: 1.1,
-            fontWeight: 700,
-            margin: 0,
-          }}>
-          {PRODUCT.name}
-        </p>
+        <XDSHeading level={1}>{PRODUCT.name}</XDSHeading>
         <StarRating rating={4.3} count={128} />
         <XDSHStack gap={2} style={{alignItems: 'center'}}>
           <XDSText type="large" weight="bold">
@@ -348,11 +338,11 @@ function ProductInfo() {
           <XDSBadge variant="error" label="Sale" />
         </XDSHStack>
       </XDSVStack>
-      {/* Color Selector */}
+      {/* Glaze Selector */}
       <XDSVStack gap={2}>
-        <XDSText type="label">Color</XDSText>
+        <XDSText type="label">Glaze</XDSText>
         <div style={{width: 'fit-content'}}>
-          <XDSSegmentedControl value={color} onChange={setColor} label="Color">
+          <XDSSegmentedControl value={color} onChange={setColor} label="Glaze">
             {COLORS.map(c => (
               <XDSSegmentedControlItem
                 key={c.value}
@@ -363,14 +353,14 @@ function ProductInfo() {
           </XDSSegmentedControl>
         </div>
       </XDSVStack>
-      {/* Shade Finish Selector */}
+      {/* Finish Selector */}
       <XDSVStack gap={2}>
-        <XDSText type="label">Shade Finish</XDSText>
+        <XDSText type="label">Finish</XDSText>
         <div style={{width: 'fit-content'}}>
           <XDSSegmentedControl
             value={finish}
             onChange={setFinish}
-            label="Shade Finish">
+            label="Finish">
             {FINISHES.map(f => (
               <XDSSegmentedControlItem
                 key={f.value}
@@ -386,7 +376,7 @@ function ProductInfo() {
         <XDSButton
           label="Decrease quantity"
           variant="ghost"
-          icon={<MinusIcon style={{width: 16, height: 16}} />}
+          icon={<XDSIcon icon={MinusIcon} size="sm" />}
           onClickAction={decrement}
           isDisabled={(quantity ?? 1) <= 1}
           isIconOnly
@@ -405,7 +395,7 @@ function ProductInfo() {
         <XDSButton
           label="Increase quantity"
           variant="ghost"
-          icon={<PlusIcon style={{width: 16, height: 16}} />}
+          icon={<XDSIcon icon={PlusIcon} size="sm" />}
           onClickAction={increment}
           isDisabled={(quantity ?? 1) >= 10}
           isIconOnly
@@ -434,7 +424,7 @@ function ProductInfo() {
             label="Add to wishlist"
             variant="ghost"
             size="lg"
-            icon={<HeartIcon style={{width: 16, height: 16}} />}
+            icon={<XDSIcon icon={HeartIcon} size="sm" />}
             isIconOnly
           />
         </XDSHStack>
@@ -486,13 +476,8 @@ export default function ProductDetailTemplate() {
             width: '100%',
             padding: '32px 24px',
           }}>
-          <div
-            style={{
-              display: 'flex',
-              gap: 40,
-              alignItems: 'flex-start',
-            }}>
-            <div style={{flex: '1 1 55%', minWidth: 0}}>
+          <XDSGrid columns={2} gap={5}>
+            <div style={{minWidth: 0}}>
               <ImageGallery
                 selected={selectedThumb}
                 onSelect={setSelectedThumb}
@@ -500,14 +485,14 @@ export default function ProductDetailTemplate() {
             </div>
             <div
               style={{
-                flex: '1 1 45%',
                 minWidth: 0,
                 position: 'sticky',
                 top: 64,
+                alignSelf: 'start',
               }}>
               <ProductInfo />
             </div>
-          </div>
+          </XDSGrid>
         </div>
       </XDSCenter>
     </XDSAppShell>

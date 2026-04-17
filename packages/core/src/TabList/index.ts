@@ -18,4 +18,5 @@ export type {XDSTabProps} from './XDSTab';
 export {XDSTabMenu} from './XDSTabMenu';
 export type {XDSTabMenuProps, XDSTabMenuOption} from './XDSTabMenu';
 
-export type {XDSTabListSize} from './XDSTabListContext';
+export {useXDSTabListContext} from './XDSTabListContext';
+export type {XDSTabListSize, XDSTabListLayout} from './XDSTabListContext';

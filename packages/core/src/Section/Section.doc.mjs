@@ -2,20 +2,7 @@
 
 export const docs = {
   name: 'Section',
-  description:
-    'Container with background variants for creating visually distinct regions that automatically escape parent container padding for edge-to-edge fills.',
-  showcase: {
-    aspectRatio: 4 / 3,
-    code: '<XDSSection title="Section">Content</XDSSection>',
-  },
   keywords: ["section","panel","container","group","fieldset","region","block"],
-  features: [
-    'Background variants: section, transparent, and wash',
-    'Automatically escapes parent container padding for edge-to-edge fills',
-    'Supports divider borders on any combination of sides (top, bottom, start, end)',
-    'Flexible sizing via SizeValue for width, height, maxWidth, and minHeight',
-    'Supports `padding={0}` for edge-to-edge content',
-  ],
   props: [
     {
       name: 'variant',
@@ -82,26 +69,19 @@ export const docs = {
     ],
   },
   usage: {
-    summary: 'Container for creating visually distinct regions on a page.',
-    content: `## When to use
-
-- Chunking information into groups using whitespace, dividers, or type scale.
-- Prefer sections over cards as the default page structure; use cards only when stronger visual distinction is needed.`,
+    description:
+      'Section is a container with background variants for creating visually distinct regions on a page. It automatically escapes parent padding for edge-to-edge fills. Use sections as the default page structure; reach for cards only when stronger visual distinction is needed.',
+    bestPractices: [
+      { guidance: true, description: 'Use dividers to separate adjacent sections when background variants alone do not provide enough visual contrast.' },
+      { guidance: true, description: 'Default to the section variant for standard content regions; reserve wash for highlighted or grouped areas.' },
+      { guidance: false, description: 'Wrap content in a Section and a Card together — choose one container type to avoid redundant nesting.' },
+    ],
   },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Section',
-  description:
-    '带有背景变体的容器，用于创建视觉上可区分的区域，自动突破父容器内边距实现全宽填充。',
-  features: [
-    '背景变体：section、transparent 和 wash',
-    '自动突破父容器内边距实现全宽填充',
-    '支持在任意边的组合上设置分隔线边框（top、bottom、start、end）',
-    '通过 SizeValue 灵活设置宽度、高度、最大宽度和最小高度',
-    '支持 `padding={0}` 实现全宽内容',
-  ],
   props: [
     {
       name: 'variant',
@@ -167,19 +147,30 @@ export const docsZh = {
       },
     ],
   },
+  usage: {
+    description:
+      'Section is a container with background variants for creating visually distinct regions on a page. It automatically escapes parent padding for edge-to-edge fills. Use sections as the default page structure; reach for cards only when stronger visual distinction is needed.',
+    bestPractices: [
+      { guidance: true, description: 'Use dividers to separate adjacent sections when background variants alone do not provide enough visual contrast.' },
+      { guidance: true, description: 'Default to the section variant for standard content regions; reserve wash for highlighted or grouped areas.' },
+      { guidance: false, description: 'Wrap content in a Section and a Card together — choose one container type to avoid redundant nesting.' },
+    ],
+  },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   description:
     'Container w/ background variants for creating visually distinct regions; auto-escapes parent container padding for edge-to-edge fills.',
-  features: [
-    'Background variants: section, transparent, wash',
-    'Auto-escapes parent container padding for edge-to-edge fills',
-    'Supports divider borders on any combination of sides (top, bottom, start, end)',
-    'Flexible sizing via SizeValue for width, height, maxWidth, minHeight',
-    'Full-bleed mode removes internal padding for edge-to-edge content',
-  ],
+  usage: {
+    description:
+      'Section is a container with background variants for creating visually distinct regions on a page. It automatically escapes parent padding for edge-to-edge fills. Use sections as the default page structure; reach for cards only when stronger visual distinction is needed.',
+    bestPractices: [
+      { guidance: true, description: 'Use dividers to separate adjacent sections when background variants alone do not provide enough visual contrast.' },
+      { guidance: true, description: 'Default to the section variant for standard content regions; reserve wash for highlighted or grouped areas.' },
+      { guidance: false, description: 'Wrap content in a Section and a Card together — choose one container type to avoid redundant nesting.' },
+    ],
+  },
   propDescriptions: {
     variant: 'Background variant applied to section container.',
     width: 'Section width; number interpreted as pixels, string used as-is.',

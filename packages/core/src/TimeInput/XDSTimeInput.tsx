@@ -212,6 +212,12 @@ export interface XDSTimeInputProps {
   hasClear?: boolean;
 
   /**
+   * Whether to automatically focus the input on mount.
+   * @default false
+   */
+  hasAutoFocus?: boolean;
+
+  /**
    * Hour format for display.
    * - '12h': Display as 12-hour with AM/PM (e.g., "2:30 PM")
    * - '24h': Display as 24-hour (e.g., "14:30")
@@ -303,6 +309,7 @@ export function XDSTimeInput({
   max,
   hasSeconds = false,
   hasClear = false,
+  hasAutoFocus = false,
   hourFormat = '12h',
   increment = 1,
   placeholder = 'Select a time',
@@ -552,6 +559,8 @@ export function XDSTimeInput({
           onKeyDown={handleInputKeyDown}
           placeholder={displayPlaceholder}
           disabled={isDisabled}
+          autoFocus={hasAutoFocus}
+          data-autofocus={hasAutoFocus || undefined}
           aria-describedby={ariaDescribedBy}
           aria-required={isRequired === true ? 'true' : undefined}
           aria-invalid={status?.type === 'error' ? 'true' : undefined}

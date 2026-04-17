@@ -2,21 +2,8 @@
 
 export const docs = {
   name: 'TopNav',
-  description:
-    'Top navigation bar component for application headers with slot-based layout and companion nav item components.',
-  showcase: {
-    aspectRatio: 16 / 4,
-    code: '<XDSTopNav label="Navigation" />',
-  },
   keywords: ["topnav","navbar","appbar","header","toolbar","navigation","menubar","topbar"],
-  features: [
-    'Slot-based layout — heading, startContent, centerContent, and endContent slots for flexible organization',
-    'Three-column centering — when centerContent is provided, switches to CSS grid (1fr auto 1fr) for true horizontal centering',
-    'Companion components — XDSTopNavHeading, XDSTopNavItem, XDSTopNavMenu, XDSTopNavMegaMenu',
-    'Accessible — uses role="navigation" with aria-label, aria-current="page" on selected items',
-    'Themeable via className — target .xds-top-nav and sub-component classes',
-    'Link customization — XDSTopNavItem accepts an as prop to swap the anchor element (e.g. for React Router)',
-  ],  theming: {
+  theming: {
     targets: [
       {className: 'xds-top-nav', states: ['mode']},
       {className: 'xds-top-nav-item', states: ['mode']},
@@ -27,26 +14,6 @@ export const docs = {
       {className: 'xds-top-nav-menu'},
     ],
   },
-  accessibility: [
-    'XDSTopNav renders a <nav> element with role="navigation" and aria-label set from the label prop',
-    'XDSTopNavItem sets aria-current="page" when isSelected is true',
-    'XDSTopNavItem sets aria-label when isIconOnly is true, keeping the item accessible.',
-    'XDSTopNavItem sets aria-disabled and tabIndex=-1 when isDisabled is true',
-    'XDSTopNavMenu sets aria-haspopup="true" on the trigger button',
-    'XDSTopNavMegaMenu sets aria-haspopup="true" and aria-expanded on the trigger button',
-    'XDSTopNavMegaMenu menu items are unreachable by keyboard (tabIndex=-1) when the panel is closed',
-    'Escape key closes the XDSTopNavMegaMenu panel',
-  ],
-  keyboard:
-    'Tab to navigate between items; Escape closes XDSTopNavMegaMenu panels',
-  notes: [
-    'Default height is 48px (--spacing-12) with 16px horizontal padding',
-    'Without centerContent: heading and startContent grow to push endContent right (flex layout)',
-    'With centerContent: switches to CSS grid (gridTemplateColumns: 1fr auto 1fr) — the right column is always rendered even when endContent is absent to maintain the three-column structure',
-    'Positioning (sticky/fixed) is handled by the layout system (e.g. XDSAppShell), not TopNav itself',
-    'Dividers are controlled by the layout system (e.g. XDSLayoutHeader hasDivider), not TopNav',
-    'XDSTopNavMegaMenu panels position relative to the nearest positioned ancestor — wrap XDSTopNav in a container with position: relative for correct full-width behavior',
-  ],
   components: [
     {
       name: 'XDSTopNav',
@@ -331,19 +298,14 @@ export const docs = {
     },
   ],
   usage: {
-    summary: 'Horizontal navigation bar for product-level navigation.',
-    content: `## When to use
-
-- 5 or fewer nav items that should always be visible.
-- Items don't require icons.
-- Minimal navigation paired with controls or filters.
-- Can combine with side nav for ecosystem tools.
-
-## When NOT to use
-
-- Complex navigation hierarchies.
-- Products without clear ownership.
-- Don't use to filter content \u2014 use tabs or filter buttons instead.`,
+    description:
+      'TopNav is a horizontal navigation bar for product-level navigation in application headers. Use TopNav for 5 or fewer always-visible navigation items, or minimal navigation paired with search and controls. For complex navigation hierarchies, use a sidebar; to filter content, use tabs or filter buttons instead.',
+    bestPractices: [
+      {guidance: true, description: 'Include a product logo and name in the heading slot to clearly identify the application.'},
+      {guidance: true, description: 'Limit primary navigation items to 5 or fewer for quick scanning and minimal cognitive load.'},
+      {guidance: false, description: 'Avoid using TopNav to filter page content — use Tabs or filter controls instead.'},
+      {guidance: false, description: 'Avoid deeply nested navigation hierarchies — keep menus to one level of depth.'},
+    ],
     anatomy: [
       {name: 'Product icon and name', required: true, description: 'Identifies the product in the navigation bar.'},
       {name: 'Navigation items', required: true, description: 'Primary links for product-level destinations.'},
@@ -356,16 +318,6 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'TopNav',
-  description:
-    '应用程序头部的顶部导航栏组件，采用插槽式布局和配套的导航项组件。',
-  features: [
-    '插槽式布局 — heading、startContent、centerContent 和 endContent 插槽实现灵活组织',
-    '三列居中 — 提供 centerContent 时，切换为 CSS grid（1fr auto 1fr）实现真正的水平居中',
-    '配套组件 — XDSTopNavHeading、XDSTopNavItem、XDSTopNavMenu、XDSTopNavMegaMenu',
-    '无障碍 — 使用 role="navigation" 和 aria-label，选中项设置 aria-current="page"',
-    '通过 className 支持主题化 — 可定位 .xds-top-nav 和子组件类',
-    '链接自定义 — XDSTopNavItem 接受 as 属性来替换锚点元素（例如用于 React Router）',
-  ],
   theming: {
     targets: [
       {className: 'xds-top-nav', states: ['mode']},
@@ -377,26 +329,6 @@ export const docsZh = {
       {className: 'xds-top-nav-menu'},
     ],
   },
-  accessibility: [
-    'XDSTopNav 渲染一个 <nav> 元素，包含 role="navigation" 和从 label 属性设置的 aria-label',
-    '当 isSelected 为 true 时，XDSTopNavItem 设置 aria-current="page"',
-    'XDSTopNavItem 为仅图标项设置 aria-label（当提供图标且没有子元素或可见标签文本时）',
-    '当 isDisabled 为 true 时，XDSTopNavItem 设置 aria-disabled 和 tabIndex=-1',
-    'XDSTopNavMenu 在触发按钮上设置 aria-haspopup="true"',
-    'XDSTopNavMegaMenu 在触发按钮上设置 aria-haspopup="true" 和 aria-expanded',
-    '当面板关闭时，XDSTopNavMegaMenu 菜单项对键盘不可达（tabIndex=-1）',
-    'Escape 键关闭 XDSTopNavMegaMenu 面板',
-  ],
-  keyboard:
-    'Tab 在项目之间导航；Escape 关闭 XDSTopNavMegaMenu 面板',
-  notes: [
-    '默认高度为 48px（--spacing-12），水平内边距 16px',
-    '无 centerContent 时：heading 和 startContent 增长以将 endContent 推向右侧（flex 布局）',
-    '有 centerContent 时：切换为 CSS grid（gridTemplateColumns: 1fr auto 1fr）— 即使 endContent 不存在，右列也始终渲染以维持三列结构',
-    '定位（sticky/fixed）由布局系统处理（例如 XDSAppShell），而非 TopNav 本身',
-    '分隔线由布局系统控制（例如 XDSLayoutHeader hasDivider），而非 TopNav',
-    'XDSTopNavMegaMenu 面板相对于最近的定位祖先定位 — 将 XDSTopNav 包裹在具有 position: relative 的容器中以获得正确的全宽行为',
-  ],
   components: [
     {
       name: 'XDSTopNav',
@@ -674,38 +606,43 @@ export const docsZh = {
       ],
     },
   ],
+  usage: {
+    description:
+      'TopNav is a horizontal navigation bar for product-level navigation in application headers. Use TopNav for 5 or fewer always-visible navigation items, or minimal navigation paired with search and controls. For complex navigation hierarchies, use a sidebar; to filter content, use tabs or filter buttons instead.',
+    bestPractices: [
+      {guidance: true, description: 'Include a product logo and name in the heading slot to clearly identify the application.'},
+      {guidance: true, description: 'Limit primary navigation items to 5 or fewer for quick scanning and minimal cognitive load.'},
+      {guidance: false, description: 'Avoid using TopNav to filter page content — use Tabs or filter controls instead.'},
+      {guidance: false, description: 'Avoid deeply nested navigation hierarchies — keep menus to one level of depth.'},
+    ],
+    anatomy: [
+      {name: 'Product icon and name', required: true, description: 'Identifies the product in the navigation bar.'},
+      {name: 'Navigation items', required: true, description: 'Primary links for product-level destinations.'},
+      {name: 'More menu', required: false, description: 'Overflow menu for additional navigation items.'},
+      {name: 'Flex area', required: false, description: 'Flexible region for search, primary action buttons, or other controls.'},
+    ],
+  },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   description: 'Top navigation bar for app headers w/ slot-based layout+companion nav item components.',
-  features: [
-    'Slot-based layout; heading, startContent, centerContent, endContent slots',
-    'Three-column centering; centerContent switches to CSS grid (1fr auto 1fr) for true horizontal centering',
-    'Companion components; XDSTopNavHeading, XDSTopNavItem, XDSTopNavMenu, XDSTopNavMegaMenu',
-    'Accessible; role="navigation" w/ aria-label, aria-current="page" on selected items',
-    'Themeable via className; target .xds-top-nav+sub-component classes',
-    'Link customization; XDSTopNavItem accepts as prop to swap anchor element (e.g. React Router)',
-  ],
-  notes: [
-    'Default height 48px (--spacing-12) w/ 16px horizontal padding.',
-    'W/o centerContent: heading+startContent grow to push endContent right (flex layout).',
-    'W/ centerContent: CSS grid (1fr auto 1fr); right column always rendered for 3-col structure.',
-    'Positioning (sticky/fixed) handled by layout system (e.g. XDSAppShell), not TopNav.',
-    'Dividers controlled by layout system (e.g. XDSLayoutHeader hasDivider), not TopNav.',
-    'XDSTopNavMegaMenu panels position relative to nearest positioned ancestor; wrap in position:relative container for full-width.',
-  ],
-  accessibility: [
-    'XDSTopNav renders <nav> w/ role="navigation"+aria-label from label prop.',
-    'XDSTopNavItem sets aria-current="page" when isSelected.',
-    'XDSTopNavItem sets aria-label when isIconOnly is true.',
-    'XDSTopNavItem sets aria-disabled+tabIndex=-1 when isDisabled.',
-    'XDSTopNavMenu sets aria-haspopup="true" on trigger button.',
-    'XDSTopNavMegaMenu sets aria-haspopup="true"+aria-expanded on trigger button.',
-    'XDSTopNavMegaMenu items unreachable by keyboard (tabIndex=-1) when panel closed.',
-    'Escape closes XDSTopNavMegaMenu panel.',
-  ],
-  keyboard: 'Tab navigates between items. Escape closes XDSTopNavMegaMenu panels.',
+  usage: {
+    description:
+      'TopNav is a horizontal navigation bar for product-level navigation in application headers. Use TopNav for 5 or fewer always-visible navigation items, or minimal navigation paired with search and controls. For complex navigation hierarchies, use a sidebar; to filter content, use tabs or filter buttons instead.',
+    bestPractices: [
+      {guidance: true, description: 'Include a product logo and name in the heading slot to clearly identify the application.'},
+      {guidance: true, description: 'Limit primary navigation items to 5 or fewer for quick scanning and minimal cognitive load.'},
+      {guidance: false, description: 'Avoid using TopNav to filter page content — use Tabs or filter controls instead.'},
+      {guidance: false, description: 'Avoid deeply nested navigation hierarchies — keep menus to one level of depth.'},
+    ],
+    anatomy: [
+      {name: 'Product icon and name', required: true, description: 'Identifies the product in the navigation bar.'},
+      {name: 'Navigation items', required: true, description: 'Primary links for product-level destinations.'},
+      {name: 'More menu', required: false, description: 'Overflow menu for additional navigation items.'},
+      {name: 'Flex area', required: false, description: 'Flexible region for search, primary action buttons, or other controls.'},
+    ],
+  },
   components: [
     {
       name: 'XDSTopNav',

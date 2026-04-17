@@ -846,3 +846,88 @@ describe('XDSSideNavItem (collapsed)', () => {
     expect(screen.getByRole('group')).toBeInTheDocument();
   });
 });
+
+// =============================================================================
+// Mobile nav close-on-activate
+// =============================================================================
+
+import {XDSSideNavRenderContext} from './XDSSideNavRenderContext';
+import {XDSAppShellMobileContext} from '../AppShell/XDSAppShellMobileContext';
+
+describe('XDSSideNavItem — mobile drawer close-on-activate', () => {
+  function renderInDrawer(ui: ReactNode, closeMobileNav = vi.fn()) {
+    return {
+      closeMobileNav,
+      ...render(
+        <XDSAppShellMobileContext.Provider
+          value={{
+            isMobile: true,
+            isMobileNavOpen: true,
+            toggleMobileNav: vi.fn(),
+            openMobileNav: vi.fn(),
+            closeMobileNav,
+            isMobileNavEnabled: true,
+            hasAutoToggle: true,
+          }}>
+          <XDSSideNavRenderContext value="drawer">{ui}</XDSSideNavRenderContext>
+        </XDSAppShellMobileContext.Provider>,
+      ),
+    };
+  }
+
+  it('closes the mobile nav when a link item is clicked', async () => {
+    const user = userEvent.setup();
+    const {closeMobileNav} = renderInDrawer(
+      <XDSSideNavItem label="Home" href="/" data-testid="item" />,
+    );
+    await user.click(screen.getByTestId('item'));
+    expect(closeMobileNav).toHaveBeenCalledTimes(1);
+  });
+
+  it('closes the mobile nav when a button item is clicked', async () => {
+    const user = userEvent.setup();
+    const onClick = vi.fn();
+    const {closeMobileNav} = renderInDrawer(
+      <XDSSideNavItem label="Action" onClick={onClick} data-testid="item" />,
+    );
+    await user.click(screen.getByTestId('item'));
+    expect(onClick).toHaveBeenCalledTimes(1);
+    expect(closeMobileNav).toHaveBeenCalledTimes(1);
+  });
+
+  it('does NOT close when a collapsible parent is toggled', async () => {
+    const user = userEvent.setup();
+    const {closeMobileNav} = renderInDrawer(
+      <XDSSideNavItem
+        label="Settings"
+        icon={StubIcon}
+        collapsible
+        data-testid="parent">
+        <XDSSideNavItem label="General" href="/settings/general" />
+      </XDSSideNavItem>,
+    );
+    await user.click(screen.getByTestId('parent'));
+    expect(closeMobileNav).not.toHaveBeenCalled();
+  });
+
+  it('does NOT close when not inside a drawer', async () => {
+    const user = userEvent.setup();
+    const closeMobileNav = vi.fn();
+    render(
+      <XDSAppShellMobileContext.Provider
+        value={{
+          isMobile: false,
+          isMobileNavOpen: false,
+          toggleMobileNav: vi.fn(),
+          openMobileNav: vi.fn(),
+          closeMobileNav,
+          isMobileNavEnabled: false,
+          hasAutoToggle: true,
+        }}>
+        <XDSSideNavItem label="Home" href="/" data-testid="item" />
+      </XDSAppShellMobileContext.Provider>,
+    );
+    await user.click(screen.getByTestId('item'));
+    expect(closeMobileNav).not.toHaveBeenCalled();
+  });
+});

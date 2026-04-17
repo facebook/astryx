@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import {useState, useCallback, useRef, useEffect} from 'react';
+import {useState, useCallback, useRef, useLayoutEffect} from 'react';
 import {XDSCodeBlock} from '@xds/core/CodeBlock';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSHStack, XDSVStack} from '@xds/core/Stack';
@@ -99,19 +99,23 @@ function usePerfMetrics() {
     scrollFrameDrops: 0,
   });
 
-  const mountStart = useRef(performance.now());
   const renderCount = useRef(0);
 
   renderCount.current += 1;
 
-  useEffect(() => {
-    const elapsed = performance.now() - mountStart.current;
-    setMetrics({
-      mountMs: elapsed,
-      renderCount: renderCount.current,
-      lastRenderMs: elapsed,
-      scrollFps: null,
-      scrollFrameDrops: 0,
+  useLayoutEffect(() => {
+    // Stamp after React commits our DOM — any prior-panel unmount has
+    // already happened, so this is a clean baseline.
+    const commitTime = performance.now();
+    requestAnimationFrame(() => {
+      const paintTime = performance.now();
+      setMetrics({
+        mountMs: paintTime - commitTime,
+        renderCount: renderCount.current,
+        lastRenderMs: paintTime - commitTime,
+        scrollFps: null,
+        scrollFrameDrops: 0,
+      });
     });
   }, []);
 
@@ -265,6 +269,22 @@ function MetricsBar({
 }
 
 // ---------------------------------------------------------------------------
+// Deferred mount — separates unmount and mount into different frames so
+// the old panel's teardown doesn't pollute the new panel's timing.
+// ---------------------------------------------------------------------------
+
+function DeferredMount({children}: {children: React.ReactNode}) {
+  const [ready, setReady] = useState(false);
+
+  useLayoutEffect(() => {
+    const id = requestAnimationFrame(() => setReady(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  return ready ? <>{children}</> : null;
+}
+
+// ---------------------------------------------------------------------------
 // Panel (one code block + its metrics)
 // ---------------------------------------------------------------------------
 
@@ -283,25 +303,27 @@ function PerfPanel({
   const {metrics, scrollRef, runScrollTest} = usePerfMetrics();
 
   return (
-    <XDSVStack gap={3}>
-      <XDSHStack gap={2} vAlign="center">
-        <XDSText type="label">{label}</XDSText>
-        <XDSBadge label={mode} />
-      </XDSHStack>
-      <XDSCard padding={3}>
-        <MetricsBar metrics={metrics} onScrollTest={runScrollTest} />
-      </XDSCard>
-      <div ref={scrollRef}>
-        <XDSCodeBlock
-          code={code}
-          language="typescript"
-          title={`${lineCount.toLocaleString()} lines`}
-          hasLineNumbers
-          maxHeight={maxHeight}
-          highlightMode={mode}
-        />
-      </div>
-    </XDSVStack>
+    <DeferredMount>
+      <XDSVStack gap={3}>
+        <XDSHStack gap={2} vAlign="center">
+          <XDSText type="label">{label}</XDSText>
+          <XDSBadge label={mode} />
+        </XDSHStack>
+        <XDSCard padding={3}>
+          <MetricsBar metrics={metrics} onScrollTest={runScrollTest} />
+        </XDSCard>
+        <div ref={scrollRef}>
+          <XDSCodeBlock
+            code={code}
+            language="typescript"
+            title={`${lineCount.toLocaleString()} lines`}
+            hasLineNumbers
+            maxHeight={maxHeight}
+            highlightMode={mode}
+          />
+        </div>
+      </XDSVStack>
+    </DeferredMount>
   );
 }
 
@@ -310,9 +332,22 @@ function PerfPanel({
 // ---------------------------------------------------------------------------
 
 const LINE_OPTIONS = ['100', '500', '1000', '2000', '5000'];
+const VIEW_OPTIONS = ['both', 'ranges', 'spans'] as const;
+type ViewMode = (typeof VIEW_OPTIONS)[number];
+
+const VIEW_LABELS: Record<ViewMode, string> = {
+  both: 'Side by Side',
+  ranges: 'CSS Highlight Only',
+  spans: 'Spans Only',
+};
 
 export default function CodeBlockPerfPage() {
   const [lineCount, setLineCount] = useState('1000');
+  const [viewMode, setViewMode] = useState<ViewMode>('both');
+
+  const showRanges = viewMode === 'both' || viewMode === 'ranges';
+  const showSpans = viewMode === 'both' || viewMode === 'spans';
+  const columns = viewMode === 'both' ? 2 : 1;
 
   return (
     <XDSAppShell contentPadding={4} height="fill">
@@ -321,41 +356,60 @@ export default function CodeBlockPerfPage() {
           <XDSHeading level={2}>CodeBlock Performance</XDSHeading>
           <XDSText type="body" color="secondary">
             Compare CSS Highlight API (ranges) vs span-based rendering side by
-            side.
+            side, or run each in isolation.
           </XDSText>
         </XDSVStack>
 
         <XDSSection variant="wash" padding={3} dividers={['bottom']}>
-          <XDSSegmentedControl
-            label="Line count"
-            value={lineCount}
-            onChange={setLineCount}
-            size="sm">
-            {LINE_OPTIONS.map(n => (
-              <XDSSegmentedControlItem
-                key={n}
-                value={n}
-                label={Number(n).toLocaleString()}
-              />
-            ))}
-          </XDSSegmentedControl>
+          <XDSHStack gap={4} vAlign="center" wrap="wrap">
+            <XDSSegmentedControl
+              label="Line count"
+              value={lineCount}
+              onChange={setLineCount}
+              size="sm">
+              {LINE_OPTIONS.map(n => (
+                <XDSSegmentedControlItem
+                  key={n}
+                  value={n}
+                  label={Number(n).toLocaleString()}
+                />
+              ))}
+            </XDSSegmentedControl>
+            <XDSSegmentedControl
+              label="View"
+              value={viewMode}
+              onChange={v => setViewMode(v as ViewMode)}
+              size="sm">
+              {VIEW_OPTIONS.map(v => (
+                <XDSSegmentedControlItem
+                  key={v}
+                  value={v}
+                  label={VIEW_LABELS[v]}
+                />
+              ))}
+            </XDSSegmentedControl>
+          </XDSHStack>
         </XDSSection>
 
-        <XDSGrid columns={2} gap={4}>
-          <PerfPanel
-            key={`ranges-${lineCount}`}
-            mode="ranges"
-            label="CSS Highlight API"
-            lineCount={Number(lineCount)}
-            maxHeight={500}
-          />
-          <PerfPanel
-            key={`spans-${lineCount}`}
-            mode="spans"
-            label="Span-based"
-            lineCount={Number(lineCount)}
-            maxHeight={500}
-          />
+        <XDSGrid columns={columns} gap={4}>
+          {showRanges && (
+            <PerfPanel
+              key={`ranges-${lineCount}`}
+              mode="ranges"
+              label="CSS Highlight API"
+              lineCount={Number(lineCount)}
+              maxHeight={500}
+            />
+          )}
+          {showSpans && (
+            <PerfPanel
+              key={`spans-${lineCount}`}
+              mode="spans"
+              label="Span-based"
+              lineCount={Number(lineCount)}
+              maxHeight={500}
+            />
+          )}
         </XDSGrid>
       </XDSVStack>
     </XDSAppShell>

@@ -15,8 +15,8 @@
 
 import {useEffect, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars, durationVars, spacingVars} from '../theme/tokens.stylex';
+import {XDSBaseProps} from '../XDSBaseProps';
 import {XDSText} from '../Text/XDSText';
 import {xdsClassName, mergeProps} from '../utils';
 
@@ -79,7 +79,7 @@ export type XDSSpinnerSize = keyof typeof SIZES;
 
 export type XDSSpinnerShade = 'default' | 'onMedia' | 'subtle';
 
-export interface XDSSpinnerProps {
+export interface XDSSpinnerProps extends XDSBaseProps<HTMLSpanElement> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLSpanElement>;
   /**
@@ -100,27 +100,6 @@ export interface XDSSpinnerProps {
    */
   shade?: XDSSpinnerShade;
   /**
-   * StyleX styles created via `stylex.create()`. Merged with the component's
-   * base styles inside a single `stylex.props()` call for optimal deduplication.
-   *
-   * @example
-   * ```
-   * const overrides = stylex.create({ root: { marginBottom: 8 } });
-   * <Component xstyle={overrides.root} />
-   * ```
-   */
-  xstyle?: StyleXStyles;
-  /**
-   * CSS class name(s) appended to the root element.
-   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
-   */
-  className?: string;
-  /**
-   * Inline styles to apply to the root element. Spread after StyleX
-   * inline styles, so these values take priority.
-   */
-  style?: React.CSSProperties;
-  /**
    * Visible content displayed below the spinner.
    * Accepts a string or ReactNode for rich content.
    *
@@ -134,11 +113,6 @@ export interface XDSSpinnerProps {
    * ```
    */
   label?: ReactNode;
-  /**
-   * Accessible label for screen readers.
-   * Defaults to `label` when label is a string, otherwise "Loading".
-   */
-  'aria-label'?: string;
   /**
    * Test ID for the root element.
    */
@@ -171,6 +145,7 @@ export function XDSSpinner({
   'aria-label': ariaLabel,
   'data-testid': testId,
   ref,
+  ...restProps
 }: XDSSpinnerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -247,6 +222,7 @@ export function XDSSpinner({
       role="status"
       aria-label={resolvedAriaLabel}
       data-testid={hasLabel ? undefined : testId}
+      {...(hasLabel ? {} : restProps)}
       {...mergeProps(
         hasLabel ? '' : xdsClassName('spinner', {size, shade}),
         stylex.props(styles.spinner, !hasLabel && xstyle),
@@ -265,6 +241,7 @@ export function XDSSpinner({
     <div
       ref={ref as React.Ref<HTMLDivElement>}
       data-testid={testId}
+      {...restProps}
       {...mergeProps(
         xdsClassName('spinner', {size, shade}),
         stylex.props(styles.wrapper, xstyle),

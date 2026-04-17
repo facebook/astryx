@@ -2,25 +2,8 @@
 
 export const docs = {
   name: 'TextInput',
-  description:
-    'A text input component for collecting user text input, with label, description, validation status, and optional/required indicators.',
-  showcase: {
-    aspectRatio: 4 / 3,
-    code: '<XDSTextInput label="Name" value="" onChange={() => {}} />',
-  },
   keywords: ["textinput","textfield","input","search","clearable","prefix","suffix","adornment","validation"],
-  features: [
-    'Label support — required label for accessibility (can be visually hidden)',
-    'Description — optional text displayed between the label and input',
-    'Optional/Required indicators — "Optional" or "Required" text with bullet separator',
-    'Label tooltip — optional info icon with tooltip at the end of the label',
-    'Validation status — error, warning, and success states with colored borders and icons',
-    'Start icon — optional icon displayed at the start of the input',
-    'Loading state — shows a spinner and sets aria-busy while an async action is pending',
-    'Disabled state — visually dims the input and prevents interaction',
-    'Accessible — label is always associated with the input via htmlFor/id; sets aria-invalid, aria-required, aria-busy, and aria-describedby as appropriate',
-    'Styled with StyleX — uses XDS design tokens for consistent styling',
-  ],  props: [
+  props: [
     {
       name: 'type',
       type: "'text' | 'password' | 'email'",
@@ -146,30 +129,15 @@ export const docs = {
       {className: 'xds-text-input', visualProps: ['size']},
     ],
   },
-  accessibility: [
-    'Label is always rendered and associated with the input via htmlFor/id (using useId). Use isLabelHidden to hide it visually while keeping it accessible to screen readers.',
-    'aria-describedby is set automatically when description or a status message is present.',
-    'aria-invalid="true" is set when status.type is "error".',
-    'aria-required="true" is set when isRequired is true.',
-    'aria-busy is set while an optimistic update or isLoading is active.',
-  ],
-  notes: [
-    'isOptional and isRequired are mutually exclusive — if both are set, "Optional" is shown.',
-    'onChangeAction fires after onChange inside a React transition, enabling useOptimistic for an instant UI update while the async work completes.',
-    'The component wraps XDSField for label, description, and optional/required rendering.',
-    'The size prop supports "sm", "md", and "lg".',
-  ],
   usage: {
-    summary: 'Enables users to enter or edit text or numeric values.',
-    content: `## When to use
-
-- Short-form and long-form text entries.
-
-## Best practices
-
-- Do: Size the input to reflect the expected content length.
-- Do: Use validation messaging for required fields.
-- Validation states: error (blocking), warning (non-blocking), success (confirmation).`,
+    description:
+      'TextInput enables users to enter or edit short-form text such as names, emails, or search queries. Use it for single-line values where the expected input is brief, and pair it with validation status to guide users through required fields.',
+    bestPractices: [
+      { guidance: true, description: 'Size the input to reflect the expected content length so users can gauge how much to type.' },
+      { guidance: true, description: 'Use validation status messages to provide clear, contextual feedback on field errors.' },
+      { guidance: false, description: 'Use a TextInput for multi-line content like comments or descriptions — use TextArea instead.' },
+      { guidance: false, description: 'Rely on placeholder text as a substitute for a label.' },
+    ],
     anatomy: [
       {name: 'Label', required: true, description: 'Text that identifies the input field.'},
       {name: 'Description', required: false, description: 'Helper text providing additional context.'},
@@ -183,20 +151,6 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'TextInput',
-  description:
-    '用于收集用户文本输入的文本输入组件，带有标签、描述、验证状态和可选/必填指示器。',
-  features: [
-    '标签支持 — 必需的无障碍标签（可视觉隐藏）',
-    '描述 — 显示在标签和输入框之间的可选文本',
-    '可选/必填指示器 — 带圆点分隔符的"可选"或"必填"文本',
-    '标签工具提示 — 标签末尾带工具提示的可选信息图标',
-    '验证状态 — 错误、警告和成功状态，带彩色边框和图标',
-    '起始图标 — 显示在输入框起始位置的可选图标',
-    '加载状态 — 异步操作挂起时显示旋转器并设置 aria-busy',
-    '禁用状态 — 视觉上使输入框变暗并阻止交互',
-    '无障碍 — 标签始终通过 htmlFor/id 与输入框关联；根据需要设置 aria-invalid、aria-required、aria-busy 和 aria-describedby',
-    '使用 StyleX 样式化 — 使用 XDS 设计令牌实现一致的样式',
-  ],
   props: [
     {
       name: 'type',
@@ -321,49 +275,45 @@ export const docsZh = {
       {className: 'xds-text-input', visualProps: ['size']},
     ],
   },
-  accessibility: [
-    '标签始终渲染并通过 htmlFor/id（使用 useId）与输入框关联。使用 isLabelHidden 视觉上隐藏它，同时保持屏幕阅读器的无障碍性。',
-    '当描述或状态消息存在时，自动设置 aria-describedby。',
-    '当 status.type 为 "error" 时，设置 aria-invalid="true"。',
-    '当 isRequired 为 true 时，设置 aria-required="true"。',
-    '乐观更新或 isLoading 活跃期间设置 aria-busy。',
-  ],
-  notes: [
-    'isOptional 和 isRequired 互斥 — 如果同时设置，显示"可选"。',
-    'onChangeAction 在 React transition 内于 onChange 之后触发，启用 useOptimistic 以在异步工作完成时实现即时 UI 更新。',
-    '组件包装 XDSField 以实现标签、描述和可选/必填的渲染。',
-    'size 属性支持 "sm"、"md" 和 "lg"。',
-  ],
+  usage: {
+    description:
+      'TextInput enables users to enter or edit short-form text such as names, emails, or search queries. Use it for single-line values where the expected input is brief, and pair it with validation status to guide users through required fields.',
+    bestPractices: [
+      { guidance: true, description: 'Size the input to reflect the expected content length so users can gauge how much to type.' },
+      { guidance: true, description: 'Use validation status messages to provide clear, contextual feedback on field errors.' },
+      { guidance: false, description: 'Use a TextInput for multi-line content like comments or descriptions — use TextArea instead.' },
+      { guidance: false, description: 'Rely on placeholder text as a substitute for a label.' },
+    ],
+    anatomy: [
+      {name: 'Label', required: true, description: 'Text that identifies the input field.'},
+      {name: 'Description', required: false, description: 'Helper text providing additional context.'},
+      {name: 'Icon', required: false, description: '16px icon displayed inside the input.'},
+      {name: 'Placeholder', required: false, description: 'Hint text shown when the input is empty.'},
+      {name: 'Spinner', required: false, description: 'Loading indicator for pending actions.'},
+    ],
+  },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   description: 'Text input for collecting user text w/ label, description, validation status, optional/required indicators.',
-  features: [
-    'Label support; required for a11y (can be visually hidden)',
-    'Description; optional text between label+input',
-    'Optional/Required indicators; "Optional" or "Required" text w/ bullet separator',
-    'Label tooltip; optional info icon w/ tooltip at label end',
-    'Validation status; error, warning, success states w/ colored borders+icons',
-    'Start icon; optional icon at input start',
-    'Loading state; shows spinner+sets aria-busy while async action pending',
-    'Disabled state; dims input, prevents interaction',
-    'Accessible; label always associated via htmlFor/id; sets aria-invalid, aria-required, aria-busy, aria-describedby',
-    'Styled w/ StyleX; uses XDS design tokens for consistent styling',
-  ],
-  notes: [
-    'isOptional+isRequired mutually exclusive; both set = "Optional" shown.',
-    'onChangeAction fires after onChange in React transition, enables useOptimistic for instant UI update.',
-    'Wraps XDSField for label, description, optional/required rendering.',
-    'size supports "sm", "md", "lg".',
-  ],
-  accessibility: [
-    'Label always rendered+associated via htmlFor/id (useId). isLabelHidden hides visually, keeps screen reader access.',
-    'aria-describedby auto-set when description or status message present.',
-    'aria-invalid="true" when status.type is "error".',
-    'aria-required="true" when isRequired is true.',
-    'aria-busy set during optimistic update or isLoading.',
-  ],
+  usage: {
+    description:
+      'TextInput enables users to enter or edit short-form text such as names, emails, or search queries. Use it for single-line values where the expected input is brief, and pair it with validation status to guide users through required fields.',
+    bestPractices: [
+      { guidance: true, description: 'Size the input to reflect the expected content length so users can gauge how much to type.' },
+      { guidance: true, description: 'Use validation status messages to provide clear, contextual feedback on field errors.' },
+      { guidance: false, description: 'Use a TextInput for multi-line content like comments or descriptions — use TextArea instead.' },
+      { guidance: false, description: 'Rely on placeholder text as a substitute for a label.' },
+    ],
+    anatomy: [
+      {name: 'Label', required: true, description: 'Text that identifies the input field.'},
+      {name: 'Description', required: false, description: 'Helper text providing additional context.'},
+      {name: 'Icon', required: false, description: '16px icon displayed inside the input.'},
+      {name: 'Placeholder', required: false, description: 'Hint text shown when the input is empty.'},
+      {name: 'Spinner', required: false, description: 'Loading indicator for pending actions.'},
+    ],
+  },
   propDescriptions: {
     type: 'HTML input type.',
     label: 'Label text for input; always rendered for a11y.',

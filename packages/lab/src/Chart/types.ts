@@ -28,6 +28,8 @@ export interface ChartContext {
   height: number;
   /** Margin offsets */
   margin: ChartMargin;
+  /** The data key used for x-axis values */
+  xKey: string;
   /** The full dataset */
   data: Record<string, unknown>[];
   /** X scale — band for categorical, linear/time for continuous */

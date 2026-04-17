@@ -2,34 +2,7 @@
 
 export const docs = {
   name: 'MultiSelector',
-  description:
-    'Multi-select dropdown with checkboxes for choosing multiple items from a list. For small, finite sets like column toggles or filter facets — not a replacement for XDSTokenizer.',
-  showcase: {
-    aspectRatio: 4 / 3,
-    code: '<XDSMultiSelector label="Tags" items={[]} />',
-  },
   keywords: ['multiselect', 'checkbox', 'dropdown', 'multi', 'picker', 'checklist', 'facet', 'filter', 'select'],
-  features: [
-    'Checkbox-based multi-select — dropdown stays open on toggle',
-    'Supports string items, object items with optional icon and disabled state, dividers, and labeled sections',
-    'Optional select-all with indeterminate state',
-    'Optional search filtering',
-    'Three trigger display modes: count, labels, badges',
-    'Integrates with XDS field conventions: label, description, isRequired, isOptional, isLabelHidden, status',
-    'Size variants: sm, md, lg',
-    'Full keyboard navigation with typeahead support',
-    'Accessible — role="combobox" trigger, role="listbox" with aria-multiselectable, real checkbox inputs',
-  ],
-  keyboard:
-    '↑↓ navigate, Enter/Space toggle, Escape close, Home/End jump, A-Z typeahead (when search not shown).',
-  accessibility: [
-    'Uses role="combobox" on the trigger button.',
-    'Dropdown listbox uses aria-multiselectable="true".',
-    'Each option uses role="option" with aria-selected.',
-    'Real XDSCheckboxInput for each item — no fake checkboxes.',
-    'Select-all checkbox rendered outside role="listbox".',
-    'Search input uses role="searchbox" with aria-controls.',
-  ],
   theming: {
     targets: [
       {className: 'xds-multi-selector', visualProps: ['size', 'status']},
@@ -167,37 +140,19 @@ export const docs = {
       ],    },
   ],
   usage: {
-    summary: 'Multi-select dropdown with checkboxes for choosing multiple items from a list.',
-    content: `## When to use
-
-- Users need to select multiple values from a dropdown list.
-- For small, finite sets of options use CheckboxList instead.`,
+    description:
+      'MultiSelector is a dropdown with checkboxes for selecting multiple items from a finite list. Use it for filter facets, column toggles, or any small set of options where multiple choices are needed.',
+    bestPractices: [
+      { guidance: true, description: 'Use for small, finite option sets where users need to select multiple items at once.' },
+      { guidance: true, description: 'Enable search filtering when the list exceeds 10–15 options to help users find items quickly.' },
+      { guidance: false, description: 'Use MultiSelector as a replacement for Tokenizer — Tokenizer is better suited for large or dynamic datasets.' },
+      { guidance: false, description: 'Omit the label — every MultiSelector needs a visible or visually hidden label for accessibility.' },
+    ],
   },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsZh = {
-  description: '带复选框的多选下拉框，用于从列表中选择多项。适用于列切换或筛选条件等小型有限集合，不适用于替代 XDSTokenizer。',
-  features: [
-    '基于复选框的多选——切换时下拉框保持打开',
-    '支持字符串项、带可选图标和禁用状态的对象项、分隔线和标签分组',
-    '可选全选，带不确定状态',
-    '可选搜索过滤',
-    '三种触发显示模式：计数、标签、徽章',
-    '集成 XDS 字段规范：label、description、isRequired、isOptional、isLabelHidden、status',
-    '尺寸变体：sm、md、lg',
-    '完整键盘导航，支持预输入',
-    '无障碍访问——role="combobox" 触发器，带 aria-multiselectable 的 role="listbox"，真实复选框输入',
-  ],
-  keyboard: '↑↓ 导航，Enter/空格切换，Escape 关闭，Home/End 跳转，A-Z 预输入（不显示搜索时）。',
-  accessibility: [
-    '触发按钮使用 role="combobox"。',
-    '下拉列表框使用 aria-multiselectable="true"。',
-    '每个选项使用带 aria-selected 的 role="option"。',
-    '每项使用真实的 XDSCheckboxInput——无假复选框。',
-    '全选复选框渲染在 role="listbox" 之外。',
-    '搜索输入使用带 aria-controls 的 role="searchbox"。',
-  ],
   components: [
     {
       name: 'XDSMultiSelector',
@@ -228,31 +183,31 @@ export const docsZh = {
       },
     },
   ],
+  usage: {
+    description:
+      'MultiSelector is a dropdown with checkboxes for selecting multiple items from a finite list. Use it for filter facets, column toggles, or any small set of options where multiple choices are needed.',
+    bestPractices: [
+      { guidance: true, description: 'Use for small, finite option sets where users need to select multiple items at once.' },
+      { guidance: true, description: 'Enable search filtering when the list exceeds 10–15 options to help users find items quickly.' },
+      { guidance: false, description: 'Use MultiSelector as a replacement for Tokenizer — Tokenizer is better suited for large or dynamic datasets.' },
+      { guidance: false, description: 'Omit the label — every MultiSelector needs a visible or visually hidden label for accessibility.' },
+    ],
+  },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   description: 'checkbox multi-select dropdown for finite sets like column toggles or filter facets',
-  features: [
-    'checkbox multi-select; dropdown stays open on toggle',
-    'strings, objects w/ icon+disabled, dividers, sections',
-    'optional select-all w/ indeterminate state',
-    'optional search filtering',
-    'trigger modes: count, labels, badges',
-    'XDS field: label, description, isRequired, isOptional, isLabelHidden, status',
-    'sizes: sm, md, lg',
-    'full keyboard nav w/ typeahead',
-    'a11y: role="combobox" trigger, listbox w/ aria-multiselectable, real checkboxes',
-  ],
-  keyboard: '↑↓ nav, Enter/Space toggle, Escape close, Home/End jump, A-Z typeahead (no search).',
-  accessibility: [
-    'role="combobox" on trigger.',
-    'aria-multiselectable="true" on listbox.',
-    'role="option" w/ aria-selected per option.',
-    'real XDSCheckboxInput per item.',
-    'select-all outside role="listbox".',
-    'role="searchbox" w/ aria-controls on search.',
-  ],
+  usage: {
+    description:
+      'MultiSelector is a dropdown with checkboxes for selecting multiple items from a finite list. Use it for filter facets, column toggles, or any small set of options where multiple choices are needed.',
+    bestPractices: [
+      { guidance: true, description: 'Use for small, finite option sets where users need to select multiple items at once.' },
+      { guidance: true, description: 'Enable search filtering when the list exceeds 10–15 options to help users find items quickly.' },
+      { guidance: false, description: 'Use MultiSelector as a replacement for Tokenizer — Tokenizer is better suited for large or dynamic datasets.' },
+      { guidance: false, description: 'Omit the label — every MultiSelector needs a visible or visually hidden label for accessibility.' },
+    ],
+  },
   components: [
     {
       name: 'XDSMultiSelector',

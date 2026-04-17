@@ -11,7 +11,6 @@
  * to adapt rendering based on mobile context.
  */
 
-
 import {createContext, useContext} from 'react';
 
 export interface XDSAppShellMobileContextValue {
@@ -27,6 +26,8 @@ export interface XDSAppShellMobileContextValue {
   closeMobileNav: () => void;
   /** Whether mobile nav is enabled at all */
   isMobileNavEnabled: boolean;
+  /** Whether auto-placed toggles should render (false in customToggle mode) */
+  hasAutoToggle: boolean;
 }
 
 const defaultValue: XDSAppShellMobileContextValue = {
@@ -36,6 +37,7 @@ const defaultValue: XDSAppShellMobileContextValue = {
   openMobileNav: () => {},
   closeMobileNav: () => {},
   isMobileNavEnabled: false,
+  hasAutoToggle: true,
 };
 
 export const XDSAppShellMobileContext =

@@ -2,12 +2,6 @@
 
 export const docs = {
   name: 'AlertDialog',
-  description:
-    'Confirmation dialog for destructive or irreversible actions. Uses role="alertdialog" with required title, description, and cancel/action buttons.',
-  showcase: {
-    aspectRatio: 4 / 3,
-    code: '<XDSAlertDialog title="Confirm" description="Are you sure?" />',
-  },
   keywords: [
     'alert',
     'alertdialog',
@@ -18,14 +12,15 @@ export const docs = {
     'modal',
     'dialog',
   ],
-  features: [
-    'ARIA alertdialog: Uses role="alertdialog" with aria-labelledby and aria-describedby',
-    'No backdrop dismiss: Cannot be closed by clicking outside the dialog',
-    'Escape = Cancel: Pressing Escape triggers the cancel action',
-    'Built-in buttons: Ghost cancel and configurable action button rendered internally',
-    'Action does not auto-close: Supports async operations with loading states',
-    'Imperative API: useXDSImperativeAlertDialog for fire-and-forget usage',
-  ],
+  usage: {
+    description:
+      'AlertDialog is a confirmation dialog for destructive or irreversible actions. Use it to require explicit user confirmation before proceeding with actions like deleting content or discarding changes.',
+    bestPractices: [
+      {guidance: true, description: 'Clearly describe the consequences of the action in the description text so users can make an informed decision.'},
+      {guidance: true, description: 'Keep the action button label specific and descriptive, such as "Delete project" rather than a generic "OK".'},
+      {guidance: false, description: 'Use AlertDialog for non-destructive actions or simple informational messages — use a standard Dialog instead.'},
+    ],
+  },
   props: [
     {name: 'isOpen', type: 'boolean', required: true, description: 'Whether the dialog is open.'},
     {name: 'onOpenChange', type: '(isOpen: boolean) => unknown', required: true, description: 'Visibility change callback.'},

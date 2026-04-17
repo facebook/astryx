@@ -2,12 +2,6 @@
 
 export const docs = {
   name: 'MobileNav',
-  description:
-    'Slide-out drawer overlay for mobile navigation. The mobile counterpart to XDSSideNav — accepts the same children (XDSSideNavSection, XDSSideNavItem, or any ReactNode).',
-  showcase: {
-    aspectRatio: 3 / 4,
-    code: '<XDSMobileNav>Nav items</XDSMobileNav>',
-  },
   keywords: ["mobilenav","drawer","sidebar","navigation","hamburger","menu","offcanvas","slideout","navdrawer"],
   props: [
     {
@@ -50,40 +44,24 @@ export const docs = {
       default: "'start'",
     },
   ],
-  features: [
-    'Native <dialog> element with showModal() for top-layer rendering — no z-index stacking issues',
-    'Animated slide-in from start or end edge with backdrop fade',
-    'Shares children with XDSSideNav — extract nav sections into a variable and render in both',
-    'RTL-aware: automatically mirrors slide direction for right-to-left layouts',
-    'Respects prefers-reduced-motion: reduces animation duration',
-  ],
-  accessibility: [
-    'Uses native <dialog> with showModal() for correct ARIA modal semantics.',
-    "aria-label set to title or 'Navigation' as fallback.",
-    'Focus trapping provided by showModal() (browser-native).',
-    'Escape key closes via native cancel event.',
-    'Backdrop click closes the drawer.',
-    'Body scroll locked while modal is open.',
-  ],
-  keyboard:
-    'Escape closes the drawer; Tab/Shift+Tab cycles focus within the drawer (browser-native focus trapping)',
   theming: {
     targets: [
       {className: 'xds-mobile-nav', visualProps: ['side']},
     ],
   },
   usage: {
-    summary: 'Slide-out drawer overlay for mobile navigation, the mobile counterpart to SideNav.',
-    content: `## When to use
-
-- Providing navigation on mobile viewports where a persistent side nav is not practical.`,
+    description:
+      'MobileNav is a slide-out drawer overlay for mobile navigation. It serves as the mobile counterpart to SideNav and accepts the same children. Use it on mobile viewports where a persistent side navigation is not practical.',
+    bestPractices: [
+      { guidance: true, description: 'Share the same navigation children between MobileNav and SideNav by extracting them into a variable.' },
+      { guidance: true, description: 'Provide a descriptive title to improve context and screen reader clarity.' },
+      { guidance: false, description: 'Use MobileNav on desktop viewports where a persistent SideNav would be more appropriate.' },
+    ],
   },
 };
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'MobileNav',
-  description:
-    '用于移动端导航的滑出式抽屉覆盖层。作为 XDSSideNav 的移动端对应组件，接受相同的子元素（XDSSideNavSection、XDSSideNavItem 或任何 ReactNode）。',
   props: [
     {
       name: 'isOpen',
@@ -125,26 +103,18 @@ export const docsZh = {
       default: "'start'",
     },
   ],
-  features: [
-    '原生 <dialog> 元素配合 showModal() 实现顶层渲染，无 z-index 层叠问题',
-    '从起始边缘或结束边缘滑入动画，配合背景遮罩淡入效果',
-    '与 XDSSideNav 共享子元素，将导航区块提取为变量即可在两者中渲染',
-    'RTL 感知：自动镜像滑动方向以适配从右到左的布局',
-    '遵循 prefers-reduced-motion：减少动画持续时间',
-  ],
-  accessibility: [
-    '使用原生 <dialog> 配合 showModal() 以获得正确的 ARIA 模态语义。',
-    "aria-label 设置为标题，回退值为 'Navigation'。",
-    'showModal() 提供焦点捕获（浏览器原生）。',
-    '通过原生 cancel 事件，按 Escape 键关闭。',
-    '点击背景遮罩关闭抽屉。',
-    '模态框打开时锁定页面滚动。',
-  ],
-  keyboard:
-    'Escape 关闭抽屉；Tab/Shift+Tab 在抽屉内循环切换焦点（浏览器原生焦点捕获）',
   theming: {
     targets: [
       {className: 'xds-mobile-nav', visualProps: ['side']},
+    ],
+  },
+  usage: {
+    description:
+      'MobileNav is a slide-out drawer overlay for mobile navigation. It serves as the mobile counterpart to SideNav and accepts the same children. Use it on mobile viewports where a persistent side navigation is not practical.',
+    bestPractices: [
+      { guidance: true, description: 'Share the same navigation children between MobileNav and SideNav by extracting them into a variable.' },
+      { guidance: true, description: 'Provide a descriptive title to improve context and screen reader clarity.' },
+      { guidance: false, description: 'Use MobileNav on desktop viewports where a persistent SideNav would be more appropriate.' },
     ],
   },
 };
@@ -153,23 +123,15 @@ export const docsZh = {
 export const docsDense = {
   description:
     'Slide-out drawer overlay for mobile navigation. Mobile counterpart to XDSSideNav; accepts same children (XDSSideNavSection, XDSSideNavItem, or any ReactNode).',
-  features: [
-    'Native <dialog> w/ showModal() for top-layer rendering; no z-index stacking issues',
-    'Animated slide-in from start or end edge w/ backdrop fade',
-    'Shares children w/ XDSSideNav; extract nav sections into variable + render in both',
-    'RTL-aware: auto mirrors slide direction for right-to-left layouts',
-    'Respects prefers-reduced-motion: reduces animation duration',
-  ],
-  accessibility: [
-    'Uses native <dialog> w/ showModal() for correct ARIA modal semantics.',
-    "aria-label set to title or 'Navigation' as fallback.",
-    'Focus trapping provided by showModal() (browser-native).',
-    'Escape key closes via native cancel event.',
-    'Backdrop click closes drawer.',
-    'Body scroll locked while modal open.',
-  ],
-  keyboard:
-    'Escape closes drawer; Tab/Shift+Tab cycles focus within drawer (browser-native focus trapping)',
+  usage: {
+    description:
+      'MobileNav is a slide-out drawer overlay for mobile navigation. It serves as the mobile counterpart to SideNav and accepts the same children. Use it on mobile viewports where a persistent side navigation is not practical.',
+    bestPractices: [
+      { guidance: true, description: 'Share the same navigation children between MobileNav and SideNav by extracting them into a variable.' },
+      { guidance: true, description: 'Provide a descriptive title to improve context and screen reader clarity.' },
+      { guidance: false, description: 'Use MobileNav on desktop viewports where a persistent SideNav would be more appropriate.' },
+    ],
+  },
   propDescriptions: {
     isOpen: 'Whether drawer is open.',
     onOpenChange:

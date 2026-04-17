@@ -2,20 +2,7 @@
 
 export const docs = {
   name: 'Skeleton',
-  description:
-    'A placeholder loading component that displays an animated pulsing effect while content is loading.',
-  showcase: {
-    aspectRatio: 4 / 3,
-    code: '<XDSSkeleton />',
-  },
   keywords: ["skeleton","placeholder","loading","shimmer","pulse","loader","bone","ghost","preloader"],
-  features: [
-    'Pulsing Animation: Smooth opacity animation using stepped timing for a subtle shimmer effect',
-    'Staggered Animation: Sequential skeletons can be staggered to create a wave effect',
-    'High Contrast Support: Automatically adjusts for users with prefers-contrast: more',
-    'Flexible Sizing: Width and height props accept pixels or any CSS value',
-    'Token-aligned Radius: Border radius options map directly to design tokens',
-  ],
   props: [
     {
       name: 'width',
@@ -47,38 +34,21 @@ export const docs = {
       {className: 'xds-skeleton'},
     ],
   },
-  notes: [
-    'Uses steps(10, end) timing function for a subtle shimmer effect.',
-    'Animation alternates between 0.25 and 1.0 opacity.',
-    'Background color comes from the glimmer token, with glimmerHighContrast for accessibility.',
-    'Numeric dimensions are converted to pixels; strings are passed through as-is.',
-    'Animation timing constants: DELAY_TIME (1000ms) initial delay before animation starts, FADE_TIME (1000ms) duration of one opacity cycle, STAGGER_TIME (100ms) delay increment between sequential elements.',
-  ],
   usage: {
-    summary: 'A placeholder loading component that displays an animated pulsing effect while content is loading.',
-    content: `## When to use
-
-- Content of known size is loading.
-- Building skeleton screens that match the layout of the content being loaded.
-
-## When NOT to use
-
-- Content dimensions are unknown (use Spinner instead).`,
+    description:
+      'A placeholder loading component that displays an animated shimmer effect while content is loading. Use Skeleton to build loading screens that match the layout of the content being loaded. For content of unknown dimensions, use Spinner instead.',
+    bestPractices: [
+      {guidance: true, description: 'Match the size and shape of the content being loaded to create a realistic placeholder.'},
+      {guidance: true, description: 'Use the index prop to stagger multiple skeletons for a natural wave animation.'},
+      {guidance: false, description: 'Use when the content dimensions are unknown — use Spinner instead.'},
+      {guidance: false, description: 'Combine with a Spinner on the same content area — pick one loading pattern.'},
+    ],
   },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Skeleton',
-  description:
-    '占位加载组件，在内容加载时显示动画脉冲效果。',
-  features: [
-    '脉冲动画：使用分步计时的平滑透明度动画，呈现细腻的闪烁效果',
-    '交错动画：连续的骨架屏可以交错排列以创建波浪效果',
-    '高对比度支持：自动适配 prefers-contrast: more 用户偏好',
-    '灵活尺寸：宽度和高度属性接受像素值或任意 CSS 值',
-    '令牌对齐圆角：边框圆角选项直接映射到设计令牌',
-  ],
   props: [
     {
       name: 'width',
@@ -111,33 +81,30 @@ export const docsZh = {
       {className: 'xds-skeleton'},
     ],
   },
-  notes: [
-    '使用 steps(10, end) 计时函数实现细腻的闪烁效果。',
-    '动画在 0.25 和 1.0 透明度之间交替。',
-    '背景颜色来自 glimmer 令牌，无障碍场景使用 glimmerHighContrast。',
-    '数字类型的尺寸会转换为像素值；字符串类型按原样传递。',
-    '动画时序常量：DELAY_TIME（1000ms）动画开始前的初始延迟，FADE_TIME（1000ms）一个透明度循环的持续时间，STAGGER_TIME（100ms）连续元素之间的延迟增量。',
-  ],
+  usage: {
+    description:
+      'A placeholder loading component that displays an animated shimmer effect while content is loading. Use Skeleton to build loading screens that match the layout of the content being loaded. For content of unknown dimensions, use Spinner instead.',
+    bestPractices: [
+      {guidance: true, description: 'Match the size and shape of the content being loaded to create a realistic placeholder.'},
+      {guidance: true, description: 'Use the index prop to stagger multiple skeletons for a natural wave animation.'},
+      {guidance: false, description: 'Use when the content dimensions are unknown — use Spinner instead.'},
+      {guidance: false, description: 'Combine with a Spinner on the same content area — pick one loading pattern.'},
+    ],
+  },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
-  description:
-    'Placeholder loading component displaying animated pulsing effect while content loads.',
-  features: [
-    'Pulsing Animation: smooth opacity animation using stepped timing for subtle shimmer effect',
-    'Staggered Animation: sequential skeletons can be staggered to create wave effect',
-    'High Contrast Support: auto-adjusts for users w/ prefers-contrast: more',
-    'Flexible Sizing: width + height props accept pixels or any CSS value',
-    'Token-aligned Radius: border radius options map directly to design tokens',
-  ],
-  notes: [
-    'Uses steps(10, end) timing function for subtle shimmer effect.',
-    'Animation alternates between 0.25 and 1.0 opacity.',
-    'Background color from glimmer token, w/ glimmerHighContrast for accessibility.',
-    'Numeric dimensions converted to pixels; strings passed through as-is.',
-    'Animation timing constants: DELAY_TIME (1000ms) initial delay before animation starts, FADE_TIME (1000ms) duration of one opacity cycle, STAGGER_TIME (100ms) delay increment between sequential elements.',
-  ],
+  usage: {
+    description:
+      'A placeholder loading component that displays an animated shimmer effect while content is loading. Use Skeleton to build loading screens that match the layout of the content being loaded. For content of unknown dimensions, use Spinner instead.',
+    bestPractices: [
+      {guidance: true, description: 'Match the size and shape of the content being loaded to create a realistic placeholder.'},
+      {guidance: true, description: 'Use the index prop to stagger multiple skeletons for a natural wave animation.'},
+      {guidance: false, description: 'Use when the content dimensions are unknown — use Spinner instead.'},
+      {guidance: false, description: 'Combine with a Spinner on the same content area — pick one loading pattern.'},
+    ],
+  },
   propDescriptions: {
     width: 'Width in pixels (number) or CSS value (string).',
     height: 'Height in pixels (number) or CSS value (string).',

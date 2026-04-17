@@ -106,31 +106,27 @@ export function formatFull(docs, options = {}) {
   const sections = [];
 
   sections.push(`# ${docs.name}\n`);
-  sections.push(docs.description + '\n');
+  const desc = docs.usage?.description || docs.description || '';
+  sections.push(desc + '\n');
 
-  if (docs.usage) {
-    sections.push('## Usage\n');
-    if (docs.usage.summary) {
-      sections.push(docs.usage.summary + '\n');
+  if (docs.usage?.anatomy?.length) {
+    sections.push('## Anatomy\n');
+    sections.push('| Element | Required | Description |');
+    sections.push('|---------|----------|-------------|');
+    for (const el of docs.usage.anatomy) {
+      const req = el.required ? 'Yes' : 'No';
+      sections.push(`| ${el.name} | ${req} | ${el.description} |`);
     }
-    if (docs.usage.content) {
-      sections.push(docs.usage.content + '\n');
-    }
-    if (docs.usage.anatomy?.length) {
-      sections.push('### Anatomy\n');
-      sections.push('| Element | Required | Description |');
-      sections.push('|---------|----------|-------------|');
-      for (const el of docs.usage.anatomy) {
-        const req = el.required ? 'Yes' : 'No';
-        sections.push(`| ${el.name} | ${req} | ${el.description} |`);
-      }
-      sections.push('');
-    }
+    sections.push('');
   }
 
-  if (docs.features?.length) {
-    sections.push('## Features\n');
-    sections.push(docs.features.map(f => `- ${f}`).join('\n') + '\n');
+  if (docs.usage?.bestPractices?.length) {
+    sections.push('## Best Practices\n');
+    for (const bp of docs.usage.bestPractices) {
+      const badge = bp.guidance ? '**Do:**' : '**Don\'t:**';
+      sections.push(`- ${badge} ${bp.description}`);
+    }
+    sections.push('');
   }
 
   // Single component props
@@ -251,27 +247,13 @@ export function formatFull(docs, options = {}) {
     }
   }
 
-  if (docs.accessibility?.length) {
-    sections.push('## Accessibility\n');
-    sections.push(docs.accessibility.map(a => `- ${a}`).join('\n') + '\n');
-  }
-
-  if (docs.keyboard) {
-    sections.push('## Keyboard\n');
-    sections.push(docs.keyboard + '\n');
-  }
-
-  if (docs.notes?.length) {
-    sections.push('## Notes\n');
-    sections.push(docs.notes.map(n => `- ${n}`).join('\n') + '\n');
-  }
 
   return sections.join('\n');
 }
 
 /**
  * Format compact docs for LLM consumption (replaces extractCompact + ensureImportStatement).
- * Includes: import, features, props, limited examples, keyboard, notes.
+ * Includes: import, best practices, props, theming.
  */
 export function formatCompact(docs, componentName, importHint) {
   const displayName = componentName.startsWith('XDS')
@@ -281,11 +263,9 @@ export function formatCompact(docs, componentName, importHint) {
   const sections = [];
 
   sections.push(`# ${docs.name}\n`);
-  sections.push(docs.description + '\n');
+  const desc = docs.usage?.description || docs.description || '';
+  sections.push(desc + '\n');
 
-  if (docs.usage?.summary) {
-    sections.push(docs.usage.summary + '\n');
-  }
   if (docs.usage?.anatomy?.length) {
     sections.push('Anatomy: ' + docs.usage.anatomy.map(el => {
       const req = el.required ? '' : ' (optional)';
@@ -293,15 +273,18 @@ export function formatCompact(docs, componentName, importHint) {
     }).join(', ') + '\n');
   }
 
-  // Import statement
   if (importHint) {
     sections.push('## Import\n');
     sections.push(`\`\`\`tsx\nimport { ${displayName} } from '${importHint}';\n\`\`\`\n`);
   }
 
-  if (docs.features?.length) {
-    sections.push('## Features\n');
-    sections.push(docs.features.map(f => `- ${f}`).join('\n') + '\n');
+  if (docs.usage?.bestPractices?.length) {
+    sections.push('## Best Practices\n');
+    for (const bp of docs.usage.bestPractices) {
+      const badge = bp.guidance ? '**Do:**' : '**Don\'t:**';
+      sections.push(`- ${badge} ${bp.description}`);
+    }
+    sections.push('');
   }
 
   // Props
@@ -326,16 +309,6 @@ export function formatCompact(docs, componentName, importHint) {
       if (ex.label) sections.push(`### ${ex.label}\n`);
       sections.push('```tsx\n' + ex.code + '\n```\n');
     }
-  }
-
-  if (docs.keyboard) {
-    sections.push('## Keyboard\n');
-    sections.push(docs.keyboard + '\n');
-  }
-
-  if (docs.notes?.length) {
-    sections.push('## Notes\n');
-    sections.push(docs.notes.map(n => `- ${n}`).join('\n') + '\n');
   }
 
   // CSS custom properties (compact includes these for theme consumers)
@@ -368,7 +341,7 @@ export function formatBrief(docs, componentName, importHint, options = {}) {
 
   // Find the right props and examples for this component
   let props = [];
-  let description = docs.description;
+  let description = docs.usage?.description || docs.description || '';
   let examples = docs.examples || [];
 
   if ('props' in docs) {

@@ -2,12 +2,6 @@
 
 export const docs = {
   name: 'Pagination',
-  description:
-    'Standalone pagination controls for navigating through pages of content. Supports multiple display variants and works with known totals or cursor-based pagination.',
-  showcase: {
-    aspectRatio: 16 / 4,
-    code: '<XDSPagination totalPages={10} currentPage={1} onPageChange={() => {}} />',
-  },
   keywords: ["pagination","pager","paginator","pagenavigation","paging","paginate","pages","pagecontrol"],
   props: [
     {
@@ -103,49 +97,27 @@ export const docs = {
         'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
     },
   ],
-  features: [
-    "Five display variants: 'pages', 'count', 'compact', 'dots', 'none'",
-    'Offset and cursor-based pagination: provide totalItems/totalPages for known totals, or hasMore for cursor-based',
-    'Page size selector: shows a dropdown when pageSizeOptions is provided',
-    'Ellipsis truncation for page numbers via generatePageRange utility',
-    'React transitions: onChangeAction uses useTransition for built-in loading state',
-    "Sizes: 'sm' and 'md'",
-  ],
-  accessibility: [
-    'Root is <nav> with configurable aria-label.',
-    'Current page button has aria-current="page".',
-    'Prev/next buttons have descriptive aria-label.',
-    'Ellipsis elements are aria-hidden.',
-    'All interactive elements are keyboard accessible.',
-  ],
   theming: {
     targets: [
       {className: 'xds-pagination', visualProps: ['size', 'variant']},
       {className: 'xds-pagination-dot', visualProps: ['size'], states: ['active']},
     ],
   },
-  notes: [
-    "Page number buttons use XDSButton (variant='ghost' for inactive, variant='primary' for active) for theming and swizzle compatibility.",
-    "Prev/next buttons use XDSButton with variant='ghost' and icon-only mode.",
-    'Dot indicators use xds-pagination-dot className with size and active state classes for theme targeting.',
-    'Returns null when totalItems <= 0 or totalPages <= 0.',
-    'Also exports generatePageRange utility for computing visible page numbers with ellipsis.',
-  ],
   usage: {
-    summary: 'Communicates the number of elements that can be loaded within a given context.',
-    content: `## When to use
-
-- Showing current position within a paginated set.
-- Accessing previous and next items.
-- Selecting a specific page from a range.`,
+    description:
+      'Pagination provides controls for navigating through pages of content. Use it to break large data sets into manageable pages, supporting multiple display variants for different density needs.',
+    bestPractices: [
+      { guidance: true, description: 'Choose the variant that best matches the information density of your layout — page numbers for precise navigation, dots for carousels.' },
+      { guidance: true, description: 'Provide totalItems or totalPages when the total is known so users can see how much content remains.' },
+      { guidance: false, description: 'Show Pagination when all items fit on a single page.' },
+      { guidance: false, description: 'Mix different Pagination variants within the same view.' },
+    ],
   },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Pagination',
-  description:
-    '用于在内容页面之间导航的独立分页控件。支持多种显示变体，适用于已知总数或基于游标的分页。',
   props: [
     {
       name: 'page',
@@ -240,62 +212,38 @@ export const docsZh = {
         '用于布局自定义（外边距、定位、尺寸）的 StyleX 样式。必须是 stylex.create() 的值，而非内联样式对象如 style={{}}。',
     },
   ],
-  features: [
-    "五种显示变体：'pages'、'count'、'compact'、'dots'、'none'",
-    '偏移量和游标分页：提供 totalItems/totalPages 用于已知总数，或 hasMore 用于游标分页',
-    '每页大小选择器：提供 pageSizeOptions 时显示下拉菜单',
-    '通过 generatePageRange 工具函数实现页码省略号截断',
-    'React transitions：onChangeAction 使用 useTransition 实现内置加载状态',
-    "尺寸：'sm' 和 'md'",
-  ],
-  accessibility: [
-    '根元素为 <nav>，带可配置的 aria-label。',
-    '当前页按钮具有 aria-current="page"。',
-    '上一页/下一页按钮具有描述性的 aria-label。',
-    '省略号元素为 aria-hidden。',
-    '所有交互元素均支持键盘访问。',
-  ],
   theming: {
     targets: [
       {className: 'xds-pagination', visualProps: ['size', 'variant']},
       {className: 'xds-pagination-dot', visualProps: ['size'], states: ['active']},
     ],
   },
-  notes: [
-    "页码按钮使用 XDSButton（非活动状态 variant='ghost'，活动状态 variant='primary'）以兼容主题和 swizzle。",
-    "上一页/下一页按钮使用 XDSButton，variant='ghost' 且仅图标模式。",
-    '点指示器使用 xds-pagination-dot 类名，带有 size 和 active 状态类以支持主题定位。',
-    '当 totalItems <= 0 或 totalPages <= 0 时返回 null。',
-    '还导出 generatePageRange 工具函数，用于计算带省略号的可见页码。',
-  ],
+  usage: {
+    description:
+      'Pagination provides controls for navigating through pages of content. Use it to break large data sets into manageable pages, supporting multiple display variants for different density needs.',
+    bestPractices: [
+      { guidance: true, description: 'Choose the variant that best matches the information density of your layout — page numbers for precise navigation, dots for carousels.' },
+      { guidance: true, description: 'Provide totalItems or totalPages when the total is known so users can see how much content remains.' },
+      { guidance: false, description: 'Show Pagination when all items fit on a single page.' },
+      { guidance: false, description: 'Mix different Pagination variants within the same view.' },
+    ],
+  },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   description:
     'Standalone pagination controls for navigating content pages. Supports multiple display variants + works w/ known totals or cursor-based pagination.',
-  features: [
-    "Five display variants: 'pages', 'count', 'compact', 'dots', 'none'",
-    'Offset + cursor-based pagination: totalItems/totalPages for known totals, hasMore for cursor-based',
-    'Page size selector: shows dropdown when pageSizeOptions provided',
-    'Ellipsis truncation for page numbers via generatePageRange utility',
-    'React transitions: onChangeAction uses useTransition for built-in loading state',
-    "Sizes: 'sm' and 'md'",
-  ],
-  accessibility: [
-    'Root is <nav> w/ configurable aria-label.',
-    'Current page button has aria-current="page".',
-    'Prev/next buttons have descriptive aria-label.',
-    'Ellipsis elements are aria-hidden.',
-    'All interactive elements keyboard accessible.',
-  ],
-  notes: [
-    "Page number buttons use XDSButton (variant='ghost' inactive, variant='primary' active) for theming + swizzle compatibility.",
-    "Prev/next buttons use XDSButton w/ variant='ghost' + icon-only mode.",
-    'Dot indicators use xds-pagination-dot className w/ size + active state classes for theme targeting.',
-    'Returns null when totalItems <= 0 or totalPages <= 0.',
-    'Exports generatePageRange utility for computing visible page numbers w/ ellipsis.',
-  ],
+  usage: {
+    description:
+      'Pagination provides controls for navigating through pages of content. Use it to break large data sets into manageable pages, supporting multiple display variants for different density needs.',
+    bestPractices: [
+      { guidance: true, description: 'Choose the variant that best matches the information density of your layout — page numbers for precise navigation, dots for carousels.' },
+      { guidance: true, description: 'Provide totalItems or totalPages when the total is known so users can see how much content remains.' },
+      { guidance: false, description: 'Show Pagination when all items fit on a single page.' },
+      { guidance: false, description: 'Mix different Pagination variants within the same view.' },
+    ],
+  },
   propDescriptions: {
     page: 'Current page number (1-based).',
     onChange: 'Called on page change.',
