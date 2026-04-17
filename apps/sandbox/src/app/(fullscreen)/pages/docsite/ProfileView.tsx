@@ -13,6 +13,9 @@ import {XDSBadge} from '@xds/core/Badge';
 import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
 import {XDSEmptyState} from '@xds/core/EmptyState';
 import {XDSCard} from '@xds/core/Card';
+import {XDSLink} from '@xds/core/Link';
+import {XDSBanner} from '@xds/core/Banner';
+import {XDSList, XDSListItem} from '@xds/core/List';
 import {XDSSelector} from '@xds/core/Selector';
 import {XDSToken} from '@xds/core/Token';
 import {XDSTable, pixel, proportional, useXDSTableSortable, useXDSTableSortableState} from '@xds/core/Table';
@@ -25,6 +28,11 @@ import {
   THEME_PICKER_ENTRIES,
 } from './constants';
 import {SearchIcon, BookmarkFilledIcon, FolderIcon} from './docsite-icons';
+import {
+  getComponentName,
+  getComponentDocs,
+} from './docsview-data';
+import {COMPONENT_PREVIEWS} from './ComponentPreviews';
 import {AppTopNav} from './AppTopNav';
 import {
   Cog6ToothIcon,
@@ -115,6 +123,7 @@ function makeCraftColumns(
       align: 'end',
       sortable: true,
       renderCell: (item) => (
+        (item.status === 'Draft' || item.status === 'Needs Fixes' || item.status === 'In Review') ? <XDSText type="body" color="secondary">—</XDSText> :
         <XDSText type="body" color="secondary">{item.views.toLocaleString()}</XDSText>
       ),
     },
@@ -125,6 +134,7 @@ function makeCraftColumns(
       align: 'end',
       sortable: true,
       renderCell: (item) => (
+        (item.status === 'Draft' || item.status === 'Needs Fixes' || item.status === 'In Review') ? <XDSText type="body" color="secondary">—</XDSText> :
         <XDSText type="body" color="secondary">{item.used.toLocaleString()}</XDSText>
       ),
     },
@@ -174,7 +184,7 @@ type UsedItem = (typeof PROFILE_USED_ITEMS)[number] & Record<string, unknown>;
 
 function makeUsedColumns(
   onPreviewTemplate: (item: UsedItem) => void,
-  onOpenDocs: () => void,
+  onOpenComponentDocs: (componentKey: string) => void,
 ): XDSTableColumn<UsedItem>[] {
   return [
     {
@@ -188,7 +198,7 @@ function makeUsedColumns(
           style={{cursor: 'pointer'}}
           onClick={() => {
             if (item.type === 'Component') {
-              onOpenDocs();
+              onOpenComponentDocs(item.name.toLowerCase().replace(/\s+/g, ''));
             } else {
               onPreviewTemplate(item);
             }
@@ -255,10 +265,12 @@ function BookmarkCard({
   item,
   index,
   onRemove,
+  onClick,
 }: {
   item: (typeof PROFILE_LIKED_ITEMS)[number];
   index: number;
   onRemove: () => void;
+  onClick: () => void;
 }) {
   const [hovered, setHovered] = useState(false);
   return (
@@ -274,7 +286,8 @@ function BookmarkCard({
             overflow: 'hidden',
           }}
           onMouseEnter={() => setHovered(true)}
-          onMouseLeave={() => setHovered(false)}>
+          onMouseLeave={() => setHovered(false)}
+          onClick={onClick}>
           <img
             src={item.img}
             alt={item.name}
@@ -420,13 +433,49 @@ const USED_SORT_OPTIONS = [
 export function ProfileView({
   activeView,
   setActiveView,
+  onStartCrafting,
+  profileTab,
+  onTabChange,
+  profileCraftName,
+  onCraftPreviewChange,
+  profileUsedName,
+  onUsedPreviewChange,
+  profileSettingsOpen,
+  onSettingsChange,
+  profileCollectionName,
+  onCollectionChange,
 }: {
   activeView: 'craft' | 'explore' | 'docs' | 'profile';
   setActiveView: (v: 'craft' | 'explore' | 'docs' | 'profile') => void;
+  onStartCrafting: () => void;
+  profileTab: 'Crafted' | 'Used' | 'Bookmarks';
+  onTabChange: (tab: 'Crafted' | 'Used' | 'Bookmarks') => void;
+  profileCraftName: string | null;
+  onCraftPreviewChange: (name: string | null) => void;
+  profileUsedName: string | null;
+  onUsedPreviewChange: (name: string | null) => void;
+  profileSettingsOpen: boolean;
+  onSettingsChange: (open: boolean) => void;
+  profileCollectionName: string | null;
+  onCollectionChange: (name: string | null) => void;
 }) {
-  const [activeTab, setActiveTab] =
-    useState<(typeof PROFILE_TABS)[number]>('Crafted');
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const activeTab = profileTab;
+  const setActiveTab = onTabChange;
+  const isSettingsOpen = profileSettingsOpen;
+  const setIsSettingsOpen = onSettingsChange;
+
+  const previewItem = useMemo(() => {
+    if (!profileCraftName) return null;
+    return (
+      (PROFILE_CRAFT_ITEMS.find(i => i.name === profileCraftName) ??
+        null) as CraftItem | null
+    );
+  }, [profileCraftName]);
+  const setPreviewItem = useCallback(
+    (item: CraftItem | null) => onCraftPreviewChange(item ? item.name : null),
+    [onCraftPreviewChange],
+  );
+
   const [selectedTheme, setSelectedTheme] = useState('default');
   const [sendTo, setSendTo] = useState('clipboard');
 
@@ -434,11 +483,13 @@ export function ProfileView({
   const [craftTypeFilter, setCraftTypeFilter] = useState('all');
   const [craftStatusFilter, setCraftStatusFilter] = useState('all');
   const [craftSort, setCraftSort] = useState('recent');
-  const [previewItem, setPreviewItem] = useState<CraftItem | null>(null);
 
-  const handlePreview = useCallback((item: CraftItem) => {
-    setPreviewItem(item);
-  }, []);
+  const handlePreview = useCallback(
+    (item: CraftItem) => {
+      setPreviewItem(item);
+    },
+    [setPreviewItem],
+  );
 
   const craftColumns = useMemo(
     () => makeCraftColumns(handlePreview),
@@ -462,15 +513,34 @@ export function ProfileView({
   const [usedSearch, setUsedSearch] = useState('');
   const [usedSort, setUsedSort] = useState('recent');
   const [usedTypeFilter, setUsedTypeFilter] = useState('all');
-  const [previewUsedItem, setPreviewUsedItem] = useState<UsedItem | null>(null);
+  const previewUsedItem = useMemo(() => {
+    if (!profileUsedName) return null;
+    return (
+      (PROFILE_USED_ITEMS.find(i => i.name === profileUsedName) ??
+        null) as UsedItem | null
+    );
+  }, [profileUsedName]);
+  const setPreviewUsedItem = useCallback(
+    (item: UsedItem | null) => onUsedPreviewChange(item ? item.name : null),
+    [onUsedPreviewChange],
+  );
 
-  const handlePreviewUsed = useCallback((item: UsedItem) => {
-    setPreviewUsedItem(item);
+  const [componentDrawerKey, setComponentDrawerKey] = useState<string | null>(null);
+
+  const handlePreviewUsed = useCallback(
+    (item: UsedItem) => {
+      setPreviewUsedItem(item);
+    },
+    [setPreviewUsedItem],
+  );
+
+  const handleOpenComponentDocs = useCallback((key: string) => {
+    setComponentDrawerKey(key);
   }, []);
 
   const usedColumns = useMemo(
-    () => makeUsedColumns(handlePreviewUsed, () => setActiveView('docs')),
-    [handlePreviewUsed, setActiveView],
+    () => makeUsedColumns(handlePreviewUsed, handleOpenComponentDocs),
+    [handlePreviewUsed, handleOpenComponentDocs],
   );
 
   // Used table sorting
@@ -490,9 +560,31 @@ export function ProfileView({
   const [removedBookmarks, setRemovedBookmarks] = useState<Set<string>>(
     () => new Set(),
   );
-  const [selectedCollection, setSelectedCollection] = useState<
-    (typeof PROFILE_COLLECTIONS)[number] | null
+  const [previewBookmarkItem, setPreviewBookmarkItem] = useState<
+    (typeof PROFILE_LIKED_ITEMS)[number] | null
   >(null);
+
+  const handleBookmarkClick = useCallback(
+    (item: (typeof PROFILE_LIKED_ITEMS)[number]) => {
+      if (item.type === 'Component') {
+        setComponentDrawerKey(item.name.toLowerCase().replace(/\s+/g, ''));
+      } else {
+        setPreviewBookmarkItem(item);
+      }
+    },
+    [],
+  );
+  const selectedCollection = useMemo(() => {
+    if (!profileCollectionName) return null;
+    return (
+      PROFILE_COLLECTIONS.find(c => c.name === profileCollectionName) ?? null
+    );
+  }, [profileCollectionName]);
+  const setSelectedCollection = useCallback(
+    (col: (typeof PROFILE_COLLECTIONS)[number] | null) =>
+      onCollectionChange(col ? col.name : null),
+    [onCollectionChange],
+  );
 
   const filteredCrafts = useMemo(() => {
     let items = [...PROFILE_CRAFT_ITEMS];
@@ -583,37 +675,48 @@ export function ProfileView({
         `}</style>
 
         <div style={{maxWidth: 1400, margin: '0 auto'}}>
-          {/* Profile header with metrics */}
+          {/* Profile header */}
           <div style={{marginBottom: 32}}>
-            <XDSHStack vAlign="center">
-              <XDSText type="display-1">Your crafts</XDSText>
-              <XDSStackItem size="fill" />
-              <XDSButton
-                label="Settings"
-                variant="ghost"
+            <XDSText type="display-1">Your crafts</XDSText>
+          </div>
+        </div>
+
+        {/* Tab bar + settings — full-width divider with tabs resting on the line */}
+        <div style={{
+          borderBottom: '1px solid var(--color-divider, #e0e0e0)',
+        }}>
+          <div style={{maxWidth: 1400, margin: '0 auto', marginBottom: -1}}>
+            <XDSHStack vAlign="end">
+              <XDSTabList
+                value={activeTab}
+                onChange={v => {
+                  setActiveTab(v as (typeof PROFILE_TABS)[number]);
+                  setSelectedCollection(null);
+                }}
                 size="lg"
-                isIconOnly
-                icon={
-                  <Cog6ToothIcon style={{width: 24, height: 24}} />
-                }
-                onClick={() => setIsSettingsOpen(true)}
-              />
+                hasDivider={false}>
+                {PROFILE_TABS.map(tab => (
+                  <XDSTab key={tab} value={tab} label={tab} />
+                ))}
+              </XDSTabList>
+              <XDSStackItem size="fill" />
+              <div style={{paddingBottom: 8}}>
+                <XDSButton
+                  label="Settings"
+                  variant="ghost"
+                  size="lg"
+                  isIconOnly
+                  icon={
+                    <Cog6ToothIcon style={{width: 24, height: 24}} />
+                  }
+                  onClick={() => setIsSettingsOpen(true)}
+                />
+              </div>
             </XDSHStack>
           </div>
+        </div>
 
-          {/* Tab bar */}
-          <XDSTabList
-            value={activeTab}
-            onChange={v => {
-              setActiveTab(v as (typeof PROFILE_TABS)[number]);
-              setSelectedCollection(null);
-            }}
-            hasDivider>
-            {PROFILE_TABS.map(tab => (
-              <XDSTab key={tab} value={tab} label={tab} />
-            ))}
-          </XDSTabList>
-
+        <div style={{maxWidth: 1400, margin: '0 auto'}}>
           {/* ===== CRAFTED TAB ===== */}
           {activeTab === 'Crafted' && (
             <>
@@ -621,7 +724,7 @@ export function ProfileView({
               <XDSHStack
                 gap={2}
                 vAlign="center"
-                style={{marginTop: 16, marginBottom: 20}}>
+                style={{marginTop: 32, marginBottom: 20}}>
                 <XDSSelector
                   label="Type"
                   isLabelHidden
@@ -651,7 +754,7 @@ export function ProfileView({
                   label="Start crafting"
                   variant="primary"
                   size="md"
-                  onClick={() => {}}
+                  onClick={onStartCrafting}
                 />
               </XDSHStack>
 
@@ -669,7 +772,7 @@ export function ProfileView({
                       <XDSButton
                         label="Start crafting"
                         variant="primary"
-                        onClick={() => {}}
+                        onClick={onStartCrafting}
                       />
                     }
                   />
@@ -684,7 +787,7 @@ export function ProfileView({
               <XDSHStack
                 gap={2}
                 vAlign="center"
-                style={{marginTop: 16, marginBottom: 20}}>
+                style={{marginTop: 32, marginBottom: 20}}>
                 <div style={{width: 280}}>
                   <XDSTextInput
                     label="Search"
@@ -757,7 +860,7 @@ export function ProfileView({
               {selectedCollection ? (
                 <>
                   {/* Collection detail view */}
-                  <div style={{marginTop: 20, marginBottom: 24}}>
+                  <div style={{marginTop: 32, marginBottom: 32}}>
                     <XDSHStack gap={2} vAlign="center">
                       <XDSButton
                         label="Back to bookmarks"
@@ -813,6 +916,7 @@ export function ProfileView({
                           key={item.name}
                           item={item}
                           index={i}
+                          onClick={() => handleBookmarkClick(item)}
                           onRemove={() =>
                             setRemovedBookmarks(prev => {
                               const next = new Set(prev);
@@ -828,19 +932,10 @@ export function ProfileView({
               ) : (
                 <>
                   {/* Collections */}
-                  <div style={{marginTop: 20, marginBottom: 24}}>
-                    <XDSText
-                      type="supporting"
-                      color="secondary"
-                      style={{
-                        fontWeight: 600,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.05em',
-                        marginBottom: 12,
-                        display: 'block',
-                      }}>
+                  <div style={{marginTop: 32, marginBottom: 32}}>
+                    <XDSHeading level={2} style={{marginBottom: 12}}>
                       Collections
-                    </XDSText>
+                    </XDSHeading>
                     <XDSGrid minChildWidth={180} gap={3}>
                       {PROFILE_COLLECTIONS.map((col, i) => (
                         <div
@@ -890,30 +985,23 @@ export function ProfileView({
                   </div>
 
                   {/* Bookmark items */}
-                  <XDSText
-                    type="supporting"
-                    color="secondary"
-                    style={{
-                      fontWeight: 600,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.05em',
-                      marginBottom: 12,
-                      display: 'block',
-                    }}>
-                    All bookmarks
-                  </XDSText>
-
-                  <div style={{marginBottom: 16, width: 280}}>
-                    <XDSTextInput
-                      label="Search bookmarks"
-                      isLabelHidden
-                      placeholder="Search bookmarks..."
-                    value={bookmarkSearch}
-                    onChange={setBookmarkSearch}
-                    size="md"
-                      startIcon={SearchIcon}
-                    />
-                  </div>
+                  <XDSHStack vAlign="center" style={{marginBottom: 16}}>
+                    <XDSHeading level={2}>
+                      All bookmarks
+                    </XDSHeading>
+                    <XDSStackItem size="fill" />
+                    <div style={{width: 280}}>
+                      <XDSTextInput
+                        label="Search bookmarks"
+                        isLabelHidden
+                        placeholder="Search bookmarks..."
+                        value={bookmarkSearch}
+                        onChange={setBookmarkSearch}
+                        size="md"
+                        startIcon={SearchIcon}
+                      />
+                    </div>
+                  </XDSHStack>
 
                   {filteredBookmarks.length === 0 ? (
                     <div style={{marginTop: 32}}>
@@ -951,6 +1039,7 @@ export function ProfileView({
                           key={item.name}
                           item={item}
                           index={i}
+                          onClick={() => handleBookmarkClick(item)}
                           onRemove={() =>
                             setRemovedBookmarks(prev => {
                               const next = new Set(prev);
@@ -1038,6 +1127,36 @@ export function ProfileView({
                     />
                   </XDSHStack>
 
+                  {(previewItem.status === 'In Review' || previewItem.status === 'Needs Fixes') && (
+                    <div style={{marginTop: 16}}>
+                      <XDSBanner
+                        status={previewItem.status === 'Needs Fixes' ? 'warning' : 'info'}
+                        title={previewItem.status === 'Needs Fixes' ? 'Changes requested' : 'In review'}
+                        description={
+                          <>
+                            {previewItem.status === 'Needs Fixes'
+                              ? 'Reviewers have left comments on your craft. Open the diffs tool to resolve them.'
+                              : 'Your craft is being reviewed by the XDS team. This usually takes 2–3 business days.'}{' '}
+                            <XDSText type="supporting">
+                              <XDSLink
+                                label="Learn more"
+                                href="#"
+                                color="secondary"
+                                hasUnderline
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  setPreviewItem(null);
+                                  setActiveView('docs');
+                                }}>
+                                Learn more
+                              </XDSLink>
+                            </XDSText>
+                          </>
+                        }
+                      />
+                    </div>
+                  )}
+
                   <XDSHStack gap={4} vAlign="center" style={{marginTop: 16}}>
                     <XDSVStack gap={0}>
                       <XDSText type="body" style={{fontWeight: 700, fontSize: 18}}>
@@ -1060,20 +1179,44 @@ export function ProfileView({
                   </XDSHStack>
 
                   <XDSVStack gap={2} style={{marginTop: 32}}>
-                    <XDSButton
-                      variant="primary"
-                      label="Edit"
-                      size="lg"
-                      style={{width: '100%'}}
-                      onClick={() => setPreviewItem(null)}
-                    />
-                    <XDSButton
-                      variant="secondary"
-                      label={previewItem.status === 'Published' ? 'Unpublish' : 'Publish'}
-                      size="lg"
-                      style={{width: '100%'}}
-                      onClick={() => setPreviewItem(null)}
-                    />
+                    {(previewItem.status === 'In Review' || previewItem.status === 'Needs Fixes') ? (
+                      <>
+                        <XDSButton
+                          variant="primary"
+                          label="Resolve in Diffs"
+                          size="lg"
+                          style={{width: '100%'}}
+                          onClick={() => {
+                            setPreviewItem(null);
+                            setActiveView('docs');
+                          }}
+                        />
+                        <XDSButton
+                          variant="secondary"
+                          label="Edit"
+                          size="lg"
+                          style={{width: '100%'}}
+                          onClick={() => setPreviewItem(null)}
+                        />
+                      </>
+                    ) : (
+                      <>
+                        <XDSButton
+                          variant="primary"
+                          label="Edit"
+                          size="lg"
+                          style={{width: '100%'}}
+                          onClick={() => setPreviewItem(null)}
+                        />
+                        <XDSButton
+                          variant="secondary"
+                          label={previewItem.status === 'Published' ? 'Unpublish' : 'Publish'}
+                          size="lg"
+                          style={{width: '100%'}}
+                          onClick={() => setPreviewItem(null)}
+                        />
+                      </>
+                    )}
                   </XDSVStack>
 
                   {previewItem.tags.length > 0 && (
@@ -1190,6 +1333,244 @@ export function ProfileView({
                       size="lg"
                       style={{width: '100%'}}
                       onClick={() => setPreviewUsedItem(null)}
+                    />
+                  </XDSVStack>
+                </XDSVStack>
+              </div>
+            </div>
+          </>
+        )}
+      </XDSDialog>
+
+      {/* Component docs drawer */}
+      <XDSDialog
+        isOpen={componentDrawerKey !== null}
+        onOpenChange={(open) => { if (!open) setComponentDrawerKey(null); }}
+        width="90vw"
+        maxHeight="90vh"
+        purpose="info"
+        style={{padding: 0, overflow: 'visible', maxWidth: 1200, '--xds-dialog-padding': '0px'} as React.CSSProperties}>
+        {componentDrawerKey && (() => {
+          const docs = getComponentDocs(componentDrawerKey);
+          const name = getComponentName(componentDrawerKey);
+          return (
+            <>
+              <div style={{position: 'absolute', top: 0, right: -40, zIndex: 1}}>
+                <XDSCard padding={0} style={{borderRadius: '50%'}}>
+                  <XDSButton
+                    label="Close"
+                    variant="ghost"
+                    size="sm"
+                    isIconOnly
+                    icon={<span style={{fontSize: 16, lineHeight: 1}}>✕</span>}
+                    onClick={() => setComponentDrawerKey(null)}
+                  />
+                </XDSCard>
+              </div>
+              <div style={{overflowY: 'auto', maxHeight: '85vh'}}>
+                <div style={{maxWidth: 840, margin: '0 auto', padding: '32px 40px'}}>
+                  <XDSText type="display-1">{name}</XDSText>
+                  <div style={{marginTop: 4, marginBottom: 32}}>
+                    <XDSText type="supporting" color="secondary">
+                      Component
+                    </XDSText>
+                  </div>
+
+                  {/* Live preview */}
+                  <div
+                    style={{
+                      border: '1px solid var(--color-divider, rgba(0,0,0,0.1))',
+                      borderRadius: 12,
+                      overflow: 'hidden',
+                      marginBottom: 48,
+                    }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '8px 12px',
+                        borderBottom: '1px solid var(--color-divider, rgba(0,0,0,0.08))',
+                        backgroundColor: 'var(--color-background-surface, #ffffff)',
+                      }}>
+                      <XDSText type="supporting" weight="semibold" color="secondary">
+                        Live preview
+                      </XDSText>
+                      <XDSButton
+                        label="Open full docs"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setComponentDrawerKey(null);
+                          setActiveView('docs');
+                        }}
+                      />
+                    </div>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        minHeight: 240,
+                        padding: 24,
+                        backgroundColor: 'var(--color-background-muted, #f5f5f5)',
+                      }}>
+                      {COMPONENT_PREVIEWS[componentDrawerKey] ?? (
+                        <XDSText type="supporting" color="secondary">
+                          Preview coming soon
+                        </XDSText>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Description */}
+                  <div style={{marginBottom: 48}}>
+                    <XDSHeading level={3}>{docs.tagline}</XDSHeading>
+                    <div style={{marginTop: 12}}>
+                      <XDSText type="body">{docs.description}</XDSText>
+                    </div>
+                    <div style={{marginTop: 24}}>
+                      <XDSHeading level={4}>When to use</XDSHeading>
+                      <div style={{marginTop: 8}}>
+                        <XDSList density="compact" listStyle="disc">
+                          {docs.whenToUse.map((item, i) => (
+                            <XDSListItem key={i} label={item} />
+                          ))}
+                        </XDSList>
+                      </div>
+                    </div>
+                    <div style={{marginTop: 24}}>
+                      <XDSHeading level={4}>When NOT to use</XDSHeading>
+                      <div style={{marginTop: 8}}>
+                        <XDSList density="compact" listStyle="disc">
+                          {docs.whenNotToUse.map((item, i) => (
+                            <XDSListItem key={i} label={item} />
+                          ))}
+                        </XDSList>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Anatomy */}
+                  <div style={{marginBottom: 48}}>
+                    <XDSHeading level={2}>Anatomy</XDSHeading>
+                    <div style={{marginTop: 16}}>
+                      <XDSText type="body">
+                        The {name} is composed of the following elements.
+                        Required elements must always be present, while optional
+                        elements can be included as needed.
+                      </XDSText>
+                    </div>
+                    <div style={{marginTop: 16}}>
+                      <XDSTable
+                        data={docs.anatomy as {[key: string]: unknown}[]}
+                        columns={[
+                          {key: 'element', header: 'Element'},
+                          {key: 'required', header: 'Required'},
+                          {key: 'description', header: 'Description'},
+                        ]}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          );
+        })()}
+      </XDSDialog>
+
+      {/* Bookmark preview dialog */}
+      <XDSDialog
+        isOpen={previewBookmarkItem !== null}
+        onOpenChange={(open) => { if (!open) setPreviewBookmarkItem(null); }}
+        width="90vw"
+        maxHeight="90vh"
+        purpose="info"
+        style={{padding: 0, overflow: 'visible', maxWidth: 1600, '--xds-dialog-padding': '0px'} as React.CSSProperties}>
+        {previewBookmarkItem && (
+          <>
+            <div style={{position: 'absolute', top: 0, right: -40, zIndex: 1}}>
+              <XDSCard padding={0} style={{borderRadius: '50%'}}>
+                <XDSButton
+                  label="Close"
+                  variant="ghost"
+                  size="sm"
+                  isIconOnly
+                  icon={<span style={{fontSize: 16, lineHeight: 1}}>✕</span>}
+                  onClick={() => setPreviewBookmarkItem(null)}
+                />
+              </XDSCard>
+            </div>
+            <div style={{overflowY: 'auto'}}>
+              <div style={{display: 'flex', minHeight: 0, padding: '0 32px'}}>
+                <XDSVStack
+                  gap={3}
+                  style={{flex: 1, minWidth: 0, padding: '32px 32px 32px 0'}}>
+                  <div
+                    style={{
+                      flex: 1,
+                      aspectRatio: '16 / 10',
+                      backgroundColor: 'var(--color-background-muted, #f9f9f9)',
+                      borderRadius: 12,
+                      overflowY: 'auto',
+                      overflowX: 'hidden',
+                      border: '1px solid var(--color-border, #e0e0e0)',
+                    }}>
+                    <img
+                      src={previewBookmarkItem.img}
+                      alt={previewBookmarkItem.name}
+                      style={{width: '100%', display: 'block'}}
+                    />
+                  </div>
+                </XDSVStack>
+
+                <XDSVStack
+                  style={{width: 360, flexShrink: 0, padding: '32px 0'}}>
+                  <XDSText type="display-2">{previewBookmarkItem.name}</XDSText>
+
+                  <div style={{marginTop: 8}}>
+                    <XDSText type="body" color="secondary">
+                      {previewBookmarkItem.description}
+                    </XDSText>
+                  </div>
+
+                  <XDSHStack gap={2} vAlign="center" style={{marginTop: 16}}>
+                    <XDSBadge
+                      label={previewBookmarkItem.type}
+                      variant={TYPE_VARIANT[previewBookmarkItem.type]}
+                    />
+                  </XDSHStack>
+
+                  <XDSHStack gap={4} vAlign="center" style={{marginTop: 16}}>
+                    <XDSVStack gap={0}>
+                      <XDSText type="body" style={{fontWeight: 700, fontSize: 18}}>
+                        {timeAgo(previewBookmarkItem.bookmarkedAt)}
+                      </XDSText>
+                      <XDSText type="supporting" color="secondary">Bookmarked</XDSText>
+                    </XDSVStack>
+                  </XDSHStack>
+
+                  <XDSVStack gap={2} style={{marginTop: 32}}>
+                    <XDSButton
+                      variant="primary"
+                      label="Use"
+                      size="lg"
+                      style={{width: '100%'}}
+                      onClick={() => setPreviewBookmarkItem(null)}
+                    />
+                    <XDSButton
+                      variant="secondary"
+                      label="Remove bookmark"
+                      size="lg"
+                      style={{width: '100%'}}
+                      onClick={() => {
+                        setRemovedBookmarks(prev => {
+                          const next = new Set(prev);
+                          next.add(previewBookmarkItem.name);
+                          return next;
+                        });
+                        setPreviewBookmarkItem(null);
+                      }}
                     />
                   </XDSVStack>
                 </XDSVStack>

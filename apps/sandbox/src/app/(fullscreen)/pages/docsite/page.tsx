@@ -235,17 +235,47 @@ function DocsiteLandingTemplate() {
     const v = searchParams.get('view');
     const t = searchParams.get('template');
     const q = searchParams.get('q');
+    const page = searchParams.get('page');
+    const tab = searchParams.get('tab');
+    const craft = searchParams.get('craft');
+    const used = searchParams.get('used');
+    const settings = searchParams.get('settings');
+    const collection = searchParams.get('collection');
     const templateIdx = t !== null ? parseInt(t, 10) : null;
     return {
       view: v,
       templateIdx: isNaN(templateIdx as number) ? null : templateIdx,
       query: q,
+      page: page as 'craft' | 'explore' | 'docs' | 'profile' | null,
+      tab:
+        tab && ['Crafted', 'Used', 'Bookmarks'].includes(tab)
+          ? (tab as 'Crafted' | 'Used' | 'Bookmarks')
+          : null,
+      craft,
+      used,
+      settings: settings === '1',
+      collection,
     };
   }, [searchParams]);
 
   const [activeView, setActiveView] = useState(
-    'craft' as 'craft' | 'explore' | 'docs' | 'profile',
+    (initialView.page ?? 'craft') as 'craft' | 'explore' | 'docs' | 'profile',
   );
+  const [profileTab, setProfileTab] = useState<
+    'Crafted' | 'Used' | 'Bookmarks'
+  >(initialView.tab ?? 'Crafted');
+  const [profileCraftName, setProfileCraftName] = useState<string | null>(
+    initialView.craft,
+  );
+  const [profileUsedName, setProfileUsedName] = useState<string | null>(
+    initialView.used,
+  );
+  const [profileSettingsOpen, setProfileSettingsOpen] = useState(
+    initialView.settings,
+  );
+  const [profileCollectionName, setProfileCollectionName] = useState<
+    string | null
+  >(initialView.collection);
   const [craftTitle, setCraftTitle] = useState<string | null>(
     initialView.query,
   );
@@ -382,21 +412,64 @@ function DocsiteLandingTemplate() {
 
   // Sync URL when view state changes
   useEffect(() => {
-    let path = `${basePath}/pages/docsite/`;
+    const params = new URLSearchParams();
+
     if (previewTarget !== null) {
-      path += '?view=preview&template=' + previewTarget;
+      params.set('view', 'preview');
+      params.set('template', String(previewTarget));
     } else if (useTarget !== null) {
-      path += '?view=editor&template=' + useTarget;
+      params.set('view', 'editor');
+      params.set('template', String(useTarget));
     } else if (craftTitle) {
-      path += '?q=' + encodeURIComponent(craftTitle);
+      params.set('q', craftTitle);
+    } else if (activeView !== 'craft') {
+      params.set('page', activeView);
+      if (activeView === 'profile') {
+        if (profileCraftName) {
+          params.set('tab', 'Crafted');
+          params.set('craft', profileCraftName);
+        } else if (profileUsedName) {
+          params.set('tab', 'Used');
+          params.set('used', profileUsedName);
+        } else if (profileCollectionName) {
+          params.set('tab', 'Bookmarks');
+          params.set('collection', profileCollectionName);
+        } else if (profileTab !== 'Crafted') {
+          params.set('tab', profileTab);
+        }
+        if (profileSettingsOpen) {
+          params.set('settings', '1');
+        }
+      }
     }
-    router.replace(path, {scroll: false});
-  }, [previewTarget, useTarget, craftTitle, router]);
+
+    const qs = params.toString();
+    router.replace(
+      `${basePath}/pages/docsite/${qs ? '?' + qs : ''}`,
+      {scroll: false},
+    );
+  }, [
+    previewTarget,
+    useTarget,
+    craftTitle,
+    activeView,
+    profileTab,
+    profileCraftName,
+    profileUsedName,
+    profileSettingsOpen,
+    profileCollectionName,
+    router,
+  ]);
 
   const prevViewRef = useRef(activeView);
+  const skipViewResetRef = useRef(false);
   useEffect(() => {
     if (prevViewRef.current === activeView) return;
     prevViewRef.current = activeView;
+    if (skipViewResetRef.current) {
+      skipViewResetRef.current = false;
+      return;
+    }
     setPreviewTarget(null);
     setUseTarget(null);
     setChatOpen(false);
@@ -447,16 +520,23 @@ function DocsiteLandingTemplate() {
   );
 
   const handleUse = useCallback((index: number) => {
+    viewBeforeEditorRef.current = activeView;
     setPreviewTarget(null);
     setUseTarget(index);
     setPanelTab('configure');
     setChatOpen(true);
-  }, []);
+  }, [activeView]);
 
+  const viewBeforeEditorRef = useRef<'craft' | 'explore' | 'docs' | 'profile'>('craft');
   const handleBackFromUse = useCallback(() => {
     setUseTarget(null);
     setChatOpen(false);
     setShowPublishCard1(false);
+    const returnTo = viewBeforeEditorRef.current;
+    if (returnTo !== 'craft') {
+      skipViewResetRef.current = true;
+      setActiveView(returnTo);
+    }
   }, []);
 
   const handlePreview = useCallback((index: number) => {
@@ -555,7 +635,10 @@ function DocsiteLandingTemplate() {
 
   // Editor flow — same layout for all cards
   if (useTarget !== null && activeView === 'craft') {
-    const t = TEMPLATES[useTarget % TEMPLATES.length];
+    const isBlankCanvas = useTarget === -1;
+    const t = isBlankCanvas
+      ? {name: 'Untitled', src: '', size: 'medium' as const, author: '', isOfficial: false}
+      : TEMPLATES[useTarget % TEMPLATES.length];
     return (
       <div
         style={{
@@ -721,7 +804,30 @@ function DocsiteLandingTemplate() {
   }
 
   if (activeView === 'profile') {
-    return <ProfileView activeView={activeView} setActiveView={setActiveView} />;
+    return (
+      <ProfileView
+        activeView={activeView}
+        setActiveView={setActiveView}
+        onStartCrafting={() => {
+          viewBeforeEditorRef.current = 'profile';
+          skipViewResetRef.current = true;
+          setActiveView('craft');
+          setUseTarget(-1);
+          setPanelTab('configure');
+          setChatOpen(true);
+        }}
+        profileTab={profileTab}
+        onTabChange={setProfileTab}
+        profileCraftName={profileCraftName}
+        onCraftPreviewChange={setProfileCraftName}
+        profileUsedName={profileUsedName}
+        onUsedPreviewChange={setProfileUsedName}
+        profileSettingsOpen={profileSettingsOpen}
+        onSettingsChange={setProfileSettingsOpen}
+        profileCollectionName={profileCollectionName}
+        onCollectionChange={setProfileCollectionName}
+      />
+    );
   }
 
   return (
@@ -1593,6 +1699,7 @@ function DocsiteLandingTemplate() {
                         size="lg"
                         style={{width: '100%'}}
                         onClick={() => {
+                          viewBeforeEditorRef.current = activeView;
                           setUseTarget(previewTarget);
                           setPreviewTarget(null);
                           setPanelTab('configure');

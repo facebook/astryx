@@ -398,18 +398,33 @@ export function TemplatePreview({
               margin: isFullPreview ? 0 : 'auto 0',
               transition: 'width 300ms ease, border-radius 300ms ease',
             }}>
-            <img
-              src={imageSrc}
-              alt="Template preview"
-              style={{
-                display: 'block',
-                width: '100%',
-                aspectRatio: undefined,
-                objectFit: undefined,
-                opacity: isGenerating ? 0 : 1,
-                transition: 'opacity 600ms ease',
-              }}
-            />
+            {imageSrc ? (
+              <img
+                src={imageSrc}
+                alt="Template preview"
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  aspectRatio: undefined,
+                  objectFit: undefined,
+                  opacity: isGenerating ? 0 : 1,
+                  transition: 'opacity 600ms ease',
+                }}
+              />
+            ) : (
+              <div
+                style={{
+                  width: '100%',
+                  aspectRatio: '1920 / 1205',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: '#fff',
+                  opacity: isGenerating ? 0 : 1,
+                  transition: 'opacity 600ms ease',
+                }}
+              />
+            )}
             {showCanvas && (
               <div
                 style={{
