@@ -236,6 +236,87 @@ function DocsiteLandingTemplate() {
   const [profileCollectionName, setProfileCollectionName] = useState<
     string | null
   >(initialView.collection);
+  const [craftTitle, setCraftTitle] = useState<string | null>(
+    initialView.query,
+  );
+  const [isProfileResults, setIsProfileResults] = useState(false);
+  const [isCraftResults, setIsCraftResults] = useState(false);
+  const [craftStatusFilter, setCraftStatusFilter] = useState('all');
+  const [craftLoading, setCraftLoading] = useState(false);
+  const [craftExiting, setCraftExiting] = useState(false);
+  const [resultFilters, setResultFilters] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const handleToggleResultFilter = useCallback((filter: string) => {
+    setResultFilters(prev => {
+      const next = new Set(prev);
+      if (next.has(filter)) next.delete(filter);
+      else next.add(filter);
+      return next;
+    });
+  }, []);
+  const craftLoadingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleBackFromResults = useCallback(() => {
+    setCraftExiting(true);
+    setCraftLoading(true);
+    setResultFilters(new Set());
+    setIsProfileResults(false);
+    setIsCraftResults(false);
+    setCraftStatusFilter('all');
+    if (craftLoadingTimer.current) clearTimeout(craftLoadingTimer.current);
+    craftLoadingTimer.current = setTimeout(() => {
+      setCraftTitle(null);
+      setCraftLoading(false);
+      setCraftExiting(false);
+      craftLoadingTimer.current = null;
+    }, 600);
+  }, []);
+  const handleTokenClick = useCallback((label: string) => {
+    setPreviewTarget(null);
+    setCraftTitle(label);
+    setIsProfileResults(false);
+    setCraftLoading(true);
+    if (craftLoadingTimer.current) clearTimeout(craftLoadingTimer.current);
+    craftLoadingTimer.current = setTimeout(() => {
+      setCraftLoading(false);
+      craftLoadingTimer.current = null;
+    }, 900);
+  }, []);
+  const [selected, setSelected] = useState(new Set());
+  const [templateFilter, setTemplateFilter] = useState<
+    'all' | 'official' | string
+  >('all');
+  const [activeFilters, setActiveFilters] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [sortOption, setSortOption] = useState('trending');
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('all');
+  const [isMobile, setIsMobile] = useState(false);
+  const [isTablet, setIsTablet] = useState(false);
+  const [generatingSource, setGeneratingSource] = useState(
+    null as number | null,
+  );
+  const [chatOpen, setChatOpen] = useState(false);
+  const [previewTarget, setPreviewTarget] = useState(
+    initialView.view === 'preview' ? initialView.templateIdx : null,
+  );
+  const [useTarget, setUseTarget] = useState(
+    initialView.view === 'editor' ? initialView.templateIdx : null,
+  );
+  const [previewGenerating, setPreviewGenerating] = useState(false);
+  const [showPublishCard1, setShowPublishCard1] = useState(false);
+  const [panelTab, setPanelTab] = useState<PanelTab>('configure');
+  const [isPointing, setIsPointing] = useState(false);
+  const [pointedElement, setPointedElement] = useState<PointedElement>(null);
+  const [editorPanelWidth, setEditorPanelWidth] = useState(380);
+  const [isEditorResizing, setIsEditorResizing] = useState(false);
+  const [_editorViewport, _setEditorViewport] = useState('desktop');
+  const [fullPreview, setFullPreview] = useState(false);
+
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
   const [card4Bookmarked, setCard4Bookmarked] = useState(false);
 
   const handleEditorResizeStart = useCallback(
