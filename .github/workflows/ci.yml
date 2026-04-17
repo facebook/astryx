@@ -50,6 +50,40 @@ jobs:
           CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- packages/core/src/ | grep -v -E '(hooks|theme|utils)/' | head -1)
           echo "has_components=$( [ -n "$CHANGED" ] && echo true || echo false )" >> $GITHUB_OUTPUT
 
+  # Lint changed/new template files for XDS purity
+  # Only runs when templates are touched — max 3 raw HTML elements allowed
+  template-lint:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Fetch base branch
+        run: git fetch origin ${{ github.base_ref }} --depth=1
+
+      - name: Find changed template files
+        id: templates
+        run: |
+          FILES=$(git diff --name-only --diff-filter=ACM origin/${{ github.base_ref }}...HEAD -- 'packages/cli/templates/**/*.tsx' | tr '\n' ' ')
+          echo "files=$FILES" >> $GITHUB_OUTPUT
+          echo "has_templates=$( [ -n "$FILES" ] && echo true || echo false )" >> $GITHUB_OUTPUT
+
+      - uses: actions/setup-node@v6
+        if: steps.templates.outputs.has_templates == 'true'
+        with:
+          node-version: 20
+          cache: 'yarn'
+
+      - name: Install dependencies
+        if: steps.templates.outputs.has_templates == 'true'
+        run: yarn install --frozen-lockfile
+
+      - name: Lint templates for XDS purity
+        if: steps.templates.outputs.has_templates == 'true'
+        run: |
+          echo "Linting changed templates: ${{ steps.templates.outputs.files }}"
+          npx eslint ${{ steps.templates.outputs.files }}
+
   # Run tests sharded across runners (parallel with everything)
   test-shard:
     runs-on: ubuntu-latest

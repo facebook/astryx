@@ -57,6 +57,16 @@ export default tseslint.config(
       }],
     },
   },
+  // Template quality enforcement - limit raw HTML in template files
+  // Only enforced on new/changed files via CI (see .github/workflows/ci.yml template-lint job)
+  // Not run globally — existing templates would flood with errors
+  {
+    files: ["packages/cli/templates/**/*.tsx"],
+    plugins: { '@xds': xdsPlugin },
+    rules: {
+      '@xds/max-non-xds-elements': ['error', { max: 3 }],
+    },
+  },
   // XDS design token enforcement - applies to core package (excluding theme files)
   {
     files: ["packages/core/src/**/*.{ts,tsx}"],
