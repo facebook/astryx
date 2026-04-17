@@ -1,8 +1,8 @@
 'use client';
 
-import {useState, useCallback, useMemo, Suspense} from 'react';
-import Link from 'next/link';
-import {useSearchParams, useRouter} from 'next/navigation';
+import {useState, useCallback, useMemo} from 'react';
+import {Link} from '../../../Link';
+import {useSearchParams, useNavigate} from 'react-router';
 import {XDSHeading} from '@xds/core/Text';
 import {XDSLayout, XDSLayoutHeader, XDSLayoutContent} from '@xds/core/Layout';
 import {
@@ -103,8 +103,8 @@ function buildSearchParams(
 }
 
 function useTableSearchParams() {
-  const searchParams = useSearchParams();
-  const router = useRouter();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
 
   const sort = useMemo(
     () =>
@@ -121,9 +121,9 @@ function useTableSearchParams() {
 
   const updateURL = useCallback(
     (newSort: XDSTableSortState, newFilters: XDSTableFilterState) => {
-      router.replace(buildSearchParams(newSort, newFilters), {scroll: false});
+      navigate(buildSearchParams(newSort, newFilters), {replace: true});
     },
-    [router],
+    [navigate],
   );
 
   const onSortChange = useCallback(
@@ -232,11 +232,7 @@ const columns: XDSTableColumn<TemplateRow>[] = [
 ];
 
 export default function TemplatesPage() {
-  return (
-    <Suspense>
-      <TemplatesPageInner />
-    </Suspense>
-  );
+  return <TemplatesPageInner />;
 }
 
 function TemplatesPageInner() {

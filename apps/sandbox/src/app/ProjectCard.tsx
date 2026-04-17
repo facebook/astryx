@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import {Link} from '../Link';
 import * as stylex from '@stylexjs/stylex';
 import {XDSHeading, XDSText} from '@xds/core/Text';
 import {XDSCard} from '@xds/core/Card';
@@ -26,7 +26,7 @@ const styles = stylex.create({
 
 export function ProjectCard({page}: {page: SandboxPage}) {
   return (
-    <Link href={page.href} {...stylex.props(styles.link)}>
+    <Link to={page.href} {...stylex.props(styles.link)}>
       <XDSCard xstyle={styles.cardStyles}>
         <XDSVStack gap={1}>
           <XDSHeading level={3} maxLines={1}>

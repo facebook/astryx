@@ -71,7 +71,7 @@ export const SIM_COUNT = 350;
 // Template data — real images from /public/templates/
 // ---------------------------------------------------------------------------
 
-export const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+export const basePath = import.meta.env.BASE_URL?.replace(/\/$/, '') || '';
 export const DUMMY_IMAGE = `${basePath}/templates/dummy-placeholder.png`;
 export const AVATAR_IMAGE = `${basePath}/templates/avatar-profile.jpg`;
 export const XDS_DESIGN_AVATAR = `${basePath}/templates/xds-design-avatar.png`;

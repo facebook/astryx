@@ -83,19 +83,10 @@ jobs:
       - name: Build Storybook
         run: yarn workspace @xds/storybook build
 
-      - name: Cache Next.js build
-        uses: actions/cache@v4
-        with:
-          path: apps/sandbox/.next/cache
-          key: nextjs-sandbox-${{ hashFiles('yarn.lock') }}-${{ hashFiles('packages/core/dist/**') }}
-          restore-keys: |
-            nextjs-sandbox-${{ hashFiles('yarn.lock') }}-
-            nextjs-sandbox-
-
       - name: Build Sandbox
         run: yarn workspace @xds/sandbox build
         env:
-          SANDBOX_BASE_PATH: /sandbox
+          VITE_BASE_PATH: /sandbox
 
       - name: Preserve PR previews and reports from gh-pages
         run: |
@@ -130,9 +121,9 @@ jobs:
           cp -r apps/storybook/dist/* deploy/storybook/
 
           # Stable sandbox (built with basePath=/sandbox)
-          if [ -d "apps/sandbox/out" ]; then
+          if [ -d "apps/sandbox/dist" ]; then
             mkdir -p deploy/sandbox
-            cp -r apps/sandbox/out/* deploy/sandbox/
+            cp -r apps/sandbox/dist/* deploy/sandbox/
           fi
 
           # Restore preserved PR previews and reports

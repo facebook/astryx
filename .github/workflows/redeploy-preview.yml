@@ -63,7 +63,7 @@ jobs:
 
       - name: Build Sandbox
         env:
-          SANDBOX_BASE_PATH: /pr/${{ github.event.inputs.pr_number }}/sandbox
+          VITE_BASE_PATH: /pr/${{ github.event.inputs.pr_number }}/sandbox
         run: yarn workspace @xds/sandbox build
 
       - name: Deploy to GitHub Pages
@@ -88,7 +88,7 @@ jobs:
             mkdir -p /tmp/gh-pages/pr/${PR_NUMBER}
             cp -r apps/storybook/dist/* /tmp/gh-pages/pr/${PR_NUMBER}/
             mkdir -p /tmp/gh-pages/pr/${PR_NUMBER}/sandbox
-            cp -r apps/sandbox/out/* /tmp/gh-pages/pr/${PR_NUMBER}/sandbox/
+            cp -r apps/sandbox/dist/* /tmp/gh-pages/pr/${PR_NUMBER}/sandbox/
 
             cd /tmp/gh-pages
             git add -A

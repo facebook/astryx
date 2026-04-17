@@ -1,7 +1,7 @@
 'use client';
 
-import {usePathname} from 'next/navigation';
-import Link from 'next/link';
+import {useLocation} from 'react-router';
+import {Link} from '../../../../Link';
 import {XDSTopNav, XDSTopNavHeading, XDSTopNavItem} from '@xds/core/TopNav';
 
 const NAV_ITEMS = [
@@ -11,7 +11,7 @@ const NAV_ITEMS = [
 ];
 
 export default function DocTopNav() {
-  const pathname = usePathname();
+  const {pathname} = useLocation();
 
   return (
     <XDSTopNav

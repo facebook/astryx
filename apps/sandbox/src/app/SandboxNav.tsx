@@ -1,8 +1,8 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {usePathname} from 'next/navigation';
-import Link from 'next/link';
+import {useLocation} from 'react-router';
+import {Link} from '../Link';
 import {XDSSideNav, XDSSideNavItem, XDSSideNavSection} from '@xds/core/SideNav';
 import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
 import {XDSText} from '@xds/core/Text';
@@ -122,7 +122,7 @@ function SandboxHeader() {
 }
 
 export function SandboxNav() {
-  const pathname = usePathname();
+  const {pathname} = useLocation();
 
   return (
     <XDSSideNav header={<SandboxHeader />}>

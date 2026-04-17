@@ -1,7 +1,7 @@
 'use client';
 
 import {useState, useCallback, useEffect, useMemo, useRef} from 'react';
-import {usePathname, useRouter} from 'next/navigation';
+import {useLocation, useNavigate} from 'react-router';
 import {XDSText} from '@xds/core/Text';
 import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
 import {XDSButton} from '@xds/core/Button';
@@ -618,8 +618,8 @@ const viewportWidths: Record<ViewportSize, string> = {
 };
 
 export function PreviewShell({children}: {children: React.ReactNode}) {
-  const pathname = usePathname();
-  const router = useRouter();
+  const {pathname} = useLocation();
+  const navigate = useNavigate();
   const searchParams = new URLSearchParams(
     typeof window !== 'undefined' ? window.location.search : '',
   );
@@ -775,7 +775,7 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
           searchSource={searchSource}
           label="Navigate to page"
           onValueChange={value => {
-            router.push(value);
+            navigate(value);
             setPaletteOpen(false);
           }}
           width={480}

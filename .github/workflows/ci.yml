@@ -98,16 +98,6 @@ jobs:
       - name: Typecheck template docs
         run: yarn workspace @xds/cli typecheck:template-docs
 
-      - name: Cache Next.js build
-        if: github.event_name == 'pull_request'
-        uses: actions/cache@v4
-        with:
-          path: apps/sandbox/.next/cache
-          key: nextjs-sandbox-${{ hashFiles('yarn.lock') }}-${{ hashFiles('packages/core/dist/**') }}
-          restore-keys: |
-            nextjs-sandbox-${{ hashFiles('yarn.lock') }}-
-            nextjs-sandbox-
-
       - name: Build Storybook
         run: yarn workspace @xds/storybook build
 
@@ -130,7 +120,7 @@ jobs:
         if: github.event_name == 'pull_request'
         run: yarn workspace @xds/sandbox build
         env:
-          SANDBOX_BASE_PATH: /pr/${{ steps.urls.outputs.pr_number }}/sandbox
+          VITE_BASE_PATH: /pr/${{ steps.urls.outputs.pr_number }}/sandbox
 
       - name: Upload Storybook artifact
         if: github.event_name == 'pull_request'
@@ -145,7 +135,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: sandbox-${{ steps.urls.outputs.short_hash }}
-          path: apps/sandbox/out/
+          path: apps/sandbox/dist/
           retention-days: 30
 
       - name: Analyze components

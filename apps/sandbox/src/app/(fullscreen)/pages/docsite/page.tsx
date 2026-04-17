@@ -2,14 +2,13 @@
 
 import * as stylex from '@stylexjs/stylex';
 import React, {
-  Suspense,
   useState,
   useEffect,
   useRef,
   useCallback,
   useMemo,
 } from 'react';
-import {useSearchParams, useRouter} from 'next/navigation';
+import {useSearchParams, useNavigate} from 'react-router';
 
 import {
   TEMPLATES,
@@ -200,16 +199,12 @@ function SearchableFilterDropdown({
 // ---------------------------------------------------------------------------
 
 export default function DocsiteLandingPage() {
-  return (
-    <Suspense>
-      <DocsiteLandingTemplate />
-    </Suspense>
-  );
+  return <DocsiteLandingTemplate />;
 }
 
 function DocsiteLandingTemplate() {
-  const searchParams = useSearchParams();
-  const router = useRouter();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [previewMode, setPreviewMode] = useState<'light' | 'dark'>('light');
   const [previewTheme, setPreviewTheme] = useState('default');
 
@@ -390,8 +385,8 @@ function DocsiteLandingTemplate() {
     } else if (craftTitle) {
       path += '?q=' + encodeURIComponent(craftTitle);
     }
-    router.replace(path, {scroll: false});
-  }, [previewTarget, useTarget, craftTitle, router]);
+    navigate(path, {replace: true});
+  }, [previewTarget, useTarget, craftTitle, navigate]);
 
   const prevViewRef = useRef(activeView);
   useEffect(() => {
