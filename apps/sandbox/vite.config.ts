@@ -10,6 +10,10 @@ export default defineConfig({
     : '/',
   plugins: [
     react({
+      include: [
+        'src/**/*.{ts,tsx}',
+        path.resolve(rootDir, 'packages/cli/templates/**/*.{ts,tsx}'),
+      ],
       babel: {
         plugins: [
           [
@@ -29,6 +33,9 @@ export default defineConfig({
       },
     }),
   ],
+  css: {
+    postcss: path.resolve(__dirname, 'postcss.config.cjs'),
+  },
   resolve: {
     alias: [
       {find: '@', replacement: path.resolve(__dirname, 'src')},

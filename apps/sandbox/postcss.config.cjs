@@ -8,6 +8,7 @@ module.exports = {
     '@stylexjs/postcss-plugin': {
       include: [
         'src/**/*.{js,jsx,ts,tsx}',
+        path.join(rootDir, 'packages/cli/templates/**/*.{ts,tsx}'),
       ],
       babelConfig: {
         babelrc: false,
@@ -34,7 +35,7 @@ module.exports = {
           ],
         ],
       },
-      useCSSLayers: true,
+      useCSSLayers: false,
     },
   },
 };
