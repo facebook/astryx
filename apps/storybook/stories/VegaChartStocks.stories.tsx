@@ -94,10 +94,10 @@ const stocksLineChartSpec: AnySpec = {
 };
 
 // ---------------------------------------------------------------------------
-// GitHub Top Programming Languages (W7378)
+// GitHub Top Programming Languages
 // ---------------------------------------------------------------------------
 
-// Inline data from WidgetStudio W7378 query
+// Inline data for the programming languages bump chart
 const programmingLanguagesData = [
   {year: 2014, language: 'Javascript', ranking: 1},
   {year: 2014, language: 'Python', ranking: 4},
@@ -192,7 +192,7 @@ const programmingLanguagesData = [
 ];
 
 /**
- * Spec from WidgetStudio W7378 — GitHub top programming languages bump chart.
+ * GitHub top programming languages bump chart.
  *
  * Uses `data.name` to reference the named dataset "table", which is injected
  * at runtime via the `data` prop. The year field is parsed as a date so the
@@ -322,7 +322,7 @@ export const StocksLineChart: Story = {
 };
 
 export const ProgrammingLanguagesBumpChart: Story = {
-  name: 'Programming Languages Bump Chart (W7378)',
+  name: 'Programming Languages Bump Chart',
   render: () => (
     <div style={{width: '100%', maxWidth: 720}}>
       <ThemedVegaChart
