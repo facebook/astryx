@@ -157,6 +157,7 @@ export default function FeaturedGalleryTemplate() {
                 <XDSBadge label="Blue badge" variant="blue" />
               </XDSHStack>
               <XDSText
+                type="body"
                 weight="bold"
                 as="p"
                 style={{
