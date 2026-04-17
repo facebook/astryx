@@ -5,7 +5,9 @@ import path from 'path';
 const rootDir = path.resolve(__dirname, '../..');
 
 export default defineConfig({
-  base: process.env.VITE_BASE_PATH || '/',
+  base: process.env.VITE_BASE_PATH
+    ? process.env.VITE_BASE_PATH.replace(/\/?$/, '/')
+    : '/',
   plugins: [
     react({
       babel: {
