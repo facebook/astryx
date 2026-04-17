@@ -12,26 +12,6 @@ import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSCarousel} from '@xds/core/Carousel';
 
-// ─── Responsive Card Sizing ─────────────────────────────────────────────────
-// 3 cards on desktop, 2 on tablet, 1 on mobile
-// Card width = (container - gaps - padding) / visible count
-const responsiveStyles = `
-  .featured-gallery-card {
-    width: calc(100vw - 48px);
-  }
-  @media (min-width: 640px) {
-    .featured-gallery-card {
-      width: calc((100vw - 48px - 16px) / 2);
-    }
-  }
-  @media (min-width: 1024px) {
-    .featured-gallery-card {
-      width: calc((100vw - 48px - 32px) / 3);
-      max-width: 480px;
-    }
-  }
-`;
-
 // ─── Icons ──────────────────────────────────────────────────────────────────
 
 const ArrowRightIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -104,62 +84,60 @@ const GALLERY_ITEMS = [
 
 function GalleryCard({item}: {item: (typeof GALLERY_ITEMS)[number]}) {
   return (
-    <div className="featured-gallery-card">
-      <XDSCard padding={0}>
-        <div style={{position: 'relative'}}>
-          <XDSAspectRatio ratio={3 / 4}>
-            <img
-              src={item.image}
-              alt={item.title}
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                display: 'block',
-              }}
-            />
-          </XDSAspectRatio>
-
-          {/* Gradient overlay for text legibility */}
-          <div
+    <XDSCard padding={0} width={480}>
+      <div style={{position: 'relative'}}>
+        <XDSAspectRatio ratio={3 / 4}>
+          <img
+            src={item.image}
+            alt={item.title}
             style={{
-              position: 'absolute',
-              inset: 0,
-              background:
-                'linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.25) 35%, transparent 60%)',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'flex-end',
-              padding: 'var(--spacing-6)',
-            }}>
-            <XDSVStack gap={2} style={{color: 'white'}}>
-              <XDSText
-                type="body"
-                weight="bold"
-                color="inherit"
-                style={{fontSize: 'var(--font-size-xl)'}}>
-                {item.title}
-              </XDSText>
-              <XDSText type="body" color="inherit" maxLines={2}>
-                {item.description}
-              </XDSText>
-              <div style={{paddingTop: 'var(--spacing-1)'}}>
-                <XDSButton
-                  label="Read more"
-                  variant="secondary"
-                  style={{
-                    color: 'white',
-                    borderColor: 'rgba(255,255,255,0.3)',
-                    backgroundColor: 'rgba(255,255,255,0.15)',
-                  }}
-                  endContent={<XDSIcon icon={ArrowRightIcon} color="inherit" />}
-                />
-              </div>
-            </XDSVStack>
-          </div>
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              display: 'block',
+            }}
+          />
+        </XDSAspectRatio>
+
+        {/* Gradient overlay for text legibility */}
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background:
+              'linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.25) 35%, transparent 60%)',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'flex-end',
+            padding: 'var(--spacing-6)',
+          }}>
+          <XDSVStack gap={2} style={{color: 'white'}}>
+            <XDSText
+              type="body"
+              weight="bold"
+              color="inherit"
+              style={{fontSize: 'var(--font-size-xl)'}}>
+              {item.title}
+            </XDSText>
+            <XDSText type="body" color="inherit" maxLines={2}>
+              {item.description}
+            </XDSText>
+            <div style={{paddingTop: 'var(--spacing-1)'}}>
+              <XDSButton
+                label="Read more"
+                variant="secondary"
+                style={{
+                  color: 'white',
+                  borderColor: 'rgba(255,255,255,0.3)',
+                  backgroundColor: 'rgba(255,255,255,0.15)',
+                }}
+                endContent={<XDSIcon icon={ArrowRightIcon} color="inherit" />}
+              />
+            </div>
+          </XDSVStack>
         </div>
-      </XDSCard>
-    </div>
+      </div>
+    </XDSCard>
   );
 }
 
@@ -168,7 +146,6 @@ function GalleryCard({item}: {item: (typeof GALLERY_ITEMS)[number]}) {
 export default function FeaturedGalleryTemplate() {
   return (
     <XDSAppShell height="auto" contentPadding={0} variant="surface">
-      <style>{responsiveStyles}</style>
       <XDSVStack gap={6}>
         {/* Header */}
         <XDSCenter axis="horizontal">
