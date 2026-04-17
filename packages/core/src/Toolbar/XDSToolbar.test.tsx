@@ -130,16 +130,22 @@ describe('XDSToolbar', () => {
     );
   });
 
-  it('applies density class', () => {
-    render(<XDSToolbar label="Actions" density="compact" />);
+  it('applies size class', () => {
+    render(<XDSToolbar label="Actions" size="sm" />);
     const toolbar = screen.getByRole('toolbar');
-    expect(toolbar.className).toContain('compact');
+    expect(toolbar.className).toContain('sm');
   });
 
-  it('applies default density class', () => {
+  it('defaults to md size', () => {
     render(<XDSToolbar label="Actions" />);
     const toolbar = screen.getByRole('toolbar');
-    expect(toolbar.className).toContain('default');
+    expect(toolbar.className).toContain('md');
+  });
+
+  it('applies lg size class', () => {
+    render(<XDSToolbar label="Actions" size="lg" />);
+    const toolbar = screen.getByRole('toolbar');
+    expect(toolbar.className).toContain('lg');
   });
 
   it('forwards ref to root element', () => {

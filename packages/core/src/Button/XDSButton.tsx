@@ -32,6 +32,7 @@ import {XDSTooltip} from '../Tooltip/XDSTooltip';
 import {XDSSpinner} from '../Spinner';
 
 import {edgeCompensation} from '../Layout/edgeCompensation.stylex';
+import {useXDSSize} from '../SizeContext/XDSSizeContext';
 import {xdsClassName, mergeProps} from '../utils';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import type {XDSLinkComponentType} from '../Link/types';
@@ -431,7 +432,7 @@ const edgeCompStyles = stylex.create({
 export function XDSButton({
   label,
   variant = 'secondary',
-  size = 'md',
+  size: sizeProp,
   type = 'button',
   isDisabled = false,
   isLoading = false,
@@ -451,6 +452,8 @@ export function XDSButton({
   ref,
   ...props
 }: XDSButtonProps): ReactNode {
+  const size = useXDSSize(sizeProp, 'md');
+
   const [isPending, startTransition] = useTransition();
   const actionInFlightRef = useRef(false);
   const isLoadingState = isLoading || isPending;

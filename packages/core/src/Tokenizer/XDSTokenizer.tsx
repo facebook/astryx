@@ -24,6 +24,7 @@ import React, {
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {XDSBaseTypeahead} from '../Typeahead/XDSBaseTypeahead';
+import {useXDSSize} from '../SizeContext/XDSSizeContext';
 import {
   XDSField,
   type XDSInputStatus,
@@ -358,7 +359,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
   hasClear = false,
   endContent,
   hasAutoFocus,
-  size = 'md',
+  size: sizeProp,
   tokenOverflowBehavior = 'none',
   debounceMs,
   hasCreate = false,
@@ -369,6 +370,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
   'data-testid': testId,
   ref,
 }: XDSTokenizerProps<T>) {
+  const size = useXDSSize(sizeProp, 'md') as XDSTokenizerSize;
   const inputId = useId();
   const descriptionId = useId();
   const statusMessageId = useId();

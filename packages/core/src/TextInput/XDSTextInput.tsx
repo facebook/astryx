@@ -108,6 +108,7 @@ export type {
   XDSInputStatusType as XDSTextInputStatusType,
 } from '../Field';
 import {xdsClassName, mergeProps} from '../utils';
+import {useXDSSize} from '../SizeContext/XDSSizeContext';
 import {XDSBaseProps} from '../XDSBaseProps';
 
 export type XDSTextInputType = 'text' | 'password' | 'email';
@@ -237,7 +238,7 @@ export function XDSTextInput({
   isDisabled = false,
   startIcon,
   status,
-  size = 'md',
+  size: sizeProp,
   onChange,
   onChangeAction,
   isLoading = false,
@@ -255,6 +256,8 @@ export function XDSTextInput({
   ref,
   ...rest
 }: XDSTextInputProps) {
+  const size = useXDSSize(sizeProp, 'md');
+
   const id = useId();
   const descriptionID = useId();
   const statusMessageID = useId();

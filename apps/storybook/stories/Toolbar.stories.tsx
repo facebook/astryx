@@ -35,7 +35,7 @@ const meta: Meta<typeof XDSToolbar> = {
   },
   argTypes: {
     label: {control: 'text'},
-    density: {control: 'radio', options: ['default', 'compact']},
+    size: {control: 'radio', options: ['sm', 'md', 'lg']},
     orientation: {control: 'radio', options: ['horizontal', 'vertical']},
     variant: {control: 'select', options: ['transparent', 'section', 'wash']},
     gap: {control: 'number'},
@@ -123,7 +123,7 @@ export const EndOnly: Story = {
 export const Compact: Story = {
   args: {
     label: 'Compact toolbar',
-    density: 'compact',
+    size: 'sm',
     startContent: (
       <>
         <XDSButton label="Cut" variant="ghost" size="sm" />
@@ -168,7 +168,7 @@ export const InsideCard: Story = {
     <XDSCard width={600}>
       <XDSToolbar
         label="User list actions"
-        density="compact"
+        size="sm"
         dividers={['bottom']}
         startContent={<XDSHeading level={4}>Users</XDSHeading>}
         endContent={
@@ -306,7 +306,7 @@ export const StackedToolbars: Story = {
     <XDSCard width={700}>
       <XDSToolbar
         label="Primary actions"
-        density="compact"
+        size="sm"
         dividers={['bottom']}
         startContent={<XDSHeading level={4}>Orders</XDSHeading>}
         endContent={
@@ -331,7 +331,7 @@ export const StackedToolbars: Story = {
       />
       <XDSToolbar
         label="Filters"
-        density="compact"
+        size="sm"
         variant="wash"
         startContent={
           <>

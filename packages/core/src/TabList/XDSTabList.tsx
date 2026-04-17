@@ -18,6 +18,7 @@ import {borderVars, colorVars, spacingVars} from '../theme/tokens.stylex';
 import {XDSBaseProps} from '../XDSBaseProps';
 import {XDSTabListContext} from './XDSTabListContext';
 import type {XDSTabListSize} from './XDSTabListContext';
+import {useXDSSize} from '../SizeContext/XDSSizeContext';
 import {xdsClassName, mergeProps} from '../utils';
 
 export interface XDSTabListProps extends Omit<
@@ -91,7 +92,7 @@ const styles = stylex.create({
 export function XDSTabList({
   value,
   onChange,
-  size = 'md',
+  size: sizeProp,
   layout = 'hug',
   hasDivider = false,
   xstyle,
@@ -100,6 +101,8 @@ export function XDSTabList({
   children,
   ...restProps
 }: XDSTabListProps) {
+  const size = useXDSSize(sizeProp, 'md') as XDSTabListSize;
+
   const contextValue = useMemo(
     () => ({value, onChange, size, layout}),
     [value, onChange, size, layout],
