@@ -26,21 +26,8 @@ import {
   PROFILE_LIKED_ITEMS,
   PROFILE_COLLECTIONS,
   THEME_PICKER_ENTRIES,
-  AVATAR_IMAGE,
 } from './constants';
-import {
-  SearchIcon,
-  BookmarkFilledIcon,
-  FolderIcon,
-  MetaLogo,
-  WhatsAppLogo,
-  ThreadsLogo,
-  FacebookLogo,
-  DefaultThemeIcon,
-  ForestThemeIcon,
-  SunsetThemeIcon,
-  MidnightThemeIcon,
-} from './docsite-icons';
+import {SearchIcon, BookmarkFilledIcon, FolderIcon} from './docsite-icons';
 
 
 import {TemplatePreviewModal} from './TemplatePreviewModal';
@@ -1497,29 +1484,19 @@ export function ProfileView({
               ) : (
                 <>
                   <XDSButton
-                    variant="primary"
-                    label="Start crafting"
+                    variant={previewItem.status === 'Published' ? 'primary' : 'secondary'}
+                    label="Edit"
                     size="lg"
                     style={{width: '100%'}}
                     onClick={() => setPreviewItem(null)}
                   />
-                  <XDSHStack gap={2}>
-                    <XDSButton
-                      variant="secondary"
-                      label="Use in your product"
-                      size="lg"
-                      style={{flex: 1}}
-                      onClick={() => setPreviewItem(null)}
-                    />
-                    <XDSButton
-                      variant="secondary"
-                      label="Bookmark"
-                      size="lg"
-                      isIconOnly
-                      icon={<BookmarkFilledIcon style={{width: 18, height: 18}} />}
-                      onClick={() => {}}
-                    />
-                  </XDSHStack>
+                  <XDSButton
+                    variant={previewItem.status === 'Published' ? 'secondary' : 'primary'}
+                    label={previewItem.status === 'Published' ? 'Unpublish' : 'Submit for review'}
+                    size="lg"
+                    style={{width: '100%'}}
+                    onClick={() => setPreviewItem(null)}
+                  />
                 </>
               )}
             </XDSVStack>
@@ -1748,6 +1725,20 @@ export function ProfileView({
             setPreviewBookmarkItem(null);
           }
         }}
+        moreLikeThis={
+          previewBookmarkItem
+            ? PROFILE_LIKED_ITEMS
+                .filter(i => i.name !== previewBookmarkItem.name && !removedBookmarks.has(i.name))
+                .slice(0, 4)
+                .map(i => ({name: i.name, img: i.img, key: i.name}))
+            : []
+        }
+        onMoreLikeThisClick={(mlItem) => {
+          const found = PROFILE_LIKED_ITEMS.find(i => i.name === mlItem.name);
+          if (found) setPreviewBookmarkItem(found);
+        }}
+        exploreTags={['website', 'dashboard', 'admin panel', 'settings', 'form layout', 'data table', 'sidebar nav', 'landing page', 'e-commerce', 'documentation', 'profile page']}
+        componentTags={['XDSAppShell', 'XDSTopNav', 'XDSVStack', 'XDSHStack', 'XDSHeading', 'XDSText', 'XDSButton', 'XDSCard', 'XDSBadge', 'XDSAvatar']}
       />
 
       {/* Settings dialog */}
