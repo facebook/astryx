@@ -11,16 +11,16 @@ import {ArrowRightIcon} from '@heroicons/react/20/solid';
 
 const IMAGES = [
   {
-    src: 'https://scontent.xx.fbcdn.net/v/t39.6806-6/670869277_2384531585379073_4187196261303804271_n.png?_nc_cat=109&ccb=1-7&_nc_sid=56bbc2&_nc_ohc=k42Doxes-E8Q7kNvwG9oHvC&_nc_oc=AdoZ6M-l0dzmoeQVMYRdht2gGcgjrH2NfvPlfkadZ-q5on9KvWAYIUg4u7kxw_RA2_cZhAGCOSzk9OG6F6sgAtWV&_nc_zt=14&_nc_ht=scontent.xx&_nc_gid=alrTzvEBgccHVg4IJNUZ2g&_nc_ss=7a30f&oh=00_Af01h2EHQr2FOcZr2JyiASS8qrIwm-ytuV2QQQn0uRpnfQ&oe=69E97D6F',
-    alt: 'Colorful lifestyle scene with warm tones',
-  },
-  {
     src: 'https://scontent.xx.fbcdn.net/v/t39.6806-6/670260643_4371306203125531_1093895092404715068_n.png?_nc_cat=108&ccb=1-7&_nc_sid=56bbc2&_nc_ohc=8DNDqYQ-HlAQ7kNvwFixzqd&_nc_oc=AdqWUbYPtoQiiTtUkVvRaqCz1Vb8xpArrNiG9wrvYQeGn1_ZoIwBbbnDsVy5W06HmMJ33Jw5Zi-v-0jxpETqCObL&_nc_zt=14&_nc_ht=scontent.xx&_nc_gid=5qc5alnBasgOfCv0qggnCQ&_nc_ss=7a30f&oh=00_Af3UnG6pajsU4ngTWofPYySbruvxaxKAupExLHtjA0GRaw&oe=69E9886B',
     alt: 'Colorful home interior with vibrant decor',
   },
   {
-    src: 'https://scontent.xx.fbcdn.net/v/t39.6806-6/670480937_2502078110200666_6842204180822201520_n.png?_nc_cat=100&ccb=1-7&_nc_sid=56bbc2&_nc_ohc=CkjsPqmDibQQ7kNvwHkqI35&_nc_oc=AdqCBagwocUt6pKl8FbB6mA-pmWSnum8-IQw1wk74AP-3vg7MxyzT9i0Gi8RSPeFDr1hFOJr19eqJAwwb4Evq_Az&_nc_zt=14&_nc_ht=scontent.xx&_nc_gid=irTVHgrA3MGqSILwcAjgfA&_nc_ss=7a30f&oh=00_Af3X_3VEp3lYvRpCV3S2jRGKstnQiL2MOac3lwcs2Y2y0g&oe=69E9A474',
+    src: 'https://scontent.xx.fbcdn.net/v/t39.6806-6/670422313_1309114328024296_2325112857517486215_n.png?_nc_cat=106&ccb=1-7&_nc_sid=56bbc2&_nc_ohc=UcKaimmopFkQ7kNvwG5cFp3&_nc_oc=AdrU7QvF-jKlYmG-Lfo9IvCucGfOpeRGaLeWPNgkhGtvMbcXnepY-eRF18hQmyWprjg8MJ3PX48peAKEsOs6oYOE&_nc_zt=14&_nc_ht=scontent.xx&_nc_gid=hWd-diGpmNdwV7EQs9TH4g&_nc_ss=7a30f&oh=00_Af14lXSPHUE34ePZGZkbZhSOYmIaLxrbclohokIfGF947g&oe=69E99A02',
     alt: 'Colorful lifestyle portrait with natural lighting',
+  },
+  {
+    src: 'https://scontent.xx.fbcdn.net/v/t39.6806-6/670480937_2502078110200666_6842204180822201520_n.png?_nc_cat=100&ccb=1-7&_nc_sid=56bbc2&_nc_ohc=CkjsPqmDibQQ7kNvwHkqI35&_nc_oc=AdqCBagwocUt6pKl8FbB6mA-pmWSnum8-IQw1wk74AP-3vg7MxyzT9i0Gi8RSPeFDr1hFOJr19eqJAwwb4Evq_Az&_nc_zt=14&_nc_ht=scontent.xx&_nc_gid=irTVHgrA3MGqSILwcAjgfA&_nc_ss=7a30f&oh=00_Af3X_3VEp3lYvRpCV3S2jRGKstnQiL2MOac3lwcs2Y2y0g&oe=69E9A474',
+    alt: 'Colorful lifestyle scene with warm tones',
   },
 ];
 
@@ -51,7 +51,7 @@ const styles = stylex.create({
     display: 'grid',
     gridTemplateColumns: '1fr 1fr 1fr',
     gap: 'var(--spacing-4)',
-    maxHeight: 500,
+    maxHeight: 550,
   },
 });
 
