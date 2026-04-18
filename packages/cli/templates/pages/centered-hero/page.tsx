@@ -6,7 +6,6 @@ import {XDSText} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSSection} from '@xds/core/Section';
-import {XDSCenter} from '@xds/core/Center';
 import {ArrowRightIcon} from '@heroicons/react/20/solid';
 
 const IMAGE_URL =
@@ -20,7 +19,7 @@ const styles = stylex.create({
 
 export default function CenteredHero() {
   return (
-    <XDSCenter height="100dvh">
+    <XDSVStack gap={6}>
       <XDSSection variant="transparent" padding={6}>
         <XDSVStack gap={6} hAlign="center">
           <XDSVStack gap={3} hAlign="center">
@@ -45,21 +44,24 @@ export default function CenteredHero() {
             <XDSButton
               label="Get started"
               variant="primary"
-              endContent={<XDSIcon icon={ArrowRightIcon} size="sm" />}
+              endContent={
+                <XDSIcon icon={ArrowRightIcon} size="sm" color="inherit" />
+              }
             />
             <XDSButton label="Learn more" variant="secondary" />
           </XDSHStack>
-          <img
-            src={IMAGE_URL}
-            alt="Serene landscape with cotton fields and towering clouds"
-            style={{
-              width: '100%',
-              borderRadius: 'var(--radius-container)',
-              display: 'block',
-            }}
-          />
         </XDSVStack>
       </XDSSection>
-    </XDSCenter>
+      <img
+        src={IMAGE_URL}
+        alt="Serene landscape with cotton fields and towering clouds"
+        style={{
+          width: 'calc(100% - var(--spacing-6) * 2)',
+          marginInline: 'var(--spacing-6)',
+          borderRadius: 'var(--radius-page)',
+          display: 'block',
+        }}
+      />
+    </XDSVStack>
   );
 }
