@@ -382,10 +382,7 @@ function useTokenLines(
 // Span-mode code element
 // ---------------------------------------------------------------------------
 
-function buildSpanLine(
-  lineText: string,
-  tokens: Token[],
-): React.ReactNode {
+function buildSpanLine(lineText: string, tokens: Token[]): React.ReactNode {
   if (tokens.length === 0) {
     return lineText || '\u200b';
   }
@@ -493,7 +490,7 @@ function RangeCodeContent({
         sizeStyle,
         isWrapped && styles.codeWrapped,
       )}>
-      {renderLines(lines, highlightSet, renderLineContent, Infinity)}
+      {renderLines(lines, highlightSet, renderLineContent)}
     </code>
   );
 }
@@ -568,22 +565,41 @@ export function XDSCodeBlock({
     : undefined;
 
   const copyIcon = copied ? (
-    <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="1em"
+      height="1em"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round">
       <path d="M5 13l4 4L19 7" />
     </svg>
   ) : (
-    <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="1em"
+      height="1em"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round">
       <path d="M8 4v12a2 2 0 002 2h8a2 2 0 002-2V7.242a2 2 0 00-.602-1.43L16.083 2.57A2 2 0 0014.685 2H10a2 2 0 00-2 2z" />
       <path d="M16 18v2a2 2 0 01-2 2H6a2 2 0 01-2-2V9a2 2 0 012-2h2" />
     </svg>
   );
 
   const copyButtonEl = hasCopyButton ? (
-    <button type="button" onClick={handleCopy}
+    <button
+      type="button"
+      onClick={handleCopy}
       aria-label={copied ? 'Copied' : 'Copy code'}
-      {...stylex.props(styles.copyButton, !showHeader && styles.copyButtonAbsolute)}>
+      {...stylex.props(
+        styles.copyButton,
+        !showHeader && styles.copyButtonAbsolute,
+      )}>
       {copyIcon}
     </button>
   ) : null;
@@ -594,14 +610,16 @@ export function XDSCodeBlock({
       tabIndex={canCollapse ? 0 : undefined}
       aria-expanded={canCollapse ? !isCollapsed : undefined}
       onClick={canCollapse ? () => setIsCollapsed(prev => !prev) : undefined}
-      onKeyDown={canCollapse
-        ? (e: React.KeyboardEvent) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              setIsCollapsed(prev => !prev);
+      onKeyDown={
+        canCollapse
+          ? (e: React.KeyboardEvent) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                setIsCollapsed(prev => !prev);
+              }
             }
-          }
-        : undefined}
+          : undefined
+      }
       {...stylex.props(
         styles.header,
         hasLineNumbers ? styles.headerWithDivider : styles.headerCompact,
@@ -612,10 +630,11 @@ export function XDSCodeBlock({
         {title && languageLabel ? ' — ' : ''}
         {languageLabel}
         {canCollapse && (
-          <span {...stylex.props(
-            styles.collapseChevron,
-            isCollapsed && styles.collapseChevronCollapsed,
-          )}>
+          <span
+            {...stylex.props(
+              styles.collapseChevron,
+              isCollapsed && styles.collapseChevronCollapsed,
+            )}>
             <XDSIcon icon="chevronDown" size="xsm" color="inherit" />
           </span>
         )}
@@ -625,12 +644,23 @@ export function XDSCodeBlock({
   ) : null;
 
   const codeBody = (
-    <div ref={scrollContainerRef} {...stylex.props(styles.scrollContainer)} style={scrollStyle}>
-      <div {...stylex.props(styles.codeWrapper, showHeader && !hasLineNumbers && styles.codeWrapperCompact)}>
+    <div
+      ref={scrollContainerRef}
+      {...stylex.props(styles.scrollContainer)}
+      style={scrollStyle}>
+      <div
+        {...stylex.props(
+          styles.codeWrapper,
+          showHeader && !hasLineNumbers && styles.codeWrapperCompact,
+        )}>
         {hasLineNumbers && (
-          <div {...stylex.props(styles.gutter, gutterSizeStyle)} aria-hidden="true">
+          <div
+            {...stylex.props(styles.gutter, gutterSizeStyle)}
+            aria-hidden="true">
             {lines.map((_, i) => (
-              <div key={i} {...stylex.props(styles.gutterLine)}>{i + 1}</div>
+              <div key={i} {...stylex.props(styles.gutterLine)}>
+                {i + 1}
+              </div>
             ))}
           </div>
         )}
@@ -658,11 +688,20 @@ export function XDSCodeBlock({
   return (
     <pre
       ref={ref}
-      {...mergeProps(xdsClassName('codeblock', {size, language}), stylex.props(styles.root, xstyle), className, style)}
+      {...mergeProps(
+        xdsClassName('codeblock', {size, language}),
+        stylex.props(styles.root, xstyle),
+        className,
+        style,
+      )}
       {...props}>
       {headerEl}
       {canCollapse ? (
-        <div {...stylex.props(styles.collapseGrid, isCollapsed && styles.collapseGridCollapsed)}>
+        <div
+          {...stylex.props(
+            styles.collapseGrid,
+            isCollapsed && styles.collapseGridCollapsed,
+          )}>
           <div {...stylex.props(styles.collapseInner)}>{codeBody}</div>
         </div>
       ) : (
