@@ -448,7 +448,7 @@
     "@babel/types" "^7.28.6"
     debug "^4.3.1"
 
-"@babel/traverse@^7.29.0":
+"@babel/traverse@^7.28.0", "@babel/traverse@^7.29.0":
   version "7.29.0"
   resolved "https://registry.npmjs.org/@babel/traverse/-/traverse-7.29.0.tgz"
   integrity sha512-4HPiQr0X7+waHfyXPZpWPfWL/J7dcN1mx9gL6WdQVMbPnF3+ZhSMs8tCxN7oHddJE9fhNE7+lxdnlyemKfJRuA==
@@ -2012,6 +2012,11 @@
   resolved "https://registry.npmjs.org/@storybook/preview-api/-/preview-api-8.6.18.tgz"
   integrity sha512-joXRXh3GdVvzhbfIgmix1xs90p8Q/nja7AhEAC2egn5Pl7SKsIYZUCYI6UdrQANb2myg9P552LKXfPect8llKg==
 
+"@storybook/react-dom-shim@10.3.5":
+  version "10.3.5"
+  resolved "https://registry.yarnpkg.com/@storybook/react-dom-shim/-/react-dom-shim-10.3.5.tgz#8f9a9238a96813c1b5343ecd3bfbd3cf61815977"
+  integrity sha512-Gw8R7XZm0zSUH0XAuxlQJhmizsLzyD6x00KOlP6l7oW9eQHXGfxg3seNDG3WrSAcW07iP1/P422kuiriQlOv7g==
+
 "@storybook/react-dom-shim@8.6.18":
   version "8.6.18"
   resolved "https://registry.npmjs.org/@storybook/react-dom-shim/-/react-dom-shim-8.6.18.tgz"
@@ -2032,7 +2037,7 @@
     resolve "^1.22.8"
     tsconfig-paths "^4.2.0"
 
-"@storybook/react@8.6.18", "@storybook/react@^8.6.17":
+"@storybook/react@8.6.18":
   version "8.6.18"
   resolved "https://registry.npmjs.org/@storybook/react/-/react-8.6.18.tgz"
   integrity sha512-BuLpzMkKtF+UCQCbi+lYVX9cdcAMG86Lu2dDn7UFkPi5HRNFq/zHPSvlz1XDgL0OYMtcqB1aoVzFzcyzUBhhjw==
@@ -2043,6 +2048,16 @@
     "@storybook/preview-api" "8.6.18"
     "@storybook/react-dom-shim" "8.6.18"
     "@storybook/theming" "8.6.18"
+
+"@storybook/react@^10.3.5":
+  version "10.3.5"
+  resolved "https://registry.yarnpkg.com/@storybook/react/-/react-10.3.5.tgz#eabb28f015b0597fb21b29751e0c368aa27f6b5f"
+  integrity sha512-tpLTLaVGoA6fLK3ReyGzZUricq7lyPaV2hLPpj5wqdXLV/LpRtAHClUpNoPDYSBjlnSjL81hMZijbkGC3mA+gw==
+  dependencies:
+    "@storybook/global" "^5.0.0"
+    "@storybook/react-dom-shim" "10.3.5"
+    react-docgen "^8.0.2"
+    react-docgen-typescript "^2.2.2"
 
 "@storybook/test@8.6.18", "@storybook/test@^8.6.17":
   version "8.6.18"
@@ -2368,7 +2383,7 @@
     "@babel/parser" "^7.1.0"
     "@babel/types" "^7.0.0"
 
-"@types/babel__traverse@*", "@types/babel__traverse@^7.18.0":
+"@types/babel__traverse@*", "@types/babel__traverse@^7.18.0", "@types/babel__traverse@^7.20.7":
   version "7.28.0"
   resolved "https://registry.npmjs.org/@types/babel__traverse/-/babel__traverse-7.28.0.tgz"
   integrity sha512-8PvcXf70gTDZBgt9ptxJ8elBeBjcLOAcOtoO/mPJjtji1+CdGbHgm77om1GrsPxsiE+uXIpNSK64UYaIwQXd4Q==
@@ -5227,6 +5242,22 @@ react-docgen@^7.0.0:
     "@babel/types" "^7.18.9"
     "@types/babel__core" "^7.18.0"
     "@types/babel__traverse" "^7.18.0"
+    "@types/doctrine" "^0.0.9"
+    "@types/resolve" "^1.20.2"
+    doctrine "^3.0.0"
+    resolve "^1.22.1"
+    strip-indent "^4.0.0"
+
+react-docgen@^8.0.2:
+  version "8.0.3"
+  resolved "https://registry.yarnpkg.com/react-docgen/-/react-docgen-8.0.3.tgz#164e5b29f8115f23d69b09966ec835d92bcdc075"
+  integrity sha512-aEZ9qP+/M+58x2qgfSFEWH1BxLyHe5+qkLNJOZQb5iGS017jpbRnoKhNRrXPeA6RfBrZO5wZrT9DMC1UqE1f1w==
+  dependencies:
+    "@babel/core" "^7.28.0"
+    "@babel/traverse" "^7.28.0"
+    "@babel/types" "^7.28.2"
+    "@types/babel__core" "^7.20.5"
+    "@types/babel__traverse" "^7.20.7"
     "@types/doctrine" "^0.0.9"
     "@types/resolve" "^1.20.2"
     doctrine "^3.0.0"

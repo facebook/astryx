@@ -22,7 +22,7 @@
     "@storybook/addon-interactions": "^8.6.17",
     "@storybook/addon-links": "^8.6.17",
     "@storybook/blocks": "^8.6.17",
-    "@storybook/react": "^8.6.17",
+    "@storybook/react": "^10.3.5",
     "@storybook/react-vite": "^8.6.17",
     "@storybook/test": "^8.6.17",
     "@stylexjs/unplugin": "^0.18.2",
