@@ -366,7 +366,10 @@ export function XDSCodeEditor({
   const showPlaceholder = placeholder && value === '';
 
   const containerStyle: React.CSSProperties | undefined = maxHeight
-    ? {maxHeight: typeof maxHeight === 'number' ? `${maxHeight}px` : maxHeight}
+    ? {
+        maxHeight: typeof maxHeight === 'number' ? `${maxHeight}px` : maxHeight,
+        overflowY: 'auto',
+      }
     : undefined;
 
   return (
@@ -377,6 +380,7 @@ export function XDSCodeEditor({
         stylex.props(styles.root, focused && styles.rootFocused, xstyle),
         className,
         style,
+        containerStyle ? {style: containerStyle} : undefined,
       )}
       {...props}>
       {hasLineNumbers && (
@@ -392,7 +396,7 @@ export function XDSCodeEditor({
       )}
       <div
         {...stylex.props(styles.editorContainer)}
-        style={{...containerStyle, position: 'relative'}}>
+        style={{position: 'relative'}}>
         {showPlaceholder && (
           <div {...stylex.props(styles.placeholder, sizeStyle)}>
             {placeholder}
