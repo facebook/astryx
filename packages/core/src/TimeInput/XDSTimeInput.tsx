@@ -73,7 +73,10 @@ const styles = stylex.create({
     borderStyle: 'none',
     padding: 0,
     fontFamily: typographyVars['--font-family-body'],
-    fontSize: typeScaleVars['--text-body-size'],
+    fontSize: {
+      default: typeScaleVars['--text-body-size'],
+      '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+    },
     lineHeight: typeScaleVars['--text-body-leading'],
     color: colorVars['--color-text-primary'],
     backgroundColor: 'transparent',
