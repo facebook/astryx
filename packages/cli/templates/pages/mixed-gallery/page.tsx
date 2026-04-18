@@ -34,7 +34,7 @@ const layoutStyles = stylex.create({
   mobileOnly: {
     display: {
       default: 'none',
-      '@media (max-width: 767px)': 'block',
+      '@media (max-width: 767px)': 'flex',
     },
   },
   mobileGap: {
@@ -213,15 +213,13 @@ export default function MixedGalleryTemplate() {
             </XDSStackItem>
 
             {/* Mobile layout (hidden on desktop) */}
-            <div {...stylex.props(layoutStyles.mobileOnly)}>
-              <XDSVStack gap={4}>
-                {IMAGES.map((image, i) => (
-                  <XDSAspectRatio key={i} ratio={16 / 9}>
-                    <GalleryCard image={image} />
-                  </XDSAspectRatio>
-                ))}
-              </XDSVStack>
-            </div>
+            <XDSVStack gap={4} xstyle={layoutStyles.mobileOnly}>
+              {IMAGES.map((image, i) => (
+                <XDSAspectRatio key={i} ratio={16 / 9}>
+                  <GalleryCard image={image} />
+                </XDSAspectRatio>
+              ))}
+            </XDSVStack>
           </XDSVStack>
         </XDSSection>
       </XDSCenter>
