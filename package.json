@@ -38,7 +38,7 @@
     "@eslint/js": "^9.39.2",
     "@playwright/test": "^1.59.1",
     "@testing-library/user-event": "^14.5.0",
-    "@types/node": "^22.0.0",
+    "@types/node": "^25.6.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^4.3.0",
