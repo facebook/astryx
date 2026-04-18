@@ -7,8 +7,10 @@ import {useXDSTheme} from '@xds/core';
 // Stocks dataset URL from vega-datasets
 // ---------------------------------------------------------------------------
 
-const STOCKS_CSV_URL =
-  'https://cdn.jsdelivr.net/npm/vega-datasets@3.2.1/data/stocks.csv';
+const VEGA_DATASETS = 'https://cdn.jsdelivr.net/npm/vega-datasets@3.2.1/data';
+
+const STOCKS_CSV_URL = `${VEGA_DATASETS}/stocks.csv`;
+const SEATTLE_WEATHER_CSV_URL = `${VEGA_DATASETS}/seattle-weather.csv`;
 
 // ---------------------------------------------------------------------------
 // Spec: Stock price line chart with cross-hair hover + tooltip
@@ -287,6 +289,43 @@ const programmingLanguagesSpec: AnySpec = {
 };
 
 // ---------------------------------------------------------------------------
+// Spec: Annual weather heatmap (seattle-weather.csv)
+// Source: https://vega.github.io/vega-lite/examples/rect_heatmap_weather.html
+// ---------------------------------------------------------------------------
+
+const weatherHeatmapSpec: AnySpec = {
+  $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
+  data: {url: SEATTLE_WEATHER_CSV_URL},
+  title: 'Daily Max Temperatures (C) in Seattle, WA',
+  config: {
+    view: {strokeWidth: 0, step: 13},
+    axis: {domain: false},
+  },
+  mark: 'rect',
+  encoding: {
+    x: {
+      field: 'date',
+      timeUnit: 'date',
+      type: 'ordinal',
+      title: 'Day',
+      axis: {labelAngle: 0, format: '%e'},
+    },
+    y: {
+      field: 'date',
+      timeUnit: 'month',
+      type: 'ordinal',
+      title: 'Month',
+    },
+    color: {
+      field: 'temp_max',
+      aggregate: 'max',
+      type: 'quantitative',
+      legend: {title: null},
+    },
+  },
+};
+
+// ---------------------------------------------------------------------------
 // Themed wrapper — resolves XDS tokens into a Vega-Lite config
 // ---------------------------------------------------------------------------
 
@@ -329,6 +368,15 @@ export const ProgrammingLanguagesBumpChart: Story = {
         spec={programmingLanguagesSpec}
         data={{table: programmingLanguagesData}}
       />
+    </div>
+  ),
+};
+
+export const WeatherHeatmap: Story = {
+  name: 'Range: Heatmap - Annual Weather Heatmap',
+  render: () => (
+    <div style={{width: '100%', maxWidth: 720}}>
+      <ThemedVegaChart spec={weatherHeatmapSpec} />
     </div>
   ),
 };
