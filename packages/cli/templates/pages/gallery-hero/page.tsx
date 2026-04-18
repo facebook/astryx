@@ -52,6 +52,8 @@ const styles = stylex.create({
     gridTemplateColumns: '1fr 1fr 1fr',
     gap: 'var(--spacing-4)',
     maxHeight: 550,
+    overflow: 'hidden',
+    borderRadius: 'var(--radius-container)',
   },
 });
 
