@@ -523,8 +523,7 @@
     "lint": "eslint src",
     "typecheck:docs": "tsc --project tsconfig.docs.json",
     "build:css": "node ../../scripts/build-css.mjs",
-    "inject:css": "node ../../scripts/inject-css-imports.mjs",
-    "postbuild": "yarn build:css && yarn inject:css && node ../../scripts/fix-use-client-dist.mjs"
+    "postbuild": "yarn build:css && node ../../scripts/fix-use-client-dist.mjs"
   },
   "peerDependencies": {
     "react": ">=19.0.0",
