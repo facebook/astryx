@@ -7,7 +7,6 @@ import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSSection} from '@xds/core/Section';
 import {XDSGrid} from '@xds/core/Grid';
 import {XDSButton} from '@xds/core/Button';
-import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSMediaTheme} from '@xds/core/theme';
 import {ArrowRightIcon} from '@heroicons/react/24/outline';
@@ -24,24 +23,6 @@ const layoutStyles = stylex.create({
   },
   textCenter: {
     textAlign: 'center',
-  },
-  desktopOnly: {
-    display: {
-      default: 'flex',
-      '@media (max-width: 767px)': 'none',
-    },
-  },
-  mobileOnly: {
-    display: {
-      default: 'none',
-      '@media (max-width: 767px)': 'flex',
-    },
-  },
-  mobileGap: {
-    gap: {
-      default: null,
-      '@media (max-width: 767px)': 'var(--spacing-3)',
-    },
   },
 });
 
@@ -160,9 +141,7 @@ export default function MixedGalleryTemplate() {
           width="100%"
           height="100%"
           padding={0}>
-          <XDSVStack
-            gap={6}
-            xstyle={[layoutStyles.fullHeight, layoutStyles.mobileGap]}>
+          <XDSVStack gap={6} xstyle={layoutStyles.fullHeight}>
             {/* Header — capped with XDSSection maxWidth */}
             <XDSCenter axis="horizontal">
               <XDSSection variant="transparent" maxWidth={680}>
@@ -174,18 +153,16 @@ export default function MixedGalleryTemplate() {
                   <XDSText type="body">
                     We believe the smallest details are the ones that matter
                     most. A little color, a thoughtful touch, a moment that
-                    catches your eye and makes you pause; that's what turns an
-                    ordinary day into something worth remembering.
+                    catches your eye and makes you pause; that&apos;s what turns
+                    an ordinary day into something worth remembering.
                   </XDSText>
                 </XDSVStack>
               </XDSSection>
             </XDSCenter>
 
-            {/* Gallery — desktop: 3-col masonry, mobile: single column */}
-
-            {/* Desktop layout (hidden on mobile) */}
-            <XDSStackItem size="fill" xstyle={layoutStyles.desktopOnly}>
-              <XDSGrid columns={3} gap={4} height="100%">
+            {/* Gallery — 3-col masonry on desktop, reflows on mobile */}
+            <XDSStackItem size="fill">
+              <XDSGrid columns={3} minChildWidth={300} gap={4} height="100%">
                 <XDSVStack gap={4} xstyle={layoutStyles.minHeightZero}>
                   <XDSStackItem size="fill">
                     <GalleryCard image={IMAGES[0]} />
@@ -207,15 +184,6 @@ export default function MixedGalleryTemplate() {
                 </XDSVStack>
               </XDSGrid>
             </XDSStackItem>
-
-            {/* Mobile layout (hidden on desktop) */}
-            <XDSVStack gap={4} xstyle={layoutStyles.mobileOnly}>
-              {IMAGES.map((image, i) => (
-                <XDSAspectRatio key={i} ratio={16 / 9}>
-                  <GalleryCard image={image} />
-                </XDSAspectRatio>
-              ))}
-            </XDSVStack>
           </XDSVStack>
         </XDSSection>
       </XDSCenter>
