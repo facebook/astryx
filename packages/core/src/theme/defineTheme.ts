@@ -63,6 +63,7 @@ import {
   expandRadiusScale,
   type XDSRadiusScaleConfig,
 } from './expandRadiusScale';
+import {expandColorScale, type XDSColorScaleConfig} from './expandColorScale';
 
 import type {DomainTokenName} from './domainTokens';
 import {domainTokenDefaults} from './domainTokens';
@@ -214,6 +215,20 @@ export interface XDSDefineThemeInput {
    * ```
    */
   radius?: XDSRadiusScaleConfig;
+  /**
+   * Color scale configuration. Generates color token overrides from a
+   * single accent color using the HCT perceptual color model.
+   *
+   * Only generates tokens derivable from the accent — status colors,
+   * categorical hues, and fixed tokens (on-dark/on-light) use defaults.
+   * Explicit `tokens` entries always take precedence.
+   *
+   * @example
+   * ```tsx
+   * color: { accent: '#0064E0', neutralStyle: 'cool', contrast: 'standard' }
+   * ```
+   */
+  color?: XDSColorScaleConfig;
   /** Token overrides — flat map of CSS custom property names to values.
    *  Values can be a string or [light, dark] tuple.
    *  Only include tokens you want to override; defaults fill the rest. */
@@ -481,7 +496,15 @@ export function defineTheme(input: XDSDefineThemeInput): XDSDefinedTheme {
     };
   }
 
-  // 1. Apply typeScale-generated tokens first (lowest precedence)
+  // 1. Apply color-generated tokens (lowest precedence for colors)
+  if (input.color) {
+    const colorTokens = expandColorScale(input.color);
+    for (const [key, value] of Object.entries(colorTokens)) {
+      tokens[key] = value;
+    }
+  }
+
+  // 1a. Apply typeScale-generated tokens (lowest precedence for type)
   if (typeScaleConfig) {
     const typeScaleTokens = expandTypeScale(typeScaleConfig);
     for (const [key, value] of Object.entries(typeScaleTokens)) {
