@@ -56,8 +56,12 @@ const overlayStyles = stylex.create({
   overlay: {
     position: 'absolute',
     inset: 0,
-    background:
-      'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0) 100%)',
+    backgroundColor: 'var(--color-overlay)',
+    opacity: {
+      default: 0,
+      ':hover': 1,
+    },
+    transition: 'opacity 0.2s ease',
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'flex-end',
