@@ -2,6 +2,9 @@ import type {Plugin} from 'vite';
 import stylexBabelPlugin from '@stylexjs/babel-plugin';
 import stylex from '@stylexjs/unplugin';
 import path from 'path';
+import {fileURLToPath} from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const XDS_LIBRARY_PATTERN = 'node_modules/@xds/';
 const STYLEX_CSS_PATH = '/virtual:stylex.css';

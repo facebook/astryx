@@ -538,6 +538,7 @@
     "@testing-library/jest-dom": "^6.6.0",
     "@testing-library/react": "^16.3.2",
     "esbuild-plugin-babel": "^0.2.3",
-    "@stylexjs/stylex": "^0.18.2"
+    "@stylexjs/stylex": "^0.18.2",
+    "@testing-library/dom": "^10.0.0"
   }
 }

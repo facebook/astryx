@@ -18,15 +18,12 @@
     "vega-lite": "^6.4.2"
   },
   "devDependencies": {
-    "@storybook/addon-essentials": "^8.6.17",
-    "@storybook/addon-interactions": "^8.6.17",
-    "@storybook/addon-links": "^8.6.17",
-    "@storybook/blocks": "^8.6.17",
-    "@storybook/react": "^8.6.17",
-    "@storybook/react-vite": "^8.6.17",
-    "@storybook/test": "^8.6.17",
+    "@storybook/addon-docs": "^10.3.5",
+    "@storybook/addon-links": "^10.3.5",
+    "@storybook/react": "^10.3.5",
+    "@storybook/react-vite": "^10.3.5",
     "@stylexjs/unplugin": "^0.18.2",
-    "storybook": "^8.6.18",
-    "@xds/build": "*"
+    "@xds/build": "*",
+    "storybook": "^10.3.5"
   }
 }
