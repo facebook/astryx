@@ -280,8 +280,7 @@ function renderLines(
     chunks.push(
       <div
         key={start}
-        {...stylex.props(styles.lineChunk)}
-        style={{containIntrinsicBlockSize: `auto ${estimatedHeight}`}}>
+        {...mergeProps(stylex.props(styles.lineChunk), {style: {containIntrinsicBlockSize: `auto ${estimatedHeight}`}})}>
         <CodeChunk
           lines={chunkLines}
           startIndex={start}
@@ -646,8 +645,7 @@ export function XDSCodeBlock({
   const codeBody = (
     <div
       ref={scrollContainerRef}
-      {...stylex.props(styles.scrollContainer)}
-      style={scrollStyle}>
+      {...mergeProps(stylex.props(styles.scrollContainer), {style: scrollStyle})}>
       <div
         {...stylex.props(
           styles.codeWrapper,

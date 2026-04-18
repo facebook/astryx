@@ -502,8 +502,7 @@ export function XDSSideNav({
   const content = showResizeHandle ? (
     <div
       ref={containerRef}
-      {...stylex.props(styles.resizableContainer)}
-      style={{width}}>
+      {...mergeProps(stylex.props(styles.resizableContainer), {style: {width}})}>
       {navElement}
       <div
         data-testid="xds-sidenav-resize-handle"

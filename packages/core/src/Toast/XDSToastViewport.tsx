@@ -3,6 +3,7 @@
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars, durationVars, easeVars} from '../theme/tokens.stylex';
+import {mergeProps} from '../utils';
 import {XDSToast} from './XDSToast';
 import {XDSToastContext, type XDSToastContextValue} from './XDSToastContext';
 import type {
@@ -187,8 +188,7 @@ export function XDSToastViewport({
         // popover="manual" promotes to the top layer (above dialogs).
         // Omitted inside dialogs where the viewport is already in a top layer.
         popover={isTopLayer ? 'manual' : undefined}
-        {...stylex.props(styles.viewport, posStyle)}
-        style={Object.keys(insetStyle).length > 0 ? insetStyle : undefined}>
+        {...mergeProps(stylex.props(styles.viewport, posStyle), {style: Object.keys(insetStyle).length > 0 ? insetStyle : undefined})}>
         {visibleToasts.map(entry => {
           const o = entry.options;
           const type = o.type ?? 'info';

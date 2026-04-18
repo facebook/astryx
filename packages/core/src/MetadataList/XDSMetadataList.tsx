@@ -266,8 +266,7 @@ export function XDSMetadataList({
         {titleContent}
         <dl
           id={contentId}
-          {...stylex.props(styles.dl, getGridStyle())}
-          style={dynamicGridStyle}>
+          {...mergeProps(stylex.props(styles.dl, getGridStyle()), {style: dynamicGridStyle})}>
           {visibleChildren}
         </dl>
         {isExceedMax && (

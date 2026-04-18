@@ -21,6 +21,7 @@ import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars, radiusVars} from '../theme/tokens.stylex';
 import {XDSButton} from '../Button';
 import {XDSIcon} from '../Icon';
+import {mergeProps} from '../utils';
 
 // =============================================================================
 // Types
@@ -116,20 +117,18 @@ export function XDSChatDictationButton({
       {isListening && (
         <span
           aria-hidden
-          {...stylex.props(styles.barsContainer)}
-          style={{gap: barGap, height: barMaxHeight}}>
+          {...mergeProps(stylex.props(styles.barsContainer), {style: {gap: barGap, height: barMaxHeight}})}>
           {boostedBands.slice(0, BAR_COUNT).map((level, i) => {
             const scale = BAR_MIN_SCALE + level * (1 - BAR_MIN_SCALE);
             return (
               <span
                 key={i}
-                {...stylex.props(styles.bar)}
-                style={{
+                {...mergeProps(stylex.props(styles.bar), {style: {
                   width: barWidth,
                   height: '100%',
                   backgroundColor: barColor,
                   transform: `scaleY(${scale})`,
-                }}
+                }})}
               />
             );
           })}

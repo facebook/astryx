@@ -12,6 +12,7 @@
 
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
+import {mergeProps} from '../utils';
 
 const LINE_WIDTH = 1;
 
@@ -80,10 +81,9 @@ export function XDSTreeListBranches({
           level !== nestedLevel - 1 && (
             <div
               key={level}
-              {...stylex.props(styles.container)}
-              style={{
+              {...mergeProps(stylex.props(styles.container), {style: {
                 left: `calc(${BRANCH_MARGIN} + ${level} * ${LEVEL_INDENT})`,
-              }}>
+              }})}>
               <div
                 {...stylex.props(styles.verticalLine, styles.verticalFull)}
               />
@@ -92,10 +92,9 @@ export function XDSTreeListBranches({
       )}
       {nestedLevel > 0 && (
         <div
-          {...stylex.props(styles.container)}
-          style={{
+          {...mergeProps(stylex.props(styles.container), {style: {
             left: `calc(${BRANCH_MARGIN} + ${nestedLevel - 1} * ${LEVEL_INDENT})`,
-          }}>
+          }})}>
           <div
             {...stylex.props(
               styles.verticalLine,
