@@ -21,7 +21,7 @@ import {
 import {useXDSChatMessageContext} from './XDSChatContext';
 import {XDSIcon} from '../Icon';
 import type {XDSIconName} from '../Icon/globalIconRegistry';
-import {xdsClassName} from '../utils';
+import {mergeProps, xdsClassName} from '../utils';
 
 export type XDSChatMessageStatus =
   | 'sending'
@@ -121,10 +121,12 @@ export function XDSChatMessageMetadata({
 
   return (
     <div
-      className={xdsClassName('chat-message-metadata')}
-      {...stylex.props(
-        styles.meta,
-        sender === 'user' ? styles.metaUser : styles.metaAssistant,
+      {...mergeProps(
+        xdsClassName('chat-message-metadata'),
+        stylex.props(
+          styles.meta,
+          sender === 'user' ? styles.metaUser : styles.metaAssistant,
+        ),
       )}>
       {timestamp != null && <span>{timestamp}</span>}
       {timestamp != null && (footer != null || statusConfig != null) && (
