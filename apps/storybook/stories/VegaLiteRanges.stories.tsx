@@ -290,6 +290,59 @@ const programmingLanguagesSpec: AnySpec = {
 };
 
 // ---------------------------------------------------------------------------
+// Spec: Bar chart with labels and emojis — ramp color scale
+// Source: https://vega.github.io/vega-lite/examples/layer_bar_fruit.html
+// ---------------------------------------------------------------------------
+
+const fruitBarChartSpec: AnySpec = {
+  $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
+  description:
+    'Vega-Lite version of bar chart from https://observablehq.com/@d3/learn-d3-scales.',
+  width: 400,
+  data: {
+    values: [
+      {name: '🍊', count: 21},
+      {name: '🍇', count: 13},
+      {name: '🍏', count: 8},
+      {name: '🍌', count: 5},
+      {name: '🍐', count: 3},
+      {name: '🍋', count: 2},
+      {name: '🍎', count: 1},
+      {name: '🍉', count: 1},
+    ],
+  },
+  encoding: {
+    y: {field: 'name', type: 'nominal', sort: '-x', title: null},
+    x: {field: 'count', type: 'quantitative', title: null},
+  },
+  layer: [
+    {
+      mark: 'bar',
+      encoding: {
+        color: {
+          field: 'count',
+          type: 'quantitative',
+          title: 'Number of fruit',
+        },
+      },
+    },
+    {
+      mark: {type: 'text', align: 'right', xOffset: -4, aria: false},
+      encoding: {
+        text: {field: 'count', type: 'quantitative'},
+        color: {
+          condition: {
+            test: {field: 'count', gt: 10},
+            value: 'white',
+          },
+          value: 'black',
+        },
+      },
+    },
+  ],
+};
+
+// ---------------------------------------------------------------------------
 // Spec: Calculate residuals (movies.json) — diverging color scale
 // Source: https://vega.github.io/vega-lite/examples/joinaggregate_residual_graph.html
 // ---------------------------------------------------------------------------
@@ -427,6 +480,15 @@ export const ResidualGraph: Story = {
   render: () => (
     <div style={{width: '100%', maxWidth: 720}}>
       <ThemedVegaChart spec={residualGraphSpec} />
+    </div>
+  ),
+};
+
+export const FruitBarChart: Story = {
+  name: 'Range: Ramp - Simple Bar Chart with Labels and Emojis',
+  render: () => (
+    <div style={{width: '100%', maxWidth: 720}}>
+      <ThemedVegaChart spec={fruitBarChartSpec} />
     </div>
   ),
 };
