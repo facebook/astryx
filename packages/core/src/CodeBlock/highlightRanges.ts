@@ -338,6 +338,96 @@ export function applyHighlightRangesBatch(
   return results;
 }
 
+// ---------------------------------------------------------------------------
+// Flat text-node application (for contentEditable elements)
+// ---------------------------------------------------------------------------
+
+/**
+ * Apply CSS Custom Highlight API ranges to a flat element (no [data-line]
+ * structure). Walks text nodes via TreeWalker and maps per-line tokens
+ * using absolute offsets. Used by XDSCodeEditor's contentEditable div.
+ *
+ * @param el - The element containing text nodes (e.g. contentEditable div)
+ * @param tokenLines - Per-line token arrays from the tokenizer
+ * @returns Cleanup function that removes all ranges
+ */
+export function applyHighlightRangesFlat(
+  el: HTMLElement,
+  tokenLines: TokenLine[],
+): () => void {
+  ensureHighlightStyles();
+
+  const resolve = createHighlightResolver();
+  const myRanges: RangeEntry[] = [];
+
+  // Build text node map with absolute character offsets
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+  const textNodes: Array<{node: Text; start: number; end: number}> = [];
+  let charOffset = 0;
+  let current = walker.nextNode();
+  while (current) {
+    const text = current as Text;
+    const len = text.length;
+    textNodes.push({node: text, start: charOffset, end: charOffset + len});
+    charOffset += len + 1; // +1 for newline between lines
+    current = walker.nextNode();
+  }
+
+  // Apply per-line tokens using absolute offsets
+  let lineStart = 0;
+  for (let lineIdx = 0; lineIdx < tokenLines.length; lineIdx++) {
+    const lineTokens = tokenLines[lineIdx];
+    // Compute line length from text nodes (or 0 if beyond range)
+    const lineLen =
+      lineIdx < textNodes.length
+        ? textNodes[lineIdx].end - textNodes[lineIdx].start
+        : 0;
+
+    if (lineTokens) {
+      for (const token of lineTokens) {
+        const absStart = lineStart + token.start;
+        const absEnd = lineStart + token.end;
+
+        // Find start text node (binary search)
+        const startEntry = findTextNodeAt(textNodes, absStart);
+        const endEntry = findTextNodeAt(textNodes, absEnd - 1);
+        if (!startEntry || !endEntry) continue;
+
+        const highlight = resolve(token.type);
+        try {
+          const range = new Range();
+          range.setStart(startEntry.node, absStart - startEntry.start);
+          range.setEnd(endEntry.node, absEnd - endEntry.start);
+          highlight.add(range);
+          myRanges.push({range, highlight});
+        } catch {
+          // Skip invalid ranges
+        }
+      }
+    }
+
+    lineStart += lineLen + 1; // +1 for newline
+  }
+
+  return () => cleanupRanges(myRanges);
+}
+
+function findTextNodeAt(
+  nodes: Array<{node: Text; start: number; end: number}>,
+  pos: number,
+): {node: Text; start: number; end: number} | null {
+  let lo = 0;
+  let hi = nodes.length - 1;
+  while (lo <= hi) {
+    const mid = (lo + hi) >>> 1;
+    const entry = nodes[mid];
+    if (pos < entry.start) hi = mid - 1;
+    else if (pos >= entry.end) lo = mid + 1;
+    else return entry;
+  }
+  return null;
+}
+
 /**
  * Cleanup a batch of ranges (returned from applyHighlightRangesBatch).
  */

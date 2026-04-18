@@ -33,7 +33,7 @@ import {
 import type {TokenLine} from '@xds/core/CodeBlock';
 import {
   ensureHighlightStyles,
-  applyHighlightRangesChunked,
+  applyHighlightRangesFlat,
 } from '@xds/core/CodeBlock';
 
 // ---------------------------------------------------------------------------
@@ -234,7 +234,7 @@ export function XDSCodeEditor({
     const tokens = tok(value, language);
     if (tokens.length === 0) return;
 
-    return applyHighlightRangesChunked(el, tokens);
+    return applyHighlightRangesFlat(el, tokens);
   }, [value, language, customTokenizer, instanceId]);
 
   // Apply CSS Custom Highlight API ranges — large code (async)
@@ -251,7 +251,7 @@ export function XDSCodeEditor({
     tokenizeAsync(value, language, abortController.signal).then(tokens => {
       if (abortController.signal.aborted) return;
       if (tokens.length === 0) return;
-      cleanup = applyHighlightRangesChunked(el, tokens);
+      cleanup = applyHighlightRangesFlat(el, tokens);
     });
 
     return () => {
