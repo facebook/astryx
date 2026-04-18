@@ -83,7 +83,7 @@ const styles = stylex.create({
     fontFamily: typographyVars['--font-family-body'],
     fontSize: {
       default: typeScaleVars['--text-label-size'],
-      '@media (pointer: coarse)': '1rem',
+      '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-label-size']})`,
     },
     lineHeight: typeScaleVars['--text-label-leading'],
     color: colorVars['--color-text-primary'],
