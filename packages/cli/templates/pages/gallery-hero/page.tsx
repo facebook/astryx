@@ -96,7 +96,7 @@ export default function GalleryHero() {
               textWrap="balance"
               xstyle={styles.textCenter}>
               Sometimes all it takes is one small thing to turn your whole day
-              around. That&apos;s what good design is for.
+              around.
             </XDSText>
           </XDSVStack>
           <XDSHStack gap={3}>
