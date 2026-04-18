@@ -338,6 +338,92 @@ export function applyHighlightRangesBatch(
   return results;
 }
 
+// ---------------------------------------------------------------------------
+// Flat text-node application (for contentEditable elements)
+// ---------------------------------------------------------------------------
+
+/**
+ * Apply CSS Custom Highlight API ranges to a flat element (no [data-line]
+ * structure). Works with contentEditable="plaintext-only" where all text
+ * may be a single Text node with embedded newlines.
+ *
+ * @param el - The element containing text (e.g. contentEditable code element)
+ * @param tokenLines - Per-line token arrays from the tokenizer
+ * @returns Cleanup function that removes all ranges
+ */
+export function applyHighlightRangesFlat(
+  el: HTMLElement,
+  tokenLines: TokenLine[],
+): () => void {
+  ensureHighlightStyles();
+
+  const resolve = createHighlightResolver();
+  const myRanges: RangeEntry[] = [];
+
+  // Collect text nodes with absolute offsets
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+  const textNodes: Array<{node: Text; start: number; length: number}> = [];
+  let totalOffset = 0;
+  let current = walker.nextNode();
+  while (current) {
+    const text = current as Text;
+    textNodes.push({node: text, start: totalOffset, length: text.length});
+    totalOffset += text.length;
+    current = walker.nextNode();
+  }
+
+  if (textNodes.length === 0) return () => cleanupRanges(myRanges);
+
+  // Convert per-line tokens to absolute offsets.
+  // The source code string has lines joined by \n, so each line starts
+  // at the cumulative offset of all previous lines + their \n separators.
+  const fullText = el.textContent ?? '';
+  let lineOffset = 0;
+  for (let lineIdx = 0; lineIdx < tokenLines.length; lineIdx++) {
+    const lineTokens = tokenLines[lineIdx];
+    if (lineTokens) {
+      for (const token of lineTokens) {
+        const absStart = lineOffset + token.start;
+        const absEnd = lineOffset + token.end;
+
+        const startPos = resolveOffset(textNodes, absStart);
+        const endPos = resolveOffset(textNodes, absEnd);
+        if (!startPos || !endPos) continue;
+
+        const highlight = resolve(token.type);
+        try {
+          const range = new Range();
+          range.setStart(startPos.node, startPos.offset);
+          range.setEnd(endPos.node, endPos.offset);
+          highlight.add(range);
+          myRanges.push({range, highlight});
+        } catch {
+          // Skip invalid ranges
+        }
+      }
+    }
+
+    // Advance past this line + \n separator
+    const nlPos = fullText.indexOf('\n', lineOffset);
+    lineOffset = nlPos === -1 ? fullText.length : nlPos + 1;
+  }
+
+  return () => cleanupRanges(myRanges);
+}
+
+function resolveOffset(
+  textNodes: Array<{node: Text; start: number; length: number}>,
+  absOffset: number,
+): {node: Text; offset: number} | null {
+  for (const entry of textNodes) {
+    const end = entry.start + entry.length;
+    if (absOffset >= entry.start && absOffset <= end) {
+      return {node: entry.node, offset: absOffset - entry.start};
+    }
+  }
+  return null;
+}
+
 /**
  * Cleanup a batch of ranges (returned from applyHighlightRangesBatch).
  */

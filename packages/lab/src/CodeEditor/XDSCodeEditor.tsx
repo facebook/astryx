@@ -12,14 +12,7 @@
 
 'use client';
 
-import {
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useCallback,
-  useState,
-  useMemo,
-} from 'react';
+import {useEffect, useLayoutEffect, useRef, useCallback, useState} from 'react';
 import type {XDSBaseProps} from '@xds/core/XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -37,8 +30,11 @@ import {
   tokenizeAsync,
   SYNC_TOKENIZE_THRESHOLD,
 } from '@xds/core/CodeBlock';
-import type {Token, TokenLine} from '@xds/core/CodeBlock';
-import {ensureHighlightStyles, applyHighlightRangesChunked} from '@xds/core/CodeBlock';
+import type {TokenLine} from '@xds/core/CodeBlock';
+import {
+  ensureHighlightStyles,
+  applyHighlightRangesFlat,
+} from '@xds/core/CodeBlock';
 
 // ---------------------------------------------------------------------------
 // Styles
@@ -72,6 +68,7 @@ const styles = stylex.create({
     lineHeight: typeScaleVars['--text-code-leading'],
   },
   editorContainer: {
+    display: 'flex',
     flex: 1,
     overflow: 'auto',
   },
@@ -142,19 +139,7 @@ export interface XDSCodeEditorProps extends Omit<
   /** Text size. @default "md" */
   size?: 'sm' | 'md';
   /** Custom tokenizer */
-  tokenizer?: (
-    code: string,
-    language: string,
-  ) => TokenLine[];
-  /**
-   * How to apply syntax highlighting.
-   * - 'css-highlight': Uses CSS Custom Highlight API (zero DOM overhead).
-   *   Falls back to 'spans' if the API is not available.
-   * - 'spans': Renders `<span>` elements with CSS classes per token.
-   *   In the editor, uses a transparent-text overlay approach.
-   * @default 'css-highlight'
-   */
-  highlightMode?: 'css-highlight' | 'spans';
+  tokenizer?: (code: string, language: string) => TokenLine[];
 }
 
 // ---------------------------------------------------------------------------
@@ -181,60 +166,6 @@ const AUTO_CLOSE_PAIRS: Record<string, string> = {
 let editorInstanceCounter = 0;
 
 // ---------------------------------------------------------------------------
-// Span-based rendering helpers
-// ---------------------------------------------------------------------------
-
-
-/**
- * Build span-based highlighted line content from per-line tokens.
- */
-function buildSpanLine(
-  lineText: string,
-  tokens: Token[],
-): React.ReactNode {
-  if (!lineText) return '\u200b';
-  if (tokens.length === 0) return lineText;
-
-  const parts: React.ReactNode[] = [];
-  let cursor = 0;
-
-  for (const token of tokens) {
-    if (token.start > cursor) {
-      parts.push(lineText.slice(cursor, token.start));
-    }
-
-    const end = Math.min(token.end, lineText.length);
-    parts.push(
-      <span
-        key={`${token.start}-${token.type}`}
-        className={`xds-token-${token.type}`}>
-        {lineText.slice(token.start, end)}
-      </span>,
-    );
-
-    cursor = end;
-  }
-
-  if (cursor < lineText.length) {
-    parts.push(lineText.slice(cursor));
-  }
-
-  return parts.length > 0 ? parts : lineText;
-}
-
-/**
- * Build span-based content for all lines.
- */
-function buildSpanContent(lines: string[], tokenLines: TokenLine[]): React.ReactNode {
-  return lines.map((line, i) => (
-    <div key={i}>
-      {buildSpanLine(line, tokenLines[i] ?? [])}
-      {i < lines.length - 1 ? '\n' : null}
-    </div>
-  ));
-}
-
-// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
@@ -243,8 +174,6 @@ function buildSpanContent(lines: string[], tokenLines: TokenLine[]): React.React
  *
  * Uses CSS Custom Highlight API for syntax coloring. Supports
  * auto-indent, tab insertion, and bracket auto-closing.
- * Falls back to span-based rendering when the API is unavailable
- * or `highlightMode="spans"` is set.
  *
  * @example
  * ```tsx
@@ -267,23 +196,16 @@ export function XDSCodeEditor({
   maxHeight,
   size = 'md',
   tokenizer: customTokenizer,
-  highlightMode: highlightModeProp = 'css-highlight',
   xstyle,
   className,
   style,
   ref,
   ...props
 }: XDSCodeEditorProps) {
-  const editorRef = useRef<HTMLDivElement>(null);
+  const editorRef = useRef<HTMLElement>(null);
   const [instanceId] = useState(() => ++editorInstanceCounter);
   const [focused, setFocused] = useState(false);
   const isComposingRef = useRef(false);
-
-  // Resolve effective highlight mode
-  const useSpans = highlightModeProp === 'spans' || !hasHighlightAPI();
-
-  // Async tokens for span mode overlay
-  const [asyncTokens, setAsyncTokens] = useState<TokenLine[] | null>(null);
 
   const lines = value.split('\n');
 
@@ -296,35 +218,6 @@ export function XDSCodeEditor({
     }
   }, [value]);
 
-  // Compute sync tokens for span mode (small code)
-  const syncTokens = useMemo(() => {
-    if (!useSpans) return null;
-    if (value.length >= SYNC_TOKENIZE_THRESHOLD) return null;
-    const tok = customTokenizer ?? tokenize;
-    return tok(value, language);
-  }, [useSpans, value, language, customTokenizer]);
-
-  // Async tokenization for span mode with large code
-  useEffect(() => {
-    if (!useSpans) return;
-    if (value.length < SYNC_TOKENIZE_THRESHOLD) return;
-
-    const abortController = new AbortController();
-
-    tokenizeAsync(value, language, abortController.signal).then(tokens => {
-      if (!abortController.signal.aborted) {
-        setAsyncTokens(tokens);
-      }
-    });
-
-    return () => {
-      abortController.abort();
-      setAsyncTokens(null);
-    };
-  }, [useSpans, value, language, customTokenizer]);
-
-  const spanTokens: TokenLine[] = syncTokens ?? asyncTokens ?? [];
-
   // Ensure styles are always injected
   useLayoutEffect(() => {
     ensureHighlightStyles();
@@ -332,7 +225,6 @@ export function XDSCodeEditor({
 
   // Apply CSS Custom Highlight API ranges — small code
   useLayoutEffect(() => {
-    if (useSpans) return;
     if (value.length >= SYNC_TOKENIZE_THRESHOLD) return;
     if (!hasHighlightAPI()) return;
 
@@ -343,12 +235,11 @@ export function XDSCodeEditor({
     const tokens = tok(value, language);
     if (tokens.length === 0) return;
 
-    return applyHighlightRangesChunked(el, tokens);
-  }, [useSpans, value, language, customTokenizer, instanceId]);
+    return applyHighlightRangesFlat(el, tokens);
+  }, [value, language, customTokenizer, instanceId]);
 
   // Apply CSS Custom Highlight API ranges — large code (async)
   useEffect(() => {
-    if (useSpans) return;
     if (value.length < SYNC_TOKENIZE_THRESHOLD) return;
     if (!hasHighlightAPI()) return;
 
@@ -361,14 +252,14 @@ export function XDSCodeEditor({
     tokenizeAsync(value, language, abortController.signal).then(tokens => {
       if (abortController.signal.aborted) return;
       if (tokens.length === 0) return;
-      cleanup = applyHighlightRangesChunked(el, tokens);
+      cleanup = applyHighlightRangesFlat(el, tokens);
     });
 
     return () => {
       abortController.abort();
       cleanup?.();
     };
-  }, [useSpans, value, language, customTokenizer, instanceId]);
+  }, [value, language, customTokenizer, instanceId]);
 
   const handleInput = useCallback(() => {
     if (isComposingRef.current) return;
@@ -479,30 +370,6 @@ export function XDSCodeEditor({
     ? {maxHeight: typeof maxHeight === 'number' ? `${maxHeight}px` : maxHeight}
     : undefined;
 
-  // For span mode in the editor, we render a non-interactive overlay with
-  // colored spans on top of the contentEditable. The contentEditable text
-  // is made transparent so the overlay provides the visual coloring while
-  // the contentEditable handles input/caret.
-  const spanOverlay =
-    useSpans && spanTokens.some(line => line.length > 0) ? (
-      <div
-        aria-hidden="true"
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          pointerEvents: 'none',
-          whiteSpace: 'pre',
-          wordBreak: 'normal',
-          overflowWrap: 'normal',
-        }}
-        {...stylex.props(styles.editor, sizeStyle)}>
-        {buildSpanContent(lines, spanTokens)}
-      </div>
-    ) : null;
-
   return (
     <div
       ref={ref}
@@ -513,47 +380,41 @@ export function XDSCodeEditor({
         style,
       )}
       {...props}>
-      {hasLineNumbers && (
-        <div
-          {...stylex.props(styles.gutter, gutterSizeStyle)}
-          aria-hidden="true">
-          {lines.map((_, i) => (
-            <div key={i} {...stylex.props(styles.gutterLine)}>
-              {i + 1}
-            </div>
-          ))}
-        </div>
-      )}
-      <div
-        {...stylex.props(styles.editorContainer)}
-        style={{...containerStyle, position: 'relative'}}>
-        {showPlaceholder && (
-          <div {...stylex.props(styles.placeholder, sizeStyle)}>
-            {placeholder}
+      <div {...stylex.props(styles.editorContainer)} style={containerStyle}>
+        {hasLineNumbers && (
+          <div
+            {...stylex.props(styles.gutter, gutterSizeStyle)}
+            aria-hidden="true">
+            {lines.map((_, i) => (
+              <div key={i} {...stylex.props(styles.gutterLine)}>
+                {i + 1}
+              </div>
+            ))}
           </div>
         )}
-        <div
-          ref={editorRef}
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          contentEditable={isReadOnly ? false : ('plaintext-only' as any)}
-          role="textbox"
-          aria-multiline="true"
-          aria-readonly={isReadOnly}
-          spellCheck={false}
-          onInput={handleInput}
-          onKeyDown={handleKeyDown}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
-          onCompositionStart={handleCompositionStart}
-          onCompositionEnd={handleCompositionEnd}
-          {...stylex.props(styles.editor, sizeStyle)}
-          style={
-            useSpans && spanTokens.some(line => line.length > 0)
-              ? {color: 'transparent', caretColor: 'inherit'}
-              : undefined
-          }
-        />
-        {spanOverlay}
+        <div style={{position: 'relative', flex: 1}}>
+          {showPlaceholder && (
+            <div {...stylex.props(styles.placeholder, sizeStyle)}>
+              {placeholder}
+            </div>
+          )}
+          <code
+            ref={editorRef}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            contentEditable={isReadOnly ? false : ('plaintext-only' as any)}
+            role="textbox"
+            aria-multiline="true"
+            aria-readonly={isReadOnly}
+            spellCheck={false}
+            onInput={handleInput}
+            onKeyDown={handleKeyDown}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+            onCompositionStart={handleCompositionStart}
+            onCompositionEnd={handleCompositionEnd}
+            {...stylex.props(styles.editor, sizeStyle)}
+          />
+        </div>
       </div>
     </div>
   );
