@@ -30,6 +30,8 @@ const styles = stylex.create({
     marginInline: 'var(--spacing-6)',
     borderRadius: 'var(--radius-page)',
     display: 'block',
+    maxHeight: 500,
+    objectFit: 'cover',
   },
 });
 
