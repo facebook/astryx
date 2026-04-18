@@ -16,6 +16,12 @@ const styles = stylex.create({
   textCenter: {
     textAlign: 'center',
   },
+  titleResponsive: {
+    fontSize: {
+      default: 'var(--text-display-2-size)',
+      '@media (max-width: 640px)': 'var(--text-display-3-size)',
+    },
+  },
   topSpacing: {
     paddingTop: 'var(--spacing-10)',
   },
@@ -54,7 +60,7 @@ export default function CenteredHero() {
               as="h1"
               weight="bold"
               textWrap="balance"
-              xstyle={styles.textCenter}>
+              xstyle={[styles.textCenter, styles.titleResponsive]}>
               Little joys, everywhere you go
             </XDSText>
             <XDSText
