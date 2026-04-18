@@ -13,5 +13,11 @@ export {
 } from './tokenizer';
 export type {Token, TokenLine} from './tokenizer';
 
-export {applyHighlightRangesChunked, applyHighlightRangesBatch, cleanupRanges} from './highlightRanges';
+export {
+  applyHighlightRangesChunked,
+  applyHighlightRangesBatch,
+  cleanupRanges,
+} from './highlightRanges';
 export {ensureHighlightStyles, TOKEN_TYPES} from './highlightStyles';
+export {hasHighlightAPI, useTokenLines, buildSpanLine} from './codeShared';
+export type {FlatTokenizer, LineTokenizer} from './codeShared';

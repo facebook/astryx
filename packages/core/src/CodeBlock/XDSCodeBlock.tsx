@@ -8,7 +8,6 @@
 
 import {
   useLayoutEffect,
-  useEffect,
   useRef,
   useState,
   useCallback,
@@ -32,15 +31,10 @@ import {
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 import {XDSIcon} from '../Icon';
-import {
-  tokenize,
-  tokenizeAsync,
-  flatTokensToLines,
-  SYNC_TOKENIZE_THRESHOLD,
-} from './tokenizer';
-import type {Token, TokenLine} from './tokenizer';
+import type {TokenLine} from './tokenizer';
 import {ensureHighlightStyles} from './highlightStyles';
 import {applyHighlightRangesChunked} from './highlightRanges';
+import {hasHighlightAPI, useTokenLines, buildSpanLine} from './codeShared';
 
 // ---------------------------------------------------------------------------
 // Styles
@@ -321,95 +315,8 @@ export interface XDSCodeBlockProps extends XDSBaseProps<HTMLPreElement> {
 }
 
 // ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function hasHighlightAPI(): boolean {
-  return (
-    typeof CSS !== 'undefined' &&
-    'highlights' in CSS &&
-    typeof Highlight !== 'undefined'
-  );
-}
-
-/**
- * Hook: per-line tokens with sync/async + custom tokenizer compat.
- */
-function useTokenLines(
-  code: string,
-  language: string,
-  customTokenizer?: XDSCodeBlockProps['tokenizer'],
-): TokenLine[] {
-  const [asyncTokens, setAsyncTokens] = useState<TokenLine[] | null>(null);
-
-  const syncTokens = useMemo(() => {
-    if (code.length >= SYNC_TOKENIZE_THRESHOLD) return null;
-    if (customTokenizer) {
-      return flatTokensToLines(customTokenizer(code, language), code);
-    }
-    return tokenize(code, language);
-  }, [code, language, customTokenizer]);
-
-  useEffect(() => {
-    if (code.length < SYNC_TOKENIZE_THRESHOLD) return;
-
-    const abortController = new AbortController();
-
-    if (customTokenizer) {
-      Promise.resolve().then(() => {
-        if (abortController.signal.aborted) return;
-        const flat = customTokenizer(code, language);
-        setAsyncTokens(flatTokensToLines(flat, code));
-      });
-    } else {
-      tokenizeAsync(code, language, abortController.signal).then(tokens => {
-        if (!abortController.signal.aborted) {
-          setAsyncTokens(tokens);
-        }
-      });
-    }
-
-    return () => {
-      abortController.abort();
-      setAsyncTokens(null);
-    };
-  }, [code, language, customTokenizer]);
-
-  return syncTokens ?? asyncTokens ?? [];
-}
-
-// ---------------------------------------------------------------------------
 // Span-mode code element
 // ---------------------------------------------------------------------------
-
-function buildSpanLine(lineText: string, tokens: Token[]): React.ReactNode {
-  if (tokens.length === 0) {
-    return lineText || '\u200b';
-  }
-
-  const parts: React.ReactNode[] = [];
-  let cursor = 0;
-
-  for (const token of tokens) {
-    if (token.start > cursor) {
-      parts.push(lineText.slice(cursor, token.start));
-    }
-    const end = Math.min(token.end, lineText.length);
-    parts.push(
-      <span
-        key={`${token.start}-${token.type}`}
-        className={`xds-token-${token.type}`}>
-        {lineText.slice(token.start, end)}
-      </span>,
-    );
-    cursor = end;
-  }
-
-  if (cursor < lineText.length) {
-    parts.push(lineText.slice(cursor));
-  }
-  return parts.length > 0 ? parts : '\u200b';
-}
 
 function SpanCodeContent({
   lines,
