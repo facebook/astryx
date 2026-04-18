@@ -1,6 +1,7 @@
 import type {Plugin} from 'vite';
 import stylexBabelPlugin from '@stylexjs/babel-plugin';
 import stylex from '@stylexjs/unplugin';
+import path from 'path';
 
 const XDS_LIBRARY_PATTERN = 'node_modules/@xds/';
 const STYLEX_CSS_PATH = '/virtual:stylex.css';
@@ -37,20 +38,10 @@ export interface XDSVitePluginOptions {
  *
  *   reset < xds-base (library) < xds-theme < product (app)
  *
- * Usage:
- *   import {xdsStylex} from '@xds/vite-plugin';
- *
- *   export default defineConfig({
- *     plugins: [
- *       ...xdsStylex({
- *         stylexOptions: {
- *           dev: process.env.NODE_ENV === 'development',
- *           unstable_moduleResolution: { type: 'commonJS', rootDir: __dirname },
- *         },
- *       }),
- *       react(),
- *     ],
- *   });
+ * The babel wrapper plugin (@xds/build/babel) is injected into the
+ * unplugin's babelConfig.plugins so it runs BEFORE the hardcoded
+ * StyleX instance. Our wrapper transforms stylex.create() calls with
+ * the correct prefix per file, leaving nothing for the stock instance.
  */
 export function xdsStylex(options: XDSVitePluginOptions): Plugin[] {
   const {
@@ -62,10 +53,28 @@ export function xdsStylex(options: XDSVitePluginOptions): Plugin[] {
   const libraryLayer = layers.library ?? 'xds-base';
   const productLayer = layers.product ?? 'product';
 
-  // Create the base StyleX unplugin with layers enabled
+  // Inject our babel wrapper as a user plugin — it runs before the
+  // unplugin's hardcoded StyleX instance and handles prefix routing.
+  const xdsBabelPlugin = path.resolve(__dirname, 'babel.js');
+  const existingPlugins = stylexOptions.babelConfig?.plugins ?? [];
+
   const basePlugin = stylex.vite({
     ...stylexOptions,
     useCSSLayers: true,
+    babelConfig: {
+      ...stylexOptions.babelConfig,
+      plugins: [
+        [
+          xdsBabelPlugin,
+          {
+            ...(stylexOptions as any),
+            // Remove babelConfig to avoid circular reference
+            babelConfig: undefined,
+          },
+        ],
+        ...existingPlugins,
+      ],
+    },
   });
 
   // Layer order declaration plugin
@@ -88,9 +97,7 @@ export function xdsStylex(options: XDSVitePluginOptions): Plugin[] {
     configureServer(server) {
       let stylexPlugin: any = null;
 
-      // Return a function so it runs AFTER all configureServer hooks
       return () => {
-        // Find the stylex plugin
         for (const p of server.config.plugins.flat()) {
           if ((p as any)?.__stylexGetSharedStore) {
             stylexPlugin = p;
@@ -98,7 +105,6 @@ export function xdsStylex(options: XDSVitePluginOptions): Plugin[] {
           }
         }
 
-        // Prepend our middleware so it runs BEFORE the unplugin's
         server.middlewares.stack.unshift({
           route: '',
           handle: (req: any, res: any, next: any) => {
