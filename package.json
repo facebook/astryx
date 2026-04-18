@@ -33,8 +33,8 @@
     "canary": "node scripts/canary.mjs"
   },
   "devDependencies": {
-    "@axe-core/playwright": "^4.11.1",
-    "@changesets/cli": "^2.30.0",
+    "@axe-core/playwright": "^4.11.2",
+    "@changesets/cli": "^2.31.0",
     "@eslint/js": "^9.39.2",
     "@playwright/test": "^1.59.1",
     "@testing-library/user-event": "^14.5.0",
@@ -47,17 +47,17 @@
     "husky": "^9.1.7",
     "jscodeshift": "^17.3.0",
     "jsdom": "^27.4.0",
-    "prettier": "^3.8.2",
+    "prettier": "^3.8.3",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "tsup": "^8.3.0",
     "typescript": "^5.7.0",
     "typescript-eslint": "^8.58.2",
-    "vite-plugin-singlefile": "^2.3.2",
+    "vite-plugin-singlefile": "^2.3.3",
     "vitest": "^2.1.0"
   },
   "resolutions": {
-    "prettier": "^3.8.2"
+    "prettier": "^3.8.3"
   },
   "packageManager": "yarn@1.22.22",
   "lint-staged": {
