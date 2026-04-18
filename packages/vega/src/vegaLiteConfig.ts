@@ -142,7 +142,7 @@ export function buildVegaLiteConfig(token: TokenResolver): VegaLiteConfig {
         token('--color-data-blue-3'),
         token('--color-data-blue-2'),
         token('--color-data-blue-1'),
-        token('--color-data-neutral'),
+        token('--color-data-gray-1'),
         token('--color-data-red-1'),
         token('--color-data-red-2'),
         token('--color-data-red-3'),
