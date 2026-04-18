@@ -27,6 +27,7 @@ const styles = stylex.create({
 export default function CenteredHero() {
   return (
     <XDSAppShell
+      variant="surface"
       topNav={
         <XDSTopNav
           label="Main navigation"
