@@ -176,6 +176,10 @@ export function buildVegaLiteConfig(token: TokenResolver): VegaLiteConfig {
       bandPaddingInner: 0.1,
     },
 
+    text: {
+      color: token('--color-text-primary'),
+    },
+
     title: {
       anchor: 'start',
       color: token('--color-text-primary'),
