@@ -23,7 +23,7 @@ export default function CenteredHero() {
     <XDSVStack gap={6}>
       <XDSTopNav
         label="Main navigation"
-        heading={<XDSTopNavHeading heading="ACME" />}
+        heading={<XDSTopNavHeading heading="DAIILY" />}
         endContent={
           <>
             <XDSTopNavItem label="Products" href="#" />
