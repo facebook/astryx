@@ -40,10 +40,13 @@ const styles = stylex.create({
   galleryImage: {
     width: '100%',
     height: '100%',
-    maxHeight: 550,
     objectFit: 'cover',
-    borderRadius: 'var(--radius-container)',
     display: 'block',
+  },
+  galleryImageWrapper: {
+    maxHeight: 550,
+    overflow: 'hidden',
+    borderRadius: 'var(--radius-container)',
   },
   galleryContainer: {
     paddingInline: 'var(--spacing-6)',
@@ -108,12 +111,13 @@ export default function GalleryHero() {
         <div {...stylex.props(styles.galleryContainer)}>
           <div {...stylex.props(styles.galleryGrid)}>
             {IMAGES.map((image, i) => (
-              <img
-                key={i}
-                {...stylex.props(styles.galleryImage)}
-                src={image.src}
-                alt={image.alt}
-              />
+              <div key={i} {...stylex.props(styles.galleryImageWrapper)}>
+                <img
+                  {...stylex.props(styles.galleryImage)}
+                  src={image.src}
+                  alt={image.alt}
+                />
+              </div>
             ))}
           </div>
         </div>
