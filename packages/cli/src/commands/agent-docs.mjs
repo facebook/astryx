@@ -126,6 +126,7 @@ export function generateCompressedIndex(version, {coreDir, zh = false, lang, run
   lines.push('No style={{}} — use the xstyle prop on XDS components for custom styling.');
   lines.push('If a component prop does what you need, use it — never replicate with CSS/stylex.');
   lines.push(`No magic values — run \`${run} docs tokens\` for spacing/color/radius.`);
+  lines.push(`To change accent/brand colors: \`${run} theme\` — never override --xds-color-* in :root.`);
   lines.push('');
 
   // CLI quick reference
