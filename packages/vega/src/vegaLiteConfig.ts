@@ -164,11 +164,11 @@ export function buildVegaLiteConfig(token: TokenResolver): VegaLiteConfig {
         token('--color-data-blue-1'),
       ],
       ramp: [
-        token('--color-data-blue-5'),
-        token('--color-data-blue-4'),
-        token('--color-data-blue-3'),
-        token('--color-data-blue-2'),
         token('--color-data-blue-1'),
+        token('--color-data-blue-2'),
+        token('--color-data-blue-3'),
+        token('--color-data-blue-4'),
+        token('--color-data-blue-5'),
       ],
     },
 
