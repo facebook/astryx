@@ -34,7 +34,7 @@
     "@babel/preset-typescript": "^7.25.0",
     "@stylexjs/babel-plugin": "^0.18.2",
     "@stylexjs/postcss-plugin": "^0.18.2",
-    "@types/node": "^22.0.0",
+    "@types/node": "^25.6.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "typescript": "^5.7.0"
