@@ -12,10 +12,12 @@ import {
   useMemo,
   useRef,
   useState,
+  useCallback,
   useLayoutEffect,
 } from 'react';
 import {scaleLinear, scaleBand} from 'd3-scale';
 import type {ScaleLinear} from 'd3-scale';
+import {isBandScale} from './utils';
 import {ChartProvider} from './ChartContext';
 import type {ChartMargin, ChartScale} from './types';
 
@@ -64,6 +66,12 @@ export interface XDSChartProps {
    * Ignored for band (categorical) scales.
    */
   xDomain?: [number, number];
+  /**
+   * Set touch-action on the chart container. Use 'none' when interactive
+   * components (brush, zoom, crosshair) are present to prevent scroll
+   * interference on mobile.
+   */
+  interactive?: boolean;
   /** Chart contents — axes, marks, tooltips */
   children: ReactNode;
 }
@@ -91,9 +99,11 @@ export function XDSChart({
   yBaseline = 'auto',
   yDomain: yDomainProp,
   xDomain: xDomainProp,
+  interactive = false,
   children,
 }: XDSChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
 
   useLayoutEffect(() => {
@@ -105,6 +115,20 @@ export function XDSChart({
     observer.observe(containerRef.current);
     return () => observer.disconnect();
   }, []);
+
+  // Block scroll/zoom on the container when interactive.
+  // Must be non-passive to actually prevent default on touch events.
+  useLayoutEffect(() => {
+    const el = containerRef.current;
+    if (!el || !interactive) return;
+    const prevent = (e: TouchEvent) => e.preventDefault();
+    el.addEventListener('touchstart', prevent, {passive: false});
+    el.addEventListener('touchmove', prevent, {passive: false});
+    return () => {
+      el.removeEventListener('touchstart', prevent);
+      el.removeEventListener('touchmove', prevent);
+    };
+  }, [interactive]);
 
   const margin = useMemo(
     () => ({...DEFAULT_MARGIN, ...marginOverride}),
@@ -181,6 +205,39 @@ export function XDSChart({
     return scaleLinear().domain([min, max]).range([innerHeight, 0]).nice();
   }, [data, yKeys, innerHeight, yBaseline, yDomainProp]);
 
+  const pixelToData = useCallback(
+    (px: number, py: number) => {
+      const y = yScale.invert(py);
+      let x: number | string | null = null;
+      if (isBandScale(xScale)) {
+        const domain = xScale.domain();
+        const step = xScale.step();
+        const idx = Math.min(domain.length - 1, Math.max(0, Math.floor(px / step)));
+        x = domain[idx];
+      } else {
+        x = (xScale as ScaleLinear<number, number>).invert(px);
+      }
+      return {x, y, px, py};
+    },
+    [xScale, yScale],
+  );
+
+  const pointerToData = useCallback(
+    (e: React.PointerEvent) => {
+      const svg = svgRef.current;
+      if (!svg) return {x: null, y: 0, px: 0, py: 0};
+      const pt = svg.createSVGPoint();
+      pt.x = e.clientX;
+      pt.y = e.clientY;
+      // Transform to the inner <g> coordinate space (accounts for margins)
+      const gEl = svg.querySelector('g');
+      const ctm = gEl?.getScreenCTM?.()?.inverse();
+      const local = ctm ? pt.matrixTransform(ctm) : {x: 0, y: 0};
+      return pixelToData(local.x, local.y);
+    },
+    [pixelToData],
+  );
+
   const ctx = useMemo(
     () => ({
       width: innerWidth,
@@ -190,14 +247,17 @@ export function XDSChart({
       data,
       xScale,
       yScale,
+      svgRef,
+      pointerToData,
+      pixelToData,
     }),
-    [innerWidth, innerHeight, margin, xKey, data, xScale, yScale],
+    [innerWidth, innerHeight, margin, xKey, data, xScale, yScale, pointerToData, pixelToData],
   );
 
   return (
-    <div ref={containerRef} style={{width: '100%'}}>
+    <div ref={containerRef} style={{width: '100%', touchAction: interactive ? 'none' : undefined, userSelect: interactive ? 'none' : undefined} as React.CSSProperties}>
       {containerWidth > 0 && (
-        <svg width={containerWidth} height={height}>
+        <svg ref={svgRef} width={containerWidth} height={height} style={interactive ? {touchAction: 'none'} : undefined}>
           <defs>
             <clipPath id="xds-chart-plot">
               <rect x={0} y={0} width={innerWidth} height={innerHeight} />

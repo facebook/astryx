@@ -146,3 +146,17 @@ export {
   type Point3D,
   type ProjectedPoint,
 } from './ThreeD';
+
+// Chart interactions
+export {
+  XDSChartBrush,
+  type XDSChartBrushProps,
+  XDSChartCrosshair,
+  type XDSChartCrosshairProps,
+  XDSChartZoom,
+  type XDSChartZoomProps,
+  XDSChartSelect,
+  type XDSChartSelectProps,
+  XDSChartReferenceLine,
+  type XDSChartReferenceLineProps,
+} from './Chart';

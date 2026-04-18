@@ -31,7 +31,7 @@ export {
   type XDSChartLegendItem,
 } from './XDSChartLegend';
 export {useChart} from './ChartContext';
-export type {ChartContext, ChartMargin, ChartScale} from './types';
+export type {ChartContext, ChartMargin, ChartScale, DataPoint} from './types';
 export {m4Reduce, type M4Point} from './m4';
 export {isBandScale, xPixel} from './utils';
 export {useXDSChartColors} from './useXDSChartColors';
@@ -59,3 +59,14 @@ export {
   CIRCLE_FRAG_BODY,
   POINT_SIZE_COMPENSATION,
 } from './webgl';
+export {XDSChartBrush, type XDSChartBrushProps} from './XDSChartBrush';
+export {
+  XDSChartCrosshair,
+  type XDSChartCrosshairProps,
+} from './XDSChartCrosshair';
+export {XDSChartZoom, type XDSChartZoomProps} from './XDSChartZoom';
+export {XDSChartSelect, type XDSChartSelectProps} from './XDSChartSelect';
+export {
+  XDSChartReferenceLine,
+  type XDSChartReferenceLineProps,
+} from './XDSChartReferenceLine';

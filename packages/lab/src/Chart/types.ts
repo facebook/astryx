@@ -20,6 +20,18 @@ export type ChartScale =
   | ScaleBand<string>
   | ScaleTime<number, number>;
 
+/** Resolved data coordinates from pixel position */
+export interface DataPoint {
+  /** X value in data space (number for linear, string for band) */
+  x: number | string | null;
+  /** Y value in data space */
+  y: number;
+  /** Pixel x within the plot area */
+  px: number;
+  /** Pixel y within the plot area */
+  py: number;
+}
+
 /** Scale context provided by XDSChart to children */
 export interface ChartContext {
   /** Inner width (SVG width minus margins) */
@@ -36,4 +48,15 @@ export interface ChartContext {
   xScale: ChartScale;
   /** Y scale — typically linear */
   yScale: ScaleLinear<number, number>;
+  /** Ref to the SVG element — used for coordinate transforms */
+  svgRef: React.RefObject<SVGSVGElement | null>;
+  /**
+   * Convert a pointer event to data coordinates.
+   * Handles SVG coordinate transform (margin offset) automatically.
+   */
+  pointerToData: (e: React.PointerEvent) => DataPoint;
+  /**
+   * Convert pixel coordinates (relative to plot area) to data values.
+   */
+  pixelToData: (px: number, py: number) => DataPoint;
 }

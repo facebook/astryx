@@ -46,6 +46,10 @@ export interface XDSRadialChartProps {
    */
   padAngle?: number;
   /** Chart contents */
+  /**
+   * Enable touch interaction mode — blocks scroll on mobile.
+   */
+  interactive?: boolean;
   children: ReactNode;
 }
 
