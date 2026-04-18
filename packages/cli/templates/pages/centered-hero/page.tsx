@@ -16,6 +16,9 @@ const styles = stylex.create({
   textCenter: {
     textAlign: 'center',
   },
+  topSpacing: {
+    paddingTop: 'var(--spacing-10)',
+  },
   heroImage: {
     width: 'calc(100% - var(--spacing-6) * 2)',
     marginInline: 'var(--spacing-6)',
@@ -44,7 +47,7 @@ export default function CenteredHero() {
       }
       contentPadding={0}>
       <XDSVStack gap={6}>
-        <XDSVStack gap={6} hAlign="center">
+        <XDSVStack gap={6} hAlign="center" xstyle={styles.topSpacing}>
           <XDSVStack gap={3} hAlign="center">
             <XDSText
               type="display-2"
