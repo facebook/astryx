@@ -81,7 +81,7 @@ export default function GalleryHero() {
       <XDSVStack gap={6}>
         <XDSVStack gap={6} hAlign="center" xstyle={styles.topSpacing}>
           <XDSVStack gap={3} hAlign="center">
-            <XDSBadge label="New — Now with more delight ✨" variant="pink" />
+            <XDSBadge label="Now with more delight ✨" variant="pink" />
             <XDSText
               type="display-2"
               as="h1"
