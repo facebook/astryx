@@ -6252,11 +6252,6 @@ vega-typings@~2.1.0:
     vega-expression "^6.1.0"
     vega-util "^2.1.0"
 
-vega-util@^1.17.2:
-  version "1.17.4"
-  resolved "https://registry.yarnpkg.com/vega-util/-/vega-util-1.17.4.tgz#b35781fe8e8d030e6519746682843d7ef9ff6d27"
-  integrity sha512-+y3ZW7dEqM8Ck+KRsd+jkMfxfE7MrQxUyIpNjkfhIpGEreym+aTn7XUw1DKXqclr8mqTQvbilPo16B3lnBr0wA==
-
 vega-util@^2.1.0, vega-util@~2.1.0:
   version "2.1.0"
   resolved "https://registry.yarnpkg.com/vega-util/-/vega-util-2.1.0.tgz#54f42d6a80e5904ea9ac6c0327e6ac57601ce85f"
