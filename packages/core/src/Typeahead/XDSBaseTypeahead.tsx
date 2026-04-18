@@ -166,7 +166,10 @@ const styles = stylex.create({
     borderStyle: 'none',
     padding: 0,
     fontFamily: typographyVars['--font-family-body'],
-    fontSize: typeScaleVars['--text-body-size'],
+    fontSize: {
+      default: typeScaleVars['--text-body-size'],
+      '@media (pointer: coarse)': '1rem',
+    },
     lineHeight: typeScaleVars['--text-body-leading'],
     color: colorVars['--color-text-primary'],
     backgroundColor: 'transparent',
