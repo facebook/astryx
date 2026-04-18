@@ -19,7 +19,7 @@
     "src"
   ],
   "scripts": {
-    "build": "tsup",
+    "build": "tsup && tsc --project tsconfig.json --emitDeclarationOnly --declaration --noEmit false --outDir dist",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit"
   },
@@ -32,7 +32,7 @@
   "devDependencies": {
     "@types/react": "^19.2.14",
     "tsup": "^8.3.0",
-    "typescript": "^5.7.0",
+    "typescript": "^6.0.3",
     "vega": "^6.2.0",
     "vega-lite": "^6.4.2",
     "vega-util": "^2.1.0"

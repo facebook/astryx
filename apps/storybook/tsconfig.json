@@ -1,9 +1,10 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "baseUrl": ".",
     "paths": {
-      "@xds/core": ["../../packages/core/src/index.ts"],
+      "@xds/core": [
+        "../../packages/core/src/index.ts"
+      ],
       "@xds/core/*": [
         "../../packages/core/src/*/index.ts",
         "../../packages/core/src/*"
@@ -14,5 +15,8 @@
       ]
     }
   },
-  "include": [".storybook/**/*", "stories/**/*"]
+  "include": [
+    ".storybook/**/*",
+    "stories/**/*"
+  ]
 }
