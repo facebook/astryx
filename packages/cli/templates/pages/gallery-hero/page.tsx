@@ -5,6 +5,7 @@ import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
 import {XDSIcon} from '@xds/core/Icon';
+import {XDSBadge} from '@xds/core/Badge';
 import {XDSAppShell} from '@xds/core/AppShell';
 import {XDSTopNav, XDSTopNavHeading, XDSTopNavItem} from '@xds/core/TopNav';
 import {ArrowRightIcon} from '@heroicons/react/20/solid';
@@ -80,6 +81,7 @@ export default function GalleryHero() {
       <XDSVStack gap={6}>
         <XDSVStack gap={6} hAlign="center" xstyle={styles.topSpacing}>
           <XDSVStack gap={3} hAlign="center">
+            <XDSBadge label="New — Now with more delight ✨" variant="pink" />
             <XDSText
               type="display-2"
               as="h1"
@@ -100,12 +102,12 @@ export default function GalleryHero() {
           <XDSHStack gap={3}>
             <XDSButton
               label="Get started"
-              variant="primary"
+              variant="secondary"
               endContent={
                 <XDSIcon icon={ArrowRightIcon} size="sm" color="inherit" />
               }
             />
-            <XDSButton label="Learn more" variant="secondary" />
+            <XDSButton label="Learn more" variant="ghost" />
           </XDSHStack>
         </XDSVStack>
         <div {...stylex.props(styles.galleryContainer)}>
