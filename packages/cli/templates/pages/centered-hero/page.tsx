@@ -5,7 +5,7 @@ import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
 import {XDSIcon} from '@xds/core/Icon';
-import {XDSSection} from '@xds/core/Section';
+import {XDSAppShell} from '@xds/core/AppShell';
 import {XDSTopNav, XDSTopNavHeading, XDSTopNavItem} from '@xds/core/TopNav';
 import {ArrowRightIcon} from '@heroicons/react/20/solid';
 
@@ -16,24 +16,33 @@ const styles = stylex.create({
   textCenter: {
     textAlign: 'center',
   },
+  heroImage: {
+    width: 'calc(100% - var(--spacing-6) * 2)',
+    marginInline: 'var(--spacing-6)',
+    borderRadius: 'var(--radius-page)',
+    display: 'block',
+  },
 });
 
 export default function CenteredHero() {
   return (
-    <XDSVStack gap={6}>
-      <XDSTopNav
-        label="Main navigation"
-        heading={<XDSTopNavHeading heading="DAIILY" />}
-        endContent={
-          <>
-            <XDSTopNavItem label="Products" href="#" />
-            <XDSTopNavItem label="Solutions" href="#" />
-            <XDSTopNavItem label="Pricing" href="#" />
-            <XDSTopNavItem label="About" href="#" />
-          </>
-        }
-      />
-      <XDSSection variant="transparent" padding={6}>
+    <XDSAppShell
+      topNav={
+        <XDSTopNav
+          label="Main navigation"
+          heading={<XDSTopNavHeading heading="DAIILY" />}
+          endContent={
+            <>
+              <XDSTopNavItem label="Products" href="#" />
+              <XDSTopNavItem label="Solutions" href="#" />
+              <XDSTopNavItem label="Pricing" href="#" />
+              <XDSTopNavItem label="About" href="#" />
+            </>
+          }
+        />
+      }
+      contentPadding={0}>
+      <XDSVStack gap={6}>
         <XDSVStack gap={6} hAlign="center">
           <XDSVStack gap={3} hAlign="center">
             <XDSText
@@ -50,7 +59,7 @@ export default function CenteredHero() {
               textWrap="balance"
               xstyle={styles.textCenter}>
               Sometimes all it takes is one small thing to turn your whole day
-              around. That&apos;s what good design is for.
+              around. That\u2019s what good design is for.
             </XDSText>
           </XDSVStack>
           <XDSHStack gap={3}>
@@ -64,17 +73,12 @@ export default function CenteredHero() {
             <XDSButton label="Learn more" variant="secondary" />
           </XDSHStack>
         </XDSVStack>
-      </XDSSection>
-      <img
-        src={IMAGE_URL}
-        alt="Serene landscape with cotton fields and towering clouds"
-        style={{
-          width: 'calc(100% - var(--spacing-6) * 2)',
-          marginInline: 'var(--spacing-6)',
-          borderRadius: 'var(--radius-page)',
-          display: 'block',
-        }}
-      />
-    </XDSVStack>
+        <img
+          {...stylex.props(styles.heroImage)}
+          src={IMAGE_URL}
+          alt="Serene landscape with cotton fields and towering clouds"
+        />
+      </XDSVStack>
+    </XDSAppShell>
   );
 }
