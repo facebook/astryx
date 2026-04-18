@@ -9,8 +9,8 @@
  * Zero runtime dependencies — all math is self-contained.
  *
  * HCT combines:
- * - Hue from CAM16 (perceptually uniform hue)
- * - Chroma from CAM16 (colorfulness)
+ * - Hue from CIELab (perceptually uniform hue)
+ * - Chroma approximated via CIELab C*ab (colorfulness)
  * - Tone from L* (CIE Lightness, 0=black, 100=white)
  */
 

@@ -122,7 +122,7 @@ export function expandColorScale(
     '--color-on-accent': ld(P[100], P[20]),
     '--color-neutral': ld(hexWithAlpha(N[10], 0.1), hexWithAlpha(N[90], 0.2)),
     '--color-background-surface': ld(N[99], N[10]),
-    '--color-background-body': ld(N[95], N[5] ?? N[0]),
+    '--color-background-body': ld(N[95], N[5]),
     '--color-overlay': ld(hexWithAlpha(N[10], 0.4), hexWithAlpha(N[10], 0.6)),
     '--color-overlay-hover': ld(
       hexWithAlpha(N[10], 0.05),
@@ -168,9 +168,5 @@ export function expandColorScale(
     '--color-skeleton': ld(NV[70], NV[30]),
     '--color-shadow': ld(hexWithAlpha(N[0], 0.1), hexWithAlpha(N[0], 0.3)),
     '--color-tint-hover': ld('black', 'white'),
-
-    // Inset shadows (input border rings) — accent-derived for hover/selected
-    '--shadow-inset-hover': `inset 0px 0px 0px 2px ${hexWithAlpha(P[40], 0.3)}`,
-    '--shadow-inset-selected': `inset 0px 0px 0px 2px ${hexWithAlpha(P[40], 0.5)}`,
   };
 }

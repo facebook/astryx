@@ -11,6 +11,9 @@ import {defineTheme} from '@xds/core/theme';
 export const brutalistTheme = defineTheme({
   name: 'brutalist',
 
+  // Hot pink accent — derives accent, background, text, border tokens via HCT
+  color: {accent: '#FF1493'},
+
   // Monospace everything — body sets Courier, heading inherits
   typography: {
     body: {family: 'Courier New', fallbacks: '"Courier", monospace'},
@@ -26,12 +29,6 @@ export const brutalistTheme = defineTheme({
   motion: {fast: 65, medium: 150, slow: 350, ratio: 0.75, easing: 'linear'},
 
   tokens: {
-    // Colors — high contrast, no subtlety
-    '--color-accent': ['#FF1493', '#FF69B4'],
-    '--color-accent-muted': ['#FF149333', '#FF69B43F'],
-    '--color-background-surface': ['#FFFFFF', '#000000'],
-    '--color-background-body': ['#F5F5F5', '#111111'],
-    '--color-background-card': ['#FFFFFF', '#000000'],
     // Contrast on hot pink accent — white in both modes
     '--color-on-accent': ['#FFFFFF', '#FFFFFF'],
     '--color-on-success': ['#FFFFFF', '#FFFFFF'],
