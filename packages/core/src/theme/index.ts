@@ -152,3 +152,9 @@ export type {
   TypographyRole,
   FontWeight,
 } from './types';
+
+export {
+  derivedVarRegistry,
+  getDerivedVars,
+  type DerivedVarEntry,
+} from './derivedVarRegistry';

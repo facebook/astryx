@@ -36,6 +36,7 @@ import {
   type ResolvedOnMedia,
 } from './onMediaTokens';
 import {parseStyleKey} from '../utils/parseStyleKey';
+import {getDerivedVars} from './derivedVarRegistry';
 import {
   colorDefaults,
   spacingDefaults,
@@ -825,7 +826,9 @@ export function generateThemeRules(theme: XDSDefinedTheme): string[] {
           }
 
           // Container padding mapping: intercept padding on container
-          // components and emit container token declarations instead
+          // components and emit container token declarations instead.
+          // Also expand derived vars: when a theme sets a standard CSS
+          // property (e.g. borderRadius), emit the internal vars too.
           let finalProps = props;
           if (CONTAINER_COMPONENTS.has(component)) {
             const paddingProps = props.filter(([p]) => PADDING_PROPS.has(p));
@@ -837,6 +840,26 @@ export function generateThemeRules(theme: XDSDefinedTheme): string[] {
               const containerTokens = expandContainerPadding(component, parsed);
               finalProps = [...nonPaddingProps, ...containerTokens];
             }
+          }
+
+          // Derived var expansion: for each CSS property, check if the
+          // component has derived var entries and emit additional declarations.
+          // Entries are processed in order (priority).
+          const derivedProps: [string, string][] = [];
+          for (const [prop, value] of finalProps) {
+            const derived = getDerivedVars(component, prop);
+            for (const entry of derived) {
+              if (entry.vars) {
+                for (const varName of entry.vars) {
+                  derivedProps.push([varName, value]);
+                }
+              }
+              // 'container' expansion is already handled above via
+              // CONTAINER_COMPONENTS — no double-emit needed here
+            }
+          }
+          if (derivedProps.length > 0) {
+            finalProps = [...finalProps, ...derivedProps];
           }
 
           // Emit base rule

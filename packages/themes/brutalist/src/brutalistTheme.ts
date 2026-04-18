@@ -50,10 +50,21 @@ export const brutalistTheme = defineTheme({
         textTransform: 'uppercase',
       },
     },
-    // Cards get heavy borders
+    // Cards get heavy borders + explicit padding via derived expansion
     card: {
       base: {
         borderWidth: '3px',
+        borderStyle: 'solid',
+        borderColor: 'var(--color-text-primary)',
+        padding: '24px',
+      },
+    },
+    // Dropdown menus: sharp corners + tight padding via derived expansion
+    'dropdown-menu': {
+      base: {
+        borderRadius: '0px',
+        padding: '4px',
+        borderWidth: '2px',
         borderStyle: 'solid',
         borderColor: 'var(--color-text-primary)',
       },

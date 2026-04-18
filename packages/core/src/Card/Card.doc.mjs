@@ -73,6 +73,10 @@ export const docs = {
         default: 'var(--spacing-4)',
       },
     ],
+    derived: [
+      {property: 'borderRadius', description: 'Border radius of the card', default: 'var(--radius-container)', vars: ['--card-radius']},
+      {property: 'padding', description: 'Container padding of the card', default: 'var(--spacing-4)', expand: 'container'},
+    ],
   },
 };
 
@@ -116,6 +120,10 @@ export const docsZh = {
           "Controls Card container padding. Accepts standard CSS padding shorthand (e.g. '16px 20px'). Automatically mapped to container tokens for layout integration. Supports paddingBlock/paddingInline for axis-specific control.",
         default: 'var(--spacing-4)',
       },
+    ],
+    derived: [
+      {property: 'borderRadius', description: 'Border radius of the card', default: 'var(--radius-container)', vars: ['--card-radius']},
+      {property: 'padding', description: 'Container padding of the card', default: 'var(--spacing-4)', expand: 'container'},
     ],
   },
 };

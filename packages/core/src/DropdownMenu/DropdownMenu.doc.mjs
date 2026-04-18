@@ -12,6 +12,10 @@ export const docs = {
       {name: '--dropdown-radius', description: 'Border radius of the menu popup', default: 'var(--radius-element)'},
       {name: '--dropdown-padding', description: 'Inner padding of the menu popup', default: 'var(--spacing-1)'},
     ],
+    derived: [
+      {property: 'borderRadius', description: 'Border radius of the menu popup', default: 'var(--radius-element)', vars: ['--dropdown-radius']},
+      {property: 'padding', description: 'Inner padding of the menu popup', default: 'var(--spacing-1)', vars: ['--dropdown-padding']},
+    ],
   },
   components: [
     {
@@ -192,6 +196,10 @@ export const docsZh = {
     vars: [
       {name: '--dropdown-radius', description: 'Border radius of the menu popup', default: 'var(--radius-element)'},
       {name: '--dropdown-padding', description: 'Inner padding of the menu popup', default: 'var(--spacing-1)'},
+    ],
+    derived: [
+      {property: 'borderRadius', description: 'Border radius of the menu popup', default: 'var(--radius-element)', vars: ['--dropdown-radius']},
+      {property: 'padding', description: 'Inner padding of the menu popup', default: 'var(--spacing-1)', vars: ['--dropdown-padding']},
     ],
   },
   components: [

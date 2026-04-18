@@ -96,6 +96,52 @@ export interface CSSPropertyDoc {
 }
 
 /**
+ * Maps a standard CSS property to one or more internal CSS custom properties.
+ *
+ * Theme authors write standard CSS (e.g. `borderRadius: '32px'`). The theme
+ * pipeline reads this metadata and expands it: emitting both the CSS property
+ * AND the internal var(s) that the component reads.
+ *
+ * Entries are ordered by priority — earlier entries are emitted first.
+ * When multiple entries share the same `property`, all fire (in order).
+ *
+ * The special `expand: 'container'` triggers the 7-token container padding
+ * expansion instead of setting a specific var.
+ *
+ * @example
+ * ```
+ * // Simple: borderRadius → one internal var
+ * { property: 'borderRadius', vars: ['--_card-radius'] }
+ *
+ * // Container expansion: padding → 7 container tokens
+ * { property: 'padding', expand: 'container' }
+ *
+ * // Multiple vars from one property
+ * { property: 'padding', vars: ['--_composer-padding', '--_composer-button-offset'] }
+ *
+ * // Multiple entries for the same property (both fire, in order)
+ * { property: 'padding', expand: 'container' },
+ * { property: 'padding', vars: ['--_card-padding'] },
+ * ```
+ */
+export interface DerivedVar {
+  /** The standard CSS property name (camelCase) that theme authors write.
+   *  e.g. `'borderRadius'`, `'padding'`, `'paddingBlock'` */
+  property: string;
+  /** What this derived mapping controls, in 1-2 sentences. */
+  description?: string;
+  /** Default value as a CSS expression if not set by theme.
+   *  e.g. `'var(--radius-container)'`, `'var(--spacing-4)'` */
+  default?: string;
+  /** Internal CSS custom property names to set when this property appears
+   *  in a theme's component overrides. Omit when using `expand`. */
+  vars?: string[];
+  /** Named expansion strategy instead of specific vars.
+   *  `'container'` — expands padding to 7 container layout tokens. */
+  expand?: 'container';
+}
+
+/**
  * Documents a CSS custom property exposed by a component for theming.
  * These vars are set on the component's root element and can be overridden
  * via `defineTheme` component overrides.
@@ -256,6 +302,12 @@ interface BaseDoc {
      *  via component overrides. Only document supported public properties —
      *  internal variables must not be listed here. */
     cssProperties?: CSSPropertyDoc[];
+    /** Maps standard CSS properties to internal vars for theme pipeline
+     *  expansion. Ordered by priority — earlier entries emit first.
+     *  The pipeline reads this to know: when a theme sets `borderRadius`
+     *  on this component, also emit `--_card-radius`.
+     *  @see DerivedVar */
+    derived?: DerivedVar[];
   };
   /** Component usage documentation — concise summary, best practices,
    *  and optional visual anatomy. */
