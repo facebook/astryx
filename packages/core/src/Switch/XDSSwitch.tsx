@@ -410,12 +410,9 @@ export function XDSSwitch({
         isRequired={isRequired}
         labelIcon={labelIcon}
         labelTooltip={labelTooltip}
+        description={description}
+        descriptionID={descriptionID}
       />
-      {description && !isLabelHidden && (
-        <span id={descriptionID} {...stylex.props(styles.description)}>
-          {description}
-        </span>
-      )}
     </div>
   );
 

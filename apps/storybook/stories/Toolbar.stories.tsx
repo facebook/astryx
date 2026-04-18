@@ -205,7 +205,7 @@ export const TableToolbar: Story = {
         label="Table filters"
         startContent={
           <>
-            <XDSTextInput placeholder="Search..." size="sm" />
+            <XDSTextInput label="Search" isLabelHidden placeholder="Search..." size="sm" />
             <XDSButton label="Status" variant="outline" size="sm" />
             <XDSButton label="Priority" variant="outline" size="sm" />
             <XDSButton label="Assignee" variant="outline" size="sm" />
@@ -335,7 +335,7 @@ export const StackedToolbars: Story = {
         variant="wash"
         startContent={
           <>
-            <XDSTextInput placeholder="Search orders..." size="sm" />
+            <XDSTextInput label="Search orders" isLabelHidden placeholder="Search orders..." size="sm" />
             <XDSButton label="Status" variant="outline" size="sm" />
             <XDSButton label="Date range" variant="outline" size="sm" />
             <XDSButton label="Customer" variant="outline" size="sm" />

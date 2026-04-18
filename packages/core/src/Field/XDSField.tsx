@@ -19,11 +19,7 @@ import type {StyleXStyles} from '@stylexjs/stylex';
 import {XDSFieldLabel} from './XDSFieldLabel';
 import {XDSFieldStatus} from './XDSFieldStatus';
 import {
-  colorVars,
-  fontWeightVars,
   spacingVars,
-  typographyVars,
-  typeScaleVars,
 } from '../theme/tokens.stylex';
 import type {XDSIconType} from '../Icon';
 import {xdsClassName, mergeProps} from '../utils';
@@ -35,32 +31,6 @@ const styles = stylex.create({
   },
   containerGap: {
     gap: spacingVars['--spacing-1'],
-  },
-  labelHidden: {
-    borderStyle: 'none',
-    clip: 'rect(0, 0, 0, 0)',
-    height: 1,
-    left: 0,
-    margin: -1,
-    overflow: 'hidden',
-    padding: 0,
-    pointerEvents: 'none',
-    position: 'absolute',
-    top: 0,
-    userSelect: 'none',
-    whiteSpace: 'nowrap',
-    width: 1,
-  },
-  labelGroup: {
-    display: 'flex',
-    flexDirection: 'column',
-  },
-  description: {
-    fontFamily: typographyVars['--font-family-body'],
-    fontSize: typeScaleVars['--text-supporting-size'],
-    lineHeight: typeScaleVars['--text-supporting-leading'],
-    fontWeight: fontWeightVars['--font-weight-normal'],
-    color: colorVars['--color-text-secondary'],
   },
   inputStatusWrapper: {
     display: 'flex',
@@ -232,28 +202,18 @@ export function XDSField({
         style,
       )}
       {...props}>
-      <div {...stylex.props(styles.labelGroup)}>
-        <XDSFieldLabel
-          label={label}
-          inputID={inputID}
-          isLabelHidden={isLabelHidden}
-          isDisabled={isDisabled}
-          isOptional={isOptional}
-          isRequired={isRequired}
-          labelIcon={labelIcon}
-          labelTooltip={labelTooltip}
-        />
-        {description && (
-          <span
-            id={resolvedDescriptionID}
-            {...stylex.props(
-              styles.description,
-              isLabelHidden && styles.labelHidden,
-            )}>
-            {description}
-          </span>
-        )}
-      </div>
+      <XDSFieldLabel
+        label={label}
+        inputID={inputID}
+        isLabelHidden={isLabelHidden}
+        isDisabled={isDisabled}
+        isOptional={isOptional}
+        isRequired={isRequired}
+        labelIcon={labelIcon}
+        labelTooltip={labelTooltip}
+        description={description}
+        descriptionID={resolvedDescriptionID}
+      />
       {statusVariant === 'attached' ? (
         <div {...stylex.props(styles.inputStatusWrapper)}>
           {children}
