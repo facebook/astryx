@@ -6,6 +6,7 @@ import {XDSCenter} from '@xds/core/Center';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
 import {XDSAspectRatio} from '@xds/core/AspectRatio';
+import {XDSGrid} from '@xds/core/Grid';
 import {XDSDivider} from '@xds/core/Divider';
 import * as stylex from '@stylexjs/stylex';
 
@@ -25,11 +26,6 @@ const styles = stylex.create({
     '@media (max-width: 768px)': {
       gridTemplateColumns: '1fr',
     },
-  },
-  masonryGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(3, 1fr)',
-    gap: 'var(--spacing-3)',
   },
   image: {
     width: '100%',
@@ -110,13 +106,13 @@ function StatBlock({value, label}: {value: string; label: string}) {
 
 function ImageGrid() {
   return (
-    <div {...stylex.props(styles.masonryGrid)}>
+    <XDSGrid columns={3} gap={3}>
       {IMAGES.map((img, i) => (
         <XDSAspectRatio key={i} ratio={1}>
           <img src={img.src} alt={img.alt} {...stylex.props(styles.image)} />
         </XDSAspectRatio>
       ))}
-    </div>
+    </XDSGrid>
   );
 }
 
@@ -139,10 +135,10 @@ export default function SideGalleryTemplate() {
                   time.
                 </XDSHeading>
                 <XDSText type="body" color="secondary">
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed
-                  do eiusmod tempor incididunt ut labore et dolore magna aliqua
-                  ut enim ad minim excepteur sint occaecat cupidatat non
-                  proident.
+                  We believe the smallest details are the ones that matter most.
+                  A little color, a thoughtful touch, a moment that catches your
+                  eye and makes you pause; that&apos;s what turns an ordinary
+                  day into something worth remembering.
                 </XDSText>
               </XDSVStack>
 
