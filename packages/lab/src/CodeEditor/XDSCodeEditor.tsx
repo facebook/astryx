@@ -68,6 +68,7 @@ const styles = stylex.create({
     lineHeight: typeScaleVars['--text-code-leading'],
   },
   editorContainer: {
+    display: 'flex',
     flex: 1,
     overflow: 'auto',
   },
@@ -366,10 +367,7 @@ export function XDSCodeEditor({
   const showPlaceholder = placeholder && value === '';
 
   const containerStyle: React.CSSProperties | undefined = maxHeight
-    ? {
-        maxHeight: typeof maxHeight === 'number' ? `${maxHeight}px` : maxHeight,
-        overflowY: 'auto',
-      }
+    ? {maxHeight: typeof maxHeight === 'number' ? `${maxHeight}px` : maxHeight}
     : undefined;
 
   return (
@@ -380,44 +378,43 @@ export function XDSCodeEditor({
         stylex.props(styles.root, focused && styles.rootFocused, xstyle),
         className,
         style,
-        containerStyle ? {style: containerStyle} : undefined,
       )}
       {...props}>
-      {hasLineNumbers && (
-        <div
-          {...stylex.props(styles.gutter, gutterSizeStyle)}
-          aria-hidden="true">
-          {lines.map((_, i) => (
-            <div key={i} {...stylex.props(styles.gutterLine)}>
-              {i + 1}
-            </div>
-          ))}
-        </div>
-      )}
-      <div
-        {...stylex.props(styles.editorContainer)}
-        style={{position: 'relative'}}>
-        {showPlaceholder && (
-          <div {...stylex.props(styles.placeholder, sizeStyle)}>
-            {placeholder}
+      <div {...stylex.props(styles.editorContainer)} style={containerStyle}>
+        {hasLineNumbers && (
+          <div
+            {...stylex.props(styles.gutter, gutterSizeStyle)}
+            aria-hidden="true">
+            {lines.map((_, i) => (
+              <div key={i} {...stylex.props(styles.gutterLine)}>
+                {i + 1}
+              </div>
+            ))}
           </div>
         )}
-        <code
-          ref={editorRef}
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          contentEditable={isReadOnly ? false : ('plaintext-only' as any)}
-          role="textbox"
-          aria-multiline="true"
-          aria-readonly={isReadOnly}
-          spellCheck={false}
-          onInput={handleInput}
-          onKeyDown={handleKeyDown}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
-          onCompositionStart={handleCompositionStart}
-          onCompositionEnd={handleCompositionEnd}
-          {...stylex.props(styles.editor, sizeStyle)}
-        />
+        <div style={{position: 'relative', flex: 1}}>
+          {showPlaceholder && (
+            <div {...stylex.props(styles.placeholder, sizeStyle)}>
+              {placeholder}
+            </div>
+          )}
+          <code
+            ref={editorRef}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            contentEditable={isReadOnly ? false : ('plaintext-only' as any)}
+            role="textbox"
+            aria-multiline="true"
+            aria-readonly={isReadOnly}
+            spellCheck={false}
+            onInput={handleInput}
+            onKeyDown={handleKeyDown}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+            onCompositionStart={handleCompositionStart}
+            onCompositionEnd={handleCompositionEnd}
+            {...stylex.props(styles.editor, sizeStyle)}
+          />
+        </div>
       </div>
     </div>
   );
