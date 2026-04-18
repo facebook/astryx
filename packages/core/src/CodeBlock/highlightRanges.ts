@@ -12,6 +12,18 @@
 import type {Token, TokenLine} from './tokenizer';
 import {ensureHighlightStyles, TOKEN_TYPES} from './highlightStyles';
 
+/**
+ * contentvisibilityautostatechange event — not yet in all TS DOM libs.
+ */
+interface ContentVisibilityAutoStateChangeEvent extends Event {
+  readonly skipped: boolean;
+}
+
+interface CheckVisibilityOptions {
+  checkVisibilityCSS?: boolean;
+  contentVisibilityAuto?: boolean;
+}
+
 // ---------------------------------------------------------------------------
 // Dynamic ::highlight() style injection
 // ---------------------------------------------------------------------------
@@ -134,59 +146,165 @@ function cleanupRanges(ranges: RangeEntry[]): void {
 }
 
 // ---------------------------------------------------------------------------
-// Chunked application
+// Chunked application with lazy content-visibility support
 // ---------------------------------------------------------------------------
 
 const LINE_CHUNK_SIZE = 50;
 
 /**
- * Apply CSS Custom Highlight API ranges for all lines. Processes
- * lines in chunks via requestAnimationFrame so colors appear
- * progressively without blocking the main thread.
+ * Apply ranges for all [data-line] divs inside a container element.
+ * Returns the RangeEntry[] so the caller can clean them up later.
+ */
+function applyRangesToContainer(
+  container: Element,
+  tokenLines: TokenLine[],
+  globalLineOffset: number,
+  resolve: (tokenType: string) => Highlight,
+): RangeEntry[] {
+  const results: RangeEntry[] = [];
+  const lineDivs = container.querySelectorAll('[data-line]');
+  for (let i = 0; i < lineDivs.length; i++) {
+    const tokenIndex = globalLineOffset + i;
+    const tokens = tokenLines[tokenIndex];
+    if (tokens && tokens.length > 0) {
+      applyLineRanges(lineDivs[i], tokens, results, resolve);
+    }
+  }
+  return results;
+}
+
+/**
+ * Apply CSS Custom Highlight API ranges lazily as content-visibility
+ * chunks scroll into view. Visible chunks get ranges immediately;
+ * offscreen chunks get ranges when `contentvisibilityautostatechange`
+ * fires. Ranges are removed when chunks scroll back offscreen to
+ * keep memory usage proportional to the viewport.
  *
- * @param codeEl - The <code> element containing line divs
+ * For small files (no chunk wrappers / below LINE_CHUNK_THRESHOLD),
+ * all lines are direct children and get ranges immediately.
+ *
+ * @param codeEl - The <code> element containing line divs (possibly inside chunk wrappers)
  * @param tokenLines - Per-line token arrays from the tokenizer
- * @returns Cleanup function that cancels pending work and removes ranges
+ * @returns Cleanup function that removes all ranges and event listeners
  */
 export function applyHighlightRangesChunked(
   codeEl: HTMLElement,
   tokenLines: TokenLine[],
-  chunkSize: number = LINE_CHUNK_SIZE,
 ): () => void {
   ensureHighlightStyles();
 
   const resolve = createHighlightResolver();
-  const lineDivs = codeEl.querySelectorAll('[data-line]');
-  const myRanges: RangeEntry[] = [];
-  let cursor = 0;
-  let rafId = 0;
-  let cancelled = false;
 
-  function processChunk() {
-    if (cancelled) return;
+  // Detect chunk wrappers — direct children of <code> that contain [data-line] divs.
+  // If there are no wrappers (small file), lines are direct children.
+  const chunkWrappers: Element[] = [];
+  const chunkLineOffsets: number[] = [];
+  let lineCount = 0;
 
-    const end = Math.min(cursor + chunkSize, lineDivs.length);
-    for (let i = cursor; i < end; i++) {
-      const lineDiv = lineDivs[i];
-      const tokens = tokenLines[i];
-      if (tokens && tokens.length > 0) {
-        applyLineRanges(lineDiv, tokens, myRanges, resolve);
-      }
-    }
-    cursor = end;
-
-    if (cursor < lineDivs.length) {
-      rafId = requestAnimationFrame(processChunk);
+  for (let i = 0; i < codeEl.children.length; i++) {
+    const child = codeEl.children[i];
+    const lineDivs = child.querySelectorAll('[data-line]');
+    if (
+      lineDivs.length > 0 &&
+      child.tagName === 'DIV' &&
+      !child.hasAttribute('data-line')
+    ) {
+      // This is a chunk wrapper
+      chunkWrappers.push(child);
+      chunkLineOffsets.push(lineCount);
+      lineCount += lineDivs.length;
     }
   }
 
-  // First chunk synchronously for immediate partial coloring
-  processChunk();
+  // No chunk wrappers — small file, apply all ranges directly
+  if (chunkWrappers.length === 0) {
+    const allRanges: RangeEntry[] = [];
+    const lineDivs = codeEl.querySelectorAll('[data-line]');
+    for (let i = 0; i < lineDivs.length; i++) {
+      const tokens = tokenLines[i];
+      if (tokens && tokens.length > 0) {
+        applyLineRanges(lineDivs[i], tokens, allRanges, resolve);
+      }
+    }
+    return () => cleanupRanges(allRanges);
+  }
+
+  // Chunked path — lazy application per chunk
+  const chunkRanges = new Map<Element, RangeEntry[]>();
+  const listeners = new Map<Element, EventListener>();
+
+  function applyChunk(wrapper: Element, index: number) {
+    if (chunkRanges.has(wrapper)) return; // already applied
+    const ranges = applyRangesToContainer(
+      wrapper,
+      tokenLines,
+      chunkLineOffsets[index],
+      resolve,
+    );
+    chunkRanges.set(wrapper, ranges);
+  }
+
+  function removeChunk(wrapper: Element) {
+    const ranges = chunkRanges.get(wrapper);
+    if (ranges) {
+      cleanupRanges(ranges);
+      chunkRanges.delete(wrapper);
+    }
+  }
+
+  for (let i = 0; i < chunkWrappers.length; i++) {
+    const wrapper = chunkWrappers[i];
+
+    const handler = (e: Event) => {
+      // contentvisibilityautostatechange fires with .skipped = true when
+      // the element goes offscreen, false when it becomes visible.
+      const skipped = (e as ContentVisibilityAutoStateChangeEvent).skipped;
+      if (skipped) {
+        removeChunk(wrapper);
+      } else {
+        applyChunk(wrapper, i);
+      }
+    };
+
+    wrapper.addEventListener('contentvisibilityautostatechange', handler);
+    listeners.set(wrapper, handler);
+
+    // Apply immediately to chunks that are currently visible.
+    // A chunk with content-visibility: auto that is onscreen will have
+    // its content rendered — check via checkVisibility if available,
+    // otherwise apply eagerly for the first screen's worth.
+    const el = wrapper as HTMLElement & {
+      checkVisibility?: (opts?: CheckVisibilityOptions) => boolean;
+    };
+    if (typeof el.checkVisibility === 'function') {
+      if (
+        el.checkVisibility({
+          checkVisibilityCSS: true,
+          contentVisibilityAuto: true,
+        })
+      ) {
+        applyChunk(wrapper, i);
+      }
+    } else {
+      // Fallback: apply first few chunks synchronously (likely visible)
+      if (i < 5) {
+        applyChunk(wrapper, i);
+      }
+    }
+  }
 
   return function cleanup() {
-    cancelled = true;
-    cancelAnimationFrame(rafId);
-    cleanupRanges(myRanges);
+    // Remove all event listeners
+    for (const [wrapper, handler] of listeners) {
+      wrapper.removeEventListener('contentvisibilityautostatechange', handler);
+    }
+    listeners.clear();
+
+    // Clean up all active ranges
+    for (const ranges of chunkRanges.values()) {
+      cleanupRanges(ranges);
+    }
+    chunkRanges.clear();
   };
 }
 
