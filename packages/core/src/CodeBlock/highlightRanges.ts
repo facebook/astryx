@@ -10,20 +10,26 @@
  */
 
 import type {Token, TokenLine} from './tokenizer';
-import {ensureHighlightStyles} from './highlightStyles';
+import {ensureHighlightStyles, TOKEN_TYPES} from './highlightStyles';
 
 // ---------------------------------------------------------------------------
 // Dynamic ::highlight() style injection
 // ---------------------------------------------------------------------------
 
-const registeredHighlightTypes = new Set<string>();
+/**
+ * Pre-seeded with all built-in token types — the static stylesheet in
+ * highlightStyles.ts already has ::highlight() rules for these. Only
+ * truly unknown types trigger dynamic insertRule, avoiding unnecessary
+ * stylesheet mutations and style recalcs.
+ */
+const registeredHighlightTypes = new Set<string>(TOKEN_TYPES);
 let dynamicStyleSheet: CSSStyleSheet | null = null;
 
 /**
- * Ensure a ::highlight(xds-{type}) CSS rule exists for the given token type.
- * Static styles cover the built-in types; only injects for unknown ones.
+ * Inject a dynamic ::highlight() rule for an unknown token type.
+ * Built-in types are pre-seeded and never reach this path.
  */
-function ensureHighlightType(tokenType: string): void {
+function ensureDynamicHighlightType(tokenType: string): void {
   if (registeredHighlightTypes.has(tokenType)) return;
   registeredHighlightTypes.add(tokenType);
 
@@ -45,18 +51,31 @@ function ensureHighlightType(tokenType: string): void {
 }
 
 // ---------------------------------------------------------------------------
-// Per-type Highlight cache
+// Per-type Highlight lookup
 // ---------------------------------------------------------------------------
 
-function getOrCreateHighlight(tokenType: string): Highlight {
-  ensureHighlightType(tokenType);
-  const name = `xds-${tokenType}`;
-  let highlight = CSS.highlights.get(name);
-  if (!highlight) {
-    highlight = new Highlight();
-    CSS.highlights.set(name, highlight);
-  }
-  return highlight;
+/**
+ * Build a local Highlight cache for the duration of a single
+ * apply pass. Avoids calling CSS.highlights.get() per-token
+ * (one Map lookup per type instead of per token).
+ */
+function createHighlightResolver(): (tokenType: string) => Highlight {
+  const cache = new Map<string, Highlight>();
+  return (tokenType: string): Highlight => {
+    let highlight = cache.get(tokenType);
+    if (highlight) return highlight;
+
+    ensureDynamicHighlightType(tokenType);
+
+    const name = `xds-${tokenType}`;
+    highlight = CSS.highlights.get(name);
+    if (!highlight) {
+      highlight = new Highlight();
+      CSS.highlights.set(name, highlight);
+    }
+    cache.set(tokenType, highlight);
+    return highlight;
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -77,6 +96,7 @@ function applyLineRanges(
   lineDiv: Element,
   tokens: Token[],
   results: RangeEntry[],
+  resolve: (tokenType: string) => Highlight,
 ): void {
   if (tokens.length === 0) return;
 
@@ -93,7 +113,7 @@ function applyLineRanges(
     const start = Math.min(token.start, textLength);
     const end = Math.min(token.end, textLength);
 
-    const highlight = getOrCreateHighlight(token.type);
+    const highlight = resolve(token.type);
 
     try {
       const range = new Range();
@@ -135,7 +155,7 @@ export function applyHighlightRangesChunked(
 ): () => void {
   ensureHighlightStyles();
 
-  // Collect all line divs with data-line attribute
+  const resolve = createHighlightResolver();
   const lineDivs = codeEl.querySelectorAll('[data-line]');
   const myRanges: RangeEntry[] = [];
   let cursor = 0;
@@ -150,7 +170,7 @@ export function applyHighlightRangesChunked(
       const lineDiv = lineDivs[i];
       const tokens = tokenLines[i];
       if (tokens && tokens.length > 0) {
-        applyLineRanges(lineDiv, tokens, myRanges);
+        applyLineRanges(lineDiv, tokens, myRanges, resolve);
       }
     }
     cursor = end;
@@ -182,6 +202,7 @@ export function applyHighlightRangesBatch(
 ): RangeEntry[] {
   ensureHighlightStyles();
 
+  const resolve = createHighlightResolver();
   const lineDivs = codeEl.querySelectorAll('[data-line]');
   const results: RangeEntry[] = [];
 
@@ -192,7 +213,7 @@ export function applyHighlightRangesBatch(
     const lineDiv = lineDivs[divIndex];
     const tokens = tokenLines[i];
     if (tokens && tokens.length > 0) {
-      applyLineRanges(lineDiv, tokens, results);
+      applyLineRanges(lineDiv, tokens, results, resolve);
     }
   }
 
