@@ -34,9 +34,10 @@ describe('generateCompressedIndex', () => {
     expect(result).toContain('<!-- XDS:END -->');
   });
 
-  it('does not include theme command references', () => {
+  it('includes theme nudge rule', () => {
     const result = generateCompressedIndex('1.0.0');
-    expect(result).not.toMatch(/\bxds theme\b/);
+    expect(result).toMatch(/xds theme/);
+    expect(result).toMatch(/never override --xds-color/);
   });
 
   it('includes upgrade command and migration rule', () => {
