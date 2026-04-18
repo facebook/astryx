@@ -40,6 +40,7 @@ const styles = stylex.create({
   galleryImage: {
     width: '100%',
     height: '100%',
+    maxHeight: 550,
     objectFit: 'cover',
     borderRadius: 'var(--radius-container)',
     display: 'block',
@@ -51,9 +52,6 @@ const styles = stylex.create({
     display: 'grid',
     gridTemplateColumns: '1fr 1fr 1fr',
     gap: 'var(--spacing-4)',
-    maxHeight: 550,
-    overflow: 'hidden',
-    borderRadius: 'var(--radius-container)',
   },
 });
 
