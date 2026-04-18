@@ -17,7 +17,7 @@ const styles = stylex.create({
   },
 });
 
-export default function HeroSimple() {
+export default function CenteredHero() {
   return (
     <XDSCenter height="100dvh">
       <XDSVStack gap={6} hAlign="center" padding={6}>
