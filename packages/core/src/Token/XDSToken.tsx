@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSToken.tsx
  * @input Uses React, ReactNode, StyleXStyles
