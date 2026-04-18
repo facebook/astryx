@@ -19,7 +19,7 @@ import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
 import {edgeSignals} from '../Layout/edgeCompensation.stylex';
 import {xdsClassName, mergeProps} from '../utils';
-import {TopNavSlotContext} from './TopNavContext';
+import {XDSTopNavSlotContext} from './TopNavContext';
 import {useXDSTopNavRenderMode} from './XDSTopNavRenderContext';
 import {useXDSTopNavMobileContent} from './XDSTopNavMobileContentContext';
 import {XDSDivider} from '../Divider/XDSDivider';
@@ -259,24 +259,26 @@ export function XDSTopNav({
       <div {...stylex.props(styles.leftSection, edgeSignals.start)}>
         {heading && <div {...stylex.props(styles.heading)}>{heading}</div>}
         {startContent && (
-          <TopNavSlotContext value="start">
+          <XDSTopNavSlotContext value="start">
             <div {...stylex.props(styles.startContent)}>{startContent}</div>
-          </TopNavSlotContext>
+          </XDSTopNavSlotContext>
         )}
       </div>
       {hasCenterContent && (
-        <TopNavSlotContext value="center">
+        <XDSTopNavSlotContext value="center">
           <div {...stylex.props(styles.centerContent)}>{centerContent}</div>
-        </TopNavSlotContext>
+        </XDSTopNavSlotContext>
       )}
       {hasCenterContent ? (
         <div {...stylex.props(styles.rightSection, edgeSignals.end)}>
-          <TopNavSlotContext value="end">{endContent}</TopNavSlotContext>
+          <XDSTopNavSlotContext value="end">{endContent}</XDSTopNavSlotContext>
         </div>
       ) : (
         endContent && (
           <div {...stylex.props(styles.endContent, edgeSignals.end)}>
-            <TopNavSlotContext value="end">{endContent}</TopNavSlotContext>
+            <XDSTopNavSlotContext value="end">
+              {endContent}
+            </XDSTopNavSlotContext>
           </div>
         )
       )}
