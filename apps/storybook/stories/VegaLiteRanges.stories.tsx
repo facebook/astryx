@@ -11,6 +11,7 @@ const VEGA_DATASETS = 'https://cdn.jsdelivr.net/npm/vega-datasets@3.2.1/data';
 
 const STOCKS_CSV_URL = `${VEGA_DATASETS}/stocks.csv`;
 const SEATTLE_WEATHER_CSV_URL = `${VEGA_DATASETS}/seattle-weather.csv`;
+const MOVIES_JSON_URL = `${VEGA_DATASETS}/movies.json`;
 
 // ---------------------------------------------------------------------------
 // Spec: Stock price line chart with cross-hair hover + tooltip
@@ -289,6 +290,46 @@ const programmingLanguagesSpec: AnySpec = {
 };
 
 // ---------------------------------------------------------------------------
+// Spec: Calculate residuals (movies.json) — diverging color scale
+// Source: https://vega.github.io/vega-lite/examples/joinaggregate_residual_graph.html
+// ---------------------------------------------------------------------------
+
+const residualGraphSpec: AnySpec = {
+  $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
+  description:
+    'A dot plot showing each movie in the database, and the difference from the average movie rating. The display is sorted by year to visualize everything in sequential order. The graph is for all Movies before 2019.',
+  data: {url: MOVIES_JSON_URL},
+  transform: [
+    {filter: "datum['IMDB Rating'] != null"},
+    {
+      filter: {
+        timeUnit: 'year',
+        field: 'Release Date',
+        range: [null, 2019],
+      },
+    },
+    {
+      joinaggregate: [{op: 'mean', field: 'IMDB Rating', as: 'AverageRating'}],
+    },
+    {
+      calculate: "datum['IMDB Rating'] - datum.AverageRating",
+      as: 'RatingDelta',
+    },
+  ],
+  mark: 'point',
+  encoding: {
+    x: {field: 'Release Date', type: 'temporal'},
+    y: {field: 'RatingDelta', type: 'quantitative', title: 'Rating Delta'},
+    color: {
+      field: 'RatingDelta',
+      type: 'quantitative',
+      scale: {domainMid: 0},
+      title: 'Rating Delta',
+    },
+  },
+};
+
+// ---------------------------------------------------------------------------
 // Spec: Annual weather heatmap (seattle-weather.csv)
 // Source: https://vega.github.io/vega-lite/examples/rect_heatmap_weather.html
 // ---------------------------------------------------------------------------
@@ -377,6 +418,15 @@ export const WeatherHeatmap: Story = {
   render: () => (
     <div style={{width: '100%', maxWidth: 720}}>
       <ThemedVegaChart spec={weatherHeatmapSpec} />
+    </div>
+  ),
+};
+
+export const ResidualGraph: Story = {
+  name: 'Range: Diverging - Calculate Residuals',
+  render: () => (
+    <div style={{width: '100%', maxWidth: 720}}>
+      <ThemedVegaChart spec={residualGraphSpec} />
     </div>
   ),
 };
