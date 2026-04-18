@@ -6,6 +6,7 @@ import {XDSText} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSSection} from '@xds/core/Section';
+import {XDSTopNav, XDSTopNavHeading, XDSTopNavItem} from '@xds/core/TopNav';
 import {ArrowRightIcon} from '@heroicons/react/20/solid';
 
 const IMAGE_URL =
@@ -20,6 +21,18 @@ const styles = stylex.create({
 export default function CenteredHero() {
   return (
     <XDSVStack gap={6}>
+      <XDSTopNav
+        label="Main navigation"
+        heading={<XDSTopNavHeading heading="ACME" />}
+        endContent={
+          <>
+            <XDSTopNavItem label="Products" href="#" />
+            <XDSTopNavItem label="Solutions" href="#" />
+            <XDSTopNavItem label="Pricing" href="#" />
+            <XDSTopNavItem label="About" href="#" />
+          </>
+        }
+      />
       <XDSSection variant="transparent" padding={6}>
         <XDSVStack gap={6} hAlign="center">
           <XDSVStack gap={3} hAlign="center">
