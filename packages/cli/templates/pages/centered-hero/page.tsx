@@ -5,6 +5,7 @@ import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
 import {XDSIcon} from '@xds/core/Icon';
+import {XDSSection} from '@xds/core/Section';
 import {XDSCenter} from '@xds/core/Center';
 import {ArrowRightIcon} from '@heroicons/react/20/solid';
 
@@ -20,43 +21,45 @@ const styles = stylex.create({
 export default function CenteredHero() {
   return (
     <XDSCenter height="100dvh">
-      <XDSVStack gap={6} hAlign="center" padding={6}>
-        <XDSVStack gap={3} hAlign="center">
-          <XDSText
-            type="display-2"
-            as="h1"
-            weight="bold"
-            textWrap="balance"
-            xstyle={styles.textCenter}>
-            Little joys, everywhere you go
-          </XDSText>
-          <XDSText
-            type="body"
-            color="secondary"
-            textWrap="balance"
-            xstyle={styles.textCenter}>
-            Sometimes all it takes is one small thing to turn your whole day
-            around. That\u2019s what good design is for.
-          </XDSText>
-        </XDSVStack>
-        <XDSHStack gap={3}>
-          <XDSButton
-            label="Get started"
-            variant="primary"
-            endContent={<XDSIcon icon={ArrowRightIcon} size="sm" />}
+      <XDSSection variant="transparent" padding={6}>
+        <XDSVStack gap={6} hAlign="center">
+          <XDSVStack gap={3} hAlign="center">
+            <XDSText
+              type="display-2"
+              as="h1"
+              weight="bold"
+              textWrap="balance"
+              xstyle={styles.textCenter}>
+              Little joys, everywhere you go
+            </XDSText>
+            <XDSText
+              type="body"
+              color="secondary"
+              textWrap="balance"
+              xstyle={styles.textCenter}>
+              Sometimes all it takes is one small thing to turn your whole day
+              around. That&apos;s what good design is for.
+            </XDSText>
+          </XDSVStack>
+          <XDSHStack gap={3}>
+            <XDSButton
+              label="Get started"
+              variant="primary"
+              endContent={<XDSIcon icon={ArrowRightIcon} size="sm" />}
+            />
+            <XDSButton label="Learn more" variant="secondary" />
+          </XDSHStack>
+          <img
+            src={IMAGE_URL}
+            alt="Serene landscape with cotton fields and towering clouds"
+            style={{
+              width: '100%',
+              borderRadius: 'var(--radius-container)',
+              display: 'block',
+            }}
           />
-          <XDSButton label="Learn more" variant="secondary" />
-        </XDSHStack>
-        <img
-          src={IMAGE_URL}
-          alt="Serene landscape with cotton fields and towering clouds"
-          style={{
-            width: '100%',
-            borderRadius: 'var(--radius-container)',
-            display: 'block',
-          }}
-        />
-      </XDSVStack>
+        </XDSVStack>
+      </XDSSection>
     </XDSCenter>
   );
 }
