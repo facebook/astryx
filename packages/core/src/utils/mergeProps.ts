@@ -10,31 +10,71 @@
  *
  * @example
  * ```tsx
+ * // Root element with xdsClassName
  * <div {...mergeProps(
  *   xdsClassName('button', { variant }),
  *   stylex.props(styles.base, variants[variant]),
  *   className,
  *   style,
  * )} />
+ *
+ * // Internal element — stylex + dynamic style only
+ * <div {...mergeProps(
+ *   stylex.props(styles.track),
+ *   { style: { width: dynamicWidth } },
+ * )} />
  * ```
  */
 export function mergeProps(
-  xdsClass: string,
-  stylexResult: {className?: string; style?: object},
-  className?: string,
+  xdsClassOrStylexResult: string | {className?: string; style?: object},
+  stylexResultOrClassName?:
+    | {className?: string; style?: object}
+    | string
+    | undefined,
+  classNameOrStyle?: string | React.CSSProperties,
   style?: React.CSSProperties,
 ): {className: string; style?: object} {
-  let cls = stylexResult.className
-    ? `${xdsClass} ${stylexResult.className}`
-    : xdsClass;
-  if (className) {
-    cls = `${cls} ${className}`;
+  // Disambiguate: first arg is string → (xdsClass, stylexResult, className?, style?)
+  // first arg is object → (stylexResult, overrides?, ...)
+  if (typeof xdsClassOrStylexResult === 'string') {
+    const xdsClass = xdsClassOrStylexResult;
+    const stylexResult = (stylexResultOrClassName as {
+      className?: string;
+      style?: object;
+    }) ?? {className: ''};
+    const className = classNameOrStyle as string | undefined;
+
+    let cls = stylexResult.className
+      ? `${xdsClass} ${stylexResult.className}`
+      : xdsClass;
+    if (className) {
+      cls = `${cls} ${className}`;
+    }
+
+    const mergedStyle =
+      style && stylexResult.style
+        ? {...stylexResult.style, ...style}
+        : style || stylexResult.style;
+
+    return {className: cls, style: mergedStyle};
+  }
+
+  // Object form: mergeProps(stylex.props(...), { style, className })
+  const base = xdsClassOrStylexResult;
+  const overrides = (stylexResultOrClassName as {
+    className?: string;
+    style?: object;
+  }) ?? {};
+
+  let cls = base.className ?? '';
+  if (overrides.className) {
+    cls = cls ? `${cls} ${overrides.className}` : overrides.className;
   }
 
   const mergedStyle =
-    style && stylexResult.style
-      ? {...stylexResult.style, ...style}
-      : style || stylexResult.style;
+    overrides.style && base.style
+      ? {...base.style, ...overrides.style}
+      : overrides.style || base.style;
 
   return {className: cls, style: mergedStyle};
 }

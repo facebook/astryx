@@ -771,13 +771,15 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
           {/* Filled track */}
           <div
             aria-hidden="true"
-            {...stylex.props(
-              styles.filledTrack,
-              isHorizontal
-                ? styles.filledTrackHorizontal
-                : styles.filledTrackVertical,
+            {...mergeProps(
+              stylex.props(
+                styles.filledTrack,
+                isHorizontal
+                  ? styles.filledTrackHorizontal
+                  : styles.filledTrackVertical,
+              ),
+              {style: filledStyle},
             )}
-            style={filledStyle}
           />
 
           {/* Marks */}
@@ -800,25 +802,29 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
                     <div
                       data-testid="slider-mark"
                       data-mark-value={mark.value}
-                      {...stylex.props(
-                        styles.mark,
-                        isHorizontal
-                          ? styles.markHorizontal
-                          : styles.markVertical,
+                      {...mergeProps(
+                        stylex.props(
+                          styles.mark,
+                          isHorizontal
+                            ? styles.markHorizontal
+                            : styles.markVertical,
+                        ),
+                        {style: markPos},
                       )}
-                      style={markPos}
                     />
                     {mark.label && (
                       <span
                         data-testid="slider-mark-label"
                         data-mark-value={mark.value}
-                        {...stylex.props(
-                          styles.markLabel,
-                          isHorizontal
-                            ? styles.markLabelHorizontal
-                            : styles.markLabelVertical,
-                        )}
-                        style={markPos}>
+                        {...mergeProps(
+                          stylex.props(
+                            styles.markLabel,
+                            isHorizontal
+                              ? styles.markLabelHorizontal
+                              : styles.markLabelVertical,
+                          ),
+                          {style: markPos},
+                        )}>
                         {mark.label}
                       </span>
                     )}

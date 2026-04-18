@@ -566,8 +566,7 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
         onKeyDown={handleKeyDown}
         onPaste={handlePaste}
         {...triggerMenu.ariaProps}
-        {...stylex.props(styles.editable)}
-        style={{maxHeight: `${maxHeight}px`}}
+        {...mergeProps(stylex.props(styles.editable), {style: {maxHeight: `${maxHeight}px`}})}
       />
       {triggerMenu.renderMenu()}
       {tokens.tokenPortals

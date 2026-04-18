@@ -184,8 +184,7 @@ export function XDSSideNavSection({
         stylex.props(styles.root),
       )}>
       <div
-        style={shouldHideHeader ? visuallyHiddenStyle : undefined}
-        {...stylex.props(styles.header)}>
+        {...mergeProps(stylex.props(styles.header), {style: shouldHideHeader ? visuallyHiddenStyle : undefined})}>
         {headerContent}
       </div>
       <div {...stylex.props(styles.items)}>{children}</div>
