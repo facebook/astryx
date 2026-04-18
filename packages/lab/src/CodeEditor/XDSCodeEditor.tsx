@@ -201,7 +201,7 @@ export function XDSCodeEditor({
   ref,
   ...props
 }: XDSCodeEditorProps) {
-  const editorRef = useRef<HTMLDivElement>(null);
+  const editorRef = useRef<HTMLElement>(null);
   const [instanceId] = useState(() => ++editorInstanceCounter);
   const [focused, setFocused] = useState(false);
   const isComposingRef = useRef(false);
@@ -398,7 +398,7 @@ export function XDSCodeEditor({
             {placeholder}
           </div>
         )}
-        <div
+        <code
           ref={editorRef}
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           contentEditable={isReadOnly ? false : ('plaintext-only' as any)}
