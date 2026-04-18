@@ -9,6 +9,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useEffect,
   useLayoutEffect,
   useCallback,
 } from 'react';
@@ -27,6 +28,8 @@ export interface XDS3DChartProps {
   azimuth?: number;
   elevation?: number;
   interactive?: boolean;
+  /** Auto-rotate speed in degrees per frame (default: 0 = off) */
+  autoRotate?: number;
   children: ReactNode;
 }
 
@@ -58,6 +61,7 @@ export function XDS3DChart({
   azimuth: azimuthProp = 35,
   elevation: elevationProp = 25,
   interactive = false,
+  autoRotate = 0,
   children,
 }: XDS3DChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -92,6 +96,10 @@ export function XDS3DChart({
     return range === 0 ? 0.5 : (value - domain[0]) / range;
   }, []);
 
+  // Projection: normalized [0,1]^3 → 2D pixel coords
+  // SYNC: This math is replicated in XDS3DScatterGL's vertex shader.
+  // Both must produce identical output. Verified by projection.test.ts.
+  // If you change this, update the shader and re-run the parity tests.
   const project = useMemo(() => {
     const azRad = (camera.azimuth * Math.PI) / 180;
     const elRad = (camera.elevation * Math.PI) / 180;
@@ -144,6 +152,25 @@ export function XDS3DChart({
   const handleEnd = useCallback(() => {
     dragRef.current = null;
   }, []);
+
+  // Auto-rotation — throttled to ~20fps to avoid overwhelming React with re-renders
+  useEffect(() => {
+    if (autoRotate === 0) return;
+    let raf: number;
+    let lastUpdate = 0;
+    const interval = 50; // ms between React updates (~20fps)
+    const tick = (now: number) => {
+      if (!dragRef.current && now - lastUpdate >= interval) {
+        const elapsed = lastUpdate === 0 ? interval : now - lastUpdate;
+        lastUpdate = now;
+        const degrees = autoRotate * (elapsed / 16.67); // normalize to 60fps equivalent
+        setCamera(prev => ({...prev, azimuth: prev.azimuth + degrees}));
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [autoRotate]);
 
   const ctx = useMemo(
     () => ({

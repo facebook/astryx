@@ -1,11 +1,7 @@
 /**
  * @file XDSChartHeatmapGL.tsx
- * @output WebGL heatmap — 2D grid of color-mapped cells
- * @position Child of XDSChart; manages its own row (y) band scale
- *
- * Renders a grid where x positions come from the chart's xScale (band)
- * and y positions come from a second categorical key. Each cell is colored
- * by interpolating a sequential palette based on the value key.
+ * @output WebGL heatmap — 2D grid, canvas mounted outside SVG
+ * @position Child of XDSChart; manages its own y band scale for rows
  */
 
 import {useRef, useEffect, useMemo} from 'react';
@@ -13,28 +9,22 @@ import {scaleBand} from 'd3-scale';
 import {useChart} from './ChartContext';
 import {isBandScale} from './utils';
 import type {ScaleBand} from 'd3-scale';
+import {
+  hexToGL,
+  getWebGLContext,
+  setupGLState,
+  sizeCanvas,
+  mountCanvasOverSVG,
+  createProgram,
+} from './webgl';
 
 export interface XDSChartHeatmapGLProps {
-  /** Data key for x-axis categories (columns) */
   xKey: string;
-  /** Data key for y-axis categories (rows) */
   yKey: string;
-  /** Data key containing the numeric intensity value */
   valueKey: string;
-  /**
-   * Color ramp — array of hex colors from low to high intensity.
-   * Use useXDSChartColors().sequential.blue(5) or similar.
-   */
   colorRange: string[];
-  /** Explicit domain [min, max]. If omitted, computed from data. */
   domain?: [number, number];
-  /** Gap between cells in pixels (default: 1) */
   cellGap?: number;
-}
-
-function hexToGL(hex: string): [number, number, number] {
-  const n = parseInt(hex.replace('#', ''), 16);
-  return [(n >> 16) / 255, ((n >> 8) & 0xff) / 255, (n & 0xff) / 255];
 }
 
 const VERT = `
@@ -57,68 +47,23 @@ const FRAG = `
   }
 `;
 
-function compileShader(
-  gl: WebGLRenderingContext,
-  type: number,
-  source: string,
-): WebGLShader | null {
-  const shader = gl.createShader(type);
-  if (!shader) return null;
-  gl.shaderSource(shader, source);
-  gl.compileShader(shader);
-  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    gl.deleteShader(shader);
-    return null;
-  }
-  return shader;
-}
-
-function createProgram(gl: WebGLRenderingContext): WebGLProgram | null {
-  const vert = compileShader(gl, gl.VERTEX_SHADER, VERT);
-  const frag = compileShader(gl, gl.FRAGMENT_SHADER, FRAG);
-  if (!vert || !frag) return null;
-  const program = gl.createProgram();
-  if (!program) return null;
-  gl.attachShader(program, vert);
-  gl.attachShader(program, frag);
-  gl.linkProgram(program);
-  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-    gl.deleteProgram(program);
-    return null;
-  }
-  return program;
-}
-
 function sampleRamp(
   ramp: [number, number, number][],
   t: number,
 ): [number, number, number] {
-  const clamped = Math.max(0, Math.min(1, t));
+  const c = Math.max(0, Math.min(1, t));
   if (ramp.length === 1) return ramp[0];
-  const scaled = clamped * (ramp.length - 1);
-  const lo = Math.floor(scaled);
+  const s = c * (ramp.length - 1);
+  const lo = Math.floor(s);
   const hi = Math.min(lo + 1, ramp.length - 1);
-  const frac = scaled - lo;
+  const f = s - lo;
   return [
-    ramp[lo][0] + frac * (ramp[hi][0] - ramp[lo][0]),
-    ramp[lo][1] + frac * (ramp[hi][1] - ramp[lo][1]),
-    ramp[lo][2] + frac * (ramp[hi][2] - ramp[lo][2]),
+    ramp[lo][0] + f * (ramp[hi][0] - ramp[lo][0]),
+    ramp[lo][1] + f * (ramp[hi][1] - ramp[lo][1]),
+    ramp[lo][2] + f * (ramp[hi][2] - ramp[lo][2]),
   ];
 }
 
-/**
- * WebGL heatmap grid. Two categorical axes (xKey × yKey) with cells colored by valueKey.
- *
- * @example
- * ```
- * <XDSChartHeatmapGL
- *   xKey="hour"
- *   yKey="day"
- *   valueKey="activity"
- *   colorRange={useXDSChartColors().sequential.blue(5)}
- * />
- * ```
- */
 export function XDSChartHeatmapGL({
   xKey,
   yKey,
@@ -128,26 +73,22 @@ export function XDSChartHeatmapGL({
   cellGap = 1,
 }: XDSChartHeatmapGLProps) {
   const {data, xScale, width, height} = useChart();
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const glRef = useRef<WebGLRenderingContext | null>(null);
   const programRef = useRef<WebGLProgram | null>(null);
+  const markerRef = useRef<SVGGElement>(null);
 
   const ramp = useMemo(() => colorRange.map(hexToGL), [colorRange]);
 
-  // Build row (y) band scale from unique yKey values
   const yBandScale = useMemo(() => {
-    const yCategories = [...new Set(data.map(d => String(d[yKey])))];
-    return scaleBand<string>()
-      .domain(yCategories)
-      .range([0, height])
-      .padding(0.05);
+    const cats = [...new Set(data.map(d => String(d[yKey])))];
+    return scaleBand<string>().domain(cats).range([0, height]).padding(0.05);
   }, [data, yKey, height]);
 
-  // Value domain
   const domain = useMemo((): [number, number] => {
     if (domainProp) return domainProp;
-    let min = Infinity;
-    let max = -Infinity;
+    let min = Infinity,
+      max = -Infinity;
     for (const d of data) {
       const v = d[valueKey];
       if (typeof v === 'number') {
@@ -158,37 +99,32 @@ export function XDSChartHeatmapGL({
     return [min, max];
   }, [data, valueKey, domainProp]);
 
+  // Mount canvas
+  useEffect(() => {
+    const marker = markerRef.current;
+    if (!marker) return;
+    if (!canvasRef.current)
+      canvasRef.current = document.createElement('canvas');
+    return mountCanvasOverSVG(marker, canvasRef.current, width, height);
+  }, [width, height]);
+
+  // Draw
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || width <= 0 || height <= 0 || !isBandScale(xScale)) return;
 
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = width * dpr;
-    canvas.height = height * dpr;
-    canvas.style.width = `${width}px`;
-    canvas.style.height = `${height}px`;
+    const dpr = sizeCanvas(canvas, width, height);
 
-    let gl = glRef.current;
-    if (!gl) {
-      gl = canvas.getContext('webgl', {
-        alpha: true,
-        premultipliedAlpha: false,
-        antialias: false,
-      });
-      if (!gl) return;
-      glRef.current = gl;
-    }
+    if (!glRef.current) glRef.current = getWebGLContext(canvas);
+    const gl = glRef.current;
+    if (!gl) return;
 
-    let program = programRef.current;
-    if (!program) {
-      program = createProgram(gl);
-      if (!program) return;
-      programRef.current = program;
-    }
+    if (!programRef.current) programRef.current = createProgram(gl, VERT, FRAG);
+    const program = programRef.current;
+    if (!program) return;
 
     gl.viewport(0, 0, canvas.width, canvas.height);
-    gl.clearColor(0, 0, 0, 0);
-    gl.clear(gl.COLOR_BUFFER_BIT);
+    setupGLState(gl);
     gl.useProgram(program);
 
     const positions: number[] = [];
@@ -196,7 +132,6 @@ export function XDSChartHeatmapGL({
     const [dMin, dMax] = domain;
     const range = dMax - dMin || 1;
     const gap = cellGap;
-
     const xBW = xScale.bandwidth();
     const yBW = yBandScale.bandwidth();
 
@@ -214,9 +149,7 @@ export function XDSChartHeatmapGL({
       const y0 = yVal + gap / 2;
       const y1 = yVal + yBW - gap / 2;
 
-      // Two triangles per cell
-      positions.push(x0, y0, x1, y0, x0, y1);
-      positions.push(x1, y0, x1, y1, x0, y1);
+      positions.push(x0, y0, x1, y0, x0, y1, x1, y0, x1, y1, x0, y1);
       for (let i = 0; i < 6; i++) colors.push(r, g, b);
     }
 
@@ -234,7 +167,6 @@ export function XDSChartHeatmapGL({
     gl.enableVertexAttribArray(aCol);
     gl.vertexAttribPointer(aCol, 3, gl.FLOAT, false, 0, 0);
 
-    // Logical pixels — positions are in logical space, viewport handles DPR
     gl.uniform2f(gl.getUniformLocation(program, 'u_resolution'), width, height);
     gl.drawArrays(gl.TRIANGLES, 0, positions.length / 2);
 
@@ -255,15 +187,5 @@ export function XDSChartHeatmapGL({
   ]);
 
   if (width <= 0 || height <= 0) return null;
-
-  return (
-    <foreignObject
-      x={0}
-      y={0}
-      width={width}
-      height={height}
-      style={{overflow: 'hidden'}}>
-      <canvas ref={canvasRef} style={{width, height, pointerEvents: 'none'}} />
-    </foreignObject>
-  );
+  return <g ref={markerRef} />;
 }
