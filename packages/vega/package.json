@@ -35,6 +35,6 @@
     "typescript": "^5.7.0",
     "vega": "^6.2.0",
     "vega-lite": "^6.4.2",
-    "vega-util": "^1.17.2"
+    "vega-util": "^2.1.0"
   }
 }
