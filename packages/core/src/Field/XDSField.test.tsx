@@ -77,7 +77,7 @@ describe('XDSField', () => {
     const description = screen.getByText('Search for items');
     expect(description).toBeInTheDocument();
     // But should have the visually-hidden styles applied
-    expect(description.className).toContain('labelHidden');
+    expect(description.className).toContain('srOnly');
   });
 
   it('shows label visually by default', () => {

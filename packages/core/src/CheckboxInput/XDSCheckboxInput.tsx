@@ -476,12 +476,9 @@ export function XDSCheckboxInput({
             isOptional={isOptional}
             isRequired={isRequired}
             labelIcon={labelIcon}
+            description={description}
+            descriptionID={descriptionID}
           />
-          {description && !isLabelHidden && (
-            <span id={descriptionID} {...stylex.props(styles.description)}>
-              {description}
-            </span>
-          )}
         </div>
       </div>
       {status?.message && (
