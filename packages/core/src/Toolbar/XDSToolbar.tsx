@@ -2,7 +2,7 @@
 
 /**
  * @file XDSToolbar.tsx
- * @input Uses XDSSection, useListFocus, StyleX, spacingVars
+ * @input Uses XDSSection, XDSSizeContext, useListFocus, edgeSignals, StyleX, spacingVars, sizeVars
  * @output Exports XDSToolbar component and XDSToolbarProps
  * @position Core implementation; consumed by index.ts
  *
@@ -17,11 +17,14 @@ import {type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import type {XDSSectionVariant} from '../Section/XDSSection';
 import type {SpacingStep} from '../utils/types';
+import type {XDSElementSize} from '../SizeContext/XDSSizeContext';
 import * as stylex from '@stylexjs/stylex';
-import {spacingVars} from '../theme/tokens.stylex';
+import {spacingVars, sizeVars} from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 import {XDSSection} from '../Section/XDSSection';
 import {useListFocus} from '../hooks/useListFocus';
+import {XDSSizeProvider} from '../SizeContext/XDSSizeContext';
+import {edgeSignals} from '../Layout/edgeCompensation.stylex';
 
 /**
  * Map SpacingStep values to spacingVars keys.
@@ -58,18 +61,7 @@ const styles = stylex.create({
     flexDirection: 'column',
     alignItems: 'stretch',
   },
-  // Compact density: tighter height
-  compact: {
-    minHeight: spacingVars['--spacing-8'],
-  },
-  defaultDensity: {
-    minHeight: spacingVars['--spacing-10'],
-  },
   // Slot containers
-  // Start and end slots add horizontal padding (spacing-2 = 8px) so that
-  // combined with the section's 8px padding, content aligns at 16px from edges.
-  // This split enables future edge compensation: ghost buttons can negate
-  // the slot padding while the section padding remains.
   startSlot: {
     display: 'flex',
     alignItems: 'center',
@@ -98,12 +90,50 @@ const styles = stylex.create({
   },
 });
 
+/**
+ * Size-specific styles. Each size sets:
+ * - minHeight: element token + vertical breathing room
+ * - --container-padding-inline: so ghost buttons auto-compensate at edges
+ */
+const sizeStyles = stylex.create({
+  sm: {
+    minHeight: sizeVars['--size-element-sm'],
+  },
+  md: {
+    minHeight: sizeVars['--size-element-md'],
+  },
+  lg: {
+    minHeight: sizeVars['--size-element-lg'],
+  },
+});
+
+/**
+ * Container padding value per size for edge compensation.
+ * Maps to the same spacing tokens used for the Section padding.
+ */
+const containerPaddingValue: Record<XDSElementSize, string> = {
+  sm: '4px',
+  md: '8px',
+  lg: '12px',
+};
+
 // Dynamic styles for configurable gap
 const dynamicStyles = stylex.create({
   gap: (gapValue: string) => ({
     gap: gapValue,
   }),
 });
+
+/**
+ * Default padding per toolbar size.
+ */
+const defaultPaddingForSize: Record<XDSElementSize, SpacingStep> = {
+  sm: 1,
+  md: 2,
+  lg: 3,
+};
+
+export type XDSToolbarSize = XDSElementSize;
 
 export interface XDSToolbarProps extends XDSBaseProps<HTMLDivElement> {
   /** Ref forwarded to the root XDSSection element */
@@ -127,12 +157,15 @@ export interface XDSToolbarProps extends XDSBaseProps<HTMLDivElement> {
    */
   label: string;
   /**
-   * Density of the toolbar.
-   * - 'default': Standard height (40px min)
-   * - 'compact': Reduced height (32px min)
-   * @default 'default'
+   * Size of the toolbar. Coordinates with Button, TextInput, TabList, and Selector —
+   * children inherit this size as their default via XDSSizeContext.
+   *
+   * - `'sm'`: Compact — fits sm buttons/inputs (28px elements)
+   * - `'md'`: Standard — fits md buttons/inputs (32px elements)
+   * - `'lg'`: Spacious — fits lg buttons/inputs (36px elements)
+   * @default 'md'
    */
-  density?: 'compact' | 'default';
+  size?: XDSToolbarSize;
   /**
    * Gap between items within each slot, using the spacing scale.
    * @default 2
@@ -151,8 +184,7 @@ export interface XDSToolbarProps extends XDSBaseProps<HTMLDivElement> {
   variant?: XDSSectionVariant;
   /**
    * Internal padding using the spacing scale.
-   * Passed through to XDSSection.
-   * @default 2 (8px) — combined with 8px slot padding = 16px from edges
+   * Passed through to XDSSection. Defaults based on size (sm=1/4px, md=2/8px, lg=3/12px).
    */
   padding?: SpacingStep;
   /**
@@ -170,12 +202,13 @@ export interface XDSToolbarProps extends XDSBaseProps<HTMLDivElement> {
  * General-purpose toolbar with start, center, and end content slots.
  *
  * Built on XDSSection, provides flex/grid layout with roving tabindex
- * keyboard navigation via useListFocus.
+ * keyboard navigation via useListFocus. Cascades `size` to child components
+ * (Button, TextInput, TabList, Selector) via XDSSizeContext, and applies
+ * edge compensation so ghost buttons align flush at container edges.
  *
  * @example
  * ```
- * <XDSToolbar
- *   label="Actions"
+ * <XDSToolbar label="Actions" size="sm"
  *   startContent={<XDSButton label="Cut" variant="ghost" />}
  *   endContent={<XDSButton label="Settings" variant="ghost" />}
  * />
@@ -186,7 +219,7 @@ export function XDSToolbar({
   centerContent,
   endContent,
   label,
-  density = 'default',
+  size = 'md',
   gap = 2,
   orientation = 'horizontal',
   variant = 'transparent',
@@ -203,6 +236,7 @@ export function XDSToolbar({
   const hasEndContent = endContent != null;
 
   const gapVar = spacingVars[spacingStepToVar[gap]] as string;
+  const resolvedPadding = padding ?? defaultPaddingForSize[size];
 
   const {listRef, handleKeyDown} = useListFocus({
     itemSelector: 'button, input, [tabindex="0"]',
@@ -210,71 +244,92 @@ export function XDSToolbar({
   });
 
   return (
-    <XDSSection
-      ref={ref}
-      variant={variant}
-      padding={padding ?? 2}
-      dividers={dividers}
-      xstyle={xstyle}
-      className={className}
-      style={style}>
-      <div
-        ref={listRef as React.RefObject<HTMLDivElement>}
-        role="toolbar"
-        aria-label={label}
-        aria-orientation={orientation}
-        onKeyDown={handleKeyDown}
-        {...mergeProps(
-          xdsClassName('toolbar', {density}),
-          stylex.props(
-            hasCenterContent ? styles.baseGrid : styles.baseFlex,
-            orientation === 'vertical' && styles.vertical,
-            density === 'compact' ? styles.compact : styles.defaultDensity,
-            dynamicStyles.gap(gapVar),
-          ),
-        )}
-        {...props}>
-        {hasCenterContent ? (
-          // Three-slot grid layout
-          <>
-            <div {...stylex.props(styles.startSlot, dynamicStyles.gap(gapVar))}>
-              {startContent}
-            </div>
-            <div
-              {...stylex.props(styles.centerSlot, dynamicStyles.gap(gapVar))}>
-              {centerContent}
-            </div>
-            <div {...stylex.props(styles.endSlot, dynamicStyles.gap(gapVar))}>
-              {endContent}
-            </div>
-          </>
-        ) : (
-          // Two-slot flex layout
-          <>
-            {hasStartContent && (
+    <XDSSizeProvider value={size}>
+      <XDSSection
+        ref={ref}
+        variant={variant}
+        padding={resolvedPadding}
+        dividers={dividers}
+        xstyle={xstyle}
+        className={className}
+        style={
+          {
+            ...style,
+            '--container-padding-inline': containerPaddingValue[size],
+          } as React.CSSProperties
+        }>
+        <div
+          ref={listRef as React.RefObject<HTMLDivElement>}
+          role="toolbar"
+          aria-label={label}
+          aria-orientation={orientation}
+          onKeyDown={handleKeyDown}
+          {...mergeProps(
+            xdsClassName('toolbar', {size}),
+            stylex.props(
+              hasCenterContent ? styles.baseGrid : styles.baseFlex,
+              orientation === 'vertical' && styles.vertical,
+              sizeStyles[size],
+              dynamicStyles.gap(gapVar),
+            ),
+          )}
+          {...props}>
+          {hasCenterContent ? (
+            // Three-slot grid layout
+            <>
               <div
                 {...stylex.props(
                   styles.startSlot,
-                  !hasEndContent && styles.startOnly,
+                  edgeSignals.start,
                   dynamicStyles.gap(gapVar),
                 )}>
                 {startContent}
               </div>
-            )}
-            {hasEndContent && (
+              <div
+                {...stylex.props(styles.centerSlot, dynamicStyles.gap(gapVar))}>
+                {centerContent}
+              </div>
               <div
                 {...stylex.props(
                   styles.endSlot,
-                  !hasStartContent && styles.endOnly,
+                  edgeSignals.end,
                   dynamicStyles.gap(gapVar),
                 )}>
                 {endContent}
               </div>
-            )}
-          </>
-        )}
-      </div>
-    </XDSSection>
+            </>
+          ) : (
+            // Two-slot flex layout
+            <>
+              {hasStartContent && (
+                <div
+                  {...stylex.props(
+                    styles.startSlot,
+                    !hasEndContent && styles.startOnly,
+                    // Edge signal: start slot is at the start edge;
+                    // if no end content, it's also at the end edge.
+                    !hasEndContent ? edgeSignals.both : edgeSignals.start,
+                    dynamicStyles.gap(gapVar),
+                  )}>
+                  {startContent}
+                </div>
+              )}
+              {hasEndContent && (
+                <div
+                  {...stylex.props(
+                    styles.endSlot,
+                    !hasStartContent && styles.endOnly,
+                    !hasStartContent ? edgeSignals.both : edgeSignals.end,
+                    dynamicStyles.gap(gapVar),
+                  )}>
+                  {endContent}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </XDSSection>
+    </XDSSizeProvider>
   );
 }
 

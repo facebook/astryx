@@ -72,6 +72,7 @@ export * from './AlertDialog';
 export * from './Dialog';
 export * from './DropdownMenu';
 export * from './MoreMenu';
+export * from './SizeContext';
 export * from './Toolbar';
 export * from './TopNav';
 export * from './SideNav';

@@ -7,7 +7,7 @@ export default function ToolbarCompactDensity() {
   return (
     <XDSToolbar
       label="Compact actions"
-      density="compact"
+      size="sm"
       startContent={
         <>
           <XDSButton label="Cut" variant="ghost" size="sm" />

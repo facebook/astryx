@@ -56,6 +56,7 @@ import {
 import {useCombobox, useSelectedItemOffset} from './hooks';
 import {XDSSelectorOption} from './XDSSelectorOption';
 import {xdsClassName, mergeProps} from '../utils';
+import {useXDSSize} from '../SizeContext/XDSSizeContext';
 import {XDSBaseProps} from '../XDSBaseProps';
 
 const styles = stylex.create({
@@ -451,7 +452,7 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
     onChangeAction,
     isLoading = false,
     placeholder = 'Select...',
-    size = 'md',
+    size: sizeProp,
     status,
     labelTooltip,
     children,
@@ -463,6 +464,7 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
     ...rest
   } = props as XDSSelectorPropsClearable<T>;
   const hasClear = hasClearProp === true;
+  const size = useXDSSize(sizeProp, 'md') as XDSSelectorSize;
 
   // Normalize null to undefined for internal use (null is the clear sentinel)
   const normalizedValue = value === null ? undefined : value;

@@ -346,6 +346,12 @@
       "import": "./dist/SideNav/index.mjs",
       "require": "./dist/SideNav/index.js"
     },
+    "./SizeContext": {
+      "source": "./src/SizeContext/index.ts",
+      "types": "./dist/SizeContext/index.d.ts",
+      "import": "./dist/SizeContext/index.mjs",
+      "require": "./dist/SizeContext/index.js"
+    },
     "./Skeleton": {
       "source": "./src/Skeleton/index.ts",
       "types": "./dist/Skeleton/index.d.ts",

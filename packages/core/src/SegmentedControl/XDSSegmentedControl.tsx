@@ -19,6 +19,7 @@ import {colorVars, spacingVars, radiusVars} from '../theme/tokens.stylex';
 import {XDSSegmentedControlContext} from './XDSSegmentedControlContext';
 import type {XDSSegmentedControlSize} from './XDSSegmentedControlContext';
 import {xdsClassName, mergeProps} from '../utils';
+import {useXDSSize} from '../SizeContext/XDSSizeContext';
 
 export interface XDSSegmentedControlProps {
   /**
@@ -114,13 +115,14 @@ export function XDSSegmentedControl({
   value,
   onChange,
   label,
-  size = 'md',
+  size: sizeProp,
   isDisabled = false,
   children,
   xstyle,
   className,
   style,
 }: XDSSegmentedControlProps) {
+  const size = useXDSSize(sizeProp, 'md') as XDSSegmentedControlSize;
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleKeyDown = useCallback(

@@ -20,6 +20,7 @@ import React, {useCallback, useId, useRef, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {XDSBaseTypeahead} from './XDSBaseTypeahead';
+import {useXDSSize} from '../SizeContext/XDSSizeContext';
 import {
   XDSField,
   type XDSInputStatus,
@@ -223,7 +224,7 @@ export function XDSTypeahead<T extends XDSSearchableItem>({
   isDisabled = false,
   hasClear = true,
   hasAutoFocus,
-  size = 'md',
+  size: sizeProp,
   debounceMs,
   onChangeQuery,
   onOpenChange,
@@ -232,6 +233,7 @@ export function XDSTypeahead<T extends XDSSearchableItem>({
   style,
   'data-testid': testId,
 }: XDSTypeaheadProps<T>) {
+  const size = useXDSSize(sizeProp, 'md') as XDSTypeaheadSize;
   const inputId = useId();
   const descriptionId = useId();
   const statusMessageId = useId();

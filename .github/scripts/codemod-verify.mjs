@@ -156,7 +156,9 @@ async function main() {
   // Also format the expected (PR) versions for a fair comparison
   const formattedExpected = {};
   for (const file of revertedFiles) {
-    const tmpFile = file + '.expected.tmp';
+    // Use the original file extension so prettier can infer the parser
+    const ext = path.extname(file);
+    const tmpFile = file.replace(ext, `.expected${ext}`);
     fs.writeFileSync(tmpFile, prVersions[file]);
     try {
       run(`npx prettier --write "${tmpFile}"`);

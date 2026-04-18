@@ -19,6 +19,7 @@
 import {type ReactNode} from 'react';
 import {getIcon} from '../Icon/globalIconRegistry';
 import {XDSDropdownMenu} from '../DropdownMenu/XDSDropdownMenu';
+import {useXDSSize} from '../SizeContext/XDSSizeContext';
 import type {XDSDropdownMenuOption} from '../DropdownMenu';
 import type {XDSButtonVariant, XDSButtonSize} from '../Button';
 
@@ -86,12 +87,13 @@ export function XDSMoreMenu({
   items,
   label = 'More options',
   variant = 'ghost',
-  size = 'md',
+  size: sizeProp,
   icon,
   isDisabled = false,
   'data-testid': testId,
   ref,
 }: XDSMoreMenuProps) {
+  const size = useXDSSize(sizeProp, 'md');
   const moreIcon = getIcon('moreHorizontal');
 
   return (

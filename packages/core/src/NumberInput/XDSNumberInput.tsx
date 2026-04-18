@@ -42,6 +42,7 @@ import {
   inputStatusFocusWithinStyles,
 } from '../Field';
 import {XDSIcon, type XDSIconType} from '../Icon';
+import {useXDSSize} from '../SizeContext/XDSSizeContext';
 
 const styles = stylex.create({
   wrapper: {
@@ -329,7 +330,7 @@ export function XDSNumberInput({
   startIcon,
   labelIcon,
   status,
-  size = 'md',
+  size: sizeProp,
   onChange,
   value,
   placeholder,
@@ -353,6 +354,7 @@ export function XDSNumberInput({
   ref,
   ...rest
 }: XDSNumberInputProps) {
+  const size = useXDSSize(sizeProp, 'md');
   const id = useId();
   const descriptionID = useId();
   const statusMessageID = useId();

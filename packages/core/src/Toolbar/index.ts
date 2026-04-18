@@ -10,4 +10,4 @@
  */
 
 export {XDSToolbar} from './XDSToolbar';
-export type {XDSToolbarProps} from './XDSToolbar';
+export type {XDSToolbarProps, XDSToolbarSize} from './XDSToolbar';
