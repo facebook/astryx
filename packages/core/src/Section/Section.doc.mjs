@@ -67,6 +67,9 @@ export const docs = {
         default: 'var(--spacing-4)',
       },
     ],
+    derived: [
+      {property: 'padding', description: 'Container padding of the section', default: 'var(--spacing-4)', expand: 'container'},
+    ],
   },
   usage: {
     description:
@@ -145,6 +148,9 @@ export const docsZh = {
           "Controls Section container padding. Accepts standard CSS padding shorthand (e.g. '16px 20px'). Automatically mapped to container tokens for layout integration. Supports paddingBlock/paddingInline for axis-specific control.",
         default: 'var(--spacing-4)',
       },
+    ],
+    derived: [
+      {property: 'padding', description: 'Container padding of the section', default: 'var(--spacing-4)', expand: 'container'},
     ],
   },
   usage: {

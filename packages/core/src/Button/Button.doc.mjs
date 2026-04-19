@@ -129,6 +129,9 @@ export const docs = {
       {name: '--button-focus-offset', description: 'Focus ring outline offset', default: '3px'},
       {name: '--button-icon-only-aspect', description: 'Aspect ratio for icon-only buttons', default: '1 / 1'},
     ],
+    derived: [
+      {property: 'borderRadius', description: 'Border radius of buttons', default: 'var(--radius-element)', vars: ['--button-radius']},
+    ],
   },
 };
 
@@ -203,6 +206,9 @@ export const docsZh = {
       {name: '--button-disabled-opacity', description: '禁用时的不透明度', default: '0.5'},
       {name: '--button-focus-offset', description: '焦点环轮廓偏移', default: '3px'},
       {name: '--button-icon-only-aspect', description: '纯图标按钮的宽高比', default: '1 / 1'},
+    ],
+    derived: [
+      {property: 'borderRadius', description: 'Border radius of buttons', default: 'var(--radius-element)', vars: ['--button-radius']},
     ],
   },
 };

@@ -10,6 +10,9 @@ export const docs = {
     vars: [
       {name: '--hovercard-radius', description: 'Border radius of the hover card', default: 'var(--radius-container)'},
     ],
+    derived: [
+      {property: 'borderRadius', description: 'Border radius of the hover card', default: 'var(--radius-container)', vars: ['--hovercard-radius']},
+    ],
   },
   components: [
     {
@@ -156,6 +159,9 @@ export const docsZh = {
     ],
     vars: [
       {name: '--hovercard-radius', description: 'Border radius of the hover card', default: 'var(--radius-container)'},
+    ],
+    derived: [
+      {property: 'borderRadius', description: 'Border radius of the hover card', default: 'var(--radius-container)', vars: ['--hovercard-radius']},
     ],
   },
   components: [

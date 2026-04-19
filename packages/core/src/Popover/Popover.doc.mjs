@@ -138,6 +138,9 @@ export const docs = {
     vars: [
       {name: '--popover-radius', description: 'Border radius of the popover', default: 'var(--radius-element)'},
     ],
+    derived: [
+      {property: 'borderRadius', description: 'Border radius of the popover', default: 'var(--radius-element)', vars: ['--popover-radius']},
+    ],
   },
   usage: {
     description:
@@ -289,6 +292,9 @@ export const docsZh = {
     ],
     vars: [
       {name: '--popover-radius', description: 'Border radius of the popover', default: 'var(--radius-element)'},
+    ],
+    derived: [
+      {property: 'borderRadius', description: 'Border radius of the popover', default: 'var(--radius-element)', vars: ['--popover-radius']},
     ],
   },
   usage: {
