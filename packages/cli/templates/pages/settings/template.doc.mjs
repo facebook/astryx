@@ -2,6 +2,6 @@
 export const doc = {
   type: 'page',
   name: 'Settings',
-  description: 'Basic account settings page',
+  description: 'Account settings page with profile, password, and advanced configuration sections',
   isReady: true,
 };
