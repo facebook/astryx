@@ -85,7 +85,7 @@ export default function SettingsTemplate() {
       }
       sideNav={
         <XDSSection padding={4} variant="transparent">
-          <XDSList density="compact">
+          <XDSList density="spacious">
             {NAV_ITEMS.map(item => (
               <XDSListItem
                 key={item}
