@@ -1504,6 +1504,7 @@ function DocsiteLandingTemplate() {
                       }}>
                       <TemplateCard
                         src={template.src}
+                        slug={template.slug}
                         name={template.name}
                         isSelected={selected.has(template.originalIndex)}
                         isGenerating={

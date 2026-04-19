@@ -180,6 +180,7 @@ export const NAV_ITEMS: {key: 'craft' | 'explore' | 'docs'; label: string}[] = [
 export const TEMPLATES: {
   name: string;
   src: string;
+  slug?: string;
   size: 'xlarge' | 'large' | 'medium' | 'small';
   author: string;
   isOfficial: boolean;
@@ -188,7 +189,8 @@ export const TEMPLATES: {
   {name: 'Shopping Details', src: SHOPPING_DETAILS_IMAGE, size: 'small', author: 'Andrea Anderson', isOfficial: true},
   {name: 'Button Component', src: SCREENSHOT_3_IMAGE, size: 'small', author: 'XDS Design', isOfficial: true},
   {name: 'Settings Page', src: `${basePath}/templates/card4-preview.png`, size: 'small', author: 'XDS Design', isOfficial: true},
-  {name: 'Login Form', src: DUMMY_IMAGE, size: 'xlarge', author: 'Marcus Chen', isOfficial: false},
+  {name: 'Login (SSO)', src: DUMMY_IMAGE, slug: 'login-sso', size: 'large', author: 'XDS Design', isOfficial: true},
+  {name: 'Login (Split)', src: DUMMY_IMAGE, slug: 'login-split', size: 'large', author: 'XDS Design', isOfficial: true},
   {name: 'Dashboard', src: DUMMY_IMAGE, size: 'large', author: 'Marcus Chen', isOfficial: false},
   {name: 'Data Table', src: DUMMY_IMAGE, size: 'small', author: 'XDS Design', isOfficial: true},
   {name: 'File Explorer', src: DUMMY_IMAGE, size: 'small', author: 'Sarah Kim', isOfficial: false},
