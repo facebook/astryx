@@ -399,7 +399,7 @@ function LibraryNav() {
         />
         <XDSSideNavItem
           label="Library"
-          href="/templates/library/"
+          href={`${basePath}/templates/library/`}
           icon={BookOpenIcon}
           selectedIcon={BookOpenIconSolid}
           isSelected
@@ -413,7 +413,7 @@ function LibraryNav() {
         />
         <XDSSideNavItem
           label="Templates"
-          href="/templates/"
+          href={`${basePath}/templates/`}
           icon={WrenchScrewdriverIcon}
         />
       </XDSSideNavSection>
