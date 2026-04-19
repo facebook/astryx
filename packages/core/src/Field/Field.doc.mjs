@@ -13,7 +13,7 @@ export const docs = {
       {name: '--input-radius', description: 'Border radius of input fields', default: 'var(--radius-element)'},
     ],
     derived: [
-      {property: 'borderRadius', description: 'Border radius of input fields', default: 'var(--radius-element)', vars: ['--input-radius']},
+      {property: 'borderRadius', vars: ['--input-radius']},
     ],
   },
   components: [
@@ -239,7 +239,7 @@ export const docsZh = {
       {name: '--input-radius', description: 'Border radius of input fields', default: 'var(--radius-element)'},
     ],
     derived: [
-      {property: 'borderRadius', description: 'Border radius of input fields', default: 'var(--radius-element)', vars: ['--input-radius']},
+      {property: 'borderRadius', vars: ['--input-radius']},
     ],
   },
   components: [

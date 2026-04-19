@@ -94,7 +94,7 @@ export const docs = {
       {name: '--banner-radius', description: 'Border radius (card container only)', default: 'var(--radius-container)'},
     ],
     derived: [
-      {property: 'borderRadius', description: 'Border radius of the banner', default: 'var(--radius-container)', vars: ['--banner-radius']},
+      {property: 'borderRadius', vars: ['--banner-radius']},
     ],
   },
 };
@@ -158,7 +158,7 @@ export const docsZh = {
       {name: '--banner-radius', description: 'Border radius (card container only)', default: 'var(--radius-container)'},
     ],
     derived: [
-      {property: 'borderRadius', description: 'Border radius of the banner', default: 'var(--radius-container)', vars: ['--banner-radius']},
+      {property: 'borderRadius', vars: ['--banner-radius']},
     ],
   },
 };

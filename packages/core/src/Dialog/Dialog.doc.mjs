@@ -11,17 +11,9 @@ export const docs = {
     vars: [
       {name: '--dialog-radius', description: 'Border radius of the dialog', default: 'var(--radius-container)'},
     ],
-    cssProperties: [
-      {
-        name: 'padding',
-        description:
-          "Controls Dialog container padding. Accepts standard CSS padding shorthand (e.g. '16px 20px'). Automatically mapped to container tokens for layout integration.",
-        default: 'var(--spacing-4)',
-      },
-    ],
     derived: [
-      {property: 'borderRadius', description: 'Border radius of the dialog', default: 'var(--radius-container)', vars: ['--dialog-radius']},
-      {property: 'padding', description: 'Container padding of the dialog', default: 'var(--spacing-4)', expand: 'container'},
+      {property: 'borderRadius', vars: ['--dialog-radius']},
+      {property: 'padding', expand: 'container'},
     ],
   },
   components: [
@@ -151,17 +143,9 @@ export const docsZh = {
     vars: [
       {name: '--dialog-radius', description: 'Border radius of the dialog', default: 'var(--radius-container)'},
     ],
-    cssProperties: [
-      {
-        name: 'padding',
-        description:
-          "Controls Dialog container padding. Accepts standard CSS padding shorthand (e.g. '16px 20px'). Automatically mapped to container tokens for layout integration.",
-        default: 'var(--spacing-4)',
-      },
-    ],
     derived: [
-      {property: 'borderRadius', description: 'Border radius of the dialog', default: 'var(--radius-container)', vars: ['--dialog-radius']},
-      {property: 'padding', description: 'Container padding of the dialog', default: 'var(--spacing-4)', expand: 'container'},
+      {property: 'borderRadius', vars: ['--dialog-radius']},
+      {property: 'padding', expand: 'container'},
     ],
   },
   components: [

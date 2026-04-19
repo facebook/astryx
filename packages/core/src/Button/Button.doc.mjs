@@ -130,7 +130,7 @@ export const docs = {
       {name: '--button-icon-only-aspect', description: 'Aspect ratio for icon-only buttons', default: '1 / 1'},
     ],
     derived: [
-      {property: 'borderRadius', description: 'Border radius of buttons', default: 'var(--radius-element)', vars: ['--button-radius']},
+      {property: 'borderRadius', vars: ['--button-radius']},
     ],
   },
 };
@@ -208,7 +208,7 @@ export const docsZh = {
       {name: '--button-icon-only-aspect', description: '纯图标按钮的宽高比', default: '1 / 1'},
     ],
     derived: [
-      {property: 'borderRadius', description: 'Border radius of buttons', default: 'var(--radius-element)', vars: ['--button-radius']},
+      {property: 'borderRadius', vars: ['--button-radius']},
     ],
   },
 };

@@ -153,8 +153,8 @@ export type {
   PropDoc,
   ComponentEntry,
   ThemingTarget,
-  CSSPropertyDoc,
   ComponentVar,
+  DerivedVar,
   TranslationDoc,
   ComponentShowcaseDoc,
 } from './docs-types';

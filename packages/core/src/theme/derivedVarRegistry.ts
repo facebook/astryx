@@ -19,10 +19,6 @@
 export interface DerivedVarEntry {
   /** The standard CSS property name (camelCase) that theme authors write. */
   property: string;
-  /** What this derived mapping controls. */
-  description?: string;
-  /** Default value as a CSS expression. */
-  default?: string;
   /** Internal CSS custom property names to set. Omit when using `expand`. */
   vars?: string[];
   /** Named expansion strategy. 'container' expands padding to container tokens. */
@@ -38,42 +34,42 @@ export interface DerivedVarEntry {
  */
 export const derivedVarRegistry: Record<string, DerivedVarEntry[]> = {
   banner: [
-    {property: 'borderRadius', description: 'Border radius of the banner', default: 'var(--radius-container)', vars: ['--banner-radius']},
+    {property: 'borderRadius', vars: ['--banner-radius']},
   ],
   button: [
-    {property: 'borderRadius', description: 'Border radius of buttons', default: 'var(--radius-element)', vars: ['--button-radius']},
+    {property: 'borderRadius', vars: ['--button-radius']},
   ],
   card: [
-    {property: 'borderRadius', description: 'Border radius of the card', default: 'var(--radius-container)', vars: ['--card-radius']},
-    {property: 'padding', description: 'Container padding of the card', default: 'var(--spacing-4)', expand: 'container'},
+    {property: 'borderRadius', vars: ['--card-radius']},
+    {property: 'padding', expand: 'container'},
   ],
   chat: [
-    {property: 'borderRadius', description: 'Border radius of the composer. Inner elements derive their radius concentrically.', default: 'var(--radius-page)', vars: ['--composer-radius']},
-    {property: 'padding', description: 'Padding of the composer. Used in the concentric radius calculation.', default: 'var(--spacing-3)', vars: ['--composer-padding']},
+    {property: 'borderRadius', vars: ['--composer-radius']},
+    {property: 'padding', vars: ['--composer-padding']},
   ],
   dialog: [
-    {property: 'borderRadius', description: 'Border radius of the dialog', default: 'var(--radius-container)', vars: ['--dialog-radius']},
-    {property: 'padding', description: 'Container padding of the dialog', default: 'var(--spacing-4)', expand: 'container'},
+    {property: 'borderRadius', vars: ['--dialog-radius']},
+    {property: 'padding', expand: 'container'},
   ],
   'dropdown-menu': [
-    {property: 'borderRadius', description: 'Border radius of the menu popup', default: 'var(--radius-element)', vars: ['--dropdown-radius']},
-    {property: 'padding', description: 'Inner padding of the menu popup', default: 'var(--spacing-1)', vars: ['--dropdown-padding']},
+    {property: 'borderRadius', vars: ['--dropdown-radius']},
+    {property: 'padding', vars: ['--dropdown-padding']},
   ],
   field: [
-    {property: 'borderRadius', description: 'Border radius of input fields', default: 'var(--radius-element)', vars: ['--input-radius']},
+    {property: 'borderRadius', vars: ['--input-radius']},
   ],
   hovercard: [
-    {property: 'borderRadius', description: 'Border radius of the hover card', default: 'var(--radius-container)', vars: ['--hovercard-radius']},
+    {property: 'borderRadius', vars: ['--hovercard-radius']},
   ],
   popover: [
-    {property: 'borderRadius', description: 'Border radius of the popover', default: 'var(--radius-element)', vars: ['--popover-radius']},
+    {property: 'borderRadius', vars: ['--popover-radius']},
   ],
   section: [
-    {property: 'padding', description: 'Container padding of the section', default: 'var(--spacing-4)', expand: 'container'},
+    {property: 'padding', expand: 'container'},
   ],
   'segmented-control': [
-    {property: 'borderRadius', description: 'Border radius of the segmented control', default: 'var(--radius-element)', vars: ['--segmented-radius']},
-    {property: 'padding', description: 'Inner padding of the segmented control', default: 'var(--spacing-0-5)', vars: ['--segmented-padding']},
+    {property: 'borderRadius', vars: ['--segmented-radius']},
+    {property: 'padding', vars: ['--segmented-padding']},
   ],
 };
 

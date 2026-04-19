@@ -329,7 +329,7 @@ export const metaTheme = defineTheme({
     card: {
       base: {
         padding: '20px',
-        '--card-radius': '32px',
+        borderRadius: '32px',
       },
     },
 
@@ -396,7 +396,7 @@ export const metaTheme = defineTheme({
     // =========================================================================
     banner: {
       base: {
-        '--banner-radius': '16px',
+        borderRadius: '16px',
       },
       'status:info': {backgroundColor: 'var(--color-background-card)'},
       'status:warning': {backgroundColor: 'var(--color-background-card)'},
@@ -516,7 +516,7 @@ export const metaTheme = defineTheme({
     dialog: {
       base: {
         backgroundColor: 'light-dark(var(--color-background-surface), #1F1F20)',
-        '--dialog-radius': '32px',
+        borderRadius: '32px',
       },
     },
 
@@ -544,9 +544,8 @@ export const metaTheme = defineTheme({
     },
     'dropdown-menu': {
       base: {
-        '--dropdown-radius': '16px',
-        '--dropdown-padding': '8px',
-        padding: '8px !important',
+        borderRadius: '16px',
+        padding: '8px',
       },
     },
     'more-menu': {
