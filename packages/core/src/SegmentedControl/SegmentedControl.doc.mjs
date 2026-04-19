@@ -13,8 +13,8 @@ export const docs = {
       {name: '--segmented-padding', description: 'Inner padding of the segmented control', default: 'var(--spacing-0-5)'},
     ],
     derived: [
-      {property: 'borderRadius', description: 'Border radius of the segmented control', default: 'var(--radius-element)', vars: ['--segmented-radius']},
-      {property: 'padding', description: 'Inner padding of the segmented control', default: 'var(--spacing-0-5)', vars: ['--segmented-padding']},
+      {property: 'borderRadius', vars: ['--segmented-radius']},
+      {property: 'padding', vars: ['--segmented-padding']},
     ],
   },
   components: [

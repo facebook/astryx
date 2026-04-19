@@ -212,19 +212,18 @@ export function formatFull(docs, options = {}) {
       sections.push(`Component key: \`${docs.theming.componentKey}\`\n`);
     }
 
-    // Public CSS custom properties
-    if (docs.theming?.cssProperties?.length) {
-      const propLines = [];
-      propLines.push('| CSS Property | Description | Default |');
-      propLines.push('|-------------|-------------|---------|');
-      for (const p of docs.theming.cssProperties) {
-        propLines.push(`| \`${p.name}\` | ${p.description} | ${p.default || '—'} |`);
-      }
-      sections.push(propLines.join('\n') + '\n');
-    }
-
-    // Component CSS vars
+    // Component CSS vars — additional themeable properties
     if (docs.theming?.vars?.length) {
+      sections.push('**Themeable CSS variables** — additional properties that can be overridden in `defineTheme` component overrides.\n');
+
+      // Build a set of vars that are derived from standard CSS properties
+      const derivedVarNames = new Set();
+      if (docs.theming?.derived?.length) {
+        for (const d of docs.theming.derived) {
+          if (d.vars) d.vars.forEach(v => derivedVarNames.add(v));
+        }
+      }
+
       const varLines = [];
       varLines.push('| CSS Variable | Default | Description |');
       varLines.push('|-------------|---------|-------------|');
@@ -232,17 +231,35 @@ export function formatFull(docs, options = {}) {
         if (v.derived) {
           varLines.push(`| \`${v.name}\` | _(derived)_ | ${v.description} |`);
         } else {
-          varLines.push(`| \`${v.name}\` | \`${v.default}\` | ${v.description} |`);
+          const derivedNote = derivedVarNames.has(v.name) ? ' _(set via standard CSS property)_' : '';
+          varLines.push(`| \`${v.name}\` | \`${v.default}\` | ${v.description}${derivedNote} |`);
         }
       }
       sections.push(varLines.join('\n') + '\n');
 
-      // Show var override example
-      const overridableVars = docs.theming.vars.filter(v => !v.derived);
-      if (overridableVars.length > 0) {
-        const exampleVar = overridableVars[0];
+      // Show derived property examples if available
+      if (docs.theming?.derived?.length) {
         const varsKey = docs.theming.targets?.length ? targetKey(docs.theming.targets[0]) : docs.theming.componentKey || '';
-        sections.push('Override CSS vars in defineTheme:\n```ts\ncomponents: {\n  ' + varsKey + ': {\n    base: { \'' + exampleVar.name + '\': \'...\' },\n  },\n}\n```\n');
+        const derivedExamples = docs.theming.derived
+          .filter(d => d.vars?.length)
+          .map(d => `      ${d.property}: '...',  // also sets ${d.vars.join(', ')}`)
+          .join('\n');
+        const expandExamples = docs.theming.derived
+          .filter(d => d.expand === 'container')
+          .map(d => `      ${d.property}: '...',  // expands to container layout tokens`)
+          .join('\n');
+        const allExamples = [derivedExamples, expandExamples].filter(Boolean).join('\n');
+        if (allExamples) {
+          sections.push('Some vars can be set by writing standard CSS properties:\n```ts\ncomponents: {\n  ' + varsKey + ': {\n    base: {\n' + allExamples + '\n    },\n  },\n}\n```\n');
+        }
+      } else {
+        // Fallback: show raw var override example
+        const overridableVars = docs.theming.vars.filter(v => !v.derived);
+        if (overridableVars.length > 0) {
+          const exampleVar = overridableVars[0];
+          const varsKey = docs.theming.targets?.length ? targetKey(docs.theming.targets[0]) : docs.theming.componentKey || '';
+          sections.push('Override CSS vars in defineTheme:\n```ts\ncomponents: {\n  ' + varsKey + ': {\n    base: { \'' + exampleVar.name + '\': \'...\' },\n  },\n}\n```\n');
+        }
       }
     }
   }
@@ -311,14 +328,16 @@ export function formatCompact(docs, componentName, importHint) {
     }
   }
 
-  // CSS custom properties (compact includes these for theme consumers)
-  if (docs.theming?.cssProperties?.length) {
-    sections.push('## CSS Properties\n');
+  // Derived theming properties (compact includes these for theme consumers)
+  if (docs.theming?.derived?.length) {
+    sections.push('## Derived Theme Properties\n');
+    sections.push('Standard CSS properties that also set internal vars:\n');
     const propLines = [];
-    propLines.push('| CSS Property | Description | Default |');
-    propLines.push('|-------------|-------------|---------|');
-    for (const p of docs.theming.cssProperties) {
-      propLines.push(`| \`${p.name}\` | ${p.description} | ${p.default || '—'} |`);
+    propLines.push('| CSS Property | Sets |');
+    propLines.push('|-------------|------|');
+    for (const d of docs.theming.derived) {
+      const target = d.expand === 'container' ? 'container layout tokens' : (d.vars || []).map(v => `\`${v}\``).join(', ');
+      propLines.push(`| \`${d.property}\` | ${target} |`);
     }
     sections.push(propLines.join('\n') + '\n');
   }
@@ -404,12 +423,12 @@ export function formatBrief(docs, componentName, importHint, options = {}) {
     }
   }
 
-  // CSS custom properties (if any)
-  if (docs.theming?.cssProperties?.length) {
-    const cssPropNames = docs.theming.cssProperties
-      .map(p => `${p.name} (${p.default || '—'})`)
-      .join(', ');
-    output.push(`  CSS Props: ${cssPropNames}`);
+  // Derived properties (if any)
+  if (docs.theming?.derived?.length) {
+    const derivedNames = docs.theming.derived
+      .map(d => d.expand === 'container' ? `${d.property} → container tokens` : `${d.property} → ${(d.vars || []).join(', ')}`)
+      .join('; ');
+    output.push(`  Derived: ${derivedNames}`);
   }
 
 // Theme targets (class names, variants, states) with theme variant merging

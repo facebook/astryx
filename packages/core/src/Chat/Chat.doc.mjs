@@ -25,8 +25,8 @@ export const docs = {
       {name: '--button-radius', description: 'Concentric button radius inside the composer.', default: 'max(var(--radius-element), calc(var(--composer-radius) - var(--composer-padding)))', derived: true, formula: 'max(var(--radius-element), calc(var(--composer-radius) - var(--composer-padding)))'},
     ],
     derived: [
-      {property: 'borderRadius', description: 'Border radius of the composer. Inner elements derive their radius concentrically.', default: 'var(--radius-page)', vars: ['--composer-radius']},
-      {property: 'padding', description: 'Padding of the composer. Used in the concentric radius calculation.', default: 'var(--spacing-3)', vars: ['--composer-padding']},
+      {property: 'borderRadius', vars: ['--composer-radius']},
+      {property: 'padding', vars: ['--composer-padding']},
     ],
   },
   components: [

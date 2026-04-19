@@ -78,24 +78,6 @@ export interface ThemingTarget {
 }
 
 /**
- * Documents a public CSS custom property that themes can set on a component
- * via component style overrides in `defineTheme`.
- *
- * @example
- * ```
- * {name: 'padding', description: 'Controls Card container padding. Mapped to container tokens automatically.', default: 'var(--spacing-4)'}
- * ```
- */
-export interface CSSPropertyDoc {
-  /** The CSS custom property name. Always starts with `--xds-`. */
-  name: string;
-  /** What this property controls, in 1-2 sentences. */
-  description: string;
-  /** Default value if not set by theme. e.g. `"var(--spacing-4)"` */
-  default?: string;
-}
-
-/**
  * Maps a standard CSS property to one or more internal CSS custom properties.
  *
  * Theme authors write standard CSS (e.g. `borderRadius: '32px'`). The theme
@@ -128,11 +110,6 @@ export interface DerivedVar {
   /** The standard CSS property name (camelCase) that theme authors write.
    *  e.g. `'borderRadius'`, `'padding'`, `'paddingBlock'` */
   property: string;
-  /** What this derived mapping controls, in 1-2 sentences. */
-  description?: string;
-  /** Default value as a CSS expression if not set by theme.
-   *  e.g. `'var(--radius-container)'`, `'var(--spacing-4)'` */
-  default?: string;
   /** Internal CSS custom property names to set when this property appears
    *  in a theme's component overrides. Omit when using `expand`. */
   vars?: string[];
@@ -155,7 +132,9 @@ export interface DerivedVar {
 export interface ComponentVar {
   /** CSS custom property name, e.g. '--card-radius' */
   name: string;
-  /** What this var controls */
+  /** What this var controls. For derived vars, describe what the CSS property
+   *  expands into (e.g. "Border radius of the card. Theme authors write
+   *  `borderRadius`; the pipeline also sets this var.") */
   description: string;
   /** Default value as a CSS expression, e.g. 'var(--radius-container)' */
   default: string;
@@ -163,6 +142,21 @@ export interface ComponentVar {
   derived?: boolean;
   /** CSS expression showing how derived vars are computed */
   formula?: string;
+  /**
+   * The standard CSS property (camelCase) that theme authors write to set
+   * this var. When present, the pipeline intercepts this property in
+   * component overrides and emits the internal var alongside the CSS.
+   *
+   * e.g. `'borderRadius'` — writing `borderRadius: '32px'` in defineTheme
+   * emits both `border-radius: 32px` and `--card-radius: 32px`.
+   */
+  property?: string;
+  /**
+   * Named expansion strategy instead of setting the var directly.
+   * `'container'` — the pipeline expands padding values into 7 container
+   * layout tokens (--xds-<component>-padding, -inline, -block-start, etc.).
+   */
+  expand?: 'container';
 }
 
 /**
@@ -298,14 +292,10 @@ interface BaseDoc {
     targets: ThemingTarget[];
     /** CSS custom properties exposed for theming. */
     vars?: ComponentVar[];
-    /** Public CSS custom properties that themes can set on this component
-     *  via component overrides. Only document supported public properties —
-     *  internal variables must not be listed here. */
-    cssProperties?: CSSPropertyDoc[];
     /** Maps standard CSS properties to internal vars for theme pipeline
      *  expansion. Ordered by priority — earlier entries emit first.
      *  The pipeline reads this to know: when a theme sets `borderRadius`
-     *  on this component, also emit `--_card-radius`.
+     *  on this component, also emit the internal var.
      *  @see DerivedVar */
     derived?: DerivedVar[];
   };
