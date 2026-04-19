@@ -18,14 +18,17 @@
       "import": "./dist/meta.js",
       "require": "./dist/meta.js"
     },
-    "./theme.css": "./dist/theme.css"
+    "./theme.css": {
+      "types": "./theme.css.d.ts",
+      "default": "./dist/theme.css"
+    }
   },
   "files": [
     "dist",
     "src"
   ],
   "scripts": {
-    "build": "xds theme build src/metaTheme.ts -o dist/theme.css && node scripts/gen-compat-css.mjs && tsup"
+    "build": "xds theme build src/metaTheme.ts -o dist/theme.css && node scripts/gen-compat-css.mjs && tsup && tsc --project tsconfig.build.json"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0"

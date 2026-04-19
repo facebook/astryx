@@ -19,14 +19,17 @@
       "import": "./dist/whatsapp.js",
       "require": "./dist/whatsapp.js"
     },
-    "./theme.css": "./dist/theme.css"
+    "./theme.css": {
+      "types": "./theme.css.d.ts",
+      "default": "./dist/theme.css"
+    }
   },
   "files": [
     "dist",
     "src"
   ],
   "scripts": {
-    "build": "xds theme build src/whatsappTheme.ts -o dist/theme.css && tsup"
+    "build": "xds theme build src/whatsappTheme.ts -o dist/theme.css && tsup && tsc --project tsconfig.build.json"
   },
   "peerDependencies": {
     "@xds/core": "*",

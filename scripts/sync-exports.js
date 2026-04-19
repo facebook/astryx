@@ -42,8 +42,14 @@ const UTILITY_DIRS = new Set(['hooks', 'theme', 'utils']);
  * These are maintained manually here as the single source of truth.
  */
 const STATIC_EXPORTS = {
-  './reset.css': './src/reset.css',
-  './xds.css': './dist/xds.css',
+  './reset.css': {
+    types: './src/reset.css.d.ts',
+    default: './src/reset.css',
+  },
+  './xds.css': {
+    types: './src/xds.css.d.ts',
+    default: './dist/xds.css',
+  },
   './theme/tokens.stylex': {
     source: './src/theme/tokens.stylex.ts',
     types: './dist/theme/tokens.stylex.d.ts',

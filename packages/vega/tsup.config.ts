@@ -12,7 +12,7 @@ import {defineConfig} from 'tsup';
 export default defineConfig({
   entry: ['src/index.ts'],
   format: ['cjs', 'esm'],
-  dts: true,
+  dts: false,
   splitting: true,
   clean: true,
   external: ['react', 'react-dom', 'vega', 'vega-lite'],
