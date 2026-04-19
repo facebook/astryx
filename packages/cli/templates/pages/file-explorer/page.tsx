@@ -339,7 +339,7 @@ export default function FileExplorerPage() {
       topNav={
         <XDSToolbar
           label="File Explorer"
-          density="compact"
+          size="sm"
           startContent={
             <XDSHStack gap={1} vAlign="center">
               <XDSIconButton
