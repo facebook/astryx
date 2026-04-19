@@ -344,8 +344,9 @@ export default function FileExplorerPage() {
           <XDSToolbar
             label="File Explorer"
             size="sm"
+            gap={1}
             startContent={
-              <XDSHStack gap={1} vAlign="center">
+              <>
                 <XDSIconButton
                   variant="ghost"
                   size="sm"
@@ -366,7 +367,7 @@ export default function FileExplorerPage() {
                   label="Go forward"
                 />
                 <XDSText type="label">{currentFolderName}</XDSText>
-              </XDSHStack>
+              </>
             }
             centerContent={
               <XDSSegmentedControl
@@ -400,7 +401,7 @@ export default function FileExplorerPage() {
               </XDSSegmentedControl>
             }
             endContent={
-              <XDSHStack gap={1} vAlign="center">
+              <>
                 <XDSIconButton
                   variant="ghost"
                   size="sm"
@@ -431,7 +432,7 @@ export default function FileExplorerPage() {
                   icon={<XDSIcon icon={MagnifyingGlassIcon} size="sm" />}
                   label="Search"
                 />
-              </XDSHStack>
+              </>
             }
           />
         </XDSLayoutHeader>
