@@ -65,7 +65,6 @@ const styles = stylex.create({
   startSlot: {
     display: 'flex',
     alignItems: 'center',
-    paddingInlineStart: spacingVars['--spacing-2'],
   },
   centerSlot: {
     display: 'flex',
