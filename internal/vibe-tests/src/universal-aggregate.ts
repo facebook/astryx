@@ -121,7 +121,7 @@ async function main() {
     const promptId = path.basename(file, '.tsx');
     const codePath = path.join(codeDir, file);
     const code = fs.readFileSync(codePath, 'utf-8');
-    const score = evaluate(code, target);
+    const score = evaluate(code, target, {iterDir, promptId});
     byPrompt[promptId] = score;
 
     if (score.maintainability.metrics?.darkModeSupport) {
