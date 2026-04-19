@@ -298,8 +298,8 @@ export function XDSTextArea({
 
   const statusIconMap: Record<XDSTextAreaStatusType, XDSIconName> = {
     warning: 'warning',
-    error: 'xCircle',
-    success: 'checkCircle',
+    error: 'error',
+    success: 'success',
   };
 
   const statusIconColorMap: Record<

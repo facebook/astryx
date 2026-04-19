@@ -332,8 +332,8 @@ const selectAllSizeStyles = stylex.create({
 
 const STATUS_ICON_MAP: Record<XDSMultiSelectorStatusType, XDSIconName> = {
   warning: 'warning',
-  error: 'xCircle',
-  success: 'checkCircle',
+  error: 'error',
+  success: 'success',
 };
 
 const STATUS_ICON_COLOR_MAP: Record<

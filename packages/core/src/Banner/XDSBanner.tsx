@@ -185,8 +185,8 @@ export interface XDSBannerProps {
 const defaultIconNames: Record<XDSBannerStatus, XDSIconName> = {
   info: 'info',
   warning: 'warning',
-  error: 'xCircle',
-  success: 'checkCircle',
+  error: 'error',
+  success: 'success',
 };
 
 // =============================================================================
