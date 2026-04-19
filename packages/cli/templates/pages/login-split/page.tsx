@@ -19,7 +19,7 @@ import {
   radiusVars,
 } from '@xds/core/theme/tokens.stylex';
 
-const COVER_IMAGE_URL = '/templates/login-split-cover.png';
+const COVER_IMAGE_URL = '/templates/light-working-vertical-1.png';
 
 const APPLE_ICON_URL = '/templates/apple-logo.png';
 const GOOGLE_ICON_URL = '/templates/google-logo.png';
