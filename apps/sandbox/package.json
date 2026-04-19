@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "build:deps": "yarn workspace @xds/core build && yarn workspace @xds/theme-default build && yarn workspace @xds/theme-neutral build && yarn workspace @xds/theme-brutalist build && yarn workspace @xds/theme-meta build && yarn workspace @xds/theme-whatsapp build && yarn workspace @xds/theme-daily build",
+    "build:deps": "yarn workspace @xds/theme-default build && yarn workspace @xds/theme-neutral build && yarn workspace @xds/theme-brutalist build && yarn workspace @xds/theme-meta build && yarn workspace @xds/theme-whatsapp build && yarn workspace @xds/theme-daily build",
     "generate:versions": "node scripts/generate-versions.js",
     "predev": "node ../../scripts/sync-templates.js && yarn generate:versions",
     "dev": "node ../../scripts/sync-templates.js --watch & next dev",
@@ -37,6 +37,7 @@
     "@types/node": "^25.6.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "@xds/build": "*"
   }
 }
