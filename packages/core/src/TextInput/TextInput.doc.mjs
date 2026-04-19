@@ -96,7 +96,7 @@ export const docs = {
       name: 'startIcon',
       type: 'XDSIconType',
       description:
-        'SVG icon component displayed at the start of the input (e.g. from heroicons or lucide).',
+        'SVG icon component displayed at the start of the input. See `npx xds docs icons` for valid semantic names.',
     },
     {
       name: 'status',

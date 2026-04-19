@@ -72,12 +72,12 @@ export const docs = {
     {
       name: 'startIcon',
       type: 'XDSIconType',
-      description: 'Icon to display at the start of the input.',
+      description: 'Icon to display at the start of the input. See `npx xds docs icons` for valid semantic names.',
     },
     {
       name: 'labelIcon',
       type: 'XDSIconType',
-      description: 'Icon to display before the label text.',
+      description: 'Icon to display before the label text. See `npx xds docs icons` for valid semantic names.',
     },
     {
       name: 'status',

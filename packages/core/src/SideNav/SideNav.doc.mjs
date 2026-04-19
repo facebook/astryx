@@ -128,13 +128,13 @@ export const docs = {
         {
           name: 'icon',
           type: 'XDSIconType',
-          description: 'Icon displayed in the outline (unselected) variant.',
+          description: 'Icon displayed in the outline (unselected) variant. See `npx xds docs icons` for valid semantic names.',
         },
         {
           name: 'selectedIcon',
           type: 'XDSIconType',
           description:
-            'Icon displayed when the item is selected (filled variant).',
+            'Icon displayed when the item is selected (filled variant). See `npx xds docs icons` for valid semantic names.',
         },
         {
           name: 'isSelected',

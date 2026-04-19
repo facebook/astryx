@@ -7,7 +7,7 @@ export const docs = {
     {
       name: 'icon',
       type: 'XDSIconName | ComponentType<SVGProps>',
-      description: 'Semantic name or SVG icon component.',
+      description: 'Semantic icon name or SVG component. Run `npx xds docs icons` for valid names.',
       required: true,
     },
     {
@@ -45,7 +45,7 @@ export const docsZh = {
     {
       name: 'icon',
       type: 'XDSIconName | ComponentType<SVGProps>',
-      description: '语义名称或 SVG 图标组件。',
+      description: '语义图标名称或 SVG 组件。运行 `npx xds docs icons` 查看可用名称。',
       required: true,
     },
     {
@@ -89,7 +89,7 @@ export const docsDense = {
     ],
   },
   propDescriptions: {
-    icon: 'Semantic name or SVG icon component.',
+    icon: 'Semantic icon name or SVG component. See `npx xds docs icons`.',
     color: 'Color variant mapped to XDS icon color tokens.',
     size: 'Icon size.',
   },

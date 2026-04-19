@@ -106,7 +106,7 @@ export const docs = {
       name: 'startIcon',
       type: 'XDSIconType',
       description:
-        'Icon component rendered inside the leading edge of the textarea wrapper.',
+        'Icon component rendered inside the leading edge of the textarea wrapper. See `npx xds docs icons` for valid semantic names.',
     },
     {
       name: 'hasSpellCheck',
