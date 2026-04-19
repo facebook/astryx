@@ -47,14 +47,8 @@ export const whatsappTheme = defineTheme({
     },
   },
 
-  // Radius: WDS scale (0/4/8/12/28/9999) matches XDS defaults exactly.
-  //   borderRadiusNone=0 → --radius-none=0
-  //   borderRadiusHalf=4 → --radius-inner=4
-  //   borderRadiusSingle=8 → --radius-element=8 (inputs, cards)
-  //   borderRadiusSinglePlus=12 → --radius-container=12
-  //   borderRadiusTriplePlus=28 → --radius-page=28
-  //   borderRadiusCircle=9999 → --radius-full=9999 (buttons)
-  // No radius override needed — multiplier=1 (default) is correct.
+  // Radius: WhatsApp uses generously rounded surfaces — doubled radius scale.
+  radius: {base: 4, multiplier: 2},
 
   // Motion: WhatsApp feels snappy but not jarring.
   // Slightly faster than XDS default, with ease-out for natural deceleration.

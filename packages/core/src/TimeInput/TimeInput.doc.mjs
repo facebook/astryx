@@ -138,7 +138,7 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'xds-time-input', visualProps: ['size']},
+      {className: 'xds-time-input', visualProps: ['size', 'status']},
     ],
   },
   usage: {
@@ -290,7 +290,7 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'xds-time-input', visualProps: ['size']},
+      {className: 'xds-time-input', visualProps: ['size', 'status']},
     ],
   },
   usage: {

@@ -535,7 +535,7 @@ export function XDSTimeInput({
       labelTooltip={labelTooltip}>
       <div
         {...mergeProps(
-          xdsClassName('time-input', {size}),
+          xdsClassName('time-input', {size, status: status?.type ?? null}),
           stylex.props(
             inputWrapperStyles.base,
             sizeStyles[size],
