@@ -9,7 +9,6 @@ import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSLink} from '@xds/core/Link';
 import {XDSButton} from '@xds/core/Button';
 import {XDSSelector} from '@xds/core/Selector';
-
 import {XDSCard} from '@xds/core/Card';
 import {XDSSection} from '@xds/core/Section';
 import {XDSSwitch} from '@xds/core/Switch';
@@ -38,6 +37,10 @@ const styles = stylex.create({
     borderRadius: 12,
     backgroundColor: 'var(--xds-color-background-muted, #f5f5f5)',
     flexShrink: 0,
+  },
+  rowPadding: {
+    paddingTop: 16,
+    paddingBottom: 16,
   },
 });
 
@@ -88,7 +91,7 @@ const DEVICE_ROWS: {
 function InfoRowItem({label, value, action}: InfoRow) {
   return (
     <>
-      <XDSHStack hAlign="between" vAlign="start" padding={4}>
+      <XDSHStack hAlign="between" vAlign="start" xstyle={styles.rowPadding}>
         <XDSVStack gap={0}>
           <XDSText type="body" weight="semibold" display="block">
             {label}
@@ -130,7 +133,7 @@ function ExpandableRow({
   return (
     <>
       {isExpanded ? (
-        <XDSVStack gap={4} padding={4}>
+        <XDSVStack gap={4} xstyle={styles.rowPadding}>
           <XDSText type="body" weight="semibold" display="block">
             {label}
           </XDSText>
@@ -141,7 +144,7 @@ function ExpandableRow({
           </XDSHStack>
         </XDSVStack>
       ) : (
-        <XDSHStack hAlign="between" vAlign="start" padding={4}>
+        <XDSHStack hAlign="between" vAlign="start" xstyle={styles.rowPadding}>
           <XDSVStack gap={0}>
             <XDSText type="body" weight="semibold" display="block">
               {label}
@@ -212,6 +215,7 @@ export default function SettingsSecurityTemplate() {
     <XDSAppShell
       height="fill"
       variant="section"
+      contentPadding={4}
       sideNav={
         <XDSVStack gap={4}>
           <XDSSection padding={4} variant="transparent">
@@ -238,7 +242,7 @@ export default function SettingsSecurityTemplate() {
           </XDSList>
         </XDSVStack>
       }>
-      <XDSSection padding={6} maxWidth={700} variant="transparent">
+      <XDSSection maxWidth={700} variant="transparent" padding={0}>
         {activeNav === 'Login & security' && (
           <XDSVStack gap={6}>
             <XDSHeading level={2}>Login &amp; security</XDSHeading>
@@ -273,7 +277,11 @@ export default function SettingsSecurityTemplate() {
                   <XDSHeading level={3}>Device history</XDSHeading>
                   <XDSDivider />
                   {DEVICE_ROWS.map((device, i) => (
-                    <XDSHStack key={i} gap={3} vAlign="start" padding={4}>
+                    <XDSHStack
+                      key={i}
+                      gap={3}
+                      vAlign="start"
+                      xstyle={styles.rowPadding}>
                       <XDSIcon icon={ComputerDesktopIcon} />
                       <XDSStackItem size="fill">
                         <XDSVStack gap={0}>
@@ -306,7 +314,10 @@ export default function SettingsSecurityTemplate() {
                 <XDSVStack gap={0}>
                   <XDSHeading level={3}>Account</XDSHeading>
                   <XDSDivider />
-                  <XDSHStack hAlign="between" vAlign="start" padding={4}>
+                  <XDSHStack
+                    hAlign="between"
+                    vAlign="start"
+                    xstyle={styles.rowPadding}>
                     <XDSVStack gap={0}>
                       <XDSText type="body" weight="semibold" display="block">
                         Deactivate your account
@@ -475,76 +486,73 @@ export default function SettingsSecurityTemplate() {
 
             <XDSCard padding={4}>
               <XDSVStack gap={0}>
-                <XDSSection padding={4} variant="transparent">
-                  <XDSHStack gap={3} vAlign="start">
-                    <XDSCenter
-                      width={48}
-                      height={48}
-                      xstyle={styles.iconBox}>
-                      <XDSIcon icon={LockClosedIcon} />
-                    </XDSCenter>
-                    <XDSVStack gap={0}>
-                      <XDSText type="body" weight="semibold" display="block">
-                        Why isn&apos;t my info shown here?
-                      </XDSText>
-                      <XDSText
-                        type="supporting"
-                        color="secondary"
-                        display="block">
-                        We&apos;re hiding some account details to protect your
-                        identity.
-                      </XDSText>
-                    </XDSVStack>
-                  </XDSHStack>
-                </XDSSection>
+                <XDSHStack gap={3} vAlign="start">
+                  <XDSCenter
+                    width={48}
+                    height={48}
+                    xstyle={styles.iconBox}>
+                    <XDSIcon icon={LockClosedIcon} />
+                  </XDSCenter>
+                  <XDSVStack gap={0}>
+                    <XDSText type="body" weight="semibold" display="block">
+                      Why isn&apos;t my info shown here?
+                    </XDSText>
+                    <XDSText
+                      type="supporting"
+                      color="secondary"
+                      display="block">
+                      We&apos;re hiding some account details to protect your
+                      identity.
+                    </XDSText>
+                  </XDSVStack>
+                </XDSHStack>
                 <XDSDivider />
-                <XDSSection padding={4} variant="transparent">
-                  <XDSHStack gap={3} vAlign="start">
-                    <XDSCenter
-                      width={48}
-                      height={48}
-                      xstyle={styles.iconBox}>
-                      <XDSIcon icon={PencilSquareIcon} />
-                    </XDSCenter>
-                    <XDSVStack gap={0}>
-                      <XDSText type="body" weight="semibold" display="block">
-                        Which details can be edited?
-                      </XDSText>
-                      <XDSText
-                        type="supporting"
-                        color="secondary"
-                        display="block">
-                        Contact info and personal details can be edited. If this
-                        info was used to verify your identity, you&apos;ll need
-                        to get verified again the next time you book—or to
-                        continue hosting.
-                      </XDSText>
-                    </XDSVStack>
-                  </XDSHStack>
-                </XDSSection>
+                <XDSHStack
+                  gap={3}
+                  vAlign="start"
+                  xstyle={styles.rowPadding}>
+                  <XDSCenter
+                    width={48}
+                    height={48}
+                    xstyle={styles.iconBox}>
+                    <XDSIcon icon={PencilSquareIcon} />
+                  </XDSCenter>
+                  <XDSVStack gap={0}>
+                    <XDSText type="body" weight="semibold" display="block">
+                      Which details can be edited?
+                    </XDSText>
+                    <XDSText
+                      type="supporting"
+                      color="secondary"
+                      display="block">
+                      Contact info and personal details can be edited. If this
+                      info was used to verify your identity, you&apos;ll need
+                      to get verified again the next time you book—or to
+                      continue hosting.
+                    </XDSText>
+                  </XDSVStack>
+                </XDSHStack>
                 <XDSDivider />
-                <XDSSection padding={4} variant="transparent">
-                  <XDSHStack gap={3} vAlign="start">
-                    <XDSCenter
-                      width={48}
-                      height={48}
-                      xstyle={styles.iconBox}>
-                      <XDSIcon icon={ShareIcon} />
-                    </XDSCenter>
-                    <XDSVStack gap={0}>
-                      <XDSText type="body" weight="semibold" display="block">
-                        What info is shared with others?
-                      </XDSText>
-                      <XDSText
-                        type="supporting"
-                        color="secondary"
-                        display="block">
-                        We only release contact information after a reservation
-                        is confirmed.
-                      </XDSText>
-                    </XDSVStack>
-                  </XDSHStack>
-                </XDSSection>
+                <XDSHStack gap={3} vAlign="start">
+                  <XDSCenter
+                    width={48}
+                    height={48}
+                    xstyle={styles.iconBox}>
+                    <XDSIcon icon={ShareIcon} />
+                  </XDSCenter>
+                  <XDSVStack gap={0}>
+                    <XDSText type="body" weight="semibold" display="block">
+                      What info is shared with others?
+                    </XDSText>
+                    <XDSText
+                      type="supporting"
+                      color="secondary"
+                      display="block">
+                      We only release contact information after a reservation
+                      is confirmed.
+                    </XDSText>
+                  </XDSVStack>
+                </XDSHStack>
               </XDSVStack>
             </XDSCard>
           </XDSVStack>
@@ -557,7 +565,7 @@ export default function SettingsSecurityTemplate() {
             <XDSVStack gap={8}>
               <XDSVStack gap={0}>
                 <XDSHeading level={3}>Messages</XDSHeading>
-                <XDSSection padding={4} variant="transparent">
+                <XDSVStack xstyle={styles.rowPadding}>
                   <XDSSwitch
                     label="Show people when I've read their messages."
                     value={readReceipts}
@@ -565,23 +573,24 @@ export default function SettingsSecurityTemplate() {
                     labelPosition="start"
                     labelSpacing="spread"
                   />
-                </XDSSection>
-                <XDSSection padding={4} variant="transparent">
-                  <XDSHStack hAlign="between" vAlign="center">
-                    <XDSText type="body" weight="semibold">
-                      Blocked people
-                    </XDSText>
-                    <XDSLink label="View" href="#">
-                      View
-                    </XDSLink>
-                  </XDSHStack>
-                </XDSSection>
+                </XDSVStack>
+                <XDSHStack
+                  hAlign="between"
+                  vAlign="center"
+                  xstyle={styles.rowPadding}>
+                  <XDSText type="body" weight="semibold">
+                    Blocked people
+                  </XDSText>
+                  <XDSLink label="View" href="#">
+                    View
+                  </XDSLink>
+                </XDSHStack>
                 <XDSDivider />
               </XDSVStack>
 
               <XDSVStack gap={0}>
                 <XDSHeading level={3}>Listings</XDSHeading>
-                <XDSSection padding={4} variant="transparent">
+                <XDSVStack xstyle={styles.rowPadding}>
                   <XDSSwitch
                     label="Include my listing(s) in search engines"
                     description="Turning this on means search engines, like Google, will display your listing page(s) in search results."
@@ -590,56 +599,52 @@ export default function SettingsSecurityTemplate() {
                     labelPosition="start"
                     labelSpacing="spread"
                   />
-                </XDSSection>
+                </XDSVStack>
                 <XDSDivider />
               </XDSVStack>
 
-              <XDSVStack gap={0}>
+              <XDSVStack gap={4}>
                 <XDSHeading level={3}>Reviews</XDSHeading>
-                <XDSSection padding={2} variant="transparent">
-                  <XDSText type="supporting" color="secondary">
-                    Choose what&apos;s shared when you write a review.{' '}
-                    <XDSLink label="Learn more" href="#" type="supporting">
-                      Learn more
-                    </XDSLink>
-                  </XDSText>
-                </XDSSection>
-                <XDSSection padding={4} variant="transparent">
-                  <XDSVStack gap={4}>
-                    <XDSSwitch
-                      label="Show my home city and country"
-                      description="Ex: City and country"
-                      value={showCity}
-                      onChange={setShowCity}
-                      labelPosition="start"
-                      labelSpacing="spread"
-                    />
-                    <XDSSwitch
-                      label="Show my trip type"
-                      description="Ex: Stayed with kids or pets"
-                      value={showTripType}
-                      onChange={setShowTripType}
-                      labelPosition="start"
-                      labelSpacing="spread"
-                    />
-                    <XDSSwitch
-                      label="Show my length of stay"
-                      description="Ex: A few nights, about a week, etc."
-                      value={showStayLength}
-                      onChange={setShowStayLength}
-                      labelPosition="start"
-                      labelSpacing="spread"
-                    />
-                    <XDSSwitch
-                      label="Show my booked services"
-                      description="Ex: Gourmet brunch or tasting menu"
-                      value={showServices}
-                      onChange={setShowServices}
-                      labelPosition="start"
-                      labelSpacing="spread"
-                    />
-                  </XDSVStack>
-                </XDSSection>
+                <XDSText type="supporting" color="secondary">
+                  Choose what&apos;s shared when you write a review.{' '}
+                  <XDSLink label="Learn more" href="#" type="supporting">
+                    Learn more
+                  </XDSLink>
+                </XDSText>
+                <XDSVStack gap={4}>
+                  <XDSSwitch
+                    label="Show my home city and country"
+                    description="Ex: City and country"
+                    value={showCity}
+                    onChange={setShowCity}
+                    labelPosition="start"
+                    labelSpacing="spread"
+                  />
+                  <XDSSwitch
+                    label="Show my trip type"
+                    description="Ex: Stayed with kids or pets"
+                    value={showTripType}
+                    onChange={setShowTripType}
+                    labelPosition="start"
+                    labelSpacing="spread"
+                  />
+                  <XDSSwitch
+                    label="Show my length of stay"
+                    description="Ex: A few nights, about a week, etc."
+                    value={showStayLength}
+                    onChange={setShowStayLength}
+                    labelPosition="start"
+                    labelSpacing="spread"
+                  />
+                  <XDSSwitch
+                    label="Show my booked services"
+                    description="Ex: Gourmet brunch or tasting menu"
+                    value={showServices}
+                    onChange={setShowServices}
+                    labelPosition="start"
+                    labelSpacing="spread"
+                  />
+                </XDSVStack>
                 <XDSDivider />
               </XDSVStack>
 

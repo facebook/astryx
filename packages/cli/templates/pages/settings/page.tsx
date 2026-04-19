@@ -84,7 +84,7 @@ export default function SettingsTemplate() {
         </XDSSection>
       }
       sideNav={
-        <XDSSection padding={3} variant="transparent">
+        <XDSSection padding={4} variant="transparent">
           <XDSList density="compact">
             {NAV_ITEMS.map(item => (
               <XDSListItem
@@ -97,7 +97,7 @@ export default function SettingsTemplate() {
           </XDSList>
         </XDSSection>
       }>
-      <XDSVStack gap={4}>
+      <XDSVStack gap={6}>
         <XDSGrid columns={2} gap={10}>
           <XDSVStack gap={1}>
             <XDSHeading level={3}>Basic information</XDSHeading>
