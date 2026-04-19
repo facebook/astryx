@@ -542,8 +542,12 @@ function parseTscOutput(output: string, filePath: string): TscError[] {
   const lines = output.split('\n');
 
   for (const line of lines) {
-    // Match: path/file.tsx(line,col): error TSxxxx: message
-    const match = line.match(/\((\d+),\d+\):\s*error\s+(TS\d+):\s*(.+)/);
+    // Match both tsc output formats:
+    // - file.tsx(line,col): error TSxxxx: message
+    // - file.tsx:line:col - error TSxxxx: message
+    const match =
+      line.match(/\((\d+),\d+\):\s*error\s+(TS\d+):\s*(.+)/) ||
+      line.match(/:(\d+):\d+\s*-\s*error\s+(TS\d+):\s*(.+)/);
     if (match && line.includes(basename)) {
       errors.push({
         line: parseInt(match[1], 10),
@@ -562,11 +566,23 @@ function parseTscOutput(output: string, filePath: string): TscError[] {
  */
 function runTscCheck(filePath: string, target: string): TscResult {
   const tsconfig = getTsconfigForTarget(target);
+  const absFilePath = path.resolve(VIBE_DIR, filePath);
+
+  // tsc can't mix --project with file arguments, so we create a temp
+  // tsconfig that extends the target config and includes just this file.
+  const tmpConfig = path.join(VIBE_DIR, '.tsc-tmp.json');
+  fs.writeFileSync(
+    tmpConfig,
+    JSON.stringify({
+      extends: `./${path.relative(VIBE_DIR, tsconfig)}`,
+      include: [absFilePath],
+    }),
+  );
 
   try {
     execFileSync(
       'npx',
-      ['tsc', '--noEmit', '--project', tsconfig, '--files', filePath],
+      ['tsc', '--noEmit', '--pretty', 'false', '--project', tmpConfig],
       {
         cwd: VIBE_DIR,
         stdio: 'pipe',
@@ -591,6 +607,9 @@ function runTscCheck(filePath: string, target: string): TscResult {
       errorCount: errors.length,
       buildSuccess: errors.length === 0,
     };
+  } finally {
+    // Clean up temp config
+    if (fs.existsSync(tmpConfig)) fs.unlinkSync(tmpConfig);
   }
 }
 
