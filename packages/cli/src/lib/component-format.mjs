@@ -212,37 +212,29 @@ export function formatFull(docs, options = {}) {
       sections.push(`Component key: \`${docs.theming.componentKey}\`\n`);
     }
 
-    // Component CSS vars — additional themeable properties
+    // Component CSS vars — split into public (directly settable) and private (set via derived)
     if (docs.theming?.vars?.length) {
-      sections.push('**Themeable CSS variables** — additional properties that can be overridden in `defineTheme` component overrides.\n');
+      // Private vars (--_*) are internal — set via standard CSS properties through derived expansion
+      const publicVars = docs.theming.vars.filter(v => !v.private && !v.derived);
+      const privateVars = docs.theming.vars.filter(v => v.private || v.derived);
 
-      // Build a set of vars that are derived from standard CSS properties
-      const derivedVarNames = new Set();
-      if (docs.theming?.derived?.length) {
-        for (const d of docs.theming.derived) {
-          if (d.vars) d.vars.forEach(v => derivedVarNames.add(v));
+      if (publicVars.length > 0) {
+        sections.push('**Themeable CSS variables** — additional properties that can be overridden in `defineTheme` component overrides.\n');
+        const varLines = [];
+        varLines.push('| CSS Variable | Default | Description |');
+        varLines.push('|-------------|---------|-------------|');
+        for (const v of publicVars) {
+          varLines.push(`| \`${v.name}\` | \`${v.default}\` | ${v.description} |`);
         }
+        sections.push(varLines.join('\n') + '\n');
       }
 
-      const varLines = [];
-      varLines.push('| CSS Variable | Default | Description |');
-      varLines.push('|-------------|---------|-------------|');
-      for (const v of docs.theming.vars) {
-        if (v.derived) {
-          varLines.push(`| \`${v.name}\` | _(derived)_ | ${v.description} |`);
-        } else {
-          const derivedNote = derivedVarNames.has(v.name) ? ' _(set via standard CSS property)_' : '';
-          varLines.push(`| \`${v.name}\` | \`${v.default}\` | ${v.description}${derivedNote} |`);
-        }
-      }
-      sections.push(varLines.join('\n') + '\n');
-
-      // Show derived property examples if available
+      // Show derived property examples — the recommended way to theme
       if (docs.theming?.derived?.length) {
         const varsKey = docs.theming.targets?.length ? targetKey(docs.theming.targets[0]) : docs.theming.componentKey || '';
         const derivedExamples = docs.theming.derived
           .filter(d => d.vars?.length)
-          .map(d => `      ${d.property}: '...',  // also sets ${d.vars.join(', ')}`)
+          .map(d => `      ${d.property}: '...',`)
           .join('\n');
         const expandExamples = docs.theming.derived
           .filter(d => d.expand === 'container')
@@ -250,15 +242,7 @@ export function formatFull(docs, options = {}) {
           .join('\n');
         const allExamples = [derivedExamples, expandExamples].filter(Boolean).join('\n');
         if (allExamples) {
-          sections.push('Some vars can be set by writing standard CSS properties:\n```ts\ncomponents: {\n  ' + varsKey + ': {\n    base: {\n' + allExamples + '\n    },\n  },\n}\n```\n');
-        }
-      } else {
-        // Fallback: show raw var override example
-        const overridableVars = docs.theming.vars.filter(v => !v.derived);
-        if (overridableVars.length > 0) {
-          const exampleVar = overridableVars[0];
-          const varsKey = docs.theming.targets?.length ? targetKey(docs.theming.targets[0]) : docs.theming.componentKey || '';
-          sections.push('Override CSS vars in defineTheme:\n```ts\ncomponents: {\n  ' + varsKey + ': {\n    base: { \'' + exampleVar.name + '\': \'...\' },\n  },\n}\n```\n');
+          sections.push('Some properties are set via standard CSS in component overrides:\n```ts\ncomponents: {\n  ' + varsKey + ': {\n    base: {\n' + allExamples + '\n    },\n  },\n}\n```\n');
         }
       }
     }
@@ -412,10 +396,10 @@ export function formatBrief(docs, componentName, importHint, options = {}) {
     output.push(`  ${shortDesc}`);
   }
 
-  // Component vars (if any)
+  // Component vars (if any — only show public vars)
   if (docs.theming?.vars?.length) {
     const varNames = docs.theming.vars
-      .filter(v => !v.derived)
+      .filter(v => !v.derived && !v.private)
       .map(v => `${v.name} (${v.default})`)
       .join(', ');
     if (varNames) {

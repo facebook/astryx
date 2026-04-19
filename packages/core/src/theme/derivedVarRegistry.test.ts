@@ -53,7 +53,7 @@ const STRUCTURAL_VARS = new Set([
 
 /**
  * Extract component-specific CSS custom property names from a source file.
- * Matches patterns like '--card-radius': or '--composer-padding':
+ * Matches patterns like '--_card-radius': or '--_chat-composer-padding':
  * Excludes structural/runtime vars and standard token vars (--color-*, --spacing-*, etc.).
  */
 function extractComponentVars(filePath: string): string[] {
@@ -152,13 +152,13 @@ const DIR_TO_REGISTRY_KEY: Record<string, string> = {
  * (cross-component vars). These are documented in the *consuming* component's
  * doc, not the *setting* component's doc.
  *
- * e.g. Carousel and Thumbnail set --button-radius for their child Buttons,
- * but --button-radius is documented in Button's doc.
+ * e.g. Carousel and Thumbnail set --_button-radius for their child Buttons,
+ * but --_button-radius is documented in Button's doc.
  */
 const CROSS_COMPONENT_VARS: Record<string, string[]> = {
-  Carousel: ['--button-radius'],
-  Thumbnail: ['--button-radius'],
-  Chat: ['--button-radius'],
+  Carousel: ['--_button-radius'],
+  Thumbnail: ['--_button-radius'],
+  Chat: ['--_button-radius'],
 };
 
 // ---------------------------------------------------------------------------
@@ -267,7 +267,7 @@ describe('getDerivedVars', () => {
   it('returns matching entries for card borderRadius', () => {
     const result = getDerivedVars('card', 'borderRadius');
     expect(result).toHaveLength(1);
-    expect(result[0].vars).toEqual(['--card-radius']);
+    expect(result[0].vars).toEqual(['--_card-radius']);
   });
 
   it('returns empty for unknown component', () => {

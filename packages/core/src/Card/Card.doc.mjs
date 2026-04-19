@@ -63,10 +63,10 @@ export const docs = {
       {className: 'xds-card'},
     ],
     vars: [
-      {name: '--card-radius', description: 'Border radius of the card', default: 'var(--radius-container)'},
+      {name: '--_card-radius', description: 'Border radius of the card', default: 'var(--radius-container)', private: true},
     ],
     derived: [
-      {property: 'borderRadius', vars: ['--card-radius']},
+      {property: 'borderRadius', vars: ['--_card-radius']},
       {property: 'padding', expand: 'container'},
     ],
   },
@@ -103,10 +103,10 @@ export const docsZh = {
       {className: 'xds-card'},
     ],
     vars: [
-      {name: '--card-radius', description: 'Border radius of the card', default: 'var(--radius-container)'},
+      {name: '--_card-radius', description: 'Border radius of the card', default: 'var(--radius-container)', private: true},
     ],
     derived: [
-      {property: 'borderRadius', vars: ['--card-radius']},
+      {property: 'borderRadius', vars: ['--_card-radius']},
       {property: 'padding', expand: 'container'},
     ],
   },

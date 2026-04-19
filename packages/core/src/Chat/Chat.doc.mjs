@@ -20,13 +20,13 @@ export const docs = {
       {className: 'xds-trigger-menu'},
     ],
     vars: [
-      {name: '--composer-radius', description: 'Border radius of the composer body. Inner elements derive their radius concentrically.', default: 'var(--radius-page)'},
-      {name: '--composer-padding', description: 'Padding of the composer body. Used in the concentric radius calculation.', default: 'var(--spacing-3)'},
-      {name: '--button-radius', description: 'Concentric button radius inside the composer.', default: 'max(var(--radius-element), calc(var(--composer-radius) - var(--composer-padding)))', derived: true, formula: 'max(var(--radius-element), calc(var(--composer-radius) - var(--composer-padding)))'},
+      {name: '--_chat-composer-radius', description: 'Border radius of the composer body. Inner elements derive their radius concentrically.', default: 'var(--radius-page)', private: true},
+      {name: '--_chat-composer-padding', description: 'Padding of the composer body. Used in the concentric radius calculation.', default: 'var(--spacing-3)', private: true},
+      {name: '--_button-radius', description: 'Concentric button radius inside the composer.', default: 'max(var(--radius-element), calc(var(--_chat-composer-radius) - var(--_chat-composer-padding)))', private: true, derived: true, formula: 'max(var(--radius-element), calc(var(--_chat-composer-radius) - var(--_chat-composer-padding)))'},
     ],
     derived: [
-      {property: 'borderRadius', vars: ['--composer-radius']},
-      {property: 'padding', vars: ['--composer-padding']},
+      {property: 'borderRadius', vars: ['--_chat-composer-radius']},
+      {property: 'padding', vars: ['--_chat-composer-padding']},
     ],
   },
   components: [

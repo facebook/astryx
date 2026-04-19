@@ -73,8 +73,8 @@ const styles = stylex.create({
     display: 'inline-flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-0-5'],
-    '--segmented-padding': spacingVars['--spacing-0-5'],
-    padding: 'var(--segmented-padding)',
+    '--_segmented-control-padding': spacingVars['--spacing-0-5'],
+    padding: 'var(--_segmented-control-padding)',
     backgroundColor: colorVars['--color-neutral'],
   },
   disabled: {
@@ -85,16 +85,16 @@ const styles = stylex.create({
 
 const sizeStyles = stylex.create({
   sm: {
-    '--segmented-radius': radiusVars['--radius-element'],
-    borderRadius: 'var(--segmented-radius)',
+    '--_segmented-control-radius': radiusVars['--radius-element'],
+    borderRadius: 'var(--_segmented-control-radius)',
   },
   md: {
-    '--segmented-radius': radiusVars['--radius-element'],
-    borderRadius: 'var(--segmented-radius)',
+    '--_segmented-control-radius': radiusVars['--radius-element'],
+    borderRadius: 'var(--_segmented-control-radius)',
   },
   lg: {
-    '--segmented-radius': radiusVars['--radius-element'],
-    borderRadius: 'var(--segmented-radius)',
+    '--_segmented-control-radius': radiusVars['--radius-element'],
+    borderRadius: 'var(--_segmented-control-radius)',
   },
 });
 

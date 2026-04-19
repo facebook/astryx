@@ -9,10 +9,10 @@ export const docs = {
       {className: 'xds-dialog', visualProps: ['variant']},
     ],
     vars: [
-      {name: '--dialog-radius', description: 'Border radius of the dialog', default: 'var(--radius-container)'},
+      {name: '--_dialog-radius', description: 'Border radius of the dialog', default: 'var(--radius-container)', private: true},
     ],
     derived: [
-      {property: 'borderRadius', vars: ['--dialog-radius']},
+      {property: 'borderRadius', vars: ['--_dialog-radius']},
       {property: 'padding', expand: 'container'},
     ],
   },
@@ -141,10 +141,10 @@ export const docsZh = {
       {className: 'xds-dialog', visualProps: ['variant']},
     ],
     vars: [
-      {name: '--dialog-radius', description: 'Border radius of the dialog', default: 'var(--radius-container)'},
+      {name: '--_dialog-radius', description: 'Border radius of the dialog', default: 'var(--radius-container)', private: true},
     ],
     derived: [
-      {property: 'borderRadius', vars: ['--dialog-radius']},
+      {property: 'borderRadius', vars: ['--_dialog-radius']},
       {property: 'padding', expand: 'container'},
     ],
   },

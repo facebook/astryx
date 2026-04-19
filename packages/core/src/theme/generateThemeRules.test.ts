@@ -224,7 +224,7 @@ describe('derived var expansion', () => {
     const cardRule = rules.find(r => r.includes('.xds-card'));
     expect(cardRule).toBeDefined();
     expect(cardRule).toContain('border-radius: 32px');
-    expect(cardRule).toContain('--card-radius: 32px');
+    expect(cardRule).toContain('--_card-radius: 32px');
   });
 
   it('emits borderRadius AND internal var for dropdown-menu', () => {
@@ -240,7 +240,7 @@ describe('derived var expansion', () => {
     const rule = rules.find(r => r.includes('.xds-dropdown-menu'));
     expect(rule).toBeDefined();
     expect(rule).toContain('border-radius: 16px');
-    expect(rule).toContain('--dropdown-radius: 16px');
+    expect(rule).toContain('--_dropdown-menu-radius: 16px');
   });
 
   it('emits padding AND internal var for dropdown-menu', () => {
@@ -255,7 +255,7 @@ describe('derived var expansion', () => {
     const rules = generateThemeRules(theme);
     const rule = rules.find(r => r.includes('.xds-dropdown-menu'));
     expect(rule).toBeDefined();
-    expect(rule).toContain('--dropdown-padding: 8px');
+    expect(rule).toContain('--_dropdown-menu-padding: 8px');
   });
 
   it('emits internal vars for chat composer', () => {
@@ -270,8 +270,8 @@ describe('derived var expansion', () => {
     const rules = generateThemeRules(theme);
     const rule = rules.find(r => r.includes('.xds-chat'));
     expect(rule).toBeDefined();
-    expect(rule).toContain('--composer-radius: 24px');
-    expect(rule).toContain('--composer-padding: 12px');
+    expect(rule).toContain('--_chat-composer-radius: 24px');
+    expect(rule).toContain('--_chat-composer-padding: 12px');
   });
 
   it('emits internal var for button borderRadius', () => {
@@ -287,7 +287,7 @@ describe('derived var expansion', () => {
     const rule = rules.find(r => r.includes('.xds-button'));
     expect(rule).toBeDefined();
     expect(rule).toContain('border-radius: 8px');
-    expect(rule).toContain('--button-radius: 8px');
+    expect(rule).toContain('--_button-radius: 8px');
   });
 
   it('does not emit derived vars for components without registry entries', () => {
@@ -336,13 +336,13 @@ describe('derived var expansion', () => {
     const rule = rules.find(r => r.includes('.xds-card.muted'));
     expect(rule).toBeDefined();
     expect(rule).toContain('border-radius: 16px');
-    expect(rule).toContain('--card-radius: 16px');
+    expect(rule).toContain('--_card-radius: 16px');
   });
 });
 
 
 describe('brutalist-style derived expansion', () => {
-  it('button borderRadius emits --button-radius for pill shape', () => {
+  it('button borderRadius emits --_button-radius for pill shape', () => {
     const theme = defineTheme({
       name: 'test-brutalist',
       radius: {base: 4, multiplier: 0},
@@ -355,7 +355,7 @@ describe('brutalist-style derived expansion', () => {
     const rules = generateThemeRules(theme);
     const rule = rules.find(r => r.includes('.xds-button'));
     expect(rule).toContain('border-radius: 9999px');
-    expect(rule).toContain('--button-radius: 9999px');
+    expect(rule).toContain('--_button-radius: 9999px');
   });
 
   it('card padding emits container tokens via derived expansion', () => {
@@ -386,7 +386,7 @@ describe('brutalist-style derived expansion', () => {
     const rule = rules.find(r => r.includes('.xds-dropdown-menu'));
     expect(rule).toBeDefined();
     expect(rule).toContain('border-radius: 0px');
-    expect(rule).toContain('--dropdown-radius: 0px');
-    expect(rule).toContain('--dropdown-padding: 4px');
+    expect(rule).toContain('--_dropdown-menu-radius: 0px');
+    expect(rule).toContain('--_dropdown-menu-padding: 4px');
   });
 });

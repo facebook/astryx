@@ -45,8 +45,8 @@ export const inputWrapperStyles = stylex.create({
         '@media (hover: hover)': colorVars['--color-border-emphasized'],
       },
     },
-    '--input-radius': radiusVars['--radius-element'],
-    borderRadius: 'var(--input-radius)',
+    '--_field-radius': radiusVars['--radius-element'],
+    borderRadius: 'var(--_field-radius)',
     backgroundColor: colorVars['--color-background-surface'],
     transitionProperty: 'border-color, outline, box-shadow',
     transitionDuration: {

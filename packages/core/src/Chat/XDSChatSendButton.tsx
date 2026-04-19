@@ -52,7 +52,7 @@ export interface XDSChatSendButtonProps {
 
 const styles = stylex.create({
   root: {
-    borderRadius: 'var(--button-radius, var(--radius-full))',
+    borderRadius: 'var(--_button-radius, var(--radius-full))',
     flexShrink: 0,
   },
 });

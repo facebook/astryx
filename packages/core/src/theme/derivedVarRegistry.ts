@@ -34,42 +34,42 @@ export interface DerivedVarEntry {
  */
 export const derivedVarRegistry: Record<string, DerivedVarEntry[]> = {
   banner: [
-    {property: 'borderRadius', vars: ['--banner-radius']},
+    {property: 'borderRadius', vars: ['--_banner-radius']},
   ],
   button: [
-    {property: 'borderRadius', vars: ['--button-radius']},
+    {property: 'borderRadius', vars: ['--_button-radius']},
   ],
   card: [
-    {property: 'borderRadius', vars: ['--card-radius']},
+    {property: 'borderRadius', vars: ['--_card-radius']},
     {property: 'padding', expand: 'container'},
   ],
   chat: [
-    {property: 'borderRadius', vars: ['--composer-radius']},
-    {property: 'padding', vars: ['--composer-padding']},
+    {property: 'borderRadius', vars: ['--_chat-composer-radius']},
+    {property: 'padding', vars: ['--_chat-composer-padding']},
   ],
   dialog: [
-    {property: 'borderRadius', vars: ['--dialog-radius']},
+    {property: 'borderRadius', vars: ['--_dialog-radius']},
     {property: 'padding', expand: 'container'},
   ],
   'dropdown-menu': [
-    {property: 'borderRadius', vars: ['--dropdown-radius']},
-    {property: 'padding', vars: ['--dropdown-padding']},
+    {property: 'borderRadius', vars: ['--_dropdown-menu-radius']},
+    {property: 'padding', vars: ['--_dropdown-menu-padding']},
   ],
   field: [
-    {property: 'borderRadius', vars: ['--input-radius']},
+    {property: 'borderRadius', vars: ['--_field-radius']},
   ],
   hovercard: [
-    {property: 'borderRadius', vars: ['--hovercard-radius']},
+    {property: 'borderRadius', vars: ['--_hovercard-radius']},
   ],
   popover: [
-    {property: 'borderRadius', vars: ['--popover-radius']},
+    {property: 'borderRadius', vars: ['--_popover-radius']},
   ],
   section: [
     {property: 'padding', expand: 'container'},
   ],
   'segmented-control': [
-    {property: 'borderRadius', vars: ['--segmented-radius']},
-    {property: 'padding', vars: ['--segmented-padding']},
+    {property: 'borderRadius', vars: ['--_segmented-control-radius']},
+    {property: 'padding', vars: ['--_segmented-control-padding']},
   ],
 };
 
