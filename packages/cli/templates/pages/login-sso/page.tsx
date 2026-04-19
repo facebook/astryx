@@ -280,8 +280,9 @@ export default function LoginSSO() {
                           href="#"
                           size="sm"
                           color="secondary"
-                          type="supporting"
-                        />
+                          type="supporting">
+                          Forgot password?
+                        </XDSLink>
                       </XDSVStack>
                     )}
                   </XDSVStack>
