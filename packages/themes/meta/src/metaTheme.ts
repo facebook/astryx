@@ -252,7 +252,7 @@ export const metaTheme = defineTheme({
     // =========================================================================
     button: {
       base: {
-        borderRadius: '9999px !important',
+        borderRadius: '9999px',
         gap: '4px',
       },
       'size:sm': {
@@ -266,7 +266,11 @@ export const metaTheme = defineTheme({
       },
       'variant:primary': {fontWeight: '500'},
       'variant:secondary': {fontWeight: '500'},
-      'variant:destructive': {fontWeight: '500'},
+      'variant:destructive': {
+        backgroundColor: 'light-dark(#D31130, #DA2A3E)',
+        color: '#FFFFFF',
+        fontWeight: '500',
+      },
       'variant:ghost': {fontWeight: '500'},
       'variant:primary-muted': {
         backgroundColor: 'light-dark(#ECF5FF, #182849)',
@@ -342,16 +346,17 @@ export const metaTheme = defineTheme({
     // =========================================================================
     'text-input': {
       base: {
-        borderRadius: '8px !important',
-        paddingInline: '12px !important',
-        paddingBlock: '12px !important',
+        borderRadius: '8px',
+        paddingInline: '12px',
+        paddingBlock: '12px',
         minHeight: '44px',
-        borderColor: 'light-dark(#CCD3DB, #494D53)',
       },
+      'status:success': {borderColor: '#686A6E'},
+      'status:warning': {borderColor: '#686A6E'},
       'variant:search': {
         backgroundColor: 'light-dark(#F3F4F5, #28292C)',
         borderColor: 'transparent',
-        borderRadius: '9999px !important',
+        borderRadius: '9999px',
       },
     },
 
@@ -360,12 +365,12 @@ export const metaTheme = defineTheme({
     // =========================================================================
     'field-status': {
       base: {
-        backgroundColor: 'transparent !important',
-        marginTop: '4px !important',
-        paddingBlockStart: '0 !important',
-        paddingBlockEnd: '0 !important',
-        paddingInline: '0 !important',
-        borderRadius: '0 !important',
+        backgroundColor: 'transparent',
+        marginTop: '4px',
+        paddingBlockStart: '0',
+        paddingBlockEnd: '0',
+        paddingInline: '0',
+        borderRadius: '0',
       },
     },
 
@@ -374,9 +379,9 @@ export const metaTheme = defineTheme({
     // =========================================================================
     selector: {
       base: {
-        borderRadius: '8px !important',
-        paddingInline: '12px !important',
-        paddingBlock: '12px !important',
+        borderRadius: '8px',
+        paddingInline: '12px',
+        paddingBlock: '12px',
         minHeight: '44px',
       },
     },
@@ -440,15 +445,19 @@ export const metaTheme = defineTheme({
     // =========================================================================
     radio: {
       base: {
-        borderWidth: '1.5px',
+        borderWidth: '2.5px',
         '--color-border-emphasized': '#8F9296',
+      },
+      checked: {
+        backgroundColor: 'var(--color-background-surface)',
+        borderColor: 'var(--color-accent)',
       },
     },
     'radio-dot': {
       base: {
         backgroundColor: 'var(--color-accent)',
-        width: '14px',
-        height: '14px',
+        width: '12px',
+        height: '12px',
       },
     },
 
@@ -539,7 +548,7 @@ export const metaTheme = defineTheme({
     popover: {
       base: {
         borderRadius: '16px',
-        padding: '16px !important',
+        padding: '16px',
       },
     },
     'dropdown-menu': {
@@ -551,7 +560,7 @@ export const metaTheme = defineTheme({
     'more-menu': {
       base: {
         borderRadius: '16px',
-        padding: '8px !important',
+        padding: '8px',
       },
     },
     tooltip: {

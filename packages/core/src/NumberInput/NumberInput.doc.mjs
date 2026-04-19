@@ -151,7 +151,7 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'xds-number-input', visualProps: ['size']},
+      {className: 'xds-number-input', visualProps: ['size', 'status']},
     ],
   },
   usage: {
@@ -323,7 +323,7 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'xds-number-input', visualProps: ['size']},
+      {className: 'xds-number-input', visualProps: ['size', 'status']},
     ],
   },
   usage: {
