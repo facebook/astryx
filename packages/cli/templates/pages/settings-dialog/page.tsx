@@ -1,6 +1,6 @@
 'use client';
 
-import {useState} from 'react';
+import React, {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSAppShell} from '@xds/core/AppShell';
 import {
@@ -13,11 +13,10 @@ import {
 } from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
-import {XDSDialog} from '@xds/core/Dialog';
+import {XDSDialog, XDSDialogHeader} from '@xds/core/Dialog';
 import {XDSList, XDSListItem} from '@xds/core/List';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSSelector} from '@xds/core/Selector';
-import {XDSSection} from '@xds/core/Section';
 import {XDSCard} from '@xds/core/Card';
 import {XDSSwitch} from '@xds/core/Switch';
 import {XDSLink} from '@xds/core/Link';
@@ -32,7 +31,6 @@ import {
   ShieldCheckIcon,
   ComputerDesktopIcon,
   WrenchScrewdriverIcon,
-  XMarkIcon,
   BellIcon,
   DocumentTextIcon,
   CreditCardIcon,
@@ -44,16 +42,43 @@ import {
 const styles = stylex.create({
   iconBox: {
     borderRadius: 12,
-    backgroundColor: 'var(--xds-color-background-muted, #f5f5f5)',
+    backgroundColor: 'var(--xds-color-background-surface, #fff)',
     flexShrink: 0,
   },
   rowPadding: {
-    paddingTop: 16,
-    paddingBottom: 16,
+    paddingBlock: 16,
+  },
+  cardContentPadding: {
+    paddingInline: 16,
+  },
+  headerPadding: {
+    paddingInline: 8,
+    paddingBlock: 8,
   },
   contentHPadding: {
-    paddingLeft: 32,
-    paddingRight: 32,
+    paddingInline: 24,
+    paddingBlockEnd: 24,
+    maxWidth: 680,
+  },
+  sideNavPadding: {
+    paddingBlock: 16,
+    paddingInline: 12,
+  },
+  sectionHeading: {
+    paddingBlockEnd: 8,
+  },
+  sideNavHeading: {
+    marginInline: 16,
+  },
+  dialogHeight: {
+    height: '85vh',
+    minHeight: '85vh',
+  },
+  layoutFill: {
+    flex: '1 1 0px',
+  },
+  panelFull: {
+    height: '100%',
   },
 });
 
@@ -247,26 +272,20 @@ export default function SettingsDialogTemplate() {
         width={900}
         maxHeight="85vh"
         padding={0}
-        purpose="form">
+        purpose="form"
+        xstyle={styles.dialogHeight}>
         <XDSLayout
           height="fill"
+          xstyle={styles.layoutFill}
           start={
             <XDSLayoutPanel
               width={280}
               hasDivider
               role="navigation"
-              padding={3}>
-              <XDSVStack gap={4}>
-                <XDSHStack hAlign="between" vAlign="center">
-                  <XDSHeading level={2}>Account settings</XDSHeading>
-                  <XDSButton
-                    label="Close"
-                    icon={<XDSIcon icon={XMarkIcon} />}
-                    variant="ghost"
-                    isIconOnly
-                    onClick={() => setIsOpen(false)}
-                  />
-                </XDSHStack>
+              padding={0}
+              xstyle={styles.panelFull}>
+              <XDSVStack gap={4} xstyle={styles.sideNavPadding}>
+                <XDSHeading level={2} xstyle={styles.sideNavHeading}>Account settings</XDSHeading>
                 <XDSList density="spacious">
                   {NAV_ITEMS.map(item => (
                     <XDSListItem
@@ -293,15 +312,17 @@ export default function SettingsDialogTemplate() {
             </XDSLayoutPanel>
           }
           content={
-            <XDSLayoutContent isScrollable>
-              <XDSSection
-                padding={4}
-                maxWidth={680}
-                variant="transparent"
-                xstyle={styles.contentHPadding}>
+            <XDSLayoutContent isScrollable padding={0}>
+              <XDSVStack xstyle={styles.headerPadding}>
+                <XDSDialogHeader
+                  title={activeNav === 'Personal information' ? 'Personal info' : activeNav}
+                  onOpenChange={open => setIsOpen(open)}
+                  hasDivider={false}
+                />
+              </XDSVStack>
+              <XDSVStack gap={0} xstyle={styles.contentHPadding}>
                 {activeNav === 'Personal information' && (
                   <XDSVStack gap={6}>
-                    <XDSHeading level={2}>Personal info</XDSHeading>
                     <XDSVStack gap={0}>
                       <InfoRowItem
                         label="Legal name"
@@ -345,9 +366,12 @@ export default function SettingsDialogTemplate() {
                       />
                     </XDSVStack>
 
-                    <XDSCard padding={4}>
-                      <XDSVStack gap={0}>
-                        <XDSHStack gap={3} vAlign="start">
+                    <XDSCard padding={0}>
+                      <XDSVStack gap={0} xstyle={styles.cardContentPadding}>
+                        <XDSHStack
+                          gap={3}
+                          vAlign="start"
+                          xstyle={styles.rowPadding}>
                           <XDSCenter
                             width={48}
                             height={48}
@@ -400,7 +424,10 @@ export default function SettingsDialogTemplate() {
                           </XDSVStack>
                         </XDSHStack>
                         <XDSDivider />
-                        <XDSHStack gap={3} vAlign="start">
+                        <XDSHStack
+                          gap={3}
+                          vAlign="start"
+                          xstyle={styles.rowPadding}>
                           <XDSCenter
                             width={48}
                             height={48}
@@ -430,8 +457,6 @@ export default function SettingsDialogTemplate() {
 
                 {activeNav === 'Login & security' && (
                   <XDSVStack gap={6}>
-                    <XDSHeading level={2}>Login &amp; security</XDSHeading>
-
                     <XDSTabList
                       value={activeTab}
                       onChange={setActiveTab}
@@ -443,7 +468,7 @@ export default function SettingsDialogTemplate() {
                     {activeTab === 'login' && (
                       <XDSVStack gap={8}>
                         <XDSVStack gap={0}>
-                          <XDSHeading level={3}>Login</XDSHeading>
+                          <XDSHeading level={3} xstyle={styles.sectionHeading}>Login</XDSHeading>
                           <XDSDivider />
                           {LOGIN_ROWS.map(row => (
                             <InfoRowItem key={row.label} {...row} />
@@ -451,7 +476,7 @@ export default function SettingsDialogTemplate() {
                         </XDSVStack>
 
                         <XDSVStack gap={0}>
-                          <XDSHeading level={3}>Social accounts</XDSHeading>
+                          <XDSHeading level={3} xstyle={styles.sectionHeading}>Social accounts</XDSHeading>
                           <XDSDivider />
                           {SOCIAL_ROWS.map(row => (
                             <InfoRowItem key={row.label} {...row} />
@@ -459,45 +484,46 @@ export default function SettingsDialogTemplate() {
                         </XDSVStack>
 
                         <XDSVStack gap={0}>
-                          <XDSHeading level={3}>Device history</XDSHeading>
+                          <XDSHeading level={3} xstyle={styles.sectionHeading}>Device history</XDSHeading>
                           <XDSDivider />
                           {DEVICE_ROWS.map((device, i) => (
-                            <XDSHStack
-                              key={i}
-                              gap={3}
-                              vAlign="start"
-                              xstyle={styles.rowPadding}>
-                              <XDSIcon icon={ComputerDesktopIcon} />
-                              <XDSStackItem size="fill">
-                                <XDSVStack gap={0}>
-                                  <XDSHStack gap={2} vAlign="center">
-                                    <XDSText type="body" weight="semibold">
-                                      {device.label}
+                            <React.Fragment key={i}>
+                              <XDSHStack
+                                gap={3}
+                                vAlign="start"
+                                xstyle={styles.rowPadding}>
+                                <XDSIcon icon={ComputerDesktopIcon} />
+                                <XDSStackItem size="fill">
+                                  <XDSVStack gap={0}>
+                                    <XDSHStack gap={2} vAlign="center">
+                                      <XDSText type="body" weight="semibold">
+                                        {device.label}
+                                      </XDSText>
+                                      {device.badge && (
+                                        <XDSBadge label={device.badge} />
+                                      )}
+                                    </XDSHStack>
+                                    <XDSText
+                                      type="supporting"
+                                      color="secondary"
+                                      display="block">
+                                      {device.location}
                                     </XDSText>
-                                    {device.badge && (
-                                      <XDSBadge label={device.badge} />
-                                    )}
-                                  </XDSHStack>
-                                  <XDSText
-                                    type="supporting"
-                                    color="secondary"
-                                    display="block">
-                                    {device.location}
-                                  </XDSText>
-                                </XDSVStack>
-                              </XDSStackItem>
-                              {device.action && (
-                                <XDSLink label={device.action} href="#">
-                                  {device.action}
-                                </XDSLink>
-                              )}
-                            </XDSHStack>
+                                  </XDSVStack>
+                                </XDSStackItem>
+                                {device.action && (
+                                  <XDSLink label={device.action} href="#">
+                                    {device.action}
+                                  </XDSLink>
+                                )}
+                              </XDSHStack>
+                              <XDSDivider />
+                            </React.Fragment>
                           ))}
-                          <XDSDivider />
                         </XDSVStack>
 
                         <XDSVStack gap={0}>
-                          <XDSHeading level={3}>Account</XDSHeading>
+                          <XDSHeading level={3} xstyle={styles.sectionHeading}>Account</XDSHeading>
                           <XDSDivider />
                           <XDSHStack
                             hAlign="between"
@@ -529,7 +555,7 @@ export default function SettingsDialogTemplate() {
                     {activeTab === 'shared' && (
                       <XDSVStack gap={8}>
                         <XDSVStack gap={2}>
-                          <XDSHeading level={3}>Shared access</XDSHeading>
+                          <XDSHeading level={3} xstyle={styles.sectionHeading}>Shared access</XDSHeading>
                           <XDSDivider />
                           <XDSText type="body" color="secondary">
                             Review each request carefully before approving
@@ -539,7 +565,7 @@ export default function SettingsDialogTemplate() {
                           </XDSText>
                         </XDSVStack>
 
-                        <XDSCard variant="muted" padding={4}>
+                        <XDSCard variant="muted">
                           <XDSHStack gap={4} vAlign="start">
                             <XDSCenter
                               width={48}
@@ -567,9 +593,6 @@ export default function SettingsDialogTemplate() {
 
                 {activeNav === 'Languages & currency' && (
                   <XDSVStack gap={6}>
-                    <XDSHeading level={2}>
-                      Languages &amp; currency
-                    </XDSHeading>
                     <XDSVStack gap={0}>
                       <ExpandableRow
                         label="Preferred language"
@@ -634,8 +657,6 @@ export default function SettingsDialogTemplate() {
 
                 {activeNav === 'Privacy' && (
                   <XDSVStack gap={6}>
-                    <XDSHeading level={2}>Privacy</XDSHeading>
-
                     <XDSVStack gap={8}>
                       <XDSVStack gap={0}>
                         <XDSHeading level={3}>Messages</XDSHeading>
@@ -727,7 +748,7 @@ export default function SettingsDialogTemplate() {
 
                       <XDSVStack gap={4}>
                         <XDSHeading level={3}>Data privacy</XDSHeading>
-                        <XDSCard padding={4}>
+                        <XDSCard>
                           <XDSHStack hAlign="between" vAlign="center">
                             <XDSText type="body">
                               Request my personal data
@@ -745,7 +766,7 @@ export default function SettingsDialogTemplate() {
                           labelPosition="start"
                           labelSpacing="spread"
                         />
-                        <XDSCard padding={4}>
+                        <XDSCard>
                           <XDSHStack hAlign="between" vAlign="center">
                             <XDSText type="body">Delete my account</XDSText>
                             <XDSLink label="Delete" href="#">
@@ -753,39 +774,37 @@ export default function SettingsDialogTemplate() {
                             </XDSLink>
                           </XDSHStack>
                         </XDSCard>
-                        <XDSCard>
-                          <XDSSection variant="wash">
-                            <XDSHStack gap={4} vAlign="start">
-                              <XDSCenter
-                                width={48}
-                                height={48}
-                                xstyle={styles.iconBox}>
-                                <XDSIcon icon={ShieldCheckIcon} />
-                              </XDSCenter>
-                              <XDSVStack gap={1}>
-                                <XDSText type="body" weight="bold">
-                                  Committed to privacy
-                                </XDSText>
-                                <XDSText type="supporting" color="secondary">
-                                  We&apos;re committed to keeping your data
-                                  protected. See details in our{' '}
-                                  <XDSLink
-                                    label="Privacy Policy"
-                                    href="#"
-                                    type="supporting">
-                                    Privacy Policy
-                                  </XDSLink>
-                                  .
-                                </XDSText>
-                              </XDSVStack>
-                            </XDSHStack>
-                          </XDSSection>
+                        <XDSCard variant="muted">
+                          <XDSHStack gap={4} vAlign="start">
+                            <XDSCenter
+                              width={48}
+                              height={48}
+                              xstyle={styles.iconBox}>
+                              <XDSIcon icon={ShieldCheckIcon} />
+                            </XDSCenter>
+                            <XDSVStack gap={1}>
+                              <XDSText type="body" weight="bold">
+                                Committed to privacy
+                              </XDSText>
+                              <XDSText type="supporting" color="secondary">
+                                We&apos;re committed to keeping your data
+                                protected. See details in our{' '}
+                                <XDSLink
+                                  label="Privacy Policy"
+                                  href="#"
+                                  type="supporting">
+                                  Privacy Policy
+                                </XDSLink>
+                                .
+                              </XDSText>
+                            </XDSVStack>
+                          </XDSHStack>
                         </XDSCard>
                       </XDSVStack>
                     </XDSVStack>
                   </XDSVStack>
                 )}
-              </XDSSection>
+              </XDSVStack>
             </XDSLayoutContent>
           }
         />
