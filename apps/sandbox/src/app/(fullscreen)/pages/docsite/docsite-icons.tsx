@@ -49,7 +49,7 @@ export function MetaLogo(props: React.SVGProps<SVGSVGElement>) {
   const g1 = `meta-g1-${id}`;
   const g2 = `meta-g2-${id}`;
   return (
-    <svg viewBox="0 0 287.56 191" fill="none" {...props}>
+    <svg viewBox="0 0 290 191" fill="none" {...props}>
       <defs>
         <linearGradient id={g1} x1="61" y1="117" x2="259" y2="127" gradientUnits="userSpaceOnUse">
           <stop offset="0" stopColor="#0064e1" /><stop offset="0.4" stopColor="#0064e1" /><stop offset="0.83" stopColor="#0073ee" /><stop offset="1" stopColor="#0082fb" />
