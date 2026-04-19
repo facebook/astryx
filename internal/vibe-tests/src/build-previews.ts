@@ -13,7 +13,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as crypto from 'node:crypto';
-import {execSync} from 'node:child_process';
+import {execFileSync} from 'node:child_process';
 import {
   getResultsDir,
   ensureDir,
@@ -100,11 +100,13 @@ function parseArgs(): {
   iterations: string[];
   prompts?: string[];
   outDir: string;
+  tscOnly: boolean;
 } {
   const args = process.argv.slice(2);
   let iterations: string[] = [];
   let prompts: string[] | undefined;
   let outDir = '';
+  let tscOnly = false;
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--iterations' && args[i + 1]) {
@@ -113,6 +115,8 @@ function parseArgs(): {
       prompts = args[++i].split(',');
     } else if (args[i] === '--out' && args[i + 1]) {
       outDir = args[++i];
+    } else if (args[i] === '--tsc-only') {
+      tscOnly = true;
     }
   }
 
@@ -128,7 +132,7 @@ function parseArgs(): {
     outDir = path.join(getResultsDir(), iterations[0], 'previews');
   }
 
-  return {iterations, prompts, outDir};
+  return {iterations, prompts, outDir, tscOnly};
 }
 
 /**
@@ -382,10 +386,10 @@ import {viteSingleFile} from 'vite-plugin-singlefile';`;
         ? `
     alias: {
       '@/components/ui': '${path
-        .resolve(VIBE_DIR, '.baseline-shims/components/ui')
+        .resolve(VIBE_DIR, '.baseline/components/ui')
         .replace(/\\/g, '/')}',
       '@/lib/utils': '${path
-        .resolve(VIBE_DIR, '.baseline-shims/lib/utils')
+        .resolve(VIBE_DIR, '.baseline/lib/utils')
         .replace(/\\/g, '/')}',
     },`
         : '';
@@ -420,210 +424,16 @@ export default defineConfig({
 }
 
 /**
- * Create baseline component shims so imports resolve
+ * Verify baseline components exist (real shadcn/ui sources in .baseline/).
+ * No generation needed — components are checked into the repo.
  */
 function ensureBaselineShims(): void {
-  const shimsDir = path.join(VIBE_DIR, '.baseline-shims');
-  const componentsDir = path.join(shimsDir, 'components', 'ui');
-  const libDir = path.join(shimsDir, 'lib');
-
-  if (fs.existsSync(path.join(libDir, 'utils.ts'))) return;
-
-  ensureDir(componentsDir);
-  ensureDir(libDir);
-
-  // cn() utility
-  fs.writeFileSync(
-    path.join(libDir, 'utils.ts'),
-    `export function cn(...classes: (string | boolean | undefined | null)[]) {
-  return classes.filter(Boolean).join(' ');
-}
-`,
-  );
-
-  // Generic shim components — render as plain HTML with basic styling
-  const components: Record<string, string> = {
-    button: `import React from 'react';
-import {cn} from '@/lib/utils';
-export function Button({className, variant, size, children, ...props}: any) {
-  return <button className={cn('px-4 py-2 rounded-md text-sm font-medium', className)} {...props}>{children}</button>;
-}
-export const buttonVariants = () => '';
-`,
-    card: `import React from 'react';
-import {cn} from '@/lib/utils';
-export function Card({className, children, ...props}: any) { return <div className={cn('rounded-lg border bg-white shadow-sm', className)} {...props}>{children}</div>; }
-export function CardHeader({className, children, ...props}: any) { return <div className={cn('flex flex-col space-y-1.5 p-6', className)} {...props}>{children}</div>; }
-export function CardTitle({className, children, ...props}: any) { return <h3 className={cn('text-2xl font-semibold', className)} {...props}>{children}</h3>; }
-export function CardDescription({className, children, ...props}: any) { return <p className={cn('text-sm text-gray-500', className)} {...props}>{children}</p>; }
-export function CardContent({className, children, ...props}: any) { return <div className={cn('p-6 pt-0', className)} {...props}>{children}</div>; }
-export function CardFooter({className, children, ...props}: any) { return <div className={cn('flex items-center p-6 pt-0', className)} {...props}>{children}</div>; }
-`,
-    badge: `import React from 'react';
-import {cn} from '@/lib/utils';
-export function Badge({className, variant, children, ...props}: any) {
-  return <span className={cn('inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold', className)} {...props}>{children}</span>;
-}
-`,
-    input: `import React from 'react';
-import {cn} from '@/lib/utils';
-export const Input = React.forwardRef<HTMLInputElement, any>(({className, ...props}, ref) => {
-  return <input ref={ref} className={cn('flex h-10 w-full rounded-md border px-3 py-2 text-sm', className)} {...props} />;
-});
-Input.displayName = 'Input';
-`,
-    label: `import React from 'react';
-import {cn} from '@/lib/utils';
-export const Label = React.forwardRef<HTMLLabelElement, any>(({className, ...props}, ref) => {
-  return <label ref={ref} className={cn('text-sm font-medium', className)} {...props} />;
-});
-Label.displayName = 'Label';
-`,
-    checkbox: `import React from 'react';
-export function Checkbox({checked, onCheckedChange, ...props}: any) {
-  return <input type="checkbox" checked={checked} onChange={e => onCheckedChange?.(e.target.checked)} {...props} />;
-}
-`,
-    select: `import React from 'react';
-import {cn} from '@/lib/utils';
-export function Select({children, value, onValueChange, ...props}: any) { return <div {...props}>{children}</div>; }
-export function SelectTrigger({className, children, ...props}: any) { return <button className={cn('flex h-10 w-full items-center justify-between rounded-md border px-3 py-2 text-sm', className)} {...props}>{children}</button>; }
-export function SelectValue({placeholder}: any) { return <span>{placeholder}</span>; }
-export function SelectContent({children}: any) { return <div>{children}</div>; }
-export function SelectItem({value, children}: any) { return <div data-value={value}>{children}</div>; }
-`,
-    progress: `import React from 'react';
-import {cn} from '@/lib/utils';
-export function Progress({value = 0, className, ...props}: any) {
-  return <div className={cn('relative h-4 w-full overflow-hidden rounded-full bg-gray-200', className)} {...props}>
-    <div className="h-full bg-blue-600 transition-all" style={{width: \`\${value}%\`}} />
-  </div>;
-}
-`,
-    skeleton: `import React from 'react';
-import {cn} from '@/lib/utils';
-export function Skeleton({className, ...props}: any) {
-  return <div className={cn('animate-pulse rounded-md bg-gray-200', className)} {...props} />;
-}
-`,
-    separator: `import React from 'react';
-import {cn} from '@/lib/utils';
-export function Separator({className, orientation = 'horizontal', ...props}: any) {
-  return <div className={cn(orientation === 'horizontal' ? 'h-px w-full' : 'h-full w-px', 'bg-gray-200', className)} {...props} />;
-}
-`,
-    tabs: `import React, {useState, createContext, useContext} from 'react';
-import {cn} from '@/lib/utils';
-const TabsContext = createContext<{value: string; onChange: (v: string) => void}>({value: '', onChange: () => {}});
-export function Tabs({defaultValue, value: controlledValue, onValueChange, children, className, ...props}: any) {
-  const [internal, setInternal] = useState(defaultValue ?? '');
-  const value = controlledValue ?? internal;
-  const onChange = onValueChange ?? setInternal;
-  return <TabsContext.Provider value={{value, onChange}}><div className={className} {...props}>{children}</div></TabsContext.Provider>;
-}
-export function TabsList({className, children, ...props}: any) { return <div className={cn('inline-flex h-10 items-center justify-center rounded-md bg-gray-100 p-1', className)} {...props}>{children}</div>; }
-export function TabsTrigger({value, className, children, ...props}: any) {
-  const ctx = useContext(TabsContext);
-  return <button className={cn('inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium', ctx.value === value && 'bg-white shadow-sm', className)} onClick={() => ctx.onChange(value)} {...props}>{children}</button>;
-}
-export function TabsContent({value, className, children, ...props}: any) {
-  const ctx = useContext(TabsContext);
-  if (ctx.value !== value) return null;
-  return <div className={className} {...props}>{children}</div>;
-}
-`,
-    table: `import React from 'react';
-import {cn} from '@/lib/utils';
-export function Table({className, children, ...props}: any) { return <div className="relative w-full overflow-auto"><table className={cn('w-full caption-bottom text-sm', className)} {...props}>{children}</table></div>; }
-export function TableHeader({className, children, ...props}: any) { return <thead className={cn('[&_tr]:border-b', className)} {...props}>{children}</thead>; }
-export function TableBody({className, children, ...props}: any) { return <tbody className={cn('[&_tr:last-child]:border-0', className)} {...props}>{children}</tbody>; }
-export function TableRow({className, children, ...props}: any) { return <tr className={cn('border-b transition-colors hover:bg-gray-50', className)} {...props}>{children}</tr>; }
-export function TableHead({className, children, ...props}: any) { return <th className={cn('h-12 px-4 text-left align-middle font-medium text-gray-500', className)} {...props}>{children}</th>; }
-export function TableCell({className, children, ...props}: any) { return <td className={cn('p-4 align-middle', className)} {...props}>{children}</td>; }
-export function TableCaption({className, children, ...props}: any) { return <caption className={cn('mt-4 text-sm text-gray-500', className)} {...props}>{children}</caption>; }
-`,
-    sheet: `import React from 'react';
-import {cn} from '@/lib/utils';
-export function Sheet({children, open, onOpenChange}: any) { return <>{children}</>; }
-export function SheetTrigger({children, asChild, ...props}: any) { return <>{children}</>; }
-export function SheetContent({className, children, side = 'right', ...props}: any) {
-  return <div className={cn('fixed inset-y-0 z-50 flex flex-col bg-white p-6 shadow-lg', side === 'right' ? 'right-0' : 'left-0', className)} style={{width: 300}} {...props}>{children}</div>;
-}
-export function SheetHeader({className, children, ...props}: any) { return <div className={cn('flex flex-col space-y-2', className)} {...props}>{children}</div>; }
-export function SheetTitle({className, children, ...props}: any) { return <h2 className={cn('text-lg font-semibold', className)} {...props}>{children}</h2>; }
-export function SheetDescription({className, children, ...props}: any) { return <p className={cn('text-sm text-gray-500', className)} {...props}>{children}</p>; }
-export function SheetClose({children, asChild, ...props}: any) { return <>{children}</>; }
-`,
-    'dropdown-menu': `import React, {useState} from 'react';
-import {cn} from '@/lib/utils';
-export function DropdownMenu({children}: any) { return <div className="relative inline-block">{children}</div>; }
-export function DropdownMenuTrigger({children, asChild}: any) { return <>{children}</>; }
-export function DropdownMenuContent({className, children, ...props}: any) { return <div className={cn('z-50 min-w-[8rem] rounded-md border bg-white p-1 shadow-md', className)} {...props}>{children}</div>; }
-export function DropdownMenuItem({className, children, ...props}: any) { return <div className={cn('relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm hover:bg-gray-100', className)} {...props}>{children}</div>; }
-export function DropdownMenuLabel({className, children, ...props}: any) { return <div className={cn('px-2 py-1.5 text-sm font-semibold', className)} {...props}>{children}</div>; }
-export function DropdownMenuSeparator({className, ...props}: any) { return <div className={cn('-mx-1 my-1 h-px bg-gray-200', className)} {...props} />; }
-export function DropdownMenuCheckboxItem({className, children, checked, ...props}: any) { return <div className={cn('relative flex cursor-pointer items-center rounded-sm py-1.5 pl-8 pr-2 text-sm', className)} {...props}>{children}</div>; }
-export function DropdownMenuRadioGroup({children}: any) { return <>{children}</>; }
-export function DropdownMenuRadioItem({className, children, ...props}: any) { return <div className={cn('relative flex cursor-pointer items-center rounded-sm py-1.5 pl-8 pr-2 text-sm', className)} {...props}>{children}</div>; }
-export function DropdownMenuSub({children}: any) { return <>{children}</>; }
-export function DropdownMenuSubTrigger({className, children, ...props}: any) { return <div className={cn('flex cursor-pointer items-center rounded-sm px-2 py-1.5 text-sm', className)} {...props}>{children}</div>; }
-export function DropdownMenuSubContent({className, children, ...props}: any) { return <div className={cn('z-50 min-w-[8rem] rounded-md border bg-white p-1 shadow-md', className)} {...props}>{children}</div>; }
-`,
-    dialog: `import React from 'react';
-import {cn} from '@/lib/utils';
-export function Dialog({children, open, onOpenChange}: any) { if (!open) return null; return <>{children}</>; }
-export function DialogTrigger({children, asChild}: any) { return <>{children}</>; }
-export function DialogContent({className, children, ...props}: any) { return <div className="fixed inset-0 z-50 flex items-center justify-center"><div className="fixed inset-0 bg-black/50" /><div className={cn('relative z-50 w-full max-w-lg rounded-lg bg-white p-6 shadow-lg', className)} {...props}>{children}</div></div>; }
-export function DialogHeader({className, children, ...props}: any) { return <div className={cn('flex flex-col space-y-1.5 text-center sm:text-left', className)} {...props}>{children}</div>; }
-export function DialogTitle({className, children, ...props}: any) { return <h2 className={cn('text-lg font-semibold', className)} {...props}>{children}</h2>; }
-export function DialogDescription({className, children, ...props}: any) { return <p className={cn('text-sm text-gray-500', className)} {...props}>{children}</p>; }
-export function DialogFooter({className, children, ...props}: any) { return <div className={cn('flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2', className)} {...props}>{children}</div>; }
-`,
-    tooltip: `import React, {useState, useRef, useEffect} from 'react';
-import {cn} from '@/lib/utils';
-export function TooltipProvider({children}: any) { return <>{children}</>; }
-export function Tooltip({children, open, onOpenChange, delayDuration}: any) { return <>{children}</>; }
-export function TooltipTrigger({children, asChild, ...props}: any) { return <>{children}</>; }
-export function TooltipContent({className, children, side, sideOffset, ...props}: any) {
-  return <div className={cn('z-50 overflow-hidden rounded-md border bg-popover px-3 py-1.5 text-sm text-popover-foreground shadow-md', className)} {...props}>{children}</div>;
-}
-`,
-    command: `import React, {useState, createContext, useContext} from 'react';
-import {cn} from '@/lib/utils';
-const CmdCtx = createContext<{search: string; setSearch: (s: string) => void}>({search: '', setSearch: () => {}});
-export function Command({className, children, ...props}: any) {
-  const [search, setSearch] = useState('');
-  return <CmdCtx.Provider value={{search, setSearch}}><div className={cn('flex h-full w-full flex-col overflow-hidden rounded-md bg-popover text-popover-foreground', className)} {...props}>{children}</div></CmdCtx.Provider>;
-}
-export function CommandInput({className, placeholder, value, onValueChange, ...props}: any) {
-  const ctx = useContext(CmdCtx);
-  return <input className={cn('flex h-11 w-full rounded-md bg-transparent py-3 px-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50 border-b', className)} placeholder={placeholder} value={value ?? ctx.search} onChange={e => { ctx.setSearch(e.target.value); onValueChange?.(e.target.value); }} {...props} />;
-}
-export function CommandList({className, children, ...props}: any) { return <div className={cn('max-h-[300px] overflow-y-auto overflow-x-hidden', className)} {...props}>{children}</div>; }
-export function CommandEmpty({children, ...props}: any) { const ctx = useContext(CmdCtx); return <div className="py-6 text-center text-sm" {...props}>{children}</div>; }
-export function CommandGroup({className, heading, children, ...props}: any) { return <div className={cn('overflow-hidden p-1 text-foreground', className)} {...props}>{heading && <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">{heading}</div>}{children}</div>; }
-export function CommandItem({className, children, onSelect, value, ...props}: any) { return <div className={cn('relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground', className)} onClick={() => onSelect?.(value)} {...props}>{children}</div>; }
-export function CommandSeparator({className, ...props}: any) { return <div className={cn('-mx-1 h-px bg-border', className)} {...props} />; }
-`,
-    'scroll-area': `import React from 'react';
-import {cn} from '@/lib/utils';
-export function ScrollArea({className, children, ...props}: any) {
-  return <div className={cn('relative overflow-auto', className)} {...props}>{children}</div>;
-}
-export function ScrollBar({orientation, ...props}: any) { return null; }
-`,
-    popover: `import React, {useState} from 'react';
-import {cn} from '@/lib/utils';
-export function Popover({children, open, onOpenChange}: any) { return <div className="relative inline-block">{children}</div>; }
-export function PopoverTrigger({children, asChild, ...props}: any) { return <>{children}</>; }
-export function PopoverContent({className, children, align, sideOffset, ...props}: any) {
-  return <div className={cn('z-50 w-72 rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-none', className)} {...props}>{children}</div>;
-}
-`,
-  };
-
-  for (const [name, content] of Object.entries(components)) {
-    fs.writeFileSync(path.join(componentsDir, `${name}.tsx`), content);
+  const baselineDir = path.join(VIBE_DIR, '.baseline');
+  const utilsPath = path.join(baselineDir, 'lib', 'utils.ts');
+  if (!fs.existsSync(utilsPath)) {
+    throw new Error(
+      'Baseline components not found at .baseline/ — run yarn install in internal/vibe-tests',
+    );
   }
 }
 
@@ -646,11 +456,15 @@ function buildPreview(
     createIndexHtml(tmpDir, `${promptId} — ${target}`, target);
     createViteConfig(tmpDir, target);
 
-    execSync(`npx vite build --config ${path.join(tmpDir, 'vite.config.ts')}`, {
-      cwd: VIBE_DIR,
-      stdio: 'pipe',
-      encoding: 'utf-8',
-    });
+    execFileSync(
+      'npx',
+      ['vite', 'build', '--config', path.join(tmpDir, 'vite.config.ts')],
+      {
+        cwd: VIBE_DIR,
+        stdio: 'pipe',
+        encoding: 'utf-8',
+      },
+    );
 
     const distHtml = path.join(tmpDir, 'dist', 'index.html');
     if (!fs.existsSync(distHtml)) {
@@ -684,8 +498,172 @@ function buildPreview(
   }
 }
 
+// ============================================================
+// tsc-based type checking
+// ============================================================
+
+interface TscError {
+  line: number;
+  message: string;
+  code: string;
+}
+
+interface TscResult {
+  target: string;
+  errors: TscError[];
+  errorCount: number;
+  buildSuccess: boolean;
+}
+
+type BuildErrors = Record<string, TscResult>;
+
+/**
+ * Get the appropriate tsconfig for a target.
+ */
+function getTsconfigForTarget(target: string): string {
+  switch (target) {
+    case 'xds':
+    case 'xds-tailwind':
+      return path.join(VIBE_DIR, 'tsconfig.xds.json');
+    case 'baseline':
+      return path.join(VIBE_DIR, 'tsconfig.baseline.json');
+    default:
+      return path.join(VIBE_DIR, 'tsconfig.html.json');
+  }
+}
+
+/**
+ * Parse tsc output into structured errors.
+ * tsc output format: "file(line,col): error TSxxxx: message"
+ */
+function parseTscOutput(output: string, filePath: string): TscError[] {
+  const errors: TscError[] = [];
+  const basename = path.basename(filePath);
+  const lines = output.split('\n');
+
+  for (const line of lines) {
+    // Match both tsc output formats:
+    // - file.tsx(line,col): error TSxxxx: message
+    // - file.tsx:line:col - error TSxxxx: message
+    const match =
+      line.match(/\((\d+),\d+\):\s*error\s+(TS\d+):\s*(.+)/) ||
+      line.match(/:(\d+):\d+\s*-\s*error\s+(TS\d+):\s*(.+)/);
+    if (match && line.includes(basename)) {
+      errors.push({
+        line: parseInt(match[1], 10),
+        message: match[3].trim(),
+        code: match[2],
+      });
+    }
+  }
+
+  return errors;
+}
+
+/**
+ * Run tsc --noEmit on a single .tsx file with the appropriate tsconfig.
+ * Returns structured error information.
+ */
+function runTscCheck(filePath: string, target: string): TscResult {
+  const tsconfig = getTsconfigForTarget(target);
+  const absFilePath = path.resolve(VIBE_DIR, filePath);
+
+  // tsc can't mix --project with file arguments, so we create a temp
+  // tsconfig that extends the target config and includes just this file.
+  const tmpConfig = path.join(VIBE_DIR, '.tsc-tmp.json');
+  fs.writeFileSync(
+    tmpConfig,
+    JSON.stringify({
+      extends: `./${path.relative(VIBE_DIR, tsconfig)}`,
+      include: [absFilePath],
+    }),
+  );
+
+  try {
+    execFileSync(
+      'npx',
+      ['tsc', '--noEmit', '--pretty', 'false', '--project', tmpConfig],
+      {
+        cwd: VIBE_DIR,
+        stdio: 'pipe',
+        encoding: 'utf-8',
+      },
+    );
+    // Clean compile
+    return {
+      target,
+      errors: [],
+      errorCount: 0,
+      buildSuccess: true,
+    };
+  } catch (err: unknown) {
+    const error = err as {stdout?: string; stderr?: string};
+    const output = (error.stdout || '') + (error.stderr || '');
+    const errors = parseTscOutput(output, filePath);
+
+    return {
+      target,
+      errors,
+      errorCount: errors.length,
+      buildSuccess: errors.length === 0,
+    };
+  } finally {
+    // Clean up temp config
+    if (fs.existsSync(tmpConfig)) fs.unlinkSync(tmpConfig);
+  }
+}
+
+/**
+ * Run tsc type checking on all .tsx result files for an iteration.
+ * Runs BEFORE auto-import fixes to measure the model's raw output quality.
+ * Writes build-errors.json to the iteration's results directory.
+ */
+function runTscChecks(
+  codeDir: string,
+  iterDir: string,
+  target: string,
+  files: string[],
+  promptFilter?: string[],
+): BuildErrors {
+  const buildErrors: BuildErrors = {};
+
+  console.log('\n  🔍 Running tsc type checks...');
+
+  for (const file of files) {
+    const promptId = path.basename(file, '.tsx');
+    if (promptFilter && !promptFilter.includes(promptId)) continue;
+
+    const filePath = path.resolve(codeDir, file);
+    const result = runTscCheck(filePath, target);
+    buildErrors[promptId] = result;
+
+    if (result.errorCount > 0) {
+      console.log(
+        `  ⚠ ${promptId}: ${result.errorCount} type error${result.errorCount > 1 ? 's' : ''}`,
+      );
+    }
+  }
+
+  // Write build-errors.json
+  const errorsPath = path.join(iterDir, 'build-errors.json');
+  writeJson(errorsPath, buildErrors);
+
+  const totalErrors = Object.values(buildErrors).reduce(
+    (sum, r) => sum + r.errorCount,
+    0,
+  );
+  const cleanCount = Object.values(buildErrors).filter(
+    r => r.buildSuccess,
+  ).length;
+  console.log(
+    `  ✓ tsc: ${cleanCount}/${Object.keys(buildErrors).length} clean, ${totalErrors} total errors`,
+  );
+
+  return buildErrors;
+}
+
 async function main() {
-  const {iterations, prompts, outDir} = parseArgs();
+  const {iterations, prompts, outDir, tscOnly} = parseArgs();
   const resultsDir = getResultsDir();
 
   console.log('\n🖼️  Building Preview Pages');
@@ -714,6 +692,15 @@ async function main() {
     ensureTsxFiles(codeDir);
 
     const files = fs.readdirSync(codeDir).filter(f => f.endsWith('.tsx'));
+
+    // Run tsc type checking on raw generated files BEFORE auto-import fixes
+    runTscChecks(codeDir, iterDir, target, files, prompts);
+
+    // --tsc-only mode: stop after type checking (for night watch correction pipeline)
+    if (tscOnly) {
+      console.log('  ⏭ --tsc-only: skipping preview builds');
+      continue;
+    }
 
     for (const file of files) {
       const promptId = path.basename(file, '.tsx');

@@ -28,15 +28,39 @@
     "preview:build": "vite build --config app/vite.config.preview.ts",
     "screenshot:previews": "tsx src/screenshot-previews.ts",
     "design-judge": "tsx src/design-judge.ts",
-    "design-judge:dry": "tsx src/design-judge.ts --dry-run"
+    "design-judge:dry": "tsx src/design-judge.ts --dry-run",
+    "correct": "tsx src/correct-previews.ts",
+    "correct:dry": "tsx src/correct-previews.ts --dry-run",
+    "preview:tsc-only": "tsx src/build-previews.ts --tsc-only"
   },
   "dependencies": {
     "@xds/cli": "*",
     "commander": "^12.1.0"
   },
   "devDependencies": {
+    "@radix-ui/react-avatar": "^1.1.0",
+    "@radix-ui/react-checkbox": "^1.1.0",
+    "@radix-ui/react-dialog": "^1.1.0",
+    "@radix-ui/react-dropdown-menu": "^2.1.0",
+    "@radix-ui/react-hover-card": "^1.1.0",
+    "@radix-ui/react-label": "^2.1.0",
+    "@radix-ui/react-popover": "^1.1.0",
+    "@radix-ui/react-progress": "^1.1.0",
+    "@radix-ui/react-scroll-area": "^1.1.0",
+    "@radix-ui/react-select": "^2.1.0",
+    "@radix-ui/react-separator": "^1.1.0",
+    "@radix-ui/react-slider": "^1.2.0",
+    "@radix-ui/react-slot": "^1.1.0",
+    "@radix-ui/react-switch": "^1.1.0",
+    "@radix-ui/react-tabs": "^1.1.0",
+    "@radix-ui/react-tooltip": "^1.1.0",
     "@tailwindcss/postcss": "^4.2.2",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.1.0",
+    "cmdk": "^1.0.0",
+    "lucide-react": "^0.400.0",
     "postcss": "^8.5.10",
+    "tailwind-merge": "^2.3.0",
     "tailwindcss": "^4.2.1",
     "tsx": "^4.19.0"
   }
