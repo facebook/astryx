@@ -125,7 +125,7 @@ export default function SettingsTemplate() {
             flexShrink: 0,
             overflowY: 'auto',
           }}>
-          <XDSList density="compact">
+          <XDSList density="balanced">
             {NAV_ITEMS.map(item => (
               <XDSListItem
                 key={item}
