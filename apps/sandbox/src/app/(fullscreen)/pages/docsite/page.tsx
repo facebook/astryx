@@ -727,6 +727,7 @@ function DocsiteLandingTemplate() {
           <TemplatePreview
             templateName={t.name}
             imageSrc={t.src}
+            slug={t.slug}
             onBack={handleBackFromUse}
             isGenerating={previewGenerating}
             onPublish={() => {
