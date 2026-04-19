@@ -2,35 +2,26 @@
 
 import {useState} from 'react';
 import {XDSAppShell} from '@xds/core/AppShell';
-import {XDSTopNav, XDSTopNavHeading} from '@xds/core/TopNav';
-import {XDSSideNav, XDSSideNavItem} from '@xds/core/SideNav';
-import {XDSVStack} from '@xds/core/Layout';
+import {XDSVStack, XDSHStack, XDSStackItem} from '@xds/core/Layout';
 import {XDSGrid} from '@xds/core/Grid';
+import {XDSList, XDSListItem} from '@xds/core/List';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSButton} from '@xds/core/Button';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
-import {XDSFormLayout} from '@xds/core/FormLayout';
+import {XDSSection} from '@xds/core/Section';
 import {XDSTypeahead} from '@xds/core/Typeahead';
-import {
-  MagnifyingGlassIcon,
-  UserIcon,
-  Cog6ToothIcon,
-  UsersIcon,
-  CreditCardIcon,
-  DocumentTextIcon,
-  CodeBracketIcon,
-} from '@heroicons/react/24/outline';
+import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
 import type {XDSSearchableItem, XDSSearchSource} from '@xds/core/Typeahead';
 
 const NAV_ITEMS = [
-  {label: 'Profile', icon: UserIcon},
-  {label: 'Account', icon: Cog6ToothIcon},
-  {label: 'Members', icon: UsersIcon},
-  {label: 'Billing', icon: CreditCardIcon},
-  {label: 'Invoices', icon: DocumentTextIcon},
-  {label: 'API', icon: CodeBracketIcon},
+  'Profile',
+  'Account',
+  'Members',
+  'Billing',
+  'Invoices',
+  'API',
 ];
 
 const SETTINGS_ITEMS: XDSSearchableItem[] = [
@@ -58,9 +49,9 @@ export default function SettingsTemplate() {
   const [firstName, setFirstName] = useState('Stephanie');
   const [lastName, setLastName] = useState('Nicol');
   const [email, setEmail] = useState('stephanie_nicol@mail.com');
-  const [currentPw, setCurrentPw] = useState('');
-  const [newPw, setNewPw] = useState('');
-  const [confirmPw, setConfirmPw] = useState('');
+  const [currentPw, setCurrentPw] = useState('password123');
+  const [newPw, setNewPw] = useState('password123');
+  const [confirmPw, setConfirmPw] = useState('password123');
   const [dataExport, setDataExport] = useState(false);
   const [adminMembers, setAdminMembers] = useState(false);
   const [twoFactor, setTwoFactor] = useState(false);
@@ -70,13 +61,15 @@ export default function SettingsTemplate() {
 
   return (
     <XDSAppShell
-      contentPadding={4}
       height="auto"
+      variant="section"
+      contentPadding={4}
       topNav={
-        <XDSTopNav
-          label="Settings"
-          heading={<XDSTopNavHeading heading="Settings" />}
-          endContent={
+        <XDSSection padding={4} variant="transparent">
+          <XDSHStack vAlign="center">
+            <XDSStackItem size="fill">
+              <XDSHeading level={1}>Settings</XDSHeading>
+            </XDSStackItem>
             <XDSTypeahead
               label="Search"
               isLabelHidden
@@ -87,31 +80,32 @@ export default function SettingsTemplate() {
               hasEntriesOnFocus
               startIcon={MagnifyingGlassIcon}
             />
-          }
-        />
+          </XDSHStack>
+        </XDSSection>
       }
       sideNav={
-        <XDSSideNav>
-          {NAV_ITEMS.map(item => (
-            <XDSSideNavItem
-              key={item.label}
-              label={item.label}
-              icon={item.icon}
-              isSelected={activeNav === item.label}
-              onClick={() => setActiveNav(item.label)}
-            />
-          ))}
-        </XDSSideNav>
+        <XDSSection padding={3} variant="transparent">
+          <XDSList density="compact">
+            {NAV_ITEMS.map(item => (
+              <XDSListItem
+                key={item}
+                label={item}
+                isSelected={activeNav === item}
+                onClick={() => setActiveNav(item)}
+              />
+            ))}
+          </XDSList>
+        </XDSSection>
       }>
-      <XDSVStack gap={6}>
-        <XDSGrid columns={{minWidth: 280, max: 2}} gap={7}>
+      <XDSVStack gap={4}>
+        <XDSGrid columns={2} gap={10}>
           <XDSVStack gap={1}>
             <XDSHeading level={3}>Basic information</XDSHeading>
             <XDSText type="supporting" color="secondary">
               View and update your personal details and account information.
             </XDSText>
           </XDSVStack>
-          <XDSFormLayout>
+          <XDSVStack gap={4}>
             <XDSTextInput
               label="Username"
               value={username}
@@ -132,20 +126,22 @@ export default function SettingsTemplate() {
               value={email}
               onChange={setEmail}
             />
-            <XDSButton label="Save" variant="primary" />
-          </XDSFormLayout>
+            <XDSHStack>
+              <XDSButton label="Save" variant="primary" />
+            </XDSHStack>
+          </XDSVStack>
         </XDSGrid>
 
         <XDSDivider />
 
-        <XDSGrid columns={{minWidth: 280, max: 2}} gap={7}>
+        <XDSGrid columns={2} gap={10}>
           <XDSVStack gap={1}>
             <XDSHeading level={3}>Change password</XDSHeading>
             <XDSText type="supporting" color="secondary">
               Update your password to keep your account secure.
             </XDSText>
           </XDSVStack>
-          <XDSFormLayout>
+          <XDSVStack gap={4}>
             <XDSTextInput
               label="Verify current password"
               type="password"
@@ -164,13 +160,15 @@ export default function SettingsTemplate() {
               value={confirmPw}
               onChange={setConfirmPw}
             />
-            <XDSButton label="Save" variant="primary" />
-          </XDSFormLayout>
+            <XDSHStack>
+              <XDSButton label="Save" variant="primary" />
+            </XDSHStack>
+          </XDSVStack>
         </XDSGrid>
 
         <XDSDivider />
 
-        <XDSGrid columns={{minWidth: 280, max: 2}} gap={7}>
+        <XDSGrid columns={2} gap={10}>
           <XDSVStack gap={1}>
             <XDSHeading level={3}>Advanced settings</XDSHeading>
             <XDSText type="supporting" color="secondary">
@@ -196,7 +194,9 @@ export default function SettingsTemplate() {
               value={twoFactor}
               onChange={setTwoFactor}
             />
-            <XDSButton label="Save" variant="primary" />
+            <XDSHStack>
+              <XDSButton label="Save" variant="primary" />
+            </XDSHStack>
           </XDSVStack>
         </XDSGrid>
       </XDSVStack>
