@@ -43,7 +43,7 @@ function App() {
         },
         {
           type: 'prose',
-          text: 'The default import uses runtime style injection \u2014 works everywhere, no build step. The `/built` import skips injection and relies on the pre-compiled CSS file for better performance and SSR support.',
+          text: 'The default import uses runtime style injection — works everywhere, no build step. The `/built` import skips injection and relies on the pre-compiled CSS file for better performance and SSR support.',
         },
       ],
     },
@@ -73,7 +73,7 @@ function App() {
         },
         {
           type: 'prose',
-          text: 'All theme packages export from two subpaths:\n- `@xds/theme-{name}` \u2014 source theme (runtime injection)\n- `@xds/theme-{name}/built` \u2014 pre-built theme (pair with `theme.css`)',
+          text: 'All theme packages export from two subpaths:\n- `@xds/theme-{name}` — source theme (runtime injection)\n- `@xds/theme-{name}/built` — pre-built theme (pair with `theme.css`)',
         },
       ],
     },
@@ -84,14 +84,14 @@ function App() {
           type: 'table',
           headers: ['Prop', 'Type', 'Default', 'Description'],
           rows: [
-            ['theme', 'XDSDefinedTheme', '\u2014', 'Theme object (required)'],
+            ['theme', 'XDSDefinedTheme', '—', 'Theme object (required)'],
             [
               'mode',
               "'system' | 'light' | 'dark'",
               "'system'",
               'Color mode. system follows OS preference.',
             ],
-            ['children', 'ReactNode', '\u2014', 'App content'],
+            ['children', 'ReactNode', '—', 'App content'],
           ],
         },
       ],
@@ -101,7 +101,7 @@ function App() {
       content: [
         {
           type: 'prose',
-          text: 'Use the CLI wizard (recommended) or create manually with defineTheme. Only override tokens that differ from defaults \u2014 omitted tokens use the XDS defaults.',
+          text: 'Use the CLI wizard (recommended) or create manually with defineTheme. Only override tokens that differ from defaults — omitted tokens use the XDS defaults.',
         },
         {
           type: 'code',
@@ -126,6 +126,7 @@ function App() {
 
 const myTheme = defineTheme({
   name: 'my-theme',
+  color: { accent: '#7B61FF', neutralStyle: 'cool' },
   typography: {
     scale: { base: 14, ratio: 1.2 },
     body: { family: 'Inter', fallbacks: '-apple-system, sans-serif' },
@@ -133,7 +134,8 @@ const myTheme = defineTheme({
   radius: { base: 4, multiplier: 1 },
   motion: { fast: 175, medium: 410, ratio: 0.75 },
   tokens: {
-    '--color-accent': ['#7B61FF', '#9B85FF'], // [light, dark]
+    // Explicit overrides take precedence over scale-generated values
+    '--color-accent': ['#7B61FF', '#9B85FF'],
   },
   components: {
     button: { 'variant:primary': { color: 'white' } },
@@ -144,6 +146,11 @@ const myTheme = defineTheme({
           type: 'table',
           headers: ['Config', 'Generates', 'Parameters'],
           rows: [
+            [
+              'color',
+              '--color-accent, --color-background-*, --color-text-*, --color-border, etc.',
+              'accent (hex), neutralStyle? (warm|cool|neutral), contrast? (standard|high)',
+            ],
             [
               'typography.scale',
               '--text-heading-*-size/weight/leading, --text-body-size/weight/leading',
@@ -157,7 +164,7 @@ const myTheme = defineTheme({
             [
               'radius',
               '--radius-1 through --radius-4, --radius-container, --radius-page',
-              'base (px), multiplier (0\u20132)',
+              'base (px), multiplier (0–2)',
             ],
             [
               'motion',
@@ -165,6 +172,104 @@ const myTheme = defineTheme({
               'fast (ms), medium (ms), ratio, easing?',
             ],
           ],
+        },
+      ],
+    },
+    {
+      title: 'Component Style Overrides',
+      content: [
+        {
+          type: 'prose',
+          text: 'The `components` field in defineTheme targets stable `.xds-*` CSS class names. Use `base` for all instances, `variant:value` or `stateName` for specific states.',
+        },
+        {
+          type: 'code',
+          lang: 'tsx',
+          label: 'Component overrides with standard CSS',
+          code: `components: {
+  // Standard CSS properties are expanded automatically.
+  // borderRadius also sets the internal radius var for concentric math.
+  // padding on container components (card, section, dialog) expands to layout tokens.
+  card: {
+    base: { borderRadius: '20px', padding: '24px' },
+  },
+  button: {
+    base: { borderRadius: '9999px', textTransform: 'uppercase' },
+    'variant:ghost': { borderWidth: '2px', borderStyle: 'solid' },
+  },
+  // Some components have public CSS vars for properties that don't map
+  // to standard CSS. Set these directly.
+  button: {
+    base: { '--button-press-scale': 'scale(0.95)' },
+  },
+}`,
+        },
+        {
+          type: 'prose',
+          text: 'Run `npx xds component <Name>` to see a component’s theming targets, public CSS variables, and which standard CSS properties are supported.',
+        },
+        {
+          type: 'list',
+          style: 'do',
+          items: [
+            'Write standard CSS properties (borderRadius, padding) — the pipeline expands them into internal vars.',
+            'Set public CSS vars directly when no standard property equivalent exists.',
+          ],
+        },
+        {
+          type: 'list',
+          style: 'dont',
+          items: [
+            'Set private CSS vars (prefixed --_) directly — use standard CSS properties instead. `xds theme build` will error.',
+          ],
+        },
+      ],
+    },
+    {
+      title: 'Custom Variants',
+      content: [
+        {
+          type: 'prose',
+          text: 'Themes can add new prop values to any component. Any `prop:value` key where the value isn’t a built-in gets treated as a new variant. Use `xds theme build` to generate TypeScript augmentations for type safety.',
+        },
+        {
+          type: 'code',
+          lang: 'tsx',
+          label: 'Adding custom variants',
+          code: `components: {
+  button: {
+    // Override an existing variant
+    'variant:secondary': { backgroundColor: 'rgba(0,0,0,0.06)' },
+    // Add a new variant — generates type augmentation on build
+    'variant:primary-muted': {
+      backgroundColor: 'light-dark(#F2F4F6, #28292C)',
+      color: 'var(--color-text-primary)',
+    },
+  },
+  banner: {
+    // Any extensible prop axis works — not just variant
+    'status:neutral': {
+      backgroundColor: 'var(--color-muted)',
+      color: 'var(--color-text-secondary)',
+    },
+  },
+}`,
+        },
+        {
+          type: 'prose',
+          text: 'After building, the new values are type-safe in JSX:',
+        },
+        {
+          type: 'code',
+          lang: 'tsx',
+          label: 'Using custom variants',
+          code: `// TypeScript knows about 'primary-muted' after xds theme build
+<XDSButton variant="primary-muted" label="Save draft" />
+<XDSBanner status="neutral" title="Note" />`,
+        },
+        {
+          type: 'prose',
+          text: 'Custom variants only work when the theme that defines them is active. The component’s variant map is extended via module augmentation — no changes to the component source needed.',
         },
       ],
     },
@@ -203,13 +308,13 @@ const myTheme = defineTheme({
             ],
             [
               'ocean.variants.d.ts',
-              '(Optional) Module augmentations for custom component prop values found in the theme\u2019s component overrides',
+              '(Optional) Module augmentations for custom component prop values found in the theme’s component overrides',
             ],
           ],
         },
         {
           type: 'prose',
-          text: 'The `__built: true` flag tells XDSTheme to skip runtime `<style>` injection \u2014 the CSS file handles it.',
+          text: 'The `__built: true` flag tells XDSTheme to skip runtime `<style>` injection — the CSS file handles it.',
         },
         {
           type: 'code',
@@ -253,12 +358,12 @@ import './themes/ocean.css';
             [
               'Component overrides',
               'Injected client-only',
-              'In static CSS \u2014 present during SSR',
+              'In static CSS — present during SSR',
             ],
             [
               'SSR safe',
               'Tokens yes, component overrides flash on hydration',
-              'Fully SSR safe \u2014 no flash',
+              'Fully SSR safe — no flash',
             ],
             [
               'Best for',
@@ -280,8 +385,8 @@ import './themes/ocean.css';
           type: 'list',
           style: 'dont',
           items: [
-            'Use runtime themes in production SSR apps \u2014 component overrides will flash on hydration.',
-            'Import /built without the CSS file \u2014 component overrides won\u2019t apply.',
+            'Use runtime themes in production SSR apps — component overrides will flash on hydration.',
+            'Import /built without the CSS file — component overrides won’t apply.',
           ],
         },
       ],
@@ -350,8 +455,8 @@ import './themes/ocean.css';
 
 function MyComponent() {
   const ctx = useXDSTheme();
-  // ctx.theme \u2014 the XDSDefinedTheme object
-  // ctx.mode \u2014 'system' | 'light' | 'dark'
+  // ctx.theme — the XDSDefinedTheme object
+  // ctx.mode — 'system' | 'light' | 'dark'
   return null;
 }`,
         },

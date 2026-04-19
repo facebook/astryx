@@ -9,12 +9,12 @@ export const docs = {
       {className: 'xds-segmented-control-item'},
     ],
     vars: [
-      {name: '--segmented-radius', description: 'Border radius of the segmented control', default: 'var(--radius-element)'},
-      {name: '--segmented-padding', description: 'Inner padding of the segmented control', default: 'var(--spacing-0-5)'},
+      {name: '--_segmented-control-radius', description: 'Border radius of the segmented control', default: 'var(--radius-element)', private: true},
+      {name: '--_segmented-control-padding', description: 'Inner padding of the segmented control', default: 'var(--spacing-0-5)', private: true},
     ],
     derived: [
-      {property: 'borderRadius', vars: ['--segmented-radius']},
-      {property: 'padding', vars: ['--segmented-padding']},
+      {property: 'borderRadius', vars: ['--_segmented-control-radius']},
+      {property: 'padding', vars: ['--_segmented-control-padding']},
     ],
   },
   components: [

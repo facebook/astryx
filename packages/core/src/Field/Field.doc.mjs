@@ -10,10 +10,10 @@ export const docs = {
       {className: 'xds-field-status', visualProps: ['type', 'variant']},
     ],
     vars: [
-      {name: '--input-radius', description: 'Border radius of input fields', default: 'var(--radius-element)'},
+      {name: '--_field-radius', description: 'Border radius of input fields', default: 'var(--radius-element)', private: true},
     ],
     derived: [
-      {property: 'borderRadius', vars: ['--input-radius']},
+      {property: 'borderRadius', vars: ['--_field-radius']},
     ],
   },
   components: [
@@ -236,10 +236,10 @@ export const docsZh = {
       {className: 'xds-field-status', visualProps: ['type', 'variant']},
     ],
     vars: [
-      {name: '--input-radius', description: 'Border radius of input fields', default: 'var(--radius-element)'},
+      {name: '--_field-radius', description: 'Border radius of input fields', default: 'var(--radius-element)', private: true},
     ],
     derived: [
-      {property: 'borderRadius', vars: ['--input-radius']},
+      {property: 'borderRadius', vars: ['--_field-radius']},
     ],
   },
   components: [

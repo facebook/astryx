@@ -173,7 +173,7 @@ const styles = stylex.create({
     top: spacingVars['--spacing-1'],
     right: spacingVars['--spacing-1'],
     zIndex: 1,
-    '--button-radius': `calc(${radiusVars['--radius-element']} - ${spacingVars['--spacing-1']})`,
+    '--_button-radius': `calc(${radiusVars['--radius-element']} - ${spacingVars['--spacing-1']})`,
     height: 20,
     minWidth: 20,
   } as Record<string, string | number>,

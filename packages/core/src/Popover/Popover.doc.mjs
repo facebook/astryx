@@ -136,10 +136,10 @@ export const docs = {
       {className: 'xds-popover'},
     ],
     vars: [
-      {name: '--popover-radius', description: 'Border radius of the popover', default: 'var(--radius-element)'},
+      {name: '--_popover-radius', description: 'Border radius of the popover', default: 'var(--radius-element)', private: true},
     ],
     derived: [
-      {property: 'borderRadius', vars: ['--popover-radius']},
+      {property: 'borderRadius', vars: ['--_popover-radius']},
     ],
   },
   usage: {
@@ -291,10 +291,10 @@ export const docsZh = {
       {className: 'xds-popover'},
     ],
     vars: [
-      {name: '--popover-radius', description: 'Border radius of the popover', default: 'var(--radius-element)'},
+      {name: '--_popover-radius', description: 'Border radius of the popover', default: 'var(--radius-element)', private: true},
     ],
     derived: [
-      {property: 'borderRadius', vars: ['--popover-radius']},
+      {property: 'borderRadius', vars: ['--_popover-radius']},
     ],
   },
   usage: {

@@ -958,7 +958,7 @@ describe('container padding mapping', () => {
         card: {
           base: {
             padding: '20px',
-            '--card-radius': '16px',
+            '--_card-radius': '16px',
             backgroundColor: 'white',
           },
         },
@@ -966,7 +966,7 @@ describe('container padding mapping', () => {
     });
     const css = generateThemeCSSFlat(theme);
     // Non-padding props pass through
-    expect(css).toContain('--card-radius: 16px');
+    expect(css).toContain('--_card-radius: 16px');
     expect(css).toContain('background-color: white');
     // Padding is mapped to component-scoped token
     expect(css).toContain('--xds-card-padding: 20px');
