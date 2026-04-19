@@ -583,35 +583,35 @@ function OverviewView({
 }) {
   return (
     <XDSSection padding={8} maxWidth={1200}>
-      {/* Hero banner */}
-      <XDSCard variant="blue" padding={10}>
-        <XDSHStack gap={8} vAlign="center">
-          <XDSStackItem size="fill">
-            <XDSVStack gap={4}>
-              <XDSText type="supporting" color="secondary">
-                Product Name Design System
-              </XDSText>
-              <XDSText type="display-1">Web overview</XDSText>
-              <XDSText type="large" color="secondary">
-                An open-source UI library to help developers quickly build
-                beautiful, accessible products.
-              </XDSText>
-              <XDSHStack>
-                <XDSButton
-                  label="Get started"
-                  variant="primary"
-                  size="lg"
-                  onClick={() => onSelectComponent('getting-started')}
-                />
-              </XDSHStack>
-            </XDSVStack>
-          </XDSStackItem>
-          <XDSStackItem size="fill" />
-        </XDSHStack>
-      </XDSCard>
-
-      {/* Category sections */}
       <XDSVStack gap={10}>
+        {/* Hero banner */}
+        <XDSCard variant="blue" padding={10}>
+          <XDSHStack gap={8} vAlign="center">
+            <XDSStackItem size="fill">
+              <XDSVStack gap={4}>
+                <XDSText type="supporting" color="secondary">
+                  Product Name Design System
+                </XDSText>
+                <XDSText type="display-1">Web overview</XDSText>
+                <XDSText type="large" color="secondary">
+                  An open-source UI library to help developers quickly build
+                  beautiful, accessible products.
+                </XDSText>
+                <XDSHStack>
+                  <XDSButton
+                    label="Get started"
+                    variant="primary"
+                    size="lg"
+                    onClick={() => onSelectComponent('getting-started')}
+                  />
+                </XDSHStack>
+              </XDSVStack>
+            </XDSStackItem>
+            <XDSStackItem size="fill" />
+          </XDSHStack>
+        </XDSCard>
+
+        {/* Category sections */}
         {COMPONENT_CATEGORIES.map(category => (
           <XDSVStack key={category.label} gap={4}>
             <XDSText type="display-2">{category.label}</XDSText>
