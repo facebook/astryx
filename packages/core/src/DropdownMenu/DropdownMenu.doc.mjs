@@ -78,7 +78,7 @@ export const docs = {
         {
           name: 'icon',
           type: 'XDSIconType',
-          description: 'Icon to display before the label.',
+          description: 'Icon to display before the label. See `npx xds docs icons` for valid semantic names.',
         },
         {
           name: 'label',
@@ -129,7 +129,7 @@ export const docs = {
         {
           name: 'icon',
           type: 'XDSIconType',
-          description: 'Icon to display before the item label.',
+          description: 'Icon to display before the item label. See `npx xds docs icons` for valid semantic names.',
         },
       ],
     },

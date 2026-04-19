@@ -91,7 +91,7 @@ export const docs = {
     {
       name: 'labelIcon',
       type: 'XDSIconType',
-      description: 'Icon displayed before the label text.',
+      description: 'Icon displayed before the label text. See `npx xds docs icons` for valid semantic names.',
     },
     {
       name: 'labelTooltip',
