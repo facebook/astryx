@@ -37,8 +37,8 @@ const styles = stylex.create({
   // Base container styles passed to useXDSLayer
   container: {
     backgroundColor: colorVars['--color-background-surface'],
-    '--hovercard-radius': radiusVars['--radius-container'],
-    borderRadius: 'var(--hovercard-radius)',
+    '--_hovercard-radius': radiusVars['--radius-container'],
+    borderRadius: 'var(--_hovercard-radius)',
     boxShadow: shadowVars['--shadow-med'],
   },
   // Position-based margin styles

@@ -115,7 +115,7 @@ const styles = stylex.create({
 });
 
 const CONCENTRIC_RADIUS =
-  'max(0px, calc(var(--segmented-radius) - var(--segmented-padding)))';
+  'max(0px, calc(var(--_segmented-control-radius) - var(--_segmented-control-padding)))';
 
 const sizeStyles = stylex.create({
   sm: {

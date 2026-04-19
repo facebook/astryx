@@ -613,13 +613,6 @@ export function defineTheme(input: XDSDefineThemeInput): XDSDefinedTheme {
 // Container padding mapping
 // =============================================================================
 
-/**
- * Components whose padding properties should be mapped to container tokens.
- * When a theme sets `padding` on these components, the pipeline intercepts it
- * and emits container token declarations instead.
- */
-const CONTAINER_COMPONENTS = new Set(['card', 'section', 'dialog']);
-
 /** Padding properties that trigger container token mapping */
 const PADDING_PROPS = new Set([
   'padding',
@@ -825,39 +818,46 @@ export function generateThemeRules(theme: XDSDefinedTheme): string[] {
             }
           }
 
-          // Container padding mapping: intercept padding on container
-          // components and emit container token declarations instead.
-          // Also expand derived vars: when a theme sets a standard CSS
-          // property (e.g. borderRadius), emit the internal vars too.
-          let finalProps = props;
-          if (CONTAINER_COMPONENTS.has(component)) {
-            const paddingProps = props.filter(([p]) => PADDING_PROPS.has(p));
-            if (paddingProps.length > 0) {
-              const nonPaddingProps = props.filter(
-                ([p]) => !PADDING_PROPS.has(p),
-              );
-              const parsed = parsePadding(paddingProps);
-              const containerTokens = expandContainerPadding(component, parsed);
-              finalProps = [...nonPaddingProps, ...containerTokens];
-            }
-          }
-
           // Derived var expansion: for each CSS property, check if the
           // component has derived var entries and emit additional declarations.
           // Entries are processed in order (priority).
+          // - `vars`: emit internal CSS custom property declarations
+          // - `expand: 'container'`: expand padding to container layout tokens
+          let finalProps = props;
           const derivedProps: [string, string][] = [];
-          for (const [prop, value] of finalProps) {
+          let containerExpanded = false;
+
+          for (const [prop, value] of props) {
             const derived = getDerivedVars(component, prop);
-            for (const entry of derived) {
+            // Padding longhands (paddingBlock, paddingInline, etc.) also
+            // match the 'padding' derived entry for container expansion.
+            const paddingDerived = PADDING_PROPS.has(prop) && prop !== 'padding'
+              ? getDerivedVars(component, 'padding')
+              : [];
+            for (const entry of [...derived, ...paddingDerived]) {
+              if (entry.expand === 'container' && PADDING_PROPS.has(prop)) {
+                containerExpanded = true;
+              }
               if (entry.vars) {
                 for (const varName of entry.vars) {
                   derivedProps.push([varName, value]);
                 }
               }
-              // 'container' expansion is already handled above via
-              // CONTAINER_COMPONENTS — no double-emit needed here
             }
           }
+
+          // Container padding expansion: replace padding props with
+          // component-scoped container tokens for layout integration.
+          if (containerExpanded) {
+            const paddingProps = props.filter(([p]) => PADDING_PROPS.has(p));
+            const nonPaddingProps = props.filter(
+              ([p]) => !PADDING_PROPS.has(p),
+            );
+            const parsed = parsePadding(paddingProps);
+            const containerTokens = expandContainerPadding(component, parsed);
+            finalProps = [...nonPaddingProps, ...containerTokens];
+          }
+
           if (derivedProps.length > 0) {
             finalProps = [...finalProps, ...derivedProps];
           }

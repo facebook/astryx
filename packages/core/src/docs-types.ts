@@ -99,7 +99,7 @@ export interface ThemingTarget {
  * { property: 'padding', expand: 'container' }
  *
  * // Multiple vars from one property
- * { property: 'padding', vars: ['--_composer-padding', '--_composer-button-offset'] }
+ * { property: 'padding', vars: ['--_chat-composer-padding', '--_composer-button-offset'] }
  *
  * // Multiple entries for the same property (both fire, in order)
  * { property: 'padding', expand: 'container' },
@@ -125,16 +125,14 @@ export interface DerivedVar {
  *
  * @example
  * ```
- * {name: '--card-radius', description: 'Border radius', default: 'var(--radius-container)'}
- * {name: '--card-concentric-radius', description: 'Inner radius', derived: true, formula: 'max(0px, calc(var(--card-radius) - var(--card-padding)))'}
+ * {name: '--_card-radius', description: 'Border radius', default: 'var(--radius-container)'}
+ * {name: '--card-concentric-radius', description: 'Inner radius', derived: true, formula: 'max(0px, calc(var(--_card-radius) - var(--card-padding)))'}
  * ```
  */
 export interface ComponentVar {
-  /** CSS custom property name, e.g. '--card-radius' */
+  /** CSS custom property name, e.g. '--_card-radius' or '--button-press-scale' */
   name: string;
-  /** What this var controls. For derived vars, describe what the CSS property
-   *  expands into (e.g. "Border radius of the card. Theme authors write
-   *  `borderRadius`; the pipeline also sets this var.") */
+  /** What this var controls */
   description: string;
   /** Default value as a CSS expression, e.g. 'var(--radius-container)' */
   default: string;
@@ -143,20 +141,13 @@ export interface ComponentVar {
   /** CSS expression showing how derived vars are computed */
   formula?: string;
   /**
-   * The standard CSS property (camelCase) that theme authors write to set
-   * this var. When present, the pipeline intercepts this property in
-   * component overrides and emits the internal var alongside the CSS.
-   *
-   * e.g. `'borderRadius'` — writing `borderRadius: '32px'` in defineTheme
-   * emits both `border-radius: 32px` and `--card-radius: 32px`.
+   * Whether this var is private (internal implementation detail).
+   * Private vars are set by the derived var expansion pipeline — theme
+   * authors write standard CSS properties instead of setting them directly.
+   * The CLI hides private vars from theming output.
+   * `xds theme build` errors if a theme sets a private var directly.
    */
-  property?: string;
-  /**
-   * Named expansion strategy instead of setting the var directly.
-   * `'container'` — the pipeline expands padding values into 7 container
-   * layout tokens (--xds-<component>-padding, -inline, -block-start, etc.).
-   */
-  expand?: 'container';
+  private?: boolean;
 }
 
 /**
