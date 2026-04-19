@@ -9,7 +9,6 @@
   },
   "scripts": {
     "harness": "tsx src/cli.ts",
-    "generate:skill-doc": "bash scripts/generate-skill-doc.sh",
     "interactive": "tsx src/interactive.ts",
     "interactive:sample": "tsx src/interactive.ts --sample 5",
     "run-interactive": "tsx src/run-interactive.ts",

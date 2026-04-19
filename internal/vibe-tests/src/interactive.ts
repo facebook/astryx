@@ -723,47 +723,6 @@ You are writing React components using ONLY:
 }
 
 /**
- * Install AGENTS.xds-tailwind.md and .generated/xds-tailwind-skill.md for XDS + Tailwind target
- *
- * This target uses XDS components with Tailwind utility classes instead of StyleX.
- * The AGENTS.xds-tailwind.md and skill doc are committed to the repo, so this
- * function just verifies they exist.
- */
-function installXdsTailwindDocs(): void {
-  const vibeTestsDir = path.join(__dirname, '..');
-  const agentsMdPath = path.join(vibeTestsDir, 'AGENTS.xds-tailwind.md');
-  const skillDocPath = path.join(
-    vibeTestsDir,
-    '.generated',
-    'xds-tailwind-skill.md',
-  );
-
-  if (!fs.existsSync(agentsMdPath)) {
-    console.error(
-      '⚠ AGENTS.xds-tailwind.md not found. Run generate-skill-doc.sh first.',
-    );
-    return;
-  }
-
-  if (!fs.existsSync(skillDocPath)) {
-    // Try generating via the skill doc script
-    try {
-      const generatedDir = path.join(vibeTestsDir, '.generated');
-      ensureDir(generatedDir);
-      console.log(
-        '⚠ xds-tailwind-skill.md not found in .generated/. Ensure it is generated.',
-      );
-    } catch (_error) {
-      console.warn(
-        '⚠ Failed to find xds-tailwind-skill.md, continuing without it',
-      );
-    }
-  }
-
-  console.log('✓ Using AGENTS.xds-tailwind.md (XDS + Tailwind target)');
-}
-
-/**
  * Install AGENTS.md for agent documentation
  */
 function installAgentsDocs(): void {
@@ -780,15 +739,15 @@ function installAgentsDocs(): void {
     }
   }
 
-  // Run xds agent-docs via CLI
+  // Generate fresh AGENTS.md from xds init CLI
   try {
-    execSync('npx xds agent-docs', {
+    execSync('npx xds init --features agents --agent-docs-path AGENTS.md', {
       cwd: vibeTestsDir,
       stdio: 'pipe',
     });
-    console.log('✓ Generated AGENTS.md');
+    console.log('✓ Generated AGENTS.md from CLI (xds init)');
   } catch (_error) {
-    console.warn('⚠ Failed to generate AGENTS.md, continuing without it');
+    console.warn('⚠ Failed to generate AGENTS.md via xds init');
   }
 }
 
@@ -797,7 +756,7 @@ interface InteractiveConfig {
   holdout?: boolean;
   persona: 'naive' | 'experienced' | 'adversarial';
   degradation?: boolean; // Enable degradation curve testing
-  target: 'xds' | 'baseline' | 'html' | 'xds-tailwind'; // Target design system
+  target: 'xds' | 'baseline' | 'html'; // Target design system
 }
 
 interface AgentTask {
@@ -988,9 +947,7 @@ function generateSubagentPrompt(
       ? 'AGENTS.baseline.md'
       : config.target === 'html'
         ? 'AGENTS.html.md'
-        : config.target === 'xds-tailwind'
-          ? 'AGENTS.xds-tailwind.md'
-          : 'AGENTS.md';
+        : 'AGENTS.md';
 
   // Persona-specific framing to simulate different user types
   const personaFraming: Record<string, Record<string, string>> = {
@@ -1008,11 +965,6 @@ function generateSubagentPrompt(
       naive: '', // No special framing
       experienced: `Use only plain HTML elements and inline CSS. `,
       adversarial: `I know React component libraries exist but I want raw HTML/CSS. `,
-    },
-    'xds-tailwind': {
-      naive: '', // No special framing - just the natural request
-      experienced: `Use XDS components from @xds/core with Tailwind utility classes. `,
-      adversarial: `I'm used to plain Tailwind but need to use your design system components. `,
     },
   };
 
@@ -1108,7 +1060,7 @@ async function main() {
   const targetIndex = args.indexOf('--target');
   const target =
     targetIndex !== -1
-      ? (args[targetIndex + 1] as 'xds' | 'baseline' | 'html' | 'xds-tailwind')
+      ? (args[targetIndex + 1] as 'xds' | 'baseline' | 'html')
       : 'xds';
   const promptsIndex = args.indexOf('--prompts');
   const promptIds =
@@ -1136,8 +1088,6 @@ async function main() {
     installBaselineDocs();
   } else if (target === 'html') {
     installHtmlDocs();
-  } else if (target === 'xds-tailwind') {
-    installXdsTailwindDocs();
   }
 
   // Load test set
@@ -1192,7 +1142,7 @@ async function main() {
   console.log(`Persona: ${persona}`);
   if (skillDocOverride) console.log(`Skill doc: ${skillDocOverride}`);
   console.log(
-    `Mode: ${target === 'xds' ? 'AGENTS.md' : target === 'baseline' ? 'AGENTS.baseline.md' : target === 'xds-tailwind' ? 'AGENTS.xds-tailwind.md' : 'AGENTS.html.md'} (retrieval-led)`,
+    `Mode: ${target === 'xds' ? 'AGENTS.md' : target === 'baseline' ? 'AGENTS.baseline.md' : 'AGENTS.html.md'} (retrieval-led)`,
   );
   console.log(
     `Protocol: ${degradation ? 'Degradation (10-turn curve)' : 'One-shot'}`,

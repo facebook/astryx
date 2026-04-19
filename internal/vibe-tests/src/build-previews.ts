@@ -142,19 +142,12 @@ function createEntryFile(
   const entryPath = path.join(tmpDir, 'entry.tsx');
 
   // For XDS and XDS+Tailwind targets, wrap in theme provider and import reset
-  if (target === 'xds' || target === 'xds-tailwind') {
-    const tailwindImport =
-      target === 'xds-tailwind'
-        ? `import '${path
-            .resolve(VIBE_DIR, 'app/tailwind.css')
-            .replace(/\\/g, '/')}';`
-        : '';
+  if (target === 'xds') {
     fs.writeFileSync(
       entryPath,
       `import React from 'react';
 import {createRoot} from 'react-dom/client';
 import '@xds/core/reset.css';
-${tailwindImport}
 import {XDSTheme} from '@xds/core/theme';
 import {defaultTheme} from '@xds/theme/default';
 import Component from '${componentPath.replace(/\\/g, '/')}';
@@ -287,7 +280,7 @@ function createViteConfig(tmpDir: string, target: string): string {
   // type casts). We use a pre-transform plugin to strip TypeScript type
   // assertions before StyleX processes the file.
   const plugins =
-    target === 'xds' || target === 'xds-tailwind'
+    target === 'xds'
       ? `
     {
       name: 'stylex-inline-vars',
@@ -359,7 +352,7 @@ function createViteConfig(tmpDir: string, target: string): string {
     viteSingleFile(),`;
 
   const imports =
-    target === 'xds' || target === 'xds-tailwind'
+    target === 'xds'
       ? `import stylex from '@stylexjs/unplugin';
 import react from '@vitejs/plugin-react';
 import {viteSingleFile} from 'vite-plugin-singlefile';`
@@ -383,7 +376,7 @@ import {viteSingleFile} from 'vite-plugin-singlefile';`;
     },`;
 
   const aliases =
-    target === 'xds' || target === 'xds-tailwind'
+    target === 'xds'
       ? xdsAliases
       : target === 'baseline'
         ? `
@@ -397,14 +390,7 @@ import {viteSingleFile} from 'vite-plugin-singlefile';`;
     },`
         : '';
 
-  // XDS+Tailwind needs PostCSS with Tailwind for utility class resolution
-  const cssConfig =
-    target === 'xds-tailwind'
-      ? `
-  css: {
-    postcss: '${path.resolve(VIBE_DIR, 'app').replace(/\\/g, '/')}',
-  },`
-      : '';
+  const cssConfig = '';
 
   fs.writeFileSync(
     configPath,
@@ -740,7 +726,7 @@ async function main() {
       console.log(`  📄 ${promptId} (${target})...`);
 
       // Auto-fix missing XDS imports before building
-      if (target === 'xds' || target === 'xds-tailwind') {
+      if (target === 'xds') {
         const autoImported = fixMissingXDSImports(componentPath);
         if (autoImported.length > 0) {
           console.log(`  ⚡ Auto-imported: ${autoImported.join(', ')}`);
@@ -755,7 +741,7 @@ async function main() {
       const ok = buildPreview(componentPath, target, promptId, previewPath);
       if (ok) {
         // Post-build validation: ensure no unresolved XDS references
-        if (target === 'xds' || target === 'xds-tailwind') {
+        if (target === 'xds') {
           const unresolved = validatePreviewHtml(previewPath);
           if (unresolved.length > 0) {
             console.error(

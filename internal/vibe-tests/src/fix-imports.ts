@@ -15,10 +15,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {getResultsDir, readJson} from './utils.js';
 
-function fixMissingXDSImports(
-  filePath: string,
-  dryRun: boolean,
-): string[] {
+function fixMissingXDSImports(filePath: string, dryRun: boolean): string[] {
   const code = fs.readFileSync(filePath, 'utf-8');
 
   // Find all XDS component references used in JSX
@@ -82,9 +79,7 @@ function main() {
   const {iterations, dryRun} = parseArgs();
   const resultsDir = getResultsDir();
 
-  console.log(
-    `\n🔧 Fix Missing XDS Imports${dryRun ? ' (dry run)' : ''}`,
-  );
+  console.log(`\n🔧 Fix Missing XDS Imports${dryRun ? ' (dry run)' : ''}`);
   console.log('='.repeat(40));
 
   let totalFixed = 0;
@@ -103,7 +98,7 @@ function main() {
     const target = iterManifest.config?.target ?? 'xds';
 
     // Only XDS targets need import fixing
-    if (target !== 'xds' && target !== 'xds-tailwind') {
+    if (target !== 'xds') {
       console.log(`  ⏭ ${iterationId} is ${target}, skipping`);
       continue;
     }
