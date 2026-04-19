@@ -1556,6 +1556,7 @@ function DocsiteLandingTemplate() {
               item={{
                 name: t.name,
                 img: t.src,
+                slug: t.slug,
                 author: t.author,
               }}
               onStartCrafting={() => {

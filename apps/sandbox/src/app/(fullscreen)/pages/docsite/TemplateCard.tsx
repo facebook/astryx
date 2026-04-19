@@ -85,6 +85,7 @@ export function TemplateCard({
           <div
             ref={iframeWrapperRef}
             style={{
+              position: 'relative',
               width: '100%',
               aspectRatio: '1920 / 1205',
               overflow: 'hidden',
@@ -95,6 +96,9 @@ export function TemplateCard({
               src={`${basePath}/templates/${slug}/?embed=1`}
               title={name}
               style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
                 width: 1920,
                 height: 1205,
                 border: 'none',
