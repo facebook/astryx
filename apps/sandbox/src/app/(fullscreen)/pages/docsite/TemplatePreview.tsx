@@ -26,7 +26,7 @@ import {
 import {XDSPopover} from '@xds/core/Popover';
 import {SharePopoverContent} from './SharePopover';
 
-import {XDS_THEMES} from './constants';
+import {XDS_THEMES, basePath} from './constants';
 import {CraftingCat} from './CraftingCat';
 
 import type {PointedElement} from './ChatPanel';
@@ -34,6 +34,7 @@ import type {PointedElement} from './ChatPanel';
 export function TemplatePreview({
   templateName,
   imageSrc,
+  slug,
   onBack: _onBack,
   isGenerating,
   onPublish,
@@ -49,6 +50,7 @@ export function TemplatePreview({
 }: {
   templateName: string;
   imageSrc: string;
+  slug?: string;
   onBack: () => void;
   isGenerating: boolean;
   onPublish?: () => void;
@@ -398,7 +400,20 @@ export function TemplatePreview({
               margin: isFullPreview ? 0 : 'auto 0',
               transition: 'width 300ms ease, border-radius 300ms ease',
             }}>
-            {imageSrc ? (
+            {slug ? (
+              <iframe
+                src={`${basePath}/templates/${slug}/?embed=1`}
+                title={templateName}
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  height: '100vh',
+                  border: 'none',
+                  opacity: isGenerating ? 0 : 1,
+                  transition: 'opacity 600ms ease',
+                }}
+              />
+            ) : imageSrc ? (
               <img
                 src={imageSrc}
                 alt="Template preview"

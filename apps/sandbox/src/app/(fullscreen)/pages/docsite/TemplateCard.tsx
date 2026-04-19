@@ -1,6 +1,6 @@
 'use client';
 
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useRef, useCallback} from 'react';
 import {XDSCard} from '@xds/core/Card';
 import {XDSButton} from '@xds/core/Button';
 import {XDSHeading, XDSText} from '@xds/core/Text';
@@ -9,9 +9,11 @@ import {XDSPopover} from '@xds/core/Popover';
 import {BookmarkIcon, BookmarkFilledIcon} from './docsite-icons';
 import {CraftingCat} from './CraftingCat';
 import {SharePopoverContent} from './SharePopover';
+import {basePath} from './constants';
 
 export function TemplateCard({
   src,
+  slug,
   name,
   isSelected: _isSelected,
   onSelect: _onSelect,
@@ -22,6 +24,7 @@ export function TemplateCard({
   cardSize: _cardSize = 'medium',
 }: {
   src: string;
+  slug?: string;
   name: string;
   isSelected?: boolean;
   onSelect?: () => void;
@@ -35,6 +38,22 @@ export function TemplateCard({
   const [showCanvas, setShowCanvas] = useState(false);
   const [showUsePopover, setShowUsePopover] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
+  const [iframeScale, setIframeScale] = useState(0.25);
+  const iframeWrapperRef = useRef<HTMLDivElement>(null);
+
+  const updateIframeScale = useCallback(() => {
+    if (iframeWrapperRef.current) {
+      setIframeScale(iframeWrapperRef.current.offsetWidth / 1920);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!slug) return;
+    updateIframeScale();
+    const observer = new ResizeObserver(updateIframeScale);
+    if (iframeWrapperRef.current) observer.observe(iframeWrapperRef.current);
+    return () => observer.disconnect();
+  }, [slug, updateIframeScale]);
 
   useEffect(() => {
     if (isGenerating) {
@@ -61,20 +80,49 @@ export function TemplateCard({
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         onClick={onPreview}>
-        {/* Image layer — always present */}
-        <img
-          src={src}
-          alt={name}
-          style={{
-            display: 'block',
-            width: '100%',
-            aspectRatio: '1920 / 1205',
-            objectFit: 'cover' as const,
-            objectPosition: 'top',
-            opacity: isGenerating ? 0 : 1,
-            transition: 'opacity 600ms ease',
-          }}
-        />
+        {/* Preview layer — live iframe when slug is provided, static image otherwise */}
+        {slug ? (
+          <div
+            ref={iframeWrapperRef}
+            style={{
+              position: 'relative',
+              width: '100%',
+              aspectRatio: '1920 / 1205',
+              overflow: 'hidden',
+              opacity: isGenerating ? 0 : 1,
+              transition: 'opacity 600ms ease',
+            }}>
+            <iframe
+              src={`${basePath}/templates/${slug}/?embed=1`}
+              title={name}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: 1920,
+                height: 1205,
+                border: 'none',
+                transform: `scale(${iframeScale})`,
+                transformOrigin: 'top left',
+                pointerEvents: 'none',
+              }}
+            />
+          </div>
+        ) : (
+          <img
+            src={src}
+            alt={name}
+            style={{
+              display: 'block',
+              width: '100%',
+              aspectRatio: '1920 / 1205',
+              objectFit: 'cover' as const,
+              objectPosition: 'top',
+              opacity: isGenerating ? 0 : 1,
+              transition: 'opacity 600ms ease',
+            }}
+          />
+        )}
         {/* Canvas layer — overlaid, fades in/out */}
         {showCanvas && (
           <div
