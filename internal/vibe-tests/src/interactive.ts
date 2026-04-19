@@ -780,15 +780,15 @@ function installAgentsDocs(): void {
     }
   }
 
-  // Run xds agent-docs via CLI
+  // Generate fresh AGENTS.md from xds init CLI
   try {
-    execSync('npx xds agent-docs', {
+    execSync('npx xds init --features agents --agent-docs-path AGENTS.md', {
       cwd: vibeTestsDir,
       stdio: 'pipe',
     });
-    console.log('✓ Generated AGENTS.md');
+    console.log('✓ Generated AGENTS.md from CLI (xds init)');
   } catch (_error) {
-    console.warn('⚠ Failed to generate AGENTS.md, continuing without it');
+    console.warn('⚠ Failed to generate AGENTS.md via xds init');
   }
 }
 
