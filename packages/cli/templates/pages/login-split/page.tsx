@@ -2,7 +2,6 @@
 
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {PhotoIcon} from '@heroicons/react/24/outline';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSCenter} from '@xds/core/Center';
 import {XDSCard} from '@xds/core/Card';
@@ -11,7 +10,6 @@ import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSButton} from '@xds/core/Button';
 import {XDSLink} from '@xds/core/Link';
 import {XDSDivider} from '@xds/core/Divider';
-import {XDSIcon} from '@xds/core/Icon';
 import {colorVars, spacingVars} from '@xds/core/theme/tokens.stylex';
 
 // Brand icons — no heroicons equivalent
@@ -41,25 +39,21 @@ const styles = stylex.create({
     width: '100%',
   },
   centered: {textAlign: 'center'},
+  splitRow: {
+    display: 'flex',
+    alignItems: 'stretch',
+  },
   formSide: {
-    width: 400,
-    minWidth: 400,
+    width: '50%',
     padding: spacingVars['--spacing-8'],
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'center',
   },
-  imageSide: {
-    flex: 1,
-    backgroundColor: colorVars['--color-background-muted'],
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
+  coverImage: {
+    width: '50%',
     minHeight: 400,
-  },
-  imageIcon: {
-    opacity: 0.3,
-    color: colorVars['--color-text-disabled'],
+    objectFit: 'cover',
   },
   socialButton: {
     flex: 1,
@@ -75,8 +69,8 @@ export default function LoginTwoColumn() {
     <XDSCenter axis="both" xstyle={styles.page}>
       <XDSVStack gap={4} hAlign="center">
         {/* Card */}
-        <XDSCard padding={0} maxWidth={900} width="100%">
-          <XDSHStack>
+        <XDSCard padding={0} maxWidth={1000} width="100%">
+          <div {...stylex.props(styles.splitRow)}>
             {/* Left — Form */}
             <div {...stylex.props(styles.formSide)}>
               <XDSVStack gap={4}>
@@ -173,11 +167,14 @@ export default function LoginTwoColumn() {
               </XDSVStack>
             </div>
 
-            {/* Right — Image placeholder */}
-            <XDSCenter axis="both" xstyle={styles.imageSide}>
-              <XDSIcon icon={PhotoIcon} size="lg" xstyle={styles.imageIcon} />
-            </XDSCenter>
-          </XDSHStack>
+            {/* Right — Cover image */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              {...stylex.props(styles.coverImage)}
+              src="/templates/colorful-home-vertical-3.png"
+              alt="Colorful home scene"
+            />
+          </div>
         </XDSCard>
 
         {/* Terms */}
