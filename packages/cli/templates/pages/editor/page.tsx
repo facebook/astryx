@@ -318,7 +318,7 @@ function BlockPreview({
             <XDSHeading level={2}>
               {(props.heading as string) || 'Hero Heading'}
             </XDSHeading>
-            <XDSText color="secondary">
+            <XDSText type="supporting" color="secondary">
               {(props.subheading as string) || 'Subtitle text goes here'}
             </XDSText>
             {(props.buttonLabel as string) && (
@@ -331,7 +331,7 @@ function BlockPreview({
     case 'text':
       return (
         <XDSCard variant={variant}>
-          <XDSText>
+          <XDSText type="body">
             {(props.content as string) || 'Text content goes here'}
           </XDSText>
         </XDSCard>
@@ -376,7 +376,7 @@ function BlockPreview({
                   <XDSVStack gap={2}>
                     <XDSIcon icon={SparklesIcon} color="accent" />
                     <XDSHeading level={4}>{card.title}</XDSHeading>
-                    <XDSText color="secondary">{card.description}</XDSText>
+                    <XDSText type="supporting" color="secondary">{card.description}</XDSText>
                   </XDSVStack>
                 </XDSSection>
               ))}
@@ -398,7 +398,7 @@ function BlockPreview({
                 <XDSSection key={i} variant="wash" padding={4}>
                   <XDSVStack gap={2}>
                     <XDSHeading level={4}>{card.title}</XDSHeading>
-                    <XDSText color="secondary">{card.description}</XDSText>
+                    <XDSText type="supporting" color="secondary">{card.description}</XDSText>
                   </XDSVStack>
                 </XDSSection>
               ))}
@@ -415,7 +415,7 @@ function BlockPreview({
             <XDSHeading level={3}>
               {(props.heading as string) || 'Call to Action'}
             </XDSHeading>
-            <XDSText color="secondary">
+            <XDSText type="supporting" color="secondary">
               {(props.description as string) || 'Description text'}
             </XDSText>
             <XDSHStack gap={3}>
@@ -633,7 +633,6 @@ export default function EditorPage() {
                     />
                   </XDSHStack>
                 }
-                density="compact"
               />
               <XDSDivider />
               <PropertiesForm
