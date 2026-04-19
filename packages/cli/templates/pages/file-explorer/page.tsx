@@ -2,11 +2,7 @@
 
 import {useState, useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {
-  XDSLayout,
-  XDSLayoutHeader,
-  XDSLayoutContent,
-} from '@xds/core/Layout';
+import {XDSLayout, XDSLayoutContent} from '@xds/core/Layout';
 import {XDSToolbar} from '@xds/core/Toolbar';
 import {XDSList, XDSListItem} from '@xds/core/List';
 import {XDSHStack, XDSVStack} from '@xds/core/Layout';
@@ -263,9 +259,11 @@ const FILESYSTEM: FileSystemItem[] = [
 ];
 
 const styles = stylex.create({
+  fillHeight: {height: '100%'},
   scrollable: {overflowY: 'auto'},
-  fixedColumn: {flexShrink: 0},
-  fillRemaining: {flex: 1},
+  fixedColumn: {flexShrink: 0, alignSelf: 'stretch'},
+  fillRemaining: {flex: 1, alignSelf: 'stretch'},
+  toolbarBlockPadding: {paddingBlock: 4},
 });
 
 function findItem(items: FileSystemItem[], id: string): FileSystemItem | null {
@@ -340,11 +338,12 @@ export default function FileExplorerPage() {
     <XDSLayout
       height="fill"
       header={
-        <XDSLayoutHeader hasDivider>
-          <XDSToolbar
+        <XDSToolbar
             label="File Explorer"
             size="sm"
-            gap={1}
+            padding={0}
+            dividers={['bottom']}
+            xstyle={styles.toolbarBlockPadding}
             startContent={
               <>
                 <XDSIconButton
@@ -435,11 +434,10 @@ export default function FileExplorerPage() {
               </>
             }
           />
-        </XDSLayoutHeader>
       }
       content={
         <XDSLayoutContent padding={0} isScrollable={false}>
-          <XDSHStack>
+          <XDSHStack xstyle={styles.fillHeight}>
             {columns.map((col, colIndex) => {
               const showDivider =
                 colIndex < columns.length - 1 || selectedFile != null;
@@ -497,7 +495,7 @@ export default function FileExplorerPage() {
             })}
             {selectedFile && (
               <XDSSection
-                padding={4}
+                padding={6}
                 variant="transparent"
                 xstyle={[styles.scrollable, styles.fillRemaining]}>
                 <XDSVStack gap={4} hAlign="center">
