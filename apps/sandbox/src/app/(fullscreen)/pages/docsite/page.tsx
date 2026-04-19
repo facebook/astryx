@@ -727,6 +727,7 @@ function DocsiteLandingTemplate() {
           <TemplatePreview
             templateName={t.name}
             imageSrc={t.src}
+            slug={t.slug}
             onBack={handleBackFromUse}
             isGenerating={previewGenerating}
             onPublish={() => {
@@ -1504,6 +1505,7 @@ function DocsiteLandingTemplate() {
                       }}>
                       <TemplateCard
                         src={template.src}
+                        slug={template.slug}
                         name={template.name}
                         isSelected={selected.has(template.originalIndex)}
                         isGenerating={
@@ -1555,6 +1557,7 @@ function DocsiteLandingTemplate() {
               item={{
                 name: t.name,
                 img: t.src,
+                slug: t.slug,
                 author: t.author,
               }}
               onStartCrafting={() => {
