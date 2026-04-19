@@ -5,12 +5,10 @@
  *
  * Usage: node scripts/build-css.mjs
  *
- * Runs two compilation passes:
- *   1. 'xds' prefix — matches the JS dist output (classNamePrefix: 'xds')
- *   2. 'x' prefix — compat layer for older consumers still on x-prefixed JS
- *
- * Both sets are combined in xds.css. The compat layer will be removed in
- * a future version once all consumers have migrated to the xds prefix.
+ * Compiles all source files with classNamePrefix: 'xds' to match the
+ * JS dist output. The resulting CSS uses xds-prefixed class names
+ * (e.g. .xds78zum5) which are distinct from product-level styles
+ * that use the default 'x' prefix.
  *
  * Dist consumers import the full stylesheet:
  *   import '@xds/core/xds.css';
@@ -28,14 +26,14 @@ const ROOT = path.resolve(__dirname, '..');
 const CORE_SRC = path.resolve(ROOT, 'packages/core/src');
 const CORE_DIST = path.resolve(ROOT, 'packages/core/dist');
 
-async function collectStyleXRules(classNamePrefix) {
+async function collectStyleXRules() {
   const files = await glob('**/*.{ts,tsx}', {
     cwd: CORE_SRC,
     absolute: true,
     ignore: ['**/*.test.*', '**/*.d.ts', '**/node_modules/**'],
   });
 
-  console.log(`  Processing ${files.length} source files (prefix: '${classNamePrefix}')...`);
+  console.log(`Processing ${files.length} source files...`);
 
   const allRules = [];
 
@@ -62,7 +60,7 @@ async function collectStyleXRules(classNamePrefix) {
               runtimeInjection: false,
               genConditionalClasses: true,
               treeshakeCompensation: true,
-              classNamePrefix,
+              classNamePrefix: 'xds',
               unstable_moduleResolution: {
                 type: 'commonJS',
                 rootDir: ROOT,
@@ -82,49 +80,32 @@ async function collectStyleXRules(classNamePrefix) {
     }
   }
 
-  console.log(`  Collected ${allRules.length} rules`);
+  console.log(`Collected ${allRules.length} StyleX rules`);
   return allRules;
 }
 
 async function main() {
-  console.log('Pass 1: xds prefix (primary)');
-  const xdsRules = await collectStyleXRules('xds');
+  const allRules = await collectStyleXRules();
 
-  console.log('Pass 2: x prefix (compat)');
-  const xRules = await collectStyleXRules('x');
-
-  if (xdsRules.length === 0) {
+  if (allRules.length === 0) {
     console.error('No StyleX rules found!');
     process.exit(1);
   }
 
   await fs.mkdir(CORE_DIST, {recursive: true});
 
-  const xdsCss = stylexBabelPlugin.processStylexRules(xdsRules, false);
-  const xCss = stylexBabelPlugin.processStylexRules(xRules, false);
-
-  const indent = (css) => css.split('\n').map(line => '  ' + line).join('\n');
+  const combinedCSS = stylexBabelPlugin.processStylexRules(allRules, false);
 
   const combinedPath = path.resolve(CORE_DIST, 'xds.css');
   await fs.writeFile(
     combinedPath,
-    [
-      '/* XDS Pre-compiled StyleX CSS — all components */',
-      '/* Auto-generated. Do not edit manually. */',
-      '',
-      '/* Primary styles (xds prefix) — matches JS dist output */',
-      `@layer xds-base {\n${indent(xdsCss)}\n}`,
-      '',
-      '/* Compat styles (x prefix) — for consumers on older JS versions.',
-      '   Will be removed in a future version. */',
-      `@layer xds-base {\n${indent(xCss)}\n}`,
-      '',
-    ].join('\n'),
+    `/* XDS Pre-compiled StyleX CSS — all components */\n/* Auto-generated. Do not edit manually. */\n\n@layer xds-base {\n${combinedCSS
+      .split('\n')
+      .map(line => '  ' + line)
+      .join('\n')}\n}\n`,
     'utf8',
   );
-
-  const totalKB = ((xdsCss.length + xCss.length) / 1024).toFixed(1);
-  console.log(`xds.css: ${totalKB} KB (xds: ${(xdsCss.length/1024).toFixed(1)} KB + compat: ${(xCss.length/1024).toFixed(1)} KB)`);
+  console.log(`xds.css: ${(combinedCSS.length / 1024).toFixed(1)} KB`);
 }
 
 main().catch(err => {
