@@ -263,7 +263,6 @@ const styles = stylex.create({
   scrollable: {overflowY: 'auto'},
   fixedColumn: {flexShrink: 0, alignSelf: 'stretch'},
   fillRemaining: {flex: 1, alignSelf: 'stretch'},
-  toolbarBlockPadding: {paddingBlock: 4},
 });
 
 function findItem(items: FileSystemItem[], id: string): FileSystemItem | null {
@@ -343,7 +342,7 @@ export default function FileExplorerPage() {
             size="sm"
             padding={0}
             dividers={['bottom']}
-            xstyle={styles.toolbarBlockPadding}
+            style={{paddingBlock: 4}}
             startContent={
               <>
                 <XDSIconButton
