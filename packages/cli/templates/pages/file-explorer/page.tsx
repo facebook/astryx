@@ -349,7 +349,7 @@ export default function FileExplorerPage() {
                 <XDSIconButton
                   variant="ghost"
                   size="sm"
-                  icon={<XDSIcon icon={ChevronLeftIcon} />}
+                  icon={<XDSIcon icon={ChevronLeftIcon} size="sm" />}
                   onClick={() => {
                     if (selectedPath.length > 0) {
                       setSelectedPath(selectedPath.slice(0, -1));
@@ -361,7 +361,7 @@ export default function FileExplorerPage() {
                 <XDSIconButton
                   variant="ghost"
                   size="sm"
-                  icon={<XDSIcon icon={ChevronRightIcon} />}
+                  icon={<XDSIcon icon={ChevronRightIcon} size="sm" />}
                   isDisabled
                   label="Go forward"
                 />
@@ -376,25 +376,25 @@ export default function FileExplorerPage() {
                 <XDSSegmentedControlItem
                   value="grid"
                   label="Grid"
-                  icon={<XDSIcon icon={Squares2X2Icon} />}
+                  icon={<XDSIcon icon={Squares2X2Icon} size="sm" />}
                   isLabelHidden
                 />
                 <XDSSegmentedControlItem
                   value="list"
                   label="List"
-                  icon={<XDSIcon icon={Bars4Icon} />}
+                  icon={<XDSIcon icon={Bars4Icon} size="sm" />}
                   isLabelHidden
                 />
                 <XDSSegmentedControlItem
                   value="column"
                   label="Column"
-                  icon={<XDSIcon icon={ViewColumnsIcon} />}
+                  icon={<XDSIcon icon={ViewColumnsIcon} size="sm" />}
                   isLabelHidden
                 />
                 <XDSSegmentedControlItem
                   value="gallery"
                   label="Gallery"
-                  icon={<XDSIcon icon={TableCellsIcon} />}
+                  icon={<XDSIcon icon={TableCellsIcon} size="sm" />}
                   isLabelHidden
                 />
               </XDSSegmentedControl>
@@ -404,31 +404,31 @@ export default function FileExplorerPage() {
                 <XDSIconButton
                   variant="ghost"
                   size="sm"
-                  icon={<XDSIcon icon={AdjustmentsHorizontalIcon} />}
+                  icon={<XDSIcon icon={AdjustmentsHorizontalIcon} size="sm" />}
                   label="Group"
                 />
                 <XDSIconButton
                   variant="ghost"
                   size="sm"
-                  icon={<XDSIcon icon={ShareIcon} />}
+                  icon={<XDSIcon icon={ShareIcon} size="sm" />}
                   label="Share"
                 />
                 <XDSIconButton
                   variant="ghost"
                   size="sm"
-                  icon={<XDSIcon icon={TagIcon} />}
+                  icon={<XDSIcon icon={TagIcon} size="sm" />}
                   label="Tags"
                 />
                 <XDSIconButton
                   variant="ghost"
                   size="sm"
-                  icon={<XDSIcon icon={EllipsisHorizontalIcon} />}
+                  icon={<XDSIcon icon={EllipsisHorizontalIcon} size="sm" />}
                   label="More"
                 />
                 <XDSIconButton
                   variant="ghost"
                   size="sm"
-                  icon={<XDSIcon icon={MagnifyingGlassIcon} />}
+                  icon={<XDSIcon icon={MagnifyingGlassIcon} size="sm" />}
                   label="Search"
                 />
               </XDSHStack>
