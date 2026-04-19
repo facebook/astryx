@@ -12,7 +12,6 @@ AGENTS.html.md
 # Generated skill doc (from CLI)
 .generated/*
 # Exception: XDS + Tailwind skill doc is committed (not auto-generated)
-!.generated/xds-tailwind-skill.md
 
 # Test results (generated)
 results/
