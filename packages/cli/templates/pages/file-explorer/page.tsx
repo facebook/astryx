@@ -2,7 +2,11 @@
 
 import {useState, useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSAppShell} from '@xds/core/AppShell';
+import {
+  XDSLayout,
+  XDSLayoutHeader,
+  XDSLayoutContent,
+} from '@xds/core/Layout';
 import {XDSToolbar} from '@xds/core/Toolbar';
 import {XDSList, XDSListItem} from '@xds/core/List';
 import {XDSHStack, XDSVStack} from '@xds/core/Layout';
@@ -333,184 +337,193 @@ export default function FileExplorerPage() {
   };
 
   return (
-    <XDSAppShell
-      variant="section"
+    <XDSLayout
       height="fill"
-      topNav={
-        <XDSToolbar
-          label="File Explorer"
-          size="sm"
-          startContent={
-            <XDSHStack gap={1} vAlign="center">
-              <XDSIconButton
-                variant="ghost"
-                size="sm"
-                icon={<XDSIcon icon={ChevronLeftIcon} />}
-                onClick={() => {
-                  if (selectedPath.length > 0) {
-                    setSelectedPath(selectedPath.slice(0, -1));
-                  }
-                }}
-                isDisabled={selectedPath.length === 0}
-                label="Go back"
-              />
-              <XDSIconButton
-                variant="ghost"
-                size="sm"
-                icon={<XDSIcon icon={ChevronRightIcon} />}
-                isDisabled
-                label="Go forward"
-              />
-              <XDSText type="label">{currentFolderName}</XDSText>
-            </XDSHStack>
-          }
-          centerContent={
-            <XDSSegmentedControl
-              value="column"
-              onChange={() => {}}
-              label="View mode">
-              <XDSSegmentedControlItem
-                value="grid"
-                label="Grid"
-                icon={<XDSIcon icon={Squares2X2Icon} />}
-                isLabelHidden
-              />
-              <XDSSegmentedControlItem
-                value="list"
-                label="List"
-                icon={<XDSIcon icon={Bars4Icon} />}
-                isLabelHidden
-              />
-              <XDSSegmentedControlItem
+      header={
+        <XDSLayoutHeader hasDivider>
+          <XDSToolbar
+            label="File Explorer"
+            size="sm"
+            startContent={
+              <XDSHStack gap={1} vAlign="center">
+                <XDSIconButton
+                  variant="ghost"
+                  size="sm"
+                  icon={<XDSIcon icon={ChevronLeftIcon} />}
+                  onClick={() => {
+                    if (selectedPath.length > 0) {
+                      setSelectedPath(selectedPath.slice(0, -1));
+                    }
+                  }}
+                  isDisabled={selectedPath.length === 0}
+                  label="Go back"
+                />
+                <XDSIconButton
+                  variant="ghost"
+                  size="sm"
+                  icon={<XDSIcon icon={ChevronRightIcon} />}
+                  isDisabled
+                  label="Go forward"
+                />
+                <XDSText type="label">{currentFolderName}</XDSText>
+              </XDSHStack>
+            }
+            centerContent={
+              <XDSSegmentedControl
                 value="column"
-                label="Column"
-                icon={<XDSIcon icon={ViewColumnsIcon} />}
-                isLabelHidden
-              />
-              <XDSSegmentedControlItem
-                value="gallery"
-                label="Gallery"
-                icon={<XDSIcon icon={TableCellsIcon} />}
-                isLabelHidden
-              />
-            </XDSSegmentedControl>
-          }
-          endContent={
-            <XDSHStack gap={1} vAlign="center">
-              <XDSIconButton
-                variant="ghost"
-                size="sm"
-                icon={<XDSIcon icon={AdjustmentsHorizontalIcon} />}
-                label="Group"
-              />
-              <XDSIconButton
-                variant="ghost"
-                size="sm"
-                icon={<XDSIcon icon={ShareIcon} />}
-                label="Share"
-              />
-              <XDSIconButton
-                variant="ghost"
-                size="sm"
-                icon={<XDSIcon icon={TagIcon} />}
-                label="Tags"
-              />
-              <XDSIconButton
-                variant="ghost"
-                size="sm"
-                icon={<XDSIcon icon={EllipsisHorizontalIcon} />}
-                label="More"
-              />
-              <XDSIconButton
-                variant="ghost"
-                size="sm"
-                icon={<XDSIcon icon={MagnifyingGlassIcon} />}
-                label="Search"
-              />
-            </XDSHStack>
-          }
-        />
-      }>
-      <XDSHStack>
-        {columns.map((col, colIndex) => {
-          const showDivider =
-            colIndex < columns.length - 1 || selectedFile != null;
-          return (
-            <XDSSection
-              key={colIndex}
-              width={240}
-              padding={2}
-              variant="transparent"
-              dividers={showDivider ? ['end'] : undefined}
-              xstyle={[styles.scrollable, styles.fixedColumn]}>
-              <XDSList density="compact" hasDividers={false}>
-                {col.items.map(item => {
-                  const isSelected = col.selectedId === item.id;
-                  const hasChildren =
-                    item.type === 'folder' &&
-                    item.children != null &&
-                    item.children.length > 0;
-                  return (
-                    <XDSListItem
-                      key={item.id}
-                      label={item.name}
-                      startContent={
-                        <XDSIcon
-                          icon={
-                            item.type === 'folder' ? FolderIcon : DocumentIcon
+                onChange={() => {}}
+                label="View mode">
+                <XDSSegmentedControlItem
+                  value="grid"
+                  label="Grid"
+                  icon={<XDSIcon icon={Squares2X2Icon} />}
+                  isLabelHidden
+                />
+                <XDSSegmentedControlItem
+                  value="list"
+                  label="List"
+                  icon={<XDSIcon icon={Bars4Icon} />}
+                  isLabelHidden
+                />
+                <XDSSegmentedControlItem
+                  value="column"
+                  label="Column"
+                  icon={<XDSIcon icon={ViewColumnsIcon} />}
+                  isLabelHidden
+                />
+                <XDSSegmentedControlItem
+                  value="gallery"
+                  label="Gallery"
+                  icon={<XDSIcon icon={TableCellsIcon} />}
+                  isLabelHidden
+                />
+              </XDSSegmentedControl>
+            }
+            endContent={
+              <XDSHStack gap={1} vAlign="center">
+                <XDSIconButton
+                  variant="ghost"
+                  size="sm"
+                  icon={<XDSIcon icon={AdjustmentsHorizontalIcon} />}
+                  label="Group"
+                />
+                <XDSIconButton
+                  variant="ghost"
+                  size="sm"
+                  icon={<XDSIcon icon={ShareIcon} />}
+                  label="Share"
+                />
+                <XDSIconButton
+                  variant="ghost"
+                  size="sm"
+                  icon={<XDSIcon icon={TagIcon} />}
+                  label="Tags"
+                />
+                <XDSIconButton
+                  variant="ghost"
+                  size="sm"
+                  icon={<XDSIcon icon={EllipsisHorizontalIcon} />}
+                  label="More"
+                />
+                <XDSIconButton
+                  variant="ghost"
+                  size="sm"
+                  icon={<XDSIcon icon={MagnifyingGlassIcon} />}
+                  label="Search"
+                />
+              </XDSHStack>
+            }
+          />
+        </XDSLayoutHeader>
+      }
+      content={
+        <XDSLayoutContent padding={0} isScrollable={false}>
+          <XDSHStack>
+            {columns.map((col, colIndex) => {
+              const showDivider =
+                colIndex < columns.length - 1 || selectedFile != null;
+              return (
+                <XDSSection
+                  key={colIndex}
+                  width={240}
+                  padding={2}
+                  variant="transparent"
+                  dividers={showDivider ? ['end'] : undefined}
+                  xstyle={[styles.scrollable, styles.fixedColumn]}>
+                  <XDSList density="compact" hasDividers={false}>
+                    {col.items.map(item => {
+                      const isSelected = col.selectedId === item.id;
+                      const hasChildren =
+                        item.type === 'folder' &&
+                        item.children != null &&
+                        item.children.length > 0;
+                      return (
+                        <XDSListItem
+                          key={item.id}
+                          label={item.name}
+                          startContent={
+                            <XDSIcon
+                              icon={
+                                item.type === 'folder'
+                                  ? FolderIcon
+                                  : DocumentIcon
+                              }
+                              color={
+                                item.type === 'folder'
+                                  ? 'accent'
+                                  : 'secondary'
+                              }
+                              size="sm"
+                            />
                           }
-                          color={
-                            item.type === 'folder' ? 'accent' : 'secondary'
+                          endContent={
+                            hasChildren ? (
+                              <XDSIcon
+                                icon={ChevronRightIcon}
+                                size="xsm"
+                                color="secondary"
+                              />
+                            ) : undefined
                           }
-                          size="sm"
+                          onClick={() => handleSelect(colIndex, item.id)}
+                          isSelected={isSelected}
                         />
-                      }
-                      endContent={
-                        hasChildren ? (
-                          <XDSIcon
-                            icon={ChevronRightIcon}
-                            size="xsm"
-                            color="secondary"
-                          />
-                        ) : undefined
-                      }
-                      onClick={() => handleSelect(colIndex, item.id)}
-                      isSelected={isSelected}
-                    />
-                  );
-                })}
-              </XDSList>
-            </XDSSection>
-          );
-        })}
-        {selectedFile && (
-          <XDSSection
-            padding={4}
-            variant="transparent"
-            xstyle={[styles.scrollable, styles.fillRemaining]}>
-            <XDSVStack gap={4} hAlign="center">
-              <XDSAvatar name={selectedFile.name} size={96} />
-              <XDSVStack gap={1} hAlign="center">
-                <XDSText type="label">{selectedFile.name}</XDSText>
-                <XDSText type="supporting">
-                  {getFileExtension(selectedFile.name)} Document
-                </XDSText>
-              </XDSVStack>
-              <XDSMetadataList title="Information">
-                <XDSMetadataListItem label="Created">
-                  March 28, 2026 at 2:15 PM
-                </XDSMetadataListItem>
-                <XDSMetadataListItem label="Modified">
-                  Yesterday, 10:27 PM
-                </XDSMetadataListItem>
-                <XDSMetadataListItem label="Kind">
-                  {getFileExtension(selectedFile.name)} Document
-                </XDSMetadataListItem>
-              </XDSMetadataList>
-            </XDSVStack>
-          </XDSSection>
-        )}
-      </XDSHStack>
-    </XDSAppShell>
+                      );
+                    })}
+                  </XDSList>
+                </XDSSection>
+              );
+            })}
+            {selectedFile && (
+              <XDSSection
+                padding={4}
+                variant="transparent"
+                xstyle={[styles.scrollable, styles.fillRemaining]}>
+                <XDSVStack gap={4} hAlign="center">
+                  <XDSAvatar name={selectedFile.name} size={96} />
+                  <XDSVStack gap={1} hAlign="center">
+                    <XDSText type="label">{selectedFile.name}</XDSText>
+                    <XDSText type="supporting">
+                      {getFileExtension(selectedFile.name)} Document
+                    </XDSText>
+                  </XDSVStack>
+                  <XDSMetadataList title="Information">
+                    <XDSMetadataListItem label="Created">
+                      March 28, 2026 at 2:15 PM
+                    </XDSMetadataListItem>
+                    <XDSMetadataListItem label="Modified">
+                      Yesterday, 10:27 PM
+                    </XDSMetadataListItem>
+                    <XDSMetadataListItem label="Kind">
+                      {getFileExtension(selectedFile.name)} Document
+                    </XDSMetadataListItem>
+                  </XDSMetadataList>
+                </XDSVStack>
+              </XDSSection>
+            )}
+          </XDSHStack>
+        </XDSLayoutContent>
+      }
+    />
   );
 }
