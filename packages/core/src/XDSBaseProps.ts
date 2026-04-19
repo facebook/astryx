@@ -38,4 +38,7 @@ export interface XDSBaseProps<T extends HTMLElement = HTMLElement> extends Omit<
    * ```
    */
   xstyle?: StyleXStyles;
+
+  /** Allow data-* attributes in object literals (not just JSX). */
+  [key: `data-${string}`]: string | undefined;
 }
