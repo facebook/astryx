@@ -3,8 +3,7 @@
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSAppShell} from '@xds/core/AppShell';
-import {XDSSideNav, XDSSideNavHeading} from '@xds/core/SideNav';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {XDSVStack, XDSHStack, XDSStackItem} from '@xds/core/Layout';
 import {XDSList, XDSListItem} from '@xds/core/List';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSLink} from '@xds/core/Link';
@@ -18,7 +17,6 @@ import {XDSTabList, XDSTab} from '@xds/core/TabList';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSCenter} from '@xds/core/Center';
-import {colorVars} from '@xds/core/theme/tokens.stylex';
 import {
   UserIcon,
   LockClosedIcon,
@@ -37,8 +35,16 @@ import {
 const styles = stylex.create({
   iconBox: {
     borderRadius: 12,
-    backgroundColor: colorVars['--color-background-muted'],
+    backgroundColor: 'var(--xds-color-background-muted, #f5f5f5)',
     flexShrink: 0,
+  },
+  rowPadding: {
+    paddingTop: 16,
+    paddingBottom: 16,
+  },
+  contentHPadding: {
+    paddingLeft: 48,
+    paddingRight: 48,
   },
 });
 
@@ -57,7 +63,6 @@ interface InfoRow {
   label: string;
   value: string;
   action: string;
-  icon?: React.ComponentType<React.SVGProps<SVGSVGElement>>;
 }
 
 const LOGIN_ROWS: InfoRow[] = [
@@ -90,7 +95,7 @@ const DEVICE_ROWS: {
 function InfoRowItem({label, value, action}: InfoRow) {
   return (
     <>
-      <XDSHStack hAlign="between" vAlign="start" xstyle={internalStyles.row}>
+      <XDSHStack hAlign="between" vAlign="start" xstyle={styles.rowPadding}>
         <XDSVStack gap={0}>
           <XDSText type="body" weight="semibold" display="block">
             {label}
@@ -132,7 +137,7 @@ function ExpandableRow({
   return (
     <>
       {isExpanded ? (
-        <XDSVStack gap={3} xstyle={internalStyles.row}>
+        <XDSVStack gap={4} xstyle={styles.rowPadding}>
           <XDSText type="body" weight="semibold" display="block">
             {label}
           </XDSText>
@@ -143,7 +148,7 @@ function ExpandableRow({
           </XDSHStack>
         </XDSVStack>
       ) : (
-        <XDSHStack hAlign="between" vAlign="start" xstyle={internalStyles.row}>
+        <XDSHStack hAlign="between" vAlign="start" xstyle={styles.rowPadding}>
           <XDSVStack gap={0}>
             <XDSText type="body" weight="semibold" display="block">
               {label}
@@ -167,13 +172,6 @@ function ExpandableRow({
     </>
   );
 }
-
-const internalStyles = stylex.create({
-  row: {
-    paddingTop: 16,
-    paddingBottom: 16,
-  },
-});
 
 const LANGUAGES = [
   {label: 'English (Canada)', value: 'en-CA'},
@@ -201,7 +199,7 @@ const TIMEZONES = [
   {label: '(GMT+01:00) London', value: 'GMT+1'},
 ];
 
-export default function SettingsSidebarTemplate() {
+export default function SettingsSecurityTemplate() {
   const [activeNav, setActiveNav] = useState('Personal information');
   const [activeTab, setActiveTab] = useState('login');
   const [readReceipts, setReadReceipts] = useState(true);
@@ -216,18 +214,17 @@ export default function SettingsSidebarTemplate() {
   const [language, setLanguage] = useState('en-CA');
   const [currency, setCurrency] = useState('CAD');
   const [timezone, setTimezone] = useState('ET');
-  const [firstName, setFirstName] = useState('Alex');
-  const [lastName, setLastName] = useState('Johnson');
-  const [email, setEmail] = useState('alex.johnson@email.com');
-  const [phone, setPhone] = useState('+1 (416) 555-0123');
 
   return (
     <XDSAppShell
-      contentPadding={4}
       height="fill"
+      variant="section"
+      contentPadding={4}
       sideNav={
-        <XDSSideNav
-          header={<XDSSideNavHeading heading="Account settings" />}>
+        <XDSVStack gap={4}>
+          <XDSSection padding={4} variant="transparent">
+            <XDSHeading level={2}>Account settings</XDSHeading>
+          </XDSSection>
           <XDSList density="spacious">
             {NAV_ITEMS.map(item => (
               <XDSListItem
@@ -247,9 +244,13 @@ export default function SettingsSidebarTemplate() {
               onClick={() => {}}
             />
           </XDSList>
-        </XDSSideNav>
+        </XDSVStack>
       }>
-      <XDSSection maxWidth={700}>
+      <XDSSection
+        maxWidth={700}
+        variant="transparent"
+        padding={4}
+        xstyle={styles.contentHPadding}>
         {activeNav === 'Login & security' && (
           <XDSVStack gap={6}>
             <XDSHeading level={2}>Login &amp; security</XDSHeading>
@@ -284,15 +285,15 @@ export default function SettingsSidebarTemplate() {
                   <XDSHeading level={3}>Device history</XDSHeading>
                   <XDSDivider />
                   {DEVICE_ROWS.map((device, i) => (
-                    <XDSVStack key={i} gap={0}>
-                      <XDSHStack
-                        hAlign="between"
-                        vAlign="start"
-                        gap={3}
-                        xstyle={internalStyles.row}>
-                        <XDSIcon icon={ComputerDesktopIcon} size="lg" />
+                    <XDSHStack
+                      key={i}
+                      gap={3}
+                      vAlign="start"
+                      xstyle={styles.rowPadding}>
+                      <XDSIcon icon={ComputerDesktopIcon} />
+                      <XDSStackItem size="fill">
                         <XDSVStack gap={0}>
-                          <XDSHStack vAlign="center" gap={2}>
+                          <XDSHStack gap={2} vAlign="center">
                             <XDSText type="body" weight="semibold">
                               {device.label}
                             </XDSText>
@@ -300,19 +301,22 @@ export default function SettingsSidebarTemplate() {
                               <XDSBadge label={device.badge} />
                             )}
                           </XDSHStack>
-                          <XDSText type="supporting" color="secondary">
+                          <XDSText
+                            type="supporting"
+                            color="secondary"
+                            display="block">
                             {device.location}
                           </XDSText>
                         </XDSVStack>
-                        {device.action && (
-                          <XDSLink label={device.action} href="#">
-                            {device.action}
-                          </XDSLink>
-                        )}
-                      </XDSHStack>
-                      <XDSDivider />
-                    </XDSVStack>
+                      </XDSStackItem>
+                      {device.action && (
+                        <XDSLink label={device.action} href="#">
+                          {device.action}
+                        </XDSLink>
+                      )}
+                    </XDSHStack>
                   ))}
+                  <XDSDivider />
                 </XDSVStack>
 
                 <XDSVStack gap={0}>
@@ -321,7 +325,7 @@ export default function SettingsSidebarTemplate() {
                   <XDSHStack
                     hAlign="between"
                     vAlign="start"
-                    xstyle={internalStyles.row}>
+                    xstyle={styles.rowPadding}>
                     <XDSVStack gap={0}>
                       <XDSText type="body" weight="semibold" display="block">
                         Deactivate your account
@@ -344,7 +348,7 @@ export default function SettingsSidebarTemplate() {
 
             {activeTab === 'shared' && (
               <XDSVStack gap={8}>
-                <XDSVStack gap={4}>
+                <XDSVStack gap={2}>
                   <XDSHeading level={3}>Shared access</XDSHeading>
                   <XDSDivider />
                   <XDSText type="body" color="secondary">
@@ -355,175 +359,28 @@ export default function SettingsSidebarTemplate() {
                   </XDSText>
                 </XDSVStack>
 
-                <XDSCard padding={0}>
-                  <XDSSection variant="wash">
-                    <XDSHStack gap={4} vAlign="start">
-                      <XDSCenter
-                        width={48}
-                        height={48}
-                        xstyle={styles.iconBox}>
-                        <XDSIcon icon={LockClosedIcon} size="lg" />
-                      </XDSCenter>
-                      <XDSVStack gap={1}>
-                        <XDSText type="body" weight="bold">
-                          Adding devices from people you trust
-                        </XDSText>
-                        <XDSText type="body" color="secondary">
-                          When you approve a request, you grant someone full
-                          access to your account. They&apos;ll be able to change
-                          reservations and send messages on your behalf.
-                        </XDSText>
-                      </XDSVStack>
-                    </XDSHStack>
-                  </XDSSection>
+                <XDSCard variant="muted" padding={4}>
+                  <XDSHStack gap={4} vAlign="start">
+                    <XDSCenter
+                      width={48}
+                      height={48}
+                      xstyle={styles.iconBox}>
+                      <XDSIcon icon={LockClosedIcon} />
+                    </XDSCenter>
+                    <XDSVStack gap={1}>
+                      <XDSText type="body" weight="bold">
+                        Adding devices from people you trust
+                      </XDSText>
+                      <XDSText type="body" color="secondary">
+                        When you approve a request, you grant someone full
+                        access to your account. They&apos;ll be able to change
+                        reservations and send messages on your behalf.
+                      </XDSText>
+                    </XDSVStack>
+                  </XDSHStack>
                 </XDSCard>
               </XDSVStack>
             )}
-          </XDSVStack>
-        )}
-
-        {activeNav === 'Privacy' && (
-          <XDSVStack gap={6}>
-            <XDSHeading level={2}>Privacy</XDSHeading>
-
-            <XDSVStack gap={8}>
-              <XDSVStack gap={4}>
-                <XDSHeading level={3}>Messages</XDSHeading>
-                <XDSSwitch
-                  label="Show people when I've read their messages."
-                  value={readReceipts}
-                  onChange={setReadReceipts}
-                  labelPosition="start"
-                  labelSpacing="spread"
-                />
-                <XDSHStack
-                  hAlign="between"
-                  vAlign="center"
-                  xstyle={internalStyles.row}>
-                  <XDSText type="body" weight="semibold">
-                    Blocked people
-                  </XDSText>
-                  <XDSLink label="View" href="#">
-                    View
-                  </XDSLink>
-                </XDSHStack>
-                <XDSDivider />
-              </XDSVStack>
-
-              <XDSVStack gap={4}>
-                <XDSHeading level={3}>Listings</XDSHeading>
-                <XDSSwitch
-                  label="Include my listing(s) in search engines"
-                  description="Turning this on means search engines, like Google, will display your listing page(s) in search results."
-                  value={searchEngines}
-                  onChange={setSearchEngines}
-                  labelPosition="start"
-                  labelSpacing="spread"
-                />
-                <XDSDivider />
-              </XDSVStack>
-
-              <XDSVStack gap={4}>
-                <XDSHeading level={3}>Reviews</XDSHeading>
-                <XDSText type="supporting" color="secondary">
-                  Choose what&apos;s shared when you write a review.{' '}
-                  <XDSLink label="Learn more" href="#" type="supporting">
-                    Learn more
-                  </XDSLink>
-                </XDSText>
-                <XDSVStack gap={4}>
-                  <XDSSwitch
-                    label="Show my home city and country"
-                    description="Ex: City and country"
-                    value={showCity}
-                    onChange={setShowCity}
-                    labelPosition="start"
-                    labelSpacing="spread"
-                  />
-                  <XDSSwitch
-                    label="Show my trip type"
-                    description="Ex: Stayed with kids or pets"
-                    value={showTripType}
-                    onChange={setShowTripType}
-                    labelPosition="start"
-                    labelSpacing="spread"
-                  />
-                  <XDSSwitch
-                    label="Show my length of stay"
-                    description="Ex: A few nights, about a week, etc."
-                    value={showStayLength}
-                    onChange={setShowStayLength}
-                    labelPosition="start"
-                    labelSpacing="spread"
-                  />
-                  <XDSSwitch
-                    label="Show my booked services"
-                    description="Ex: Gourmet brunch or tasting menu"
-                    value={showServices}
-                    onChange={setShowServices}
-                    labelPosition="start"
-                    labelSpacing="spread"
-                  />
-                </XDSVStack>
-                <XDSDivider />
-              </XDSVStack>
-
-              <XDSVStack gap={4}>
-                <XDSHeading level={3}>Data privacy</XDSHeading>
-                <XDSCard padding={4}>
-                  <XDSHStack hAlign="between" vAlign="center">
-                    <XDSText type="body">Request my personal data</XDSText>
-                    <XDSLink label="Request" href="#">
-                      Request
-                    </XDSLink>
-                  </XDSHStack>
-                </XDSCard>
-                <XDSSwitch
-                  label="Help improve AI-powered features"
-                  description="When this is on, we use your data to develop and improve AI models."
-                  value={aiFeatures}
-                  onChange={setAiFeatures}
-                  labelPosition="start"
-                  labelSpacing="spread"
-                />
-                <XDSCard padding={4}>
-                  <XDSHStack hAlign="between" vAlign="center">
-                    <XDSText type="body">Delete my account</XDSText>
-                    <XDSLink label="Delete" href="#">
-                      Delete
-                    </XDSLink>
-                  </XDSHStack>
-                </XDSCard>
-                <XDSCard padding={0}>
-                  <XDSSection variant="wash">
-                    <XDSHStack gap={4} vAlign="start">
-                      <XDSCenter
-                        width={48}
-                        height={48}
-                        xstyle={styles.iconBox}>
-                        <XDSIcon icon={ShieldCheckIcon} size="lg" />
-                      </XDSCenter>
-                      <XDSVStack gap={1}>
-                        <XDSText type="body" weight="bold">
-                          Committed to privacy
-                        </XDSText>
-                        <XDSText type="supporting" color="secondary">
-                          We&apos;re committed to keeping your data protected.
-                          See details in our{' '}
-                          <XDSLink
-                            label="Privacy Policy"
-                            href="#"
-                            type="supporting">
-                            Privacy Policy
-                          </XDSLink>
-                          .
-                        </XDSText>
-                      </XDSVStack>
-                    </XDSHStack>
-                  </XDSSection>
-                </XDSCard>
-              </XDSVStack>
-            </XDSVStack>
           </XDSVStack>
         )}
 
@@ -637,78 +494,224 @@ export default function SettingsSidebarTemplate() {
 
             <XDSCard padding={4}>
               <XDSVStack gap={0}>
-                <XDSSection padding={0}>
-                  <XDSHStack gap={3} vAlign="start">
-                    <XDSCenter
-                      width={48}
-                      height={48}
-                      xstyle={styles.iconBox}>
-                      <XDSIcon icon={LockClosedIcon} size="lg" />
-                    </XDSCenter>
-                    <XDSVStack gap={0}>
-                      <XDSText type="body" weight="semibold" display="block">
-                        Why isn&apos;t my info shown here?
-                      </XDSText>
-                      <XDSText
-                        type="supporting"
-                        color="secondary"
-                        display="block">
-                        We&apos;re hiding some account details to protect your
-                        identity.
-                      </XDSText>
-                    </XDSVStack>
-                  </XDSHStack>
-                </XDSSection>
+                <XDSHStack gap={3} vAlign="start">
+                  <XDSCenter
+                    width={48}
+                    height={48}
+                    xstyle={styles.iconBox}>
+                    <XDSIcon icon={LockClosedIcon} />
+                  </XDSCenter>
+                  <XDSVStack gap={0}>
+                    <XDSText type="body" weight="semibold" display="block">
+                      Why isn&apos;t my info shown here?
+                    </XDSText>
+                    <XDSText
+                      type="supporting"
+                      color="secondary"
+                      display="block">
+                      We&apos;re hiding some account details to protect your
+                      identity.
+                    </XDSText>
+                  </XDSVStack>
+                </XDSHStack>
                 <XDSDivider />
-                <XDSSection padding={0}>
-                  <XDSHStack gap={3} vAlign="start">
-                    <XDSCenter
-                      width={48}
-                      height={48}
-                      xstyle={styles.iconBox}>
-                      <XDSIcon icon={PencilSquareIcon} size="lg" />
-                    </XDSCenter>
-                    <XDSVStack gap={0}>
-                      <XDSText type="body" weight="semibold" display="block">
-                        Which details can be edited?
-                      </XDSText>
-                      <XDSText
-                        type="supporting"
-                        color="secondary"
-                        display="block">
-                        Contact info and personal details can be edited. If this
-                        info was used to verify your identity, you&apos;ll need
-                        to get verified again the next time you book—or to
-                        continue hosting.
-                      </XDSText>
-                    </XDSVStack>
-                  </XDSHStack>
-                </XDSSection>
+                <XDSHStack
+                  gap={3}
+                  vAlign="start"
+                  xstyle={styles.rowPadding}>
+                  <XDSCenter
+                    width={48}
+                    height={48}
+                    xstyle={styles.iconBox}>
+                    <XDSIcon icon={PencilSquareIcon} />
+                  </XDSCenter>
+                  <XDSVStack gap={0}>
+                    <XDSText type="body" weight="semibold" display="block">
+                      Which details can be edited?
+                    </XDSText>
+                    <XDSText
+                      type="supporting"
+                      color="secondary"
+                      display="block">
+                      Contact info and personal details can be edited. If this
+                      info was used to verify your identity, you&apos;ll need
+                      to get verified again the next time you book—or to
+                      continue hosting.
+                    </XDSText>
+                  </XDSVStack>
+                </XDSHStack>
                 <XDSDivider />
-                <XDSSection padding={0}>
-                  <XDSHStack gap={3} vAlign="start">
-                    <XDSCenter
-                      width={48}
-                      height={48}
-                      xstyle={styles.iconBox}>
-                      <XDSIcon icon={ShareIcon} size="lg" />
-                    </XDSCenter>
-                    <XDSVStack gap={0}>
-                      <XDSText type="body" weight="semibold" display="block">
-                        What info is shared with others?
-                      </XDSText>
-                      <XDSText
-                        type="supporting"
-                        color="secondary"
-                        display="block">
-                        We only release contact information after a reservation
-                        is confirmed.
-                      </XDSText>
-                    </XDSVStack>
-                  </XDSHStack>
-                </XDSSection>
+                <XDSHStack gap={3} vAlign="start">
+                  <XDSCenter
+                    width={48}
+                    height={48}
+                    xstyle={styles.iconBox}>
+                    <XDSIcon icon={ShareIcon} />
+                  </XDSCenter>
+                  <XDSVStack gap={0}>
+                    <XDSText type="body" weight="semibold" display="block">
+                      What info is shared with others?
+                    </XDSText>
+                    <XDSText
+                      type="supporting"
+                      color="secondary"
+                      display="block">
+                      We only release contact information after a reservation
+                      is confirmed.
+                    </XDSText>
+                  </XDSVStack>
+                </XDSHStack>
               </XDSVStack>
             </XDSCard>
+          </XDSVStack>
+        )}
+
+        {activeNav === 'Privacy' && (
+          <XDSVStack gap={6}>
+            <XDSHeading level={2}>Privacy</XDSHeading>
+
+            <XDSVStack gap={8}>
+              <XDSVStack gap={0}>
+                <XDSHeading level={3}>Messages</XDSHeading>
+                <XDSVStack xstyle={styles.rowPadding}>
+                  <XDSSwitch
+                    label="Show people when I've read their messages."
+                    value={readReceipts}
+                    onChange={setReadReceipts}
+                    labelPosition="start"
+                    labelSpacing="spread"
+                  />
+                </XDSVStack>
+                <XDSHStack
+                  hAlign="between"
+                  vAlign="center"
+                  xstyle={styles.rowPadding}>
+                  <XDSText type="body" weight="semibold">
+                    Blocked people
+                  </XDSText>
+                  <XDSLink label="View" href="#">
+                    View
+                  </XDSLink>
+                </XDSHStack>
+                <XDSDivider />
+              </XDSVStack>
+
+              <XDSVStack gap={0}>
+                <XDSHeading level={3}>Listings</XDSHeading>
+                <XDSVStack xstyle={styles.rowPadding}>
+                  <XDSSwitch
+                    label="Include my listing(s) in search engines"
+                    description="Turning this on means search engines, like Google, will display your listing page(s) in search results."
+                    value={searchEngines}
+                    onChange={setSearchEngines}
+                    labelPosition="start"
+                    labelSpacing="spread"
+                  />
+                </XDSVStack>
+                <XDSDivider />
+              </XDSVStack>
+
+              <XDSVStack gap={4}>
+                <XDSHeading level={3}>Reviews</XDSHeading>
+                <XDSText type="supporting" color="secondary">
+                  Choose what&apos;s shared when you write a review.{' '}
+                  <XDSLink label="Learn more" href="#" type="supporting">
+                    Learn more
+                  </XDSLink>
+                </XDSText>
+                <XDSVStack gap={4}>
+                  <XDSSwitch
+                    label="Show my home city and country"
+                    description="Ex: City and country"
+                    value={showCity}
+                    onChange={setShowCity}
+                    labelPosition="start"
+                    labelSpacing="spread"
+                  />
+                  <XDSSwitch
+                    label="Show my trip type"
+                    description="Ex: Stayed with kids or pets"
+                    value={showTripType}
+                    onChange={setShowTripType}
+                    labelPosition="start"
+                    labelSpacing="spread"
+                  />
+                  <XDSSwitch
+                    label="Show my length of stay"
+                    description="Ex: A few nights, about a week, etc."
+                    value={showStayLength}
+                    onChange={setShowStayLength}
+                    labelPosition="start"
+                    labelSpacing="spread"
+                  />
+                  <XDSSwitch
+                    label="Show my booked services"
+                    description="Ex: Gourmet brunch or tasting menu"
+                    value={showServices}
+                    onChange={setShowServices}
+                    labelPosition="start"
+                    labelSpacing="spread"
+                  />
+                </XDSVStack>
+                <XDSDivider />
+              </XDSVStack>
+
+              <XDSVStack gap={4}>
+                <XDSHeading level={3}>Data privacy</XDSHeading>
+                <XDSCard padding={4}>
+                  <XDSHStack hAlign="between" vAlign="center">
+                    <XDSText type="body">Request my personal data</XDSText>
+                    <XDSLink label="Request" href="#">
+                      Request
+                    </XDSLink>
+                  </XDSHStack>
+                </XDSCard>
+                <XDSSwitch
+                  label="Help improve AI-powered features"
+                  description="When this is on, we use your data to develop and improve AI models."
+                  value={aiFeatures}
+                  onChange={setAiFeatures}
+                  labelPosition="start"
+                  labelSpacing="spread"
+                />
+                <XDSCard padding={4}>
+                  <XDSHStack hAlign="between" vAlign="center">
+                    <XDSText type="body">Delete my account</XDSText>
+                    <XDSLink label="Delete" href="#">
+                      Delete
+                    </XDSLink>
+                  </XDSHStack>
+                </XDSCard>
+                <XDSCard>
+                  <XDSSection variant="wash">
+                    <XDSHStack gap={4} vAlign="start">
+                      <XDSCenter
+                        width={48}
+                        height={48}
+                        xstyle={styles.iconBox}>
+                        <XDSIcon icon={ShieldCheckIcon} />
+                      </XDSCenter>
+                      <XDSVStack gap={1}>
+                        <XDSText type="body" weight="bold">
+                          Committed to privacy
+                        </XDSText>
+                        <XDSText type="supporting" color="secondary">
+                          We&apos;re committed to keeping your data protected.
+                          See details in our{' '}
+                          <XDSLink
+                            label="Privacy Policy"
+                            href="#"
+                            type="supporting">
+                            Privacy Policy
+                          </XDSLink>
+                          .
+                        </XDSText>
+                      </XDSVStack>
+                    </XDSHStack>
+                  </XDSSection>
+                </XDSCard>
+              </XDSVStack>
+            </XDSVStack>
           </XDSVStack>
         )}
       </XDSSection>

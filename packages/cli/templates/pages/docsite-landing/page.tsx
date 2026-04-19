@@ -453,7 +453,9 @@ function BoidsCanvas({
 // Template data — real images from /public/templates/
 // ---------------------------------------------------------------------------
 
-const DUMMY_IMAGE = '/templates/dummy-placeholder.png';
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
+
+const DUMMY_IMAGE = `${basePath}/templates/dummy-placeholder.png`;
 
 const TEMPLATE_IMAGES = [DUMMY_IMAGE, DUMMY_IMAGE, DUMMY_IMAGE, DUMMY_IMAGE];
 
@@ -1529,7 +1531,7 @@ function AppTopNav() {
             heading=""
             logo={
               <img
-                src="/templates/xds-logo.svg"
+                src={`${basePath}/templates/xds-logo.svg`}
                 alt="XDS"
                 style={{height: 36, width: 48}}
               />
@@ -1759,7 +1761,7 @@ export default function DocsiteLandingTemplate() {
                 <XDSSideNavHeading
                   icon={
                     <img
-                      src="/templates/xds-logo.svg"
+                      src={`${basePath}/templates/xds-logo.svg`}
                       alt="XDS"
                       style={{
                         width: 48,
