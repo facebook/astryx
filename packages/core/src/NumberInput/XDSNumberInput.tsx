@@ -529,7 +529,7 @@ export function XDSNumberInput({
       labelTooltip={labelTooltip}>
       <div
         {...mergeProps(
-          xdsClassName('number-input', {size}),
+          xdsClassName('number-input', {size, status: status?.type ?? null}),
           stylex.props(
             inputWrapperStyles.base,
             styles.wrapper,

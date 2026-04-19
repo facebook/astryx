@@ -496,7 +496,7 @@ export function XDSDateInput({
         ref={popover.triggerRef}
         {...rest}
         {...mergeProps(
-          xdsClassName('date-input', {size}),
+          xdsClassName('date-input', {size, status: status?.type ?? null}),
           stylex.props(
             inputWrapperStyles.base,
             sizeStyles[size],

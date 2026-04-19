@@ -345,7 +345,7 @@ export function XDSTextInput({
       labelTooltip={labelTooltip}>
       <div
         {...mergeProps(
-          xdsClassName('text-input', {size}),
+          xdsClassName('text-input', {size, status: status?.type ?? null}),
           stylex.props(
             inputWrapperStyles.base,
             styles.wrapper,

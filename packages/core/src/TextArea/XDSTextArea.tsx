@@ -355,7 +355,7 @@ export function XDSTextArea({
       labelTooltip={labelTooltip}>
       <div
         {...mergeProps(
-          xdsClassName('textarea'),
+          xdsClassName('textarea', {status: status?.type ?? null}),
           stylex.props(
             inputWrapperStyles.base,
             styles.wrapper,

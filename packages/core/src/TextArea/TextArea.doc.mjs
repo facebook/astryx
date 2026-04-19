@@ -150,7 +150,7 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'xds-textarea'},
+      {className: 'xds-textarea', visualProps: ['status']},
     ],
   },
   usage: {
@@ -314,7 +314,7 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'xds-textarea'},
+      {className: 'xds-textarea', visualProps: ['status']},
     ],
   },
   usage: {
