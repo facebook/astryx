@@ -191,12 +191,18 @@ export function getXdsVersion(coreDir) {
 /**
  * Inject or update XDS section in a file using XDS markers.
  * If the file has existing markers, replaces the content between them.
- * If the file exists without markers, appends the block.
+ * If the file exists without markers, appends the block (unless onlyReplace is true).
  * If createIfMissing is true and the file doesn't exist, creates it with a header.
  *
+ * @param {string} filePath
+ * @param {string} compressedIndex
+ * @param {object} [options]
+ * @param {boolean} [options.createIfMissing] - Create the file if it doesn't exist
+ * @param {string} [options.header] - Header for newly created files
+ * @param {boolean} [options.onlyReplace] - Only write if XDS markers already exist (skip files without markers)
  * @returns {boolean} Whether the file was written
  */
-export function injectXdsBlock(filePath, compressedIndex, {createIfMissing = false, header = ''} = {}) {
+export function injectXdsBlock(filePath, compressedIndex, {createIfMissing = false, header = '', onlyReplace = false} = {}) {
   let content = '';
 
   if (fs.existsSync(filePath)) {
@@ -210,6 +216,9 @@ export function injectXdsBlock(filePath, compressedIndex, {createIfMissing = fal
         content.slice(0, startIdx) +
         compressedIndex +
         content.slice(endIdx + XDS_MARKER_END.length);
+    } else if (onlyReplace) {
+      // File exists but has no XDS markers — skip it
+      return false;
     } else {
       content = content.trimEnd() + '\n\n' + compressedIndex + '\n';
     }
@@ -313,9 +322,10 @@ export function removeAgentDocs(targetDir) {
  * @param {string} [options.lang]
  * @param {string} [options.agent] - Tool preset: 'claude', 'cursor', 'codex', 'all'
  * @param {string[]} [options.paths] - Explicit paths (overrides agent/auto-detect)
+ * @param {boolean} [options.onlyReplace] - Only update files that already have XDS markers (for upgrades)
  * @returns {string[]} List of files written
  */
-export function installAgentDocs(targetDir, {zh = false, lang, agent, paths} = {}) {
+export function installAgentDocs(targetDir, {zh = false, lang, agent, paths, onlyReplace = false} = {}) {
   const coreDir = findCoreDir(targetDir);
   const version = getXdsVersion(coreDir);
   const runPrefix = getRunPrefix(targetDir);
@@ -366,13 +376,15 @@ export function installAgentDocs(targetDir, {zh = false, lang, agent, paths} = {
 
   if (existing.length > 0) {
     for (const p of existing) {
-      injectXdsBlock(path.join(targetDir, p), compressedIndex);
-      written.push(p);
+      const didWrite = injectXdsBlock(path.join(targetDir, p), compressedIndex, {onlyReplace});
+      if (didWrite) written.push(p);
     }
     return written;
   }
 
-  // Nothing exists — create .claude/CLAUDE.md as default
+  // Nothing exists — create .claude/CLAUDE.md as default (skip if onlyReplace)
+  if (onlyReplace) return written;
+
   const defaultPath = CLAUDE_DIR_MD;
   fs.mkdirSync(path.join(targetDir, '.claude'), {recursive: true});
   injectXdsBlock(path.join(targetDir, defaultPath), compressedIndex, {

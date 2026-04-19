@@ -294,9 +294,11 @@ export function registerUpgrade(program) {
       const existingDocs = discoverAgentDocs(process.cwd());
       if (existingDocs.length > 0) {
         try {
-          const written = installAgentDocs(process.cwd());
-          receipt.agentDocsRefreshed = true;
-          if (!json) p.log.success(`Agent docs updated: ${written.join(', ')}`);
+          // onlyReplace: only update files that already have XDS markers.
+          // Don't inject into files that never had XDS content.
+          const written = installAgentDocs(process.cwd(), {onlyReplace: true});
+          receipt.agentDocsRefreshed = written.length > 0;
+          if (!json && written.length > 0) p.log.success(`Agent docs updated: ${written.join(', ')}`);
         } catch {
           if (!json) {
             p.log.warn(

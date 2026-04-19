@@ -110,6 +110,30 @@ describe('injectXdsBlock', () => {
     expect(fs.existsSync(filePath)).toBe(false);
   });
 
+  it('skips files without markers when onlyReplace is true', () => {
+    const filePath = path.join(tmpDir, 'test.md');
+    fs.writeFileSync(filePath, '# Existing content\n\nNo XDS markers here.\n');
+
+    const result = injectXdsBlock(filePath, '<!-- XDS:START -->\nnew\n<!-- XDS:END -->', {onlyReplace: true});
+
+    expect(result).toBe(false);
+    const content = fs.readFileSync(filePath, 'utf-8');
+    expect(content).not.toContain('<!-- XDS:START -->');
+    expect(content).toBe('# Existing content\n\nNo XDS markers here.\n');
+  });
+
+  it('replaces existing markers even when onlyReplace is true', () => {
+    const filePath = path.join(tmpDir, 'test.md');
+    fs.writeFileSync(filePath, 'before\n<!-- XDS:START -->\nold\n<!-- XDS:END -->\nafter\n');
+
+    const result = injectXdsBlock(filePath, '<!-- XDS:START -->\nnew\n<!-- XDS:END -->', {onlyReplace: true});
+
+    expect(result).toBe(true);
+    const content = fs.readFileSync(filePath, 'utf-8');
+    expect(content).toContain('new');
+    expect(content).not.toContain('old');
+  });
+
   it('creates file when createIfMissing is true', () => {
     const filePath = path.join(tmpDir, 'new.md');
 
@@ -374,6 +398,43 @@ describe('installAgentDocs', () => {
 
     expect(written).toEqual(['custom/AGENT.md']);
     expect(fs.existsSync(path.join(tmpDir, 'custom', 'AGENT.md'))).toBe(true);
+  });
+
+  it('onlyReplace: skips files without XDS markers', () => {
+    setupCorePackage(tmpDir);
+    fs.writeFileSync(path.join(tmpDir, 'CLAUDE.md'), '# Claude\n\nProject rules only.\n');
+
+    const written = installAgentDocs(tmpDir, {onlyReplace: true});
+
+    expect(written).toEqual([]);
+    const content = fs.readFileSync(path.join(tmpDir, 'CLAUDE.md'), 'utf-8');
+    expect(content).not.toContain('<!-- XDS:START -->');
+    expect(content).toBe('# Claude\n\nProject rules only.\n');
+  });
+
+  it('onlyReplace: updates files that have XDS markers', () => {
+    setupCorePackage(tmpDir, '2.0.0');
+    fs.writeFileSync(
+      path.join(tmpDir, 'CLAUDE.md'),
+      '# Claude\n\n<!-- XDS:START -->\nPLACEHOLDER_STALE_CONTENT\n<!-- XDS:END -->\n\nOther rules.\n',
+    );
+
+    const written = installAgentDocs(tmpDir, {onlyReplace: true});
+
+    expect(written).toEqual(['CLAUDE.md']);
+    const content = fs.readFileSync(path.join(tmpDir, 'CLAUDE.md'), 'utf-8');
+    expect(content).toContain('XDS v2.0.0');
+    expect(content).not.toContain('PLACEHOLDER_STALE_CONTENT');
+    expect(content).toContain('Other rules.');
+  });
+
+  it('onlyReplace: does not create default .claude/CLAUDE.md when nothing exists', () => {
+    setupCorePackage(tmpDir);
+
+    const written = installAgentDocs(tmpDir, {onlyReplace: true});
+
+    expect(written).toEqual([]);
+    expect(fs.existsSync(path.join(tmpDir, '.claude', 'CLAUDE.md'))).toBe(false);
   });
 });
 
