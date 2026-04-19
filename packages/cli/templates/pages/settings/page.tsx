@@ -1,27 +1,31 @@
 'use client';
 
 import {useState} from 'react';
-import * as stylex from '@stylexjs/stylex';
-import {XDSVStack} from '@xds/core/Layout';
+import {XDSAppShell} from '@xds/core/AppShell';
+import {XDSVStack, XDSHStack, XDSStackItem} from '@xds/core/Layout';
+import {XDSGrid} from '@xds/core/Grid';
 import {XDSList, XDSListItem} from '@xds/core/List';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSButton} from '@xds/core/Button';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
+import {XDSSection} from '@xds/core/Section';
 import {XDSTypeahead} from '@xds/core/Typeahead';
+import * as stylex from '@stylexjs/stylex';
 import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
 import type {XDSSearchableItem, XDSSearchSource} from '@xds/core/Typeahead';
 
 const styles = stylex.create({
-  sidebarItem: {
-    padding: '8px 12px',
-    borderRadius: 6,
-    cursor: 'pointer',
-    fontSize: 14,
+  constrainedShell: {
+    maxWidth: 1100,
+    marginInline: 'auto',
   },
-  sidebarItemSelected: {
-    fontWeight: 600,
+  headerPadding: {
+    padding: 16,
+  },
+  sideNavWidth: {
+    minWidth: 240,
   },
 });
 
@@ -70,62 +74,31 @@ export default function SettingsTemplate() {
   );
 
   return (
-    <div
-      style={{minHeight: '100svh', display: 'flex', flexDirection: 'column'}}>
-      {/* Header — full width with edge-to-edge divider */}
-      <div
-        style={{
-          borderBottom: '1px solid var(--xds-color-border-primary, #e5e5e5)',
-          flexShrink: 0,
-        }}>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '16px 16px',
-            maxWidth: 1000,
-            margin: '0 auto',
-          }}>
-          <XDSHeading level={1}>Settings</XDSHeading>
-          <div style={{width: 344}}>
-            <XDSTypeahead
-              label="Search"
-              isLabelHidden
-              placeholder="Search settings..."
-              searchSource={settingsSearchSource}
-              value={searchValue}
-              onChange={setSearchValue}
-              hasEntriesOnFocus
-              startIcon={MagnifyingGlassIcon}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Body — constrained */}
-      <div
-        style={{
-          display: 'flex',
-          flex: 1,
-          overflow: 'hidden',
-          maxWidth: 1000,
-          margin: '0 auto',
-          width: '100%',
-        }}>
-        {/* Sidebar */}
-        <nav
-          style={{
-            width: 240,
-            paddingTop: 16,
-            paddingLeft: 12,
-            paddingRight: 12,
-            paddingBottom: 8,
-            borderRight: '1px solid var(--xds-color-border-primary, #e5e5e5)',
-            flexShrink: 0,
-            overflowY: 'auto',
-          }}>
-          <XDSList density="compact">
+    <XDSAppShell
+      height="auto"
+      variant="section"
+      contentPadding={4}
+      xstyle={styles.constrainedShell}
+      topNav={
+        <XDSHStack vAlign="center" xstyle={styles.headerPadding}>
+          <XDSStackItem size="fill">
+            <XDSHeading level={1}>Settings</XDSHeading>
+          </XDSStackItem>
+          <XDSTypeahead
+            label="Search"
+            isLabelHidden
+            placeholder="Search settings..."
+            searchSource={settingsSearchSource}
+            value={searchValue}
+            onChange={setSearchValue}
+            hasEntriesOnFocus
+            startIcon={MagnifyingGlassIcon}
+          />
+        </XDSHStack>
+      }
+      sideNav={
+        <XDSSection padding={2} variant="transparent" xstyle={styles.sideNavWidth}>
+          <XDSList density="balanced">
             {NAV_ITEMS.map(item => (
               <XDSListItem
                 key={item}
@@ -135,146 +108,111 @@ export default function SettingsTemplate() {
               />
             ))}
           </XDSList>
-        </nav>
-
-        {/* Content */}
-        <div style={{flex: 1, padding: 16, maxWidth: 960, overflowY: 'auto'}}>
-          <XDSVStack gap={4}>
-            {/* Basic information */}
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
-                gap: 40,
-              }}>
-              <div>
-                <XDSVStack gap={1}>
-                  <XDSHeading level={3}>Basic information</XDSHeading>
-                  <XDSText type="supporting" color="secondary">
-                    View and update your personal details and account
-                    information.
-                  </XDSText>
-                </XDSVStack>
-              </div>
-              <div>
-                <XDSVStack gap={4}>
-                  <XDSTextInput
-                    label="Username"
-                    value={username}
-                    onChange={setUsername}
-                  />
-                  <XDSTextInput
-                    label="First name"
-                    value={firstName}
-                    onChange={setFirstName}
-                  />
-                  <XDSTextInput
-                    label="Last name"
-                    value={lastName}
-                    onChange={setLastName}
-                  />
-                  <XDSTextInput
-                    label="Email address"
-                    value={email}
-                    onChange={setEmail}
-                  />
-                  <div>
-                    <XDSButton label="Save" variant="primary" />
-                  </div>
-                </XDSVStack>
-              </div>
-            </div>
-
-            <XDSDivider />
-
-            {/* Change password */}
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
-                gap: 40,
-              }}>
-              <div>
-                <XDSVStack gap={1}>
-                  <XDSHeading level={3}>Change password</XDSHeading>
-                  <XDSText type="supporting" color="secondary">
-                    Update your password to keep your account secure.
-                  </XDSText>
-                </XDSVStack>
-              </div>
-              <div>
-                <XDSVStack gap={4}>
-                  <XDSTextInput
-                    label="Verify current password"
-                    type="password"
-                    value={currentPw}
-                    onChange={setCurrentPw}
-                  />
-                  <XDSTextInput
-                    label="New password"
-                    type="password"
-                    value={newPw}
-                    onChange={setNewPw}
-                  />
-                  <XDSTextInput
-                    label="Confirm password"
-                    type="password"
-                    value={confirmPw}
-                    onChange={setConfirmPw}
-                  />
-                  <div>
-                    <XDSButton label="Save" variant="primary" />
-                  </div>
-                </XDSVStack>
-              </div>
-            </div>
-
-            <XDSDivider />
-
-            {/* Advanced settings */}
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
-                gap: 40,
-              }}>
-              <div>
-                <XDSVStack gap={1}>
-                  <XDSHeading level={3}>Advanced settings</XDSHeading>
-                  <XDSText type="supporting" color="secondary">
-                    Configure detailed account preferences and security options.
-                  </XDSText>
-                </XDSVStack>
-              </div>
-              <div>
-                <XDSVStack gap={5}>
-                  <XDSCheckboxInput
-                    label="Data Export Access"
-                    description="Allow export of personal data and backups."
-                    value={dataExport}
-                    onChange={setDataExport}
-                  />
-                  <XDSCheckboxInput
-                    label="Allow Admin to Add Members"
-                    description="Admins can invite and manage members."
-                    value={adminMembers}
-                    onChange={setAdminMembers}
-                  />
-                  <XDSCheckboxInput
-                    label="Enable Two-Factor Authentication"
-                    description="Require 2FA for added account security."
-                    value={twoFactor}
-                    onChange={setTwoFactor}
-                  />
-                  <div>
-                    <XDSButton label="Save" variant="primary" />
-                  </div>
-                </XDSVStack>
-              </div>
-            </div>
+        </XDSSection>
+      }>
+      <XDSVStack gap={4}>
+        <XDSGrid columns={2} gap={10}>
+          <XDSVStack gap={1}>
+            <XDSHeading level={3}>Basic information</XDSHeading>
+            <XDSText type="supporting" color="secondary">
+              View and update your personal details and account information.
+            </XDSText>
           </XDSVStack>
-        </div>
-      </div>
-    </div>
+          <XDSVStack gap={4}>
+            <XDSTextInput
+              label="Username"
+              value={username}
+              onChange={setUsername}
+            />
+            <XDSTextInput
+              label="First name"
+              value={firstName}
+              onChange={setFirstName}
+            />
+            <XDSTextInput
+              label="Last name"
+              value={lastName}
+              onChange={setLastName}
+            />
+            <XDSTextInput
+              label="Email address"
+              value={email}
+              onChange={setEmail}
+            />
+            <XDSHStack>
+              <XDSButton label="Save" variant="primary" />
+            </XDSHStack>
+          </XDSVStack>
+        </XDSGrid>
+
+        <XDSDivider />
+
+        <XDSGrid columns={2} gap={10}>
+          <XDSVStack gap={1}>
+            <XDSHeading level={3}>Change password</XDSHeading>
+            <XDSText type="supporting" color="secondary">
+              Update your password to keep your account secure.
+            </XDSText>
+          </XDSVStack>
+          <XDSVStack gap={4}>
+            <XDSTextInput
+              label="Verify current password"
+              type="password"
+              value={currentPw}
+              onChange={setCurrentPw}
+            />
+            <XDSTextInput
+              label="New password"
+              type="password"
+              value={newPw}
+              onChange={setNewPw}
+            />
+            <XDSTextInput
+              label="Confirm password"
+              type="password"
+              value={confirmPw}
+              onChange={setConfirmPw}
+            />
+            <XDSHStack>
+              <XDSButton label="Save" variant="primary" />
+            </XDSHStack>
+          </XDSVStack>
+        </XDSGrid>
+
+        <XDSDivider />
+
+        <XDSGrid columns={2} gap={10}>
+          <XDSVStack gap={1}>
+            <XDSHeading level={3}>Advanced settings</XDSHeading>
+            <XDSText type="supporting" color="secondary">
+              Configure detailed account preferences and security options.
+            </XDSText>
+          </XDSVStack>
+          <XDSVStack gap={5}>
+            <XDSCheckboxInput
+              label="Data Export Access"
+              description="Allow export of personal data and backups."
+              value={dataExport}
+              onChange={setDataExport}
+            />
+            <XDSCheckboxInput
+              label="Allow Admin to Add Members"
+              description="Admins can invite and manage members."
+              value={adminMembers}
+              onChange={setAdminMembers}
+            />
+            <XDSCheckboxInput
+              label="Enable Two-Factor Authentication"
+              description="Require 2FA for added account security."
+              value={twoFactor}
+              onChange={setTwoFactor}
+            />
+            <XDSHStack>
+              <XDSButton label="Save" variant="primary" />
+            </XDSHStack>
+          </XDSVStack>
+        </XDSGrid>
+      </XDSVStack>
+    </XDSAppShell>
   );
 }
