@@ -1607,8 +1607,7 @@ function DocsiteLandingTemplate() {
         isOpen={isSettingsOpen}
         onOpenChange={setIsSettingsOpen}
         width={560}
-        purpose="form"
-        title="Settings">
+        purpose="form">
         <XDSStack direction="vertical" gap={4} style={{padding: '8px 0'}}>
           <XDSStack direction="horizontal" hAlign="between" vAlign="center">
             <XDSStack direction="vertical" gap={1}>
