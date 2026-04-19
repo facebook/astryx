@@ -168,7 +168,6 @@ export default function LoginTwoColumn() {
             </div>
 
             {/* Right — Cover image */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               {...stylex.props(styles.coverImage)}
               src="/templates/colorful-home-vertical-3.png"
