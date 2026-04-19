@@ -584,7 +584,7 @@ function OverviewView({
   return (
     <XDSSection padding={8} maxWidth={1200}>
       {/* Hero banner */}
-      <XDSCard variant="muted" padding={10}>
+      <XDSCard variant="blue" padding={10}>
         <XDSHStack gap={8} vAlign="center">
           <XDSStackItem size="fill">
             <XDSVStack gap={4}>
