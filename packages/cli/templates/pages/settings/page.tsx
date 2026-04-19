@@ -97,7 +97,7 @@ export default function SettingsTemplate() {
           </XDSList>
         </XDSSection>
       }>
-      <XDSVStack gap={6}>
+      <XDSVStack gap={4}>
         <XDSGrid columns={2} gap={10}>
           <XDSVStack gap={1}>
             <XDSHeading level={3}>Basic information</XDSHeading>
