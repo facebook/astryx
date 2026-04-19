@@ -43,6 +43,7 @@ const styles = stylex.create({
   whiteSpaceNormal: {whiteSpace: 'normal'},
   tabListFlush: {marginInlineStart: '-12px'},
   narrowContent: {maxWidth: 640},
+  fullWidth: {width: '100%'},
 });
 
 // ---------------------------------------------------------------------------
@@ -582,7 +583,7 @@ function OverviewView({
   onSelectComponent: (key: string) => void;
 }) {
   return (
-    <XDSSection padding={8} maxWidth={1200}>
+    <XDSSection padding={8} maxWidth={1200} xstyle={styles.fullWidth}>
       <XDSVStack gap={10}>
         {/* Hero banner */}
         <XDSCard variant="blue" padding={10}>
