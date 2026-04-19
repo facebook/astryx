@@ -42,6 +42,10 @@ const styles = stylex.create({
     paddingTop: 16,
     paddingBottom: 16,
   },
+  contentHPadding: {
+    paddingLeft: 48,
+    paddingRight: 48,
+  },
 });
 
 const NAV_ITEMS = [
@@ -242,7 +246,11 @@ export default function SettingsSecurityTemplate() {
           </XDSList>
         </XDSVStack>
       }>
-      <XDSSection maxWidth={700} variant="transparent" padding={0}>
+      <XDSSection
+        maxWidth={700}
+        variant="transparent"
+        padding={4}
+        xstyle={styles.contentHPadding}>
         {activeNav === 'Login & security' && (
           <XDSVStack gap={6}>
             <XDSHeading level={2}>Login &amp; security</XDSHeading>

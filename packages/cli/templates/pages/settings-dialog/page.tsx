@@ -51,6 +51,10 @@ const styles = stylex.create({
     paddingTop: 16,
     paddingBottom: 16,
   },
+  contentHPadding: {
+    paddingLeft: 32,
+    paddingRight: 32,
+  },
 });
 
 const NAV_ITEMS = [
@@ -293,7 +297,8 @@ export default function SettingsDialogTemplate() {
               <XDSSection
                 padding={4}
                 maxWidth={680}
-                variant="transparent">
+                variant="transparent"
+                xstyle={styles.contentHPadding}>
                 {activeNav === 'Personal information' && (
                   <XDSVStack gap={6}>
                     <XDSHeading level={2}>Personal info</XDSHeading>
