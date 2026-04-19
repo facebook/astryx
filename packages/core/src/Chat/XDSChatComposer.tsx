@@ -217,13 +217,15 @@ const styles = stylex.create({
   },
   statusTop: {
     paddingBlockStart: 'var(--_chat-composer-padding)',
-    paddingBlockEnd: 'calc(var(--_chat-composer-padding) + var(--_chat-composer-radius))',
+    paddingBlockEnd:
+      'calc(var(--_chat-composer-padding) + var(--_chat-composer-radius))',
     marginBlockEnd: 'calc(-1 * var(--_chat-composer-radius))',
     borderTopLeftRadius: 'var(--_chat-composer-radius)',
     borderTopRightRadius: 'var(--_chat-composer-radius)',
   },
   statusBottom: {
-    paddingBlockStart: 'calc(var(--_chat-composer-padding) + var(--_chat-composer-radius))',
+    paddingBlockStart:
+      'calc(var(--_chat-composer-padding) + var(--_chat-composer-radius))',
     paddingBlockEnd: 'var(--_chat-composer-padding)',
     marginBlockStart: 'calc(-1 * var(--_chat-composer-radius))',
     borderBottomLeftRadius: 'var(--_chat-composer-radius)',
@@ -325,7 +327,7 @@ export function XDSChatComposer(props: XDSChatComposerProps) {
         status.type === 'warning' && styles.statusWarning,
       )}>
       <XDSIcon
-        icon={status.type === 'error' ? 'xCircle' : 'warning'}
+        icon={status.type === 'error' ? 'error' : 'warning'}
         size="md"
         color={status.type === 'error' ? 'negative' : 'warning'}
       />

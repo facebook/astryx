@@ -38,7 +38,7 @@ const STATUS_CONFIG: Record<
   sent: {icon: 'check', label: 'Sent'},
   delivered: {icon: 'checkDouble', label: 'Delivered'},
   read: {icon: 'checkDouble', label: 'Read'},
-  error: {icon: 'xCircle', label: 'Failed'},
+  error: {icon: 'error', label: 'Failed'},
 };
 
 const pulseKeyframes = stylex.keyframes({

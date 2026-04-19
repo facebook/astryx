@@ -368,8 +368,8 @@ export function XDSNumberInput({
 
   const statusIconMap: Record<XDSInputStatusType, XDSIconName> = {
     warning: 'warning',
-    error: 'xCircle',
-    success: 'checkCircle',
+    error: 'error',
+    success: 'success',
   };
 
   const statusIconColorMap: Record<
