@@ -100,11 +100,13 @@ function parseArgs(): {
   iterations: string[];
   prompts?: string[];
   outDir: string;
+  tscOnly: boolean;
 } {
   const args = process.argv.slice(2);
   let iterations: string[] = [];
   let prompts: string[] | undefined;
   let outDir = '';
+  let tscOnly = false;
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--iterations' && args[i + 1]) {
@@ -113,6 +115,8 @@ function parseArgs(): {
       prompts = args[++i].split(',');
     } else if (args[i] === '--out' && args[i + 1]) {
       outDir = args[++i];
+    } else if (args[i] === '--tsc-only') {
+      tscOnly = true;
     }
   }
 
@@ -128,7 +132,7 @@ function parseArgs(): {
     outDir = path.join(getResultsDir(), iterations[0], 'previews');
   }
 
-  return {iterations, prompts, outDir};
+  return {iterations, prompts, outDir, tscOnly};
 }
 
 /**
@@ -419,7 +423,6 @@ export default defineConfig({
   return configPath;
 }
 
-
 /**
  * Verify baseline components exist (real shadcn/ui sources in .baseline/).
  * No generation needed — components are checked into the repo.
@@ -433,7 +436,6 @@ function ensureBaselineShims(): void {
     );
   }
 }
-
 
 /**
  * Build a single preview page
@@ -491,7 +493,6 @@ function buildPreview(
     if (fs.existsSync(tmpDir)) fs.rmSync(tmpDir, {recursive: true});
   }
 }
-
 
 // ============================================================
 // tsc-based type checking
@@ -559,14 +560,11 @@ function runTscCheck(filePath: string, target: string): TscResult {
   const tsconfig = getTsconfigForTarget(target);
 
   try {
-    execSync(
-      `npx tsc --noEmit --project ${tsconfig} --files ${filePath}`,
-      {
-        cwd: VIBE_DIR,
-        stdio: 'pipe',
-        encoding: 'utf-8',
-      },
-    );
+    execSync(`npx tsc --noEmit --project ${tsconfig} --files ${filePath}`, {
+      cwd: VIBE_DIR,
+      stdio: 'pipe',
+      encoding: 'utf-8',
+    });
     // Clean compile
     return {
       target,
@@ -638,7 +636,7 @@ function runTscChecks(
 }
 
 async function main() {
-  const {iterations, prompts, outDir} = parseArgs();
+  const {iterations, prompts, outDir, tscOnly} = parseArgs();
   const resultsDir = getResultsDir();
 
   console.log('\n🖼️  Building Preview Pages');
@@ -670,6 +668,12 @@ async function main() {
 
     // Run tsc type checking on raw generated files BEFORE auto-import fixes
     runTscChecks(codeDir, iterDir, target, files, prompts);
+
+    // --tsc-only mode: stop after type checking (for night watch correction pipeline)
+    if (tscOnly) {
+      console.log('  ⏭ --tsc-only: skipping preview builds');
+      continue;
+    }
 
     for (const file of files) {
       const promptId = path.basename(file, '.tsx');
