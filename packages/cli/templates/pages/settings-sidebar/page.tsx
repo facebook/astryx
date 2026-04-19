@@ -35,16 +35,33 @@ import {
 const styles = stylex.create({
   iconBox: {
     borderRadius: 12,
-    backgroundColor: 'var(--xds-color-background-muted, #f5f5f5)',
+    backgroundColor: 'var(--xds-color-background-surface, #fff)',
     flexShrink: 0,
   },
   rowPadding: {
     paddingTop: 16,
     paddingBottom: 16,
   },
-  contentHPadding: {
+  cardContentPadding: {
+    paddingLeft: 16,
+    paddingRight: 16,
+  },
+  contentCenter: {
+    maxWidth: 700,
+    marginLeft: 'auto',
+    marginRight: 'auto',
     paddingLeft: 48,
     paddingRight: 48,
+  },
+  sideNavPadding: {
+    paddingTop: 16,
+    paddingBottom: 16,
+    paddingLeft: 12,
+    paddingRight: 12,
+  },
+  sideNavHeading: {
+    marginLeft: 16,
+    marginRight: 16,
   },
 });
 
@@ -221,36 +238,30 @@ export default function SettingsSecurityTemplate() {
       variant="section"
       contentPadding={4}
       sideNav={
-        <XDSVStack gap={4}>
-          <XDSSection padding={4} variant="transparent">
-            <XDSHeading level={2}>Account settings</XDSHeading>
-          </XDSSection>
-          <XDSList density="spacious">
-            {NAV_ITEMS.map(item => (
+        <XDSVStack gap={4} xstyle={styles.sideNavPadding}>
+            <XDSHeading level={2} xstyle={styles.sideNavHeading}>Account settings</XDSHeading>
+            <XDSList density="spacious">
+              {NAV_ITEMS.map(item => (
+                <XDSListItem
+                  key={item.label}
+                  label={item.label}
+                  startContent={<XDSIcon icon={item.icon} />}
+                  isSelected={activeNav === item.label}
+                  onClick={() => setActiveNav(item.label)}
+                />
+              ))}
+            </XDSList>
+            <XDSDivider />
+            <XDSList density="spacious">
               <XDSListItem
-                key={item.label}
-                label={item.label}
-                startContent={<XDSIcon icon={item.icon} />}
-                isSelected={activeNav === item.label}
-                onClick={() => setActiveNav(item.label)}
+                label="Professional hosting tools"
+                startContent={<XDSIcon icon={WrenchScrewdriverIcon} />}
+                onClick={() => {}}
               />
-            ))}
-          </XDSList>
-          <XDSDivider />
-          <XDSList density="spacious">
-            <XDSListItem
-              label="Professional hosting tools"
-              startContent={<XDSIcon icon={WrenchScrewdriverIcon} />}
-              onClick={() => {}}
-            />
-          </XDSList>
+            </XDSList>
         </XDSVStack>
       }>
-      <XDSSection
-        maxWidth={700}
-        variant="transparent"
-        padding={4}
-        xstyle={styles.contentHPadding}>
+      <XDSVStack gap={0} xstyle={styles.contentCenter}>
         {activeNav === 'Login & security' && (
           <XDSVStack gap={6}>
             <XDSHeading level={2}>Login &amp; security</XDSHeading>
@@ -359,7 +370,7 @@ export default function SettingsSecurityTemplate() {
                   </XDSText>
                 </XDSVStack>
 
-                <XDSCard variant="muted" padding={4}>
+                <XDSCard variant="muted">
                   <XDSHStack gap={4} vAlign="start">
                     <XDSCenter
                       width={48}
@@ -492,9 +503,9 @@ export default function SettingsSecurityTemplate() {
               />
             </XDSVStack>
 
-            <XDSCard padding={4}>
-              <XDSVStack gap={0}>
-                <XDSHStack gap={3} vAlign="start">
+            <XDSCard padding={0}>
+              <XDSVStack gap={0} xstyle={styles.cardContentPadding}>
+                <XDSHStack gap={3} vAlign="start" xstyle={styles.rowPadding}>
                   <XDSCenter
                     width={48}
                     height={48}
@@ -541,7 +552,7 @@ export default function SettingsSecurityTemplate() {
                   </XDSVStack>
                 </XDSHStack>
                 <XDSDivider />
-                <XDSHStack gap={3} vAlign="start">
+                <XDSHStack gap={3} vAlign="start" xstyle={styles.rowPadding}>
                   <XDSCenter
                     width={48}
                     height={48}
@@ -658,7 +669,7 @@ export default function SettingsSecurityTemplate() {
 
               <XDSVStack gap={4}>
                 <XDSHeading level={3}>Data privacy</XDSHeading>
-                <XDSCard padding={4}>
+                <XDSCard>
                   <XDSHStack hAlign="between" vAlign="center">
                     <XDSText type="body">Request my personal data</XDSText>
                     <XDSLink label="Request" href="#">
@@ -674,7 +685,7 @@ export default function SettingsSecurityTemplate() {
                   labelPosition="start"
                   labelSpacing="spread"
                 />
-                <XDSCard padding={4}>
+                <XDSCard>
                   <XDSHStack hAlign="between" vAlign="center">
                     <XDSText type="body">Delete my account</XDSText>
                     <XDSLink label="Delete" href="#">
@@ -682,39 +693,37 @@ export default function SettingsSecurityTemplate() {
                     </XDSLink>
                   </XDSHStack>
                 </XDSCard>
-                <XDSCard>
-                  <XDSSection variant="wash">
-                    <XDSHStack gap={4} vAlign="start">
-                      <XDSCenter
-                        width={48}
-                        height={48}
-                        xstyle={styles.iconBox}>
-                        <XDSIcon icon={ShieldCheckIcon} />
-                      </XDSCenter>
-                      <XDSVStack gap={1}>
-                        <XDSText type="body" weight="bold">
-                          Committed to privacy
-                        </XDSText>
-                        <XDSText type="supporting" color="secondary">
-                          We&apos;re committed to keeping your data protected.
-                          See details in our{' '}
-                          <XDSLink
-                            label="Privacy Policy"
-                            href="#"
-                            type="supporting">
-                            Privacy Policy
-                          </XDSLink>
-                          .
-                        </XDSText>
-                      </XDSVStack>
-                    </XDSHStack>
-                  </XDSSection>
+                <XDSCard variant="muted">
+                  <XDSHStack gap={4} vAlign="start">
+                    <XDSCenter
+                      width={48}
+                      height={48}
+                      xstyle={styles.iconBox}>
+                      <XDSIcon icon={ShieldCheckIcon} />
+                    </XDSCenter>
+                    <XDSVStack gap={1}>
+                      <XDSText type="body" weight="bold">
+                        Committed to privacy
+                      </XDSText>
+                      <XDSText type="supporting" color="secondary">
+                        We&apos;re committed to keeping your data protected.
+                        See details in our{' '}
+                        <XDSLink
+                          label="Privacy Policy"
+                          href="#"
+                          type="supporting">
+                          Privacy Policy
+                        </XDSLink>
+                        .
+                      </XDSText>
+                    </XDSVStack>
+                  </XDSHStack>
                 </XDSCard>
               </XDSVStack>
             </XDSVStack>
           </XDSVStack>
         )}
-      </XDSSection>
+      </XDSVStack>
     </XDSAppShell>
   );
 }
