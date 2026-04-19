@@ -3,6 +3,7 @@
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSVStack, XDSHStack, XDSStackItem} from '@xds/core/Layout';
+import {XDSGrid} from '@xds/core/Grid';
 import {XDSCenter} from '@xds/core/Center';
 import {XDSCard} from '@xds/core/Card';
 import {XDSText} from '@xds/core/Text';
@@ -25,18 +26,15 @@ const GOOGLE_ICON_URL = '/templates/google-logo.png';
 
 const styles = stylex.create({
   page: {
-    padding: spacingVars['--spacing-6'],
     backgroundColor: colorVars['--color-background-body'],
   },
   fullWidth: {
     width: '100%',
   },
   formColumn: {
-    width: '50%',
     padding: spacingVars['--spacing-8'],
   },
   imageColumn: {
-    width: '50%',
     paddingBlock: spacingVars['--spacing-4'],
     paddingInlineEnd: spacingVars['--spacing-4'],
   },
@@ -58,7 +56,7 @@ export default function LoginTwoColumn() {
       <XDSVStack gap={4} hAlign="center">
         {/* Card */}
         <XDSCard padding={0} maxWidth={1000} width="100%">
-          <XDSHStack vAlign="stretch">
+          <XDSGrid columns={2} align="stretch">
             {/* Left — Form */}
             <XDSVStack xstyle={styles.formColumn}>
               <XDSHStack gap={2} vAlign="center">
@@ -172,7 +170,7 @@ export default function LoginTwoColumn() {
                 alt="Two people working at a desk"
               />
             </XDSVStack>
-          </XDSHStack>
+          </XDSGrid>
         </XDSCard>
 
         {/* Terms */}
