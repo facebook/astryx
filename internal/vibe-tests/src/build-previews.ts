@@ -13,7 +13,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as crypto from 'node:crypto';
-import {execSync} from 'node:child_process';
+import {execFileSync} from 'node:child_process';
 import {
   getResultsDir,
   ensureDir,
@@ -456,11 +456,15 @@ function buildPreview(
     createIndexHtml(tmpDir, `${promptId} — ${target}`, target);
     createViteConfig(tmpDir, target);
 
-    execSync(`npx vite build --config ${path.join(tmpDir, 'vite.config.ts')}`, {
-      cwd: VIBE_DIR,
-      stdio: 'pipe',
-      encoding: 'utf-8',
-    });
+    execFileSync(
+      'npx',
+      ['vite', 'build', '--config', path.join(tmpDir, 'vite.config.ts')],
+      {
+        cwd: VIBE_DIR,
+        stdio: 'pipe',
+        encoding: 'utf-8',
+      },
+    );
 
     const distHtml = path.join(tmpDir, 'dist', 'index.html');
     if (!fs.existsSync(distHtml)) {
@@ -560,11 +564,15 @@ function runTscCheck(filePath: string, target: string): TscResult {
   const tsconfig = getTsconfigForTarget(target);
 
   try {
-    execSync(`npx tsc --noEmit --project ${tsconfig} --files ${filePath}`, {
-      cwd: VIBE_DIR,
-      stdio: 'pipe',
-      encoding: 'utf-8',
-    });
+    execFileSync(
+      'npx',
+      ['tsc', '--noEmit', '--project', tsconfig, '--files', filePath],
+      {
+        cwd: VIBE_DIR,
+        stdio: 'pipe',
+        encoding: 'utf-8',
+      },
+    );
     // Clean compile
     return {
       target,
