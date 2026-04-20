@@ -37,6 +37,9 @@ const styles = stylex.create({
       '@media (max-width: 640px)': 'var(--text-display-3-size)',
     },
   },
+  topSpacing: {
+    paddingTop: 'var(--spacing-12)',
+  },
   galleryImage: {
     width: '100%',
     height: '100%',
@@ -71,7 +74,7 @@ export default function GalleryHero() {
       }
       contentPadding={0}>
       <XDSVStack gap={10}>
-        <XDSVStack gap={6} hAlign="center">
+        <XDSVStack gap={6} hAlign="center" xstyle={styles.topSpacing}>
           <XDSVStack gap={3} hAlign="center">
             <XDSBadge label="❤️ Now with more delight ❤️" variant="pink" />
             <XDSText
