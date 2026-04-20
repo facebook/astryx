@@ -3,5 +3,10 @@ export {XDSRadialGrid, type XDSRadialGridProps} from './XDSRadialGrid';
 export {XDSRadialArea, type XDSRadialAreaProps} from './XDSRadialArea';
 export {XDSRadialAxis, type XDSRadialAxisProps} from './XDSRadialAxis';
 export {XDSRadialSlice, type XDSRadialSliceProps} from './XDSRadialSlice';
+export {
+  XDSRadialTooltip,
+  type XDSRadialTooltipProps,
+  type RadialTooltipDatum,
+} from './XDSRadialTooltip';
 export {useRadial} from './RadialContext';
 export type {RadialContext, RadialMode} from './types';
