@@ -171,6 +171,8 @@ const styles = stylex.create({
     flex: 1,
     minWidth: 0,
     textAlign: 'start',
+    // Suppress inner focus ring — the parent <li> handles it via :has(:focus-visible)
+    outline: 'none',
   },
   invisibleAnchor: {
     all: 'unset',
@@ -183,6 +185,8 @@ const styles = stylex.create({
     minWidth: 0,
     textAlign: 'start',
     textDecoration: 'none',
+    // Suppress inner focus ring — the parent <li> handles it via :has(:focus-visible)
+    outline: 'none',
   },
   content: {
     display: 'flex',
