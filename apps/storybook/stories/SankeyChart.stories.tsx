@@ -563,9 +563,10 @@ export const Monochrome: Story = {
         nodes={funnelNodes}
         links={funnelLinks}
         columns={funnelColumns}
-        height={340}>
+        height={340}
+        nodeColor="#1a1a1e">
         <XDSSankeyLink color="#1a1a1e" opacity={0.75} />
-        <XDSSankeyNode color="#1a1a1e" glow={false} />
+        <XDSSankeyNode glow={false} />
         <XDSSankeyLabel />
       </XDSSankeyChart>
     </XDSStack>

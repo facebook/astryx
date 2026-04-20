@@ -26,7 +26,27 @@ function defaultFormat(value: number): string {
   return value.toLocaleString();
 }
 
-function onSurfaceColor(color: [number, number, number]): string {
+/**
+ * On-surface text color. When a CSS color override is active, parse its
+ * perceived lightness. For oklch tuples, use the L channel directly.
+ */
+function onSurfaceColor(
+  color: [number, number, number],
+  cssOverride?: string,
+): string {
+  if (cssOverride) {
+    // Quick heuristic: if the override looks dark, use on-dark
+    // Check for common dark patterns (#1, #0, rgb(0-80,...), black, etc.)
+    const c = cssOverride.toLowerCase().trim();
+    const isDark =
+      c === 'black' ||
+      /^#[0-3]/.test(c) ||
+      /^#.[0-3]/.test(c) ||
+      /^rgb\(\s*[0-7]\d?\s*,/.test(c);
+    return isDark
+      ? 'var(--color-on-dark, #fff)'
+      : 'var(--color-on-light, #000)';
+  }
   return color[0] < 0.6
     ? 'var(--color-on-dark, #fff)'
     : 'var(--color-on-light, #000)';
@@ -36,7 +56,7 @@ export function XDSSankeyLabel({
   showPercent = true,
   formatValue = defaultFormat,
 }: XDSSankeyLabelProps) {
-  const {nodes, columns, maxValue, height, nodeWidth} = useSankey();
+  const {nodes, columns, maxValue, height, nodeWidth, nodeColor} = useSankey();
   const lastColumn = columns.length - 1;
 
   return (
@@ -56,6 +76,7 @@ export function XDSSankeyLabel({
               key={node.id}
               node={node}
               nodeWidth={nodeWidth}
+              nodeColor={nodeColor}
               text={text}
               pctStr={pctStr}
               showPercent={showPercent}
@@ -85,6 +106,7 @@ export function XDSSankeyLabel({
 function RotatedLabel({
   node,
   nodeWidth,
+  nodeColor,
   text,
   pctStr,
   showPercent,
@@ -92,6 +114,7 @@ function RotatedLabel({
 }: {
   node: import('./types').SankeyNodeLayout;
   nodeWidth: number;
+  nodeColor?: string;
   text: string;
   pctStr: string;
   showPercent: boolean;
@@ -110,7 +133,7 @@ function RotatedLabel({
           dominantBaseline="central"
           style={{
             font: '600 10px/1 system-ui',
-            fill: onSurfaceColor(node.color),
+            fill: onSurfaceColor(node.color, nodeColor),
             letterSpacing: '-0.01em',
           }}>
           {text}

@@ -44,6 +44,12 @@ export interface XDSSankeyChartProps {
   /** Vertical gap between sibling nodes (default: 14) */
   nodeGap?: number;
   /**
+   * Override all node bar colors with a single CSS color.
+   * Both XDSSankeyNode and XDSSankeyLabel read this from context
+   * so labels adapt their text color for contrast.
+   */
+  nodeColor?: string;
+  /**
    * Minimum width per column in px (default: 160).
    * When total min width exceeds the container, horizontal scrolling activates.
    */
@@ -120,6 +126,7 @@ export function XDSSankeyChart({
   height = 320,
   nodeWidth = 20,
   nodeGap = 14,
+  nodeColor,
   minColumnWidth = 160,
   children,
 }: XDSSankeyChartProps) {
@@ -177,8 +184,9 @@ export function XDSSankeyChart({
       valueScale: layout.valueScale,
       maxValue: layout.maxValue,
       nodeWidth,
+      nodeColor,
     };
-  }, [layout, chartWidth, height, nodeWidth]);
+  }, [layout, chartWidth, height, nodeWidth, nodeColor]);
 
   return (
     <div ref={containerRef} style={{width: '100%'}}>

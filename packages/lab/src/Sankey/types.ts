@@ -86,4 +86,6 @@ export interface SankeyContext {
   valueScale: number;
   maxValue: number;
   nodeWidth: number;
+  /** Global node color override (CSS string) — when set, all nodes use this color */
+  nodeColor?: string;
 }

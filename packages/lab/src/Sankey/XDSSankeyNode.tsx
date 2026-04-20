@@ -1,9 +1,10 @@
 /**
  * @file XDSSankeyNode.tsx
  * @output Renders node indicators with optional glow
- * @position Visual layer — minimal node presence, letting flows dominate
+ * @position Visual layer — node bars that labels sit on
  *
- * Supports per-node colors (from data) or a uniform override.
+ * Reads nodeColor from chart context. When set, all nodes use that color.
+ * Otherwise, uses each node's individual oklch color from data.
  */
 
 import {useSankey} from './SankeyContext';
@@ -11,11 +12,6 @@ import {useSankey} from './SankeyContext';
 export interface XDSSankeyNodeProps {
   /** Whether to show the glow effect behind nodes (default: true) */
   glow?: boolean;
-  /**
-   * Override all node colors with a single CSS color.
-   * When omitted, uses each node's individual color from data.
-   */
-  color?: string;
 }
 
 function oklch(c: [number, number, number], alpha: number): string {
@@ -25,18 +21,17 @@ function oklch(c: [number, number, number], alpha: number): string {
 /**
  * Renders all node indicators in the Sankey chart.
  *
- * Each node is a thin vertical bar with an optional soft glow.
- * Use the `color` prop to override all nodes to a single color,
- * or omit it to use per-node colors from the data.
+ * Color comes from the chart's `nodeColor` prop (global override)
+ * or each node's individual color from data.
  */
-export function XDSSankeyNode({glow = true, color}: XDSSankeyNodeProps) {
-  const {nodes} = useSankey();
+export function XDSSankeyNode({glow = true}: XDSSankeyNodeProps) {
+  const {nodes, nodeColor} = useSankey();
 
   return (
     <g>
       {nodes.map(node => {
-        const fill = color || oklch(node.color, 0.9);
-        const glowFill = color ? color : oklch(node.color, 0.12);
+        const fill = nodeColor || oklch(node.color, 0.9);
+        const glowFill = nodeColor || oklch(node.color, 0.12);
 
         return (
           <g key={node.id}>
@@ -48,7 +43,7 @@ export function XDSSankeyNode({glow = true, color}: XDSSankeyNodeProps) {
                 height={node.height + 2}
                 rx={4}
                 fill={glowFill}
-                opacity={color ? 0.12 : 1}
+                opacity={nodeColor ? 0.12 : 1}
               />
             )}
             <rect
