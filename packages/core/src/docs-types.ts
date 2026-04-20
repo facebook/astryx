@@ -78,21 +78,44 @@ export interface ThemingTarget {
 }
 
 /**
- * Documents a public CSS custom property that themes can set on a component
- * via component style overrides in `defineTheme`.
+ * Maps a standard CSS property to one or more internal CSS custom properties.
+ *
+ * Theme authors write standard CSS (e.g. `borderRadius: '32px'`). The theme
+ * pipeline reads this metadata and expands it: emitting both the CSS property
+ * AND the internal var(s) that the component reads.
+ *
+ * Entries are ordered by priority — earlier entries are emitted first.
+ * When multiple entries share the same `property`, all fire (in order).
+ *
+ * The special `expand: 'container'` triggers the 7-token container padding
+ * expansion instead of setting a specific var.
  *
  * @example
  * ```
- * {name: 'padding', description: 'Controls Card container padding. Mapped to container tokens automatically.', default: 'var(--spacing-4)'}
+ * // Simple: borderRadius → one internal var
+ * { property: 'borderRadius', vars: ['--_card-radius'] }
+ *
+ * // Container expansion: padding → 7 container tokens
+ * { property: 'padding', expand: 'container' }
+ *
+ * // Multiple vars from one property
+ * { property: 'padding', vars: ['--_chat-composer-padding', '--_composer-button-offset'] }
+ *
+ * // Multiple entries for the same property (both fire, in order)
+ * { property: 'padding', expand: 'container' },
+ * { property: 'padding', vars: ['--_card-padding'] },
  * ```
  */
-export interface CSSPropertyDoc {
-  /** The CSS custom property name. Always starts with `--xds-`. */
-  name: string;
-  /** What this property controls, in 1-2 sentences. */
-  description: string;
-  /** Default value if not set by theme. e.g. `"var(--spacing-4)"` */
-  default?: string;
+export interface DerivedVar {
+  /** The standard CSS property name (camelCase) that theme authors write.
+   *  e.g. `'borderRadius'`, `'padding'`, `'paddingBlock'` */
+  property: string;
+  /** Internal CSS custom property names to set when this property appears
+   *  in a theme's component overrides. Omit when using `expand`. */
+  vars?: string[];
+  /** Named expansion strategy instead of specific vars.
+   *  `'container'` — expands padding to 7 container layout tokens. */
+  expand?: 'container';
 }
 
 /**
@@ -102,12 +125,12 @@ export interface CSSPropertyDoc {
  *
  * @example
  * ```
- * {name: '--card-radius', description: 'Border radius', default: 'var(--radius-container)'}
- * {name: '--card-concentric-radius', description: 'Inner radius', derived: true, formula: 'max(0px, calc(var(--card-radius) - var(--card-padding)))'}
+ * {name: '--_card-radius', description: 'Border radius', default: 'var(--radius-container)'}
+ * {name: '--card-concentric-radius', description: 'Inner radius', derived: true, formula: 'max(0px, calc(var(--_card-radius) - var(--card-padding)))'}
  * ```
  */
 export interface ComponentVar {
-  /** CSS custom property name, e.g. '--card-radius' */
+  /** CSS custom property name, e.g. '--_card-radius' or '--button-press-scale' */
   name: string;
   /** What this var controls */
   description: string;
@@ -117,6 +140,14 @@ export interface ComponentVar {
   derived?: boolean;
   /** CSS expression showing how derived vars are computed */
   formula?: string;
+  /**
+   * Whether this var is private (internal implementation detail).
+   * Private vars are set by the derived var expansion pipeline — theme
+   * authors write standard CSS properties instead of setting them directly.
+   * The CLI hides private vars from theming output.
+   * `xds theme build` errors if a theme sets a private var directly.
+   */
+  private?: boolean;
 }
 
 /**
@@ -252,10 +283,12 @@ interface BaseDoc {
     targets: ThemingTarget[];
     /** CSS custom properties exposed for theming. */
     vars?: ComponentVar[];
-    /** Public CSS custom properties that themes can set on this component
-     *  via component overrides. Only document supported public properties —
-     *  internal variables must not be listed here. */
-    cssProperties?: CSSPropertyDoc[];
+    /** Maps standard CSS properties to internal vars for theme pipeline
+     *  expansion. Ordered by priority — earlier entries emit first.
+     *  The pipeline reads this to know: when a theme sets `borderRadius`
+     *  on this component, also emit the internal var.
+     *  @see DerivedVar */
+    derived?: DerivedVar[];
   };
   /** Component usage documentation — concise summary, best practices,
    *  and optional visual anatomy. */

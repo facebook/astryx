@@ -294,8 +294,8 @@ export function XDSDateInput({
   // Status icon mapping
   const statusIconMap: Record<XDSInputStatusType, XDSIconName> = {
     warning: 'warning',
-    error: 'xCircle',
-    success: 'checkCircle',
+    error: 'error',
+    success: 'success',
   };
 
   const statusIconColorMap: Record<
@@ -496,7 +496,7 @@ export function XDSDateInput({
         ref={popover.triggerRef}
         {...rest}
         {...mergeProps(
-          xdsClassName('date-input', {size}),
+          xdsClassName('date-input', {size, status: status?.type ?? null}),
           stylex.props(
             inputWrapperStyles.base,
             sizeStyles[size],

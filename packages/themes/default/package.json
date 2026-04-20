@@ -18,14 +18,17 @@
       "import": "./dist/default.js",
       "require": "./dist/default.js"
     },
-    "./theme.css": "./dist/theme.css"
+    "./theme.css": {
+      "types": "./theme.css.d.ts",
+      "default": "./dist/theme.css"
+    }
   },
   "files": [
     "dist",
     "src"
   ],
   "scripts": {
-    "build": "xds theme build src/defaultTheme.ts -o dist/theme.css && tsup"
+    "build": "xds theme build src/defaultTheme.ts -o dist/theme.css && tsup && tsc --project tsconfig.build.json"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0"

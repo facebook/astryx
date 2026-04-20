@@ -204,7 +204,7 @@ export function XDS3DChart({
   );
 
   return (
-    <div ref={containerRef} style={{width: '100%'}}>
+    <div ref={containerRef} style={{width: '100%', touchAction: interactive ? 'none' : undefined, userSelect: interactive ? 'none' : undefined} as React.CSSProperties}>
       {containerWidth > 0 && (
         <svg
           width={containerWidth}

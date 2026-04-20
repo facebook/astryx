@@ -272,8 +272,8 @@ export function XDSTextInput({
 
   const statusIconMap: Record<XDSInputStatusType, XDSIconName> = {
     warning: 'warning',
-    error: 'xCircle',
-    success: 'checkCircle',
+    error: 'error',
+    success: 'success',
   };
 
   const statusIconColorMap: Record<
@@ -345,7 +345,7 @@ export function XDSTextInput({
       labelTooltip={labelTooltip}>
       <div
         {...mergeProps(
-          xdsClassName('text-input', {size}),
+          xdsClassName('text-input', {size, status: status?.type ?? null}),
           stylex.props(
             inputWrapperStyles.base,
             styles.wrapper,

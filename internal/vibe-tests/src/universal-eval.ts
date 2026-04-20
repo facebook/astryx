@@ -30,6 +30,75 @@ function clamp(n: number): number {
 }
 
 // ============================================================
+// tsc-based correctness scoring (reads build-errors.json)
+// ============================================================
+
+interface TscError {
+  line: number;
+  message: string;
+  code: string;
+}
+
+export interface TscResult {
+  target: string;
+  errors: TscError[];
+  errorCount: number;
+  buildSuccess: boolean;
+}
+
+export type BuildErrors = Record<string, TscResult>;
+
+/** Cache for build-errors.json per iteration directory */
+const buildErrorsCache = new Map<string, BuildErrors | null>();
+
+/**
+ * Load build-errors.json from the iteration directory containing this file.
+ * Returns null if not found (backwards compat with older iterations).
+ */
+export function loadBuildErrors(iterDir: string): BuildErrors | null {
+  if (buildErrorsCache.has(iterDir)) {
+    return buildErrorsCache.get(iterDir)!;
+  }
+
+  const errorsPath = _path.join(iterDir, 'build-errors.json');
+  if (!_fs.existsSync(errorsPath)) {
+    buildErrorsCache.set(iterDir, null);
+    return null;
+  }
+
+  try {
+    const data = JSON.parse(_fs.readFileSync(errorsPath, 'utf-8')) as BuildErrors;
+    buildErrorsCache.set(iterDir, data);
+    return data;
+  } catch {
+    buildErrorsCache.set(iterDir, null);
+    return null;
+  }
+}
+
+/**
+ * Score correctness from tsc errors.
+ * Clean compile (0 errors): 100
+ * Each type error: -15
+ * Floor at 0
+ */
+function scoreTscErrors(tscResult: TscResult): {score: number; findings: UniversalFinding[]} {
+  const findings: UniversalFinding[] = [];
+
+  for (const err of tscResult.errors) {
+    findings.push({
+      rule: 'type-error',
+      severity: 'critical',
+      detail: `TS${err.code.replace('TS', '')}: ${err.message}`,
+      line: err.line,
+    });
+  }
+
+  const score = Math.max(0, 100 - tscResult.errorCount * 15);
+  return {score, findings};
+}
+
+// ============================================================
 // Known component catalogs
 // ============================================================
 
@@ -229,7 +298,46 @@ const KNOWN_BASELINE_COMPONENTS = new Set([
 // 1. Correctness
 // ============================================================
 
-function analyzeCorrectness(code: string, target: string): DimensionScore {
+function analyzeCorrectness(
+  code: string,
+  target: string,
+  tscResult?: TscResult | null,
+): DimensionScore {
+  // If tsc results are available, use them as primary correctness signal
+  if (tscResult) {
+    const {score: tscScore, findings: tscFindings} = scoreTscErrors(tscResult);
+
+    // Add regex-based supplementary findings (hallucinated tokens, unknown components)
+    const regexFindings = analyzeCorrectnessRegex(code, target);
+
+    // Combine: tsc errors are primary, regex findings are additive
+    const allFindings = [...tscFindings, ...regexFindings.findings];
+    const regexPenalty = regexFindings.findings.reduce((sum, f) => {
+      switch (f.severity) {
+        case 'critical': return sum + 20;
+        case 'moderate': return sum + 8;
+        case 'minor': return sum + 3;
+        default: return sum;
+      }
+    }, 0);
+
+    const finalScore = Math.max(0, tscScore - regexPenalty);
+    return {score: clamp(finalScore), findings: allFindings};
+  }
+
+  // Fallback: regex-only scoring (backwards compat with older iterations)
+  const {score, findings} = analyzeCorrectnessRegex(code, target);
+  return {score: clamp(score), findings};
+}
+
+/**
+ * Regex-based correctness checks (supplementary to tsc).
+ * Detects hallucinated components and tokens that tsc might not catch.
+ */
+function analyzeCorrectnessRegex(
+  code: string,
+  target: string,
+): {score: number; findings: UniversalFinding[]} {
   const findings: UniversalFinding[] = [];
 
   if (target === 'xds') {
@@ -313,7 +421,7 @@ function analyzeCorrectness(code: string, target: string): DimensionScore {
     }
   }
 
-  return {score: clamp(score), findings};
+  return {score, findings};
 }
 
 // ============================================================
@@ -1050,10 +1158,32 @@ function analyzeMaintainability(
 
 /**
  * Run all 5 dimension analyzers on a code sample.
+ *
+ * @param code - The generated TSX source code
+ * @param target - The target system ('xds' | 'baseline' | 'html')
+ * @param options - Optional context for enhanced scoring
+ * @param options.tscResult - tsc type check results (from build-errors.json)
+ * @param options.iterDir - Path to iteration directory (for loading build-errors.json)
+ * @param options.promptId - Prompt ID (for looking up tsc results)
  */
-export function evaluate(code: string, target: string): UniversalScore {
+export function evaluate(
+  code: string,
+  target: string,
+  options?: {
+    tscResult?: TscResult | null;
+    iterDir?: string;
+    promptId?: string;
+  },
+): UniversalScore {
+  // Resolve tsc result: direct, from file, or null
+  let tscResult = options?.tscResult;
+  if (tscResult === undefined && options?.iterDir && options?.promptId) {
+    const buildErrors = loadBuildErrors(options.iterDir);
+    tscResult = buildErrors?.[options.promptId] ?? null;
+  }
+
   return {
-    correctness: analyzeCorrectness(code, target),
+    correctness: analyzeCorrectness(code, target, tscResult),
     accessibility: analyzeAccessibility(code),
     codeQuality: analyzeCodeQuality(code),
     efficiency: analyzeEfficiency(code, target),

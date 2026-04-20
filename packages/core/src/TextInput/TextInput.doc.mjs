@@ -96,7 +96,7 @@ export const docs = {
       name: 'startIcon',
       type: 'XDSIconType',
       description:
-        'SVG icon component displayed at the start of the input (e.g. from heroicons or lucide).',
+        'SVG icon component displayed at the start of the input. See `npx xds docs icons` for valid semantic names.',
     },
     {
       name: 'status',
@@ -126,7 +126,7 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'xds-text-input', visualProps: ['size']},
+      {className: 'xds-text-input', visualProps: ['size', 'status']},
     ],
   },
   usage: {
@@ -272,7 +272,7 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'xds-text-input', visualProps: ['size']},
+      {className: 'xds-text-input', visualProps: ['size', 'status']},
     ],
   },
   usage: {

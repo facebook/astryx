@@ -280,7 +280,9 @@ function renderLines(
     chunks.push(
       <div
         key={start}
-        {...mergeProps(stylex.props(styles.lineChunk), {style: {containIntrinsicBlockSize: `auto ${estimatedHeight}`}})}>
+        {...mergeProps(stylex.props(styles.lineChunk), {
+          style: {containIntrinsicBlockSize: `auto ${estimatedHeight}`},
+        })}>
         <CodeChunk
           lines={chunkLines}
           startIndex={start}
@@ -329,6 +331,17 @@ function hasHighlightAPI(): boolean {
     'highlights' in CSS &&
     typeof Highlight !== 'undefined'
   );
+}
+
+/**
+ * Safari supports the Highlight API JS objects but has rendering issues
+ * with ::highlight() in code blocks. Detect Safari (WebKit without Chrome)
+ * so we can fall back to spans.
+ */
+function isSafari(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent;
+  return /AppleWebKit/.test(ua) && !/Chrome/.test(ua);
 }
 
 /**
@@ -524,7 +537,8 @@ export function XDSCodeBlock({
 
   const useSpans =
     highlightMode === 'spans' ||
-    (highlightMode === 'auto' && !hasHighlightAPI());
+    (highlightMode === 'auto' && !hasHighlightAPI()) ||
+    (highlightMode === 'auto' && isSafari());
 
   const lines = useMemo(() => {
     const l = code.split('\n');
@@ -645,7 +659,9 @@ export function XDSCodeBlock({
   const codeBody = (
     <div
       ref={scrollContainerRef}
-      {...mergeProps(stylex.props(styles.scrollContainer), {style: scrollStyle})}>
+      {...mergeProps(stylex.props(styles.scrollContainer), {
+        style: scrollStyle,
+      })}>
       <div
         {...stylex.props(
           styles.codeWrapper,

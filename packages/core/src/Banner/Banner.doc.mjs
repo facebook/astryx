@@ -91,7 +91,10 @@ export const docs = {
       {className: 'xds-banner-icon', visualProps: ['status']},
     ],
     vars: [
-      {name: '--banner-radius', description: 'Border radius (card container only)', default: 'var(--radius-container)'},
+      {name: '--_banner-radius', description: 'Border radius (card container only)', default: 'var(--radius-container)', private: true},
+    ],
+    derived: [
+      {property: 'borderRadius', vars: ['--_banner-radius']},
     ],
   },
 };
@@ -152,7 +155,10 @@ export const docsZh = {
       },
     ],
     vars: [
-      {name: '--banner-radius', description: 'Border radius (card container only)', default: 'var(--radius-container)'},
+      {name: '--_banner-radius', description: 'Border radius (card container only)', default: 'var(--radius-container)', private: true},
+    ],
+    derived: [
+      {property: 'borderRadius', vars: ['--_banner-radius']},
     ],
   },
 };

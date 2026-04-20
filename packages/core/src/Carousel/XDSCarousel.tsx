@@ -159,7 +159,7 @@ const styles = stylex.create({
     pointerEvents: 'none' as const,
   },
   buttonRadiusOverride: {
-    '--button-radius': radiusVars['--radius-full'],
+    '--_button-radius': radiusVars['--radius-full'],
   } as Record<string, string>,
 });
 

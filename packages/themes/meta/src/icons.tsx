@@ -33,16 +33,13 @@ import {
   ClipboardDocumentIcon,
   WrenchScrewdriverIcon,
   MicrophoneIcon,
-} from '@heroicons/react/24/outline';
-
-import {
   CheckCircleIcon,
   XCircleIcon,
   ExclamationTriangleIcon,
   ArrowTopRightOnSquareIcon,
   StopIcon,
   StopCircleIcon,
-} from '@heroicons/react/24/solid';
+} from '@heroicons/react/24/outline';
 
 const iconProps = {
   width: '1em',
@@ -56,8 +53,8 @@ export const metaIconRegistry: XDSIconRegistry = {
   chevronLeft: <ChevronLeftIcon {...iconProps} />,
   chevronRight: <ChevronRightIcon {...iconProps} />,
   check: <CheckIcon {...iconProps} />,
-  checkCircle: <CheckCircleIcon {...iconProps} />,
-  xCircle: <XCircleIcon {...iconProps} />,
+  success: <CheckCircleIcon {...iconProps} />,
+  error: <XCircleIcon {...iconProps} />,
   warning: <ExclamationTriangleIcon {...iconProps} />,
   info: <InformationCircleIcon {...iconProps} />,
   calendar: <CalendarDaysIcon {...iconProps} />,

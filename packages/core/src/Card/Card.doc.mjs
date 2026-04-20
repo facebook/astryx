@@ -63,15 +63,11 @@ export const docs = {
       {className: 'xds-card'},
     ],
     vars: [
-      {name: '--card-radius', description: 'Border radius of the card', default: 'var(--radius-container)'},
+      {name: '--_card-radius', description: 'Border radius of the card', default: 'var(--radius-container)', private: true},
     ],
-    cssProperties: [
-      {
-        name: 'padding',
-        description:
-          "Controls Card container padding. Accepts standard CSS padding shorthand (e.g. '16px 20px'). Automatically mapped to container tokens for layout integration. Supports paddingBlock/paddingInline for axis-specific control.",
-        default: 'var(--spacing-4)',
-      },
+    derived: [
+      {property: 'borderRadius', vars: ['--_card-radius']},
+      {property: 'padding', expand: 'container'},
     ],
   },
 };
@@ -107,15 +103,11 @@ export const docsZh = {
       {className: 'xds-card'},
     ],
     vars: [
-      {name: '--card-radius', description: 'Border radius of the card', default: 'var(--radius-container)'},
+      {name: '--_card-radius', description: 'Border radius of the card', default: 'var(--radius-container)', private: true},
     ],
-    cssProperties: [
-      {
-        name: 'padding',
-        description:
-          "Controls Card container padding. Accepts standard CSS padding shorthand (e.g. '16px 20px'). Automatically mapped to container tokens for layout integration. Supports paddingBlock/paddingInline for axis-specific control.",
-        default: 'var(--spacing-4)',
-      },
+    derived: [
+      {property: 'borderRadius', vars: ['--_card-radius']},
+      {property: 'padding', expand: 'container'},
     ],
   },
 };

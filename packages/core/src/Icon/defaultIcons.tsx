@@ -87,8 +87,8 @@ export const defaultIcons: XDSIconRegistry = {
     </svg>
   ),
 
-  /** ✓ in circle — success (solid fill for status visibility) */
-  checkCircle: (
+  /** ✓ in circle — success state (solid fill for status visibility) */
+  success: (
     <svg {...solidSvgProps}>
       <path
         fillRule="evenodd"
@@ -98,8 +98,8 @@ export const defaultIcons: XDSIconRegistry = {
     </svg>
   ),
 
-  /** ✕ in circle — error (solid fill for status visibility) */
-  xCircle: (
+  /** ✕ in circle — error state (solid fill for status visibility) */
+  error: (
     <svg {...solidSvgProps}>
       <path
         fillRule="evenodd"
@@ -257,6 +257,4 @@ export const defaultIcons: XDSIconRegistry = {
       <path d="M12 18v4m-4 0h8" />
     </svg>
   ),
-
-  /** ⏺ — filled circle (recording indicator) */
 };

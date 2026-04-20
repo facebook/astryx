@@ -75,6 +75,7 @@ function postcss(rootDir, overrides = {}) {
   return {
     plugins: {
       [require.resolve('./index.js')]: {
+        cwd: rootDir,
         appDir,
         babelPlugins: [
           ['@stylexjs/babel-plugin', stylexOptions(rootDir, rest)],

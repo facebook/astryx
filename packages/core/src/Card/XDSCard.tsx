@@ -61,8 +61,8 @@ export type XDSCardVariant =
 
 const styles = stylex.create({
   card: {
-    '--card-radius': radiusVars['--radius-container'],
-    borderRadius: 'var(--card-radius)',
+    '--_card-radius': radiusVars['--radius-container'],
+    borderRadius: 'var(--_card-radius)',
     overflow: 'clip',
   },
   withBorder: {

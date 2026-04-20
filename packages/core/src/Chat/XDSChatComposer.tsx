@@ -11,9 +11,9 @@
  * page-radius container, hover/focus shadows, and concentric inner radius.
  *
  * Component CSS vars (themeable via defineTheme):
- * - `--composer-radius` (default: --radius-page) — outer border radius
- * - `--composer-padding` (default: --spacing-3) — body padding
- * - Inner element radius = calc(--composer-radius - --composer-padding)
+ * - `--_chat-composer-radius` (default: --radius-page) — outer border radius
+ * - `--_chat-composer-padding` (default: --spacing-3) — body padding
+ * - Inner element radius = calc(--_chat-composer-radius - --_chat-composer-padding)
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Chat/Chat.doc.mjs
@@ -113,13 +113,13 @@ const styles = stylex.create({
     display: 'flex',
     flexDirection: 'column',
     // Component CSS vars — themeable via defineTheme({ components: { 'chat-composer': { base: {...} } } })
-    '--composer-radius': radiusVars['--radius-page'],
-    '--composer-padding': spacingVars['--spacing-3'],
+    '--_chat-composer-radius': radiusVars['--radius-page'],
+    '--_chat-composer-padding': spacingVars['--spacing-3'],
     // Concentric radius: buttons follow the outer shell's curvature.
-    // Sets --button-radius (not --radius-element) so only buttons are
+    // Sets --_button-radius (not --radius-element) so only buttons are
     // affected — other components in slots keep their own radius.
     // Default: 28px - 12px = 16px (fully rounds a 32px button).
-    '--button-radius': `max(${radiusVars['--radius-element']}, calc(var(--composer-radius) - var(--composer-padding)))`,
+    '--_button-radius': `max(${radiusVars['--radius-element']}, calc(var(--_chat-composer-radius) - var(--_chat-composer-padding)))`,
   },
 
   rootDisabled: {
@@ -131,9 +131,9 @@ const styles = stylex.create({
     zIndex: 2,
     display: 'flex',
     flexDirection: 'column',
-    padding: 'var(--composer-padding)',
+    padding: 'var(--_chat-composer-padding)',
     gap: spacingVars['--spacing-2'],
-    borderRadius: 'var(--composer-radius)',
+    borderRadius: 'var(--_chat-composer-radius)',
     backgroundColor: colorVars['--color-background-popover'],
     cursor: 'text',
     boxShadow: {
@@ -216,18 +216,20 @@ const styles = stylex.create({
     fontFamily: typographyVars['--font-family-body'],
   },
   statusTop: {
-    paddingBlockStart: 'var(--composer-padding)',
-    paddingBlockEnd: 'calc(var(--composer-padding) + var(--composer-radius))',
-    marginBlockEnd: 'calc(-1 * var(--composer-radius))',
-    borderTopLeftRadius: 'var(--composer-radius)',
-    borderTopRightRadius: 'var(--composer-radius)',
+    paddingBlockStart: 'var(--_chat-composer-padding)',
+    paddingBlockEnd:
+      'calc(var(--_chat-composer-padding) + var(--_chat-composer-radius))',
+    marginBlockEnd: 'calc(-1 * var(--_chat-composer-radius))',
+    borderTopLeftRadius: 'var(--_chat-composer-radius)',
+    borderTopRightRadius: 'var(--_chat-composer-radius)',
   },
   statusBottom: {
-    paddingBlockStart: 'calc(var(--composer-padding) + var(--composer-radius))',
-    paddingBlockEnd: 'var(--composer-padding)',
-    marginBlockStart: 'calc(-1 * var(--composer-radius))',
-    borderBottomLeftRadius: 'var(--composer-radius)',
-    borderBottomRightRadius: 'var(--composer-radius)',
+    paddingBlockStart:
+      'calc(var(--_chat-composer-padding) + var(--_chat-composer-radius))',
+    paddingBlockEnd: 'var(--_chat-composer-padding)',
+    marginBlockStart: 'calc(-1 * var(--_chat-composer-radius))',
+    borderBottomLeftRadius: 'var(--_chat-composer-radius)',
+    borderBottomRightRadius: 'var(--_chat-composer-radius)',
   },
   statusError: {
     backgroundColor: colorVars['--color-error-muted'],
@@ -325,7 +327,7 @@ export function XDSChatComposer(props: XDSChatComposerProps) {
         status.type === 'warning' && styles.statusWarning,
       )}>
       <XDSIcon
-        icon={status.type === 'error' ? 'xCircle' : 'warning'}
+        icon={status.type === 'error' ? 'error' : 'warning'}
         size="md"
         color={status.type === 'error' ? 'negative' : 'warning'}
       />

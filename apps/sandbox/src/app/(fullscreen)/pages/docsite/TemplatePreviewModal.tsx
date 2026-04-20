@@ -16,6 +16,7 @@ import {
   AVATAR_IMAGE,
   XDS_DESIGN_AVATAR,
   THEME_PICKER_ENTRIES,
+  basePath,
 } from './constants';
 import {SharePopoverContent} from './SharePopover';
 import {
@@ -71,6 +72,7 @@ const tokenStyles = stylex.create({
 export type TemplatePreviewItem = {
   name: string;
   img: string;
+  slug?: string;
   author: string;
   description?: string;
 };
@@ -179,19 +181,34 @@ export function TemplatePreviewModal({
                 overflowX: 'hidden',
                 border: '1px solid var(--color-border, #e0e0e0)',
               }}>
-              <img
-                src={item.img}
-                alt={item.name}
-                style={{
-                  width: '100%',
-                  display: 'block',
-                  opacity: transitioning ? 0 : 1,
-                  transition: 'opacity 250ms ease',
-                  animation: transitioning
-                    ? 'none'
-                    : 'previewFadeIn 300ms ease',
-                }}
-              />
+              {item.slug ? (
+                <iframe
+                  src={`${basePath}/templates/${item.slug}/?embed=1`}
+                  title={item.name}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    border: 'none',
+                    display: 'block',
+                    opacity: transitioning ? 0 : 1,
+                    transition: 'opacity 250ms ease',
+                  }}
+                />
+              ) : (
+                <img
+                  src={item.img}
+                  alt={item.name}
+                  style={{
+                    width: '100%',
+                    display: 'block',
+                    opacity: transitioning ? 0 : 1,
+                    transition: 'opacity 250ms ease',
+                    animation: transitioning
+                      ? 'none'
+                      : 'previewFadeIn 300ms ease',
+                  }}
+                />
+              )}
             </div>
           </XDSVStack>
 

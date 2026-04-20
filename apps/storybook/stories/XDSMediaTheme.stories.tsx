@@ -61,7 +61,7 @@ function OnDarkDemo() {
           <XDSStack direction="row" gap={2} align="center" wrap="wrap">
             <XDSBadge label="Badge" />
             <XDSIcon icon="info" size="md" />
-            <XDSIcon icon="checkCircle" size="md" />
+            <XDSIcon icon="success" size="md" />
           </XDSStack>
         </XDSStack>
       </XDSMediaTheme>

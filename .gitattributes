@@ -1,0 +1,5 @@
+# Vendored shadcn components — treat as binary (no diffs, no linguist stats)
+internal/vibe-tests/.baseline/components/ui/** linguist-generated=true binary
+
+# Lock files
+yarn.lock linguist-generated=true

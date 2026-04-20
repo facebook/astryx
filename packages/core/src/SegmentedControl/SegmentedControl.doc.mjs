@@ -8,6 +8,14 @@ export const docs = {
       {className: 'xds-segmented-control', visualProps: ['size']},
       {className: 'xds-segmented-control-item'},
     ],
+    vars: [
+      {name: '--_segmented-control-radius', description: 'Border radius of the segmented control', default: 'var(--radius-element)', private: true},
+      {name: '--_segmented-control-padding', description: 'Inner padding of the segmented control', default: 'var(--spacing-0-5)', private: true},
+    ],
+    derived: [
+      {property: 'borderRadius', vars: ['--_segmented-control-radius']},
+      {property: 'padding', vars: ['--_segmented-control-padding']},
+    ],
   },
   components: [
     {

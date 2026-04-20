@@ -106,7 +106,7 @@ export const docs = {
       name: 'startIcon',
       type: 'XDSIconType',
       description:
-        'Icon component rendered inside the leading edge of the textarea wrapper.',
+        'Icon component rendered inside the leading edge of the textarea wrapper. See `npx xds docs icons` for valid semantic names.',
     },
     {
       name: 'hasSpellCheck',
@@ -150,7 +150,7 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'xds-textarea'},
+      {className: 'xds-textarea', visualProps: ['status']},
     ],
   },
   usage: {
@@ -314,7 +314,7 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'xds-textarea'},
+      {className: 'xds-textarea', visualProps: ['status']},
     ],
   },
   usage: {

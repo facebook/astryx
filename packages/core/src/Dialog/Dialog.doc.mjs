@@ -9,15 +9,11 @@ export const docs = {
       {className: 'xds-dialog', visualProps: ['variant']},
     ],
     vars: [
-      {name: '--dialog-radius', description: 'Border radius of the dialog', default: 'var(--radius-container)'},
+      {name: '--_dialog-radius', description: 'Border radius of the dialog', default: 'var(--radius-container)', private: true},
     ],
-    cssProperties: [
-      {
-        name: 'padding',
-        description:
-          "Controls Dialog container padding. Accepts standard CSS padding shorthand (e.g. '16px 20px'). Automatically mapped to container tokens for layout integration.",
-        default: 'var(--spacing-4)',
-      },
+    derived: [
+      {property: 'borderRadius', vars: ['--_dialog-radius']},
+      {property: 'padding', expand: 'container'},
     ],
   },
   components: [
@@ -145,15 +141,11 @@ export const docsZh = {
       {className: 'xds-dialog', visualProps: ['variant']},
     ],
     vars: [
-      {name: '--dialog-radius', description: 'Border radius of the dialog', default: 'var(--radius-container)'},
+      {name: '--_dialog-radius', description: 'Border radius of the dialog', default: 'var(--radius-container)', private: true},
     ],
-    cssProperties: [
-      {
-        name: 'padding',
-        description:
-          "Controls Dialog container padding. Accepts standard CSS padding shorthand (e.g. '16px 20px'). Automatically mapped to container tokens for layout integration.",
-        default: 'var(--spacing-4)',
-      },
+    derived: [
+      {property: 'borderRadius', vars: ['--_dialog-radius']},
+      {property: 'padding', expand: 'container'},
     ],
   },
   components: [

@@ -9,8 +9,12 @@ export const docs = {
       {className: 'xds-dropdown-menu-item'},
     ],
     vars: [
-      {name: '--dropdown-radius', description: 'Border radius of the menu popup', default: 'var(--radius-element)'},
-      {name: '--dropdown-padding', description: 'Inner padding of the menu popup', default: 'var(--spacing-1)'},
+      {name: '--_dropdown-menu-radius', description: 'Border radius of the menu popup', default: 'var(--radius-element)', private: true},
+      {name: '--_dropdown-menu-padding', description: 'Inner padding of the menu popup', default: 'var(--spacing-1)', private: true},
+    ],
+    derived: [
+      {property: 'borderRadius', vars: ['--_dropdown-menu-radius']},
+      {property: 'padding', vars: ['--_dropdown-menu-padding']},
     ],
   },
   components: [
@@ -74,7 +78,7 @@ export const docs = {
         {
           name: 'icon',
           type: 'XDSIconType',
-          description: 'Icon to display before the label.',
+          description: 'Icon to display before the label. See `npx xds docs icons` for valid semantic names.',
         },
         {
           name: 'label',
@@ -125,7 +129,7 @@ export const docs = {
         {
           name: 'icon',
           type: 'XDSIconType',
-          description: 'Icon to display before the item label.',
+          description: 'Icon to display before the item label. See `npx xds docs icons` for valid semantic names.',
         },
       ],
     },
@@ -190,8 +194,12 @@ export const docsZh = {
       {className: 'xds-dropdown-menu-item'},
     ],
     vars: [
-      {name: '--dropdown-radius', description: 'Border radius of the menu popup', default: 'var(--radius-element)'},
-      {name: '--dropdown-padding', description: 'Inner padding of the menu popup', default: 'var(--spacing-1)'},
+      {name: '--_dropdown-menu-radius', description: 'Border radius of the menu popup', default: 'var(--radius-element)', private: true},
+      {name: '--_dropdown-menu-padding', description: 'Inner padding of the menu popup', default: 'var(--spacing-1)', private: true},
+    ],
+    derived: [
+      {property: 'borderRadius', vars: ['--_dropdown-menu-radius']},
+      {property: 'padding', vars: ['--_dropdown-menu-padding']},
     ],
   },
   components: [

@@ -120,8 +120,8 @@ const styles = stylex.create({
     padding: 0,
     border: 'none',
     backgroundColor: colorVars['--color-background-surface'],
-    '--dialog-radius': radiusVars['--radius-container'],
-    borderRadius: 'var(--dialog-radius)',
+    '--_dialog-radius': radiusVars['--radius-container'],
+    borderRadius: 'var(--_dialog-radius)',
     boxShadow: shadowVars['--shadow-high'],
     display: {
       default: 'none',

@@ -8,10 +8,19 @@ import toolbarDensityToSize, {
   meta as toolbarDensityToSizeMeta,
 } from './toolbar-density-to-size.mjs';
 
+import iconNameDeprecations, {
+  meta as iconNameDeprecationsMeta,
+} from './icon-name-deprecations.mjs';
+
 export default [
   {
     name: 'toolbar-density-to-size',
     transform: toolbarDensityToSize,
     meta: toolbarDensityToSizeMeta,
+  },
+  {
+    name: 'icon-name-deprecations',
+    transform: iconNameDeprecations,
+    meta: iconNameDeprecationsMeta,
   },
 ];

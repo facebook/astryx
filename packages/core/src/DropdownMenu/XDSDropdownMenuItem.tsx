@@ -38,7 +38,7 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-2'],
     width: '100%',
     padding: spacingVars['--spacing-2'],
-    borderRadius: `max(0px, calc(var(--dropdown-radius, ${spacingVars['--spacing-2']}) - var(--dropdown-padding, ${spacingVars['--spacing-1']})))`,
+    borderRadius: `max(0px, calc(var(--_dropdown-menu-radius, ${spacingVars['--spacing-2']}) - var(--_dropdown-menu-padding, ${spacingVars['--spacing-1']})))`,
     fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-label-size'],
     color: colorVars['--color-text-primary'],

@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "jsx": "react-jsx",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "noEmit": true,
+    "skipLibCheck": true,
+    "paths": {
+      "@xds/core": ["../../packages/core/src"],
+      "@xds/core/*": ["../../packages/core/src/*"],
+      "@xds/theme/default": ["../../packages/themes/default/src/source.ts"],
+      "@stylexjs/stylex": ["../../node_modules/@stylexjs/stylex"]
+    }
+  },
+  "include": ["**/*.tsx"]
+}

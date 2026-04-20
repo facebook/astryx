@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "jsx": "react-jsx",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "noEmit": true,
+    "skipLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/components/ui/*": [".baseline/components/ui/*"],
+      "@/lib/*": [".baseline/lib/*"]
+    }
+  },
+  "include": ["**/*.tsx"]
+}

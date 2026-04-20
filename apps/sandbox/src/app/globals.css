@@ -1,1 +1,10 @@
+@import "./layers.css";
+@import "@xds/core/reset.css";
+@import "@xds/theme-default/theme.css";
+@import "@xds/theme-neutral/theme.css";
+@import "@xds/theme-brutalist/theme.css";
+@import "@xds/theme-meta/theme.css";
+@import "@xds/theme-whatsapp/theme.css";
+@import "@xds/theme-daily/theme.css";
+
 @stylex;

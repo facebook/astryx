@@ -10,7 +10,10 @@ export const docs = {
       {className: 'xds-field-status', visualProps: ['type', 'variant']},
     ],
     vars: [
-      {name: '--input-radius', description: 'Border radius of input fields', default: 'var(--radius-element)'},
+      {name: '--_field-radius', description: 'Border radius of input fields', default: 'var(--radius-element)', private: true},
+    ],
+    derived: [
+      {property: 'borderRadius', vars: ['--_field-radius']},
     ],
   },
   components: [
@@ -81,7 +84,7 @@ export const docs = {
         {
           name: 'labelIcon',
           type: 'XDSIconType',
-          description: 'Icon to display before the label text.',
+          description: 'Icon to display before the label text. See `npx xds docs icons` for valid semantic names.',
         },
         {
           name: 'labelTooltip',
@@ -171,7 +174,7 @@ export const docs = {
         {
           name: 'labelIcon',
           type: 'XDSIconType',
-          description: 'Icon before the label text.',
+          description: 'Icon before the label text. See `npx xds docs icons` for valid semantic names.',
         },
         {
           name: 'labelTooltip',
@@ -233,7 +236,10 @@ export const docsZh = {
       {className: 'xds-field-status', visualProps: ['type', 'variant']},
     ],
     vars: [
-      {name: '--input-radius', description: 'Border radius of input fields', default: 'var(--radius-element)'},
+      {name: '--_field-radius', description: 'Border radius of input fields', default: 'var(--radius-element)', private: true},
+    ],
+    derived: [
+      {property: 'borderRadius', vars: ['--_field-radius']},
     ],
   },
   components: [

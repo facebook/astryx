@@ -917,6 +917,35 @@ function validateComponentOverrides(themeDef) {
   return warnings;
 }
 
+/**
+ * Validate that themes don't set private (--_*) CSS custom properties directly.
+ * Private vars are internal implementation details managed by the derived var
+ * expansion pipeline. Theme authors should write standard CSS properties
+ * (e.g. borderRadius, padding) instead.
+ *
+ * Returns array of error strings.
+ */
+function validatePrivateVars(themeDef) {
+  const errors = [];
+  if (!themeDef.components) return errors;
+
+  for (const [component, rules] of Object.entries(themeDef.components)) {
+    for (const [key, styles] of Object.entries(rules)) {
+      for (const [prop, value] of Object.entries(styles)) {
+        if (typeof prop === 'string' && prop.startsWith('--_')) {
+          errors.push(
+            `Component "${component}" (${key}) sets private var "${prop}". ` +
+            `Private vars (--_*) are internal — use standard CSS properties ` +
+            `(e.g. borderRadius, padding) instead. The pipeline expands them automatically.`,
+          );
+        }
+      }
+    }
+  }
+
+  return errors;
+}
+
 export function registerTheme(program) {
   const theme = program
     .command('theme')
@@ -961,6 +990,16 @@ export function registerTheme(program) {
       for (const w of warnings) {
         warningMessages.push(w);
         if (!json) console.warn(`  ⚠ ${w}`);
+      }
+
+      // Validate no private vars are set directly
+      const privateVarErrors = validatePrivateVars(themeDef);
+      for (const e of privateVarErrors) {
+        warningMessages.push(e);
+        if (!json) console.error(`  ✗ ${e}`);
+      }
+      if (privateVarErrors.length > 0 && !json) {
+        console.error(`\n  ${privateVarErrors.length} private var error(s). Use standard CSS properties instead.`);
       }
 
       // Generate CSS using the shared generateThemeRules from core.

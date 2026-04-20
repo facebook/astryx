@@ -185,8 +185,8 @@ export interface XDSBannerProps {
 const defaultIconNames: Record<XDSBannerStatus, XDSIconName> = {
   info: 'info',
   warning: 'warning',
-  error: 'xCircle',
-  success: 'checkCircle',
+  error: 'error',
+  success: 'success',
 };
 
 // =============================================================================
@@ -222,8 +222,8 @@ const styles = stylex.create({
     overflow: 'clip',
   },
   card: {
-    '--banner-radius': radiusVars['--radius-container'],
-    borderRadius: 'var(--banner-radius)',
+    '--_banner-radius': radiusVars['--radius-container'],
+    borderRadius: 'var(--_banner-radius)',
   },
   section: {
     borderRadius: '0',
@@ -297,8 +297,8 @@ const styles = stylex.create({
     borderBottomColor: colorVars['--color-border'],
   },
   contentAreaCard: {
-    borderBottomLeftRadius: 'var(--banner-radius)',
-    borderBottomRightRadius: 'var(--banner-radius)',
+    borderBottomLeftRadius: 'var(--_banner-radius)',
+    borderBottomRightRadius: 'var(--_banner-radius)',
   },
   chevron: {
     display: 'inline-flex',

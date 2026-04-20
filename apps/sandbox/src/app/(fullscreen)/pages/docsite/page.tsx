@@ -727,6 +727,7 @@ function DocsiteLandingTemplate() {
           <TemplatePreview
             templateName={t.name}
             imageSrc={t.src}
+            slug={t.slug}
             onBack={handleBackFromUse}
             isGenerating={previewGenerating}
             onPublish={() => {
@@ -1504,6 +1505,7 @@ function DocsiteLandingTemplate() {
                       }}>
                       <TemplateCard
                         src={template.src}
+                        slug={template.slug}
                         name={template.name}
                         isSelected={selected.has(template.originalIndex)}
                         isGenerating={
@@ -1555,6 +1557,7 @@ function DocsiteLandingTemplate() {
               item={{
                 name: t.name,
                 img: t.src,
+                slug: t.slug,
                 author: t.author,
               }}
               onStartCrafting={() => {
@@ -1604,8 +1607,7 @@ function DocsiteLandingTemplate() {
         isOpen={isSettingsOpen}
         onOpenChange={setIsSettingsOpen}
         width={560}
-        purpose="form"
-        title="Settings">
+        purpose="form">
         <XDSStack direction="vertical" gap={4} style={{padding: '8px 0'}}>
           <XDSStack direction="horizontal" hAlign="between" vAlign="center">
             <XDSStack direction="vertical" gap={1}>

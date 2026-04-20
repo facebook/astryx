@@ -59,13 +59,8 @@ export const docs = {
     targets: [
       {className: 'xds-section', visualProps: ['variant']},
     ],
-    cssProperties: [
-      {
-        name: 'padding',
-        description:
-          "Controls Section container padding. Accepts standard CSS padding shorthand (e.g. '16px 20px'). Automatically mapped to container tokens for layout integration. Supports paddingBlock/paddingInline for axis-specific control.",
-        default: 'var(--spacing-4)',
-      },
+    derived: [
+      {property: 'padding', expand: 'container'},
     ],
   },
   usage: {
@@ -138,13 +133,8 @@ export const docsZh = {
     targets: [
       {className: 'xds-section', visualProps: ['variant']},
     ],
-    cssProperties: [
-      {
-        name: 'padding',
-        description:
-          "Controls Section container padding. Accepts standard CSS padding shorthand (e.g. '16px 20px'). Automatically mapped to container tokens for layout integration. Supports paddingBlock/paddingInline for axis-specific control.",
-        default: 'var(--spacing-4)',
-      },
+    derived: [
+      {property: 'padding', expand: 'container'},
     ],
   },
   usage: {
