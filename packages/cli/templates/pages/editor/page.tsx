@@ -266,6 +266,7 @@ const editorStyles = stylex.create({
     left: 16,
     bottom: 16,
     width: 320,
+    paddingInline: 16,
     zIndex: 10,
     backgroundColor: colorVars['--color-background-card'],
     borderRadius: radiusVars['--radius-container'],
