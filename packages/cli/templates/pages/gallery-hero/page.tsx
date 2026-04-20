@@ -6,6 +6,7 @@ import {XDSText} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSBadge} from '@xds/core/Badge';
+import {XDSGrid} from '@xds/core/Grid';
 import {XDSAppShell} from '@xds/core/AppShell';
 import {XDSTopNav, XDSTopNavHeading, XDSTopNavItem} from '@xds/core/TopNav';
 import {ArrowRightIcon} from '@heroicons/react/20/solid';
@@ -35,9 +36,6 @@ const styles = stylex.create({
       '@media (max-width: 640px)': 'var(--text-display-3-size)',
     },
   },
-  topSpacing: {
-    paddingTop: 'var(--spacing-10)',
-  },
   galleryImage: {
     width: '100%',
     height: '100%',
@@ -49,13 +47,8 @@ const styles = stylex.create({
     overflow: 'hidden',
     borderRadius: 'var(--radius-container)',
   },
-  galleryContainer: {
+  galleryPadding: {
     paddingInline: 'var(--spacing-6)',
-  },
-  galleryGrid: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr 1fr',
-    gap: 'var(--spacing-4)',
   },
 });
 
@@ -78,8 +71,8 @@ export default function GalleryHero() {
         />
       }
       contentPadding={0}>
-      <XDSVStack gap={6}>
-        <XDSVStack gap={6} hAlign="center" xstyle={styles.topSpacing}>
+      <XDSVStack gap={10}>
+        <XDSVStack gap={6} hAlign="center">
           <XDSVStack gap={3} hAlign="center">
             <XDSBadge label="❤️ Now with more delight ❤️" variant="pink" />
             <XDSText
@@ -110,19 +103,17 @@ export default function GalleryHero() {
             <XDSButton label="Learn more" variant="ghost" />
           </XDSHStack>
         </XDSVStack>
-        <div {...stylex.props(styles.galleryContainer)}>
-          <div {...stylex.props(styles.galleryGrid)}>
-            {IMAGES.map((image, i) => (
-              <div key={i} {...stylex.props(styles.galleryImageWrapper)}>
-                <img
-                  {...stylex.props(styles.galleryImage)}
-                  src={image.src}
-                  alt={image.alt}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
+        <XDSGrid columns={3} gap={4} xstyle={styles.galleryPadding}>
+          {IMAGES.map((image, i) => (
+            <div key={i} {...stylex.props(styles.galleryImageWrapper)}>
+              <img
+                {...stylex.props(styles.galleryImage)}
+                src={image.src}
+                alt={image.alt}
+              />
+            </div>
+          ))}
+        </XDSGrid>
       </XDSVStack>
     </XDSAppShell>
   );
