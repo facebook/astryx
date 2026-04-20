@@ -14,8 +14,8 @@
  * This module provides a two-layer solution:
  *
  * 1. **Containers** set the inset budget via CSS custom properties on slot wrappers:
- *    - `--edge-inset-start: <px>` — how much to pull back at the start edge
- *    - `--edge-inset-end: <px>` — how much to pull back at the end edge
+ *    - `--_edge-inset-start: <px>` — how much to pull back at the start edge
+ *    - `--_edge-inset-end: <px>` — how much to pull back at the end edge
  *
  * 2. **Components** opt in by applying `edgeCompensation.item` which uses
  *    `:first-child` / `:last-child` selectors to only compensate items
@@ -53,29 +53,29 @@ import {spacingVars} from '../theme/tokens.stylex';
  */
 export const edgeInset = stylex.create({
   /** Start edge inset: spacing-1 (4px) */
-  start1: {'--edge-inset-start': spacingVars['--spacing-1']},
+  start1: {'--_edge-inset-start': spacingVars['--spacing-1']},
   /** Start edge inset: spacing-1.5 (6px) */
-  start1_5: {'--edge-inset-start': spacingVars['--spacing-1-5']},
+  start1_5: {'--_edge-inset-start': spacingVars['--spacing-1-5']},
   /** Start edge inset: spacing-2 (8px) */
-  start2: {'--edge-inset-start': spacingVars['--spacing-2']},
+  start2: {'--_edge-inset-start': spacingVars['--spacing-2']},
   /** Start edge inset: spacing-3 (12px) */
-  start3: {'--edge-inset-start': spacingVars['--spacing-3']},
+  start3: {'--_edge-inset-start': spacingVars['--spacing-3']},
   /** Start edge inset: spacing-4 (16px) */
-  start4: {'--edge-inset-start': spacingVars['--spacing-4']},
+  start4: {'--_edge-inset-start': spacingVars['--spacing-4']},
   /** Start edge inset: spacing-5 (20px) */
-  start5: {'--edge-inset-start': spacingVars['--spacing-5']},
+  start5: {'--_edge-inset-start': spacingVars['--spacing-5']},
   /** End edge inset: spacing-1 (4px) */
-  end1: {'--edge-inset-end': spacingVars['--spacing-1']},
+  end1: {'--_edge-inset-end': spacingVars['--spacing-1']},
   /** End edge inset: spacing-1.5 (6px) */
-  end1_5: {'--edge-inset-end': spacingVars['--spacing-1-5']},
+  end1_5: {'--_edge-inset-end': spacingVars['--spacing-1-5']},
   /** End edge inset: spacing-2 (8px) */
-  end2: {'--edge-inset-end': spacingVars['--spacing-2']},
+  end2: {'--_edge-inset-end': spacingVars['--spacing-2']},
   /** End edge inset: spacing-3 (12px) */
-  end3: {'--edge-inset-end': spacingVars['--spacing-3']},
+  end3: {'--_edge-inset-end': spacingVars['--spacing-3']},
   /** End edge inset: spacing-4 (16px) */
-  end4: {'--edge-inset-end': spacingVars['--spacing-4']},
+  end4: {'--_edge-inset-end': spacingVars['--spacing-4']},
   /** End edge inset: spacing-5 (20px) */
-  end5: {'--edge-inset-end': spacingVars['--spacing-5']},
+  end5: {'--_edge-inset-end': spacingVars['--spacing-5']},
 });
 
 // =============================================================================
@@ -110,33 +110,11 @@ export const edgeCompensation = stylex.create({
   item: {
     marginInlineStart: {
       default: null,
-      ':first-child': 'calc(-1 * var(--edge-inset-start, 0px))',
+      ':first-child': 'calc(-1 * var(--_edge-inset-start, 0px))',
     },
     marginInlineEnd: {
       default: null,
-      ':last-child': 'calc(-1 * var(--edge-inset-end, 0px))',
+      ':last-child': 'calc(-1 * var(--_edge-inset-end, 0px))',
     },
-  },
-});
-
-// =============================================================================
-// Legacy API (deprecated — migrate to edgeInset + edgeCompensation.item)
-// =============================================================================
-
-/**
- * @deprecated Use `edgeInset` instead. These set --edge-start/--edge-end
- * multiplier signals which are no longer used by the new compensation model.
- * Kept temporarily for backwards compatibility during migration.
- */
-export const edgeSignals = stylex.create({
-  start: {
-    '--edge-start': '1',
-  },
-  end: {
-    '--edge-end': '1',
-  },
-  both: {
-    '--edge-start': '1',
-    '--edge-end': '1',
   },
 });

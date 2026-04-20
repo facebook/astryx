@@ -489,7 +489,7 @@ export function XDSButton({
 
   // Ghost buttons opt into edge compensation — they pull back at container
   // edges via negative margin when placed as first/last child in a slot
-  // that sets --edge-inset-start/--edge-inset-end.
+  // that sets --_edge-inset-start/--_edge-inset-end.
   const isFlat = variant === 'ghost';
   const edgeCompStyle = isFlat ? edgeCompensation.item : null;
 
