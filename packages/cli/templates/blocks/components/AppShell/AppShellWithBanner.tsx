@@ -99,7 +99,7 @@ export default function AppShellWithBanner() {
       banner={
         <XDSBanner
           status="info"
-          variant="section"
+          container="section"
           title="System maintenance scheduled"
           description="The system will undergo maintenance tonight at 10pm UTC."
           isDismissable
