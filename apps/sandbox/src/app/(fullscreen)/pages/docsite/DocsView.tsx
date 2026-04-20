@@ -11,6 +11,7 @@ import {XDSStack} from '@xds/core/Layout';
 import {XDSCard} from '@xds/core/Card';
 import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
 import {XDSList, XDSListItem} from '@xds/core/List';
+import {XDSNavMenuItem} from '@xds/core/NavMenu';
 import {XDSTable} from '@xds/core/Table';
 import {XDSCommandPalette} from '@xds/core/CommandPalette';
 import {
@@ -75,10 +76,10 @@ export function DocsView({
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   const headingMenu = (
-    <XDSList density="spacious" style={{minWidth: 240}}>
-      <XDSListItem label="Craft" onClick={() => setActiveView('craft')} />
-      <XDSListItem label="Library" onClick={() => setActiveView('docs')} />
-    </XDSList>
+    <>
+      <XDSNavMenuItem label="Craft" onClick={() => setActiveView('craft')} />
+      <XDSNavMenuItem label="Library" onClick={() => setActiveView('docs')} />
+    </>
   );
 
   return (

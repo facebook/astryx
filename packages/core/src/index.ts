@@ -39,6 +39,7 @@ export * from './List';
 export * from './MetadataList';
 export * from './NavIcon';
 export * from './NavItem';
+export * from './NavMenu';
 export * from './Slider';
 export * from './Stack';
 export * from './Switch';

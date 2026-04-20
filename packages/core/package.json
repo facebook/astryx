@@ -286,6 +286,12 @@
       "import": "./dist/NavItem/index.mjs",
       "require": "./dist/NavItem/index.js"
     },
+    "./NavMenu": {
+      "source": "./src/NavMenu/index.ts",
+      "types": "./dist/NavMenu/index.d.ts",
+      "import": "./dist/NavMenu/index.mjs",
+      "require": "./dist/NavMenu/index.js"
+    },
     "./NumberInput": {
       "source": "./src/NumberInput/index.ts",
       "types": "./dist/NumberInput/index.d.ts",
