@@ -12,6 +12,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const {gradeTemplate} = require('./grade-template');
 
 const ROOT = path.resolve(__dirname, '..');
 const TEMPLATES_DIR = path.join(ROOT, 'packages', 'cli', 'templates');
@@ -47,14 +48,20 @@ async function discoverPages() {
     const docModule = await import(`file://${docPath}`);
     const doc = docModule.doc;
 
+    const sourceDir = path.join(PAGES_DIR, dir.name);
+    const gradeResult = gradeTemplate(
+      path.join(sourceDir, 'page.tsx'), doc, 'page',
+    );
     templates.push({
       type: 'page',
       dirName: dir.name,
       name: doc.name,
       description: doc.description,
       isReady: doc.isReady ?? false,
-      sourceDir: path.join(PAGES_DIR, dir.name),
+      sourceDir,
       sourceFile: 'page.tsx',
+      grade: gradeResult.grade,
+      gradeScore: gradeResult.gradeScore,
     });
   }
 
@@ -91,6 +98,8 @@ async function discoverBlocks() {
     const doc = docModule.doc;
 
     const componentFolder = path.basename(path.dirname(docPath));
+    const blockSourceDir = path.dirname(tsxPath);
+    const gradeResult = gradeTemplate(tsxPath, doc, 'block');
     blocks.push({
       type: 'block',
       dirName: basename,
@@ -100,9 +109,11 @@ async function discoverBlocks() {
       component: componentFolder,
       aspectRatio: doc.aspectRatio ?? 4 / 3,
       scale: doc.scale ?? 1,
-      sourceDir: path.dirname(tsxPath),
+      sourceDir: blockSourceDir,
       sourceFile: basename + '.tsx',
-      relPath: path.relative(BLOCKS_DIR, path.dirname(tsxPath)),
+      relPath: path.relative(BLOCKS_DIR, blockSourceDir),
+      grade: gradeResult.grade,
+      gradeScore: gradeResult.gradeScore,
     });
   }
 
@@ -234,11 +245,11 @@ async function main() {
   if (fs.existsSync(ROUTES_DIR)) fs.rmSync(ROUTES_DIR, {recursive: true});
 
   const registryPath = path.join(GENERATED_DIR, 'templateRegistry.ts');
-  fs.writeFileSync(registryPath, generateRegistry(pages, 'templates', 'TemplateEntry'));
+  fs.writeFileSync(registryPath, generateRegistry(pages, 'templates', 'TemplateEntry', ['grade', 'gradeScore']));
   console.log(`  wrote ${path.relative(ROOT, registryPath)}`);
 
   const blockRegistryPath = path.join(GENERATED_DIR, 'blockRegistry.ts');
-  fs.writeFileSync(blockRegistryPath, generateRegistry(blocks, 'blocks', 'BlockEntry', ['component', 'aspectRatio', 'scale']));
+  fs.writeFileSync(blockRegistryPath, generateRegistry(blocks, 'blocks', 'BlockEntry', ['component', 'aspectRatio', 'scale', 'grade', 'gradeScore']));
   console.log(`  wrote ${path.relative(ROOT, blockRegistryPath)}`);
 
   const sourceRegistryPath = path.join(GENERATED_DIR, 'sourceRegistry.ts');

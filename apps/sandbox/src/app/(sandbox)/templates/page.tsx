@@ -33,6 +33,8 @@ type TemplateRow = {
   codePath: string;
   docPath: string;
   isReady: boolean;
+  grade: string;
+  gradeScore: number;
 };
 
 const rows: TemplateRow[] = [
@@ -46,6 +48,8 @@ const rows: TemplateRow[] = [
     codePath: `packages/cli/templates/pages/${t.slug}/page.tsx`,
     docPath: `packages/cli/templates/pages/${t.slug}/template.doc.mjs`,
     isReady: t.isReady,
+    grade: t.grade,
+    gradeScore: t.gradeScore,
   })),
   ...blocks.map(b => ({
     id: `block-${b.slug}`,
@@ -57,6 +61,8 @@ const rows: TemplateRow[] = [
     codePath: `packages/cli/templates/blocks/components/${b.component}/${b.slug}.tsx`,
     docPath: `packages/cli/templates/blocks/components/${b.component}/${b.slug}.doc.mjs`,
     isReady: b.isReady,
+    grade: b.grade,
+    gradeScore: b.gradeScore,
   })),
 ];
 
@@ -157,6 +163,14 @@ function CopyPath({path}: {path: string}) {
 
 const uniqueComponents = [...new Set(blocks.map(b => b.component))].sort();
 
+const GRADE_VARIANT: Record<string, 'success' | 'info' | 'warning' | 'error' | 'neutral'> = {
+  A: 'success',
+  B: 'info',
+  C: 'warning',
+  D: 'error',
+  F: 'error',
+};
+
 const fieldDefs = [
   {key: 'name', type: 'string', label: 'Name'},
   {
@@ -177,6 +191,18 @@ const fieldDefs = [
       ...uniqueComponents.map(c => ({value: c, label: c})),
     ],
   },
+  {
+    key: 'grade',
+    type: 'enum',
+    label: 'Grade',
+    enumValues: [
+      {value: 'A', label: 'A'},
+      {value: 'B', label: 'B'},
+      {value: 'C', label: 'C'},
+      {value: 'D', label: 'D'},
+      {value: 'F', label: 'F'},
+    ],
+  },
 ] as const;
 
 const columns: XDSTableColumn<TemplateRow>[] = [
@@ -190,6 +216,19 @@ const columns: XDSTableColumn<TemplateRow>[] = [
       <XDSBadge
         label={row.type}
         variant={row.type === 'Page' ? 'info' : 'neutral'}
+      />
+    ),
+  },
+  {
+    key: 'grade',
+    header: 'Grade',
+    sortable: {sortKey: 'gradeScore'},
+    filter: 'grade',
+    width: pixel(100),
+    renderCell: (row: TemplateRow) => (
+      <XDSBadge
+        label={`${row.grade} (${row.gradeScore})`}
+        variant={GRADE_VARIANT[row.grade] ?? 'neutral'}
       />
     ),
   },
