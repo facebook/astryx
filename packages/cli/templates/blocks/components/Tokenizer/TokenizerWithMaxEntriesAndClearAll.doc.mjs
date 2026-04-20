@@ -5,5 +5,5 @@ export const doc = {
   description: 'With max entries and clear all',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Tokenizer'],
+  componentsUsed: ['Tokenizer', 'Typeahead'],
 };

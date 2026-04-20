@@ -5,5 +5,5 @@ export const doc = {
   description: 'Basic multi-select',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Tokenizer'],
+  componentsUsed: ['Tokenizer', 'Typeahead'],
 };

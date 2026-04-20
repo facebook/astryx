@@ -5,5 +5,5 @@ export const doc = {
   description: 'Children mode',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Table', 'TableRow', 'TableCell', 'HStack', 'Avatar', 'Text', 'Badge'],
+  componentsUsed: ['Avatar', 'Badge', 'Layout', 'Table', 'Text'],
 };

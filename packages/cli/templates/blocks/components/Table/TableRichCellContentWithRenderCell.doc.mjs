@@ -5,5 +5,5 @@ export const doc = {
   description: 'Rich cell content with renderCell',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Table', 'VStack', 'Text', 'Badge'],
+  componentsUsed: ['Badge', 'Layout', 'Table', 'Text'],
 };

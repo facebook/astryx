@@ -5,5 +5,5 @@ export const doc = {
   description: 'Rich label with composition',
   isReady: true,
   aspectRatio: 1,
-  componentsUsed: ['Spinner', 'VStack', 'Text'],
+  componentsUsed: ['Layout', 'Spinner', 'Text'],
 };

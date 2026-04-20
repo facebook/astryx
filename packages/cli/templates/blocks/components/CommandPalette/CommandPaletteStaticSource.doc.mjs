@@ -5,5 +5,5 @@ export const doc = {
   description: 'Command palette with a static list of searchable items.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['CommandPalette', 'Button'],
+  componentsUsed: ['Button', 'CommandPalette', 'Typeahead'],
 };

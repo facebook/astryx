@@ -5,5 +5,5 @@ export const doc = {
   description: 'Single-select group',
   isReady: true,
   aspectRatio: 1,
-  componentsUsed: ['ToggleButtonGroup', 'ToggleButton'],
+  componentsUsed: ['ToggleButton'],
 };

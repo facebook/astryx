@@ -5,5 +5,5 @@ export const doc = {
   description: 'Basic data-driven table',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Table', 'HStack', 'Avatar', 'VStack', 'Text', 'StatusDot', 'Badge'],
+  componentsUsed: ['Avatar', 'Badge', 'Layout', 'StatusDot', 'Table', 'Text'],
 };
