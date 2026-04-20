@@ -45,7 +45,7 @@ const PRODUCTS: Product[] = [
     price: 75.0,
     // illustrative-horizontal-1 from xds_oss asset set
     image:
-      'https://scontent.xx.fbcdn.net/v/t39.6806-6/670836735_2461791954280697_1048571955964692895_n.jpg?_nc_cat=105&ccb=1-7&_nc_sid=56bbc2&_nc_ohc=PqyUZYYCE1EQ7kNvwGpA_Kp&_nc_oc=AdrRhXpBSrOK-N3AHrYhuworVLdzC0CRe6ENUkQ6D4nl-fMZCLAVHlF26nE3VFAzARKQDGMq6jtimRG3tEreHa4L&_nc_zt=14&_nc_ht=scontent.xx&_nc_gid=-hlieSl5nR5t3maOUHKfbw&_nc_ss=7a30f&oh=00_Af0TcvGjUF4TZmhhvH499P3Mat7X8W7-F5uwD_73tyXM_w&oe=69EC78EB',
+      'https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-1.jpg',
   },
   {
     id: 2,
@@ -55,7 +55,7 @@ const PRODUCTS: Product[] = [
     price: 80.0,
     // illustrative-vertical-1 from xds_oss asset set
     image:
-      'https://scontent.xx.fbcdn.net/v/t39.6806-6/672442902_1640784437230723_4677249872577324579_n.jpg?_nc_cat=111&ccb=1-7&_nc_sid=56bbc2&_nc_ohc=rV_x--08XysQ7kNvwGO8c6c&_nc_oc=AdpvN7NspvLSqM1MSnOtOzUGJJCoiM4EFbyskzrYjxBQu-fUy96kObhUGyh8pIF1KjmxRxTCTIPKMbJZRjhLoE8D&_nc_zt=14&_nc_ht=scontent.xx&_nc_gid=Bj2Ig1JgYHXUPynXXi_flA&_nc_ss=7a30f&oh=00_Af2gh9BZAC7VM0GHirHVjyO21PqV8yOaupQOodwJiL2C6A&oe=69EC7442',
+      'https://lookaside.facebook.com/assets/xds_oss/illustrative-vertical-1.jpg',
   },
   {
     id: 3,
@@ -65,7 +65,7 @@ const PRODUCTS: Product[] = [
     price: 75.0,
     // illustrative-horizontal-3 from xds_oss asset set
     image:
-      'https://scontent.xx.fbcdn.net/v/t39.6806-6/672674636_1739232910577387_6597229795491381664_n.jpg?_nc_cat=102&ccb=1-7&_nc_sid=56bbc2&_nc_ohc=c0Wke920NswQ7kNvwGhLkgq&_nc_oc=AdrsJKgPZutQFvTwNjAeGGrz7p-hZ1gaeoYHLpRrLftyt4d-NoUuAyGgy9bYi3n2qEeKNrDGemlvWQrYck5tS5B4&_nc_zt=14&_nc_ht=scontent.xx&_nc_gid=SJuvp50R21gmMEnU0djIpg&_nc_ss=7a30f&oh=00_Af1d0CtT64b3fbzLZK93XX_4qgmaj4LJXnZncMkh_WHzbQ&oe=69EC6AD2',
+      'https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-3.jpg',
   },
   {
     id: 4,
@@ -75,7 +75,7 @@ const PRODUCTS: Product[] = [
     price: 75.0,
     // illustrative-horizontal-4 from xds_oss asset set
     image:
-      'https://scontent.xx.fbcdn.net/v/t39.6806-6/673819168_896838673380430_7926069171483718115_n.jpg?_nc_cat=102&ccb=1-7&_nc_sid=56bbc2&_nc_ohc=vq6xwTjrdE0Q7kNvwGvUa2U&_nc_oc=Adra06VCrdWxdsu2FVv8-LPN9W7Q_9R1g-w0XDYgDB2enGkCzrSRMI_uao0DtECFtBZzM6MqirZmjhZDVM6WKDLT&_nc_zt=14&_nc_ht=scontent.xx&_nc_gid=11WopT4AoM8tkAn8ZJeoeg&_nc_ss=7a30f&oh=00_Af0FPd3dUOYq5xvvtVNHE2rnD9-vO3DyG4AoZtBkpUpfAA&oe=69EC7737',
+      'https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-4.jpg',
   },
   {
     id: 5,
@@ -85,7 +85,7 @@ const PRODUCTS: Product[] = [
     price: 60.0,
     // illustrative-horizontal-5 from xds_oss asset set
     image:
-      'https://scontent.xx.fbcdn.net/v/t39.6806-6/671996506_1459966745508173_9056303866152525429_n.jpg?_nc_cat=103&ccb=1-7&_nc_sid=56bbc2&_nc_ohc=e19jRih997cQ7kNvwHsMzeC&_nc_oc=AdqUH-cyW2pD203Ak2_imFh9QIu6Rxfj6lrB0c9BwQuBJvauc0ZorfWguhTJqtTG6kn2yZeVE-iMdWzwQFV2u1U6&_nc_zt=14&_nc_ht=scontent.xx&_nc_gid=mzlSe2YEBlaB7g9PZTHF8A&_nc_ss=7a30f&oh=00_Af3Yb4eBzjMHgEq2pibEfISB9R2WuM-BZ7Es1VKZ3X8m9w&oe=69EC9980',
+      'https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-5.jpg',
   },
   {
     id: 6,
@@ -95,7 +95,7 @@ const PRODUCTS: Product[] = [
     price: 80.0,
     // illustrative-horizontal-2 from xds_oss asset set
     image:
-      'https://scontent.xx.fbcdn.net/v/t39.6806-6/672815225_1876405093020036_2561561570479095601_n.jpg?_nc_cat=103&ccb=1-7&_nc_sid=56bbc2&_nc_ohc=WZOQWQWrQNUQ7kNvwHxEhmr&_nc_oc=AdpERGoZm1dwPqICPi3Yd30ZnGyj2Djvizg8dsPm_HZxUVQ1FCYBeVuGHpT0It8o-uYDM_bQdwIOdNYi716Ga8Kn&_nc_zt=14&_nc_ht=scontent.xx&_nc_gid=nMcBB19eB5I78bZuXEfV-g&_nc_ss=7a30f&oh=00_Af3VevBaBOLy8S_b2iqdOhcqr-lpQtcFv3qdU8Z3rEAOcw&oe=69EC9B9E',
+      'https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-2.jpg',
   },
 ];
 
