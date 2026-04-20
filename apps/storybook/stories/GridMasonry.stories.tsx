@@ -22,9 +22,6 @@ type Story = StoryObj;
 // ─── Styles ────────────────────────────────────────────────────────────────
 
 const styles = stylex.create({
-  masonryGrid: {
-    gridTemplateRows: 'repeat(6, 80px)',
-  },
   card: {
     position: 'relative',
     width: '100%',
@@ -167,34 +164,28 @@ export const MasonryGallery: Story = {
           </XDSText>
         </XDSVStack>
 
-        <XDSGrid columns={3} gap={3} xstyle={styles.masonryGrid}>
-          {/* Tall item — spans 4 rows */}
+        <XDSGrid columns={3} rowHeight={80} gap={3}>
+          {/* Column 1: 4 + 2 = 6 rows */}
           <XDSGridSpan rows={4}>
             <GalleryCard image={IMAGES[0]} />
           </XDSGridSpan>
-
-          {/* Short item — spans 2 rows */}
           <XDSGridSpan rows={2}>
             <GalleryCard image={IMAGES[1]} />
           </XDSGridSpan>
 
-          {/* Medium item — spans 3 rows */}
-          <XDSGridSpan rows={3}>
+          {/* Column 2: 2 + 4 = 6 rows */}
+          <XDSGridSpan rows={2}>
             <GalleryCard image={IMAGES[2]} />
           </XDSGridSpan>
-
-          {/* Medium item — spans 3 rows (fills below IMAGES[1]) */}
-          <XDSGridSpan rows={3}>
+          <XDSGridSpan rows={4}>
             <GalleryCard image={IMAGES[3]} />
           </XDSGridSpan>
 
-          {/* Short item — spans 2 rows */}
-          <XDSGridSpan rows={2}>
+          {/* Column 3: 3 + 3 = 6 rows */}
+          <XDSGridSpan rows={3}>
             <GalleryCard image={IMAGES[4]} />
           </XDSGridSpan>
-
-          {/* Repeat for visual density */}
-          <XDSGridSpan rows={2}>
+          <XDSGridSpan rows={3}>
             <GalleryCard image={IMAGES[0]} />
           </XDSGridSpan>
         </XDSGrid>
@@ -210,25 +201,18 @@ export const MasonryGallery: Story = {
  */
 export const DenseMasonry: Story = {
   render: () => {
-    const denseStyles = stylex.create({
-      autoRows: {
-        gridAutoRows: '60px',
-      },
-    });
-
     return (
       <XDSSection variant="wash" padding={6}>
         <XDSVStack gap={5}>
           <XDSVStack gap={2}>
             <XDSHeading level={2}>Dense Masonry</XDSHeading>
             <XDSText type="body">
-              Uses <code>gridAutoRows</code> for unlimited content with a
-              4-column layout. Each item gets a different row span for natural
-              visual rhythm.
+              A 4-column layout with <code>rowHeight={60}</code>. Each item gets
+              a different row span for natural visual rhythm.
             </XDSText>
           </XDSVStack>
 
-          <XDSGrid columns={4} gap={3} xstyle={denseStyles.autoRows}>
+          <XDSGrid columns={4} rowHeight={60} gap={3}>
             <XDSGridSpan rows={4}>
               <GalleryCard image={IMAGES[2]} showOverlay />
             </XDSGridSpan>
@@ -279,12 +263,6 @@ export const DenseMasonry: Story = {
  */
 export const FeaturedMasonry: Story = {
   render: () => {
-    const featuredStyles = stylex.create({
-      autoRows: {
-        gridAutoRows: '70px',
-      },
-    });
-
     return (
       <XDSSection variant="wash" padding={6}>
         <XDSVStack gap={5}>
@@ -292,11 +270,11 @@ export const FeaturedMasonry: Story = {
             <XDSHeading level={2}>Featured Masonry</XDSHeading>
             <XDSText type="body">
               Combines column spans and row spans for a featured hero layout.
-              The primary image spans 2 columns × 4 rows.
+              The primary image spans 2 columns × 5 rows.
             </XDSText>
           </XDSVStack>
 
-          <XDSGrid columns={3} gap={3} xstyle={featuredStyles.autoRows}>
+          <XDSGrid columns={3} rowHeight={70} gap={3}>
             {/* Hero — 2 cols × 5 rows */}
             <XDSGridSpan columns={2} rows={5}>
               <GalleryCard image={IMAGES[2]} showOverlay />
