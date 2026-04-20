@@ -3,5 +3,5 @@
 import {XDSKbd} from '@xds/core/Kbd';
 
 export default function KbdShowcase() {
-  return <XDSKbd>⌘K</XDSKbd>;
+  return <XDSKbd keys="mod+k" />;
 }

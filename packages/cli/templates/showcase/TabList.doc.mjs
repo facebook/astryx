@@ -1,2 +1,2 @@
 /** @type {import('@xds/core').ComponentShowcaseDoc} */
-export const doc = {name: 'TabList', aspectRatio: 16 / 4};
+export const doc = {name: 'TabList', aspectRatio: 1};

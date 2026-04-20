@@ -3,5 +3,5 @@
 import {XDSBadge} from '@xds/core/Badge';
 
 export default function BadgeShowcase() {
-  return <XDSBadge label="New" />;
+  return <XDSBadge label="Badge" />;
 }

@@ -1,12 +1,13 @@
 'use client';
 
-import {XDSCheckboxList} from '@xds/core/CheckboxList';
+import {XDSCheckboxList, XDSCheckboxListItem} from '@xds/core/CheckboxList';
 
 export default function CheckboxListShowcase() {
   return (
-    <XDSCheckboxList
-      label="Options"
-      items={[{label: 'Option A', value: 'a'}]}
-    />
+    <XDSCheckboxList label="Notification preferences" value={[]} onChange={() => {}}>
+      <XDSCheckboxListItem label="Email" value="email" />
+      <XDSCheckboxListItem label="SMS" value="sms" />
+      <XDSCheckboxListItem label="Push notification" value="push" />
+    </XDSCheckboxList>
   );
 }

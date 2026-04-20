@@ -3,5 +3,9 @@
 import {XDSLink} from '@xds/core/Link';
 
 export default function LinkShowcase() {
-  return <XDSLink href="#">Link text</XDSLink>;
+  return (
+    <XDSLink label="Documentation" href="/docs" isStandalone>
+      Documentation
+    </XDSLink>
+  );
 }

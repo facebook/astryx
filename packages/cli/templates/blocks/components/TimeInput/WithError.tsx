@@ -1,0 +1,19 @@
+'use client';
+
+import {useState} from 'react';
+import {XDSTimeInput} from '@xds/core/TimeInput';
+
+export default function WithError() {
+  const [value, setValue] = useState('22:00');
+  return (
+    <XDSTimeInput
+      label="Event time"
+      value={value}
+      onChange={setValue}
+      status={{
+        type: 'error',
+        message: 'Time must be during business hours',
+      }}
+    />
+  );
+}
