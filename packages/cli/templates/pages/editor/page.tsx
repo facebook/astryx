@@ -286,8 +286,11 @@ const editorStyles = stylex.create({
     paddingInline: 4,
   },
   panelContentPadding: {
-    paddingInline: 16,
+    paddingInline: 8,
     paddingBlockEnd: 16,
+  },
+  collapseButtonEdgeComp: {
+    marginInlineEnd: -8,
   },
   previewArea: {
     flex: 1,
@@ -828,6 +831,7 @@ export default function EditorPage() {
                     size="sm"
                     onClick={() => setIsPanelCollapsed(v => !v)}
                     isIconOnly
+                    xstyle={editorStyles.collapseButtonEdgeComp}
                   />
                 </XDSHStack>
 
