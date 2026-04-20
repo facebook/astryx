@@ -39,7 +39,7 @@ export interface XDSSankeyChartProps {
   columns?: SankeyColumn[];
   /** Chart height in px (default: 320) */
   height?: number;
-  /** Node bar width in px (default: 3) */
+  /** Node bar width in px (default: 20) */
   nodeWidth?: number;
   /** Vertical gap between sibling nodes (default: 14) */
   nodeGap?: number;
@@ -118,7 +118,7 @@ export function XDSSankeyChart({
   links,
   columns,
   height = 320,
-  nodeWidth = 3,
+  nodeWidth = 20,
   nodeGap = 14,
   minColumnWidth = 160,
   children,

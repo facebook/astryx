@@ -103,7 +103,7 @@ export function computeLayout(
   const {
     width,
     height,
-    nodeWidth = 3,
+    nodeWidth = 20,
     nodeGap = 14,
     labelMargin = 28,
   } = options;

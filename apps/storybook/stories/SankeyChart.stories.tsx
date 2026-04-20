@@ -366,7 +366,6 @@ export const WideBarStyle: Story = {
         links={demoLinks}
         columns={demoColumns}
         height={380}
-        nodeWidth={20}
         nodeGap={8}>
         <XDSSankeyGrid />
         <XDSSankeyLink opacity={0.5} tension={0.5} />

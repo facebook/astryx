@@ -1,15 +1,14 @@
 /**
  * @file XDSSankeyLabel.tsx
- * @output Renders node labels — adapts placement based on node size
- * @position Visual layer — adjusts layout for readability at every scale
+ * @output Renders node labels — rotated on bar or beside it based on fit
+ * @position Visual layer — adapts placement for readability at every scale
  *
- * Three rendering strategies based on available space:
+ * Two strategies based on available space:
  * - Tall nodes: rotated -90° text directly on the bar (no background)
  * - Short nodes: horizontal label beside the bar with surface pill
- * - Thin bars (< 16px): horizontal labels above the bar
  *
- * Text color uses --color-on-dark/--color-on-light from XDSMediaTheme
- * when rendering directly on colored bars.
+ * Last-column labels anchor to the left to avoid clipping at the chart edge.
+ * Text on bars uses --color-on-dark/--color-on-light from XDSMediaTheme.
  */
 
 import {useSankey} from './SankeyContext';
@@ -27,10 +26,6 @@ function defaultFormat(value: number): string {
   return value.toLocaleString();
 }
 
-/**
- * On-surface text color based on oklch lightness.
- * L < 0.6 → dark fill → white text. L >= 0.6 → light fill → dark text.
- */
 function onSurfaceColor(color: [number, number, number]): string {
   return color[0] < 0.6
     ? 'var(--color-on-dark, #fff)'
@@ -41,8 +36,8 @@ export function XDSSankeyLabel({
   showPercent = true,
   formatValue = defaultFormat,
 }: XDSSankeyLabelProps) {
-  const {nodes, maxValue, height, nodeWidth} = useSankey();
-  const isWide = nodeWidth >= 16;
+  const {nodes, columns, maxValue, height, nodeWidth} = useSankey();
+  const lastColumn = columns.length - 1;
 
   return (
     <g>
@@ -52,21 +47,6 @@ export function XDSSankeyLabel({
         const formatted = formatValue(node.value);
         const text = `${node.label} = ${formatted}`;
 
-        if (!isWide) {
-          return (
-            <ThinLabel
-              key={node.id}
-              node={node}
-              formatted={formatted}
-              pctStr={pctStr}
-              showPercent={showPercent}
-              height={height}
-            />
-          );
-        }
-
-        // Estimate if rotated text fits inside the node height
-        // ~6.5px per character at 10px font, rotated means text width = node height
         const textWidth = text.length * 6.5;
         const fitsRotated = node.height >= textWidth + 8;
 
@@ -84,7 +64,6 @@ export function XDSSankeyLabel({
           );
         }
 
-        // Small node: place label beside the bar with surface pill
         return (
           <BesideLabel
             key={node.id}
@@ -94,6 +73,7 @@ export function XDSSankeyLabel({
             pctStr={pctStr}
             showPercent={showPercent}
             height={height}
+            isLastColumn={node.column === lastColumn}
           />
         );
       })}
@@ -101,63 +81,7 @@ export function XDSSankeyLabel({
   );
 }
 
-/** Thin bars: horizontal labels above */
-function ThinLabel({
-  node,
-  formatted,
-  pctStr,
-  showPercent,
-  height,
-}: {
-  node: import('./types').SankeyNodeLayout;
-  formatted: string;
-  pctStr: string;
-  showPercent: boolean;
-  height: number;
-}) {
-  const labelY = Math.max(24, node.y - 5);
-  const valueY = Math.max(12, labelY - 12);
-  const pctY = Math.min(height - 2, node.y + node.height + 12);
-
-  return (
-    <g>
-      <text
-        x={node.x}
-        y={valueY}
-        style={{
-          font: '600 13px/1 system-ui',
-          fill: 'var(--color-text-primary, #1c1c1e)',
-          letterSpacing: '-0.01em',
-        }}>
-        {formatted}
-      </text>
-      <text
-        x={node.x}
-        y={labelY}
-        style={{
-          font: '500 9px/1 system-ui',
-          fill: 'var(--color-text-secondary, #6e6e80)',
-          textTransform: 'uppercase',
-          letterSpacing: '0.04em',
-        }}>
-        {node.label}
-      </text>
-      {showPercent && node.column > 0 && (
-        <text
-          x={node.x}
-          y={pctY}
-          style={{
-            font: '500 9px/1 system-ui',
-            fill: 'var(--color-text-tertiary, #8e8ea0)',
-          }}>
-          {pctStr}
-        </text>
-      )}
-    </g>
-  );
-}
-
-/** Tall wide bars: rotated text directly on the bar, no background */
+/** Tall bars: rotated text directly on the bar, no background */
 function RotatedLabel({
   node,
   nodeWidth,
@@ -208,7 +132,10 @@ function RotatedLabel({
   );
 }
 
-/** Short wide bars: label beside the node in the flow area with surface pill */
+/**
+ * Short bars: label beside the node with surface pill.
+ * Last column labels go to the left to avoid clipping.
+ */
 function BesideLabel({
   node,
   nodeWidth,
@@ -216,6 +143,7 @@ function BesideLabel({
   pctStr,
   showPercent,
   height,
+  isLastColumn,
 }: {
   node: import('./types').SankeyNodeLayout;
   nodeWidth: number;
@@ -223,20 +151,21 @@ function BesideLabel({
   pctStr: string;
   showPercent: boolean;
   height: number;
+  isLastColumn: boolean;
 }) {
   const cx = node.x + nodeWidth / 2;
   const cy = node.y + node.height / 2;
-
-  // Place to the right of the node bar
-  const labelX = node.x + nodeWidth + 6;
   const pillW = text.length * 6 + 10;
   const pillH = 16;
 
+  const labelX = isLastColumn ? node.x - 6 : node.x + nodeWidth + 6;
+  const pillX = isLastColumn ? labelX - pillW + 4 : labelX - 4;
+  const textAnchor = isLastColumn ? 'end' : 'start';
+
   return (
     <g>
-      {/* Surface pill for contrast in the flow area */}
       <rect
-        x={labelX - 4}
+        x={pillX}
         y={cy - pillH / 2}
         width={pillW}
         height={pillH}
@@ -247,6 +176,7 @@ function BesideLabel({
       <text
         x={labelX}
         y={cy}
+        textAnchor={textAnchor}
         dominantBaseline="central"
         style={{
           font: '600 10px/1 system-ui',
