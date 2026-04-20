@@ -111,13 +111,13 @@ const dynamicStyles = stylex.create({
 const defaultBlockPaddingForSize: Record<XDSElementSize, SpacingStep> = {
   sm: 2,
   md: 2,
-  lg: 3,
+  lg: 2,
 };
 
 const blockPaddingVarForSize: Record<XDSElementSize, string> = {
   sm: spacingVars['--spacing-2'] as string,
   md: spacingVars['--spacing-2'] as string,
-  lg: spacingVars['--spacing-3'] as string,
+  lg: spacingVars['--spacing-2'] as string,
 };
 
 /**
