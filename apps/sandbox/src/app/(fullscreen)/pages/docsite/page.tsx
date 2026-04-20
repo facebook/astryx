@@ -198,11 +198,21 @@ function DocsiteLandingTemplate() {
     const settings = searchParams.get('settings');
     const collection = searchParams.get('collection');
     const templateIdx = t !== null ? parseInt(t, 10) : null;
+
+    // Tab values like "theme", "components", "templates" are tabs within the
+    // craft view, not standalone pages. Map them so ?page=theme opens the craft
+    // view with the correct tab pre-selected.
+    const CRAFT_TABS = ['all', 'templates', 'theme', 'components'];
+    const isCraftTab = page !== null && CRAFT_TABS.includes(page);
+
     return {
       view: v,
       templateIdx: isNaN(templateIdx as number) ? null : templateIdx,
       query: q,
-      page: page as 'craft' | 'explore' | 'docs' | 'profile' | 'theme' | null,
+      page: isCraftTab
+        ? ('craft' as const)
+        : (page as 'craft' | 'explore' | 'docs' | 'profile' | null),
+      craftTab: isCraftTab ? page : null,
       tab:
         tab && ['Crafted', 'Used', 'Bookmarks'].includes(tab)
           ? (tab as 'Crafted' | 'Used' | 'Bookmarks')
@@ -293,7 +303,7 @@ function DocsiteLandingTemplate() {
   const [sortOption, setSortOption] = useState('trending');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('all');
+  const [activeTab, setActiveTab] = useState(initialView.craftTab ?? 'all');
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
   const [generatingSource, setGeneratingSource] = useState(
@@ -363,6 +373,8 @@ function DocsiteLandingTemplate() {
       params.set('template', String(useTarget));
     } else if (craftTitle) {
       params.set('q', craftTitle);
+    } else if (activeView === 'craft' && activeTab !== 'all') {
+      params.set('page', activeTab);
     } else if (activeView !== 'craft') {
       params.set('page', activeView);
       if (activeView === 'profile') {
@@ -391,6 +403,7 @@ function DocsiteLandingTemplate() {
     useTarget,
     craftTitle,
     activeView,
+    activeTab,
     profileTab,
     profileCraftName,
     profileUsedName,
