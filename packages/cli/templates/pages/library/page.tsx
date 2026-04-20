@@ -384,7 +384,9 @@ const styles = stylex.create({
     height: '100%',
     objectFit: 'cover',
   },
-
+  cardBody: {
+    padding: spacingVars['--spacing-4'],
+  },
   hideOnSmall: {
     display: {
       default: 'none',
@@ -433,11 +435,7 @@ function LibraryNav() {
         />
       </XDSSideNavSection>
       <XDSSideNavSection title="Browse">
-        <XDSSideNavItem
-          label="Components"
-          href="#"
-          icon={Squares2X2Icon}
-        />
+        <XDSSideNavItem label="Components" href="#" icon={Squares2X2Icon} />
         <XDSSideNavItem
           label="Templates"
           href="#"
@@ -458,7 +456,7 @@ function LibraryCard({item}: {item: LibraryItem}) {
           alt={item.name}
         />
       </XDSAspectRatio>
-      <XDSVStack gap={1} padding={4}>
+      <XDSVStack gap={1} xstyle={styles.cardBody}>
         <XDSHeading level={3}>{item.name}</XDSHeading>
         <XDSText type="body" size="sm" color="secondary">
           {item.description}
