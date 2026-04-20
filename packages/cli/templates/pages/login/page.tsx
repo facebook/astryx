@@ -27,6 +27,18 @@ const styles = stylex.create({
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSignIn = () => {
+    setError('');
+    if (!email || !password) {
+      setError('Please enter both email and password.');
+      return;
+    }
+    setIsLoading(true);
+    setTimeout(() => setIsLoading(false), 2000);
+  };
 
   return (
     <XDSCenter axis="both" xstyle={styles.page}>
@@ -51,6 +63,12 @@ export default function LoginPage() {
               </XDSVStack>
             </XDSVStack>
 
+            {error && (
+              <XDSText type="body" color="error" size="sm">
+                {error}
+              </XDSText>
+            )}
+
             <XDSTextInput
               label="Email"
               value={email}
@@ -70,9 +88,11 @@ export default function LoginPage() {
             />
 
             <XDSButton
-              label="Sign in"
+              label={isLoading ? 'Signing in…' : 'Sign in'}
               variant="primary"
               size="lg"
+              isDisabled={isLoading}
+              onClick={handleSignIn}
               xstyle={styles.fullWidth}
             />
           </XDSVStack>
