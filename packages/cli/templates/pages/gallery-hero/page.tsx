@@ -102,7 +102,10 @@ export default function GalleryHero() {
             <XDSButton label="Learn more" variant="ghost" />
           </XDSHStack>
         </XDSVStack>
-        <XDSGrid columns={3} gap={4} xstyle={styles.galleryPadding}>
+        <XDSGrid
+          columns={{minWidth: 200}}
+          gap={4}
+          xstyle={styles.galleryPadding}>
           {IMAGES.map((image, i) => (
             <XDSAspectRatio
               key={i}
