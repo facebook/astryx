@@ -72,6 +72,7 @@ export default function LoginSSO() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loginFailed, setLoginFailed] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const provider = getProvider(email);
   const emailValid = isValidEmail(email);
@@ -85,7 +86,24 @@ export default function LoginSSO() {
     }
   };
 
-  const handleBack = () => setStep('email');
+  const handleBack = () => {
+    setStep('email');
+    setLoginFailed(false);
+    setIsLoading(false);
+  };
+
+  const handleSignIn = () => {
+    if (!password) {
+      setLoginFailed(true);
+      return;
+    }
+    setIsLoading(true);
+    setLoginFailed(false);
+    setTimeout(() => {
+      setIsLoading(false);
+      setLoginFailed(true);
+    }, 2000);
+  };
 
   return (
     <XDSCenter axis="both" xstyle={styles.page}>
@@ -195,7 +213,9 @@ export default function LoginSSO() {
                         label={`Continue with ${provider.name}`}
                         variant="primary"
                         size="lg"
+                        isLoading={isLoading}
                         xstyle={styles.fullWidth}
+                        onClick={() => setIsLoading(true)}
                       />
                       <XDSButton
                         label="Use a different email"
@@ -256,8 +276,9 @@ export default function LoginSSO() {
                         label="Sign in"
                         variant="primary"
                         size="lg"
+                        isLoading={isLoading}
                         xstyle={styles.fullWidth}
-                        onClick={() => setLoginFailed(true)}
+                        onClick={handleSignIn}
                       />
                       <XDSButton
                         label="Use a different email"
