@@ -2,16 +2,17 @@
 
 import {useState, useCallback} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {colorVars} from '@xds/core/theme/tokens.stylex';
+import {colorVars, shadowVars} from '@xds/core/theme/tokens.stylex';
 import {XDSButton} from '@xds/core/Button';
 import {XDSCard} from '@xds/core/Card';
 import {XDSCenter} from '@xds/core/Center';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSEmptyState} from '@xds/core/EmptyState';
-import {XDSGrid} from '@xds/core/Grid';
 import {XDSHStack, XDSVStack} from '@xds/core/Layout';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSList, XDSListItem} from '@xds/core/List';
+import {XDSTable} from '@xds/core/Table';
+import type {XDSTableColumn} from '@xds/core/Table';
 import {XDSSection} from '@xds/core/Section';
 import {
   XDSSegmentedControl,
@@ -39,9 +40,16 @@ import {
   DevicePhoneMobileIcon,
   EyeIcon,
   PlusCircleIcon,
-  ChevronDoubleLeftIcon,
-  ChevronDoubleRightIcon,
+  ArrowLeftEndOnRectangleIcon,
+  ShoppingBagIcon,
+  ShoppingCartIcon,
+  BanknotesIcon,
+  ChatBubbleLeftIcon,
+  PlayCircleIcon,
+  EllipsisHorizontalIcon,
+  LockClosedIcon,
 } from '@heroicons/react/24/outline';
+import {XDSSpinner} from '@xds/core/Spinner';
 
 type BlockType =
   | 'hero'
@@ -73,6 +81,74 @@ const BLOCK_META: Record<BlockType, {label: string; icon: IconComponent}> = {
   cta: {label: 'CTA', icon: MegaphoneIcon},
 };
 
+type Transaction = {
+  id: string;
+  name: string;
+  category: string;
+  date: string;
+  amount: string;
+  isPositive?: boolean;
+};
+
+const CATEGORY_ICONS: Record<string, IconComponent> = {
+  'Food & Drink': ShoppingBagIcon,
+  Groceries: ShoppingCartIcon,
+  Income: BanknotesIcon,
+  Transport: ChatBubbleLeftIcon,
+  Entertainment: PlayCircleIcon,
+};
+
+const TRANSACTION_COLUMNS: XDSTableColumn<Transaction>[] = [
+  {
+    key: 'name',
+    header: 'Transaction',
+    renderCell: (item: Transaction) => (
+      <XDSHStack gap={3} vAlign="center">
+        <XDSIcon
+          icon={CATEGORY_ICONS[item.category] || SparklesIcon}
+        />
+        <XDSVStack gap={0}>
+          <XDSText type="label" weight="semibold">{item.name}</XDSText>
+          <XDSText type="supporting" color="secondary">{item.category}</XDSText>
+        </XDSVStack>
+      </XDSHStack>
+    ),
+  },
+  {
+    key: 'date',
+    header: 'Date',
+    renderCell: (item: Transaction) => (
+      <XDSText type="body" color="secondary">{item.date}</XDSText>
+    ),
+  },
+  {
+    key: 'amount',
+    header: 'Amount',
+    renderCell: (item: Transaction) => (
+      <XDSText
+        type="label"
+        weight="semibold"
+        color={undefined}
+        hasTabularNumbers>
+        {item.amount}
+      </XDSText>
+    ),
+  },
+  {
+    key: 'actions',
+    header: '',
+    renderCell: () => (
+      <XDSButton
+        label="More"
+        icon={<XDSIcon icon={EllipsisHorizontalIcon} size="sm" />}
+        variant="ghost"
+        size="sm"
+        isIconOnly
+      />
+    ),
+  },
+];
+
 const VIEWPORT_MAX: Record<ViewportSize, number> = {
   desktop: 960,
   tablet: 768,
@@ -86,57 +162,40 @@ function uid() {
 
 const DEFAULT_BLOCKS: Block[] = [
   {
-    id: '1',
-    type: 'hero',
-    label: 'Hero',
-    props: {
-      heading: 'Build something amazing',
-      subheading:
-        'A modern page builder powered by XDS components. Drag, drop, and customize blocks to create beautiful pages in minutes.',
-      buttonLabel: 'Get Started',
-      alignment: 'center',
-    },
-  },
-  {
     id: '2',
     type: 'features',
-    label: 'Features',
+    label: 'Recent Transactions',
     props: {
-      cards: [
-        {
-          title: 'Fast',
-          description: 'Optimised for performance with zero runtime overhead.',
-        },
-        {
-          title: 'Flexible',
-          description: 'Adapts to any design system with configurable tokens.',
-        },
-        {
-          title: 'Accessible',
-          description: 'Built-in ARIA support and keyboard navigation.',
-        },
+      heading: 'Recent Transactions',
+      description: 'Your latest account activity.',
+      items: [
+        {id: 't1', name: 'Blue Bottle Coffee', category: 'Food & Drink', date: 'Today, 10:24 AM', amount: '-$6.50'},
+        {id: 't2', name: 'Whole Foods Market', category: 'Groceries', date: 'Yesterday', amount: '-$142.30'},
+        {id: 't3', name: 'Stripe Payout', category: 'Income', date: 'Oct 12', amount: '+$4,200.00', isPositive: true},
+        {id: 't4', name: 'Uber Technologies', category: 'Transport', date: 'Oct 11', amount: '-$24.10'},
+        {id: 't5', name: 'Netflix Subscription', category: 'Entertainment', date: 'Oct 10', amount: '-$19.99'},
       ],
     },
   },
   {
     id: '3',
     type: 'text',
-    label: 'Text Block',
+    label: 'Syncing State',
     props: {
-      content:
-        'XDS is a flexible design system that helps teams build consistent, accessible, and performant user interfaces. Use these blocks as starting points and customise them to fit your needs.',
+      heading: 'Syncing your accounts',
+      description:
+        "We're pulling in your latest transactions.\nThis usually takes a few seconds.",
+      buttonLabel: 'Cancel',
     },
   },
   {
     id: '4',
     type: 'cta',
-    label: 'Call to Action',
+    label: 'Trust Notice',
     props: {
-      heading: 'Ready to get started?',
+      heading: 'Adding devices from people you trust',
       description:
-        'Jump in and start building your page today. No configuration required.',
-      primaryLabel: 'Start Building',
-      secondaryLabel: 'Learn More',
+        "When you approve a request, you grant someone full access to your account. They'll be able to change reservations and send messages on your behalf.",
     },
   },
 ];
@@ -171,11 +230,10 @@ function defaultProps(type: BlockType): Record<string, unknown> {
       };
     case 'features':
       return {
-        cards: [
-          {
-            title: 'Lightning Fast',
-            description: 'Sub-second load times out of the box.',
-          },
+        heading: 'Activity',
+        description: '',
+        items: [
+          {id: 't1', name: 'New Item', category: 'General', date: 'Today', amount: '$0.00'},
         ],
       };
     case 'cta':
@@ -215,12 +273,12 @@ const editorStyles = stylex.create({
     zIndex: 10,
     backgroundColor: colorVars['--color-background-card'],
     borderRadius: 12,
-    boxShadow:
-      '0 2px 8px rgba(0,0,0,0.08), 0 8px 24px rgba(0,0,0,0.06)',
+    boxShadow: shadowVars['--shadow-low'],
     overflow: 'hidden',
   },
   floatingPanelCollapsed: {
     bottom: 'auto',
+    paddingBlockEnd: 16,
   },
   panelScroll: {
     flex: 1,
@@ -231,15 +289,43 @@ const editorStyles = stylex.create({
     overflowY: 'auto',
     padding: 32,
     paddingLeft: 368,
-    justifyContent: 'center',
-    alignItems: 'flex-start',
   },
   canvas: (maxWidth: number) => ({
     maxWidth,
+    width: '100%',
+    marginInline: 'auto',
     transition: 'max-width 0.3s ease',
   }),
   clickable: {
     cursor: 'pointer',
+  },
+  selectedCard: {
+    outline: '2px solid',
+    outlineColor: colorVars['--color-border-blue'],
+    outlineOffset: -2,
+  },
+  flex1: {
+    flex: 1,
+  },
+  sectionHeadingInline: {
+    paddingInline: 0,
+  },
+  iconCircle: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 40,
+    height: 40,
+    borderRadius: '50%',
+    backgroundColor: colorVars['--color-background-muted'],
+    flexShrink: 0,
+  },
+  tabListWrapper: {
+    paddingInline: 4,
+  },
+  panelContentPadding: {
+    paddingInline: 16,
+    paddingBlockEnd: 16,
   },
 });
 
@@ -290,15 +376,6 @@ function PropertiesForm({
 
     case 'text':
       return (
-        <XDSTextArea
-          label="Content"
-          value={(props.content as string) ?? ''}
-          onChange={(v: string) => onUpdate('content', v)}
-        />
-      );
-
-    case 'cta':
-      return (
         <XDSVStack gap={4}>
           <XDSTextInput
             label="Heading"
@@ -311,14 +388,26 @@ function PropertiesForm({
             onChange={(v: string) => onUpdate('description', v)}
           />
           <XDSTextInput
-            label="Primary Button"
-            value={(props.primaryLabel as string) ?? ''}
-            onChange={(v: string) => onUpdate('primaryLabel', v)}
+            label="Button Label"
+            value={(props.buttonLabel as string) ?? ''}
+            onChange={(v: string) => onUpdate('buttonLabel', v)}
           />
+        </XDSVStack>
+      );
+
+    case 'features':
+    case 'cta':
+      return (
+        <XDSVStack gap={4}>
           <XDSTextInput
-            label="Secondary Button"
-            value={(props.secondaryLabel as string) ?? ''}
-            onChange={(v: string) => onUpdate('secondaryLabel', v)}
+            label="Heading"
+            value={(props.heading as string) ?? ''}
+            onChange={(v: string) => onUpdate('heading', v)}
+          />
+          <XDSTextArea
+            label="Description"
+            value={(props.description as string) ?? ''}
+            onChange={(v: string) => onUpdate('description', v)}
           />
         </XDSVStack>
       );
@@ -373,59 +462,58 @@ function BlockPreview({
   onSelect: () => void;
 }) {
   const {type, props} = block;
-  const variant = isSelected ? 'blue' : 'default';
+  const cardXstyle = [
+    editorStyles.clickable,
+    isSelected && editorStyles.selectedCard,
+  ];
 
   switch (type) {
     case 'hero':
       return (
         <XDSCard
-          variant={variant}
-          xstyle={editorStyles.clickable}
+          padding={6}
+          xstyle={cardXstyle}
           onClick={onSelect}>
-          <XDSGrid columns={2} gap={6}>
-            <XDSVStack gap={4}>
-              <XDSHeading level={2}>
-                {(props.heading as string) || 'Hero Heading'}
-              </XDSHeading>
-              <XDSText type="supporting" color="secondary">
-                {(props.subheading as string) || 'Subtitle text goes here'}
-              </XDSText>
-              {(props.buttonLabel as string) && (
-                <XDSButton label={props.buttonLabel as string} />
-              )}
-            </XDSVStack>
-            <XDSSection variant="wash" padding={6}>
-              <XDSCenter>
-                <XDSCard padding={4}>
-                  <XDSVStack gap={2}>
-                    <XDSText type="supporting" color="secondary">
-                      Portfolio
-                    </XDSText>
-                    {['AAPL', 'TSLA', 'VFV'].map((ticker, i) => (
-                      <XDSHStack key={ticker} gap={3} vAlign="center">
-                        <XDSText type="label" weight="semibold">
-                          {ticker}
-                        </XDSText>
-                        <XDSText
-                          type="supporting"
-                          color={i === 1 ? 'secondary' : 'active'}>
-                          {i === 1 ? '−1.2%' : '+3.4%'}
-                        </XDSText>
-                      </XDSHStack>
-                    ))}
-                  </XDSVStack>
-                </XDSCard>
-              </XDSCenter>
-            </XDSSection>
-          </XDSGrid>
+          <XDSVStack gap={4}>
+            <XDSHeading level={2}>
+              {(props.heading as string) || 'Hero Heading'}
+            </XDSHeading>
+            <XDSText type="supporting" color="secondary">
+              {(props.subheading as string) || 'Subtitle text goes here'}
+            </XDSText>
+            {(props.buttonLabel as string) && (
+              <XDSButton label={props.buttonLabel as string} />
+            )}
+          </XDSVStack>
         </XDSCard>
       );
 
     case 'text':
+      if (props.heading) {
+        return (
+          <XDSCard
+            padding={6}
+            xstyle={cardXstyle}
+            onClick={onSelect}>
+            <XDSEmptyState
+              title={props.heading as string}
+              description={props.description as string}
+              icon={<XDSSpinner />}
+              actions={
+                (props.buttonLabel as string) ? (
+                  <XDSButton
+                    label={props.buttonLabel as string}
+                    variant="secondary"
+                  />
+                ) : undefined
+              }
+            />
+          </XDSCard>
+        );
+      }
       return (
         <XDSCard
-          variant={variant}
-          xstyle={editorStyles.clickable}
+          xstyle={cardXstyle}
           onClick={onSelect}>
           <XDSText type="body">
             {(props.content as string) || 'Text content goes here'}
@@ -436,8 +524,7 @@ function BlockPreview({
     case 'image':
       return (
         <XDSCard
-          variant={variant}
-          xstyle={editorStyles.clickable}
+          xstyle={cardXstyle}
           onClick={onSelect}>
           <XDSEmptyState
             title="Image Block"
@@ -451,43 +538,48 @@ function BlockPreview({
     case 'button':
       return (
         <XDSCard
-          variant={variant}
           padding={6}
-          xstyle={editorStyles.clickable}
+          xstyle={cardXstyle}
           onClick={onSelect}>
-          <XDSButton
-            label={(props.label as string) || 'Button'}
-            variant={
-              (props.variant as 'primary' | 'secondary' | 'ghost') || 'primary'
-            }
-            size={(props.size as 'sm' | 'md' | 'lg') || 'md'}
-          />
+          <XDSCenter>
+            <XDSButton
+              label={(props.label as string) || 'Button'}
+              variant={
+                (props.variant as 'primary' | 'secondary' | 'ghost') || 'primary'
+              }
+              size={(props.size as 'sm' | 'md' | 'lg') || 'md'}
+            />
+          </XDSCenter>
         </XDSCard>
       );
 
     case 'features': {
-      const featureCards =
-        (props.cards as Array<{title: string; description: string}>) || [];
+      const items = (props.items as Transaction[]) || [];
       return (
         <XDSCard
-          variant={variant}
-          xstyle={editorStyles.clickable}
+          padding={6}
+          xstyle={cardXstyle}
           onClick={onSelect}>
           <XDSVStack gap={4}>
-            <XDSHeading level={3}>Features</XDSHeading>
-            <XDSGrid columns={{minWidth: 200}} gap={4}>
-              {featureCards.map((card, i) => (
-                <XDSSection key={i} variant="wash" padding={4}>
-                  <XDSVStack gap={2}>
-                    <XDSIcon icon={SparklesIcon} color="accent" />
-                    <XDSHeading level={4}>{card.title}</XDSHeading>
-                    <XDSText type="supporting" color="secondary">
-                      {card.description}
-                    </XDSText>
-                  </XDSVStack>
-                </XDSSection>
-              ))}
-            </XDSGrid>
+            <XDSHStack gap={3} vAlign="start">
+              <XDSVStack gap={1} xstyle={editorStyles.flex1}>
+                <XDSHeading level={3}>
+                  {(props.heading as string) || 'Features'}
+                </XDSHeading>
+                {(props.description as string) && (
+                  <XDSText type="supporting" color="secondary">
+                    {props.description as string}
+                  </XDSText>
+                )}
+              </XDSVStack>
+              <XDSButton label="View All" variant="secondary" size="sm" />
+            </XDSHStack>
+            <XDSTable
+              data={items}
+              columns={TRANSACTION_COLUMNS}
+              idKey="id"
+              hasHover
+            />
           </XDSVStack>
         </XDSCard>
       );
@@ -498,25 +590,20 @@ function BlockPreview({
         (props.cards as Array<{title: string; description: string}>) || [];
       return (
         <XDSCard
-          variant={variant}
-          xstyle={editorStyles.clickable}
+          xstyle={cardXstyle}
           onClick={onSelect}>
           <XDSVStack gap={4}>
-            <XDSHStack gap={4} vAlign="center">
-              <XDSHeading level={3}>Cards</XDSHeading>
-            </XDSHStack>
-            <XDSGrid columns={{minWidth: 200}} gap={4}>
+            <XDSHeading level={3}>Cards</XDSHeading>
+            <XDSDivider />
+            <XDSList density="balanced" hasDividers={false}>
               {cardItems.map((card, i) => (
-                <XDSSection key={i} variant="wash" padding={4}>
-                  <XDSVStack gap={2}>
-                    <XDSHeading level={4}>{card.title}</XDSHeading>
-                    <XDSText type="supporting" color="secondary">
-                      {card.description}
-                    </XDSText>
-                  </XDSVStack>
-                </XDSSection>
+                <XDSListItem
+                  key={i}
+                  label={card.title}
+                  description={card.description}
+                />
               ))}
-            </XDSGrid>
+            </XDSList>
           </XDSVStack>
         </XDSCard>
       );
@@ -525,54 +612,22 @@ function BlockPreview({
     case 'cta':
       return (
         <XDSCard
-          variant={variant}
-          xstyle={editorStyles.clickable}
+          padding={6}
+          xstyle={cardXstyle}
           onClick={onSelect}>
-          <XDSGrid columns={2} gap={6}>
-            <XDSSection variant="wash" padding={6}>
-              <XDSCenter>
-                <XDSCard padding={4}>
-                  <XDSVStack gap={3}>
-                    {[
-                      ['NVDA', '$500.00 USD'],
-                      ['Recurring investments', '●'],
-                      ['Dividend reinvestments', '●'],
-                    ].map(([label, val], i) => (
-                      <XDSHStack key={i} gap={3} vAlign="center">
-                        <XDSText
-                          type="label"
-                          weight={i === 0 ? 'semibold' : 'normal'}>
-                          {label}
-                        </XDSText>
-                        <XDSText
-                          type="supporting"
-                          color={i > 0 ? 'active' : 'secondary'}>
-                          {val}
-                        </XDSText>
-                      </XDSHStack>
-                    ))}
-                  </XDSVStack>
-                </XDSCard>
-              </XDSCenter>
-            </XDSSection>
-            <XDSVStack gap={4}>
-              <XDSHeading level={3}>
-                {(props.heading as string) || 'Call to Action'}
-              </XDSHeading>
+          <XDSHStack gap={4} vAlign="start">
+            <div {...stylex.props(editorStyles.iconCircle)}>
+              <XDSIcon icon={LockClosedIcon} color="secondary" />
+            </div>
+            <XDSVStack gap={1}>
+              <XDSText type="label" weight="semibold">
+                {(props.heading as string) || 'Notice'}
+              </XDSText>
               <XDSText type="supporting" color="secondary">
                 {(props.description as string) || 'Description text'}
               </XDSText>
-              <XDSHStack gap={3}>
-                <XDSButton
-                  label={(props.primaryLabel as string) || 'Primary'}
-                />
-                <XDSButton
-                  label={(props.secondaryLabel as string) || 'Secondary'}
-                  variant="secondary"
-                />
-              </XDSHStack>
             </XDSVStack>
-          </XDSGrid>
+          </XDSHStack>
         </XDSCard>
       );
 
@@ -648,9 +703,9 @@ export default function EditorPage() {
   // --- sidebar content ---
 
   const blocksTabContent = (
-    <XDSVStack gap={4}>
+    <XDSVStack gap={2}>
       <XDSVStack gap={1}>
-        <XDSSection variant="transparent" padding={4}>
+        <XDSSection variant="transparent" padding={2} xstyle={editorStyles.sectionHeadingInline}>
           <XDSHeading level={4}>Add Block</XDSHeading>
         </XDSSection>
         <XDSList density="balanced" hasDividers={false}>
@@ -668,7 +723,7 @@ export default function EditorPage() {
       </XDSVStack>
 
       <XDSVStack gap={1}>
-        <XDSSection variant="transparent" padding={3}>
+        <XDSSection variant="transparent" padding={2} xstyle={editorStyles.sectionHeadingInline}>
           <XDSHeading level={4}>Layers</XDSHeading>
         </XDSSection>
         <XDSList density="balanced" hasDividers={false}>
@@ -729,22 +784,12 @@ export default function EditorPage() {
   );
 
   const propertiesTabContent = selectedBlock ? (
-    <XDSVStack gap={4}>
-      <XDSToolbar
-        label="Block properties"
-        startContent={
-          <XDSHeading level={4}>
-            {selectedBlock.label} Properties
-          </XDSHeading>
-        }
-      />
-      <PropertiesForm
-        block={selectedBlock}
-        onUpdate={(key, value) =>
-          updateBlockProp(selectedBlock.id, key, value)
-        }
-      />
-    </XDSVStack>
+    <PropertiesForm
+      block={selectedBlock}
+      onUpdate={(key, value) =>
+        updateBlockProp(selectedBlock.id, key, value)
+      }
+    />
   ) : (
     <XDSEmptyState
       title="No block selected"
@@ -758,6 +803,7 @@ export default function EditorPage() {
       <XDSHStack xstyle={editorStyles.bodyRow}>
         {/* Floating Sidebar */}
         <XDSVStack
+          gap={4}
           xstyle={[
             editorStyles.floatingPanel,
             isPanelCollapsed && editorStyles.floatingPanelCollapsed,
@@ -766,7 +812,7 @@ export default function EditorPage() {
           <XDSSection variant="transparent" padding={4}>
             <XDSVStack gap={4}>
               <XDSHStack gap={3} vAlign="center">
-                <XDSVStack gap={0} xstyle={{flex: 1}}>
+                <XDSVStack gap={0} xstyle={editorStyles.flex1}>
                   {isEditingTitle ? (
                     <XDSTextInput
                       label="Page title"
@@ -784,29 +830,13 @@ export default function EditorPage() {
                   )}
                 </XDSVStack>
                 <XDSHStack gap={1}>
-                  {!isEditingTitle && (
-                    <XDSButton
-                      label="Edit title"
-                      icon={
-                        <XDSIcon icon={DocumentTextIcon} size="sm" />
-                      }
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setIsEditingTitle(true)}
-                      isIconOnly
-                    />
-                  )}
                   <XDSButton
                     label={
                       isPanelCollapsed ? 'Expand panel' : 'Collapse panel'
                     }
                     icon={
                       <XDSIcon
-                        icon={
-                          isPanelCollapsed
-                            ? ChevronDoubleRightIcon
-                            : ChevronDoubleLeftIcon
-                        }
+                        icon={ArrowLeftEndOnRectangleIcon}
                         size="sm"
                       />
                     }
@@ -820,6 +850,7 @@ export default function EditorPage() {
 
               <XDSToolbar
                 label="Viewport and actions"
+                padding={0}
                 startContent={
                   <XDSSegmentedControl
                     label="Viewport size"
@@ -866,17 +897,19 @@ export default function EditorPage() {
 
           {!isPanelCollapsed && (
             <>
-              <XDSTabList
-                value={sidebarTab}
-                onChange={(v: string) => setSidebarTab(v as SidebarTab)}>
-                <XDSTab value="blocks" label="Blocks" />
-                <XDSTab value="properties" label="Properties" />
-              </XDSTabList>
-              <XDSDivider />
+              <XDSVStack gap={0} xstyle={editorStyles.tabListWrapper}>
+                <XDSTabList
+                  value={sidebarTab}
+                  onChange={(v: string) => setSidebarTab(v as SidebarTab)}>
+                  <XDSTab value="blocks" label="Blocks" />
+                  <XDSTab value="properties" label="Properties" />
+                </XDSTabList>
+                <XDSDivider />
+              </XDSVStack>
               <XDSSection
                 variant="transparent"
-                padding={4}
-                xstyle={editorStyles.panelScroll}>
+                padding={0}
+                xstyle={[editorStyles.panelScroll, editorStyles.panelContentPadding]}>
                 {sidebarTab === 'blocks'
                   ? blocksTabContent
                   : propertiesTabContent}
@@ -886,26 +919,27 @@ export default function EditorPage() {
         </XDSVStack>
 
         {/* Preview Canvas */}
-        <XDSVStack
-          gap={4}
-          xstyle={editorStyles.previewArea}
-          maxWidth={VIEWPORT_MAX[viewport]}>
-          {blocks.length > 0 ? (
-            blocks.map(block => (
-              <BlockPreview
-                key={block.id}
-                block={block}
-                isSelected={block.id === selectedId}
-                onSelect={() => selectBlock(block.id)}
+        <XDSVStack xstyle={editorStyles.previewArea}>
+          <XDSVStack
+            gap={4}
+            xstyle={editorStyles.canvas(VIEWPORT_MAX[viewport])}>
+            {blocks.length > 0 ? (
+              blocks.map(block => (
+                <BlockPreview
+                  key={block.id}
+                  block={block}
+                  isSelected={block.id === selectedId}
+                  onSelect={() => selectBlock(block.id)}
+                />
+              ))
+            ) : (
+              <XDSEmptyState
+                title="No blocks yet"
+                description="Add blocks from the sidebar to start building your page"
+                icon={<XDSIcon icon={PlusCircleIcon} />}
               />
-            ))
-          ) : (
-            <XDSEmptyState
-              title="No blocks yet"
-              description="Add blocks from the sidebar to start building your page"
-              icon={<XDSIcon icon={PlusCircleIcon} />}
-            />
-          )}
+            )}
+          </XDSVStack>
         </XDSVStack>
       </XDSHStack>
     </XDSVStack>
