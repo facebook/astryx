@@ -19,6 +19,7 @@ import {XDSField} from '../Field/XDSField';
 import type {XDSInputStatus} from '../Field/types';
 import {XDSList} from '../List/XDSList';
 import type {XDSListDensity} from '../List/XDSListContext';
+import {xdsClassName} from '../utils';
 import {
   XDSCheckboxListContext,
   type XDSCheckboxListContextValue,
@@ -205,7 +206,9 @@ export function XDSCheckboxList({
       }
       statusVariant="detached"
       xstyle={xstyle}
-      className={className}
+      className={
+        xdsClassName('checkbox-list') + (className ? ` ${className}` : '')
+      }
       style={style}>
       <XDSCheckboxListContext.Provider value={contextValue}>
         <XDSList density={density} hasDividers={hasDividers}>
