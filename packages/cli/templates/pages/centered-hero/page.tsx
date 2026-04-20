@@ -51,7 +51,7 @@ export default function CenteredHero() {
         />
       }
       contentPadding={0}>
-      <XDSVStack gap={12}>
+      <XDSVStack gap={10}>
         <XDSVStack gap={6} hAlign="center">
           <XDSVStack gap={3} hAlign="center">
             <XDSText
