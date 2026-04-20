@@ -104,10 +104,7 @@ export default function GalleryHero() {
         </XDSVStack>
         <XDSGrid columns={3} gap={4} xstyle={styles.galleryPadding}>
           {IMAGES.map((image, i) => (
-            <XDSAspectRatio
-              key={i}
-              ratio={3 / 4}
-              xstyle={styles.galleryImageClip}>
+            <XDSAspectRatio key={i} ratio={1} xstyle={styles.galleryImageClip}>
               <img
                 {...stylex.props(styles.galleryImage)}
                 src={image.src}
