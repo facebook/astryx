@@ -20,6 +20,7 @@ import {container} from '../Layout/container.stylex';
 import type {SpacingToken} from '../Layout/container.stylex';
 import {
   paddingStyles,
+  paddingBlockStyles,
   containerPaddingInlineVarStyles,
   containerPaddingBlockStartVarStyles,
   containerPaddingBlockEndVarStyles,
@@ -69,8 +70,11 @@ const variantStyles = stylex.create({
 const nestedStyles = stylex.create({
   // Outer wrapper escapes parent's container padding
   outer: {
-    // Always escape horizontal padding
-    marginInline: 'calc(-1 * var(--container-padding-inline, 0px))',
+    // Escape horizontal padding using directional vars with shorthand fallback
+    marginInlineStart:
+      'calc(-1 * var(--container-padding-inline-start, var(--container-padding-inline, 0px)))',
+    marginInlineEnd:
+      'calc(-1 * var(--container-padding-inline-end, var(--container-padding-inline, 0px)))',
     // Escape top padding only if first child
     marginTop: {
       default: null,
@@ -85,6 +89,8 @@ const nestedStyles = stylex.create({
   // Inner wrapper resets container padding for descendants
   inner: {
     '--container-padding-inline': '0px',
+    '--container-padding-inline-start': '0px',
+    '--container-padding-inline-end': '0px',
     '--container-padding-block-start': '0px',
     '--container-padding-block-end': '0px',
     height: '100%',
@@ -187,6 +193,13 @@ export interface XDSSectionProps extends XDSBaseProps<HTMLElement> {
    * @default 4 (16px)
    */
   padding?: SpacingStep;
+  /**
+   * Block (vertical) padding override. When set, overrides only the block
+   * axis padding while preserving inline padding from `padding` or the
+   * container theme default.
+   * Accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.
+   */
+  paddingBlock?: SpacingStep;
 }
 
 /**
@@ -216,6 +229,7 @@ export function XDSSection({
   children,
   dividers,
   padding,
+  paddingBlock,
   xstyle,
   className,
   style,
@@ -277,6 +291,11 @@ export function XDSSection({
             !useThemeDefault &&
               effectivePadding !== 4 &&
               containerPaddingBlockEndVarStyles[effectivePadding],
+            paddingBlock != null && paddingBlockStyles[paddingBlock],
+            paddingBlock != null &&
+              containerPaddingBlockStartVarStyles[paddingBlock],
+            paddingBlock != null &&
+              containerPaddingBlockEndVarStyles[paddingBlock],
             variantStyles[variant],
             dividers?.includes('top') && dividerStyles.top,
             dividers?.includes('bottom') && dividerStyles.bottom,

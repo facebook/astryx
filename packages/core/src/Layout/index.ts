@@ -18,7 +18,11 @@ export type {
 } from './container.stylex';
 
 // Edge compensation utility
-export {edgeSignals, edgeCompensation} from './edgeCompensation.stylex';
+export {
+  edgeInset,
+  edgeCompensation,
+  edgeSignals,
+} from './edgeCompensation.stylex';
 
 // Stack utilities (re-exported from Stack module)
 export {stack} from '../Stack/stack.stylex';

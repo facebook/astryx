@@ -17,7 +17,7 @@ import {type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
-import {edgeSignals} from '../Layout/edgeCompensation.stylex';
+import {edgeInset} from '../Layout/edgeCompensation.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 import {XDSTopNavSlotContext} from './TopNavContext';
 import {useXDSTopNavRenderMode} from './XDSTopNavRenderContext';
@@ -36,8 +36,6 @@ const styles = stylex.create({
     width: '100%',
     padding: spacingVars['--spacing-2'],
     boxSizing: 'border-box',
-    // Publish inline padding for edge compensation (ghost buttons at edges).
-    '--container-padding-inline': spacingVars['--spacing-2'],
   },
   // Flex layout (default, used when no centerContent)
   baseFlex: {
@@ -256,7 +254,7 @@ export function XDSTopNav({
         style,
       )}
       {...props}>
-      <div {...stylex.props(styles.leftSection, edgeSignals.start)}>
+      <div {...stylex.props(styles.leftSection, edgeInset.start2)}>
         {heading && <div {...stylex.props(styles.heading)}>{heading}</div>}
         {startContent && (
           <XDSTopNavSlotContext value="start">
@@ -270,12 +268,12 @@ export function XDSTopNav({
         </XDSTopNavSlotContext>
       )}
       {hasCenterContent ? (
-        <div {...stylex.props(styles.rightSection, edgeSignals.end)}>
+        <div {...stylex.props(styles.rightSection, edgeInset.end2)}>
           <XDSTopNavSlotContext value="end">{endContent}</XDSTopNavSlotContext>
         </div>
       ) : (
         endContent && (
-          <div {...stylex.props(styles.endContent, edgeSignals.end)}>
+          <div {...stylex.props(styles.endContent, edgeInset.end2)}>
             <XDSTopNavSlotContext value="end">
               {endContent}
             </XDSTopNavSlotContext>
