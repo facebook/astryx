@@ -376,3 +376,176 @@ export const WideBarStyle: Story = {
     </XDSStack>
   ),
 };
+
+// --- US Federal Budget (Vega dataset) ---
+// Source: vega-datasets budget.json — FY2020 federal receipts
+// Revenue sources → receiving agencies (values in $thousands)
+
+const budgetNodes: SankeyNode[] = [
+  {
+    id: 'income_tax',
+    label: 'Income Tax',
+    value: 2118406000,
+    color: [0.55, 0.19, 255],
+  },
+  {
+    id: 'payroll_tax',
+    label: 'Payroll Tax',
+    value: 1336808000,
+    color: [0.58, 0.17, 240],
+  },
+  {
+    id: 'corp_tax',
+    label: 'Corp Tax',
+    value: 511220000,
+    color: [0.6, 0.16, 220],
+  },
+  {
+    id: 'excise_tax',
+    label: 'Excise Tax',
+    value: 119883000,
+    color: [0.56, 0.14, 200],
+  },
+  {
+    id: 'misc_revenue',
+    label: 'Misc Revenue',
+    value: 96615000,
+    color: [0.54, 0.12, 280],
+  },
+  {id: 'customs', label: 'Customs', value: 47878000, color: [0.52, 0.11, 180]},
+  {
+    id: 'proposals',
+    label: 'Proposals',
+    value: 45000000,
+    color: [0.5, 0.1, 300],
+  },
+  {
+    id: 'estate_tax',
+    label: 'Estate Tax',
+    value: 38543000,
+    color: [0.48, 0.09, 160],
+  },
+  {
+    id: 'general_fund',
+    label: 'General Fund',
+    value: 2812308000,
+    color: [0.62, 0.17, 150],
+  },
+  {
+    id: 'social_security',
+    label: 'Social Security',
+    value: 968357000,
+    color: [0.6, 0.16, 170],
+  },
+  {id: 'hhs', label: 'HHS', value: 309881000, color: [0.58, 0.15, 130]},
+  {
+    id: 'treasury',
+    label: 'Treasury',
+    value: 75173000,
+    color: [0.56, 0.13, 190],
+  },
+  {id: 'labor', label: 'Labor', value: 57839000, color: [0.54, 0.12, 40]},
+  {
+    id: 'transport',
+    label: 'Transport',
+    value: 57056000,
+    color: [0.52, 0.11, 60],
+  },
+  {
+    id: 'agriculture',
+    label: 'Agriculture',
+    value: 11566000,
+    color: [0.5, 0.1, 100],
+  },
+  {id: 'fcc', label: 'FCC', value: 10049000, color: [0.48, 0.09, 260]},
+  {
+    id: 'rail_retire',
+    label: 'Rail Retire',
+    value: 7098000,
+    color: [0.5, 0.08, 320],
+  },
+  {id: 'opm', label: 'OPM', value: 5026000, color: [0.48, 0.08, 340]},
+];
+
+const budgetLinks: SankeyLink[] = [
+  {source: 'income_tax', target: 'general_fund', value: 2118406000},
+  {source: 'payroll_tax', target: 'social_security', value: 968357000},
+  {source: 'corp_tax', target: 'general_fund', value: 511220000},
+  {source: 'payroll_tax', target: 'hhs', value: 298488000},
+  {source: 'misc_revenue', target: 'treasury', value: 75173000},
+  {source: 'excise_tax', target: 'general_fund', value: 62827000},
+  {source: 'payroll_tax', target: 'labor', value: 57839000},
+  {source: 'excise_tax', target: 'transport', value: 57056000},
+  {source: 'proposals', target: 'general_fund', value: 45000000},
+  {source: 'estate_tax', target: 'general_fund', value: 38543000},
+  {source: 'customs', target: 'general_fund', value: 36312000},
+  {source: 'customs', target: 'agriculture', value: 11566000},
+  {source: 'misc_revenue', target: 'hhs', value: 11393000},
+  {source: 'misc_revenue', target: 'fcc', value: 10049000},
+  {source: 'payroll_tax', target: 'rail_retire', value: 7098000},
+  {source: 'payroll_tax', target: 'opm', value: 5026000},
+];
+
+const budgetColumns = [
+  {
+    ids: [
+      'income_tax',
+      'payroll_tax',
+      'corp_tax',
+      'excise_tax',
+      'misc_revenue',
+      'customs',
+      'proposals',
+      'estate_tax',
+    ],
+    label: 'Revenue Source',
+  },
+  {
+    ids: [
+      'general_fund',
+      'social_security',
+      'hhs',
+      'treasury',
+      'labor',
+      'transport',
+      'agriculture',
+      'fcc',
+      'rail_retire',
+      'opm',
+    ],
+    label: 'Receiving Agency',
+  },
+];
+
+function formatBudget(value: number): string {
+  if (value >= 1_000_000_000)
+    return '$' + (value / 1_000_000_000).toFixed(1) + 'T';
+  if (value >= 1_000_000) return '$' + Math.round(value / 1_000_000) + 'B';
+  if (value >= 1_000) return '$' + Math.round(value / 1_000) + 'M';
+  return '$' + value.toLocaleString();
+}
+
+/**
+ * Real data: US Federal Budget FY2020 from vega-datasets.
+ * Tax revenue sources flowing to receiving government agencies.
+ */
+export const USFederalBudget: Story = {
+  render: () => (
+    <XDSStack direction="vertical" gap={4}>
+      <XDSHeading level={3}>US Federal Budget FY2020</XDSHeading>
+      <XDSText type="body" color="secondary">
+        Revenue sources → receiving agencies (vega-datasets/budget.json)
+      </XDSText>
+      <XDSSankeyChart
+        nodes={budgetNodes}
+        links={budgetLinks}
+        columns={budgetColumns}
+        height={480}>
+        <XDSSankeyGrid />
+        <XDSSankeyLink opacity={0.6} tension={0.5} />
+        <XDSSankeyNode />
+        <XDSSankeyLabel formatValue={formatBudget} background />
+      </XDSSankeyChart>
+    </XDSStack>
+  ),
+};
