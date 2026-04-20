@@ -2,7 +2,7 @@
 
 import {useState, useCallback} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {colorVars, shadowVars} from '@xds/core/theme/tokens.stylex';
+import {colorVars, radiusVars, shadowVars} from '@xds/core/theme/tokens.stylex';
 import {XDSButton} from '@xds/core/Button';
 import {XDSCard} from '@xds/core/Card';
 import {XDSCenter} from '@xds/core/Center';
@@ -272,7 +272,7 @@ const editorStyles = stylex.create({
     width: 320,
     zIndex: 10,
     backgroundColor: colorVars['--color-background-card'],
-    borderRadius: 12,
+    borderRadius: radiusVars['--radius-container'],
     boxShadow: shadowVars['--shadow-low'],
     overflow: 'hidden',
   },
