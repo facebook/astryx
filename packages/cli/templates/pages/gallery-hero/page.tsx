@@ -5,7 +5,6 @@ import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
 import {XDSIcon} from '@xds/core/Icon';
-import {XDSBadge} from '@xds/core/Badge';
 import {XDSGrid} from '@xds/core/Grid';
 import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import {XDSAppShell} from '@xds/core/AppShell';
@@ -51,6 +50,7 @@ const styles = stylex.create({
   },
   galleryPadding: {
     paddingInline: 'var(--spacing-6)',
+    paddingBottom: 'var(--spacing-10)',
   },
 });
 
@@ -76,7 +76,6 @@ export default function GalleryHero() {
       <XDSVStack gap={10}>
         <XDSVStack gap={6} hAlign="center" xstyle={styles.topSpacing}>
           <XDSVStack gap={3} hAlign="center">
-            <XDSBadge label="❤️ Now with more delight ❤️" variant="pink" />
             <XDSText
               type="display-2"
               as="h1"
