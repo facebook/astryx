@@ -176,5 +176,7 @@ export {
   type SankeyLink,
   type SankeyNodeLayout,
   type SankeyLinkLayout,
+  XDSSankeyGrid,
+  type XDSSankeyGridProps,
   type SankeyContext,
 } from './Sankey';

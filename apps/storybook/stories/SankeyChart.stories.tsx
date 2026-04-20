@@ -4,6 +4,7 @@ import {
   XDSSankeyLink,
   XDSSankeyNode,
   XDSSankeyLabel,
+  XDSSankeyGrid,
   type SankeyNode,
   type SankeyLink,
 } from '@xds/lab';
@@ -51,7 +52,7 @@ const funnelColumns = [
   ['subscribed', 'churned'],
 ];
 
-/** Classic diverging funnel — marketing acquisition to revenue */
+/** Classic diverging funnel with grid lines */
 export const ConversionFunnel: Story = {
   render: () => (
     <XDSStack direction="vertical" gap={4}>
@@ -63,7 +64,8 @@ export const ConversionFunnel: Story = {
         nodes={funnelNodes}
         links={funnelLinks}
         columns={funnelColumns}
-        height={340}>
+        height={360}>
+        <XDSSankeyGrid />
         <XDSSankeyLink />
         <XDSSankeyNode />
         <XDSSankeyLabel />
@@ -131,7 +133,8 @@ export const RevenueFlow: Story = {
         nodes={revenueNodes}
         links={revenueLinks}
         columns={revenueColumns}
-        height={400}>
+        height={420}>
+        <XDSSankeyGrid />
         <XDSSankeyLink opacity={0.65} tension={0.55} />
         <XDSSankeyNode />
         <XDSSankeyLabel />
@@ -140,7 +143,7 @@ export const RevenueFlow: Story = {
   ),
 };
 
-/** Minimal — auto-detected columns with no explicit assignment */
+/** Minimal — auto-detected columns, no grid */
 export const AutoColumns: Story = {
   render: () => {
     const nodes: SankeyNode[] = [
@@ -173,23 +176,84 @@ export const AutoColumns: Story = {
   },
 };
 
-/** High tension — very curvy ribbons */
-export const HighTension: Story = {
-  render: () => (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSHeading level={3}>High Tension (0.7)</XDSHeading>
-      <XDSText type="body" color="secondary">
-        Curvier bezier ribbons
-      </XDSText>
-      <XDSSankeyChart
-        nodes={funnelNodes}
-        links={funnelLinks}
-        columns={funnelColumns}
-        height={340}>
-        <XDSSankeyLink tension={0.7} />
-        <XDSSankeyNode />
-        <XDSSankeyLabel />
-      </XDSSankeyChart>
-    </XDSStack>
-  ),
+/** Many columns — demonstrates horizontal scroll with minColumnWidth */
+export const ManyColumns: Story = {
+  render: () => {
+    const nodes: SankeyNode[] = [
+      {id: 'awareness', label: 'Awareness', value: 100000},
+      {id: 'interest', label: 'Interest', value: 68000},
+      {id: 'dropped1', label: 'Dropped', value: 32000, color: [0.5, 0.12, 350]},
+      {id: 'consideration', label: 'Consideration', value: 45000},
+      {
+        id: 'dropped2',
+        label: 'Distracted',
+        value: 23000,
+        color: [0.5, 0.12, 350],
+      },
+      {id: 'intent', label: 'Intent', value: 32000},
+      {
+        id: 'dropped3',
+        label: 'Abandoned',
+        value: 13000,
+        color: [0.5, 0.12, 350],
+      },
+      {id: 'evaluation', label: 'Evaluation', value: 24000},
+      {id: 'dropped4', label: 'Lost', value: 8000, color: [0.5, 0.12, 350]},
+      {
+        id: 'purchase',
+        label: 'Purchase',
+        value: 18000,
+        color: [0.64, 0.18, 155],
+      },
+      {id: 'dropped5', label: 'Rejected', value: 6000, color: [0.5, 0.12, 350]},
+    ];
+    const links: SankeyLink[] = [
+      {source: 'awareness', target: 'interest', value: 68000},
+      {source: 'awareness', target: 'dropped1', value: 32000},
+      {source: 'interest', target: 'consideration', value: 45000},
+      {source: 'interest', target: 'dropped2', value: 23000},
+      {source: 'consideration', target: 'intent', value: 32000},
+      {source: 'consideration', target: 'dropped3', value: 13000},
+      {source: 'intent', target: 'evaluation', value: 24000},
+      {source: 'intent', target: 'dropped4', value: 8000},
+      {source: 'evaluation', target: 'purchase', value: 18000},
+      {source: 'evaluation', target: 'dropped5', value: 6000},
+    ];
+    const columns = [
+      ['awareness'],
+      ['interest', 'dropped1'],
+      ['consideration', 'dropped2'],
+      ['intent', 'dropped3'],
+      ['evaluation', 'dropped4'],
+      ['purchase', 'dropped5'],
+    ];
+
+    return (
+      <XDSStack direction="vertical" gap={4}>
+        <XDSHeading level={3}>Deep Funnel (6 stages)</XDSHeading>
+        <XDSText type="body" color="secondary">
+          Scrolls horizontally when columns exceed container width
+        </XDSText>
+        <div
+          style={{
+            maxWidth: 600,
+            border: '1px solid var(--color-border, #ddd)',
+            borderRadius: 12,
+            overflow: 'hidden',
+          }}>
+          <XDSSankeyChart
+            nodes={nodes}
+            links={links}
+            columns={columns}
+            height={360}
+            minColumnWidth={160}>
+            <XDSSankeyGrid />
+            <XDSSankeyLink />
+            <XDSSankeyNode />
+            <XDSSankeyLabel />
+          </XDSSankeyChart>
+        </div>
+      </XDSStack>
+    );
+  },
 };

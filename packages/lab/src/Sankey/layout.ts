@@ -5,6 +5,7 @@
  *
  * Simplified Sankey layout: nodes placed in explicit columns,
  * vertical positions centered per column, link offsets cumulative.
+ * Reserves top margin for labels above the topmost node.
  */
 
 import type {
@@ -30,6 +31,8 @@ export interface LayoutOptions {
   height: number;
   nodeWidth?: number;
   nodeGap?: number;
+  /** Top margin reserved for labels above the topmost node */
+  labelMargin?: number;
   columns?: string[][];
 }
 
@@ -73,22 +76,34 @@ function autoColumns(nodes: SankeyNode[], links: SankeyLink[]): string[][] {
   return columns;
 }
 
+export interface LayoutResult {
+  nodes: SankeyNodeLayout[];
+  links: SankeyLinkLayout[];
+  columnXs: number[];
+  valueScale: number;
+  maxValue: number;
+}
+
 export function computeLayout(
   nodes: SankeyNode[],
   links: SankeyLink[],
   options: LayoutOptions,
-): {
-  nodes: SankeyNodeLayout[];
-  links: SankeyLinkLayout[];
-  valueScale: number;
-  maxValue: number;
-} {
-  const {width, height, nodeWidth = 3, nodeGap = 14} = options;
+): LayoutResult {
+  const {
+    width,
+    height,
+    nodeWidth = 3,
+    nodeGap = 14,
+    labelMargin = 28,
+  } = options;
   const columns = options.columns || autoColumns(nodes, links);
   const colCount = columns.length;
 
   const nodeMap = new Map<string, SankeyNode>();
   nodes.forEach(n => nodeMap.set(n.id, n));
+
+  // Usable height after reserving space for labels above and below
+  const usableHeight = height - labelMargin - 16; // 16px bottom for percentages
 
   // Scale based on largest column
   let maxColValue = 0;
@@ -98,20 +113,23 @@ export function computeLayout(
   });
 
   const maxNodes = Math.max(...columns.map(c => c.length));
-  const valueScale = (height - (maxNodes - 1) * nodeGap) / maxColValue;
+  const valueScale = (usableHeight - (maxNodes - 1) * nodeGap) / maxColValue;
   const colSpacing = colCount > 1 ? (width - nodeWidth) / (colCount - 1) : 0;
 
+  const columnXs: number[] = [];
   const layoutNodes = new Map<string, SankeyNodeLayout>();
   let colorIdx = 0;
 
   columns.forEach((col, ci) => {
     const x = ci * colSpacing;
+    columnXs.push(x);
     const totalH = col.reduce(
       (s, id) => s + (nodeMap.get(id)?.value || 0) * valueScale,
       0,
     );
     const totalGap = (col.length - 1) * nodeGap;
-    let y = (height - totalH - totalGap) / 2;
+    // Center vertically within usable area, offset by labelMargin
+    let y = labelMargin + (usableHeight - totalH - totalGap) / 2;
 
     col.forEach(id => {
       const node = nodeMap.get(id);
@@ -159,6 +177,7 @@ export function computeLayout(
   return {
     nodes: Array.from(layoutNodes.values()),
     links: layoutLinks,
+    columnXs,
     valueScale,
     maxValue: maxColValue,
   };

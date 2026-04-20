@@ -55,8 +55,12 @@ export interface SankeyLinkLayout {
 export interface SankeyContext {
   nodes: SankeyNodeLayout[];
   links: SankeyLinkLayout[];
+  /** X position of each column's node bar */
+  columnXs: number[];
   width: number;
   height: number;
   valueScale: number;
   maxValue: number;
+  /** Node bar width */
+  nodeWidth: number;
 }
