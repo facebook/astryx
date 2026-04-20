@@ -195,9 +195,8 @@ export const MasonryGallery: Story = {
 };
 
 /**
- * A denser masonry layout with more rows defined and a 4-column grid.
- * Uses `grid-auto-rows` via xstyle instead of explicit template rows
- * for unlimited content.
+ * A denser masonry layout with a 4-column grid and smaller row tracks.
+ * Uses `rowHeight={60}` for unlimited content.
  */
 export const DenseMasonry: Story = {
   render: () => {
