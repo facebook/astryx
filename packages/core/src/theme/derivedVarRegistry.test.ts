@@ -31,6 +31,8 @@ const STRUCTURAL_VARS = new Set([
   '--container-padding-inline',
   '--container-padding-inline-start',
   '--container-padding-inline-end',
+  '--edge-inset-start',
+  '--edge-inset-end',
   '--container-padding-block-start',
   '--container-padding-block-end',
   '--container-max-height',
