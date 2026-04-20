@@ -5,5 +5,5 @@ export const doc = {
   description: 'With hover menu and mega menu',
   isReady: true,
   aspectRatio: 16 / 4,
-  componentsUsed: ['TopNav', 'TopNavHeading', 'TopNavItem', 'TopNavMenu', 'TopNavMegaMenu', 'TopNavMegaMenuItem', 'TopNavMegaMenuFeaturedCard'],
+  componentsUsed: ['TopNav'],
 };

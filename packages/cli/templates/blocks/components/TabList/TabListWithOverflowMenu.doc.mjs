@@ -5,5 +5,5 @@ export const doc = {
   description: 'With overflow menu',
   isReady: true,
   aspectRatio: 16 / 4,
-  componentsUsed: ['TabList', 'Tab', 'TabMenu'],
+  componentsUsed: ['TabList'],
 };

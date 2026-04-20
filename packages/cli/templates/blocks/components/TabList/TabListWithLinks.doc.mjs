@@ -5,5 +5,5 @@ export const doc = {
   description: 'With links',
   isReady: true,
   aspectRatio: 16 / 4,
-  componentsUsed: ['TabList', 'Tab'],
+  componentsUsed: ['TabList'],
 };

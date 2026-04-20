@@ -4,7 +4,7 @@ import {versions, getTransformsBetween} from '../registry.mjs';
 describe('registry', () => {
   describe('versions', () => {
     test('are sorted in ascending semver order across digit boundaries', () => {
-      expect(versions).toEqual(['0.0.2', '0.0.6', '0.0.7', '0.0.8', '0.0.10', '0.0.12', '0.0.14']);
+      expect(versions).toEqual(['0.0.2', '0.0.6', '0.0.7', '0.0.8', '0.0.10', '0.0.12', '0.0.13']);
     });
   });
 
@@ -31,6 +31,16 @@ describe('registry', () => {
     test('returns empty array when from is greater than to', async () => {
       const results = await getTransformsBetween('0.0.8', '0.0.2');
       expect(results).toEqual([]);
+    });
+
+    test('handles prerelease suffixes in --to (canary versions)', async () => {
+      const results = await getTransformsBetween('0.0.12', '0.0.13-canary.21d98fa');
+      expect(results.map((r) => r.version)).toEqual(['0.0.13']);
+    });
+
+    test('handles prerelease suffixes in --from', async () => {
+      const results = await getTransformsBetween('0.0.12-canary.abc1234', '0.0.13');
+      expect(results.map((r) => r.version)).toEqual(['0.0.13']);
     });
   });
 });

@@ -5,5 +5,5 @@ export const doc = {
   description: 'Card header layout with a title and three-dot overflow menu.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['MoreMenu', 'Layout', 'Heading'],
+  componentsUsed: ['Layout', 'MoreMenu', 'Text'],
 };

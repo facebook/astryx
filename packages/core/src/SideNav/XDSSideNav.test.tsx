@@ -224,10 +224,10 @@ describe('XDSSideNavHeading', () => {
       />,
     );
     const button = screen.getByRole('button');
-    // Native popover toggle via popoverTarget attribute (jsdom doesn't
-    // support the Popover API, so we verify the attribute is set instead
-    // of testing the full open/close cycle).
-    expect(button).toHaveAttribute('popovertarget');
+    // The trigger button uses aria attributes from useXDSPopover and
+    // an onClick handler from useXDSMenuHover for click-to-lock toggle.
+    expect(button).toHaveAttribute('aria-haspopup', 'dialog');
+    expect(button).toHaveAttribute('aria-expanded');
   });
 
   it('renders chevron as separate trigger when menu and hrefs are provided', () => {

@@ -33,6 +33,7 @@ import {XDSButton} from '@xds/core/Button';
 import {XDSNavIcon} from '@xds/core/NavIcon';
 import {XDSBanner} from '@xds/core/Banner';
 import {XDSList, XDSListItem} from '@xds/core/List';
+import {XDSNavMenuItem} from '@xds/core/NavMenu';
 
 // =============================================================================
 // Configuration types
@@ -569,11 +570,11 @@ function SampleSideNav({
         : undefined;
 
   const headingMenu = (
-    <XDSList density="spacious">
-      <XDSListItem label="Sibling Product 1" href="#" />
-      <XDSListItem label="Sibling Product 2" href="#" />
-      <XDSListItem label="Sibling Product 3" href="#" />
-    </XDSList>
+    <>
+      <XDSNavMenuItem label="Sibling Product 1" onClick={() => {}} />
+      <XDSNavMenuItem label="Sibling Product 2" onClick={() => {}} />
+      <XDSNavMenuItem label="Sibling Product 3" onClick={() => {}} />
+    </>
   );
 
   const heading =
@@ -827,11 +828,11 @@ function SampleTopNav({
         : undefined;
 
   const topNavHeadingMenu = (
-    <XDSList density="spacious">
-      <XDSListItem label="Sibling Product 1" href="#" />
-      <XDSListItem label="Sibling Product 2" href="#" />
-      <XDSListItem label="Sibling Product 3" href="#" />
-    </XDSList>
+    <>
+      <XDSNavMenuItem label="Sibling Product 1" onClick={() => {}} />
+      <XDSNavMenuItem label="Sibling Product 2" onClick={() => {}} />
+      <XDSNavMenuItem label="Sibling Product 3" onClick={() => {}} />
+    </>
   );
 
   const topNavHeading =

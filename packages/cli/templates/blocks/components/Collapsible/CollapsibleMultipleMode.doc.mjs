@@ -5,5 +5,5 @@ export const doc = {
   description: 'Coordinated group where multiple sections can be open simultaneously.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Collapsible', 'Card', 'VStack'],
+  componentsUsed: ['Card', 'Collapsible', 'Stack'],
 };

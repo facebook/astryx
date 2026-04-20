@@ -5,5 +5,5 @@ export const doc = {
   description: 'Custom token rendering',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Tokenizer', 'Token'],
+  componentsUsed: ['Token', 'Tokenizer', 'Typeahead'],
 };

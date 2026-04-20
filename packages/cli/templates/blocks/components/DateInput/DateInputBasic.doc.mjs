@@ -5,5 +5,5 @@ export const doc = {
   description: 'Simple date input with text entry and calendar popover.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['DateInput'],
+  componentsUsed: ['Calendar', 'DateInput'],
 };

@@ -396,7 +396,10 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
       ref={ref}
       {...tableRenderProps.htmlProps}
       {...mergeProps(
-        xdsClassName('base-table'),
+        xdsClassName('base-table') +
+          (tableRenderProps.htmlProps.className
+            ? ` ${tableRenderProps.htmlProps.className}`
+            : ''),
         stylex.props(...tableRenderProps.styles),
       )}
       style={tableStyle}>

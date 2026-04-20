@@ -5,5 +5,5 @@ export const doc = {
   description: 'Metadata list with a heading title and collapsible show more toggle.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['MetadataList', 'Heading'],
+  componentsUsed: ['MetadataList', 'Text'],
 };

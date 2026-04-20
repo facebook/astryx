@@ -5,5 +5,5 @@ export const doc = {
   description: 'Date input displaying an error validation message.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['DateInput'],
+  componentsUsed: ['Calendar', 'DateInput'],
 };

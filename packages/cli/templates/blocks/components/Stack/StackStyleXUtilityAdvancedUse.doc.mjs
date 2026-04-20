@@ -5,5 +5,5 @@ export const doc = {
   description: 'StyleX utility — advanced use',
   isReady: true,
   aspectRatio: 1,
-  componentsUsed: ['Stack'],
+  componentsUsed: ['Layout'],
 };

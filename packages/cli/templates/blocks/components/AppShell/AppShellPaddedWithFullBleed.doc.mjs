@@ -5,5 +5,5 @@ export const doc = {
   description: 'Padded layout with a full-bleed chart section using XDSSection padding override.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['AppShell', 'TopNav', 'Heading', 'Section', 'Card'],
+  componentsUsed: ['AppShell', 'Card', 'Section', 'Text', 'TopNav'],
 };

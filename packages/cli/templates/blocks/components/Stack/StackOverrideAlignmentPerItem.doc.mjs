@@ -5,5 +5,5 @@ export const doc = {
   description: 'Override alignment per item',
   isReady: true,
   aspectRatio: 1,
-  componentsUsed: ['Stack', 'HStack', 'StackItem'],
+  componentsUsed: ['Layout'],
 };

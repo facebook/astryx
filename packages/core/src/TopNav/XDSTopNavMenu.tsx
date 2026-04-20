@@ -14,7 +14,6 @@
 
 import {
   useCallback,
-  useEffect,
   useId,
   useRef,
   useState,
@@ -22,7 +21,7 @@ import {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {useXDSPopover} from '../Popover/useXDSPopover';
-import {useListFocus} from '../hooks/useListFocus';
+import {useXDSMenuHover} from '../hooks/useXDSMenuHover';
 import {getIcon} from '../Icon/globalIconRegistry';
 import {xdsClassName, mergeProps} from '../utils';
 import {navItemStyles} from '../NavItem/navItemStyles.stylex';
@@ -385,89 +384,32 @@ export function XDSTopNavMenu({
 
   // Default: desktop popover
   const slot = useTopNavSlot();
-  const showTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const triggerButtonRef = useRef<HTMLButtonElement | null>(null);
-  const clickLockedRef = useRef(false);
 
   const popover = useXDSPopover({
     dialogLabel: label,
     xstyle: styles.menuOffset,
   });
 
-  const {
-    listRef: menuRef,
-    handleKeyDown: handleListKeyDown,
-    focusFirst,
-  } = useListFocus({
-    onEscape: () => {
-      clearTimeouts();
-      clickLockedRef.current = false;
-      popover.hide();
-      triggerButtonRef.current?.focus();
-    },
+  const {triggerProps, contentProps, menuRef, setTriggerEl} = useXDSMenuHover({
+    show: popover.show,
+    hide: popover.hide,
+    isOpen: popover.isOpen,
+    isEnabled: true,
+    showDelay: delay,
+    hideDelay,
   });
 
-  const clearTimeouts = useCallback(() => {
-    if (showTimeoutRef.current) {
-      clearTimeout(showTimeoutRef.current);
-      showTimeoutRef.current = null;
-    }
-    if (hideTimeoutRef.current) {
-      clearTimeout(hideTimeoutRef.current);
-      hideTimeoutRef.current = null;
-    }
-  }, []);
-
-  const scheduleShow = useCallback(() => {
-    clearTimeouts();
-    showTimeoutRef.current = setTimeout(() => {
-      popover.show({skipAutoFocus: true});
-    }, delay);
-  }, [clearTimeouts, popover, delay]);
-
-  const scheduleHide = useCallback(() => {
-    clearTimeouts();
-    hideTimeoutRef.current = setTimeout(() => {
-      popover.hide();
-    }, hideDelay);
-  }, [clearTimeouts, popover, hideDelay]);
-
-  const handleMouseEnter = useCallback(() => {
-    if (!clickLockedRef.current) scheduleShow();
-  }, [scheduleShow]);
-
-  const handleMouseLeave = useCallback(() => {
-    if (!clickLockedRef.current) scheduleHide();
-  }, [scheduleHide]);
-
-  const handleClick = useCallback(() => {
-    clearTimeouts();
-    if (popover.isOpen) {
-      clickLockedRef.current = false;
-      popover.hide();
-      triggerButtonRef.current?.focus();
-    } else {
-      clickLockedRef.current = true;
-      popover.show();
-      requestAnimationFrame(() => focusFirst());
-    }
-  }, [popover, clearTimeouts, focusFirst]);
-
-  // Combine refs — popover.triggerRef for anchor, triggerButtonRef for focus
   const setTriggerRef = useCallback(
     (el: HTMLButtonElement | null) => {
       (
         triggerButtonRef as React.MutableRefObject<HTMLButtonElement | null>
       ).current = el;
       popover.triggerRef(el);
+      setTriggerEl(el);
     },
-    [popover],
+    [popover, setTriggerEl],
   );
-
-  useEffect(() => {
-    return () => clearTimeouts();
-  }, [clearTimeouts]);
 
   return (
     <>
@@ -475,9 +417,7 @@ export function XDSTopNavMenu({
         ref={setTriggerRef}
         type="button"
         {...popover.triggerProps}
-        onClick={handleClick}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
+        {...triggerProps}
         {...mergeProps(
           xdsClassName('top-nav-menu'),
           stylex.props(styles.trigger, popover.isOpen && styles.triggerOpen),
@@ -496,9 +436,7 @@ export function XDSTopNavMenu({
           ref={menuRef as React.RefObject<HTMLDivElement>}
           role="menu"
           aria-label={label}
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
-          onKeyDown={handleListKeyDown}
+          {...contentProps}
           {...stylex.props(styles.menuContainer)}>
           {items.map((item, index) => {
             const Element = item.href ? 'a' : 'div';

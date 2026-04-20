@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file Thumbnail component barrel export
  */

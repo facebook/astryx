@@ -5,5 +5,5 @@ export const doc = {
   description: 'Date input restricted to a min/max date range with custom placeholder.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['DateInput'],
+  componentsUsed: ['Calendar', 'DateInput'],
 };

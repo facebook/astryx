@@ -52,8 +52,8 @@ const styles = stylex.create({
     paddingInline: 16,
   },
   headerPadding: {
-    paddingInline: 8,
-    paddingBlock: 8,
+    paddingInline: 24,
+    paddingBlock: 24,
     position: 'sticky',
     top: 0,
     backgroundColor: 'var(--xds-color-background-surface, #fff)',
