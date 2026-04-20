@@ -10,6 +10,7 @@
 
 import {useCallback, useRef, useState, useEffect} from 'react';
 import {createPortal} from 'react-dom';
+import {XDSIconButton} from '@xds/core/IconButton';
 import {useChart} from './ChartContext';
 import {isBandScale} from './utils';
 import type {ScaleLinear} from 'd3-scale';
@@ -44,25 +45,49 @@ export interface XDSChartZoomProps {
   toolbar?: false | ZoomToolbarPosition;
 }
 
-// SVG icon paths (16x16 viewBox)
-const ICON_ZOOM_IN = 'M8 3v10M3 8h10'; // plus
-const ICON_ZOOM_OUT = 'M3 8h10'; // minus
-const ICON_PAN =
-  'M8 2v12M2 8h12M5 5l3-3 3 3M5 11l3 3 3-3M2 5l-0 3 0 3M14 5l0 3 0 3'; // move arrows
-const ICON_RESET = 'M2 8a6 6 0 1 1 1.5 4M2 12V8h4'; // circular arrow
-
-function ToolbarIcon({d, size = 16}: {d: string; size?: number}) {
+// Chart toolbar icons (16x16 SVG)
+function ZoomInIcon() {
   return (
     <svg
-      width={size}
-      height={size}
+      width={16}
+      height={16}
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round">
+      <path d="M8 3v10M3 8h10" />
+    </svg>
+  );
+}
+
+function ZoomOutIcon() {
+  return (
+    <svg
+      width={16}
+      height={16}
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round">
+      <path d="M3 8h10" />
+    </svg>
+  );
+}
+
+function ResetIcon() {
+  return (
+    <svg
+      width={16}
+      height={16}
       viewBox="0 0 16 16"
       fill="none"
       stroke="currentColor"
       strokeWidth={1.5}
       strokeLinecap="round"
       strokeLinejoin="round">
-      <path d={d} />
+      <path d="M2 8a6 6 0 1 1 1.5 4M2 12V8h4" />
     </svg>
   );
 }
@@ -76,7 +101,6 @@ export function XDSChartZoom({
   toolbar = 'top-right',
 }: XDSChartZoomProps) {
   const {width, height, xScale, yScale, svgRef} = useChart();
-  const [panMode, setPanMode] = useState(false);
 
   // Capture initial domains on mount for reset
   const initialDomainsRef = useRef<{
@@ -215,7 +239,7 @@ export function XDSChartZoom({
           yDomain: yScale.domain() as [number, number],
         };
         dragRef.current = null;
-      } else if (pointersRef.current.size === 1 && panMode) {
+      } else if (pointersRef.current.size === 1) {
         dragRef.current = {
           startX: e.clientX,
           startY: e.clientY,
@@ -224,7 +248,7 @@ export function XDSChartZoom({
         };
       }
     },
-    [panMode, getXDomain, yScale],
+    [getXDomain, yScale],
   );
 
   const onPointerMove = useCallback(
@@ -247,7 +271,7 @@ export function XDSChartZoom({
           const half = ((yMax - yMin) / 2) * ratio;
           onYDomainChange?.([mid - half, mid + half]);
         }
-      } else if (dragRef.current && panMode) {
+      } else if (dragRef.current) {
         const dx = e.clientX - dragRef.current.startX;
         const dy = e.clientY - dragRef.current.startY;
         if (!yOnly && !isBandScale(xScale)) {
@@ -262,16 +286,7 @@ export function XDSChartZoom({
         }
       }
     },
-    [
-      panMode,
-      xScale,
-      width,
-      height,
-      onXDomainChange,
-      onYDomainChange,
-      xOnly,
-      yOnly,
-    ],
+    [xScale, width, height, onXDomainChange, onYDomainChange, xOnly, yOnly],
   );
 
   const onPointerUp = useCallback((e: React.PointerEvent<SVGRectElement>) => {
@@ -313,26 +328,6 @@ export function XDSChartZoom({
     }
   };
 
-  const btnStyle: React.CSSProperties = {
-    width: 28,
-    height: 28,
-    border: '1px solid var(--color-border)',
-    borderRadius: 6,
-    background: 'var(--color-background-popover)',
-    color: 'var(--color-text-primary)',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 0,
-  };
-
-  const activeBtnStyle: React.CSSProperties = {
-    ...btnStyle,
-    background: 'var(--color-accent-muted)',
-    borderColor: 'var(--color-accent)',
-  };
-
   return (
     <>
       <g>
@@ -344,7 +339,7 @@ export function XDSChartZoom({
           fill="transparent"
           style={
             {
-              cursor: panMode ? 'grab' : 'default',
+              cursor: 'grab',
               touchAction: 'none',
               userSelect: 'none',
             } as React.CSSProperties
@@ -362,34 +357,27 @@ export function XDSChartZoom({
         portalTarget &&
         createPortal(
           <div style={toolbarPositionStyle(toolbar)}>
-            <button
-              style={btnStyle}
+            <XDSIconButton
+              label="Zoom in"
+              icon={<ZoomInIcon />}
+              variant="ghost"
+              size="sm"
               onClick={() => zoomBy(1 / (1 + zoomSpeed))}
-              title="Zoom in"
-              type="button">
-              <ToolbarIcon d={ICON_ZOOM_IN} />
-            </button>
-            <button
-              style={btnStyle}
+            />
+            <XDSIconButton
+              label="Zoom out"
+              icon={<ZoomOutIcon />}
+              variant="ghost"
+              size="sm"
               onClick={() => zoomBy(1 + zoomSpeed)}
-              title="Zoom out"
-              type="button">
-              <ToolbarIcon d={ICON_ZOOM_OUT} />
-            </button>
-            <button
-              style={panMode ? activeBtnStyle : btnStyle}
-              onClick={() => setPanMode(!panMode)}
-              title={panMode ? 'Disable pan' : 'Enable pan'}
-              type="button">
-              <ToolbarIcon d={ICON_PAN} />
-            </button>
-            <button
-              style={btnStyle}
+            />
+            <XDSIconButton
+              label="Reset zoom"
+              icon={<ResetIcon />}
+              variant="ghost"
+              size="sm"
               onClick={handleReset}
-              title="Reset zoom"
-              type="button">
-              <ToolbarIcon d={ICON_RESET} />
-            </button>
+            />
           </div>,
           portalTarget,
         )}
