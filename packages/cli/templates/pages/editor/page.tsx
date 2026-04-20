@@ -327,6 +327,10 @@ const editorStyles = stylex.create({
     paddingInline: 16,
     paddingBlockEnd: 16,
   },
+  tabFill: {
+    flex: 1,
+    textAlign: 'center',
+  },
 });
 
 // ---------------------------------------------------------------------------
@@ -901,8 +905,8 @@ export default function EditorPage() {
                 <XDSTabList
                   value={sidebarTab}
                   onChange={(v: string) => setSidebarTab(v as SidebarTab)}>
-                  <XDSTab value="blocks" label="Blocks" />
-                  <XDSTab value="properties" label="Properties" />
+                  <XDSTab value="blocks" label="Blocks" xstyle={editorStyles.tabFill} />
+                  <XDSTab value="properties" label="Properties" xstyle={editorStyles.tabFill} />
                 </XDSTabList>
                 <XDSDivider />
               </XDSVStack>
