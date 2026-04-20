@@ -103,7 +103,7 @@ export default function GalleryHero() {
           </XDSHStack>
         </XDSVStack>
         <XDSGrid
-          columns={{minWidth: 200}}
+          columns={{minWidth: 200, repeat: 'fit'}}
           gap={4}
           xstyle={styles.galleryPadding}>
           {IMAGES.map((image, i) => (
