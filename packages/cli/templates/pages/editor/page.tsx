@@ -675,7 +675,7 @@ export default function EditorPage() {
   const blocksTabContent = (
     <XDSVStack gap={2}>
       <XDSVStack gap={1}>
-        <XDSSection variant="transparent" padding={0}>
+        <XDSSection variant="transparent" padding={2}>
           <XDSHeading level={4}>Add Block</XDSHeading>
         </XDSSection>
         <XDSList density="balanced" hasDividers={false}>
@@ -693,7 +693,7 @@ export default function EditorPage() {
       </XDSVStack>
 
       <XDSVStack gap={1}>
-        <XDSSection variant="transparent" padding={0}>
+        <XDSSection variant="transparent" padding={2}>
           <XDSHeading level={4}>Layers</XDSHeading>
         </XDSSection>
         <XDSList density="balanced" hasDividers={false}>
