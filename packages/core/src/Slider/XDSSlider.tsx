@@ -40,7 +40,10 @@ import type {XDSBaseProps} from '../XDSBaseProps';
 // Types
 // =============================================================================
 
-export interface XDSSliderBaseProps extends XDSBaseProps<HTMLDivElement> {
+export interface XDSSliderBaseProps extends Omit<
+  XDSBaseProps<HTMLDivElement>,
+  'onChange'
+> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLDivElement>;
   /** Label text for the slider (always rendered for accessibility). */

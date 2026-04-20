@@ -21,7 +21,10 @@ import {xdsClassName, mergeProps} from '../utils';
 import {useXDSSize} from '../SizeContext/XDSSizeContext';
 import type {XDSBaseProps} from '../XDSBaseProps';
 
-export interface XDSSegmentedControlProps extends XDSBaseProps<HTMLDivElement> {
+export interface XDSSegmentedControlProps extends Omit<
+  XDSBaseProps<HTMLDivElement>,
+  'onChange'
+> {
   /**
    * The currently selected value (controlled).
    */
