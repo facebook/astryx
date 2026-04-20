@@ -21,7 +21,6 @@ import {
   type PointerEvent,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
 import {
   colorVars,
   spacingVars,
@@ -35,12 +34,16 @@ import {XDSField} from '../Field/XDSField';
 import {XDSTooltip} from '../Tooltip/XDSTooltip';
 import type {XDSInputStatus} from '../Field/types';
 import {xdsClassName, mergeProps} from '../utils';
+import type {XDSBaseProps} from '../XDSBaseProps';
 
 // =============================================================================
 // Types
 // =============================================================================
 
-export interface XDSSliderBaseProps {
+export interface XDSSliderBaseProps extends Omit<
+  XDSBaseProps<HTMLDivElement>,
+  'onChange'
+> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLDivElement>;
   /** Label text for the slider (always rendered for accessibility). */
@@ -73,27 +76,6 @@ export interface XDSSliderBaseProps {
   valueDisplay?: 'tooltip' | 'text' | 'none';
   /** Tick marks at specified positions with optional labels. */
   marks?: Array<{value: number; label?: string}>;
-  /**
-   * StyleX styles created via `stylex.create()`. Merged with the component's
-   * base styles inside a single `stylex.props()` call for optimal deduplication.
-   *
-   * @example
-   * ```
-   * const overrides = stylex.create({ root: { marginBottom: 8 } });
-   * <Component xstyle={overrides.root} />
-   * ```
-   */
-  xstyle?: StyleXStyles;
-  /**
-   * CSS class name(s) appended to the root element.
-   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
-   */
-  className?: string;
-  /**
-   * Inline styles to apply to the root element. Spread after StyleX
-   * inline styles, so these values take priority.
-   */
-  style?: React.CSSProperties;
   /** Test ID for the root element. */
   'data-testid'?: string;
 }
