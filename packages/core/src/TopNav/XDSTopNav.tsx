@@ -254,7 +254,7 @@ export function XDSTopNav({
         style,
       )}
       {...props}>
-      <div {...stylex.props(styles.leftSection, edgeInset.start2)}>
+      <div {...stylex.props(styles.leftSection, edgeInset.start1)}>
         {heading && <div {...stylex.props(styles.heading)}>{heading}</div>}
         {startContent && (
           <XDSTopNavSlotContext value="start">
@@ -268,12 +268,12 @@ export function XDSTopNav({
         </XDSTopNavSlotContext>
       )}
       {hasCenterContent ? (
-        <div {...stylex.props(styles.rightSection, edgeInset.end2)}>
+        <div {...stylex.props(styles.rightSection)}>
           <XDSTopNavSlotContext value="end">{endContent}</XDSTopNavSlotContext>
         </div>
       ) : (
         endContent && (
-          <div {...stylex.props(styles.endContent, edgeInset.end2)}>
+          <div {...stylex.props(styles.endContent)}>
             <XDSTopNavSlotContext value="end">
               {endContent}
             </XDSTopNavSlotContext>
