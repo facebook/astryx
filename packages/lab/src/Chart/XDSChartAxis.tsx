@@ -8,7 +8,6 @@
 
 import {useMemo} from 'react';
 import {useChart} from './ChartContext';
-import {isBandScale} from './utils';
 import type {ScaleLinear, ScaleTime} from 'd3-scale';
 
 export interface XDSChartAxisProps {
@@ -45,7 +44,7 @@ export function XDSChartAxis({
 
   const ticks = useMemo(() => {
     // Runtime band scale check — works even when yScale is cast to ScaleLinear for horizontal orientation
-    if ('bandwidth' in scale && typeof (scale as any).bandwidth === 'function') {
+    if ('bandwidth' in scale) {
       const bandScale = scale as unknown as import('d3-scale').ScaleBand<string>;
       return bandScale.domain().map(d => ({
         value: d,
