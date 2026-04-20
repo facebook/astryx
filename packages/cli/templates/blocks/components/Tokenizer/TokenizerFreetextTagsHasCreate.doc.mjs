@@ -5,5 +5,5 @@ export const doc = {
   description: 'Free-text tags (hasCreate)',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Tokenizer'],
+  componentsUsed: ['Tokenizer', 'Typeahead'],
 };

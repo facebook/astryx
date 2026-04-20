@@ -5,5 +5,5 @@ export const doc = {
   description: 'Command palette with auto-grouped items and custom item rendering.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['CommandPalette', 'Button'],
+  componentsUsed: ['Button', 'CommandPalette', 'Typeahead'],
 };

@@ -22,9 +22,10 @@ import {XDSHStack} from '../Stack';
 import {XDSHeading} from '../Text/XDSHeading';
 import {XDSText} from '../Text/XDSText';
 import {XDSButton, type XDSButtonVariant} from '../Button';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import {xdsClassName} from '../utils';
 
-export interface XDSAlertDialogProps {
+export interface XDSAlertDialogProps extends XDSBaseProps<HTMLDivElement> {
   /**
    * Whether the dialog is open.
    */
@@ -113,6 +114,10 @@ export function XDSAlertDialog({
   isActionLoading,
   onAction,
   width = 400,
+  xstyle,
+  className,
+  style,
+  'data-testid': testId,
 }: XDSAlertDialogProps) {
   const titleId = useId();
   const descriptionId = useId();
@@ -130,7 +135,12 @@ export function XDSAlertDialog({
       role="alertdialog"
       aria-labelledby={titleId}
       aria-describedby={descriptionId}
-      className={xdsClassName('alert-dialog')}>
+      className={
+        xdsClassName('alert-dialog') + (className ? ` ${className}` : '')
+      }
+      xstyle={xstyle}
+      style={style}
+      data-testid={testId}>
       <XDSLayout
         content={
           <XDSLayoutContent>

@@ -5,5 +5,5 @@ export const doc = {
   description: 'With custom item rendering',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Typeahead', 'TypeaheadItem', 'Avatar'],
+  componentsUsed: ['Avatar', 'Typeahead'],
 };

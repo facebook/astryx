@@ -22,6 +22,7 @@ import {XDSTableCell} from './XDSTableCell';
 import {XDSTableHeaderCell} from './XDSTableHeaderCell';
 import {XDSTableContext} from './XDSTableContext';
 import {useXDSBaseTablePlugins} from './useXDSBaseTablePlugins';
+import {xdsClassName} from '../utils';
 import type {
   XDSBaseTableProps,
   XDSTableVerticalAlign,
@@ -120,8 +121,16 @@ function buildTableStylePlugin<
 >(): TablePlugin<T> {
   return {
     transformTable(props: TableRenderProps): TableRenderProps {
+      const existingClass = props.htmlProps.className ?? '';
+      const tableClass = xdsClassName('table');
       return {
         ...props,
+        htmlProps: {
+          ...props.htmlProps,
+          className: existingClass
+            ? `${existingClass} ${tableClass}`
+            : tableClass,
+        },
         styles: [...props.styles, tableStyles.base, tableStyles.containerBleed],
       };
     },

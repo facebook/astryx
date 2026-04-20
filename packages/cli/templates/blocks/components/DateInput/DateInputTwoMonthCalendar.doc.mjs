@@ -5,5 +5,5 @@ export const doc = {
   description: 'Date input displaying two months simultaneously in the calendar popover.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['DateInput'],
+  componentsUsed: ['Calendar', 'DateInput'],
 };

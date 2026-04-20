@@ -5,5 +5,5 @@ export const doc = {
   description: 'Form layout inside a dialog using HTML form attribute for submit button.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['FormLayout', 'Dialog', 'TextInput', 'Button'],
+  componentsUsed: ['Button', 'Dialog', 'FormLayout', 'Layout', 'TextInput'],
 };

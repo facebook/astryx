@@ -5,5 +5,5 @@ export const doc = {
   description: 'Sidebar layout',
   isReady: true,
   aspectRatio: 1,
-  componentsUsed: ['Stack', 'HStack', 'StackItem'],
+  componentsUsed: ['Layout'],
 };

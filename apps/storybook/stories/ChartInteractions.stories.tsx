@@ -8,7 +8,7 @@ import {
   XDSChartDot,
   XDSChartBar,
   XDSChartBrush,
-  XDSChartCrosshair,
+  XDSChartTooltip,
   XDSChartZoom,
   XDSChartSelect,
   XDSChartReferenceLine,
@@ -98,8 +98,10 @@ export const Crosshair: StoryObj = {
             color={colors.categorical(1)[0]}
             radius={3}
           />
-          <XDSChartCrosshair
-            xFormat={v => `${Math.round(v)} hp`}
+          <XDSChartTooltip
+            crosshair="xy"
+            crosshairLabels
+            xFormat={v => `${Math.round(Number(v))} hp`}
             yFormat={v => `${Math.round(v)} mpg`}
           />
         </XDSChart>
@@ -204,8 +206,6 @@ const monthlyData = [
   {month: 'May', revenue: 5400, expenses: 3100},
   {month: 'Jun', revenue: 6200, expenses: 3400},
 ];
-
-
 
 /** Reference lines for target and average */
 export const ReferenceLines: StoryObj = {

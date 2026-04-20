@@ -5,5 +5,5 @@ export const doc = {
   description: 'With XDSAppShell + TopNav (no header)',
   isReady: true,
   aspectRatio: 3 / 4,
-  componentsUsed: ['AppShell', 'TopNav', 'TopNavHeading', 'SideNav', 'SideNavSection', 'SideNavItem'],
+  componentsUsed: ['AppShell', 'SideNav', 'TopNav'],
 };

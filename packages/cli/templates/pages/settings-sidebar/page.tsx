@@ -10,7 +10,6 @@ import {XDSLink} from '@xds/core/Link';
 import {XDSButton} from '@xds/core/Button';
 import {XDSSelector} from '@xds/core/Selector';
 import {XDSCard} from '@xds/core/Card';
-import {XDSSection} from '@xds/core/Section';
 import {XDSSwitch} from '@xds/core/Switch';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSTabList, XDSTab} from '@xds/core/TabList';
