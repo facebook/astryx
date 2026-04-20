@@ -39,7 +39,7 @@ export default defineConfig({
               runtimeInjection: false,
               genConditionalClasses: true,
               treeshakeCompensation: true,
-              classNamePrefix: 'xds',
+
               unstable_moduleResolution: {
                 type: 'commonJS',
                 rootDir: '.',
