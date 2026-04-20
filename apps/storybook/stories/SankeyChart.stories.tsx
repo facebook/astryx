@@ -549,3 +549,114 @@ export const USFederalBudget: Story = {
     </XDSStack>
   ),
 };
+
+// --- Color modes ---
+
+/** Monochrome — flat black ribbons on white, editorial style */
+export const Monochrome: Story = {
+  render: () => (
+    <XDSStack direction="vertical" gap={4}>
+      <XDSHeading level={3}>Petroleum Flow</XDSHeading>
+      <XDSText type="body" color="secondary">
+        Monochrome — flat color, no gradients
+      </XDSText>
+      <XDSSankeyChart
+        nodes={funnelNodes}
+        links={funnelLinks}
+        columns={funnelColumns}
+        height={340}>
+        <XDSSankeyLink color="#1a1a1e" opacity={0.75} />
+        <XDSSankeyNode color="#1a1a1e" glow={false} />
+        <XDSSankeyLabel />
+      </XDSSankeyChart>
+    </XDSStack>
+  ),
+};
+
+/** Source-colored — each link takes its source node's color */
+export const SourceColored: Story = {
+  render: () => (
+    <XDSStack direction="vertical" gap={4}>
+      <XDSHeading level={3}>Source-Colored Links</XDSHeading>
+      <XDSText type="body" color="secondary">
+        Each ribbon matches its source node
+      </XDSText>
+      <XDSSankeyChart
+        nodes={funnelNodes}
+        links={funnelLinks}
+        columns={funnelColumns}
+        height={340}>
+        <XDSSankeyGrid />
+        <XDSSankeyLink color="source" />
+        <XDSSankeyNode />
+        <XDSSankeyLabel />
+      </XDSSankeyChart>
+    </XDSStack>
+  ),
+};
+
+/** Target-colored — each link takes its target node's color */
+export const TargetColored: Story = {
+  render: () => (
+    <XDSStack direction="vertical" gap={4}>
+      <XDSHeading level={3}>Target-Colored Links</XDSHeading>
+      <XDSText type="body" color="secondary">
+        Each ribbon matches its destination node
+      </XDSText>
+      <XDSSankeyChart
+        nodes={funnelNodes}
+        links={funnelLinks}
+        columns={funnelColumns}
+        height={340}>
+        <XDSSankeyGrid />
+        <XDSSankeyLink color="target" />
+        <XDSSankeyNode />
+        <XDSSankeyLabel />
+      </XDSSankeyChart>
+    </XDSStack>
+  ),
+};
+
+/** Leaned gradient — source-biased, transitions late */
+export const LeanedSourceGradient: Story = {
+  render: () => (
+    <XDSStack direction="vertical" gap={4}>
+      <XDSHeading level={3}>Source-Leaned Gradient</XDSHeading>
+      <XDSText type="body" color="secondary">
+        bias=0.2 — holds source color, transitions near target
+      </XDSText>
+      <XDSSankeyChart
+        nodes={funnelNodes}
+        links={funnelLinks}
+        columns={funnelColumns}
+        height={340}>
+        <XDSSankeyGrid />
+        <XDSSankeyLink color={{gradient: 0.2}} />
+        <XDSSankeyNode />
+        <XDSSankeyLabel />
+      </XDSSankeyChart>
+    </XDSStack>
+  ),
+};
+
+/** Leaned gradient — target-biased, transitions early */
+export const LeanedTargetGradient: Story = {
+  render: () => (
+    <XDSStack direction="vertical" gap={4}>
+      <XDSHeading level={3}>Target-Leaned Gradient</XDSHeading>
+      <XDSText type="body" color="secondary">
+        bias=0.8 — transitions early, holds target color
+      </XDSText>
+      <XDSSankeyChart
+        nodes={funnelNodes}
+        links={funnelLinks}
+        columns={funnelColumns}
+        height={340}>
+        <XDSSankeyGrid />
+        <XDSSankeyLink color={{gradient: 0.8}} />
+        <XDSSankeyNode />
+        <XDSSankeyLabel />
+      </XDSSankeyChart>
+    </XDSStack>
+  ),
+};
