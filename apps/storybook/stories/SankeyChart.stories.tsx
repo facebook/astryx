@@ -316,7 +316,7 @@ export const BusinessFunnel: Story = {
         <XDSSankeyGrid />
         <XDSSankeyLink opacity={0.6} />
         <XDSSankeyNode />
-        <XDSSankeyLabel background />
+        <XDSSankeyLabel />
       </XDSSankeyChart>
     </XDSStack>
   ),
@@ -544,7 +544,7 @@ export const USFederalBudget: Story = {
         <XDSSankeyGrid />
         <XDSSankeyLink opacity={0.6} tension={0.5} />
         <XDSSankeyNode />
-        <XDSSankeyLabel formatValue={formatBudget} background />
+        <XDSSankeyLabel formatValue={formatBudget} />
       </XDSSankeyChart>
     </XDSStack>
   ),
