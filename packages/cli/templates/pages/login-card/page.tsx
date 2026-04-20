@@ -50,6 +50,20 @@ export default function LoginSimple() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loginFailed, setLoginFailed] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleLogin = () => {
+    if (!email || !password) {
+      setLoginFailed(true);
+      return;
+    }
+    setIsLoading(true);
+    setLoginFailed(false);
+    setTimeout(() => {
+      setIsLoading(false);
+      setLoginFailed(true);
+    }, 2000);
+  };
 
   return (
     <XDSCenter axis="both" xstyle={styles.page}>
@@ -121,11 +135,12 @@ export default function LoginSimple() {
 
             {/* Login button */}
             <XDSButton
-              label="Login"
+              label={isLoading ? 'Signing in…' : 'Login'}
               variant="primary"
               size="lg"
+              isDisabled={isLoading}
               xstyle={styles.fullWidth}
-              onClick={() => setLoginFailed(true)}
+              onClick={handleLogin}
             />
 
             {/* Divider */}
