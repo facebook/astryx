@@ -16,6 +16,7 @@ import {XDSTabList, XDSTab} from '@xds/core/TabList';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSCenter} from '@xds/core/Center';
+import {colorVars, radiusVars} from '@xds/core/theme/tokens.stylex';
 import {
   UserIcon,
   LockClosedIcon,
@@ -33,8 +34,8 @@ import {
 
 const styles = stylex.create({
   iconBox: {
-    borderRadius: 12,
-    backgroundColor: 'var(--xds-color-background-surface, #fff)',
+    borderRadius: radiusVars['--radius-container'],
+    backgroundColor: colorVars['--color-background-surface'],
     flexShrink: 0,
   },
   rowPadding: {
