@@ -202,7 +202,7 @@ function DocsiteLandingTemplate() {
       view: v,
       templateIdx: isNaN(templateIdx as number) ? null : templateIdx,
       query: q,
-      page: page as 'craft' | 'explore' | 'docs' | 'profile' | null,
+      page: page as 'craft' | 'explore' | 'docs' | 'profile' | 'theme' | null,
       tab:
         tab && ['Crafted', 'Used', 'Bookmarks'].includes(tab)
           ? (tab as 'Crafted' | 'Used' | 'Bookmarks')
@@ -215,7 +215,12 @@ function DocsiteLandingTemplate() {
   }, [searchParams]);
 
   const [activeView, setActiveView] = useState(
-    (initialView.page ?? 'craft') as 'craft' | 'explore' | 'docs' | 'profile',
+    (initialView.page ?? 'craft') as
+      | 'craft'
+      | 'explore'
+      | 'docs'
+      | 'profile'
+      | 'theme',
   );
   const [profileTab, setProfileTab] = useState<
     'Crafted' | 'Used' | 'Bookmarks'
@@ -463,9 +468,9 @@ function DocsiteLandingTemplate() {
     [activeView],
   );
 
-  const viewBeforeEditorRef = useRef<'craft' | 'explore' | 'docs' | 'profile'>(
-    'craft',
-  );
+  const viewBeforeEditorRef = useRef<
+    'craft' | 'explore' | 'docs' | 'profile' | 'theme'
+  >('craft');
   const handleBackFromUse = useCallback(() => {
     setUseTarget(null);
     setChatOpen(false);
