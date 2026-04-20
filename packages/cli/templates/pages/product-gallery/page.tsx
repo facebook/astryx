@@ -7,6 +7,7 @@ import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
 import {XDSGrid} from '@xds/core/Grid';
 import {XDSAspectRatio} from '@xds/core/AspectRatio';
+import {XDSCard} from '@xds/core/Card';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSSection} from '@xds/core/Section';
 import {ArrowRightIcon} from '@heroicons/react/24/outline';
@@ -15,10 +16,6 @@ import * as stylex from '@stylexjs/stylex';
 // ─── Styles ─────────────────────────────────────────────────────────────────
 
 const styles = stylex.create({
-  imageWrapper: {
-    borderRadius: 'var(--radius-container)',
-    overflow: 'clip',
-  },
   image: {
     width: '100%',
     height: '100%',
@@ -106,13 +103,15 @@ const fmt = (n: number) => `$${n.toFixed(2)}`;
 function ProductCard({product}: {product: Product}) {
   return (
     <XDSVStack gap={3}>
-      <XDSAspectRatio ratio={1} xstyle={styles.imageWrapper}>
-        <img
-          src={product.image}
-          alt={product.name}
-          {...stylex.props(styles.image)}
-        />
-      </XDSAspectRatio>
+      <XDSCard padding={0}>
+        <XDSAspectRatio ratio={1}>
+          <img
+            src={product.image}
+            alt={product.name}
+            {...stylex.props(styles.image)}
+          />
+        </XDSAspectRatio>
+      </XDSCard>
 
       <XDSVStack gap={1}>
         <XDSHeading level={2}>{product.name}</XDSHeading>
