@@ -129,6 +129,7 @@ export function XDSChartTooltip({
   // Screen-space coords for the tooltip popover
   const [tooltipCoords, setTooltipCoords] = useState({x: 0, y: 0});
   const layerContainerRef = useRef<HTMLElement | null>(null);
+  const active = useRef(false);
 
   const layer = useXDSLayer({mode: 'fixed'});
 
@@ -169,7 +170,7 @@ export function XDSChartTooltip({
     [data, xKey, xScale, yScale, height],
   );
 
-  const handlePointerMove = useCallback(
+  const updateTooltip = useCallback(
     (e: React.PointerEvent<SVGRectElement>) => {
       const dataPoint = pointerToData(e);
 
@@ -183,11 +184,7 @@ export function XDSChartTooltip({
 
       if (result) {
         setHoverState(result);
-
-        // Use client coords directly for fixed layer positioning
-        // Offset to avoid cursor overlap
         setTooltipCoords({x: e.clientX + 12, y: e.clientY - 8});
-
         layer.show();
       }
 
@@ -199,9 +196,41 @@ export function XDSChartTooltip({
     [pointerToData, findNearest, snap, layer, svgRef],
   );
 
+  // Touch: tap to show, drag to scrub
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent<SVGRectElement>) => {
+      if (e.pointerType !== 'mouse') {
+        e.preventDefault(); // blocks text selection on touch
+        active.current = true;
+        updateTooltip(e);
+      }
+    },
+    [updateTooltip],
+  );
+
+  // Mouse: hover to show. Touch: drag to scrub (only if active).
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent<SVGRectElement>) => {
+      if (e.pointerType !== 'mouse' && !active.current) return;
+      updateTooltip(e);
+    },
+    [updateTooltip],
+  );
+
+  // Touch: lift to dismiss
+  const handlePointerUp = useCallback(() => {
+    if (active.current) {
+      active.current = false;
+      setHoverState(null);
+      layer.hide();
+    }
+  }, [layer]);
+
   const handlePointerLeave = useCallback(() => {
-    setHoverState(null);
-    layer.hide();
+    if (!active.current) {
+      setHoverState(null);
+      layer.hide();
+    }
   }, [layer]);
 
   const fmtX =
@@ -243,7 +272,10 @@ export function XDSChartTooltip({
           height={height}
           fill="transparent"
           style={{touchAction: 'none'}}
+          onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
           onPointerLeave={handlePointerLeave}
         />
 

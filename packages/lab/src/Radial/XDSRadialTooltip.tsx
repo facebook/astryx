@@ -82,6 +82,7 @@ export function XDSRadialTooltip({
   const [tooltipCoords, setTooltipCoords] = useState({x: 0, y: 0});
   const svgRef = useRef<SVGSVGElement | null>(null);
   const portalRef = useRef<HTMLElement | null>(null);
+  const active = useRef(false);
 
   const layer = useXDSLayer({mode: 'fixed'});
 
@@ -167,7 +168,7 @@ export function XDSRadialTooltip({
     [axes, angleByAxis, axisDomains, cx, cy, radius, data],
   );
 
-  const handlePointerMove = useCallback(
+  const updateTooltip = useCallback(
     (e: React.PointerEvent<SVGCircleElement>) => {
       const svg = svgRef.current;
       if (!svg) return;
@@ -196,9 +197,41 @@ export function XDSRadialTooltip({
     [mode, hitTestPie, hitTestSpider, layer],
   );
 
+  // Touch: tap to show, drag to scrub
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent<SVGCircleElement>) => {
+      if (e.pointerType !== 'mouse') {
+        e.preventDefault();
+        active.current = true;
+        updateTooltip(e);
+      }
+    },
+    [updateTooltip],
+  );
+
+  // Mouse: hover. Touch: drag (only if active).
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent<SVGCircleElement>) => {
+      if (e.pointerType !== 'mouse' && !active.current) return;
+      updateTooltip(e);
+    },
+    [updateTooltip],
+  );
+
+  // Touch: lift to dismiss
+  const handlePointerUp = useCallback(() => {
+    if (active.current) {
+      active.current = false;
+      setHoverState(null);
+      layer.hide();
+    }
+  }, [layer]);
+
   const handlePointerLeave = useCallback(() => {
-    setHoverState(null);
-    layer.hide();
+    if (!active.current) {
+      setHoverState(null);
+      layer.hide();
+    }
   }, [layer]);
 
   const defaultRender = (d: RadialTooltipDatum) => (
@@ -233,7 +266,10 @@ export function XDSRadialTooltip({
           r={radius + 10}
           fill="transparent"
           style={{touchAction: 'none'}}
+          onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
           onPointerLeave={handlePointerLeave}
         />
 
