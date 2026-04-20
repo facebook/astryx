@@ -5,6 +5,7 @@ import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
 import {XDSIcon} from '@xds/core/Icon';
+import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import {XDSAppShell} from '@xds/core/AppShell';
 import {XDSTopNav, XDSTopNavHeading, XDSTopNavItem} from '@xds/core/TopNav';
 import {ArrowRightIcon} from '@heroicons/react/20/solid';
@@ -30,8 +31,12 @@ const styles = stylex.create({
   },
   heroImage: {
     width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+  },
+  imageClip: {
+    overflow: 'hidden',
     borderRadius: 'var(--radius-container)',
-    display: 'block',
   },
 });
 
@@ -84,13 +89,13 @@ export default function SplitHero() {
             <XDSButton label="Learn more" variant="secondary" />
           </XDSHStack>
         </XDSVStack>
-        <XDSVStack xstyle={styles.flex1}>
+        <XDSAspectRatio ratio={4 / 5} xstyle={[styles.flex1, styles.imageClip]}>
           <img
             {...stylex.props(styles.heroImage)}
             src={IMAGE_URL}
             alt="Illustrative vertical artwork with vibrant colors"
           />
-        </XDSVStack>
+        </XDSAspectRatio>
       </XDSHStack>
     </XDSAppShell>
   );
