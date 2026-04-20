@@ -4,7 +4,7 @@
  * @position Child of XDSChart; reads scales from context
  */
 
-import {useState, useCallback, useRef} from 'react';
+import React, {useState, useCallback, useRef} from 'react';
 import {useChart} from './ChartContext';
 import {isBandScale} from './utils';
 import type {ScaleLinear} from 'd3-scale';
@@ -195,8 +195,13 @@ export function XDSChartBrush({
         width={width}
         height={height}
         fill="transparent"
-        style={{cursor: 'crosshair'}}
-        onTouchStart={e => e.preventDefault()}
+        style={
+          {
+            cursor: 'crosshair',
+            touchAction: 'none',
+            userSelect: 'none',
+          } as React.CSSProperties
+        }
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}

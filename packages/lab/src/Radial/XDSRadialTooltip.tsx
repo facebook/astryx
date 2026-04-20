@@ -5,11 +5,13 @@
  *
  * Uses the XDS Layer system for top-layer rendering.
  * Hit-tests pointer position against slices (pie/donut) or axis proximity (spider).
+ * Portals the popover div outside the SVG into the chart container.
  */
 
 'use client';
 
-import {useState, useCallback, useRef, useEffect, type ReactNode} from 'react';
+import {useState, useCallback, useRef, type ReactNode} from 'react';
+import {createPortal} from 'react-dom';
 import {useXDSLayer} from '@xds/core/Layer';
 import {useRadial} from './RadialContext';
 
@@ -79,12 +81,16 @@ export function XDSRadialTooltip({
   const [hoverState, setHoverState] = useState<RadialTooltipDatum | null>(null);
   const [tooltipCoords, setTooltipCoords] = useState({x: 0, y: 0});
   const svgRef = useRef<SVGSVGElement | null>(null);
+  const portalRef = useRef<HTMLElement | null>(null);
 
   const layer = useXDSLayer({mode: 'fixed'});
 
-  // Resolve SVG element from the <g> parent
+  // Resolve SVG + portal target from the <g> mount
   const gRef = useCallback((el: SVGGElement | null) => {
-    if (el) svgRef.current = el.ownerSVGElement;
+    if (el) {
+      svgRef.current = el.ownerSVGElement;
+      portalRef.current = el.ownerSVGElement?.parentElement ?? null;
+    }
   }, []);
 
   const hitTestPie = useCallback(
@@ -95,12 +101,9 @@ export function XDSRadialTooltip({
       const dy = localY - cy;
       const dist = Math.sqrt(dx * dx + dy * dy);
 
-      // Outside the chart or inside the donut hole
       if (dist > radius || dist < innerRadius) return null;
 
-      // Compute angle (matching the chart's convention: start from -PI/2, clockwise)
       let angle = Math.atan2(dy, dx);
-      // Normalize to match slice angles
       if (angle < -Math.PI / 2) angle += 2 * Math.PI;
 
       for (let i = 0; i < slices.length; i++) {
@@ -130,7 +133,6 @@ export function XDSRadialTooltip({
 
       if (dist > radius + 20) return null;
 
-      // Find nearest axis by angle
       const angle = Math.atan2(dy, dx);
       let nearestAxis = axes[0];
       let minAngleDist = Infinity;
@@ -144,12 +146,8 @@ export function XDSRadialTooltip({
         }
       }
 
-      // Only trigger if reasonably close to an axis
       if (minAngleDist > Math.PI / axes.length) return null;
 
-      // Find which data point is closest along that axis
-      // For simplicity, use the first data entry (single-series spider)
-      // or the one with the highest value on that axis
       let bestIdx = 0;
       let bestVal = 0;
       for (let i = 0; i < data.length; i++) {
@@ -222,24 +220,24 @@ export function XDSRadialTooltip({
     </div>
   );
 
-  // Highlight: render a translated copy of the hovered slice
   const highlightSlice =
     highlight && hoverState && mode === 'pie' && slices?.[hoverState.index];
 
   return (
     <>
       <g ref={gRef}>
-        {/* Event capture — circle covering the chart area */}
+        {/* Event capture — circle covering the chart area, no pointer capture */}
         <circle
           cx={cx}
           cy={cy}
           r={radius + 10}
           fill="transparent"
+          style={{touchAction: 'none'}}
           onPointerMove={handlePointerMove}
           onPointerLeave={handlePointerLeave}
         />
 
-        {/* Highlight offset for pie slice */}
+        {/* Highlight: translate hovered slice outward */}
         {highlightSlice && (
           <g
             transform={(() => {
@@ -258,31 +256,34 @@ export function XDSRadialTooltip({
               fill="none"
               stroke="var(--color-border-emphasized)"
               strokeWidth={2}
-              clipPath={`url(#radial-highlight-${hoverState.index})`}
             />
           </g>
         )}
       </g>
 
-      {/* Tooltip in top layer */}
-      {layer.render(
-        hoverState ? (
-          <div
-            style={{
-              background: 'var(--color-background-popover)',
-              border: '1px solid var(--color-border)',
-              borderRadius: 8,
-              padding: '8px 12px',
-              boxShadow: 'var(--shadow-med)',
-              whiteSpace: 'nowrap',
-              width: 'fit-content',
-              pointerEvents: 'none',
-            }}>
-            {render ? render(hoverState) : defaultRender(hoverState)}
-          </div>
-        ) : null,
-        {x: tooltipCoords.x, y: tooltipCoords.y},
-      )}
+      {/* Tooltip in top layer — portaled outside SVG */}
+      {portalRef.current &&
+        createPortal(
+          layer.render(
+            hoverState ? (
+              <div
+                style={{
+                  background: 'var(--color-background-popover)',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 8,
+                  padding: '8px 12px',
+                  boxShadow: 'var(--shadow-med)',
+                  whiteSpace: 'nowrap',
+                  width: 'fit-content',
+                  pointerEvents: 'none',
+                }}>
+                {render ? render(hoverState) : defaultRender(hoverState)}
+              </div>
+            ) : null,
+            {x: tooltipCoords.x, y: tooltipCoords.y},
+          ),
+          portalRef.current,
+        )}
     </>
   );
 }

@@ -5,15 +5,16 @@
  *
  * Combines tooltip content and crosshair display into one component.
  * Uses the XDS Layer system (Popover API) so the tooltip renders above
- * all other content without foreignObject clipping issues.
+ * all other content — portaled to the chart container div (outside SVG).
  */
 
 'use client';
 
-import {useState, useCallback, useRef, useEffect, type ReactNode} from 'react';
+import {useState, useCallback, useRef, type ReactNode} from 'react';
+import {createPortal} from 'react-dom';
 import {useXDSLayer} from '@xds/core/Layer';
 import {useChart} from './ChartContext';
-import {isBandScale, xPixel} from './utils';
+import {xPixel} from './utils';
 import type {DataPoint} from './types';
 
 /**
@@ -89,9 +90,8 @@ export interface XDSChartTooltipProps {
 /**
  * Chart tooltip with integrated crosshair.
  *
- * Renders a floating tooltip card in the top layer (via Popover API) and
- * optional crosshair guidelines within the SVG. This avoids foreignObject
- * clipping and ensures the tooltip renders above all page content.
+ * Renders crosshair lines within the SVG and a floating tooltip card
+ * in the top layer (via Popover API, portaled outside the SVG).
  *
  * @example
  * ```tsx
@@ -126,7 +126,10 @@ export function XDSChartTooltip({
     point: DataPoint;
   } | null>(null);
 
-  const active = useRef(false);
+  // Screen-space coords for the tooltip popover
+  const [tooltipCoords, setTooltipCoords] = useState({x: 0, y: 0});
+  const layerContainerRef = useRef<HTMLElement | null>(null);
+
   const layer = useXDSLayer({mode: 'fixed'});
 
   // Find nearest data index by x-pixel distance
@@ -148,7 +151,6 @@ export function XDSChartTooltip({
 
       const datum = data[closestIdx];
       const dpx = xPixel(datum, xKey, xScale);
-      // Use the first numeric yKey value for positioning
       const yVals = Object.entries(datum)
         .filter(([k, v]) => k !== xKey && typeof v === 'number')
         .map(([, v]) => v as number);
@@ -169,66 +171,38 @@ export function XDSChartTooltip({
 
   const handlePointerMove = useCallback(
     (e: React.PointerEvent<SVGRectElement>) => {
-      if (e.pointerType !== 'mouse' && !active.current) return;
-
       const dataPoint = pointerToData(e);
 
+      let result: {index: number; point: DataPoint} | null = null;
+
       if (snap) {
-        const nearest = findNearest(dataPoint.px);
-        if (nearest) {
-          setHoverState(nearest);
-          layer.show();
-        }
+        result = findNearest(dataPoint.px);
       } else {
-        setHoverState({index: -1, point: dataPoint});
+        result = {index: -1, point: dataPoint};
+      }
+
+      if (result) {
+        setHoverState(result);
+
+        // Use client coords directly for fixed layer positioning
+        // Offset to avoid cursor overlap
+        setTooltipCoords({x: e.clientX + 12, y: e.clientY - 8});
+
         layer.show();
       }
-    },
-    [pointerToData, findNearest, snap, layer],
-  );
 
-  const handlePointerDown = useCallback(
-    (e: React.PointerEvent<SVGRectElement>) => {
-      (e.target as Element).setPointerCapture(e.pointerId);
-      active.current = true;
-      handlePointerMove(e);
+      // Resolve portal container on first interaction
+      if (!layerContainerRef.current && svgRef.current) {
+        layerContainerRef.current = svgRef.current.parentElement;
+      }
     },
-    [handlePointerMove],
+    [pointerToData, findNearest, snap, layer, svgRef],
   );
-
-  const handlePointerUp = useCallback(() => {
-    active.current = false;
-  }, []);
 
   const handlePointerLeave = useCallback(() => {
-    if (!active.current) {
-      setHoverState(null);
-      layer.hide();
-    }
+    setHoverState(null);
+    layer.hide();
   }, [layer]);
-
-  // Compute tooltip screen position for the layer
-  const [tooltipCoords, setTooltipCoords] = useState({x: 0, y: 0});
-
-  useEffect(() => {
-    if (!hoverState || !svgRef.current) return;
-
-    const svg = svgRef.current;
-    const g = svg.querySelector('g');
-    if (!g) return;
-
-    // Convert chart-space point to screen coordinates for the fixed layer
-    const pt = svg.createSVGPoint();
-    const ctm = g.getScreenCTM();
-    if (!ctm) return;
-
-    pt.x = hoverState.point.px;
-    pt.y = hoverState.point.py;
-    const screenPt = pt.matrixTransform(ctm);
-
-    // Offset tooltip to the right of the point
-    setTooltipCoords({x: screenPt.x + 12, y: screenPt.y - 8});
-  }, [hoverState, svgRef]);
 
   const fmtX =
     xFormat ??
@@ -254,20 +228,22 @@ export function XDSChartTooltip({
   const showX = crosshair === 'x' || crosshair === 'xy';
   const showY = crosshair === 'y' || crosshair === 'xy';
 
+  // Portal target: the chart's container div (parent of the SVG)
+  const portalTarget =
+    layerContainerRef.current ?? svgRef.current?.parentElement;
+
   return (
     <>
       <g>
-        {/* Event capture rect */}
+        {/* Event capture rect — pointer events only, no capture/selection */}
         <rect
           x={0}
           y={0}
           width={width}
           height={height}
           fill="transparent"
+          style={{touchAction: 'none'}}
           onPointerMove={handlePointerMove}
-          onPointerDown={handlePointerDown}
-          onPointerUp={handlePointerUp}
-          onPointerCancel={handlePointerUp}
           onPointerLeave={handlePointerLeave}
         />
 
@@ -366,25 +342,31 @@ export function XDSChartTooltip({
         )}
       </g>
 
-      {/* Tooltip card in top layer */}
-      {layer.render(
-        datum && hoverState && hoverState.index >= 0 ? (
-          <div
-            style={{
-              background: 'var(--color-background-popover)',
-              border: '1px solid var(--color-border)',
-              borderRadius: 8,
-              padding: '8px 12px',
-              boxShadow: 'var(--shadow-med)',
-              whiteSpace: 'nowrap',
-              width: 'fit-content',
-              pointerEvents: 'none',
-            }}>
-            {render ? render(datum, hoverState.index) : defaultRender(datum)}
-          </div>
-        ) : null,
-        {x: tooltipCoords.x, y: tooltipCoords.y},
-      )}
+      {/* Tooltip card — portaled outside SVG into chart container div */}
+      {portalTarget &&
+        createPortal(
+          layer.render(
+            datum && hoverState && hoverState.index >= 0 ? (
+              <div
+                style={{
+                  background: 'var(--color-background-popover)',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 8,
+                  padding: '8px 12px',
+                  boxShadow: 'var(--shadow-med)',
+                  whiteSpace: 'nowrap',
+                  width: 'fit-content',
+                  pointerEvents: 'none',
+                }}>
+                {render
+                  ? render(datum, hoverState.index)
+                  : defaultRender(datum)}
+              </div>
+            ) : null,
+            {x: tooltipCoords.x, y: tooltipCoords.y},
+          ),
+          portalTarget,
+        )}
     </>
   );
 }
