@@ -9,6 +9,7 @@ import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSButton} from '@xds/core/Button';
 import {XDSCard} from '@xds/core/Card';
 import {XDSIcon} from '@xds/core/Icon';
+import {XDSBanner} from '@xds/core/Banner';
 import {CubeIcon} from '@heroicons/react/24/outline';
 import {colorVars, spacingVars} from '@xds/core/theme/tokens.stylex';
 
@@ -64,9 +65,7 @@ export default function LoginPage() {
             </XDSVStack>
 
             {error && (
-              <XDSText type="body" color="error" size="sm">
-                {error}
-              </XDSText>
+              <XDSBanner status="error" title={error} container="card" />
             )}
 
             <XDSTextInput
