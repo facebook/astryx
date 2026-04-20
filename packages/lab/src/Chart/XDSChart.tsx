@@ -19,7 +19,8 @@ import {scaleLinear, scaleBand} from 'd3-scale';
 import type {ScaleLinear} from 'd3-scale';
 import {isBandScale} from './utils';
 import {ChartProvider} from './ChartContext';
-import type {ChartMargin, ChartScale} from './types';
+import {BrushProvider} from './BrushContext';
+import type {ChartMargin, ChartScale, BrushRange} from './types';
 
 /**
  * Controls how the y-axis domain is computed:
@@ -205,7 +206,10 @@ export function XDSChart({
       if (isBandScale(xScale)) {
         const domain = xScale.domain();
         const step = xScale.step();
-        const idx = Math.min(domain.length - 1, Math.max(0, Math.floor(px / step)));
+        const idx = Math.min(
+          domain.length - 1,
+          Math.max(0, Math.floor(px / step)),
+        );
         x = domain[idx];
       } else {
         x = (xScale as ScaleLinear<number, number>).invert(px);
@@ -244,20 +248,51 @@ export function XDSChart({
       pointerToData,
       pixelToData,
     }),
-    [innerWidth, innerHeight, margin, xKey, data, xScale, yScale, pointerToData, pixelToData],
+    [
+      innerWidth,
+      innerHeight,
+      margin,
+      xKey,
+      data,
+      xScale,
+      yScale,
+      pointerToData,
+      pixelToData,
+    ],
+  );
+
+  // Brush highlight state — shared with mark components via BrushContext
+  const [brushRange, setBrushRange] = useState<BrushRange | null>(null);
+  const brushState = useMemo(
+    () => ({range: brushRange, setRange: setBrushRange}),
+    [brushRange],
   );
 
   return (
-    <div ref={containerRef} style={{width: '100%', touchAction: interactive ? 'none' : undefined, userSelect: interactive ? 'none' : undefined} as React.CSSProperties}>
+    <div
+      ref={containerRef}
+      style={
+        {
+          width: '100%',
+          touchAction: interactive ? 'none' : undefined,
+          userSelect: interactive ? 'none' : undefined,
+        } as React.CSSProperties
+      }>
       {containerWidth > 0 && (
-        <svg ref={svgRef} width={containerWidth} height={height} style={interactive ? {touchAction: 'none'} : undefined}>
+        <svg
+          ref={svgRef}
+          width={containerWidth}
+          height={height}
+          style={interactive ? {touchAction: 'none'} : undefined}>
           <defs>
             <clipPath id="xds-chart-plot">
               <rect x={0} y={0} width={innerWidth} height={innerHeight} />
             </clipPath>
           </defs>
           <g transform={`translate(${margin.left},${margin.top})`}>
-            <ChartProvider value={ctx}>{children}</ChartProvider>
+            <BrushProvider value={brushState}>
+              <ChartProvider value={ctx}>{children}</ChartProvider>
+            </BrushProvider>
           </g>
         </svg>
       )}

@@ -14,13 +14,9 @@ import {XDSIconButton} from '@xds/core/IconButton';
 import {useChart} from './ChartContext';
 import {isBandScale} from './utils';
 import type {ScaleLinear} from 'd3-scale';
+import type {ZoomToolbarPosition} from './types';
 
-/** Toolbar position relative to the chart */
-export type ZoomToolbarPosition =
-  | 'top-right'
-  | 'top-left'
-  | 'bottom-right'
-  | 'bottom-left';
+export type {ZoomToolbarPosition};
 
 export interface XDSChartZoomProps {
   onXDomainChange?: (domain: [number, number]) => void;

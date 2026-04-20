@@ -314,3 +314,65 @@ export const ReferenceLines: StoryObj = {
     );
   },
 };
+
+/** Kitchen sink: brush highlight + zoom/pan + tooltip + click select */
+export const KitchenSink: StoryObj = {
+  render: () => {
+    const colors = useXDSChartColors();
+    const [raw] = useDataset<Car>('cars.json');
+    const data = useMemo(
+      () =>
+        raw
+          .filter(d => d.Horsepower != null && d.Miles_per_Gallon != null)
+          .map(d => ({hp: d.Horsepower, mpg: d.Miles_per_Gallon})),
+      [raw],
+    );
+    const [xDomain, setXDomain] = useState<[number, number]>([40, 230]);
+    const [yDomain, setYDomain] = useState<[number, number]>([8, 47]);
+    const [selected, setSelected] = useState<number[]>([]);
+    const [brushCount, setBrushCount] = useState<number | null>(null);
+
+    if (!data.length) return <XDSText type="supporting">Loading…</XDSText>;
+
+    return (
+      <XDSStack direction="vertical" gap={4}>
+        <XDSHeading level={3}>Kitchen Sink</XDSHeading>
+        <XDSText type="supporting" color="secondary">
+          Scroll to zoom. Drag to pan. Brush (shift+drag) to highlight. Click a
+          point to select. Hover for tooltip + crosshair.
+          {brushCount != null && ` ${brushCount} points brushed.`}
+          {selected.length > 0 && ` ${selected.length} points selected.`}
+        </XDSText>
+        <XDSChart
+          data={data}
+          xKey="hp"
+          yKeys={['mpg']}
+          xDomain={xDomain}
+          yDomain={yDomain}
+          interactive
+          height={450}>
+          <XDSChartGrid horizontal vertical />
+          <XDSChartAxis position="bottom" />
+          <XDSChartAxis position="left" />
+          <XDSChartDot
+            dataKey="mpg"
+            color={colors.categorical(1)[0]}
+            radius={4}
+          />
+          <XDSChartTooltip crosshair="xy" />
+          <XDSChartBrush
+            mode="xy"
+            onBrush={(_, sel) => setBrushCount(sel.length)}
+            onClear={() => setBrushCount(null)}
+          />
+          <XDSChartSelect selected={selected} onSelectionChange={setSelected} />
+          <XDSChartZoom
+            onXDomainChange={setXDomain}
+            onYDomainChange={setYDomain}
+            toolbar="top-right"
+          />
+        </XDSChart>
+      </XDSStack>
+    );
+  },
+};

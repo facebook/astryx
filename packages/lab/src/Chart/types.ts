@@ -60,3 +60,36 @@ export interface ChartContext {
    */
   pixelToData: (px: number, py: number) => DataPoint;
 }
+
+/** Brush selection range in data coordinates */
+export interface BrushRange {
+  x: [number, number];
+  y?: [number, number];
+}
+
+/** Brush direction mode */
+export type BrushMode = 'x' | 'xy';
+
+/** Active brush state shared via BrushContext */
+export interface BrushState {
+  /** The active brush range in data coordinates, or null if no brush */
+  range: BrushRange | null;
+  /** Update the brush range (called by XDSChartBrush) */
+  setRange: (range: BrushRange | null) => void;
+}
+
+/**
+ * Crosshair mode for tooltips:
+ * - `'x'` — vertical line only
+ * - `'y'` — horizontal line only
+ * - `'xy'` — both axes
+ * - `false` — no crosshair lines
+ */
+export type ChartCrosshairMode = 'x' | 'y' | 'xy' | false;
+
+/** Toolbar position relative to the chart */
+export type ZoomToolbarPosition =
+  | 'top-right'
+  | 'top-left'
+  | 'bottom-right'
+  | 'bottom-left';

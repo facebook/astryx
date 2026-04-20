@@ -15,16 +15,9 @@ import {createPortal} from 'react-dom';
 import {useXDSLayer} from '@xds/core/Layer';
 import {useChart} from './ChartContext';
 import {xPixel} from './utils';
-import type {DataPoint} from './types';
+import type {DataPoint, ChartCrosshairMode} from './types';
 
-/**
- * Crosshair mode:
- * - `'x'` — vertical line only (most common for time series)
- * - `'y'` — horizontal line only
- * - `'xy'` — both axes
- * - `false` — no crosshair lines
- */
-export type ChartCrosshairMode = 'x' | 'y' | 'xy' | false;
+export type {ChartCrosshairMode};
 
 export interface XDSChartTooltipProps {
   /**

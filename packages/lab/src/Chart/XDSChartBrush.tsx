@@ -6,20 +6,12 @@
 
 import React, {useState, useCallback, useRef} from 'react';
 import {useChart} from './ChartContext';
+import {useBrush} from './BrushContext';
 import {isBandScale} from './utils';
 import type {ScaleLinear} from 'd3-scale';
+import type {BrushMode, BrushRange} from './types';
 
-/**
- * Brush direction mode:
- * - `'x'` — horizontal range selection (default)
- * - `'xy'` — 2D rectangular selection
- */
-export type BrushMode = 'x' | 'xy';
-
-export interface BrushRange {
-  x: [number, number];
-  y?: [number, number];
-}
+export type {BrushMode, BrushRange};
 
 export interface XDSChartBrushProps {
   /**
@@ -88,6 +80,7 @@ export function XDSChartBrush({
   opacity = 0.15,
 }: XDSChartBrushProps) {
   const {width, height, data, xKey, xScale, yScale} = useChart();
+  const {setRange} = useBrush();
   const [brush, setBrush] = useState<{
     x0: number;
     y0: number;
@@ -140,13 +133,14 @@ export function XDSChartBrush({
     // Too small — treat as click (clear)
     if (dx < 3 && (mode === 'x' || dy < 3)) {
       setBrush(null);
+      setRange(null);
       onClear?.();
       return;
     }
 
     if (isBandScale(xScale)) {
-      // Band scale — can't invert meaningfully for range
       setBrush(null);
+      setRange(null);
       return;
     }
 
@@ -166,7 +160,6 @@ export function XDSChartBrush({
       selected = data.filter(d => {
         const xv = d[xKey];
         if (typeof xv !== 'number' || xv < xMin || xv > xMax) return false;
-        // Check all numeric values against y range
         return Object.entries(d).some(
           ([k, v]) =>
             k !== xKey && typeof v === 'number' && v >= yMin && v <= yMax,
@@ -179,8 +172,9 @@ export function XDSChartBrush({
       });
     }
 
+    setRange(range);
     onBrush?.(range, selected);
-  }, [brush, mode, xScale, yScale, data, xKey, onBrush, onClear]);
+  }, [brush, mode, xScale, yScale, data, xKey, onBrush, onClear, setRange]);
 
   const rectX = brush ? brush.x0 : 0;
   const rectY = brush ? brush.y0 : 0;

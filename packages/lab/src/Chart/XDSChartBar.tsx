@@ -5,6 +5,7 @@
  */
 
 import {useChart} from './ChartContext';
+import {useBrush} from './BrushContext';
 import {isBandScale} from './utils';
 
 export interface XDSChartBarProps {
@@ -27,6 +28,7 @@ export interface XDSChartBarProps {
  */
 export function XDSChartBar({dataKey, color, radius = 4}: XDSChartBarProps) {
   const {data, xKey, xScale, yScale} = useChart();
+  const {range} = useBrush();
 
   if (!isBandScale(xScale)) return null;
 
@@ -47,6 +49,19 @@ export function XDSChartBar({dataKey, color, radius = 4}: XDSChartBarProps) {
         const barY = Math.min(yPos, zeroY);
         const barHeight = Math.abs(yPos - zeroY);
 
+        // Dim bars outside brush (band scale: use index-based x range check)
+        let opacity = 1;
+        if (range) {
+          const idx = i;
+          const domainLen = xScale.domain().length;
+          const normalizedX =
+            range.x[0] + (idx / domainLen) * (range.x[1] - range.x[0]);
+          // For band scales, check if bar index falls within brush pixel range
+          const barMidPx = xVal + xScale.bandwidth() / 2;
+          const inX = barMidPx >= range.x[0] && barMidPx <= range.x[1];
+          opacity = inX ? 1 : 0.15;
+        }
+
         return (
           <rect
             key={i}
@@ -55,6 +70,7 @@ export function XDSChartBar({dataKey, color, radius = 4}: XDSChartBarProps) {
             width={xScale.bandwidth()}
             height={Math.max(0, barHeight)}
             fill={color}
+            opacity={opacity}
             rx={radius}
             ry={radius}
           />

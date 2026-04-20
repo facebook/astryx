@@ -24,18 +24,25 @@ export {
   type XDSChartStreamGLProps,
   type XDSChartStreamGLHandle,
 } from './XDSChartStreamGL';
-export {
-  XDSChartTooltip,
-  type XDSChartTooltipProps,
-  type ChartCrosshairMode,
-} from './XDSChartTooltip';
+export {XDSChartTooltip, type XDSChartTooltipProps} from './XDSChartTooltip';
 export {
   XDSChartLegend,
   type XDSChartLegendProps,
   type XDSChartLegendItem,
 } from './XDSChartLegend';
 export {useChart} from './ChartContext';
-export type {ChartContext, ChartMargin, ChartScale, DataPoint} from './types';
+export {useBrush} from './BrushContext';
+export type {
+  ChartContext,
+  ChartMargin,
+  ChartScale,
+  DataPoint,
+  BrushRange,
+  BrushMode,
+  BrushState,
+  ChartCrosshairMode,
+  ZoomToolbarPosition,
+} from './types';
 export {m4Reduce, type M4Point} from './m4';
 export {isBandScale, xPixel} from './utils';
 export {useXDSChartColors} from './useXDSChartColors';
@@ -63,13 +70,8 @@ export {
   CIRCLE_FRAG_BODY,
   POINT_SIZE_COMPENSATION,
 } from './webgl';
-export {
-  XDSChartBrush,
-  type XDSChartBrushProps,
-  type BrushMode,
-  type BrushRange,
-} from './XDSChartBrush';
-export {XDSChartZoom, type XDSChartZoomProps, type ZoomToolbarPosition} from './XDSChartZoom';
+export {XDSChartBrush, type XDSChartBrushProps} from './XDSChartBrush';
+export {XDSChartZoom, type XDSChartZoomProps} from './XDSChartZoom';
 export {XDSChartSelect, type XDSChartSelectProps} from './XDSChartSelect';
 export {
   XDSChartReferenceLine,
