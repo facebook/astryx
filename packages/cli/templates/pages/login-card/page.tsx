@@ -135,10 +135,10 @@ export default function LoginSimple() {
 
             {/* Login button */}
             <XDSButton
-              label={isLoading ? 'Signing in…' : 'Login'}
+              label="Login"
               variant="primary"
               size="lg"
-              isDisabled={isLoading}
+              isLoading={isLoading}
               xstyle={styles.fullWidth}
               onClick={handleLogin}
             />

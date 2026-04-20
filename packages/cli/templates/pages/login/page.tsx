@@ -88,10 +88,10 @@ export default function LoginPage() {
             />
 
             <XDSButton
-              label={isLoading ? 'Signing in…' : 'Sign in'}
+              label="Sign in"
               variant="primary"
               size="lg"
-              isDisabled={isLoading}
+              isLoading={isLoading}
               onClick={handleSignIn}
               xstyle={styles.fullWidth}
             />
