@@ -7,6 +7,7 @@
  *
  * Handles:
  *   - JSX string literals: icon="checkCircle" → icon="success"
+ *   - JSX expressions: icon={cond ? 'checkCircle' : 'copy'} → icon={cond ? 'success' : 'copy'}
  *   - Object properties: { icon: "checkCircle" } → { icon: "success" }
  *   - String assignments: const x = "checkCircle" (when assigned to icon-typed vars)
  *   - Icon registry objects: { checkCircle: <Svg /> } → { success: <Svg /> }
@@ -33,16 +34,48 @@ export default function transformer(file, api) {
   const root = j(file.source);
   let hasChanges = false;
 
-  // 1. JSX attributes: icon="checkCircle" → icon="success"
+  // Helper: rename a string literal node if it matches a deprecated name
+  function renameStringLiteral(node) {
+    if (!node) return false;
+    if (node.type === 'StringLiteral' || node.type === 'Literal') {
+      const newName = RENAMES[node.value];
+      if (newName) {
+        node.value = newName;
+        if (node.raw) node.raw = `'${newName}'`;
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // Helper: recursively rename deprecated icon strings inside an expression
+  function renameInExpression(node) {
+    if (!node) return false;
+    let changed = false;
+    if (node.type === 'StringLiteral' || node.type === 'Literal') {
+      changed = renameStringLiteral(node);
+    } else if (node.type === 'ConditionalExpression') {
+      changed = renameInExpression(node.consequent) || changed;
+      changed = renameInExpression(node.alternate) || changed;
+    } else if (node.type === 'LogicalExpression') {
+      changed = renameInExpression(node.left) || changed;
+      changed = renameInExpression(node.right) || changed;
+    }
+    return changed;
+  }
+
+  // 1. JSX attributes: icon="checkCircle" or icon={cond ? 'checkCircle' : 'copy'}
   root.find(j.JSXAttribute).forEach((path) => {
     const attrName = path.node.name?.name;
     if (!ICON_PROPS.has(attrName)) return;
 
     const value = path.node.value;
     if (value && (value.type === 'StringLiteral' || value.type === 'Literal')) {
-      const newName = RENAMES[value.value];
-      if (newName) {
-        path.node.value = j.stringLiteral(newName);
+      if (renameStringLiteral(value)) {
+        hasChanges = true;
+      }
+    } else if (value && value.type === 'JSXExpressionContainer') {
+      if (renameInExpression(value.expression)) {
         hasChanges = true;
       }
     }
