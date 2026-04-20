@@ -2,7 +2,7 @@
 
 import {useState, useCallback} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {colorVars} from '@xds/core/theme/tokens.stylex';
+import {colorVars, radiusVars, shadowVars} from '@xds/core/theme/tokens.stylex';
 import {XDSButton} from '@xds/core/Button';
 import {XDSCard} from '@xds/core/Card';
 import {XDSCenter} from '@xds/core/Center';
@@ -13,7 +13,6 @@ import {
   XDSVStack,
   XDSStackItem,
   XDSLayout,
-  XDSLayoutPanel,
   XDSLayoutContent,
 } from '@xds/core/Layout';
 import {XDSIcon} from '@xds/core/Icon';
@@ -258,6 +257,33 @@ function defaultProps(type: BlockType): Record<string, unknown> {
 // ---------------------------------------------------------------------------
 
 const editorStyles = stylex.create({
+  contentRelative: {
+    position: 'relative',
+  },
+  floatingPanel: {
+    position: 'absolute',
+    top: 16,
+    left: 16,
+    bottom: 16,
+    width: 320,
+    zIndex: 10,
+    backgroundColor: colorVars['--color-background-card'],
+    borderRadius: radiusVars['--radius-container'],
+    boxShadow: shadowVars['--shadow-low'],
+    overflow: 'hidden',
+  },
+  floatingPanelCollapsed: {
+    bottom: 'auto',
+  },
+  panelScroll: {
+    overflowY: 'auto',
+  },
+  previewArea: {
+    flex: 1,
+    overflowY: 'auto',
+    padding: 32,
+    paddingLeft: 368,
+  },
   canvas: (maxWidth: number) => ({
     maxWidth,
     width: '100%',
@@ -745,135 +771,151 @@ export default function EditorPage() {
   return (
     <XDSLayout
       height="fill"
-      start={
-        <XDSLayoutPanel width={320} hasDivider padding={0} label="Editor sidebar">
-          <XDSSection variant="transparent" padding={4}>
-            <XDSVStack gap={4}>
-              <XDSHStack gap={3} vAlign="center">
-                <XDSStackItem size="fill">
-                  {isEditingTitle ? (
-                    <XDSTextInput
-                      label="Page title"
-                      isLabelHidden
-                      value={pageTitle}
-                      onChange={setPageTitle}
-                      onKeyDown={(e: React.KeyboardEvent) => {
-                        if (e.key === 'Enter') setIsEditingTitle(false);
-                      }}
-                      hasAutoFocus
-                      onBlur={() => setIsEditingTitle(false)}
-                    />
-                  ) : (
-                    <XDSHeading level={2}>{pageTitle}</XDSHeading>
-                  )}
-                </XDSStackItem>
-                <XDSButton
-                  label={
-                    isPanelCollapsed ? 'Expand panel' : 'Collapse panel'
-                  }
-                  icon={
-                    <XDSIcon
-                      icon={ArrowLeftEndOnRectangleIcon}
-                      size="sm"
-                    />
-                  }
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIsPanelCollapsed(v => !v)}
-                  isIconOnly
-                />
-              </XDSHStack>
-
-              <XDSToolbar
-                label="Viewport and actions"
-                padding={0}
-                startContent={
-                  <XDSSegmentedControl
-                    label="Viewport size"
-                    value={viewport}
-                    onChange={(v: string) =>
-                      setViewport(v as ViewportSize)
-                    }>
-                    <XDSSegmentedControlItem
-                      value="desktop"
-                      label="Desktop"
-                      icon={<XDSIcon icon={ComputerDesktopIcon} size="sm" />}
-                      isLabelHidden
-                    />
-                    <XDSSegmentedControlItem
-                      value="tablet"
-                      label="Tablet"
-                      icon={<XDSIcon icon={DeviceTabletIcon} size="sm" />}
-                      isLabelHidden
-                    />
-                    <XDSSegmentedControlItem
-                      value="phone"
-                      label="Phone"
-                      icon={
-                        <XDSIcon icon={DevicePhoneMobileIcon} size="sm" />
-                      }
-                      isLabelHidden
-                    />
-                  </XDSSegmentedControl>
-                }
-                endContent={
-                  <XDSHStack gap={2}>
-                    <XDSButton
-                      label="Preview"
-                      icon={<XDSIcon icon={EyeIcon} size="sm" />}
-                      variant="ghost"
-                      isIconOnly
-                    />
-                    <XDSButton label="Publish" variant="primary" />
-                  </XDSHStack>
-                }
-              />
-            </XDSVStack>
-          </XDSSection>
-
-          {!isPanelCollapsed && (
-            <>
-              <XDSTabList
-                value={sidebarTab}
-                onChange={(v: string) => setSidebarTab(v as SidebarTab)}
-                layout="fill"
-                hasDivider>
-                <XDSTab value="blocks" label="Blocks" />
-                <XDSTab value="properties" label="Properties" />
-              </XDSTabList>
-              <XDSSection variant="transparent" padding={4}>
-                {sidebarTab === 'blocks'
-                  ? blocksTabContent
-                  : propertiesTabContent}
-              </XDSSection>
-            </>
-          )}
-        </XDSLayoutPanel>
-      }
       content={
-        <XDSLayoutContent>
-          <XDSCenter axis="horizontal">
-            <XDSVStack
-              gap={4}
-              xstyle={editorStyles.canvas(VIEWPORT_MAX[viewport])}>
-              {blocks.length > 0 ? (
-                blocks.map(block => (
-                  <BlockPreview
-                    key={block.id}
-                    block={block}
-                    isSelected={block.id === selectedId}
-                    onSelect={() => selectBlock(block.id)}
+        <XDSLayoutContent
+          padding={0}
+          isScrollable={false}
+          xstyle={editorStyles.contentRelative}>
+          {/* Floating Sidebar */}
+          <XDSVStack
+            gap={4}
+            xstyle={[
+              editorStyles.floatingPanel,
+              isPanelCollapsed && editorStyles.floatingPanelCollapsed,
+            ]}>
+            <XDSSection variant="transparent" padding={4}>
+              <XDSVStack gap={4}>
+                <XDSHStack gap={3} vAlign="center">
+                  <XDSStackItem size="fill">
+                    {isEditingTitle ? (
+                      <XDSTextInput
+                        label="Page title"
+                        isLabelHidden
+                        value={pageTitle}
+                        onChange={setPageTitle}
+                        onKeyDown={(e: React.KeyboardEvent) => {
+                          if (e.key === 'Enter') setIsEditingTitle(false);
+                        }}
+                        hasAutoFocus
+                        onBlur={() => setIsEditingTitle(false)}
+                      />
+                    ) : (
+                      <XDSHeading level={2}>{pageTitle}</XDSHeading>
+                    )}
+                  </XDSStackItem>
+                  <XDSButton
+                    label={
+                      isPanelCollapsed ? 'Expand panel' : 'Collapse panel'
+                    }
+                    icon={
+                      <XDSIcon
+                        icon={ArrowLeftEndOnRectangleIcon}
+                        size="sm"
+                      />
+                    }
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsPanelCollapsed(v => !v)}
+                    isIconOnly
                   />
-                ))
-              ) : (
-                <XDSEmptyState
-                  title="No blocks yet"
-                  description="Add blocks from the sidebar to start building your page"
-                  icon={<XDSIcon icon={PlusCircleIcon} />}
+                </XDSHStack>
+
+                <XDSToolbar
+                  label="Viewport and actions"
+                  padding={0}
+                  startContent={
+                    <XDSSegmentedControl
+                      label="Viewport size"
+                      value={viewport}
+                      onChange={(v: string) =>
+                        setViewport(v as ViewportSize)
+                      }>
+                      <XDSSegmentedControlItem
+                        value="desktop"
+                        label="Desktop"
+                        icon={
+                          <XDSIcon icon={ComputerDesktopIcon} size="sm" />
+                        }
+                        isLabelHidden
+                      />
+                      <XDSSegmentedControlItem
+                        value="tablet"
+                        label="Tablet"
+                        icon={<XDSIcon icon={DeviceTabletIcon} size="sm" />}
+                        isLabelHidden
+                      />
+                      <XDSSegmentedControlItem
+                        value="phone"
+                        label="Phone"
+                        icon={
+                          <XDSIcon icon={DevicePhoneMobileIcon} size="sm" />
+                        }
+                        isLabelHidden
+                      />
+                    </XDSSegmentedControl>
+                  }
+                  endContent={
+                    <XDSHStack gap={2}>
+                      <XDSButton
+                        label="Preview"
+                        icon={<XDSIcon icon={EyeIcon} size="sm" />}
+                        variant="ghost"
+                        isIconOnly
+                      />
+                      <XDSButton label="Publish" variant="primary" />
+                    </XDSHStack>
+                  }
                 />
-              )}
-            </XDSVStack>
-          </XDSCenter>
+              </XDSVStack>
+            </XDSSection>
+
+            {!isPanelCollapsed && (
+              <>
+                <XDSTabList
+                  value={sidebarTab}
+                  onChange={(v: string) => setSidebarTab(v as SidebarTab)}
+                  layout="fill"
+                  hasDivider>
+                  <XDSTab value="blocks" label="Blocks" />
+                  <XDSTab value="properties" label="Properties" />
+                </XDSTabList>
+                <XDSSection
+                  variant="transparent"
+                  padding={4}
+                  xstyle={editorStyles.panelScroll}>
+                  {sidebarTab === 'blocks'
+                    ? blocksTabContent
+                    : propertiesTabContent}
+                </XDSSection>
+              </>
+            )}
+          </XDSVStack>
+
+          {/* Preview Canvas */}
+          <XDSVStack xstyle={editorStyles.previewArea}>
+            <XDSCenter axis="horizontal">
+              <XDSVStack
+                gap={4}
+                xstyle={editorStyles.canvas(VIEWPORT_MAX[viewport])}>
+                {blocks.length > 0 ? (
+                  blocks.map(block => (
+                    <BlockPreview
+                      key={block.id}
+                      block={block}
+                      isSelected={block.id === selectedId}
+                      onSelect={() => selectBlock(block.id)}
+                    />
+                  ))
+                ) : (
+                  <XDSEmptyState
+                    title="No blocks yet"
+                    description="Add blocks from the sidebar to start building your page"
+                    icon={<XDSIcon icon={PlusCircleIcon} />}
+                  />
+                )}
+              </XDSVStack>
+            </XDSCenter>
+          </XDSVStack>
         </XDSLayoutContent>
       }
     />
