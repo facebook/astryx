@@ -86,12 +86,12 @@ const styles = stylex.create({
   checkboxFocus: {
     outline: {
       default: 'none',
-      [stylex.when.ancestor(':focus-within', checkboxScope)]:
+      [stylex.when.ancestor(':has(:focus-visible)', checkboxScope)]:
         `2px solid ${colorVars['--color-accent']}`,
     },
     outlineOffset: {
       default: null,
-      [stylex.when.ancestor(':focus-within', checkboxScope)]: '2px',
+      [stylex.when.ancestor(':has(:focus-visible)', checkboxScope)]: '2px',
     },
   },
   // State-dependent colors with ancestor hover behavior

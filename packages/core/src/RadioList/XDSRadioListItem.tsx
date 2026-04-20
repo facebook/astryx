@@ -96,11 +96,11 @@ const styles = stylex.create({
   radioWrapperFocus: {
     outline: {
       default: 'none',
-      ':focus-within': `2px solid ${colorVars['--color-accent']}`,
+      ':has(:focus-visible)': `2px solid ${colorVars['--color-accent']}`,
     },
     outlineOffset: {
       default: '0',
-      ':focus-within': '2px',
+      ':has(:focus-visible)': '2px',
     },
     borderRadius: '50%',
   },
