@@ -64,8 +64,10 @@ export function DocsView({
   activeView: _activeView,
   setActiveView,
 }: {
-  activeView: 'craft' | 'explore' | 'docs' | 'profile';
-  setActiveView: (v: 'craft' | 'explore' | 'docs' | 'profile') => void;
+  activeView: 'craft' | 'explore' | 'docs' | 'profile' | 'theme';
+  setActiveView: (
+    v: 'craft' | 'explore' | 'docs' | 'profile' | 'theme',
+  ) => void;
 }) {
   const [activeNav, setActiveNav] = useState('button');
   const [_showCode, _setShowCode] = useState(true);

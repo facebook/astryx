@@ -48,8 +48,10 @@ export function ChatPanel({
 }: {
   isGenerating: boolean;
   onSend?: () => void;
-  activeView: 'craft' | 'explore' | 'docs' | 'profile';
-  setActiveView: (view: 'craft' | 'explore' | 'docs' | 'profile') => void;
+  activeView: 'craft' | 'explore' | 'docs' | 'profile' | 'theme';
+  setActiveView: (
+    view: 'craft' | 'explore' | 'docs' | 'profile' | 'theme',
+  ) => void;
   templateName?: string;
   onBack?: () => void;
   activeTab?: PanelTab;
@@ -137,12 +139,14 @@ export function ChatPanel({
           </div>
 
           <div
-            style={{
-              padding: 12,
-              // Override shadow tokens so the composer body inherits none
-              '--shadow-low': 'none',
-              '--shadow-med': 'none',
-            } as React.CSSProperties}>
+            style={
+              {
+                padding: 12,
+                // Override shadow tokens so the composer body inherits none
+                '--shadow-low': 'none',
+                '--shadow-med': 'none',
+              } as React.CSSProperties
+            }>
             <XDSChatComposer
               onSubmit={() => {
                 onSend?.();
@@ -153,10 +157,12 @@ export function ChatPanel({
               placeholder="Ask for changes"
               input={<XDSChatComposerInput placeholder="Ask for changes" />}
               xstyle={composerStyles.border}
-              style={{
-                '--shadow-low': 'none',
-                '--shadow-med': 'none',
-              } as React.CSSProperties}
+              style={
+                {
+                  '--shadow-low': 'none',
+                  '--shadow-med': 'none',
+                } as React.CSSProperties
+              }
             />
           </div>
         </>
