@@ -266,12 +266,14 @@ const editorStyles = stylex.create({
     left: 16,
     bottom: 16,
     width: 320,
-    paddingInline: 16,
     zIndex: 10,
     backgroundColor: colorVars['--color-background-card'],
     borderRadius: radiusVars['--radius-container'],
     boxShadow: shadowVars['--shadow-low'],
     overflow: 'hidden',
+  },
+  headerPadding: {
+    paddingInline: 16,
   },
   floatingPanelCollapsed: {
     bottom: 'auto',
@@ -792,7 +794,7 @@ export default function EditorPage() {
               editorStyles.floatingPanel,
               isPanelCollapsed && editorStyles.floatingPanelCollapsed,
             ]}>
-            <XDSSection variant="transparent" padding={4}>
+            <XDSSection variant="transparent" padding={4} xstyle={editorStyles.headerPadding}>
               <XDSVStack gap={4}>
                 <XDSHStack gap={3} vAlign="center">
                   <XDSStackItem size="fill">
