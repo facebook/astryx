@@ -18,7 +18,13 @@ import {XDSBanner} from '@xds/core/Banner';
 import {XDSList, XDSListItem} from '@xds/core/List';
 import {XDSSelector} from '@xds/core/Selector';
 import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
-import {XDSTable, pixel, proportional, useXDSTableSortable, useXDSTableSortableState} from '@xds/core/Table';
+import {
+  XDSTable,
+  pixel,
+  proportional,
+  useXDSTableSortable,
+  useXDSTableSortableState,
+} from '@xds/core/Table';
 import type {XDSTableColumn} from '@xds/core/Table';
 import {
   PROFILE_CRAFT_ITEMS,
@@ -27,14 +33,15 @@ import {
   PROFILE_COLLECTIONS,
   THEME_PICKER_ENTRIES,
 } from './constants';
-import {SearchIcon, BookmarkIcon, BookmarkFilledIcon, FolderIcon} from './docsite-icons';
-
+import {
+  SearchIcon,
+  BookmarkIcon,
+  BookmarkFilledIcon,
+  FolderIcon,
+} from './docsite-icons';
 
 import {TemplatePreviewModal} from './TemplatePreviewModal';
-import {
-  getComponentName,
-  getComponentDocs,
-} from './docsview-data';
+import {getComponentName, getComponentDocs} from './docsview-data';
 import {COMPONENT_PREVIEWS} from './ComponentPreviews';
 import {AppTopNav} from './AppTopNav';
 import {
@@ -69,7 +76,15 @@ function generateSparklineData(seed: number, length = 12): number[] {
   return points;
 }
 
-function Sparkline({data, width = '100%', height = 40}: {data: number[]; width?: string | number; height?: number}) {
+function Sparkline({
+  data,
+  width = '100%',
+  height = 40,
+}: {
+  data: number[];
+  width?: string | number;
+  height?: number;
+}) {
   const viewW = 200;
   const viewH = height;
   const max = Math.max(...data);
@@ -87,15 +102,33 @@ function Sparkline({data, width = '100%', height = 40}: {data: number[]; width?:
   const areaPath = `${linePath}L${viewW},${viewH}L0,${viewH}Z`;
 
   return (
-    <svg viewBox={`0 0 ${viewW} ${viewH}`} width={width} height={height} preserveAspectRatio="none">
+    <svg
+      viewBox={`0 0 ${viewW} ${viewH}`}
+      width={width}
+      height={height}
+      preserveAspectRatio="none">
       <defs>
         <linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="var(--color-positive)" stopOpacity="0.15" />
-          <stop offset="100%" stopColor="var(--color-positive)" stopOpacity="0.02" />
+          <stop
+            offset="0%"
+            stopColor="var(--color-positive)"
+            stopOpacity="0.15"
+          />
+          <stop
+            offset="100%"
+            stopColor="var(--color-positive)"
+            stopOpacity="0.02"
+          />
         </linearGradient>
       </defs>
       <path d={areaPath} fill="url(#sparkFill)" />
-      <path d={linePath} fill="none" stroke="var(--color-positive)" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+      <path
+        d={linePath}
+        fill="none"
+        stroke="var(--color-positive)"
+        strokeWidth="2"
+        vectorEffect="non-scaling-stroke"
+      />
     </svg>
   );
 }
@@ -103,15 +136,36 @@ function Sparkline({data, width = '100%', height = 40}: {data: number[]; width?:
 function TrendIndicator({value}: {value: number}) {
   const isPositive = value >= 0;
   return (
-    <span style={{display: 'inline-flex', alignItems: 'center', gap: 4, color: 'var(--color-positive)'}}>
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 4,
+        color: 'var(--color-positive)',
+      }}>
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
         {isPositive ? (
-          <path d="M2 10C4 7 6 5 8 6C10 7 11 4 12 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          <path
+            d="M2 10C4 7 6 5 8 6C10 7 11 4 12 3"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         ) : (
-          <path d="M2 4C4 7 6 9 8 8C10 7 11 10 12 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          <path
+            d="M2 4C4 7 6 9 8 8C10 7 11 10 12 11"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         )}
       </svg>
-      <span style={{fontSize: 13}}>{isPositive ? '+' : ''}{value}%</span>
+      <span style={{fontSize: 13}}>
+        {isPositive ? '+' : ''}
+        {value}%
+      </span>
     </span>
   );
 }
@@ -128,7 +182,10 @@ function timeAgo(dateStr: string): string {
   return `${Math.floor(days / 365)}y ago`;
 }
 
-const STATUS_VARIANT: Record<string, 'success' | 'warning' | 'neutral' | 'error'> = {
+const STATUS_VARIANT: Record<
+  string,
+  'success' | 'warning' | 'neutral' | 'error'
+> = {
   Published: 'success',
   'In Review': 'warning',
   Draft: 'neutral',
@@ -151,7 +208,7 @@ function makeCraftColumns(
       key: 'name',
       header: 'Name',
       width: proportional(3, {minWidth: 200}),
-      renderCell: (item) => (
+      renderCell: item => (
         <XDSHStack
           gap={3}
           vAlign="center"
@@ -169,12 +226,21 @@ function makeCraftColumns(
             <img
               src={item.img}
               alt=""
-              style={{width: '100%', height: '100%', objectFit: 'cover', display: 'block'}}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                display: 'block',
+              }}
             />
           </div>
           <XDSVStack gap={0}>
-            <XDSText type="body" style={{fontWeight: 600}}>{item.name}</XDSText>
-            <XDSText type="supporting" color="secondary">{item.type}</XDSText>
+            <XDSText type="body" style={{fontWeight: 600}}>
+              {item.name}
+            </XDSText>
+            <XDSText type="supporting" color="secondary">
+              {item.type}
+            </XDSText>
           </XDSVStack>
         </XDSHStack>
       ),
@@ -184,7 +250,7 @@ function makeCraftColumns(
       header: 'Status',
       width: pixel(120),
       sortable: true,
-      renderCell: (item) => (
+      renderCell: item => (
         <XDSBadge label={item.status} variant={STATUS_VARIANT[item.status]} />
       ),
     },
@@ -194,10 +260,18 @@ function makeCraftColumns(
       width: pixel(100),
       align: 'end',
       sortable: true,
-      renderCell: (item) => (
-        (item.status === 'Draft' || item.status === 'Needs Fixes' || item.status === 'In Review') ? <XDSText type="body" color="secondary">—</XDSText> :
-        <XDSText type="body" color="secondary">{item.views.toLocaleString()}</XDSText>
-      ),
+      renderCell: item =>
+        item.status === 'Draft' ||
+        item.status === 'Needs Fixes' ||
+        item.status === 'In Review' ? (
+          <XDSText type="body" color="secondary">
+            —
+          </XDSText>
+        ) : (
+          <XDSText type="body" color="secondary">
+            {item.views.toLocaleString()}
+          </XDSText>
+        ),
     },
     {
       key: 'used',
@@ -205,25 +279,35 @@ function makeCraftColumns(
       width: pixel(80),
       align: 'end',
       sortable: true,
-      renderCell: (item) => (
-        (item.status === 'Draft' || item.status === 'Needs Fixes' || item.status === 'In Review') ? <XDSText type="body" color="secondary">—</XDSText> :
-        <XDSText type="body" color="secondary">{item.used.toLocaleString()}</XDSText>
-      ),
+      renderCell: item =>
+        item.status === 'Draft' ||
+        item.status === 'Needs Fixes' ||
+        item.status === 'In Review' ? (
+          <XDSText type="body" color="secondary">
+            —
+          </XDSText>
+        ) : (
+          <XDSText type="body" color="secondary">
+            {item.used.toLocaleString()}
+          </XDSText>
+        ),
     },
     {
       key: 'lastUpdated',
       header: 'Updated',
       width: pixel(100),
       sortable: true,
-      renderCell: (item) => (
-        <XDSText type="body" color="secondary">{timeAgo(item.lastUpdated)}</XDSText>
+      renderCell: item => (
+        <XDSText type="body" color="secondary">
+          {timeAgo(item.lastUpdated)}
+        </XDSText>
       ),
     },
     {
       key: 'actions',
       header: '',
       width: pixel(48),
-      renderCell: (item) => (
+      renderCell: item => (
         <div style={{position: 'relative'}}>
           <XDSDropdownMenu
             button={{
@@ -236,7 +320,11 @@ function makeCraftColumns(
             hasChevron={false}
             items={[
               {label: 'Edit', icon: PencilIcon, onClick: () => {}},
-              {label: 'Duplicate', icon: DocumentDuplicateIcon, onClick: () => {}},
+              {
+                label: 'Duplicate',
+                icon: DocumentDuplicateIcon,
+                onClick: () => {},
+              },
               {
                 label: item.status === 'Published' ? 'Unpublish' : 'Publish',
                 icon: ArrowUpTrayIcon,
@@ -263,7 +351,7 @@ function makeUsedColumns(
       key: 'name',
       header: 'Name',
       width: proportional(3, {minWidth: 200}),
-      renderCell: (item) => (
+      renderCell: item => (
         <XDSHStack
           gap={3}
           vAlign="center"
@@ -287,15 +375,26 @@ function makeUsedColumns(
             <img
               src={item.img}
               alt=""
-              style={{width: '100%', height: '100%', objectFit: 'cover', display: 'block'}}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                display: 'block',
+              }}
             />
           </div>
           <XDSVStack gap={0.5} style={{minWidth: 0}}>
-            <XDSText type="body" style={{fontWeight: 600}}>{item.name}</XDSText>
+            <XDSText type="body" style={{fontWeight: 600}}>
+              {item.name}
+            </XDSText>
             <XDSText
               type="supporting"
               color="secondary"
-              style={{overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>
+              style={{
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}>
               {item.description}
             </XDSText>
           </XDSVStack>
@@ -307,7 +406,7 @@ function makeUsedColumns(
       header: 'Type',
       width: pixel(120),
       sortable: true,
-      renderCell: (item) => (
+      renderCell: item => (
         <XDSBadge label={item.type} variant={TYPE_VARIANT[item.type]} />
       ),
     },
@@ -317,8 +416,10 @@ function makeUsedColumns(
       width: pixel(100),
       align: 'end',
       sortable: true,
-      renderCell: (item) => (
-        <XDSText type="body" color="secondary">{item.usageCount}</XDSText>
+      renderCell: item => (
+        <XDSText type="body" color="secondary">
+          {item.usageCount}
+        </XDSText>
       ),
     },
     {
@@ -326,8 +427,10 @@ function makeUsedColumns(
       header: 'Last Used',
       width: pixel(100),
       sortable: true,
-      renderCell: (item) => (
-        <XDSText type="body" color="secondary">{timeAgo(item.lastUsed)}</XDSText>
+      renderCell: item => (
+        <XDSText type="body" color="secondary">
+          {timeAgo(item.lastUsed)}
+        </XDSText>
       ),
     },
   ];
@@ -392,9 +495,7 @@ function BookmarkCard({
                 variant="ghost"
                 size="sm"
                 isIconOnly
-                icon={
-                  <BookmarkFilledIcon style={{width: 16, height: 16}} />
-                }
+                icon={<BookmarkFilledIcon style={{width: 16, height: 16}} />}
                 style={{color: '#fff'}}
                 onClick={onRemove}
               />
@@ -464,11 +565,20 @@ function PreviewDialogShell({
   return (
     <XDSDialog
       isOpen={isOpen}
-      onOpenChange={(open) => { if (!open) onClose(); }}
+      onOpenChange={open => {
+        if (!open) onClose();
+      }}
       width="90vw"
       maxHeight="90vh"
       purpose="info"
-      style={{padding: 0, overflow: 'visible', maxWidth: 1600, '--xds-dialog-padding': '0px'} as React.CSSProperties}>
+      style={
+        {
+          padding: 0,
+          overflow: 'visible',
+          maxWidth: 1600,
+          '--xds-dialog-padding': '0px',
+        } as React.CSSProperties
+      }>
       {isOpen && (
         <>
           <div style={{position: 'absolute', top: 0, right: -40, zIndex: 1}}>
@@ -484,7 +594,8 @@ function PreviewDialogShell({
             </XDSCard>
           </div>
           <div style={{overflowY: 'auto', height: '100%'}}>
-            <div style={{display: 'flex', minHeight: '100%', padding: '0 32px'}}>
+            <div
+              style={{display: 'flex', minHeight: '100%', padding: '0 32px'}}>
               <XDSVStack
                 gap={3}
                 style={{flex: 1, minWidth: 0, padding: '32px 32px 32px 0'}}>
@@ -520,12 +631,21 @@ export function DialogPreview() {
   const [isOpen, setIsOpen] = useState(false);
   return (
     <div>
-      <div style={{marginBottom: 16}}><XDSHeading level={3}>Dialog</XDSHeading></div>
-      <XDSButton label="Open Dialog" variant="primary" onClick={() => setIsOpen(true)} />
+      <div style={{marginBottom: 16}}>
+        <XDSHeading level={3}>Dialog</XDSHeading>
+      </div>
+      <XDSButton
+        label="Open Dialog"
+        variant="primary"
+        onClick={() => setIsOpen(true)}
+      />
       <XDSDialog isOpen={isOpen} onOpenChange={setIsOpen}>
         <XDSDialogHeader title="Example Dialog" onOpenChange={setIsOpen} />
         <div style={{padding: 16}}>
-          <XDSText type="body">This is an example dialog. Dialogs are used to require user action or display important information that needs acknowledgment.</XDSText>
+          <XDSText type="body">
+            This is an example dialog. Dialogs are used to require user action
+            or display important information that needs acknowledgment.
+          </XDSText>
         </div>
       </XDSDialog>
     </div>
@@ -576,8 +696,10 @@ export function ProfileView({
   profileCollectionName,
   onCollectionChange,
 }: {
-  activeView: 'craft' | 'explore' | 'docs' | 'profile';
-  setActiveView: (v: 'craft' | 'explore' | 'docs' | 'profile') => void;
+  activeView: 'craft' | 'explore' | 'docs' | 'profile' | 'theme';
+  setActiveView: (
+    v: 'craft' | 'explore' | 'docs' | 'profile' | 'theme',
+  ) => void;
   onStartCrafting: () => void;
   profileTab: 'Crafted' | 'Used' | 'Bookmarks';
   onTabChange: (tab: 'Crafted' | 'Used' | 'Bookmarks') => void;
@@ -597,10 +719,8 @@ export function ProfileView({
 
   const previewItem = useMemo(() => {
     if (!profileCraftName) return null;
-    return (
-      (PROFILE_CRAFT_ITEMS.find(i => i.name === profileCraftName) ??
-        null) as CraftItem | null
-    );
+    return (PROFILE_CRAFT_ITEMS.find(i => i.name === profileCraftName) ??
+      null) as CraftItem | null;
   }, [profileCraftName]);
   const setPreviewItem = useCallback(
     (item: CraftItem | null) => onCraftPreviewChange(item ? item.name : null),
@@ -628,7 +748,10 @@ export function ProfileView({
   );
 
   // Crafted table sorting
-  const craftSortState = useXDSTableSortableState<CraftItem, 'lastUpdated' | 'views' | 'used'>({
+  const craftSortState = useXDSTableSortableState<
+    CraftItem,
+    'lastUpdated' | 'views' | 'used'
+  >({
     data: [] as CraftItem[],
     defaultSort: [{sortKey: 'lastUpdated', direction: 'descending'}],
     comparators: {
@@ -638,7 +761,10 @@ export function ProfileView({
         new Date(a.lastUpdated).getTime() - new Date(b.lastUpdated).getTime(),
     },
   });
-  const craftSortPlugin = useXDSTableSortable<CraftItem, 'lastUpdated' | 'views' | 'used'>(craftSortState.sortConfig);
+  const craftSortPlugin = useXDSTableSortable<
+    CraftItem,
+    'lastUpdated' | 'views' | 'used'
+  >(craftSortState.sortConfig);
 
   // Used tab state
   const [usedSearch, setUsedSearch] = useState('');
@@ -646,17 +772,17 @@ export function ProfileView({
   const [usedTypeFilter, setUsedTypeFilter] = useState('all');
   const previewUsedItem = useMemo(() => {
     if (!profileUsedName) return null;
-    return (
-      (PROFILE_USED_ITEMS.find(i => i.name === profileUsedName) ??
-        null) as UsedItem | null
-    );
+    return (PROFILE_USED_ITEMS.find(i => i.name === profileUsedName) ??
+      null) as UsedItem | null;
   }, [profileUsedName]);
   const setPreviewUsedItem = useCallback(
     (item: UsedItem | null) => onUsedPreviewChange(item ? item.name : null),
     [onUsedPreviewChange],
   );
 
-  const [componentDrawerKey, setComponentDrawerKey] = useState<string | null>(null);
+  const [componentDrawerKey, setComponentDrawerKey] = useState<string | null>(
+    null,
+  );
 
   const handlePreviewUsed = useCallback(
     (item: UsedItem) => {
@@ -675,7 +801,10 @@ export function ProfileView({
   );
 
   // Used table sorting
-  const usedSortState = useXDSTableSortableState<UsedItem, 'lastUsed' | 'usageCount'>({
+  const usedSortState = useXDSTableSortableState<
+    UsedItem,
+    'lastUsed' | 'usageCount'
+  >({
     data: [] as UsedItem[],
     defaultSort: [{sortKey: 'lastUsed', direction: 'descending'}],
     comparators: {
@@ -684,7 +813,10 @@ export function ProfileView({
         new Date(a.lastUsed).getTime() - new Date(b.lastUsed).getTime(),
     },
   });
-  const usedSortPlugin = useXDSTableSortable<UsedItem, 'lastUsed' | 'usageCount'>(usedSortState.sortConfig);
+  const usedSortPlugin = useXDSTableSortable<
+    UsedItem,
+    'lastUsed' | 'usageCount'
+  >(usedSortState.sortConfig);
 
   // Bookmarks tab state
   const [bookmarkSearch, setBookmarkSearch] = useState('');
@@ -697,7 +829,9 @@ export function ProfileView({
   const [editingCollectionName, setEditingCollectionName] = useState(false);
   const [collectionNameDraft, setCollectionNameDraft] = useState('');
   const [editingCollectionItems, setEditingCollectionItems] = useState(false);
-  const [collectionItemsDraft, setCollectionItemsDraft] = useState<Set<string>>(() => new Set());
+  const [collectionItemsDraft, setCollectionItemsDraft] = useState<Set<string>>(
+    () => new Set(),
+  );
   const [isNewCollection, setIsNewCollection] = useState(false);
 
   const handleBookmarkClick = useCallback(
@@ -712,7 +846,12 @@ export function ProfileView({
   );
   const selectedCollection = useMemo(() => {
     if (isNewCollection) {
-      return {name: collectionNameDraft || 'Untitled', count: 0, color: '#6B7280', items: [] as string[]};
+      return {
+        name: collectionNameDraft || 'Untitled',
+        count: 0,
+        color: '#6B7280',
+        items: [] as string[],
+      };
     }
     if (!profileCollectionName) return null;
     return (
@@ -759,17 +898,13 @@ export function ProfileView({
     items.sort((a, b) => {
       if (usedSort === 'frequency') return b.usageCount - a.usageCount;
       if (usedSort === 'name') return a.name.localeCompare(b.name);
-      return (
-        new Date(b.lastUsed).getTime() - new Date(a.lastUsed).getTime()
-      );
+      return new Date(b.lastUsed).getTime() - new Date(a.lastUsed).getTime();
     });
     return items;
   }, [usedSearch, usedSort, usedTypeFilter]);
 
   const filteredBookmarks = useMemo(() => {
-    let items = PROFILE_LIKED_ITEMS.filter(
-      i => !removedBookmarks.has(i.name),
-    );
+    let items = PROFILE_LIKED_ITEMS.filter(i => !removedBookmarks.has(i.name));
     if (bookmarkSearch) {
       const q = bookmarkSearch.toLowerCase();
       items = items.filter(
@@ -788,7 +923,6 @@ export function ProfileView({
       i => itemNames.has(i.name) && !removedBookmarks.has(i.name),
     );
   }, [selectedCollection, removedBookmarks]);
-
 
   return (
     <div
@@ -821,9 +955,10 @@ export function ProfileView({
         </div>
 
         {/* Tab bar + settings — full-width divider with tabs resting on the line */}
-        <div style={{
-          borderBottom: '1px solid var(--color-divider, #e0e0e0)',
-        }}>
+        <div
+          style={{
+            borderBottom: '1px solid var(--color-divider, #e0e0e0)',
+          }}>
           <div style={{maxWidth: 1400, margin: '0 auto', marginBottom: -1}}>
             <XDSHStack vAlign="end">
               <XDSTabList
@@ -845,9 +980,7 @@ export function ProfileView({
                   variant="ghost"
                   size="lg"
                   isIconOnly
-                  icon={
-                    <Cog6ToothIcon style={{width: 24, height: 24}} />
-                  }
+                  icon={<Cog6ToothIcon style={{width: 24, height: 24}} />}
                   onClick={() => setIsSettingsOpen(true)}
                 />
               </div>
@@ -983,7 +1116,11 @@ export function ProfileView({
                 </div>
               ) : (
                 <XDSTable
-                  data={filteredUsed as Array<(typeof filteredUsed)[number] & Record<string, unknown>>}
+                  data={
+                    filteredUsed as Array<
+                      (typeof filteredUsed)[number] & Record<string, unknown>
+                    >
+                  }
                   columns={usedColumns}
                   idKey="name"
                   hasHover
@@ -1000,7 +1137,10 @@ export function ProfileView({
                 <>
                   {/* Collection detail view */}
                   <div style={{marginTop: 32, marginBottom: 32}}>
-                    <XDSHStack gap={2} vAlign="center" style={{marginBottom: 4}}>
+                    <XDSHStack
+                      gap={2}
+                      vAlign="center"
+                      style={{marginBottom: 4}}>
                       <XDSButton
                         label="Back to bookmarks"
                         variant="ghost"
@@ -1019,7 +1159,8 @@ export function ProfileView({
                           width: 32,
                           height: 32,
                           borderRadius: 8,
-                          backgroundColor: 'var(--color-background-muted, #f0f0f0)',
+                          backgroundColor:
+                            'var(--color-background-muted, #f0f0f0)',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -1038,7 +1179,9 @@ export function ProfileView({
                           <input
                             autoFocus
                             value={collectionNameDraft}
-                            onChange={e => setCollectionNameDraft(e.target.value)}
+                            onChange={e =>
+                              setCollectionNameDraft(e.target.value)
+                            }
                             onBlur={() => setEditingCollectionName(false)}
                             onKeyDown={e => {
                               if (e.key === 'Enter' || e.key === 'Escape') {
@@ -1053,8 +1196,12 @@ export function ProfileView({
                               outline: 'none',
                               padding: '2px 0',
                               background: 'transparent',
-                              borderBottom: '2px solid var(--color-accent, #0066FF)',
-                              width: Math.max(120, collectionNameDraft.length * 11),
+                              borderBottom:
+                                '2px solid var(--color-accent, #0066FF)',
+                              width: Math.max(
+                                120,
+                                collectionNameDraft.length * 11,
+                              ),
                             }}
                           />
                         ) : (
@@ -1106,7 +1253,9 @@ export function ProfileView({
                           isIconOnly
                           icon={<PlusIcon style={{width: 20, height: 20}} />}
                           onClick={() => {
-                            setCollectionItemsDraft(new Set(selectedCollection.items));
+                            setCollectionItemsDraft(
+                              new Set(selectedCollection.items),
+                            );
                             setEditingCollectionItems(true);
                           }}
                         />
@@ -1124,7 +1273,9 @@ export function ProfileView({
                       {PROFILE_LIKED_ITEMS.filter(
                         item => !removedBookmarks.has(item.name),
                       ).map((item, i) => {
-                        const isInCollection = collectionItemsDraft.has(item.name);
+                        const isInCollection = collectionItemsDraft.has(
+                          item.name,
+                        );
                         return (
                           <div
                             key={item.name}
@@ -1141,7 +1292,11 @@ export function ProfileView({
                               cursor: 'pointer',
                             }}>
                             <XDSCard padding={0}>
-                              <div style={{position: 'relative', overflow: 'hidden'}}>
+                              <div
+                                style={{
+                                  position: 'relative',
+                                  overflow: 'hidden',
+                                }}>
                                 <img
                                   src={item.img}
                                   alt={item.name}
@@ -1168,7 +1323,8 @@ export function ProfileView({
                                     onChange={() => {
                                       setCollectionItemsDraft(prev => {
                                         const next = new Set(prev);
-                                        if (next.has(item.name)) next.delete(item.name);
+                                        if (next.has(item.name))
+                                          next.delete(item.name);
                                         else next.add(item.name);
                                         return next;
                                       });
@@ -1182,13 +1338,23 @@ export function ProfileView({
                                     left: 0,
                                     right: 0,
                                     padding: '24px 12px 12px',
-                                    background: 'linear-gradient(to top, rgba(0,0,0,0.6), transparent)',
+                                    background:
+                                      'linear-gradient(to top, rgba(0,0,0,0.6), transparent)',
                                   }}>
-                                  <div style={{display: 'flex', flexDirection: 'column', gap: 8}}>
-                                    <XDSText type="body" style={{color: '#fff', fontWeight: 600}}>
+                                  <div
+                                    style={{
+                                      display: 'flex',
+                                      flexDirection: 'column',
+                                      gap: 8,
+                                    }}>
+                                    <XDSText
+                                      type="body"
+                                      style={{color: '#fff', fontWeight: 600}}>
                                       {item.name}
                                     </XDSText>
-                                    <XDSText type="supporting" style={{color: 'rgba(255,255,255,0.7)'}}>
+                                    <XDSText
+                                      type="supporting"
+                                      style={{color: 'rgba(255,255,255,0.7)'}}>
                                       {item.type}
                                     </XDSText>
                                   </div>
@@ -1209,7 +1375,9 @@ export function ProfileView({
                             label="Add items"
                             variant="primary"
                             onClick={() => {
-                              setCollectionItemsDraft(new Set(selectedCollection.items));
+                              setCollectionItemsDraft(
+                                new Set(selectedCollection.items),
+                              );
                               setEditingCollectionItems(true);
                             }}
                           />
@@ -1246,9 +1414,7 @@ export function ProfileView({
                   {/* Collections */}
                   <div style={{marginTop: 32, marginBottom: 32}}>
                     <XDSHStack vAlign="center" style={{marginBottom: 12}}>
-                      <XDSHeading level={2}>
-                        Collections
-                      </XDSHeading>
+                      <XDSHeading level={2}>Collections</XDSHeading>
                       <XDSStackItem size="fill" />
                       <XDSButton
                         label="Add collection"
@@ -1281,7 +1447,8 @@ export function ProfileView({
                                   width: 36,
                                   height: 36,
                                   borderRadius: 10,
-                                  backgroundColor: 'var(--color-background-muted, #f0f0f0)',
+                                  backgroundColor:
+                                    'var(--color-background-muted, #f0f0f0)',
                                   display: 'flex',
                                   alignItems: 'center',
                                   justifyContent: 'center',
@@ -1291,14 +1458,13 @@ export function ProfileView({
                                   style={{
                                     width: 18,
                                     height: 18,
-                                    color: 'var(--color-text-secondary, #6b7280)',
+                                    color:
+                                      'var(--color-text-secondary, #6b7280)',
                                   }}
                                 />
                               </div>
                               <XDSVStack gap={0}>
-                                <XDSText
-                                  type="body"
-                                  style={{fontWeight: 600}}>
+                                <XDSText type="body" style={{fontWeight: 600}}>
                                   {col.name}
                                 </XDSText>
                                 <XDSText type="supporting" color="secondary">
@@ -1315,9 +1481,7 @@ export function ProfileView({
 
                   {/* Bookmark items */}
                   <XDSHStack vAlign="center" style={{marginBottom: 16}}>
-                    <XDSHeading level={2}>
-                      All bookmarks
-                    </XDSHeading>
+                    <XDSHeading level={2}>All bookmarks</XDSHeading>
                     <XDSStackItem size="fill" />
                     <div style={{width: 280}}>
                       <XDSTextInput
@@ -1413,11 +1577,18 @@ export function ProfileView({
               </XDSText>
             </XDSHStack>
 
-            {(previewItem.status === 'In Review' || previewItem.status === 'Needs Fixes') && (
+            {(previewItem.status === 'In Review' ||
+              previewItem.status === 'Needs Fixes') && (
               <div style={{marginTop: 16}}>
                 <XDSBanner
-                  status={previewItem.status === 'Needs Fixes' ? 'warning' : 'info'}
-                  title={previewItem.status === 'Needs Fixes' ? 'Changes requested' : 'In review'}
+                  status={
+                    previewItem.status === 'Needs Fixes' ? 'warning' : 'info'
+                  }
+                  title={
+                    previewItem.status === 'Needs Fixes'
+                      ? 'Changes requested'
+                      : 'In review'
+                  }
                   description={
                     <>
                       {previewItem.status === 'Needs Fixes'
@@ -1429,7 +1600,7 @@ export function ProfileView({
                           href="#"
                           color="secondary"
                           hasUnderline
-                          onClick={(e) => {
+                          onClick={e => {
                             e.preventDefault();
                             setPreviewItem(null);
                             setActiveView('docs');
@@ -1448,25 +1619,62 @@ export function ProfileView({
                 <XDSList hasDividers density="balanced">
                   <XDSListItem
                     label="Views"
-                    startContent={<EyeIcon style={{width: 18, height: 18, color: 'var(--color-secondary)'}} />}
-                    endContent={<XDSText type="label">{previewItem.views.toLocaleString()}</XDSText>}
+                    startContent={
+                      <EyeIcon
+                        style={{
+                          width: 18,
+                          height: 18,
+                          color: 'var(--color-secondary)',
+                        }}
+                      />
+                    }
+                    endContent={
+                      <XDSText type="label">
+                        {previewItem.views.toLocaleString()}
+                      </XDSText>
+                    }
                   />
                   <XDSListItem
                     label="Uses"
-                    startContent={<CursorArrowRaysIcon style={{width: 18, height: 18, color: 'var(--color-secondary)'}} />}
-                    endContent={<XDSText type="label">{previewItem.used.toLocaleString()}</XDSText>}
+                    startContent={
+                      <CursorArrowRaysIcon
+                        style={{
+                          width: 18,
+                          height: 18,
+                          color: 'var(--color-secondary)',
+                        }}
+                      />
+                    }
+                    endContent={
+                      <XDSText type="label">
+                        {previewItem.used.toLocaleString()}
+                      </XDSText>
+                    }
                   />
                   <XDSListItem
                     label="Bookmarked"
-                    startContent={<BookmarkIcon style={{width: 18, height: 18, color: 'var(--color-secondary)'}} />}
-                    endContent={<XDSText type="label">{previewItem.bookmarks.toLocaleString()}</XDSText>}
+                    startContent={
+                      <BookmarkIcon
+                        style={{
+                          width: 18,
+                          height: 18,
+                          color: 'var(--color-secondary)',
+                        }}
+                      />
+                    }
+                    endContent={
+                      <XDSText type="label">
+                        {previewItem.bookmarks.toLocaleString()}
+                      </XDSText>
+                    }
                   />
                 </XDSList>
               </div>
             )}
 
             <XDSVStack gap={2} style={{marginTop: 'auto', paddingTop: 32}}>
-              {(previewItem.status === 'In Review' || previewItem.status === 'Needs Fixes') ? (
+              {previewItem.status === 'In Review' ||
+              previewItem.status === 'Needs Fixes' ? (
                 <XDSButton
                   variant="secondary"
                   label="Edit"
@@ -1477,15 +1685,27 @@ export function ProfileView({
               ) : (
                 <>
                   <XDSButton
-                    variant={previewItem.status === 'Published' ? 'primary' : 'secondary'}
+                    variant={
+                      previewItem.status === 'Published'
+                        ? 'primary'
+                        : 'secondary'
+                    }
                     label="Edit"
                     size="lg"
                     style={{width: '100%'}}
                     onClick={() => setPreviewItem(null)}
                   />
                   <XDSButton
-                    variant={previewItem.status === 'Published' ? 'secondary' : 'primary'}
-                    label={previewItem.status === 'Published' ? 'Unpublish' : 'Submit for review'}
+                    variant={
+                      previewItem.status === 'Published'
+                        ? 'secondary'
+                        : 'primary'
+                    }
+                    label={
+                      previewItem.status === 'Published'
+                        ? 'Unpublish'
+                        : 'Submit for review'
+                    }
                     size="lg"
                     style={{width: '100%'}}
                     onClick={() => setPreviewItem(null)}
@@ -1493,7 +1713,6 @@ export function ProfileView({
                 </>
               )}
             </XDSVStack>
-
           </>
         )}
       </PreviewDialogShell>
@@ -1525,13 +1744,35 @@ export function ProfileView({
               <XDSList hasDividers density="balanced">
                 <XDSListItem
                   label="Times used"
-                  startContent={<CursorArrowRaysIcon style={{width: 18, height: 18, color: 'var(--color-secondary)'}} />}
-                  endContent={<XDSText type="label">{previewUsedItem.usageCount}</XDSText>}
+                  startContent={
+                    <CursorArrowRaysIcon
+                      style={{
+                        width: 18,
+                        height: 18,
+                        color: 'var(--color-secondary)',
+                      }}
+                    />
+                  }
+                  endContent={
+                    <XDSText type="label">{previewUsedItem.usageCount}</XDSText>
+                  }
                 />
                 <XDSListItem
                   label="Last used"
-                  startContent={<ClockIcon style={{width: 18, height: 18, color: 'var(--color-secondary)'}} />}
-                  endContent={<XDSText type="label">{timeAgo(previewUsedItem.lastUsed)}</XDSText>}
+                  startContent={
+                    <ClockIcon
+                      style={{
+                        width: 18,
+                        height: 18,
+                        color: 'var(--color-secondary)',
+                      }}
+                    />
+                  }
+                  endContent={
+                    <XDSText type="label">
+                      {timeAgo(previewUsedItem.lastUsed)}
+                    </XDSText>
+                  }
                 />
               </XDSList>
             </div>
@@ -1559,150 +1800,179 @@ export function ProfileView({
       {/* Component docs drawer */}
       <XDSDialog
         isOpen={componentDrawerKey !== null}
-        onOpenChange={(open) => { if (!open) setComponentDrawerKey(null); }}
+        onOpenChange={open => {
+          if (!open) setComponentDrawerKey(null);
+        }}
         width="90vw"
         maxHeight="90vh"
         purpose="info"
-        style={{padding: 0, overflow: 'visible', maxWidth: 1200, '--xds-dialog-padding': '0px'} as React.CSSProperties}>
-        {componentDrawerKey && (() => {
-          const docs = getComponentDocs(componentDrawerKey);
-          const name = getComponentName(componentDrawerKey);
-          return (
-            <>
-              <div style={{position: 'absolute', top: 0, right: -40, zIndex: 1}}>
-                <XDSCard padding={0} style={{borderRadius: '50%'}}>
-                  <XDSButton
-                    label="Close"
-                    variant="ghost"
-                    size="sm"
-                    isIconOnly
-                    icon={<span style={{fontSize: 16, lineHeight: 1}}>✕</span>}
-                    onClick={() => setComponentDrawerKey(null)}
-                  />
-                </XDSCard>
-              </div>
-              <div style={{overflowY: 'auto', maxHeight: '85vh'}}>
-                <div style={{maxWidth: 840, margin: '0 auto', padding: '32px 40px'}}>
-                  <XDSText type="display-1">{name}</XDSText>
-                  <div style={{marginTop: 4, marginBottom: 32}}>
-                    <XDSText type="supporting" color="secondary">
-                      Component
-                    </XDSText>
-                  </div>
-
-                  {/* Live preview */}
+        style={
+          {
+            padding: 0,
+            overflow: 'visible',
+            maxWidth: 1200,
+            '--xds-dialog-padding': '0px',
+          } as React.CSSProperties
+        }>
+        {componentDrawerKey &&
+          (() => {
+            const docs = getComponentDocs(componentDrawerKey);
+            const name = getComponentName(componentDrawerKey);
+            return (
+              <>
+                <div
+                  style={{position: 'absolute', top: 0, right: -40, zIndex: 1}}>
+                  <XDSCard padding={0} style={{borderRadius: '50%'}}>
+                    <XDSButton
+                      label="Close"
+                      variant="ghost"
+                      size="sm"
+                      isIconOnly
+                      icon={
+                        <span style={{fontSize: 16, lineHeight: 1}}>✕</span>
+                      }
+                      onClick={() => setComponentDrawerKey(null)}
+                    />
+                  </XDSCard>
+                </div>
+                <div style={{overflowY: 'auto', maxHeight: '85vh'}}>
                   <div
                     style={{
-                      border: '1px solid var(--color-divider, rgba(0,0,0,0.1))',
-                      borderRadius: 12,
-                      overflow: 'hidden',
-                      marginBottom: 48,
+                      maxWidth: 840,
+                      margin: '0 auto',
+                      padding: '32px 40px',
                     }}>
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: '8px 12px',
-                        borderBottom: '1px solid var(--color-divider, rgba(0,0,0,0.08))',
-                        backgroundColor: 'var(--color-background-surface, #ffffff)',
-                      }}>
-                      <XDSText type="supporting" weight="semibold" color="secondary">
-                        Live preview
+                    <XDSText type="display-1">{name}</XDSText>
+                    <div style={{marginTop: 4, marginBottom: 32}}>
+                      <XDSText type="supporting" color="secondary">
+                        Component
                       </XDSText>
-                      <XDSButton
-                        label="Open full docs"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setComponentDrawerKey(null);
-                          setActiveView('docs');
-                        }}
-                      />
                     </div>
+
+                    {/* Live preview */}
                     <div
                       style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        minHeight: 240,
-                        padding: 24,
-                        backgroundColor: 'var(--color-background-muted, #f5f5f5)',
+                        border:
+                          '1px solid var(--color-divider, rgba(0,0,0,0.1))',
+                        borderRadius: 12,
+                        overflow: 'hidden',
+                        marginBottom: 48,
                       }}>
-                      {COMPONENT_PREVIEWS[componentDrawerKey] ?? (
-                        <XDSText type="supporting" color="secondary">
-                          Preview coming soon
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '8px 12px',
+                          borderBottom:
+                            '1px solid var(--color-divider, rgba(0,0,0,0.08))',
+                          backgroundColor:
+                            'var(--color-background-surface, #ffffff)',
+                        }}>
+                        <XDSText
+                          type="supporting"
+                          weight="semibold"
+                          color="secondary">
+                          Live preview
                         </XDSText>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Description */}
-                  <div style={{marginBottom: 48}}>
-                    <XDSHeading level={3}>{docs.tagline}</XDSHeading>
-                    <div style={{marginTop: 12}}>
-                      <XDSText type="body">{docs.description}</XDSText>
-                    </div>
-                    <div style={{marginTop: 24}}>
-                      <XDSHeading level={4}>When to use</XDSHeading>
-                      <div style={{marginTop: 8}}>
-                        <XDSList density="compact" listStyle="disc">
-                          {docs.whenToUse.map((item, i) => (
-                            <XDSListItem key={i} label={item} />
-                          ))}
-                        </XDSList>
+                        <XDSButton
+                          label="Open full docs"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setComponentDrawerKey(null);
+                            setActiveView('docs');
+                          }}
+                        />
+                      </div>
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          minHeight: 240,
+                          padding: 24,
+                          backgroundColor:
+                            'var(--color-background-muted, #f5f5f5)',
+                        }}>
+                        {COMPONENT_PREVIEWS[componentDrawerKey] ?? (
+                          <XDSText type="supporting" color="secondary">
+                            Preview coming soon
+                          </XDSText>
+                        )}
                       </div>
                     </div>
-                    <div style={{marginTop: 24}}>
-                      <XDSHeading level={4}>When NOT to use</XDSHeading>
-                      <div style={{marginTop: 8}}>
-                        <XDSList density="compact" listStyle="disc">
-                          {docs.whenNotToUse.map((item, i) => (
-                            <XDSListItem key={i} label={item} />
-                          ))}
-                        </XDSList>
+
+                    {/* Description */}
+                    <div style={{marginBottom: 48}}>
+                      <XDSHeading level={3}>{docs.tagline}</XDSHeading>
+                      <div style={{marginTop: 12}}>
+                        <XDSText type="body">{docs.description}</XDSText>
+                      </div>
+                      <div style={{marginTop: 24}}>
+                        <XDSHeading level={4}>When to use</XDSHeading>
+                        <div style={{marginTop: 8}}>
+                          <XDSList density="compact" listStyle="disc">
+                            {docs.whenToUse.map((item, i) => (
+                              <XDSListItem key={i} label={item} />
+                            ))}
+                          </XDSList>
+                        </div>
+                      </div>
+                      <div style={{marginTop: 24}}>
+                        <XDSHeading level={4}>When NOT to use</XDSHeading>
+                        <div style={{marginTop: 8}}>
+                          <XDSList density="compact" listStyle="disc">
+                            {docs.whenNotToUse.map((item, i) => (
+                              <XDSListItem key={i} label={item} />
+                            ))}
+                          </XDSList>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Anatomy */}
-                  <div style={{marginBottom: 48}}>
-                    <XDSHeading level={2}>Anatomy</XDSHeading>
-                    <div style={{marginTop: 16}}>
-                      <XDSText type="body">
-                        The {name} is composed of the following elements.
-                        Required elements must always be present, while optional
-                        elements can be included as needed.
-                      </XDSText>
-                    </div>
-                    <div style={{marginTop: 16}}>
-                      <XDSTable
-                        data={docs.anatomy as {[key: string]: unknown}[]}
-                        columns={[
-                          {key: 'element', header: 'Element'},
-                          {key: 'required', header: 'Required'},
-                          {key: 'description', header: 'Description'},
-                        ]}
-                      />
+                    {/* Anatomy */}
+                    <div style={{marginBottom: 48}}>
+                      <XDSHeading level={2}>Anatomy</XDSHeading>
+                      <div style={{marginTop: 16}}>
+                        <XDSText type="body">
+                          The {name} is composed of the following elements.
+                          Required elements must always be present, while
+                          optional elements can be included as needed.
+                        </XDSText>
+                      </div>
+                      <div style={{marginTop: 16}}>
+                        <XDSTable
+                          data={docs.anatomy as {[key: string]: unknown}[]}
+                          columns={[
+                            {key: 'element', header: 'Element'},
+                            {key: 'required', header: 'Required'},
+                            {key: 'description', header: 'Description'},
+                          ]}
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </>
-          );
-        })()}
+              </>
+            );
+          })()}
       </XDSDialog>
 
       {/* Bookmark preview dialog — reuses the exact same modal as the home page */}
       <TemplatePreviewModal
         isOpen={previewBookmarkItem !== null}
         onClose={() => setPreviewBookmarkItem(null)}
-        item={previewBookmarkItem ? {
-          name: previewBookmarkItem.name,
-          img: previewBookmarkItem.img,
-          author: previewBookmarkItem.author,
-          description: previewBookmarkItem.description,
-        } : null}
+        item={
+          previewBookmarkItem
+            ? {
+                name: previewBookmarkItem.name,
+                img: previewBookmarkItem.img,
+                author: previewBookmarkItem.author,
+                description: previewBookmarkItem.description,
+              }
+            : null
+        }
         onStartCrafting={() => {
           setPreviewBookmarkItem(null);
           onStartCrafting();
@@ -1720,26 +1990,52 @@ export function ProfileView({
         }}
         moreLikeThis={
           previewBookmarkItem
-            ? PROFILE_LIKED_ITEMS
-                .filter(i => i.name !== previewBookmarkItem.name && !removedBookmarks.has(i.name))
+            ? PROFILE_LIKED_ITEMS.filter(
+                i =>
+                  i.name !== previewBookmarkItem.name &&
+                  !removedBookmarks.has(i.name),
+              )
                 .slice(0, 4)
                 .map(i => ({name: i.name, img: i.img, key: i.name}))
             : []
         }
-        onMoreLikeThisClick={(mlItem) => {
+        onMoreLikeThisClick={mlItem => {
           const found = PROFILE_LIKED_ITEMS.find(i => i.name === mlItem.name);
           if (found) setPreviewBookmarkItem(found);
         }}
-        exploreTags={['website', 'dashboard', 'admin panel', 'settings', 'form layout', 'data table', 'sidebar nav', 'landing page', 'e-commerce', 'documentation', 'profile page']}
-        componentTags={['XDSAppShell', 'XDSTopNav', 'XDSVStack', 'XDSHStack', 'XDSHeading', 'XDSText', 'XDSButton', 'XDSCard', 'XDSBadge', 'XDSAvatar']}
+        exploreTags={[
+          'website',
+          'dashboard',
+          'admin panel',
+          'settings',
+          'form layout',
+          'data table',
+          'sidebar nav',
+          'landing page',
+          'e-commerce',
+          'documentation',
+          'profile page',
+        ]}
+        componentTags={[
+          'XDSAppShell',
+          'XDSTopNav',
+          'XDSVStack',
+          'XDSHStack',
+          'XDSHeading',
+          'XDSText',
+          'XDSButton',
+          'XDSCard',
+          'XDSBadge',
+          'XDSAvatar',
+        ]}
       />
 
       {/* Settings dialog */}
-      <XDSDialog isOpen={isSettingsOpen} onOpenChange={setIsSettingsOpen} width={720}>
-        <XDSDialogHeader
-          title="Settings"
-          onOpenChange={setIsSettingsOpen}
-        />
+      <XDSDialog
+        isOpen={isSettingsOpen}
+        onOpenChange={setIsSettingsOpen}
+        width={720}>
+        <XDSDialogHeader title="Settings" onOpenChange={setIsSettingsOpen} />
         <div
           style={{
             padding: 24,
@@ -1786,21 +2082,17 @@ export function ProfileView({
                   <div key={category} style={{marginBottom: 20}}>
                     <div style={{marginBottom: 8}}>
                       <XDSText type="supporting" color="secondary">
-                        {category.charAt(0).toUpperCase() +
-                          category.slice(1)}
+                        {category.charAt(0).toUpperCase() + category.slice(1)}
                       </XDSText>
                     </div>
                     <XDSGrid columns={4} gap={3}>
                       {entries.map(entry => {
-                        const isSelected =
-                          selectedTheme === entry.key;
+                        const isSelected = selectedTheme === entry.key;
                         const p = entry.preview;
                         return (
                           <div
                             key={entry.key}
-                            onClick={() =>
-                              setSelectedTheme(entry.key)
-                            }
+                            onClick={() => setSelectedTheme(entry.key)}
                             style={{
                               borderRadius: 12,
                               overflow: 'hidden',
@@ -1808,8 +2100,7 @@ export function ProfileView({
                               border: isSelected
                                 ? '2px solid var(--color-accent, #0066FF)'
                                 : '1px solid var(--color-border-emphasized, #e0e0e0)',
-                              transition:
-                                'border-color 0.15s ease',
+                              transition: 'border-color 0.15s ease',
                             }}>
                             <XDSVStack>
                               <div
@@ -1817,8 +2108,7 @@ export function ProfileView({
                                   height: 80,
                                   backgroundColor: p.bg,
                                   display: 'flex',
-                                  flexDirection:
-                                    'column' as const,
+                                  flexDirection: 'column' as const,
                                   overflow: 'hidden',
                                 }}>
                                 <XDSHStack
@@ -1890,9 +2180,7 @@ export function ProfileView({
                                 <XDSText
                                   type="supporting"
                                   style={{
-                                    fontWeight: isSelected
-                                      ? 600
-                                      : 400,
+                                    fontWeight: isSelected ? 600 : 400,
                                   }}>
                                   {entry.name}
                                 </XDSText>
