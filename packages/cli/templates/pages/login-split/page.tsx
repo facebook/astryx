@@ -19,9 +19,9 @@ import {
   radiusVars,
 } from '@xds/core/theme/tokens.stylex';
 
-// colorful-lifestyle-vertical-1 from xds_oss asset set
+// light-working-vertical-1 from xds_oss asset set
 const COVER_IMAGE_URL =
-  'https://scontent.xx.fbcdn.net/v/t39.6806-6/670480937_2502078110200666_6842204180822201520_n.png?_nc_cat=100&ccb=1-7&_nc_sid=56bbc2&_nc_ohc=CkjsPqmDibQQ7kNvwGqbpNN&_nc_oc=Adp5jI8z5m0aqhA07RtwoFUrqqr3jc6tQshxd5Hr5UyL_DIkFt0wEIQwLeKgXOg1lTBG_Ncth9lSFM0vmPqMxbfx&_nc_zt=14&_nc_ht=scontent.xx&_nc_gid=eCyOnLSq2cMADZiwJgLJaQ&_nc_ss=7a30f&oh=00_Af2sEmvEqZa5nd1SqocypZQnRh_FLwZHEBOrG0LTR7tfdA&oe=69E852F4';
+  'https://scontent.xx.fbcdn.net/v/t39.6806-6/671925666_4495480327349179_31826850576590602_n.png?_nc_cat=108&ccb=1-7&_nc_sid=56bbc2&_nc_ohc=nHeGVeCH7wIQ7kNvwEe_ed5&_nc_oc=AdrmcEXVuygkqWh3Gd9ap9XNslAE4LphVAtWeNXNglbrdryrAnVn7b1pI489fHosZUwgNv1UWgRTizw-6x0E48MI&_nc_zt=14&_nc_ht=scontent.xx&_nc_gid=soyKpwlpum27aTB16xwsWg&_nc_ss=7a30f&oh=00_Af2VtQRME3fzALwgGvOuScpGMWsY5hpgmGN1E4nGG6hhWQ&oe=69EC2E2B';
 
 const AppleIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" fill="currentColor" width={16} height={16} {...props}>

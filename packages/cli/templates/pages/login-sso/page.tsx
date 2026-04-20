@@ -20,9 +20,9 @@ import {shadowVars} from '@xds/core/theme/tokens.stylex';
 // Styles
 // ---------------------------------------------------------------------------
 
-// moody-scene-horizontal-1 from xds_oss asset set
+// building from xds_oss asset set
 const BG_URL =
-  'https://scontent.xx.fbcdn.net/v/t39.6806-6/672863405_1398068472358179_8859473259447111379_n.png?_nc_cat=100&ccb=1-7&_nc_sid=56bbc2&_nc_ohc=-wV2jHO2HVUQ7kNvwHGzCzr&_nc_oc=AdrxH65fOWB9AYbTJt499HTYmTlEoQ2-Gq4v0HixJT92Mz5awWgcZNSxSTRZJPypWIDapoCWcQ2JcNruqRd9ovzp&_nc_zt=14&_nc_ht=scontent.xx&_nc_gid=ak5CKQPy-Mq6Vm7qld0MTw&_nc_ss=7a30f&oh=00_Af03yc18QziUpPjAs6EJMXwjb9gx2bfazL1ccL5840WQdw&oe=69E8390A';
+  'https://scontent.xx.fbcdn.net/v/t39.6806-6/673946116_928438936673086_7955596512102197644_n.jpg?_nc_cat=103&ccb=1-7&_nc_sid=56bbc2&_nc_ohc=PVl7FEhjCusQ7kNvwEIGngs&_nc_oc=AdpqpGsFv2Z4UswEve2B2ZCHTKIXDjyDvMT-4Z3wfkVRnE3bKLbU4_DLcVEg3Z1ZVLDKyB3qEi1_KDcmHVsxDFWV&_nc_zt=14&_nc_ht=scontent.xx&_nc_gid=rUsd40W1gpadk3EzTZm5Tw&_nc_ss=7a30f&oh=00_Af1sx6n6V2eu3whVV18i5CYuQkQb_Ry2BN-V-2_DWlcWgw&oe=69EC4058';
 
 const styles = stylex.create({
   page: {
