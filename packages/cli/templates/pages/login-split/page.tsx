@@ -100,7 +100,7 @@ export default function LoginTwoColumn() {
                     <XDSEmptyState
                       title="You're signed in"
                       description="Redirecting to your dashboard…"
-                      icon={<XDSIcon icon={CheckCircleIcon} />}
+                      icon={<XDSIcon icon={CheckCircleIcon} size="xl" />}
                     />
                   ) : (
                   <XDSVStack gap={4} xstyle={styles.fullWidth}>
