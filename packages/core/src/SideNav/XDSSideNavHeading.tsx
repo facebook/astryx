@@ -38,7 +38,8 @@ import {useXDSSideNavCollapse} from './XDSSideNavCollapseContext';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import type {XDSLinkComponentType} from '../Link/types';
 import {xdsClassName, mergeProps} from '../utils';
-import {useMenuHoverIntent} from '../hooks/useMenuHoverIntent';
+import {useXDSMenuHover} from '../hooks/useXDSMenuHover';
+import {XDSNavMenuContext} from '../NavMenu/XDSNavMenuContext';
 
 // =============================================================================
 // Styles
@@ -183,6 +184,13 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
+    width: '100%',
+    border: 'none',
+    backgroundColor: 'transparent',
+    fontFamily: 'inherit',
+    fontSize: 'inherit',
+    color: 'inherit',
+    textAlign: 'start',
     minHeight: spacingVars['--spacing-8'],
     paddingInlineStart: {
       default: spacingVars['--spacing-2'],
@@ -362,9 +370,10 @@ export function XDSSideNavHeading({
 
   const popover = useXDSPopover({
     dialogLabel: 'Navigation menu',
+    hasCloseButton: false,
   });
 
-  const {triggerHoverProps, contentHoverProps, menuRef} = useMenuHoverIntent({
+  const {triggerProps, contentProps, menuRef, setTriggerEl} = useXDSMenuHover({
     show: popover.show,
     hide: popover.hide,
     isOpen: popover.isOpen,
@@ -373,11 +382,12 @@ export function XDSSideNavHeading({
 
   const setRef = useCallback(
     (el: HTMLDivElement | null) => {
-      (rootRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
+      (rootRef as React.RefObject<HTMLDivElement | null>).current = el;
+      setTriggerEl(el);
       if (typeof ref === 'function') {
         ref(el);
       } else if (ref) {
-        (ref as React.MutableRefObject<HTMLDivElement | null>).current = el;
+        (ref as React.RefObject<HTMLDivElement | null>).current = el;
       }
       if (menu) {
         popover.triggerRef(el);
@@ -394,12 +404,12 @@ export function XDSSideNavHeading({
     const collapsedIcon = <span {...stylex.props(styles.icon)}>{icon}</span>;
 
     const collapsedSetRef = (el: HTMLElement | null) => {
-      (collapsedItemRef as React.MutableRefObject<HTMLElement | null>).current =
+      (collapsedItemRef as React.RefObject<HTMLElement | null>).current =
         el;
       if (typeof ref === 'function') {
         ref(el as HTMLDivElement | null);
       } else if (ref) {
-        (ref as React.MutableRefObject<HTMLDivElement | null>).current =
+        (ref as React.RefObject<HTMLDivElement | null>).current =
           el as HTMLDivElement | null;
       }
     };
@@ -431,7 +441,7 @@ export function XDSSideNavHeading({
             aria-label={heading}
             data-testid={testId}
             {...popover.triggerProps}
-            {...triggerHoverProps}
+            {...triggerProps}
             {...mergeProps(
               xdsClassName('side-nav-heading'),
               stylex.props(
@@ -448,13 +458,13 @@ export function XDSSideNavHeading({
           {popover.render(
             <div
               ref={menuRef as React.RefObject<HTMLDivElement>}
+              role="menu"
               {...stylex.props(styles.popoverContent)}
-              {...contentHoverProps}>
-              <div
+              {...contentProps}>
+              <button
+                type="button"
                 {...stylex.props(styles.popoverHeading)}
-                onClick={() => popover.hide()}
-                role="button"
-                tabIndex={0}>
+                onClick={triggerProps.onClick}>
                 {icon && <span {...stylex.props(styles.icon)}>{icon}</span>}
                 <span {...stylex.props(styles.textContainer)}>
                   {superheading && (
@@ -480,8 +490,10 @@ export function XDSSideNavHeading({
                     </span>
                   )}
                 </span>
-              </div>
+              </button>
+              <XDSNavMenuContext.Provider value={{closeMenu: popover.hide}}>
               {menu}
+            </XDSNavMenuContext.Provider>
             </div>,
             {placement: 'below', alignment: 'start', xstyle: styles.popover},
           )}
@@ -578,18 +590,17 @@ export function XDSSideNavHeading({
   // Shared popover heading content — uses renderTextContent for consistent
   // sizing, with flipped chevron inline after the title. Always static (no links).
   const popoverHeadingContent = (
-    <div
+    <button
+      type="button"
       {...stylex.props(styles.popoverHeading)}
-      onClick={() => popover.hide()}
-      role="button"
-      tabIndex={0}>
+      onClick={triggerProps.onClick}>
       {icon && <span {...stylex.props(styles.icon)}>{icon}</span>}
       {renderTextContent(
         <span {...stylex.props(styles.popoverChevron)}>
           {getIcon('chevronDown')}
         </span>,
       )}
-    </div>
+    </button>
   );
 
   // Whole heading is a link (no menu, single headingHref)
@@ -621,7 +632,7 @@ export function XDSSideNavHeading({
         <div
           ref={setRef}
           data-testid={testId}
-          {...triggerHoverProps}
+          {...triggerProps}
           {...mergeProps(
             xdsClassName('side-nav-heading'),
             stylex.props(styles.root, styles.menuTrigger, xstyle),
@@ -633,7 +644,7 @@ export function XDSSideNavHeading({
             <button
               type="button"
               aria-label="Open menu"
-              onClick={triggerHoverProps.onClick}
+              onClick={(e) => { e.stopPropagation(); triggerProps.onClick(); }}
               {...popover.triggerProps}
               {...stylex.props(styles.chevron, styles.interactive)}>
               {getIcon('chevronDown')}
@@ -644,8 +655,9 @@ export function XDSSideNavHeading({
         {popover.render(
           <div
             ref={menuRef as React.RefObject<HTMLDivElement>}
+            role="menu"
             {...stylex.props(styles.popoverContent)}
-            {...contentHoverProps}>
+            {...contentProps}>
             {popoverHeadingContent}
             {menu}
           </div>,
@@ -668,7 +680,7 @@ export function XDSSideNavHeading({
         <div
           ref={setRef}
           data-testid={testId}
-          {...triggerHoverProps}
+          {...triggerProps}
           {...mergeProps(
             xdsClassName('side-nav-heading'),
             stylex.props(styles.root, xstyle),
@@ -688,7 +700,7 @@ export function XDSSideNavHeading({
               <button
                 type="button"
                 aria-label="Open menu"
-                onClick={triggerHoverProps.onClick}
+                onClick={(e) => { e.stopPropagation(); triggerProps.onClick(); }}
                 {...popover.triggerProps}
                 {...stylex.props(styles.chevron, styles.interactive)}>
                 {getIcon('chevronDown')}
@@ -700,8 +712,9 @@ export function XDSSideNavHeading({
         {popover.render(
           <div
             ref={menuRef as React.RefObject<HTMLDivElement>}
+            role="menu"
             {...stylex.props(styles.popoverContent)}
-            {...contentHoverProps}>
+            {...contentProps}>
             {popoverHeadingContent}
             {menu}
           </div>,

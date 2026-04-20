@@ -225,7 +225,7 @@ describe('XDSSideNavHeading', () => {
     );
     const button = screen.getByRole('button');
     // The trigger button uses aria attributes from useXDSPopover and
-    // an onClick handler from useMenuHoverIntent for click-to-lock toggle.
+    // an onClick handler from useXDSMenuHover for click-to-lock toggle.
     expect(button).toHaveAttribute('aria-haspopup', 'dialog');
     expect(button).toHaveAttribute('aria-expanded');
   });
