@@ -2,7 +2,7 @@
 
 import {useState, useCallback} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {colorVars, radiusVars, shadowVars} from '@xds/core/theme/tokens.stylex';
+import {colorVars, radiusVars, shadowVars, spacingVars} from '@xds/core/theme/tokens.stylex';
 import {XDSButton} from '@xds/core/Button';
 import {XDSCard} from '@xds/core/Card';
 import {XDSCenter} from '@xds/core/Center';
@@ -262,9 +262,9 @@ const editorStyles = stylex.create({
   },
   floatingPanel: {
     position: 'absolute',
-    top: 16,
-    left: 16,
-    bottom: 16,
+    top: spacingVars['--spacing-4'],
+    left: spacingVars['--spacing-4'],
+    bottom: spacingVars['--spacing-4'],
     width: 320,
     zIndex: 10,
     backgroundColor: colorVars['--color-background-card'],
@@ -273,21 +273,21 @@ const editorStyles = stylex.create({
     overflow: 'hidden',
   },
   headerPadding: {
-    paddingInline: 16,
+    paddingInline: spacingVars['--spacing-4'],
   },
   floatingPanelCollapsed: {
     bottom: 'auto',
-    paddingBlockEnd: 16,
+    paddingBlockEnd: spacingVars['--spacing-4'],
   },
   panelScroll: {
     overflowY: 'auto',
   },
   tabListWrapper: {
-    paddingInline: 4,
+    paddingInline: spacingVars['--spacing-1'],
   },
   panelContentPadding: {
-    paddingInline: 8,
-    paddingBlockEnd: 16,
+    paddingInline: spacingVars['--spacing-2'],
+    paddingBlockEnd: spacingVars['--spacing-4'],
   },
   collapseButtonEdgeComp: {
     marginInlineEnd: -8,
@@ -295,7 +295,7 @@ const editorStyles = stylex.create({
   previewArea: {
     flex: 1,
     overflowY: 'auto',
-    padding: 32,
+    padding: spacingVars['--spacing-8'],
     paddingLeft: 368,
   },
   canvas: (maxWidth: number) => ({
