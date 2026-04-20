@@ -1,5 +1,5 @@
 /**
- * @file useStack.ts
+ * @file useXDSChartStack.ts
  * @output Hook for reading stacked baselines from chart context
  * @position Used by XDSChartBar and XDSChartArea when `stack` prop is set
  */
@@ -11,7 +11,7 @@ import {useChart} from './ChartContext';
  * The stack layout is computed in XDSChart from yKeys using d3-stack.
  * Returns y0 (bottom) and y1 (top) accessors for each data point index.
  */
-export function useStack(
+export function useXDSChartStack(
   stackGroup: string | undefined,
   dataKey: string,
 ): {

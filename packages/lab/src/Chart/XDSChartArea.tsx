@@ -7,7 +7,7 @@
 import {useMemo, useId} from 'react';
 import {area, curveLinear, curveMonotoneX, curveNatural, curveStep} from 'd3-shape';
 import {useChart} from './ChartContext';
-import {useStack} from './useStack';
+import {useXDSChartStack} from './useXDSChartStack';
 import {xPixel} from './utils';
 
 const CURVES = {
@@ -57,7 +57,7 @@ export function XDSChartArea({
   strokeWidth = 2,
 }: XDSChartAreaProps) {
   const {data, xKey, xScale, yScale} = useChart();
-  const {y0, y1} = useStack(stackGroup, dataKey);
+  const {y0, y1} = useXDSChartStack(stackGroup, dataKey);
   const gradientId = useId();
 
   const curveFactory = CURVES[curve];

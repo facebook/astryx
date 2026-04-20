@@ -32,7 +32,7 @@ export {
   type XDSChartLegendItem,
 } from './XDSChartLegend';
 export {useChart} from './ChartContext';
-export {useStack} from './useStack';
+export {useXDSChartStack} from './useXDSChartStack';
 export type {ChartContext, ChartMargin, ChartScale, DataPoint, StackedSeries} from './types';
 export {m4Reduce, type M4Point} from './m4';
 export {isBandScale, xPixel} from './utils';

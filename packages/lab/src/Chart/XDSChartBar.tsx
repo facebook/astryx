@@ -5,7 +5,7 @@
  */
 
 import {useChart} from './ChartContext';
-import {useStack} from './useStack';
+import {useXDSChartStack} from './useXDSChartStack';
 import {isBandScale} from './utils';
 
 export interface XDSChartBarProps {
@@ -42,7 +42,7 @@ export function XDSChartBar({
   opacity = 1,
 }: XDSChartBarProps) {
   const {data, xKey, xScale, yScale, orientation, barGroup} = useChart();
-  const {y0, y1, isStacked} = useStack(stackGroup, dataKey);
+  const {y0, y1, isStacked} = useXDSChartStack(stackGroup, dataKey);
 
   if (orientation === 'horizontal') {
     // Horizontal bars: yScale is band (categories), xScale is linear (values)
