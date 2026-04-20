@@ -30,6 +30,7 @@ import {XDSIcon} from '@xds/core/Icon';
 import {XDSSection} from '@xds/core/Section';
 import {XDSCenter} from '@xds/core/Center';
 import {XDSGrid} from '@xds/core/Grid';
+import {radiusVars} from '@xds/core/theme/tokens.stylex';
 import {
   ArrowTopRightOnSquareIcon,
   ArrowsPointingOutIcon,
@@ -42,7 +43,7 @@ import {
 const styles = stylex.create({
   tabListFlush: {marginInlineStart: '-12px'},
   previewCard: {
-    borderRadius: 12,
+    borderRadius: radiusVars['--radius-container'],
     cursor: 'pointer',
   },
 });
