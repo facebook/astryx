@@ -160,3 +160,26 @@ export {
   XDSChartReferenceLine,
   type XDSChartReferenceLineProps,
 } from './Chart';
+
+// Sankey / flow diagrams — ribbon-based flow visualization
+export {
+  XDSSankeyChart,
+  type XDSSankeyChartProps,
+  XDSSankeyLink,
+  type XDSSankeyLinkProps,
+  XDSSankeyNode,
+  type XDSSankeyNodeProps,
+  XDSSankeyLabel,
+  type XDSSankeyLabelProps,
+  useSankey,
+  type SankeyNode,
+  type SankeyLink,
+  type SankeyColumn,
+  type SankeyColumnDef,
+  type SankeyNodeLayout,
+  type SankeyLinkLayout,
+  type SankeyColumnLayout,
+  XDSSankeyGrid,
+  type XDSSankeyGridProps,
+  type SankeyContext,
+} from './Sankey';
