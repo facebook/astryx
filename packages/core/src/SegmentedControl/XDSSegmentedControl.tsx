@@ -14,14 +14,17 @@
 
 import React, {useMemo, useRef, useCallback, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars, spacingVars, radiusVars} from '../theme/tokens.stylex';
 import {XDSSegmentedControlContext} from './XDSSegmentedControlContext';
 import type {XDSSegmentedControlSize} from './XDSSegmentedControlContext';
 import {xdsClassName, mergeProps} from '../utils';
 import {useXDSSize} from '../SizeContext/XDSSizeContext';
+import type {XDSBaseProps} from '../XDSBaseProps';
 
-export interface XDSSegmentedControlProps {
+export interface XDSSegmentedControlProps extends Omit<
+  XDSBaseProps<HTMLDivElement>,
+  'onChange'
+> {
   /**
    * The currently selected value (controlled).
    */
@@ -48,20 +51,6 @@ export interface XDSSegmentedControlProps {
    * XDSSegmentedControlItem children.
    */
   children: ReactNode;
-  /**
-   * Additional StyleX styles for the container.
-   */
-  xstyle?: StyleXStyles;
-  /**
-   * CSS class name(s) appended to the root element.
-   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
-   */
-  className?: string;
-  /**
-   * Inline styles to apply to the root element. Spread after StyleX
-   * inline styles, so these values take priority.
-   */
-  style?: React.CSSProperties;
 }
 
 // =============================================================================
