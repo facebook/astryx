@@ -5,8 +5,10 @@
  *
  * Two rendering modes based on nodeWidth:
  * - Thin bars (< 16px): labels above the node bar horizontally
- * - Wide bars (≥ 16px): labels rotated -90° on the node bar with a
- *   white background pill for contrast over ribbon colors
+ * - Wide bars (≥ 16px): rotated -90° labels centered on the bar
+ *
+ * Text color for labels on node bars uses --color-on-dark / --color-on-light
+ * based on the node's oklch lightness, matching XDSMediaTheme conventions.
  */
 
 import {useSankey} from './SankeyContext';
@@ -32,12 +34,23 @@ function defaultFormat(value: number): string {
 }
 
 /**
+ * Pick the right on-surface text token based on the node's oklch lightness.
+ * L < 0.6 → dark fill → --color-on-dark (white text).
+ * L >= 0.6 → light fill → --color-on-light (dark text).
+ */
+function onSurfaceColor(color: [number, number, number]): string {
+  return color[0] < 0.6
+    ? 'var(--color-on-dark, #fff)'
+    : 'var(--color-on-light, #000)';
+}
+
+/**
  * Renders labels for all nodes.
  *
  * Adapts rendering based on node bar width:
  * - **Thin** (< 16px): value + label above the bar, percentage below
- * - **Wide** (≥ 16px): rotated label centered on the bar with a
- *   background pill. Value sits above, percentage below.
+ * - **Wide** (≥ 16px): rotated label centered on the bar with
+ *   theme-aware text color. Value sits above, percentage below.
  */
 export function XDSSankeyLabel({
   showPercent = true,
@@ -151,20 +164,18 @@ function WideLabel({
 }) {
   const cx = node.x + nodeWidth / 2;
   const cy = node.y + node.height / 2;
-
-  // Combine label and value for the rotated text
   const text = `${node.label} = ${formatValue(node.value)}`;
-
-  // Background pill — rotated with the text
   const pillW = text.length * 6.5 + 12;
   const pillH = 16;
+  const showRotated = node.height >= 20;
 
-  // Only show rotated label if bar is tall enough for text
-  const minHeight = 20;
-  const showRotated = node.height >= minHeight;
+  // Text color: if background pill, use primary (pill provides contrast).
+  // Otherwise, pick on-dark/on-light based on node bar lightness.
+  const textOnBar = showBg
+    ? 'var(--color-text-primary, #1c1c1e)'
+    : onSurfaceColor(node.color);
 
   if (!showRotated) {
-    // Fall back to value above for very short bars
     return (
       <g>
         <text
@@ -183,7 +194,6 @@ function WideLabel({
 
   return (
     <g>
-      {/* Rotated label on the bar */}
       <g transform={`translate(${cx}, ${cy}) rotate(-90)`}>
         {showBg && (
           <rect
@@ -203,13 +213,12 @@ function WideLabel({
           dominantBaseline="central"
           style={{
             font: '600 10px/1 system-ui',
-            fill: 'var(--color-text-primary, #1c1c1e)',
+            fill: textOnBar,
             letterSpacing: '-0.01em',
           }}>
           {text}
         </text>
       </g>
-      {/* Percentage below */}
       {showPercent && node.column > 0 && (
         <text
           x={cx}
