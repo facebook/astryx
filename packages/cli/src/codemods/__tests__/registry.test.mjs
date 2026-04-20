@@ -32,5 +32,15 @@ describe('registry', () => {
       const results = await getTransformsBetween('0.0.8', '0.0.2');
       expect(results).toEqual([]);
     });
+
+    test('handles prerelease suffixes in --to (canary versions)', async () => {
+      const results = await getTransformsBetween('0.0.12', '0.0.13-canary.21d98fa');
+      expect(results.map((r) => r.version)).toEqual(['0.0.13']);
+    });
+
+    test('handles prerelease suffixes in --from', async () => {
+      const results = await getTransformsBetween('0.0.12-canary.abc1234', '0.0.13');
+      expect(results.map((r) => r.version)).toEqual(['0.0.13']);
+    });
   });
 });
