@@ -31,6 +31,7 @@ import {tabScope} from './tab.markers.stylex';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import type {XDSLinkComponentType} from '../Link/types';
 import {xdsClassName, mergeProps} from '../utils';
+import {edgeCompensation} from '../Layout/edgeCompensation.stylex';
 
 export interface XDSTabProps extends XDSBaseProps<HTMLButtonElement> {
   /**
@@ -119,7 +120,7 @@ const styles = stylex.create({
   },
   indicator: {
     position: 'absolute',
-    bottom: '-2px',
+    bottom: 'var(--_tab-indicator-bottom, -2px)',
     left: spacingVars['--spacing-3'],
     right: spacingVars['--spacing-3'],
     height: '2px',
@@ -239,6 +240,7 @@ export function XDSTab({
         sizeStyles[size],
         isSelected && styles.selected,
         isFill && layoutStyles.fill,
+        edgeCompensation.item,
         tabScope,
         xstyle,
       ),

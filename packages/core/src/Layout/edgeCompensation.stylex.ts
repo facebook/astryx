@@ -2,86 +2,80 @@
  * @file edgeCompensation.stylex.ts
  * @input Uses @stylexjs/stylex
  * @output StyleX utilities for automatic edge padding compensation
- * @position Layout utility; used by containers (TopNav, LayoutHeader, Banner, etc.)
- *   and components with transparent variants (Button ghost/tertiary)
+ * @position Layout utility; used by containers (TopNav, Toolbar, etc.)
+ *   and components with transparent variants (Button ghost, Tab)
  *
- * ## Edge Compensation Pattern
+ * ## Edge Inset Pattern
  *
- * Interactive components with transparent padding (ghost buttons, tertiary buttons)
+ * Interactive components with transparent padding (ghost buttons, tabs)
  * create excess visual space at container edges. The container's padding + the
- * component's own transparent padding doubles up. Solid buttons don't have this
- * problem — their padding is visually filled.
+ * component's own transparent padding doubles up.
  *
  * This module provides a two-layer solution:
  *
- * 1. **Containers** set spatial signals via CSS custom properties:
- *    - `--edge-start: 1` / `--edge-end: 1` on edge-adjacent slots
- *    - `--container-padding-inline` on the container root (the inline padding value)
+ * 1. **Containers** set the inset budget via CSS custom properties on slot wrappers:
+ *    - `--edge-inset-start: <px>` — how much to pull back at the start edge
+ *    - `--edge-inset-end: <px>` — how much to pull back at the end edge
  *
- * 2. **Components** with flat/transparent variants read these signals and
- *    self-adjust their margins, clamped to `min(own-padding, container-padding-inline)`.
+ * 2. **Components** opt in by applying `edgeCompensation.item` which uses
+ *    `:first-child` / `:last-child` selectors to only compensate items
+ *    actually at the edge.
  *
- * The compensation formula:
- * ```
- * margin = var(--edge-*, 0) * -1 * min(own-padding, var(--container-padding-inline, 0px))
- * ```
- *
- * - When not at an edge: `--edge-*` is 0, so margin is 0 (no effect)
- * - When at an edge: margin pulls the component toward the edge by the smaller
- *   of its own padding or the container's inline padding
- *
- * ### Why --container-padding-inline?
- *
- * Edge compensation is always an inline (horizontal) adjustment. Many containers
- * have different inline vs block padding (e.g., Banner: paddingInline=spacing-4,
- * paddingBlock=spacing-3; TopNav: paddingInline=spacing-4, no block padding).
- * The container system uses two directional vars: --container-padding-inline for
- * horizontal padding and --container-padding-block-start/end for vertical. Edge compensation
- * only reads the inline var since it only adjusts horizontal margins.
+ * The container decides the amount. The component decides whether to participate.
  *
  * SYNC: When modified, update /packages/core/src/Layout/Layout.doc.mjs
  */
 
 import * as stylex from '@stylexjs/stylex';
+import {spacingVars} from '../theme/tokens.stylex';
 
 // =============================================================================
-// Container-side: Edge signal styles
+// Container-side: Edge inset styles
 // =============================================================================
 
 /**
- * Styles for containers to mark slots at their edges.
+ * Styles for containers to set the edge inset budget on slot wrappers.
  *
- * Apply these to wrapper divs around slot content (startContent, endContent, etc.)
- * so child components know they're at a container boundary.
- *
- * The container must also set `--container-padding-inline` on its root element
- * so components know how much inline room is available for compensation.
+ * Apply to wrapper divs around slot content (startContent, endContent, etc.).
+ * The value is the amount of negative margin that edge-adjacent components
+ * will apply to pull themselves toward the container edge.
  *
  * @example
  * ```tsx
- * // In TopNav:
- * <div {...stylex.props(edgeSignals.start)}>
+ * // Toolbar sets inset equal to its slot padding:
+ * <div {...stylex.props(edgeInset.start4)}>
  *   {startContent}
  * </div>
- * <div {...stylex.props(edgeSignals.end)}>
+ * <div {...stylex.props(edgeInset.end4)}>
  *   {endContent}
  * </div>
  * ```
  */
-export const edgeSignals = stylex.create({
-  /** Mark slot as being at the inline-start edge of the container */
-  start: {
-    '--edge-start': '1',
-  },
-  /** Mark slot as being at the inline-end edge of the container */
-  end: {
-    '--edge-end': '1',
-  },
-  /** Mark slot as being at both edges (e.g., a single-slot container) */
-  both: {
-    '--edge-start': '1',
-    '--edge-end': '1',
-  },
+export const edgeInset = stylex.create({
+  /** Start edge inset: spacing-1 (4px) */
+  start1: {'--edge-inset-start': spacingVars['--spacing-1']},
+  /** Start edge inset: spacing-1.5 (6px) */
+  start1_5: {'--edge-inset-start': spacingVars['--spacing-1-5']},
+  /** Start edge inset: spacing-2 (8px) */
+  start2: {'--edge-inset-start': spacingVars['--spacing-2']},
+  /** Start edge inset: spacing-3 (12px) */
+  start3: {'--edge-inset-start': spacingVars['--spacing-3']},
+  /** Start edge inset: spacing-4 (16px) */
+  start4: {'--edge-inset-start': spacingVars['--spacing-4']},
+  /** Start edge inset: spacing-5 (20px) */
+  start5: {'--edge-inset-start': spacingVars['--spacing-5']},
+  /** End edge inset: spacing-1 (4px) */
+  end1: {'--edge-inset-end': spacingVars['--spacing-1']},
+  /** End edge inset: spacing-1.5 (6px) */
+  end1_5: {'--edge-inset-end': spacingVars['--spacing-1-5']},
+  /** End edge inset: spacing-2 (8px) */
+  end2: {'--edge-inset-end': spacingVars['--spacing-2']},
+  /** End edge inset: spacing-3 (12px) */
+  end3: {'--edge-inset-end': spacingVars['--spacing-3']},
+  /** End edge inset: spacing-4 (16px) */
+  end4: {'--edge-inset-end': spacingVars['--spacing-4']},
+  /** End edge inset: spacing-5 (20px) */
+  end5: {'--edge-inset-end': spacingVars['--spacing-5']},
 });
 
 // =============================================================================
@@ -91,44 +85,36 @@ export const edgeSignals = stylex.create({
 /**
  * Styles for components to self-adjust at container edges.
  *
- * Components with transparent/flat variants (ghost buttons, tertiary buttons,
- * icon-only buttons) should apply these styles to compensate for doubled padding
- * at container edges.
+ * Components with transparent/flat padding (ghost buttons, tabs) apply
+ * `edgeCompensation.item` to participate in edge compensation.
  *
- * The compensation is `min(own-padding, container-padding-inline)` — never more
- * than either value. When not at an edge (signals default to 0), no compensation
- * is applied.
- *
- * Components must set `--component-padding-inline` on themselves so the
- * compensation formula knows the component's own inline padding. This makes
- * edge compensation theme-safe — if a theme changes the button's internal
- * padding, the compensation adjusts automatically.
+ * Only the first child in a slot gets start compensation, and only the
+ * last child gets end compensation — via `:first-child` / `:last-child`.
  *
  * @example
  * ```tsx
  * // In XDSButton, for ghost variant:
- * const styles = stylex.create({
- *   ghost: {
- *     paddingInline: spacingVars['--spacing-3'],
- *     '--component-padding-inline': spacingVars['--spacing-3'],
- *   },
- * });
- *
  * {...stylex.props(
  *   styles.base,
  *   styles.ghost,
- *   edgeCompensation.self,
+ *   edgeCompensation.item,
  * )}
  * ```
  */
 export const edgeCompensation = stylex.create({
   /**
-   * Self-compensating edge style. Reads --component-padding-inline from the
-   * component itself. The component must set this variable to its own inline
-   * padding value (typically via the same spacing token used for paddingInline).
+   * Edge-compensating item. Applies negative margin at container edges
+   * using the inset budget set by the parent container.
+   * Only activates when the component is :first-child (start) or :last-child (end).
    */
-  self: {
-    marginInlineStart: `calc(var(--edge-start, 0) * -1 * min(var(--component-padding-inline, 0px), var(--container-padding-inline, 0px)))`,
-    marginInlineEnd: `calc(var(--edge-end, 0) * -1 * min(var(--component-padding-inline, 0px), var(--container-padding-inline, 0px)))`,
+  item: {
+    marginInlineStart: {
+      default: null,
+      ':first-child': 'calc(-1 * var(--edge-inset-start, 0px))',
+    },
+    marginInlineEnd: {
+      default: null,
+      ':last-child': 'calc(-1 * var(--edge-inset-end, 0px))',
+    },
   },
 });

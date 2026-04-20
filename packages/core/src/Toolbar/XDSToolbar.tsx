@@ -2,7 +2,7 @@
 
 /**
  * @file XDSToolbar.tsx
- * @input Uses XDSSection, XDSSizeContext, useListFocus, edgeSignals, StyleX, spacingVars, sizeVars
+ * @input Uses XDSSection, XDSSizeContext, useListFocus, StyleX, spacingVars, sizeVars
  * @output Exports XDSToolbar component and XDSToolbarProps
  * @position Core implementation; consumed by index.ts
  *
@@ -24,7 +24,6 @@ import {xdsClassName, mergeProps} from '../utils';
 import {XDSSection} from '../Section/XDSSection';
 import {useListFocus} from '../hooks/useListFocus';
 import {XDSSizeProvider} from '../SizeContext/XDSSizeContext';
-import {edgeSignals} from '../Layout/edgeCompensation.stylex';
 
 /**
  * Map SpacingStep values to spacingVars keys.
@@ -65,7 +64,6 @@ const styles = stylex.create({
   startSlot: {
     display: 'flex',
     alignItems: 'center',
-    paddingInlineStart: spacingVars['--spacing-2'],
   },
   centerSlot: {
     display: 'flex',
@@ -78,7 +76,6 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'flex-end',
-    paddingInlineEnd: spacingVars['--spacing-2'],
   },
   // When only startContent is present, let it fill
   startOnly: {
@@ -90,48 +87,50 @@ const styles = stylex.create({
   },
 });
 
-/**
- * Size-specific styles. Each size sets:
- * - minHeight: element token + vertical breathing room
- * - --container-padding-inline: so ghost buttons auto-compensate at edges
- */
 const sizeStyles = stylex.create({
-  sm: {
+  base: {
     minHeight: sizeVars['--size-element-sm'],
-  },
-  md: {
-    minHeight: sizeVars['--size-element-md'],
-  },
-  lg: {
-    minHeight: sizeVars['--size-element-lg'],
   },
 });
 
-/**
- * Container padding value per size for edge compensation.
- * Maps to the same spacing tokens used for the Section padding.
- */
-const containerPaddingValue: Record<XDSElementSize, string> = {
-  sm: '4px',
-  md: '8px',
-  lg: '12px',
-};
-
-// Dynamic styles for configurable gap
+// Dynamic styles for configurable gap and tab indicator offset
 const dynamicStyles = stylex.create({
   gap: (gapValue: string) => ({
     gap: gapValue,
   }),
+  tabIndicatorBottom: (offset: string) => ({
+    '--_tab-indicator-bottom': offset,
+  }),
 });
 
 /**
- * Default padding per toolbar size.
+ * Default block padding per toolbar size. Inline padding comes from the
+ * parent container (Card, Section, LayoutHeader) via the Section's
+ * theme default — the toolbar only controls its vertical tightness.
  */
-const defaultPaddingForSize: Record<XDSElementSize, SpacingStep> = {
-  sm: 1,
+const defaultBlockPaddingForSize: Record<XDSElementSize, SpacingStep> = {
+  sm: 2,
   md: 2,
-  lg: 3,
+  lg: 2,
 };
+
+const blockPaddingVarForSize: Record<XDSElementSize, string> = {
+  sm: spacingVars['--spacing-2'] as string,
+  md: spacingVars['--spacing-2'] as string,
+  lg: spacingVars['--spacing-2'] as string,
+};
+
+/**
+ * Dynamic edge inset style. The inset equals container-inline-padding minus
+ * the toolbar's block padding, creating even spacing around edge-compensated
+ * items (ghost buttons, tabs).
+ */
+const edgeInsetStyles = stylex.create({
+  inset: (blockPadding: string) => ({
+    '--edge-inset-start': `calc(var(--container-padding-inline-start, var(--container-padding-inline, ${spacingVars['--spacing-4']})) - ${blockPadding})`,
+    '--edge-inset-end': `calc(var(--container-padding-inline-end, var(--container-padding-inline, ${spacingVars['--spacing-4']})) - ${blockPadding})`,
+  }),
+});
 
 export type XDSToolbarSize = XDSElementSize;
 
@@ -168,7 +167,7 @@ export interface XDSToolbarProps extends XDSBaseProps<HTMLDivElement> {
   size?: XDSToolbarSize;
   /**
    * Gap between items within each slot, using the spacing scale.
-   * @default 2
+   * @default 1
    */
   gap?: SpacingStep;
   /**
@@ -182,11 +181,7 @@ export interface XDSToolbarProps extends XDSBaseProps<HTMLDivElement> {
    * @default 'transparent'
    */
   variant?: XDSSectionVariant;
-  /**
-   * Internal padding using the spacing scale.
-   * Passed through to XDSSection. Defaults based on size (sm=1/4px, md=2/8px, lg=3/12px).
-   */
-  padding?: SpacingStep;
+
   /**
    * Which sides should have divider borders.
    * Passed through to XDSSection.
@@ -220,10 +215,9 @@ export function XDSToolbar({
   endContent,
   label,
   size = 'md',
-  gap = 2,
+  gap = 1,
   orientation = 'horizontal',
   variant = 'transparent',
-  padding,
   dividers,
   xstyle,
   className,
@@ -236,7 +230,6 @@ export function XDSToolbar({
   const hasEndContent = endContent != null;
 
   const gapVar = spacingVars[spacingStepToVar[gap]] as string;
-  const resolvedPadding = padding ?? defaultPaddingForSize[size];
 
   const {listRef, handleKeyDown} = useListFocus({
     itemSelector: 'button, input, [tabindex="0"]',
@@ -248,16 +241,11 @@ export function XDSToolbar({
       <XDSSection
         ref={ref}
         variant={variant}
-        padding={resolvedPadding}
+        paddingBlock={defaultBlockPaddingForSize[size]}
         dividers={dividers}
         xstyle={xstyle}
         className={className}
-        style={
-          {
-            ...style,
-            '--container-padding-inline': containerPaddingValue[size],
-          } as React.CSSProperties
-        }>
+        style={style}>
         <div
           ref={listRef as React.RefObject<HTMLDivElement>}
           role="toolbar"
@@ -269,8 +257,11 @@ export function XDSToolbar({
             stylex.props(
               hasCenterContent ? styles.baseGrid : styles.baseFlex,
               orientation === 'vertical' && styles.vertical,
-              sizeStyles[size],
+              sizeStyles.base,
               dynamicStyles.gap(gapVar),
+              dynamicStyles.tabIndicatorBottom(
+                `calc(-1 * (${blockPaddingVarForSize[size]}${dividers?.includes('bottom') ? ' + 1px' : ''}))`,
+              ),
             ),
           )}
           {...props}>
@@ -280,7 +271,7 @@ export function XDSToolbar({
               <div
                 {...stylex.props(
                   styles.startSlot,
-                  edgeSignals.start,
+                  edgeInsetStyles.inset(blockPaddingVarForSize[size]),
                   dynamicStyles.gap(gapVar),
                 )}>
                 {startContent}
@@ -292,7 +283,7 @@ export function XDSToolbar({
               <div
                 {...stylex.props(
                   styles.endSlot,
-                  edgeSignals.end,
+                  edgeInsetStyles.inset(blockPaddingVarForSize[size]),
                   dynamicStyles.gap(gapVar),
                 )}>
                 {endContent}
@@ -306,9 +297,7 @@ export function XDSToolbar({
                   {...stylex.props(
                     styles.startSlot,
                     !hasEndContent && styles.startOnly,
-                    // Edge signal: start slot is at the start edge;
-                    // if no end content, it's also at the end edge.
-                    !hasEndContent ? edgeSignals.both : edgeSignals.start,
+                    edgeInsetStyles.inset(blockPaddingVarForSize[size]),
                     dynamicStyles.gap(gapVar),
                   )}>
                   {startContent}
@@ -319,7 +308,7 @@ export function XDSToolbar({
                   {...stylex.props(
                     styles.endSlot,
                     !hasStartContent && styles.endOnly,
-                    !hasStartContent ? edgeSignals.both : edgeSignals.end,
+                    edgeInsetStyles.inset(blockPaddingVarForSize[size]),
                     dynamicStyles.gap(gapVar),
                   )}>
                   {endContent}

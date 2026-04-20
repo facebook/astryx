@@ -98,11 +98,12 @@ export const ThreeSlot: Story = {
 export const StartOnly: Story = {
   args: {
     label: 'Bulk actions',
+    size: 'sm',
     startContent: (
       <>
         <XDSBadge label="3 selected" />
-        <XDSButton label="Delete" variant="ghost" size="sm" />
-        <XDSButton label="Archive" variant="ghost" size="sm" />
+        <XDSButton label="Delete" variant="ghost" />
+        <XDSButton label="Archive" variant="ghost" />
       </>
     ),
   },
@@ -126,16 +127,15 @@ export const Compact: Story = {
     size: 'sm',
     startContent: (
       <>
-        <XDSButton label="Cut" variant="ghost" size="sm" />
-        <XDSButton label="Copy" variant="ghost" size="sm" />
-        <XDSButton label="Paste" variant="ghost" size="sm" />
+        <XDSButton label="Cut" variant="ghost" />
+        <XDSButton label="Copy" variant="ghost" />
+        <XDSButton label="Paste" variant="ghost" />
       </>
     ),
     endContent: (
       <XDSButton
         label="Settings"
         variant="ghost"
-        size="sm"
         icon={<Cog6ToothIcon style={{width: 14, height: 14}} />}
         isIconOnly
       />
@@ -147,7 +147,7 @@ export const WashVariant: Story = {
   args: {
     label: 'Highlighted toolbar',
     variant: 'wash',
-    startContent: <XDSText>3 items selected</XDSText>,
+    startContent: <XDSText type="body">3 items selected</XDSText>,
     endContent: (
       <>
         <XDSButton label="Delete" variant="ghost" />
@@ -161,7 +161,7 @@ export const WashVariant: Story = {
 // Composition patterns — real-world layouts
 // ---------------------------------------------------------------------------
 
-/** Toolbar as a Card header. Full-bleed via XDSSection, compact density for card context. */
+/** Toolbar as a Card header. Compact density for card context. */
 export const InsideCard: Story = {
   name: 'Composition: Card Header',
   render: () => (
@@ -176,13 +176,11 @@ export const InsideCard: Story = {
             <XDSButton
               label="Filter"
               variant="ghost"
-              size="sm"
               icon={<FunnelIcon style={{width: 16, height: 16}} />}
               isIconOnly
             />
             <XDSButton
               label="Add user"
-              size="sm"
               icon={<PlusIcon style={{width: 16, height: 16}} />}
               isIconOnly
             />
@@ -190,7 +188,7 @@ export const InsideCard: Story = {
         }
       />
       <XDSSection>
-        <XDSText>Table rows go here...</XDSText>
+        <XDSText type="body">Table rows go here...</XDSText>
       </XDSSection>
     </XDSCard>
   ),
@@ -203,12 +201,19 @@ export const TableToolbar: Story = {
     <div style={{width: 700}}>
       <XDSToolbar
         label="Table filters"
+        size="sm"
         startContent={
           <>
-            <XDSTextInput label="Search" isLabelHidden placeholder="Search..." size="sm" />
-            <XDSButton label="Status" variant="outline" size="sm" />
-            <XDSButton label="Priority" variant="outline" size="sm" />
-            <XDSButton label="Assignee" variant="outline" size="sm" />
+            <XDSTextInput
+              label="Search"
+              isLabelHidden
+              placeholder="Search..."
+              value=""
+              onChange={() => {}}
+            />
+            <XDSButton label="Status" variant="secondary" />
+            <XDSButton label="Priority" variant="secondary" />
+            <XDSButton label="Assignee" variant="secondary" />
           </>
         }
         endContent={
@@ -237,7 +242,7 @@ export const TableToolbar: Story = {
   ),
 };
 
-/** Page-level toolbar with breadcrumbs-like back nav, centered title, and actions. */
+/** Page-level toolbar with back nav, centered title, and actions. */
 export const PageHeader: Story = {
   name: 'Composition: Page Header',
   render: () => (
@@ -262,18 +267,19 @@ export const PageHeader: Story = {
         }
       />
       <XDSSection>
-        <XDSText>Settings form content...</XDSText>
+        <XDSText type="body">Settings form content...</XDSText>
       </XDSSection>
     </XDSCard>
   ),
 };
 
-/** Bulk selection toolbar with badge count + action buttons. Appears contextually when items are selected. */
+/** Bulk selection toolbar with badge count + action buttons. */
 export const BulkActions: Story = {
   name: 'Composition: Bulk Selection',
   render: () => (
     <XDSToolbar
       label="Bulk actions"
+      size="sm"
       variant="wash"
       startContent={
         <>
@@ -281,20 +287,18 @@ export const BulkActions: Story = {
           <XDSButton
             label="Delete"
             variant="ghost"
-            size="sm"
             icon={<TrashIcon style={{width: 16, height: 16}} />}
             isIconOnly
           />
           <XDSButton
             label="Archive"
             variant="ghost"
-            size="sm"
             icon={<ArchiveBoxIcon style={{width: 16, height: 16}} />}
             isIconOnly
           />
         </>
       }
-      endContent={<XDSButton label="Deselect all" variant="ghost" size="sm" />}
+      endContent={<XDSButton label="Deselect all" variant="ghost" />}
     />
   ),
 };
@@ -314,18 +318,16 @@ export const StackedToolbars: Story = {
             <XDSButton
               label="Refresh"
               variant="ghost"
-              size="sm"
               icon={<ArrowPathIcon style={{width: 16, height: 16}} />}
               isIconOnly
             />
             <XDSButton
               label="Export"
               variant="ghost"
-              size="sm"
               icon={<ArrowDownTrayIcon style={{width: 16, height: 16}} />}
               isIconOnly
             />
-            <XDSButton label="New order" size="sm" />
+            <XDSButton label="New order" />
           </>
         }
       />
@@ -335,18 +337,22 @@ export const StackedToolbars: Story = {
         variant="wash"
         startContent={
           <>
-            <XDSTextInput label="Search orders" isLabelHidden placeholder="Search orders..." size="sm" />
-            <XDSButton label="Status" variant="outline" size="sm" />
-            <XDSButton label="Date range" variant="outline" size="sm" />
-            <XDSButton label="Customer" variant="outline" size="sm" />
+            <XDSTextInput
+              label="Search orders"
+              isLabelHidden
+              placeholder="Search orders..."
+              value=""
+              onChange={() => {}}
+            />
+            <XDSButton label="Status" variant="secondary" />
+            <XDSButton label="Date range" variant="secondary" />
+            <XDSButton label="Customer" variant="secondary" />
           </>
         }
-        endContent={
-          <XDSButton label="Clear filters" variant="ghost" size="sm" />
-        }
+        endContent={<XDSButton label="Clear filters" variant="ghost" />}
       />
       <XDSSection>
-        <XDSText>Order table rows...</XDSText>
+        <XDSText type="body">Order table rows...</XDSText>
       </XDSSection>
     </XDSCard>
   ),
@@ -370,7 +376,7 @@ export const InsideLayout: Story = {
               }
               endContent={
                 <>
-                  <XDSButton label="Notifications" variant="ghost" size="sm" />
+                  <XDSButton label="Notifications" variant="ghost" />
                   <XDSMoreMenu
                     items={[
                       {label: 'Profile'},
@@ -385,7 +391,7 @@ export const InsideLayout: Story = {
         }
         content={
           <XDSLayoutContent>
-            <XDSText>Dashboard content...</XDSText>
+            <XDSText type="body">Dashboard content...</XDSText>
           </XDSLayoutContent>
         }
       />
@@ -393,7 +399,7 @@ export const InsideLayout: Story = {
   ),
 };
 
-/** Toolbar with tab navigation on the left and action buttons on the right. Tests that tab hover targets align with buttons at each size. */
+/** Toolbar with tab navigation. Size cascades from toolbar to tabs and buttons. */
 export const WithTabNavigation: Story = {
   name: 'Composition: Tab Navigation',
   render: () => {
@@ -404,9 +410,10 @@ export const WithTabNavigation: Story = {
           <XDSCard key={size}>
             <XDSToolbar
               label={`Tab navigation (${size})`}
+              size={size}
               dividers={['bottom']}
               startContent={
-                <XDSTabList value={tab} onChange={setTab} size={size}>
+                <XDSTabList value={tab} onChange={setTab}>
                   <XDSTab value="overview" label="Overview" />
                   <XDSTab value="analytics" label="Analytics" />
                   <XDSTab value="settings" label="Settings" />
@@ -417,16 +424,15 @@ export const WithTabNavigation: Story = {
                   <XDSButton
                     label="Export"
                     variant="ghost"
-                    size={size}
                     icon={<ArrowDownTrayIcon style={{width: 16, height: 16}} />}
                     isIconOnly
                   />
-                  <XDSButton label="New item" size={size} />
+                  <XDSButton label="New item" />
                 </>
               }
             />
             <XDSSection>
-              <XDSText>Content for {size} size variant</XDSText>
+              <XDSText type="body">Content for {size} size variant</XDSText>
             </XDSSection>
           </XDSCard>
         ))}
