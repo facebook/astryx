@@ -1,102 +1,247 @@
 /**
  * @file XDSChartTooltip.tsx
- * @output Hover tooltip that follows the nearest data point
+ * @output Hover tooltip with optional crosshair lines, rendered in the top layer
  * @position Child of XDSChart; reads scales from context
+ *
+ * Combines tooltip content and crosshair display into one component.
+ * Uses the XDS Layer system (Popover API) so the tooltip renders above
+ * all other content without foreignObject clipping issues.
  */
 
-import {useState, useCallback, type ReactNode} from 'react';
+'use client';
+
+import {useState, useCallback, useRef, useEffect, type ReactNode} from 'react';
+import {useXDSLayer} from '@xds/core/Layer';
 import {useChart} from './ChartContext';
 import {isBandScale, xPixel} from './utils';
+import type {DataPoint} from './types';
+
+/**
+ * Crosshair mode:
+ * - `'x'` — vertical line only (most common for time series)
+ * - `'y'` — horizontal line only
+ * - `'xy'` — both axes
+ * - `false` — no crosshair lines
+ */
+export type ChartCrosshairMode = 'x' | 'y' | 'xy' | false;
 
 export interface XDSChartTooltipProps {
   /**
    * Custom render function for tooltip content.
-   * Receives the hovered data point.
-   * Default: renders all yKeys as "key: value" lines.
+   * Receives the nearest data point and its index.
+   * Return `null` to hide the tooltip card while keeping crosshair visible.
+   *
+   * @default Renders all keys as "key: value" lines
    */
   render?: (datum: Record<string, unknown>, index: number) => ReactNode;
+
+  /**
+   * Crosshair line display mode.
+   * - `'x'` — vertical crosshair line (default)
+   * - `'y'` — horizontal crosshair line
+   * - `'xy'` — both axes
+   * - `false` — no crosshair lines, tooltip only
+   *
+   * @default 'x'
+   */
+  crosshair?: ChartCrosshairMode;
+
+  /**
+   * Whether to show axis value labels on the crosshair lines.
+   * Only relevant when `crosshair` is not `false`.
+   *
+   * @default false
+   */
+  crosshairLabels?: boolean;
+
+  /**
+   * Whether to snap to the nearest data point (true) or follow
+   * the pointer freely (false). Snap mode finds the closest datum
+   * by x-distance and positions the tooltip at that point.
+   *
+   * @default true
+   */
+  snap?: boolean;
+
+  /**
+   * Format function for x-axis crosshair label.
+   */
+  xFormat?: (value: number | string | null) => string;
+
+  /**
+   * Format function for y-axis crosshair label.
+   */
+  yFormat?: (value: number) => string;
+
+  /**
+   * Color for crosshair lines.
+   * @default 'var(--color-border-emphasized)'
+   */
+  crosshairColor?: string;
+
+  /**
+   * Whether to show a dot indicator at the snapped data point.
+   * @default true
+   */
+  dot?: boolean;
 }
 
 /**
- * Tooltip overlay. Renders a floating card near the hovered data point.
- * Place as the last child inside XDSChart so it renders on top.
+ * Chart tooltip with integrated crosshair.
+ *
+ * Renders a floating tooltip card in the top layer (via Popover API) and
+ * optional crosshair guidelines within the SVG. This avoids foreignObject
+ * clipping and ensures the tooltip renders above all page content.
  *
  * @example
- * ```
+ * ```tsx
+ * // Default: vertical crosshair + tooltip card
  * <XDSChartTooltip />
+ *
+ * // Both axes, with labels
+ * <XDSChartTooltip crosshair="xy" crosshairLabels />
+ *
+ * // Tooltip only, no crosshair lines
+ * <XDSChartTooltip crosshair={false} />
+ *
+ * // Custom render
  * <XDSChartTooltip render={(d) => <span>{d.month}: ${d.revenue}</span>} />
  * ```
  */
-export function XDSChartTooltip({render}: XDSChartTooltipProps) {
-  const {data, xKey, xScale, yScale, width, height} = useChart();
-  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+export function XDSChartTooltip({
+  render,
+  crosshair = 'x',
+  crosshairLabels = false,
+  snap = true,
+  xFormat,
+  yFormat,
+  crosshairColor = 'var(--color-border-emphasized)',
+  dot = true,
+}: XDSChartTooltipProps) {
+  const {data, xKey, xScale, yScale, width, height, svgRef, pointerToData} =
+    useChart();
 
-  const handleMouseMove = useCallback(
-    (e: React.MouseEvent<SVGRectElement>) => {
-      const svg = e.currentTarget.ownerSVGElement;
-      if (!svg) return;
-      const point = svg.createSVGPoint();
-      point.x = e.clientX;
-      point.y = e.clientY;
-      const cursor = point.matrixTransform(
-        e.currentTarget.getScreenCTM()?.inverse(),
-      );
+  const [hoverState, setHoverState] = useState<{
+    index: number;
+    point: DataPoint;
+  } | null>(null);
 
-      // Find nearest data index by x position
-      if (isBandScale(xScale)) {
-        const domain = xScale.domain();
-        const step = xScale.step();
-        const idx = Math.min(
-          domain.length - 1,
-          Math.max(0, Math.floor(cursor.x / step)),
-        );
-        setHoverIndex(idx);
-      } else {
-        // Linear — find closest point
-        const linearScale = xScale as (v: number) => number;
-        let closest = 0;
-        let minDist = Infinity;
-        data.forEach((d, i) => {
-          const dist = Math.abs(xPixel(d, xKey, xScale) - cursor.x);
-          if (dist < minDist) {
-            minDist = dist;
-            closest = i;
-          }
-        });
-        setHoverIndex(closest);
+  const active = useRef(false);
+  const layer = useXDSLayer({mode: 'fixed'});
+
+  // Find nearest data index by x-pixel distance
+  const findNearest = useCallback(
+    (px: number): {index: number; point: DataPoint} | null => {
+      if (data.length === 0) return null;
+
+      let closestIdx = 0;
+      let minDist = Infinity;
+
+      for (let i = 0; i < data.length; i++) {
+        const datumPx = xPixel(data[i], xKey, xScale);
+        const dist = Math.abs(datumPx - px);
+        if (dist < minDist) {
+          minDist = dist;
+          closestIdx = i;
+        }
       }
+
+      const datum = data[closestIdx];
+      const dpx = xPixel(datum, xKey, xScale);
+      // Use the first numeric yKey value for positioning
+      const yVals = Object.entries(datum)
+        .filter(([k, v]) => k !== xKey && typeof v === 'number')
+        .map(([, v]) => v as number);
+      const dpy = yVals.length > 0 ? yScale(Math.max(...yVals)) : height / 2;
+
+      return {
+        index: closestIdx,
+        point: {
+          x: datum[xKey] as number | string | null,
+          y: yVals.length > 0 ? Math.max(...yVals) : 0,
+          px: dpx,
+          py: dpy,
+        },
+      };
     },
-    [data, xScale],
+    [data, xKey, xScale, yScale, height],
   );
 
-  const handleMouseLeave = useCallback(() => setHoverIndex(null), []);
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent<SVGRectElement>) => {
+      if (e.pointerType !== 'mouse' && !active.current) return;
 
-  const datum = hoverIndex !== null ? data[hoverIndex] : null;
+      const dataPoint = pointerToData(e);
 
-  // Compute tooltip position
-  let tooltipX = 0;
-  let tooltipY = 0;
-  if (datum && hoverIndex !== null) {
-    if (isBandScale(xScale)) {
-      tooltipX = xPixel(datum, xKey, xScale);
-    } else {
-      tooltipX = xPixel(datum, xKey, xScale);
+      if (snap) {
+        const nearest = findNearest(dataPoint.px);
+        if (nearest) {
+          setHoverState(nearest);
+          layer.show();
+        }
+      } else {
+        setHoverState({index: -1, point: dataPoint});
+        layer.show();
+      }
+    },
+    [pointerToData, findNearest, snap, layer],
+  );
+
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent<SVGRectElement>) => {
+      (e.target as Element).setPointerCapture(e.pointerId);
+      active.current = true;
+      handlePointerMove(e);
+    },
+    [handlePointerMove],
+  );
+
+  const handlePointerUp = useCallback(() => {
+    active.current = false;
+  }, []);
+
+  const handlePointerLeave = useCallback(() => {
+    if (!active.current) {
+      setHoverState(null);
+      layer.hide();
     }
-    // Find the max y value across all numeric keys for positioning
-    const yVals = Object.values(datum).filter(
-      (v): v is number => typeof v === 'number',
-    );
-    tooltipY = yScale(Math.max(...yVals));
-  }
+  }, [layer]);
+
+  // Compute tooltip screen position for the layer
+  const [tooltipCoords, setTooltipCoords] = useState({x: 0, y: 0});
+
+  useEffect(() => {
+    if (!hoverState || !svgRef.current) return;
+
+    const svg = svgRef.current;
+    const g = svg.querySelector('g');
+    if (!g) return;
+
+    // Convert chart-space point to screen coordinates for the fixed layer
+    const pt = svg.createSVGPoint();
+    const ctm = g.getScreenCTM();
+    if (!ctm) return;
+
+    pt.x = hoverState.point.px;
+    pt.y = hoverState.point.py;
+    const screenPt = pt.matrixTransform(ctm);
+
+    // Offset tooltip to the right of the point
+    setTooltipCoords({x: screenPt.x + 12, y: screenPt.y - 8});
+  }, [hoverState, svgRef]);
+
+  const fmtX =
+    xFormat ??
+    ((v: number | string | null) =>
+      v != null ? (typeof v === 'number' ? v.toFixed(1) : String(v)) : '');
+  const fmtY = yFormat ?? ((v: number) => v.toFixed(1));
+
+  const datum = hoverState ? data[hoverState.index] : null;
+  const point = hoverState?.point ?? null;
 
   const defaultRender = (d: Record<string, unknown>) => (
     <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 2,
-        fontSize: 12,
-      }}>
+      style={{display: 'flex', flexDirection: 'column', gap: 2, fontSize: 12}}>
       {Object.entries(d).map(([k, v]) => (
         <div key={k}>
           <span style={{color: 'var(--color-text-secondary)'}}>{k}:</span>{' '}
@@ -106,42 +251,124 @@ export function XDSChartTooltip({render}: XDSChartTooltipProps) {
     </div>
   );
 
+  const showX = crosshair === 'x' || crosshair === 'xy';
+  const showY = crosshair === 'y' || crosshair === 'xy';
+
   return (
-    <g>
-      {/* Invisible overlay to capture mouse events */}
-      <rect
-        x={0}
-        y={0}
-        width={width}
-        height={height}
-        fill="transparent"
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
-      />
-
-      {/* Vertical crosshair */}
-      {hoverIndex !== null && (
-        <line
-          x1={tooltipX}
-          x2={tooltipX}
-          y1={0}
-          y2={height}
-          stroke="var(--color-border-emphasized)"
-          strokeWidth={1}
-          strokeDasharray="4 4"
-          pointerEvents="none"
+    <>
+      <g>
+        {/* Event capture rect */}
+        <rect
+          x={0}
+          y={0}
+          width={width}
+          height={height}
+          fill="transparent"
+          onPointerMove={handlePointerMove}
+          onPointerDown={handlePointerDown}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
+          onPointerLeave={handlePointerLeave}
         />
-      )}
 
-      {/* Tooltip card via foreignObject */}
-      {datum && hoverIndex !== null && (
-        <foreignObject
-          x={tooltipX + 8}
-          y={Math.max(0, tooltipY - 40)}
-          width={180}
-          height={120}
-          pointerEvents="none"
-          style={{overflow: 'visible'}}>
+        {point && (
+          <>
+            {/* Vertical crosshair line */}
+            {showX && (
+              <line
+                x1={point.px}
+                x2={point.px}
+                y1={0}
+                y2={height}
+                stroke={crosshairColor}
+                strokeWidth={1}
+                strokeDasharray="3 3"
+                pointerEvents="none"
+              />
+            )}
+
+            {/* Horizontal crosshair line */}
+            {showY && (
+              <line
+                x1={0}
+                x2={width}
+                y1={point.py}
+                y2={point.py}
+                stroke={crosshairColor}
+                strokeWidth={1}
+                strokeDasharray="3 3"
+                pointerEvents="none"
+              />
+            )}
+
+            {/* Data point indicator dot */}
+            {dot && snap && hoverState && hoverState.index >= 0 && (
+              <circle
+                cx={point.px}
+                cy={point.py}
+                r={4}
+                fill="var(--color-background-surface)"
+                stroke={crosshairColor}
+                strokeWidth={2}
+                pointerEvents="none"
+              />
+            )}
+
+            {/* X-axis label */}
+            {crosshairLabels && showX && point.x != null && (
+              <g
+                transform={`translate(${point.px},${height})`}
+                pointerEvents="none">
+                <rect
+                  x={-24}
+                  y={2}
+                  width={48}
+                  height={16}
+                  rx={4}
+                  fill="var(--color-background-popover)"
+                  stroke={crosshairColor}
+                  strokeWidth={0.5}
+                />
+                <text
+                  y={14}
+                  textAnchor="middle"
+                  fontSize={10}
+                  fill="var(--color-text-primary)">
+                  {fmtX(point.x)}
+                </text>
+              </g>
+            )}
+
+            {/* Y-axis label */}
+            {crosshairLabels && showY && (
+              <g transform={`translate(0,${point.py})`} pointerEvents="none">
+                <rect
+                  x={-48}
+                  y={-8}
+                  width={44}
+                  height={16}
+                  rx={4}
+                  fill="var(--color-background-popover)"
+                  stroke={crosshairColor}
+                  strokeWidth={0.5}
+                />
+                <text
+                  x={-26}
+                  dy="0.35em"
+                  textAnchor="middle"
+                  fontSize={10}
+                  fill="var(--color-text-primary)">
+                  {fmtY(point.y)}
+                </text>
+              </g>
+            )}
+          </>
+        )}
+      </g>
+
+      {/* Tooltip card in top layer */}
+      {layer.render(
+        datum && hoverState && hoverState.index >= 0 ? (
           <div
             style={{
               background: 'var(--color-background-popover)',
@@ -151,11 +378,13 @@ export function XDSChartTooltip({render}: XDSChartTooltipProps) {
               boxShadow: 'var(--shadow-med)',
               whiteSpace: 'nowrap',
               width: 'fit-content',
+              pointerEvents: 'none',
             }}>
-            {render ? render(datum, hoverIndex) : defaultRender(datum)}
+            {render ? render(datum, hoverState.index) : defaultRender(datum)}
           </div>
-        </foreignObject>
+        ) : null,
+        {x: tooltipCoords.x, y: tooltipCoords.y},
       )}
-    </g>
+    </>
   );
 }

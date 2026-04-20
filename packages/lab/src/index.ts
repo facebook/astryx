@@ -87,6 +87,7 @@ export {
   type XDSChartStreamGLHandle,
   XDSChartTooltip,
   type XDSChartTooltipProps,
+  type ChartCrosshairMode,
   XDSChartLegend,
   type XDSChartLegendProps,
   type XDSChartLegendItem,
@@ -151,8 +152,6 @@ export {
 export {
   XDSChartBrush,
   type XDSChartBrushProps,
-  XDSChartCrosshair,
-  type XDSChartCrosshairProps,
   XDSChartZoom,
   type XDSChartZoomProps,
   XDSChartSelect,
