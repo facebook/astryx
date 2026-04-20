@@ -20,9 +20,8 @@ import {shadowVars} from '@xds/core/theme/tokens.stylex';
 // Styles
 // ---------------------------------------------------------------------------
 
-// building from xds_oss asset set
 const BG_URL =
-  'https://scontent.xx.fbcdn.net/v/t39.6806-6/673946116_928438936673086_7955596512102197644_n.jpg?_nc_cat=103&ccb=1-7&_nc_sid=56bbc2&_nc_ohc=PVl7FEhjCusQ7kNvwEIGngs&_nc_oc=AdpqpGsFv2Z4UswEve2B2ZCHTKIXDjyDvMT-4Z3wfkVRnE3bKLbU4_DLcVEg3Z1ZVLDKyB3qEi1_KDcmHVsxDFWV&_nc_zt=14&_nc_ht=scontent.xx&_nc_gid=rUsd40W1gpadk3EzTZm5Tw&_nc_ss=7a30f&oh=00_Af1sx6n6V2eu3whVV18i5CYuQkQb_Ry2BN-V-2_DWlcWgw&oe=69EC4058';
+  'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1920&q=80';
 
 const styles = stylex.create({
   page: {

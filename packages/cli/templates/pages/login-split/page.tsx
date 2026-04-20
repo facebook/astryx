@@ -20,9 +20,8 @@ import {
   radiusVars,
 } from '@xds/core/theme/tokens.stylex';
 
-// light-working-vertical-1 from xds_oss asset set
 const COVER_IMAGE_URL =
-  'https://scontent.xx.fbcdn.net/v/t39.6806-6/671925666_4495480327349179_31826850576590602_n.png?_nc_cat=108&ccb=1-7&_nc_sid=56bbc2&_nc_ohc=nHeGVeCH7wIQ7kNvwEe_ed5&_nc_oc=AdrmcEXVuygkqWh3Gd9ap9XNslAE4LphVAtWeNXNglbrdryrAnVn7b1pI489fHosZUwgNv1UWgRTizw-6x0E48MI&_nc_zt=14&_nc_ht=scontent.xx&_nc_gid=soyKpwlpum27aTB16xwsWg&_nc_ss=7a30f&oh=00_Af2VtQRME3fzALwgGvOuScpGMWsY5hpgmGN1E4nGG6hhWQ&oe=69EC2E2B';
+  'https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&q=80';
 
 const AppleIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" fill="currentColor" width={16} height={16} aria-hidden="true" {...props}>
