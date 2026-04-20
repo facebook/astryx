@@ -15,11 +15,6 @@ import * as stylex from '@stylexjs/stylex';
 // ─── Styles ─────────────────────────────────────────────────────────────────
 
 const styles = stylex.create({
-  link: {
-    textDecoration: 'none',
-    color: 'inherit',
-    cursor: 'pointer',
-  },
   imageWrapper: {
     borderRadius: 'var(--radius-container)',
     overflow: 'clip',
@@ -28,8 +23,6 @@ const styles = stylex.create({
     width: '100%',
     height: '100%',
     objectFit: 'cover',
-    objectPosition: 'center',
-    display: 'block',
   },
 });
 
@@ -106,28 +99,23 @@ const fmt = (n: number) => `$${n.toFixed(2)}`;
 
 function ProductCard({product}: {product: Product}) {
   return (
-    <a
-      href="#"
-      onClick={e => e.preventDefault()}
-      {...stylex.props(styles.link)}>
-      <XDSVStack gap={3}>
-        <XDSAspectRatio ratio={1} xstyle={styles.imageWrapper}>
-          <img
-            src={product.image}
-            alt={product.name}
-            {...stylex.props(styles.image)}
-          />
-        </XDSAspectRatio>
+    <XDSVStack gap={3}>
+      <XDSAspectRatio ratio={1} xstyle={styles.imageWrapper}>
+        <img
+          src={product.image}
+          alt={product.name}
+          {...stylex.props(styles.image)}
+        />
+      </XDSAspectRatio>
 
-        <XDSVStack gap={1}>
-          <XDSHeading level={2}>{product.name}</XDSHeading>
-          <XDSText type="body" color="secondary" maxLines={2}>
-            {product.description}
-          </XDSText>
-          <XDSHeading level={2}>{fmt(product.price)}</XDSHeading>
-        </XDSVStack>
+      <XDSVStack gap={1}>
+        <XDSHeading level={2}>{product.name}</XDSHeading>
+        <XDSText type="body" color="secondary" maxLines={2}>
+          {product.description}
+        </XDSText>
+        <XDSHeading level={2}>{fmt(product.price)}</XDSHeading>
       </XDSVStack>
-    </a>
+    </XDSVStack>
   );
 }
 
