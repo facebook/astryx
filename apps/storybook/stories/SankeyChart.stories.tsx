@@ -257,3 +257,67 @@ export const ManyColumns: Story = {
     );
   },
 };
+
+// --- Business Funnel: blue main flow, gray exits ---
+
+// oklch approximations of XDS data tokens:
+// blue categorical: #0171E3 ≈ oklch(0.55 0.19 255)
+// blue-3: #2694FE ≈ oklch(0.65 0.17 250)
+// gray-4: #5D6C7B ≈ oklch(0.50 0.02 240)
+// gray-3: #AFB9C4 ≈ oklch(0.77 0.02 240)
+
+const bizNodes: SankeyNode[] = [
+  {id: 'visitors', label: 'Visitors', value: 84200, color: [0.55, 0.19, 255]},
+  {id: 'signups', label: 'Signed Up', value: 42100, color: [0.58, 0.18, 255]},
+  {id: 'bounce', label: 'Bounced', value: 42100, color: [0.5, 0.02, 240]},
+  {id: 'onboarded', label: 'Onboarded', value: 28700, color: [0.61, 0.17, 252]},
+  {id: 'stalled', label: 'Stalled', value: 13400, color: [0.5, 0.02, 240]},
+  {id: 'active', label: 'Active Users', value: 21500, color: [0.64, 0.16, 250]},
+  {id: 'inactive', label: 'Inactive', value: 7200, color: [0.5, 0.02, 240]},
+  {id: 'paying', label: 'Paying', value: 15200, color: [0.67, 0.15, 248]},
+  {id: 'free', label: 'Free Tier', value: 6300, color: [0.5, 0.02, 240]},
+];
+
+const bizLinks: SankeyLink[] = [
+  {source: 'visitors', target: 'signups', value: 42100},
+  {source: 'visitors', target: 'bounce', value: 42100},
+  {source: 'signups', target: 'onboarded', value: 28700},
+  {source: 'signups', target: 'stalled', value: 13400},
+  {source: 'onboarded', target: 'active', value: 21500},
+  {source: 'onboarded', target: 'inactive', value: 7200},
+  {source: 'active', target: 'paying', value: 15200},
+  {source: 'active', target: 'free', value: 6300},
+];
+
+const bizColumns = [
+  ['visitors'],
+  ['signups', 'bounce'],
+  ['onboarded', 'stalled'],
+  ['active', 'inactive'],
+  ['paying', 'free'],
+];
+
+/**
+ * Business funnel with blue main flow and gray exit paths.
+ * Uses background labels for readability over the ribbons.
+ */
+export const BusinessFunnel: Story = {
+  render: () => (
+    <XDSStack direction="vertical" gap={4}>
+      <XDSHeading level={3}>Acquisition Funnel</XDSHeading>
+      <XDSText type="body" color="secondary">
+        Blue = progression · Gray = drop-off
+      </XDSText>
+      <XDSSankeyChart
+        nodes={bizNodes}
+        links={bizLinks}
+        columns={bizColumns}
+        height={380}>
+        <XDSSankeyGrid />
+        <XDSSankeyLink opacity={0.6} />
+        <XDSSankeyNode />
+        <XDSSankeyLabel background />
+      </XDSSankeyChart>
+    </XDSStack>
+  ),
+};
