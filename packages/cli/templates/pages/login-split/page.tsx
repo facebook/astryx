@@ -8,7 +8,8 @@ import {XDSCenter} from '@xds/core/Center';
 import {XDSCard} from '@xds/core/Card';
 import {XDSText} from '@xds/core/Text';
 import {XDSIcon} from '@xds/core/Icon';
-import {SquaresPlusIcon} from '@heroicons/react/24/outline';
+import {XDSEmptyState} from '@xds/core/EmptyState';
+import {SquaresPlusIcon, CheckCircleIcon} from '@heroicons/react/24/outline';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSButton} from '@xds/core/Button';
 import {XDSLink} from '@xds/core/Link';
@@ -65,6 +66,7 @@ export default function LoginTwoColumn() {
   const [password, setPassword] = useState('');
   const [loginFailed, setLoginFailed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const handleLogin = () => {
     if (!email || !password) {
@@ -75,7 +77,7 @@ export default function LoginTwoColumn() {
     setLoginFailed(false);
     setTimeout(() => {
       setIsLoading(false);
-      setLoginFailed(true);
+      setIsSuccess(true);
     }, 2000);
   };
 
@@ -94,6 +96,13 @@ export default function LoginTwoColumn() {
 
               <XDSStackItem size="fill">
                 <XDSCenter axis="vertical" height="100%">
+                  {isSuccess ? (
+                    <XDSEmptyState
+                      title="You're signed in"
+                      description="Redirecting to your dashboard…"
+                      icon={<XDSIcon icon={CheckCircleIcon} />}
+                    />
+                  ) : (
                   <XDSVStack gap={4} xstyle={styles.fullWidth}>
                     <XDSVStack gap={1}>
                       <XDSText type="display-1" as="h2">Welcome back</XDSText>
@@ -180,15 +189,18 @@ export default function LoginTwoColumn() {
                       </XDSStackItem>
                     </XDSHStack>
                   </XDSVStack>
+                  )}
                 </XDSCenter>
               </XDSStackItem>
 
+              {!isSuccess && (
               <XDSText type="supporting" color="secondary">
                 Don&apos;t have an account?{' '}
                 <XDSLink label="Sign up" href="#" type="supporting">
                   Sign up
                 </XDSLink>
               </XDSText>
+              )}
             </XDSVStack>
 
             {/* Right — Cover image */}
