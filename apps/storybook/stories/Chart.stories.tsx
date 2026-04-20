@@ -8,6 +8,7 @@ import {
   XDSChartLine,
   XDSChartDot,
   XDSChartArea,
+  XDSChartBand,
   XDSChartTooltip,
   XDSChartLegend,
   XDSChartDotGL,
@@ -229,7 +230,7 @@ export const ConfidenceBand: StoryObj = {
         <XDSChartGrid horizontal />
         <XDSChartAxis position="bottom" />
         <XDSChartAxis position="left" />
-        <XDSChartArea
+        <XDSChartBand
           yUpper="avgMax"
           yLower="avgMin"
           color={colors.categorical(1)[0]}

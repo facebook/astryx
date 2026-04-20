@@ -5,7 +5,7 @@ import {
   XDSChartGrid,
   XDSChartBar,
   XDSChartLine,
-  XDSChartArea,
+  XDSChartBand,
   XDSChartErrorBar,
   XDSChartCandlestick,
   XDSChartLegend,
@@ -40,13 +40,13 @@ function ConfidenceIntervalsDemo() {
         <XDSChartGrid horizontal />
         <XDSChartAxis position="bottom" />
         <XDSChartAxis position="left" />
-        <XDSChartArea
+        <XDSChartBand
           yUpper="upper95"
           yLower="lower95"
           color={c[0]}
           opacity={0.1}
         />
-        <XDSChartArea
+        <XDSChartBand
           yUpper="upper80"
           yLower="lower80"
           color={c[0]}
@@ -82,7 +82,7 @@ function UpperConfidenceDemo() {
         <XDSChartGrid horizontal />
         <XDSChartAxis position="bottom" />
         <XDSChartAxis position="left" />
-        <XDSChartArea
+        <XDSChartBand
           yUpper="upper95"
           baseline="mean"
           color={c[1]}
