@@ -7,6 +7,7 @@ import {XDSButton} from '@xds/core/Button';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSGrid} from '@xds/core/Grid';
 import {XDSAspectRatio} from '@xds/core/AspectRatio';
+import {XDSSection} from '@xds/core/Section';
 import {XDSAppShell} from '@xds/core/AppShell';
 import {XDSTopNav, XDSTopNavHeading, XDSTopNavItem} from '@xds/core/TopNav';
 import {ArrowRightIcon} from '@heroicons/react/20/solid';
@@ -45,11 +46,7 @@ const styles = stylex.create({
     objectFit: 'cover',
   },
   galleryImageClip: {
-    overflow: 'hidden',
     borderRadius: 'var(--radius-container)',
-  },
-  galleryPadding: {
-    paddingInline: 'var(--spacing-6)',
   },
 });
 
@@ -103,20 +100,22 @@ export default function GalleryHero() {
             <XDSButton label="Learn more" variant="ghost" />
           </XDSHStack>
         </XDSVStack>
-        <XDSGrid columns={3} gap={4} xstyle={styles.galleryPadding}>
-          {IMAGES.map((image, i) => (
-            <XDSAspectRatio
-              key={i}
-              ratio={4 / 5}
-              xstyle={styles.galleryImageClip}>
-              <img
-                {...stylex.props(styles.galleryImage)}
-                src={image.src}
-                alt={image.alt}
-              />
-            </XDSAspectRatio>
-          ))}
-        </XDSGrid>
+        <XDSSection variant="transparent" padding={6}>
+          <XDSGrid columns={3} gap={4}>
+            {IMAGES.map((image, i) => (
+              <XDSAspectRatio
+                key={i}
+                ratio={4 / 5}
+                xstyle={styles.galleryImageClip}>
+                <img
+                  {...stylex.props(styles.galleryImage)}
+                  src={image.src}
+                  alt={image.alt}
+                />
+              </XDSAspectRatio>
+            ))}
+          </XDSGrid>
+        </XDSSection>
       </XDSVStack>
     </XDSAppShell>
   );
