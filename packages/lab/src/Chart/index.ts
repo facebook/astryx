@@ -63,7 +63,12 @@ export {
   CIRCLE_FRAG_BODY,
   POINT_SIZE_COMPENSATION,
 } from './webgl';
-export {XDSChartBrush, type XDSChartBrushProps} from './XDSChartBrush';
+export {
+  XDSChartBrush,
+  type XDSChartBrushProps,
+  type BrushMode,
+  type BrushRange,
+} from './XDSChartBrush';
 export {XDSChartZoom, type XDSChartZoomProps} from './XDSChartZoom';
 export {XDSChartSelect, type XDSChartSelectProps} from './XDSChartSelect';
 export {

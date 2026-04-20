@@ -120,6 +120,9 @@ export {
   type XDSRadialAxisProps,
   XDSRadialSlice,
   type XDSRadialSliceProps,
+  XDSRadialTooltip,
+  type XDSRadialTooltipProps,
+  type RadialTooltipDatum,
   useRadial,
   type RadialContext,
   type RadialMode,
@@ -152,6 +155,8 @@ export {
 export {
   XDSChartBrush,
   type XDSChartBrushProps,
+  type BrushMode,
+  type BrushRange,
   XDSChartZoom,
   type XDSChartZoomProps,
   XDSChartSelect,
