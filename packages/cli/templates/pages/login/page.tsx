@@ -9,6 +9,7 @@ import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSButton} from '@xds/core/Button';
 import {XDSCard} from '@xds/core/Card';
 import {XDSIcon} from '@xds/core/Icon';
+import {XDSBanner} from '@xds/core/Banner';
 import {CubeIcon} from '@heroicons/react/24/outline';
 import {colorVars, spacingVars} from '@xds/core/theme/tokens.stylex';
 
@@ -27,6 +28,18 @@ const styles = stylex.create({
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSignIn = () => {
+    setError('');
+    if (!email || !password) {
+      setError('Please enter both email and password.');
+      return;
+    }
+    setIsLoading(true);
+    setTimeout(() => setIsLoading(false), 2000);
+  };
 
   return (
     <XDSCenter axis="both" xstyle={styles.page}>
@@ -51,6 +64,10 @@ export default function LoginPage() {
               </XDSVStack>
             </XDSVStack>
 
+            {error && (
+              <XDSBanner status="error" title={error} container="card" />
+            )}
+
             <XDSTextInput
               label="Email"
               value={email}
@@ -73,6 +90,8 @@ export default function LoginPage() {
               label="Sign in"
               variant="primary"
               size="lg"
+              isLoading={isLoading}
+              onClick={handleSignIn}
               xstyle={styles.fullWidth}
             />
           </XDSVStack>

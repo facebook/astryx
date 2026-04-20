@@ -17,6 +17,7 @@ import {XDSDialog, XDSDialogHeader} from '@xds/core/Dialog';
 import {XDSList, XDSListItem} from '@xds/core/List';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSSelector} from '@xds/core/Selector';
+import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSCard} from '@xds/core/Card';
 import {XDSSwitch} from '@xds/core/Switch';
 import {XDSLink} from '@xds/core/Link';
@@ -24,6 +25,7 @@ import {XDSTabList, XDSTab} from '@xds/core/TabList';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSCenter} from '@xds/core/Center';
+import {colorVars, radiusVars, spacingVars} from '@xds/core/theme/tokens.stylex';
 import {
   UserIcon,
   LockClosedIcon,
@@ -41,38 +43,38 @@ import {
 
 const styles = stylex.create({
   iconBox: {
-    borderRadius: 12,
-    backgroundColor: 'var(--xds-color-background-surface, #fff)',
+    borderRadius: radiusVars['--radius-container'],
+    backgroundColor: colorVars['--color-background-surface'],
     flexShrink: 0,
   },
   rowPadding: {
-    paddingBlock: 16,
+    paddingBlock: spacingVars['--spacing-4'],
   },
   cardContentPadding: {
-    paddingInline: 16,
+    paddingInline: spacingVars['--spacing-4'],
   },
   headerPadding: {
-    paddingInline: 24,
-    paddingBlock: 24,
+    paddingInline: spacingVars['--spacing-6'],
+    paddingBlock: spacingVars['--spacing-6'],
     position: 'sticky',
     top: 0,
-    backgroundColor: 'var(--xds-color-background-surface, #fff)',
+    backgroundColor: colorVars['--color-background-surface'],
     zIndex: 1,
   },
   contentHPadding: {
-    paddingInline: 24,
-    paddingBlockEnd: 24,
+    paddingInline: spacingVars['--spacing-6'],
+    paddingBlockEnd: spacingVars['--spacing-6'],
     maxWidth: 680,
   },
   sideNavPadding: {
-    paddingBlock: 16,
-    paddingInline: 12,
+    paddingBlock: spacingVars['--spacing-4'],
+    paddingInline: spacingVars['--spacing-3'],
   },
   sectionHeading: {
-    paddingBlockEnd: 8,
+    paddingBlockEnd: spacingVars['--spacing-2'],
   },
   sideNavHeading: {
-    marginInline: 16,
+    marginInline: spacingVars['--spacing-4'],
   },
   dialogHeight: {
     height: '85vh',
@@ -248,6 +250,14 @@ export default function SettingsDialogTemplate() {
   const [currency, setCurrency] = useState('CAD');
   const [timezone, setTimezone] = useState('ET');
   const [activeTab, setActiveTab] = useState('login');
+
+  const [legalName, setLegalName] = useState('Alex Johnson');
+  const [preferredName, setPreferredName] = useState('');
+  const [email, setEmail] = useState('a***n@example.com');
+  const [phone, setPhone] = useState('+1 ***-***-0123');
+  const [address, setAddress] = useState('');
+  const [mailingAddress, setMailingAddress] = useState('');
+  const [emergencyContact, setEmergencyContact] = useState('Provided');
   const [readReceipts, setReadReceipts] = useState(true);
   const [searchEngines, setSearchEngines] = useState(true);
   const [showCity, setShowCity] = useState(true);
@@ -328,46 +338,109 @@ export default function SettingsDialogTemplate() {
                 {activeNav === 'Personal information' && (
                   <XDSVStack gap={6}>
                     <XDSVStack gap={0}>
-                      <InfoRowItem
+                      <ExpandableRow
                         label="Legal name"
-                        value="Alex Johnson"
-                        action="Edit"
-                      />
-                      <InfoRowItem
+                        value={legalName}
+                        isExpanded={expandedRow === 'legalName'}
+                        onEdit={() => handleEdit('legalName')}
+                        onCancel={handleCancel}
+                        onSave={handleSave}>
+                        <XDSTextInput
+                          label="Legal name"
+                          isLabelHidden
+                          value={legalName}
+                          onChange={setLegalName}
+                        />
+                      </ExpandableRow>
+                      <ExpandableRow
                         label="Preferred first name"
-                        value="Not provided"
-                        action="Add"
-                      />
-                      <InfoRowItem
+                        value={preferredName || 'Not provided'}
+                        isExpanded={expandedRow === 'preferredName'}
+                        onEdit={() => handleEdit('preferredName')}
+                        onCancel={handleCancel}
+                        onSave={handleSave}>
+                        <XDSTextInput
+                          label="Preferred first name"
+                          isLabelHidden
+                          value={preferredName}
+                          onChange={setPreferredName}
+                        />
+                      </ExpandableRow>
+                      <ExpandableRow
                         label="Email address"
-                        value="a***n@example.com"
-                        action="Edit"
-                      />
-                      <InfoRowItem
+                        value={email}
+                        isExpanded={expandedRow === 'email'}
+                        onEdit={() => handleEdit('email')}
+                        onCancel={handleCancel}
+                        onSave={handleSave}>
+                        <XDSTextInput
+                          label="Email address"
+                          isLabelHidden
+                          value={email}
+                          onChange={setEmail}
+                        />
+                      </ExpandableRow>
+                      <ExpandableRow
                         label="Phone number"
-                        value="+1 ***-***-0123"
-                        action="Edit"
-                      />
+                        value={phone}
+                        isExpanded={expandedRow === 'phone'}
+                        onEdit={() => handleEdit('phone')}
+                        onCancel={handleCancel}
+                        onSave={handleSave}>
+                        <XDSTextInput
+                          label="Phone number"
+                          isLabelHidden
+                          value={phone}
+                          onChange={setPhone}
+                        />
+                      </ExpandableRow>
                       <InfoRowItem
                         label="Identity verification"
                         value="Verified"
                         action=""
                       />
-                      <InfoRowItem
+                      <ExpandableRow
                         label="Residential address"
-                        value="Not provided"
-                        action="Add"
-                      />
-                      <InfoRowItem
+                        value={address || 'Not provided'}
+                        isExpanded={expandedRow === 'address'}
+                        onEdit={() => handleEdit('address')}
+                        onCancel={handleCancel}
+                        onSave={handleSave}>
+                        <XDSTextInput
+                          label="Residential address"
+                          isLabelHidden
+                          value={address}
+                          onChange={setAddress}
+                        />
+                      </ExpandableRow>
+                      <ExpandableRow
                         label="Mailing address"
-                        value="Not provided"
-                        action="Add"
-                      />
-                      <InfoRowItem
+                        value={mailingAddress || 'Not provided'}
+                        isExpanded={expandedRow === 'mailingAddress'}
+                        onEdit={() => handleEdit('mailingAddress')}
+                        onCancel={handleCancel}
+                        onSave={handleSave}>
+                        <XDSTextInput
+                          label="Mailing address"
+                          isLabelHidden
+                          value={mailingAddress}
+                          onChange={setMailingAddress}
+                        />
+                      </ExpandableRow>
+                      <ExpandableRow
                         label="Emergency contact"
-                        value="Provided"
-                        action="Edit"
-                      />
+                        value={emergencyContact}
+                        isExpanded={expandedRow === 'emergencyContact'}
+                        onEdit={() => handleEdit('emergencyContact')}
+                        onCancel={handleCancel}
+                        onSave={handleSave}>
+                        <XDSTextInput
+                          label="Emergency contact"
+                          isLabelHidden
+                          value={emergencyContact}
+                          onChange={setEmergencyContact}
+                        />
+                      </ExpandableRow>
                     </XDSVStack>
 
                     <XDSCard padding={0}>

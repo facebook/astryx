@@ -13,19 +13,20 @@ import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
 import {XDSSection} from '@xds/core/Section';
 import {XDSTypeahead} from '@xds/core/Typeahead';
 import * as stylex from '@stylexjs/stylex';
+import {spacingVars} from '@xds/core/theme/tokens.stylex';
 import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
 import type {XDSSearchableItem, XDSSearchSource} from '@xds/core/Typeahead';
 
 const styles = stylex.create({
   constrainedShell: {
-    maxWidth: 1100,
+    maxWidth: 1440,
     marginInline: 'auto',
   },
   headerPadding: {
-    padding: 16,
+    padding: spacingVars['--spacing-4'],
   },
   sideNavWidth: {
-    minWidth: 240,
+    minWidth: 260,
   },
 });
 
