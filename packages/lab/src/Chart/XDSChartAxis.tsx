@@ -44,10 +44,12 @@ export function XDSChartAxis({
   const scale = isHorizontal ? xScale : yScale;
 
   const ticks = useMemo(() => {
-    if (isBandScale(scale)) {
-      return scale.domain().map(d => ({
+    // Runtime band scale check — works even when yScale is cast to ScaleLinear for horizontal orientation
+    if ('bandwidth' in scale && typeof (scale as any).bandwidth === 'function') {
+      const bandScale = scale as unknown as import('d3-scale').ScaleBand<string>;
+      return bandScale.domain().map(d => ({
         value: d,
-        offset: (scale(d) ?? 0) + scale.bandwidth() / 2,
+        offset: (bandScale(d) ?? 0) + bandScale.bandwidth() / 2,
       }));
     }
     const linearScale = scale as

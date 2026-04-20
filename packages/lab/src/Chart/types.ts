@@ -69,6 +69,5 @@ export interface ChartContext {
   stackLayout?: Map<string, StackedSeries>;
   /** Chart orientation — 'vertical' (default) or 'horizontal' */
   orientation: 'vertical' | 'horizontal';
-  /** Bar grouping info keyed by dataKey — index and count for grouped bars */
-  barGroup?: Map<string, {index: number; count: number}>;
+
 }

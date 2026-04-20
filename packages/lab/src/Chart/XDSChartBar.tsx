@@ -6,6 +6,7 @@
 
 import {useChart} from './ChartContext';
 import {useXDSChartStack} from './useXDSChartStack';
+import {useBarGroup} from './BarRegistry';
 import {isBandScale} from './utils';
 
 export interface XDSChartBarProps {
@@ -41,8 +42,9 @@ export function XDSChartBar({
   stack: stackGroup,
   opacity = 1,
 }: XDSChartBarProps) {
-  const {data, xKey, xScale, yScale, orientation, barGroup} = useChart();
+  const {data, xKey, xScale, yScale, orientation} = useChart();
   const {y0, y1, isStacked} = useXDSChartStack(stackGroup, dataKey);
+  const group = useBarGroup(dataKey, isStacked);
 
   if (orientation === 'horizontal') {
     // Horizontal bars: yScale is band (categories), xScale is linear (values)
@@ -54,7 +56,6 @@ export function XDSChartBar({
     const bandwidth = bandScale.bandwidth();
 
     // Grouping for horizontal bars
-    const group = !isStacked && barGroup ? barGroup.get(dataKey) : undefined;
     const barWidth = group ? bandwidth / group.count : bandwidth;
     const barOffset = group ? group.index * barWidth : 0;
 
@@ -92,7 +93,6 @@ export function XDSChartBar({
   const bandwidth = xScale.bandwidth();
 
   // Grouping: subdivide band width among ungrouped bars
-  const group = !isStacked && barGroup ? barGroup.get(dataKey) : undefined;
   const barWidth = group ? bandwidth / group.count : bandwidth;
   const barOffset = group ? group.index * barWidth : 0;
 

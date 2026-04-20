@@ -9,20 +9,20 @@
 
 import {
   type ReactNode,
-  type ReactElement,
+
   useMemo,
   useRef,
   useState,
   useCallback,
   useLayoutEffect,
-  Children,
-  isValidElement,
+
 } from 'react';
 import {scaleLinear, scaleBand} from 'd3-scale';
 import {stack as d3Stack, stackOrderNone, stackOffsetNone} from 'd3-shape';
 import type {ScaleLinear} from 'd3-scale';
 import {isBandScale} from './utils';
 import {ChartProvider} from './ChartContext';
+import {BarRegistryProvider} from './BarRegistry';
 import type {ChartMargin, ChartScale, StackedSeries} from './types';
 
 /**
@@ -267,30 +267,6 @@ export function XDSChart({
     return layout;
   }, [data, yKeys]);
 
-  // Compute bar grouping — count Bar children without stack prop and assign indices
-  const barGroup = useMemo((): Map<string, {index: number; count: number}> | undefined => {
-    const barDataKeys: string[] = [];
-    Children.forEach(children, child => {
-      if (
-        isValidElement(child) &&
-        (child as ReactElement<{dataKey?: string; stack?: string}>).props.dataKey &&
-        !(child as ReactElement<{stack?: string}>).props.stack &&
-        typeof child.type === 'function' &&
-        (child.type as {name?: string}).name === 'XDSChartBar'
-      ) {
-        barDataKeys.push(
-          (child as ReactElement<{dataKey: string}>).props.dataKey,
-        );
-      }
-    });
-    if (barDataKeys.length <= 1) return undefined;
-    const map = new Map<string, {index: number; count: number}>();
-    barDataKeys.forEach((key, idx) => {
-      map.set(key, {index: idx, count: barDataKeys.length});
-    });
-    return map;
-  }, [children]);
-
   const pixelToData = useCallback(
     (px: number, py: number) => {
       const y = yScale.invert(py);
@@ -338,9 +314,8 @@ export function XDSChart({
       pixelToData,
       stackLayout,
       orientation,
-      barGroup,
     }),
-    [innerWidth, innerHeight, margin, xKey, data, xScale, yScale, pointerToData, pixelToData, stackLayout, orientation, barGroup],
+    [innerWidth, innerHeight, margin, xKey, data, xScale, yScale, pointerToData, pixelToData, stackLayout, orientation],
   );
 
   return (
@@ -353,7 +328,9 @@ export function XDSChart({
             </clipPath>
           </defs>
           <g transform={`translate(${margin.left},${margin.top})`}>
-            <ChartProvider value={ctx}>{children}</ChartProvider>
+            <ChartProvider value={ctx}>
+              <BarRegistryProvider>{children}</BarRegistryProvider>
+            </ChartProvider>
           </g>
         </svg>
       )}
