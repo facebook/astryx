@@ -17,7 +17,7 @@ import {XDSTabList, XDSTab} from '@xds/core/TabList';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSCenter} from '@xds/core/Center';
-import {colorVars, radiusVars} from '@xds/core/theme/tokens.stylex';
+import {colorVars, radiusVars, spacingVars} from '@xds/core/theme/tokens.stylex';
 import {
   UserIcon,
   LockClosedIcon,
@@ -40,29 +40,23 @@ const styles = stylex.create({
     flexShrink: 0,
   },
   rowPadding: {
-    paddingTop: 16,
-    paddingBottom: 16,
+    paddingBlock: spacingVars['--spacing-4'],
   },
   cardContentPadding: {
-    paddingLeft: 16,
-    paddingRight: 16,
+    paddingInline: spacingVars['--spacing-4'],
   },
   contentCenter: {
     maxWidth: 700,
-    marginLeft: 'auto',
-    marginRight: 'auto',
-    paddingLeft: 48,
-    paddingRight: 48,
+    minWidth: 0,
+    width: '100%',
+    paddingInline: spacingVars['--spacing-12'],
   },
   sideNavPadding: {
-    paddingTop: 16,
-    paddingBottom: 16,
-    paddingLeft: 12,
-    paddingRight: 12,
+    paddingBlock: spacingVars['--spacing-4'],
+    paddingInline: spacingVars['--spacing-3'],
   },
   sideNavHeading: {
-    marginLeft: 16,
-    marginRight: 16,
+    marginInline: spacingVars['--spacing-4'],
   },
 });
 
@@ -270,6 +264,7 @@ export default function SettingsSecurityTemplate() {
             </XDSList>
         </XDSVStack>
       }>
+      <XDSCenter axis="horizontal">
       <XDSVStack gap={0} xstyle={styles.contentCenter}>
         {activeNav === 'Login & security' && (
           <XDSVStack gap={6}>
@@ -796,6 +791,7 @@ export default function SettingsSecurityTemplate() {
           </XDSVStack>
         )}
       </XDSVStack>
+      </XDSCenter>
     </XDSAppShell>
   );
 }
