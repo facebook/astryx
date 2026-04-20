@@ -141,14 +141,14 @@ const styles = stylex.create({
       ':active': colorVars['--color-overlay-pressed'],
     },
   },
-  focusWithinOutline: {
+  focusVisibleOutline: {
     outline: {
       default: 'none',
-      ':focus-within': `2px solid ${colorVars['--color-accent']}`,
+      ':has(:focus-visible)': `2px solid ${colorVars['--color-accent']}`,
     },
     outlineOffset: {
       default: '0',
-      ':focus-within': '2px',
+      ':has(:focus-visible)': '2px',
     },
   },
   disabled: {
@@ -171,6 +171,8 @@ const styles = stylex.create({
     flex: 1,
     minWidth: 0,
     textAlign: 'start',
+    // Suppress inner focus ring — the parent <li> handles it via :has(:focus-visible)
+    outline: 'none',
   },
   invisibleAnchor: {
     all: 'unset',
@@ -183,6 +185,8 @@ const styles = stylex.create({
     minWidth: 0,
     textAlign: 'start',
     textDecoration: 'none',
+    // Suppress inner focus ring — the parent <li> handles it via :has(:focus-visible)
+    outline: 'none',
   },
   content: {
     display: 'flex',
@@ -453,7 +457,7 @@ export function XDSListItem({
           hasDividers ? styles.noRadius : styles.withRadius,
           hasDividers && styles.withDivider,
           isInteractive && styles.interactive,
-          isInteractive && styles.focusWithinOutline,
+          isInteractive && styles.focusVisibleOutline,
           isDisabled && styles.disabled,
           isSelected && styles.selected,
           xstyle,
