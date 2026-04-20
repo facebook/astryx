@@ -384,19 +384,19 @@ function LibraryNav() {
             />
           }
           heading="My App"
-          headingHref="/"
+          headingHref="#"
         />
       }>
       <XDSSideNavSection title="Main">
         <XDSSideNavItem
           label="Home"
-          href="/"
+          href="#"
           icon={HomeIcon}
           selectedIcon={HomeIconSolid}
         />
         <XDSSideNavItem
           label="Library"
-          href={`${basePath}/templates/library/`}
+          href="#"
           icon={BookOpenIcon}
           selectedIcon={BookOpenIconSolid}
           isSelected
@@ -405,12 +405,12 @@ function LibraryNav() {
       <XDSSideNavSection title="Browse">
         <XDSSideNavItem
           label="Components"
-          href="/components-patterns/"
+          href="#"
           icon={Squares2X2Icon}
         />
         <XDSSideNavItem
           label="Templates"
-          href={`${basePath}/templates/`}
+          href="#"
           icon={WrenchScrewdriverIcon}
         />
       </XDSSideNavSection>
