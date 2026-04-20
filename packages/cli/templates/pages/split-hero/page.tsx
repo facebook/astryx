@@ -89,7 +89,7 @@ export default function SplitHero() {
             <XDSButton label="Learn more" variant="secondary" />
           </XDSHStack>
         </XDSVStack>
-        <XDSAspectRatio ratio={4 / 5} xstyle={[styles.flex1, styles.imageClip]}>
+        <XDSAspectRatio ratio={5 / 4} xstyle={[styles.flex1, styles.imageClip]}>
           <img
             {...stylex.props(styles.heroImage)}
             src={IMAGE_URL}
